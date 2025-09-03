@@ -1,525 +1,660 @@
-# Default values for generic-application.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-#
-nameOverride: ""
-fullnameOverride: ""
-#
-rbac:
-  create: true
-  annotations: {}
-  extraLabels: {}
+# =============================================================================
+# Platforma Helm Chart Configuration
+# =============================================================================
+
+# -- Number of replicas for the deployment
+replicaCount: 1
+
+# -- Image configuration
+image:
+  repository: europe-west3-docker.pkg.dev/mik8s-euwe3-prod-gke-project/pl/pl
+  pullPolicy: Always
+  tag: "main" # or Chart.AppVersion
+
+# -- Image pull secrets for private registries
+imagePullSecrets: [] # - name: regcred
+
+# -- Service Account configuration
 serviceAccount:
-  # -- Create service account.
   create: false
-  # name:
-  extraLabels: {}
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
   name: "platforma-ci-sa"
-  automountServiceAccountToken: true
-app:
-  enabled: true
-  # -- Server container name
-  name: app
-  image:
-    # -- Image repository
-    repository: 511903394050.dkr.ecr.eu-central-1.amazonaws.com/pl
-    # -- Tag to override with, will default to the application version
-    tag: "main"
-    # -- Image pull policy
-    pullPolicy: IfNotPresent
-    # -- Override command for the container
-    command: ""
-    # -- Argument list for the command
-    args: []
-  # -- Deployment additional labels
-  extraLabels: {}
-  #-- Deployment annotations
   annotations: {}
-  # -- Name of Priority Class
-  priorityClassName: ""
-  #  Use an alternate scheduler, e.g. "stork".
-  #  ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
-  schedulerName: ""
+    # eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/my-platforma-iam-role
+    # iam.gke.io/sa-name: my-platforma-gsa # For Workload Identity on GKE
+
+# -- Service configuration
+service:
+  type: ClusterIP # ClusterIP, NodePort, LoadBalancer
+  port: 6345 # Matches --listen-port default
+  # loadBalancerIP: "" # Specific static IP for the load balancer
+  # annotations: {} # e.g., for AWS ALB: "service.beta.kubernetes.io/aws-load-balancer-type": "nlb"
+
+# -- Ingress configuration
+ingress:
+  enabled: false
+  className: "nginx" # Or your specific IngressClass (e.g., "gce", "traefik")
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  # -- The hostname to be used for the Ingress resource.
+  host: platforma.local
+  # -- TLS configuration for the Ingress.
+  tls:
+    enabled: false
+    # -- The name of the Kubernetes secret that contains the TLS certificate.
+    secretName: ""
+  # -- Path configurations for the Ingress.
+  paths:
+    # -- Configuration for the main gRPC service path.
+    grpc:
+      enabled: true
+      path: /
+      pathType: Prefix
+    # -- Configuration for the HTTP service path.
+    # This path is ONLY added to the Ingress if `primaryStorage.fs.enabled` is also true.
+    http:
+      enabled: true
+      path: /http
+      pathType: Prefix
+
+# -- Health check probes
+probes:
+  liveness:
+    enabled: true
+    # -- Type of probe. Can be 'httpGet', 'tcpSocket', or 'grpc'.
+    type: grpc
+    # -- Common probe settings
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 6
+    # -- Configuration for httpGet probe
+    httpGet:
+      path: /health
+      port: 8080 # Port for httpGet probe
+    # -- Configuration for tcpSocket probe
+    tcpSocket:
+      port: 6345 # Port for tcpSocket probe
+    # -- Configuration for grpc probe
+    grpc:
+      port: 6345 # Port for gRPC probe
+      # -- Service name for gRPC probe. Required for headless services.
+      service: ""
+  readiness:
+    enabled: true
+    # -- Type of probe. Can be 'httpGet', 'tcpSocket', or 'grpc'.
+    type: grpc
+    # -- Common probe settings
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 3
+    # -- Configuration for httpGet probe
+    httpGet:
+      path: /health
+      port: 8080 # Port for httpGet probe
+    # -- Configuration for tcpSocket probe
+    tcpSocket:
+      port: 6345 # Port for tcpSocket probe
+    # -- Configuration for grpc probe
+    grpc:
+      port: 6345 # Port for gRPC probe
+      # -- Service name for gRPC probe. Required for headless services.
+      service: ""
+
+# -- Environment Variables for the application container
+env:
+  # -- Simple key-value environment variables
+  variables:
+    # PLATFORMA_APP_ENV: "production"
+    # FEATURE_TOGGLE_X: "true"
+
+  # -- Environment variables populated from Kubernetes Secrets (recommended for sensitive data)
+  # Ensure the referenced Secret exists in the same namespace.
+  # See: https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables
+  secretVariables:
+  - name: PL_LICENSE
+    secretKeyRef:
+      name: pl-license-secret
+      key: pl-license-key
+    # - name: DB_PASSWORD # Name of the environment variable in the container
+    #   secretKeyRef:
+    #     name: my-database-secret # Name of the Kubernetes Secret
+    #     key: password # Key within the Secret that holds the value
+    #     # optional: true # Set to true if the secret or its key can be missing (Kubernetes 1.20+)
+
+    # - name: S3_ACCESS_KEY_ID # Example for S3 credentials from a secret
+    #   secretKeyRef:
+    #     name: platforma-s3-credentials
+    #     key: access_key
+
+    # - name: S3_SECRET_ACCESS_KEY # Example for S3 credentials from a secret
+    #   secretKeyRef:
+    #     name: platforma-s3-credentials
+    #     key: secret_key
+
+    # -- Environment variables populated from Kubernetes ConfigMaps (for non-sensitive configuration)
+    # Ensure the referenced ConfigMap exists in the same namespace.
+    # See: https://kubernetes.io/docs/concepts/configuration/configmap/#using-configmaps-as-environment-variables
+  configMapVariables:
+    # - name: APP_MODE # Name of the environment variable in the container
+    #   configMapKeyRef:
+    #     name: my-app-configmap # Name of the Kubernetes ConfigMap
+    #     key: application_mode # Key within the ConfigMap that holds the value
+    #     # optional: true # Set to true if the configmap or its key can be missing (Kubernetes 1.20+)
+
+    # - name: PLATFORMA_API_BASE_URL
+    #   configMapKeyRef:
+    #     name: platforma-backend-config
+    #     key: api_base_url
+
+    # -- Deployment-level configuration
+deployment:
+  priorityClassName: "" # Assigns a PriorityClass (e.g., "high-priority") to the Pod.
+  schedulerName: "" # Use an alternate scheduler, e.g., "stork-scheduler".
+  # -- Override the default container entrypoint by specifying a command.
+  # By default, this is disabled, and the chart passes arguments directly
+  # to the container's predefined ENTRYPOINT.
+  command:
+    enabled: false
+    # -- The command to execute.
+    # Example: ["/opt/platforma/bin/platforma"]
+    command: []
   # -- Only Pod's additional labels
   podLabels: {}
-  # -- Only Pod's annotations
+  # -- Only Pod's annotations (e.g., for Prometheus scraping)
   podAnnotations: {}
-  #  prometheus.io/scrape: "false"
-  #  prometheus.io/port: "9090"
-  #  prometheus.io/scheme: "http"
-  # -- Pod's management policy
-  podManagementPolicy: OrderedReady
-  # Deployment strategy ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+    # prometheus.io/scrape: "true"
+    # prometheus.io/port: {{ .Values.service.monitoringPort | quote }}
+    # prometheus.io/path: "/metrics"
+  redeployOnUpgrade: true
+  # -- Deployment strategy ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
   strategy:
-    #rollingUpdate:
-    #  maxSurge: 1
-    #  maxUnavailable: 0
-    #type: RollingUpdate
-    type: Recreate
-  # -- Depoyment's (continer level) security context
+    type: Recreate # Or Recreate. RollingUpdate is generally preferred for zero-downtime updates.
+    # If type is RollingUpdate:
+    rollingUpdate:
+      maxSurge: 25% # Max number of pods that can be created above desired count
+      maxUnavailable: 25% # Max number of pods that can be unavailable during update
+      # maxSurge: 1 # Example for fixed numbers
+      # maxUnavailable: 0
+      # -- Container-level security context.
+      # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   securityContext:
-    privileged: true # This is the most impactful setting.
-    runAsUser: 0
-    runAsGroup: 0
-    runAsNonRoot: false
-    readOnlyRootFilesystem: false
-    allowPrivilegeEscalation: true
+    privileged: false # Grants all capabilities. Use with extreme caution.
+    runAsUser: 0 # Run as root user inside the container
+    runAsGroup: 0 # Run as root group inside the container
+    runAsNonRoot: false # Allow running as root user
+    readOnlyRootFilesystem: false # Allow writing to the container's root filesystem
+    allowPrivilegeEscalation: false # Allow processes to gain more privileges
+    # privileged: false # Grants all capabilities. Use with extreme caution.
+    # runAsUser: 0 # Run as root user inside the container
+    # runAsGroup: 0 # Run as root group inside the container
+    # runAsNonRoot: false # Allow running as root user
+    # readOnlyRootFilesystem: false # Allow writing to the container's root filesystem
+    # allowPrivilegeEscalation: false # Allow processes to gain more privileges
     capabilities:
-      add: ["ALL"] # Add all Linux capabilities
-      drop: [] # Drop no capabilities
-  # -- Pod's security context.
-  # ref: [https://kubernetes.io/docs/tasks/configure-pod-container/security-context/](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
+      add: [] # Add all Linux capabilities. Use with extreme caution.
+      drop: [ "ALL" ] # Drop no capabilities. Consider dropping unnecessary capabilities.
+  # -- Pod-level security context.
+  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   podSecurityContext:
-    fsGroup: 3000
-  # -- Prometheus metrics settings
-  metrics:
-    # If you enable Prometheus metrics for an application,
-    # add proper annotations; see podAnnotations for an example.
-    # You need to add them manually as a compatible layer with istio metrics.
-    # Add another reason that we have auto scraping enabled based on Prometheus annotations.
+    fsGroup: 3000 # Group ID for volume ownership
+    # fsGroup: 3000 # Group ID for volume ownership
+    # Additional pod security context fields:
+    # runAsUser: 1000 # If running as non-root
+    # runAsGroup: 1000 # If running as non-root
+    # runAsNonRoot: true # Set to true if runAsUser/runAsGroup are non-root
+    # supplementalGroups: [1001, 1002] # Additional groups for the pod
+    # seccompProfile: # Linux Seccomp profile
+    #   type: RuntimeDefault # Or "Localhost" with specific path
+
+    # -- Sidecar Containers
+    # This section defines containers that run alongside your main application container.
+    # In Kubernetes v1.28+, native sidecar support is achieved by setting `restartPolicy: Always`
+    # on initContainers. These sidecars start before the main application container
+    # and remain running throughout its lifecycle, terminating gracefully after the main container exits.
+    # Useful for logging agents, monitoring exporters, network proxies, etc.
+    # See: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/#sharing-volumes- Con sidecar-containers
+sidecarContainers: []
+  # - name: my-log-shipper
+  #   image: fluent/fluentd:v1.16-debian-1.0
+  #   imagePullPolicy: IfNotPresent
+  #   command: ["fluentd", "-c", "/fluentd/etc/fluentd.conf"]
+  #   restartPolicy: Always # Essential for native sidecar behavior
+  #   volumeMounts:
+  #     - name: log-dir-volume # Mount the application's log directory
+  #       mountPath: /var/log/platforma # Fluentd will read logs from here
+  #     # You'd also need a ConfigMap for fluentd.conf and mount it.
+  #   resources:
+  #     limits:
+  #       cpu: 100m
+  #       memory: 128Mi
+  #     requests:
+  #       cpu: 50m
+  #       memory: 64Mi
+  # - name: my-monitoring-exporter
+  #   image: prom/node-exporter:latest
+  #   imagePullPolicy: IfNotPresent
+  #   command: ["node_exporter"]
+  #   restartPolicy: Always
+  #   resources:
+  #     limits:
+  #       cpu: 50m
+  #       memory: 64Mi
+  #     requests:
+  #       cpu: 25m
+  #       memory: 32Mi
+
+# =============================================================================
+# Platforma CLI Options
+# =============================================================================
+
+# -- Main Options (--version, --full-version, --only-verify-config, --get-queue-limits)
+mainOptions:
+  # -- License file configuration
+  licenseFile:
     enabled: false
-    targetPort: 9090
-    portName: metrics-server
-  # Number of old ReplicaSets to retain
-  #
-  replicaCount: 1
-  horizontalPodAutoscaler:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 3
-    metrics: []
-  #
-  containerWorkingDir: "/app"
-  # -- See `kubectl explain poddisruptionbudget.spec` for more.
-  # ref: [https://kubernetes.io/docs/tasks/run-application/configure-pdb/](https://kubernetes.io/docs/tasks/run-application/configure-pdb/)
-  podDisruptionBudget:
-    enabled: false
-    #minAvailable: 1
-    #maxUnavailable: 1
-    extraLabels: {}
-  # -- Deployment init containers
-  initContainers: []
-  # Inject Kubernetes services as environment variables.
-  # See https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/#environment-variables
-  enableServiceLinks: true
-  # -- Image pull secrets.
-  # ref. https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
-  imagePullSecrets:
-    - name: regcred
-  # -- Node tolerations for server scheduling to nodes with taints.
-  # ref: [https://kubernetes.io/docs/concepts/configuration/assign-pod-node/](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/)
-  tolerations: []
-  # -- Pod's node selector.
-  # ref: [https://kubernetes.io/docs/user-guide/node-selection/](https://kubernetes.io/docs/user-guide/node-selection/)
-  nodeSelector: {}
-  # -- Pod affinity
-  affinity: {}
-  # -- Topology Spread Constraints ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
-  topologySpreadConstraints: []
-  # -- Env variables
-  # -- Additional environment variables (ex.: secret tokens, flags)
-  env:
-    AWS_REGION: europe-west3
-  envValueFrom:
-    PL_LICENSE:
-      secretKeyRef:
-        name: pl-license-secret
-        key: pl-license-key
-    MI_LICENSE:
-      secretKeyRef:
-        name: mixcr-license-secret
-        key: mixcr-license-key
-    AWS_ACCESS_KEY_ID:
-      secretKeyRef:
-        name: pl-gcp-secrets
-        key: aws-access-key-id
-    AWS_SECRET_ACCESS_KEY:
-      secretKeyRef:
-        name: pl-gcp-secrets
-        key: aws-secret-access-key
-  # -- External secrets. (AWS Secrets Manager)
-  externalSecret:
-    enabled: false
-    awsRegion: eu-central-1
-    # -- ExternalSecret annotations
-    annotations: {}
-    # -- ExternalSecret extraLabels
-    extraLabels: {}
-    # -- SecretsStore target
-    secretRefreshInterval: 24h
-    secretStoreTarget: general-application-secrets
-    secretDataFrom: {}
-  # -- volumeMounts
-  volumeMounts: []
-  # example:
-  #  - mountPath: /cache
-  #    name: cache-volume
-  # --  volumes
-  volumes: []
-  # example: persistent volume
-  #  - name: cache-volume
-  #    persistentVolumeClaim:
-  #      claimName: release-name-generic-application
-  # example: inmemory
-  #  - name: cache-volume
-  #    emptyDir:
-  #      medium: Memory
-  #      sizeLimit: 2Gi
-  structuredConfig: {}
-  config: |
-    logging:
-      level: "debug"
-    debug:
-      listen: "0.0.0.0:9091"
-    grpcServer:
-      listen: "0.0.0.0:6345"
-    monitoring:
-      listen: "0.0.0.0:9090"
-    license:
-      value: "env:PL_LICENSE"
-    core:
-      logging:
-        extendedInfo: true
-      authEnabled: true
-      auth:
-        - driver: ldap
-          serverUrl: "ldap://pl-dev-glauth.dev-gke.svc.cluster.local:3893"
-          defaultDN: "cn=%u,ou=users,ou=users,dc=pldev,dc=io"
-      db:
-        path: {{ .Values.app.persistentVolume.database.mountPath | quote }}
-
-    controllers:
-      common:
-        timeouts:
-          request: 10s
-          init: 1m
-          stop: 30s
-
-      data:
-        main:
-          storages:
-            primary:
-              mode: primary
-              downloadable: true
-
-            work:
-              mode: active
-              downloadable: false
-
-            raw:
-              mode: passive
-              downloadable: false
-
-            test-assets:
-              mode: passive
-
-        storages:
-          - id: "primary"
-            type: S3
-            endpoint: "https://storage.googleapis.com"
-            bucketName: {{ .Values.app.coreConfig.s3.bucketName }}
-            keyPrefix: {{ .Values.app.coreConfig.s3.primaryStorageKeyPrefix }}
-
-          - id: "raw"
-            type: S3
-            endpoint: "https://storage.googleapis.com"
-            bucketName: {{ .Values.app.coreConfig.s3.bucketName }}
-            keyPrefix: "corp-library/"
-
-          - id: "test-assets"
-            type: S3
-            endpoint: "https://storage.googleapis.com"
-            bucketName: {{ .Values.app.coreConfig.s3.bucketName }}
-            keyPrefix: "test-assets/"
-
-          - id: "work"
-            type: FS
-            rootPath: {{ .Values.app.persistentVolume.work.mountPath }}
-
-      packageLoader:
-        packagesRoot: {{ .Values.app.persistentVolume.softwareloader.mountPath }}
-      runner:
-        storageRoot: {{ .Values.app.persistentVolume.work.mountPath }}
-        batch:
-          type: 'google-batch'
-          storage:
-            type: "nfs"
-            addr: "10.244.108.130"
-            path: "/nfs_share"
-            mount: {{ .Values.app.persistentVolume.nfsShareVolume.mountPath }}
-          projectId: {{ .Values.app.coreConfig.batch.projectId }}
-          region: {{ .Values.app.coreConfig.batch.region }}
-          network: {{ .Values.app.coreConfig.batch.network }}
-          subnetwork: {{ .Values.app.coreConfig.batch.subnetwork }}
-
-      workflows:
-        features:
-          computeLimits: true
-  coreConfig:
-    auth:
-      enabled: true
-      type: ldap
-    s3:
-      bucketName: "mik8s-platforma-ci-euwe3-dev-gke"
-      primaryStorageKeyPrefix: "platforma-ci-primary/"
-    batch:
-      projectId: "gke-project-id"
-      region: "gke-region"
-      network: "gke-vpc"
-      subnetwork: "gke-subnetwork"
-
-  htpasswdConfig: {}
-  # -- Persistent volume:
-  persistentVolume:
-    # -- Create/use Persistent Volume Claim for server component. Empty dir if false
-    # -- If you change mountPath values here, don't forget to update platforma.yaml with the new values.
-    database:
-      enabled: true
-      type: "pvc"
-      # -- Mount path
-      mountPath: "/db"
-      # -- Array of access modes. Must match those of existing PV or dynamic provisioner.
-      # ref: [http://kubernetes.io/docs/user-guide/persistent-volumes/](http://kubernetes.io/docs/user-guide/persistent-volumes/)
-      accessModes:
-        - ReadWriteOnce
-      # -- Persistant volume annotations
-      annotations: {}
-      # -- Persistant volume extraLabels
-      extraLabels: {}
-      # -- persistentVolumeReclaimPolicy. The reclaim policy for a PersistentVolume tells the cluster what to do with the volume after it has been released of its claim.
-      reclaimPolicy: ""
-      # -- StorageClass to use for persistent volume. Requires server.persistentVolume.enabled: true. If defined, PVC created automatically
-      storageClass: "standard-rwo"
-      # -- Existing Claim name. If defined, PVC must be created manually before volume will be bound
-      existingClaim: ""
-      # -- Bind Persistent Volume by labels. Must match all labels of targeted PV.
-      matchLabels: {}
-      # -- Mount path. Server data Persistent Volume mount root path.
-      size: 20Gi
-    work:
+    path: "/etc/platforma/.pl-license"
+    # Secret configuration for license file
+    secretRef:
       enabled: false
-      type: "pvc"
-      # -- Mount path
-      mountPath: "/mnt/platforma-data/instance/work"
-      # -- Array of access modes. Must match those of existing PV or dynamic provisioner.
-      # ref: [http://kubernetes.io/docs/user-guide/persistent-volumes/](http://kubernetes.io/docs/user-guide/persistent-volumes/)
-      accessModes:
-        - ReadWriteMany
-      # -- Persistant volume annotations
-      annotations: {}
-      # -- Persistant volume extraLabels
-      extraLabels: {}
-      # -- persistentVolumeReclaimPolicy. The reclaim policy for a PersistentVolume tells the cluster what to do with the volume after it has been released of its claim.
-      reclaimPolicy: ""
-      # -- StorageClass to use for persistent volume. Requires server.persistentVolume.enabled: true. If defined, PVC created automatically
-      storageClass: "local-path"
-      # -- Existing Claim name. If defined, PVC must be created manually before volume will be bound
-      existingClaim: ""
-      # -- Bind Persistent Volume by labels. Must match all labels of targeted PV.
-      matchLabels: {}
-      # -- Mount path. Server data Persistent Volume mount root path.
-      size: 400Gi
-    softwareloader:
-      enabled: false
-      type: "pvc"
-      # -- Mount path
-      mountPath: "/mnt/platforma-data/instance/software-loader"
-      # -- Array of access modes. Must match those of existing PV or dynamic provisioner.
-      # ref: [http://kubernetes.io/docs/user-guide/persistent-volumes/](http://kubernetes.io/docs/user-guide/persistent-volumes/)
-      accessModes:
-        - ReadWriteMany
-      # -- Persistant volume annotations
-      annotations: {}
-      # -- Persistant volume extraLabels
-      extraLabels: {}
-      # -- persistentVolumeReclaimPolicy. The reclaim policy for a PersistentVolume tells the cluster what to do with the volume after it has been released of its claim.
-      reclaimPolicy: ""
-      # -- StorageClass to use for persistent volume. Requires server.persistentVolume.enabled: true. If defined, PVC created automatically
-      storageClass: "local-path"
-      # -- Existing Claim name. If defined, PVC must be created manually before volume will be bound
-      existingClaim: ""
-      # -- Bind Persistent Volume by labels. Must match all labels of targeted PV.
-      matchLabels: {}
-      # -- Mount path. Server data Persistent Volume mount root path.
-      size: 150Gi
-   # -- NFS Share Volume for Google Batch configuration
-    # Note: When using nfsShareVolume, you should disable both work and softwareloader PVCs
-    # as this volume will be used for both work and software-loader data
-    nfsShareVolume:
-      enabled: true
-      type: "pvc"
-      # -- Mount path for shared NFS volume
-      mountPath: "/mnt/platforma-data/instance"
-      # -- Array of access modes. Must match those of existing PV or dynamic provisioner.
-      accessModes:
-        - ReadWriteMany
-      # -- Persistant volume annotations
-      annotations: {}
-      # -- Persistant volume extraLabels
-      extraLabels: {}
-      # -- persistentVolumeReclaimPolicy. The reclaim policy for a PersistentVolume tells the cluster what to do with the volume after it has been released of its claim.
-      reclaimPolicy: ""
-      # -- StorageClass to use for persistent volume. Requires server.persistentVolume.enabled: true. If defined, PVC created automatically
-      storageClass: "filestore-nfs"
-      # -- Existing Claim name. If defined, PVC must be created manually before volume will be bound
-      existingClaim: "filestore-ci-fast-pvc"
-      # -- Bind Persistent Volume by labels. Must match all labels of targeted PV.
-      matchLabels: {}
-  # -- Resource object.
-  # ref: [http://kubernetes.io/docs/user-guide/compute-resources/](http://kubernetes.io/docs/user-guide/compute-resources/
-  resources:
-    limits:
-      memory: 4096Mi
-      cpu: 2000m
-    requests:
-      memory: 2048Mi
-      cpu: 1000m
-  # Indicates whether the Container is ready to service requests. If the readiness probe fails, the endpoints controller removes the Pod's IP address from the endpoints of all Services that match the Pod. The default state of readiness before the initial delay is Failure. If a Container does not provide a readiness probe, the default state is Success.
-  readinessProbe:
-    grpc:
-      port: 6345
-    initialDelaySeconds: 15
-    periodSeconds: 15
-    timeoutSeconds: 5
-    failureThreshold: 3
-  # Indicates whether the Container is running. If the liveness probe fails, the kubelet kills the Container, and the Container is subjected to its restart policy. If a Container does not provide a liveness probe, the default state is Success.
-  livenessProbe:
-    grpc:
-      port: 6345
-    initialDelaySeconds: 30
-    periodSeconds: 30
-    timeoutSeconds: 5
-    failureThreshold: 10
-  # Indicates whether the Container is done with potentially costly initialization. If set it is executed first. If it fails Container is restarted. If it succeeds liveness and readiness probes takes over.
-  startupProbe: {}
-  #startupProbe:
-  #  tcpSocket:
-  #    port: http
-  #  failureThreshold: 30
-  #  periodSeconds: 15
-  #  successThreshold: 1
-  #  timeoutSeconds: 5
-  #
-  ingress:
-    # -- Enable deployment of ingress for server component
-    enabled: false
-    # For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
-    # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
-    # ingressClassName: nginx
-    ingressClassName: gce
-    # -- Ingress annotations
-    annotations:
-      kubernetes.io/ingress.class: "gce"
-    # -- Ingress extra labels
-    extraLabels: {}
-    # -- Array of host objects
-    path: /
-    hosts:
-      - pl0.gcp.milaboratories.com
-    pathType: Prefix
-    # Extra paths to prepend to every host configuration. This is useful when working with annotation based services.
-    extraPaths: []
-    # -- Array of TLS objects
-    #tls: []
-    #  - secretName: chart-example-tls
-    #     hosts:
-    #       - chart-example.local
-  service:
-    # -- Service annotations
-    annotations:
-    # -- Service labels
-    extraLabels: {}
-    # -- Service ClusterIP
-    clusterIP: ""
-    # -- Service External IPs. ref: [https://kubernetes.io/docs/user-guide/services/#external-ips]( https://kubernetes.io/docs/user-guide/services/#external-ips)
-    externalIPs: []
-    # -- Service load balacner IP
-    loadBalancerIP: ""
-    # -- Load balancer source range
-    loadBalancerSourceRanges: []
-    # -- Service port
-    port: 6345
-    # -- Container port name
-    portName: plgrpc
-    # -- Container port
-    targetPort: 6345
-    # -- Node port
-    # nodePort: 30000
-    # -- Service type
-    type: ClusterIP
-    # Ref: https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
-    # externalTrafficPolicy: "local"
-    # healthCheckNodePort: 0
+      name: "" # Name of the secret containing license file
+      key: "license" # Key in secret for license content
 
-    # Container Lifecycle Hooks. Execute a specific bash command or make an HTTP request
-    lifecycleHooks: {}
-    # postStart:
-    #   exec:
-    #     command: []
-  debug:
-    ingress:
-      # -- Enable deployment of ingress for debug component of the server
+# -- Local Storage Options (using PVCs)
+persistence:
+  # -- Configuration for the main data volume (simple setup).
+  # If enabled, this creates a single PVC for all application data.
+  # The `dbDir`, `workDir`, and `packagesDir` options below will be ignored.
+  mainRoot:
+    enabled: false
+    # -- If true, a PVC will be created for the main root directory.
+    createPvc: true
+    # -- Use an existing PVC for the main root directory. If specified, `size` and `storageClass` are ignored.
+    existingClaim: ""
+    accessMode: ReadWriteOnce
+    size: 100Gi
+    # storageClass: "standard"
+    mountPath: /data/platforma-data
+  # -- Configuration for the database volume (advanced setup).
+  # Only used if `persistence.mainRoot.enabled` is false.
+  dbDir:
+    enabled: true
+    # -- If true, a PVC will be created for the database directory.
+    createPvc: true
+    # -- Use an existing PVC for the database directory. If specified, `size` and `storageClass` are ignored.
+    existingClaim: ""
+    accessMode: ReadWriteOnce
+    size: 20Gi
+    storageClass: "standard-rwo"
+    mountPath: /data/platforma-data/rocksdb
+  # -- Configuration for the working directory volume (advanced setup).
+  # Only used if `persistence.mainRoot.enabled` is false.
+  workDir:
+    enabled: false
+    # -- If true, a PVC will be created for the working directory.
+    createPvc: true
+    # -- Use an existing PVC for the working directory. If specified, `size` and `storageClass` are ignored.
+    existingClaim: ""
+    accessMode: ReadWriteOnce
+    size: 50Gi
+    storageClass: "standard-rwo"
+    mountPath: /data/platforma-data/work
+  # -- Configuration for the packages volume (advanced setup).
+  # Only used if `persistence.mainRoot.enabled` is false.
+  packagesDir:
+    enabled: false
+    # -- If true, a PVC will be created for the packages directory.
+    createPvc: true
+    # -- Use an existing PVC for the packages directory. If specified, `size` and `storageClass` are ignored.
+    existingClaim: ""
+    accessMode: ReadWriteOnce
+    size: 50Gi
+    storageClass: "standard-rwo"
+    mountPath: /data/platforma-data/packages
+
+# -- Listen Options (--listen-port, --listen-http-port, --listen-address, TLS options)
+listenOptions:
+  port: 6345 # Should match service.port
+  # -- The HTTP port. This is only used if `primaryStorage.fs.enabled` is true.
+  httpPort: 6347
+  ip: "0.0.0.0"
+  # -- TLS configuration for listening
+  tls:
+    enabled: false
+    certPath: ""
+    keyPath: ""
+    org: "Platforma"
+    domains: []
+    ips: []
+  # -- Self-signed TLS options
+  selfSignedTls: false
+  selfSignedTlsOrg: ""
+  selfSignedTlsDomains: []
+  selfSignedTlsIps: []
+
+# -- GCP shared settings
+gcp:
+  serviceAccount: "mik8s-platforma-ci-access@mik8s-euwe3-prod-gke-project.iam.gserviceaccount.com"
+  projectId: "mik8s-euwe3-prod-gke-project"
+
+# -- Primary Storage Options
+# NOTE: Only one primary storage can be enabled at a time (s3, fs, or gcs)
+primaryStorage:
+  # -- S3 primary storage configuration
+  s3:
+    enabled: false
+    url: "s3://milab-euce1-prod-data-s3-platforma-ci/platforma-ci-primary/"
+    region: "eu-central-1"
+    key: "" # It's better to use SecretKeyRef for sensitive keys
+    secret: "" # It's better to use SecretKeyRef for sensitive secrets
+    externalEndpoint: ""
+    noDataIntegrity: false
+    # Secret configuration for S3 credentials
+    secretRef:
       enabled: false
-      # For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
-      # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
-      # ingressClassName: nginx
-      ingressClassName: traefik
-      # -- Ingress annotations
-      annotations: {}
-      # -- Ingress extra labels
-      extraLabels: {}
-      # -- Array of host objects
-      path: /
-      hosts:
-        - pl-debug.chart-example.local
-      pathType: Prefix
-      # Extra paths to prepend to every host configuration. This is useful when working with annotation based services.
-      extraPaths: []
-      # -- Array of TLS objects
-      #tls: []
-      #  - secretName: chart-example-tls
-      #     hosts:
-      #       - chart-example.local
-    service:
-      # -- Service annotations
-      annotations: {}
-      # -- Service labels
-      extraLabels: {}
-      # -- Service ClusterIP
-      clusterIP: ""
-      # -- Service External IPs. ref: [https://kubernetes.io/docs/user-guide/services/#external-ips]( https://kubernetes.io/docs/user-guide/services/#external-ips)
-      externalIPs: []
-      # -- Service load balacner IP
-      loadBalancerIP: ""
-      # -- Load balancer source range
-      loadBalancerSourceRanges: []
-      # -- Service port
-      port: 9091
-      # -- Container port name
-      portName: pldebug
-      # -- Container port
-      targetPort: 9091
-      # -- Node port
-      # nodePort: 30000
-      # -- Service type
+      name: "" # Name of the secret containing S3 credentials
+      keyKey: "access-key" # Key in secret for access key
+      secretKey: "secret-key" # Key in secret for secret key
+  # -- Filesystem storage option
+  fs:
+    enabled: false
+    url: ""
+    # Auto-generate URL from listen settings
+    autoUrl: true
+    # -- Service configuration for the HTTP endpoint needed for FS primary storage.
+    # This service is only created if primaryStorage.fs.enabled is true.
+    httpService:
       type: ClusterIP
-      # Ref: https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
-      # externalTrafficPolicy: "local"
-      # healthCheckNodePort: 0
-  # -- Pod's termination grace period in seconds
-  terminationGracePeriodSeconds: 30
-  # Overrides pod.spec.hostAliases in the generic-application deployment's pods
-  hostAliases: []
-  # - ip: "1.2.3.4"
-  #   hostnames:
-  #     - "my.host.com"
+      annotations: {}
+    # PVC configuration for filesystem storage
+    pvc:
+      enabled: false
+      # -- Use an existing PVC for the filesystem primary storage. If specified, `size` and `storageClass` are ignored.
+      existingClaim: ""
+      accessMode: ReadWriteOnce
+      size: 100Gi
+      # storageClass: "standard"
+      mountPath: /data/primary-storage
+  # -- GCS primary storage configuration
+  gcs:
+    enabled: true
+    url: "gs://mik8s-platforma-ci-euwe3-dev-gke/platforma-ci-primary/" # e.g., gs://<bucket>[/<prefix-in-bucket>]
+    # serviceAccount centralized via top-level gcp.serviceAccount
 
-  # Enable direct access to the network interfaces of the host machine where the pod was started
-  hostNetwork: false
-  # dnsPolicy and dnsConfig for Deployments if you want non-default settings.
-  # These will be passed directly to the PodSpec of same.
-  dnsPolicy: ""
-  dnsConfig: ""
+    # -- Data Library Options (--no-data-library, --no-host-data-library, --data-library-fs, --data-library-s3, --data-library-gcs)
+dataLibrary:
+  noDataLibrary: false
+  noHostDataLibrary: false
+  # -- S3 data libraries
+  s3:
+  - id: "library"
+    enabled: false
+    url: "s3://milab-euce1-prod-data-s3-platforma-ci/platforma-ci-library/"
+    region: "eu-central-1"
+    key: "" # It's better to use SecretKeyRef for sensitive keys
+    secret: "" # It's better to use SecretKeyRef for sensitive secrets
+    externalEndpoint: ""
+    noDataIntegrity: false
+    # Secret configuration for S3 credentials
+    secretRef:
+      enabled: false
+      name: "" # Name of the secret containing S3 credentials
+      keyKey: "access-key" # Key in secret for access key
+      secretKey: "secret-key" # Key in secret for secret key
+  # -- Filesystem data libraries. Each item in this list will create a corresponding PVC.
+  fs: []
+    # - id: "my-fs-library"
+    #   path: "/data/fs-library-1" # Mount path inside the container
+    #   pvc:
+    #     enabled: true
+    #     # -- Use an existing PVC for this filesystem data library. If specified, `size` and `storageClass` are ignored.
+    #     existingClaim: ""
+    #     accessMode: ReadWriteOnce
+    #     size: 10Gi
+    #     storageClass: "standard"
+  # -- GCS data libraries
+  gcs:
+    # serviceAccount centralized via top-level gcp.serviceAccount
+  - id: "test-assets"
+    enabled: true
+    url: "gs://mik8s-platforma-ci-euwe3-dev-gke/test-assets/"
+    # serviceAccount centralized via top-level gcp.serviceAccount
+    # - id: "my-gcs-library"
+    #   enabled: true
+    #   url: "gs://my-gcs-bucket/library"
+    #   projectId: "" # GCP project ID
+    #   serviceAccount: "" # GCP service account name
+    #   jsonKeyFilePath: "" # Path to GCP service account JSON key file
+
+    # -- Authentication Options
+authOptions:
+  # -- Htpasswd authentication (--auth-htpasswd)
+  htpasswd:
+    enabled: false
+    # -- Manually specify the full path to the htpasswd file in the container.
+    # NOTE: This is only used if `secretRef.enabled` is false.
+    path: ""
+    # -- Provide the htpasswd file via a Kubernetes secret (recommended).
+    secretRef:
+      enabled: false
+      # -- Name of the Secret containing the htpasswd file.
+      # This secret will be mounted to the directory `/etc/platforma/secrets/htpasswd`.
+      name: ""
+      # -- The key in the secret that contains the htpasswd file content.
+      # The final path used by the application will be `/etc/platforma/secrets/htpasswd/{{ .Values.authOptions.htpasswd.secretRef.key }}`.
+      key: "htpasswd"
+  # -- LDAP authentication
+  ldap:
+    enabled: true
+    server: "ldap://pl-dev-glauth.dev-gke.svc.cluster.local:3893"
+    dn: "cn=%u,ou=users,ou=users,dc=pldev,dc=io"
+    startTls: false
+    # -- LDAP TLS configuration.
+    # Enables client-side TLS for the LDAP connection.
+    # You can mix and match how certificates are provided. For example, you can
+    # provide the client cert/key via a secret and the CA certificate via `casPath`.
+    tls:
+      enabled: false
+      # -- Provide certificate, key, and optional CA via direct paths on the container's filesystem.
+      # This is used if `tls.secretRef.enabled` is false.
+      certPath: ""
+      keyPath: ""
+      casPath: "" # Optional. Path to a CA certificate file.
+      # -- Provide certificate, key, and optional CA via a Kubernetes secret.
+      # The secret will be mounted to `/etc/platforma/secrets/ldap`.
+      secretRef:
+        enabled: false
+        # -- Name of the Secret containing the TLS files.
+        name: ""
+        # -- Key in the secret for the client certificate.
+        certKey: "tls.crt"
+        # -- Key in the secret for the client private key.
+        keyKey: "tls.key"
+        # -- Key in the secret for the CA certificate (optional).
+        # If specified, this takes precedence over `tls.casPath`.
+        caKey: "ca.crt"
+    # -- Path to the file with system root CA certificates for LDAP (e.g., /etc/ssl/certs/ca-certificates.crt).
+    # This is evaluated by the application independently of the client TLS configuration above.
+    rootCas: ""
+
+# -- A list of extra command-line arguments to pass to the Platforma container.
+# This provides a flexible way to set CLI options that are not explicitly
+# defined elsewhere in this values file.
+#
+# Example for runner options:
+# extraArgs:
+#   - --runner-local-cpu=8
+#   - --runner-local-ram=16GiB
+#
+# Example for debugging and special modes:
+# extraArgs:
+#   - --use-restricted-network-mode
+#   - --skip-extended-self-check
+#   - --only-verify-config
+#   - --cancel-running-blocks
+#   - --get-queue-limits
+#
+# Example for file-based logging (when logging.stdout is false):
+# extraArgs:
+#   - --log-level=warn
+#   - --log-dir=/var/log/platforma
+#   - --log-rotation-size=100MiB
+extraArgs:
+- --skip-extended-self-check
+
+# -- Google Batch Options (--google-batch-storage, --google-batch-project, --google-batch-region, --google-batch-job-name-prefix, --google-batch-job-image, --google-batch-network, --google-batch-subnetwork, --google-batch-provisioning)
+googleBatch:
+  enabled: true
+  storage: "/data/platforma-data=nfs://10.244.108.130/nfs_share"
+  region: "europe-west3"
+  jobNamePrefix: "pl-ci"
+  jobImage: ""
+  network: "projects/mik8s-euwe3-prod-gke-project/global/networks/mik8s-euwe3-prod-gke-vpc"
+  subnetwork: "projects/mik8s-euwe3-prod-gke-project/regions/europe-west3/subnetworks/mik8s-euwe3-prod-gke-private-1"
+  provisioning: "SPOT"
+  # serviceAccount centralized via top-level gcp.serviceAccount
+  # -- Volumes for Google Batch. This is used to mount the shared NFS volume.
+  volumes:
+    enabled: true
+    # -- The name of the volume.
+    name: "nfs-volume"
+    # -- The path where the volume will be mounted inside the container.
+    mountPath: "/data/platforma-data"
+    # -- The name of the working directory subdirectory inside the NFS volume.
+    workDirName: "pl-ci/work"
+    # -- The name of the packages directory subdirectory inside the NFS volume.
+    packagesDirName: "pl-ci/packages"
+    # -- Use an existing PVC for the Google Batch volume. If specified, the `storageClass` option is ignored.
+    existingClaim: "filestore-fast-pvc"
+    # -- The storage class to use for dynamic provisioning.
+    storageClass: ""
+    # -- The size of the volume to create. This is only used for dynamic provisioning.
+    size: "1Ti"
+    # -- The access mode for the volume.
+    accessMode: "ReadWriteMany"
+
+# -- Logging Options
+# This section configures the application's logging behavior using the --log-dst flag.
+logging:
+  # -- Specifies the logging destination.
+  # Supported values:
+  #   - "stream://stdout" (default): Logs are sent to the standard output of the container.
+  #   - "stream://stderr": Logs are sent to the standard error of the container.
+  #   - "dir:///var/log/platforma": Logs are written to files in the specified directory,
+  #     which can be backed by a persistent volume. The path should match `persistence.mountPath`.
+  destination: "stream://stdout"
+
+  # -- Persistence configuration for directory-based logging (`dir://`).
+  # This is only used if `destination` is set to a `dir://` path.
+  persistence:
+    # -- Enable a PersistentVolumeClaim to store log files.
+    enabled: false
+    # -- Use an existing PVC for logs. If specified, other PVC settings are ignored.
+    existingClaim: ""
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    # storageClass: "standard"
+    mountPath: "/var/log/platforma"
+
+# -- Monitoring options for Prometheus endpoint
+monitoring:
+  # -- Enable the /metrics endpoint and its dedicated Service for Prometheus scraping.
+  enabled: true
+  # -- Port for the monitoring endpoint.
+  port: 9090
+  # -- Service configuration for the monitoring endpoint.
+  service:
+    # -- Type of Service for monitoring. ClusterIP is recommended.
+    type: ClusterIP
+    # -- Annotations for the monitoring Service, e.g., for Prometheus Operator.
+    annotations: {}
+      # prometheus.io/scrape: "true"
+      # prometheus.io/path: "/metrics"
+
+# -- Debug options for pprof endpoint
+debug:
+  # -- Enable the debug endpoint and its dedicated Service.
+  enabled: true
+  # -- Port for the debug endpoint.
+  port: 9091
+  # -- Service configuration for the debug endpoint.
+  service:
+    # -- Type of Service for debug. ClusterIP is recommended.
+    type: ClusterIP
+    # -- Annotations for the debug service.
+    annotations: {}
+
+# =============================================================================
+# Kubernetes Resource Configuration
+# =============================================================================
+
+# -- Network Policy settings
+# See: https://kubernetes.io/docs/concepts/services-networking/network-policies/
+networkPolicy:
+  # -- Enable or disable the creation of NetworkPolicy resource.
+  # Requires a NetworkPolicy-enabled CNI plugin (e.g., Calico, Cilium, Weave Net).
+  enabled: false
+  # -- Specify the policy types.
+  # This defaults to ["Ingress", "Egress"] but can be overridden.
+  policyTypes:
+  - Ingress
+  - Egress
+  # -- Ingress rules for the application.
+  # By default, denies all ingress traffic unless explicitly allowed.
+  # Allow traffic from:
+  # - Pods in the same namespace with specific labels
+  # - Pods in other namespaces
+  # - IP blocks
+  ingress: []
+    # - from:
+    #     - podSelector: {} # Allow all pods in the same namespace
+    #     - namespaceSelector: {} # Allow all pods in all namespaces
+    # - from: # Allow traffic from other pods in the same namespace with specific labels
+    #   - podSelector:
+    #       matchLabels:
+    #         app.kubernetes.io/name: my-other-app
+    #         app.kubernetes.io/instance: my-release
+    # ports: # Specify ports that traffic is allowed on
+    #   - protocol: TCP
+    #     port: 6345 # Allow HTTP traffic to the application port
+
+  # -- Egress rules for the application.
+  # By default, denies all egress traffic unless explicitly allowed.
+  # Allow traffic to:
+  # - Pods in the same namespace
+  # - Pods in other namespaces
+  # - IP blocks (e.g., external databases, cloud APIs)
+  egress: []
+    # - to:
+    #     - ipBlock:
+    #         cidr: 0.0.0.0/0 # Allow all outbound traffic (caution: broad access)
+    #   ports:
+    #     - protocol: TCP
+    #       port: 80
+    #     - protocol: TCP
+    #       port: 443
+    # - to: # Allow egress to DNS services (crucial for most applications)
+    #     - namespaceSelector: {} # Select all namespaces (for DNS in kube-system)
+    #       podSelector:
+    #         matchLabels:
+    #           k8s-app: kube-dns # Example selector for default CoreDNS/kube-dns
+    #   ports:
+    #     - protocol: UDP
+    #       port: 53
+
+# -- Resource limits and requests
+resources:
+  limits:
+    cpu: 8000m
+    memory: 16Gi
+  requests:
+    cpu: 4000m
+    memory: 8Gi
+
+# -- Node selector, affinity, and tolerations
+nodeSelector: {}
+affinity: {}
+tolerations: {}
