@@ -65,6 +65,8 @@ export const DockerAsset = `{
 
 export const EPNameMultiRootBinary = 'multi-root-bin';
 
+// This binary artifact intentionally has only part of roots, meaning
+// software is not available for some platforms.
 export const MultiRootBinary = `{
   "type": "binary",
   "registry": {
