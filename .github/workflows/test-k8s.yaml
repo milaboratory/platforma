@@ -32,6 +32,7 @@ jobs:
       helm-release-name: 'pl-dev-gcp'
       helm-chart-values-file: 'helm/gcp/values.yaml'
       helm-chart-debug: true
+      helm-chart-render-template: true
       notify-slack: true
       namespace: 'dev-gke'
       npmrc-config: |
