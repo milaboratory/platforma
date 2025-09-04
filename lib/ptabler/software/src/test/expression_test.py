@@ -53,7 +53,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[add_col_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -66,7 +66,7 @@ class ExpressionTests(unittest.TestCase):
             "c_sum": [15, 27]
         })
 
-        result_df = final_table_space["input_table"].collect()
+        result_df = ctx.get_table("input_table").collect()
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
     def test_filter_with_compound_condition(self):
@@ -97,7 +97,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[filter_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -109,14 +109,12 @@ class ExpressionTests(unittest.TestCase):
             "category": ["A", "A"]
         })
 
-        self.assertTrue("filtered_output" in final_table_space)
-        result_df = final_table_space["filtered_output"].collect()
+        result_df = ctx.get_table("filtered_output").collect()
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
         # Ensure original table is still present and unchanged if needed for other tests,
         # though Filter creates a new one.
-        self.assertTrue("source_table" in final_table_space)
-        original_df_collected = final_table_space["source_table"].collect()
+        original_df_collected = ctx.get_table("source_table").collect()
         assert_frame_equal(original_df_collected, initial_df.collect())
 
     def test_add_columns_string_operations_sequential(self):
@@ -162,7 +160,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[add_upper_step, add_full_name_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -176,7 +174,7 @@ class ExpressionTests(unittest.TestCase):
             "full_name": ["JOHN doe", "JANE smith"]
         })
 
-        result_df = final_table_space["names_table"].collect()
+        result_df = ctx.get_table("names_table").collect()
         # Order of columns might differ, so select in expected order for comparison
         result_df = result_df.select(expected_df.columns)
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
@@ -212,7 +210,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[cumsum_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -226,7 +224,7 @@ class ExpressionTests(unittest.TestCase):
             "value_cumsum": [10, 25, 45, 5, 15, 35]
         })
 
-        result_df = final_table_space["data_table"].collect().sort(
+        result_df = ctx.get_table("data_table").collect().sort(
             ["category", "order_col"])
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
@@ -261,13 +259,13 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[rank_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
         )
 
-        result_df_collected = final_table_space["data_table"].collect()
+        result_df_collected = ctx.get_table("data_table").collect()
 
         result_df_sorted = result_df_collected.sort(
             ["category", "value", "id"], descending=[False, True, True])
@@ -310,7 +308,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[add_dist_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -323,7 +321,7 @@ class ExpressionTests(unittest.TestCase):
             "lev_dist": [1, 1, 6],  # Exact values
         }, schema_overrides={"lev_dist": pl.UInt32})
 
-        result_df = final_table_space["strings_table"].collect()
+        result_df = ctx.get_table("strings_table").collect()
         result_df = result_df.select(expected_df.columns)
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
@@ -356,7 +354,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[add_dist_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -369,7 +367,7 @@ class ExpressionTests(unittest.TestCase):
             "s1s2_hash": ["2T0A+DADLH", "YKSEMRPXPM", "ORAT8YELPR"]
         })
 
-        result_df = final_table_space["strings_table"].collect()
+        result_df = ctx.get_table("strings_table").collect()
         result_df = result_df.select(expected_df.columns)
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
@@ -442,13 +440,13 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[add_hash_cols_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
         )
 
-        result_df = final_table_space["source_table"].collect()
+        result_df = ctx.get_table("source_table").collect()
 
         # 1. Check base columns for exact values
         expected_base_df = pl.DataFrame({
@@ -526,7 +524,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[fuzzy_filter_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -537,8 +535,7 @@ class ExpressionTests(unittest.TestCase):
             "name": ["Michael", "Micheal"]
         })
 
-        self.assertTrue("filtered_names" in final_table_space)
-        result_df = final_table_space["filtered_names"].collect()
+        result_df = ctx.get_table("filtered_names").collect()
         result_df = result_df.sort("id")
         expected_df = expected_df.sort("id")
 
@@ -586,7 +583,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[conditional_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -603,7 +600,7 @@ class ExpressionTests(unittest.TestCase):
             # value=50  -> Low (else, not >50)
         })
 
-        result_df = final_table_space["source_data"].collect()
+        result_df = ctx.get_table("source_data").collect()
         # Ensure column order for comparison
         result_df = result_df.select(expected_df.columns)
         result_df = result_df.sort("id")
@@ -638,7 +635,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[replace_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -650,7 +647,7 @@ class ExpressionTests(unittest.TestCase):
             "replace_capture_groups": ["Person: John Doe, Years: 30", "Person: Jane Smith, Years: 25", "Person: Bob Johnson, Years: 40"]
         })
 
-        result_df = final_table_space["source_data"].collect()
+        result_df = ctx.get_table("source_data").collect()
         # Ensure column order for comparison
         result_df = result_df.select(expected_df.columns)
         result_df = result_df.sort("id")
@@ -694,7 +691,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[fillna_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -713,7 +710,7 @@ class ExpressionTests(unittest.TestCase):
             "filled_with_const": pl.Int64
         })
 
-        result_df = final_table_space["source_data"].collect()
+        result_df = ctx.get_table("source_data").collect()
         # Ensure column order for comparison
         result_df = result_df.select(expected_df.columns)
         result_df = result_df.sort("id")
@@ -792,7 +789,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[window_agg_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -815,7 +812,7 @@ class ExpressionTests(unittest.TestCase):
             "first_val_by_cat": [10, 10, 10, 100, 100, 100],
         }, schema_overrides={"total_count": pl.UInt32, "min_val_by_cat": pl.Int64, "first_val_by_cat": pl.Int64})
 
-        result_df = final_table_space["data_table"].collect()
+        result_df = ctx.get_table("data_table").collect()
         # Sort result by the same keys as expected_df if not already guaranteed by processing
         result_df = result_df.sort(["category", "order_for_first"])
 
@@ -845,7 +842,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[add_col_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -857,7 +854,7 @@ class ExpressionTests(unittest.TestCase):
             "negated_value": [-10, 5, 0]
         })
 
-        result_df = final_table_space["input_table"].collect()
+        result_df = ctx.get_table("input_table").collect()
         # Ensure column order for comparison
         result_df = result_df.select(expected_df.columns)
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
@@ -888,7 +885,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[contains_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -901,7 +898,7 @@ class ExpressionTests(unittest.TestCase):
             "contains_hello_literal": [True, False, False, True]
         })
 
-        result_df = final_table_space["test_data"].collect()
+        result_df = ctx.get_table("test_data").collect()
         result_df = result_df.select(expected_df.columns)
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
@@ -932,7 +929,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[contains_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -944,7 +941,7 @@ class ExpressionTests(unittest.TestCase):
             "contains_hello_digits": [True, True, False, False]
         })
 
-        result_df = final_table_space["test_data"].collect()
+        result_df = ctx.get_table("test_data").collect()
         result_df = result_df.select(expected_df.columns)
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
@@ -973,7 +970,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[contains_any_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -986,7 +983,7 @@ class ExpressionTests(unittest.TestCase):
             "contains_citrus": [False, False, True, False, False]
         })
 
-        result_df = final_table_space["test_data"].collect()
+        result_df = ctx.get_table("test_data").collect()
         result_df = result_df.select(expected_df.columns)
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
@@ -1025,7 +1022,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[count_matches_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -1040,7 +1037,7 @@ class ExpressionTests(unittest.TestCase):
             "count_a_regex": [3, 2, 0, 1]
         }, schema_overrides={"count_ab_literal": pl.UInt32, "count_a_regex": pl.UInt32})
 
-        result_df = final_table_space["test_data"].collect()
+        result_df = ctx.get_table("test_data").collect()
         result_df = result_df.select(expected_df.columns)
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
@@ -1079,7 +1076,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[extract_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -1093,7 +1090,7 @@ class ExpressionTests(unittest.TestCase):
             "domain": ["example.com", "test.org", None, "company.co.uk"]
         })
 
-        result_df = final_table_space["test_data"].collect()
+        result_df = ctx.get_table("test_data").collect()
         result_df = result_df.select(expected_df.columns)
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
@@ -1129,7 +1126,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[starts_with_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -1143,7 +1140,7 @@ class ExpressionTests(unittest.TestCase):
             "starts_with_data": [False, False, True, False, False]
         })
 
-        result_df = final_table_space["test_data"].collect()
+        result_df = ctx.get_table("test_data").collect()
         result_df = result_df.select(expected_df.columns)
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
@@ -1179,7 +1176,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[ends_with_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -1192,7 +1189,7 @@ class ExpressionTests(unittest.TestCase):
             "is_image": [False, True, False, False, False]
         })
 
-        result_df = final_table_space["test_data"].collect()
+        result_df = ctx.get_table("test_data").collect()
         result_df = result_df.select(expected_df.columns)
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
@@ -1221,7 +1218,7 @@ class ExpressionTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[contains_any_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -1234,7 +1231,7 @@ class ExpressionTests(unittest.TestCase):
             "contains_fruit_ci": [True, True, False, False]
         })
 
-        result_df = final_table_space["test_data"].collect()
+        result_df = ctx.get_table("test_data").collect()
         result_df = result_df.select(expected_df.columns)
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 

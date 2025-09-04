@@ -33,16 +33,6 @@ class Sort(PStep, tag="sort"):
     by: List[SortDirective]
 
     def execute(self, ctx: StepContext):
-        """
-        Executes the sort step.
-
-        Args:
-            ctx: StepContext containing methods to manage the table space.
-
-        Raises:
-            ValueError: If the specified input_table is not found in the tablespace,
-                        or if 'by' directives list is empty.
-        """
         if not self.by:
             raise ValueError("The 'by' list of sort directives cannot be empty for the sort step.")
 

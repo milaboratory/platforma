@@ -140,15 +140,6 @@ class Aggregate(PStep, tag="aggregate"):
     aggregations: list[AnyAggregationOperation]
 
     def execute(self, ctx: StepContext):
-        """
-        Executes the aggregate step.
-
-        Args:
-            ctx: StepContext containing methods to manage the table space.
-
-        Raises:
-            ValueError: If the specified input_table is not found in the tablespace.
-        """
         lf = ctx.get_table(self.input_table)
         polars_aggs_to_apply = [op_config.to_polars().alias(op_config.name)
                                 for op_config in self.aggregations]

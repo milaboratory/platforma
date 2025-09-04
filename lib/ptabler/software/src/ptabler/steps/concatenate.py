@@ -17,16 +17,6 @@ class Concatenate(PStep, tag="concatenate"):
     columns: Optional[List[str]] = None
 
     def execute(self, ctx: StepContext):
-        """
-        Executes the concatenate step.
-
-        Args:
-            ctx: StepContext containing methods to manage the table space.
-
-        Raises:
-            ValueError: If any specified input table is not found in the tablespace,
-                        or if input_tables list is empty.
-        """
         if not self.input_tables:
             raise ValueError("The 'input_tables' list cannot be empty for concatenation.")
 

@@ -33,15 +33,6 @@ class Join(PStep, tag="join"):
     coalesce: bool = True
 
     def execute(self, ctx: StepContext):
-        """
-        Executes the join step.
-
-        Args:
-            ctx: StepContext containing methods to manage the table space.
-
-        Raises:
-            ValueError: If input tables are not found or if join keys are missing for non-cross joins.
-        """
         left_lf = ctx.get_table(self.left_table)
         right_lf = ctx.get_table(self.right_table)
 
