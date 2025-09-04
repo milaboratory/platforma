@@ -8,7 +8,8 @@ from ptabler.workflow.workflow import PWorkflow
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
 test_data_root_dir = os.path.join(
     os.path.dirname(os.path.dirname(current_script_dir)),
-    "test_data")
+    "test_data",
+)
 global_settings = GlobalSettings(root_folder=test_data_root_dir)
 
 class ParquetTests(unittest.TestCase):

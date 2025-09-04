@@ -53,6 +53,7 @@ validateParams := func(params) {
 	validation.assertType(params, _PARAMS_SCHEMA, "Invalid params structure")
 
     columns := {}
+    ll.assert(len(params.axes) > 0, "At least one axis is required")
     for entry in params.axes {
         if !is_undefined(columns[entry.column]) {
             ll.assert(false, "Column (%s) used more then once which is prohibited", entry.column)
@@ -69,6 +70,7 @@ validateParams := func(params) {
             }
         }
     }
+    ll.assert(len(params.columns) > 0, "At least one column is required")
     for entry in params.columns {
         if !is_undefined(columns[entry.column]) {
             ll.assert(false, "Column (%s) used more then once which is prohibited", entry.column)
