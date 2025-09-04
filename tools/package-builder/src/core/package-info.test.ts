@@ -27,6 +27,17 @@ test('PackageInfo loads correctly for multi-package', () => {
   expect(pkg.version).toEqual(artifacts.PackageVersion);
 });
 
+test('Limited list of supported platforms', () => {
+  const l = createLogger('error');
+
+  const i = new PackageInfo(l, {
+    pkgJsonData: artifacts.PackageJson,
+  });
+
+  const pkg = i.getPackage(artifacts.EPNameMultiRootBinary);
+  expect(pkg.platforms).toEqual(['linux-x64', 'macosx-aarch64']);
+});
+
 test('PackageInfo considers version override', () => {
   const l = createLogger('error');
 

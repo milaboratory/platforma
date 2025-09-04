@@ -6,8 +6,13 @@ import type { TestRenderResults } from '@platforma-sdk/test';
 import type { MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type { ComputableCtx } from '@milaboratories/computable';
+import { vi } from 'vitest';
 
 const TIMEOUT = getTestTimeout(30_000);
+
+vi.setConfig({
+  testTimeout: TIMEOUT,
+});
 
 async function getCsvHandle(
   result: TestRenderResults<string>,
@@ -113,7 +118,6 @@ tplTest.concurrent.for([
   { partitionKeyLength: 2, storageFormat: 'Json' },
 ])(
   'should export p-frame to csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
-  { timeout: TIMEOUT },
   // This timeout has additional 10 seconds due to very slow performance of Platforma on large transactions,
   // where thousands of fields and resources are created.
   // The test itself is not large, but first test in a batch also loads 'pframes' binary from network.
@@ -160,7 +164,6 @@ tplTest.concurrent.for([
   { partitionKeyLength: 2, storageFormat: 'Json' },
 ])(
   'should export filtered p-frame to csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
-  { timeout: TIMEOUT },
   // This timeout has additional 10 seconds due to very slow performance of Platforma on large transactions,
   // where thousands of fields and resources are created.
   // The test itself is not large, but first test in a batch also loads 'pframes' binary from network.
@@ -266,7 +269,6 @@ tplTest.concurrent.for([
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
 ])(
   'should export super-partitioned p-frame to csv file - superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
-  { timeout: TIMEOUT },
   async (
     { superPartitionKeyLength, partitionKeyLength, storageFormat },
     { helper, expect, driverKit },

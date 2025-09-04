@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.software-ptexter
 
+## 1.1.1
+
+### Patch Changes
+
+- d58f182: Use fresh python run environment with bugfix for pip on windows
+
 ## 1.1.0
 
 ### Minor Changes
