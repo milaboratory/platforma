@@ -2,7 +2,7 @@ import polars as pl
 import msgspec
 from typing import List, Optional
 
-from .base import GlobalSettings, PStep, TableSpace
+from .base import PStep, StepContext
 from ..expression import AnyExpression
 
 
@@ -32,32 +32,21 @@ class Sort(PStep, tag="sort"):
     output_table: str
     by: List[SortDirective]
 
-    def execute(self, table_space: TableSpace, global_settings: GlobalSettings) -> tuple[TableSpace, list[pl.LazyFrame]]:
+    def execute(self, ctx: StepContext):
         """
         Executes the sort step.
 
         Args:
-            table_space: The current tablespace containing named LazyFrames.
-            global_settings: Global settings for the workflow.
-
-        Returns:
-            A tuple containing the updated tablespace with the sorted table
-            and an empty list (as this is not a sink operation).
+            ctx: StepContext containing methods to manage the table space.
 
         Raises:
             ValueError: If the specified input_table is not found in the tablespace,
                         or if 'by' directives list is empty.
         """
-        if self.input_table not in table_space:
-            raise ValueError(
-                f"Input table '{self.input_table}' not found in tablespace. "
-                f"Available tables: {list(table_space.keys())}"
-            )
-
         if not self.by:
             raise ValueError("The 'by' list of sort directives cannot be empty for the sort step.")
 
-        lf = table_space[self.input_table]
+        lf = ctx.get_table(self.input_table)
 
         sort_by_expressions: List[pl.Expr] = []
         descending_flags: List[bool] = []
@@ -85,7 +74,4 @@ class Sort(PStep, tag="sort"):
             maintain_order=True  # Always use stable sorting for consistent results
         )
 
-        updated_table_space = table_space.copy()
-        updated_table_space[self.output_table] = sorted_lf
-        
-        return updated_table_space, []
+        ctx.put_table(self.output_table, sorted_lf)

@@ -175,7 +175,7 @@ class SortTests(unittest.TestCase):
             output_table="sorted_output",
             by=[SortDirective(value=ColumnReferenceExpression(name="value"))]
         )
-        with self.assertRaisesRegex(ValueError, "Input table 'non_existent_table' not found in tablespace."):
+        with self.assertRaisesRegex(ValueError, "Table 'non_existent_table' not found in table space."):
             self._execute_sort_workflow(sort_step, self.initial_table_space_basic)
 
     def test_error_empty_by_list(self):

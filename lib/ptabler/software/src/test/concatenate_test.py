@@ -122,7 +122,7 @@ class ConcatenateTests(unittest.TestCase):
             input_tables=["table1", "non_existent_table"],
             output_table="concatenated_error"
         )
-        with self.assertRaisesRegex(ValueError, "Input table 'non_existent_table' not found in tablespace."):
+        with self.assertRaisesRegex(ValueError, "Table 'non_existent_table' not found in table space."):
             self._execute_concat_workflow(concat_step)
 
     def test_error_empty_input_tables_list(self):

@@ -2,7 +2,7 @@ import polars as pl
 import msgspec
 from typing import Union, List
 
-from .base import GlobalSettings, PStep, TableSpace
+from .base import PStep, StepContext
 from ..expression import AnyExpression
 
 
@@ -139,14 +139,17 @@ class Aggregate(PStep, tag="aggregate"):
     group_by: List[Union[str, AnyExpression]]
     aggregations: list[AnyAggregationOperation]
 
-    def execute(self, table_space: TableSpace, global_settings: GlobalSettings) -> tuple[TableSpace, list[pl.LazyFrame]]:
-        if self.input_table not in table_space:
-            raise ValueError(
-                f"Input table '{self.input_table}' not found in tablespace. "
-                f"Available tables: {list(table_space.keys())}"
-            )
+    def execute(self, ctx: StepContext):
+        """
+        Executes the aggregate step.
 
-        lf = table_space[self.input_table]
+        Args:
+            ctx: StepContext containing methods to manage the table space.
+
+        Raises:
+            ValueError: If the specified input_table is not found in the tablespace.
+        """
+        lf = ctx.get_table(self.input_table)
         polars_aggs_to_apply = [op_config.to_polars().alias(op_config.name)
                                 for op_config in self.aggregations]
 
@@ -166,7 +169,4 @@ class Aggregate(PStep, tag="aggregate"):
         else:
             aggregated_lf = lf.select(polars_aggs_to_apply)
 
-        updated_table_space = table_space.copy()
-        updated_table_space[self.output_table] = aggregated_lf
-
-        return updated_table_space, []
+        ctx.put_table(self.output_table, aggregated_lf)
