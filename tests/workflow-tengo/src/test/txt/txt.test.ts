@@ -7,7 +7,16 @@ import {
 } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 import path from 'path';
+import { vi } from 'vitest';
 import * as env from '../env';
+
+import { getTestTimeout } from '@milaboratories/helpers';
+
+const TIMEOUT = getTestTimeout(60_000);
+
+vi.setConfig({
+  testTimeout: TIMEOUT,
+});
 
 type TestInput = {
   name: string;
