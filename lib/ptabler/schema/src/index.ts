@@ -19,6 +19,7 @@ import type { AggregateStep } from './aggregate';
 import type { AnyJoinStep } from './join';
 import type { ConcatenateStep } from './concatenate';
 import type { SortStep } from './sort';
+import type { WriteFrameStep } from './write_frame';
 
 export type PTablerStep =
   | ReadCsvStep
@@ -35,7 +36,8 @@ export type PTablerStep =
   | SortStep
   | SelectStep
   | WithColumnsStep
-  | WithoutColumnsStep;
+  | WithoutColumnsStep
+  | WriteFrameStep;
 
 export type PTablerWorkflow = {
   workflow: PTablerStep[];

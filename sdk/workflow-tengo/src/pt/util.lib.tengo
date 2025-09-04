@@ -52,7 +52,12 @@ _PARAMS_SCHEMA := {
 validateParams := func(params) {
 	validation.assertType(params, _PARAMS_SCHEMA, "Invalid params structure")
 
+    columns := {}
     for entry in params.axes {
+        if !is_undefined(columns[entry.column]) {
+            ll.assert(false, "Column (%s) used more then once which is prohibited", entry.column)
+        }
+        columns[entry.column] = 1
         if !is_undefined(entry.spec.parentAxes) && len(entry.spec.parentAxes) > 0 {
             for index in entry.spec.parentAxes {
                 ll.assert(
@@ -65,6 +70,10 @@ validateParams := func(params) {
         }
     }
     for entry in params.columns {
+        if !is_undefined(columns[entry.column]) {
+            ll.assert(false, "Column (%s) used more then once which is prohibited", entry.column)
+        }
+        columns[entry.column] = 1
         if !is_undefined(entry.spec.parentAxes) && len(entry.spec.parentAxes) > 0 {
             for index in entry.spec.parentAxes {
                 ll.assert(
@@ -138,10 +147,11 @@ makeFrameSpecs := func(params) {
     return columns
 }
 
-makeWriteFrameStep := func(frameName, params) {
+makeWriteFrameStep := func(frameName, dfName, params) {
 	step := {
         type: "write_frame",
-        name: frameName,
+        inputTable: dfName,
+        frameName: frameName,
         axes: [],
         columns: [],
         partitionKeyLength: 0
