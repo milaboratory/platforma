@@ -2,8 +2,10 @@
   "name": "@platforma-open/milaboratories.software-ptabler",
   "version": "1.12.2",
   "scripts": {
-    "preinit-python": "pyenv exec python -m venv --clear .venv",
-    "init-python": ".venv/bin/pip install --quiet --disable-pip-version-check -r src/requirements.txt",
+    "init-python:create-venv": "pyenv exec python -m venv --clear .venv",
+    "init-python:install-deps": ".venv/bin/pip install --quiet --disable-pip-version-check -r",
+    "init-python": "pnpm run init-python:create-venv && pnpm run init-python:install-deps src/requirements.dev.txt && pnpm run init-python:install-deps src/requirements.txt",
+    "lint": "[ ! -d .venv ] || .venv/bin/ruff check",
     "build": "rm -rf ./dist && pl-pkg build",
     "prepublishOnly": "pl-pkg prepublish",
     "test": "[ ! -d .venv ] || (.venv/bin/python -m unittest discover --verbose -s src -p '*.py')",
