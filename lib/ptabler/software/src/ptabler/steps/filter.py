@@ -1,6 +1,5 @@
-import polars as pl
 
-from .base import GlobalSettings, PStep, TableSpace
+from .base import PStep, StepContext
 from ..expression import AnyExpression
 
 
@@ -18,27 +17,17 @@ class Filter(PStep, tag="filter"):
     condition: AnyExpression
 
 
-    def execute(self, table_space: TableSpace, global_settings: GlobalSettings) -> tuple[TableSpace, list[pl.LazyFrame]]:
+    def execute(self, ctx: StepContext):
         """
         Executes the filter step.
 
         Args:
-            table_space: The current tablespace containing named LazyFrames.
-            global_settings: Global settings for the workflow.
+            ctx: StepContext containing methods to manage the table space.
 
-        Returns:
-            A tuple containing the updated tablespace and an empty list (as this is not a sink operation).
-        
         Raises:
             ValueError: If the specified input_table is not found in the tablespace.
         """
-        if self.input_table not in table_space:
-            raise ValueError(
-                f"Table '{self.input_table}' not found in tablespace. "
-                f"Available tables: {list(table_space.keys())}"
-            )
-
-        lf = table_space[self.input_table]
+        lf = ctx.get_table(self.input_table)
 
         # Convert the condition Expression to a Polars expression
         polars_condition = self.condition.to_polars()
@@ -47,7 +36,4 @@ class Filter(PStep, tag="filter"):
         filtered_lf = lf.filter(polars_condition)
 
         # Update the tablespace with the new filtered LazyFrame
-        updated_table_space = table_space.copy()
-        updated_table_space[self.output_table] = filtered_lf
-        
-        return updated_table_space, []
+        ctx.put_table(self.output_table, filtered_lf)

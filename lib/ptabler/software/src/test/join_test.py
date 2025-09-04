@@ -288,7 +288,7 @@ class JoinTests(unittest.TestCase):
 
     def test_error_left_table_not_found(self):
         """Tests error when left_table is not in tablespace."""
-        with self.assertRaisesRegex(ValueError, "Left table 'nonexistent_left_table' not found in tablespace."):
+        with self.assertRaisesRegex(ValueError, "Table 'nonexistent_left_table' not found in table space."):
             join_step = Join(
                 left_table="nonexistent_left_table",
                 right_table="right_table",
@@ -301,7 +301,7 @@ class JoinTests(unittest.TestCase):
 
     def test_error_right_table_not_found(self):
         """Tests error when right_table is not in tablespace."""
-        with self.assertRaisesRegex(ValueError, "Right table 'nonexistent_right_table' not found in tablespace."):
+        with self.assertRaisesRegex(ValueError, "Table 'nonexistent_right_table' not found in table space."):
             join_step = Join(
                 left_table="left_table",
                 right_table="nonexistent_right_table",

@@ -1,8 +1,8 @@
 import msgspec
 import polars as pl
-from typing import List, overload, Literal, Tuple, Union
+from typing import List, overload, Literal, Union
 
-from ptabler.steps import AnyPStep, GlobalSettings, TableSpace
+from ptabler.steps import AnyPStep, GlobalSettings, TableSpace, StepContext
 
 
 class PWorkflow(msgspec.Struct):
@@ -22,10 +22,10 @@ class PWorkflow(msgspec.Struct):
         ...
 
     @overload
-    def execute(self, global_settings: GlobalSettings, lazy: Literal[True], initial_table_space: TableSpace | None = None) -> Tuple[TableSpace, List[pl.LazyFrame]]:
+    def execute(self, global_settings: GlobalSettings, lazy: Literal[True], initial_table_space: TableSpace | None = None) -> tuple[TableSpace, List[pl.LazyFrame]]:
         ...
 
-    def execute(self, global_settings: GlobalSettings, lazy: bool = False, initial_table_space: TableSpace | None = None) -> Union[None, Tuple[TableSpace, List[pl.LazyFrame]]]:
+    def execute(self, global_settings: GlobalSettings, lazy: bool = False, initial_table_space: TableSpace | None = None) -> Union[None, tuple[TableSpace, List[pl.LazyFrame]]]:
         """
         Executes all steps in the workflow sequentially.
 
@@ -34,11 +34,11 @@ class PWorkflow(msgspec.Struct):
         corresponding to sink operations (e.g., writing to files).
 
         It then iterates through each step defined in `self.workflow`:
-        1. Calls the `execute` method of the current step, passing the
-           current `table_space` and `global_settings`.
-        2. The step's `execute` method is expected to return the updated
-           `table_space` and a list of any sink LazyFrames it generated.
-        3. These sink LazyFrames are accumulated.
+        1. Creates a StepContext for the current step with the current
+           `table_space` and `global_settings`.
+        2. Calls the `execute` method of the current step, passing the ctx.
+        3. The step's `execute` method modifies the ctx directly.
+        4. Sink LazyFrames are accumulated from the ctx.
 
         If `lazy` is False (default), after all steps are processed,
         `polars.collect_all()` is called on the accumulated sink LazyFrames
@@ -65,16 +65,15 @@ class PWorkflow(msgspec.Struct):
             `TableSpace` and the list of all sink `pl.LazyFrame`s.
             If `lazy` is False, executes sink operations and returns `None`.
         """
-        table_space: TableSpace = initial_table_space if initial_table_space is not None else {}
-        all_sink_lazyframes: List[pl.LazyFrame] = []
+        ctx = StepContext(
+            settings=global_settings,
+            initial_table_space=initial_table_space
+        )
 
         for step_obj in self.workflow:
-            table_space, step_sink_lazyframes = step_obj.execute(
-                table_space=table_space,
-                global_settings=global_settings
-            )
-            all_sink_lazyframes.extend(step_sink_lazyframes)
+            step_obj.execute(ctx)
 
+        table_space, all_sink_lazyframes = ctx.into_parts()
         if lazy:
             return table_space, all_sink_lazyframes
         else:

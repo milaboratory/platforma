@@ -5,7 +5,7 @@ import msgspec
 
 from ptabler.common import toPolarsType, PType
 
-from .base import GlobalSettings, PStep, TableSpace
+from .base import PStep, StepContext
 from .util import normalize_path
 
 class ColumnSchema(msgspec.Struct, frozen=True, omit_defaults=True):
@@ -36,7 +36,7 @@ class BaseReadLogic(PStep):
         """
         pass
 
-    def execute(self, table_space: TableSpace, global_settings: GlobalSettings) -> tuple[TableSpace, list[pl.LazyFrame]]:
+    def execute(self, ctx: StepContext):
         """
         Common execution logic for reading steps.
         Processes schema, builds scan kwargs, calls _do_scan, and updates table space.
@@ -70,13 +70,10 @@ class BaseReadLogic(PStep):
         if self.ignore_errors is not None:
             scan_kwargs["ignore_errors"] = self.ignore_errors
 
-        file_path = os.path.join(global_settings.root_folder, normalize_path(self.file))
+        file_path = os.path.join(ctx.settings.root_folder, normalize_path(self.file))
         lazy_frame = self._do_scan(file_path, scan_kwargs)
         
-        updated_table_space = table_space.copy()
-        updated_table_space[self.name] = lazy_frame
-        
-        return updated_table_space, []
+        ctx.put_table(self.name, lazy_frame)
 
 class ReadCsv(BaseReadLogic, tag="read_csv"):
     """
@@ -158,30 +155,24 @@ class BaseWriteLogic(PStep):
         """
         pass
 
-    def execute(self, table_space: TableSpace, global_settings: GlobalSettings) -> tuple[TableSpace, list[pl.LazyFrame]]:
+    def execute(self, ctx: StepContext):
         """
         Common execution logic for writing steps.
         Retrieves the table, selects columns if specified, and then calls _do_sink.
         The actual write operation occurs when the returned LazyFrame (representing 
         the sink status) is collected by the main execution engine.
         """
-        if self.table not in table_space:
-            raise ValueError(
-                f"Table '{self.table}' not found in tablespace. "
-                f"Available tables: {list(table_space.keys())}"
-            )
-
-        lf_to_write = table_space[self.table]
+        lf_to_write = ctx.take_table(self.table)
 
         selected_lf = lf_to_write
         if self.columns:
             selected_lf = lf_to_write.select(self.columns)
         
-        sink_plan = self._do_sink(selected_lf, os.path.join(global_settings.root_folder, normalize_path(self.file)))
+        file_path = os.path.join(ctx.settings.root_folder, normalize_path(self.file))
+        sink_plan = self._do_sink(selected_lf, file_path)
 
-        # The tablespace itself is not modified by a write operation.
-        # We return the original tablespace and the plan that includes the sink operation.
-        return table_space, [sink_plan]
+        # Add the sink plan to the context for later execution
+        ctx.put_sink(sink_plan)
 
 class WriteCsv(BaseWriteLogic, tag="write_csv"):
     """

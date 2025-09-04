@@ -1,4 +1,4 @@
-from .base import PStep, GlobalSettings, TableSpace
+from .base import PStep, GlobalSettings, TableSpace, StepContext
 from .io import ReadCsv, ReadNdjson, ReadParquet, WriteCsv, WriteNdjson, WriteParquet
 from .basics import AddColumns, Select, WithColumns, WithoutColumns
 from .filter import Filter
@@ -47,6 +47,7 @@ __all__ = [
     "PStep",
     "GlobalSettings",
     "TableSpace",
+    "StepContext",
 
     "AnyPStep",
 ]
