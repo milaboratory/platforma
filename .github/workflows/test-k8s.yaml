@@ -32,7 +32,7 @@ jobs:
       helm-release-name: 'pl-dev-gcp'
       helm-chart-values-file: 'helm/gcp/values.yaml'
       helm-chart-debug: true
-      helm-chart-render-template: true
+      helm-chart-render-template: false
       notify-slack: true
       namespace: 'dev-gke'
       npmrc-config: |
@@ -49,14 +49,16 @@ jobs:
           }
         }
       env: |
-        { "BODY_LIMIT": "1048576000", 
+        { "BODY_LIMIT": "1048576000",
           "TEST_TIMEOUT": "5m" }
     secrets:
       env: |
         { "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
           "PL_CI_TEST_PASSWORD": ${{ toJSON(secrets.PL_CI_TEST_PASSWORD) }},
           "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
-          "GCLOUD_CI_GKE_BUCKET_NAME": ${{ toJSON(secrets.GCLOUD_CI_GKE_BUCKET_NAME) }} }
+          "GCLOUD_CI_GKE_BUCKET_NAME": ${{ toJSON(secrets.GCLOUD_CI_GKE_BUCKET_NAME) }},
+          "QUAY_USERNAME": ${{ toJSON(secrets.QUAY_USERNAME) }},
+          "QUAY_ROBOT_TOKEN": ${{ toJSON(secrets.QUAY_ROBOT_TOKEN) }} }
 
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       SLACK_CHANNEL: ${{ secrets.SLACK_PL_SDK_CHANNEL }}
