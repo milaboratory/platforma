@@ -830,7 +830,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			specs := util.makeFrameSpecs(params)
 			parentWorkflow._saveFrameSpecs(frameName, specs)
 
-			step := util.makeWriteFrameStep(frameName, params)
+			step := util.makeWriteFrameStep(frameName, dfName, params)
 			parentWorkflow.addRawStep(step)
 		},
 
