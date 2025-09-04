@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.2.0
+
+### Minor Changes
+
+- fe141f9: use pframes with docker support
+
 ## 5.1.5
 
 ### Patch Changes
