@@ -528,7 +528,7 @@ googleBatch:
     # -- The name of the packages directory subdirectory inside the NFS volume.
     packagesDirName: "pl-ci/packages"
     # -- Use an existing PVC for the Google Batch volume. If specified, the `storageClass` option is ignored.
-    existingClaim: "filestore-fast-pvc"
+    existingClaim: "filestore-ci-fast-pvc"
     # -- The storage class to use for dynamic provisioning.
     storageClass: ""
     # -- The size of the volume to create. This is only used for dynamic provisioning.
