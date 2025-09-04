@@ -18,15 +18,6 @@ class Filter(PStep, tag="filter"):
 
 
     def execute(self, ctx: StepContext):
-        """
-        Executes the filter step.
-
-        Args:
-            ctx: StepContext containing methods to manage the table space.
-
-        Raises:
-            ValueError: If the specified input_table is not found in the tablespace.
-        """
         lf = ctx.get_table(self.input_table)
 
         # Convert the condition Expression to a Polars expression

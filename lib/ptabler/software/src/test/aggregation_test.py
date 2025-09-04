@@ -39,7 +39,7 @@ class AggregationTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[aggregate_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -50,8 +50,7 @@ class AggregationTests(unittest.TestCase):
             "value_sum": [40, 60]
         }).sort("category")
 
-        self.assertTrue("aggregated_data" in final_table_space)
-        result_df = final_table_space["aggregated_data"].collect().sort(
+        result_df = ctx.get_table("aggregated_data").collect().sort(
             "category")
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
@@ -81,7 +80,7 @@ class AggregationTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[aggregate_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -92,8 +91,7 @@ class AggregationTests(unittest.TestCase):
             "item_with_max_score": [102, 203]  # item_id for max score
         }).sort("group")
 
-        self.assertTrue("max_score_items" in final_table_space)
-        result_df = final_table_space["max_score_items"].collect().sort(
+        result_df = ctx.get_table("max_score_items").collect().sort(
             "group")
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 

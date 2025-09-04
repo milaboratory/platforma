@@ -57,13 +57,13 @@ class ConcatenateTests(unittest.TestCase):
         """Helper to execute a workflow with a single concatenate step."""
         workflow = PWorkflow(workflow=[concat_step])
         space_to_use = initial_space_override if initial_space_override is not None else self.initial_table_space.copy()
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=space_to_use
         )
-        self.assertTrue(concat_step.output_table in final_table_space)
-        return final_table_space[concat_step.output_table].collect()
+        result_table = ctx.get_table(concat_step.output_table)
+        return result_table.collect()
 
     def test_basic_concatenation(self):
         """Tests basic concatenation of two tables with all columns."""

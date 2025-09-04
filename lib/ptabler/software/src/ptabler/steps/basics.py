@@ -28,15 +28,6 @@ class AddColumns(PStep, tag="add_columns"):
     columns: List[ColumnDefinition]
 
     def execute(self, ctx: StepContext):
-        """
-        Executes the add_columns step.
-
-        Args:
-            ctx: StepContext containing methods to manage the table space.
-
-        Raises:
-            ValueError: If the specified table is not found in the tablespace.
-        """
         lf = ctx.get_table(self.table)
 
         polars_expressions_to_add = []
@@ -65,15 +56,6 @@ class Select(PStep, tag="select"):
     columns: List[ColumnDefinition]
 
     def execute(self, ctx: StepContext):
-        """
-        Executes the select step.
-
-        Args:
-            ctx: StepContext containing methods to manage the table space.
-
-        Raises:
-            ValueError: If the specified input_table is not found in the tablespace.
-        """
         lf_input = ctx.get_table(self.input_table)
 
         polars_expressions_to_select = []
@@ -105,15 +87,6 @@ class WithColumns(PStep, tag="with_columns"):
     columns: List[ColumnDefinition]
 
     def execute(self, ctx: StepContext):
-        """
-        Executes the with_columns step.
-
-        Args:
-            ctx: StepContext containing methods to manage the table space.
-
-        Raises:
-            ValueError: If the specified input_table is not found in the tablespace.
-        """
         lf_input = ctx.get_table(self.input_table)
 
         polars_expressions_to_add = []
@@ -138,15 +111,6 @@ class WithoutColumns(PStep, tag="without_columns"):
     columns: List[str] # List of column names to exclude
 
     def execute(self, ctx: StepContext):
-        """
-        Executes the without_columns step.
-
-        Args:
-            ctx: StepContext containing methods to manage the table space.
-
-        Raises:
-            ValueError: If the specified input_table is not found in the tablespace.
-        """
         lf_input = ctx.get_table(self.input_table)
 
         # Polars' exclude method takes a list of column names to remove.

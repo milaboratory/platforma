@@ -34,13 +34,13 @@ class JoinTests(unittest.TestCase):
     def _execute_join_workflow(self, join_step: Join) -> pl.DataFrame:
         """Helper to execute a workflow with a single join step."""
         workflow = PWorkflow(workflow=[join_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=self.initial_table_space.copy()
         )
-        self.assertTrue("joined_output" in final_table_space)
-        return final_table_space["joined_output"].collect()
+        result_table = ctx.get_table("joined_output")
+        return result_table.collect()
 
     def test_inner_join(self):
         """Tests an inner join."""
@@ -175,13 +175,12 @@ class JoinTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[join_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_cs_table_space
         )
-        self.assertTrue("joined_output" in final_table_space)
-        result_df = final_table_space["joined_output"].collect()
+        result_df = ctx.get_table("joined_output").collect()
 
 
         expected_df = pl.DataFrame({
@@ -221,13 +220,12 @@ class JoinTests(unittest.TestCase):
         )
         
         workflow = PWorkflow(workflow=[join_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=temp_initial_table_space.copy()
         )
-        self.assertTrue("joined_output" in final_table_space)
-        result_df = final_table_space["joined_output"].collect()
+        result_df = ctx.get_table("joined_output").collect()
 
         # If Polars adds "id_right" due to the original key names being the same ("id")
         # before one was mapped to "key_right" for the join, we remove it.
@@ -358,13 +356,12 @@ class JoinTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[join_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=temp_table_space.copy()
         )
-        self.assertTrue("joined_output" in final_table_space)
-        result_df = final_table_space["joined_output"].collect()
+        result_df = ctx.get_table("joined_output").collect()
 
         # Expected left_lf selection: val_l (from val_left), pk1 (from pk1), pk2_final_left (from pk2)
         # Expected right_lf selection: val_r (from val_right), pk1 (from fk1), pk2_final_right (from fk2_renamed)

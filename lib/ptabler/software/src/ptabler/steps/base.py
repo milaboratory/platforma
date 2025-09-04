@@ -21,6 +21,7 @@ class StepContext:
         self._settings = settings
         self._table_space = initial_table_space if initial_table_space is not None else {}
         self._lazy_frames: list[pl.LazyFrame] = []
+        self._chained_tasks: list[callable] = []
     
     @property
     def settings(self) -> GlobalSettings:
@@ -83,18 +84,28 @@ class StepContext:
         """
         self._lazy_frames.append(lazy_frame)
     
-    def into_parts(self) -> tuple[dict[str, pl.LazyFrame], list[pl.LazyFrame]]:
+    def chain_task(self, task: callable):
+        """
+        Adds a task to be executed after all sink operations are completed.
+        
+        Args:
+            task: A callable (lambda or function) to be executed later
+        """
+        self._chained_tasks.append(task)
+    
+    
+    def into_parts(self) -> tuple[dict[str, pl.LazyFrame], list[pl.LazyFrame], list[callable]]:
         """
         Destructs the StepContext and returns its internal state.
         
         This method should only be used in workflow execution with lazy=True.
-        It returns the internal table_space and lazy_frames without copying,
+        It returns the internal table_space, lazy_frames, and chained_tasks without copying,
         effectively consuming the context.
         
         Returns:
-            A tuple of (table_space, lazy_frames)
+            A tuple of (table_space, lazy_frames, chained_tasks)
         """
-        return self._table_space, self._lazy_frames
+        return self._table_space, self._lazy_frames, self._chained_tasks
 
 
 class PStep(msgspec.Struct, tag_field="type", rename="camel"):
@@ -110,6 +121,7 @@ class PStep(msgspec.Struct, tag_field="type", rename="camel"):
         - take_table: Remove and return a lazy frame from the table space
         - put_table: Add or replace a lazy frame in the table space
         - put_sink: Add a lazy frame for sink operations
+        - chain_task: Add a task to be executed after all sink operations are completed
 
         Args:
             ctx: A StepContext object that manages the table space and

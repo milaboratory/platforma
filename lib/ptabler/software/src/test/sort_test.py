@@ -39,13 +39,13 @@ class SortTests(unittest.TestCase):
     def _execute_sort_workflow(self, sort_step: Sort, initial_space: TableSpace) -> pl.DataFrame:
         """Helper to execute a workflow with a single sort step."""
         workflow = PWorkflow(workflow=[sort_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_space.copy()
         )
-        self.assertTrue(sort_step.output_table in final_table_space)
-        return final_table_space[sort_step.output_table].collect()
+        result_table = ctx.get_table(sort_step.output_table)
+        return result_table.collect()
 
     def test_single_column_ascending(self):
         sort_step = Sort(
