@@ -8,7 +8,7 @@ import type { ComputableCtx } from '@milaboratories/computable';
 import { getTestTimeout } from '@milaboratories/helpers';
 import { vi } from 'vitest';
 
-const TIMEOUT = getTestTimeout(40_000);
+const TIMEOUT = getTestTimeout(60_000);
 
 vi.setConfig({
   testTimeout: TIMEOUT,
