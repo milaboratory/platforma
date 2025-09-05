@@ -67,14 +67,16 @@ export function highlightByMarkup(
   }
   const legend: HighlightLegend = Object.fromEntries(
     Object.entries(labels)
-      .filter(([id]) => linesById.has(id))
-      .map(([id, label], index) => [
-        id,
-        {
-          label,
-          color: markupColors[index % markupColors.length],
-        },
-      ]),
+      .map(([id, label], index) =>
+        [
+          id,
+          {
+            label,
+            color: markupColors[index % markupColors.length],
+          },
+        ] as const,
+      )
+      .filter(([id]) => linesById.has(id)),
   );
   const blob = new Blob(
     (function*() {

@@ -1,83 +1,165 @@
 <script lang="ts" setup>
-import { useObjectUrl } from '@vueuse/core';
-import { computed, useTemplateRef } from 'vue';
+import type { PlMultiSequenceAlignmentWidget } from '@platforma-sdk/model';
+import {
+  computed,
+  onBeforeMount,
+  onBeforeUnmount,
+  onWatcherCleanup,
+  ref,
+  useCssModule,
+  useTemplateRef,
+  watch,
+} from 'vue';
+import { cellSize } from './cell-size';
 import Consensus from './Consensus.vue';
 import Legend from './Legend.vue';
+import type { TreeNodeData } from './phylogenetic-tree.worker';
+import PhylogeneticTree from './PhylogeneticTree.vue';
 import SeqLogo from './SeqLogo.vue';
 import type { HighlightLegend, ResidueCounts } from './types';
 
-const { sequences, highlightImage } = defineProps<{
-  sequences: string[];
-  sequenceNames: string[];
-  labelRows: string[][];
-  residueCounts: ResidueCounts;
-  highlightImage: {
-    blob: Blob;
-    legend: HighlightLegend;
-  } | undefined;
-  widgets: ('consensus' | 'seqLogo' | 'legend')[];
+const props = defineProps<{
+  sequences: {
+    name: string;
+    rows: string[];
+    residueCounts: ResidueCounts;
+    highlightImageUrl?: string;
+  }[];
+  labels: {
+    rows: string[];
+  }[];
+  highlightLegend: HighlightLegend | undefined;
+  phylogeneticTree: TreeNodeData[] | undefined;
+  widgets: PlMultiSequenceAlignmentWidget[];
 }>();
+
+const classes = useCssModule();
 
 const rootEl = useTemplateRef('rootRef');
 defineExpose({ rootEl });
 
-const highlightImageObjectUrl = useObjectUrl(() => highlightImage?.blob);
-const highlightImageCssUrl = computed(() =>
-  highlightImageObjectUrl.value
-    ? `url('${highlightImageObjectUrl.value}')`
-    : 'none',
+const rowCount = computed(() => props.sequences.at(0)?.rows.length ?? 0);
+
+const targetCellInlineSize = CSS.px(cellSize.inline).toString();
+const targetCellBlockSize = CSS.px(cellSize.block).toString();
+
+const referenceCellRef = useTemplateRef('referenceCell');
+const referenceCellInlineSize = ref<number>();
+
+const cornerRef = useTemplateRef('corner');
+const cornerInlineSize = ref<number>();
+
+const letterSpacing = computed(() =>
+  referenceCellInlineSize.value
+    ? CSS.px(cellSize.inline - referenceCellInlineSize.value).toString()
+    : undefined,
 );
 
-const sequenceLengths = computed(() =>
-  sequences.at(0)?.split(' ').map(({ length }) => length),
+const sequenceNameInsetInlineStart = computed(() =>
+  CSS.px(cornerInlineSize.value ?? 0).toString(),
 );
+
+let observer: ResizeObserver;
+
+onBeforeMount(() => {
+  const getInlineSize = (entry: ResizeObserverEntry) =>
+    entry.borderBoxSize.find(Boolean)?.inlineSize;
+
+  observer = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      switch (entry.target) {
+        case referenceCellRef.value:
+          referenceCellInlineSize.value = getInlineSize(entry);
+          break;
+        case cornerRef.value:
+          cornerInlineSize.value = getInlineSize(entry);
+          break;
+      }
+    }
+  });
+});
+
+onBeforeUnmount(() => {
+  observer.disconnect();
+});
+
+for (const ref of [referenceCellRef, cornerRef]) {
+  watch(ref, (el, prevEl) => {
+    if (el) observer.observe(el);
+    onWatcherCleanup(() => {
+      if (prevEl) observer.unobserve(prevEl);
+    });
+  });
+}
 </script>
 
 <template>
-  <div ref="rootRef" :class="$style.root">
-    <div :class="['pl-scrollable', $style.table]">
-      <div :class="$style.corner">
-        <div :class="$style['label-scroll-indicator']" />
-      </div>
-      <div :class="$style.header">
-        <div v-if="sequenceNames.length > 1" :class="$style['sequence-names']">
-          <span
-            v-for="(name, index) of sequenceNames"
-            :key="index"
-            :style="{
-              inlineSize: ((sequenceLengths?.at(index) ?? 0) * 20)
-                + 'px',
-            }"
-          >{{ name }}</span>
-        </div>
-        <Consensus v-if="widgets.includes('consensus')" :residue-counts />
-        <SeqLogo v-if="widgets.includes('seqLogo')" :residue-counts />
-      </div>
-      <div :class="$style.labels">
-        <div :class="$style['labels-grid']">
-          <template v-for="(labelRow, rowIndex) of labelRows">
-            <div
-              v-for="(label, labelIndex) of labelRow"
-              :key="labelIndex"
-              :style="{ gridRow: rowIndex + 1 }"
-            >
-              {{ label }}
+  <div ref="rootRef" :class="classes.root">
+    <div ref="referenceCell" :class="classes.referenceCell">x</div>
+    <div :class="['pl-scrollable', classes.table]">
+      <div :class="classes.sidebar">
+        <PhylogeneticTree
+          v-if="props.widgets.includes('tree') && props.phylogeneticTree"
+          :tree="props.phylogeneticTree"
+          :class="classes.phylogeneticTree"
+        />
+        <div :class="classes.labels">
+          <template
+            v-for="({ rows }, columnIndex) of props.labels"
+            :key="columnIndex"
+          >
+            <div v-for="(row, rowIndex) of rows" :key="rowIndex">
+              {{ row }}
             </div>
           </template>
         </div>
       </div>
-      <div :class="$style.sequences">
+      <template v-if="letterSpacing !== undefined">
         <div
-          v-for="(sequence, index) of sequences"
-          :key="index"
+          v-for="(column, columnIndex) of props.sequences"
+          :key="columnIndex"
+          :class="classes.sequenceColumn"
         >
-          {{ sequence }}
+          <div :class="classes.sequenceHeader">
+            <div
+              v-show="props.sequences.length > 1"
+              :class="classes.sequenceName"
+            >
+              {{ column.name }}
+            </div>
+            <Consensus
+              v-if="props.widgets.includes('consensus')"
+              :residue-counts="column.residueCounts"
+              :labels-class="classes.sequenceRow"
+            />
+            <SeqLogo
+              v-if="props.widgets.includes('seqLogo')"
+              :residue-counts="column.residueCounts"
+            />
+          </div>
+          <div
+            :class="classes.sequenceRowsContainer"
+            :style="{
+              backgroundImage: column.highlightImageUrl
+                ? `url(${column.highlightImageUrl})`
+                : undefined,
+            }"
+          >
+            <div
+              v-for="(row, rowIndex) of column.rows"
+              :key="rowIndex"
+              :class="classes.sequenceRow"
+            >
+              {{ row }}
+            </div>
+          </div>
         </div>
-      </div>
+      </template>
+      <div ref="corner" :class="classes.corner" />
     </div>
     <Legend
-      v-if="widgets?.includes('legend') && highlightImage?.legend"
-      :legend="highlightImage.legend"
+      v-if="props.widgets.includes('legend') && props.highlightLegend"
+      :legend="props.highlightLegend"
     />
   </div>
 </template>
@@ -90,114 +172,128 @@ const sequenceLengths = computed(() =>
   min-block-size: 0;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+  container-type: inline-size;
 
   &[data-pre-print] {
-    .table {
-      container-type: unset;
-    }
-    .labels {
+    container-type: unset;
+
+    .sidebar {
       max-inline-size: unset;
     }
   }
 }
 
+.referenceCell {
+  position: fixed;
+  visibility: hidden;
+  font-family: Spline Sans Mono;
+  font-weight: 600;
+  line-height: v-bind('targetCellBlockSize');
+}
+
 .table {
-  container-type: inline-size;
   display: grid;
-  grid-template-areas:
-    "corner header"
-    "labels sequences";
+  grid-template-columns:
+    [sidebar-start] auto [sidebar-end] repeat(
+    v-bind('props.sequences.length'),
+    [column-start] auto [column-end]
+  );
+  grid-template-rows:
+    [header-start] auto [header-end]
+    repeat(v-bind('rowCount'), [row-start] auto [row-end]);
   justify-content: start;
-  timeline-scope: --msa-labels-scroll;
+  position: relative;
   @media print {
     overflow: visible;
   }
 }
 
-.corner {
-  grid-area: corner;
-  background-color: #fff;
+.sidebar {
+  grid-column: sidebar;
+  grid-row: 1 row-start / -1 row-end;
+  display: grid;
+  grid-template-rows: subgrid;
   position: sticky;
   inset-inline-start: 0;
-  inset-block-start: 0;
-  z-index: 2;
-}
-
-.label-scroll-indicator {
-  position: absolute;
-  inset-inline-end: 0;
-  block-size: 100cqb;
-  inline-size: 8px;
-  animation-name: hide;
-  animation-timeline: --msa-labels-scroll;
-  visibility: hidden;
-  background: #fff;
-  box-shadow: -4px 0 4px -2px rgba(0, 0, 0, 0.10);
-}
-
-.header {
-  grid-area: header;
   background-color: #fff;
-  position: sticky;
-  inset-block-start: 0;
-  z-index: 1;
+  inline-size: min-content;
+  max-inline-size: 30cqi;
+  overflow: scroll;
+  overscroll-behavior-inline: none;
+  scrollbar-width: none;
 }
 
-.sequence-names {
-  display: flex;
-  font-weight: 700;
-  line-height: 20px;
-  margin-block-end: 4px;
-  gap: 20px;
+.phylogeneticTree {
+  grid-row: 1 row-start / -1 row-end;
 }
 
 .labels {
-  grid-area: labels;
-  background-color: #fff;
-  position: sticky;
-  inset-inline-start: 0;
-  z-index: 1;
-  inline-size: max-content;
-  max-inline-size: 30cqi;
-  overflow: scroll;
-  scrollbar-width: none;
-  overscroll-behavior-inline: none;
-  scroll-timeline: --msa-labels-scroll inline;
+  grid-row: 1 row-start / -1 row-end;
+  display: grid;
+  grid-template-columns: repeat(v-bind('props.labels.length'), auto);
+  grid-template-rows: subgrid;
+  grid-auto-flow: column;
+  column-gap: 12px;
+  padding-inline-end: 12px;
+  font-family: Spline Sans Mono;
+  line-height: v-bind('targetCellBlockSize');
+  white-space: nowrap;
 }
 
-.labels-grid {
+.sequenceColumn {
+  grid-row: header-start / -1 row-end;
   display: grid;
-  grid-auto-flow: dense;
-  font-family: Spline Sans Mono;
-  line-height: 24px;
-  text-wrap: nowrap;
-
-  > * {
-    padding-inline-end: 12px;
+  grid-template-rows: subgrid;
+  & + & {
+    margin-inline-start: 24px;
   }
 }
 
-.sequences {
-  grid-area: sequences;
+.sequenceHeader {
+  grid-row: header;
   display: flex;
   flex-direction: column;
-  font-family: Spline Sans Mono;
-  font-weight: 600;
-  line-height: 24px;
-  letter-spacing: 11.6px;
-  text-indent: 5.8px;
-  margin-inline-end: -5.8px;
-  background-image: v-bind(highlightImageCssUrl);
-  background-repeat: no-repeat;
-  background-size: calc(100% - 5.8px) 100%;
+  justify-content: end;
+  min-inline-size: 0;
+  position: sticky;
+  inset-block-start: 0;
+  background-color: #fff;
 }
 
-@keyframes hide {
-  from {
-    visibility: visible;
-  }
-  to {
-    visibility: hidden;
-  }
+.sequenceName {
+  margin-block-end: 4px;
+  font-weight: 700;
+  line-height: 20px;
+  inline-size: fit-content;
+  position: sticky;
+  inset-inline-start: v-bind('sequenceNameInsetInlineStart');
+}
+
+.sequenceRowsContainer {
+  grid-row: 1 row-start / -1 row-end;
+  display: grid;
+  grid-template-rows: subgrid;
+}
+
+.sequenceRow {
+  font-family: Spline Sans Mono;
+  font-weight: 600;
+  line-height: v-bind('targetCellBlockSize');
+  letter-spacing: v-bind('letterSpacing');
+  text-indent: calc(v-bind('letterSpacing') / 2);
+  inline-size: calc-size(
+    min-content,
+    round(down, size, v-bind('targetCellInlineSize'))
+  );
+  white-space: nowrap;
+}
+
+.corner {
+  grid-column: sidebar;
+  grid-row: header;
+  position: sticky;
+  inset-inline-start: 0;
+  inset-block-start: 0;
+  background-color: #fff;
 }
 </style>
