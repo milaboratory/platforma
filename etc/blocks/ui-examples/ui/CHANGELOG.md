@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.41
+
+### Patch Changes
+
+- d60cc17: Removed alignment example
+- Updated dependencies [d60cc17]
+  - @platforma-sdk/model@1.43.0
+  - @milaboratories/milaboratories.ui-examples.model@1.2.35
+
 ## 1.5.40
 
 ### Patch Changes

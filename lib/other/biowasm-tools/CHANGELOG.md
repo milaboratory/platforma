@@ -1,5 +1,11 @@
 # @milaboratories/biowasm-tools
 
+## 2.0.0
+
+### Major Changes
+
+- d60cc17: Replaced @biowasm/aioli with custom solution
+
 ## 1.1.2
 
 ### Patch Changes

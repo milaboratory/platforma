@@ -1,5 +1,13 @@
 # @milaboratories/pl-drivers
 
+## 1.10.13
+
+### Patch Changes
+
+- 49160c4: Revert BlobDriver interface
+- Updated dependencies [49160c4]
+  - @milaboratories/pl-model-common@1.19.18
+
 ## 1.10.12
 
 ### Patch Changes
