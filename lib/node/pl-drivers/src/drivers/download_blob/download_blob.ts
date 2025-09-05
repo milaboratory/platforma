@@ -295,7 +295,6 @@ export class DownloadDriver implements BlobDriver {
   }
 
   /** Gets a content of a blob by a handle. */
-  public async getContent(handle: LocalBlobHandle | RemoteBlobHandle): Promise<Uint8Array>;
   public async getContent(
     handle: LocalBlobHandle | RemoteBlobHandle,
     options?: GetContentOptions,
