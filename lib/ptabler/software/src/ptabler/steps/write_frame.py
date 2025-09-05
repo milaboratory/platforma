@@ -231,18 +231,18 @@ class WriteFrame(PStep, tag="write_frame"):
     
     @staticmethod
     def get_number_of_bytes_in_column(conn: duckdb.DuckDBPyConnection, path: str, column_name: str) -> int:
-        result = conn.execute(f"""
+        result = conn.execute("""
             SELECT SUM(total_compressed_size) AS total_compressed_size, path_in_schema
-            FROM parquet_metadata('{path}')
-            WHERE path_in_schema = '{column_name}'
+            FROM parquet_metadata(?)
+            WHERE path_in_schema = ?
             GROUP BY path_in_schema
-        """).fetchall()
+        """, [path, column_name]).fetchall()
         return result[0][0]
 
     @staticmethod
     def get_number_of_rows_in_column(conn: duckdb.DuckDBPyConnection, path: str) -> int:
-        result = conn.execute(f"""
+        result = conn.execute("""
             SELECT num_rows
-            FROM parquet_file_metadata('{path}')
-        """).fetchall()
+            FROM parquet_file_metadata(?)
+        """, [path]).fetchall()
         return result[0][0]
