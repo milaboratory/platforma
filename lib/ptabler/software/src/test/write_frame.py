@@ -316,6 +316,85 @@ class WriteFrameTests(unittest.TestCase):
         finally:
             if os.path.exists(frame_dir):
                 shutil.rmtree(frame_dir)
+    
+    def test_input_validation_empty_frame_name(self):
+        """Test that empty frame_name raises ValueError"""
+        with self.assertRaises(ValueError) as cm:
+            WriteFrame(
+                input_table="input_table",
+                frame_name="",
+                axes=[AxisMapping(column="id", type="Long")],
+                columns=[ColumnMapping(column="value", type="Double")]
+            ).execute(None)
+        self.assertIn("frame_name", str(cm.exception).lower())
+    
+    def test_input_validation_no_axes(self):
+        """Test that empty axes list raises ValueError"""
+        with self.assertRaises(ValueError) as cm:
+            WriteFrame(
+                input_table="input_table",
+                frame_name="frame_name",
+                axes=[],
+                columns=[ColumnMapping(column="value", type="Double")]
+            ).execute(None)
+        self.assertIn("axis must be specified", str(cm.exception).lower())
+    
+    def test_input_validation_no_columns(self):
+        """Test that empty columns list raises ValueError"""
+        with self.assertRaises(ValueError) as cm:
+            WriteFrame(
+                input_table="input_table",
+                frame_name="frame_name",
+                axes=[AxisMapping(column="id", type="Long")],
+                columns=[]
+            ).execute(None)
+        self.assertIn("column must be specified", str(cm.exception).lower())
+    
+    def test_input_validation_duplicate_column_names_axes_and_columns(self):
+        """Test that duplicate column names between axes and columns raises ValueError"""
+        with self.assertRaises(ValueError) as cm:
+            WriteFrame(
+                input_table="input_table",
+                frame_name="frame_name",
+                axes=[AxisMapping(column="duplicate", type="Long")],
+                columns=[ColumnMapping(column="duplicate", type="Double")]
+            ).execute(None)
+        self.assertIn("duplicate", str(cm.exception))
+    
+    def test_input_validation_multiple_duplicate_column_names(self):
+        """Test that multiple duplicate column names between axes and columns raises ValueError"""
+        with self.assertRaises(ValueError) as cm:
+            WriteFrame(
+                input_table="input_table",
+                frame_name="frame_name",
+                axes=[
+                    AxisMapping(column="dup1", type="Long"),
+                    AxisMapping(column="dup2", type="String")
+                ],
+                columns=[
+                    ColumnMapping(column="dup1", type="Double"),
+                    ColumnMapping(column="dup2", type="Float")
+                ]
+            ).execute(None)
+        exception_str = str(cm.exception)
+        self.assertIn("dup1", exception_str)
+        self.assertIn("dup2", exception_str)
+    
+    def test_input_validation_partition_key_length_equals_axes_count(self):
+        """Test that partition_key_length equal to axes count raises ValueError"""
+        with self.assertRaises(ValueError) as cm:
+            WriteFrame(
+                input_table="input_table",
+                frame_name="frame_name",
+                axes=[
+                    AxisMapping(column="id", type="Long"),
+                    AxisMapping(column="name", type="String")
+                ],
+                columns=[ColumnMapping(column="value", type="Double")],
+                partition_key_length=2  # Equal to number of axes
+            ).execute(None)
+        self.assertIn("partition_key_length", str(cm.exception))
+        self.assertIn("strictly less than", str(cm.exception))
 
 if __name__ == '__main__':
     unittest.main()

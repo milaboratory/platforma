@@ -78,7 +78,7 @@ class WriteFrame(PStep, tag="write_frame"):
             duplicates = list(set(axis_columns) & set(column_columns))
             raise ValueError(f"Column identifiers used in both axes and columns: [{', '.join(duplicates)}]")
         
-        if self.partition_key_length >= len(self.axes):
+        if self.partition_key_length < 0 or self.partition_key_length >= len(self.axes):
             raise ValueError(
                 f"The 'partition_key_length' ({self.partition_key_length}) must be "
                 f"strictly less than the number of axes ({len(self.axes)})."

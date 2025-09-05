@@ -90,7 +90,8 @@ validateParams := func(params) {
 
     // Check that partitionKeyLength is strictly less than the number of axes
     ll.assert(
-        params.partitionKeyLength == undefined || params.partitionKeyLength < len(params.axes),
+        params.partitionKeyLength == undefined ||
+            (params.partitionKeyLength >= 0 && params.partitionKeyLength < len(params.axes)),
         "partitionKeyLength (%d) must be strictly less than the number of axes (%d)",
         params.partitionKeyLength,
         len(params.axes)
