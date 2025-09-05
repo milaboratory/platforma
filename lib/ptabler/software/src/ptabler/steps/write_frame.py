@@ -110,7 +110,7 @@ class WriteFrame(PStep, tag="write_frame"):
     def write_partitions_with_bloom_filters(self, intermediate_parquet: str):
         try:
             frame_dir = os.path.dirname(intermediate_parquet)
-            duckdb_conn = duckdb.connect()
+            duckdb_conn = duckdb.connect(database=':memory:')
 
             data_info_by_column = {}
             for column in self.columns:
@@ -123,29 +123,42 @@ class WriteFrame(PStep, tag="write_frame"):
             columns_info = {
                 column.column: DataInfoColumn(id=column.column, type=column.type) for column in self.columns
             }
-            def create_part_info(data_file, column):
+            def create_part_info(data_file, column, number_of_rows, axes_hash, axes_number_of_bytes):
                 data_path = os.path.join(frame_dir, normalize_path(data_file))
                 lf = pl.scan_parquet(data_path)
-                
-                axes_hash = lf.select(
-                    plh.concat_str([axis.id for axis in axes_info], separator="~").chash.sha256()
-                        .alias("axes_hash")
-                ).collect()
-                axes_hash_str: str = axes_hash["axes_hash"][0]
 
                 column_hash = lf.select(
-                    plh.col(column.column).chash.sha256().alias("column_hash")
-                ).collect()
-                column_hash_str: str = column_hash["column_hash"][0]
-                
-                data_digest = f"{axes_hash_str}#{column_hash_str}"
+                    plh.col(column.column).cast(pl.String).chash.sha2_256().alias("column_hash")
+                ).collect()["column_hash"][0]
+                column_number_of_bytes = self.get_number_of_bytes_in_column(duckdb_conn, data_path, column.column)
+                data_digest = f"{axes_hash}{column_hash}"
                 
                 return DataInfoPart(
                     data=data_file,
                     data_digest=data_digest,
+                    stats=Stats(
+                        number_of_rows=number_of_rows,
+                        number_of_bytes=NumberOfBytes(
+                            axes=axes_number_of_bytes,
+                            column=column_number_of_bytes,
+                        )),
                     axes=axes_info,
                     column=columns_info[column.column]
                 )
+            
+            def get_reusable_part_info(data_file, column):
+                data_path = os.path.join(frame_dir, normalize_path(data_file))
+                lf = pl.scan_parquet(data_path)
+
+                number_of_rows = self.get_number_of_rows_in_column(duckdb_conn, data_path, column.column)
+                axes_hash = lf.select(
+                    plh.concat_str([axis.id for axis in axes_info], separator="~").chash.sha2_256()
+                        .alias("axes_hash")
+                ).collect()["axes_hash"][0]
+                axes_number_of_bytes = [
+                    self.get_number_of_bytes_in_column(duckdb_conn, data_path, axis.id) for axis in axes_info
+                ]
+                return number_of_rows, axes_hash, axes_number_of_bytes
 
             axis_identifiers = [f'"{axis.column}"' for axis in self.axes]
             all_column_identifiers = axis_identifiers + [f'"{column.column}"' for column in self.columns]
@@ -191,14 +204,18 @@ class WriteFrame(PStep, tag="write_frame"):
                     part_key = msgspec.json.encode(list(row)).decode('utf-8')
                     data_file = f"partition_{i}.parquet"
                     create_part_data(data_file, row)
+                    nrows, axes_hash, axes_nbytes = get_reusable_part_info(data_file, column)
                     for column in self.columns:
-                        data_info_by_column[column.column].parts[part_key] = create_part_info(data_file, column)
+                        part_info = create_part_info(data_file, column, nrows, axes_hash, axes_nbytes)
+                        data_info_by_column[column.column].parts[part_key] = part_info
             elif pl.scan_parquet(intermediate_parquet).select(pl.len()).collect().item() > 0:
                 part_key = msgspec.json.encode(list()).decode('utf-8')
                 data_file = "partition_0.parquet"
                 create_part_data(data_file)
+                nrows, axes_hash, axes_nbytes = get_reusable_part_info(data_file, column)
                 for column in self.columns:
-                    data_info_by_column[column.column].parts[part_key] = create_part_info(data_file, column)
+                    part_info = create_part_info(data_file, column, nrows, axes_hash, axes_nbytes)
+                    data_info_by_column[column.column].parts[part_key] = part_info
 
             for column_name, data_info in data_info_by_column.items():
                 datainfo_path = os.path.join(frame_dir, f"{column_name}.datainfo")
@@ -209,3 +226,20 @@ class WriteFrame(PStep, tag="write_frame"):
             duckdb_conn.close()
             if os.path.exists(intermediate_parquet):
                 os.remove(intermediate_parquet)
+    
+    def get_number_of_bytes_in_column(conn: duckdb.DuckDBPyConnection, path: str, column_name: str) -> int:
+        result = conn.execute(f"""
+            SELECT SUM(total_compressed_size) AS total_compressed_size, path_in_schema
+            FROM parquet_metadata('{path}')
+            WHERE path_in_schema = '{column_name}'
+            GROUP BY path_in_schema
+        """).fetchall()
+        return result[0][0]
+
+    def get_number_of_rows_in_column(conn: duckdb.DuckDBPyConnection, path: str, column_name: str) -> int:
+        result = conn.execute(f"""
+            SELECT num_rows
+            FROM parquet_file_metadata('{path}')
+            WHERE path_in_schema = '{column_name}'
+        """).fetchall()
+        return result[0][0]
