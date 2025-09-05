@@ -873,11 +873,19 @@ export class PFrameDriver implements InternalPFrameDriver {
           signal: combinedSignal,
         });
 
-        const size = await pTable.getFootprint({
+        const resultSize = await pTable.getFootprint({
+          withPredecessors: false,
+          signal: combinedSignal,
+        });
+        if (resultSize >= 2 * 1024 * 1024 * 1024) {
+          throw new PFrameDriverError(`Join results exceed 2GB, please add filters to shrink the result size`);
+        }
+
+        const overallSize = await pTable.getFootprint({
           withPredecessors: true,
           signal: combinedSignal,
         });
-        this.pTableCache.cache(table, size);
+        this.pTableCache.cache(table, overallSize);
 
         return spec.map((spec, i) => ({
           spec: spec,
