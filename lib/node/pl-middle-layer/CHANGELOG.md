@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.35
+
+### Patch Changes
+
+- a23251c: PFrames - error on large table results
+
 ## 1.42.34
 
 ### Patch Changes
