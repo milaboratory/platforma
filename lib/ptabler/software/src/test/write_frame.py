@@ -1,10 +1,15 @@
 import unittest
 import os
+import shutil
 import polars as pl
 import polars_hash as plh
 import duckdb
+import msgspec.json
 
 from ptabler.steps import GlobalSettings
+from ptabler.steps.write_frame import AxisMapping, WriteFrame, DataInfo, ColumnMapping
+from ptabler.steps.util import normalize_path
+from ptabler.workflow.workflow import PWorkflow
 
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
 test_data_root_dir = os.path.join(
@@ -100,6 +105,56 @@ class WriteFrameTests(unittest.TestCase):
             conn.close()
             if os.path.exists(output_file_abs_path):
                 os.remove(output_file_abs_path)
+    
+    def test_write_empty_frame(self):
+        frame_dir = os.path.join(global_settings.root_folder, normalize_path("frame_name"))
+        
+        write_frame_step = WriteFrame(
+            input_table="input_table",
+            frame_name="frame_name",
+            axes=[
+                AxisMapping(column="id", type="Long"),
+                AxisMapping(column="name", type="String"),
+            ],
+            columns=[ColumnMapping(column="value", type="Double")],
+            partition_key_length=0
+        )
+        ptw = PWorkflow(workflow=[write_frame_step])
+
+        lf = pl.LazyFrame(schema={
+            "id": pl.Int64,
+            "name": pl.String,
+            "value": pl.Float64,
+        })
+        ts = {"input_table": lf}
+
+        if os.path.exists(frame_dir):
+            shutil.rmtree(frame_dir)
+
+        try:
+            ptw.execute(global_settings=global_settings, initial_table_space=ts)
+
+            datainfo_file = os.path.join(frame_dir, "value.datainfo")
+            self.assertTrue(
+                os.path.exists(datainfo_file),
+                "value.datainfo file should exist even for empty frame"
+            )
+            
+            expected_serialized = msgspec.json.encode(DataInfo(
+                partition_key_length=0,
+                parts={}
+            ))
+            with open(datainfo_file, 'rb') as f:
+                actual_data = f.read()
+            self.assertEqual(
+                actual_data,
+                expected_serialized, 
+                "Actual datainfo should match expected structure for empty frames",
+            )
+
+        finally:
+            if os.path.exists(frame_dir):
+                shutil.rmtree(frame_dir)
 
 if __name__ == '__main__':
     unittest.main()

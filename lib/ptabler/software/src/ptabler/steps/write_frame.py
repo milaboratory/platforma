@@ -40,10 +40,10 @@ class Stats(Struct, rename="camel"):
 
 class DataInfoPart(Struct, rename="camel"):
     data: str
-    data_digest: Optional[str] = None
-    stats: Optional[Stats] = None
     axes: List[DataInfoAxis]
     column: DataInfoColumn
+    data_digest: Optional[str] = None
+    stats: Optional[Stats] = None
 
 class DataInfo(Struct, tag="ParquetPartitioned", rename="camel"):
     partition_key_length: int
@@ -135,6 +135,8 @@ class WriteFrame(PStep, tag="write_frame"):
                 
                 return DataInfoPart(
                     data=data_file,
+                    axes=axes_info,
+                    column=columns_info[column.column],
                     data_digest=data_digest,
                     stats=Stats(
                         number_of_rows=number_of_rows,
@@ -142,8 +144,6 @@ class WriteFrame(PStep, tag="write_frame"):
                             axes=axes_number_of_bytes,
                             column=column_number_of_bytes,
                         )),
-                    axes=axes_info,
-                    column=columns_info[column.column]
                 )
             
             def get_reusable_part_info(data_file, column):

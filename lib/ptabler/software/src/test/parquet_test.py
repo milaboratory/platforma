@@ -47,7 +47,6 @@ class ParquetTests(unittest.TestCase):
 
         if os.path.exists(intermediate_file_abs_path):
             os.remove(intermediate_file_abs_path)
-
         if os.path.exists(output_file_abs_path):
             os.remove(output_file_abs_path)
 
