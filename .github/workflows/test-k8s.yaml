@@ -13,16 +13,16 @@ jobs:
   init:
     runs-on: ubuntu-latest
     steps:
-      - uses: milaboratory/github-ci/actions/context/init@v4-beta
+      - uses: milaboratory/github-ci/actions/context/init@v4
         with:
           version-canonize: false
           branch-versioning: main
   run:
     needs:
       - init
-    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm-k8s.yaml@v4-beta
+    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm-k8s.yaml@v4
     with:
-      app-name: Platforma SDK Ggoogle Batch Int Tests
+      app-name: Platforma SDK Google Batch Int Tests
       app-name-slug: 'platforma-sdk-gcp'
       gha-runner-label: 'dev-gke'
       node-version: '20.x'
@@ -31,8 +31,6 @@ jobs:
       pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --minWorkers=50 --maxWorkers=50 --testTimeout=300000'
       helm-release-name: 'pl-dev-gcp'
       helm-chart-values-file: 'helm/gcp/values.yaml'
-      helm-chart-debug: true
-      helm-chart-render-template: false
       notify-slack: true
       namespace: 'dev-gke'
       npmrc-config: |
