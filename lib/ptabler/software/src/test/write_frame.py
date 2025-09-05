@@ -478,5 +478,76 @@ class WriteFrameTests(unittest.TestCase):
             if os.path.exists(frame_dir):
                 shutil.rmtree(frame_dir)
 
+    def test_write_partitioned_frame_with_special_chars_in_axis_value(self):
+        """Test partitioned frame with special characters (single quote, double quote, dot, comma) in axis1 value"""
+        frame_dir = os.path.join(global_settings.root_folder, normalize_path("frame_name"))
+        
+        write_frame_step = WriteFrame(
+            input_table="input_table",
+            frame_name="frame_name",
+            axes=[
+                AxisMapping(column="axis1", type="String"),  # String type for partition key
+                AxisMapping(column="axis2", type="Long"),
+            ],
+            columns=[ColumnMapping(column="column", type="Double")],
+            partition_key_length=1  # Partition by axis1
+        )
+        ptw = PWorkflow(workflow=[write_frame_step])
+
+        # Single row with special characters in axis1 value
+        lf = pl.LazyFrame({
+            "axis1": ["test's \"value\", with.dot"],  # Single quote, double quote, comma, dot
+            "axis2": [42],
+            "column": [123.45],
+        })
+        ts = {"input_table": lf}
+
+        if os.path.exists(frame_dir):
+            shutil.rmtree(frame_dir)
+
+        try:
+            ptw.execute(global_settings=global_settings, initial_table_space=ts)
+
+            # Verify datainfo file exists
+            datainfo_file = os.path.join(frame_dir, "column.datainfo")
+            self.assertTrue(os.path.exists(datainfo_file))
+            
+            # Verify datainfo structure with expected values
+            expected_data_info = DataInfo(
+                partition_key_length=1,
+                parts={
+                    "[\"test's \\\"value\\\", with.dot\"]": DataInfoPart(
+                        data="partition_0.parquet",
+                        axes=[DataInfoAxis(id="axis2", type="Long")],
+                        column=DataInfoColumn(id="column", type="Double"),
+                        data_digest="882c031a2cdd7cdec5a957163e4d93c7713654086ff62a23187d53a8150841bf",
+                        stats=Stats(
+                            number_of_rows=1,
+                            number_of_bytes=NumberOfBytes(
+                                axes=[65],
+                                column=65
+                            )
+                        )
+                    )
+                }
+            )
+            expected_serialized = msgspec.json.encode(expected_data_info).decode('utf-8')
+            with open(datainfo_file, 'rb') as f:
+                actual_data_info = f.read().decode('utf-8')
+            self.assertEqual(actual_data_info, expected_serialized)
+            
+            partition_file = os.path.join(frame_dir, "partition_0.parquet")
+            self.assertTrue(os.path.exists(partition_file))
+            actual_df = pl.read_parquet(partition_file)
+            expected_df = pl.DataFrame({
+                "axis2": [42],
+                "column": [123.45],
+            })
+            assert_frame_equal(actual_df, expected_df, check_dtypes=False)
+
+        finally:
+            if os.path.exists(frame_dir):
+                shutil.rmtree(frame_dir)
+
 if __name__ == '__main__':
     unittest.main()
