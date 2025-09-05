@@ -66,6 +66,8 @@ class ParquetTests(unittest.TestCase):
                 self.assertGreater(len(lines), 0, "Output file should not be empty")
 
         finally:
+            if os.path.exists(intermediate_file_abs_path):
+                os.remove(intermediate_file_abs_path)
             if os.path.exists(output_file_abs_path):
                 os.remove(output_file_abs_path)
 
