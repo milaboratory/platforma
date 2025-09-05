@@ -6,21 +6,19 @@ A Polars-based data processing library for table operations.
 
 ### Prerequisites
 
-1. **Install pyenv** (Python version manager):
+1. **Install mise** (universal runtime manager):
    ```bash
    # macOS (using Homebrew)
-   brew install pyenv
+   brew install mise
    
-   # Follow pyenv installation guide for your OS:
-   # https://github.com/pyenv/pyenv#installation
+   # Follow mise installation guide for your OS:
+   # https://mise.jdx.dev/getting-started.html
    ```
 
-2. **Configure pyenv** in your shell profile:
+2. **Configure mise** in your shell profile:
    ```bash
    # Add to ~/.zshrc, ~/.bashrc, or ~/.bash_profile
-   export PYENV_ROOT="$HOME/.pyenv"
-   command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-   eval "$(pyenv init -)"
+   eval "$(mise activate zsh)"
    ```
 
 ### Running Tests Locally
@@ -30,7 +28,7 @@ A Polars-based data processing library for table operations.
    pnpm run init-python
    ```
    This will:
-   - Set the local Python version to 3.12.6
+   - Use Python of the required version via mise
    - Create a virtual environment with the correct Python version
    - Install all required dependencies
 
@@ -48,9 +46,9 @@ When updating the Python version, make sure to update both:
    "environment": "@platforma-open/milaboratories.runenv-python-3:3.12.6"
    ```
 
-2. **Local Python version** in `.python-version` file:
-   ```
-   3.12.6
+2. **Local Python version** in the `init-python:create-venv` script in `package.json`:
+   ```json
+   "init-python:create-venv": "mise exec python@3.12.6 -- python -m venv --clear .venv"
    ```
 
 After updating, recreate the virtual environment:
