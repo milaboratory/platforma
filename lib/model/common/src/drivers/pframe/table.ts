@@ -1,6 +1,11 @@
 import type { PTableColumnSpec } from './table_common';
 import type { PTableShape, PTableVector, TableRange } from './data_types';
 
+export type GetDataOptions = {
+  range?: TableRange;
+  signal?: AbortSignal;
+};
+
 /**
  * Table view.
  * */
@@ -27,5 +32,17 @@ export interface PTable {
    * @param columnIndices unified indices of columns to be retrieved
    * @param range optionally limit the range of records to retrieve
    * */
-  getData(columnIndices: number[], range?: TableRange): Promise<PTableVector[]>;
+  getData(
+    columnIndices: number[],
+    options?: GetDataOptions,
+  ): Promise<PTableVector[]>;
+  /** @deprecated Use {@link getData} with {@link GetDataOptions} instead */
+  getData(
+    columnIndices: number[],
+    range?: TableRange,
+  ): Promise<PTableVector[]>;
+  getData(
+    columnIndices: number[],
+    optionsOrRange?: GetDataOptions | TableRange,
+  ): Promise<PTableVector[]>;
 }

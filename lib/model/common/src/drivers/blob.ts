@@ -78,9 +78,6 @@ export interface BlobDriver {
    */
   getContent(
     handle: LocalBlobHandle | RemoteBlobHandle,
-  ): Promise<Uint8Array>;
-  getContent(
-    handle: LocalBlobHandle | RemoteBlobHandle,
     options?: GetContentOptions,
   ): Promise<Uint8Array>;
   /** @deprecated Use {@link getContent} with {@link GetContentOptions} instead */

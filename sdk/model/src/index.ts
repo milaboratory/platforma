@@ -4,7 +4,6 @@ export * from './builder';
 export * from './bconfig';
 export * from './components';
 export * from './config';
-export * from './pframe';
 export * from './platforma';
 export * from './ref_util';
 export * from './render';

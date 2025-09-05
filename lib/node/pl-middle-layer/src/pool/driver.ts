@@ -38,6 +38,7 @@ import type {
   RemoteBlobHandleAndSize,
   RemoteBlobHandle,
   ContentHandler,
+  GetDataOptions,
 } from '@platforma-sdk/model';
 import {
   mapPObjectData,
@@ -545,14 +546,6 @@ export interface InternalPFrameDriver extends SdkPFrameDriver, AsyncDisposable {
     ctx: ComputableCtx,
   ): PTableHandle;
 
-  /** Calculates data for the table and returns complete data representation of it */
-  calculateTableData(
-    handle: PFrameHandle,
-    request: CalculateTableDataRequest<PObjectId>,
-    range: TableRange | undefined,
-    signal?: AbortSignal
-  ): Promise<CalculateTableDataResponse>;
-
   /** Calculate set of unique values for a specific axis for the filtered set of records */
   getUniqueValues(
     handle: PFrameHandle,
@@ -565,21 +558,6 @@ export interface InternalPFrameDriver extends SdkPFrameDriver, AsyncDisposable {
     handle: PTableHandle,
     signal?: AbortSignal,
   ): Promise<PTableShape>;
-
-  /**
-   * Retrieve the data from the table. To retrieve only data required, it can be
-   * sliced both horizontally ({@link columnIndices}) and vertically
-   * ({@link range}).
-   *
-   * @param columnIndices unified indices of columns to be retrieved
-   * @param range optionally limit the range of records to retrieve
-   * */
-  getData(
-    handle: PTableHandle,
-    columnIndices: number[],
-    range: TableRange | undefined,
-    signal?: AbortSignal,
-  ): Promise<PTableVector[]>;
 }
 
 export class PFrameDriver implements InternalPFrameDriver {
@@ -848,13 +826,34 @@ export class PFrameDriver implements InternalPFrameDriver {
   public async calculateTableData(
     handle: PFrameHandle,
     request: CalculateTableDataRequest<PObjectId>,
-    range: TableRange | undefined,
-    signal?: AbortSignal,
+    options?: GetDataOptions,
+  ): Promise<CalculateTableDataResponse>;
+  /** @deprecated Use {@link calculateTableData} with {@link GetDataOptions} instead */
+  public async calculateTableData(
+    handle: PFrameHandle,
+    request: CalculateTableDataRequest<PObjectId>,
+    range?: TableRange,
+  ): Promise<CalculateTableDataResponse>;
+  public async calculateTableData(
+    handle: PFrameHandle,
+    request: CalculateTableDataRequest<PObjectId>,
+    optionsOrRange?: GetDataOptions | TableRange,
   ): Promise<CalculateTableDataResponse> {
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info',
         `Call calculateTableData, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
+    }
+
+    let options: GetDataOptions | undefined = undefined;
+    if (optionsOrRange !== undefined) {
+      if (typeof optionsOrRange === 'object' && 'range' in optionsOrRange) {
+        options = optionsOrRange;
+      } else {
+        options = {
+          range: optionsOrRange as TableRange,
+        } satisfies GetDataOptions;
+      }
     }
 
     const table = this.pTables.acquire({
@@ -863,21 +862,29 @@ export class PFrameDriver implements InternalPFrameDriver {
     });
     const { resource: { pTablePromise, disposeSignal } } = table;
     const pTable = await pTablePromise;
-    const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
+    const combinedSignal = AbortSignal.any([options?.signal, disposeSignal].filter((s) => !!s));
 
     return await this.frameConcurrencyLimiter.run(async () => {
       try {
         const spec = pTable.getSpec();
         const data = await pTable.getData([...spec.keys()], {
-          range,
+          range: options?.range,
           signal: combinedSignal,
         });
 
-        const size = await pTable.getFootprint({
+        const resultSize = await pTable.getFootprint({
+          withPredecessors: false,
+          signal: combinedSignal,
+        });
+        if (resultSize >= 2 * 1024 * 1024 * 1024) {
+          throw new PFrameDriverError(`Join results exceed 2GB, please add filters to shrink the result size`);
+        }
+
+        const overallSize = await pTable.getFootprint({
           withPredecessors: true,
           signal: combinedSignal,
         });
-        this.pTableCache.cache(table, size);
+        this.pTableCache.cache(table, overallSize);
 
         return spec.map((spec, i) => ({
           spec: spec,
@@ -940,16 +947,37 @@ export class PFrameDriver implements InternalPFrameDriver {
   public async getData(
     handle: PTableHandle,
     columnIndices: number[],
-    range: TableRange | undefined,
-    signal?: AbortSignal,
+    options?: GetDataOptions,
+  ): Promise<PTableVector[]>;
+  /** @deprecated Use {@link getData} with {@link GetDataOptions} instead */
+  public async getData(
+    handle: PTableHandle,
+    columnIndices: number[],
+    range?: TableRange,
+  ): Promise<PTableVector[]>;
+  public async getData(
+    handle: PTableHandle,
+    columnIndices: number[],
+    optionsOrRange?: GetDataOptions | TableRange,
   ): Promise<PTableVector[]> {
+    let options: GetDataOptions | undefined = undefined;
+    if (optionsOrRange !== undefined) {
+      if (typeof optionsOrRange === 'object' && 'range' in optionsOrRange) {
+        options = optionsOrRange;
+      } else {
+        options = {
+          range: optionsOrRange as TableRange,
+        } satisfies GetDataOptions;
+      }
+    }
+
     const { pTablePromise, disposeSignal } = this.pTables.getByKey(handle);
     const pTable = await pTablePromise;
-    const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
+    const combinedSignal = AbortSignal.any([options?.signal, disposeSignal].filter((s) => !!s));
 
     return await this.tableConcurrencyLimiter.run(async () => {
       return await pTable.getData(columnIndices, {
-        range,
+        range: options?.range,
         signal: combinedSignal,
       });
     });

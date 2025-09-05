@@ -5,7 +5,7 @@ import {
   PTableShape,
   PTableSorting,
   PTableVector,
-  TableRange
+  GetDataOptions,
 } from '@milaboratories/pl-model-common';
 
 /**
@@ -57,10 +57,7 @@ export interface PTableV7 extends Disposable {
    * */
   getData(
     columnIndices: number[],
-    ops?: {
-      range?: TableRange,
-      signal?: AbortSignal,
-    },
+    ops?: GetDataOptions,
   ): Promise<PTableVector[]>;
 
   /** Filters the table and returns new PTable instance */

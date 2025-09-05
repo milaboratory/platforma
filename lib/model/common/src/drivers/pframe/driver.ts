@@ -1,5 +1,5 @@
 import type { Branded } from '../../branding';
-import type { PTable } from './table';
+import type { PTable, GetDataOptions } from './table';
 import type { PFrame } from './pframe';
 import type { AddParameterToAllMethods } from './type_util';
 import type { PTableShape, PTableVector, TableRange } from './data_types';
@@ -47,7 +47,18 @@ export interface PFrameDriver {
   calculateTableData(
     handle: PFrameHandle,
     request: CalculateTableDataRequest<PObjectId>,
+    options?: GetDataOptions,
+  ): Promise<CalculateTableDataResponse>;
+  /** @deprecated Use {@link calculateTableData} with {@link GetDataOptions} instead */
+  calculateTableData(
+    handle: PFrameHandle,
+    request: CalculateTableDataRequest<PObjectId>,
     range?: TableRange,
+  ): Promise<CalculateTableDataResponse>;
+  calculateTableData(
+    handle: PFrameHandle,
+    request: CalculateTableDataRequest<PObjectId>,
+    optionsOrRange?: GetDataOptions | TableRange,
   ): Promise<CalculateTableDataResponse>;
 
   /** Calculate set of unique values for a specific axis for the filtered set of records */
@@ -85,7 +96,18 @@ export interface PFrameDriver {
   getData(
     handle: PTableHandle,
     columnIndices: number[],
-    range?: TableRange
+    options?: GetDataOptions,
+  ): Promise<PTableVector[]>;
+  /** @deprecated Use {@link getData} with {@link GetDataOptions} instead */
+  getData(
+    handle: PTableHandle,
+    columnIndices: number[],
+    range?: TableRange,
+  ): Promise<PTableVector[]>;
+  getData(
+    handle: PTableHandle,
+    columnIndices: number[],
+    optionsOrRange?: GetDataOptions | TableRange,
   ): Promise<PTableVector[]>;
 }
 
