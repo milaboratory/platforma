@@ -1,5 +1,19 @@
 # @platforma-sdk/ui-vue
 
+## 1.43.0
+
+### Minor Changes
+
+- d60cc17: Added support for markup highlighting with multiple sequence columns, added initial support for phylogenetic trees, revamped the MSA data generation and layout
+
+### Patch Changes
+
+- Updated dependencies [d60cc17]
+- Updated dependencies [d60cc17]
+  - @milaboratories/biowasm-tools@2.0.0
+  - @platforma-sdk/model@1.43.0
+  - @milaboratories/uikit@2.4.14
+
 ## 1.42.53
 
 ### Patch Changes

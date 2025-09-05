@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.18
+
+### Patch Changes
+
+- 49160c4: Revert BlobDriver interface
+
 ## 1.19.17
 
 ### Patch Changes

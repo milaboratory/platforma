@@ -1,5 +1,16 @@
 # @platforma-sdk/model
 
+## 1.43.0
+
+### Minor Changes
+
+- d60cc17: Added support for markup highlighting with multiple sequence columns, added initial support for phylogenetic trees, revamped the MSA data generation and layout
+
+### Patch Changes
+
+- Updated dependencies [49160c4]
+  - @milaboratories/pl-model-common@1.19.18
+
 ## 1.42.51
 
 ### Patch Changes

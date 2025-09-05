@@ -1,5 +1,13 @@
 # @platforma-sdk/test
 
+## 1.43.0
+
+### Patch Changes
+
+- Updated dependencies [d60cc17]
+  - @platforma-sdk/model@1.43.0
+  - @milaboratories/pl-middle-layer@1.42.36
+
 ## 1.42.55
 
 ### Patch Changes
