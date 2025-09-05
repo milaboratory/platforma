@@ -3,6 +3,7 @@ from msgspec import Struct
 import msgspec.json
 import os
 import polars as pl
+import polars_hash as plh
 import duckdb
 
 from ptabler.steps.util import normalize_path
@@ -107,86 +108,104 @@ class WriteFrame(PStep, tag="write_frame"):
         ctx.chain_task(lambda: self.write_partitions_with_bloom_filters(intermediate_parquet))
 
     def write_partitions_with_bloom_filters(self, intermediate_parquet: str):
-        frame_dir = os.path.dirname(intermediate_parquet)
+        try:
+            frame_dir = os.path.dirname(intermediate_parquet)
+            duckdb_conn = duckdb.connect()
 
-        data_info_by_column = {}
-        for column in self.columns:
-            data_info_by_column[column.column] = DataInfo(
-                partition_key_length=self.partition_key_length,
-                parts={}
-            )
-        
-        axes_info = [DataInfoAxis(id=axis.column, type=axis.type) for axis in self.axes]
-        columns_info = {
-            column.column: DataInfoColumn(id=column.column, type=column.type) for column in self.columns
-        }
-        def create_part_info(data_file, column):
-            return DataInfoPart(
-                data=data_file,
-                axes=axes_info,
-                column=columns_info[column.column]
-            )
-
-        axis_identifiers = [f'"{axis.column}"' for axis in self.axes]
-        all_column_identifiers = axis_identifiers + [f'"{column.column}"' for column in self.columns]
-        def create_part_data(data_file: str, row=None):
-            conn = duckdb.connect()
+            data_info_by_column = {}
+            for column in self.columns:
+                data_info_by_column[column.column] = DataInfo(
+                    partition_key_length=self.partition_key_length,
+                    parts={}
+                )
             
-            if row is not None:
-                where_conditions = []
-                for i, value in enumerate(row):
-                    column_name = axis_identifiers[i]
-                    if isinstance(value, str):
-                        # Escape single quotes in string values
-                        escaped_value = value.replace("'", "''")
-                        where_conditions.append(f"{column_name} = '{escaped_value}'")
-                    else:
-                        where_conditions.append(f"{column_name} = {value}")
+            axes_info = [DataInfoAxis(id=axis.column, type=axis.type) for axis in self.axes]
+            columns_info = {
+                column.column: DataInfoColumn(id=column.column, type=column.type) for column in self.columns
+            }
+            def create_part_info(data_file, column):
+                data_path = os.path.join(frame_dir, normalize_path(data_file))
+                lf = pl.scan_parquet(data_path)
                 
-                query = f"""
-                    WITH filtered_data AS (
-                        SELECT *
+                axes_hash = lf.select(
+                    plh.concat_str([axis.id for axis in axes_info], separator="~").chash.sha256()
+                        .alias("axes_hash")
+                ).collect()
+                axes_hash_str: str = axes_hash["axes_hash"][0]
+
+                column_hash = lf.select(
+                    plh.col(column.column).chash.sha256().alias("column_hash")
+                ).collect()
+                column_hash_str: str = column_hash["column_hash"][0]
+                
+                data_digest = f"{axes_hash_str}#{column_hash_str}"
+                
+                return DataInfoPart(
+                    data=data_file,
+                    data_digest=data_digest,
+                    axes=axes_info,
+                    column=columns_info[column.column]
+                )
+
+            axis_identifiers = [f'"{axis.column}"' for axis in self.axes]
+            all_column_identifiers = axis_identifiers + [f'"{column.column}"' for column in self.columns]
+            def create_part_data(data_file: str, row=None):
+                if row is not None:
+                    where_conditions = []
+                    for i, value in enumerate(row):
+                        column_name = axis_identifiers[i]
+                        if isinstance(value, str):
+                            # Escape single quotes in string values
+                            escaped_value = value.replace("'", "''")
+                            where_conditions.append(f"{column_name} = '{escaped_value}'")
+                        else:
+                            where_conditions.append(f"{column_name} = {value}")
+                    
+                    query = f"""
+                        WITH filtered_data AS (
+                            SELECT *
+                            FROM read_parquet('{intermediate_parquet}')
+                            WHERE {' AND '.join(where_conditions)}
+                        )
+                        SELECT {', '.join(all_column_identifiers[len(row):])}
+                        FROM filtered_data
+                        ORDER BY {', '.join(axis_identifiers[len(row):])}
+                    """
+                else:
+                    query = f"""
+                        SELECT {', '.join(all_column_identifiers)}
                         FROM read_parquet('{intermediate_parquet}')
-                        WHERE {' AND '.join(where_conditions)}
-                    )
-                    SELECT {', '.join(all_column_identifiers[len(row):])}
-                    FROM filtered_data
-                    ORDER BY {', '.join(axis_identifiers[len(row):])}
-                """
-            else:
-                query = f"""
-                    SELECT {', '.join(all_column_identifiers)}
-                    FROM read_parquet('{intermediate_parquet}')
-                    ORDER BY {', '.join(axis_identifiers)}
-                """
+                        ORDER BY {', '.join(axis_identifiers)}
+                    """
+                
+                duckdb_conn.execute(f"""
+                    COPY ({query})
+                    TO '{os.path.join(frame_dir, normalize_path(data_file))}'
+                    (FORMAT PARQUET, COMPRESSION 'ZSTD', COMPRESSION_LEVEL 3)
+                """)
             
-            conn.execute(f"""
-                COPY ({query})
-                TO '{os.path.join(frame_dir, normalize_path(data_file))}'
-                (FORMAT PARQUET, COMPRESSION 'ZSTD', COMPRESSION_LEVEL 3)
-            """)
-            conn.close()
-        
-        if self.partition_key_length > 0:
-            partitioned_axes = [axis.column for axis in self.axes][:self.partition_key_length]
-            distinct_axes_df = pl.read_parquet(intermediate_parquet).select(partitioned_axes).unique()
-            for i, row in enumerate(distinct_axes_df.iter_rows()):
-                part_key = msgspec.json.encode(list(row)).decode('utf-8')
-                data_file = f"partition_{i}.parquet"
-                create_part_data(data_file, row)
+            if self.partition_key_length > 0:
+                partitioned_axes = [axis.column for axis in self.axes][:self.partition_key_length]
+                distinct_axes_df = pl.read_parquet(intermediate_parquet).select(partitioned_axes).unique()
+                for i, row in enumerate(distinct_axes_df.iter_rows()):
+                    part_key = msgspec.json.encode(list(row)).decode('utf-8')
+                    data_file = f"partition_{i}.parquet"
+                    create_part_data(data_file, row)
+                    for column in self.columns:
+                        data_info_by_column[column.column].parts[part_key] = create_part_info(data_file, column)
+            elif pl.scan_parquet(intermediate_parquet).select(pl.len()).collect().item() > 0:
+                part_key = msgspec.json.encode(list()).decode('utf-8')
+                data_file = "partition_0.parquet"
+                create_part_data(data_file)
                 for column in self.columns:
                     data_info_by_column[column.column].parts[part_key] = create_part_info(data_file, column)
-        elif pl.scan_parquet(intermediate_parquet).select(pl.len()).collect().item() > 0:
-            part_key = msgspec.json.encode(list()).decode('utf-8')
-            data_file = "partition_0.parquet"
-            create_part_data(data_file)
-            for column in self.columns:
-                data_info_by_column[column.column].parts[part_key] = create_part_info(data_file, column)
 
-        for column_name, data_info in data_info_by_column.items():
-            datainfo_path = os.path.join(frame_dir, f"{column_name}.datainfo")
-            with open(datainfo_path, 'wb') as f:
-                f.write(msgspec.json.encode(data_info))
-        
-        if os.path.exists(intermediate_parquet):
-            os.remove(intermediate_parquet)
+            for column_name, data_info in data_info_by_column.items():
+                datainfo_path = os.path.join(frame_dir, f"{column_name}.datainfo")
+                with open(datainfo_path, 'wb') as f:
+                    f.write(msgspec.json.encode(data_info))
+            
+        finally:
+            duckdb_conn.close()
+            if os.path.exists(intermediate_parquet):
+                os.remove(intermediate_parquet)
