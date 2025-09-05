@@ -120,7 +120,8 @@ class WriteFrame(PStep, tag="write_frame"):
                     parts={}
                 )
             
-            axes_info = [DataInfoAxis(id=axis.column, type=axis.type) for axis in self.axes]
+            non_partitioned_axes = self.axes[self.partition_key_length:]
+            axes_info = [DataInfoAxis(id=axis.column, type=axis.type) for axis in non_partitioned_axes]
             columns_info = {
                 column.column: DataInfoColumn(id=column.column, type=column.type) for column in self.columns
             }

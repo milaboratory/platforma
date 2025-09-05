@@ -215,13 +215,102 @@ class WriteFrameTests(unittest.TestCase):
             self.assertEqual(actual_data_info, expected_serialized)
 
             self.assertTrue(os.path.exists(os.path.join(frame_dir, "partition_0.parquet")))
-
             expected_df = pl.DataFrame({
                 "id": [1, 2, 3],
                 "name": ["Alice", "Bob", "Charlie"],
                 "value": [10.5, 20.0, 30.5],
             }).sort("id")
             actual_df = pl.read_parquet(os.path.join(frame_dir, "partition_0.parquet")).sort("id")
+            assert_frame_equal(actual_df, expected_df, check_dtypes=False)
+
+        finally:
+            if os.path.exists(frame_dir):
+                shutil.rmtree(frame_dir)
+    
+    def test_write_partitioned_frame(self):
+        frame_dir = os.path.join(global_settings.root_folder, normalize_path("frame_name"))
+        
+        write_frame_step = WriteFrame(
+            input_table="input_table",
+            frame_name="frame_name",
+            axes=[
+                AxisMapping(column="id", type="Long"),
+                AxisMapping(column="name", type="String"),
+            ],
+            columns=[ColumnMapping(column="value", type="Double")],
+            partition_key_length=1
+        )
+        ptw = PWorkflow(workflow=[write_frame_step])
+
+        lf = pl.LazyFrame({
+            "id": [1, 1, 2],
+            "name": ["Alice", "Bob", "Charlie"],
+            "value": [10.5, 20.0, 30.5],
+        })
+        ts = {"input_table": lf}
+
+        if os.path.exists(frame_dir):
+            shutil.rmtree(frame_dir)
+
+        try:
+            ptw.execute(global_settings=global_settings, initial_table_space=ts)
+
+            datainfo_file = os.path.join(frame_dir, "value.datainfo")
+            self.assertTrue(
+                os.path.exists(datainfo_file),
+                "value.datainfo file should exist even for empty frame"
+            )
+            
+            expected_data_info = DataInfo(
+                partition_key_length=1,
+                parts={
+                    "[1]": DataInfoPart(
+                        data="partition_0.parquet",
+                        axes=[DataInfoAxis(id="name", type="String")],
+                        column=DataInfoColumn(id="value", type="Double"),
+                        data_digest="526ea7869eb6c53280dd8c408a97db169183039ab236f9e7e5516f0e583db508",
+                        stats=Stats(
+                            number_of_rows=2,
+                            number_of_bytes=NumberOfBytes(
+                                axes=[81],
+                                column=81
+                            )
+                        )
+                    ),
+                    "[2]": DataInfoPart(
+                        data="partition_1.parquet",
+                        axes=[DataInfoAxis(id="name", type="String")],
+                        column=DataInfoColumn(id="value", type="Double"),
+                        data_digest="6a1370af1bce26dfab7ede772239d16c5d98a52b00efb60b3e38ebf4e9b2791f",
+                        stats=Stats(
+                            number_of_rows=1,
+                            number_of_bytes=NumberOfBytes(
+                                axes=[68],
+                                column=65
+                            )
+                        )
+                    )
+                }
+            )
+            expected_serialized = msgspec.json.encode(expected_data_info).decode('utf-8')
+            with open(datainfo_file, 'rb') as f:
+                actual_data_info = f.read().decode('utf-8')
+            self.assertEqual(actual_data_info, expected_serialized)
+
+            self.assertTrue(os.path.exists(os.path.join(frame_dir, "partition_0.parquet")))
+            expected_df = pl.DataFrame({
+                "name": ["Alice", "Bob"],
+                "value": [10.5, 20.0],
+            }).sort("name")
+            actual_df = pl.read_parquet(os.path.join(frame_dir, "partition_0.parquet")).sort("name")
+            assert_frame_equal(actual_df, expected_df, check_dtypes=False)
+
+            self.assertTrue(os.path.exists(os.path.join(frame_dir, "partition_1.parquet")))
+            expected_df = pl.DataFrame({
+                "name": ["Charlie"],
+                "value": [30.5],
+            }).sort("name")
+            actual_df = pl.read_parquet(os.path.join(frame_dir, "partition_1.parquet")).sort("name")
             assert_frame_equal(actual_df, expected_df, check_dtypes=False)
 
         finally:
