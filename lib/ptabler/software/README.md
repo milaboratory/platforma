@@ -36,6 +36,19 @@ A Polars-based data processing library for table operations.
    ```bash
    pnpm t
    ```
+   Tests will display coverage information upon successful completion.
+
+### Code Linting
+
+To check code quality and style:
+```bash
+pnpm run lint
+```
+
+To automatically fix linting issues where possible:
+```bash
+pnpm run lint --fix
+```
 
 ### Updating Python Version
 
