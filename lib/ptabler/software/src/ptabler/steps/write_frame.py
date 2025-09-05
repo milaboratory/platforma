@@ -5,6 +5,7 @@ import os
 import polars as pl
 import polars_hash as plh
 import duckdb
+import hashlib
 
 from ptabler.steps.util import normalize_path
 
@@ -123,15 +124,15 @@ class WriteFrame(PStep, tag="write_frame"):
             columns_info = {
                 column.column: DataInfoColumn(id=column.column, type=column.type) for column in self.columns
             }
-            def create_part_info(data_file, column, number_of_rows, axes_hash, axes_number_of_bytes):
+            def create_part_info(data_file, column, nrows, axes_hash, axes_nbytes):
                 data_path = os.path.join(frame_dir, normalize_path(data_file))
                 lf = pl.scan_parquet(data_path)
 
                 column_hash = lf.select(
                     plh.col(column.column).cast(pl.String).chash.sha2_256().alias("column_hash")
                 ).collect()["column_hash"][0]
-                column_number_of_bytes = self.get_number_of_bytes_in_column(duckdb_conn, data_path, column.column)
-                data_digest = f"{axes_hash}{column_hash}"
+                column_nbytes = WriteFrame.get_number_of_bytes_in_column(duckdb_conn, data_path, column.column)
+                data_digest = hashlib.sha256(f"{axes_hash}{column_hash}".encode()).hexdigest()
                 
                 return DataInfoPart(
                     data=data_file,
@@ -139,10 +140,10 @@ class WriteFrame(PStep, tag="write_frame"):
                     column=columns_info[column.column],
                     data_digest=data_digest,
                     stats=Stats(
-                        number_of_rows=number_of_rows,
+                        number_of_rows=nrows,
                         number_of_bytes=NumberOfBytes(
-                            axes=axes_number_of_bytes,
-                            column=column_number_of_bytes,
+                            axes=axes_nbytes,
+                            column=column_nbytes,
                         )),
                 )
             
@@ -150,15 +151,15 @@ class WriteFrame(PStep, tag="write_frame"):
                 data_path = os.path.join(frame_dir, normalize_path(data_file))
                 lf = pl.scan_parquet(data_path)
 
-                number_of_rows = self.get_number_of_rows_in_column(duckdb_conn, data_path, column.column)
+                nrows = WriteFrame.get_number_of_rows_in_column(duckdb_conn, data_path)
                 axes_hash = lf.select(
                     plh.concat_str([axis.id for axis in axes_info], separator="~").chash.sha2_256()
                         .alias("axes_hash")
                 ).collect()["axes_hash"][0]
-                axes_number_of_bytes = [
-                    self.get_number_of_bytes_in_column(duckdb_conn, data_path, axis.id) for axis in axes_info
+                axes_nbytes = [
+                    WriteFrame.get_number_of_bytes_in_column(duckdb_conn, data_path, axis.id) for axis in axes_info
                 ]
-                return number_of_rows, axes_hash, axes_number_of_bytes
+                return nrows, axes_hash, axes_nbytes
 
             axis_identifiers = [f'"{axis.column}"' for axis in self.axes]
             all_column_identifiers = axis_identifiers + [f'"{column.column}"' for column in self.columns]
@@ -227,6 +228,7 @@ class WriteFrame(PStep, tag="write_frame"):
             if os.path.exists(intermediate_parquet):
                 os.remove(intermediate_parquet)
     
+    @staticmethod
     def get_number_of_bytes_in_column(conn: duckdb.DuckDBPyConnection, path: str, column_name: str) -> int:
         result = conn.execute(f"""
             SELECT SUM(total_compressed_size) AS total_compressed_size, path_in_schema
@@ -236,10 +238,10 @@ class WriteFrame(PStep, tag="write_frame"):
         """).fetchall()
         return result[0][0]
 
-    def get_number_of_rows_in_column(conn: duckdb.DuckDBPyConnection, path: str, column_name: str) -> int:
+    @staticmethod
+    def get_number_of_rows_in_column(conn: duckdb.DuckDBPyConnection, path: str) -> int:
         result = conn.execute(f"""
             SELECT num_rows
             FROM parquet_file_metadata('{path}')
-            WHERE path_in_schema = '{column_name}'
         """).fetchall()
         return result[0][0]
