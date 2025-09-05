@@ -6,7 +6,7 @@ import {
 } from '@platforma-sdk/model';
 import { type Ref } from 'vue';
 
-const latestVersion = 1;
+const latestVersion = 2;
 
 export function runMigrations(model: Ref<PlMultiSequenceAlignmentModel>) {
   const currentVersion = getCurrentVersion(model.value);
@@ -18,6 +18,11 @@ export function runMigrations(model: Ref<PlMultiSequenceAlignmentModel>) {
       if (oldLabelColumnIds) {
         model.value.labelColumnIds = oldLabelColumnIds
           .map((id) => parseJson(id));
+      }
+    }
+    if (currentVersion < 2) {
+      if (model.value.colorScheme?.type === 'markup') {
+        delete model.value.colorScheme;
       }
     }
   } catch (error) {

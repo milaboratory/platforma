@@ -1,35 +1,31 @@
 {
   "name": "@milaboratories/biowasm-tools",
   "version": "1.1.2",
-  "description": "A framework for building WebAssembly-based genomics tools",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/biowasm/aioli.git"
-  },
-  "author": "Robert Aboukhalil & Milaboratories",
-  "license": "MIT",
   "files": [
     "dist"
   ],
-  "main": "./dist/aioli.js",
-  "module": "./dist/aioli.mjs",
-  "types": "./dist/aioli.d.ts",
-  "dependencies": {
-    "comlink": "^4.3.1",
-    "wasm-feature-detect": "^1.2.11"
+  "exports": {
+    "./kalign": {
+      "import": "./dist/kalign.mjs",
+      "types": "./dist/kalign.d.ts"
+    },
+    "./rapidnj": {
+      "import": "./dist/rapidnj.mjs",
+      "types": "./dist/rapidnj.d.ts"
+    }
   },
   "devDependencies": {
-    "cypress": "^10.6.0",
-    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite-plugin-dts": "catalog:",
     "vitest": "catalog:"
   },
   "scripts": {
-    "dev": "ts-builder serve --target browser-lib --build-config ./build.config.mjs",
+    "dev": "ts-builder serve --target browser-lib --build-config ./build.config.ts",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "build": "ts-builder build --target browser-lib --build-config ./build.config.mjs",
-    "test": "exit 0",
-    "test-cypress": "npm run build && cypress run",
-    "test-open": "npm run build && cypress open"
+    "build": "ts-builder build --target browser-lib --build-config ./build.config.ts",
+    "generate-assets": "docker build --output=assets ."
   }
 }
