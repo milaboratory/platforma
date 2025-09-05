@@ -318,7 +318,6 @@ class WriteFrameTests(unittest.TestCase):
                 shutil.rmtree(frame_dir)
     
     def test_input_validation_empty_frame_name(self):
-        """Test that empty frame_name raises ValueError"""
         with self.assertRaises(ValueError) as cm:
             WriteFrame(
                 input_table="input_table",
@@ -329,7 +328,6 @@ class WriteFrameTests(unittest.TestCase):
         self.assertIn("frame_name", str(cm.exception).lower())
     
     def test_input_validation_no_axes(self):
-        """Test that empty axes list raises ValueError"""
         with self.assertRaises(ValueError) as cm:
             WriteFrame(
                 input_table="input_table",
@@ -340,7 +338,6 @@ class WriteFrameTests(unittest.TestCase):
         self.assertIn("axis must be specified", str(cm.exception).lower())
     
     def test_input_validation_no_columns(self):
-        """Test that empty columns list raises ValueError"""
         with self.assertRaises(ValueError) as cm:
             WriteFrame(
                 input_table="input_table",
@@ -351,7 +348,6 @@ class WriteFrameTests(unittest.TestCase):
         self.assertIn("column must be specified", str(cm.exception).lower())
     
     def test_input_validation_duplicate_column_names_axes_and_columns(self):
-        """Test that duplicate column names between axes and columns raises ValueError"""
         with self.assertRaises(ValueError) as cm:
             WriteFrame(
                 input_table="input_table",
@@ -362,7 +358,6 @@ class WriteFrameTests(unittest.TestCase):
         self.assertIn("duplicate", str(cm.exception))
     
     def test_input_validation_multiple_duplicate_column_names(self):
-        """Test that multiple duplicate column names between axes and columns raises ValueError"""
         with self.assertRaises(ValueError) as cm:
             WriteFrame(
                 input_table="input_table",
@@ -381,7 +376,6 @@ class WriteFrameTests(unittest.TestCase):
         self.assertIn("dup2", exception_str)
     
     def test_input_validation_partition_key_length_equals_axes_count(self):
-        """Test that partition_key_length equal to axes count raises ValueError"""
         with self.assertRaises(ValueError) as cm:
             WriteFrame(
                 input_table="input_table",
@@ -395,6 +389,94 @@ class WriteFrameTests(unittest.TestCase):
             ).execute(None)
         self.assertIn("partition_key_length", str(cm.exception))
         self.assertIn("strictly less than", str(cm.exception))
+
+    def test_write_frame_with_quotes_casting_reordering_nulls(self):
+        frame_dir = os.path.join(global_settings.root_folder, normalize_path("frame_name"))
+        
+        write_frame_step = WriteFrame(
+            input_table="input_table",
+            frame_name="frame_name",
+            axes=[
+                AxisMapping(column="user's_id", type="Long"),  # Single quote in name
+                AxisMapping(column="item.type", type="String"),  # Dot in name
+            ],
+            columns=[ColumnMapping(column="us*r sc%re", type="Double")],  # Special characters in name
+            partition_key_length=0
+        )
+        ptw = PWorkflow(workflow=[write_frame_step])
+
+        # Initial order: axis2, column, axis1 (item.type, us*r sc%re, user's_id)
+        # Data with different types than mapping + NULLs + unsorted
+        lf = pl.LazyFrame({
+            "item.type": ["A", None, "B", "A", "C"],  # String (matches mapping) with NULL
+            "us*r sc%re": [10, 25, None, 15, 30],  # Int (will cast to Double) with NULL
+            "user's_id": [3.0, 1.0, 2.0, None, 4.0],  # Float (will cast to Long) with NULL
+        })
+        ts = {"input_table": lf}
+
+        if os.path.exists(frame_dir):
+            shutil.rmtree(frame_dir)
+
+        try:
+            ptw.execute(global_settings=global_settings, initial_table_space=ts)
+
+            # Verify file exists
+            datainfo_file = os.path.join(frame_dir, "us*r sc%re.datainfo")
+            self.assertTrue(os.path.exists(datainfo_file))
+            
+            expected_data_info = DataInfo(
+                partition_key_length=0,
+                parts={
+                    "[]": DataInfoPart(
+                        data="partition_0.parquet",
+                        axes=[
+                            DataInfoAxis(id="user's_id", type="Long"),
+                            DataInfoAxis(id="item.type", type="String")
+                        ],
+                        column=DataInfoColumn(id="us*r sc%re", type="Double"),
+                        data_digest="f442658e05050d8a04fc3190b145ac9c211f4780798b050d91a61f0719a1275d",
+                        stats=Stats(
+                            number_of_rows=3,
+                            number_of_bytes=NumberOfBytes(
+                                axes=[85, 80],
+                                column=84
+                            )
+                        )
+                    )
+                }
+            )
+            
+            expected_serialized = msgspec.json.encode(expected_data_info).decode('utf-8')
+            with open(datainfo_file, 'rb') as f:
+                actual_data_info = f.read().decode('utf-8')
+            self.assertEqual(actual_data_info, expected_serialized)
+            
+            # Read and verify parquet data
+            parquet_file = os.path.join(frame_dir, "partition_0.parquet")
+            self.assertTrue(os.path.exists(parquet_file))
+            actual_df = pl.read_parquet(parquet_file)
+            
+            # Expected: Only NULLs in AXIS columns are filtered out, data column NULLs remain
+            # Original data: 
+            # "item.type": ["A", None, "B", "A", "C"]  - row 1 has NULL (axis column)
+            # "us*r sc%re": [10, 25, None, 15, 30]   - row 2 has NULL (data column, kept)  
+            # "user's_id": [3.0, 1.0, 2.0, None, 4.0] - row 3 has NULL (axis column)
+            # Rows with NULL in axis columns (rows 1 and 3) are filtered out
+            # Remaining rows: 0, 2, 4 -> (3.0, "A", 10), (2.0, "B", None), (4.0, "C", 30)
+            # After sorting by axes: user's_id, item.type
+            expected_df = pl.DataFrame({
+                "user's_id": [2, 3, 4],  # Long type, sorted
+                "item.type": ["B", "A", "C"],  # String type, sorted by first axis then second
+                "us*r sc%re": [None, 10.0, 30.0],  # Double type (cast from Int), NULL preserved
+            }).cast({"us*r sc%re": pl.Float64})  # Ensure proper type
+            self.assertEqual(actual_df["user's_id"].dtype, pl.Int64)  # Long
+            self.assertEqual(actual_df["item.type"].dtype, pl.String)  # String  
+            self.assertEqual(actual_df["us*r sc%re"].dtype, pl.Float64)  # Double
+            assert_frame_equal(actual_df.sort("user's_id"), expected_df.sort("user's_id"), check_dtypes=False)
+
+        finally:
+            if os.path.exists(frame_dir):
+                shutil.rmtree(frame_dir)
 
 if __name__ == '__main__':
     unittest.main()
