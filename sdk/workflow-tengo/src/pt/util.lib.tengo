@@ -1,5 +1,6 @@
 ll := import(":ll")
 constants := import(":pframes.constants")
+spec := import(":pframes.spec")
 validation := import(":validation")
 slices := import(":slices")
 
@@ -7,36 +8,14 @@ _AXIS_SCHEMA := {
 	// Column reference in DataFrame
 	`column`: `string`,
 	// Specification of the axis
-	`spec`: {
-		// Type of axis values
-		`type`: `string,regex=Int|Long|String`,
-		// Name of the axis to be used in spec
-		`name`: `string`,
-		// Auxiliary information to the axis name, type and parents to form a unique identifier
-		`domain,?`: { any: `string` },
-		// Any additional information attached to the axis that does not affect its identifier
-		`annotations,?`: { any: `string` },
-		// A list of zero-based indices of parent axes in the overall axes specification
-		`parentAxes,?`: [`number`]
-	}
+	`spec`: spec.P_AXIS_SPEC_SCHEMA
 }
 
 _COLUMN_SCHEMA := {
 	// Column reference in DataFrame
 	`column`: `string`,
 	// Specification of the column
-	`spec`: {
-		// Type of column values
-		`valueType`: `string,regex=Int|Long|Float|Double|String`,
-		// Name of the column to be used in spec
-		`name`: `string`,
-		// Auxiliary information to the column name, type and parents to form a unique identifier
-		`domain,?`: { any: `string` },
-		// Any additional information attached to the axis that does not affect its identifier
-		`annotations,?`: { any: `string` },
-		// A list of zero-based indices of parent axes in the overall axes specification
-		`parentAxes,?`: [ `number` ]
-	}
+	`spec`: spec.P_COLUMN_OWN_SPEC_SCHEMA
 }
 
 _PARAMS_SCHEMA := {

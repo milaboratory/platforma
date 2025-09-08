@@ -203,6 +203,18 @@ _validateJson := func(js, schema, keyPath, ...stack) {
 		return fail(keyPath, "js %q does not fit any of the following rules: %q", js, schema)
 	}
 
+	// if the schema is an array with "and" at the beginning,
+	// we should check if the element is succeed with
+	// all of the following elements.
+	if is_array(schema) && len(schema) > 0 && schema[0] == "and" {
+		for i, elem in schema[1:] {
+			r := _validateJson(js, elem, keyPath, stack...)
+			if isFail(r) {
+				return r
+			}
+		}
+	}
+
 	// if the schema is an array, then check that every
 	// element of the json has the schema that is the first element
 	// of the schema.
