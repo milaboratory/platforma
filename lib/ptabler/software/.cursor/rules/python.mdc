@@ -1,0 +1,8 @@
+---
+description: Python
+globs:
+alwaysApply: true
+---
+Use python from venv. If there is no venv - use `pnpm run init-python` to create venv.
+Use `pnpm t` to run tests. Do not add comments to tests. Try to keep them concise.
+Use `pnpm run lint` to check for linting errors and `pnpm run lint --fix` to fix some of them.

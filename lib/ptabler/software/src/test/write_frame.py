@@ -5,6 +5,8 @@ import polars as pl
 import polars_hash as plh
 import duckdb
 import msgspec.json
+import pyarrow as pa
+import pyarrow.parquet as pq
 from polars.testing import assert_frame_equal
 
 from ptabler.steps import GlobalSettings
@@ -222,6 +224,8 @@ class WriteFrameTests(unittest.TestCase):
             }).sort("id")
             actual_df = pl.read_parquet(os.path.join(frame_dir, "partition_0.parquet")).sort("id")
             assert_frame_equal(actual_df, expected_df, check_dtypes=False)
+            actual_schema = pq.read_schema(os.path.join(frame_dir, "partition_0.parquet"))
+            self.assertEqual(actual_schema.types, [pa.int64(), pa.string(), pa.float64()])
 
         finally:
             if os.path.exists(frame_dir):
@@ -304,6 +308,8 @@ class WriteFrameTests(unittest.TestCase):
             }).sort("name")
             actual_df = pl.read_parquet(os.path.join(frame_dir, "partition_0.parquet")).sort("name")
             assert_frame_equal(actual_df, expected_df, check_dtypes=False)
+            actual_schema = pq.read_schema(os.path.join(frame_dir, "partition_0.parquet"))
+            self.assertEqual(actual_schema.types, [pa.string(), pa.float64()])
 
             self.assertTrue(os.path.exists(os.path.join(frame_dir, "partition_1.parquet")))
             expected_df = pl.DataFrame({
@@ -312,6 +318,8 @@ class WriteFrameTests(unittest.TestCase):
             }).sort("name")
             actual_df = pl.read_parquet(os.path.join(frame_dir, "partition_1.parquet")).sort("name")
             assert_frame_equal(actual_df, expected_df, check_dtypes=False)
+            actual_schema = pq.read_schema(os.path.join(frame_dir, "partition_1.parquet"))
+            self.assertEqual(actual_schema.types, [pa.string(), pa.float64()])
 
         finally:
             if os.path.exists(frame_dir):
@@ -544,6 +552,67 @@ class WriteFrameTests(unittest.TestCase):
                 "column": [123.45],
             })
             assert_frame_equal(actual_df, expected_df, check_dtypes=False)
+
+        finally:
+            if os.path.exists(frame_dir):
+                shutil.rmtree(frame_dir)
+
+    def test_one_line_dataframe_with_string_axis_parquet_schema(self):
+        output_file_abs_path = os.path.join(test_data_root_dir, "outputs", "one_line_string_axis.parquet")
+        
+        try:
+            pl.DataFrame({
+                "string_axis": ["test_value"],
+                "numeric_column": [42.5],
+            }).write_parquet(output_file_abs_path)
+            self.assertTrue(
+                os.path.exists(output_file_abs_path), 
+                f"Parquet file was not created at {output_file_abs_path}"
+            )
+            
+            string_field = pq.read_schema(output_file_abs_path).field("string_axis")
+            self.assertEqual(string_field.type, pa.large_string())
+            
+        finally:
+            if os.path.exists(output_file_abs_path):
+                os.remove(output_file_abs_path)
+
+    def test_write_frame_with_string_axis_schema_assertion(self):
+        frame_dir = os.path.join(global_settings.root_folder, normalize_path("string_axis_frame"))
+        
+        write_frame_step = WriteFrame(
+            input_table="input_table",
+            frame_name="string_axis_frame",
+            axes=[
+                AxisMapping(column="string_axis", type="String"),
+            ],
+            columns=[ColumnMapping(column="numeric_column", type="Double")],
+            partition_key_length=0
+        )
+        ptw = PWorkflow(workflow=[write_frame_step])
+
+        lf = pl.LazyFrame({
+            "string_axis": ["test_value"],
+            "numeric_column": [42.5],
+        })
+        ts = {"input_table": lf}
+
+        if os.path.exists(frame_dir):
+            shutil.rmtree(frame_dir)
+
+        try:
+            ptw.execute(global_settings=global_settings, initial_table_space=ts)
+
+            parquet_file = os.path.join(frame_dir, "partition_0.parquet")
+            self.assertTrue(os.path.exists(parquet_file))
+            
+            actual_df = pl.read_parquet(parquet_file)
+            expected_df = pl.DataFrame({
+                "string_axis": ["test_value"],
+                "numeric_column": [42.5],
+            })
+            assert_frame_equal(actual_df, expected_df, check_dtypes=False)
+            self.assertEqual(pq.read_schema(parquet_file).types, [pa.string(), pa.float64()])
 
         finally:
             if os.path.exists(frame_dir):
