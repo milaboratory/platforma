@@ -261,7 +261,7 @@ catalog:
   '@platforma-open/milaboratories.software-small-binaries': ^1.15.21
   '@biowasm/aioli': ~3.2.1
 
-  '@platforma-open/milaboratories.runenv-python-3': 1.4.2
+  '@platforma-open/milaboratories.runenv-python-3': 1.4.5
 
   # Test
 

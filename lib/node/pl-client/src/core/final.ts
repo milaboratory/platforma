@@ -97,7 +97,7 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
       } else if (r.type.name.startsWith('StreamWorkdir/')) {
         return readyOrDuplicateOrError(r);
       } else {
-        // Unknonw resource type detected
+        // Unknown resource type detected
         // Set used to log this message only once
         if (!unknownResourceTypeNames.has(r.type.name)) {
           console.log('UNKNOWN RESOURCE TYPE: ' + r.type.name);

@@ -1,8 +1,8 @@
-import { Pl } from '@milaboratories/pl-middle-layer';
+import { isPColumn, parseFinalPObjectCollection, Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import { expect } from 'vitest';
+import { assert, expect } from 'vitest';
 import type { TestRenderResults } from '@platforma-sdk/test';
-import type { MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
+import type { CalculateTableDataResponse, MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type { ComputableCtx } from '@milaboratories/computable';
 import { getTestTimeout } from '@milaboratories/helpers';
@@ -29,6 +29,41 @@ const getFileContent = async (
   );
   expect(handle).toBeDefined();
   return (await driverKit.blobDriver.getContent(handle!)).toString();
+};
+
+const getTableData = async (
+  result: TestRenderResults<string>,
+  outputName: string,
+  driverKit: MiddleLayerDriverKit,
+  timeout = TIMEOUT,
+): Promise<CalculateTableDataResponse> => {
+  const handle = await awaitStableState(
+    result.computeOutput(outputName, (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
+      if (!acc || !acc.getIsReadyOrError()) return undefined;
+      const pObjects = parseFinalPObjectCollection(acc, false, '', []);
+      const pColumns = Object.entries(pObjects).map(([, obj]) => {
+        if (!isPColumn(obj)) throw new Error(`not a PColumn (kind = ${obj.spec.kind})`);
+        return obj;
+      });
+      return driverKit.pFrameDriver.createPFrame(pColumns, ctx);
+    }),
+    timeout,
+  );
+  assert(handle);
+
+  const pColumns = await driverKit.pFrameDriver.listColumns(handle);
+  const pTable = await driverKit.pFrameDriver.calculateTableData(handle, {
+    src: {
+      type: 'full',
+      entries: pColumns.map((col) => ({
+        type: 'column',
+        column: col.columnId,
+      })),
+    },
+    filters: [],
+    sorting: [],
+  }, undefined);
+  return pTable;
 };
 
 const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
@@ -74,6 +109,52 @@ tplTest.concurrent(
     const outputTsvContent = await getFileContent(result, 'out', driverKit);
 
     expect(normalizeTsv(outputTsvContent)).toEqual(normalizeTsv(expectedOutputTsvData));
+  },
+);
+
+tplTest.concurrent(
+  'pt write frame test',
+  async ({ helper, expect, driverKit }) => {
+    const inputCsvData = 'a,b\n1,X\n9,Z\n4,Y';
+    const saveFrameParams = {
+      axes: [{
+        column: 'a',
+        spec: {
+          name: 'a',
+          type: 'Int',
+        },
+      }],
+      columns: [{
+        column: 'b',
+        spec: {
+          name: 'b',
+          valueType: 'String',
+        },
+      }],
+    };
+
+    const result = await helper.renderTemplate(
+      false,
+      'pt.write_frame',
+      ['out'],
+      (tx) => ({
+        inputCsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputCsvData)),
+        saveFrameParams: tx.createValue(Pl.JsonObject, JSON.stringify(saveFrameParams)),
+      }),
+    );
+
+    const pTable = await getTableData(result, 'out', driverKit);
+    const pTableSpecs = pTable.map((col) => col.spec);
+    expect(pTableSpecs).toEqual([
+      {
+        name: 'a',
+        type: 'Int',
+      },
+      {
+        name: 'b',
+        type: 'String',
+      },
+    ]);
   },
 );
 

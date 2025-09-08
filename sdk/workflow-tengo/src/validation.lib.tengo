@@ -213,6 +213,8 @@ _validateJson := func(js, schema, keyPath, ...stack) {
 				return r
 			}
 		}
+
+		return success
 	}
 
 	// if the schema is an array, then check that every

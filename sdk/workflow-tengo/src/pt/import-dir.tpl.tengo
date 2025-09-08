@@ -90,7 +90,7 @@ self.body(func(inputs) {
         for encodedAxisKey, parquetChunk in dataInfo.parts {
             // Gather all the data
 
-            parquetChunkData := self.saveFile(path.join(frameName, dataInfo.data))
+            parquetChunkData := self.saveFile(path.join(frameName, parquetChunk.data))
 
             parquetChunkMetadata := {
                 dataDigest: parquetChunk.dataDigest,
