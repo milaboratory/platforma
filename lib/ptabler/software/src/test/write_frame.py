@@ -516,11 +516,9 @@ class WriteFrameTests(unittest.TestCase):
         try:
             ptw.execute(global_settings=global_settings, initial_table_space=ts)
 
-            # Verify datainfo file exists
             datainfo_file = os.path.join(frame_dir, "column.datainfo")
             self.assertTrue(os.path.exists(datainfo_file))
             
-            # Verify datainfo structure with expected values
             expected_data_info = DataInfo(
                 partition_key_length=1,
                 parts={
@@ -613,6 +611,82 @@ class WriteFrameTests(unittest.TestCase):
             })
             assert_frame_equal(actual_df, expected_df, check_dtypes=False)
             self.assertEqual(pq.read_schema(parquet_file).types, [pa.string(), pa.float64()])
+
+        finally:
+            if os.path.exists(frame_dir):
+                shutil.rmtree(frame_dir)
+
+    def test_write_frame_with_selective_axes_and_columns(self):
+        frame_dir = os.path.join(global_settings.root_folder, normalize_path("selective_frame"))
+        
+        write_frame_step = WriteFrame(
+            input_table="input_table",
+            frame_name="selective_frame",
+            axes=[
+                AxisMapping(column="axis1", type="Long"),
+            ],
+            columns=[ColumnMapping(column="column1", type="Double")],
+            partition_key_length=0
+        )
+        ptw = PWorkflow(workflow=[write_frame_step])
+
+        lf = pl.LazyFrame({
+            "axis1": [1, 2, 3],
+            "axis2": ["A", "B", "C"],
+            "column1": [10.5, 20.0, 30.5],
+            "column2": [100, 200, 300],
+        })
+        ts = {"input_table": lf}
+
+        if os.path.exists(frame_dir):
+            shutil.rmtree(frame_dir)
+
+        try:
+            ptw.execute(global_settings=global_settings, initial_table_space=ts)
+
+            datainfo_file = os.path.join(frame_dir, "column1.datainfo")
+            self.assertTrue(
+                os.path.exists(datainfo_file),
+                "column1.datainfo file should exist"
+            )
+            
+            expected_data_info = DataInfo(
+                partition_key_length=0,
+                parts={
+                    "[]": DataInfoPart(
+                        data="partition_0.parquet",
+                        axes=[
+                            DataInfoAxis(id="axis1", type="Long")
+                        ],
+                        column=DataInfoColumn(id="column1", type="Double"),
+                        data_digest="a25431d198b539431eea891de566fe019e85671789d6f3ed461e3714d53db34a",
+                        stats=Stats(
+                            number_of_rows=3,
+                            number_of_bytes=NumberOfBytes(
+                                axes=[85],
+                                column=84
+                            )
+                        )
+                    )
+                }
+            )
+            expected_serialized = msgspec.json.encode(expected_data_info).decode('utf-8')
+            with open(datainfo_file, 'rb') as f:
+                actual_data_info = f.read().decode('utf-8')
+            self.assertEqual(actual_data_info, expected_serialized)
+
+            parquet_file = os.path.join(frame_dir, "partition_0.parquet")
+            self.assertTrue(os.path.exists(parquet_file))
+            
+            actual_df = pl.read_parquet(parquet_file)
+            expected_df = pl.DataFrame({
+                "axis1": [1, 2, 3],
+                "column1": [10.5, 20.0, 30.5],
+            }).sort("axis1")
+            assert_frame_equal(actual_df.sort("axis1"), expected_df, check_dtypes=False)
+            
+            actual_schema = pq.read_schema(parquet_file)
+            self.assertEqual(actual_schema.types, [pa.int64(), pa.float64()])
 
         finally:
             if os.path.exists(frame_dir):
