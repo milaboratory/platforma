@@ -2,7 +2,7 @@
   "name": "@platforma-open/milaboratories.software-ptabler",
   "version": "1.12.2",
   "scripts": {
-    "init-python:create-venv": "mise exec python@3.12.6 -- python -m venv --clear .venv",
+    "init-python:create-venv": "mise exec python@3.12.10 -- python -m venv --clear .venv",
     "init-python:pip-install": ".venv/bin/pip install --quiet --disable-pip-version-check",
     "init-python": "pnpm run init-python:create-venv && pnpm run init-python:pip-install -r src/requirements.dev.txt -r src/requirements.txt",
     "lint": "[ ! -d .venv ] || .venv/bin/ruff check",

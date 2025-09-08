@@ -1,6 +1,7 @@
 ll := import(":ll")
 constants := import(":pframes.constants")
 validation := import(":validation")
+slices := import(":slices")
 
 _AXIS_SCHEMA := {
 	// Column reference in DataFrame
@@ -155,23 +156,19 @@ makeWriteFrameStep := func(frameName, dfName, params) {
         type: "write_frame",
         inputTable: dfName,
         frameName: frameName,
-        axes: [],
-        columns: [],
+        axes: slices.map(params.axes, func(entry) {
+            return {
+                column: entry.column,
+                type: entry.spec.type
+            }
+        }),
+        columns: slices.map(params.columns, func(entry) {
+            return {
+                column: entry.column,
+                type: entry.spec.valueType
+            }
+        }),
         partitionKeyLength: 0
-    }
-    for entry in params.axes {
-        axis := {
-            column: entry.column,
-            type: entry.spec.type
-        }
-        step.axes = append(step.axes, axis)
-    }
-    for entry in params.columns {
-        column := {
-            column: entry.column,
-            type: entry.spec.valueType
-        }
-        step.columns = append(step.columns, column)
     }
     if !is_undefined(params.partitionKeyLength) {
         step.partitionKeyLength = params.partitionKeyLength
