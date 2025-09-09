@@ -64,7 +64,7 @@ export type HttpRange =
     };
 
 /** HTTP method passed to object store */
-export type HttpMethod = 'GET' | 'HEAD';
+export type HttpMethod = 'GET' | 'HEAD' | 'PROPFIND';
 
 /** HTTP response from object store */
 export type ObjectStoreResponse =
