@@ -44,6 +44,17 @@ export const BuildFlags = {
 };
 
 export const DockerFlags = {
+  'docker-registry': Flags.string({
+    env: envs.PL_DOCKER_REGISTRY,
+    description: 'docker registry Platforma Backend will use to pull image with this software.',
+    required: false,
+  }),
+  'docker-push-to': Flags.string({
+    env: envs.PL_DOCKER_REGISTRY_PUSH_TO,
+    description: 'alternative registry for docker push. This allows to push docker image to different registry compared to what would be used for docker pull on Platforma Backend side.',
+    required: false,
+  }),
+
   'skip-docker-build': Flags.boolean({
     env: envs.PL_DOCKER_SKIP_BUILD,
     description: 'do not build docker images',

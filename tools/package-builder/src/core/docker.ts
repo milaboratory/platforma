@@ -4,7 +4,6 @@ import * as util from './util';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { PL_DOCKER_REGISTRY } from './envs';
 
 export const defaultDockerRegistry = 'containers.pl-open.science/milaboratories/pl-containers';
 
@@ -133,12 +132,12 @@ export function removeTag(imageTag: string) {
   }
 }
 
-export function generateRemoteTagName(pkg: DockerPackage, imageID: string): string {
+export function generateRemoteTagName(pkg: DockerPackage, imageID: string, registry?: string): string {
   if (pkg.type !== 'docker') {
     throw new Error(`package '${pkg.name}' is not a docker package`);
   }
 
-  return dockerTag(pkg.name, imageID);
+  return dockerTag(pkg.name, imageID, registry);
 }
 
 export function generateLocalTagName(packageRoot: string, pkg: DockerPackage): string {
@@ -180,7 +179,7 @@ function contentHash(contextFullPath: string, dockerfileFullPath: string): strin
   return contextHash.digest('hex').slice(0, 12);
 }
 
-function dockerTag(packageName: string, contentHash: string): string {
-  const dockerRegistry = process.env[PL_DOCKER_REGISTRY] ?? defaultDockerRegistry;
+function dockerTag(packageName: string, contentHash: string, registry?: string): string {
+  const dockerRegistry = registry ?? defaultDockerRegistry;
   return `${dockerRegistry}:${packageName.replaceAll('/', '.')}.${contentHash}`;
 }
