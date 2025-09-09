@@ -1,4 +1,5 @@
-import { convertFilterUiToExpressions } from '../filters/converter';
+import { when } from '@milaboratories/ptabler-js';
+import { convertFilterUiToExpressionImpl } from '../filters/converter';
 import type { AnnotationSpec, AnnotationSpecUi } from './types';
 
 export function convertAnnotationSpecs(annotationsUI: AnnotationSpecUi[]): AnnotationSpec[] {
@@ -20,7 +21,7 @@ export function convertAnnotationSpecs(annotationsUI: AnnotationSpecUi[]): Annot
       return false;
     })
     .map((step): AnnotationSpec => ({
-      label: step.label.trim(),
-      expression: convertFilterUiToExpressions(step.filter),
+      name: step.label.trim(),
+      expression: when(convertFilterUiToExpressionImpl(step.filter)).then(true).otherwise(false).toJSON(),
     }));
 }

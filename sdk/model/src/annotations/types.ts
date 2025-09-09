@@ -7,7 +7,7 @@ export type AnnotationSpecs = {
 };
 
 export type AnnotationSpec<T extends Expression = Expression> = {
-  label: string;
+  name: string;
   expression: T;
 };
 
