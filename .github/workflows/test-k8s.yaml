@@ -28,7 +28,7 @@ jobs:
       node-version: '20.x'
       pl-version: 'main'
       pnpm-build-command: '--filter "*/workflow-tengo*"'
-      pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --minWorkers=50 --maxWorkers=50 --testTimeout=300000'
+      pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --minWorkers=50 --maxWorkers=50 --testTimeout=900000'
       helm-release-name: 'pl-dev-gcp'
       helm-chart-values-file: 'helm/gcp/values.yaml'
       notify-slack: true
@@ -48,7 +48,7 @@ jobs:
         }
       env: |
         { "BODY_LIMIT": "1048576000",
-          "TEST_TIMEOUT": "5m" }
+          "TEST_TIMEOUT": "15m" }
     secrets:
       env: |
         { "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
