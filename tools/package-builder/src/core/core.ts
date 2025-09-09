@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import type winston from 'winston';
 import type { PackageConfig, Entrypoint, DockerPackage } from './package-info';
 import { PackageInfo } from './package-info';
+import type * as artifacts from './schemas/artifacts';
 import {
   Renderer,
   readBuiltArtifactInfo,
@@ -98,6 +99,21 @@ export class Core {
 
   public get buildablePackages(): Map<string, PackageConfig> {
     return new Map(Array.from(this.packages.entries()).filter(([, value]) => value.isBuildable));
+  }
+
+  public packageHasType(id: string, type: artifacts.artifactType): boolean {
+    const pkg = this.packages.get(id);
+    if (pkg && pkg.type === type) {
+      return true;
+    }
+
+    // check 'magic' entrypoint name with suffix
+    const dockerPkg = this.packages.get(docker.entrypointName(id));
+    if (dockerPkg) {
+      return true;
+    }
+
+    return false;
   }
 
   public getPackage(id: string, type?: 'docker' | 'archive'): PackageConfig {
@@ -269,12 +285,12 @@ export class Core {
     const packagesToBuild = options?.ids ?? Array.from(this.buildablePackages.keys());
 
     for (const pkgID of packagesToBuild) {
-      const pkg = this.getPackage(pkgID, 'docker');
-      if (pkg.type !== 'docker') {
+      if (!this.packageHasType(pkgID, 'docker')) {
         continue;
       }
 
-      this.buildDockerImage(pkg.id, pkg, options?.registry);
+      const pkg = this.getPackage(pkgID, 'docker');
+      this.buildDockerImage(pkg.id, pkg as DockerPackage, options?.registry);
     }
   }
 
