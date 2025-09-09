@@ -1,39 +1,39 @@
 import type {
   AnchoredIdDeriver,
+  AnchoredPColumnSelector,
+  AxisFilterByIdx,
+  AxisFilterValue,
   AxisId,
+  NativePObjectId,
+  PartitionedDataInfoEntries,
   PColumn,
   PColumnSelector,
   PColumnSpec,
-  PObjectId,
-  SUniversalPColumnId,
-  AxisFilterValue,
-  AxisFilterByIdx,
-  AnchoredPColumnSelector,
-  PartitionedDataInfoEntries,
-  ResolveAnchorsOptions,
-  NativePObjectId,
   PColumnValues,
+  PObjectId,
+  ResolveAnchorsOptions,
+  SUniversalPColumnId,
 } from '@milaboratories/pl-model-common';
 import {
-  selectorsToPredicate,
-  resolveAnchors,
-  getAxisId,
-  isPColumnSpec,
-  canonicalizeAxisId,
-  isPartitionedDataInfoEntries,
-  entriesToDataInfo,
-  deriveNativeId,
   Annotation,
+  canonicalizeAxisId,
+  deriveNativeId,
+  entriesToDataInfo,
+  getAxisId,
+  isPartitionedDataInfoEntries,
+  isPColumnSpec,
+  resolveAnchors,
+  selectorsToPredicate,
 } from '@milaboratories/pl-model-common';
+import canonicalize from 'canonicalize';
+import type { Optional } from 'utility-types';
 import type { TreeNodeAccessor } from '../accessor';
+import type { PColumnDataUniversal } from '../api';
+import { filterDataInfoEntries } from './axis_filtering';
 import type { LabelDerivationOps, TraceEntry } from './label';
 import { deriveLabels } from './label';
-import type { Optional } from 'utility-types';
+import { convertOrParsePColumnData, getUniquePartitionKeys } from './pcolumn_data';
 import type { APColumnSelectorWithSplit, PColumnSelectorWithSplit } from './split_selectors';
-import canonicalize from 'canonicalize';
-import { getUniquePartitionKeys, convertOrParsePColumnData } from './pcolumn_data';
-import { filterDataInfoEntries } from './axis_filtering';
-import type { PColumnDataUniversal } from '../api';
 
 function isPColumnValues(value: unknown): value is PColumnValues {
   if (!Array.isArray(value)) return false;

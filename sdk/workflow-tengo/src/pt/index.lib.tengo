@@ -58,6 +58,9 @@ _newDataFrameGroupBy := undefined
 
 workflowCounter := 0
 
+_isStepCol := func(obj) {
+	return ll.isMap(obj) && is_string(obj.name) && ll.isMap(obj.expression)
+}
 
 _validateColumn := func(name, columnStruct) {
 	ll.assert(is_string(name), "column name must be a string")
@@ -978,30 +981,35 @@ _newDataFrameGroupBy = func(parentWorkflow, dfName, groupByExpressions) {
 }
 
 _newDataFrame = func(parentWorkflow, dfName) {
-	_mapExprsToStepCols := func(exprs, methodName, ctx) {
-		ll.assert(len(exprs) > 0, methodName + " requires at least one expression argument.")
+	_mapExprsToStepCols := func(items, methodName, ctx) {
+		ll.assert(len(items) > 0, methodName + " requires at least one expression argument.")
 		cols := []
-		for expr in exprs {
-			if !exp._isExpression(expr) {
-				ll.panic("Invalid argument to " + methodName + ": Expected an expression object, got %v", expr)
+		for item in items {
+			if exp._isExpression(item) {
+				cols = append(cols, item._getExpression(ctx))
+			} else if _isStepCol(item) {
+				cols = append(cols, item)
+			} else {
+				ll.panic("Invalid argument to " + methodName + ": Expected an expression/column object, got %v", item)
 			}
-			cols = append(cols, expr._getExpression(ctx))
 		}
 		return cols
 	}
 
-	_mapExprsToStepColsAllowingStrings := func(exprs, methodName, ctx) {
-		ll.assert(len(exprs) > 0, methodName + " requires at least one expression argument.")
+	_mapExprsToStepColsAllowingStrings := func(items, methodName, ctx) {
+		ll.assert(len(items) > 0, methodName + " requires at least one expression argument.")
 		cols := []
-		for expr in exprs {
-			if is_string(expr) {
+		for item in items {
+			if is_string(item) {
 				// For strings, interpret as column name
-				colExpr := exp.col(expr)
+				colExpr := exp.col(item)
 				cols = append(cols, colExpr._getExpression(ctx))
-			} else if exp._isExpression(expr) {
-				cols = append(cols, expr._getExpression(ctx))
+			} else if exp._isExpression(item) {
+				cols = append(cols, item._getExpression(ctx))
+			} else if _isStepCol(item) {
+				cols = append(cols, item)
 			} else {
-				ll.panic("Invalid argument to " + methodName + ": Expected an expression object or string column name, got %v", expr)
+				ll.panic("Invalid argument to " + methodName + ": Expected an expression/column object or string column name, got %v", item)
 			}
 		}
 		return cols
@@ -1098,6 +1106,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *   )
 		 */
 		withColumns: func(...expressions) {
+			stepCols := _mapExprsToStepCols(expressions, "withColumns")
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
 			parentWorkflow._addStep(func(ctx) {
 				stepCols := _mapExprsToStepCols(expressions, "withColumns", ctx)
@@ -1260,7 +1269,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 * This is followed by an `.agg()` call to perform aggregations on the groups.
 		 *
 		 * @param ...expressions {string|object} - One or more column names (strings) or expression objects to group by.
-		 * @returns {object} - A DataFrameGroupBy object, which has an `agg()` method.
+		 * @returns {object} - A DataFrameGroupBy object, which has an `F)` method.
 		 * @example
 		 *   grouped := df.groupBy("category", pt.col("year").alias("sale_year"))
 		 *   // now call .agg() on 'grouped'

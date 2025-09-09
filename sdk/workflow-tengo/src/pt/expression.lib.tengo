@@ -1203,7 +1203,7 @@ col = func(name) {
 
 /**
  * Creates an expression from a literal (constant) value.
- * @param value - any - The literal value (string, number, boolean, or null).
+ * @param value - any - The literal value (string, number, boolean, or undefined).
  * @returns {object} - An expression object.
  */
 lit = func(value) {

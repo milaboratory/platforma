@@ -46,7 +46,7 @@ export type TypeField<V> = {
   defaultValue: () => V | undefined;
 };
 
-export type TypeFieldRecord<T> = { [K in keyof T]: TypeField<T[K]>; };
+export type TypeFieldRecord<T extends FilterUi> = { [K in keyof T]: TypeField<T[K]>; };
 
 export type TypeForm<T> = {
   [P in keyof T]: T[P] extends Record<string, unknown> ? {
