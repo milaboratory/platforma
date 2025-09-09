@@ -3,6 +3,7 @@ import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
 import * as envs from '../../core/envs';
+import * as docker from '../../core/docker';
 
 export default class BuildAll extends Command {
   static override description
@@ -40,7 +41,10 @@ export default class BuildAll extends Command {
       core.allPlatforms = flags['all-platforms'];
       core.fullDirHash = flags['full-dir-hash'];
 
-      if (!flags['skip-docker-build'] && core.buildMode !== 'dev-local') {
+      if (
+        core.buildMode !== 'dev-local'
+        && docker.shouldBuild(envs.isCI(), flags['docker-build'], flags['docker-no-build'])
+      ) {
         core.buildDockerImages({
           ids: flags['package-id'],
           registry: flags['docker-registry'],

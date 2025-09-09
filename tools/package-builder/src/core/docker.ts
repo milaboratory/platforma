@@ -63,20 +63,20 @@ export function remoteImageExists(tag: string): boolean {
   return true;
 }
 
-export function push(tag: string) {
-  const result = spawnSync('docker', ['push', tag], {
-    stdio: 'inherit',
-    env: {
-      ...process.env, // PATH variable from parent process affects execution
-      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
-    },
-  });
-  if (result.error) {
-    throw result.error;
+export function shouldBuild(isCI: boolean, buildFlag: boolean, noBuildFlag: boolean): boolean {
+  if (noBuildFlag) {
+    return false;
   }
-  if (result.status !== 0) {
-    throw new Error(`docker push failed with status ${result.status}`);
+  if (buildFlag) {
+    return true;
   }
+  if (isCI) {
+    // Build docker images in CI by default
+    return true;
+  }
+
+  // Do not build docker images automatically outside CI for now.
+  return false;
 }
 
 export function build(context: string, dockerfile: string, tag: string, softwarePackage: string, softwareVersion: string | undefined) {
@@ -97,6 +97,22 @@ export function build(context: string, dockerfile: string, tag: string, software
   }
   if (result.status !== 0) {
     throw new Error(`docker build failed with status ${result.status}`);
+  }
+}
+
+export function push(tag: string) {
+  const result = spawnSync('docker', ['push', tag], {
+    stdio: 'inherit',
+    env: {
+      ...process.env, // PATH variable from parent process affects execution
+      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+    },
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw new Error(`docker push failed with status ${result.status}`);
   }
 }
 
