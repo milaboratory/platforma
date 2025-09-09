@@ -528,7 +528,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
     }
 
     if (pushTo) {
-      const pushTag = `${pushTo}:${tag.split(':')[1]}`;
+      const pushTag = `${pushTo}:${tag.split(':').slice(-1)[0]}`;
       docker.addTag(tag, pushTag);
       this.logger.info(`Publishing docker image '${tag}' using alternative tag '${pushTag}'`);
       docker.push(pushTag);
