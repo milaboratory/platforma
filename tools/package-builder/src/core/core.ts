@@ -100,12 +100,16 @@ export class Core {
     return new Map(Array.from(this.packages.entries()).filter(([, value]) => value.isBuildable));
   }
 
-  public getPackage(id: string): PackageConfig {
+  public getPackage(id: string, type?: 'docker' | 'archive'): PackageConfig {
     const pkg = this.packages.get(id);
     if (pkg) {
-      return pkg;
+      // If we request docker package and current package is not docker - continue searching
+      if (type !== 'docker' || pkg.type === 'docker') {
+        return pkg;
+      }
     }
 
+    // 'magic' entrypoint name with suffix.
     const dockerPkg = this.packages.get(docker.entrypointName(id));
     if (dockerPkg) {
       return dockerPkg;
@@ -265,7 +269,7 @@ export class Core {
     const packagesToBuild = options?.ids ?? Array.from(this.buildablePackages.keys());
 
     for (const pkgID of packagesToBuild) {
-      const pkg = this.getPackage(pkgID);
+      const pkg = this.getPackage(pkgID, 'docker');
       if (pkg.type !== 'docker') {
         continue;
       }
