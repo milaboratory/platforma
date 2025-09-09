@@ -16,6 +16,7 @@ export default class PublishAll extends Command {
 
     ...cmdOpts.ArchiveFlag,
     ...cmdOpts.StorageURLFlag,
+    ['docker-push-to']: cmdOpts.DockerFlags['docker-push-to'],
 
     ...cmdOpts.PackageIDFlag,
     ...cmdOpts.FailExistingPackagesFlag,
@@ -42,6 +43,7 @@ export default class PublishAll extends Command {
 
     core.publishDockerImages({
       ids: flags['package-id'],
+      pushTo: flags['docker-push-to'],
     });
   }
 }
