@@ -140,12 +140,13 @@ export function deriveLabels<T>(
         .filter((fm) => includedTypes.has(fm.fullType)
           || (forceTraceElements && forceTraceElements.has(fm.type)));
       if (includedTrace.length === 0) {
-        if (force)
+        if (force) {
           result.push({
             label: 'Unlabeled',
             value: r.value,
           } satisfies RecordsWithLabel<T>);
-        else return undefined;
+          continue;
+        } else return undefined;
       }
       const labelSet = includedTrace
         .map((fm) => fm.label);
