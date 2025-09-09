@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.43.1
+
+### Patch Changes
+
+- e61fe33: Bump miplots4 version
+
 ## 1.43.0
 
 ### Minor Changes
