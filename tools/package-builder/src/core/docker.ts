@@ -80,7 +80,7 @@ export function build(context: string, dockerfile: string, tag: string, software
     throw result.error;
   }
   if (result.status !== 0) {
-    throw util.CLIError(`docker build failed with status ${result.status}`);
+    throw util.CLIError(`'docker build' failed with status ${result.status}`);
   }
 }
 
@@ -96,7 +96,7 @@ export function push(tag: string) {
     throw result.error;
   }
   if (result.status !== 0) {
-    throw util.CLIError(`docker push failed with status ${result.status}`);
+    throw util.CLIError(`'docker push' failed with status ${result.status}`);
   }
 }
 
@@ -112,7 +112,7 @@ export function addTag(imageIdOrTag: string, newTag: string) {
     throw result.error;
   }
   if (result.status !== 0) {
-    throw util.CLIError(`docker build failed with status ${result.status}`);
+    throw util.CLIError(`'docker tag' failed with status ${result.status}`);
   }
 }
 
@@ -128,7 +128,7 @@ export function removeTag(imageTag: string) {
     throw result.error;
   }
   if (result.status !== 0) {
-    throw util.CLIError(`docker build failed with status ${result.status}`);
+    throw util.CLIError(`'docker image rm' failed with status ${result.status}`);
   }
 }
 
