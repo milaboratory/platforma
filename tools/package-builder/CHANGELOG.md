@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.3.0
+
+### Minor Changes
+
+- ff7f75e: Allow to push docker image into alternative registry after building
+
 ## 3.2.4
 
 ### Patch Changes
