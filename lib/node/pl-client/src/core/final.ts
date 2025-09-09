@@ -55,6 +55,7 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
     case 'std/map':
     case 'EphStdMap':
     case 'PFrame':
+    case 'ParquetChunk':
     case 'BContext':
     case 'BlockPackCustom':
     case 'BinaryMap':
