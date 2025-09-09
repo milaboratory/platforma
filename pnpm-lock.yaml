@@ -28,8 +28,8 @@ catalogs:
       specifier: ^29.7.0
       version: 29.7.0
     '@milaboratories/miplots4':
-      specifier: ^1.0.143
-      version: 1.0.143
+      specifier: ^1.0.145
+      version: 1.0.145
     '@milaboratories/pframes-rs-node':
       specifier: 1.0.72
       version: 1.0.72
@@ -2468,7 +2468,7 @@ importers:
         version: link:../../lib/other/biowasm-tools
       '@milaboratories/miplots4':
         specifier: 'catalog:'
-        version: 1.0.143(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)
+        version: 1.0.145(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)
       '@milaboratories/uikit':
         specifier: workspace:*
         version: link:../../lib/ui/uikit
@@ -4886,8 +4886,8 @@ packages:
     resolution: {integrity: sha512-66j+tzU5p1oW0GZiQEH0410W+5isvkfq6dWWatiTQ5dZ9qf6vunEE+U6I5tPbUjzLjWbd7CSpfPhJgvkq7exQA==}
     engines: {node: '>=20'}
 
-  '@milaboratories/miplots4@1.0.143':
-    resolution: {integrity: sha512-r0Tce6qt3Q515yv+BcubztA9sLBNhep0ZvOPdwZjeVy7g5y4BL+Q/+LRZErhw3sVbS4tFmPohB3MLmmt+lVM1w==}
+  '@milaboratories/miplots4@1.0.145':
+    resolution: {integrity: sha512-NiWAywxWtacWR5danfZA2y8DjzzLVSBjTxBe5fvhpUCI84CYZcGyn4eS44fDFG3IO1uaC9FAsKpWcWta0HTK+Q==}
 
   '@milaboratories/pframes-rs-node@1.0.72':
     resolution: {integrity: sha512-pZu+Ul+rEbm3kvKjE6yVNkSdb3WneKrr2T5R51dAfgyxRL5mElZulbArey/TIQxsx/J9Ssj8Cw1nrlg6O5ycMQ==}
@@ -13520,7 +13520,7 @@ snapshots:
 
   '@milaboratories/helpers@1.7.0': {}
 
-  '@milaboratories/miplots4@1.0.143(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)':
+  '@milaboratories/miplots4@1.0.145(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)':
     dependencies:
       '@d3fc/d3fc-chart': 5.1.9(d3-array@3.2.4)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)(d3-scale@4.0.2)(d3-selection@3.0.0)(d3-shape@3.2.0)
       '@d3fc/d3fc-pointer': 3.0.3(d3-dispatch@3.0.1)(d3-selection@3.0.0)
