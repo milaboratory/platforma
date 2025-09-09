@@ -14,6 +14,7 @@ export default class Docker extends Command {
 
     ...cmdOpts.PackageIDFlag,
     ...cmdOpts.VersionFlag,
+    ['docker-push-to']: cmdOpts.DockerFlags['docker-push-to'],
 
     ...cmdOpts.FailExistingPackagesFlag,
   };
@@ -29,6 +30,7 @@ export default class Docker extends Command {
 
     core.publishDockerImages({
       ids: flags['package-id'],
+      pushTo: flags['docker-push-to'],
     });
   }
 }
