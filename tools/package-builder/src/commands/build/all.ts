@@ -43,6 +43,7 @@ export default class BuildAll extends Command {
       if (!flags['skip-docker-build'] && core.buildMode !== 'dev-local') {
         core.buildDockerImages({
           ids: flags['package-id'],
+          registry: flags['docker-registry'],
         });
       }
 
@@ -66,6 +67,7 @@ export default class BuildAll extends Command {
         //       once we support content-addressable archives, we can publish everything here (not just docker).
         core.publishDockerImages({
           ids: flags['package-id'],
+          pushTo: flags['docker-push-to'],
         });
       }
     } catch (e) {

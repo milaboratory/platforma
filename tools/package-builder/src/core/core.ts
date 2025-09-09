@@ -259,6 +259,7 @@ export class Core {
   public buildDockerImages(
     options?: {
       ids?: string[];
+      registry?: string;
     },
   ) {
     const packagesToBuild = options?.ids ?? Array.from(this.buildablePackages.keys());
@@ -269,11 +270,11 @@ export class Core {
         continue;
       }
 
-      this.buildDockerImage(pkg.id, pkg);
+      this.buildDockerImage(pkg.id, pkg, options?.registry);
     }
   }
 
-  private buildDockerImage(pkgID: string, pkg: DockerPackage) {
+  private buildDockerImage(pkgID: string, pkg: DockerPackage, registry?: string) {
     const dockerfile = path.resolve(this.pkgInfo.packageRoot, pkg.dockerfile ?? 'Dockerfile');
     const context = path.resolve(this.pkgInfo.packageRoot, pkg.context ?? '.');
     const entrypoint = pkg.entrypoint ?? [];
@@ -298,7 +299,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
     docker.build(context, dockerfile, localTag, pkg.name, this.pkgInfo.version);
 
     const imageHash = docker.getImageHash(localTag);
-    const dstTag = docker.generateRemoteTagName(pkg, imageHash);
+    const dstTag = docker.generateRemoteTagName(pkg, imageHash, registry);
 
     this.logger.debug(`Adding destination tag to docker image:
       dstTag: "${dstTag}"
@@ -488,6 +489,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
 
   public publishDockerImages(options?: {
     ids?: string[];
+    pushTo?: string;
   }) {
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
 
@@ -497,11 +499,11 @@ entrypoint: '${entrypoint.join('\', \'')}'
         continue;
       }
 
-      this.publishDockerImage(pkg);
+      this.publishDockerImage(pkg, options?.pushTo);
     }
   }
 
-  private publishDockerImage(pkg: PackageConfig) {
+  private publishDockerImage(pkg: PackageConfig, pushTo?: string) {
     if (pkg.type !== 'docker') {
       throw new Error(`package '${pkg.id}' is not a docker package`);
     }
@@ -523,6 +525,14 @@ entrypoint: '${entrypoint.join('\', \'')}'
       }
 
       throw new Error(`Docker image '${tag}' not exists locally and is not found in remote registry. Publication failed.`);
+    }
+
+    if (pushTo) {
+      const pushTag = `${pushTo}:${tag.split(':')[1]}`;
+      docker.addTag(tag, pushTag);
+      this.logger.info(`Publishing docker image '${tag}' using alternative tag '${pushTag}'`);
+      docker.push(pushTag);
+      return;
     }
 
     this.logger.info(`Publishing docker image '${tag}' into registry '${pkg.registry.name}'`);
