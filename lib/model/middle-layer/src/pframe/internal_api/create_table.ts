@@ -27,39 +27,6 @@ export interface InlineColumnJoinEntry {
   readonly dataInfo: JsonDataInfo;
 }
 
-// TODO: remove...
-
-export interface InnerJoinV3 {
-  type: 'inner';
-  entries: JoinEntryV3[];
-}
-
-export interface FullJoinV3 {
-  type: 'full';
-  entries: JoinEntryV3[];
-}
-
-export interface OuterJoinV3 {
-  type: 'outer';
-  primary: JoinEntryV3;
-  secondary: JoinEntryV3[];
-}
-
-export type JoinEntryV3 = 
-  | ColumnJoinEntry
-  | SlicedColumnJoinEntry
-  | InlineColumnJoinEntry
-  | InnerJoinV3
-  | FullJoinV3
-  | OuterJoinV3;
-
-export interface CreateTableRequestV3 {
-  src: JoinEntryV3;
-  filters: PTableRecordFilter[];
-}
-
-// TODO: ...remove
-
 export interface InnerJoinV4 {
   type: 'inner';
   entries: JoinEntryV4[];
