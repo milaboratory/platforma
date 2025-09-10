@@ -545,7 +545,7 @@ logging:
   #   - "stream://stderr": Logs are sent to the standard error of the container.
   #   - "dir:///var/log/platforma": Logs are written to files in the specified directory,
   #     which can be backed by a persistent volume. The path should match `persistence.mountPath`.
-  destination: "stream://stdout"
+  destination: "stream://stderr"
 
   # -- Persistence configuration for directory-based logging (`dir://`).
   # This is only used if `destination` is set to a `dir://` path.
