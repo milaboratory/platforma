@@ -37,8 +37,8 @@ catalogs:
       specifier: 2.2.7
       version: 2.2.7
     '@milaboratories/tengo-tester':
-      specifier: ^1.6.3
-      version: 1.6.3
+      specifier: ^1.6.4
+      version: 1.6.4
     '@oclif/core':
       specifier: ^4.0.37
       version: 4.0.37
@@ -3260,7 +3260,7 @@ importers:
         version: link:../../lib/node/resolve-helper
       '@milaboratories/tengo-tester':
         specifier: 'catalog:'
-        version: 1.6.3
+        version: 1.6.4
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../../lib/node/ts-helpers
@@ -4914,8 +4914,8 @@ packages:
   '@milaboratories/software-pframes-conv@2.2.7':
     resolution: {integrity: sha512-FFZRPP8C86cJdGbaj6t/FmHSfRyuSWnXw8d6UACtPLh7sQRRuwi95LBp808sPP5vqFWBHFijvuh0CtXdSrjZYA==}
 
-  '@milaboratories/tengo-tester@1.6.3':
-    resolution: {integrity: sha512-HkCvUa9VkCGvxB23BFu6/T11HXT3Sn8FeKu/hE30O8DrF5e6DRcTRuETofarOH2yu7yUXoWBsv8Gmyy7aSPXag==}
+  '@milaboratories/tengo-tester@1.6.4':
+    resolution: {integrity: sha512-0t//LejQwe8LuZtTbu4zUHk0/gIP3nZOoW6JJv//zTRH8Ybx+JGvE8rztesnTaqQeV2U9qzfXKNb51OZPYU1Vw==}
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -13585,7 +13585,7 @@ snapshots:
 
   '@milaboratories/software-pframes-conv@2.2.7': {}
 
-  '@milaboratories/tengo-tester@1.6.3': {}
+  '@milaboratories/tengo-tester@1.6.4': {}
 
   '@mstssk/cleandir@2.0.0': {}
 
