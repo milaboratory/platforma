@@ -3,6 +3,7 @@ constants := import(":pframes.constants")
 spec := import(":pframes.spec")
 validation := import(":validation")
 slices := import(":slices")
+canonical := import(":canonical")
 
 _AXIS_SCHEMA := {
 	// Column reference in DataFrame
@@ -155,8 +156,16 @@ makeWriteFrameStep := func(frameName, dfName, params) {
     return step
 }
 
+makeFrameColumnRef := func(frameName, columnId) {
+	return canonical.encode({
+		frame: frameName,
+		columnId: columnId
+	})
+}
+
 export ll.toStrict({
 	validateParams: validateParams,
     makeFrameSpecs: makeFrameSpecs,
-    makeWriteFrameStep: makeWriteFrameStep
+    makeWriteFrameStep: makeWriteFrameStep,
+    makeFrameColumnRef: makeFrameColumnRef
 })

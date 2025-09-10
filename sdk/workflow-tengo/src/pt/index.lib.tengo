@@ -471,16 +471,17 @@ workflow := func() {
 				ptablerCmdBuilder.saveFileContent(outContentFile)
 			}
 
+			tplArgs := {}
 			for frameName, specsById in outFramesSpecs {
 				columnIds := []
 				for columnId, _ in specsById {
 					columnIds = append(columnIds, columnId)
 				}
-				tplArgs := {
-					frameName: frameName,
-					columnIds: columnIds
-				}
-				ptablerCmdBuilder.processWorkdir(frameName, importDirTpl, tplArgs)
+				tplArgs[frameName] = columnIds;
+			}
+            workdirProcessorName := "import_dir";
+			if len(tplArgs) > 0 {
+				ptablerCmdBuilder.processWorkdir(workdirProcessorName, importDirTpl, tplArgs)
 			}
 
 			execResult := ptablerCmdBuilder.run()
@@ -494,12 +495,15 @@ workflow := func() {
 				 * @return frame constructed with `pframes.pFrameBuilder()`
 				 */
 				getFrameDirect: func(frameName) {
-					frame := execResult.getProcessorResult(frameName)
 					specs := outFramesSpecs[frameName]
+					ll.assert(!is_undefined(specs), "saveFrameDirect was not called for frame '%s'", frameName)
+					savedFrames := execResult.getProcessorResult(workdirProcessorName)
 
 					pf := pframes.pFrameBuilder()
 					for pColumnId, pColumnSpec in specs {
-						pf.add(pColumnId, pColumnSpec, frame.getFutureInputField(pColumnId))
+						pColumnRef := util.makeFrameColumnRef(frameName, pColumnId)
+						pColumnData := savedFrames.getFutureInputField(pColumnRef)
+						pf.add(pColumnId, pColumnSpec, pColumnData)
 					}
 					return pf.build()
 				}

@@ -10,6 +10,7 @@ smart := import(":smart")
 constants := import(":pframes.constants")
 objects := import(":objects")
 json := import("json")
+util := import(":pt.util")
 
 // json schema of .datainfo file
 _DATA_INFO_SCHEMA := {
@@ -43,82 +44,92 @@ _DATA_INFO_SCHEMA := {
 self := import(":workdir.proc")
 
 self.readFiles(func(inputs) {
-    frameName := inputs.args.frameName
-    columnIds := inputs.args.columnIds
+    columnIdsByFrameName := inputs.args
 
-    dataInfos := {}
-
-    framePrefix := frameName + path.separator
-	for filePath in inputs.files {
-        if !text.has_prefix(filePath, framePrefix) {
+    rawDataInfos := {}
+    for filePath in inputs.files {
+        pathParts := path.split(filePath)
+        if len(pathParts) != 2 {
             continue
         }
-        fileName := text.trim_prefix(filePath, framePrefix)
-		if text.has_suffix(fileName, ".datainfo") {
-            columnId := text.trim_suffix(fileName, ".datainfo")
-			dataInfos[columnId] = filePath
-		}
-	}
 
-    for columnId in columnIds {
-        ll.assert(
-            dataInfos[columnId] != undefined,
-            "no data info file found for column '%s'",
-            columnId
-        )
+        frameName := pathParts[0]
+        dataInfoName := pathParts[1]
+        if !text.has_suffix(dataInfoName, ".datainfo") {
+            continue
+        }
+
+        columnId := text.trim_suffix(dataInfoName, ".datainfo")
+        columnRef := util.makeFrameColumnRef(frameName, columnId)
+        rawDataInfos[columnRef] = filePath
     }
 
+    dataInfos := {}
+    for frameName, columnIds in columnIdsByFrameName {
+        for columnId in columnIds {
+            columnRef := util.makeFrameColumnRef(frameName, columnId)
+
+            dataInfoPath := path.join(frameName, columnId + ".datainfo")
+            ll.assert(
+                rawDataInfos[columnRef] == dataInfoPath,
+                "no data info file found for column '%s'",
+                columnId
+            )
+            dataInfos[columnRef] = dataInfoPath
+        }
+    }
 	return dataInfos
 })
 
 self.body(func(inputs) {
-    frameName := inputs.args.frameName
-    columnIds := inputs.args.columnIds
+    columnIdsByFrameName := inputs.args
 
     outputs := {}
+    for frameName, columnIds in columnIdsByFrameName {
+        for columnId in columnIds {
+            columnRef := util.makeFrameColumnRef(frameName, columnId)
 
-    for columnId in columnIds {
-        dataInfo := inputs[columnId].getDataAsJson()
-        validation.assertType(dataInfo, _DATA_INFO_SCHEMA)
+            dataInfo := inputs[columnRef].getDataAsJson()
+            validation.assertType(dataInfo, _DATA_INFO_SCHEMA)
 
-        resourceData := { partitionKeyLength: dataInfo.partitionKeyLength }
-        resourceBuilder := smart.structBuilder(
-            constants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED,
-            json.encode(resourceData)
-        )
-
-        for encodedAxisKey, parquetChunk in dataInfo.parts {
-            // Gather all the data
-
-            parquetChunkData := self.saveFile(path.join(frameName, parquetChunk.data))
-
-            parquetChunkMetadata := {
-                dataDigest: parquetChunk.dataDigest,
-                stats: parquetChunk.stats
-            }
-            objects.deleteUndefined(parquetChunkMetadata)
-
-            parquetChunkMapping := {
-                axes: parquetChunk.axes,
-                column: parquetChunk.column
-            }
-
-            // Create field structure
-
-            parquetChunkResource := smart.structBuilder(
-                constants.RTYPE_PARQUET_CHUNK,
-                json.encode(parquetChunkMetadata)
+            resourceData := { partitionKeyLength: dataInfo.partitionKeyLength }
+            resourceBuilder := smart.structBuilder(
+                constants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED,
+                json.encode(resourceData)
             )
 
-            parquetChunkResource.createMetaField("blob").set(parquetChunkData)
-            parquetChunkResource.createMetaField("mapping").setJson(parquetChunkMapping)
-            
-            resourceBuilder.createInputField(encodedAxisKey).
-                set(parquetChunkResource.lockAndBuild())
+            for encodedAxisKey, parquetChunk in dataInfo.parts {
+                // Gather all the data
+
+                parquetChunkData := self.saveFile(path.join(frameName, parquetChunk.data))
+
+                parquetChunkMetadata := {
+                    dataDigest: parquetChunk.dataDigest,
+                    stats: parquetChunk.stats
+                }
+                objects.deleteUndefined(parquetChunkMetadata)
+
+                parquetChunkMapping := {
+                    axes: parquetChunk.axes,
+                    column: parquetChunk.column
+                }
+
+                // Create field structure
+
+                parquetChunkResource := smart.structBuilder(
+                    constants.RTYPE_PARQUET_CHUNK,
+                    json.encode(parquetChunkMetadata)
+                )
+
+                parquetChunkResource.createMetaField("blob").set(parquetChunkData)
+                parquetChunkResource.createMetaField("mapping").setJson(parquetChunkMapping)
+                
+                resourceBuilder.createInputField(encodedAxisKey).
+                    set(parquetChunkResource.lockAndBuild())
+            }
+
+            outputs[columnRef] = resourceBuilder.lockAndBuild()
         }
-
-        outputs[columnId] = resourceBuilder.lockAndBuild()
     }
-
     return outputs
 })
