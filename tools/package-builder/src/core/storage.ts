@@ -49,7 +49,7 @@ async function newS3(
   try {
     await objectExists(client, bucket, '/');
   } catch (error) {
-    throw new Error(
+    throw util.CLIError(
       // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       `credentials given to package builder do not have access to S3 bucket '${bucket}': ${error}`,
     );
@@ -89,7 +89,7 @@ export class S3Storage implements RegistryStorage {
 
 export async function initByUrl(address: string, pkgRoot: string): Promise<RegistryStorage> {
   if (address === '') {
-    throw new Error(`Empty registry storage address`);
+    throw util.CLIError(`Empty registry storage address`);
   }
 
   try {
@@ -116,7 +116,7 @@ export async function initByUrl(address: string, pkgRoot: string): Promise<Regis
         return new S3Storage(s3eClient, s3eBucket, s3eKeyPrefix);
       }
       default:
-        throw new Error(
+        throw util.CLIError(
           `Protocol ${url.protocol} is not supported for software registries yet. Use your own tooling for package upload`,
         );
     }

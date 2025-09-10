@@ -210,7 +210,7 @@ export function readDescriptorFile(
   filePath: string,
 ): entrypointSwJson {
   if (!fs.existsSync(filePath)) {
-    throw new Error(`entrypoint '${entrypointName}' not found in '${filePath}'`);
+    throw util.CLIError(`entrypoint '${entrypointName}' not found in '${filePath}'`);
   }
 
   const swJsonContent = fs.readFileSync(filePath);
@@ -261,7 +261,7 @@ export function listPackageEntrypoints(packageRoot: string): { name: string; pat
 
   for (let i = 0; i < entrypoints.length - 1; i++) {
     if (entrypoints[i].name === entrypoints[i + 1].name) {
-      throw new Error(
+      throw util.CLIError(
         `duplicate entrypoint name found between software and assets: '${entrypoints[i].name}'`,
       );
     }
@@ -314,7 +314,7 @@ export class Renderer {
             },
           };
       if (!info) {
-        throw new Error(`Entrypoint ${epName} not found in result`);
+        throw util.CLIError(`Entrypoint ${epName} not found in result`);
       }
 
       if (mode !== 'release') {
@@ -369,7 +369,7 @@ export class Renderer {
 
     if (result.size === 0 && !hasReferences) {
       this.logger.error('no entrypoint descriptors were rendered');
-      throw new Error('no entrypoint descriptors were rendered');
+      throw util.CLIError('no entrypoint descriptors were rendered');
     }
 
     return result;
@@ -398,7 +398,7 @@ export class Renderer {
     } else if (srcFile.endsWith(compiledAssetSuffix)) {
       epType = 'asset';
     } else {
-      throw new Error(
+      throw util.CLIError(
         `unknown entrypoint '${epName}' type: cannot get type from extension of source file ${srcFile}`,
       );
     }
@@ -420,12 +420,12 @@ export class Renderer {
     const epType = ep.type;
     switch (epType) {
       case 'environment':
-        throw new Error(
+        throw util.CLIError(
           `entrypoint ${epName} points to 'environment' artifact, which does not support local build yet`,
         );
 
       case 'asset':
-        throw new Error(
+        throw util.CLIError(
           `entrypoint ${epName} points to 'asset' artifact, which does not support local build yet`,
         );
 
@@ -433,12 +433,12 @@ export class Renderer {
         const pkgType = pkg.type;
         switch (pkgType) {
           case 'environment':{
-            throw new Error(
+            throw util.CLIError(
               `entrypoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`,
             );
           }
           case 'asset':{
-            throw new Error(
+            throw util.CLIError(
               `entrypoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`,
             );
           }
@@ -489,7 +489,7 @@ export class Renderer {
             };
           }
           case 'docker': {
-            throw new Error(
+            throw util.CLIError(
               `entrypoint is incompatible for local build with artifact type: ep=${epName} (software), artifact='${pkgType}'`,
             );
           }
@@ -552,7 +552,7 @@ export class Renderer {
     }
 
     if (!artInfo.registryName) {
-      throw new Error(
+      throw util.CLIError(
         `could not render binary entrypoint '${epName}': registry name is not set in artifact info file ${artInfoPath}`,
       );
     }
@@ -573,17 +573,17 @@ export class Renderer {
         const pkgType = binPkg.type;
         switch (pkgType) {
           case 'asset':{
-            throw new Error(
+            throw util.CLIError(
               `entripoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`,
             );
           }
           case 'environment':{
-            throw new Error(
+            throw util.CLIError(
               `entripoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`,
             );
           }
           case 'docker': {
-            throw new Error(
+            throw util.CLIError(
               `entrypoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`,
             );
           }
@@ -676,7 +676,7 @@ export class Renderer {
         break;
 
       case 'dev-local':
-        throw new Error(`run environments do not support 'local' dev build mode yet`);
+        throw util.CLIError(`run environments do not support 'local' dev build mode yet`);
 
       default:
         util.assertNever(mode);
@@ -685,7 +685,7 @@ export class Renderer {
     const envPkg = ep.package;
 
     if (envPkg.type !== 'environment') {
-      throw new Error(
+      throw util.CLIError(
         `could not render run environemnt entrypoint ${epName} (not 'environment' artifact)`,
       );
     }
@@ -711,7 +711,7 @@ export class Renderer {
         break;
 
       case 'dev-local':
-        throw new Error(`assets do not support 'local' dev build mode yet`);
+        throw util.CLIError(`assets do not support 'local' dev build mode yet`);
 
       default:
         util.assertNever(mode);
@@ -720,7 +720,7 @@ export class Renderer {
     const assetPkg = ep.package;
 
     if (assetPkg.type !== 'asset') {
-      throw new Error(`could not render asset entrypoint '${epName}': not 'asset' artifact`);
+      throw util.CLIError(`could not render asset entrypoint '${epName}': not 'asset' artifact`);
     }
 
     const artInfoPath = this.pkgInfo.artifactInfoLocation(assetPkg.id, 'archive', undefined);
@@ -730,7 +730,7 @@ export class Renderer {
     }
 
     if (!artInfo.registryURL) {
-      throw new Error(
+      throw util.CLIError(
         `could not render asset entrypoint '${epName}': base download URL is not configured for asset's registry`,
       );
     }
@@ -745,11 +745,11 @@ export class Renderer {
   private renderDockerInfo(epName: string, ep: PackageEntrypoint, requireArtifactInfo?: boolean): dockerInfo | undefined {
     const dockerPkg = ep.package;
     if (dockerPkg.type !== 'docker') {
-      throw new Error(`could not render docker entrypoint '${epName}': not 'docker' artifact`);
+      throw util.CLIError(`could not render docker entrypoint '${epName}': not 'docker' artifact`);
     }
 
     if (ep.type !== 'software') {
-      throw new Error(`could not render docker entrypoint '${epName}': not 'software' artifact`);
+      throw util.CLIError(`could not render docker entrypoint '${epName}': not 'software' artifact`);
     }
 
     const artInfoPath = this.pkgInfo.artifactInfoLocation(dockerPkg.id, 'docker', util.currentArch());
@@ -785,7 +785,7 @@ export class Renderer {
         : this.resolveDependency(pkgName, id);
 
     if (!swDescriptor.runEnv) {
-      throw new Error(
+      throw util.CLIError(
         `software '${envName}' cannot be used as run environment (no 'runEnv' section in entrypoint descriptor)`,
       );
     }
@@ -796,7 +796,7 @@ export class Renderer {
       this.logger.error(
         `run environment '${envName}' type '${runEnv.type}' differs from declared package type '${requireType}'`,
       );
-      throw new Error(
+      throw util.CLIError(
         `incompatible environment: env type '${runEnv.type}' != package type '${requireType}'`,
       );
     }
@@ -864,7 +864,7 @@ function readArtifactInfoIfExists(location: string, epName: string, requireExist
   }
 
   if (requireExisting) {
-    throw new Error(`could not render docker entrypoint '${epName}': artifact info file '${location}' does not exist`);
+    throw util.CLIError(`could not render docker entrypoint '${epName}': artifact info file '${location}' does not exist`);
   }
 
   return undefined;

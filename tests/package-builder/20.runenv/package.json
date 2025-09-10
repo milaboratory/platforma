@@ -1,11 +1,12 @@
 {
   "name": "@milaboratories/example-pl-package-runenv-1",
   "version": "1.1.0",
+  "private": true,
   "description": "Example of software to be used as runenv",
   "scripts": {
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
     "reset": "npm run cleanup && rm -rf ./node_modules/",
-    "test": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build"
+    "check": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build"
   },
   "block-software": {
     "entrypoints": {

@@ -16,6 +16,7 @@
         "GENERATE_TAGS",
         "TAGS_ADDITIONAL_ARGS",
         "TAGS_FILE",
+        "PL_DOCKER_REGISTRY_PUSH_TO",
         "PL_DOCKER_SKIP_BUILD",
         "PL_DOCKER_SKIP_PUSH"
       ],
@@ -31,7 +32,8 @@
         "PL_TEST_PROXY",
         "PL_TEST_STORAGE_ID",
         "DEBUG",
-        "MI_LICENSE"
+        "MI_LICENSE",
+        "PL_DOCKER_REGISTRY_PUSH_TO"
       ]
     },
     "do-pack": {
