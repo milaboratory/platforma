@@ -1,6 +1,7 @@
 {
   "name": "@milaboratories/example-pl-package-integration-1",
   "version": "1.1.0",
+  "private": true,
   "description": "The software description example",
   "scripts": {
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
@@ -133,7 +134,7 @@
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
-    "@platforma-sdk/package-builder": "workspace:*",
-    "@milaboratories/example-pl-package-runenv-1": "workspace:*"
+    "@platforma-sdk/package-builder": "file:../../../tools/package-builder",
+    "@milaboratories/example-pl-package-runenv-1": "file:../20.runenv"
   }
 }

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import type { Hash } from 'node:crypto';
 import { createHash } from 'node:crypto';
 import winston from 'winston';
-import type { ZodError } from 'zod';
+import type { ZodError, ZodIssue } from 'zod';
 import { Errors as OclifErrors } from '@oclif/core';
 
 export const packageJsonName = 'package.json';
@@ -318,11 +318,22 @@ export function artifactIDToString(a: artifactID): string {
 }
 
 export const formatZodError = (err: ZodError): string[] => {
-  const { formErrors, fieldErrors } = err.flatten();
-  const _fieldErrors = Object.entries(fieldErrors).map(([field, errors]) => {
-    return `key '${field}': ${errors?.join(',')}`;
-  });
-  return formErrors.concat(_fieldErrors);
+  const { formErrors, fieldErrors } = err.flatten(
+    (issue: ZodIssue) => ({ path: issue.path.join('.'), message: issue.message }),
+  );
+
+  const _errors: string[] = [];
+  for (const e of formErrors ?? []) {
+    _errors.push(`${e.path}: ${e.message}`);
+  }
+
+  for (const [_, issues] of Object.entries(fieldErrors)) {
+    for (const e of issues ?? []) {
+      _errors.push(`${e.path}: ${e.message}`);
+    }
+  }
+
+  return _errors;
 };
 
 export function CLIError(msg: string): OclifErrors.CLIError {

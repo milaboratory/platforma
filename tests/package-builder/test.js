@@ -9,15 +9,22 @@ function formatWidth(text, width) {
   return ' '.repeat(width - text.length) + text;
 }
 
+const ignoreList = ['node_modules', '.turbo', 'dist'];
+
 const scriptDir = __dirname;
 process.chdir(scriptDir);
 
-// List all directories in the current directory
+// List all directories in the current directory to detect output alignment
 var width = 0;
-const directories = fs.readdirSync(scriptDir).filter((file) => {
-  const isDir = fs.statSync(path.join(scriptDir, file)).isDirectory()
-  width = (isDir && width < file.length) ? file.length : width
+const directories = fs.readdirSync(scriptDir).filter((item) => {
+  const isDir = fs.statSync(path.join(scriptDir, item)).isDirectory()
+  if (ignoreList.includes(item)) {
+    return false;
+  }
 
+  if (isDir) {
+    width = Math.max(width, item.length);
+  }
   return isDir;
 });
 
@@ -26,8 +33,8 @@ directories.forEach((directory) => {
   try {
     process.stdout.write(`  ${formatWidth(directory, width)}: `);
 
-    execSync('pnpm install', { cwd: path.join(scriptDir, directory) })
-    execSync('pnpm run test', { cwd: path.join(scriptDir, directory) });
+    execSync('pnpm install', { cwd: path.join(scriptDir, directory), stdio: 'pipe' })
+    execSync('pnpm run build', { cwd: path.join(scriptDir, directory), stdio: 'pipe' });
 
     process.stdout.write(`OK\n`);
   } catch (error) {
