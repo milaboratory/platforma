@@ -358,7 +358,7 @@ class PTableCache {
 }
 
 class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable {
-  public readonly pFramePromise: Promise<PFrameInternal.PFrameV11>;
+  public readonly pFramePromise: Promise<PFrameInternal.PFrameV12>;
   private readonly abortController = new AbortController();
   private readonly localBlobs: LocalBlobPoolEntry[] = [];
   private readonly remoteBlobs: RemoteBlobPoolEntry[] = [];
@@ -502,17 +502,19 @@ type FullPTableDef = {
 };
 
 export type PFrameDriverOps = {
-  // Port to run parquet HTTP server on.
+  /** Port to run parquet HTTP server on. */
   parquetServerPort: number;
-  // Concurrency limits for `getUniqueValues` and `calculateTableData` requests
+  /** Concurrency limits for `getUniqueValues` and `calculateTableData` requests */
   pFrameConcurrency: number;
-  // Concurrency limits for `getShape` and `getData` requests
+  /** Concurrency limits for `getShape` and `getData` requests */
   pTableConcurrency: number;
-  // Maximum number of `calculateTableData` results cached for each PFrame
+  /** Maximum number of `calculateTableData` results cached for each PFrame */
   pFrameCacheMaxCount: number;
-  // Maximum size of `calculateTableData` results cached for PFrames overall.
-  // The limit is soft, as the same table could be materialized with other requests and will not be deleted in such case.
-  // Also each table has predeccessors, overlapping predecessors will be counted twice, so the effective limit is smaller.
+  /**
+   * Maximum size of `calculateTableData` results cached for PFrames overall.
+   * The limit is soft, as the same table could be materialized with other requests and will not be deleted in such case.
+   * Also each table has predeccessors, overlapping predecessors will be counted twice, so the effective limit is smaller.
+   */
   pFramesCacheMaxSize: number;
 };
 
@@ -964,7 +966,7 @@ export class PFrameDriver implements InternalPFrameDriver {
   }
 }
 
-function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEntryV3 {
+function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEntryV4 {
   const type = entry.type;
   switch (type) {
     case 'column':
@@ -979,13 +981,13 @@ function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEn
         newId: entry.newId,
         axisFilters: entry.axisFilters,
       };
-    // case 'artificialColumn':
-    //   return {
-    //     type: 'artificialColumn',
-    //     columnId: entry.column,
-    //     newId: entry.newId,
-    //     axesIndices: entry.axesIndices,
-    //   };
+    case 'artificialColumn':
+      return {
+        type: 'artificialColumn',
+        columnId: entry.column,
+        newId: entry.newId,
+        axesIndices: entry.axesIndices,
+      };
     case 'inlineColumn':
       return {
         type: 'inlineColumn',
