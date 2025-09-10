@@ -2,7 +2,7 @@ import archiver from 'archiver';
 import fs from 'node:fs';
 import path from 'node:path';
 import type * as winston from 'winston';
-import type * as util from './util';
+import * as util from './util';
 import type { Hash } from 'node:crypto';
 import { createHash } from 'node:crypto';
 
@@ -55,7 +55,7 @@ export async function create(
   }
 
   if (format == '') {
-    throw new Error(
+    throw util.CLIError(
       `Archive ${dstArchivePath} has unsupported extension. Cannot create archive of unknown format`,
     );
   }

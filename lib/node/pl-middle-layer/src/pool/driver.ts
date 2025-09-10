@@ -965,7 +965,8 @@ export class PFrameDriver implements InternalPFrameDriver {
 }
 
 function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEntryV3 {
-  switch (entry.type) {
+  const type = entry.type;
+  switch (type) {
     case 'column':
       return {
         type: 'column',
@@ -978,6 +979,13 @@ function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEn
         newId: entry.newId,
         axisFilters: entry.axisFilters,
       };
+    // case 'artificialColumn':
+    //   return {
+    //     type: 'artificialColumn',
+    //     columnId: entry.column,
+    //     newId: entry.newId,
+    //     axesIndices: entry.axesIndices,
+    //   };
     case 'inlineColumn':
       return {
         type: 'inlineColumn',
@@ -1005,7 +1013,7 @@ function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEn
         secondary: entry.secondary.map((col) => joinEntryToInternal(col)),
       };
     default:
-      assertNever(entry);
+      throw new PFrameDriverError(`unsupported PFrame join entry type: ${type}`);
   }
 }
 

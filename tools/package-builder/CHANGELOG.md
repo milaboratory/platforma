@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.4.0
+
+### Minor Changes
+
+- 2aa207d: Nice error messages formatting for package-builder
+
 ## 3.3.0
 
 ### Minor Changes

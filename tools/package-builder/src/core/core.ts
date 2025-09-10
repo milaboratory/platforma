@@ -131,8 +131,7 @@ export class Core {
       return dockerPkg;
     }
 
-    this.logger.error(`package with id '${id}' not found in ${util.softwareConfigName} file`);
-    throw new Error(`no package with id '${id}'`);
+    throw util.CLIError(`package with id '${id}' not found in ${util.softwareConfigName} file`);
   }
 
   /** Parses entrypoints from a package.json
@@ -152,7 +151,7 @@ export class Core {
       for (const pkgId of options.packageIds) {
         const packageEntrypoints = index.get(pkgId);
         if (!packageEntrypoints || packageEntrypoints.length === 0) {
-          throw new Error(
+          throw util.CLIError(
             `cannot build descriptor for package ${pkgId}: no entrypoints found for package`,
           );
         }
@@ -197,7 +196,7 @@ export class Core {
       this.logger.error(
         'Attempt to build several packages targeting single package archive. This will simply overwrite the archive several times. If you know what you are doing, add \'--force\' flag',
       );
-      throw new Error('attempt to build several packages using the same software package archive');
+      throw util.CLIError('attempt to build several packages using the same software package archive');
     }
 
     for (const pkgID of packagesToBuild) {
@@ -253,7 +252,7 @@ export class Core {
       this.logger.error(
         `  not buildable: artifact '${pkg.id}' archive build is impossible for configuration inside '${util.softwareConfigName}'`,
       );
-      throw new Error('not a buildable artifact');
+      throw util.CLIError('not a buildable artifact');
     }
 
     const contentRoot = options?.contentRoot ?? pkg.contentRoot(platform);
@@ -300,11 +299,11 @@ export class Core {
     const entrypoint = pkg.entrypoint ?? [];
 
     if (!fs.existsSync(dockerfile)) {
-      throw new Error(`Dockerfile '${dockerfile}' not found`);
+      throw util.CLIError(`Dockerfile '${dockerfile}' not found`);
     }
 
     if (!fs.existsSync(context)) {
-      throw new Error(`Context '${context}' not found`);
+      throw util.CLIError(`Context '${context}' not found`);
     }
 
     const localTag = docker.generateLocalTagName(this.pkgInfo.packageRoot, pkg);
@@ -449,7 +448,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
     if (!storageURL) {
       const regNameUpper = pkg.registry.name.toUpperCase().replaceAll(/[^A-Z0-9_]/g, '_');
       this.logger.error(`no storage URL is set for registry ${pkg.registry.name}`);
-      throw new Error(
+      throw util.CLIError(
         `'registry.storageURL' of package '${pkg.id}' is empty. Set it as command option, in '${util.softwareConfigName}' file or via environment variable 'PL_REGISTRY_${regNameUpper}_UPLOAD_URL'`,
       );
     }
@@ -470,7 +469,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
     const exists = await s.exists(dstName);
     if (exists && !options?.forceReupload) {
       if (options?.failExisting) {
-        throw new Error(
+        throw util.CLIError(
           `software package '${dstName}' already exists in registry '${pkg.registry.name}'. To re-upload it, use 'force' flag. To not fail, remove 'fail-existing-packages' flag`,
         );
       }
@@ -525,7 +524,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
 
   private publishDockerImage(pkg: PackageConfig, pushTo?: string) {
     if (pkg.type !== 'docker') {
-      throw new Error(`package '${pkg.id}' is not a docker package`);
+      throw util.CLIError(`package '${pkg.id}' is not a docker package`);
     }
 
     const artInfoPath = this.pkgInfo.artifactInfoLocation(pkg.id, 'docker', util.currentArch());
@@ -544,7 +543,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
         return;
       }
 
-      throw new Error(`Docker image '${tag}' not exists locally and is not found in remote registry. Publication failed.`);
+      throw util.CLIError(`Docker image '${tag}' not exists locally and is not found in remote registry. Publication failed.`);
     }
 
     if (pushTo) {
@@ -602,7 +601,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
     },
   ) {
     if (!options?.signCommand) {
-      throw new Error(
+      throw util.CLIError(
         'current version of pl-package-builder supports only package signature with external utility. Provide \'sign command\' option to sign package',
       );
     }
@@ -610,7 +609,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
     const commandFormatIsValid
       = Array.isArray(signCommand) && signCommand.every((item) => typeof item === 'string');
     if (!commandFormatIsValid) {
-      throw new Error(
+      throw util.CLIError(
         'sign command must be valid JSON array with command and arguments (["cmd", "arg", "arg", "..."])',
       );
     }
@@ -632,7 +631,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
       throw result.error;
     }
     if (result.status !== 0) {
-      throw new Error(`${JSON.stringify(toExecute)} failed with non-zero exit code`);
+      throw util.CLIError(`${JSON.stringify(toExecute)} failed with non-zero exit code`);
     }
   }
 

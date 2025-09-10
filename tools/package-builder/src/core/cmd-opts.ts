@@ -199,6 +199,6 @@ export function modeFromFlag(dev?: devModeName): util.BuildMode {
 
     default:
       util.assertNever(dev);
-      throw new Error('unknown dev mode'); // just to calm down TS type analyzer
+      throw util.CLIError('unknown dev mode'); // just to calm down TS type analyzer
   }
 }
