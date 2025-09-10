@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.26
+
+### Patch Changes
+
+- 662eee0: PFrames - spec update to support artificialColumn join entry
+- Updated dependencies [662eee0]
+  - @milaboratories/pl-model-common@1.19.19
+
 ## 1.8.25
 
 ### Patch Changes
