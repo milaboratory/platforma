@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import type { PythonPackage } from './package-info';
 import type winston from 'winston';
 import * as paths from './paths';
+import * as util from './util';
 
 const PYTHON_VERSION_PATTERNS = {
   PY3_PREFIX: /^3\./,
@@ -67,7 +68,7 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
   }
 
   if (!buildParams.root) {
-    throw new Error('Cannot prepare Docker options: package root directory is not specified. Please ensure the "root" property is set in the build parameters.');
+    throw util.CLIError('Cannot prepare Docker options: package root directory is not specified. Please ensure the "root" property is set in the build parameters.');
   }
   const contextDir = path.resolve(buildParams.root ?? packageRoot);
 
@@ -188,10 +189,10 @@ function getDefaultPythonOptions(): PythonOptions {
 
 function verifyDockerOptions(options: DockerOptions) {
   if (!fs.existsSync(options.dockerfile)) {
-    throw new Error(`Dockerfile '${options.dockerfile}' not found`);
+    throw util.CLIError(`Dockerfile '${options.dockerfile}' not found`);
   }
 
   if (!fs.existsSync(options.context)) {
-    throw new Error(`Context '${options.context}' not found`);
+    throw util.CLIError(`Context '${options.context}' not found`);
   }
 }

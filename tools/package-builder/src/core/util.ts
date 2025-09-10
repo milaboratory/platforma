@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import type { Hash } from 'node:crypto';
 import { createHash } from 'node:crypto';
 import winston from 'winston';
+import type { ZodError, ZodIssue } from 'zod';
+import { Errors as OclifErrors } from '@oclif/core';
 
 export const packageJsonName = 'package.json';
 export const softwareConfigName = 'package.json';
@@ -118,7 +120,7 @@ export function findInstalledModule(
   const packagePath = path.resolve(nodeModules, packageName);
 
   if (!fs.existsSync(packagePath)) {
-    throw new Error(
+    throw CLIError(
       `package '${packageName}' not found in '${nodeModules}'. Did you forget to add it as a dependency?`,
     );
   }
@@ -135,7 +137,7 @@ function searchPathUp(startPath: string, pathToCheck: string, itemToCheck: strin
 
   const parentDir = path.dirname(pathToCheck);
   if (parentDir === pathToCheck || pathToCheck === '') {
-    throw new Error(
+    throw CLIError(
       `failed to find '${itemToCheck}' file in any of parent directories starting from '${startPath}'`,
     );
   }
@@ -151,7 +153,7 @@ export function createLogger(level: string = 'debug'): winston.Logger {
       const indent = ' '.repeat(level.length + 2); // For ': ' after the level
       if (typeof message !== 'string') {
         const messageJson = JSON.stringify(message);
-        throw Error(`logger message ${messageJson} is not a string`);
+        throw new Error(`logger message ${messageJson} is not a string`);
       }
       const indentedMessage = message
         .split('\n')
@@ -232,7 +234,7 @@ export function currentOS(): OSType {
     case 'win32':
       return 'windows';
     default:
-      throw new Error(
+      throw CLIError(
         `operating system '${platform}' is not currently supported by Platforma ecosystem. The list of OSes supported: `
         + JSON.stringify(OSes),
       );
@@ -250,7 +252,7 @@ export function currentArch(): ArchType {
     case 'x64':
       return 'x64';
     default:
-      throw new Error(
+      throw CLIError(
         `processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: `
         + JSON.stringify(Arches),
       );
@@ -301,7 +303,7 @@ export type artifactID = {
 export function artifactIDFromString(s: string): artifactID {
   const parts = s.split(':', 2);
   if (parts.length < 2) {
-    throw new Error(
+    throw CLIError(
       `string '${s}' is not an artifact ID (artifact ID format is <packageName>:<artifactName>)`,
     );
   }
@@ -313,4 +315,27 @@ export function artifactIDFromString(s: string): artifactID {
 
 export function artifactIDToString(a: artifactID): string {
   return `${a.package}:${a.name}`;
+}
+
+export const formatZodError = (err: ZodError): string[] => {
+  const { formErrors, fieldErrors } = err.flatten(
+    (issue: ZodIssue) => ({ path: issue.path.join('.'), message: issue.message }),
+  );
+
+  const _errors: string[] = [];
+  for (const e of formErrors ?? []) {
+    _errors.push(`${e.path}: ${e.message}`);
+  }
+
+  for (const [_, issues] of Object.entries(fieldErrors)) {
+    for (const e of issues ?? []) {
+      _errors.push(`${e.path}: ${e.message}`);
+    }
+  }
+
+  return _errors;
+};
+
+export function CLIError(msg: string): OclifErrors.CLIError {
+  return new OclifErrors.CLIError(msg);
 }
