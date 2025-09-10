@@ -44,6 +44,20 @@ export interface SlicedColumnJoinEntry<Col> {
   readonly axisFilters: ConstantAxisFilter[];
 }
 
+export interface ArtificialColumnJoinEntry<Col> {
+  /** Node type discriminator */
+  readonly type: 'artificialColumn';
+
+  /** Column definition */
+  readonly column: Col;
+
+  /** New column id */
+  readonly newId: PObjectId;
+
+  /** Indices of axes to pick from the column (zero-based) */
+  readonly axesIndices: number[];
+}
+
 /** Defines a terminal column node in the join request tree */
 export interface InlineColumnJoinEntry {
   /** Node type discriminator */
@@ -111,6 +125,7 @@ export interface OuterJoin<Col> {
 export type JoinEntry<Col> =
   | ColumnJoinEntry<Col>
   | SlicedColumnJoinEntry<Col>
+  | ArtificialColumnJoinEntry<Col>
   | InlineColumnJoinEntry
   | InnerJoin<Col>
   | FullJoin<Col>
@@ -396,6 +411,13 @@ export function mapJoinEntry<C1, C2>(
         column: cb(entry.column),
         newId: entry.newId,
         axisFilters: entry.axisFilters,
+      };
+    case 'artificialColumn':
+      return {
+        type: 'artificialColumn',
+        column: cb(entry.column),
+        newId: entry.newId,
+        axesIndices: entry.axesIndices,
       };
     case 'inlineColumn':
       return entry;
