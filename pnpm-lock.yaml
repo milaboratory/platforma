@@ -2769,6 +2769,42 @@ importers:
         specifier: workspace:*
         version: link:../../tools/package-builder
 
+  tests/package-builder/10.asset:
+    devDependencies:
+      '@platforma-sdk/package-builder':
+        specifier: workspace:*
+        version: link:../../../tools/package-builder
+
+  tests/package-builder/20.runenv:
+    devDependencies:
+      '@platforma-sdk/package-builder':
+        specifier: workspace:*
+        version: link:../../../tools/package-builder
+
+  tests/package-builder/30.software-pkg:
+    devDependencies:
+      '@milaboratories/example-pl-package-runenv-1':
+        specifier: workspace:*
+        version: link:../20.runenv
+      '@platforma-sdk/package-builder':
+        specifier: workspace:*
+        version: link:../../../tools/package-builder
+
+  tests/package-builder/90.catalogue:
+    devDependencies:
+      '@milaboratories/example-pl-package-asset-1':
+        specifier: workspace:*
+        version: link:../10.asset
+      '@milaboratories/example-pl-package-integration-1':
+        specifier: workspace:*
+        version: link:../30.software-pkg
+      '@milaboratories/example-pl-package-runenv-1':
+        specifier: workspace:*
+        version: link:../20.runenv
+      '@platforma-sdk/package-builder':
+        specifier: workspace:*
+        version: link:../../../tools/package-builder
+
   tests/workflow-tengo:
     dependencies:
       '@platforma-sdk/workflow-tengo':

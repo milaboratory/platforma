@@ -6,7 +6,7 @@
   "scripts": {
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
     "reset": "npm run cleanup && rm -rf ./node_modules/",
-    "build": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build"
+    "check": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build"
   },
   "block-software": {
     "entrypoints": {
@@ -48,9 +48,9 @@
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
-    "@platforma-sdk/package-builder": "file:../../../tools/package-builder",
-    "@milaboratories/example-pl-package-asset-1": "file:../10.asset",
-    "@milaboratories/example-pl-package-runenv-1": "file:../20.runenv",
-    "@milaboratories/example-pl-package-integration-1": "file:../30.software-pkg"
+    "@platforma-sdk/package-builder": "workspace:*",
+    "@milaboratories/example-pl-package-asset-1": "workspace:*",
+    "@milaboratories/example-pl-package-runenv-1": "workspace:*",
+    "@milaboratories/example-pl-package-integration-1": "workspace:*"
   }
 }

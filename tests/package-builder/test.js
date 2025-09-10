@@ -33,8 +33,16 @@ directories.forEach((directory) => {
   try {
     process.stdout.write(`  ${formatWidth(directory, width)}: `);
 
+    // We have to keep test pacakges to be part of pnpm-workspace.yaml.
+    // Otherwise they would not get node_modules at install step and will not be able to build.
+    // We can't use plain 'npm' instead of 'pnpm', as it does not know what 'catalog:' and 'workspace:' are
+    // (which are used in package.json of package-builder)
     execSync('pnpm install', { cwd: path.join(scriptDir, directory), stdio: 'pipe' })
-    execSync('pnpm run build', { cwd: path.join(scriptDir, directory), stdio: 'pipe' });
+
+    // We can't use 'build' or 'test' in test packages as it would be started by turbo.
+    // Packages depend on each-other. Turbo might run build/test steps independently for packages
+    // because of caching.
+    execSync('pnpm run check', { cwd: path.join(scriptDir, directory), stdio: 'pipe' });
 
     process.stdout.write(`OK\n`);
   } catch (error) {
