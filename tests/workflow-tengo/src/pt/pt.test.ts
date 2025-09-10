@@ -1,8 +1,8 @@
-import { isPColumn, parseFinalPObjectCollection, Pl } from '@milaboratories/pl-middle-layer';
+import { isPColumn, parseFinalPObjectCollection, Pl, pTableValue } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { assert, expect } from 'vitest';
 import type { TestRenderResults } from '@platforma-sdk/test';
-import type { CalculateTableDataResponse, MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
+import type { CalculateTableDataResponse, MiddleLayerDriverKit, PObjectId, PTableColumnSpec } from '@milaboratories/pl-middle-layer';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type { ComputableCtx } from '@milaboratories/computable';
 import { getTestTimeout } from '@milaboratories/helpers';
@@ -40,7 +40,7 @@ const getTableData = async (
   const handle = await awaitStableState(
     result.computeOutput(outputName, (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
       if (!acc || !acc.getIsReadyOrError()) return undefined;
-      const pObjects = parseFinalPObjectCollection(acc, false, '', []);
+      const pObjects = parseFinalPObjectCollection(acc, false, '', [outputName]);
       const pColumns = Object.entries(pObjects).map(([, obj]) => {
         if (!isPColumn(obj)) throw new Error(`not a PColumn (kind = ${obj.spec.kind})`);
         return obj;
@@ -115,7 +115,10 @@ tplTest.concurrent(
 tplTest.concurrent(
   'pt write frame test',
   async ({ helper, expect, driverKit }) => {
-    const inputCsvData = 'a,b\n1,X\n9,Z\n4,Y';
+    const inputCsvData = `a,b
+1,X
+9,Z
+4,Y`;
     const saveFrameParams = {
       axes: [{
         column: 'a',
@@ -144,16 +147,45 @@ tplTest.concurrent(
     );
 
     const pTable = await getTableData(result, 'out', driverKit);
+
     const pTableSpecs = pTable.map((col) => col.spec);
     expect(pTableSpecs).toEqual([
       {
-        name: 'a',
-        type: 'Int',
+        type: 'axis',
+        id: {
+          name: 'a',
+          type: 'Int',
+        },
+        spec: {
+          name: 'a',
+          type: 'Int',
+        },
       },
       {
-        name: 'b',
-        type: 'String',
+        type: 'column',
+        id: `{"name":"b","resolvePath":["out"]}` as PObjectId,
+        spec: {
+          kind: 'PColumn',
+          name: 'b',
+          valueType: 'String',
+          axesSpec: [{
+            name: 'a',
+            type: 'Int',
+          }],
+        },
       },
+    ] satisfies PTableColumnSpec[]);
+
+    const pTableData = pTable.map((col) => {
+      const rows: string[] = [];
+      for (let i = 0; i < col.data.data.length; i++) {
+        rows.push(pTableValue(col.data, i, { absent: '', na: '' })?.toString() ?? '');
+      }
+      return rows;
+    });
+    expect(pTableData).toEqual([
+      ['1', '4', '9'],
+      ['X', 'Y', 'Z'],
     ]);
   },
 );
