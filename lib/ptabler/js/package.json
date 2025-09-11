@@ -21,7 +21,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "type-check": "ts-builder types --target node",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
     "@platforma-open/milaboratories.software-ptabler.schema": "workspace:*"
