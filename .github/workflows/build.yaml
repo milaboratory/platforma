@@ -31,7 +31,6 @@ jobs:
       test: true
       test-script-name: 'test'
       publish-to-public: 'true'
-      docker-ga-push: false
       pnpm-recursive-build: false
       pnpm-recursive-tests: false
       npmrc-config: |
