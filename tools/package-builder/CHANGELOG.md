@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.5.1
+
+### Patch Changes
+
+- 5073f31: Fix autopush in ci
+
 ## 3.5.0
 
 ### Minor Changes
