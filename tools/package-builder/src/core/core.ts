@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import type winston from 'winston';
 import type { PackageConfig, Entrypoint, DockerPackage } from './package-info';
 import { PackageInfo } from './package-info';
+import type * as artifacts from './schemas/artifacts';
 import {
   Renderer,
   readBuiltArtifactInfo,
@@ -100,12 +101,31 @@ export class Core {
     return new Map(Array.from(this.packages.entries()).filter(([, value]) => value.isBuildable));
   }
 
-  public getPackage(id: string): PackageConfig {
+  public packageHasType(id: string, type: artifacts.artifactType): boolean {
     const pkg = this.packages.get(id);
-    if (pkg) {
-      return pkg;
+    if (pkg && pkg.type === type) {
+      return true;
     }
 
+    // check 'magic' entrypoint name with suffix
+    const dockerPkg = this.packages.get(docker.entrypointName(id));
+    if (dockerPkg) {
+      return true;
+    }
+
+    return false;
+  }
+
+  public getPackage(id: string, type?: 'docker' | 'archive'): PackageConfig {
+    const pkg = this.packages.get(id);
+    if (pkg) {
+      // If we request docker package and current package is not docker - continue searching
+      if (type !== 'docker' || pkg.type === 'docker') {
+        return pkg;
+      }
+    }
+
+    // 'magic' entrypoint name with suffix.
     const dockerPkg = this.packages.get(docker.entrypointName(id));
     if (dockerPkg) {
       return dockerPkg;
@@ -264,12 +284,12 @@ export class Core {
     const packagesToBuild = options?.ids ?? Array.from(this.buildablePackages.keys());
 
     for (const pkgID of packagesToBuild) {
-      const pkg = this.getPackage(pkgID);
-      if (pkg.type !== 'docker') {
+      if (!this.packageHasType(pkgID, 'docker')) {
         continue;
       }
 
-      this.buildDockerImage(pkg.id, pkg, options?.registry);
+      const pkg = this.getPackage(pkgID, 'docker');
+      this.buildDockerImage(pkg.id, pkg as DockerPackage, options?.registry);
     }
   }
 

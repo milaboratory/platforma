@@ -55,18 +55,32 @@ export const DockerFlags = {
     required: false,
   }),
 
-  'skip-docker-build': Flags.boolean({
-    env: envs.PL_DOCKER_SKIP_BUILD,
+  'docker-build': Flags.boolean({
+    env: envs.PL_DOCKER_BUILD,
+    description: 'build docker images',
+    default: false,
+    required: false,
+  }),
+  'docker-no-build': Flags.boolean({
+    env: envs.PL_DOCKER_NO_BUILD,
     description: 'do not build docker images',
     default: false,
     required: false,
+    exclusive: ['docker-build'],
   }),
 
   'docker-autopush': Flags.boolean({
     env: envs.PL_DOCKER_AUTOPUSH,
-    description: 'push docker images to registry after build. Enabled by default in CI builds.',
+    description: 'push docker images after build. Enabled by default in CI builds.',
     default: false,
     required: false,
+  }),
+  'docker-no-autopush': Flags.boolean({
+    env: envs.PL_DOCKER_NO_AUTOPUSH,
+    description: 'do not push docker images after build',
+    default: false,
+    required: false,
+    exclusive: ['docker-autopush'],
   }),
 };
 
