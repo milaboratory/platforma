@@ -45,29 +45,6 @@ class WriteFrameTests(unittest.TestCase):
         finally:
             if os.path.exists(output_file_abs_path):
                 os.remove(output_file_abs_path)
-
-    def test_polars_hash_for_non_string_columns(self):
-        lf = pl.DataFrame({
-            "axis1": ["A", "B", "C", "A", "B"],
-            "axis2": [1, 2, 3, 1, 2], 
-            "axis3": [10.5, 20.5, 30.5, 10.5, 20.5],
-            "column1": [True, False, True, False, True],
-        })
-            
-        result = lf.select([
-            pl.concat_str(["axis1", "axis2", "axis3"], separator="~").chash.sha2_256()
-                .alias("axes_hash"),
-            pl.col("column1").cast(pl.String).chash.sha2_256()
-                .alias("column_hash"),
-        ])
-
-        axes_hash = result["axes_hash"][0]
-        self.assertIsInstance(axes_hash, str)
-        self.assertEqual(len(axes_hash), 64)  # SHA256 produces 64 hex characters
-
-        column_hash = result["column_hash"][0]
-        self.assertIsInstance(column_hash, str)
-        self.assertEqual(len(column_hash), 64)  # SHA256 produces 64 hex characters
     
     def test_duckdb_read_parquet_metadata(self):
         output_file_abs_path = os.path.join(test_data_root_dir, "outputs", "metadata_test.parquet")
@@ -199,7 +176,7 @@ class WriteFrameTests(unittest.TestCase):
                             DataInfoAxis(id="name", type="String")
                         ],
                         column=DataInfoColumn(id="value", type="Double"),
-                        data_digest="247598c14a14e85bdf0a0171357cef2654996064fa1a8dab86d31619505fa4e8",
+                        data_digest="501a0f0f5facf5e8e6bf23a00488bfeeb99103a9c8f0043343fa718d4c790a68",
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
@@ -271,7 +248,7 @@ class WriteFrameTests(unittest.TestCase):
                         data="partition_0.parquet",
                         axes=[DataInfoAxis(id="name", type="String")],
                         column=DataInfoColumn(id="value", type="Double"),
-                        data_digest="526ea7869eb6c53280dd8c408a97db169183039ab236f9e7e5516f0e583db508",
+                        data_digest="71520d3724a30b6a735dfd1716aff5392f2fca060ae64531703ea772d4a45790",
                         stats=Stats(
                             number_of_rows=2,
                             number_of_bytes=NumberOfBytes(
@@ -284,7 +261,7 @@ class WriteFrameTests(unittest.TestCase):
                         data="partition_1.parquet",
                         axes=[DataInfoAxis(id="name", type="String")],
                         column=DataInfoColumn(id="value", type="Double"),
-                        data_digest="6a1370af1bce26dfab7ede772239d16c5d98a52b00efb60b3e38ebf4e9b2791f",
+                        data_digest="5f23b532f575ffcde7e232e9e5329ef8d9ef6dc709cbbbea3b277e5e6f78b336",
                         stats=Stats(
                             number_of_rows=1,
                             number_of_bytes=NumberOfBytes(
@@ -441,7 +418,7 @@ class WriteFrameTests(unittest.TestCase):
                             DataInfoAxis(id="item.type", type="String")
                         ],
                         column=DataInfoColumn(id="us*r sc%re", type="Double"),
-                        data_digest="f442658e05050d8a04fc3190b145ac9c211f4780798b050d91a61f0719a1275d",
+                        data_digest="a8857a51363993a093f8bbb1f12faa5328913a8efb68d77630da4f980abc022a",
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
@@ -525,7 +502,7 @@ class WriteFrameTests(unittest.TestCase):
                         data="partition_0.parquet",
                         axes=[DataInfoAxis(id="axis2", type="Long")],
                         column=DataInfoColumn(id="column", type="Double"),
-                        data_digest="882c031a2cdd7cdec5a957163e4d93c7713654086ff62a23187d53a8150841bf",
+                        data_digest="d5743cb38e6a0a5054e338e0b18e81a28666bde2cfb78ba9d2e12b364090542e",
                         stats=Stats(
                             number_of_rows=1,
                             number_of_bytes=NumberOfBytes(
@@ -658,7 +635,7 @@ class WriteFrameTests(unittest.TestCase):
                             DataInfoAxis(id="axis1", type="Long")
                         ],
                         column=DataInfoColumn(id="column1", type="Double"),
-                        data_digest="a25431d198b539431eea891de566fe019e85671789d6f3ed461e3714d53db34a",
+                        data_digest="3b2c28a16c8475742adb1ee2208a80d19ade2c8f513605897b5f87d5fe0f8570",
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(

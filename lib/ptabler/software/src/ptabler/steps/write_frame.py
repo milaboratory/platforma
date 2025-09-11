@@ -3,7 +3,6 @@ from msgspec import Struct
 import msgspec.json
 import os
 import polars as pl
-import polars_hash as plh
 import duckdb
 import hashlib
 
@@ -49,6 +48,37 @@ class DataInfoPart(Struct, rename="camel"):
 class DataInfo(Struct, tag="ParquetPartitioned", rename="camel"):
     partition_key_length: int
     parts: Dict[str, DataInfoPart]
+
+def hash(prefix: str, lf: pl.LazyFrame, expr: pl.Expr) -> str:
+    hasher = hashlib.sha256(prefix.encode())
+    data = lf.select(expr.cast(pl.String).chash.sha2_256()).collect()
+    [hasher.update((h if h is not None else "|~|").encode()) for (h,) in data.iter_rows()]
+    return hasher.hexdigest()
+
+def get_column_null_count(conn: duckdb.DuckDBPyConnection, path: str, column_name: str):
+    result = conn.execute("""
+        SELECT SUM(stats_null_count) AS stats_null_count, path_in_schema
+        FROM parquet_metadata(?)
+        WHERE path_in_schema = ?
+        GROUP BY path_in_schema
+    """, [path, column_name]).fetchall()
+    return result[0][0]
+
+def get_number_of_bytes_in_column(conn: duckdb.DuckDBPyConnection, path: str, column_name: str) -> int:
+    result = conn.execute("""
+        SELECT SUM(total_compressed_size) AS total_compressed_size, path_in_schema
+        FROM parquet_metadata(?)
+        WHERE path_in_schema = ?
+        GROUP BY path_in_schema
+    """, [path, column_name]).fetchall()
+    return result[0][0]
+
+def get_number_of_rows_in_column(conn: duckdb.DuckDBPyConnection, path: str) -> int:
+    result = conn.execute("""
+        SELECT num_rows
+        FROM parquet_file_metadata(?)
+    """, [path]).fetchall()
+    return result[0][0]
 
 class WriteFrame(PStep, tag="write_frame"):
     """
@@ -117,7 +147,7 @@ class WriteFrame(PStep, tag="write_frame"):
 
             if self.strict:
                 for axis in self.axes:
-                    null_count = WriteFrame.get_column_null_count(duckdb_conn, intermediate_parquet, axis.column)
+                    null_count = get_column_null_count(duckdb_conn, intermediate_parquet, axis.column)
                     if null_count > 0:
                         raise ValueError(f"Found {null_count} null values in axis '{axis.column}'.")
 
@@ -135,12 +165,9 @@ class WriteFrame(PStep, tag="write_frame"):
             }
             def create_part_info(data_file, column, nrows, axes_hash, axes_nbytes):
                 data_path = os.path.join(frame_dir, normalize_path(data_file))
-                lf = pl.scan_parquet(data_path)
 
-                column_hash = lf.select(
-                    plh.col(column.column).cast(pl.String).chash.sha2_256().alias("column_hash")
-                ).collect()["column_hash"][0]
-                column_nbytes = WriteFrame.get_number_of_bytes_in_column(duckdb_conn, data_path, column.column)
+                column_hash = hash(column.type, pl.scan_parquet(data_path), pl.col(column.column))
+                column_nbytes = get_number_of_bytes_in_column(duckdb_conn, data_path, column.column)
                 data_digest = hashlib.sha256(f"{axes_hash}{column_hash}".encode()).hexdigest()
                 
                 return DataInfoPart(
@@ -158,15 +185,15 @@ class WriteFrame(PStep, tag="write_frame"):
             
             def get_reusable_part_info(data_file, column):
                 data_path = os.path.join(frame_dir, normalize_path(data_file))
-                lf = pl.scan_parquet(data_path)
 
-                nrows = WriteFrame.get_number_of_rows_in_column(duckdb_conn, data_path)
-                axes_hash = lf.select(
-                    plh.concat_str([axis.id for axis in axes_info], separator="~").chash.sha2_256()
-                        .alias("axes_hash")
-                ).collect()["axes_hash"][0]
+                nrows = get_number_of_rows_in_column(duckdb_conn, data_path)
+                axes_hash = hash(
+                    "~".join([axis.type for axis in axes_info]),
+                    pl.scan_parquet(data_path),
+                    pl.concat_str([axis.id for axis in axes_info], separator="~"),
+                )
                 axes_nbytes = [
-                    WriteFrame.get_number_of_bytes_in_column(duckdb_conn, data_path, axis.id) for axis in axes_info
+                    get_number_of_bytes_in_column(duckdb_conn, data_path, axis.id) for axis in axes_info
                 ]
                 return nrows, axes_hash, axes_nbytes
 
@@ -236,31 +263,3 @@ class WriteFrame(PStep, tag="write_frame"):
             duckdb_conn.close()
             if os.path.exists(intermediate_parquet):
                 os.remove(intermediate_parquet)
-    
-    @staticmethod
-    def get_column_null_count(conn: duckdb.DuckDBPyConnection, path: str, column_name: str):
-        result = conn.execute("""
-            SELECT SUM(stats_null_count) AS stats_null_count, path_in_schema
-            FROM parquet_metadata(?)
-            WHERE path_in_schema = ?
-            GROUP BY path_in_schema
-        """, [path, column_name]).fetchall()
-        return result[0][0]
-
-    @staticmethod
-    def get_number_of_bytes_in_column(conn: duckdb.DuckDBPyConnection, path: str, column_name: str) -> int:
-        result = conn.execute("""
-            SELECT SUM(total_compressed_size) AS total_compressed_size, path_in_schema
-            FROM parquet_metadata(?)
-            WHERE path_in_schema = ?
-            GROUP BY path_in_schema
-        """, [path, column_name]).fetchall()
-        return result[0][0]
-
-    @staticmethod
-    def get_number_of_rows_in_column(conn: duckdb.DuckDBPyConnection, path: str) -> int:
-        result = conn.execute("""
-            SELECT num_rows
-            FROM parquet_file_metadata(?)
-        """, [path]).fetchall()
-        return result[0][0]
