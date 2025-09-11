@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.5.0
+
+### Minor Changes
+
+- f127b97: Do not build docker images outside CI by default
+
 ## 3.4.0
 
 ### Minor Changes
