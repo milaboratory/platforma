@@ -530,32 +530,29 @@ entrypoint: '${entrypoint.join('\', \'')}'
     const artInfoPath = this.pkgInfo.artifactInfoLocation(pkg.id, 'docker', util.currentArch());
     const artInfo = readBuiltArtifactInfo(artInfoPath);
     const tag = artInfo.remoteArtifactLocation;
+    const pushTag = pushTo ? `${pushTo}:${tag.split(':').slice(-1)[0]}` : tag;
 
     // Because of turbo caching, we may face situation when no real docker build was executed on CI agent,
     // but image is already in remote registry. We should not fail in such scenarios, calmly skipping docker push step.
+    const remoteImageExists = docker.remoteImageExists(pushTag);
+    if (remoteImageExists) {
+      this.logger.info(`Docker image '${tag}' not exists locally but is already in remote registry. Skipping push...`);
+      return;
+    }
 
     const localImageExists = docker.localImageExists(tag);
     if (!localImageExists) {
-      const remoteImageExists = docker.remoteImageExists(tag);
-
-      if (remoteImageExists) {
-        this.logger.info(`Docker image '${tag}' not exists locally but is already in remote registry. Skipping push...`);
-        return;
-      }
-
       throw util.CLIError(`Docker image '${tag}' not exists locally and is not found in remote registry. Publication failed.`);
     }
 
     if (pushTo) {
-      const pushTag = `${pushTo}:${tag.split(':').slice(-1)[0]}`;
       docker.addTag(tag, pushTag);
       this.logger.info(`Publishing docker image '${tag}' using alternative tag '${pushTag}'`);
-      docker.push(pushTag);
-      return;
+    } else {
+      this.logger.info(`Publishing docker image '${tag}' into registry '${pkg.registry.name}'`);
     }
 
-    this.logger.info(`Publishing docker image '${tag}' into registry '${pkg.registry.name}'`);
-    docker.push(tag);
+    docker.push(pushTag);
   }
 
   public signPackages(options?: {
