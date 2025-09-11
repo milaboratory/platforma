@@ -1,5 +1,12 @@
 # @platforma-sdk/package-builder
 
+## 3.5.2
+
+### Patch Changes
+
+- 44115b4: Check image existence in remote repo first (before push)
+- 44115b4: Fix autopush in ci
+
 ## 3.5.1
 
 ### Patch Changes
