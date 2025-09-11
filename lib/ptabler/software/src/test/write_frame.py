@@ -180,8 +180,8 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
-                                axes=[85, 92],
-                                column=84
+                                axes=[127, 130],
+                                column=127
                             )
                         )
                     )
@@ -252,8 +252,8 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=2,
                             number_of_bytes=NumberOfBytes(
-                                axes=[81],
-                                column=81
+                                axes=[119],
+                                column=119
                             )
                         )
                     ),
@@ -265,8 +265,8 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=1,
                             number_of_bytes=NumberOfBytes(
-                                axes=[68],
-                                column=65
+                                axes=[50],
+                                column=47
                             )
                         )
                     )
@@ -422,8 +422,8 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
-                                axes=[85, 80],
-                                column=84
+                                axes=[127, 118],
+                                column=150
                             )
                         )
                     )
@@ -506,8 +506,8 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=1,
                             number_of_bytes=NumberOfBytes(
-                                axes=[65],
-                                column=65
+                                axes=[47],
+                                column=47
                             )
                         )
                     )
@@ -639,8 +639,8 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
-                                axes=[85],
-                                column=84
+                                axes=[127],
+                                column=127
                             )
                         )
                     )

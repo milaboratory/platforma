@@ -57,7 +57,7 @@ def hash(prefix: str, lf: pl.LazyFrame, expr: pl.Expr) -> str:
 
 def get_column_null_count(conn: duckdb.DuckDBPyConnection, path: str, column_name: str):
     result = conn.execute("""
-        SELECT SUM(stats_null_count) AS stats_null_count, path_in_schema
+        SELECT SUM(stats_null_count), path_in_schema
         FROM parquet_metadata(?)
         WHERE path_in_schema = ?
         GROUP BY path_in_schema
@@ -66,7 +66,7 @@ def get_column_null_count(conn: duckdb.DuckDBPyConnection, path: str, column_nam
 
 def get_number_of_bytes_in_column(conn: duckdb.DuckDBPyConnection, path: str, column_name: str) -> int:
     result = conn.execute("""
-        SELECT SUM(total_compressed_size) AS total_compressed_size, path_in_schema
+        SELECT SUM(total_uncompressed_size), path_in_schema
         FROM parquet_metadata(?)
         WHERE path_in_schema = ?
         GROUP BY path_in_schema
