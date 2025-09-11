@@ -1,9 +1,9 @@
-Syncing 'main' proto version...
-  Cloning 'git@github.com:milaboratory/pl.git' into tmp directory /Users/gramkin/Work/platforma-main/lib/node/pl-client/proto/plapi/tmp-repo
-    Cloning into '/Users/gramkin/Work/platforma-main/lib/node/pl-client/proto/plapi/tmp-repo'...
+Syncing 'MILAB-3052_1' proto version...
+  Cloning 'git@github.com:milaboratory/pl.git' into tmp directory /Users/vadimpiven/Documents/MiLabs/git/platforma/lib/node/pl-client/proto/plapi/tmp-repo
+    Cloning into '/Users/vadimpiven/Documents/MiLabs/git/platforma/lib/node/pl-client/proto/plapi/tmp-repo'...
   Syncing proto files from 'plapi'
     - 'plapiproto/'
-      building file list ... done
+      sending incremental file list
       ./
       api.proto
       api_types.proto
@@ -11,75 +11,75 @@ Syncing 'main' proto version...
       import.proto
       resource_types.proto
       
-      sent 43520 bytes  received 136 bytes  87312.00 bytes/sec
-      total size is 43100  speedup is 0.99
+      sent 43,532 bytes  received 114 bytes  87,292.00 bytes/sec
+      total size is 43,122  speedup is 0.99
 
     - 'plapi/'
-      building file list ... done
+      sending incremental file list
       ./
       
-      sent 80 bytes  received 26 bytes  212.00 bytes/sec
+      sent 65 bytes  received 19 bytes  168.00 bytes/sec
       total size is 0  speedup is 0.00
 
     - 'protodep.toml'
-      building file list ... done
+      sending incremental file list
       protodep.toml
       
-      sent 270 bytes  received 42 bytes  624.00 bytes/sec
-      total size is 138  speedup is 0.44
+      sent 255 bytes  received 35 bytes  580.00 bytes/sec
+      total size is 138  speedup is 0.48
 
     - 'protodep.lock'
-      building file list ... done
+      sending incremental file list
       protodep.lock
       
-      sent 368 bytes  received 42 bytes  820.00 bytes/sec
-      total size is 236  speedup is 0.58
+      sent 353 bytes  received 35 bytes  776.00 bytes/sec
+      total size is 236  speedup is 0.61
 
   Syncing shared proto files from 'controllers/shared/grpc'
     - 'progressapi/'
-      building file list ... done
+      sending incremental file list
       ./
       protocol.proto
       
-      sent 1370 bytes  received 48 bytes  2836.00 bytes/sec
-      total size is 1220  speedup is 0.86
+      sent 1,356 bytes  received 38 bytes  2,788.00 bytes/sec
+      total size is 1,220  speedup is 0.88
 
     - 'streamingapi/'
-      building file list ... done
+      sending incremental file list
       ./
       protocol.proto
       
-      sent 9047 bytes  received 48 bytes  18190.00 bytes/sec
-      total size is 8897  speedup is 0.98
+      sent 9,033 bytes  received 38 bytes  18,142.00 bytes/sec
+      total size is 8,897  speedup is 0.98
 
     - 'downloadapi/'
-      building file list ... done
+      sending incremental file list
       ./
       protocol.proto
       
-      sent 1268 bytes  received 48 bytes  2632.00 bytes/sec
-      total size is 1118  speedup is 0.85
+      sent 1,254 bytes  received 38 bytes  2,584.00 bytes/sec
+      total size is 1,118  speedup is 0.87
 
     - 'lsapi/'
-      building file list ... done
+      sending incremental file list
       ./
       protocol.proto
       
-      sent 5010 bytes  received 48 bytes  10116.00 bytes/sec
-      total size is 4860  speedup is 0.96
+      sent 4,996 bytes  received 38 bytes  10,068.00 bytes/sec
+      total size is 4,860  speedup is 0.97
 
     - 'protodep.toml'
-      building file list ... done
+      sending incremental file list
       protodep.toml
       
-      sent 240 bytes  received 42 bytes  564.00 bytes/sec
-      total size is 108  speedup is 0.38
+      sent 225 bytes  received 35 bytes  520.00 bytes/sec
+      total size is 108  speedup is 0.42
 
     - 'protodep.lock'
-      building file list ... done
+      sending incremental file list
       protodep.lock
       
-      sent 338 bytes  received 42 bytes  760.00 bytes/sec
-      total size is 206  speedup is 0.54
+      sent 323 bytes  received 35 bytes  716.00 bytes/sec
+      total size is 206  speedup is 0.58
 
 Updating dependencies...

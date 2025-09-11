@@ -1238,6 +1238,8 @@ message MaintenanceAPI {
       // without instanceID we are not sure if it's the same state or not,
       // and UI can't detect it and clear its state (e.g. caches of drivers).
       string instance_id = 5;
+
+      string os = 6;
     }
   }
 
