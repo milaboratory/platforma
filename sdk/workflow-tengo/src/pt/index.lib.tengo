@@ -1269,7 +1269,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 * This is followed by an `.agg()` call to perform aggregations on the groups.
 		 *
 		 * @param ...expressions {string|object} - One or more column names (strings) or expression objects to group by.
-		 * @returns {object} - A DataFrameGroupBy object, which has an `F)` method.
+		 * @returns {object} - A DataFrameGroupBy object, which has an `agg()` method.
 		 * @example
 		 *   grouped := df.groupBy("category", pt.col("year").alias("sale_year"))
 		 *   // now call .agg() on 'grouped'
