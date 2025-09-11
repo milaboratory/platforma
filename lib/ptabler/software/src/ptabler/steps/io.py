@@ -162,7 +162,7 @@ class BaseWriteLogic(PStep):
         The actual write operation occurs when the returned LazyFrame (representing 
         the sink status) is collected by the main execution engine.
         """
-        lf_to_write = ctx.take_table(self.table)
+        lf_to_write = ctx.get_table(self.table)
 
         selected_lf = lf_to_write
         if self.columns:
@@ -172,7 +172,7 @@ class BaseWriteLogic(PStep):
         sink_plan = self._do_sink(selected_lf, file_path)
 
         # Add the sink plan to the context for later execution
-        ctx.put_sink(sink_plan)
+        ctx.add_sink(sink_plan)
 
 class WriteCsv(BaseWriteLogic, tag="write_csv"):
     """

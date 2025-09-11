@@ -43,7 +43,7 @@ class DataInfoPart(Struct, rename="camel"):
     data: str
     axes: List[DataInfoAxis]
     column: DataInfoColumn
-    data_digest: Optional[str] = None
+    data_digest: str
     stats: Optional[Stats] = None
 
 class DataInfo(Struct, tag="ParquetPartitioned", rename="camel"):
@@ -61,6 +61,7 @@ class WriteFrame(PStep, tag="write_frame"):
     axes: List[AxisMapping]
     columns: List[ColumnMapping]
     partition_key_length: int = 0
+    strict: bool = False
 
     def execute(self, ctx: StepContext):
         if not self.frame_name or not self.frame_name.strip():
@@ -84,7 +85,7 @@ class WriteFrame(PStep, tag="write_frame"):
                 f"strictly less than the number of axes ({len(self.axes)})."
             )
         
-        lf = ctx.take_table(self.input_table)
+        lf = ctx.get_table(self.input_table)
 
         frame_dir = os.path.join(ctx.settings.root_folder, normalize_path(self.frame_name))
         os.makedirs(frame_dir)
@@ -94,17 +95,18 @@ class WriteFrame(PStep, tag="write_frame"):
             cast_expressions.append(pl.col(axis.column).cast(toPolarsType(axis.type)))
         for column in self.columns:
             cast_expressions.append(pl.col(column.column).cast(toPolarsType(column.type), strict=False))
-        projected_lf = lf.select(cast_expressions)
+        lf = lf.select(cast_expressions)
 
-        filter_expressions = [pl.col(axis.column).is_not_null() for axis in self.axes]
-        filtered_lf = projected_lf.filter(pl.all_horizontal(filter_expressions))
+        if not self.strict:
+            filter_expressions = [pl.col(axis.column).is_not_null() for axis in self.axes]
+            lf = lf.filter(pl.all_horizontal(filter_expressions))
         
-        sorted_lf = filtered_lf.sort([axis.column for axis in self.axes], nulls_last=False)
+        lf = lf.sort([axis.column for axis in self.axes], nulls_last=False)
         
         intermediate_parquet = os.path.join(frame_dir, normalize_path("intermediate.parquet"))
-        sink_lf = sorted_lf.sink_parquet(path=intermediate_parquet, lazy=True)
+        lf = lf.sink_parquet(path=intermediate_parquet, lazy=True)
         
-        ctx.put_sink(sink_lf)
+        ctx.add_sink(lf)
         
         ctx.chain_task(lambda: self.write_partitions_with_bloom_filters(intermediate_parquet))
 
@@ -112,6 +114,12 @@ class WriteFrame(PStep, tag="write_frame"):
         try:
             frame_dir = os.path.dirname(intermediate_parquet)
             duckdb_conn = duckdb.connect(database=':memory:')
+
+            if self.strict:
+                for axis in self.axes:
+                    null_count = WriteFrame.get_column_null_count(duckdb_conn, intermediate_parquet, axis.column)
+                    if null_count > 0:
+                        raise ValueError(f"Found {null_count} null values in axis '{axis.column}'.")
 
             data_info_by_column = {}
             for column in self.columns:
@@ -229,6 +237,16 @@ class WriteFrame(PStep, tag="write_frame"):
             if os.path.exists(intermediate_parquet):
                 os.remove(intermediate_parquet)
     
+    @staticmethod
+    def get_column_null_count(conn: duckdb.DuckDBPyConnection, path: str, column_name: str):
+        result = conn.execute("""
+            SELECT SUM(stats_null_count) AS stats_null_count, path_in_schema
+            FROM parquet_metadata(?)
+            WHERE path_in_schema = ?
+            GROUP BY path_in_schema
+        """, [path, column_name]).fetchall()
+        return result[0][0]
+
     @staticmethod
     def get_number_of_bytes_in_column(conn: duckdb.DuckDBPyConnection, path: str, column_name: str) -> int:
         result = conn.execute("""

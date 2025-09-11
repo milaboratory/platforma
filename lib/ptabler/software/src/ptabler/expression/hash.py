@@ -3,12 +3,8 @@ import polars as pl
 import math
 
 from .base import Expression
-from .basics import ColumnReferenceExpression
-from .string import StringJoinExpression
 
-from typing import Union
-
-PolarsHashExpression = Union[ColumnReferenceExpression, StringJoinExpression]
+AnyExpression = Expression
 
 # Define type literals based on the TypeScript definitions
 HashType = typing.Literal[
@@ -62,7 +58,7 @@ class HashExpression(Expression, tag='hash'):
     - 'base64_alphanumeric_upper': Uppercased base64_alphanumeric.
     """
 
-    value: 'PolarsHashExpression'
+    value: 'AnyExpression'
     """The expression whose resulting value will be hashed."""
 
     bits: int | None = None

@@ -48,23 +48,6 @@ class StepContext:
             )
         return self._table_space[table_name]
     
-    def take_table(self, table_name: str) -> pl.LazyFrame:
-        """
-        Takes a lazy frame from the table space and removes it.
-        
-        Args:
-            table_name: Name of the table to take
-            
-        Returns:
-            The lazy frame from the table
-            
-        Raises:
-            ValueError: If the table doesn't exist
-        """
-        lf = self.get_table(table_name)
-        del self._table_space[table_name]
-        return lf
-    
     def put_table(self, table_name: str, lazy_frame: pl.LazyFrame):
         """
         Puts or replaces a lazy frame in the table space.
@@ -75,7 +58,7 @@ class StepContext:
         """
         self._table_space[table_name] = lazy_frame
     
-    def put_sink(self, lazy_frame: pl.LazyFrame):
+    def add_sink(self, lazy_frame: pl.LazyFrame):
         """
         Adds a lazy frame to the collection of sink operations.
         
@@ -118,9 +101,8 @@ class PStep(msgspec.Struct, tag_field="type", rename="camel"):
 
         This method takes a StepContext object that provides methods to:
         - get_table: Return a lazy frame from the table space without removing it
-        - take_table: Remove and return a lazy frame from the table space
         - put_table: Add or replace a lazy frame in the table space
-        - put_sink: Add a lazy frame for sink operations
+        - add_sink: Add a lazy frame for sink operations
         - chain_task: Add a task to be executed after all sink operations are completed
 
         Args:

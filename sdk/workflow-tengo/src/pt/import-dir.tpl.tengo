@@ -19,7 +19,7 @@ _DATA_INFO_SCHEMA := {
     `parts`: {
         any: {
             `data`: `string,regex=\.parquet$`,
-            `dataDigest,?`: `string`,
+            `dataDigest`: `string`,
             `stats,?`: {
                 `numberOfRows,?`: `number`,
                 `numberOfBytes,?`: {

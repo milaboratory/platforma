@@ -2,7 +2,6 @@ import unittest
 import os
 import shutil
 import polars as pl
-import polars_hash as plh
 import duckdb
 import msgspec.json
 import pyarrow as pa
@@ -56,9 +55,9 @@ class WriteFrameTests(unittest.TestCase):
         })
             
         result = lf.select([
-            plh.concat_str(["axis1", "axis2", "axis3"], separator="~").chash.sha2_256()
+            pl.concat_str(["axis1", "axis2", "axis3"], separator="~").chash.sha2_256()
                 .alias("axes_hash"),
-            plh.col("column1").cast(pl.String).chash.sha2_256()
+            pl.col("column1").cast(pl.String).chash.sha2_256()
                 .alias("column_hash"),
         ])
 
@@ -687,6 +686,41 @@ class WriteFrameTests(unittest.TestCase):
             
             actual_schema = pq.read_schema(parquet_file)
             self.assertEqual(actual_schema.types, [pa.int64(), pa.float64()])
+
+        finally:
+            if os.path.exists(frame_dir):
+                shutil.rmtree(frame_dir)
+
+    def test_strict_mode_with_nulls_in_axis_failure(self):
+        frame_dir = os.path.join(global_settings.root_folder, normalize_path("strict_mode_second_axis"))
+        
+        write_frame_step = WriteFrame(
+            input_table="input_table",
+            frame_name="strict_mode_second_axis",
+            axes=[
+                AxisMapping(column="name", type="String"),
+            ],
+            columns=[ColumnMapping(column="value", type="Double")],
+            partition_key_length=0,
+            strict=True
+        )
+        ptw = PWorkflow(workflow=[write_frame_step])
+
+        lf = pl.LazyFrame({
+            "name": ["Alice", None, "Charlie"],
+            "value": [10.5, 20.0, 30.5],
+        })
+        ts = {"input_table": lf}
+
+        if os.path.exists(frame_dir):
+            shutil.rmtree(frame_dir)
+
+        try:
+            with self.assertRaises(ValueError) as cm:
+                ptw.execute(global_settings=global_settings, initial_table_space=ts)
+            
+            exception_str = str(cm.exception)
+            self.assertIn("null values in axis 'name'", exception_str)
 
         finally:
             if os.path.exists(frame_dir):

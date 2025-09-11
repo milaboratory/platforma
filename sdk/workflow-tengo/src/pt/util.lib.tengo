@@ -27,7 +27,10 @@ _PARAMS_SCHEMA := {
 	`columns`: [_COLUMN_SCHEMA],
 	// Partitioning key length
 	// default: 0
-	`partitionKeyLength,?` : `number`
+	`partitionKeyLength,?` : `number`,
+    // Whether to fail if there is a NULL value in axis
+    // default: false (do not fail, silently filter-out NULLs)
+    `strict,?` : `bool`
 }
 
 validateParams := func(params) {
@@ -148,10 +151,14 @@ makeWriteFrameStep := func(frameName, dfName, params) {
                 type: entry.spec.valueType
             }
         }),
-        partitionKeyLength: 0
+        partitionKeyLength: 0,
+        strict: false
     }
     if !is_undefined(params.partitionKeyLength) {
         step.partitionKeyLength = params.partitionKeyLength
+    }
+    if !is_undefined(params.strict) {
+        step.strict = params.strict
     }
     return step
 }
