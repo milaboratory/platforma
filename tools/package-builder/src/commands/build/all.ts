@@ -41,7 +41,7 @@ export default class BuildAll extends Command {
       core.allPlatforms = flags['all-platforms'];
       core.fullDirHash = flags['full-dir-hash'];
 
-      const buildDocker = core.buildMode !== 'dev-local' && docker.shouldBuild(envs.isCI(), flags['docker-build'], flags['docker-no-build']);
+      const buildDocker = core.buildMode !== 'dev-local' && docker.shouldDoAction(envs.isCI(), flags['docker-build'], flags['docker-no-build']);
 
       if (buildDocker) {
         core.buildDockerImages({
@@ -63,7 +63,7 @@ export default class BuildAll extends Command {
         packageIds: flags['package-id'] ? flags['package-id'] : undefined,
       });
 
-      const autopush = flags['docker-autopush'] && !flags['docker-no-autopush'];
+      const autopush = docker.shouldDoAction(envs.isCI(), flags['docker-autopush'], flags['docker-no-autopush']);
       if (buildDocker && autopush) {
         // TODO: as we do not create content-addressable archives for binary packages, we should not upload them
         //       for each build to not spoil release process with dev archives cached by CDN.

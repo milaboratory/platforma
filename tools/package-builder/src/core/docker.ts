@@ -63,11 +63,11 @@ export function remoteImageExists(tag: string): boolean {
   return true;
 }
 
-export function shouldBuild(isCI: boolean, buildFlag: boolean, noBuildFlag: boolean): boolean {
-  if (noBuildFlag) {
+export function shouldDoAction(isCI: boolean, doFlag: boolean, noDoFlag: boolean): boolean {
+  if (noDoFlag) {
     return false;
   }
-  if (buildFlag) {
+  if (doFlag) {
     return true;
   }
 
