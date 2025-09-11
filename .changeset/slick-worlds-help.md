@@ -2,4 +2,4 @@
 '@platforma-sdk/package-builder': minor
 ---
 
-Allow to push docker image into alternative registry after building
+Do not build docker images outside CI by default
