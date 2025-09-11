@@ -1,24 +1,22 @@
 import type { Expression } from '@milaboratories/ptabler-js';
 import type { FilterUi } from '../filters';
 
-export type AnnotationSpecs = {
+export type AnnotationSpec<T extends ExpressionSpec = ExpressionSpec> = {
   title: string;
-  specs: AnnotationSpec[];
+  steps: T[];
 };
 
-export type AnnotationSpec<T extends Expression = Expression> = {
+export type ExpressionSpec<T extends Expression = Expression> = {
   name: string;
   expression: T;
 };
 
-export type AnnotationSpecsUi = {
-  isCreated?: boolean;
+export type AnnotationSpecUi<T extends FilterSpecUi = FilterSpecUi> = {
   title: string;
-  specs: AnnotationSpecUi[];
+  steps: T[];
 };
 
-export type AnnotationSpecUi = {
-  id?: number;
+export type FilterSpecUi<T extends FilterUi = Extract<FilterUi, { type: 'and' | 'or' }>> = {
   label: string;
-  filter: Extract<FilterUi, { type: 'and' | 'or' }>;
+  filter: T;
 };

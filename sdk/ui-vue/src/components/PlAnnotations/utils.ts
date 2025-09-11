@@ -1,13 +1,4 @@
-import type { AnnotationScriptUi, FilterUi, TypeFieldRecord } from '@platforma-sdk/model';
-
-export function getDefaultAnnotationScript(): AnnotationScriptUi {
-  return {
-    isCreated: false,
-    title: 'My Annotation',
-    mode: 'byClonotype',
-    steps: [],
-  };
-}
+import type { FilterUi, TypeFieldRecord } from '@platforma-sdk/model';
 
 export function createDefaultFilterMetadata<T extends Extract<FilterUi, { column: unknown }>>(): TypeFieldRecord<T> {
   return {

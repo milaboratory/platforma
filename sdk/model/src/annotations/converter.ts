@@ -1,8 +1,8 @@
 import { when } from '@milaboratories/ptabler-js';
 import { convertFilterUiToExpressionImpl } from '../filters/converter';
-import type { AnnotationSpec, AnnotationSpecUi } from './types';
+import type { ExpressionSpec, FilterSpecUi } from './types';
 
-export function convertAnnotationSpecs(annotationsUI: AnnotationSpecUi[]): AnnotationSpec[] {
+export function convertFilterSpecsToExpressionSpecs(annotationsUI: FilterSpecUi[]): ExpressionSpec[] {
   return annotationsUI
     .filter((annotation) => {
       // No need to convert empty steps
@@ -20,7 +20,7 @@ export function convertAnnotationSpecs(annotationsUI: AnnotationSpecUi[]): Annot
 
       return false;
     })
-    .map((step): AnnotationSpec => ({
+    .map((step): ExpressionSpec => ({
       name: step.label.trim(),
       expression: when(convertFilterUiToExpressionImpl(step.filter)).then(true).otherwise(false).toJSON(),
     }));
