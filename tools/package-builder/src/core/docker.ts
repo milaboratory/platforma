@@ -70,13 +70,10 @@ export function shouldBuild(isCI: boolean, buildFlag: boolean, noBuildFlag: bool
   if (buildFlag) {
     return true;
   }
-  if (isCI) {
-    // Build docker images in CI by default
-    return true;
-  }
 
+  // Build docker images in CI by default
   // Do not build docker images automatically outside CI for now.
-  return false;
+  return isCI;
 }
 
 export function build(context: string, dockerfile: string, tag: string, softwarePackage: string, softwareVersion: string | undefined) {
