@@ -63,6 +63,19 @@ export function remoteImageExists(tag: string): boolean {
   return true;
 }
 
+export function shouldBuild(isCI: boolean, buildFlag: boolean, noBuildFlag: boolean): boolean {
+  if (noBuildFlag) {
+    return false;
+  }
+  if (buildFlag) {
+    return true;
+  }
+
+  // Build docker images in CI by default
+  // Do not build docker images automatically outside CI for now.
+  return isCI;
+}
+
 export function build(context: string, dockerfile: string, tag: string, softwarePackage: string, softwareVersion: string | undefined) {
   const result = spawnSync('docker', [
     'build', '-t', tag, context, '-f', dockerfile,

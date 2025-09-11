@@ -16,9 +16,12 @@
         "GENERATE_TAGS",
         "TAGS_ADDITIONAL_ARGS",
         "TAGS_FILE",
+
         "PL_DOCKER_REGISTRY_PUSH_TO",
-        "PL_DOCKER_SKIP_BUILD",
-        "PL_DOCKER_SKIP_PUSH"
+        "PL_DOCKER_BUILD",
+        "PL_DOCKER_NO_BUILD",
+        "PL_DOCKER_AUTOPUSH",
+        "PL_DOCKER_NO_AUTOPUSH"
       ],
       "env": ["PL_PKG_DEV"],
       "dependsOn": ["type-check", "^build"]
@@ -33,7 +36,12 @@
         "PL_TEST_STORAGE_ID",
         "DEBUG",
         "MI_LICENSE",
-        "PL_DOCKER_REGISTRY_PUSH_TO"
+
+        "PL_DOCKER_REGISTRY_PUSH_TO",
+        "PL_DOCKER_BUILD",
+        "PL_DOCKER_NO_BUILD",
+        "PL_DOCKER_AUTOPUSH",
+        "PL_DOCKER_NO_AUTOPUSH"
       ]
     },
     "do-pack": {
