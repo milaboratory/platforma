@@ -1,5 +1,5 @@
 import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
-import type { AnnotationSpecUi } from '../../annotations';
+import type { FilterSpecUi } from '../../annotations';
 import type { FilterUi, FilterUiOfType, FilterUiType } from '../../filters';
 import type { AnnotationFilter, AnnotationMode, AnnotationScript, IsNA, NotFilter, NumericalComparisonFilter, PatternFilter, PatternPredicate, ValueRank } from './filter';
 import type { SimplifiedPColumnSpec } from './types';
@@ -20,24 +20,24 @@ function isStringValueType(spec: SimplifiedPColumnSpec): boolean {
   return spec.valueType === 'String';
 }
 export type TypeToLiteral<T> =
-[T] extends [FilterUiType] ? 'FilterUiType' :
-    [T] extends [SUniversalPColumnId] ? 'SUniversalPColumnId' :
-        [T] extends [PatternPredicate] ? 'PatternPredicate' :
-            [T] extends [AnnotationFilter[]] ? 'AnnotationFilter[]' :
-                [T] extends [AnnotationFilter] ? 'AnnotationFilter' :
-                    [T] extends [number] ? 'number' :
-                        [T] extends [number | undefined] ? 'number?' :
-                            [T] extends [string] ? 'string' :
-                                [T] extends [string | undefined] ? 'string?' :
-                                    [T] extends [boolean] ? 'boolean' :
-                                        [T] extends [boolean | undefined] ? 'boolean?' :
-                                            [T] extends [unknown[]] ? 'unknown[]' :
-                                            // this is special
-                                              T extends number ? 'number' :
-                                                T extends string ? 'string' :
-                                                  T extends boolean ? 'boolean' :
-                                                    T extends Record<string, unknown> ? 'form' :
-                                                      'unknown';
+  [T] extends [FilterUiType] ? 'FilterUiType' :
+      [T] extends [SUniversalPColumnId] ? 'SUniversalPColumnId' :
+          [T] extends [PatternPredicate] ? 'PatternPredicate' :
+              [T] extends [AnnotationFilter[]] ? 'AnnotationFilter[]' :
+                  [T] extends [AnnotationFilter] ? 'AnnotationFilter' :
+                      [T] extends [number] ? 'number' :
+                          [T] extends [number | undefined] ? 'number?' :
+                              [T] extends [string] ? 'string' :
+                                  [T] extends [string | undefined] ? 'string?' :
+                                      [T] extends [boolean] ? 'boolean' :
+                                          [T] extends [boolean | undefined] ? 'boolean?' :
+                                              [T] extends [unknown[]] ? 'unknown[]' :
+                                              // this is special
+                                                T extends number ? 'number' :
+                                                  T extends string ? 'string' :
+                                                    T extends boolean ? 'boolean' :
+                                                      T extends Record<string, unknown> ? 'form' :
+                                                        'unknown';
 
 // @TODO: "parse" option
 export type TypeField<V> = {
@@ -616,7 +616,9 @@ export function compileFilters(uiFilters: FilterUi[]): AnnotationFilter[] {
   return uiFilters.filter((f) => f.type !== undefined).map(compileFilter);
 }
 
-export type AnnotationStepUi = AnnotationSpecUi;
+export type AnnotationStepUi = FilterSpecUi & {
+  id?: number;
+};
 
 export type AnnotationScriptUi = {
   isCreated?: boolean;

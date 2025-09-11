@@ -6,13 +6,14 @@ import {
   PlElementList,
   PlSidebarItem,
 } from '@milaboratories/uikit';
-import type { AnnotationStepUi, FilterUi, PObjectId, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { FilterUi, PObjectId, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
 import { getFilterUiMetadata } from '@platforma-sdk/model';
+import type { FilterSpecUI } from '../types';
 import { createDefaultFilterMetadata } from '../utils';
 import DynamicForm from './DynamicForm.vue';
 
 // Models
-const step = defineModel<AnnotationStepUi>('step', { required: true });
+const step = defineModel<FilterSpecUI>('step', { required: true });
 // Props
 const props = defineProps<{
   columns: SimplifiedUniversalPColumnEntry[];
