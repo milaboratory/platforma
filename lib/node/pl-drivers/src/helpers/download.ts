@@ -4,6 +4,7 @@ import type { Dispatcher } from 'undici';
 import { request } from 'undici';
 import { Readable } from 'node:stream';
 import type { ReadableStream } from 'node:stream/web';
+import { TransformStream } from 'node:stream/web';
 import { text } from 'node:stream/consumers';
 import type { GetContentOptions } from '@milaboratories/pl-model-common';
 
@@ -44,9 +45,29 @@ export class RemoteFileDownloader {
       await checkStatusCodeOk(statusCode, webBody, url);
       ops.signal?.throwIfAborted();
 
-      const size = Number(responseHeaders['content-length']);
-      const result = await handler(webBody, size);
-      ops.signal?.throwIfAborted();
+      // Some backend versions have a bug where they return more data than requested in range.
+      // So we have to manually normalize the stream to the expected size.
+      const size = ops.range ? ops.range.to - ops.range.from : Number(responseHeaders['content-length']);
+      const normalizedStream = webBody.pipeThrough(new (class extends TransformStream {
+        constructor(sizeBytes: number) {
+          super({
+            transform(chunk: Uint8Array, controller) {
+              const truncatedChunk = chunk.slice(0, sizeBytes);
+              controller.enqueue(truncatedChunk);
+              sizeBytes -= truncatedChunk.length;
+              if (!sizeBytes) controller.terminate();
+            },
+            flush() {
+              // Some backend versions have a bug where they return 1 less byte than requested in range.
+              // We cannot request one more byte because if this end byte is the last byte of the file,
+              // the backend will return 416 (Range Not Satisfiable).
+              if (sizeBytes) throw new Error(`backend returned less data than expected, `
+                + `please update the backend - newer versions have the correct behavior`);
+            },
+          });
+        }
+      })(size));
+      const result = await handler(normalizedStream, size);
 
       handlerSuccess = true;
       return result;
