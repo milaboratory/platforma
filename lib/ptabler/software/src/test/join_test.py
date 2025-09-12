@@ -5,13 +5,12 @@ from polars.testing import assert_frame_equal
 from ptabler.workflow import PWorkflow
 from ptabler.steps import GlobalSettings, Join, TableSpace
 from ptabler.steps.join import ColumnMapping
-from ptabler.expression import ColumnReferenceExpression
 
 # Minimal global_settings for tests
 global_settings = GlobalSettings(root_folder=".")
 
 
-class JoinStepTests(unittest.TestCase):
+class JoinTests(unittest.TestCase):
 
     def setUp(self):
         """Setup common data for join tests."""
@@ -35,13 +34,13 @@ class JoinStepTests(unittest.TestCase):
     def _execute_join_workflow(self, join_step: Join) -> pl.DataFrame:
         """Helper to execute a workflow with a single join step."""
         workflow = PWorkflow(workflow=[join_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=self.initial_table_space.copy()
         )
-        self.assertTrue("joined_output" in final_table_space)
-        return final_table_space["joined_output"].collect()
+        result_table = ctx.get_table("joined_output")
+        return result_table.collect()
 
     def test_inner_join(self):
         """Tests an inner join."""
@@ -176,13 +175,12 @@ class JoinStepTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[join_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_cs_table_space
         )
-        self.assertTrue("joined_output" in final_table_space)
-        result_df = final_table_space["joined_output"].collect()
+        result_df = ctx.get_table("joined_output").collect()
 
 
         expected_df = pl.DataFrame({
@@ -222,13 +220,12 @@ class JoinStepTests(unittest.TestCase):
         )
         
         workflow = PWorkflow(workflow=[join_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=temp_initial_table_space.copy()
         )
-        self.assertTrue("joined_output" in final_table_space)
-        result_df = final_table_space["joined_output"].collect()
+        result_df = ctx.get_table("joined_output").collect()
 
         # If Polars adds "id_right" due to the original key names being the same ("id")
         # before one was mapped to "key_right" for the join, we remove it.
@@ -289,7 +286,7 @@ class JoinStepTests(unittest.TestCase):
 
     def test_error_left_table_not_found(self):
         """Tests error when left_table is not in tablespace."""
-        with self.assertRaisesRegex(ValueError, "Left table 'nonexistent_left_table' not found in tablespace."):
+        with self.assertRaisesRegex(ValueError, "Table 'nonexistent_left_table' not found in table space."):
             join_step = Join(
                 left_table="nonexistent_left_table",
                 right_table="right_table",
@@ -302,7 +299,7 @@ class JoinStepTests(unittest.TestCase):
 
     def test_error_right_table_not_found(self):
         """Tests error when right_table is not in tablespace."""
-        with self.assertRaisesRegex(ValueError, "Right table 'nonexistent_right_table' not found in tablespace."):
+        with self.assertRaisesRegex(ValueError, "Table 'nonexistent_right_table' not found in table space."):
             join_step = Join(
                 left_table="left_table",
                 right_table="nonexistent_right_table",
@@ -359,13 +356,12 @@ class JoinStepTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[join_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=temp_table_space.copy()
         )
-        self.assertTrue("joined_output" in final_table_space)
-        result_df = final_table_space["joined_output"].collect()
+        result_df = ctx.get_table("joined_output").collect()
 
         # Expected left_lf selection: val_l (from val_left), pk1 (from pk1), pk2_final_left (from pk2)
         # Expected right_lf selection: val_r (from val_right), pk1 (from fk1), pk2_final_right (from fk2_renamed)

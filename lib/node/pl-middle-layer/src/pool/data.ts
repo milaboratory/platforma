@@ -41,6 +41,8 @@ export const PColumnDataParquetSuperPartitioned = resourceType(
 );
 export const PColumnDataJson = resourceType('PColumnData/Json', '1');
 
+export const ParquetChunkResourceType = resourceType('ParquetChunk', '1');
+
 export type PColumnDataJsonResourceValue = {
   keyLength: number;
   data: Record<string, PColumnValue>;
@@ -54,6 +56,9 @@ export type PColumnDataSuperPartitionedResourceValue = {
   superPartitionKeyLength: number;
   partitionKeyLength: number;
 };
+
+const BinaryPartitionedIndexFieldSuffix = '.index';
+const BinaryPartitionedValuesFieldSuffix = '.values';
 
 export function parseDataInfoResource(
   data: PlTreeNodeAccessor,
@@ -118,16 +123,16 @@ export function parseDataInfoResource(
 
     // parsing the structure
     for (const field of data.listInputFields()) {
-      if (field.endsWith('.index')) {
-        const partKey = field.slice(0, field.length - 6);
+      if (field.endsWith(BinaryPartitionedIndexFieldSuffix)) {
+        const partKey = field.slice(0, -BinaryPartitionedIndexFieldSuffix.length);
         let part = parts[partKey];
         if (part === undefined) {
           part = {};
           parts[partKey] = part;
         }
         part.index = data.traverse({ field, errorIfFieldNotSet: true }).persist();
-      } else if (field.endsWith('.values')) {
-        const partKey = field.slice(0, field.length - 7);
+      } else if (field.endsWith(BinaryPartitionedValuesFieldSuffix)) {
+        const partKey = field.slice(0, -BinaryPartitionedValuesFieldSuffix.length);
         let part = parts[partKey];
         if (part === undefined) {
           part = {};
@@ -161,8 +166,8 @@ export function parseDataInfoResource(
       if (keys === undefined) throw new PFrameDriverError(`no partition keys for super key ${superKey}`);
 
       for (const field of keys) {
-        if (field.endsWith('.index')) {
-          const key = field.slice(0, field.length - 6);
+        if (field.endsWith(BinaryPartitionedIndexFieldSuffix)) {
+          const key = field.slice(0, -BinaryPartitionedIndexFieldSuffix.length);
 
           const partKey = JSON.stringify([
             ...JSON.parse(superKey) as PColumnValue[],
@@ -176,8 +181,8 @@ export function parseDataInfoResource(
             field,
             errorIfFieldNotSet: true,
           }).persist();
-        } else if (field.endsWith('.values')) {
-          const key = field.slice(0, field.length - 7);
+        } else if (field.endsWith(BinaryPartitionedValuesFieldSuffix)) {
+          const key = field.slice(0, -BinaryPartitionedValuesFieldSuffix.length);
 
           const partKey = JSON.stringify([
             ...JSON.parse(superKey) as PColumnValue[],
@@ -207,7 +212,7 @@ export function parseDataInfoResource(
     for (const key of data.listInputFields()) {
       const resource = data.traverse({ field: key, assertFieldType: 'Input', errorIfFieldNotSet: true });
 
-      parts[key] = traverseParquetPartitionedResource(resource);
+      parts[key] = traverseParquetChunkResource(resource);
     }
 
     return {
@@ -231,7 +236,7 @@ export function parseDataInfoResource(
           ...JSON.parse(superKey) as PColumnValue[],
           ...JSON.parse(key) as PColumnValue[],
         ]);
-        parts[partKey] = traverseParquetPartitionedResource(resource);
+        parts[partKey] = traverseParquetChunkResource(resource);
       }
     }
 
@@ -245,7 +250,14 @@ export function parseDataInfoResource(
   throw new PFrameDriverError(`unsupported resource type: ${resourceTypeToString(data.resourceType)}`);
 }
 
-export function traverseParquetPartitionedResource(resource: PlTreeNodeAccessor): ParquetChunk<PlTreeEntry> {
+export function traverseParquetChunkResource(resource: PlTreeNodeAccessor): ParquetChunk<PlTreeEntry> {
+  if (!resourceTypesEqual(resource.resourceType, ParquetChunkResourceType)) {
+    throw new PFrameDriverError(
+      `unknown resource type: ${resourceTypeToString(resource.resourceType)}, `
+      + `expected: ${resourceTypeToString(ParquetChunkResourceType)}`,
+    );
+  }
+
   const blob = resource.traverse(
     { field: 'blob', assertFieldType: 'Service', errorIfFieldNotSet: true },
   ).persist();

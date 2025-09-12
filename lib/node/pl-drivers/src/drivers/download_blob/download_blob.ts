@@ -63,6 +63,7 @@ import { blobKey, pathToKey } from './blob_key';
 import { DownloadBlobTask, nonRecoverableError } from './download_blob_task';
 import { FilesCache } from '../helpers/files_cache';
 import { SparseCache, SparseCacheFsFile, SparseCacheFsRanges } from './sparse_cache/cache';
+import { isOffByOneError } from '../../helpers/download';
 
 export type DownloadDriverOps = {
   /**
@@ -319,7 +320,7 @@ export class DownloadDriver implements BlobDriver {
       }
     }
 
-    return await this.withContent(handle, {
+    const request = () => this.withContent(handle, {
       ...options,
       handler: async (content) => {
         const chunks: Uint8Array[] = [];
@@ -330,6 +331,15 @@ export class DownloadDriver implements BlobDriver {
         return Buffer.concat(chunks);
       }
     });
+
+    try {
+      return await request();
+    } catch (error) {
+      if (isOffByOneError(error)) {
+        return await request();
+      }
+      throw error;
+    }
   }
 
   /** Gets a content stream of a blob by a handle and calls handler with it. */
@@ -363,7 +373,11 @@ export class DownloadDriver implements BlobDriver {
           
           const handlerPromise = handler(handlerStream, size);
           const _cachePromise = buffer(cacheStream)
-            .then((data) => this.rangesCache.set(key, range ?? { from: 0, to: result.size }, data));
+            .then((data) => this.rangesCache.set(key, range ?? { from: 0, to: result.size }, data))
+            .catch(() => {
+              // Ignore cache errors - they shouldn't affect the main handler result
+              // This prevents unhandled promise rejections when the stream fails
+            });
 
           return await handlerPromise;
         }

@@ -10,7 +10,7 @@ from ptabler.steps import GlobalSettings, Concatenate, TableSpace
 global_settings = GlobalSettings(root_folder=".")
 
 
-class ConcatenateStepTests(unittest.TestCase):
+class ConcatenateTests(unittest.TestCase):
 
     def setUp(self):
         """Setup common data for concatenation tests."""
@@ -57,13 +57,13 @@ class ConcatenateStepTests(unittest.TestCase):
         """Helper to execute a workflow with a single concatenate step."""
         workflow = PWorkflow(workflow=[concat_step])
         space_to_use = initial_space_override if initial_space_override is not None else self.initial_table_space.copy()
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=space_to_use
         )
-        self.assertTrue(concat_step.output_table in final_table_space)
-        return final_table_space[concat_step.output_table].collect()
+        result_table = ctx.get_table(concat_step.output_table)
+        return result_table.collect()
 
     def test_basic_concatenation(self):
         """Tests basic concatenation of two tables with all columns."""
@@ -122,7 +122,7 @@ class ConcatenateStepTests(unittest.TestCase):
             input_tables=["table1", "non_existent_table"],
             output_table="concatenated_error"
         )
-        with self.assertRaisesRegex(ValueError, "Input table 'non_existent_table' not found in tablespace."):
+        with self.assertRaisesRegex(ValueError, "Table 'non_existent_table' not found in table space."):
             self._execute_concat_workflow(concat_step)
 
     def test_error_empty_input_tables_list(self):

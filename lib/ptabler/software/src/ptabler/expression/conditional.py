@@ -1,4 +1,3 @@
-import typing
 import msgspec
 import polars as pl
 

@@ -15,31 +15,31 @@ json := import("json")
 // Common schemas
 //
 
-P_AXIS_SPEC_SCHEMA := {
-	// `__options__,closed`: ``, // commented out to keep the room for future schema modifications
-	`type`: `string,regex=Int|Long|Float|Double|String`,
+P_UNTYPED_SPEC_SCHEMA := {
 	`name`: `string`,
 	`domain,?`: { any: `string` },
 	`annotations,?`: { any: `string` },
-	`parentAxes,?`: `any` // [ `number` ]
+	`parentAxes,?`: [ `number` ]
 }
 
-P_COLUMN_SPEC_SCHEMA := {
-	// `__options__,closed`: ``, // commented out to keep the room for future schema modifications
+P_AXIS_SPEC_SCHEMA := ["and", P_UNTYPED_SPEC_SCHEMA, {
+	`type`: `string,regex=Int|Long|String`
+}]
+
+P_COLUMN_OWN_SPEC_SCHEMA := ["and", P_UNTYPED_SPEC_SCHEMA, {
+	`valueType`: `string,regex=Int|Long|Float|Double|String`
+}]
+
+P_COLUMN_SPEC_SCHEMA := ["and", P_UNTYPED_SPEC_SCHEMA, {
 	`kind`: `string,regex=PColumn`,
 	`valueType`: `string`,
-	`name`: `string`,
-	`domain,?`: { any: `string` },
-	`annotations,?`: { any: `string` },
-	`parentAxes,?`: `any`, // [ `number` ]
 	`axesSpec,?`: [ P_AXIS_SPEC_SCHEMA ]
-}
+}]
 
 P_OBJECT_SPEC_SCHEMA := ["or", P_COLUMN_SPEC_SCHEMA, {
 	`kind`: `string`,
 	`annotations,?`: { any: `string` }
 }]
-
 
 KIND_P_COLUMN := "PColumn"
 
@@ -531,7 +531,9 @@ axisSpecToMatcher := func(axisSpec) {
 }
 
 export ll.toStrict({
+	P_UNTYPED_SPEC_SCHEMA: P_UNTYPED_SPEC_SCHEMA,
 	P_AXIS_SPEC_SCHEMA: P_AXIS_SPEC_SCHEMA,
+	P_COLUMN_OWN_SPEC_SCHEMA: P_COLUMN_OWN_SPEC_SCHEMA,
 	P_COLUMN_SPEC_SCHEMA: P_COLUMN_SPEC_SCHEMA,
 	P_OBJECT_SPEC_SCHEMA: P_OBJECT_SPEC_SCHEMA,
 

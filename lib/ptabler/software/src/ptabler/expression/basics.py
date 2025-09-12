@@ -1,6 +1,5 @@
 from math import log
 import typing
-import operator
 import polars as pl
 
 from ptabler.common import PType, toPolarsType

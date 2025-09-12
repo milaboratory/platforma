@@ -47,7 +47,7 @@ export const plTest = test.extend<{
         onTestFinished(async (task) => {
           if (task.errors !== undefined) {
             console.log(
-              `TEST FAILED SO ALTERNATIVE ROOT IS PRESETVED IN PL: ${alternativeRoot} (${resourceIdToString(
+              `TEST FAILED SO ALTERNATIVE ROOT IS PRESERVED IN PL: ${alternativeRoot} (${resourceIdToString(
                 altRootId,
               )})`,
             );

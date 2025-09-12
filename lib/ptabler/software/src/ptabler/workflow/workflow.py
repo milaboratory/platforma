@@ -1,8 +1,8 @@
 import msgspec
 import polars as pl
-from typing import List, overload, Literal, Tuple, Union
+from typing import List, overload, Literal, Union
 
-from ptabler.steps import AnyPStep, GlobalSettings, TableSpace
+from ptabler.steps import AnyPStep, GlobalSettings, TableSpace, StepContext
 
 
 class PWorkflow(msgspec.Struct):
@@ -22,10 +22,20 @@ class PWorkflow(msgspec.Struct):
         ...
 
     @overload
-    def execute(self, global_settings: GlobalSettings, lazy: Literal[True], initial_table_space: TableSpace | None = None) -> Tuple[TableSpace, List[pl.LazyFrame]]:
+    def execute(
+        self,
+        global_settings: GlobalSettings,
+        lazy: Literal[True],
+        initial_table_space: TableSpace | None = None,
+    ) -> StepContext:
         ...
 
-    def execute(self, global_settings: GlobalSettings, lazy: bool = False, initial_table_space: TableSpace | None = None) -> Union[None, Tuple[TableSpace, List[pl.LazyFrame]]]:
+    def execute(
+        self,
+        global_settings: GlobalSettings,
+        lazy: bool = False,
+        initial_table_space: TableSpace | None = None,
+    ) -> Union[None, StepContext]:
         """
         Executes all steps in the workflow sequentially.
 
@@ -34,19 +44,20 @@ class PWorkflow(msgspec.Struct):
         corresponding to sink operations (e.g., writing to files).
 
         It then iterates through each step defined in `self.workflow`:
-        1. Calls the `execute` method of the current step, passing the
-           current `table_space` and `global_settings`.
-        2. The step's `execute` method is expected to return the updated
-           `table_space` and a list of any sink LazyFrames it generated.
-        3. These sink LazyFrames are accumulated.
+        1. Creates a StepContext for the current step with the current
+           `table_space` and `global_settings`.
+        2. Calls the `execute` method of the current step, passing the ctx.
+        3. The step's `execute` method modifies the ctx directly.
+        4. Sink LazyFrames are accumulated from the ctx.
 
         If `lazy` is False (default), after all steps are processed,
         `polars.collect_all()` is called on the accumulated sink LazyFrames
         to execute these I/O-bound operations. The `streaming=True` option
         is used for potentially better performance and lower memory usage.
 
-        If `lazy` is True, this method returns the final `table_space` and
-        the list of `all_sink_lazyframes` without executing `pl.collect_all()`.
+        If `lazy` is True, this method returns the `StepContext` containing
+        the final table space, sink operations, and chained tasks without 
+        executing `pl.collect_all()` or running the chained tasks.
         This mode is intended for testing or scenarios where deferred execution
         is desired.
 
@@ -61,29 +72,35 @@ class PWorkflow(msgspec.Struct):
                                  tablespace is created. Defaults to None.
 
         Returns:
-            If `lazy` is True, returns a tuple containing the final
-            `TableSpace` and the list of all sink `pl.LazyFrame`s.
-            If `lazy` is False, executes sink operations and returns `None`.
+            If `lazy` is True, returns the `StepContext` containing the final
+            table space, sink operations, and chained tasks.
+            If `lazy` is False, executes sink operations and chained tasks,
+            then returns `None`.
         """
-        table_space: TableSpace = initial_table_space if initial_table_space is not None else {}
-        all_sink_lazyframes: List[pl.LazyFrame] = []
+        ctx = StepContext(
+            settings=global_settings,
+            initial_table_space=initial_table_space
+        )
 
         for step_obj in self.workflow:
-            table_space, step_sink_lazyframes = step_obj.execute(
-                table_space=table_space,
-                global_settings=global_settings
-            )
-            all_sink_lazyframes.extend(step_sink_lazyframes)
+            step_obj.execute(ctx)
 
         if lazy:
-            return table_space, all_sink_lazyframes
+            return ctx
         else:
-            if all_sink_lazyframes:
+            _, sink_frames, chained_tasks = ctx.into_parts()
+            
+            if sink_frames:
                 # Execute all collected sink operations (e.g., write_csv).
                 # The results of these operations (if any, usually None for writes)
                 # are ignored here. The primary purpose is to trigger the computation
                 # and I/O.
                 # `comm_subplan_elim=True` (default) is generally good for performance.
-                _ = pl.collect_all(all_sink_lazyframes)
+                _ = pl.collect_all(sink_frames)
                 # Future consideration: Add logging for workflow completion or errors.
+            
+            # Execute all chained tasks in the order they were added
+            for task in chained_tasks:
+                task()
+            
             return None

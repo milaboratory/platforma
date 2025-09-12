@@ -1,0 +1,22 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+
+self.defineOutputs("out")
+
+self.body(func(inputs) {
+	csv := inputs.inputCsv
+	saveFrameParams := inputs.saveFrameParams
+
+	wf := pt.workflow()
+
+	df := wf.frame(csv, { xsvType: "csv" })
+	df.saveFrameDirect("output", saveFrameParams)
+
+	ptResult := wf.run()
+	pf := ptResult.getFrameDirect("output")
+
+	return {
+		out: pframes.exportFrame(pf)
+	}
+})

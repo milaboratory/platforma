@@ -11,7 +11,7 @@ test_data_root_dir = os.path.join(
     "test_data")
 global_settings = GlobalSettings(root_folder=test_data_root_dir)
 
-class NdjsonTest(unittest.TestCase):
+class NdjsonTests(unittest.TestCase):
 
     def test_workflow_read_ndjson_write_csv(self):
         """Test reading NDJSON file and writing to CSV"""
