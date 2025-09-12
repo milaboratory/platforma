@@ -8,6 +8,22 @@ util := import(":annotations.util")
 DATA_FILE := "data.tsv"
 ANNOTATION_HEADER := util.ANNOTATION_HEADER
 
+/**
+ * Computes annotations and optional filters based on the provided steps and column bundle.
+ *
+ * @param inputs: A map containing the following keys:
+ *   - title: The title for the annotations.
+ *   - steps: An array of steps, each containing a name and an expression.
+ *   - mainAxis: The main axis specification.
+ *   - columnBundle: The column bundle to extract columns from.
+ *   - shouldComputeFilters: A boolean indicating whether to compute filters.
+ *   - createAxisSpec: A function to create axis specifications.
+ *   - createColumnSpec: A function to create column specifications.
+ *
+ * @returns: A map containing:
+ *   - annotations: The computed annotations with their data and specification.
+ *   - annotationsFilters (optional): An array of computed filters with their data and specifications.
+ */
 computeAnnotations := func(inputs) {
 	outputs := {}
 
