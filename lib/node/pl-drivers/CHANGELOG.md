@@ -1,5 +1,14 @@
 # @milaboratories/pl-drivers
 
+## 1.10.16
+
+### Patch Changes
+
+- 349375b: Add retry on off by one error
+- Updated dependencies [349375b]
+  - @milaboratories/pl-client@2.12.2
+  - @milaboratories/pl-tree@1.7.13
+
 ## 1.10.15
 
 ### Patch Changes

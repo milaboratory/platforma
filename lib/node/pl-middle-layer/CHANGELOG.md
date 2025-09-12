@@ -1,5 +1,19 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.40
+
+### Patch Changes
+
+- 349375b: Ptabler - saveFrameDirect for exporting data as Parquet PFrame
+- Updated dependencies [349375b]
+- Updated dependencies [349375b]
+  - @milaboratories/pl-drivers@1.10.16
+  - @milaboratories/pl-client@2.12.2
+  - @platforma-sdk/workflow-tengo@5.2.1
+  - @milaboratories/pl-model-backend@1.1.9
+  - @milaboratories/pl-errors@1.1.24
+  - @milaboratories/pl-tree@1.7.13
+
 ## 1.42.39
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @platforma-sdk/test
 
+## 1.43.5
+
+### Patch Changes
+
+- 349375b: Ptabler - saveFrameDirect for exporting data as Parquet PFrame
+- Updated dependencies [349375b]
+  - @milaboratories/pl-middle-layer@1.42.40
+  - @milaboratories/pl-client@2.12.2
+  - @milaboratories/pl-tree@1.7.13
+
 ## 1.43.4
 
 ### Patch Changes
