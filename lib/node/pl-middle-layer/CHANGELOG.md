@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.39
+
+### Patch Changes
+
+- 0432c59: Server platforma info for backend and blocks
+- Updated dependencies [0432c59]
+  - @milaboratories/pl-model-middle-layer@1.8.28
+  - @milaboratories/pl-client@2.12.1
+  - @platforma-sdk/block-tools@2.6.6
+  - @milaboratories/pl-model-backend@1.1.8
+  - @milaboratories/pl-drivers@1.10.15
+  - @milaboratories/pl-errors@1.1.23
+  - @milaboratories/pl-tree@1.7.12
+  - @platforma-sdk/workflow-tengo@5.2.0
+
 ## 1.42.38
 
 ### Patch Changes
