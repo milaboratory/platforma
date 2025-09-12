@@ -384,16 +384,16 @@ class WriteFrameTests(unittest.TestCase):
                 AxisMapping(column="user's_id", type="Long"),  # Single quote in name
                 AxisMapping(column="item.type", type="String"),  # Dot in name
             ],
-            columns=[ColumnMapping(column="us*r sc%re", type="Double")],  # Special characters in name
+            columns=[ColumnMapping(column='us*r "sc%re"', type="Double")],  # Special characters in name
             partition_key_length=0
         )
         ptw = PWorkflow(workflow=[write_frame_step])
 
-        # Initial order: axis2, column, axis1 (item.type, us*r sc%re, user's_id)
+        # Initial order: axis2, column, axis1 (item.type, us*r "sc%re", user's_id)
         # Data with different types than mapping + NULLs + unsorted
         lf = pl.LazyFrame({
             "item.type": ["A", None, "B", "A", "C"],  # String (matches mapping) with NULL
-            "us*r sc%re": [10, 25, None, 15, 30],  # Int (will cast to Double) with NULL
+            'us*r "sc%re"': [10, 25, None, 15, 30],  # Int (will cast to Double) with NULL
             "user's_id": [3.0, 1.0, 2.0, None, 4.0],  # Float (will cast to Long) with NULL
         })
         ts = {"input_table": lf}
@@ -405,7 +405,7 @@ class WriteFrameTests(unittest.TestCase):
             ptw.execute(global_settings=global_settings, initial_table_space=ts)
 
             # Verify file exists
-            datainfo_file = os.path.join(frame_dir, "us*r sc%re.datainfo")
+            datainfo_file = os.path.join(frame_dir, 'us*r "sc%re".datainfo')
             self.assertTrue(os.path.exists(datainfo_file))
             
             expected_data_info = DataInfo(
@@ -417,7 +417,7 @@ class WriteFrameTests(unittest.TestCase):
                             DataInfoAxis(id="user's_id", type="Long"),
                             DataInfoAxis(id="item.type", type="String")
                         ],
-                        column=DataInfoColumn(id="us*r sc%re", type="Double"),
+                        column=DataInfoColumn(id='us*r "sc%re"', type="Double"),
                         data_digest="a8857a51363993a093f8bbb1f12faa5328913a8efb68d77630da4f980abc022a",
                         stats=Stats(
                             number_of_rows=3,
@@ -443,7 +443,7 @@ class WriteFrameTests(unittest.TestCase):
             # Expected: Only NULLs in AXIS columns are filtered out, data column NULLs remain
             # Original data: 
             # "item.type": ["A", None, "B", "A", "C"]  - row 1 has NULL (axis column)
-            # "us*r sc%re": [10, 25, None, 15, 30]   - row 2 has NULL (data column, kept)  
+            # 'us*r "sc%re"': [10, 25, None, 15, 30]   - row 2 has NULL (data column, kept)  
             # "user's_id": [3.0, 1.0, 2.0, None, 4.0] - row 3 has NULL (axis column)
             # Rows with NULL in axis columns (rows 1 and 3) are filtered out
             # Remaining rows: 0, 2, 4 -> (3.0, "A", 10), (2.0, "B", None), (4.0, "C", 30)
@@ -451,11 +451,11 @@ class WriteFrameTests(unittest.TestCase):
             expected_df = pl.DataFrame({
                 "user's_id": [2, 3, 4],  # Long type, sorted
                 "item.type": ["B", "A", "C"],  # String type, sorted by first axis then second
-                "us*r sc%re": [None, 10.0, 30.0],  # Double type (cast from Int), NULL preserved
-            }).cast({"us*r sc%re": pl.Float64})  # Ensure proper type
+                'us*r "sc%re"': [None, 10.0, 30.0],  # Double type (cast from Int), NULL preserved
+            }).cast({'us*r "sc%re"': pl.Float64})  # Ensure proper type
             self.assertEqual(actual_df["user's_id"].dtype, pl.Int64)  # Long
             self.assertEqual(actual_df["item.type"].dtype, pl.String)  # String  
-            self.assertEqual(actual_df["us*r sc%re"].dtype, pl.Float64)  # Double
+            self.assertEqual(actual_df['us*r "sc%re"'].dtype, pl.Float64)  # Double
             assert_frame_equal(actual_df.sort("user's_id"), expected_df.sort("user's_id"), check_dtypes=False)
 
         finally:

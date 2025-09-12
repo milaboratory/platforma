@@ -80,6 +80,9 @@ def get_number_of_rows_in_column(conn: duckdb.DuckDBPyConnection, path: str) -> 
     """, [path]).fetchall()
     return result[0][0]
 
+def escape(name):
+    return f'"{name.replace('"', '""')}"'
+
 class WriteFrame(PStep, tag="write_frame"):
     """
     PStep to create a PFrame from provided lazy table.
@@ -183,7 +186,7 @@ class WriteFrame(PStep, tag="write_frame"):
                         )),
                 )
             
-            def get_reusable_part_info(data_file, column):
+            def get_common_part_info(data_file, column):
                 data_path = os.path.join(frame_dir, normalize_path(data_file))
 
                 nrows = get_number_of_rows_in_column(duckdb_conn, data_path)
@@ -196,25 +199,21 @@ class WriteFrame(PStep, tag="write_frame"):
                     get_number_of_bytes_in_column(duckdb_conn, data_path, axis.id) for axis in axes_info
                 ]
                 return nrows, axes_hash, axes_nbytes
-
-            axis_identifiers = [f'"{axis.column}"' for axis in self.axes]
-            all_column_identifiers = axis_identifiers + [f'"{column.column}"' for column in self.columns]
+            
+            axis_identifiers = [escape(axis.column) for axis in self.axes]
+            all_column_identifiers = axis_identifiers + [escape(column.column) for column in self.columns]
             def create_part_data(data_file: str, row=None):
+                query_params = [intermediate_parquet]
                 if row is not None:
                     where_conditions = []
                     for i, value in enumerate(row):
-                        column_name = axis_identifiers[i]
-                        if isinstance(value, str):
-                            # Escape single quotes in string values
-                            escaped_value = value.replace("'", "''")
-                            where_conditions.append(f"{column_name} = '{escaped_value}'")
-                        else:
-                            where_conditions.append(f"{column_name} = {value}")
+                        where_conditions.append(f"{axis_identifiers[i]} = ?")
+                        query_params.append(value)
                     
                     query = f"""
                         WITH filtered_data AS (
                             SELECT *
-                            FROM read_parquet('{intermediate_parquet}')
+                            FROM read_parquet(?)
                             WHERE {' AND '.join(where_conditions)}
                         )
                         SELECT {', '.join(all_column_identifiers[len(row):])}
@@ -224,7 +223,7 @@ class WriteFrame(PStep, tag="write_frame"):
                 else:
                     query = f"""
                         SELECT {', '.join(all_column_identifiers)}
-                        FROM read_parquet('{intermediate_parquet}')
+                        FROM read_parquet(?)
                         ORDER BY {', '.join(axis_identifiers)}
                     """
                 
@@ -232,7 +231,7 @@ class WriteFrame(PStep, tag="write_frame"):
                     COPY ({query})
                     TO '{os.path.join(frame_dir, normalize_path(data_file))}'
                     (FORMAT PARQUET, COMPRESSION 'ZSTD', COMPRESSION_LEVEL 3)
-                """)
+                """, query_params)
             
             if self.partition_key_length > 0:
                 partitioned_axes = [axis.column for axis in self.axes][:self.partition_key_length]
@@ -241,7 +240,7 @@ class WriteFrame(PStep, tag="write_frame"):
                     part_key = msgspec.json.encode(list(row)).decode('utf-8')
                     data_file = f"partition_{i}.parquet"
                     create_part_data(data_file, row)
-                    nrows, axes_hash, axes_nbytes = get_reusable_part_info(data_file, column)
+                    nrows, axes_hash, axes_nbytes = get_common_part_info(data_file, column)
                     for column in self.columns:
                         part_info = create_part_info(data_file, column, nrows, axes_hash, axes_nbytes)
                         data_info_by_column[column.column].parts[part_key] = part_info
@@ -249,7 +248,7 @@ class WriteFrame(PStep, tag="write_frame"):
                 part_key = msgspec.json.encode(list()).decode('utf-8')
                 data_file = "partition_0.parquet"
                 create_part_data(data_file)
-                nrows, axes_hash, axes_nbytes = get_reusable_part_info(data_file, column)
+                nrows, axes_hash, axes_nbytes = get_common_part_info(data_file, column)
                 for column in self.columns:
                     part_info = create_part_info(data_file, column, nrows, axes_hash, axes_nbytes)
                     data_info_by_column[column.column].parts[part_key] = part_info
