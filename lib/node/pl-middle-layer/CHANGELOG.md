@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.41
+
+### Patch Changes
+
+- a14e5c5: PFrames - stop downloading blob instantly
+
 ## 1.42.40
 
 ### Patch Changes
