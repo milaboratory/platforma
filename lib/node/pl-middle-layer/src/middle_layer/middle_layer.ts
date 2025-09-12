@@ -95,8 +95,8 @@ export class MiddleLayer {
    * Get the OS where backend is running.
    * For old backend versions returns undefined.
    */
-  public get backendOs(): BlockPlatform | undefined {
-    return this.pl.serverInfo.os as BlockPlatform | undefined;
+  public get serverPlatform(): BlockPlatform | undefined {
+    return this.pl.serverInfo.platform as BlockPlatform | undefined;
   }
 
   /** Adds a runtime capability to the middle layer. */

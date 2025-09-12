@@ -1,4 +1,4 @@
-Syncing 'MILAB-3052_1' proto version...
+Syncing 'main' proto version...
   Cloning 'git@github.com:milaboratory/pl.git' into tmp directory /Users/vadimpiven/Documents/MiLabs/git/platforma/lib/node/pl-client/proto/plapi/tmp-repo
     Cloning into '/Users/vadimpiven/Documents/MiLabs/git/platforma/lib/node/pl-client/proto/plapi/tmp-repo'...
   Syncing proto files from 'plapi'
@@ -11,28 +11,28 @@ Syncing 'MILAB-3052_1' proto version...
       import.proto
       resource_types.proto
       
-      sent 43,532 bytes  received 114 bytes  87,292.00 bytes/sec
-      total size is 43,122  speedup is 0.99
+      sent 43,648 bytes  received 114 bytes  87,524.00 bytes/sec
+      total size is 43,232  speedup is 0.99
 
     - 'plapi/'
       sending incremental file list
       ./
       
-      sent 65 bytes  received 19 bytes  168.00 bytes/sec
+      sent 62 bytes  received 19 bytes  162.00 bytes/sec
       total size is 0  speedup is 0.00
 
     - 'protodep.toml'
       sending incremental file list
       protodep.toml
       
-      sent 255 bytes  received 35 bytes  580.00 bytes/sec
-      total size is 138  speedup is 0.48
+      sent 256 bytes  received 35 bytes  582.00 bytes/sec
+      total size is 138  speedup is 0.47
 
     - 'protodep.lock'
       sending incremental file list
       protodep.lock
       
-      sent 353 bytes  received 35 bytes  776.00 bytes/sec
+      sent 354 bytes  received 35 bytes  778.00 bytes/sec
       total size is 236  speedup is 0.61
 
   Syncing shared proto files from 'controllers/shared/grpc'
@@ -41,15 +41,15 @@ Syncing 'MILAB-3052_1' proto version...
       ./
       protocol.proto
       
-      sent 1,356 bytes  received 38 bytes  2,788.00 bytes/sec
-      total size is 1,220  speedup is 0.88
+      sent 1,358 bytes  received 38 bytes  2,792.00 bytes/sec
+      total size is 1,220  speedup is 0.87
 
     - 'streamingapi/'
       sending incremental file list
       ./
       protocol.proto
       
-      sent 9,033 bytes  received 38 bytes  18,142.00 bytes/sec
+      sent 9,035 bytes  received 38 bytes  18,146.00 bytes/sec
       total size is 8,897  speedup is 0.98
 
     - 'downloadapi/'
@@ -57,29 +57,29 @@ Syncing 'MILAB-3052_1' proto version...
       ./
       protocol.proto
       
-      sent 1,254 bytes  received 38 bytes  2,584.00 bytes/sec
-      total size is 1,118  speedup is 0.87
+      sent 1,256 bytes  received 38 bytes  2,588.00 bytes/sec
+      total size is 1,118  speedup is 0.86
 
     - 'lsapi/'
       sending incremental file list
       ./
       protocol.proto
       
-      sent 4,996 bytes  received 38 bytes  10,068.00 bytes/sec
+      sent 4,998 bytes  received 38 bytes  10,072.00 bytes/sec
       total size is 4,860  speedup is 0.97
 
     - 'protodep.toml'
       sending incremental file list
       protodep.toml
       
-      sent 225 bytes  received 35 bytes  520.00 bytes/sec
-      total size is 108  speedup is 0.42
+      sent 226 bytes  received 35 bytes  522.00 bytes/sec
+      total size is 108  speedup is 0.41
 
     - 'protodep.lock'
       sending incremental file list
       protodep.lock
       
-      sent 323 bytes  received 35 bytes  716.00 bytes/sec
-      total size is 206  speedup is 0.58
+      sent 324 bytes  received 35 bytes  718.00 bytes/sec
+      total size is 206  speedup is 0.57
 
 Updating dependencies...

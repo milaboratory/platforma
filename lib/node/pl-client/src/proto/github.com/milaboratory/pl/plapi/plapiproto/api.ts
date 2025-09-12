@@ -3052,9 +3052,17 @@ export interface MaintenanceAPI_Ping_Response {
      */
     instanceId: string;
     /**
-     * @generated from protobuf field: string os = 6
+     * @generated from protobuf field: string platform = 6
      */
-    os: string;
+    platform: string; // <os>-<arch>
+    /**
+     * @generated from protobuf field: string os = 7
+     */
+    os: string; // linux / windows / macosx
+    /**
+     * @generated from protobuf field: string arch = 8
+     */
+    arch: string; // x64 / aarch64
 }
 /**
  * @generated from protobuf enum MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression
@@ -15525,7 +15533,9 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
             { no: 3, name: "server_info", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 4, name: "compression", kind: "enum", T: () => ["MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression", MaintenanceAPI_Ping_Response_Compression] },
             { no: 5, name: "instance_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 6, name: "os", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+            { no: 6, name: "platform", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 7, name: "os", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 8, name: "arch", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<MaintenanceAPI_Ping_Response>): MaintenanceAPI_Ping_Response {
@@ -15535,7 +15545,9 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         message.serverInfo = "";
         message.compression = 0;
         message.instanceId = "";
+        message.platform = "";
         message.os = "";
+        message.arch = "";
         if (value !== undefined)
             reflectionMergePartial<MaintenanceAPI_Ping_Response>(this, message, value);
         return message;
@@ -15560,8 +15572,14 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
                 case /* string instance_id */ 5:
                     message.instanceId = reader.string();
                     break;
-                case /* string os */ 6:
+                case /* string platform */ 6:
+                    message.platform = reader.string();
+                    break;
+                case /* string os */ 7:
                     message.os = reader.string();
+                    break;
+                case /* string arch */ 8:
+                    message.arch = reader.string();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -15590,9 +15608,15 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         /* string instance_id = 5; */
         if (message.instanceId !== "")
             writer.tag(5, WireType.LengthDelimited).string(message.instanceId);
-        /* string os = 6; */
+        /* string platform = 6; */
+        if (message.platform !== "")
+            writer.tag(6, WireType.LengthDelimited).string(message.platform);
+        /* string os = 7; */
         if (message.os !== "")
-            writer.tag(6, WireType.LengthDelimited).string(message.os);
+            writer.tag(7, WireType.LengthDelimited).string(message.os);
+        /* string arch = 8; */
+        if (message.arch !== "")
+            writer.tag(8, WireType.LengthDelimited).string(message.arch);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
