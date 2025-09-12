@@ -331,7 +331,7 @@ class PTableCache {
       this.logger('info', `calculateTableData cache - added PTable ${key} with size ${size}`);
     }
 
-    this.global.set(key, resource, { size });
+    this.global.set(key, resource, { size: Math.max(size, 1) }); // 1 is minimum size to avoid cache evictions
 
     let perFrame = this.perFrame.get(resource.resource.pFrame);
     if (!perFrame) {
