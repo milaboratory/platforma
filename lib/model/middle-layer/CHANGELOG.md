@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.28
+
+### Patch Changes
+
+- 0432c59: Server platforma info for backend and blocks
+
 ## 1.8.27
 
 ### Patch Changes

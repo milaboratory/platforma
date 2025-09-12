@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.12.1
+
+### Patch Changes
+
+- 0432c59: Server platforma info for backend and blocks
+
 ## 2.12.0
 
 ### Minor Changes
