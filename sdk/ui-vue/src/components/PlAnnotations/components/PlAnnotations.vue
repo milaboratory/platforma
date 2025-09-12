@@ -1,14 +1,16 @@
 <script setup lang="ts">
+import { computed, effect, shallowRef } from 'vue';
+
 import { isNil } from '@milaboratories/helpers';
 import { PlSidebarGroup, useConfirm } from '@milaboratories/uikit';
 import type { PObjectId, SimplifiedUniversalPColumnEntry } from '@platforma-sdk/model';
-import { computed, effect, shallowRef } from 'vue';
-import type { AnnotationSpecUi } from '../types';
+
+import type { Annotation } from '../types';
 import AnnotationsSidebar from './AnnotationsSidebar.vue';
 import FilterSidebar from './FilterSidebar.vue';
 
 // Models
-const annotation = defineModel<AnnotationSpecUi>('annotation', { required: true });
+const annotation = defineModel<Annotation>('annotation', { required: true });
 // Props
 const props = defineProps<{
   columns: SimplifiedUniversalPColumnEntry[];

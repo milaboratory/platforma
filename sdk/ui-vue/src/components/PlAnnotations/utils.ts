@@ -1,6 +1,7 @@
-import type { FilterUi, TypeFieldRecord } from '@platforma-sdk/model';
+import type { FilterSpecTypeFieldRecord } from '@milaboratories/uikit';
+import type { FilterSpec } from './types';
 
-export function createDefaultFilterMetadata<T extends Extract<FilterUi, { column: unknown }>>(): TypeFieldRecord<T> {
+export function createDefaultFilterMetadata<T extends Extract<FilterSpec, { column: unknown }>>(): FilterSpecTypeFieldRecord<T> {
   return {
     column: {
       label: 'Column',
@@ -12,5 +13,5 @@ export function createDefaultFilterMetadata<T extends Extract<FilterUi, { column
       fieldType: 'FilterUiType',
       defaultValue: () => undefined,
     },
-  } as TypeFieldRecord<T>;
+  } as FilterSpecTypeFieldRecord<T>;
 };

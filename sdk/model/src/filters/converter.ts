@@ -1,7 +1,7 @@
 import { and, col, lit, or, rank, type Expression, type ExpressionImpl } from '@milaboratories/ptabler-js';
-import type { FilterUi } from '../filters';
+import type { FilterSpec } from '../filters';
 
-export function convertFilterUiToExpressionImpl(value: FilterUi): ExpressionImpl {
+export function convertFilterUiToExpressionImpl(value: FilterSpec): ExpressionImpl {
   if (value.type === 'or') {
     const expressions = value.filters.filter((f) => f.type !== undefined).map(convertFilterUiToExpressionImpl);
     if (expressions.length === 0) {
@@ -46,6 +46,10 @@ export function convertFilterUiToExpressionImpl(value: FilterUi): ExpressionImpl
     return col(value.column).strContains(value.value, false, true).not();
   }
 
+  if (value.type === 'equal') {
+    return col(value.column).eq(lit(value.x));
+  }
+
   if (value.type === 'lessThan') {
     return col(value.column).lt(lit(value.x));
   }
@@ -62,11 +66,29 @@ export function convertFilterUiToExpressionImpl(value: FilterUi): ExpressionImpl
     return col(value.column).ge(lit(value.x));
   }
 
+  if (value.type === 'equalToColumn') {
+    return col(value.column).eq(col(value.rhs));
+  }
+
+  if (value.type === 'greaterThanColumn') {
+    if (value.minDiff !== undefined && value.minDiff !== 0) {
+      return col(value.column).plus(lit(value.minDiff)).gt(col(value.rhs));
+    }
+    return col(value.column).gt(col(value.rhs));
+  }
+
   if (value.type === 'lessThanColumn') {
     if (value.minDiff !== undefined && value.minDiff !== 0) {
       return col(value.column).plus(lit(value.minDiff)).lt(col(value.rhs));
     }
     return col(value.column).lt(col(value.rhs));
+  }
+
+  if (value.type === 'greaterThanColumnOrEqual') {
+    if (value.minDiff !== undefined && value.minDiff !== 0) {
+      return col(value.column).plus(lit(value.minDiff)).ge(col(value.rhs));
+    }
+    return col(value.column).ge(col(value.rhs));
   }
 
   if (value.type === 'lessThanColumnOrEqual') {
@@ -91,6 +113,6 @@ export function convertFilterUiToExpressionImpl(value: FilterUi): ExpressionImpl
   throw new Error('Unhandled filter type');
 }
 
-export function convertFilterUiToExpressions(value: FilterUi): Expression {
+export function convertFilterUiToExpressions(value: FilterSpec): Expression {
   return convertFilterUiToExpressionImpl(value).toJSON();
 }
