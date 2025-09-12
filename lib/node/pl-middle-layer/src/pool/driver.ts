@@ -93,8 +93,7 @@ class LocalBlobPool
   }
 
   protected createNewResource(params: PlTreeEntry): ComputableStableDefined<LocalBlobHandleAndSize> {
-    // precalculation of value tree will trigger the download process right away
-    return this.blobDriver.getDownloadedBlob(params).withPreCalculatedValueTree();
+    return this.blobDriver.getDownloadedBlob(params);
   }
 
   public getByKey(blobId: string): ComputableStableDefined<LocalBlobHandleAndSize> {
