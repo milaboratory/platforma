@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.42
+
+### Patch Changes
+
+- a5644f0: Fix PTable caching
+
 ## 1.42.41
 
 ### Patch Changes
