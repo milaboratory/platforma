@@ -114,10 +114,6 @@ computeAnnotations := func(inputs) {
 		spec: annotationsDataAndSpec[ANNOTATION_HEADER].spec
 	}
 
-	// if (!shouldComputeFilters) {
-	// 	return outputs
-	// }
-
 	outputs["annotationsFilters"] = slices.map(filterFiles, func(v) {
 		label := columnNameManager.fromSafe(v.name)
 		specAndData := createFilterDataAndSpec(v.file, v.name, label)
