@@ -16,11 +16,10 @@ computeAnnotations := func(inputs) {
 
 	mainAxis := inputs.mainAxis
 	columnBundle := inputs.columnBundle
-
-	blockId := inputs.blockId
-	traceSpec := inputs.traceSpec
-	
 	shouldComputeFilters := inputs.shouldComputeFilters
+
+	createAxisSpec := inputs.createAxisSpec
+	createColumnSpec := inputs.createColumnSpec
 
 	if len(steps) == 0 || is_undefined(columnBundle) {
 		return outputs
@@ -30,14 +29,10 @@ computeAnnotations := func(inputs) {
 		return step.expression
 	}))
 
-	createAxisSpec := util.createAxisSpecFactory(blockId)
-	createColumnSpec := util.createColumnSpecFactory(traceSpec, blockId)
-
 	annotationsAxisSpec := createAxisSpec("String", ANNOTATION_HEADER, title)
-	
+
 	createAnnotationsDataAndSpec := util.createAnnotationsDataAndSpecFactory(mainAxis, createColumnSpec, title)
 	createFilterDataAndSpec := util.createFilterDataAndSpecFactory(mainAxis, createColumnSpec)
-
 
 	tableBuilder := pFrames.tsvFileBuilder().cpu(1).mem(string(1 + len(columnsFromExpressions) * 2) + "GiB")
 	tableBuilder.setAxisHeader(mainAxis.spec, mainAxis.column)
