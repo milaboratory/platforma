@@ -70,7 +70,7 @@ watch(() => props.formMetadata, (newForm) => {
 function isFilterType(type: string | undefined): boolean {
   return type === 'FilterType'
     // @deprecated version
-    || type === 'FilterSpecType';
+    || type === 'FilterUiType';
 }
 
 </script>
