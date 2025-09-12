@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.workflow
 
+## 1.1.64
+
+### Patch Changes
+
+- Updated dependencies [349375b]
+  - @platforma-sdk/workflow-tengo@5.2.1
+
 ## 1.1.63
 
 ### Patch Changes

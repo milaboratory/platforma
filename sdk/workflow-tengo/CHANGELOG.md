@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.2.1
+
+### Patch Changes
+
+- 349375b: Ptabler - saveFrameDirect for exporting data as Parquet PFrame
+- Updated dependencies [349375b]
+  - @platforma-open/milaboratories.software-ptabler@1.12.3
+
 ## 5.2.0
 
 ### Minor Changes

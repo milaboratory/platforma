@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.12.2
+
+### Patch Changes
+
+- 349375b: Ptabler - saveFrameDirect for exporting data as Parquet PFrame
+
 ## 2.12.1
 
 ### Patch Changes
