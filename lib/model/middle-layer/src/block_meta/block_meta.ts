@@ -6,13 +6,13 @@ import {
   DescriptionContentText
 } from './content_types';
 
-export const BlockPlatform = z.union([
-  z.literal('windows-x64'),
-  z.literal('windows-aarch64'),
-  z.literal('macosx-x64'),
-  z.literal('macosx-aarch64'),
-  z.literal('linux-x64'),
-  z.literal('linux-aarch64')
+export const BlockPlatform = z.enum([
+  'windows-x64',
+  'windows-aarch64',
+  'macosx-x64',
+  'macosx-aarch64',
+  'linux-x64',
+  'linux-aarch64'
 ]);
 export type BlockPlatform = z.infer<typeof BlockPlatform>;
 
