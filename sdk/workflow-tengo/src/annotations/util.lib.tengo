@@ -322,6 +322,12 @@ mapExpressionColumnNames := func(expression, transformFn) {
 	return copy
 }
 
+/**
+ * Given a list of annotation steps with expressions, computes the annotations data and specifications.
+ *
+ * @param expressions - An array of annotation steps, each containing a name and an expression.
+ * @return - A list of unique column names extracted from the expressions.
+ */
 extractColumnsFromExpressions := func(expressions) {
 	columnsSet := {}
 
