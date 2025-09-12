@@ -10,7 +10,7 @@ export function createDefaultFilterMetadata<T extends Extract<FilterSpec, { colu
     },
     type: {
       label: 'Predicate',
-      fieldType: 'FilterUiType',
+      fieldType: 'FilterType',
       defaultValue: () => undefined,
     },
   } as FilterSpecTypeFieldRecord<T>;
