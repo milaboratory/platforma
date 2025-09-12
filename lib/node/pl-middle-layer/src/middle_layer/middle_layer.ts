@@ -26,7 +26,7 @@ import {
 } from './ops';
 import { randomUUID } from 'node:crypto';
 import type { ProjectListEntry } from '../model';
-import type { AuthorMarker, ProjectMeta } from '@milaboratories/pl-model-middle-layer';
+import type { AuthorMarker, ProjectMeta, BlockPlatform } from '@milaboratories/pl-model-middle-layer';
 import { BlockUpdateWatcher } from '../block_registry/watcher';
 import type { QuickJSWASMModule } from 'quickjs-emscripten';
 import { getQuickJS } from 'quickjs-emscripten';
@@ -89,6 +89,14 @@ export class MiddleLayer {
   ) {
     this.projectList = projectList;
     this.pl = this.env.pl;
+  }
+
+  /**
+   * Get the OS where backend is running.
+   * For old backend versions returns undefined.
+   */
+  public get serverPlatform(): BlockPlatform | undefined {
+    return this.pl.serverInfo.platform as BlockPlatform | undefined;
   }
 
   /** Adds a runtime capability to the middle layer. */
