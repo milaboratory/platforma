@@ -1,0 +1,135 @@
+//
+// read p-frame from the directory
+//
+
+text := import("text")
+ll := import(":ll")
+path := import(":path")
+validation := import(":validation")
+smart := import(":smart")
+constants := import(":pframes.constants")
+objects := import(":objects")
+json := import("json")
+util := import(":pt.util")
+
+// json schema of .datainfo file
+_DATA_INFO_SCHEMA := {
+    `type`: `string,regex=ParquetPartitioned`,
+    `partitionKeyLength`: `number`,
+    `parts`: {
+        any: {
+            `data`: `string,regex=\.parquet$`,
+            `dataDigest`: `string`,
+            `stats,?`: {
+                `numberOfRows,?`: `number`,
+                `numberOfBytes,?`: {
+                    `axes`: [`number`],
+                    `column`: `number`
+                }
+            },
+            `axes`: [
+                {
+                    `id`: `string`,
+                    `type`: `string,regex=Int|Long|String`
+                }
+            ],
+            `column`: {
+                `id`: `string`,
+                `type`: `string,regex=Int|Long|Float|Double|String`
+            }
+        }
+    }
+}
+
+self := import(":workdir.proc")
+
+self.readFiles(func(inputs) {
+    columnIdsByFrameName := inputs.args
+
+    rawDataInfos := {}
+    for filePath in inputs.files {
+        pathParts := path.split(filePath)
+        if len(pathParts) != 2 {
+            continue
+        }
+
+        frameName := pathParts[0]
+        dataInfoName := pathParts[1]
+        if !text.has_suffix(dataInfoName, ".datainfo") {
+            continue
+        }
+
+        columnId := text.trim_suffix(dataInfoName, ".datainfo")
+        columnRef := util.makeFrameColumnRef(frameName, columnId)
+        rawDataInfos[columnRef] = filePath
+    }
+
+    dataInfos := {}
+    for frameName, columnIds in columnIdsByFrameName {
+        for columnId in columnIds {
+            columnRef := util.makeFrameColumnRef(frameName, columnId)
+
+            dataInfoPath := path.join(frameName, columnId + ".datainfo")
+            ll.assert(
+                rawDataInfos[columnRef] == dataInfoPath,
+                "no data info file found for column '%s'",
+                columnId
+            )
+            dataInfos[columnRef] = dataInfoPath
+        }
+    }
+	return dataInfos
+})
+
+self.body(func(inputs) {
+    columnIdsByFrameName := inputs.args
+
+    outputs := {}
+    for frameName, columnIds in columnIdsByFrameName {
+        for columnId in columnIds {
+            columnRef := util.makeFrameColumnRef(frameName, columnId)
+
+            dataInfo := inputs[columnRef].getDataAsJson()
+            validation.assertType(dataInfo, _DATA_INFO_SCHEMA)
+
+            resourceData := { partitionKeyLength: dataInfo.partitionKeyLength }
+            resourceBuilder := smart.structBuilder(
+                constants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED,
+                json.encode(resourceData)
+            )
+
+            for encodedAxisKey, parquetChunk in dataInfo.parts {
+                // Gather all the data
+
+                parquetChunkData := self.saveFile(path.join(frameName, parquetChunk.data))
+
+                parquetChunkMetadata := {
+                    dataDigest: parquetChunk.dataDigest,
+                    stats: parquetChunk.stats
+                }
+                objects.deleteUndefined(parquetChunkMetadata)
+
+                parquetChunkMapping := {
+                    axes: parquetChunk.axes,
+                    column: parquetChunk.column
+                }
+
+                // Create field structure
+
+                parquetChunkResource := smart.structBuilder(
+                    constants.RTYPE_PARQUET_CHUNK,
+                    json.encode(parquetChunkMetadata)
+                )
+
+                parquetChunkResource.createMetaField("blob").set(parquetChunkData)
+                parquetChunkResource.createMetaField("mapping").setJson(parquetChunkMapping)
+                
+                resourceBuilder.createInputField(encodedAxisKey).
+                    set(parquetChunkResource.lockAndBuild())
+            }
+
+            outputs[columnRef] = resourceBuilder.lockAndBuild()
+        }
+    }
+    return outputs
+})

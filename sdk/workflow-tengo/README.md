@@ -19,4 +19,8 @@ Perfect for researchers who need flexible data processing that can intelligently
 - [Tengo syntax](https://github.com/d5/tengo/blob/master/docs/tutorial.md)
 - [Tengo builtin functions](https://github.com/d5/tengo/blob/master/docs/builtins.md)
 
+# Running single test
 
+```sh
+pnpm build:dev --filter='@platforma-sdk/workflow-tengo-tests...' && (cd tests/workflow-tengo && PL_ADDRESS="http://127.0.0.1:6345" PL_TEST_USER="default" PL_TEST_PASSWORD="__password__" pnpm run test pt -t "pt write frame test" --retry 0)
+```

@@ -1,11 +1,11 @@
 import polars as pl
 import os
-from typing import List, Optional, Dict, Mapping, Any 
+from typing import List, Optional, Dict, Any 
 import msgspec
 
 from ptabler.common import toPolarsType, PType
 
-from .base import GlobalSettings, PStep, TableSpace
+from .base import PStep, StepContext
 from .util import normalize_path
 
 class ColumnSchema(msgspec.Struct, frozen=True, omit_defaults=True):
@@ -36,7 +36,7 @@ class BaseReadLogic(PStep):
         """
         pass
 
-    def execute(self, table_space: TableSpace, global_settings: GlobalSettings) -> tuple[TableSpace, list[pl.LazyFrame]]:
+    def execute(self, ctx: StepContext):
         """
         Common execution logic for reading steps.
         Processes schema, builds scan kwargs, calls _do_scan, and updates table space.
@@ -70,13 +70,10 @@ class BaseReadLogic(PStep):
         if self.ignore_errors is not None:
             scan_kwargs["ignore_errors"] = self.ignore_errors
 
-        file_path = os.path.join(global_settings.root_folder, normalize_path(self.file))
+        file_path = os.path.join(ctx.settings.root_folder, normalize_path(self.file))
         lazy_frame = self._do_scan(file_path, scan_kwargs)
         
-        updated_table_space = table_space.copy()
-        updated_table_space[self.name] = lazy_frame
-        
-        return updated_table_space, []
+        ctx.put_table(self.name, lazy_frame)
 
 class ReadCsv(BaseReadLogic, tag="read_csv"):
     """
@@ -120,6 +117,25 @@ class ReadNdjson(BaseReadLogic, tag="read_ndjson"):
         """
         return pl.scan_ndjson(file_path, **scan_kwargs)
 
+class ReadParquet(BaseReadLogic, tag="read_parquet"):
+    """
+    PStep to read data from an Apache Parquet file into the tablespace.
+    Corresponds to the ReadParquetStep in the TypeScript definitions.
+    """
+    file: str  # Path to the Parquet file
+    name: str  # Name to assign to the loaded DataFrame in the tablespace
+
+    schema: Optional[List[ColumnSchema]] = None
+    infer_schema: Optional[bool] = None
+    ignore_errors: Optional[bool] = None
+    n_rows: Optional[int] = None
+
+    def _do_scan(self, file_path: str, scan_kwargs: Dict[str, Any]) -> pl.LazyFrame:
+        """
+        Prepares a Polars scan plan to read the Apache Parquet file.
+        """
+        return pl.scan_parquet(file_path, **scan_kwargs)
+
 class BaseWriteLogic(PStep):
     """
     Abstract base class for PSteps that write tables to files.
@@ -139,30 +155,24 @@ class BaseWriteLogic(PStep):
         """
         pass
 
-    def execute(self, table_space: TableSpace, global_settings: GlobalSettings) -> tuple[TableSpace, list[pl.LazyFrame]]:
+    def execute(self, ctx: StepContext):
         """
         Common execution logic for writing steps.
         Retrieves the table, selects columns if specified, and then calls _do_sink.
         The actual write operation occurs when the returned LazyFrame (representing 
         the sink status) is collected by the main execution engine.
         """
-        if self.table not in table_space:
-            raise ValueError(
-                f"Table '{self.table}' not found in tablespace. "
-                f"Available tables: {list(table_space.keys())}"
-            )
-
-        lf_to_write = table_space[self.table]
+        lf_to_write = ctx.get_table(self.table)
 
         selected_lf = lf_to_write
         if self.columns:
             selected_lf = lf_to_write.select(self.columns)
         
-        sink_plan = self._do_sink(selected_lf, os.path.join(global_settings.root_folder, normalize_path(self.file)))
+        file_path = os.path.join(ctx.settings.root_folder, normalize_path(self.file))
+        sink_plan = self._do_sink(selected_lf, file_path)
 
-        # The tablespace itself is not modified by a write operation.
-        # We return the original tablespace and the plan that includes the sink operation.
-        return table_space, [sink_plan]
+        # Add the sink plan to the context for later execution
+        ctx.add_sink(sink_plan)
 
 class WriteCsv(BaseWriteLogic, tag="write_csv"):
     """
@@ -225,3 +235,19 @@ class WriteNdjson(BaseWriteLogic, tag="write_ndjson"):
         Prepares a Polars plan to write the selected LazyFrame to an NDJSON file.
         """
         return selected_lf.sink_ndjson(path=output_path, lazy=True)
+
+class WriteParquet(BaseWriteLogic, tag="write_parquet"):
+    """
+    PStep to write a table from the tablespace to an Apache Parquet file.
+    Uses Polars' sink_parquet for lazy writing.
+    Corresponds to the WriteParquetStep in TypeScript definitions.
+    """
+    table: str  # Name of the table in the tablespace to write
+    file: str   # Path to the output Parquet file
+    columns: Optional[List[str]] = None  # Optional: List of column names to write
+
+    def _do_sink(self, selected_lf: pl.LazyFrame, output_path: str) -> pl.LazyFrame:
+        """
+        Prepares a Polars plan to write the selected LazyFrame to an Apache Parquet file.
+        """
+        return selected_lf.sink_parquet(path=output_path, lazy=True)

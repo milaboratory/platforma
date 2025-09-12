@@ -23,6 +23,8 @@ exportPFrame := func(pfResource, skipHideDataFromUI) {
 	//
 	fields := pfResource.inputs()
 
+	ll.assert(pfResource.info().InputsLocked, "pframe resource not locked for export: %v", pfResource.info().Type)
+
 	// if context is passed as an input we differently treat the field names.
 	if pfResource.checkResourceType(constants.RTYPE_CONTEXT) {
 		newFields := {}

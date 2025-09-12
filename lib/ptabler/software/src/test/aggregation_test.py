@@ -6,13 +6,13 @@ from ptabler.workflow import PWorkflow
 from ptabler.steps import GlobalSettings, Aggregate, TableSpace
 # Assuming MaxBy is imported from here
 from ptabler.steps.aggregate import Sum, MaxBy
-from ptabler.expression import ColumnReferenceExpression, ConstantValueExpression
+from ptabler.expression import ColumnReferenceExpression
 
 # Minimal global_settings for tests
 global_settings = GlobalSettings(root_folder=".")
 
 
-class AggregationStepTests(unittest.TestCase):
+class AggregationTests(unittest.TestCase):
 
     def test_simple_aggregation_sum(self):
         """
@@ -39,7 +39,7 @@ class AggregationStepTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[aggregate_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -50,8 +50,7 @@ class AggregationStepTests(unittest.TestCase):
             "value_sum": [40, 60]
         }).sort("category")
 
-        self.assertTrue("aggregated_data" in final_table_space)
-        result_df = final_table_space["aggregated_data"].collect().sort(
+        result_df = ctx.get_table("aggregated_data").collect().sort(
             "category")
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
@@ -81,7 +80,7 @@ class AggregationStepTests(unittest.TestCase):
         )
 
         workflow = PWorkflow(workflow=[aggregate_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_table_space
@@ -92,8 +91,7 @@ class AggregationStepTests(unittest.TestCase):
             "item_with_max_score": [102, 203]  # item_id for max score
         }).sort("group")
 
-        self.assertTrue("max_score_items" in final_table_space)
-        result_df = final_table_space["max_score_items"].collect().sort(
+        result_df = ctx.get_table("max_score_items").collect().sort(
             "group")
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 

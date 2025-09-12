@@ -1,8 +1,8 @@
-import { Pl } from '@milaboratories/pl-middle-layer';
+import { isPColumn, parseFinalPObjectCollection, Pl, pTableValue } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import { expect } from 'vitest';
+import { assert, expect } from 'vitest';
 import type { TestRenderResults } from '@platforma-sdk/test';
-import type { MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
+import type { CalculateTableDataResponse, MiddleLayerDriverKit, PObjectId, PTableColumnSpec } from '@milaboratories/pl-middle-layer';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type { ComputableCtx } from '@milaboratories/computable';
 import { getTestTimeout } from '@milaboratories/helpers';
@@ -29,6 +29,41 @@ const getFileContent = async (
   );
   expect(handle).toBeDefined();
   return (await driverKit.blobDriver.getContent(handle!)).toString();
+};
+
+const getTableData = async (
+  result: TestRenderResults<string>,
+  outputName: string,
+  driverKit: MiddleLayerDriverKit,
+  timeout = TIMEOUT,
+): Promise<CalculateTableDataResponse> => {
+  const handle = await awaitStableState(
+    result.computeOutput(outputName, (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
+      if (!acc || !acc.getIsReadyOrError()) return undefined;
+      const pObjects = parseFinalPObjectCollection(acc, false, '', [outputName]);
+      const pColumns = Object.entries(pObjects).map(([, obj]) => {
+        if (!isPColumn(obj)) throw new Error(`not a PColumn (kind = ${obj.spec.kind})`);
+        return obj;
+      });
+      return driverKit.pFrameDriver.createPFrame(pColumns, ctx);
+    }),
+    timeout,
+  );
+  assert(handle);
+
+  const pColumns = await driverKit.pFrameDriver.listColumns(handle);
+  const pTable = await driverKit.pFrameDriver.calculateTableData(handle, {
+    src: {
+      type: 'full',
+      entries: pColumns.map((col) => ({
+        type: 'column',
+        column: col.columnId,
+      })),
+    },
+    filters: [],
+    sorting: [],
+  }, undefined);
+  return pTable;
 };
 
 const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
@@ -74,6 +109,84 @@ tplTest.concurrent(
     const outputTsvContent = await getFileContent(result, 'out', driverKit);
 
     expect(normalizeTsv(outputTsvContent)).toEqual(normalizeTsv(expectedOutputTsvData));
+  },
+);
+
+tplTest.concurrent(
+  'pt write frame test',
+  async ({ helper, expect, driverKit }) => {
+    const inputCsvData = `a,b
+1,X
+9,Z
+4,Y`;
+    const saveFrameParams = {
+      axes: [{
+        column: 'a',
+        spec: {
+          name: 'a',
+          type: 'Int',
+        },
+      }],
+      columns: [{
+        column: 'b',
+        spec: {
+          name: 'b',
+          valueType: 'String',
+        },
+      }],
+    };
+
+    const result = await helper.renderTemplate(
+      false,
+      'pt.write_frame',
+      ['out'],
+      (tx) => ({
+        inputCsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputCsvData)),
+        saveFrameParams: tx.createValue(Pl.JsonObject, JSON.stringify(saveFrameParams)),
+      }),
+    );
+
+    const pTable = await getTableData(result, 'out', driverKit);
+
+    const pTableSpecs = pTable.map((col) => col.spec);
+    expect(pTableSpecs).toEqual([
+      {
+        type: 'axis',
+        id: {
+          name: 'a',
+          type: 'Int',
+        },
+        spec: {
+          name: 'a',
+          type: 'Int',
+        },
+      },
+      {
+        type: 'column',
+        id: `{"name":"b","resolvePath":["out"]}` as PObjectId,
+        spec: {
+          kind: 'PColumn',
+          name: 'b',
+          valueType: 'String',
+          axesSpec: [{
+            name: 'a',
+            type: 'Int',
+          }],
+        },
+      },
+    ] satisfies PTableColumnSpec[]);
+
+    const pTableData = pTable.map((col) => {
+      const rows: string[] = [];
+      for (let i = 0; i < col.data.data.length; i++) {
+        rows.push(pTableValue(col.data, i, { absent: '', na: '' })?.toString() ?? '');
+      }
+      return rows;
+    });
+    expect(pTableData).toEqual([
+      ['1', '4', '9'],
+      ['X', 'Y', 'Z'],
+    ]);
   },
 );
 

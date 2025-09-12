@@ -1,12 +1,10 @@
 import typing
 import polars as pl
-import polars_hash
 import math
 
 from .base import Expression
 
 AnyExpression = Expression
-
 
 # Define type literals based on the TypeScript definitions
 HashType = typing.Literal[

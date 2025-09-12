@@ -1,7 +1,6 @@
 import unittest
 import polars as pl
 from polars.testing import assert_frame_equal
-from typing import Optional
 
 from ptabler.workflow import PWorkflow
 from ptabler.steps import GlobalSettings, TableSpace, Sort
@@ -12,7 +11,7 @@ from ptabler.expression import ColumnReferenceExpression
 global_settings = GlobalSettings(root_folder=".")
 
 
-class SortStepTests(unittest.TestCase):
+class SortTests(unittest.TestCase):
 
     def setUp(self):
         """Setup common data for sort tests."""
@@ -40,13 +39,13 @@ class SortStepTests(unittest.TestCase):
     def _execute_sort_workflow(self, sort_step: Sort, initial_space: TableSpace) -> pl.DataFrame:
         """Helper to execute a workflow with a single sort step."""
         workflow = PWorkflow(workflow=[sort_step])
-        final_table_space, _ = workflow.execute(
+        ctx = workflow.execute(
             global_settings=global_settings,
             lazy=True,
             initial_table_space=initial_space.copy()
         )
-        self.assertTrue(sort_step.output_table in final_table_space)
-        return final_table_space[sort_step.output_table].collect()
+        result_table = ctx.get_table(sort_step.output_table)
+        return result_table.collect()
 
     def test_single_column_ascending(self):
         sort_step = Sort(
@@ -176,7 +175,7 @@ class SortStepTests(unittest.TestCase):
             output_table="sorted_output",
             by=[SortDirective(value=ColumnReferenceExpression(name="value"))]
         )
-        with self.assertRaisesRegex(ValueError, "Input table 'non_existent_table' not found in tablespace."):
+        with self.assertRaisesRegex(ValueError, "Table 'non_existent_table' not found in table space."):
             self._execute_sort_workflow(sort_step, self.initial_table_space_basic)
 
     def test_error_empty_by_list(self):

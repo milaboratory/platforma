@@ -64,6 +64,12 @@ export interface ReadNdjsonStep extends BaseFileReadStep {
   type: 'read_ndjson';
 }
 
+/** Represents the configuration for a step that reads data from an Apache Parquet file into the tablespace. */
+export interface ReadParquetStep extends BaseFileReadStep {
+  /** The type of the step, which is always 'read_parquet' for this operation. */
+  type: 'read_parquet';
+}
+
 /**
  * Base interface for file writing operations that contains common fields
  * shared across different file format writers.
@@ -103,4 +109,12 @@ export interface WriteCsvStep extends BaseFileWriteStep {
 export interface WriteNdjsonStep extends BaseFileWriteStep {
   /** The type of the step, which is always 'write_ndjson' for this operation. */
   type: 'write_ndjson';
+}
+
+/**
+ * Represents the configuration for a step that writes a table from the tablespace to an Apache Parquet file.
+ */
+export interface WriteParquetStep extends BaseFileWriteStep {
+  /** The type of the step, which is always 'write_parquet' for this operation. */
+  type: 'write_parquet';
 }

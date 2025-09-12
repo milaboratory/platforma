@@ -2,7 +2,7 @@ import polars as pl
 import msgspec
 from typing import List
 
-from .base import GlobalSettings, PStep, TableSpace
+from .base import PStep, StepContext
 from ..expression import AnyExpression
 
 
@@ -27,27 +27,8 @@ class AddColumns(PStep, tag="add_columns"):
     table: str
     columns: List[ColumnDefinition]
 
-    def execute(self, table_space: TableSpace, global_settings: GlobalSettings) -> tuple[TableSpace, list[pl.LazyFrame]]:
-        """
-        Executes the add_columns step.
-
-        Args:
-            table_space: The current tablespace containing named LazyFrames.
-            global_settings: Global settings for the workflow.
-
-        Returns:
-            A tuple containing the updated tablespace and an empty list (as this is not a sink operation).
-        
-        Raises:
-            ValueError: If the specified table is not found in the tablespace.
-        """
-        if self.table not in table_space:
-            raise ValueError(
-                f"Table '{self.table}' not found in tablespace. "
-                f"Available tables: {list(table_space.keys())}"
-            )
-
-        lf = table_space[self.table]
+    def execute(self, ctx: StepContext):
+        lf = ctx.get_table(self.table)
 
         polars_expressions_to_add = []
         for col_def in self.columns:
@@ -60,10 +41,7 @@ class AddColumns(PStep, tag="add_columns"):
             lf = lf.with_columns(polars_expressions_to_add)
 
         # Update the tablespace with the modified LazyFrame
-        updated_table_space = table_space.copy()
-        updated_table_space[self.table] = lf
-        
-        return updated_table_space, []
+        ctx.put_table(self.table, lf)
 
 
 class Select(PStep, tag="select"):
@@ -77,28 +55,8 @@ class Select(PStep, tag="select"):
     output_table: str = msgspec.field(name="outputTable")
     columns: List[ColumnDefinition]
 
-    def execute(self, table_space: TableSpace, global_settings: GlobalSettings) -> tuple[TableSpace, list[pl.LazyFrame]]:
-        """
-        Executes the select step.
-
-        Args:
-            table_space: The current tablespace containing named LazyFrames.
-            global_settings: Global settings for the workflow.
-
-        Returns:
-            A tuple containing the updated tablespace (with the new output_table)
-            and an empty list (as this is not a sink operation).
-        
-        Raises:
-            ValueError: If the specified input_table is not found in the tablespace.
-        """
-        if self.input_table not in table_space:
-            raise ValueError(
-                f"Input table '{self.input_table}' not found in tablespace. "
-                f"Available tables: {list(table_space.keys())}"
-            )
-
-        lf_input = table_space[self.input_table]
+    def execute(self, ctx: StepContext):
+        lf_input = ctx.get_table(self.input_table)
 
         polars_expressions_to_select = []
         if not self.columns:
@@ -114,10 +72,7 @@ class Select(PStep, tag="select"):
 
         lf_output = lf_input.select(polars_expressions_to_select)
 
-        updated_table_space = table_space.copy()
-        updated_table_space[self.output_table] = lf_output
-        
-        return updated_table_space, []
+        ctx.put_table(self.output_table, lf_output)
 
 
 class WithColumns(PStep, tag="with_columns"):
@@ -131,28 +86,8 @@ class WithColumns(PStep, tag="with_columns"):
     output_table: str = msgspec.field(name="outputTable")
     columns: List[ColumnDefinition]
 
-    def execute(self, table_space: TableSpace, global_settings: GlobalSettings) -> tuple[TableSpace, list[pl.LazyFrame]]:
-        """
-        Executes the with_columns step.
-
-        Args:
-            table_space: The current tablespace containing named LazyFrames.
-            global_settings: Global settings for the workflow.
-
-        Returns:
-            A tuple containing the updated tablespace (with the new output_table)
-            and an empty list (as this is not a sink operation).
-        
-        Raises:
-            ValueError: If the specified input_table is not found in the tablespace.
-        """
-        if self.input_table not in table_space:
-            raise ValueError(
-                f"Input table '{self.input_table}' not found in tablespace. "
-                f"Available tables: {list(table_space.keys())}"
-            )
-
-        lf_input = table_space[self.input_table]
+    def execute(self, ctx: StepContext):
+        lf_input = ctx.get_table(self.input_table)
 
         polars_expressions_to_add = []
         for col_def in self.columns:
@@ -162,10 +97,7 @@ class WithColumns(PStep, tag="with_columns"):
         # If polars_expressions_to_add is empty, lf.with_columns([]) is a no-op, returning the original lf.
         lf_output = lf_input.with_columns(polars_expressions_to_add)
 
-        updated_table_space = table_space.copy()
-        updated_table_space[self.output_table] = lf_output
-        
-        return updated_table_space, []
+        ctx.put_table(self.output_table, lf_output)
 
 
 class WithoutColumns(PStep, tag="without_columns"):
@@ -178,34 +110,11 @@ class WithoutColumns(PStep, tag="without_columns"):
     output_table: str = msgspec.field(name="outputTable")
     columns: List[str] # List of column names to exclude
 
-    def execute(self, table_space: TableSpace, global_settings: GlobalSettings) -> tuple[TableSpace, list[pl.LazyFrame]]:
-        """
-        Executes the without_columns step.
-
-        Args:
-            table_space: The current tablespace containing named LazyFrames.
-            global_settings: Global settings for the workflow.
-
-        Returns:
-            A tuple containing the updated tablespace (with the new output_table)
-            and an empty list (as this is not a sink operation).
-        
-        Raises:
-            ValueError: If the specified input_table is not found in the tablespace.
-        """
-        if self.input_table not in table_space:
-            raise ValueError(
-                f"Input table '{self.input_table}' not found in tablespace. "
-                f"Available tables: {list(table_space.keys())}"
-            )
-
-        lf_input = table_space[self.input_table]
+    def execute(self, ctx: StepContext):
+        lf_input = ctx.get_table(self.input_table)
 
         # Polars' exclude method takes a list of column names to remove.
         # If self.columns is empty, it effectively does nothing, which is fine.
         lf_output = lf_input.select(pl.all().exclude(self.columns))
 
-        updated_table_space = table_space.copy()
-        updated_table_space[self.output_table] = lf_output
-        
-        return updated_table_space, []
+        ctx.put_table(self.output_table, lf_output)

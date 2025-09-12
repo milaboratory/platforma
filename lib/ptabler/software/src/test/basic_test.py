@@ -9,7 +9,7 @@ test_data_root_dir = os.path.join(
     "test_data")
 global_settings = GlobalSettings(root_folder=test_data_root_dir)
 
-class BasicTest(unittest.TestCase):
+class BasicTests(unittest.TestCase):
 
     def test_workflow_read_tsv_write_csv(self):
 

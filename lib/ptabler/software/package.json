@@ -2,10 +2,13 @@
   "name": "@platforma-open/milaboratories.software-ptabler",
   "version": "1.12.2",
   "scripts": {
-    "init-python": "[ -d ../.venv ] || (cd src && python -m venv ../../.venv && ../../.venv/bin/pip install -r requirements.txt)",
+    "init-python:create-venv": "mise exec python@3.12.10 -- python -m venv --clear .venv",
+    "init-python:pip-install": ".venv/bin/pip install --quiet --disable-pip-version-check",
+    "init-python": "pnpm run init-python:create-venv && pnpm run init-python:pip-install -r src/requirements.dev.txt -r src/requirements.txt",
+    "lint": "[ ! -d .venv ] || .venv/bin/ruff check",
     "build": "rm -rf ./dist && pl-pkg build",
     "prepublishOnly": "pl-pkg prepublish",
-    "test": "[ ! -d ../.venv ] || (../.venv/bin/python -m unittest discover --verbose -s src -p '*.py')",
+    "test": "[ ! -d .venv ] || (.venv/bin/coverage run -m unittest discover --verbose -s src -p '*.py' && .venv/bin/coverage report -m)",
     "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
