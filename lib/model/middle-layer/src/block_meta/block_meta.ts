@@ -6,6 +6,16 @@ import {
   DescriptionContentText
 } from './content_types';
 
+export const BlockPlatform = z.enum([
+  'windows-x64',
+  'windows-aarch64',
+  'macosx-x64',
+  'macosx-aarch64',
+  'linux-x64',
+  'linux-aarch64'
+]);
+export type BlockPlatform = z.infer<typeof BlockPlatform>;
+
 export function BlockPackMeta<
   const LongStringType extends z.ZodTypeAny,
   const BinaryType extends z.ZodTypeAny
@@ -37,7 +47,12 @@ export function BlockPackMeta<
     /**
      * The URL to the Terms of Service for the block. If provided checkbox with link to this URL should be shown in order to add block.
      */
-    termsOfServiceUrl: z.string().url().optional()
+    termsOfServiceUrl: z.string().url().optional(),
+    /**
+     * Supported operating systems.
+     * If not provided, the block is supported on all operating systems.
+     */
+    supportedPlatforms: z.array(BlockPlatform).optional()
   });
 }
 
