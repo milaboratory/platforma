@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import { effect, shallowRef } from 'vue';
+
 import { PlPureSlideModal } from '@milaboratories/uikit';
 import type { PObjectId, SimplifiedUniversalPColumnEntry } from '@platforma-sdk/model';
-import { effect, shallowRef } from 'vue';
-import type { AnnotationSpecUi } from '../types';
+
+import type { Annotation } from '../types';
 import PlAnnotations from './PlAnnotations.vue';
 
 // Models
-const annotation = defineModel<AnnotationSpecUi>('annotation', { required: true });
+const annotation = defineModel<Annotation>('annotation', { required: true });
 const opened = defineModel<boolean>('opened', { required: true });
 // Props
 const props = defineProps<{

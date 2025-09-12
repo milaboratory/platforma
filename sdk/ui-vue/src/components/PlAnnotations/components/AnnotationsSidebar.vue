@@ -7,10 +7,10 @@ import {
   PlElementList,
   PlSidebarItem,
 } from '@milaboratories/uikit';
-import type { AnnotationSpecUi } from '../types';
+import type { Annotation } from '../types';
 
 // Models
-const annotation = defineModel<AnnotationSpecUi>('annotation', { required: true });
+const annotation = defineModel<Annotation>('annotation', { required: true });
 const selectedStepId = defineModel<undefined | number>('selectedStepId');
 // Emits
 const emits = defineEmits<{

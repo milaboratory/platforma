@@ -1,9 +1,12 @@
-<script setup lang="ts" generic="T extends FilterUi = FilterUi">
-import { isNil } from '@milaboratories/helpers';
-import { PlCheckbox, PlDropdown, PlNumberField, PlTextField } from '@milaboratories/uikit';
-import type { FilterUi, FilterUiType, SimplifiedUniversalPColumnEntry, SUniversalPColumnId, TypeFieldRecord } from '@platforma-sdk/model';
-import { getFilterUiMetadata, getFilterUiTypeOptions } from '@platforma-sdk/model';
+<script setup lang="ts" generic="T extends FilterSpec = FilterSpec">
 import { computed, watch } from 'vue';
+
+import { isNil } from '@milaboratories/helpers';
+import type { FilterSpecTypeFieldRecord } from '@milaboratories/uikit';
+import { getFilterUiMetadata, getFilterUiTypeOptions, PlCheckbox, PlDropdown, PlNumberField, PlTextField } from '@milaboratories/uikit';
+import type { SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
+
+import type { FilterSpec, FilterSpecType } from '../types';
 
 type ObjectEntries<T, K extends keyof T = keyof T> = [K, T[K]][];
 
@@ -11,7 +14,7 @@ const formData = defineModel<T>({ default: () => ({}) });
 
 const props = defineProps<{
   columns: SimplifiedUniversalPColumnEntry[];
-  formMetadata: TypeFieldRecord<T>;
+  formMetadata: FilterSpecTypeFieldRecord<T>;
 }>();
 
 const columnSpecRef = computed(() => {
@@ -64,6 +67,12 @@ watch(() => props.formMetadata, (newForm) => {
 { immediate: true, deep: true },
 );
 
+function isFilterType(type: string | undefined): boolean {
+  return type === 'FilterType'
+    // @deprecated version
+    || type === 'FilterSpecType';
+}
+
 </script>
 
 <template>
@@ -79,9 +88,9 @@ watch(() => props.formMetadata, (newForm) => {
           @update:model-value="setFieldValue(fieldName, $event as T[keyof T])"
         />
       </template>
-      <template v-else-if="field.fieldType === 'FilterUiType'">
+      <template v-else-if="isFilterType(field.fieldType)">
         <PlDropdown
-          :model-value="formData[fieldName] as FilterUiType"
+          :model-value="formData[fieldName] as FilterSpecType"
           :label="field.label ?? fieldName"
           :options="filterUiTypeOptions"
           @update:model-value="setFieldValue(fieldName, $event as T[keyof T])"

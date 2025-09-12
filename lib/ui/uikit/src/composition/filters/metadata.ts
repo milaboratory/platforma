@@ -1,7 +1,28 @@
-import type { FilterUiType, SimplifiedPColumnSpec } from '@platforma-sdk/model';
-import type { FilterUiMetadataRecord } from './types';
+import type { FilterSpecType, SimplifiedPColumnSpec } from '@platforma-sdk/model';
+import type { FilterSpecMetadataRecord } from './types';
 
 export const filterUiMetadata = {
+  equal: {
+    label: 'Col = X (Equal)',
+    form: {
+      column: {
+        label: 'Column',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: 'Predicate',
+        fieldType: 'FilterType',
+        defaultValue: () => 'equal',
+      },
+      x: {
+        label: 'X',
+        fieldType: 'number',
+        defaultValue: () => 0,
+      },
+    },
+    supportedFor: isNumericValueType,
+  },
   lessThan: {
     label: 'Col < X (Less Than)',
     form: {
@@ -12,7 +33,7 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'lessThan',
       },
       x: {
@@ -33,7 +54,7 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'greaterThan',
       },
       x: {
@@ -54,7 +75,7 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'lessThanOrEqual',
       },
       x: {
@@ -75,7 +96,7 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'greaterThanOrEqual',
       },
       x: {
@@ -85,6 +106,30 @@ export const filterUiMetadata = {
       },
     },
     supportedFor: isNumericValueType,
+  },
+  // Columns comparison
+  equalToColumn: {
+    label: 'Col₁ = Col₂ (Compare Columns)',
+    form: {
+      column: {
+        label: 'Col₁',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: 'Predicate',
+        fieldType: 'FilterType',
+        defaultValue: () => 'equalToColumn',
+      },
+      rhs: {
+        label: 'Col₂',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+    },
+    supportedFor: (spec1: SimplifiedPColumnSpec, spec2?: SimplifiedPColumnSpec): boolean => {
+      return isNumericValueType(spec1) && (spec2 === undefined || isNumericValueType(spec2));
+    },
   },
   lessThanColumn: {
     label: 'Col₁ < Col₂ (Compare Columns)',
@@ -96,8 +141,36 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'lessThanColumn',
+      },
+      rhs: {
+        label: 'Col₂',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      minDiff: {
+        label: 'Margin (positive)',
+        fieldType: 'number?',
+        defaultValue: () => undefined,
+      },
+    },
+    supportedFor: (spec1: SimplifiedPColumnSpec, spec2?: SimplifiedPColumnSpec): boolean => {
+      return isNumericValueType(spec1) && (spec2 === undefined || isNumericValueType(spec2));
+    },
+  },
+  greaterThanColumn: {
+    label: 'Col₁ > Col₂ (Compare Columns)',
+    form: {
+      column: {
+        label: 'Col₁',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: 'Predicate',
+        fieldType: 'FilterType',
+        defaultValue: () => 'greaterThanColumn',
       },
       rhs: {
         label: 'Col₂',
@@ -124,7 +197,7 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'lessThanColumnOrEqual',
       },
       rhs: {
@@ -142,6 +215,35 @@ export const filterUiMetadata = {
       return isNumericValueType(spec1) && (spec2 === undefined || isNumericValueType(spec2));
     },
   },
+  greaterThanColumnOrEqual: {
+    label: 'Col₁ ≥ Col₂ (Compare Columns)',
+    form: {
+      column: {
+        label: 'Col₁',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: 'Predicate',
+        fieldType: 'FilterType',
+        defaultValue: () => 'greaterThanColumnOrEqual',
+      },
+      rhs: {
+        label: 'Col₂',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      minDiff: {
+        label: 'Margin (positive)',
+        fieldType: 'number?',
+        defaultValue: () => undefined,
+      },
+    },
+    supportedFor: (spec1: SimplifiedPColumnSpec, spec2?: SimplifiedPColumnSpec): boolean => {
+      return isNumericValueType(spec1) && (spec2 === undefined || isNumericValueType(spec2));
+    },
+  },
+  // Ordering filters
   topN: {
     label: 'Top N',
     form: {
@@ -152,7 +254,7 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'topN',
       },
       n: {
@@ -173,7 +275,7 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'bottomN',
       },
       n: {
@@ -194,7 +296,7 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'patternContainSubsequence',
       },
       value: {
@@ -215,7 +317,7 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'patternNotContainSubsequence',
       },
       value: {
@@ -236,7 +338,7 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'patternEquals',
       },
       value: {
@@ -257,7 +359,7 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'patternNotEquals',
       },
       value: {
@@ -278,7 +380,7 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'isNA',
       },
     },
@@ -294,7 +396,7 @@ export const filterUiMetadata = {
       },
       type: {
         label: 'Predicate',
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         defaultValue: () => 'isNotNA',
       },
     },
@@ -304,13 +406,13 @@ export const filterUiMetadata = {
     label: 'Or',
     form: {
       type: {
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         label: 'Predicate',
         defaultValue: () => 'or',
       },
       filters: {
         fieldType: 'unknown[]',
-        label: 'Filter',
+        label: 'Filters',
         defaultValue: () => [],
       },
     },
@@ -320,13 +422,13 @@ export const filterUiMetadata = {
     label: 'And',
     form: {
       type: {
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         label: 'Predicate',
         defaultValue: () => 'and',
       },
       filters: {
         fieldType: 'unknown[]',
-        label: 'Filter',
+        label: 'Filters',
         defaultValue: () => [],
       },
     },
@@ -336,7 +438,7 @@ export const filterUiMetadata = {
     label: 'Not',
     form: {
       type: {
-        fieldType: 'FilterUiType',
+        fieldType: 'FilterType',
         label: 'Predicate',
         defaultValue: () => 'not',
       },
@@ -348,7 +450,7 @@ export const filterUiMetadata = {
     },
     supportedFor: () => false,
   },
-} satisfies FilterUiMetadataRecord<FilterUiType>;
+} satisfies FilterSpecMetadataRecord<FilterSpecType>;
 
 export function getFilterUiTypeOptions(columnSpec?: SimplifiedPColumnSpec) {
   if (!columnSpec) {
@@ -361,7 +463,7 @@ export function getFilterUiTypeOptions(columnSpec?: SimplifiedPColumnSpec) {
   }));
 }
 
-export function getFilterUiMetadata(type: FilterUiType) {
+export function getFilterUiMetadata(type: FilterSpecType) {
   return filterUiMetadata[type];
 }
 

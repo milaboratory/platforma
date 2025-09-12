@@ -1,10 +1,33 @@
+// @DEPRECATED - use sdk/model/src/filters + sdk/model/src/annotations
 import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
 import type { FilterSpecUi } from '../../annotations';
-import type { FilterUi, FilterUiOfType, FilterUiType } from '../../filters';
+import type { FilterSpec } from '../../filters';
 import type { AnnotationFilter, AnnotationMode, AnnotationScript, IsNA, NotFilter, NumericalComparisonFilter, PatternFilter, PatternPredicate, ValueRank } from './filter';
-import type { SimplifiedPColumnSpec } from './types';
 
-export type { FilterUi, FilterUiOfType, FilterUiType };
+export type FilterUi = FilterSpec<Extract<
+  FilterSpec,
+  // supported filters
+  { type:
+    | 'lessThan'
+    | 'greaterThan'
+    | 'lessThanOrEqual'
+    | 'greaterThanOrEqual'
+    | 'lessThanColumn'
+    | 'lessThanColumnOrEqual'
+    | 'patternContainSubsequence'
+    | 'patternNotContainSubsequence'
+    | 'patternEquals'
+    | 'patternNotEquals'
+    | 'topN'
+    | 'bottomN'
+    | 'isNA'
+    | 'isNotNA';
+  }
+>, { id?: number; name?: string; isExpanded?: boolean }>;
+
+export type FilterUiType = Exclude<FilterUi, { type: undefined }>['type'];
+
+export type FilterUiOfType<T extends FilterUiType> = Extract<FilterUi, { type: T }>;
 
 // DEPRECATED - use lib/ui/uikit/src/composition/filters
 export function unreachable(x: never): never {
@@ -12,13 +35,6 @@ export function unreachable(x: never): never {
   throw new Error('Unexpected object: ' + x);
 }
 
-function isNumericValueType(spec: SimplifiedPColumnSpec): boolean {
-  return spec.valueType === 'Int' || spec.valueType === 'Long' || spec.valueType === 'Float' || spec.valueType === 'Double';
-}
-
-function isStringValueType(spec: SimplifiedPColumnSpec): boolean {
-  return spec.valueType === 'String';
-}
 export type TypeToLiteral<T> =
   [T] extends [FilterUiType] ? 'FilterUiType' :
       [T] extends [SUniversalPColumnId] ? 'SUniversalPColumnId' :
@@ -73,377 +89,16 @@ export type FormField =
 
 export type AnyForm = Record<string, FormField>;
 
-type CreateFilterUiMetadataMap<T extends FilterUiType> = {
-  [P in T]: {
-    label: string;
-    form: TypeForm<FilterUiOfType<T>>; // TODO: simplify this to `TypeField<T>`
-    supportedFor: (spec1: SimplifiedPColumnSpec, spec2: SimplifiedPColumnSpec | undefined) => boolean;
-  }
+export type AnnotationStepUi = FilterSpecUi<FilterUi> & {
+  id?: number;
 };
 
-export const filterUiMetadata = {
-  lessThan: {
-    label: 'Col < X (Less Than)',
-    form: {
-      column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'lessThan',
-      },
-      x: {
-        label: 'X',
-        fieldType: 'number',
-        defaultValue: () => 0,
-      },
-    },
-    supportedFor: isNumericValueType,
-  },
-  greaterThan: {
-    label: 'Col > X (Greater Than)',
-    form: {
-      column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'greaterThan',
-      },
-      x: {
-        label: 'X',
-        fieldType: 'number',
-        defaultValue: () => 0,
-      },
-    },
-    supportedFor: isNumericValueType,
-  },
-  lessThanOrEqual: {
-    label: 'Col ≤ X (Less Than or Equal)',
-    form: {
-      column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'lessThanOrEqual',
-      },
-      x: {
-        label: 'X',
-        fieldType: 'number',
-        defaultValue: () => 0,
-      },
-    },
-    supportedFor: isNumericValueType,
-  },
-  greaterThanOrEqual: {
-    label: 'Col ≥ X (Greater Than or Equal)',
-    form: {
-      column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'greaterThanOrEqual',
-      },
-      x: {
-        label: 'X',
-        fieldType: 'number',
-        defaultValue: () => 0,
-      },
-    },
-    supportedFor: isNumericValueType,
-  },
-  lessThanColumn: {
-    label: 'Col₁ < Col₂ (Compare Columns)',
-    form: {
-      column: {
-        label: 'Col₁',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'lessThanColumn',
-      },
-      rhs: {
-        label: 'Col₂',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      minDiff: {
-        label: 'Margin (positive)',
-        fieldType: 'number?',
-        defaultValue: () => undefined,
-      },
-    },
-    supportedFor: (spec1: SimplifiedPColumnSpec, spec2?: SimplifiedPColumnSpec): boolean => {
-      return isNumericValueType(spec1) && (spec2 === undefined || isNumericValueType(spec2));
-    },
-  },
-  lessThanColumnOrEqual: {
-    label: 'Col₁ ≤ Col₂ (Compare Columns)',
-    form: {
-      column: {
-        label: 'Col₁',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'lessThanColumnOrEqual',
-      },
-      rhs: {
-        label: 'Col₂',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      minDiff: {
-        label: 'Margin (positive)',
-        fieldType: 'number?',
-        defaultValue: () => undefined,
-      },
-    },
-    supportedFor: (spec1: SimplifiedPColumnSpec, spec2?: SimplifiedPColumnSpec): boolean => {
-      return isNumericValueType(spec1) && (spec2 === undefined || isNumericValueType(spec2));
-    },
-  },
-  topN: {
-    label: 'Top N',
-    form: {
-      column: {
-        label: 'Rank By Column',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'topN',
-      },
-      n: {
-        label: 'N',
-        fieldType: 'number',
-        defaultValue: () => 10,
-      },
-    },
-    supportedFor: isNumericValueType,
-  },
-  bottomN: {
-    label: 'Bottom N',
-    form: {
-      column: {
-        label: 'Rank By Column',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'bottomN',
-      },
-      n: {
-        label: 'N',
-        fieldType: 'number',
-        defaultValue: () => 10,
-      },
-    },
-    supportedFor: isNumericValueType,
-  },
-  patternContainSubsequence: {
-    label: 'Col ~ Seq (Contain Subsequence)',
-    form: {
-      column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'patternContainSubsequence',
-      },
-      value: {
-        label: 'Seq',
-        fieldType: 'string',
-        defaultValue: () => '',
-      },
-    },
-    supportedFor: isStringValueType,
-  },
-  patternNotContainSubsequence: {
-    label: 'Col ≁ Seq (Not Contain Subsequence)',
-    form: {
-      column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'patternNotContainSubsequence',
-      },
-      value: {
-        label: 'Seq',
-        fieldType: 'string',
-        defaultValue: () => '',
-      },
-    },
-    supportedFor: isStringValueType,
-  },
-  patternEquals: {
-    label: 'Col = Seq (Equals)',
-    form: {
-      column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'patternEquals',
-      },
-      value: {
-        label: 'Seq',
-        fieldType: 'string',
-        defaultValue: () => '',
-      },
-    },
-    supportedFor: isStringValueType,
-  },
-  patternNotEquals: {
-    label: 'Col ≠ Seq (Not Equal)',
-    form: {
-      column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'patternNotEquals',
-      },
-      value: {
-        label: 'Seq',
-        fieldType: 'string',
-        defaultValue: () => '',
-      },
-    },
-    supportedFor: isStringValueType,
-  },
-  isNA: {
-    label: 'Is NA',
-    form: {
-      column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'isNA',
-      },
-    },
-    supportedFor: () => true,
-  },
-  isNotNA: {
-    label: 'Is Not NA',
-    form: {
-      column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
-        defaultValue: () => undefined,
-      },
-      type: {
-        label: 'Predicate',
-        fieldType: 'FilterUiType',
-        defaultValue: () => 'isNotNA',
-      },
-    },
-    supportedFor: () => true,
-  },
-  or: {
-    label: 'Or',
-    form: {
-      type: {
-        fieldType: 'FilterUiType',
-        label: 'Predicate',
-        defaultValue: () => 'or',
-      },
-      filters: {
-        fieldType: 'unknown[]',
-        label: 'Filters',
-        defaultValue: () => [],
-      },
-    },
-    supportedFor: () => false,
-  },
-  and: {
-    label: 'And',
-    form: {
-      type: {
-        fieldType: 'FilterUiType',
-        label: 'Predicate',
-        defaultValue: () => 'and',
-      },
-      filters: {
-        fieldType: 'unknown[]',
-        label: 'Filters',
-        defaultValue: () => [],
-      },
-    },
-    supportedFor: () => false,
-  },
-  not: {
-    label: 'Not',
-    form: {
-      type: {
-        fieldType: 'FilterUiType',
-        label: 'Predicate',
-        defaultValue: () => 'not',
-      },
-      filter: {
-        fieldType: 'form',
-        label: 'Filter',
-        defaultValue: () => undefined as unknown as FilterUi, // TODO:
-      },
-    },
-    supportedFor: () => false,
-  },
-} satisfies CreateFilterUiMetadataMap<FilterUiType>;
-
-export function getFilterUiTypeOptions(columnSpec?: SimplifiedPColumnSpec) {
-  if (!columnSpec) {
-    return [];
-  }
-
-  return Object.entries(filterUiMetadata).filter(([_, metadata]) => metadata.supportedFor(columnSpec)).map(([type, metadata]) => ({
-    label: metadata.label,
-    value: type,
-  }));
-}
-
-export function getFilterUiMetadata(type: FilterUiType) {
-  return filterUiMetadata[type];
-}
+export type AnnotationScriptUi = {
+  isCreated?: boolean;
+  title: string;
+  mode: AnnotationMode;
+  steps: AnnotationStepUi[];
+};
 
 export function compileFilter(ui: FilterUi): AnnotationFilter {
   if (ui.type === 'or') {
@@ -605,27 +260,12 @@ export function compileFilter(ui: FilterUi): AnnotationFilter {
     };
   }
 
-  if (ui.type === undefined) {
-    throw new Error('Filter type is undefined, this should not happen');
-  }
-
   unreachable(ui);
 }
 
 export function compileFilters(uiFilters: FilterUi[]): AnnotationFilter[] {
   return uiFilters.filter((f) => f.type !== undefined).map(compileFilter);
 }
-
-export type AnnotationStepUi = FilterSpecUi & {
-  id?: number;
-};
-
-export type AnnotationScriptUi = {
-  isCreated?: boolean;
-  title: string;
-  mode: AnnotationMode;
-  steps: AnnotationStepUi[];
-};
 
 export function compileAnnotationScript(uiScript: AnnotationScriptUi): AnnotationScript {
   return {
