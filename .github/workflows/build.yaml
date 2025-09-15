@@ -22,6 +22,8 @@ jobs:
       - init
     uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4
     with:
+      docker-ga-push: true
+
       app-name: Platforma SDK
       app-name-slug: 'platforma-sdk'
       gha-runner-label: 'dev-pl-sdk'
