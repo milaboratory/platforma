@@ -31,8 +31,8 @@ catalogs:
       specifier: ^1.0.145
       version: 1.0.145
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.76
-      version: 1.0.76
+      specifier: 1.0.77
+      version: 1.0.77
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.7
       version: 2.2.7
@@ -1926,7 +1926,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.76(encoding@0.1.13)
+        version: 1.0.77(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -4895,11 +4895,11 @@ packages:
   '@milaboratories/miplots4@1.0.145':
     resolution: {integrity: sha512-NiWAywxWtacWR5danfZA2y8DjzzLVSBjTxBe5fvhpUCI84CYZcGyn4eS44fDFG3IO1uaC9FAsKpWcWta0HTK+Q==}
 
-  '@milaboratories/pframes-rs-node@1.0.76':
-    resolution: {integrity: sha512-IX9wAGoc1SMgGu1CMqsuOoIkj6CQDtFI/SIl0IejtcDuL2PY5siHghtpniApK1OVJcmdmtXGXBi2D/MoDU6Qvg==}
+  '@milaboratories/pframes-rs-node@1.0.77':
+    resolution: {integrity: sha512-sITEufGgQ4tsVdZjpQQ2O65jTtsnQpu/E+LKJzkj+/ltJr43wfOYmmGuRd4SDTvfqV7lM13W07CAnRKiBKJgMg==}
 
-  '@milaboratories/pframes-rs-serv@1.0.76':
-    resolution: {integrity: sha512-buulenG/mEmrql/a714KgWV1WIEIt8YMRaxOOd3Rqgesis7Tjq0M6EdKOzpTEL3VwVokJYG3W/Rb4+vDOfBoKQ==}
+  '@milaboratories/pframes-rs-serv@1.0.77':
+    resolution: {integrity: sha512-lf1e4OmynvyAy3xormhR4f98ir70OUjQJUggMa83bZ96P6GcH7t2ThOzigtolbz73IgnQ10Jx6tvDoi1AQXq0g==}
     hasBin: true
 
   '@milaboratories/pl-error-like@1.12.5':
@@ -4908,8 +4908,8 @@ packages:
   '@milaboratories/pl-model-common@1.19.19':
     resolution: {integrity: sha512-3j0IUc/zqGoHALY8/vP/V1iUflMsllkeDOjORwI+b7d/LkIxR4oKm+NEQqUJh7RmQjSA0b4n0FiEyKYEcgEVFA==}
 
-  '@milaboratories/pl-model-middle-layer@1.8.26':
-    resolution: {integrity: sha512-V1M1ja0vg/ao9wEFNM/h/hGD2ml6EODQbeBYEssIoDv+aQehbKxPZKPb19S9t7E2IbsvGzWdeBaiMgbxgo9yZw==}
+  '@milaboratories/pl-model-middle-layer@1.8.28':
+    resolution: {integrity: sha512-aLtlw7O1/kPetJI3noQyM82aVMuakb6bv+/CYAEp3PWXVyVEteOlv83ASYdMGuWBYWmznIZ5JlGl6SEOvECQWg==}
 
   '@milaboratories/software-pframes-conv@2.2.7':
     resolution: {integrity: sha512-FFZRPP8C86cJdGbaj6t/FmHSfRyuSWnXw8d6UACtPLh7sQRRuwi95LBp808sPP5vqFWBHFijvuh0CtXdSrjZYA==}
@@ -8162,8 +8162,8 @@ packages:
     resolution: {integrity: sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==}
     engines: {node: '>=18'}
 
-  commander@14.0.0:
-    resolution: {integrity: sha512-2uM9rYjPvyq39NwLRqaiLtWHyDC1FvryJDa2ATTVims5YAS4PupsEQsDvP14FqhFr0P49CYDugi59xaxJlTXRA==}
+  commander@14.0.1:
+    resolution: {integrity: sha512-2JkV3gUZUVrbNA+1sjBOYLsMZ5cEEl8GTFP2a4AVz5hvasAMCQ1D2l2le/cX+pV4N6ZU17zjUahLpIXRrnWL8A==}
     engines: {node: '>=20'}
 
   commander@2.20.3:
@@ -13580,10 +13580,10 @@ snapshots:
       - d3-scale-chromatic
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.76(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.77(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
-      '@milaboratories/pframes-rs-serv': 1.0.76
+      '@milaboratories/pframes-rs-serv': 1.0.77
       '@milaboratories/pl-model-common': 1.19.19
       humanize-duration: 3.33.0
       ulid: 3.0.1
@@ -13591,12 +13591,12 @@ snapshots:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-serv@1.0.76':
+  '@milaboratories/pframes-rs-serv@1.0.77':
     dependencies:
       '@milaboratories/helpers': 1.8.0
       '@milaboratories/pl-model-common': 1.19.19
-      '@milaboratories/pl-model-middle-layer': 1.8.26
-      commander: 14.0.0
+      '@milaboratories/pl-model-middle-layer': 1.8.28
+      commander: 14.0.1
       selfsigned: 3.0.1
 
   '@milaboratories/pl-error-like@1.12.5':
@@ -13611,7 +13611,7 @@ snapshots:
       canonicalize: 2.1.0
       zod: 3.23.8
 
-  '@milaboratories/pl-model-middle-layer@1.8.26':
+  '@milaboratories/pl-model-middle-layer@1.8.28':
     dependencies:
       '@milaboratories/pl-model-common': 1.19.19
       remeda: 2.28.0
@@ -17880,7 +17880,7 @@ snapshots:
 
   commander@12.1.0: {}
 
-  commander@14.0.0: {}
+  commander@14.0.1: {}
 
   commander@2.20.3: {}
 
