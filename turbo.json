@@ -17,7 +17,6 @@
         "TAGS_ADDITIONAL_ARGS",
         "TAGS_FILE",
 
-        "PL_DOCKER_REGISTRY_PUSH_TO",
         "PL_DOCKER_BUILD",
         "PL_DOCKER_NO_BUILD",
         "PL_DOCKER_AUTOPUSH",
@@ -37,7 +36,6 @@
         "DEBUG",
         "MI_LICENSE",
 
-        "PL_DOCKER_REGISTRY_PUSH_TO",
         "PL_DOCKER_BUILD",
         "PL_DOCKER_NO_BUILD",
         "PL_DOCKER_AUTOPUSH",
