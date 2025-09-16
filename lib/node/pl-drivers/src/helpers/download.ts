@@ -62,31 +62,41 @@ export class RemoteFileDownloader {
       await checkStatusCodeOk(statusCode, webBody, url);
       ops.signal?.throwIfAborted();
 
-      // Some backend versions have a bug where they return more data than requested in range.
-      // So we have to manually normalize the stream to the expected size.
-      const size = ops.range ? ops.range.to - ops.range.from : Number(responseHeaders['content-length']);
-      const normalizedStream = webBody.pipeThrough(new (class extends TransformStream {
-        constructor(sizeBytes: number, recordOffByOne: () => void) {
-          super({
-            transform(chunk: Uint8Array, controller) {
-              const truncatedChunk = chunk.slice(0, sizeBytes);
-              controller.enqueue(truncatedChunk);
-              sizeBytes -= truncatedChunk.length;
-              if (!sizeBytes) controller.terminate();
-            },
-            flush(controller) {
-              // Some backend versions have a bug where they return 1 less byte than requested in range.
-              // We cannot always request one more byte because if this end byte is the last byte of the file,
-              // the backend will return 416 (Range Not Satisfiable). So error is thrown to force client to retry the request.
-              if (sizeBytes === 1) {
-                recordOffByOne();
-                controller.error(new OffByOneError());
-              }
-            },
-          });
-        }
-      })(size, () => this.offByOneServers.push(urlOrigin)));
-      const result = await handler(normalizedStream, size);
+      let result: T | undefined = undefined;
+
+      const contentLength = Number(responseHeaders['content-length']);
+      if (Number.isNaN(contentLength) || contentLength === 0) {
+        // Some backend versions have a bug that they are not returning content-length header.
+        // In this case `content-length` header is returned as 0.
+        // We should not clip the result stream to 0 bytes in such case.
+        result = await handler(webBody, 0);
+      } else {
+        // Some backend versions have a bug where they return more data than requested in range.
+        // So we have to manually normalize the stream to the expected size.
+        const size = ops.range ? ops.range.to - ops.range.from : contentLength;
+        const normalizedStream = webBody.pipeThrough(new (class extends TransformStream {
+          constructor(sizeBytes: number, recordOffByOne: () => void) {
+            super({
+              transform(chunk: Uint8Array, controller) {
+                const truncatedChunk = chunk.slice(0, sizeBytes);
+                controller.enqueue(truncatedChunk);
+                sizeBytes -= truncatedChunk.length;
+                if (!sizeBytes) controller.terminate();
+              },
+              flush(controller) {
+                // Some backend versions have a bug where they return 1 less byte than requested in range.
+                // We cannot always request one more byte because if this end byte is the last byte of the file,
+                // the backend will return 416 (Range Not Satisfiable). So error is thrown to force client to retry the request.
+                if (sizeBytes === 1) {
+                  recordOffByOne();
+                  controller.error(new OffByOneError());
+                }
+              },
+            });
+          }
+        })(size, () => this.offByOneServers.push(urlOrigin)));
+        result = await handler(normalizedStream, size);
+      }
 
       handlerSuccess = true;
       return result;
