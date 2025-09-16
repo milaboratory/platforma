@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.12.4
+
+### Patch Changes
+
+- d14b733: Allow DuckDB to spill on disk
+
 ## 1.12.3
 
 ### Patch Changes
