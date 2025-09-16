@@ -147,6 +147,9 @@ class WriteFrame(PStep, tag="write_frame"):
         try:
             frame_dir = os.path.dirname(intermediate_parquet)
             duckdb_conn = duckdb.connect(database=':memory:')
+            duckdb_conn.execute("""
+                SET temp_directory TO ?;
+            """, [frame_dir])
 
             if self.strict:
                 for axis in self.axes:
