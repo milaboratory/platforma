@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.5.3
+
+### Patch Changes
+
+- 6656782: render docker descriptor in dev mode
+
 ## 3.5.2
 
 ### Patch Changes
