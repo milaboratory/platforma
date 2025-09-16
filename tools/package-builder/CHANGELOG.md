@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.5.4
+
+### Patch Changes
+
+- d635ab3: add docker descriptor validation
+
 ## 3.5.3
 
 ### Patch Changes
