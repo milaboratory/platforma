@@ -6,8 +6,6 @@ import polars as pl
 import duckdb
 import hashlib
 
-from ptabler.steps.util import normalize_path
-
 from .base import PStep, StepContext
 from ..common import toPolarsType
 
@@ -99,6 +97,8 @@ class WriteFrame(PStep, tag="write_frame"):
     def execute(self, ctx: StepContext):
         if not self.frame_name or not self.frame_name.strip():
             raise ValueError("The 'frame_name' cannot be empty.")
+        if self.frame_name != os.path.basename(self.frame_name):
+            raise ValueError("The 'frame_name' must be a directory name, not a path.")
         
         if not self.axes:
             raise ValueError("At least one axis must be specified.")
@@ -120,7 +120,7 @@ class WriteFrame(PStep, tag="write_frame"):
         
         lf = ctx.get_table(self.input_table)
 
-        frame_dir = os.path.join(ctx.settings.root_folder, normalize_path(self.frame_name))
+        frame_dir = os.path.join(ctx.settings.root_folder, self.frame_name)
         os.makedirs(frame_dir)
 
         cast_expressions = []
@@ -136,7 +136,7 @@ class WriteFrame(PStep, tag="write_frame"):
         
         lf = lf.sort([axis.column for axis in self.axes], nulls_last=False)
         
-        intermediate_parquet = os.path.join(frame_dir, normalize_path("intermediate.parquet"))
+        intermediate_parquet = os.path.join(frame_dir, "intermediate.parquet")
         lf = lf.sink_parquet(path=intermediate_parquet, lazy=True)
         
         ctx.add_sink(lf)
@@ -147,9 +147,7 @@ class WriteFrame(PStep, tag="write_frame"):
         try:
             frame_dir = os.path.dirname(intermediate_parquet)
             duckdb_conn = duckdb.connect(database=':memory:')
-            duckdb_conn.execute("""
-                SET temp_directory TO ?;
-            """, [frame_dir])
+            duckdb_conn.execute("SET temp_directory TO ?;", [frame_dir])
 
             if self.strict:
                 for axis in self.axes:
@@ -170,7 +168,7 @@ class WriteFrame(PStep, tag="write_frame"):
                 column.column: DataInfoColumn(id=column.column, type=column.type) for column in self.columns
             }
             def create_part_info(data_file, column, nrows, axes_hash, axes_nbytes):
-                data_path = os.path.join(frame_dir, normalize_path(data_file))
+                data_path = os.path.join(frame_dir, data_file)
 
                 column_hash = hash(column.type, pl.scan_parquet(data_path), pl.col(column.column))
                 column_nbytes = get_number_of_bytes_in_column(duckdb_conn, data_path, column.column)
@@ -190,7 +188,7 @@ class WriteFrame(PStep, tag="write_frame"):
                 )
             
             def get_common_part_info(data_file, column):
-                data_path = os.path.join(frame_dir, normalize_path(data_file))
+                data_path = os.path.join(frame_dir, data_file)
 
                 nrows = get_number_of_rows_in_column(duckdb_conn, data_path)
                 axes_hash = hash(
@@ -232,7 +230,7 @@ class WriteFrame(PStep, tag="write_frame"):
                 
                 duckdb_conn.execute(f"""
                     COPY ({query})
-                    TO '{os.path.join(frame_dir, normalize_path(data_file))}'
+                    TO '{os.path.join(frame_dir, data_file)}'
                     (FORMAT PARQUET, COMPRESSION 'ZSTD', COMPRESSION_LEVEL 3)
                 """, query_params)
             
