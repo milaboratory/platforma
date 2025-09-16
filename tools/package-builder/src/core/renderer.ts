@@ -326,6 +326,7 @@ export class Renderer {
         switch (pkg.type) {
           case 'docker':
             info.docker = this.renderDockerInfo(epName, ep, options?.requireAllArtifacts);
+            validateDockerDescriptor(info.docker);
             break;
           default:
             this.logger.debug('  rendering \'local\' source...');
@@ -868,4 +869,15 @@ function readArtifactInfoIfExists(location: string, epName: string, requireExist
   }
 
   return undefined;
+}
+
+export function validateDockerDescriptor(dockerDescriptor: dockerInfo | undefined): void {
+  if (!dockerDescriptor?.cmd?.length) {
+    return;
+  }
+
+  const isPkgRequired = dockerDescriptor.cmd.some((cmd) => cmd.includes('{pkg}'));
+  if (isPkgRequired && !dockerDescriptor.pkg) {
+    throw util.CLIError(`docker descriptor is invalid: 'pkg' is required when 'cmd' contains '{pkg}'`);
+  }
 }
