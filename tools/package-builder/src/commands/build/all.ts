@@ -41,7 +41,7 @@ export default class BuildAll extends Command {
       core.allPlatforms = flags['all-platforms'];
       core.fullDirHash = flags['full-dir-hash'];
 
-      const buildDocker = core.buildMode !== 'dev-local' && docker.shouldDoAction(envs.isCI(), flags['docker-build'], flags['docker-no-build']);
+      const buildDocker = docker.shouldDoAction(envs.isCI(), flags['docker-build'], flags['docker-no-build']);
 
       if (buildDocker) {
         core.buildDockerImages({
