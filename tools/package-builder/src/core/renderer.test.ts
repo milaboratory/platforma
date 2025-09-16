@@ -10,6 +10,7 @@ import {
   descriptorFilePath,
   readDescriptorFile,
   writeBuiltArtifactInfo,
+  validateDockerDescriptor,
 } from './renderer';
 import * as test_assets from './test-artifacts';
 import { createLogger } from './util';
@@ -175,6 +176,89 @@ describe('Renderer tests', () => {
     expect(dockerDescriptor.docker!.tag).toMatch(expectedTag);
     expect(dockerDescriptor.docker!.cmd).toEqual(['echo', 'hello']);
     expect(dockerDescriptor.docker!.entrypoint).toEqual(['/usr/bin/env', 'printf']);
+  });
+
+  describe('validateDockerDescriptor', () => {
+    test('should pass with valid docker descriptor', () => {
+      const validDescriptor = {
+        tag: 'test:latest',
+        entrypoint: ['/bin/sh'],
+        cmd: ['echo', 'hello'],
+      };
+
+      expect(() => validateDockerDescriptor(validDescriptor)).not.toThrow();
+    });
+
+    test('should pass with valid docker descriptor containing pkg placeholder and pkg property', () => {
+      const validDescriptor = {
+        tag: 'test:latest',
+        entrypoint: ['/bin/sh'],
+        cmd: ['python', '-m', '{pkg}'],
+        pkg: 'my-package',
+      };
+
+      expect(() => validateDockerDescriptor(validDescriptor)).not.toThrow();
+    });
+
+    test('should throw when cmd contains {pkg} placeholder but pkg property is missing', () => {
+      const invalidDescriptor = {
+        tag: 'test:latest',
+        entrypoint: ['/bin/sh'],
+        cmd: ['python', '-m', '{pkg}'],
+      };
+
+      expect(() => validateDockerDescriptor(invalidDescriptor)).toThrow(
+        'docker descriptor is invalid: \'pkg\' is required when \'cmd\' contains \'{pkg}\'',
+      );
+    });
+
+    test('should throw when cmd contains {pkg} placeholder but pkg property is undefined', () => {
+      const invalidDescriptor = {
+        tag: 'test:latest',
+        entrypoint: ['/bin/sh'],
+        cmd: ['python', '-m', '{pkg}'],
+        pkg: undefined,
+      };
+
+      expect(() => validateDockerDescriptor(invalidDescriptor)).toThrow(
+        'docker descriptor is invalid: \'pkg\' is required when \'cmd\' contains \'{pkg}\'',
+      );
+    });
+
+    test('should handle multiple cmd entries with pkg placeholder', () => {
+      const invalidDescriptor = {
+        tag: 'test:latest',
+        entrypoint: ['/bin/sh'],
+        cmd: ['echo', 'start', 'python -m {pkg}', 'echo', 'end'],
+      };
+
+      expect(() => validateDockerDescriptor(invalidDescriptor)).toThrow(
+        'docker descriptor is invalid: \'pkg\' is required when \'cmd\' contains \'{pkg}\'',
+      );
+    });
+
+    test('should pass when pkg placeholder is not present', () => {
+      const validDescriptor = {
+        tag: 'test:latest',
+        entrypoint: ['/bin/sh'],
+        cmd: ['echo', 'hello', 'world'],
+      };
+
+      expect(() => validateDockerDescriptor(validDescriptor)).not.toThrow();
+    });
+
+    test('should throw when pkg is provided with empty string', () => {
+      const invalidDescriptor = {
+        tag: 'test:latest',
+        entrypoint: ['/bin/sh'],
+        cmd: ['python', '-m', '{pkg}'],
+        pkg: '',
+      };
+
+      expect(() => validateDockerDescriptor(invalidDescriptor)).toThrow(
+        'docker descriptor is invalid: \'pkg\' is required when \'cmd\' contains \'{pkg}\'',
+      );
+    });
   });
 });
 
