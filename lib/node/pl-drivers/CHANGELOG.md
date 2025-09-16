@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.10.17
+
+### Patch Changes
+
+- a3b0a3e: Fix BlobDriver clipping stream to 0 length
+
 ## 1.10.16
 
 ### Patch Changes
