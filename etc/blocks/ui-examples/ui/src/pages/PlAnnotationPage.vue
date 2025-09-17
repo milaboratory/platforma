@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AnnotationScriptUi, PObjectId, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { PObjectId, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
 import { PlAnnotationsModal } from '@platforma-sdk/ui-vue';
 import { ref, watch } from 'vue';
 
@@ -10,19 +10,17 @@ watch(showModal, (value) => {
   }
 });
 
-const mockAnnotations = ref<AnnotationScriptUi>({
-  isCreated: true,
+const mockAnnotations = ref({
   title: 'Sample Pattern Filter',
-  mode: 'byClonotype',
   steps: [
     {
       id: 1,
       label: 'Text Pattern Filter',
       filter: {
-        type: 'and',
+        type: 'and' as const,
         filters: [
           {
-            type: 'patternEquals',
+            type: 'patternEquals' as const,
             column: 'sample_name' as SUniversalPColumnId,
             value: 'Sample_001',
           },
@@ -33,10 +31,10 @@ const mockAnnotations = ref<AnnotationScriptUi>({
       id: 2,
       label: 'Numeric Comparison',
       filter: {
-        type: 'or',
+        type: 'or' as const,
         filters: [
           {
-            type: 'greaterThan',
+            type: 'greaterThan' as const,
             column: 'count' as SUniversalPColumnId,
             x: 100,
           },
@@ -51,7 +49,7 @@ const mockColumns = ref<SimplifiedUniversalPColumnEntry[]>([
     id: 'sample_name' as SUniversalPColumnId,
     label: 'Sample Name',
     obj: {
-      valueType: 'String',
+      valueType: 'String' as const,
       annotations: {},
     },
   },
@@ -59,7 +57,7 @@ const mockColumns = ref<SimplifiedUniversalPColumnEntry[]>([
     id: 'count' as SUniversalPColumnId,
     label: 'Count',
     obj: {
-      valueType: 'Int',
+      valueType: 'Int' as const,
       annotations: {},
     },
   },
@@ -67,7 +65,7 @@ const mockColumns = ref<SimplifiedUniversalPColumnEntry[]>([
     id: 'description' as SUniversalPColumnId,
     label: 'Description',
     obj: {
-      valueType: 'String',
+      valueType: 'String' as const,
       annotations: {},
     },
   },
@@ -75,7 +73,7 @@ const mockColumns = ref<SimplifiedUniversalPColumnEntry[]>([
     id: 'score' as SUniversalPColumnId,
     label: 'Score',
     obj: {
-      valueType: 'Double',
+      valueType: 'Double' as const,
       annotations: {},
     },
   },
@@ -83,7 +81,7 @@ const mockColumns = ref<SimplifiedUniversalPColumnEntry[]>([
     id: 'frequency' as SUniversalPColumnId,
     label: 'Frequency',
     obj: {
-      valueType: 'Float',
+      valueType: 'Float' as const,
       annotations: {},
     },
   },
