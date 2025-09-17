@@ -2405,6 +2405,7 @@ importers:
         version: 5.6.3
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   lib/util/test-helpers:
     dependencies:
       '@milaboratories/helpers':
@@ -2438,6 +2439,8 @@ importers:
         version: link:../../../tools/tengo-builder
 >>>>>>> 3d6e27db3 (annotations workflow sdk)
 
+=======
+>>>>>>> 29c0f835c (fix: update test page for annotations)
   sdk/eslint-config:
     dependencies:
       '@eslint/js':
