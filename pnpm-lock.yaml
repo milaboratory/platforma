@@ -96,9 +96,6 @@ catalogs:
     '@types/http-proxy':
       specifier: ^1.17.16
       version: 1.17.16
-    '@types/humanize-duration':
-      specifier: ^3.27.4
-      version: 3.27.4
     '@types/jest':
       specifier: ^29.5.14
       version: 29.5.14
@@ -201,9 +198,6 @@ catalogs:
     https-proxy-agent:
       specifier: ^7.0.6
       version: 7.0.6
-    humanize-duration:
-      specifier: ^3.33.1
-      version: 3.33.1
     husky:
       specifier: ^9.1.7
       version: 9.1.7
@@ -1813,9 +1807,6 @@ importers:
       denque:
         specifier: 'catalog:'
         version: 2.1.0
-      humanize-duration:
-        specifier: 'catalog:'
-        version: 3.33.1
       tar-fs:
         specifier: 'catalog:'
         version: 3.0.9
@@ -1844,9 +1835,6 @@ importers:
       '@types/decompress':
         specifier: 'catalog:'
         version: 4.2.7
-      '@types/humanize-duration':
-        specifier: 'catalog:'
-        version: 3.27.4
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
@@ -2344,9 +2332,15 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 2.1.9(vitest@2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   lib/util/sequences:
     devDependencies:
@@ -7281,9 +7275,6 @@ packages:
   '@types/http-proxy@1.17.16':
     resolution: {integrity: sha512-sdWoUajOB1cd0A8cRRQ1cfyWNbmFKLAqBB89Y8x5iYyG/mkJHc0YUH8pdWBy2omi9qtCpiIgGjuwO0dQST2l5w==}
 
-  '@types/humanize-duration@3.27.4':
-    resolution: {integrity: sha512-yaf7kan2Sq0goxpbcwTQ+8E9RP6HutFBPv74T/IA/ojcHKhuKVlk2YFYyHhWZeLvZPzzLE3aatuQB4h0iqyyUA==}
-
   '@types/istanbul-lib-coverage@2.0.6':
     resolution: {integrity: sha512-2QF/t/auWm0lsy8XtKVPG19v3sSOQlJe/YHZgfjb/KBBHOGSV+J2q/S671rcq9uTBrLAXmZpqJiaQbMT+zNU1w==}
 
@@ -9075,9 +9066,6 @@ packages:
 
   humanize-duration@3.33.0:
     resolution: {integrity: sha512-vYJX7BSzn7EQ4SaP2lPYVy+icHDppB6k7myNeI3wrSRfwMS5+BHyGgzpHR0ptqJ2AQ6UuIKrclSg5ve6Ci4IAQ==}
-
-  humanize-duration@3.33.1:
-    resolution: {integrity: sha512-hwzSCymnRdFx9YdRkQQ0OYequXiVAV6ZGQA2uzocwB0F4309Ke6pO8dg0P8LHhRQJyVjGteRTAA/zNfEcpXn8A==}
 
   husky@9.1.7:
     resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
@@ -16894,8 +16882,6 @@ snapshots:
     dependencies:
       '@types/node': 22.5.5
 
-  '@types/humanize-duration@3.27.4': {}
-
   '@types/istanbul-lib-coverage@2.0.6': {}
 
   '@types/istanbul-lib-report@3.0.3':
@@ -17146,6 +17132,24 @@ snapshots:
       test-exclude: 7.0.1
       tinyrainbow: 1.2.0
       vitest: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4))':
+    dependencies:
+      '@ampproject/remapping': 2.3.0
+      '@bcoe/v8-coverage': 0.2.3
+      debug: 4.4.0(supports-color@8.1.1)
+      istanbul-lib-coverage: 3.2.2
+      istanbul-lib-report: 3.0.1
+      istanbul-lib-source-maps: 5.0.6
+      istanbul-reports: 3.1.7
+      magic-string: 0.30.17
+      magicast: 0.3.5
+      std-env: 3.9.0
+      test-exclude: 7.0.1
+      tinyrainbow: 1.2.0
+      vitest: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
     transitivePeerDependencies:
       - supports-color
 
@@ -18938,8 +18942,6 @@ snapshots:
   human-signals@2.1.0: {}
 
   humanize-duration@3.33.0: {}
-
-  humanize-duration@3.33.1: {}
 
   husky@9.1.7: {}
 

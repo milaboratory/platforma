@@ -208,8 +208,6 @@ catalog:
   'fast-json-patch': ^3.1.1
 
   'es-toolkit': ^1.39.10
-  'humanize-duration': ^3.33.1
-  '@types/humanize-duration': ^3.27.4
 
   # dont upgrade, ask @dbolotin first
   'zod': ~3.23.8

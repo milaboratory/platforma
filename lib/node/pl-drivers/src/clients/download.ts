@@ -2,6 +2,7 @@
 import type { GrpcClientProvider, GrpcClientProviderFactory } from '@milaboratories/pl-client';
 import { addRTypeToMetadata, stringifyWithResourceId } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
+import { PerfTimer } from '@milaboratories/helpers';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
@@ -16,7 +17,6 @@ import { validateAbsolute } from '../helpers/validate';
 import type { DownloadAPI_GetDownloadURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
 import { DownloadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client';
 import { type GetContentOptions } from '@milaboratories/pl-model-common';
-import humanizeDuration from 'humanize-duration';
 
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
@@ -65,15 +65,14 @@ export class ClientDownload {
       + `range: ${JSON.stringify(ops.range ?? null)}`,
     );
 
-    const t0 = performance.now();
+    const timer = PerfTimer.start();
     const result = isLocal(downloadUrl)
       ? await this.withLocalFileContent(downloadUrl, ops, handler)
       : await this.remoteFileDownloader.withContent(downloadUrl, remoteHeaders, ops, handler);
-    const t1 = performance.now();
 
     this.logger.info(
       `blob ${stringifyWithResourceId(info)} download finished, `
-      + `took: ${humanizeDuration(Math.round(t1 - t0))}`,
+      + `took: ${timer.elapsed()}`,
     );
     return result;
   }
