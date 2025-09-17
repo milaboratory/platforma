@@ -45,6 +45,7 @@ packages:
   - tools/pl-bootstrap
   - tools/eslint-config
   - tools/blocks-deps-updater
+  - tools/npm-migrations
 
   - sdk/model
   - sdk/workflow-tengo
