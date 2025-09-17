@@ -40,6 +40,7 @@
     "@protobuf-ts/runtime-rpc": "catalog:",
     "decompress": "catalog:",
     "denque": "catalog:",
+    "humanize-duration": "catalog:",
     "tar-fs": "catalog:",
     "undici": "catalog:",
     "upath": "catalog:",
@@ -47,6 +48,7 @@
   },
   "devDependencies": {
     "@types/decompress": "catalog:",
+    "@types/humanize-duration": "catalog:",
     "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",

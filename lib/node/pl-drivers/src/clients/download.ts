@@ -16,6 +16,7 @@ import { validateAbsolute } from '../helpers/validate';
 import type { DownloadAPI_GetDownloadURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
 import { DownloadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client';
 import { type GetContentOptions } from '@milaboratories/pl-model-common';
+import humanizeDuration from 'humanize-duration';
 
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
@@ -58,11 +59,23 @@ export class ClientDownload {
     const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, ops.signal);
 
     const remoteHeaders = Object.fromEntries(headers.map(({ name, value }) => [name, value]));
-    this.logger.info(`download blob ${stringifyWithResourceId(info)} from url ${downloadUrl}, ops: ${JSON.stringify(ops)}`);
+    this.logger.info(
+      `blob ${stringifyWithResourceId(info)} download started, `
+      + `url: ${downloadUrl}, `
+      + `range: ${JSON.stringify(ops.range ?? null)}`,
+    );
 
-    return isLocal(downloadUrl)
+    const t0 = performance.now();
+    const result = isLocal(downloadUrl)
       ? await this.withLocalFileContent(downloadUrl, ops, handler)
       : await this.remoteFileDownloader.withContent(downloadUrl, remoteHeaders, ops, handler);
+    const t1 = performance.now();
+
+    this.logger.info(
+      `blob ${stringifyWithResourceId(info)} download finished, `
+      + `took: ${humanizeDuration(Math.round(t1 - t0))}`,
+    );
+    return result;
   }
 
   async withLocalFileContent<T>(

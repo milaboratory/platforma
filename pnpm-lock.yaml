@@ -96,6 +96,9 @@ catalogs:
     '@types/http-proxy':
       specifier: ^1.17.16
       version: 1.17.16
+    '@types/humanize-duration':
+      specifier: ^3.27.4
+      version: 3.27.4
     '@types/jest':
       specifier: ^29.5.14
       version: 29.5.14
@@ -198,6 +201,9 @@ catalogs:
     https-proxy-agent:
       specifier: ^7.0.6
       version: 7.0.6
+    humanize-duration:
+      specifier: ^3.33.1
+      version: 3.33.1
     husky:
       specifier: ^9.1.7
       version: 9.1.7
@@ -1807,6 +1813,9 @@ importers:
       denque:
         specifier: 'catalog:'
         version: 2.1.0
+      humanize-duration:
+        specifier: 'catalog:'
+        version: 3.33.1
       tar-fs:
         specifier: 'catalog:'
         version: 3.0.9
@@ -1835,6 +1844,9 @@ importers:
       '@types/decompress':
         specifier: 'catalog:'
         version: 4.2.7
+      '@types/humanize-duration':
+        specifier: 'catalog:'
+        version: 3.27.4
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
@@ -7269,6 +7281,9 @@ packages:
   '@types/http-proxy@1.17.16':
     resolution: {integrity: sha512-sdWoUajOB1cd0A8cRRQ1cfyWNbmFKLAqBB89Y8x5iYyG/mkJHc0YUH8pdWBy2omi9qtCpiIgGjuwO0dQST2l5w==}
 
+  '@types/humanize-duration@3.27.4':
+    resolution: {integrity: sha512-yaf7kan2Sq0goxpbcwTQ+8E9RP6HutFBPv74T/IA/ojcHKhuKVlk2YFYyHhWZeLvZPzzLE3aatuQB4h0iqyyUA==}
+
   '@types/istanbul-lib-coverage@2.0.6':
     resolution: {integrity: sha512-2QF/t/auWm0lsy8XtKVPG19v3sSOQlJe/YHZgfjb/KBBHOGSV+J2q/S671rcq9uTBrLAXmZpqJiaQbMT+zNU1w==}
 
@@ -9060,6 +9075,9 @@ packages:
 
   humanize-duration@3.33.0:
     resolution: {integrity: sha512-vYJX7BSzn7EQ4SaP2lPYVy+icHDppB6k7myNeI3wrSRfwMS5+BHyGgzpHR0ptqJ2AQ6UuIKrclSg5ve6Ci4IAQ==}
+
+  humanize-duration@3.33.1:
+    resolution: {integrity: sha512-hwzSCymnRdFx9YdRkQQ0OYequXiVAV6ZGQA2uzocwB0F4309Ke6pO8dg0P8LHhRQJyVjGteRTAA/zNfEcpXn8A==}
 
   husky@9.1.7:
     resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
@@ -16876,6 +16894,8 @@ snapshots:
     dependencies:
       '@types/node': 22.5.5
 
+  '@types/humanize-duration@3.27.4': {}
+
   '@types/istanbul-lib-coverage@2.0.6': {}
 
   '@types/istanbul-lib-report@3.0.3':
@@ -18918,6 +18938,8 @@ snapshots:
   human-signals@2.1.0: {}
 
   humanize-duration@3.33.0: {}
+
+  humanize-duration@3.33.1: {}
 
   husky@9.1.7: {}
 
