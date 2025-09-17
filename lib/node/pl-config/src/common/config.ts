@@ -20,7 +20,7 @@ export function newDefaultPlConfig(
     license: licenseForConfig(license),
     logging: {
       level: 'info',
-      destinations: [{ path: logPath }],
+      destinations: [{ type: 'file', path: logPath }],
     },
     monitoring: {
       enabled: true,
