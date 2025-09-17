@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.6.0
+
+### Minor Changes
+
+- c11cf91: Release pl=1.42.0
+
 ## 2.5.5
 
 ### Patch Changes
