@@ -25,14 +25,25 @@ export function newDefaultPlBinarySource(): PlBinarySourceDownload {
 }
 
 export async function resolveLocalPlBinaryPath(
-  logger: MiLogger,
-  downloadDir: string,
-  src: PlBinarySource,
+  { logger, downloadDir, src, proxy }: {
+    logger: MiLogger;
+    downloadDir: string;
+    src: PlBinarySource;
+    proxy?: string;
+  },
 ): Promise<string> {
   switch (src.type) {
     case 'Download':
       // eslint-disable-next-line no-case-declarations
-      const ops = await downloadBinary(logger, downloadDir, 'pl', `pl-${src.version}`, os.arch(), os.platform());
+      const ops = await downloadBinary({
+        logger,
+        baseDir: downloadDir,
+        softwareName: 'pl',
+        archiveName: `pl-${src.version}`,
+        arch: os.arch(),
+        platform: os.platform(),
+        proxy,
+      });
       return upath.join(ops.baseName, 'binaries', osToBinaryName[newOs(os.platform())]);
 
     case 'Local':

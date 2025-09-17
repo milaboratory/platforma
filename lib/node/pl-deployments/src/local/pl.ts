@@ -1,5 +1,4 @@
-import type {
-  ProcessOptions } from './process';
+import type { ProcessOptions } from './process';
 import {
   isProcessAlive,
   processStop,
@@ -128,6 +127,11 @@ export type LocalPlOptions = {
    * (default: true)
    */
   readonly closeOld?: boolean;
+  /**
+   * HTTP proxy to use to fetch the binary and pass it down
+   * as a HTTP_PROXY environment variable
+   */
+  readonly proxy?: string;
 
   readonly onClose?: (pl: LocalPl) => Promise<void>;
   readonly onError?: (pl: LocalPl) => Promise<void>;
@@ -163,10 +167,17 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
     await fsp.writeFile(configPath, ops.config);
 
     const plBinPath = upath.join(workDir, 'binaries');
-    const baseBinaryPath = await resolveLocalPlBinaryPath(logger, plBinPath, ops.plBinary);
+    const baseBinaryPath = await resolveLocalPlBinaryPath({
+      logger,
+      downloadDir: plBinPath,
+      src: ops.plBinary,
+      proxy: ops.proxy,
+    });
     const binaryPath = trace('binaryPath', upath.join('binaries', baseBinaryPath));
 
-    const processOpts = plProcessOps(binaryPath, configPath, ops, workDir, process.env);
+    const env = { ...process.env, HTTP_PROXY: ops.proxy, HTTPS_PROXY: ops.proxy };
+
+    const processOpts = plProcessOps(binaryPath, configPath, ops, workDir, env);
     trace('processOpts', {
       cmd: processOpts.cmd,
       args: processOpts.args,

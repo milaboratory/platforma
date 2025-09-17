@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import upath from 'upath';
-import { request } from 'undici';
+import { ProxyAgent, request } from 'undici';
 import { Writable, Readable } from 'node:stream';
 import { text } from 'node:stream/consumers';
 import * as tar from 'tar';
@@ -27,21 +27,24 @@ export type DownloadBinaryResult = {
 };
 
 export async function downloadBinaryNoExtract(
-  logger: MiLogger,
-  baseDir: string,
-  softwareName: string,
-  tgzName: string,
-  arch: string,
-  platform: string,
+  { logger, baseDir, softwareName, tgzName, arch, platform, proxy }: {
+    logger: MiLogger;
+    baseDir: string;
+    softwareName: string;
+    tgzName: string;
+    arch: string;
+    platform: string;
+    proxy?: string;
+  },
 ): Promise<DownloadBinaryResult> {
   const opts = getPathsForDownload(softwareName, tgzName, baseDir, newArch(arch), newOs(platform));
   const { archiveUrl, alternativeArchiveGAUrl, archivePath } = opts;
 
   try {
-    await downloadArchive(logger, archiveUrl, archivePath);
+    await downloadArchive({ logger, archiveUrl, dstArchiveFile: archivePath, proxy });
     opts.wasDownloadedFrom = archiveUrl;
   } catch (_e) {
-    await downloadArchive(logger, alternativeArchiveGAUrl, archivePath);
+    await downloadArchive({ logger, archiveUrl: alternativeArchiveGAUrl, dstArchiveFile: archivePath, proxy });
     opts.wasDownloadedFrom = alternativeArchiveGAUrl;
   }
 
@@ -49,21 +52,24 @@ export async function downloadBinaryNoExtract(
 }
 
 export async function downloadBinary(
-  logger: MiLogger,
-  baseDir: string,
-  softwareName: string,
-  archiveName: string,
-  arch: string,
-  platform: string,
+  { logger, baseDir, softwareName, archiveName, arch, platform, proxy }: {
+    logger: MiLogger;
+    baseDir: string;
+    softwareName: string;
+    archiveName: string;
+    arch: string;
+    platform: string;
+    proxy?: string;
+  },
 ): Promise<DownloadBinaryResult> {
   const opts = getPathsForDownload(softwareName, archiveName, baseDir, newArch(arch), newOs(platform));
   const { archiveUrl, alternativeArchiveGAUrl, archivePath, archiveType, targetFolder } = opts;
 
   try {
-    await downloadArchive(logger, archiveUrl, archivePath);
+    await downloadArchive({ logger, archiveUrl, dstArchiveFile: archivePath, proxy });
     opts.wasDownloadedFrom = archiveUrl;
   } catch (_e) {
-    await downloadArchive(logger, alternativeArchiveGAUrl, archivePath);
+    await downloadArchive({ logger, archiveUrl: alternativeArchiveGAUrl, dstArchiveFile: archivePath, proxy });
     opts.wasDownloadedFrom = alternativeArchiveGAUrl;
   }
 
@@ -112,9 +118,12 @@ export type DownloadInfo = {
   newExisted?: boolean;
 };
 
-export async function downloadArchive(
-  logger: MiLogger, archiveUrl: string, dstArchiveFile: string,
-): Promise<DownloadInfo> {
+export async function downloadArchive({ logger, archiveUrl, dstArchiveFile, proxy }: {
+  logger: MiLogger;
+  archiveUrl: string;
+  dstArchiveFile: string;
+  proxy?: string;
+}): Promise<DownloadInfo> {
   const state: DownloadInfo = {};
   state.dstArchive = dstArchiveFile;
 
@@ -130,7 +139,9 @@ export async function downloadArchive(
 
     logger.info(`Downloading archive:\n  URL: ${archiveUrl}\n Save to: ${dstArchiveFile}`);
 
-    const { body, statusCode } = await request(archiveUrl);
+    const dispatcher = proxy === undefined ? undefined : new ProxyAgent(proxy);
+
+    const { body, statusCode } = await request(archiveUrl, { dispatcher });
     state.statusCode = statusCode;
     if (statusCode != 200) {
       // completely draining the stream to prevent leaving open connections
