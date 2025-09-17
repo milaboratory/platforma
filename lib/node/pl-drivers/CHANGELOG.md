@@ -1,5 +1,13 @@
 # @milaboratories/pl-drivers
 
+## 1.10.18
+
+### Patch Changes
+
+- 5cc2e06: Blob download time logging
+- Updated dependencies [5cc2e06]
+  - @milaboratories/helpers@1.8.1
+
 ## 1.10.17
 
 ### Patch Changes
