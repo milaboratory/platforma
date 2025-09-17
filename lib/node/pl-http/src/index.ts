@@ -1,7 +1,17 @@
 import type { Client, Dispatcher } from 'undici';
 import { Agent, ProxyAgent, interceptors } from 'undici';
 
-export function defaultHttpDispatcher(httpProxy?: string): Dispatcher {
+export type ProxySettings = {
+  url?: string;
+  /**
+   * @see {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Proxy-Authorization}.
+   */
+  auth?: string;
+};
+
+export function defaultHttpDispatcher(
+  httpProxy?: string | ProxySettings,
+): Dispatcher {
   const httpOptions: Client.Options = {
     allowH2: true,
     autoSelectFamily: false,
@@ -11,16 +21,17 @@ export function defaultHttpDispatcher(httpProxy?: string): Dispatcher {
     keepAliveMaxTimeout: 60e3,
   };
 
-  const dispatcher = httpProxy !== undefined
-    ? new ProxyAgent({ uri: httpProxy, ...httpOptions })
-    : new Agent(httpOptions);
+  const proxy = typeof httpProxy === 'string' ? { url: httpProxy } : httpProxy;
 
-  return dispatcher
-    .compose(
-      interceptors.dns({
-        maxTTL: 60e3, // Cache DNS results for 1 minute (default: 10 seconds)
-        affinity: 4,
-      }),
-      interceptors.retry(),
-    );
+  const dispatcher = proxy?.url
+    ? new ProxyAgent({ uri: proxy.url, token: proxy.auth, ...httpOptions })
+    : new Agent(httpOptions)
+      .compose(
+        interceptors.dns({
+          maxTTL: 60e3, // Cache DNS results for 1 minute (default: 10 seconds)
+          affinity: 4,
+        }),
+      );
+
+  return dispatcher.compose(interceptors.retry());
 }

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import upath from 'upath';
+import type { Dispatcher } from 'undici';
 import { request } from 'undici';
 import { Writable, Readable } from 'node:stream';
 import { text } from 'node:stream/consumers';
@@ -27,21 +28,24 @@ export type DownloadBinaryResult = {
 };
 
 export async function downloadBinaryNoExtract(
-  logger: MiLogger,
-  baseDir: string,
-  softwareName: string,
-  tgzName: string,
-  arch: string,
-  platform: string,
+  { logger, baseDir, softwareName, tgzName, arch, platform, dispatcher }: {
+    logger: MiLogger;
+    baseDir: string;
+    softwareName: string;
+    tgzName: string;
+    arch: string;
+    platform: string;
+    dispatcher?: Dispatcher;
+  },
 ): Promise<DownloadBinaryResult> {
   const opts = getPathsForDownload(softwareName, tgzName, baseDir, newArch(arch), newOs(platform));
   const { archiveUrl, alternativeArchiveGAUrl, archivePath } = opts;
 
   try {
-    await downloadArchive(logger, archiveUrl, archivePath);
+    await downloadArchive({ logger, archiveUrl, archivePath, dispatcher });
     opts.wasDownloadedFrom = archiveUrl;
   } catch (_e) {
-    await downloadArchive(logger, alternativeArchiveGAUrl, archivePath);
+    await downloadArchive({ logger, archiveUrl: alternativeArchiveGAUrl, archivePath, dispatcher });
     opts.wasDownloadedFrom = alternativeArchiveGAUrl;
   }
 
@@ -49,21 +53,24 @@ export async function downloadBinaryNoExtract(
 }
 
 export async function downloadBinary(
-  logger: MiLogger,
-  baseDir: string,
-  softwareName: string,
-  archiveName: string,
-  arch: string,
-  platform: string,
+  { logger, baseDir, softwareName, archiveName, arch, platform, dispatcher }: {
+    logger: MiLogger;
+    baseDir: string;
+    softwareName: string;
+    archiveName: string;
+    arch: string;
+    platform: string;
+    dispatcher?: Dispatcher;
+  },
 ): Promise<DownloadBinaryResult> {
   const opts = getPathsForDownload(softwareName, archiveName, baseDir, newArch(arch), newOs(platform));
   const { archiveUrl, alternativeArchiveGAUrl, archivePath, archiveType, targetFolder } = opts;
 
   try {
-    await downloadArchive(logger, archiveUrl, archivePath);
+    await downloadArchive({ logger, archiveUrl, archivePath, dispatcher });
     opts.wasDownloadedFrom = archiveUrl;
   } catch (_e) {
-    await downloadArchive(logger, alternativeArchiveGAUrl, archivePath);
+    await downloadArchive({ logger, archiveUrl: alternativeArchiveGAUrl, archivePath, dispatcher });
     opts.wasDownloadedFrom = alternativeArchiveGAUrl;
   }
 
@@ -100,7 +107,7 @@ function getPathsForDownload(
 }
 
 export type DownloadInfo = {
-  dstArchive?: string;
+  archivePath?: string;
   fileExisted?: boolean;
   dirnameCreated?: boolean;
   statusCode?: number;
@@ -113,24 +120,29 @@ export type DownloadInfo = {
 };
 
 export async function downloadArchive(
-  logger: MiLogger, archiveUrl: string, dstArchiveFile: string,
+  { logger, archiveUrl, archivePath, dispatcher }: {
+    logger: MiLogger;
+    archiveUrl: string;
+    archivePath: string;
+    dispatcher?: Dispatcher;
+  },
 ): Promise<DownloadInfo> {
   const state: DownloadInfo = {};
-  state.dstArchive = dstArchiveFile;
+  state.archivePath = archivePath;
 
   try {
-    state.fileExisted = await fileExists(dstArchiveFile);
+    state.fileExisted = await fileExists(archivePath);
     if (state.fileExisted) {
-      logger.info(`Platforma Backend archive download skipped: '${dstArchiveFile}' already exists`);
+      logger.info(`Platforma Backend archive download skipped: '${archivePath}' already exists`);
       return state;
     }
 
-    await fsp.mkdir(upath.dirname(dstArchiveFile), { recursive: true });
+    await fsp.mkdir(upath.dirname(archivePath), { recursive: true });
     state.dirnameCreated = true;
 
-    logger.info(`Downloading archive:\n  URL: ${archiveUrl}\n Save to: ${dstArchiveFile}`);
+    logger.info(`Downloading archive:\n  URL: ${archiveUrl}\n Save to: ${archivePath}`);
 
-    const { body, statusCode } = await request(archiveUrl);
+    const { body, statusCode } = await request(archiveUrl, { dispatcher });
     state.statusCode = statusCode;
     if (statusCode != 200) {
       // completely draining the stream to prevent leaving open connections
@@ -141,16 +153,16 @@ export async function downloadArchive(
     }
 
     // to prevent incomplete downloads we first write in a temp file
-    state.tmpPath = dstArchiveFile + '.tmp';
+    state.tmpPath = archivePath + '.tmp';
     // eslint-disable-next-line n/no-unsupported-features/node-builtins
     await Readable.toWeb(body).pipeTo(Writable.toWeb(fs.createWriteStream(state.tmpPath)));
     state.wroteTmp = true;
     state.tmpExisted = await fileExists(state.tmpPath);
 
     // and then atomically rename it
-    await fsp.rename(state.tmpPath, dstArchiveFile);
+    await fsp.rename(state.tmpPath, archivePath);
     state.renamed = true;
-    state.newExisted = await fileExists(dstArchiveFile);
+    state.newExisted = await fileExists(archivePath);
 
     return state;
   } catch (e: unknown) {
