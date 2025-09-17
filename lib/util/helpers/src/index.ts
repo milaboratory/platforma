@@ -20,6 +20,7 @@ export * from './error';
 export * from './hash';
 export * from './random';
 export * from './uniqId';
+export * from './perfTimer';
 
 export {
   utils,

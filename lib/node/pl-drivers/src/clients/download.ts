@@ -2,6 +2,7 @@
 import type { GrpcClientProvider, GrpcClientProviderFactory } from '@milaboratories/pl-client';
 import { addRTypeToMetadata, stringifyWithResourceId } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
+import { PerfTimer } from '@milaboratories/helpers';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
@@ -58,11 +59,22 @@ export class ClientDownload {
     const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, ops.signal);
 
     const remoteHeaders = Object.fromEntries(headers.map(({ name, value }) => [name, value]));
-    this.logger.info(`download blob ${stringifyWithResourceId(info)} from url ${downloadUrl}, ops: ${JSON.stringify(ops)}`);
+    this.logger.info(
+      `blob ${stringifyWithResourceId(info)} download started, `
+      + `url: ${downloadUrl}, `
+      + `range: ${JSON.stringify(ops.range ?? null)}`,
+    );
 
-    return isLocal(downloadUrl)
+    const timer = PerfTimer.start();
+    const result = isLocal(downloadUrl)
       ? await this.withLocalFileContent(downloadUrl, ops, handler)
       : await this.remoteFileDownloader.withContent(downloadUrl, remoteHeaders, ops, handler);
+
+    this.logger.info(
+      `blob ${stringifyWithResourceId(info)} download finished, `
+      + `took: ${timer.elapsed()}`,
+    );
+    return result;
   }
 
   async withLocalFileContent<T>(
