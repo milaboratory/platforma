@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.8.1
+
+### Patch Changes
+
+- 5cc2e06: Blob download time logging
+
 ## 1.8.0
 
 ### Minor Changes

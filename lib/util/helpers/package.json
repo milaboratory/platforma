@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/helpers",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -36,6 +36,5 @@
     "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-v8": "catalog:",
     "vitest": "catalog:"
-
   }
 }

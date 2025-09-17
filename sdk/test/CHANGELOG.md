@@ -1,5 +1,12 @@
 # @platforma-sdk/test
 
+## 1.43.11
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.42.46
+- @platforma-sdk/model@1.43.2
+
 ## 1.43.10
 
 ### Patch Changes
