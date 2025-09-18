@@ -1,9 +1,9 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.42.47",
+  "version": "1.43.0",
   "description": "Pl Middle Layer",
   "engines": {
-    "node": ">=20.16.0"
+    "node": ">=22.19.0"
   },
   "type": "module",
   "types": "./dist/index.d.ts",

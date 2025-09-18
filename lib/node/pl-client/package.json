@@ -1,8 +1,8 @@
 {
   "name": "@milaboratories/pl-client",
-  "version": "2.12.2",
+  "version": "2.13.0",
   "engines": {
-    "node": ">=20.3.0"
+    "node": ">=22.19.0"
   },
   "description": "New TS/JS client for Platform API",
   "type": "module",

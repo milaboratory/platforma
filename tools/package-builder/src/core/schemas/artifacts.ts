@@ -94,7 +94,21 @@ export const environmentPackageSchema = archiveRulesSchema.extend({
   runtime: z
     .enum(runEnvironmentTypes)
     .describe('type of runtime this run environment provides: \'java\', \'python\' and so on'),
+
   ['r-version']: z.string().optional(),
+  ['python-version']: z.string().optional(),
+  ['java-version']: z.string().optional(),
+
+  envVars: z
+    .array(
+      z
+        .string()
+        .regex(
+          /=/,
+          'environment variable should be specified in format: <var-name>=<var-value>, i.e.: MY_ENV=value',
+        ),
+    )
+    .optional(),
 
   binDir: z
     .string()
