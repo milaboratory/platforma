@@ -1349,8 +1349,9 @@ export async function withProject<T>(
   txOrPl: PlTransaction | PlClient,
   rid: ResourceId,
   cb: (p: ProjectMutator) => T | Promise<T>,
+  name?: string,
 ): Promise<T> {
-  return withProjectAuthored(projectHelper, txOrPl, rid, undefined, cb);
+  return withProjectAuthored(projectHelper, txOrPl, rid, undefined, cb, { lockId: 'project:' + rid.toString(), name });
 }
 
 export async function withProjectAuthored<T>(
@@ -1362,7 +1363,7 @@ export async function withProjectAuthored<T>(
   ops: Partial<TxOps> = {},
 ): Promise<T> {
   if (txOrPl instanceof PlClient) {
-    return await txOrPl.withWriteTx('ProjectAction', async (tx) => {
+    return await txOrPl.withWriteTx('ProjectAction' + (ops.name ? `: ${ops.name}` : ''), async (tx) => {
       const mut = await ProjectMutator.load(projectHelper, tx, rid, author);
       const result = await cb(mut);
       if (!mut.wasModified)

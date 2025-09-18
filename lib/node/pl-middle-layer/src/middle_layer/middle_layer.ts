@@ -133,7 +133,7 @@ export class MiddleLayer {
   ): Promise<void> {
     await withProjectAuthored(this.env.projectHelper, this.pl, rid, author, (prj) => {
       prj.setMeta(meta);
-    });
+    }, { name: 'setProjectMeta' });
     await this.projectListTree.refreshState();
   }
 
