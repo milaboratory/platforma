@@ -1,5 +1,17 @@
 # @milaboratories/pl-local
 
+## 2.7.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/ts-helpers@1.5.0
+  - @milaboratories/pl-config@1.7.4
+
 ## 2.6.0
 
 ### Minor Changes

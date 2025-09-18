@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.20.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
 ## 1.19.19
 
 ### Patch Changes
