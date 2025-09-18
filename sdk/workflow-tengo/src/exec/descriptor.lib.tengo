@@ -7,7 +7,12 @@ runEnvScheme := {
 	registry: "string",
 	package: "string",
 	type: "string",
-	binDir: "string"
+	binDir: "string",
+	"envVars,?": ["string"],
+
+	"python-version,?": "string",
+	"java-version,?": "string",
+	"r-version,?": "string"
 }
 
 binaryScheme := {
