@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import type winston from 'winston';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import type { Entrypoint, EntrypointType, PackageEntrypoint, PackageInfo } from './package-info';
 import * as artifacts from './schemas/artifacts';
 import * as util from './util';
@@ -44,7 +44,7 @@ const runEnvironmentSchema = z.object({
           /=/,
           'environment variable should be specified in format: <var-name>=<var-value>, i.e.: MY_ENV=value',
         ),
-    ),
+    ).optional(),
 
   binDir: z.string(),
 });
@@ -225,20 +225,30 @@ export function readDescriptorFile(
   entrypointName: string,
   filePath: string,
 ): entrypointSwJson {
-  if (!fs.existsSync(filePath)) {
-    throw util.CLIError(`entrypoint '${entrypointName}' not found in '${filePath}'`);
+  try {
+    if (!fs.existsSync(filePath)) {
+      throw util.CLIError(`entrypoint '${entrypointName}' not found in '${filePath}'`);
+    }
+
+    const swJsonContent = fs.readFileSync(filePath);
+    const swJson = swJsonSchema.parse(JSON.parse(swJsonContent.toString()));
+
+    return {
+      id: {
+        package: npmPackageName,
+        name: entrypointName,
+      },
+      ...swJson,
+    };
+  } catch (e) {
+    if (e instanceof ZodError) {
+      const errLines: string[] = [`Failed to read and parse entrypoint '${entrypointName}' from '${filePath}':`];
+      errLines.push(...(util.formatZodError(e).map((line) => `  ${line}`)));
+      throw util.CLIError(errLines.join('\n'));
+    }
+
+    throw e;
   }
-
-  const swJsonContent = fs.readFileSync(filePath);
-  const swJson = swJsonSchema.parse(JSON.parse(swJsonContent.toString()));
-
-  return {
-    id: {
-      package: npmPackageName,
-      name: entrypointName,
-    },
-    ...swJson,
-  };
 }
 
 const softwareFileExtension = '.sw.json';
