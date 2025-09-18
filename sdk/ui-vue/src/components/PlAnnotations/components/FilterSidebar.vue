@@ -1,3 +1,10 @@
+<script lang="ts">
+export type Props = {
+  columns: SimplifiedUniversalPColumnEntry[];
+  hasSelectedColumns?: boolean;
+  getValuesForSelectedColumns?: () => Promise<undefined | { columnId: PObjectId; values: string[] }>;
+};
+</script>
 <script setup lang="ts">
 import { isNil, randomInt } from '@milaboratories/helpers';
 import {
@@ -8,6 +15,7 @@ import {
   PlSidebarItem,
 } from '@milaboratories/uikit';
 import type { PObjectId, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
+import { computed } from 'vue';
 import type { Filter, FilterSpec } from '../types';
 import { createDefaultFilterMetadata } from '../utils';
 import DynamicForm from './DynamicForm.vue';
@@ -15,11 +23,11 @@ import DynamicForm from './DynamicForm.vue';
 // Models
 const step = defineModel<Filter>('step', { required: true });
 // Props
-const props = defineProps<{
-  columns: SimplifiedUniversalPColumnEntry[];
-  hasSelectedColumns: boolean;
-  getValuesForSelectedColumns: () => Promise<undefined | { columnId: PObjectId; values: string[] }>;
-}>();
+const props = defineProps<Props>();
+// State
+const withSelection = computed(() => {
+  return props.hasSelectedColumns !== undefined && props.getValuesForSelectedColumns !== undefined;
+});
 // Actions
 const addFilterPlaceholder = () => {
   step.value.filter.filters.push({
@@ -30,6 +38,8 @@ const addFilterPlaceholder = () => {
 };
 
 async function addFilterFromSelected() {
+  if (props.hasSelectedColumns === undefined || props.getValuesForSelectedColumns === undefined) return;
+
   const data = await props.getValuesForSelectedColumns();
   if (!data || data.values.length === 0) return;
 
@@ -87,7 +97,7 @@ const getFilterValues = (filter: FilterSpec) => {
           <PlBtnSecondary style="width: 100%;" icon="add" @click="addFilterPlaceholder">
             Filter
           </PlBtnSecondary>
-          <PlBtnSecondary style="width: 100%;" icon="add" :disabled="!props.hasSelectedColumns" @click="addFilterFromSelected">
+          <PlBtnSecondary v-if="withSelection" style="width: 100%;" icon="add" :disabled="!props.hasSelectedColumns" @click="addFilterFromSelected">
             From selection
           </PlBtnSecondary>
         </div>

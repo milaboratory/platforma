@@ -1,23 +1,16 @@
 <script setup lang="ts">
+import { PlPureSlideModal } from '@milaboratories/uikit';
 import { effect, shallowRef } from 'vue';
 
-import { PlPureSlideModal } from '@milaboratories/uikit';
-import type { PObjectId, SimplifiedUniversalPColumnEntry } from '@platforma-sdk/model';
-
 import type { Annotation } from '../types';
+import type { Props } from './PlAnnotations.vue';
 import PlAnnotations from './PlAnnotations.vue';
 
 // Models
 const annotation = defineModel<Annotation>('annotation', { required: true });
 const opened = defineModel<boolean>('opened', { required: true });
 // Props
-const props = defineProps<{
-  columns: SimplifiedUniversalPColumnEntry[];
-  hasSelectedColumns: boolean;
-  getValuesForSelectedColumns: () => Promise<undefined | { columnId: PObjectId; values: string[] }>;
-
-  onDeleteSchema?: () => void;
-}>();
+const props = defineProps<Props>();
 // State
 const selectedStepId = shallowRef<number | undefined>(undefined);
 // Watchers
