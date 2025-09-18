@@ -291,6 +291,24 @@ function migratePTableFilters<T>(
   };
 }
 
+function hasArtificialColumns<T>(entry: JoinEntry<T>): boolean {
+  switch (entry.type) {
+    case 'column':
+    case 'slicedColumn':
+    case 'inlineColumn':
+      return false;
+    case 'artificialColumn':
+      return true;
+    case 'full':
+    case 'inner':
+      return entry.entries.some(hasArtificialColumns);
+    case 'outer':
+      return hasArtificialColumns(entry.primary) || entry.secondary.some(hasArtificialColumns);
+    default:
+      assertNever(entry);
+  }
+}
+
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PTableCache {
@@ -708,8 +726,8 @@ export class PFrameDriver implements InternalPFrameDriver {
           return new PTableHolder(handle, disposeSignal, sortedTable, predecessor);
         }
 
-        // 2. Filter
-        if (params.def.filters.length > 0) {
+        // 2. Filter (except the case with artificial columns where cartesian creates too many rows)
+        if (!hasArtificialColumns(params.def.src) && params.def.filters.length > 0) {
           const predecessor = this.acquire({
             ...params,
             def: {
@@ -725,7 +743,8 @@ export class PFrameDriver implements InternalPFrameDriver {
         // 1. Join
         const table = pFramePromise.then((pFrame) => pFrame.createTable({
           src: joinEntryToInternal(params.def.src),
-          filters: params.def.partitionFilters,
+          // `params.def.filters` would be non-empty only when join has artificial columns
+          filters: [...params.def.partitionFilters, ...params.def.filters],
         }));
         return new PTableHolder(handle, disposeSignal, table);
       }
