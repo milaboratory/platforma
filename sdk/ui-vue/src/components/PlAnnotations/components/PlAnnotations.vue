@@ -1,9 +1,15 @@
+<script lang="ts">
+import type { Props as BaseProps } from './FilterSidebar.vue';
+export type Props = BaseProps & {
+  onDeleteSchema?: () => void;
+};
+</script>
+
 <script setup lang="ts">
 import { computed, effect, shallowRef } from 'vue';
 
 import { isNil } from '@milaboratories/helpers';
 import { PlSidebarGroup, useConfirm } from '@milaboratories/uikit';
-import type { PObjectId, SimplifiedUniversalPColumnEntry } from '@platforma-sdk/model';
 
 import type { Annotation } from '../types';
 import AnnotationsSidebar from './AnnotationsSidebar.vue';
@@ -12,13 +18,7 @@ import FilterSidebar from './FilterSidebar.vue';
 // Models
 const annotation = defineModel<Annotation>('annotation', { required: true });
 // Props
-const props = defineProps<{
-  columns: SimplifiedUniversalPColumnEntry[];
-  hasSelectedColumns: boolean;
-  getValuesForSelectedColumns: () => Promise<undefined | { columnId: PObjectId; values: string[] }>;
-
-  onDeleteSchema?: () => void;
-}>();
+const props = defineProps<Props>();
 // State
 const selectedStepId = shallowRef<number | undefined>(undefined);
 const selectedStep = computed(() => {
