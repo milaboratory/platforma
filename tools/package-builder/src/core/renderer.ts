@@ -65,7 +65,7 @@ const runDependencyPythonSchema = runEnvironmentSchema.extend({
     .string()
     .describe('name used to import this package as software dependency of tengo script'),
 });
-type runEncDependencyPython = z.infer<typeof runDependencyPythonSchema>;
+type runEnvDependencyPython = z.infer<typeof runDependencyPythonSchema>;
 
 const runDependencyRSchema = runEnvironmentSchema.extend({
   type: z.literal('R'),
@@ -84,7 +84,7 @@ const runDependencyCondaSchema = runEnvironmentSchema.extend({
 });
 type runEnvDependencyConda = z.infer<typeof runDependencyCondaSchema>;
 
-type runEnvDependencyInfo = runEnvDependencyJava | runEncDependencyPython | runEnvDependencyR | runEnvDependencyConda;
+type runEnvDependencyInfo = runEnvDependencyJava | runEnvDependencyPython | runEnvDependencyR | runEnvDependencyConda;
 
 const anyPackageSettingsSchema = z.object({
   cmd: z.array(z.string()).min(1).describe('run given command, appended by args from workflow'),
@@ -805,7 +805,7 @@ export class Renderer {
   }
 
   private resolveRunEnvironment(envName: string, requireType: 'java'): runEnvDependencyJava;
-  private resolveRunEnvironment(envName: string, requireType: 'python'): runEncDependencyPython;
+  private resolveRunEnvironment(envName: string, requireType: 'python'): runEnvDependencyPython;
   private resolveRunEnvironment(envName: string, requireType: 'R'): runEnvDependencyR;
   private resolveRunEnvironment(
     envName: string,

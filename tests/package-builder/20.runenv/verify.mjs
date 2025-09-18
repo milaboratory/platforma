@@ -58,8 +58,8 @@ function verifyJavaContent(data) {
     throw new Error(`Expected java-version '21', got '${runEnv['java-version']}'`);
   }
 
-  if (JSON.stringify(runEnv.envVars) !== '[]') {
-    throw new Error(`Expected envVars to be [], got ${JSON.stringify(runEnv.envVars)}`);
+  if (runEnv.envVars.length !== 0) {
+    throw new Error(`Expected envVars to be an empty array, got ${JSON.stringify(runEnv.envVars)}`);
   }
 
   console.log('✓ Java content verification passed');
@@ -76,8 +76,8 @@ function verifyRContent(data) {
     throw new Error(`Expected r-version '4.3.1', got '${runEnv['r-version']}'`);
   }
 
-  if (JSON.stringify(runEnv.envVars) !== '[]') {
-    throw new Error(`Expected envVars to be [], got ${JSON.stringify(runEnv.envVars)}`);
+  if (runEnv.envVars.length !== 0) {
+    throw new Error(`Expected envVars to be an empty array, got ${JSON.stringify(runEnv.envVars)}`);
   }
 
   console.log('✓ R content verification passed');

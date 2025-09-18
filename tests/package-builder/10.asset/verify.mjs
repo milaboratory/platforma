@@ -26,7 +26,7 @@ function verifyValidJSON(filePath) {
   }
 }
 
-function verifyAssetContent(data) {
+function verifyAssetContent(data, npmPackageVersion) {
   const { asset } = data;
 
   if (!asset) {
@@ -41,13 +41,13 @@ function verifyAssetContent(data) {
     throw new Error(`Expected url to contain 'https://example.com/base-path/', got '${asset.url}'`);
   }
 
-  if (!asset.url.includes('1.2.3')) {
-    throw new Error(`Expected url to contain '1.2.3', got '${asset.url}'`);
+  if (!asset.url.includes(npmPackageVersion)) {
+    throw new Error(`Expected url to contain '${npmPackageVersion}', got '${asset.url}'`);
   }
 
   console.log('✓ Asset content verification passed');
   console.log(`  - URL contains base path: ${asset.url.includes('https://example.com/base-path/')}`);
-  console.log(`  - URL contains version: ${asset.url.includes('1.2.3')}`);
+  console.log(`  - URL contains version: ${asset.url.includes(npmPackageVersion)}`);
   console.log(`  - Full URL: ${asset.url}`);
 }
 
@@ -55,10 +55,13 @@ function main() {
   try {
     console.log('Starting asset verification...');
 
+    const { version } = JSON.parse(readFileSync('./package.json', 'utf8'));
+    const npmPackageVersion = version;
+
     const asset123Path = join(baseDir, fileName);
     verifyFileExists(asset123Path);
     const asset123Data = verifyValidJSON(asset123Path);
-    verifyAssetContent(asset123Data);
+    verifyAssetContent(asset123Data, npmPackageVersion);
 
     console.log('✅ All asset are valid.');
     process.exit(0);
