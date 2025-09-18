@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import type winston from 'winston';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import type { Entrypoint, EntrypointType, PackageEntrypoint, PackageInfo } from './package-info';
 import * as artifacts from './schemas/artifacts';
 import * as util from './util';
@@ -31,6 +31,21 @@ type dockerInfo = z.infer<typeof dockerSchema>;
 const runEnvironmentSchema = z.object({
   type: z.enum(artifacts.runEnvironmentTypes),
   ...externalPackageLocationSchema.shape,
+
+  ['r-version']: z.string().optional(),
+  ['python-version']: z.string().optional(),
+  ['java-version']: z.string().optional(),
+
+  envVars: z
+    .array(
+      z
+        .string()
+        .regex(
+          /=/,
+          'environment variable should be specified in format: <var-name>=<var-value>, i.e.: MY_ENV=value',
+        ),
+    ).optional(),
+
   binDir: z.string(),
 });
 type runEnvInfo = z.infer<typeof runEnvironmentSchema>;
@@ -41,23 +56,25 @@ const runDependencyJavaSchema = runEnvironmentSchema.extend({
     .string()
     .describe('name used to import this package as software dependency of tengo script'),
 });
-type runDependencyJava = z.infer<typeof runDependencyJavaSchema>;
+type runEnvDependencyJava = z.infer<typeof runDependencyJavaSchema>;
 
 const runDependencyPythonSchema = runEnvironmentSchema.extend({
   type: z.literal('python'),
+  ['python-version']: z.string(),
   name: z
     .string()
     .describe('name used to import this package as software dependency of tengo script'),
 });
-type runDependencyPython = z.infer<typeof runDependencyPythonSchema>;
+type runEnvDependencyPython = z.infer<typeof runDependencyPythonSchema>;
 
 const runDependencyRSchema = runEnvironmentSchema.extend({
   type: z.literal('R'),
+  ['r-version']: z.string(),
   name: z
     .string()
     .describe('name used to import this package as software dependency of tengo script'),
 });
-type runDependencyR = z.infer<typeof runDependencyRSchema>;
+type runEnvDependencyR = z.infer<typeof runDependencyRSchema>;
 
 const runDependencyCondaSchema = runEnvironmentSchema.extend({
   type: z.literal('conda'),
@@ -65,10 +82,9 @@ const runDependencyCondaSchema = runEnvironmentSchema.extend({
     .string()
     .describe('name used to import this package as software dependency of tengo script'),
 });
-type runDependencyConda = z.infer<typeof runDependencyCondaSchema>;
+type runEnvDependencyConda = z.infer<typeof runDependencyCondaSchema>;
 
-type runDepInfo = runDependencyJava | runDependencyPython | runDependencyR | runDependencyConda;
-// runDependencyConda
+type runEnvDependencyInfo = runEnvDependencyJava | runEnvDependencyPython | runEnvDependencyR | runEnvDependencyConda;
 
 const anyPackageSettingsSchema = z.object({
   cmd: z.array(z.string()).min(1).describe('run given command, appended by args from workflow'),
@@ -209,20 +225,30 @@ export function readDescriptorFile(
   entrypointName: string,
   filePath: string,
 ): entrypointSwJson {
-  if (!fs.existsSync(filePath)) {
-    throw util.CLIError(`entrypoint '${entrypointName}' not found in '${filePath}'`);
+  try {
+    if (!fs.existsSync(filePath)) {
+      throw util.CLIError(`entrypoint '${entrypointName}' not found in '${filePath}'`);
+    }
+
+    const swJsonContent = fs.readFileSync(filePath);
+    const swJson = swJsonSchema.parse(JSON.parse(swJsonContent.toString()));
+
+    return {
+      id: {
+        package: npmPackageName,
+        name: entrypointName,
+      },
+      ...swJson,
+    };
+  } catch (e) {
+    if (e instanceof ZodError) {
+      const errLines: string[] = [`Failed to read and parse entrypoint '${entrypointName}' from '${filePath}':`];
+      errLines.push(...(util.formatZodError(e).map((line) => `  ${line}`)));
+      throw util.CLIError(errLines.join('\n'));
+    }
+
+    throw e;
   }
-
-  const swJsonContent = fs.readFileSync(filePath);
-  const swJson = swJsonSchema.parse(JSON.parse(swJsonContent.toString()));
-
-  return {
-    id: {
-      package: npmPackageName,
-      name: entrypointName,
-    },
-    ...swJson,
-  };
 }
 
 const softwareFileExtension = '.sw.json';
@@ -700,6 +726,12 @@ export class Renderer {
 
     return {
       type: envPkg.runtime,
+
+      ['r-version']: envPkg['r-version'],
+      ['python-version']: envPkg['python-version'],
+      ['java-version']: envPkg['java-version'],
+
+      envVars: envPkg.envVars ?? [],
       registry: artInfo.registryName!,
       package: artInfo.remoteArtifactLocation,
       binDir: envPkg.binDir,
@@ -772,13 +804,13 @@ export class Renderer {
     return readSwJsonFile(npmPackageName, modulePath, entrypointName);
   }
 
-  private resolveRunEnvironment(envName: string, requireType: 'java'): runDependencyJava;
-  private resolveRunEnvironment(envName: string, requireType: 'python'): runDependencyPython;
-  private resolveRunEnvironment(envName: string, requireType: 'R'): runDependencyR;
+  private resolveRunEnvironment(envName: string, requireType: 'java'): runEnvDependencyJava;
+  private resolveRunEnvironment(envName: string, requireType: 'python'): runEnvDependencyPython;
+  private resolveRunEnvironment(envName: string, requireType: 'R'): runEnvDependencyR;
   private resolveRunEnvironment(
     envName: string,
     requireType: artifacts.runEnvironmentType,
-  ): runDepInfo {
+  ): runEnvDependencyInfo {
     const [pkgName, id] = util.rSplit(envName, ':', 2);
     const swDescriptor
       = pkgName === ''
@@ -802,14 +834,38 @@ export class Renderer {
       );
     }
 
-    return {
-      name: envName,
+    switch (runEnv.type) {
+      case 'python': {
+        return {
+          name: envName,
+          ...runEnv,
 
-      type: runEnv.type,
-      registry: runEnv.registry,
-      package: runEnv.package,
-      binDir: runEnv.binDir,
-    };
+          type: 'python',
+          ['python-version']: runEnv['python-version'] ?? '',
+        };
+      }
+      case 'R': {
+        return {
+          name: envName,
+          ...runEnv,
+
+          type: 'R',
+          ['r-version']: runEnv['r-version'] ?? '',
+        };
+      }
+      case 'java': {
+        return {
+          name: envName,
+          ...runEnv,
+
+          type: 'java',
+          ['java-version']: runEnv['java-version'] ?? '',
+        };
+      }
+      default:
+        util.assertNever(runEnv.type);
+        throw new Error('renderer logic error: resolveRunEnvironment does not cover all run environment types'); // calm down the linter
+    }
   }
 }
 
