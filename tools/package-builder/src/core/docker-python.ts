@@ -1,9 +1,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type { PythonPackage } from './package-info';
+import type * as entrypoint from './schemas/entrypoint';
 import type winston from 'winston';
 import * as paths from './paths';
 import * as util from './util';
+import type * as artifacts from './schemas/artifacts';
+import { resolveRunEnvironment } from './resolver';
 
 const PYTHON_VERSION_PATTERNS = {
   PY3_PREFIX: /^3\./,
@@ -45,12 +47,18 @@ function generatePythonDockerfileContent(options: PythonOptions): string {
     .replace(/\$\{PKG\}/g, options.pkg);
 }
 
-export function prepareDockerOptions(logger: winston.Logger, packageRoot: string, pacakgeId: string, buildParams: PythonPackage): DockerOptions {
-  logger.debug(`Preparing Docker options for Python package: ${buildParams.name} (id: ${pacakgeId})`);
+export function prepareDockerOptions(
+  logger: winston.Logger,
+  currentPackageRoot: string,
+  currentPackageName: string,
+  artifactID: string,
+  buildParams: entrypoint.PythonPackage,
+): DockerOptions {
+  logger.debug(`Preparing Docker options for Python package: ${buildParams.name} (id: ${artifactID})`);
 
   const options = getDefaultPythonOptions();
 
-  const pythonVersion = getPythonVersionFromEnvironment(buildParams.environment);
+  const pythonVersion = getPythonVersionFromEnvironment(logger, currentPackageRoot, currentPackageName, buildParams.environment);
   if (pythonVersion) {
     logger.debug(`Extracted Python version from environment: ${pythonVersion}`);
     options.pythonVersion = pythonVersion;
@@ -70,7 +78,7 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
   if (!buildParams.root) {
     throw util.CLIError('Cannot prepare Docker options: package root directory is not specified. Please ensure the "root" property is set in the build parameters.');
   }
-  const contextDir = path.resolve(buildParams.root ?? packageRoot);
+  const contextDir = path.resolve(buildParams.root ?? currentPackageRoot);
 
   options.requirements = path.join(contextDir, options.requirements);
   const hasRequirements = fs.existsSync(options.requirements);
@@ -84,13 +92,13 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
   options.requirements = path.relative(contextDir, options.requirements);
 
   // Generate a temporary directory for the Dockerfile
-  const tmpDir = path.join(packageRoot, 'dist', 'docker');
+  const tmpDir = path.join(currentPackageRoot, 'dist', 'docker');
   fs.mkdirSync(tmpDir, { recursive: true });
   logger.debug(`Created temporary Docker directory: ${tmpDir}`);
 
   const dockerfile = {
     content: generatePythonDockerfileContent(options),
-    path: path.resolve(tmpDir, `Dockerfile-${pacakgeId}`),
+    path: path.resolve(tmpDir, `Dockerfile-${artifactID}`),
   };
 
   fs.writeFileSync(dockerfile.path, dockerfile.content);
@@ -140,26 +148,35 @@ function isValidDockerTag(tag: string): boolean {
 }
 
 export function getPythonVersionFromEnvironment(
-  environmentId: string,
+  logger: winston.Logger,
+  currentPackageRoot: string,
+  currentPackageName: string,
+  runEnvironmentID: artifacts.artifactIDString,
   { normalizeForDocker = true }: { normalizeForDocker?: boolean } = {},
 ): string | undefined {
-  if (!environmentId) {
+  if (!runEnvironmentID) {
     return undefined;
   }
 
-  const trimmedInput = environmentId.trim();
-  if (!trimmedInput) {
-    return undefined;
-  }
+  const environmentDescriptor = resolveRunEnvironment(logger, currentPackageRoot, currentPackageName, runEnvironmentID, 'python');
 
-  const colonIndex = trimmedInput.indexOf(':');
-  if (colonIndex === -1 || colonIndex === trimmedInput.length - 1) {
-    return undefined;
-  }
+  let versionTag: string | undefined = environmentDescriptor['python-version'];
+  if (!versionTag) {
+    versionTag = undefined;
+    const trimmedInput = runEnvironmentID.trim();
+    if (!trimmedInput) {
+      return undefined;
+    }
 
-  const versionTag = trimmedInput.slice(colonIndex + 1);
-  if (versionTag.startsWith('python')) {
-    return undefined;
+    const colonIndex = trimmedInput.indexOf(':');
+    if (colonIndex === -1 || colonIndex === trimmedInput.length - 1) {
+      return undefined;
+    }
+
+    versionTag = trimmedInput.slice(colonIndex + 1);
+    if (versionTag.startsWith('python')) {
+      return undefined;
+    }
   }
 
   if (!normalizeForDocker) {

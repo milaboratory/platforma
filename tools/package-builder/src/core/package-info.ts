@@ -11,149 +11,6 @@ import { tryResolve } from '@milaboratories/resolve-helper';
 import * as docker from './docker';
 import { prepareDockerOptions } from './docker-python';
 
-export interface PackageArchiveInfo extends artifacts.archiveRules {
-  name: string;
-  version: string;
-  crossplatform: boolean;
-
-  fullName: (platform: util.PlatformType) => string; // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
-  namePattern: string; // address to put into sw.json (common/corretto/21.2.0.4.1-{os}-{arch}.tgz)
-
-  contentRoot: (platform: util.PlatformType) => string; // absolute path to package's content root
-}
-
-const _softwareEntrypointsList = z.record(z.string(), entrypoint.softwareOptionsSchema);
-export type SoftwareEntrypoints = z.infer<typeof _softwareEntrypointsList>;
-
-const _environmentEntrypointsList = z.record(z.string(), entrypoint.environmentOptionsSchema);
-export type EnvironmentEntrypoints = z.infer<typeof _environmentEntrypointsList>;
-
-export interface AssetPackage extends artifacts.assetPackageConfig, PackageArchiveInfo {
-  type: 'asset';
-  registry: artifacts.registry;
-  name: string;
-  version: string;
-  crossplatform: boolean;
-
-  isMultiroot: boolean;
-  contentRoot(platform: util.PlatformType): string;
-}
-
-export interface RunEnvironmentPackage extends artifacts.environmentConfig, PackageArchiveInfo {
-  registry: artifacts.registry;
-  name: string;
-  version: string;
-  crossplatform: boolean;
-
-  isMultiroot: boolean;
-  contentRoot(platform: util.PlatformType): string;
-}
-
-export interface BinaryPackage extends artifacts.binaryPackageConfig, PackageArchiveInfo {
-  registry: artifacts.registry;
-  name: string;
-  version: string;
-  crossplatform: boolean;
-
-  isMultiroot: boolean;
-  contentRoot(platform: util.PlatformType): string;
-}
-export interface JavaPackage extends artifacts.javaPackageConfig, PackageArchiveInfo {
-  registry: artifacts.registry;
-  name: string;
-  version: string;
-  crossplatform: boolean;
-
-  isMultiroot: boolean;
-  contentRoot(platform: util.PlatformType): string;
-}
-export interface PythonPackage extends artifacts.pythonPackageConfig, PackageArchiveInfo {
-  registry: artifacts.registry;
-  name: string;
-  version: string;
-  crossplatform: boolean;
-
-  isMultiroot: boolean;
-  contentRoot(platform: util.PlatformType): string;
-}
-export interface RPackage extends artifacts.rPackageConfig, PackageArchiveInfo {
-  registry: artifacts.registry;
-  name: string;
-  version: string;
-  crossplatform: boolean;
-
-  isMultiroot: boolean;
-  fullName: (platform: util.PlatformType) => string; // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
-  contentRoot(platform: util.PlatformType): string;
-}
-// export interface CondaPackage extends artifacts.condaPackageConfig, PackageArchiveInfo {
-//   registry: artifacts.registry;
-//   name: string;
-//   version: string;
-//   crossplatform: boolean;
-// }
-export interface DockerPackage extends artifacts.dockerPackageConfig {
-  registry: artifacts.registry; // TODO: delete this field
-  name: string;
-  version: string;
-  crossplatform: boolean;
-
-  fullName: (platform: util.PlatformType) => string; // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
-  namePattern: string; // address to put into sw.json (common/corretto/21.2.0.4.1-{os}-{arch}.tgz)
-
-  contentRoot(platform: util.PlatformType): string;
-}
-
-export type BuildablePackage =
-  | AssetPackage
-  | RunEnvironmentPackage
-  | BinaryPackage
-  | JavaPackage
-  | PythonPackage
-  | RPackage
-  | DockerPackage;
-// CondaPackage
-
-export type PackageConfig = BuildablePackage & {
-  id: string;
-  platforms: util.PlatformType[];
-
-  isBuildable: boolean;
-  isMultiroot: boolean;
-  contentRoot(platform: util.PlatformType): string;
-};
-
-export interface ReferenceEntrypoint {
-  type: 'reference';
-  name: string;
-  reference: string;
-}
-
-export interface AssetEntrypoint {
-  type: 'asset';
-  name: string;
-  package: PackageConfig;
-}
-
-export interface SoftwareEntrypoint {
-  type: 'software';
-  name: string;
-  package: PackageConfig;
-  cmd: string[];
-  env: string[];
-}
-
-export interface EnvironmentEntrypoint {
-  type: 'environment';
-  name: string;
-  package: PackageConfig;
-  env: string[];
-}
-
-export type PackageEntrypoint = AssetEntrypoint | SoftwareEntrypoint | EnvironmentEntrypoint;
-export type Entrypoint = ReferenceEntrypoint | PackageEntrypoint;
-export type EntrypointType = Extract<Entrypoint, { type: string }>['type'];
-
 const storagePresetSchema = z.object({
   downloadURL: z.string().optional(),
   storageURL: z.string().optional(),
@@ -273,8 +130,8 @@ export class PackageInfo {
     return this.pkgJson['block-software'].registries?.binary ?? {};
   }
 
-  get entrypoints(): Map<string, Entrypoint> {
-    const list = new Map<string, Entrypoint>();
+  get entrypoints(): Map<string, entrypoint.Entrypoint> {
+    const list = new Map<string, entrypoint.Entrypoint>();
 
     for (const [epName, ep] of Object.entries(this.pkgJson['block-software'].entrypoints)) {
       if (ep.docker) {
@@ -358,7 +215,7 @@ export class PackageInfo {
 
   // Get not docker entrypoint if exists.
   // If only docker entrypoint exists, return it.
-  public getMainEntrypoint(name: string): Entrypoint {
+  public getMainEntrypoint(name: string): entrypoint.Entrypoint {
     const ep = this.entrypoints.get(name);
     if (ep) {
       return ep;
@@ -370,7 +227,7 @@ export class PackageInfo {
   /**
    * Resolves entrypoint reference to full entrypoint file path and type
    */
-  public resolveReference(epName: string, ep: ReferenceEntrypoint): string {
+  public resolveReference(epName: string, ep: entrypoint.ReferenceEntrypoint): string {
     this.logger.debug(`resolving entrypoint '${epName}' reference '${ep.reference}'. packageRoot='${this.packageRoot}'`);
 
     const refInfo = ep.reference.match(entrypoint.EnyrypointReferencePattern)?.groups;
@@ -392,8 +249,8 @@ export class PackageInfo {
   }
 
   // Packages are buildable artifacts with entrypoints
-  get packages(): Map<string, PackageConfig> {
-    const result = new Map<string, PackageConfig>();
+  get packages(): Map<string, entrypoint.PackageConfig> {
+    const result = new Map<string, entrypoint.PackageConfig>();
 
     for (const ep of this.entrypoints.values()) {
       if (ep.type === 'reference') {
@@ -409,7 +266,7 @@ export class PackageInfo {
     return result;
   }
 
-  public getPackage(id: string, type?: string): PackageConfig {
+  public getPackage(id: string, type?: string): entrypoint.PackageConfig {
     const artifact = this.getArtifact(id, type);
     return this.makePackageConfig(id, artifact);
   }
@@ -421,7 +278,7 @@ export class PackageInfo {
     return path.resolve(this.packageRoot, 'dist', 'artifacts', pkgID, `${artifactType}${platformPart}.json`);
   }
 
-  private makePackageConfig(id: string, artifact: artifacts.config): PackageConfig {
+  private makePackageConfig(id: string, artifact: artifacts.config): entrypoint.PackageConfig {
     const pkgRoot = this.packageRoot;
 
     const crossplatform
@@ -480,12 +337,12 @@ export class PackageInfo {
     };
   }
 
-  private prepareDockerPackage(pkg: PackageConfig): PackageConfig {
+  private prepareDockerPackage(pkg: entrypoint.PackageConfig): entrypoint.PackageConfig {
     if (pkg.type !== 'python') {
       throw util.CLIError(`Auto Docker entrypoint only supported for Python, got '${pkg.type}'.`);
     }
 
-    const options = prepareDockerOptions(this.logger, this.packageRoot, pkg.id, pkg);
+    const options = prepareDockerOptions(this.logger, this.packageRoot, this.packageName, pkg.id, pkg);
     const artifact: artifacts.dockerPackageConfig = {
       type: 'docker',
       ...options,
