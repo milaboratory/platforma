@@ -283,7 +283,7 @@ catalog:
   '@types/readline-sync': ^1.4.8
   '@types/jest': ^29.5.14
   '@types/http-proxy': ^1.17.16
-  '@types/node': ~20.16.15
+  '@types/node': ~22.19.0
   '@types/eslint__js': ^8.42.3
   '@types/semver': ^7.7.0
   '@types/mime-types': ^2.1.4
