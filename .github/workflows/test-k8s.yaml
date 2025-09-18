@@ -25,7 +25,7 @@ jobs:
       app-name: Platforma SDK Google Batch Int Tests
       app-name-slug: 'platforma-sdk-gcp'
       gha-runner-label: 'dev-gke'
-      node-version: '20.x'
+      node-version: '22.x'
       pl-version: 'main'
       pnpm-build-command: '--filter "*/workflow-tengo*"'
       pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --minWorkers=50 --maxWorkers=50 --testTimeout=900000'
