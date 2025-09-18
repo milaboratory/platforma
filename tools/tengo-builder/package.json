@@ -21,7 +21,7 @@
   ],
   "license": "UNLICENSED",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
     "@milaboratories/ts-helpers": "workspace:*",

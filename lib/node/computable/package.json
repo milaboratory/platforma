@@ -2,7 +2,7 @@
   "name": "@milaboratories/computable",
   "version": "2.6.8",
   "engines": {
-    "node": ">=20.3.0"
+    "node": ">=22.19.0"
   },
   "description": "Watcher / Computable Abstraction",
   "types": "./dist/index.d.ts",
