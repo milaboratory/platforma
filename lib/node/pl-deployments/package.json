@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-deployments",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "pl-version": "1.42.0",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
   "engines": {

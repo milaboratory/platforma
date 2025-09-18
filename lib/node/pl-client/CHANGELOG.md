@@ -1,5 +1,16 @@
 # @milaboratories/pl-client
 
+## 2.13.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/ts-helpers@1.5.0
+
 ## 2.12.2
 
 ### Patch Changes
