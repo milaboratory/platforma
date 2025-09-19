@@ -31,8 +31,8 @@ catalogs:
       specifier: ^1.0.145
       version: 1.0.145
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.79
-      version: 1.0.79
+      specifier: 1.0.81
+      version: 1.0.81
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.7
       version: 2.2.7
@@ -1926,7 +1926,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.79(encoding@0.1.13)
+        version: 1.0.81(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -4901,11 +4901,11 @@ packages:
   '@milaboratories/miplots4@1.0.145':
     resolution: {integrity: sha512-NiWAywxWtacWR5danfZA2y8DjzzLVSBjTxBe5fvhpUCI84CYZcGyn4eS44fDFG3IO1uaC9FAsKpWcWta0HTK+Q==}
 
-  '@milaboratories/pframes-rs-node@1.0.79':
-    resolution: {integrity: sha512-wpff9Pdb8neiWZxfSktFayRcQ4FLmNeaG58IwYO0Ynfz+VgTI2gHXOPrLTBVnXaOf+jTrYqKj5fJ78lnoXqY6g==}
+  '@milaboratories/pframes-rs-node@1.0.81':
+    resolution: {integrity: sha512-kxqhiJuriPT80dNlIAQcX9ScKM6CG8BN466N/23PG5OlkLqfovAyRlJz2e/BGotUtYqqOIb+cWcgX07xIZ+R7Q==}
 
-  '@milaboratories/pframes-rs-serv@1.0.79':
-    resolution: {integrity: sha512-uka+KtD0QIGdMrMY0UzKg19DMPok1E46wZI5D0o0w26422Nm3+9h5/MSpLV+OguU1FeuCFJm68Sz+Ilmn3HqNA==}
+  '@milaboratories/pframes-rs-serv@1.0.81':
+    resolution: {integrity: sha512-vgK1tvz9rvtN0bkYMBTGMl0/hgJ+JMI4ineFmXS3lHZsRq1iPgnHiUe+BuZjbsZjGCptXc6EvddblxctIQ2rtw==}
     hasBin: true
 
   '@milaboratories/pl-error-like@1.12.5':
@@ -13525,18 +13525,18 @@ snapshots:
       - d3-scale-chromatic
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.79(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.81(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/helpers': 1.8.1
-      '@milaboratories/pframes-rs-serv': 1.0.79
+      '@milaboratories/pframes-rs-serv': 1.0.81
       '@milaboratories/pl-model-common': 1.19.19
       ulid: 3.0.1
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-serv@1.0.79':
+  '@milaboratories/pframes-rs-serv@1.0.81':
     dependencies:
       '@milaboratories/helpers': 1.8.1
       '@milaboratories/pl-model-common': 1.19.19
