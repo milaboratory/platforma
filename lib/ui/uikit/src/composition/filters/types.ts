@@ -1,15 +1,15 @@
 import type { FilterSpec, FilterSpecOfType, FilterSpecType, SimplifiedPColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
 
 export type FilterSpecTypeField<V> = {
-  fieldType: FilterSpecTypeToLiteral<V>;
   label: string;
+  fieldType: FilterSpecTypeToLiteral<V>;
   defaultValue: () => V | undefined;
 };
 
 export type FilterSpecTypeFieldRecord<T extends FilterSpec> = { [K in keyof T]: FilterSpecTypeField<T[K]>; };
 
 export type FilterSpecFormField<T extends FilterSpec> = {
-  [K in Exclude<keyof T, 'id' | 'name' | 'isExpanded'>]: FilterSpecTypeField<T[K]>
+  [K in keyof T]: FilterSpecTypeField<T[K]>
 };
 
 export type FilterSpecMetadataRecord<T extends FilterSpecType> = {
