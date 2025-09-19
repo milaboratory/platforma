@@ -5,6 +5,7 @@
 self := import(":tpl.light")
 
 feats := import(":feats")
+text := import("text")
 render := import(":render")
 workdir := import(":workdir")
 runcmd := import(":exec.runcmd")
@@ -16,6 +17,13 @@ internal := import(":exec.python.internal")
 constants := import(":exec.constants")
 pkg := import(":exec.package")
 
+/**
+ * Creates new python virtual environment using given python interpreter (python run environment) and descriptor.
+ *
+ * @param pythonPackage: smart.reference - python run environment.
+ * @param pythonDescriptor: desc.runEnvScheme - python run environment descriptor.
+ * @return venv: smart.reference - python virtual environment.
+ */
 _createVenv := func(pythonPackage, pythonDescriptor) {
 	wdBefore := workdir.builder().
 		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
@@ -35,6 +43,13 @@ _createVenv := func(pythonPackage, pythonDescriptor) {
 		mem(pkg.DEFAULT_ALLOCATION_RAM).
 		substitutionRule(pythonRule, "python-run-environment").
 		addPathTyped(t, path.join("{python}", pythonDescriptor.binDir))
+
+	if !is_undefined(pythonDescriptor.envVars) {
+		for envVar in pythonDescriptor.envVars {
+			split := text.split(envVar, "=")
+			venvBuilder.envTyped(split[0], t, split[1])
+		}
+	}
 
 	venvBuilder.
 		cmd("python").
@@ -100,7 +115,7 @@ self.body(func(inputs) {
 		venv: venv,
 		toolset: inputs.toolset,
 		dependencies: inputs.dependencies,
-		pythonBinDir: pythonDescriptor.binDir,
+		pythonDescriptor: pythonDescriptor,
 		pythonVenvBinDir: venvParams.binDir
 	})
 

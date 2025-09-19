@@ -1,5 +1,21 @@
 # @milaboratories/pl-drivers
 
+## 1.11.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/computable@2.7.0
+  - @milaboratories/ts-helpers@1.5.0
+  - @milaboratories/pl-client@2.13.0
+  - @milaboratories/pl-model-common@1.20.0
+  - @milaboratories/pl-tree@1.8.0
+  - @milaboratories/helpers@1.9.0
+
 ## 1.10.18
 
 ### Patch Changes

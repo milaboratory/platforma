@@ -88,6 +88,13 @@ _loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) 
 	plan.envExpression("VIRTUAL_ENV", path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv"))
 	plan.envExpression("PYTHONPATH", path.join(_expr(_ARG_VAR_PYTHON_RUN_ENV), descriptor.runEnv.binDir, "python_stdlib") + _expr(_ARG_PATH_DELIMETER) + _expr(_ARG_VAR_PKG))
 
+	if !is_undefined(descriptor.runEnv.envVars) {
+		for envVar in descriptor.runEnv.envVars {
+			split := text.split(envVar, "=")
+			plan.envExpression(split[0], split[1])
+		}
+	}
+
 	return ll.toStrict({
 		runEnvType: "python",
 		plan:       plan

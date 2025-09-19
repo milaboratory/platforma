@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.2.3
+
+### Patch Changes
+
+- 32715b4: Pass env vars from run environment to pip install and final command execution
+
 ## 5.2.2
 
 ### Patch Changes
