@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.7.0
+
+### Minor Changes
+
+- f6ba1b9: Allow run environments to provide custom env variables for all runs
+
 ## 3.6.0
 
 ### Minor Changes
