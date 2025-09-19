@@ -3,6 +3,8 @@ FROM python:${PYTHON_VERSION}
 
 WORKDIR ${PKG}
 
+${RUNENV_ENVS}
+
 # Install dependencies to leverage Docker cache
 COPY ${REQUIREMENTS_PATH} .
 RUN ${TOOLSET} install --no-cache-dir -r ${REQUIREMENTS_FILENAME}
