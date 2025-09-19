@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { getPythonVersionFromEnvironment, prepareDockerOptions } from '../docker-python';
+import { getRunEnvironmentPythonInfo, prepareDockerOptions } from '../docker-python';
 import type { PythonPackage } from '../schemas/entrypoint';
 import type winston from 'winston';
 import * as util from '../util';
@@ -24,7 +24,7 @@ const mockLogger = {
 // Mock Python package for testing - will be set in beforeEach
 let mockPythonPackage: PythonPackage;
 
-const createRunEnvironmentSwJson = (packageRoot: string, runenvArtifactID: string, pythonVersion: string) => {
+const createRunEnvironmentSwJson = (packageRoot: string, runenvArtifactID: string, pythonVersion: string, envVars: string[]) => {
   const [runenvPackageName, runenvEntrypointName] = util.rSplit(runenvArtifactID, ':', 2);
 
   const entrypointPath = path.join(
@@ -43,9 +43,7 @@ const createRunEnvironmentSwJson = (packageRoot: string, runenvArtifactID: strin
     runEnv: {
       'type': 'python',
       'python-version': pythonVersion,
-      'envVars': [
-        'MY_ENV_VAR=1234',
-      ],
+      'envVars': envVars,
       'registry': 'example-python-registry',
       'package': 'software/package-path/py3/1.1.0-{os}-{arch}.tgz',
       'binDir': '.',
@@ -74,7 +72,7 @@ describe('Docker Python Functions', () => {
     // Create a mock requirements.txt file
     fs.writeFileSync(path.join(testPackageRoot, 'requirements.txt'), 'requests>=2.25.0\n');
 
-    createRunEnvironmentSwJson(testPackageRoot, '@platforma-open/milaboratories.runenv-python-3:3.12.10', '3.12.10');
+    createRunEnvironmentSwJson(testPackageRoot, '@platforma-open/milaboratories.runenv-python-3:3.12.10', '3.12.10', []);
 
     // Initialize mockPythonPackage with absolute path
     mockPythonPackage = {
@@ -144,7 +142,7 @@ describe('Docker Python Functions', () => {
     });
 
     it('should use default Python version when environment has no version', () => {
-      createRunEnvironmentSwJson(testPackageRoot, '@platforma-open/milaboratories.runenv-python-3:aaa', '');
+      createRunEnvironmentSwJson(testPackageRoot, '@platforma-open/milaboratories.runenv-python-3:aaa', '', []);
 
       const packageWithoutVersion: PythonPackage = {
         ...mockPythonPackage,
@@ -251,23 +249,31 @@ describe('getPythonVersionFromEnvironment', () => {
     ['@platforma-open/milaboratories.runenv-python-3:3.13.7-windowsservercore-ltsc2025', '', '3.13.7-windowsservercore-ltsc2025'],
   ];
 
-  const undefinedCases: string[] = [
-    '@milaboratories/example-pl-package-runenv-1:python',
-    '',
+  const undefinedCases: [string, string[]][] = [
+    ['@milaboratories/example-pl-package-runenv-1:python', ['MY_ENV_VAR=1234']],
+    ['@milaboratories/example-pl-package-runenv-1:python', []],
   ];
 
   describe('without normalizeForDocker', () => {
     rawCases.forEach(([input, pyVersion, expected]) => {
       it(`should extract "${expected}" from "${input}"`, () => {
-        createRunEnvironmentSwJson(testPackageRoot, input, pyVersion);
-        expect(getPythonVersionFromEnvironment(mockLogger, testPackageRoot, 'test-package', input, { normalizeForDocker: false })).toBe(expected);
+        createRunEnvironmentSwJson(testPackageRoot, input, pyVersion, ['MY_ENV_VAR=1234']);
+        expect(getRunEnvironmentPythonInfo(mockLogger, testPackageRoot, 'test-package', input, { normalizeForDocker: false })).toStrictEqual({
+          pythonVersion: expected,
+          envVars: ['MY_ENV_VAR=1234'],
+        });
       });
     });
 
-    undefinedCases.forEach((input) => {
+    undefinedCases.forEach(([input, envVars]) => {
       it(`should return undefined for "${input}"`, () => {
-        createRunEnvironmentSwJson(testPackageRoot, input, '');
-        expect(getPythonVersionFromEnvironment(mockLogger, testPackageRoot, 'test-package', input, { normalizeForDocker: false })).toBeUndefined();
+        if (input !== '') {
+          createRunEnvironmentSwJson(testPackageRoot, input, '', envVars);
+        }
+        expect(getRunEnvironmentPythonInfo(mockLogger, testPackageRoot, 'test-package', input, { normalizeForDocker: false })).toStrictEqual({
+          pythonVersion: undefined,
+          envVars,
+        });
       });
     });
   });
@@ -275,15 +281,23 @@ describe('getPythonVersionFromEnvironment', () => {
   describe('with normalizeForDocker = true', () => {
     dockerSafeCases.forEach(([input, pyVersion, expected]) => {
       it(`should extract docker-safe "${expected}" from "${input}"`, () => {
-        createRunEnvironmentSwJson(testPackageRoot, input, pyVersion);
-        expect(getPythonVersionFromEnvironment(mockLogger, testPackageRoot, 'test-package', input, { normalizeForDocker: true })).toBe(expected);
+        createRunEnvironmentSwJson(testPackageRoot, input, pyVersion, []);
+        expect(getRunEnvironmentPythonInfo(mockLogger, testPackageRoot, 'test-package', input, { normalizeForDocker: true })).toStrictEqual({
+          pythonVersion: expected,
+          envVars: [],
+        });
       });
     });
 
-    undefinedCases.forEach((input) => {
+    undefinedCases.forEach(([input, envVars]) => {
       it(`should return undefined for "${input}"`, () => {
-        createRunEnvironmentSwJson(testPackageRoot, input, '');
-        expect(getPythonVersionFromEnvironment(mockLogger, testPackageRoot, 'test-package', input, { normalizeForDocker: true })).toBeUndefined();
+        if (input !== '') {
+          createRunEnvironmentSwJson(testPackageRoot, input, '', envVars);
+        }
+        expect(getRunEnvironmentPythonInfo(mockLogger, testPackageRoot, 'test-package', input, { normalizeForDocker: true })).toStrictEqual({
+          pythonVersion: undefined,
+          envVars,
+        });
       });
     });
   });

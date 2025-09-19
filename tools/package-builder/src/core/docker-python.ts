@@ -22,6 +22,7 @@ export interface PythonOptions {
   toolset: string;
   requirements: string;
   pkg: string;
+  envVars: string[]; // custom environment variables set for run environment
 }
 
 export interface DockerOptions {
@@ -38,8 +39,11 @@ function generatePythonDockerfileContent(options: PythonOptions): string {
   const templatePath = paths.assets('python-dockerfile.template');
   const templateContent = fs.readFileSync(templatePath, 'utf-8');
 
+  const envVars = options.envVars.map((envVar) => `ENV ${envVar}`).join('\n');
+
   // Generate Dockerfile with dependencies
   return templateContent
+    .replace(/\$\{RUNENV_ENVS\}/g, envVars)
     .replace(/\$\{PYTHON_VERSION\}/g, options.pythonVersion)
     .replace(/\$\{REQUIREMENTS_PATH\}/g, options.requirements)
     .replace(/\$\{REQUIREMENTS_FILENAME\}/g, path.basename(options.requirements))
@@ -58,13 +62,14 @@ export function prepareDockerOptions(
 
   const options = getDefaultPythonOptions();
 
-  const pythonVersion = getPythonVersionFromEnvironment(logger, currentPackageRoot, currentPackageName, buildParams.environment);
-  if (pythonVersion) {
-    logger.debug(`Extracted Python version from environment: ${pythonVersion}`);
-    options.pythonVersion = pythonVersion;
+  const pythonInfo = getRunEnvironmentPythonInfo(logger, currentPackageRoot, currentPackageName, buildParams.environment);
+  if (pythonInfo.pythonVersion) {
+    logger.debug(`Extracted Python version from environment: ${pythonInfo.pythonVersion}`);
+    options.pythonVersion = pythonInfo.pythonVersion;
   } else {
     logger.debug(`No Python version found in environment, using default: ${options.pythonVersion}`);
   }
+  options.envVars = pythonInfo.envVars;
 
   if (buildParams.dependencies) {
     options.toolset = buildParams.dependencies.toolset;
@@ -147,52 +152,80 @@ function isValidDockerTag(tag: string): boolean {
   return PYTHON_VERSION_PATTERNS.DOCKER_TAG_FORMAT.test(tag);
 }
 
-export function getPythonVersionFromEnvironment(
+export function getRunEnvironmentPythonInfo(
   logger: winston.Logger,
   currentPackageRoot: string,
   currentPackageName: string,
   runEnvironmentID: artifacts.artifactIDString,
   { normalizeForDocker = true }: { normalizeForDocker?: boolean } = {},
-): string | undefined {
+): {
+    pythonVersion: string | undefined;
+    envVars: string[];
+  } {
   if (!runEnvironmentID) {
-    return undefined;
+    return {
+      pythonVersion: undefined,
+      envVars: [],
+    };
   }
 
   const environmentDescriptor = resolveRunEnvironment(logger, currentPackageRoot, currentPackageName, runEnvironmentID, 'python');
 
-  let versionTag: string | undefined = environmentDescriptor['python-version'];
-  if (!versionTag) {
-    versionTag = undefined;
+  let pythonVersion: string | undefined = environmentDescriptor['python-version'];
+  const envVars = environmentDescriptor.envVars ?? [];
+  if (!pythonVersion) {
+    pythonVersion = undefined;
     const trimmedInput = runEnvironmentID.trim();
     if (!trimmedInput) {
-      return undefined;
+      return {
+        pythonVersion: undefined,
+        envVars,
+      };
     }
 
     const colonIndex = trimmedInput.indexOf(':');
     if (colonIndex === -1 || colonIndex === trimmedInput.length - 1) {
-      return undefined;
+      return {
+        pythonVersion: undefined,
+        envVars,
+      };
     }
 
-    versionTag = trimmedInput.slice(colonIndex + 1);
-    if (versionTag.startsWith('python')) {
-      return undefined;
+    pythonVersion = trimmedInput.slice(colonIndex + 1);
+    if (pythonVersion.startsWith('python')) {
+      return {
+        pythonVersion: undefined,
+        envVars,
+      };
     }
   }
 
   if (!normalizeForDocker) {
-    return versionTag;
+    return {
+      pythonVersion,
+      envVars,
+    };
   }
 
-  const normalizedTag = normalizeDockerTag(versionTag);
+  const normalizedTag = normalizeDockerTag(pythonVersion);
   if (!normalizedTag) {
-    return undefined;
+    return {
+      pythonVersion: undefined,
+      envVars,
+    };
   }
 
   if (!isValidPythonVersion(normalizedTag) || !isValidDockerTag(normalizedTag)) {
-    return undefined;
+    return {
+      pythonVersion: undefined,
+      envVars,
+    };
   }
 
-  return normalizedTag;
+  return {
+    pythonVersion: normalizedTag,
+    envVars,
+  };
 }
 
 function getDefaultPythonOptions(): PythonOptions {
@@ -201,6 +234,7 @@ function getDefaultPythonOptions(): PythonOptions {
     toolset: 'pip',
     requirements: 'requirements.txt',
     pkg: '/app/',
+    envVars: [],
   };
 }
 
