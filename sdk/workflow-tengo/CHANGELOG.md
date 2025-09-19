@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.3.0
+
+### Minor Changes
+
+- f948c9c: Bumb runenv-python-3 v1.4.5 -> 1.4.12
+
 ## 5.2.3
 
 ### Patch Changes
