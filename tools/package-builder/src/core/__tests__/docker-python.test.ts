@@ -220,7 +220,6 @@ describe('getPythonVersionFromEnvironment', () => {
 
     // Standard versions
     ['@platforma-open/milaboratories.runenv-python-3:3.12.6', '', '3.12.6'],
-    ['@platforma-open/milaboratories.runenv-python-3:3.12.6', '', '3.12.6'],
     ['@platforma-open/milaboratories.runenv-python-3:3.11.0', '', '3.11.0'],
 
     // Pre-releases
