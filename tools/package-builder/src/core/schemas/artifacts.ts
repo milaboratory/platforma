@@ -69,13 +69,15 @@ const archiveRulesSchema = z.object({
 });
 export type archiveRules = z.infer<typeof archiveRulesSchema>;
 
-const artifactIDSchema = z
+export const artifactIDSchema = z
   .string()
   .regex(/:/, {
     message:
       'tengo artifact ID must have <npmPackage>:<artifactName> format, e.g @milaboratory/runenv-java-corretto:21.2.0.4.1',
   })
   .describe('ID of tengo build artifact');
+
+export type artifactIDString = z.infer<typeof artifactIDSchema>;
 
 export const assetPackageSchema = archiveRulesSchema
   .omit({ roots: true })

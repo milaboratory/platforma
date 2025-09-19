@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import type { DockerPackage } from './package-info';
+import type { DockerPackage } from './schemas/entrypoint';
 import * as util from './util';
 import * as fs from 'node:fs';
 import * as path from 'node:path';

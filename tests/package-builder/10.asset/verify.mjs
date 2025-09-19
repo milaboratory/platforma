@@ -55,13 +55,12 @@ function main() {
   try {
     console.log('Starting asset verification...');
 
-    const { version } = JSON.parse(readFileSync('./package.json', 'utf8'));
-    const npmPackageVersion = version;
-
     const asset123Path = join(baseDir, fileName);
     verifyFileExists(asset123Path);
     const asset123Data = verifyValidJSON(asset123Path);
-    verifyAssetContent(asset123Data, npmPackageVersion);
+
+    const { version } = JSON.parse(readFileSync('./package.json', 'utf8'));
+    verifyAssetContent(asset123Data, version);
 
     console.log('✅ All asset are valid.');
     process.exit(0);

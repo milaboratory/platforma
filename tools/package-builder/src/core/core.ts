@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import type winston from 'winston';
-import type { PackageConfig, Entrypoint, DockerPackage } from './package-info';
 import { PackageInfo } from './package-info';
 import type * as artifacts from './schemas/artifacts';
+import type * as entrypoint from './schemas/entrypoint';
 import {
   Renderer,
   readBuiltArtifactInfo,
@@ -17,7 +17,7 @@ import * as docker from './docker';
 
 export class Core {
   private readonly logger: winston.Logger;
-  private _entrypoints: Map<string, Entrypoint> | undefined;
+  private _entrypoints: Map<string, entrypoint.Entrypoint> | undefined;
   private _renderer: Renderer | undefined;
 
   public readonly pkgInfo: PackageInfo;
@@ -38,15 +38,15 @@ export class Core {
     this.fullDirHash = false;
   }
 
-  public binArchivePath(pkg: PackageConfig, os: util.OSType, arch: util.ArchType): string {
+  public binArchivePath(pkg: entrypoint.PackageConfig, os: util.OSType, arch: util.ArchType): string {
     return archive.getPath(this.archiveOptions(pkg, os, arch, 'tgz'));
   }
 
-  public assetArchivePath(pkg: PackageConfig, os: util.OSType, arch: util.ArchType): string {
+  public assetArchivePath(pkg: entrypoint.PackageConfig, os: util.OSType, arch: util.ArchType): string {
     return archive.getPath(this.archiveOptions(pkg, os, arch, 'zip'));
   }
 
-  public archivePath(pkg: PackageConfig, os: util.OSType, arch: util.ArchType): string {
+  public archivePath(pkg: entrypoint.PackageConfig, os: util.OSType, arch: util.ArchType): string {
     if (pkg.type === 'asset') {
       return this.assetArchivePath(pkg, os, arch);
     }
@@ -54,7 +54,7 @@ export class Core {
     return this.binArchivePath(pkg, os, arch);
   }
 
-  public get entrypoints(): Map<string, Entrypoint> {
+  public get entrypoints(): Map<string, entrypoint.Entrypoint> {
     if (!this._entrypoints) {
       this._entrypoints = this.pkgInfo.entrypoints;
     }
@@ -62,8 +62,8 @@ export class Core {
     return this._entrypoints;
   }
 
-  public get packages(): Map<string, PackageConfig> {
-    const pkgs = new Map<string, PackageConfig>();
+  public get packages(): Map<string, entrypoint.PackageConfig> {
+    const pkgs = new Map<string, entrypoint.PackageConfig>();
 
     for (const [_, ep] of this.entrypoints.entries()) {
       if (ep.type === 'reference') {
@@ -97,7 +97,7 @@ export class Core {
     return result;
   }
 
-  public get buildablePackages(): Map<string, PackageConfig> {
+  public get buildablePackages(): Map<string, entrypoint.PackageConfig> {
     return new Map(Array.from(this.packages.entries()).filter(([, value]) => value.isBuildable));
   }
 
@@ -116,7 +116,7 @@ export class Core {
     return false;
   }
 
-  public getPackage(id: string, type?: 'docker' | 'archive'): PackageConfig {
+  public getPackage(id: string, type?: 'docker' | 'archive'): entrypoint.PackageConfig {
     const pkg = this.packages.get(id);
     if (pkg) {
       // If we request docker package and current package is not docker - continue searching
@@ -234,7 +234,7 @@ export class Core {
   //  (when unique content of archive produces unique location, i.e. hash of archive)
   // package location files are used to build entrypoint descriptor (sw.json file)
   public async buildPackage(
-    pkg: PackageConfig,
+    pkg: entrypoint.PackageConfig,
     platform: util.PlatformType,
     options?: {
       archivePath?: string;
@@ -289,11 +289,11 @@ export class Core {
       }
 
       const pkg = this.getPackage(pkgID, 'docker');
-      this.buildDockerImage(pkg.id, pkg as DockerPackage, options?.registry);
+      this.buildDockerImage(pkg.id, pkg as entrypoint.DockerPackage, options?.registry);
     }
   }
 
-  private buildDockerImage(pkgID: string, pkg: DockerPackage, registry?: string) {
+  private buildDockerImage(pkgID: string, pkg: entrypoint.DockerPackage, registry?: string) {
     const dockerfile = path.resolve(this.pkgInfo.packageRoot, pkg.dockerfile ?? 'Dockerfile');
     const context = path.resolve(this.pkgInfo.packageRoot, pkg.context ?? '.');
     const entrypoint = pkg.entrypoint ?? [];
@@ -340,7 +340,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
 
   private async createPackageArchive(
     packageContentType: string,
-    pkg: PackageConfig,
+    pkg: entrypoint.PackageConfig,
     archivePath: string,
     contentRoot: string,
     os: util.OSType,
@@ -411,7 +411,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
   }
 
   private async publishPackage(
-    pkg: PackageConfig,
+    pkg: entrypoint.PackageConfig,
     platform: util.PlatformType,
     options?: {
       archivePath?: string;
@@ -429,7 +429,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
     await this.publishArchive(pkg, platform, options);
   }
 
-  private async publishArchive(pkg: PackageConfig, platform: util.PlatformType, options?: {
+  private async publishArchive(pkg: entrypoint.PackageConfig, platform: util.PlatformType, options?: {
     archivePath?: string;
     storageURL?: string;
     failExisting?: boolean;
@@ -522,7 +522,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
     }
   }
 
-  private publishDockerImage(pkg: PackageConfig, pushTo?: string) {
+  private publishDockerImage(pkg: entrypoint.PackageConfig, pushTo?: string) {
     if (pkg.type !== 'docker') {
       throw util.CLIError(`package '${pkg.id}' is not a docker package`);
     }
@@ -590,7 +590,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
   }
 
   private signPackage(
-    pkg: PackageConfig,
+    pkg: entrypoint.PackageConfig,
     platform: util.PlatformType,
     options?: {
       archivePath?: string;
@@ -662,7 +662,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
   }
 
   private archiveOptions(
-    pkg: PackageConfig,
+    pkg: entrypoint.PackageConfig,
     os: util.OSType,
     arch: util.ArchType,
     archiveType: archive.archiveType,
