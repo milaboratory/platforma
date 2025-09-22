@@ -348,6 +348,23 @@ workflow := func() {
 		},
 
 		frameFromColumnBundle: func(bundle, options) {
+			decodeColumn := func(columnId) {
+				isFilteredColumn := func(columnId) {
+				decoded := undefined
+				if is_string(columnId) {
+					decoded = json.decode(columnId)
+				} else if is_map(columnId) {
+					decoded = columnId
+				} else {
+					ll.panic("Invalid column ID type. Expected string or object.")
+				}
+				return decoded
+			}
+			isFilteredColumn := func(columnId) {
+				decoded := decodeColumn(columnId)
+				return is_map(decoded) && !is_undefined(decoded.source) && !is_undefined(decoded.axisFilters)
+			}
+
 			axes := options.axes
 			ll.assert(is_array(axes) && len(axes) > 0, "options.axes must be a non-empty array")
 			
@@ -356,53 +373,44 @@ workflow := func() {
 
 			tsvBuilder := pframes.tsvFileBuilder()
 
-			mapAxisIdxToColumn := {}
+			axesHeaders := []
 
 			for idx, axis in axes {
 				ll.assert(is_map(axis), "each axis entry must be a map")
 				ll.assert(is_map(axis.spec) && is_string(axis.column), "each axis entry must have a column and spec")
 				tsvBuilder.setAxisHeader(axis.spec, axis.column)
-				mapAxisIdxToColumn[idx] = axis.column
+				axesHeaders = append(axesHeaders, axis.column)
 			}
 
-			additionalDFs := []
-
+			filteredColumns := []
 			for column in columns {
-				decoded := undefined
-				if is_string(column) {
-					decoded = json.decode(column)
-				} else if is_map(column) {
-					decoded = column
-				} else {
-					ll.panic("Invalid column ID type. Expected string or object.")
+				if (isFilteredColumn(column)) {
+					filteredColumns = append(filteredColumns, column)
 				}
-				isFiltered := is_map(decoded) && !is_undefined(decoded.source) && !is_undefined(decoded.axisFilters)
-				
-				if isFiltered {
-					source := decoded.source
-					axisFilters := decoded.axisFilters
 
-					tsv := pframes.tsvFileBuilder()
-					for axis in axes {
-						tsv.setAxisHeader(axis.spec, axis.column)
-					}
-					tsv.add(bundle.getColumn(source), { header: "value" }) // tsv.add(bundle.getColumn(column))
-					df := self.frame(tsv.buildForPT())
-					for axisFilter in axisFilters {
-						id := mapAxisIdxToColumn[axisFilter[0]]
-						value := axisFilter[1]
-						df = df.filter(col(id).eq(lit(value))).withoutColumns(id)
-					}
-
-					additionalDFs = append(additionalDFs, df)
-				} else {
-					tsvBuilder.add(bundle.getColumn(column))
-				}
+				tsvBuilder.add(bundle.getColumn(column))
 			}
-
+			
 			mainDF := self.frame(tsvBuilder.buildForPT())
-			for df in additionalDFs {
-				mainDF = mainDF.join(df, { how: "inner" })
+
+			for column in filteredColumns {
+				decoded := decodeColumn(column)
+				source := decoded.source
+				axisFilters := decoded.axisFilters
+
+				tsv := pframes.tsvFileBuilder()
+				for axis in axes {
+					tsv.setAxisHeader(axis.spec, axis.column)
+				}
+				tsv.add(bundle.getColumn(source), { header: column })
+				df := self.frame(tsv.buildForPT())
+				for idx, axisFilter in axisFilters {
+					id := axesHeaders[idx]
+					value := axisFilter[1]
+					df = df.filter(col(id).eq(lit(value))).withoutColumns(id)
+				}
+
+				mainDF.join(df, { on: axesHeaders })
 			}
 
 			return mainDF
