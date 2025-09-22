@@ -365,19 +365,19 @@ workflow := func() {
 			additionalDFs := []
 
 			for column in columns {
-				decodedId := undefined
-				if is_string(id) {
-					decodedId = json.decode(id)
-				} else if is_map(id) {
-					decodedId = id
+				decoded := undefined
+				if is_string(column) {
+					decoded = json.decode(column)
+				} else if is_map(column) {
+					decoded = column
 				} else {
 					ll.panic("Invalid column ID type. Expected string or object.")
 				}
-				isFiltered := is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters)
+				isFiltered := is_map(decoded) && !is_undefined(decoded.source) && !is_undefined(decoded.axisFilters)
 				
 				if isFiltered {
-					source := decodedId.source
-					axisFilters := decodedId.axisFilters
+					source := decoded.source
+					axisFilters := decoded.axisFilters
 
 					tsv := pframes.tsvFileBuilder()
 					for idx, axis in axes {
