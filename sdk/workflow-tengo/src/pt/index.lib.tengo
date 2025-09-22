@@ -356,10 +356,13 @@ workflow := func() {
 
 			tsvBuilder := pframes.tsvFileBuilder()
 
+			mapAxisIdxToColumn := {}
+
 			for idx, axis in axes {
 				ll.assert(is_map(axis), "each axis entry must be a map")
 				ll.assert(is_map(axis.spec) && is_string(axis.column), "each axis entry must have a column and spec")
-				tsvBuilder.setAxisHeader(axis.spec, string(idx))
+				tsvBuilder.setAxisHeader(axis.spec, axis.column)
+				mapAxisIdxToColumn[idx] = axis.column
 			}
 
 			additionalDFs := []
@@ -380,13 +383,13 @@ workflow := func() {
 					axisFilters := decoded.axisFilters
 
 					tsv := pframes.tsvFileBuilder()
-					for idx, axis in axes {
-						tsv.setAxisHeader(axis.spec, string(idx))
+					for axis in axes {
+						tsv.setAxisHeader(axis.spec, axis.column)
 					}
 					tsv.add(bundle.getColumn(source), { header: "value" }) // tsv.add(bundle.getColumn(column))
 					df := self.frame(tsv.buildForPT())
 					for axisFilter in axisFilters {
-						id := string(axisFilter[0])
+						id := mapAxisIdxToColumn[axisFilter[0]]
 						value := axisFilter[1]
 						df = df.filter(col(id).eq(lit(value))).withoutColumns(id)
 					}
