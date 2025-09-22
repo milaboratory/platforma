@@ -347,6 +347,64 @@ workflow := func() {
 			return _newDataFrame(self, finalDataFrameId)
 		},
 
+		frameFromColumnBundle: func(bundle, options) {
+			axes := options.axes
+			ll.assert(is_array(axes) && len(axes) > 0, "options.axes must be a non-empty array")
+			
+			columns := options.columns
+			ll.assert(is_array(columns) && len(columns) > 0, "options.columns must be a non-empty array")
+
+			tsvBuilder := pframes.tsvFileBuilder()
+
+			for idx, axis in axes {
+				ll.assert(is_map(axis), "each axis entry must be a map")
+				ll.assert(is_map(axis.spec) && is_string(axis.column), "each axis entry must have a column and spec")
+				tsvBuilder.setAxisHeader(axis.spec, string(idx))
+			}
+
+			additionalDFs := []
+
+			for column in columns {
+				decodedId := undefined
+				if is_string(id) {
+					decodedId = json.decode(id)
+				} else if is_map(id) {
+					decodedId = id
+				} else {
+					ll.panic("Invalid column ID type. Expected string or object.")
+				}
+				isFiltered := is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters)
+				
+				if isFiltered {
+					source := decodedId.source
+					axisFilters := decodedId.axisFilters
+
+					tsv := pframes.tsvFileBuilder()
+					for idx, axis in axes {
+						tsv.setAxisHeader(axis.spec, string(idx))
+					}
+					tsv.add(bundle.getColumn(source), { header: "value" }) // tsv.add(bundle.getColumn(column))
+					df := self.frame(tsv.buildForPT())
+					for axisFilter in axisFilters {
+						id := string(axisFilter[0])
+						value := axisFilter[1]
+						df = df.filter(col(id).eq(lit(value))).withoutColumns(id)
+					}
+
+					additionalDFs = append(additionalDFs, df)
+				} else {
+					tsvBuilder.add(bundle.getColumn(column))
+				}
+			}
+
+			mainDF := self.frame(tsvBuilder.buildForPT())
+			for df in additionalDFs {
+				mainDF = mainDF.join(df, { how: "inner" })
+			}
+
+			return mainDF
+		},
+
 		_newAnonymousDataFrameId: func() {
 			anonymousDFCounter += 1
 			return "anonymous_" + string(anonymousDFCounter)
