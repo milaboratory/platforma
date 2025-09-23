@@ -13,15 +13,20 @@ class AwaitLock {
     });
   }
 
-  release(): void {
+  /**
+   * Releases the lock. Returns true if the lock becomes fully idle (no waiters, not acquired).
+   */
+  release(): boolean {
     if (!this.acquired) {
       throw new Error('Cannot release an unacquired lock');
     }
 
     if (this.resolvers.length) {
       this.resolvers.shift()?.();
+      return false;
     } else {
       this.acquired = false;
+      return true;
     }
   }
 }
@@ -30,13 +35,17 @@ const m = new Map<string, AwaitLock>();
 
 export async function advisory_lock(id: string) {
   if (!m.has(id)) {
-    const lock = new AwaitLock();
-    m.set(id, lock);
+    m.set(id, new AwaitLock());
   }
 
-  await m.get(id)!.acquireAsync();
+  const lock = m.get(id)!;
+  await lock.acquireAsync();
 
+  let released = false;
   return () => {
-    m.get(id)!.release();
+    if (released) return;
+    released = true;
+    const nowIdle = lock.release();
+    if (nowIdle) m.delete(id);
   };
 }
