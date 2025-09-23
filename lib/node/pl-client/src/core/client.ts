@@ -21,7 +21,7 @@ import { DefaultFinalResourceDataPredicate } from './final';
 import type { AllTxStat, TxStat } from './stat';
 import { addStat, initialTxStat } from './stat';
 import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
-import { lock } from './advisory_lock';
+import { advisory_lock } from './advisory_lock';
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -39,8 +39,6 @@ const AnonymousClientRoot = 'AnonymousRoot';
 function alternativeRootFieldName(alternativeRoot: string): string {
   return `alternative_root_${alternativeRoot}`;
 }
-
-let totalConflicts = 0;
 
 /** Client to access core PL API. */
 export class PlClient {
@@ -256,83 +254,67 @@ export class PlClient {
     // for exponential / linear backoff
     let retryState = createRetryState(ops?.retryOptions ?? this.defaultRetryOptions);
 
-    let conflictsCount = 0;
-
-    const startTime = Date.now();
-
     while (true) {
-      const unlock = ops?.lockId ? await lock(ops.lockId) : () => {};
-      // opening low-level tx
-      const llTx = this._ll.createTx(writable, ops);
-      // wrapping it into high-level tx (this also asynchronously sends initialization message)
-      const tx = new PlTransaction(
-        llTx,
-        name,
-        writable,
-        clientRoot,
-        this.finalPredicate,
-        this.resourceDataCache,
-      );
-
-      let ok = false;
-      let result: T | undefined = undefined;
-      let txId;
-
+      const release = ops?.lockId ? await advisory_lock(ops.lockId) : () => {};
       try {
+      // opening low-level tx
+        const llTx = this._ll.createTx(writable, ops);
+        // wrapping it into high-level tx (this also asynchronously sends initialization message)
+        const tx = new PlTransaction(
+          llTx,
+          name,
+          writable,
+          clientRoot,
+          this.finalPredicate,
+          this.resourceDataCache,
+        );
+
+        let ok = false;
+        let result: T | undefined = undefined;
+        let txId;
+
+        try {
         // executing transaction body
-        if (tx.writable) {
-          console.log('>>> executing writable transaction', tx.name, ops?.lockId);
-        }
-        result = await body(tx);
-        // collecting stat
-        this._txCommittedStat = addStat(this._txCommittedStat, tx.stat);
-        ok = true;
-      } catch (e: unknown) {
+          result = await body(tx);
+          // collecting stat
+          this._txCommittedStat = addStat(this._txCommittedStat, tx.stat);
+          ok = true;
+        } catch (e: unknown) {
         // the only recoverable
-        if (e instanceof TxCommitConflict) {
-          console.log('>>> TxCommitConflict ' + (ops?.name ? `(${ops.name})` : ''), ++conflictsCount, 'total conflicts', ++totalConflicts);
+          if (e instanceof TxCommitConflict) {
           // ignoring
           // collecting stat
-          this._txConflictStat = addStat(this._txConflictStat, tx.stat);
-        } else {
+            this._txConflictStat = addStat(this._txConflictStat, tx.stat);
+          } else {
           // collecting stat
-          this._txErrorStat = addStat(this._txErrorStat, tx.stat);
-          throw e;
-        }
-      } finally {
-        // close underlying grpc stream, if not yet done
+            this._txErrorStat = addStat(this._txErrorStat, tx.stat);
+            throw e;
+          }
+        } finally {
+          // close underlying grpc stream, if not yet done
 
-        // even though we can skip two lines below for read-only transactions,
-        // we don't do it to simplify reasoning about what is going on in
-        // concurrent code, especially in significant latency situations
-        try {
+          // even though we can skip two lines below for read-only transactions,
+          // we don't do it to simplify reasoning about what is going on in
+          // concurrent code, especially in significant latency situations
           await tx.complete();
           await tx.await();
 
           txId = await tx.getGlobalTxId();
-        } finally {
-          if (!ok) {
-            unlock();
-          }
         }
-      }
 
-      if (ok) {
+        if (ok) {
         // syncing on transaction if requested
-        if (ops?.sync === undefined ? this.forceSync : ops?.sync)
-          await this._ll.grpcPl.get().txSync({ txId });
+          if (ops?.sync === undefined ? this.forceSync : ops?.sync)
+            await this._ll.grpcPl.get().txSync({ txId });
 
-        unlock();
+          // introducing artificial delay, if requested
+          if (writable && this.txDelay > 0)
+            await tp.setTimeout(this.txDelay, undefined, { signal: ops?.abortSignal });
 
-        // introducing artificial delay, if requested
-        if (writable && this.txDelay > 0)
-          await tp.setTimeout(this.txDelay, undefined, { signal: ops?.abortSignal });
-
-        if (tx.writable) {
-          console.log('>>> transaction', tx.name, ops?.lockId, 'completed in', Date.now() - startTime, 'ms', 'total conflicts', totalConflicts, 'conflicts count', conflictsCount);
+          return result!;
         }
-
-        return result!;
+      } finally {
+        release();
       }
 
       // we only get here after TxCommitConflict error,

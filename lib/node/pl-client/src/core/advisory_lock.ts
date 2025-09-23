@@ -28,7 +28,7 @@ class AwaitLock {
 
 const m = new Map<string, AwaitLock>();
 
-export async function lock(id: string) {
+export async function advisory_lock(id: string) {
   if (!m.has(id)) {
     const lock = new AwaitLock();
     m.set(id, lock);
