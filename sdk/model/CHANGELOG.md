@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.43.18
+
+### Patch Changes
+
+- 0a11758: fix columns filtering for createPFrameForGraphs
+
 ## 1.43.14
 
 ### Patch Changes
