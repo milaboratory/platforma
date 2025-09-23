@@ -227,7 +227,7 @@ export function createPFrameForGraphs<A, U>(
     const columns = new PColumnCollection();
     columns.addColumnProvider(ctx.resultPool);
 
-    const allColumns = columns.getColumns(() => true, { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
+    const allColumns = columns.getColumns((spec) => !isHiddenFromGraphColumn(spec), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
     // if at least one column is not yet ready, we can't show the graph
     if (!allColumnsReady(allColumns)) {
       return undefined;
