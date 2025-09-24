@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.43.21
+
+### Patch Changes
+
+- ed7a454: createPlDataTableV2 - update to migrate Table block
+
 ## 1.43.18
 
 ### Patch Changes
