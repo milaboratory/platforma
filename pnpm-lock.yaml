@@ -15,6 +15,9 @@ catalogs:
     '@changesets/cli':
       specifier: ^2.29.5
       version: 2.29.5
+    '@eslint/js':
+      specifier: ^9.16.0
+      version: 9.25.1
     '@faker-js/faker':
       specifier: ^9.2.0
       version: 9.2.0
@@ -28,8 +31,8 @@ catalogs:
       specifier: ^1.0.145
       version: 1.0.145
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.81
-      version: 1.0.81
+      specifier: 1.0.82
+      version: 1.0.82
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.7
       version: 2.2.7
@@ -69,6 +72,9 @@ catalogs:
     '@rollup/plugin-typescript':
       specifier: ^12.1.4
       version: 12.1.4
+    '@stylistic/eslint-plugin':
+      specifier: ^2.11.0
+      version: 2.11.0
     '@types/d3-array':
       specifier: ^3.2.1
       version: 3.2.1
@@ -168,12 +174,21 @@ catalogs:
     eslint:
       specifier: ^9.25.1
       version: 9.25.1
+    eslint-plugin-n:
+      specifier: ^17.12.0
+      version: 17.14.0
+    eslint-plugin-vue:
+      specifier: ^9.26.0
+      version: 9.31.0
     fast-json-patch:
       specifier: ^3.1.1
       version: 3.1.1
     fs-extra:
       specifier: ^11.2.0
       version: 11.3.0
+    globals:
+      specifier: ^15.13.0
+      version: 15.13.0
     happy-dom:
       specifier: ^15.11.7
       version: 15.11.7
@@ -282,6 +297,9 @@ catalogs:
     typescript:
       specifier: ~5.6.3
       version: 5.6.3
+    typescript-eslint:
+      specifier: ^8.17.0
+      version: 8.17.0
     undici:
       specifier: ~7.13.0
       version: 7.13.0
@@ -1908,7 +1926,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.81(encoding@0.1.13)
+        version: 1.0.82(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -4883,11 +4901,11 @@ packages:
   '@milaboratories/miplots4@1.0.145':
     resolution: {integrity: sha512-NiWAywxWtacWR5danfZA2y8DjzzLVSBjTxBe5fvhpUCI84CYZcGyn4eS44fDFG3IO1uaC9FAsKpWcWta0HTK+Q==}
 
-  '@milaboratories/pframes-rs-node@1.0.81':
-    resolution: {integrity: sha512-kxqhiJuriPT80dNlIAQcX9ScKM6CG8BN466N/23PG5OlkLqfovAyRlJz2e/BGotUtYqqOIb+cWcgX07xIZ+R7Q==}
+  '@milaboratories/pframes-rs-node@1.0.82':
+    resolution: {integrity: sha512-AEfFColi+S1KPWOqordX/xwRhrX1dqJcmQirtkH+Wb65Xd25ZVtpLXZ2IFzlIU+YEIHCJjzOCAeQtfEc72lydg==}
 
-  '@milaboratories/pframes-rs-serv@1.0.81':
-    resolution: {integrity: sha512-vgK1tvz9rvtN0bkYMBTGMl0/hgJ+JMI4ineFmXS3lHZsRq1iPgnHiUe+BuZjbsZjGCptXc6EvddblxctIQ2rtw==}
+  '@milaboratories/pframes-rs-serv@1.0.82':
+    resolution: {integrity: sha512-0nFLgmbSxIhwxS4koDs54VtoBZM+UsVybBhWj/BCLZhuKP7tqg4+90R9zQoJGZ/rqZOqqH7ZiwIZHTgcRiQe1A==}
     hasBin: true
 
   '@milaboratories/pl-error-like@1.12.5':
@@ -8939,9 +8957,6 @@ packages:
 
   get-tsconfig@4.10.1:
     resolution: {integrity: sha512-auHyJ4AgMz7vgS8Hp3N6HXSmlMdUyhSUrfBF16w153rxtLIEOE+HGqaBppczZvnHLqQJfiHotCYpNhl0lUROFQ==}
-
-  get-tsconfig@4.8.1:
-    resolution: {integrity: sha512-k9PN+cFBmaLWtVz29SkUoqU5O0slLuHJXt/2P+tMVFT+phsSGXGkp9t3rQIqdz0e+06EHNGs3oM6ZX1s2zHxRg==}
 
   git-hooks-list@3.1.0:
     resolution: {integrity: sha512-LF8VeHeR7v+wAbXqfgRlTSX/1BJR9Q1vEMR8JAz1cEg6GX07+zyj3sAdDvYjj/xnlIfVuGgj4qBei1K3hKH+PA==}
@@ -13565,18 +13580,18 @@ snapshots:
       - d3-scale-chromatic
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.81(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.82(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/helpers': 1.8.1
-      '@milaboratories/pframes-rs-serv': 1.0.81
+      '@milaboratories/pframes-rs-serv': 1.0.82
       '@milaboratories/pl-model-common': 1.19.19
       ulid: 3.0.1
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-serv@1.0.81':
+  '@milaboratories/pframes-rs-serv@1.0.82':
     dependencies:
       '@milaboratories/helpers': 1.8.1
       '@milaboratories/pl-model-common': 1.19.19
@@ -18389,7 +18404,7 @@ snapshots:
       enhanced-resolve: 5.17.1
       eslint: 9.25.1
       eslint-plugin-es-x: 7.8.0(eslint@9.25.1)
-      get-tsconfig: 4.8.1
+      get-tsconfig: 4.10.1
       globals: 15.13.0
       ignore: 5.3.2
       minimatch: 9.0.5
@@ -18718,11 +18733,6 @@ snapshots:
   get-stream@6.0.1: {}
 
   get-tsconfig@4.10.1:
-    dependencies:
-      resolve-pkg-maps: 1.0.0
-    optional: true
-
-  get-tsconfig@4.8.1:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
