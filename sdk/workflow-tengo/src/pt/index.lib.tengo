@@ -349,7 +349,6 @@ workflow := func() {
 
 		frameFromColumnBundle: func(bundle, options) {
 			decodeColumn := func(columnId) {
-				isFilteredColumn := func(columnId) {
 				decoded := undefined
 				if is_string(columnId) {
 					decoded = json.decode(columnId)
@@ -407,7 +406,7 @@ workflow := func() {
 				for idx, axisFilter in axisFilters {
 					id := axesHeaders[idx]
 					value := axisFilter[1]
-					df = df.filter(col(id).eq(lit(value))).withoutColumns(id)
+					df = df.filter(exp.col(id).eq(exp.lit(value))).withoutColumns(id)
 				}
 
 				mainDF.join(df, { on: axesHeaders })
