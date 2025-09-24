@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.8.0
+
+### Minor Changes
+
+- 923913e: Update backend version for Built-In mode
+
 ## 2.7.0
 
 ### Minor Changes
