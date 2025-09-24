@@ -301,8 +301,8 @@ catalogs:
       specifier: ^8.17.0
       version: 8.17.0
     undici:
-      specifier: ~7.13.0
-      version: 7.13.0
+      specifier: ~7.16.0
+      version: 7.16.0
     upath:
       specifier: ^2.0.1
       version: 2.0.1
@@ -1584,7 +1584,7 @@ importers:
         version: 11.1.0
       undici:
         specifier: 'catalog:'
-        version: 7.13.0
+        version: 7.16.0
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
@@ -1633,7 +1633,7 @@ importers:
         version: link:../ts-helpers
       undici:
         specifier: 'catalog:'
-        version: 7.13.0
+        version: 7.16.0
       upath:
         specifier: 'catalog:'
         version: 2.0.1
@@ -1703,7 +1703,7 @@ importers:
         version: 7.4.3
       undici:
         specifier: 'catalog:'
-        version: 7.13.0
+        version: 7.16.0
       upath:
         specifier: 'catalog:'
         version: 2.0.1
@@ -1812,7 +1812,7 @@ importers:
         version: 3.0.9
       undici:
         specifier: 'catalog:'
-        version: 7.13.0
+        version: 7.16.0
       upath:
         specifier: 'catalog:'
         version: 2.0.1
@@ -1895,7 +1895,7 @@ importers:
         version: 7.0.6
       undici:
         specifier: 'catalog:'
-        version: 7.13.0
+        version: 7.16.0
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -1992,7 +1992,7 @@ importers:
         version: 2.28.0
       undici:
         specifier: 'catalog:'
-        version: 7.13.0
+        version: 7.16.0
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
@@ -2705,7 +2705,7 @@ importers:
         version: link:../../sdk/test
       undici:
         specifier: 'catalog:'
-        version: 7.13.0
+        version: 7.16.0
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -2900,7 +2900,7 @@ importers:
         version: 7.4.3
       undici:
         specifier: 'catalog:'
-        version: 7.13.0
+        version: 7.16.0
       yaml:
         specifier: 'catalog:'
         version: 2.8.0
@@ -3247,7 +3247,7 @@ importers:
         version: 7.4.3
       undici:
         specifier: 'catalog:'
-        version: 7.13.0
+        version: 7.16.0
       winston:
         specifier: 'catalog:'
         version: 3.17.0
@@ -10884,8 +10884,8 @@ packages:
     resolution: {integrity: sha512-zICwjrDrcrUE0pyyJc1I2QzBkLM8FINsgOrt6WjA+BgajVq9Nxu2PbFFXUrAggLfDXlZGZBVZYw7WNV5KiBiBA==}
     engines: {node: '>=14.0'}
 
-  undici@7.13.0:
-    resolution: {integrity: sha512-l+zSMssRqrzDcb3fjMkjjLGmuiiK2pMIcV++mJaAc9vhjSGpvM7h43QgP+OAMb1GImHmbPyG2tBXeuyG5iY4gA==}
+  undici@7.16.0:
+    resolution: {integrity: sha512-QEg3HPMll0o3t2ourKwOeUAZ159Kn9mx5pnzHRQO8+Wixmh88YdZRiIwat0iNzNNXn0yoEtXJqFpyW7eM8BV7g==}
     engines: {node: '>=20.18.1'}
 
   unist-util-is@6.0.0:
@@ -20870,7 +20870,7 @@ snapshots:
     dependencies:
       '@fastify/busboy': 2.1.1
 
-  undici@7.13.0: {}
+  undici@7.16.0: {}
 
   unist-util-is@6.0.0:
     dependencies:
