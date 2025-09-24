@@ -1,5 +1,11 @@
 # @milaboratories/pl-config
 
+## 1.7.5
+
+### Patch Changes
+
+- 213d0c2: Make sure built-in backend has a log file
+
 ## 1.7.4
 
 ### Patch Changes
