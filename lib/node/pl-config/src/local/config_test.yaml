@@ -7,7 +7,8 @@ license:
 logging:
   level: 'info'
   destinations:
-  - path: 'platforma.log'
+    - type: 'file'
+      path: 'platforma.log'
 
 monitoring:
   enabled: true
@@ -31,10 +32,10 @@ core:
 
   authEnabled: true
   auth:
-  - driver: jwt
-    key: jwtkey
-  - driver: htpasswd
-    path: 'users.htpasswd'
+    - driver: jwt
+      key: jwtkey
+    - driver: htpasswd
+      path: 'users.htpasswd'
   db:
     path: 'db'
 
@@ -58,26 +59,26 @@ controllers:
           downloadable: false
 
     storages:
-    - id: 'root'
-      type: 'FS'
-      indexCachePeriod: '1m'
-      rootPath: ''
-      allowRemoteAccess: false
-      externalURL: ''
+      - id: 'root'
+        type: 'FS'
+        indexCachePeriod: '1m'
+        rootPath: ''
+        allowRemoteAccess: false
+        externalURL: ''
 
-    - id: 'work'
-      type: 'FS'
-      indexCachePeriod: '1m'
-      rootPath: 'storages/work'
-      allowRemoteAccess: false
-      externalURL: ''
+      - id: 'work'
+        type: 'FS'
+        indexCachePeriod: '1m'
+        rootPath: 'storages/work'
+        allowRemoteAccess: false
+        externalURL: ''
 
-    - id: 'main'
-      type: 'FS'
-      indexCachePeriod: '0m'
-      rootPath: 'storages/main'
-      allowRemoteAccess: false
-      externalURL: 'http://127.0.0.1:11237'
+      - id: 'main'
+        type: 'FS'
+        indexCachePeriod: '0m'
+        rootPath: 'storages/main'
+        allowRemoteAccess: false
+        externalURL: 'http://127.0.0.1:11237'
 
   runner:
     type: local
@@ -86,8 +87,8 @@ controllers:
     workdirCacheOnFailure: '1h'
     storageRoot: 'storages/work'
     secrets:
-    - map:
-        MI_LICENSE: 'abc'
+      - map:
+          MI_LICENSE: 'abc'
 
   packageLoader:
     packagesRoot: 'packages'
