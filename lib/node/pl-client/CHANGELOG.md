@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.13.1
+
+### Patch Changes
+
+- ee46338: [blocks/mixcr-clonotyping] after running the latest version of MiXCR errors during adding new blocks
+
 ## 2.13.0
 
 ### Minor Changes
