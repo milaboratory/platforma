@@ -99,7 +99,7 @@ export class ClientUpload {
       );
     }
 
-    const headers = Object.fromEntries(info.headers.map(({ name, value }) => [name, value]));
+    const headers = Object.fromEntries(info.headers.map(({ name, value }) => [name.toLowerCase(), value]));
 
     try {
       const {
