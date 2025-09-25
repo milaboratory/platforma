@@ -112,12 +112,16 @@ export class Project {
     this.activeConfigs = activeConfigs(projectTree.entry(), env);
   }
 
+  get projectLockId(): string {
+    return 'project:' + this.rid.toString();
+  }
+
   private async refreshLoop(): Promise<void> {
     while (!this.destroyed) {
       try {
         await withProject(this.env.projectHelper, this.env.pl, this.rid, (prj) => {
           prj.doRefresh(this.env.ops.stagingRenderingRate);
-        }, 'doRefresh');
+        }, { name: 'doRefresh', lockId: this.projectLockId });
         await this.activeConfigs.getValue();
         await setTimeout(this.env.ops.projectRefreshInterval, this.abortController.signal);
 
@@ -186,7 +190,7 @@ export class Project {
         backoffMultiplier: DefaultRetryOptions.backoffMultiplier * 1.1,
       },
       name: 'addBlock',
-      lockId: 'project:' + this.rid.toString(),
+      lockId: this.projectLockId,
     });
 
     await this.projectTree.refreshState();
@@ -214,7 +218,7 @@ export class Project {
   ): Promise<string> {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
       mut.duplicateBlock(originalBlockId, newBlockId, before),
-    { name: 'duplicateBlock' },
+    { name: 'duplicateBlock', lockId: this.projectLockId },
     );
     await this.projectTree.refreshState();
 
@@ -239,14 +243,14 @@ export class Project {
         preparedBp,
         resetArgs ? { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState } : undefined,
       ),
-    { name: 'updateBlockPack' },
+    { name: 'updateBlockPack', lockId: this.projectLockId },
     );
     await this.projectTree.refreshState();
   }
 
   /** Deletes a block with all associated data. */
   public async deleteBlock(blockId: string, author?: AuthorMarker): Promise<void> {
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => mut.deleteBlock(blockId), { name: 'deleteBlock' });
+    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => mut.deleteBlock(blockId), { name: 'deleteBlock', lockId: this.projectLockId });
     this.navigationStates.deleteBlock(blockId);
     await this.projectTree.refreshState();
   }
@@ -280,7 +284,7 @@ export class Project {
         ],
       };
       mut.updateStructure(newStructure);
-    }, { name: 'reorderBlocks' });
+    }, { name: 'reorderBlocks', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
 
@@ -290,7 +294,7 @@ export class Project {
    * stale state.
    * */
   public async runBlock(blockId: string): Promise<void> {
-    await withProject(this.env.projectHelper, this.env.pl, this.rid, (mut) => mut.renderProduction([blockId], true), 'runBlock');
+    await withProject(this.env.projectHelper, this.env.pl, this.rid, (mut) => mut.renderProduction([blockId], true), { name: 'runBlock', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
 
@@ -300,7 +304,7 @@ export class Project {
    * calculated.
    * */
   public async stopBlock(blockId: string): Promise<void> {
-    await withProject(this.env.projectHelper, this.env.pl, this.rid, (mut) => mut.stopProduction(blockId), 'stopBlock');
+    await withProject(this.env.projectHelper, this.env.pl, this.rid, (mut) => mut.stopProduction(blockId), { name: 'stopBlock', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
 
@@ -321,7 +325,7 @@ export class Project {
   public async setBlockArgs(blockId: string, args: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
       mut.setStates([{ blockId, args }]),
-    { name: 'setBlockArgs' });
+    { name: 'setBlockArgs', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
 
@@ -334,7 +338,7 @@ export class Project {
   public async setUiState(blockId: string, uiState: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
       mut.setStates([{ blockId, uiState }]),
-    { name: 'setUiState' });
+    { name: 'setUiState', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
 
@@ -360,7 +364,7 @@ export class Project {
   ) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
       mut.setStates([{ blockId, args, uiState }]);
-    }, { name: 'setBlockArgsAndUiState', lockId: 'project:' + this.rid.toString() });
+    }, { name: 'setBlockArgsAndUiState', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
 
@@ -386,7 +390,7 @@ export class Project {
       const config = extractConfig(cachedDeserialize<BlockPackInfo>(notEmpty(bpData.data)).config);
       await withProjectAuthored(this.env.projectHelper, tx, this.rid, author, (prj) => {
         prj.setStates([{ blockId, args: config.initialArgs, uiState: config.initialUiState }]);
-      }, { name: 'resetBlockArgsAndUiState' });
+      }, { name: 'resetBlockArgsAndUiState', lockId: this.projectLockId });
       await tx.commit();
     });
     await this.projectTree.refreshState();
@@ -491,7 +495,7 @@ export class Project {
     await applyProjectMigrations(env.pl, rid);
 
     // Doing a no-op mutation to apply all migration and schema fixes
-    await withProject(env.projectHelper, env.pl, rid, (_) => {}, 'init');
+    await withProject(env.projectHelper, env.pl, rid, (_) => {}, { name: 'init' });
 
     // Loading project tree
     const projectTree = await SynchronizedTreeState.init(

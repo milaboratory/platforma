@@ -21,7 +21,7 @@ import { DefaultFinalResourceDataPredicate } from './final';
 import type { AllTxStat, TxStat } from './stat';
 import { addStat, initialTxStat } from './stat';
 import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
-import { advisory_lock } from './advisory_lock';
+import { advisoryLock } from './advisory_locks';
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -255,9 +255,10 @@ export class PlClient {
     let retryState = createRetryState(ops?.retryOptions ?? this.defaultRetryOptions);
 
     while (true) {
-      const release = ops?.lockId ? await advisory_lock(ops.lockId) : () => {};
+      const release = ops?.lockId ? await advisoryLock(ops.lockId) : () => {};
+
       try {
-      // opening low-level tx
+        // opening low-level tx
         const llTx = this._ll.createTx(writable, ops);
         // wrapping it into high-level tx (this also asynchronously sends initialization message)
         const tx = new PlTransaction(
@@ -274,16 +275,16 @@ export class PlClient {
         let txId;
 
         try {
-        // executing transaction body
+          // executing transaction body
           result = await body(tx);
           // collecting stat
           this._txCommittedStat = addStat(this._txCommittedStat, tx.stat);
           ok = true;
         } catch (e: unknown) {
-        // the only recoverable
+          // the only recoverable
           if (e instanceof TxCommitConflict) {
-          // ignoring
-          // collecting stat
+            // ignoring
+            // collecting stat
             this._txConflictStat = addStat(this._txConflictStat, tx.stat);
           } else {
           // collecting stat
@@ -303,7 +304,7 @@ export class PlClient {
         }
 
         if (ok) {
-        // syncing on transaction if requested
+          // syncing on transaction if requested
           if (ops?.sync === undefined ? this.forceSync : ops?.sync)
             await this._ll.grpcPl.get().txSync({ txId });
 

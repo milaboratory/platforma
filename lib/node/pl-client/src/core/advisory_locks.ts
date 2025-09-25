@@ -33,7 +33,11 @@ class AwaitLock {
 
 const m = new Map<string, AwaitLock>();
 
-export async function advisory_lock(id: string) {
+/**
+ * Acquire a process-local async lock for the given id and return a release function.
+ * Ensures only one concurrent operation per id within this process.
+ */
+export async function advisoryLock(id: string) {
   if (!m.has(id)) {
     m.set(id, new AwaitLock());
   }
@@ -48,4 +52,16 @@ export async function advisory_lock(id: string) {
     const nowIdle = lock.release();
     if (nowIdle) m.delete(id);
   };
+}
+
+/**
+ * Run the callback under the lock for the given id; releases automatically.
+ */
+export async function advisoryLockCallback<T>(id: string, cb: () => Promise<T>): Promise<T> {
+  const release = await advisoryLock(id);
+  try {
+    return await cb();
+  } finally {
+    release();
+  }
 }

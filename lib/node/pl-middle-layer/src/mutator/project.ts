@@ -1349,9 +1349,9 @@ export async function withProject<T>(
   txOrPl: PlTransaction | PlClient,
   rid: ResourceId,
   cb: (p: ProjectMutator) => T | Promise<T>,
-  name?: string,
+  ops?: Partial<TxOps>,
 ): Promise<T> {
-  return withProjectAuthored(projectHelper, txOrPl, rid, undefined, cb, { lockId: 'project:' + rid.toString(), name });
+  return withProjectAuthored(projectHelper, txOrPl, rid, undefined, cb, ops);
 }
 
 export async function withProjectAuthored<T>(
