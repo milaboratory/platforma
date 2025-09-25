@@ -65,7 +65,7 @@ body := func(args, blockId) {
 		}
 	}
 }
-// 
+
 export {
 	getNumbers: body
 }
