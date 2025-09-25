@@ -1,5 +1,18 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.9
+
+### Patch Changes
+
+- ee46338: [blocks/mixcr-clonotyping] after running the latest version of MiXCR errors during adding new blocks
+- Updated dependencies [ee46338]
+  - @milaboratories/pl-client@2.13.1
+  - @milaboratories/pl-model-backend@1.1.11
+  - @milaboratories/pl-drivers@1.11.1
+  - @milaboratories/pl-errors@1.1.26
+  - @milaboratories/pl-tree@1.8.1
+  - @platforma-sdk/workflow-tengo@5.3.0
+
 ## 1.43.8
 
 ### Patch Changes
