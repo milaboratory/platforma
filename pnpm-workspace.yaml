@@ -175,7 +175,7 @@ catalog:
 
   # Net
 
-  'undici': ~7.13.0
+  'undici': ~7.16.0
   '@grpc/grpc-js': ~1.13.4
   '@protobuf-ts/grpc-transport': *protobuf-ts
   '@protobuf-ts/runtime': *protobuf-ts

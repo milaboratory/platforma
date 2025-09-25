@@ -50,8 +50,11 @@ export class RemoteFileDownloader {
 
     const { statusCode, body, headers: responseHeaders } = await request(url, {
       dispatcher: this.httpClient,
-      headers,
+      // Undici automatically sets certain headers, so we need to lowercase user-provided headers
+      // to prevent automatic headers from being set and avoid "duplicated headers" error.
+      headers: Object.fromEntries(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value])),
       signal: ops.signal,
+      highWaterMark: 1 * 1024 * 1024, // 1MB chunks instead of 64KB, tested to be optimal for Human Aging dataset
     });
     ops.signal?.throwIfAborted();
 
