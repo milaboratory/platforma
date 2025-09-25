@@ -1,5 +1,13 @@
 # @milaboratories/pl-drivers
 
+## 1.11.2
+
+### Patch Changes
+
+- b979236: Undici tunning
+  - @milaboratories/pl-client@2.13.2
+  - @milaboratories/pl-tree@1.8.2
+
 ## 1.11.1
 
 ### Patch Changes
