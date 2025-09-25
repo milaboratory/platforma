@@ -11,7 +11,7 @@
     "build:dev": "PL_PKG_DEV=local turbo run build --output-logs=errors-only",
     "build:dry-run": "turbo run build --dry-run=json",
     "watch-build": "turbo watch build",
-    "test": "PL_PKG_DEV=local turbo run test --concurrency 1 --force --output-logs=errors-only",
+    "test": "PL_PKG_DEV=local turbo run test --concurrency 1 --force --filter='@milaboratories/pl-client' --output-logs=errors-only",
     "test:pl-ci": "turbo run test --concurrency 1 --force --output-logs=errors-only",
     "test:dry-run": "PL_PKG_DEV=local turbo run test --force --dry-run=json",
     "test:no-cache": "PL_PKG_DEV=local turbo run test --concurrency 1 --force",
