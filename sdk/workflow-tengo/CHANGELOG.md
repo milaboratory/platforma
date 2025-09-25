@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.3.1
+
+### Patch Changes
+
+- 8f68937: Drop deprecated unused code to trigger rebuild (check CI tests)
+
 ## 5.3.0
 
 ### Minor Changes
