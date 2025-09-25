@@ -383,11 +383,12 @@ workflow := func() {
 
 			filteredColumns := []
 			for column in columns {
+				ll.assert(is_string(column), "each column entry must be a string")
 				if (isFilteredColumn(column)) {
 					filteredColumns = append(filteredColumns, column)
+				} else {
+					tsvBuilder.add(bundle.getColumn(column))
 				}
-
-				tsvBuilder.add(bundle.getColumn(column))
 			}
 			
 			mainDF := self.frame(tsvBuilder.buildForPT())
@@ -403,13 +404,15 @@ workflow := func() {
 				}
 				tsv.add(bundle.getColumn(source), { header: column })
 				df := self.frame(tsv.buildForPT())
-				for idx, axisFilter in axisFilters {
-					id := axesHeaders[idx]
+				joinColumns := slices.map(axes, func(axis) { return axis.column })
+				for axisFilter in axisFilters {
+					id := axesHeaders[axisFilter[0]]
 					value := axisFilter[1]
 					df = df.filter(exp.col(id).eq(exp.lit(value))).withoutColumns(id)
+					joinColumns = slices.filter(joinColumns, func(c) { return c != id } )
 				}
 
-				mainDF.join(df, { on: axesHeaders })
+				mainDF = mainDF.join(df, { on: joinColumns })
 			}
 
 			return mainDF
