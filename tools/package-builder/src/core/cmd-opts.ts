@@ -43,6 +43,47 @@ export const BuildFlags = {
   }),
 };
 
+export const DockerFlags = {
+  'docker-registry': Flags.string({
+    env: envs.PL_DOCKER_REGISTRY,
+    description: 'docker registry Platforma Backend will use to pull image with this software.',
+    required: false,
+  }),
+  'docker-push-to': Flags.string({
+    env: envs.PL_DOCKER_REGISTRY_PUSH_TO,
+    description: 'alternative registry for docker push. This allows to push docker image to different registry compared to what would be used for docker pull on Platforma Backend side.',
+    required: false,
+  }),
+
+  'docker-build': Flags.boolean({
+    env: envs.PL_DOCKER_BUILD,
+    description: 'build docker images',
+    default: false,
+    required: false,
+  }),
+  'docker-no-build': Flags.boolean({
+    env: envs.PL_DOCKER_NO_BUILD,
+    description: 'do not build docker images',
+    default: false,
+    required: false,
+    exclusive: ['docker-build'],
+  }),
+
+  'docker-autopush': Flags.boolean({
+    env: envs.PL_DOCKER_AUTOPUSH,
+    description: 'push docker images after build. Enabled by default in CI builds.',
+    default: false,
+    required: false,
+  }),
+  'docker-no-autopush': Flags.boolean({
+    env: envs.PL_DOCKER_NO_AUTOPUSH,
+    description: 'do not push docker images after build',
+    default: false,
+    required: false,
+    exclusive: ['docker-autopush'],
+  }),
+};
+
 export const DirHashFlag = {
   'full-dir-hash': Flags.boolean({
     env: envs.PL_PKG_FULL_HASH,
@@ -158,6 +199,6 @@ export function modeFromFlag(dev?: devModeName): util.BuildMode {
 
     default:
       util.assertNever(dev);
-      throw new Error('unknown dev mode'); // just to calm down TS type analyzer
+      throw util.CLIError('unknown dev mode'); // just to calm down TS type analyzer
   }
 }

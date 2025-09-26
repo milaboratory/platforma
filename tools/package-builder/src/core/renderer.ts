@@ -1,290 +1,30 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import type winston from 'winston';
-import { z } from 'zod';
-import type { Entrypoint, EntrypointType, PackageEntrypoint } from './package-info';
-import * as artifacts from './schemas/artifacts';
+import type { PackageInfo } from './package-info';
+import type * as artifacts from './schemas/artifacts';
+import type * as swJson from './schemas/sw-json';
+import type { Entrypoint, EntrypointType, PackageEntrypoint } from './schemas/entrypoint';
 import * as util from './util';
-import { dockerEntrypointNameToOrigin, dockerTagFromPackage } from './docker';
-
-const externalPackageLocationSchema = z.object({
-  registry: z.string().describe('name of the registry to use for package download'),
-  package: z
-    .string()
-    .describe('full package path in registry, e.g. \'common/jdk/21.0.2.13.1-{os}-{arch}.tgz'),
-});
-
-const assetSchema = z.object({
-  ...externalPackageLocationSchema.shape,
-  url: z.string().describe('asset download URL'),
-});
-type assetInfo = z.infer<typeof assetSchema>;
-
-const dockerSchema = z.object({
-  tag: z.string().describe('name of the image to be built instead of custom one'),
-  entrypoint: z.array(z.string()).describe('entrypoint command to be run in the container'),
-  cmd: z.array(z.string()).describe('command to be run in the container'),
-  pkg: z.string().optional().describe('custom working directory in Docker container (only for Python packages)'),
-});
-type dockerInfo = z.infer<typeof dockerSchema>;
-
-const runEnvironmentSchema = z.object({
-  type: z.enum(artifacts.runEnvironmentTypes),
-  ...externalPackageLocationSchema.shape,
-  binDir: z.string(),
-});
-type runEnvInfo = z.infer<typeof runEnvironmentSchema>;
-
-const runDependencyJavaSchema = runEnvironmentSchema.extend({
-  type: z.literal('java'),
-  name: z
-    .string()
-    .describe('name used to import this package as software dependency of tengo script'),
-});
-type runDependencyJava = z.infer<typeof runDependencyJavaSchema>;
-
-const runDependencyPythonSchema = runEnvironmentSchema.extend({
-  type: z.literal('python'),
-  name: z
-    .string()
-    .describe('name used to import this package as software dependency of tengo script'),
-});
-type runDependencyPython = z.infer<typeof runDependencyPythonSchema>;
-
-const runDependencyRSchema = runEnvironmentSchema.extend({
-  type: z.literal('R'),
-  name: z
-    .string()
-    .describe('name used to import this package as software dependency of tengo script'),
-});
-type runDependencyR = z.infer<typeof runDependencyRSchema>;
-
-const runDependencyCondaSchema = runEnvironmentSchema.extend({
-  type: z.literal('conda'),
-  name: z
-    .string()
-    .describe('name used to import this package as software dependency of tengo script'),
-});
-type runDependencyConda = z.infer<typeof runDependencyCondaSchema>;
-
-type runDepInfo = runDependencyJava | runDependencyPython | runDependencyR | runDependencyConda;
-// runDependencyConda
-
-const anyPackageSettingsSchema = z.object({
-  cmd: z.array(z.string()).min(1).describe('run given command, appended by args from workflow'),
-
-  envVars: z
-    .array(
-      z
-        .string()
-        .regex(
-          /=/,
-          'full environment variable specification is required: <var-name>=<var-value>, e.g.: IS_CI=yes',
-        ),
-    )
-    .optional(),
-});
-
-const binaryPackageSettingsSchema = z.object({
-  type: z.literal('binary'),
-  ...anyPackageSettingsSchema.shape,
-
-  runEnv: z.undefined(),
-  pkg: z.string().optional().describe('custom working directory in Docker container (default: /app)'),
-});
-
-const javaPackageSettingsSchema = z.object({
-  type: z.literal('java'),
-
-  ...anyPackageSettingsSchema.shape,
-  runEnv: runDependencyJavaSchema,
-});
-
-const pythonPackageSettingsSchema = z.object({
-  type: z.literal('python'),
-
-  ...anyPackageSettingsSchema.shape,
-  runEnv: runDependencyPythonSchema,
-
-  toolset: z.string(),
-  dependencies: z
-    .record(z.string(), z.string())
-    .describe(
-      'paths of files that describe dependencies for given toolset: say, requirements.txt for \'pip\'',
-    ),
-  pkg: z.string().optional().describe('custom working directory in Docker container (default: /app)'),
-});
-
-const rPackageSettingsSchema = z.object({
-  type: z.literal('R'),
-
-  ...anyPackageSettingsSchema.shape,
-  runEnv: runDependencyRSchema,
-
-  toolset: z.string(),
-  dependencies: z
-    .record(z.string(), z.string())
-    .describe(
-      'paths of files that describe dependencies for given toolset: say, requirements.txt for \'pip\'',
-    ),
-});
-
-const condaPackageSettingsSchema = z.object({
-  type: z.literal('conda'),
-
-  ...anyPackageSettingsSchema.shape,
-  runEnv: runDependencyCondaSchema,
-
-  renvLock: z
-    .string()
-    .optional()
-    .describe('contents of renv.lock for R language virtual env bootstrap'),
-});
-
-const binarySchema = z.union([
-  externalPackageLocationSchema.extend(binaryPackageSettingsSchema.shape),
-  externalPackageLocationSchema.extend(javaPackageSettingsSchema.shape),
-  externalPackageLocationSchema.extend(pythonPackageSettingsSchema.shape),
-  externalPackageLocationSchema.extend(rPackageSettingsSchema.shape),
-  externalPackageLocationSchema.extend(condaPackageSettingsSchema.shape),
-]);
-type binaryInfo = z.infer<typeof binarySchema>;
-
-const localPackageLocationSchema = z.object({
-  hash: z
-    .string()
-    .describe(
-      'hash of software directory. Makes deduplication to work properly when you actively develop software',
-    ),
-  path: z.string().describe('absolute path to root directory of software on local host'),
-});
-
-const localSchema = z.discriminatedUnion('type', [
-  localPackageLocationSchema.extend(binaryPackageSettingsSchema.shape),
-  localPackageLocationSchema.extend(javaPackageSettingsSchema.shape),
-  localPackageLocationSchema.extend(pythonPackageSettingsSchema.shape),
-  localPackageLocationSchema.extend(rPackageSettingsSchema.shape),
-  localPackageLocationSchema.extend(condaPackageSettingsSchema.shape),
-]);
-type localInfo = z.infer<typeof localSchema>;
-
-const entrypointSchema = z
-  .object({
-    isDev: z.boolean().optional(),
-
-    asset: assetSchema.optional(),
-    binary: binarySchema.optional(),
-    runEnv: runEnvironmentSchema.optional(),
-    local: localSchema.optional(),
-    docker: dockerSchema.optional(),
-  })
-  .refine(
-    (data) =>
-      util.toInt(data.runEnv)
-      + util.toInt(data.binary)
-      + util.toInt(data.asset)
-      + util.toInt(data.local)
-      == 1,
-    {
-      message:
-        'entrypoint cannot point to several packages at once: choose \'environment\', \'binary\', \'asset\' or \'local\'',
-      path: ['environment | binary | asset | local'],
-    },
-  );
-export type entrypointSwJson = z.infer<typeof entrypointSchema> & {
-  id: util.artifactID;
-};
-
-export function readSoftwareEntrypoint(
-  npmPackageName: string,
-  packageRoot: string,
-  entrypointName: string,
-): entrypointSwJson {
-  const filePath = entrypointFilePath(packageRoot, 'software', entrypointName);
-  return readEntrypointDescriptor(npmPackageName, entrypointName, filePath);
-}
-
-export function readEntrypointDescriptor(
-  npmPackageName: string,
-  entrypointName: string,
-  filePath: string,
-): entrypointSwJson {
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`entrypoint '${entrypointName}' not found in '${filePath}'`);
-  }
-
-  const swJsonContent = fs.readFileSync(filePath);
-  const swJson = entrypointSchema.parse(JSON.parse(swJsonContent.toString()));
-
-  return {
-    id: {
-      package: npmPackageName,
-      name: entrypointName,
-    },
-    ...swJson,
-  };
-}
-
-const softwareFileExtension = '.sw.json';
-const assetFileExtension = '.as.json';
-
-export function listPackageEntrypoints(packageRoot: string): { name: string; path: string }[] {
-  const entrypoints = [];
-
-  const swDir = entrypointFilePath(packageRoot, 'software');
-  if (fs.existsSync(swDir)) {
-    const swItems = fs.readdirSync(swDir);
-    const swEntrypoints: { name: string; path: string }[] = swItems
-      .filter((fName: string) => fName.endsWith(softwareFileExtension))
-      .map((fName: string) => ({
-        name: fName.slice(0, -softwareFileExtension.length),
-        path: path.join(swDir, fName),
-      }));
-
-    entrypoints.push(...swEntrypoints);
-  }
-
-  const assetDir = entrypointFilePath(packageRoot, 'asset');
-  if (fs.existsSync(assetDir)) {
-    const assetItems = fs.readdirSync(assetDir);
-    const assetEntrypoints = assetItems
-      .filter((fName: string) => fName.endsWith(assetFileExtension))
-      .map((fName: string) => ({
-        name: fName.slice(0, -assetFileExtension.length),
-        path: path.join(swDir, fName),
-      }));
-
-    entrypoints.push(...assetEntrypoints);
-  }
-
-  entrypoints.sort();
-
-  for (let i = 0; i < entrypoints.length - 1; i++) {
-    if (entrypoints[i].name === entrypoints[i + 1].name) {
-      throw new Error(
-        `duplicate entrypoint name found between software and assets: '${entrypoints[i].name}'`,
-      );
-    }
-  }
-
-  return entrypoints;
-}
+import * as docker from './docker';
+import { descriptorFilePath } from './resolver';
+import { resolveRunEnvironment } from './resolver';
 
 export class Renderer {
   constructor(
     private logger: winston.Logger,
-    private npmPackageName: string,
-    private npmPackageRoot: string,
+    private readonly pkgInfo: PackageInfo,
   ) {}
 
   public renderSoftwareEntrypoints(
     mode: util.BuildMode,
     entrypoints: Map<string, Entrypoint>,
     options?: {
+      requireAllArtifacts?: boolean;
       fullDirHash?: boolean;
     },
-  ): Map<string, entrypointSwJson> {
-    const result = new Map<string, entrypointSwJson>();
+  ): Map<string, swJson.entrypoint> {
+    const result = new Map<string, swJson.entrypoint>();
     let hasReferences = false;
 
     const fullDirHash = options?.fullDirHash ?? false;
@@ -301,19 +41,20 @@ export class Renderer {
 
       this.logger.debug(`Rendering entrypoint descriptor '${epName}'...`);
 
+      //
       // In docker case we should merge docker info and other info
       //
-      const originEpName = dockerEntrypointNameToOrigin(epName);
+      const originEpName = docker.entrypointNameToOrigin(epName);
       const info = result.has(originEpName)
         ? result.get(originEpName)
         : {
             id: {
-              package: this.npmPackageName,
+              package: this.pkgInfo.packageName,
               name: originEpName,
             },
           };
       if (!info) {
-        throw new Error(`Entrypoint ${epName} not found in result`);
+        throw util.CLIError(`Entrypoint ${epName} not found in result`);
       }
 
       if (mode !== 'release') {
@@ -324,7 +65,8 @@ export class Renderer {
       if (mode === 'dev-local') {
         switch (pkg.type) {
           case 'docker':
-            info.docker = this.renderDockerInfo(epName, ep);
+            info.docker = this.renderDockerInfo(epName, ep, options?.requireAllArtifacts);
+            validateDockerDescriptor(info.docker);
             break;
           default:
             this.logger.debug('  rendering \'local\' source...');
@@ -338,25 +80,25 @@ export class Renderer {
       const type = pkg.type;
       switch (type) {
         case 'R':
-          info.binary = this.renderBinaryInfo(mode, epName, ep);
+          info.binary = this.renderBinaryInfo(mode, epName, ep, options?.requireAllArtifacts);
           break;
         case 'environment':
-          info.runEnv = this.renderRunEnvInfo(mode, epName, ep);
+          info.runEnv = this.renderRunEnvInfo(mode, epName, ep, options?.requireAllArtifacts);
           break;
         case 'asset':
-          info.asset = this.renderAssetInfo(mode, epName, ep);
+          info.asset = this.renderAssetInfo(mode, epName, ep, options?.requireAllArtifacts);
           break;
         case 'binary':
-          info.binary = this.renderBinaryInfo(mode, epName, ep);
+          info.binary = this.renderBinaryInfo(mode, epName, ep, options?.requireAllArtifacts);
           break;
         case 'docker':
-          info.docker = this.renderDockerInfo(epName, ep);
+          info.docker = this.renderDockerInfo(epName, ep, options?.requireAllArtifacts);
           break;
         case 'java':
-          info.binary = this.renderBinaryInfo(mode, epName, ep);
+          info.binary = this.renderBinaryInfo(mode, epName, ep, options?.requireAllArtifacts);
           break;
         case 'python':
-          info.binary = this.renderBinaryInfo(mode, epName, ep);
+          info.binary = this.renderBinaryInfo(mode, epName, ep, options?.requireAllArtifacts);
           break;
         default:
           util.assertNever(type);
@@ -368,15 +110,15 @@ export class Renderer {
 
     if (result.size === 0 && !hasReferences) {
       this.logger.error('no entrypoint descriptors were rendered');
-      throw new Error('no entrypoint descriptors were rendered');
+      throw util.CLIError('no entrypoint descriptors were rendered');
     }
 
     return result;
   }
 
-  public writeEntrypointDescriptor(info: entrypointSwJson, dstFile?: string) {
+  public writeEntrypointDescriptor(info: swJson.entrypoint, dstFile?: string) {
     const epType = info.asset ? 'asset' : 'software';
-    const dstSwInfoPath = dstFile ?? entrypointFilePath(this.npmPackageRoot, epType, info.id.name);
+    const dstSwInfoPath = dstFile ?? descriptorFilePath(this.pkgInfo.packageRoot, epType, info.id.name);
 
     this.logger.info(`Writing entrypoint descriptor to '${dstSwInfoPath}'`);
 
@@ -397,12 +139,12 @@ export class Renderer {
     } else if (srcFile.endsWith(compiledAssetSuffix)) {
       epType = 'asset';
     } else {
-      throw new Error(
+      throw util.CLIError(
         `unknown entrypoint '${epName}' type: cannot get type from extension of source file ${srcFile}`,
       );
     }
 
-    const dstSwInfoPath = entrypointFilePath(this.npmPackageRoot, epType, epName);
+    const dstSwInfoPath = descriptorFilePath(this.pkgInfo.packageRoot, epType, epName);
     util.ensureDirsExist(path.dirname(dstSwInfoPath));
     fs.copyFileSync(srcFile, dstSwInfoPath);
   }
@@ -411,7 +153,7 @@ export class Renderer {
     epName: string,
     ep: PackageEntrypoint,
     fullDirHash: boolean,
-  ): localInfo {
+  ): swJson.localInfo {
     const pkg = ep.package;
     const rootDir = pkg.contentRoot(util.currentPlatform());
     const hash = fullDirHash ? util.hashDirSync(rootDir) : util.hashDirMetaSync(rootDir);
@@ -419,12 +161,12 @@ export class Renderer {
     const epType = ep.type;
     switch (epType) {
       case 'environment':
-        throw new Error(
+        throw util.CLIError(
           `entrypoint ${epName} points to 'environment' artifact, which does not support local build yet`,
         );
 
       case 'asset':
-        throw new Error(
+        throw util.CLIError(
           `entrypoint ${epName} points to 'asset' artifact, which does not support local build yet`,
         );
 
@@ -432,12 +174,12 @@ export class Renderer {
         const pkgType = pkg.type;
         switch (pkgType) {
           case 'environment':{
-            throw new Error(
+            throw util.CLIError(
               `entrypoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`,
             );
           }
           case 'asset':{
-            throw new Error(
+            throw util.CLIError(
               `entrypoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`,
             );
           }
@@ -458,7 +200,7 @@ export class Renderer {
               path: rootDir,
               cmd: ep.cmd,
               envVars: ep.env,
-              runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
+              runEnv: resolveRunEnvironment(this.logger, this.pkgInfo.packageRoot, this.pkgInfo.packageName, pkg.environment, pkg.type),
             };
           }
           case 'python': {
@@ -470,7 +212,7 @@ export class Renderer {
               path: rootDir,
               cmd: ep.cmd,
               envVars: ep.env,
-              runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
+              runEnv: resolveRunEnvironment(this.logger, this.pkgInfo.packageRoot, this.pkgInfo.packageName, pkg.environment, pkg.type),
               toolset: toolset ?? 'pip',
               dependencies: deps,
             };
@@ -484,11 +226,11 @@ export class Renderer {
               envVars: ep.env,
               toolset: 'renv',
               dependencies: {},
-              runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
+              runEnv: resolveRunEnvironment(this.logger, this.pkgInfo.packageRoot, this.pkgInfo.packageName, pkg.environment, pkg.type),
             };
           }
           case 'docker': {
-            throw new Error(
+            throw util.CLIError(
               `entrypoint is incompatible for local build with artifact type: ep=${epName} (software), artifact='${pkgType}'`,
             );
           }
@@ -525,7 +267,8 @@ export class Renderer {
     mode: util.BuildMode,
     epName: string,
     ep: PackageEntrypoint,
-  ): binaryInfo {
+    requireArtifactInfo?: boolean,
+  ): swJson.binaryInfo | undefined {
     switch (mode) {
       case 'release':
         break;
@@ -537,7 +280,23 @@ export class Renderer {
         util.assertNever(mode);
     }
 
-    const pkg = ep.package;
+    const binPkg = ep.package;
+
+    // TODO: we need to collect artifact info for all platforms
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(
+      binPkg.id, 'archive',
+      binPkg.crossplatform ? undefined : util.currentPlatform(),
+    );
+    const artInfo = readArtifactInfoIfExists(artInfoPath, epName, requireArtifactInfo);
+    if (!artInfo) {
+      return undefined;
+    }
+
+    if (!artInfo.registryName) {
+      throw util.CLIError(
+        `could not render binary entrypoint '${epName}': registry name is not set in artifact info file ${artInfoPath}`,
+      );
+    }
 
     const epType = ep.type;
     switch (epType) {
@@ -552,20 +311,20 @@ export class Renderer {
         );
       }
       case 'software':{
-        const pkgType = pkg.type;
+        const pkgType = binPkg.type;
         switch (pkgType) {
           case 'asset':{
-            throw new Error(
+            throw util.CLIError(
               `entripoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`,
             );
           }
           case 'environment':{
-            throw new Error(
+            throw util.CLIError(
               `entripoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`,
             );
           }
           case 'docker': {
-            throw new Error(
+            throw util.CLIError(
               `entrypoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`,
             );
           }
@@ -573,8 +332,8 @@ export class Renderer {
             // Regular binary with no run environment dependency
             return {
               type: 'binary',
-              registry: pkg.registry.name,
-              package: pkg.namePattern,
+              registry: artInfo.registryName,
+              package: artInfo.remoteArtifactLocation,
 
               cmd: ep.cmd,
               envVars: ep.env,
@@ -583,25 +342,25 @@ export class Renderer {
           case 'java':{
             return {
               type: 'java',
-              registry: pkg.registry.name,
-              package: pkg.namePattern,
+              registry: artInfo.registryName,
+              package: artInfo.remoteArtifactLocation,
 
               cmd: ep.cmd,
               envVars: ep.env,
-              runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
+              runEnv: resolveRunEnvironment(this.logger, this.pkgInfo.packageRoot, this.pkgInfo.packageName, binPkg.environment, binPkg.type),
             };
           }
           case 'python': {
-            const { toolset, ...deps } = pkg.dependencies ?? {};
+            const { toolset, ...deps } = binPkg.dependencies ?? {};
 
             return {
               type: 'python',
-              registry: pkg.registry.name,
-              package: pkg.namePattern,
+              registry: artInfo.registryName,
+              package: artInfo.remoteArtifactLocation,
 
               cmd: ep.cmd,
               envVars: ep.env,
-              runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
+              runEnv: resolveRunEnvironment(this.logger, this.pkgInfo.packageRoot, this.pkgInfo.packageName, binPkg.environment, binPkg.type),
               toolset: toolset ?? 'pip',
               dependencies: deps,
             };
@@ -609,30 +368,27 @@ export class Renderer {
           case 'R': {
             return {
               type: 'R',
-              registry: pkg.registry.name,
-              package: pkg.namePattern,
+              registry: artInfo.registryName,
+              package: artInfo.remoteArtifactLocation,
 
               cmd: ep.cmd,
               envVars: ep.env,
-              runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
+              runEnv: resolveRunEnvironment(this.logger, this.pkgInfo.packageRoot, this.pkgInfo.packageName, binPkg.environment, binPkg.type),
               toolset: 'renv',
               dependencies: {},
             };
           }
-          // case "conda":
-          //     if (runEnv!.type !== pkgType) {
-          //         this.logger.error(`run environment '${binary.environment}' type '${runEnv!.type}' differs from declared package type '${binary.type}'`)
-          //         throw new Error(`incompatible environment: env type '${runEnv!.type}' != package type '${binary.type}'`)
-          //     }
+          // case "conda":{
           //     return {
           //         type: "conda",
-          //         registry: binary.registry.name!,
-          //         package: binary.namePattern,
+          //         registry: artifactInfo.registryName,
+          //         package: artifactInfo.pathForSwJson,
 
           //         cmd: ep.cmd,
           //         envVars: ep.envVars,
           //         runEnv: runEnv!,
           //     }
+          //   }
           default:{
             util.assertNever(pkgType);
             throw new Error(
@@ -654,132 +410,106 @@ export class Renderer {
     mode: util.BuildMode,
     epName: string,
     ep: PackageEntrypoint,
-  ): runEnvInfo {
+    requireArtifactInfo?: boolean,
+  ): swJson.runEnvInfo | undefined {
     switch (mode) {
       case 'release':
         break;
 
       case 'dev-local':
-        throw new Error(`run environments do not support 'local' dev build mode yet`);
+        throw util.CLIError(`run environments do not support 'local' dev build mode yet`);
 
       default:
         util.assertNever(mode);
     }
 
-    const env = ep.package;
+    const envPkg = ep.package;
 
-    if (env.type !== 'environment') {
-      throw new Error(
+    if (envPkg.type !== 'environment') {
+      throw util.CLIError(
         `could not render run environemnt entrypoint ${epName} (not 'environment' artifact)`,
       );
     }
 
+    // TODO: we need to collect artifact info for all platforms
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(envPkg.id, 'archive', util.currentPlatform());
+    const artInfo = readArtifactInfoIfExists(artInfoPath, epName, requireArtifactInfo);
+    if (!artInfo) {
+      return undefined;
+    }
+
     return {
-      type: env.runtime,
-      registry: env.registry.name,
-      package: env.namePattern,
-      binDir: env.binDir,
+      type: envPkg.runtime,
+
+      ['r-version']: envPkg['r-version'],
+      ['python-version']: envPkg['python-version'],
+      ['java-version']: envPkg['java-version'],
+
+      envVars: envPkg.envVars ?? [],
+      registry: artInfo.registryName!,
+      package: artInfo.remoteArtifactLocation,
+      binDir: envPkg.binDir,
     };
   }
 
-  private renderAssetInfo(mode: util.BuildMode, epName: string, ep: PackageEntrypoint): assetInfo {
+  private renderAssetInfo(mode: util.BuildMode, epName: string, ep: PackageEntrypoint, requireArtifactInfo?: boolean): swJson.assetInfo | undefined {
     switch (mode) {
       case 'release':
         break;
 
       case 'dev-local':
-        throw new Error(`assets do not support 'local' dev build mode yet`);
+        throw util.CLIError(`assets do not support 'local' dev build mode yet`);
 
       default:
         util.assertNever(mode);
     }
 
-    const pkg = ep.package;
+    const assetPkg = ep.package;
 
-    if (pkg.type !== 'asset') {
-      throw new Error(`could not render asset entrypoint '${epName}': not 'asset' artifact`);
+    if (assetPkg.type !== 'asset') {
+      throw util.CLIError(`could not render asset entrypoint '${epName}': not 'asset' artifact`);
     }
 
-    if (!pkg.registry.downloadURL) {
-      throw new Error(
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(assetPkg.id, 'archive', undefined);
+    const artInfo = readArtifactInfoIfExists(artInfoPath, epName, requireArtifactInfo);
+    if (!artInfo) {
+      return undefined;
+    }
+
+    if (!artInfo.registryURL) {
+      throw util.CLIError(
         `could not render asset entrypoint '${epName}': base download URL is not configured for asset's registry`,
       );
     }
 
     return {
-      registry: pkg.registry.name,
-      package: pkg.namePattern,
-      url: util.urlJoin(pkg.registry.downloadURL, pkg.namePattern),
+      registry: artInfo.registryName!,
+      package: artInfo.remoteArtifactLocation,
+      url: util.urlJoin(artInfo.registryURL, artInfo.remoteArtifactLocation),
     };
   }
 
-  private renderDockerInfo(entrypointName: string, ep: PackageEntrypoint): dockerInfo {
-    const pkg = ep.package;
-    if (pkg.type !== 'docker') {
-      throw new Error(`could not render docker entrypoint '${entrypointName}': not 'docker' artifact`);
+  private renderDockerInfo(epName: string, ep: PackageEntrypoint, requireArtifactInfo?: boolean): swJson.dockerInfo | undefined {
+    const dockerPkg = ep.package;
+    if (dockerPkg.type !== 'docker') {
+      throw util.CLIError(`could not render docker entrypoint '${epName}': not 'docker' artifact`);
     }
 
     if (ep.type !== 'software') {
-      throw new Error(`could not render docker entrypoint '${entrypointName}': not 'software' artifact`);
+      throw util.CLIError(`could not render docker entrypoint '${epName}': not 'software' artifact`);
     }
 
-    const blockName = this.npmPackageName.split('/').pop() ?? '';
-    if (blockName === '') {
-      throw new Error(`could not render docker entrypoint '${entrypointName}': could not determine block name from npm package name '${this.npmPackageName}'`);
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(dockerPkg.id, 'docker', util.currentArch());
+    const artInfo = readArtifactInfoIfExists(artInfoPath, epName, requireArtifactInfo);
+    if (!artInfo) {
+      return undefined;
     }
-
-    const tag = dockerTagFromPackage(this.npmPackageRoot, pkg);
 
     return {
-      tag: tag,
-      entrypoint: pkg.entrypoint ?? [],
+      tag: artInfo.remoteArtifactLocation,
+      entrypoint: dockerPkg.entrypoint ?? [],
       cmd: ep.cmd,
-      pkg: pkg.pkg,
-    };
-  }
-
-  private resolveDependency(npmPackageName: string, entrypointName: string): entrypointSwJson {
-    const modulePath = util.findInstalledModule(this.logger, npmPackageName, this.npmPackageRoot);
-    return readSoftwareEntrypoint(npmPackageName, modulePath, entrypointName);
-  }
-
-  private resolveRunEnvironment(envName: string, requireType: 'java'): runDependencyJava;
-  private resolveRunEnvironment(envName: string, requireType: 'python'): runDependencyPython;
-  private resolveRunEnvironment(envName: string, requireType: 'R'): runDependencyR;
-  private resolveRunEnvironment(
-    envName: string,
-    requireType: artifacts.runEnvironmentType,
-  ): runDepInfo {
-    const [pkgName, id] = util.rSplit(envName, ':', 2);
-    const swDescriptor
-      = pkgName === ''
-        ? readSoftwareEntrypoint(this.npmPackageName, this.npmPackageRoot, id)
-        : this.resolveDependency(pkgName, id);
-
-    if (!swDescriptor.runEnv) {
-      throw new Error(
-        `software '${envName}' cannot be used as run environment (no 'runEnv' section in entrypoint descriptor)`,
-      );
-    }
-
-    const runEnv = swDescriptor.runEnv;
-
-    if (runEnv.type !== requireType) {
-      this.logger.error(
-        `run environment '${envName}' type '${runEnv.type}' differs from declared package type '${requireType}'`,
-      );
-      throw new Error(
-        `incompatible environment: env type '${runEnv.type}' != package type '${requireType}'`,
-      );
-    }
-
-    return {
-      name: envName,
-
-      type: runEnv.type,
-      registry: runEnv.registry,
-      package: runEnv.package,
-      binDir: runEnv.binDir,
+      pkg: dockerPkg.pkg,
     };
   }
 }
@@ -787,22 +517,48 @@ export class Renderer {
 export const compiledSoftwareSuffix = '.sw.json';
 export const compiledAssetSuffix = '.as.json';
 
-export function entrypointFilePath(
-  packageRoot: string,
-  entrypointType: Extract<EntrypointType, 'software' | 'asset'>,
-  entrypointName?: string,
-): string {
-  const typeSuffix = entrypointType === 'software' ? compiledSoftwareSuffix : compiledAssetSuffix;
+export type builtArtifactInfo = {
+  type: artifacts.artifactType;
+  platform: util.PlatformType;
+  registryURL?: string; // registry public URL (for assets)
+  registryName?: string; // name of registry (for binary and asset archives)
+  remoteArtifactLocation: string; // path to put into sw.json or as.json file
+  uploadPath?: string; // custom upload path if it does not match pathForSwJson
+};
 
-  if (!entrypointName) {
-    return path.resolve(packageRoot, 'dist', 'tengo', entrypointType);
+export function writeBuiltArtifactInfo(
+  location: string,
+  locInfo: builtArtifactInfo) {
+  fs.mkdirSync(path.dirname(location), { recursive: true });
+  fs.writeFileSync(location, JSON.stringify(locInfo), { encoding: 'utf8' });
+}
+
+export function readBuiltArtifactInfo(
+  location: string,
+): builtArtifactInfo {
+  const data = fs.readFileSync(location, 'utf8');
+  return JSON.parse(data) as builtArtifactInfo;
+}
+
+function readArtifactInfoIfExists(location: string, epName: string, requireExisting?: boolean): builtArtifactInfo | undefined {
+  if (fs.existsSync(location)) {
+    return readBuiltArtifactInfo(location);
   }
 
-  return path.resolve(
-    packageRoot,
-    'dist',
-    'tengo',
-    entrypointType,
-    `${entrypointName}${typeSuffix}`,
-  );
+  if (requireExisting) {
+    throw util.CLIError(`could not render docker entrypoint '${epName}': artifact info file '${location}' does not exist`);
+  }
+
+  return undefined;
+}
+
+export function validateDockerDescriptor(dockerDescriptor: swJson.dockerInfo | undefined): void {
+  if (!dockerDescriptor?.cmd?.length) {
+    return;
+  }
+
+  const isPkgRequired = dockerDescriptor.cmd.some((cmd) => cmd.includes('{pkg}'));
+  if (isPkgRequired && !dockerDescriptor.pkg) {
+    throw util.CLIError(`docker descriptor is invalid: 'pkg' is required when 'cmd' contains '{pkg}'`);
+  }
 }

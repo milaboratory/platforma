@@ -6,7 +6,8 @@ license:
 logging:
   level: info
   destinations:
-  - path: platforma.log
+    - type: 'file'
+      path: platforma.log
 
 monitoring:
   enabled: true
@@ -31,10 +32,10 @@ core:
 
   authEnabled: true
   auth:
-  - driver: jwt
-    key: jwtkey
-  - driver: htpasswd
-    path: /home/pl-doctor/platforma_backend/users.htpasswd
+    - driver: jwt
+      key: jwtkey
+    - driver: htpasswd
+      path: /home/pl-doctor/platforma_backend/users.htpasswd
   db:
     path: db
 
@@ -53,8 +54,8 @@ controllers:
     storageRoot: /home/pl-doctor/platforma_backend/storages/work
     workdirCacheOnFailure: 1h
     secrets:
-    - map:
-        MI_LICENSE: 'abc'
+      - map:
+          MI_LICENSE: 'abc'
 
   data:
     main:
@@ -70,18 +71,18 @@ controllers:
           downloadable: true
 
     storages:
-    - id: remoteRoot
-      type: FS
-      indexCachePeriod: 1m
-      rootPath: ""
-    - id: work
-      type: FS
-      indexCachePeriod: 1m
-      rootPath: /home/pl-doctor/platforma_backend/storages/work
+      - id: remoteRoot
+        type: FS
+        indexCachePeriod: 1m
+        rootPath: ''
+      - id: work
+        type: FS
+        indexCachePeriod: 1m
+        rootPath: /home/pl-doctor/platforma_backend/storages/work
 
-    - id: main
-      type: FS
-      indexCachePeriod: "0s"
-      rootPath: /home/pl-doctor/platforma_backend/storages/main
-      allowRemoteAccess: true
-      externalURL: "http://localhost:11112"
+      - id: main
+        type: FS
+        indexCachePeriod: '0s'
+        rootPath: /home/pl-doctor/platforma_backend/storages/main
+        allowRemoteAccess: true
+        externalURL: 'http://localhost:11112'

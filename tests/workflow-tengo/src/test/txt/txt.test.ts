@@ -8,6 +8,14 @@ import {
 import { tplTest } from '@platforma-sdk/test';
 import path from 'path';
 import * as env from '../env';
+import { getTestTimeout } from '@milaboratories/helpers';
+import { vi } from 'vitest';
+
+const TIMEOUT = getTestTimeout(60_000);
+
+vi.setConfig({
+  testTimeout: TIMEOUT,
+});
 
 type TestInput = {
   name: string;
@@ -74,7 +82,7 @@ const cases: TestInput[] = [
   },
 ];
 
-tplTest.for(cases)(
+tplTest.concurrent.for(cases)(
   'txt.head test: $name',
   async ({ handleProvider, headOptions, expectedContent }, { helper, expect, driverKit }) => {
     const importHandle = await handleProvider(driverKit);
@@ -119,7 +127,7 @@ tplTest.for(cases)(
 );
 
 // Test error case when maxBytes limit is exceeded
-tplTest(
+tplTest.concurrent(
   'txt.head error test: maxBytes exceeded',
   async ({ helper, expect, driverKit }) => {
     const importHandle = await driverKit.lsDriver.getLocalFileHandle(

@@ -1,7 +1,9 @@
 import { isJsonEqual } from '@milaboratories/helpers';
 import type { ListOptionNormalized } from '@milaboratories/uikit';
 import {
+  Annotation,
   type CalculateTableDataRequest,
+  type CalculateTableDataResponse,
   type CanonicalizedJson,
   canonicalizeJson,
   createRowSelectionColumn,
@@ -23,23 +25,25 @@ import {
   type PTableSorting,
   pTableValue,
   readAnnotation,
-  Annotation,
   readAnnotationJson,
 } from '@platforma-sdk/model';
-import { ref, watch } from 'vue';
+import { onWatcherCleanup, ref, watch } from 'vue';
+import { objectHash } from '../../objectHash';
 import { highlightByChemicalProperties } from './chemical-properties';
+import type { Markup } from './markup';
 import {
   highlightByMarkup,
   markupAlignedSequence,
   parseMarkup,
 } from './markup';
-import { multiSequenceAlignment } from './multi-sequence-alignment';
+import type * as MultiSequenceAlignmentWorker from './multi-sequence-alignment.worker';
+import type * as PhylogeneticTreeWorker from './phylogenetic-tree.worker';
 import { getResidueCounts } from './residue-counts';
 import type { HighlightLegend, ResidueCounts } from './types';
 
 const getPFrameDriver = () => getRawPlatformaInstance().pFrameDriver;
 
-export const sequenceLimit = 1000;
+export const SEQUENCE_LIMIT = 1000;
 
 export const useSequenceColumnsOptions = refreshOnDeepChange(
   getSequenceColumnsOptions,
@@ -57,10 +61,7 @@ export const useMultipleAlignmentData = refreshOnDeepChange(
   getMultipleAlignmentData,
 );
 
-async function getSequenceColumnsOptions({
-  pFrame,
-  sequenceColumnPredicate,
-}: {
+async function getSequenceColumnsOptions({ pFrame, sequenceColumnPredicate }: {
   pFrame: PFrameHandle | undefined;
   sequenceColumnPredicate: (column: PColumnIdAndSpec) => boolean;
 }): Promise<OptionsWithDefaults<PObjectId> | undefined> {
@@ -68,6 +69,7 @@ async function getSequenceColumnsOptions({
 
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
+
   const options = columns.values()
     .filter((column) => sequenceColumnPredicate(column))
     .map(({ spec, columnId }) => ({
@@ -75,14 +77,13 @@ async function getSequenceColumnsOptions({
       value: columnId,
     }))
     .toArray();
+
   const defaults = options.map(({ value }) => value);
+
   return { options, defaults };
 }
 
-async function getLabelColumnsOptions({
-  pFrame,
-  sequenceColumnIds,
-}: {
+async function getLabelColumnsOptions({ pFrame, sequenceColumnIds }: {
   pFrame: PFrameHandle | undefined;
   sequenceColumnIds: PObjectId[] | undefined;
 }): Promise<OptionsWithDefaults<PTableColumnId> | undefined> {
@@ -90,7 +91,6 @@ async function getLabelColumnsOptions({
 
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
-  const optionMap = new Map<CanonicalizedJson<PTableColumnId>, string>();
 
   const sequenceColumnsAxes = new Map(
     sequenceColumnIds.values().flatMap((id) => {
@@ -103,6 +103,7 @@ async function getLabelColumnsOptions({
     }),
   );
 
+  const optionMap = new Map<CanonicalizedJson<PTableColumnId>, string>();
   for (const [axisIdJson, axisSpec] of sequenceColumnsAxes.entries()) {
     const axisId = parseJson(axisIdJson);
     const labelColumn = columns.find(({ spec }) =>
@@ -127,7 +128,10 @@ async function getLabelColumnsOptions({
   });
 
   for (const { columnId, spec } of compatibleColumns) {
-    const columnIdJson = canonicalizeJson({ type: 'column', id: columnId } satisfies PTableColumnId);
+    const columnIdJson = canonicalizeJson<PTableColumnId>({
+      type: 'column',
+      id: columnId,
+    });
     if (optionMap.has(columnIdJson)) continue;
     optionMap.set(
       columnIdJson,
@@ -147,59 +151,180 @@ async function getLabelColumnsOptions({
     })
     .map(({ value }) => value)
     .toArray();
+
   return { options, defaults };
 }
 
-async function getMarkupColumnsOptions({
-  pFrame,
-  sequenceColumnIds,
-}: {
+async function getMarkupColumnsOptions({ pFrame, sequenceColumnIds }: {
   pFrame: PFrameHandle | undefined;
   sequenceColumnIds: PObjectId[] | undefined;
-}): Promise<ListOptionNormalized<PObjectId>[] | undefined> {
-  if (!pFrame || sequenceColumnIds?.length !== 1) return;
+}): Promise<ListOptionNormalized<PObjectId[]>[] | undefined> {
+  if (!pFrame || !sequenceColumnIds) return;
 
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
-  const sequenceColumn = columns.find((column) =>
-    column.columnId === sequenceColumnIds[0],
-  );
-  if (!sequenceColumn) {
-    throw new Error(
-      `Couldn't find sequence column (ID: \`${sequenceColumnIds[0]}\`).`,
+
+  const sequenceColumns = sequenceColumnIds.map((columnId) => {
+    const column = columns.find((column) => column.columnId === columnId);
+    if (!column) {
+      throw new Error(
+        `Couldn't find sequence column (ID: \`${sequenceColumnIds[0]}\`).`,
+      );
+    }
+    return column;
+  });
+
+  const columnPairs = sequenceColumns
+    .flatMap((sequenceColumn) =>
+      columns
+        .filter((column) =>
+          readAnnotationJson(column.spec, Annotation.Sequence.IsAnnotation)
+          && isJsonEqual(sequenceColumn.spec.axesSpec, column.spec.axesSpec)
+          && Object.entries(sequenceColumn.spec.domain ?? {})
+            .every(([key, value]) => column.spec.domain?.[key] === value),
+        )
+        .map((markupColumn) => ({ markupColumn, sequenceColumn })),
     );
-  }
-  return columns.values()
-    .filter((column) =>
-      !!readAnnotationJson(column.spec, Annotation.Sequence.IsAnnotation)
-      && isJsonEqual(sequenceColumn.spec.axesSpec, column.spec.axesSpec)
-      && Object.entries(sequenceColumn.spec.domain ?? {}).every((
-        [key, value],
-      ) => column.spec.domain?.[key] === value),
-    ).map(({ columnId, spec }) => ({
-      value: columnId,
-      label: readAnnotation(spec, Annotation.Label) ?? 'Unlabeled column',
+
+  const groupedByDomainDiff = Map.groupBy(
+    columnPairs,
+    ({ markupColumn, sequenceColumn }) => {
+      const domainDiff = Object.fromEntries(
+        Object.entries(markupColumn.spec.domain ?? {})
+          .filter(([key]) => sequenceColumn.spec.domain?.[key] == undefined),
+      );
+      return canonicalizeJson(domainDiff);
+    },
+  );
+
+  return groupedByDomainDiff.entries()
+    .map(([domainDiffJson, columnPairs]) => ({
+      label: Object.values(parseJson(domainDiffJson)).join(', '),
+      value: columnPairs.map(({ markupColumn }) => markupColumn.columnId),
     }))
     .toArray();
 }
 
-async function getMultipleAlignmentData({
-  pFrame,
-  sequenceColumnIds,
-  labelColumnIds,
-  selection,
-  colorScheme,
-  alignmentParams,
-}: {
-  pFrame: PFrameHandle | undefined;
-  sequenceColumnIds: PObjectId[] | undefined;
-  labelColumnIds: PTableColumnId[] | undefined;
-  selection: PlSelectionModel | undefined;
-  colorScheme: PlMultiSequenceAlignmentColorSchemeOption;
-  alignmentParams: PlMultiSequenceAlignmentSettings['alignmentParams'];
-}): Promise<MultipleAlignmentData | undefined> {
+async function getMultipleAlignmentData(
+  {
+    pFrame,
+    sequenceColumnIds,
+    labelColumnIds,
+    selection,
+    colorScheme,
+    alignmentParams,
+    shouldBuildPhylogeneticTree,
+  }: {
+    pFrame: PFrameHandle | undefined;
+    sequenceColumnIds: PObjectId[] | undefined;
+    labelColumnIds: PTableColumnId[] | undefined;
+    selection: PlSelectionModel | undefined;
+    colorScheme: PlMultiSequenceAlignmentColorSchemeOption;
+    alignmentParams: PlMultiSequenceAlignmentSettings['alignmentParams'];
+    shouldBuildPhylogeneticTree: boolean;
+  },
+  abortSignal: AbortSignal,
+): Promise<MultipleAlignmentData | undefined> {
   if (!pFrame || !sequenceColumnIds?.length || !labelColumnIds) return;
 
+  const table = await getTableData({
+    pFrame,
+    sequenceColumnIds,
+    labelColumnIds,
+    selection,
+    colorScheme,
+  });
+
+  const rowCount = table.at(0)?.data.data.length ?? 0;
+
+  if (rowCount < 2) return;
+
+  const exceedsLimit = rowCount > SEQUENCE_LIMIT;
+  const rawSequences = extractSequences(sequenceColumnIds, table);
+  const labels = extractLabels(labelColumnIds, table);
+  const markups = colorScheme.type === 'markup'
+    ? extractMarkups(colorScheme.columnIds, table)
+    : undefined;
+
+  const highlightLegend: HighlightLegend = {};
+
+  const alignedSequences = await Promise.all(
+    rawSequences.map(async ({ name, rows }) => ({
+      name,
+      rows: await alignSequences(
+        rows,
+        JSON.parse(JSON.stringify(alignmentParams)),
+        abortSignal,
+      ),
+    })),
+  );
+
+  let phylogeneticTree: PhylogeneticTreeWorker.TreeNodeData[] | undefined;
+  if (shouldBuildPhylogeneticTree) {
+    phylogeneticTree = await buildPhylogeneticTree(
+      alignedSequences,
+      abortSignal,
+    );
+    const rowOrder = phylogeneticTree.values()
+      .filter(({ id }) => id >= 0)
+      .map(({ id }) => id)
+      .toArray();
+    for (const sequencesColumn of alignedSequences) {
+      sequencesColumn.rows = rowOrder.map((i) => sequencesColumn.rows[i]);
+    }
+    for (const labelsColumn of labels) {
+      labelsColumn.rows = rowOrder.map((i) => labelsColumn.rows[i]);
+    }
+    for (const markupsColumn of markups ?? []) {
+      markupsColumn.rows = rowOrder.map((i) => markupsColumn.rows[i]);
+    }
+  }
+
+  const sequences = await Promise.all(
+    alignedSequences.map(async ({ name, rows }, index) => {
+      const residueCounts = getResidueCounts(rows);
+      const image = generateHighlightImage({
+        colorScheme,
+        sequences: rows,
+        residueCounts,
+        markup: markups?.at(index),
+      });
+      if (image) {
+        Object.assign(highlightLegend, image.legend);
+      }
+      return {
+        name,
+        rows,
+        residueCounts,
+        ...image && {
+          highlightImageUrl: await blobToBase64(image.blob),
+        },
+      } satisfies MultipleAlignmentData['sequences'][number];
+    }),
+  );
+
+  return {
+    sequences,
+    labels,
+    ...Object.keys(highlightLegend).length && {
+      highlightLegend,
+    },
+    ...phylogeneticTree && {
+      phylogeneticTree,
+    },
+    exceedsLimit,
+  };
+}
+
+async function getTableData(
+  { pFrame, sequenceColumnIds, labelColumnIds, selection, colorScheme }: {
+    pFrame: PFrameHandle;
+    sequenceColumnIds: PObjectId[];
+    labelColumnIds: PTableColumnId[];
+    selection: PlSelectionModel | undefined;
+    colorScheme: PlMultiSequenceAlignmentColorSchemeOption;
+  },
+): Promise<CalculateTableDataResponse> {
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
   const linkerColumns = columns.filter((column) => isLinkerColumn(column.spec));
@@ -250,7 +375,9 @@ async function getMultipleAlignmentData({
 
   // and markup
   if (colorScheme.type === 'markup') {
-    secondaryEntry.push({ type: 'column', column: colorScheme.columnId });
+    for (const column of colorScheme.columnIds) {
+      secondaryEntry.push({ type: 'column', column });
+    }
   }
 
   const sorting: PTableSorting[] = Array.from(
@@ -282,125 +409,203 @@ async function getMultipleAlignmentData({
     sorting,
   };
 
-  const table = await pFrameDriver.calculateTableData(
+  return pFrameDriver.calculateTableData(
     pFrame,
     JSON.parse(JSON.stringify(request)),
     {
       offset: 0,
       // +1 is a hack to check whether the selection is over the limit
-      length: sequenceLimit + 1,
+      length: SEQUENCE_LIMIT + 1,
     },
   );
+}
 
-  let rowCount = table?.[0].data.data.length ?? 0;
-  let exceedsLimit = false;
-  if (rowCount > sequenceLimit) {
-    rowCount = sequenceLimit;
-    exceedsLimit = true;
-  }
-
-  const sequenceColumns = sequenceColumnIds.map((columnId) => {
+const extractSequences = (
+  columnIds: PObjectId[],
+  table: CalculateTableDataResponse,
+): { name: string; rows: string[] }[] =>
+  columnIds.map((columnId) => {
     const column = table.find(({ spec }) => spec.id === columnId);
     if (!column) {
       throw new Error(`Couldn't find sequence column (ID: \`${columnId}\`).`);
     }
-    return column;
+    const name = readAnnotation(column.spec.spec, Annotation.Label)
+      ?? 'Unlabeled column';
+    const rows = column.data.data
+      .keys()
+      .take(SEQUENCE_LIMIT)
+      .map((row) =>
+        pTableValue(column.data, row, { absent: '', na: '' })?.toString()
+        ?? '',
+      )
+      .toArray();
+    return { name, rows };
   });
 
-  const labelColumns = labelColumnIds.map((labelColumn) => {
+const extractLabels = (
+  columnIds: PTableColumnId[],
+  table: CalculateTableDataResponse,
+): { rows: string[] }[] =>
+  columnIds.map((columnId) => {
     const column = table.find(({ spec }) => {
-      if (labelColumn.type === 'axis' && spec.type === 'axis') {
-        return isJsonEqual(labelColumn.id, spec.id);
+      if (columnId.type === 'axis' && spec.type === 'axis') {
+        return isJsonEqual(columnId.id, spec.id);
       }
-      if (labelColumn.type === 'column' && spec.type === 'column') {
-        return labelColumn.id === spec.id;
+      if (columnId.type === 'column' && spec.type === 'column') {
+        return columnId.id === spec.id;
       }
     });
     if (!column) {
-      throw new Error(`Couldn't find label column (ID: \`${labelColumn}\`).`);
+      throw new Error(`Couldn't find label column (ID: \`${columnId}\`).`);
     }
-    return column;
+    const rows = column.data.data
+      .keys()
+      .take(SEQUENCE_LIMIT)
+      .map((row) =>
+        pTableValue(column.data, row, { absent: '', na: '' })?.toString()
+        ?? '',
+      )
+      .toArray();
+    return { rows };
   });
 
-  const alignedSequences = await Promise.all(
-    sequenceColumns.map((column) =>
-      multiSequenceAlignment(
-        Array.from(
-          { length: rowCount },
-          (_, row) =>
-            pTableValue(column.data, row, { na: '', absent: '' })?.toString()
-            ?? '',
-        ),
-        alignmentParams,
-      ),
-    ),
-  );
-
-  const sequences = Array.from(
-    { length: rowCount },
-    (_, row) => alignedSequences.map((column) => column[row]),
-  );
-
-  const sequenceNames = sequenceColumns.map((column) =>
-    readAnnotation(column.spec.spec, Annotation.Label) ?? 'Unlabeled column',
-  );
-
-  const labels = Array.from(
-    { length: rowCount },
-    (_, row) =>
-      labelColumns.map((column) =>
-        pTableValue(column.data, row, { na: '', absent: '' })?.toString() ?? '',
-      ),
-  );
-
-  const concatenatedSequences = sequences.map((row) => row.join(' '));
-  const residueCounts = getResidueCounts(concatenatedSequences);
-
-  const result: MultipleAlignmentData = {
-    sequences: concatenatedSequences,
-    sequenceNames,
-    labelRows: labels,
-    exceedsLimit,
-    residueCounts,
-  };
-
-  if (colorScheme.type === 'chemical-properties') {
-    result.highlightImage = highlightByChemicalProperties({
-      sequences: concatenatedSequences,
-      residueCounts,
-    });
-  } else if (colorScheme.type === 'markup') {
-    const markupColumn = table.find(({ spec }) =>
-      spec.id === colorScheme.columnId,
-    );
-    if (!markupColumn) {
-      throw new Error(
-        `Couldn't find markup column (ID: \`${colorScheme.columnId}\`).`,
-      );
+const extractMarkups = (
+  columnIds: PObjectId[],
+  table: CalculateTableDataResponse,
+): { labels: Record<string, string>; rows: Markup[] }[] =>
+  columnIds.map((columnId) => {
+    const column = table.find(({ spec }) => spec.id === columnId);
+    if (!column) {
+      throw new Error(`Couldn't find markup column (ID: \`${columnId}\`).`);
     }
-    const markupRows = Array.from(
-      { length: rowCount },
-      (_, row) => {
-        const markup = parseMarkup(
-          pTableValue(markupColumn.data, row, { na: '', absent: '' })
-            ?.toString()
-            ?? '',
-        );
-        return markupAlignedSequence(sequences[row][0], markup);
-      },
+    const labels = readAnnotationJson(
+      column.spec.spec,
+      Annotation.Sequence.Annotation.Mapping,
+    ) ?? {};
+    const rows = column.data.data
+      .keys()
+      .take(SEQUENCE_LIMIT)
+      .map((row) =>
+        parseMarkup(
+          pTableValue(column.data, row, { absent: '', na: '' })?.toString()
+          ?? '',
+        ),
+      )
+      .toArray();
+    return { labels, rows };
+  });
+
+const alignSequences = (() => {
+  const cache = new Map<string, string[]>();
+  return async (
+    sequences: string[],
+    alignmentParams: PlMultiSequenceAlignmentSettings['alignmentParams'],
+    abortSignal: AbortSignal,
+  ): Promise<string[]> => {
+    const hash = await objectHash([sequences, alignmentParams]);
+    let result = cache.get(hash);
+    if (result) return result;
+    result = await runInWorker<
+      MultiSequenceAlignmentWorker.RequestMessage,
+      MultiSequenceAlignmentWorker.ResponseMessage
+    >(
+      new Worker(
+        new URL('./multi-sequence-alignment.worker.ts', import.meta.url),
+        { type: 'module' },
+      ),
+      { sequences, params: alignmentParams },
+      abortSignal,
     );
-    const labels = readAnnotationJson(markupColumn.spec.spec, Annotation.Sequence.Annotation.Mapping) ?? {};
-    result.highlightImage = highlightByMarkup({
-      markupRows,
-      columnCount: concatenatedSequences.at(0)?.length ?? 0,
-      labels,
+    cache.set(hash, result);
+    return result;
+  };
+})();
+
+function generateHighlightImage(
+  { colorScheme, sequences, residueCounts, markup }: {
+    colorScheme: PlMultiSequenceAlignmentColorSchemeOption;
+    sequences: string[];
+    residueCounts: ResidueCounts;
+    markup: { labels: Record<string, string>; rows: Markup[] } | undefined;
+  },
+): { blob: Blob; legend: HighlightLegend } | undefined {
+  if (colorScheme.type === 'chemical-properties') {
+    return highlightByChemicalProperties({ sequences, residueCounts });
+  }
+  if (colorScheme.type === 'markup') {
+    if (!markup) {
+      throw new Error('Missing markup data.');
+    }
+    return highlightByMarkup({
+      markupRows: sequences.map((sequence, row) => {
+        const markupRow = markup.rows.at(row);
+        if (!markupRow) throw new Error(`Missing markup for row ${row}.`);
+        return markupAlignedSequence(sequence, markupRow);
+      }),
+      columnCount: sequences.at(0)?.length ?? 0,
+      labels: markup.labels,
     });
   }
-
-  return result;
 }
 
-function refreshOnDeepChange<T, P>(cb: (params: P) => Promise<T>) {
+const blobToBase64 = (blob: Blob): Promise<string> =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => resolve(reader.result as string));
+    reader.addEventListener('error', () => reject(reader.error));
+    reader.readAsDataURL(blob);
+  });
+
+const buildPhylogeneticTree = (() => {
+  const cache = new Map<string, PhylogeneticTreeWorker.TreeNodeData[]>();
+  return async (data: { rows: string[] }[], abortSignal: AbortSignal) => {
+    const concatenatedSequences = data.at(0)?.rows
+      .keys()
+      .map((row) => data.map((column) => column.rows.at(row) ?? '').join(''))
+      .toArray() ?? [];
+    const hash = await objectHash(concatenatedSequences);
+    let result = cache.get(hash);
+    if (result) return result;
+    result = await runInWorker<
+      PhylogeneticTreeWorker.RequestMessage,
+      PhylogeneticTreeWorker.ResponseMessage
+    >(
+      new Worker(
+        new URL('./phylogenetic-tree.worker.ts', import.meta.url),
+        { type: 'module' },
+      ),
+      concatenatedSequences,
+      abortSignal,
+    );
+    cache.set(hash, result);
+    return result;
+  };
+})();
+
+const runInWorker = <RequestMessage, ResponseMessage>(
+  worker: Worker,
+  message: RequestMessage,
+  abortSignal: AbortSignal,
+) =>
+  new Promise<ResponseMessage>((resolve, reject) => {
+    worker.addEventListener('message', ({ data }) => {
+      resolve(data);
+      worker.terminate();
+    });
+    worker.addEventListener('error', ({ error, message }) => {
+      reject(error ?? message);
+      worker.terminate();
+    });
+    abortSignal.addEventListener('abort', () => {
+      reject(abortSignal.reason);
+      worker.terminate();
+    });
+    worker.postMessage(message);
+  });
+
+function refreshOnDeepChange<T, P>(
+  cb: (params: P, abortSignal: AbortSignal) => Promise<T>,
+) {
   const data = ref<T>();
   const isLoading = ref(true);
   const error = ref<Error>();
@@ -408,11 +613,15 @@ function refreshOnDeepChange<T, P>(cb: (params: P) => Promise<T>) {
   return (paramsGetter: () => P) => {
     watch(paramsGetter, async (params, prevParams) => {
       if (isJsonEqual(params, prevParams)) return;
+      const abortController = new AbortController();
       const currentRequestId = requestId = Symbol();
+      onWatcherCleanup(() => {
+        abortController.abort();
+      });
       try {
         error.value = undefined;
         isLoading.value = true;
-        const result = await cb(params);
+        const result = await cb(params, abortController.signal);
         if (currentRequestId === requestId) {
           data.value = result;
         }
@@ -432,14 +641,17 @@ function refreshOnDeepChange<T, P>(cb: (params: P) => Promise<T>) {
 }
 
 type MultipleAlignmentData = {
-  sequences: string[];
-  sequenceNames: string[];
-  labelRows: string[][];
-  residueCounts: ResidueCounts;
-  highlightImage?: {
-    blob: Blob;
-    legend: HighlightLegend;
-  };
+  sequences: {
+    name: string;
+    rows: string[];
+    residueCounts: ResidueCounts;
+    highlightImageUrl?: string;
+  }[];
+  labels: {
+    rows: string[];
+  }[];
+  highlightLegend?: HighlightLegend;
+  phylogeneticTree?: PhylogeneticTreeWorker.TreeNodeData[];
   exceedsLimit: boolean;
 };
 

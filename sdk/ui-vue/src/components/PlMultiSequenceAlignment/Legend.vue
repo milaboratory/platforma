@@ -1,22 +1,22 @@
 <script setup lang="ts">
+import { useCssModule } from 'vue';
 import type { HighlightLegend } from './types';
 
-defineProps<{
+const props = defineProps<{
   legend: HighlightLegend;
 }>();
+
+const classes = useCssModule();
 </script>
 
 <template>
-  <div :class="$style.container">
+  <div :class="classes.container">
     <div
-      v-for="([key, { label, color }]) of Object.entries(legend)"
+      v-for="({ label, color }, key) of props.legend"
       :key="key"
-      :class="$style.item"
+      :class="classes.item"
     >
-      <div
-        :class="$style['color-sample']"
-        :style="{ backgroundColor: color }"
-      />
+      <div :class="classes.colorSample" :style="{ backgroundColor: color }" />
       {{ label }}
     </div>
   </div>
@@ -35,7 +35,7 @@ defineProps<{
   gap: 4px;
 }
 
-.color-sample {
+.colorSample {
   display: inline-block;
   block-size: 18px;
   inline-size: 18px;

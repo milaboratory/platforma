@@ -1,5 +1,127 @@
 # @milaboratories/pl-drivers
 
+## 1.11.2
+
+### Patch Changes
+
+- b979236: Undici tunning
+  - @milaboratories/pl-client@2.13.2
+  - @milaboratories/pl-tree@1.8.2
+
+## 1.11.1
+
+### Patch Changes
+
+- Updated dependencies [ee46338]
+  - @milaboratories/pl-client@2.13.1
+  - @milaboratories/pl-tree@1.8.1
+
+## 1.11.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/computable@2.7.0
+  - @milaboratories/ts-helpers@1.5.0
+  - @milaboratories/pl-client@2.13.0
+  - @milaboratories/pl-model-common@1.20.0
+  - @milaboratories/pl-tree@1.8.0
+  - @milaboratories/helpers@1.9.0
+
+## 1.10.18
+
+### Patch Changes
+
+- 5cc2e06: Blob download time logging
+- Updated dependencies [5cc2e06]
+  - @milaboratories/helpers@1.8.1
+
+## 1.10.17
+
+### Patch Changes
+
+- a3b0a3e: Fix BlobDriver clipping stream to 0 length
+
+## 1.10.16
+
+### Patch Changes
+
+- 349375b: Add retry on off by one error
+- Updated dependencies [349375b]
+  - @milaboratories/pl-client@2.12.2
+  - @milaboratories/pl-tree@1.7.13
+
+## 1.10.15
+
+### Patch Changes
+
+- Updated dependencies [0432c59]
+  - @milaboratories/pl-client@2.12.1
+  - @milaboratories/pl-tree@1.7.12
+
+## 1.10.14
+
+### Patch Changes
+
+- Updated dependencies [662eee0]
+  - @milaboratories/pl-model-common@1.19.19
+
+## 1.10.13
+
+### Patch Changes
+
+- 49160c4: Revert BlobDriver interface
+- Updated dependencies [49160c4]
+  - @milaboratories/pl-model-common@1.19.18
+
+## 1.10.12
+
+### Patch Changes
+
+- Updated dependencies [fc0eb68]
+- Updated dependencies [fc0eb68]
+  - @milaboratories/pl-client@2.12.0
+  - @milaboratories/helpers@1.8.0
+  - @milaboratories/pl-tree@1.7.11
+
+## 1.10.11
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @milaboratories/pl-model-common@1.19.17
+
+## 1.10.10
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/computable@2.6.8
+  - @milaboratories/ts-helpers@1.4.7
+  - @milaboratories/pl-client@2.11.13
+  - @milaboratories/pl-model-common@1.19.16
+  - @milaboratories/pl-tree@1.7.10
+
+## 1.10.9
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.19.15
+- @milaboratories/computable@2.6.7
+- @milaboratories/pl-tree@1.7.9
+
+## 1.10.8
+
+### Patch Changes
+
+- Updated dependencies [b2e7c82]
+  - @milaboratories/helpers@1.7.0
+
 ## 1.10.7
 
 ### Patch Changes

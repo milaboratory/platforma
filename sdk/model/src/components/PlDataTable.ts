@@ -27,6 +27,7 @@ import {
   matchAxisId,
   PColumnName,
   readAnnotation,
+  uniqueBy,
 } from '@milaboratories/pl-model-common';
 import type {
   AxisLabelProvider,
@@ -457,7 +458,7 @@ export type CreatePlDataTableOps = {
    *
    * Default behaviour: all columns are considered to be core
    */
-  coreColumnPredicate?: (spec: PColumnSpec) => boolean;
+  coreColumnPredicate?: (spec: PColumnIdAndSpec) => boolean;
 
   /**
    * Determines how core columns should be joined together:
@@ -471,6 +472,14 @@ export type CreatePlDataTableOps = {
    * Default: 'full'
    */
   coreJoinType?: 'inner' | 'full';
+
+  /**
+   * Determines if technical columns should be skipped from the table.
+   * Intended for use in Table block only.
+   *
+   * Default: false
+   */
+  doNotSkipTechnicalColumns?: boolean;
 };
 
 /** Check if column is a label column */
@@ -612,7 +621,7 @@ function createPTableDef(params: {
   partitionFilters: PTableRecordSingleValueFilterV2[];
   filters: PTableRecordSingleValueFilterV2[];
   sorting: PTableSorting[];
-  coreColumnPredicate?: ((spec: PColumnSpec) => boolean);
+  coreColumnPredicate?: ((spec: PColumnIdAndSpec) => boolean);
 }): PTableDef<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>> {
   let coreColumns = params.columns;
   const secondaryColumns: typeof params.columns = [];
@@ -620,7 +629,7 @@ function createPTableDef(params: {
   if (params.coreColumnPredicate) {
     coreColumns = [];
     for (const c of params.columns)
-      if (params.coreColumnPredicate(c.spec)) coreColumns.push(c);
+      if (params.coreColumnPredicate(getColumnIdAndSpec(c))) coreColumns.push(c);
       else secondaryColumns.push(c);
   }
 
@@ -662,14 +671,6 @@ export function isColumnOptional(spec: { annotations?: Annotation }): boolean {
 }
 
 /**
- * Return unique entries of the array by the provided id
- * For each id, the last entry is kept
- */
-export function uniqueBy<T>(array: T[], makeId: (entry: T) => string): T[] {
-  return [...new Map(array.map((e) => [makeId(e), e])).values()];
-}
-
-/**
  * Create p-table spec and handle given ui table state
  *
  * @param ctx context
@@ -679,12 +680,14 @@ export function uniqueBy<T>(array: T[], makeId: (entry: T) => string): T[] {
  */
 export function createPlDataTableV2<A, U>(
   ctx: RenderCtx<A, U>,
-  inputColumns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
+  inputColumns: PColumn<PColumnDataUniversal>[],
   tableState: PlDataTableStateV2 | undefined,
   ops?: CreatePlDataTableOps,
 ): PlDataTableModel | undefined {
-  if (inputColumns.length === 0) return undefined;
-  const columns = inputColumns.filter((c) => isLinkerColumn(c.spec) || !isColumnHidden(c.spec));
+  const columns = ops?.doNotSkipTechnicalColumns
+    ? inputColumns
+    : inputColumns.filter((c) => isLinkerColumn(c.spec) || !isColumnHidden(c.spec));
+  if (columns.length === 0) return undefined;
 
   const tableStateNormalized = upgradePlDataTableStateV2(tableState);
 
@@ -761,8 +764,9 @@ export function createPlDataTableV2<A, U>(
     .forEach((c) => hiddenColumns.delete(c.id));
 
   // Preserve core columns as they change the shape of join.
-  if (ops?.coreColumnPredicate) {
-    const coreColumns = columns.flatMap((c) => ops?.coreColumnPredicate?.(c.spec) ? [c.id] : []);
+  const coreColumnPredicate = ops?.coreColumnPredicate;
+  if (coreColumnPredicate) {
+    const coreColumns = columns.flatMap((c) => coreColumnPredicate(getColumnIdAndSpec(c)) ? [c.id] : []);
     coreColumns.forEach((c) => hiddenColumns.delete(c));
   }
 
@@ -784,7 +788,7 @@ export function createPlDataTableV2<A, U>(
     partitionFilters,
     filters,
     sorting,
-    coreColumnPredicate: ops?.coreColumnPredicate,
+    coreColumnPredicate,
   });
   const visibleHandle = ctx.createPTable(visibleDef);
 

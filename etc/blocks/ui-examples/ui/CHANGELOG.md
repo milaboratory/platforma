@@ -1,5 +1,67 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.45
+
+### Patch Changes
+
+- Updated dependencies [ed7a454]
+  - @platforma-sdk/model@1.43.21
+  - @milaboratories/milaboratories.ui-examples.model@1.2.39
+
+## 1.5.44
+
+### Patch Changes
+
+- Updated dependencies [0a11758]
+  - @platforma-sdk/model@1.43.18
+  - @milaboratories/milaboratories.ui-examples.model@1.2.38
+
+## 1.5.43
+
+### Patch Changes
+
+- @platforma-sdk/model@1.43.14
+- @milaboratories/milaboratories.ui-examples.model@1.2.37
+
+## 1.5.42
+
+### Patch Changes
+
+- @platforma-sdk/model@1.43.2
+- @milaboratories/milaboratories.ui-examples.model@1.2.36
+
+## 1.5.41
+
+### Patch Changes
+
+- d60cc17: Removed alignment example
+- Updated dependencies [d60cc17]
+  - @platforma-sdk/model@1.43.0
+  - @milaboratories/milaboratories.ui-examples.model@1.2.35
+
+## 1.5.40
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @platforma-sdk/model@1.42.51
+  - @milaboratories/milaboratories.ui-examples.model@1.2.34
+
+## 1.5.39
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @platforma-sdk/model@1.42.47
+  - @milaboratories/milaboratories.ui-examples.model@1.2.33
+
+## 1.5.38
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.model@1.2.32
+- @platforma-sdk/model@1.42.46
+
 ## 1.5.37
 
 ### Patch Changes

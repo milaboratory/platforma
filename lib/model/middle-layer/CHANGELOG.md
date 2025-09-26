@@ -1,5 +1,82 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.29
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/pl-model-common@1.20.0
+
+## 1.8.28
+
+### Patch Changes
+
+- 0432c59: Server platforma info for backend and blocks
+
+## 1.8.27
+
+### Patch Changes
+
+- fb57534: PFrames version bump
+
+## 1.8.26
+
+### Patch Changes
+
+- 662eee0: PFrames - spec update to support artificialColumn join entry
+- Updated dependencies [662eee0]
+  - @milaboratories/pl-model-common@1.19.19
+
+## 1.8.25
+
+### Patch Changes
+
+- Updated dependencies [49160c4]
+  - @milaboratories/pl-model-common@1.19.18
+
+## 1.8.24
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @milaboratories/pl-model-common@1.19.17
+
+## 1.8.23
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/pl-model-common@1.19.16
+
+## 1.8.22
+
+### Patch Changes
+
+- 0ff2a1b: **Registry Overview Snapshots & Enhanced Schema Backward Compatibility**
+
+  Added comprehensive snapshot functionality for registry overviews and improved Zod schema compatibility across the entire codebase.
+
+  ## Registry Snapshots (minor)
+
+  - **Automatic backup creation**: Overview files are automatically backed up during every registry update with gzipped compression
+  - **Organized storage structure**: Snapshots stored in `_overview_snapshots_v2/global/` and `per_package/` folders mirroring main hierarchy
+  - **Security features**: Millisecond timestamps with random suffixes prevent CDN retrieval attacks
+  - **CLI management tools**: Added `list-overview-snapshots` and `restore-overview-from-snapshot` commands with safety confirmations
+  - **Configurable behavior**: `skipSnapshotCreation` setting allows disabling snapshots when needed
+  - **Comprehensive testing**: Full test coverage ensures reliability
+
+  ## Schema Backward Compatibility (patch)
+
+  - **Strategic schema improvements**: Enhanced Zod schemas to prevent data loss during version transitions
+  - **Smart classification**: Applied `.passthrough()` to evolving data structures (overviews, manifests, registries, errors) while maintaining `.strict()` for closed types (content types, identifiers)
+  - **Wide compatibility coverage**: Updated schemas across block metadata, registry specifications, error structures, and deployment configurations
+  - **Forward compatibility**: Older versions will now preserve unknown fields instead of stripping them during parsing
+
+  These improvements ensure robust registry management with automatic backup capabilities and seamless schema evolution without breaking changes.
+
+  - @milaboratories/pl-model-common@1.19.15
+
 ## 1.8.21
 
 ### Patch Changes

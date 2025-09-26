@@ -9,20 +9,25 @@ import {
   computed,
   onBeforeUnmount,
   shallowRef,
+  useCssModule,
   useTemplateRef,
   watchEffect,
 } from 'vue';
+import { cellSize } from './cell-size';
 import type { ResidueCounts } from './types';
 import { useMiPlots } from './useMiPlots';
 
-const { residueCounts } = defineProps<{
+const props = defineProps<{
   residueCounts: ResidueCounts;
+  labelsClass: string;
 }>();
+
+const classes = useCssModule();
 
 const plotEl = useTemplateRef('plotEl');
 
-const columns = computed(() => {
-  return residueCounts.map((column) => {
+const columns = computed(() =>
+  props.residueCounts.map((column) => {
     let totalCount = 0;
     let topResidue = { label: '', count: 0 };
     for (const [residue, count] of Object.entries(column)) {
@@ -35,11 +40,11 @@ const columns = computed(() => {
       label: topResidue.label,
       color: `color-mix(in oklab, ${confidence} #3056AE, #C1CDE9)`,
     };
-  });
-});
+  }),
+);
 
-const settings = computed<Settings | undefined>(() => {
-  const width = residueCounts.length * 20;
+const settings = computed(() => {
+  const width = props.residueCounts.length * cellSize.inline;
   return ({
     type: 'discrete',
     y: {
@@ -52,7 +57,7 @@ const settings = computed<Settings | undefined>(() => {
         type: 'column',
         value: 'columnKey',
       },
-      order: residueCounts.map((_, i) => i),
+      order: props.residueCounts.map((_, i) => i),
       inheritedAes: Object.fromEntries(
         columns.value.map(({ color }) => ({ fillColor: color })).entries(),
       ),
@@ -61,8 +66,9 @@ const settings = computed<Settings | undefined>(() => {
       type: 'bar',
       height: 'max',
       aes: {
-        ...residueCounts.length && {
-          width: (width - residueCounts.length + 1) / residueCounts.length,
+        ...props.residueCounts.length && {
+          width: (width - props.residueCounts.length + 1)
+            / props.residueCounts.length,
         },
         fillColor: {
           type: 'primaryGrouping',
@@ -95,34 +101,32 @@ const settings = computed<Settings | undefined>(() => {
     frame: {
       type: 'empty',
     },
-  });
+  } satisfies Settings);
 });
 
-const data = computed<DataByColumns>(
-  () => {
-    const countKey: number[] = [];
-    const columnKey: number[] = [];
-    for (const [columnIndex, column] of residueCounts.entries()) {
-      for (const [residue, count] of Object.entries(column)) {
-        if (residue === '-') continue;
-        countKey.push(residue === ' ' ? 0 : count);
-        columnKey.push(columnIndex);
-      }
+const data = computed<DataByColumns>(() => {
+  const countKey: number[] = [];
+  const columnKey: number[] = [];
+  for (const [columnIndex, column] of props.residueCounts.entries()) {
+    for (const [residue, count] of Object.entries(column)) {
+      if (residue === '-') continue;
+      countKey.push(count);
+      columnKey.push(columnIndex);
     }
-    return ({
-      type: 'columns',
-      id: `consensus-${crypto.randomUUID()}`,
-      values: { countKey, columnKey },
-    });
-  },
-);
+  }
+  return ({
+    type: 'columns',
+    id: `consensus-${crypto.randomUUID()}`,
+    values: { countKey, columnKey },
+  });
+});
 
 const plot = shallowRef<ChartInterface>();
 
 const { miplots, error } = useMiPlots();
 
 watchEffect(async () => {
-  if (!settings.value || !plotEl.value || !miplots.value) return;
+  if (!plotEl.value || !miplots.value) return;
   if (!plot.value) {
     plot.value = miplots.value.newPlot(data.value, settings.value);
     plot.value.mount(plotEl.value);
@@ -140,8 +144,8 @@ onBeforeUnmount(() => {
   <PlAlert v-if="error" type="error">
     {{ error.message }}
   </PlAlert>
-  <div v-else :class="$style.container">
-    <div :class="$style.labels">
+  <div v-else :class="classes.container">
+    <div :class="props.labelsClass">
       {{ columns.map(column => column.label).join('') }}
     </div>
     <div ref="plotEl" />
@@ -153,14 +157,9 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
 
-.labels {
-  font-family: Spline Sans Mono;
-  font-weight: 600;
-  line-height: 24px;
-  letter-spacing: 11.6px;
-  text-indent: 5.8px;
-  margin-inline-end: -5.8px;
+  svg {
+    display: block;
+  }
 }
 </style>

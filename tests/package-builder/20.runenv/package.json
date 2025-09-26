@@ -1,20 +1,25 @@
 {
   "name": "@milaboratories/example-pl-package-runenv-1",
   "version": "1.1.0",
+  "private": true,
   "description": "Example of software to be used as runenv",
   "scripts": {
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
     "reset": "npm run cleanup && rm -rf ./node_modules/",
-    "test": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build"
+    "check": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build && node ./verify.mjs"
   },
   "block-software": {
     "entrypoints": {
       "python": {
         "environment": {
           "artifact": {
-            "registry": "example",
+            "registry": "example-python-registry",
             "type": "environment",
             "runtime": "python",
+            "python-version": "3.12.10",
+            "envVars": [
+              "MY_ENV_VAR=1234"
+            ],
             "root": "./src",
             "binDir": "."
           }
@@ -23,9 +28,10 @@
       "java": {
         "environment": {
           "artifact": {
-            "registry": "example",
+            "registry": "example-java-registry",
             "type": "environment",
             "runtime": "java",
+            "java-version": "21",
             "root": "./src",
             "binDir": "."
           }
@@ -34,7 +40,7 @@
       "r": {
         "environment": {
           "artifact": {
-            "registry": "example",
+            "registry": "example-r-registry",
             "type": "environment",
             "runtime": "R",
             "r-version": "4.3.1",

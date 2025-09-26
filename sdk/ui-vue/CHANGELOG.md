@@ -1,5 +1,105 @@
 # @platforma-sdk/ui-vue
 
+## 1.43.21
+
+### Patch Changes
+
+- Updated dependencies [ed7a454]
+  - @platforma-sdk/model@1.43.21
+  - @milaboratories/uikit@2.4.19
+
+## 1.43.18
+
+### Patch Changes
+
+- Updated dependencies [0a11758]
+  - @platforma-sdk/model@1.43.18
+  - @milaboratories/uikit@2.4.18
+
+## 1.43.14
+
+### Patch Changes
+
+- @platforma-sdk/model@1.43.14
+- @milaboratories/uikit@2.4.17
+
+## 1.43.11
+
+### Patch Changes
+
+- @milaboratories/uikit@2.4.16
+- @platforma-sdk/model@1.43.2
+
+## 1.43.2
+
+### Patch Changes
+
+- @platforma-sdk/model@1.43.2
+- @milaboratories/uikit@2.4.15
+
+## 1.43.1
+
+### Patch Changes
+
+- e61fe33: Bump miplots4 version
+
+## 1.43.0
+
+### Minor Changes
+
+- d60cc17: Added support for markup highlighting with multiple sequence columns, added initial support for phylogenetic trees, revamped the MSA data generation and layout
+
+### Patch Changes
+
+- Updated dependencies [d60cc17]
+- Updated dependencies [d60cc17]
+  - @milaboratories/biowasm-tools@2.0.0
+  - @platforma-sdk/model@1.43.0
+  - @milaboratories/uikit@2.4.14
+
+## 1.42.53
+
+### Patch Changes
+
+- @milaboratories/uikit@2.4.13
+- @platforma-sdk/model@1.42.51
+
+## 1.42.51
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @platforma-sdk/model@1.42.51
+  - @milaboratories/uikit@2.4.12
+
+## 1.42.47
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @platforma-sdk/model@1.42.47
+  - @milaboratories/uikit@2.4.11
+
+## 1.42.46
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.46
+- @milaboratories/uikit@2.4.10
+
+## 1.42.44
+
+### Patch Changes
+
+- @milaboratories/uikit@2.4.9
+- @platforma-sdk/model@1.42.36
+
+## 1.42.42
+
+### Patch Changes
+
+- b80a619: AgGrid version update
+
 ## 1.42.36
 
 ### Patch Changes

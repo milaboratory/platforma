@@ -1,5 +1,73 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.3.1
+
+### Patch Changes
+
+- 8f68937: Drop deprecated unused code to trigger rebuild (check CI tests)
+
+## 5.3.0
+
+### Minor Changes
+
+- f948c9c: Bumb runenv-python-3 v1.4.5 -> 1.4.12
+
+## 5.2.3
+
+### Patch Changes
+
+- 32715b4: Pass env vars from run environment to pip install and final command execution
+
+## 5.2.2
+
+### Patch Changes
+
+- Updated dependencies [d14b733]
+  - @platforma-open/milaboratories.software-ptabler@1.12.4
+
+## 5.2.1
+
+### Patch Changes
+
+- 349375b: Ptabler - saveFrameDirect for exporting data as Parquet PFrame
+- Updated dependencies [349375b]
+  - @platforma-open/milaboratories.software-ptabler@1.12.3
+
+## 5.2.0
+
+### Minor Changes
+
+- fe141f9: use pframes with docker support
+
+## 5.1.5
+
+### Patch Changes
+
+- Updated dependencies [d58f182]
+  - @platforma-open/milaboratories.software-ptabler@1.12.2
+  - @platforma-open/milaboratories.software-ptexter@1.1.1
+
+## 5.1.4
+
+### Patch Changes
+
+- 06b7746: Pass 'pkg' path to command renderer when it is available in docker descriptor
+
+## 5.1.3
+
+### Patch Changes
+
+- Updated dependencies [69c33c1]
+  - @platforma-open/milaboratories.software-ptabler@1.12.1
+
+## 5.1.2
+
+### Patch Changes
+
+- Updated dependencies [c11e4aa]
+  - @platforma-open/milaboratories.software-ptabler@1.12.0
+  - @platforma-open/milaboratories.software-ptexter@1.1.0
+
 ## 5.1.1
 
 ### Patch Changes

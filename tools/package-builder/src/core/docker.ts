@@ -1,18 +1,17 @@
 import { spawnSync } from 'node:child_process';
-import type { DockerPackage } from './package-info';
+import type { DockerPackage } from './schemas/entrypoint';
 import * as util from './util';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { PL_DOCKER_REGISTRY } from './envs';
 
 export const defaultDockerRegistry = 'containers.pl-open.science/milaboratories/pl-containers';
 
-export function dockerEntrypointName(name: string): string {
+export function entrypointName(name: string): string {
   return name + ':docker';
 }
 
-export function dockerEntrypointNameToOrigin(name: string): string {
+export function entrypointNameToOrigin(name: string): string {
   const suffixIndex = name.indexOf(':docker');
   if (suffixIndex === -1) {
     return name;
@@ -20,11 +19,89 @@ export function dockerEntrypointNameToOrigin(name: string): string {
   return name.substring(0, suffixIndex);
 }
 
-export function dockerPush(tag: string) {
+export function getImageHash(tag: string): string {
+  const result = spawnSync('docker', ['image', 'ls', '--filter=reference=' + tag, '--format={{.ID}}'], {
+    stdio: 'pipe',
+    env: {
+      ...process.env, // PATH variable from parent process affects execution
+      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+    },
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw util.CLIError(`local docker image check failed with status ${result.status}`);
+  }
+
+  const output = result.stdout.toString().trim();
+  if (output.split('\n').length > 1) {
+    throw util.CLIError(`package-builder internal logic error: more than one image found by exact tag match: ${output}`);
+  }
+
+  return output;
+}
+
+export function localImageExists(tag: string): boolean {
+  return getImageHash(tag) !== '';
+}
+
+export function remoteImageExists(tag: string): boolean {
+  const result = spawnSync('docker', ['manifest', 'inspect', tag], {
+    stdio: 'pipe',
+    env: {
+      ...process.env, // PATH variable from parent process affects execution
+      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+    },
+  });
+
+  if (result.error || result.status !== 0) {
+    return false;
+  }
+
+  return true;
+}
+
+export function shouldDoAction(isCI: boolean, doFlag: boolean, noDoFlag: boolean): boolean {
+  if (noDoFlag) {
+    return false;
+  }
+  if (doFlag) {
+    return true;
+  }
+
+  // Build docker images in CI by default
+  // Do not build docker images automatically outside CI for now.
+  return isCI;
+}
+
+export function build(context: string, dockerfile: string, tag: string, softwarePackage: string, softwareVersion: string | undefined) {
+  const result = spawnSync('docker', [
+    'build', '-t', tag, context, '-f', dockerfile,
+    '--label', 'com.milaboratories.package-builder.software=true',
+    '--label', 'com.milaboratories.package-builder.software.package=' + softwarePackage,
+    '--label', 'com.milaboratories.package-builder.software.version=' + softwareVersion,
+  ], {
+    stdio: 'inherit',
+    env: {
+      ...process.env, // PATH variable from parent process affects execution
+      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+    },
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw util.CLIError(`'docker build' failed with status ${result.status}`);
+  }
+}
+
+export function push(tag: string) {
   const result = spawnSync('docker', ['push', tag], {
     stdio: 'inherit',
     env: {
-      ...process.env, // Inherit all environment variables from the parent process
+      ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
     },
   });
@@ -32,15 +109,15 @@ export function dockerPush(tag: string) {
     throw result.error;
   }
   if (result.status !== 0) {
-    throw new Error(`docker push failed with status ${result.status}`);
+    throw util.CLIError(`'docker push' failed with status ${result.status}`);
   }
 }
 
-export function dockerBuild(context: string, dockerfile: string, tag: string) {
-  const result = spawnSync('docker', ['build', '-t', tag, context, '-f', dockerfile], {
+export function addTag(imageIdOrTag: string, newTag: string) {
+  const result = spawnSync('docker', ['image', 'tag', imageIdOrTag, newTag], {
     stdio: 'inherit',
     env: {
-      ...process.env, // Inherit all environment variables from the parent process
+      ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
     },
   });
@@ -48,19 +125,44 @@ export function dockerBuild(context: string, dockerfile: string, tag: string) {
     throw result.error;
   }
   if (result.status !== 0) {
-    throw new Error(`docker build failed with status ${result.status}`);
+    throw util.CLIError(`'docker tag' failed with status ${result.status}`);
   }
 }
 
-export function dockerTagFromPackage(packageRoot: string, pkg: DockerPackage): string {
-  if (pkg.type !== 'docker') {
-    throw new Error(`package '${pkg.name}' is not a docker package`);
+export function removeTag(imageTag: string) {
+  const result = spawnSync('docker', ['image', 'rm', imageTag], {
+    stdio: 'inherit',
+    env: {
+      ...process.env, // PATH variable from parent process affects execution
+      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+    },
+  });
+  if (result.error) {
+    throw result.error;
   }
+  if (result.status !== 0) {
+    throw util.CLIError(`'docker image rm' failed with status ${result.status}`);
+  }
+}
+
+export function generateRemoteTagName(pkg: DockerPackage, imageID: string, registry?: string): string {
+  if (pkg.type !== 'docker') {
+    throw util.CLIError(`package '${pkg.name}' is not a docker package`);
+  }
+
+  return dockerTag(pkg.name, imageID, registry);
+}
+
+export function generateLocalTagName(packageRoot: string, pkg: DockerPackage): string {
+  if (pkg.type !== 'docker') {
+    throw util.CLIError(`package '${pkg.name}' is not a docker package`);
+  }
+
   const dockerfile = dockerfileFullPath(packageRoot, pkg);
   const context = contextFullPath(packageRoot, pkg);
   const hash = contentHash(context, dockerfile);
-  const tag = dockerTag(pkg.name, hash);
-  return tag;
+
+  return dockerTag('local-image', hash);
 }
 
 function dockerfileFullPath(packageRoot: string, pkg: DockerPackage): string {
@@ -69,18 +171,18 @@ function dockerfileFullPath(packageRoot: string, pkg: DockerPackage): string {
 
 function contextFullPath(packageRoot: string, pkg: DockerPackage): string {
   if (pkg.context === './' || pkg.context === '.') {
-    throw new Error(`Invalid Docker context: "${pkg.context}". Context cannot be "./" or "." - use absolute path or relative path without "./" prefix`);
+    throw util.CLIError(`Invalid Docker context: "${pkg.context}". Context cannot be "./" or "." - use absolute path or relative path without "./" prefix`);
   }
   return path.resolve(packageRoot, pkg.context ?? '.');
 }
 
 function contentHash(contextFullPath: string, dockerfileFullPath: string): string {
   if (!fs.existsSync(dockerfileFullPath)) {
-    throw new Error(`Dockerfile '${dockerfileFullPath}' not found`);
+    throw util.CLIError(`Dockerfile '${dockerfileFullPath}' not found`);
   }
 
   if (!fs.existsSync(contextFullPath)) {
-    throw new Error(`Context '${contextFullPath}' not found`);
+    throw util.CLIError(`Context '${contextFullPath}' not found`);
   }
 
   const contextHash = util.hashDirMetaSync(contextFullPath);
@@ -90,7 +192,7 @@ function contentHash(contextFullPath: string, dockerfileFullPath: string): strin
   return contextHash.digest('hex').slice(0, 12);
 }
 
-function dockerTag(packageName: string, contentHash: string): string {
-  const dockerRegistry = process.env[PL_DOCKER_REGISTRY] ?? defaultDockerRegistry;
+function dockerTag(packageName: string, contentHash: string, registry?: string): string {
+  const dockerRegistry = registry ?? defaultDockerRegistry;
   return `${dockerRegistry}:${packageName.replaceAll('/', '.')}.${contentHash}`;
 }

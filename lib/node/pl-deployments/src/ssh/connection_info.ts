@@ -9,7 +9,7 @@ import { z } from 'zod';
 export const PortPair = z.object({
   local: z.number(),
   remote: z.number(),
-});
+}).passthrough();
 /** The pair of ports for forwarding. */
 export type PortPair = z.infer<typeof PortPair>;
 
@@ -22,7 +22,7 @@ export const SshPlPorts = z.object({
   minioPort: PortPair,
   /** @deprecated */
   minioConsolePort: PortPair,
-});
+}).passthrough();
 /** All info about ports that are forwarded. */
 export type SshPlPorts = z.infer<typeof SshPlPorts>;
 
@@ -40,7 +40,7 @@ export const ConnectionInfo = z.object({
 
   // It's true by default because it was added later and previous installation use minio.
   minioIsUsed: z.boolean().default(true),
-});
+}).passthrough();
 /** The content of the file that holds all the info about the connection on the remote server. */
 export type ConnectionInfo = z.infer<typeof ConnectionInfo>;
 

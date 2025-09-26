@@ -21,10 +21,13 @@ import { DefaultFinalResourceDataPredicate } from './final';
 import type { AllTxStat, TxStat } from './stat';
 import { addStat, initialTxStat } from './stat';
 import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import { advisoryLock } from './advisory_locks';
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
   retryOptions?: RetryOptions;
+  name?: string;
+  lockId?: string;
 };
 
 const defaultTxOps = {
@@ -252,61 +255,67 @@ export class PlClient {
     let retryState = createRetryState(ops?.retryOptions ?? this.defaultRetryOptions);
 
     while (true) {
-      // opening low-level tx
-      const llTx = this._ll.createTx(writable, ops);
-      // wrapping it into high-level tx (this also asynchronously sends initialization message)
-      const tx = new PlTransaction(
-        llTx,
-        name,
-        writable,
-        clientRoot,
-        this.finalPredicate,
-        this.resourceDataCache,
-      );
-
-      let ok = false;
-      let result: T | undefined = undefined;
-      let txId;
+      const release = ops?.lockId ? await advisoryLock(ops.lockId) : () => {};
 
       try {
-        // executing transaction body
-        result = await body(tx);
-        // collecting stat
-        this._txCommittedStat = addStat(this._txCommittedStat, tx.stat);
-        ok = true;
-      } catch (e: unknown) {
-        // the only recoverable
-        if (e instanceof TxCommitConflict) {
-          // ignoring
+        // opening low-level tx
+        const llTx = this._ll.createTx(writable, ops);
+        // wrapping it into high-level tx (this also asynchronously sends initialization message)
+        const tx = new PlTransaction(
+          llTx,
+          name,
+          writable,
+          clientRoot,
+          this.finalPredicate,
+          this.resourceDataCache,
+        );
+
+        let ok = false;
+        let result: T | undefined = undefined;
+        let txId;
+
+        try {
+          // executing transaction body
+          result = await body(tx);
           // collecting stat
-          this._txConflictStat = addStat(this._txConflictStat, tx.stat);
-        } else {
+          this._txCommittedStat = addStat(this._txCommittedStat, tx.stat);
+          ok = true;
+        } catch (e: unknown) {
+          // the only recoverable
+          if (e instanceof TxCommitConflict) {
+            // ignoring
+            // collecting stat
+            this._txConflictStat = addStat(this._txConflictStat, tx.stat);
+          } else {
           // collecting stat
-          this._txErrorStat = addStat(this._txErrorStat, tx.stat);
-          throw e;
+            this._txErrorStat = addStat(this._txErrorStat, tx.stat);
+            throw e;
+          }
+        } finally {
+          // close underlying grpc stream, if not yet done
+
+          // even though we can skip two lines below for read-only transactions,
+          // we don't do it to simplify reasoning about what is going on in
+          // concurrent code, especially in significant latency situations
+          await tx.complete();
+          await tx.await();
+
+          txId = await tx.getGlobalTxId();
+        }
+
+        if (ok) {
+          // syncing on transaction if requested
+          if (ops?.sync === undefined ? this.forceSync : ops?.sync)
+            await this._ll.grpcPl.get().txSync({ txId });
+
+          // introducing artificial delay, if requested
+          if (writable && this.txDelay > 0)
+            await tp.setTimeout(this.txDelay, undefined, { signal: ops?.abortSignal });
+
+          return result!;
         }
       } finally {
-        // close underlying grpc stream, if not yet done
-
-        // even though we can skip two lines below for read-only transactions,
-        // we don't do it to simplify reasoning about what is going on in
-        // concurrent code, especially in significant latency situations
-        await tx.complete();
-        await tx.await();
-
-        txId = await tx.getGlobalTxId();
-      }
-
-      if (ok) {
-        // syncing on transaction if requested
-        if (ops?.sync === undefined ? this.forceSync : ops?.sync)
-          await this._ll.grpcPl.get().txSync({ txId });
-
-        // introducing artificial delay, if requested
-        if (writable && this.txDelay > 0)
-          await tp.setTimeout(this.txDelay, undefined, { signal: ops?.abortSignal });
-
-        return result!;
+        release();
       }
 
       // we only get here after TxCommitConflict error,

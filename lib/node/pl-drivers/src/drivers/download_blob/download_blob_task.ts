@@ -59,12 +59,16 @@ export class DownloadBlobTask {
     try {
       const size = await this.ensureDownloaded();
       this.setDone(size);
-      this.change.markChanged(`blob download for ${resourceIdToString(this.rInfo.id)} finished`);
+      this.change.markChanged(`blob ${resourceIdToString(this.rInfo.id)} download finished`);
     } catch (e: any) {
-      this.logger.error(`download blob ${stringifyWithResourceId(this.rInfo)} failed: ${e}, state: ${JSON.stringify(this.state)}`);
+      this.logger.error(
+        `blob ${stringifyWithResourceId(this.rInfo)} download failed, `
+        + `state: ${JSON.stringify(this.state)}, `
+        + `error: ${e}`,
+      );
       if (nonRecoverableError(e)) {
         this.setError(e);
-        this.change.markChanged(`blob download for ${resourceIdToString(this.rInfo.id)} failed`);
+        this.change.markChanged(`blob ${resourceIdToString(this.rInfo.id)} download failed`);
         // Just in case we were half-way extracting an archive.
         await fsp.rm(this.path, { force: true });
       }
@@ -86,7 +90,10 @@ export class DownloadBlobTask {
     this.signalCtl.signal.throwIfAborted();
     if (alreadyExists) {
       this.state.fileExists = true;
-      this.logger.info(`a blob was already downloaded: ${this.state.filePath}`);
+      this.logger.info(
+        `blob ${stringifyWithResourceId(this.rInfo)} was already downloaded, `
+        + `path: ${this.state.filePath}`,
+      );
       const stat = await fsp.stat(this.state.filePath);
       this.signalCtl.signal.throwIfAborted();
       this.state.fileSize = stat.size;

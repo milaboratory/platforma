@@ -6,11 +6,13 @@ self := import(":tpl.light")
 feats := import(":feats")
 
 ll := import(":ll")
+text := import("text")
 workdir := import(":workdir")
 runcmd := import(":exec.runcmd")
 path := import(":path")
 validation := import(":validation")
 constants := import(":exec.constants")
+desc := import(":exec.descriptor")
 pkg := import(":exec.package")
 
 self.defineOutputs("runEnv")
@@ -34,7 +36,14 @@ _runInVenv := func(python, venv, wd, pythonBinDir, pythonVenvBinDir) {
 		envTyped("PYTHONPATH", t, path.join("{python_runenv}", pythonBinDir, "python_stdlib"))
 }
 
-_installPipDependencies := func(python, venv, dependencies, pythonBinDir, pythonVenvBinDir ) {
+/**
+ * @param python: smart.reference - python run environment package.
+ * @param venv: smart.reference - python virtual environment.
+ * @param dependencies: {"any": smart.reference} - dependencies map.
+ * @param pythonDescriptor: desc.runEnvScheme - python run environment descriptor.
+ * @param pythonVenvBinDir: string - name of bin directory in python venv depending on OS type (Scripts on Windows, bin on Unix).
+ */
+_installPipDependencies := func(python, venv, dependencies, pythonDescriptor, pythonVenvBinDir) {
 	requirementsRef := dependencies.requirements
 
 	wdForDeps := workdir.builder().
@@ -44,10 +53,17 @@ _installPipDependencies := func(python, venv, dependencies, pythonBinDir, python
 		addFile("requirements.txt", requirementsRef).
 		build()
 
-	depsBuilder := _runInVenv(python, venv, wdForDeps, pythonBinDir, pythonVenvBinDir)
+	depsBuilder := _runInVenv(python, venv, wdForDeps, pythonDescriptor.binDir, pythonVenvBinDir)
 
 	// DEPRECATED: remove after 15 Mar 2025
 	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+
+	if !is_undefined(pythonDescriptor.envVars) {
+		for envVar in pythonDescriptor.envVars {
+			split := text.split(envVar, "=")
+			depsBuilder.envTyped(split[0], t, split[1])
+		}
+	}
 
 	depsBuilder.
 		cmd("python").arg("-m").
@@ -76,7 +92,7 @@ self.prepare(func(inputs) {
 		venv: validation.reference,
 		toolset: "string",
 		dependencies: {"any": validation.reference},
-		pythonBinDir: "string",
+		pythonDescriptor: desc.runEnvScheme,
 		pythonVenvBinDir: "string"
 	})
 
@@ -86,7 +102,7 @@ self.prepare(func(inputs) {
 			inputs.python,
             inputs.venv,
             inputs.dependencies,
-            inputs.pythonBinDir,
+            inputs.pythonDescriptor,
             inputs.pythonVenvBinDir
 		)
 		return {

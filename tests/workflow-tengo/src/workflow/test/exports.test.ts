@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 
-tplTest(
+tplTest.concurrent(
   'resolve: should return resolved export',
   // This timeout is set due to very slow performance of Platforma on large transactions, where thousands of fields and resources are created.
   // the test itself does almost nothing (concatenates 2 strings) and should pass immediately.
@@ -30,7 +30,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'resolve: should return resolved anchors and anchored columns',
   // This timeout is set due to very slow performance of Platforma on large transactions, where thousands of fields and resources are created.
   // the test itself does almost nothing (concatenates 2 strings) and should pass immediately.
@@ -60,7 +60,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should return undefined',
   // This timeout is set due to very slow performance of Platforma on large transactions, where thousands of fields and resources are created.
   // the test itself does almost nothing and should pass immediately.

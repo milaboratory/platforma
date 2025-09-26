@@ -14,13 +14,14 @@ import {
 import type {
   PlMultiSequenceAlignmentColorSchemeOption as ColorSchemeOption,
   PlMultiSequenceAlignmentSettings as Settings,
+  PlMultiSequenceAlignmentWidget,
   PObjectId,
   PTableColumnId,
 } from '@platforma-sdk/model';
-import { computed, ref, watchEffect } from 'vue';
-import { defaultAlignmentParams } from './multi-sequence-alignment';
+import { computed, ref, useCssModule, watchEffect } from 'vue';
+import { defaultSettings } from './settings';
 
-const { settings } = defineProps<{
+const props = defineProps<{
   settings: Settings;
   sequenceColumnOptions: ListOptionNormalized<PObjectId>[] | undefined;
   labelColumnOptions: ListOptionNormalized<PTableColumnId>[] | undefined;
@@ -32,6 +33,8 @@ const emit = defineEmits<{
   export: [];
 }>();
 
+const classes = useCssModule();
+
 const settingsOpen = ref(false);
 
 function updateSetting<K extends keyof Settings>(
@@ -42,85 +45,90 @@ function updateSetting<K extends keyof Settings>(
 }
 
 function toggleWidget(
-  widget: 'seqLogo' | 'consensus' | 'legend',
+  widget: PlMultiSequenceAlignmentWidget,
   checked: boolean,
 ) {
   updateSetting(
     'widgets',
     checked
-      ? [...settings.widgets, widget]
-      : settings.widgets.filter((w) => widget !== w),
+      ? [...props.settings.widgets, widget]
+      : props.settings.widgets.filter((w) => widget !== w),
   );
 }
 
-const alignmentParams = ref({ ...settings.alignmentParams });
+const alignmentParams = ref({ ...props.settings.alignmentParams });
 watchEffect(() => {
-  alignmentParams.value = { ...settings.alignmentParams };
+  alignmentParams.value = { ...props.settings.alignmentParams };
 });
 
 const alignmentParamsChangesPending = computed(() =>
-  !isJsonEqual(settings.alignmentParams, alignmentParams.value),
+  !isJsonEqual(props.settings.alignmentParams, alignmentParams.value),
 );
 
 const canResetAlignmentParams = computed(() =>
-  !isJsonEqual(settings.alignmentParams, defaultAlignmentParams),
+  !isJsonEqual(props.settings.alignmentParams, defaultSettings.alignmentParams),
 );
 </script>
 
 <template>
-  <div :class="$style.container">
-    <div :class="$style.line">
-      <div :class="$style.section">
+  <div :class="classes.container">
+    <div :class="classes.line">
+      <div :class="classes.section">
         <PlDropdownMulti
           label="Sequence Columns"
-          :model-value="settings.sequenceColumnIds ?? []"
-          :options="sequenceColumnOptions"
+          :model-value="props.settings.sequenceColumnIds ?? []"
+          :options="props.sequenceColumnOptions"
           clearable
-          @update:model-value="updateSetting('sequenceColumnIds', $event)"
+          @update:model-value="event => updateSetting('sequenceColumnIds', event)"
         />
         <PlDropdownMulti
-          :model-value="settings.labelColumnIds ?? []"
+          :model-value="props.settings.labelColumnIds ?? []"
           label="Label Columns"
-          :options="labelColumnOptions"
+          :options="props.labelColumnOptions"
           clearable
-          @update:model-value="updateSetting('labelColumnIds', $event)"
+          @update:model-value="event => updateSetting('labelColumnIds', event)"
         />
         <PlDropdown
-          :model-value="settings.colorScheme"
+          :model-value="props.settings.colorScheme"
           label="Color Scheme"
-          :options="colorSchemeOptions"
-          @update:model-value="updateSetting('colorScheme', $event)"
+          :options="props.colorSchemeOptions"
+          @update:model-value="event => updateSetting('colorScheme', event)"
         />
       </div>
-      <div :class="$style.buttons">
+      <div :class="classes.buttons">
         <PlBtnGhost icon="settings" @click.stop="settingsOpen = true">
           Settings
         </PlBtnGhost>
-        <PlBtnGhost icon="export" @click.stop="$emit('export')">
+        <PlBtnGhost icon="export" @click.stop="emit('export')">
           Export
         </PlBtnGhost>
       </div>
     </div>
-    <div :class="$style.line">
-      <div :class="$style.section">
+    <div :class="classes.line">
+      <div :class="classes.section">
         <PlCheckbox
-          :model-value="settings.widgets.includes('seqLogo')"
-          @update:model-value="toggleWidget('seqLogo', $event)"
+          :model-value="props.settings.widgets.includes('seqLogo')"
+          @update:model-value="event => toggleWidget('seqLogo', event)"
         >
           Seq logo
         </PlCheckbox>
         <PlCheckbox
-          :model-value="settings.widgets.includes('consensus')"
-          @update:model-value="toggleWidget('consensus', $event)"
+          :model-value="props.settings.widgets.includes('consensus')"
+          @update:model-value="event => toggleWidget('consensus', event)"
         >
           Consensus
         </PlCheckbox>
         <PlCheckbox :model-value="false" disabled>Navigator</PlCheckbox>
-        <PlCheckbox :model-value="false" disabled>Tree</PlCheckbox>
         <PlCheckbox
-          :model-value="settings.widgets.includes('legend')"
-          :disabled="settings.colorScheme.type === 'no-color'"
-          @update:model-value="toggleWidget('legend', $event)"
+          :model-value="props.settings.widgets.includes('tree')"
+          @update:model-value="event => toggleWidget('tree', event)"
+        >
+          Tree
+        </PlCheckbox>
+        <PlCheckbox
+          :model-value="props.settings.widgets.includes('legend')"
+          :disabled="props.settings.colorScheme.type === 'no-color'"
+          @update:model-value="event => toggleWidget('legend', event)"
         >
           Legend
         </PlCheckbox>
@@ -162,18 +170,18 @@ const canResetAlignmentParams = computed(() =>
     </PlNumberField>
     <div
       v-if="alignmentParamsChangesPending"
-      :class="$style['pending-changes']"
+      :class="classes.pendingChanges"
     >
       <PlBtnPrimary @click="updateSetting('alignmentParams', alignmentParams)">
         Apply
       </PlBtnPrimary>
-      <PlBtnGhost @click="alignmentParams = settings.alignmentParams">
+      <PlBtnGhost @click="alignmentParams = props.settings.alignmentParams">
         Cancel
       </PlBtnGhost>
     </div>
     <PlBtnSecondary
       v-if="canResetAlignmentParams"
-      :class="$style['reset-button']"
+      :class="classes.resetButton"
       icon="reverse"
       @click="updateSetting('alignmentParams', undefined)"
     >
@@ -204,14 +212,14 @@ const canResetAlignmentParams = computed(() =>
   display: flex;
 }
 
-.pending-changes {
+.pendingChanges {
   display: flex;
   button {
     min-width: 160px;
   }
 }
 
-.reset-button {
+.resetButton {
   margin-block-start: auto;
   span {
     text-transform: none;

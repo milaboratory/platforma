@@ -1,5 +1,66 @@
 # @platforma-sdk/model
 
+## 1.43.21
+
+### Patch Changes
+
+- ed7a454: createPlDataTableV2 - update to migrate Table block
+
+## 1.43.18
+
+### Patch Changes
+
+- 0a11758: fix columns filtering for createPFrameForGraphs
+
+## 1.43.14
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/pl-model-common@1.20.0
+
+## 1.43.2
+
+### Patch Changes
+
+- Updated dependencies [662eee0]
+  - @milaboratories/pl-model-common@1.19.19
+
+## 1.43.0
+
+### Minor Changes
+
+- d60cc17: Added support for markup highlighting with multiple sequence columns, added initial support for phylogenetic trees, revamped the MSA data generation and layout
+
+### Patch Changes
+
+- Updated dependencies [49160c4]
+  - @milaboratories/pl-model-common@1.19.18
+
+## 1.42.51
+
+### Patch Changes
+
+- 6bc20d1: add hidden for graphs columns
+- Updated dependencies [6bc20d1]
+  - @milaboratories/pl-model-common@1.19.17
+
+## 1.42.47
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/pl-model-common@1.19.16
+
+## 1.42.46
+
+### Patch Changes
+
+- Updated dependencies [0ff2a1b]
+  - @milaboratories/pl-error-like@1.12.5
+  - @milaboratories/pl-model-common@1.19.15
+
 ## 1.42.36
 
 ### Patch Changes

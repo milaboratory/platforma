@@ -1,5 +1,71 @@
 # @milaboratories/milaboratories.ui-examples.workflow
 
+## 1.1.68
+
+### Patch Changes
+
+- Updated dependencies [8f68937]
+  - @platforma-sdk/workflow-tengo@5.3.1
+
+## 1.1.67
+
+### Patch Changes
+
+- Updated dependencies [f948c9c]
+  - @platforma-sdk/workflow-tengo@5.3.0
+
+## 1.1.66
+
+### Patch Changes
+
+- Updated dependencies [32715b4]
+  - @platforma-sdk/workflow-tengo@5.2.3
+
+## 1.1.65
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@5.2.2
+
+## 1.1.64
+
+### Patch Changes
+
+- Updated dependencies [349375b]
+  - @platforma-sdk/workflow-tengo@5.2.1
+
+## 1.1.63
+
+### Patch Changes
+
+- Updated dependencies [fe141f9]
+  - @platforma-sdk/workflow-tengo@5.2.0
+
+## 1.1.62
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@5.1.5
+
+## 1.1.61
+
+### Patch Changes
+
+- Updated dependencies [06b7746]
+  - @platforma-sdk/workflow-tengo@5.1.4
+
+## 1.1.60
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@5.1.3
+
+## 1.1.59
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@5.1.2
+
 ## 1.1.58
 
 ### Patch Changes

@@ -1,7 +1,7 @@
 import { Pl } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest('test simple template', async ({ helper, expect }) => {
+tplTest.concurrent('test simple template', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     false,
     'tpl.test.simple1',
@@ -17,7 +17,7 @@ tplTest('test simple template', async ({ helper, expect }) => {
   expect(await mainResult.awaitStableValue()).eq('Truman Show');
 });
 
-tplTest('test template with maps output', async ({ helper, expect }) => {
+tplTest.concurrent('test template with maps output', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     false,
     'tpl.test.map-outputs',
@@ -31,7 +31,7 @@ tplTest('test template with maps output', async ({ helper, expect }) => {
   expect(simpleMap['a']).eq('a');
 });
 
-tplTest(
+tplTest.concurrent(
   'test template json encoded strings in keys',
   async ({ helper, expect }) => {
     const key = '{"a":"b"}';

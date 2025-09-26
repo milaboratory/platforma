@@ -200,7 +200,7 @@ ${this.rawBackendMessage}
 const backendErrorSchema = z.object({
   errorType: z.string().default(''),
   message: z.string(),
-});
+}).passthrough();
 
 /**
  * Parses a Pl error and suberrors from the Pl backend.

@@ -216,7 +216,7 @@ tplTest.concurrent.for([
   await expect(async () => await mainResult.awaitStableValue()).rejects.toThrow(/the_test_error/);
 });
 
-tplTest('test error field absent', async ({ pl, helper, expect }) => {
+tplTest.concurrent('test error field absent', async ({ pl, helper, expect }) => {
   let inputResource: ResourceId = 0n as ResourceId; // hack
   const result = await helper.renderTemplate(
     true,
@@ -251,7 +251,7 @@ tplTest('test error field absent', async ({ pl, helper, expect }) => {
   ).rejects.toThrow(/not found and inputs locked/);
 });
 
-tplTest(
+tplTest.concurrent(
   'test await state with wildcards #1',
   async ({ pl, helper, expect }) => {
     let inputResource: ResourceId = 0n as ResourceId; // hack
@@ -298,7 +298,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'test await state with wildcards #2',
   async ({ pl, helper, expect }) => {
     let inputResource: ResourceId = 0n as ResourceId; // hack
@@ -360,7 +360,7 @@ tplTest(
   },
 );
 
-tplTest('test await state with match #1', async ({ pl, helper, expect }) => {
+tplTest.concurrent('test await state with match #1', async ({ pl, helper, expect }) => {
   let inputResource1: ResourceId = 0n as ResourceId; // hack
   const result = await helper.renderTemplate(
     true,
@@ -415,7 +415,7 @@ tplTest('test await state with match #1', async ({ pl, helper, expect }) => {
   expect(await mainResult.awaitStableValue()).eq('1:1');
 });
 
-tplTest(
+tplTest.concurrent(
   'test await state with match, check behaviour with errors',
   async ({ pl, helper, expect }) => {
     let inputResource1: ResourceId = 0n as ResourceId; // hack

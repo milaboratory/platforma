@@ -1,5 +1,109 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.100
+
+### Patch Changes
+
+- Updated dependencies [ed7a454]
+  - @platforma-sdk/model@1.43.21
+  - @milaboratories/milaboratories.monetization-test.model@1.0.17
+  - @platforma-sdk/ui-vue@1.43.21
+
+## 1.1.99
+
+### Patch Changes
+
+- Updated dependencies [0a11758]
+  - @platforma-sdk/model@1.43.18
+  - @milaboratories/milaboratories.monetization-test.model@1.0.16
+  - @platforma-sdk/ui-vue@1.43.18
+
+## 1.1.98
+
+### Patch Changes
+
+- @platforma-sdk/model@1.43.14
+- @platforma-sdk/ui-vue@1.43.14
+- @milaboratories/milaboratories.monetization-test.model@1.0.15
+
+## 1.1.97
+
+### Patch Changes
+
+- @platforma-sdk/model@1.43.2
+- @platforma-sdk/ui-vue@1.43.11
+
+## 1.1.96
+
+### Patch Changes
+
+- @platforma-sdk/model@1.43.2
+- @milaboratories/milaboratories.monetization-test.model@1.0.14
+- @platforma-sdk/ui-vue@1.43.2
+
+## 1.1.95
+
+### Patch Changes
+
+- Updated dependencies [e61fe33]
+  - @platforma-sdk/ui-vue@1.43.1
+
+## 1.1.94
+
+### Patch Changes
+
+- Updated dependencies [d60cc17]
+  - @platforma-sdk/ui-vue@1.43.0
+  - @platforma-sdk/model@1.43.0
+  - @milaboratories/milaboratories.monetization-test.model@1.0.13
+
+## 1.1.93
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.51
+- @platforma-sdk/ui-vue@1.42.53
+
+## 1.1.92
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @platforma-sdk/model@1.42.51
+  - @milaboratories/milaboratories.monetization-test.model@1.0.12
+  - @platforma-sdk/ui-vue@1.42.51
+
+## 1.1.91
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @platforma-sdk/model@1.42.47
+  - @milaboratories/milaboratories.monetization-test.model@1.0.11
+  - @platforma-sdk/ui-vue@1.42.47
+
+## 1.1.90
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.10
+- @platforma-sdk/model@1.42.46
+- @platforma-sdk/ui-vue@1.42.46
+
+## 1.1.89
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.36
+- @platforma-sdk/ui-vue@1.42.44
+
+## 1.1.88
+
+### Patch Changes
+
+- Updated dependencies [b80a619]
+  - @platforma-sdk/ui-vue@1.42.42
+
 ## 1.1.87
 
 ### Patch Changes

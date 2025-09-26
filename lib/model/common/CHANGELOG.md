@@ -1,5 +1,42 @@
 # @milaboratories/pl-model-common
 
+## 1.20.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+## 1.19.19
+
+### Patch Changes
+
+- 662eee0: PFrames - spec update to support artificialColumn join entry
+
+## 1.19.18
+
+### Patch Changes
+
+- 49160c4: Revert BlobDriver interface
+
+## 1.19.17
+
+### Patch Changes
+
+- 6bc20d1: add hidden for graphs columns
+
+## 1.19.16
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+
+## 1.19.15
+
+### Patch Changes
+
+- Updated dependencies [0ff2a1b]
+  - @milaboratories/pl-error-like@1.12.5
+
 ## 1.19.14
 
 ### Patch Changes

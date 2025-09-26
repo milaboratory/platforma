@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/helpers",
-  "version": "1.6.22",
+  "version": "1.9.0",
   "description": "",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -16,6 +16,7 @@
   "scripts": {
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
+    "test": "vitest run --coverage",
     "watch": "ts-builder build --target node --watch",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "lint": "eslint ."
@@ -25,13 +26,15 @@
     "./src/**/*"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "devDependencies": {
     "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@milaboratories/ts-configs": "workspace:*",
+    "@vitest/coverage-v8": "catalog:",
+    "vitest": "catalog:"
   }
 }

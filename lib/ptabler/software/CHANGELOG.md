@@ -1,5 +1,37 @@
 # @platforma-open/software-ptabler
 
+## 1.12.4
+
+### Patch Changes
+
+- d14b733: Allow DuckDB to spill on disk
+
+## 1.12.3
+
+### Patch Changes
+
+- 349375b: Ptabler - saveFrameDirect for exporting data as Parquet PFrame
+
+## 1.12.2
+
+### Patch Changes
+
+- d58f182: Use fresh python run environment with bugfix for pip on windows
+
+## 1.12.1
+
+### Patch Changes
+
+- 69c33c1: Re-release ptabler once again to check CI issues
+
+## 1.12.0
+
+### Minor Changes
+
+- c11e4aa: feat: Package ptabler and ptexter as Docker images
+
+  This change introduces Docker support for the ptabler and ptexter packages, allowing them to be distributed as Docker images. This simplifies deployment and ensures a consistent execution environment.
+
 ## 1.11.2
 
 ### Patch Changes

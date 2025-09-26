@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler.types
 
+## 1.11.3
+
+### Patch Changes
+
+- 349375b: Ptabler - saveFrameDirect for exporting data as Parquet PFrame
+
 ## 1.11.2
 
 ### Patch Changes

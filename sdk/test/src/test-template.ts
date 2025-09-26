@@ -16,7 +16,6 @@ import type {
 import {
   createRenderTemplate,
   field,
-  FieldRef,
   initDriverKit,
   loadTemplate,
   MiddleLayer,
@@ -25,9 +24,7 @@ import {
   toGlobalResourceId,
 } from '@milaboratories/pl-middle-layer';
 import type { PlTreeEntry, PlTreeNodeAccessor, SynchronizedTreeState } from '@milaboratories/pl-tree';
-import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
-import * as fsp from 'node:fs/promises';
 import path from 'node:path';
 import { plTest } from './test-pl';
 
@@ -138,14 +135,14 @@ export class TplTestHelpers {
     return new TestRenderResults(this.resultRootTree.entry(resultMapRid));
   }
 
-  createObject(tx: PlTransaction, value: any) {
+  createObject(tx: PlTransaction, value: unknown) {
     return tx.createValue(Pl.JsonObject, JSON.stringify(value));
   }
 
   async renderWorkflow(
     workflow: string | TemplateSpecAny,
     preRun: boolean,
-    args: Record<string, any> | Promise<Record<string, any>>,
+    args: Record<string, unknown> | Promise<Record<string, unknown>>,
     ops: WorkflowRenderOps = {},
   ): Promise<TestWorkflowResults> {
     const blockId = ops.blockId ?? randomUUID();
@@ -171,9 +168,9 @@ export class TplTestHelpers {
       },
     );
 
-    const exports: TestRenderResults<'result'> | undefined = undefined;
+    let exports: TestRenderResults<'result'> | undefined = undefined;
     if (ops.exportProcessor !== undefined) {
-      const exports = await this.renderTemplate(true, ops.exportProcessor, ['result'], (tx) => ({
+      exports = await this.renderTemplate(true, ops.exportProcessor, ['result'], (tx) => ({
         pf: tx.getFutureFieldValue(mainResult.resultEntry.rid, 'context', 'Input'),
       }));
     }

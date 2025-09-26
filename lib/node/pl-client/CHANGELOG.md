@@ -1,5 +1,55 @@
 # @milaboratories/pl-client
 
+## 2.13.2
+
+### Patch Changes
+
+- Updated dependencies [b979236]
+  - @milaboratories/pl-http@1.1.8
+
+## 2.13.1
+
+### Patch Changes
+
+- ee46338: [blocks/mixcr-clonotyping] after running the latest version of MiXCR errors during adding new blocks
+
+## 2.13.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/ts-helpers@1.5.0
+
+## 2.12.2
+
+### Patch Changes
+
+- 349375b: Ptabler - saveFrameDirect for exporting data as Parquet PFrame
+
+## 2.12.1
+
+### Patch Changes
+
+- 0432c59: Server platforma info for backend and blocks
+
+## 2.12.0
+
+### Minor Changes
+
+- fc0eb68: Default jitter settings for transactions have been increased.
+
+## 2.11.13
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/ts-helpers@1.4.7
+
 ## 2.11.12
 
 ### Patch Changes

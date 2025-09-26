@@ -1,5 +1,115 @@
 # @platforma-sdk/block-tools
 
+## 2.6.8
+
+### Patch Changes
+
+- Updated dependencies [b979236]
+  - @milaboratories/pl-http@1.1.8
+
+## 2.6.7
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/ts-helpers@1.5.0
+  - @milaboratories/pl-model-common@1.20.0
+  - @milaboratories/ts-helpers-oclif@1.1.29
+  - @milaboratories/pl-model-middle-layer@1.8.29
+
+## 2.6.6
+
+### Patch Changes
+
+- Updated dependencies [0432c59]
+  - @milaboratories/pl-model-middle-layer@1.8.28
+
+## 2.6.5
+
+### Patch Changes
+
+- Updated dependencies [fb57534]
+  - @milaboratories/pl-model-middle-layer@1.8.27
+
+## 2.6.4
+
+### Patch Changes
+
+- Updated dependencies [662eee0]
+  - @milaboratories/pl-model-middle-layer@1.8.26
+  - @milaboratories/pl-model-common@1.19.19
+
+## 2.6.3
+
+### Patch Changes
+
+- Updated dependencies [49160c4]
+  - @milaboratories/pl-model-common@1.19.18
+  - @milaboratories/pl-model-middle-layer@1.8.25
+
+## 2.6.2
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @milaboratories/pl-model-common@1.19.17
+  - @milaboratories/pl-model-middle-layer@1.8.24
+
+## 2.6.1
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @milaboratories/pl-model-middle-layer@1.8.23
+  - @milaboratories/ts-helpers@1.4.7
+  - @milaboratories/pl-model-common@1.19.16
+  - @milaboratories/ts-helpers-oclif@1.1.28
+
+## 2.6.0
+
+### Minor Changes
+
+- 0ff2a1b: **Enhanced force mode to support complete package and version removal**
+
+  Force mode in the registry now properly handles complete removal of manually deleted packages and versions:
+
+  - **Complete rebuild**: Force mode now starts with empty overviews instead of loading existing ones, ensuring overviews exactly match storage contents
+  - **Automatic cleanup**: Manually deleted packages/versions are automatically removed from registry overviews during force mode refresh
+  - **Pre-write snapshots**: Added safety feature that creates backup snapshots with `-prewrite-` suffix before making any changes in force mode
+  - **Comprehensive testing**: Added extensive test coverage for deletion scenarios
+
+  **Breaking changes**: None - this enhancement only affects force mode behavior and maintains backward compatibility for normal mode operations.
+
+  **Use case**: This resolves the issue where manually deleted packages would persist in registry overviews because the previous force mode only updated packages found in storage. Now force mode performs a complete rebuild, guaranteeing consistency between storage and overviews.
+
+- 0ff2a1b: **Registry Overview Snapshots & Enhanced Schema Backward Compatibility**
+
+  Added comprehensive snapshot functionality for registry overviews and improved Zod schema compatibility across the entire codebase.
+
+  ## Registry Snapshots (minor)
+
+  - **Automatic backup creation**: Overview files are automatically backed up during every registry update with gzipped compression
+  - **Organized storage structure**: Snapshots stored in `_overview_snapshots_v2/global/` and `per_package/` folders mirroring main hierarchy
+  - **Security features**: Millisecond timestamps with random suffixes prevent CDN retrieval attacks
+  - **CLI management tools**: Added `list-overview-snapshots` and `restore-overview-from-snapshot` commands with safety confirmations
+  - **Configurable behavior**: `skipSnapshotCreation` setting allows disabling snapshots when needed
+  - **Comprehensive testing**: Full test coverage ensures reliability
+
+  ## Schema Backward Compatibility (patch)
+
+  - **Strategic schema improvements**: Enhanced Zod schemas to prevent data loss during version transitions
+  - **Smart classification**: Applied `.passthrough()` to evolving data structures (overviews, manifests, registries, errors) while maintaining `.strict()` for closed types (content types, identifiers)
+  - **Wide compatibility coverage**: Updated schemas across block metadata, registry specifications, error structures, and deployment configurations
+  - **Forward compatibility**: Older versions will now preserve unknown fields instead of stripping them during parsing
+
+  These improvements ensure robust registry management with automatic backup capabilities and seamless schema evolution without breaking changes.
+
+### Patch Changes
+
+- Updated dependencies [0ff2a1b]
+  - @milaboratories/pl-model-middle-layer@1.8.22
+  - @milaboratories/pl-model-common@1.19.15
+
 ## 2.5.92
 
 ### Patch Changes

@@ -1,5 +1,19 @@
 # @milaboratories/ts-helpers-winston
 
+## 1.0.29
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/ts-helpers@1.5.0
+
+## 1.0.28
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @milaboratories/ts-helpers@1.4.7
+
 ## 1.0.27
 
 ### Patch Changes

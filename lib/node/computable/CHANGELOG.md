@@ -1,5 +1,31 @@
 # @milaboratories/computable
 
+## 2.7.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/ts-helpers@1.5.0
+
+## 2.6.8
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/ts-helpers@1.4.7
+
+## 2.6.7
+
+### Patch Changes
+
+- Updated dependencies [0ff2a1b]
+  - @milaboratories/pl-error-like@1.12.5
+
 ## 2.6.6
 
 ### Patch Changes

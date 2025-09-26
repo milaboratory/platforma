@@ -3,7 +3,7 @@ import { Pl, field, resourceType, toGlobalFieldId, toGlobalResourceId } from '@m
 import { sleep } from '@milaboratories/ts-helpers';
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure field' },
 ])(
@@ -40,7 +40,7 @@ tplTest.for([
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure field' },
 ])(
@@ -77,7 +77,7 @@ tplTest.for([
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure field' },
 ])(
@@ -130,7 +130,7 @@ tplTest.for([
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure field' },
 ])(
@@ -185,7 +185,7 @@ tplTest.for([
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure field' },
 ])(
@@ -220,33 +220,16 @@ tplTest.for([
 
     await sleep(3);
 
-    let actualResource: ResourceId | undefined = undefined;
-
-    // Now create and set the actual resource with the field
-    await pl.withWriteTx('setResource', async (tx) => {
+    // Create, populate, lock and publish the actual resource in one transaction
+    await pl.withWriteTx('setResource_locked_before_publish', async (tx) => {
       const actualResourceLocal = tx.createStruct(resourceType('std/map', '1'));
-      actualResource = await toGlobalResourceId(actualResourceLocal);
-      tx.setField(resourceHolderField!, actualResourceLocal);
-      await tx.commit();
-    });
-
-    await sleep(3);
-
-    // Now create and set the actual resource with the field
-    await pl.withWriteTx('setField', async (tx) => {
-      tx.createField(field(actualResource!, 'x'), 'Input');
+      tx.createField(field(actualResourceLocal, 'x'), 'Input');
       tx.setField(
-        field(actualResource!, 'x'),
+        field(actualResourceLocal, 'x'),
         tx.createValue(Pl.JsonObject, JSON.stringify('delayed-resource-value')),
       );
-      await tx.commit();
-    });
-
-    await sleep(3);
-
-    // Now create and set the actual resource with the field
-    await pl.withWriteTx('setField', async (tx) => {
-      tx.lock(actualResource!);
+      tx.lock(actualResourceLocal);
+      tx.setField(resourceHolderField!, actualResourceLocal);
       await tx.commit();
     });
 
@@ -256,7 +239,7 @@ tplTest.for([
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure field' },
 ])(

@@ -2,8 +2,7 @@ import polars as pl
 from typing import Literal, Optional, List
 from msgspec import Struct
 
-from .base import GlobalSettings, PStep, TableSpace
-
+from .base import PStep, StepContext
 
 class ColumnMapping(Struct):
     column: str
@@ -33,33 +32,9 @@ class Join(PStep, tag="join"):
     # This mirrors Polars' join coalesce behavior.
     coalesce: bool = True
 
-    def execute(self, table_space: TableSpace, global_settings: GlobalSettings) -> tuple[TableSpace, list[pl.LazyFrame]]:
-        """
-        Executes the join step.
-
-        Args:
-            table_space: The current tablespace containing named LazyFrames.
-            global_settings: Global settings for the workflow.
-
-        Returns:
-            A tuple containing the updated tablespace and an empty list (as this is not a sink operation).
-
-        Raises:
-            ValueError: If input tables are not found or if join keys are missing for non-cross joins.
-        """
-        if self.left_table not in table_space:
-            raise ValueError(
-                f"Left table '{self.left_table}' not found in tablespace. "
-                f"Available tables: {list(table_space.keys())}"
-            )
-        if self.right_table not in table_space:
-            raise ValueError(
-                f"Right table '{self.right_table}' not found in tablespace. "
-                f"Available tables: {list(table_space.keys())}"
-            )
-
-        left_lf = table_space[self.left_table]
-        right_lf = table_space[self.right_table]
+    def execute(self, ctx: StepContext):
+        left_lf = ctx.get_table(self.left_table)
+        right_lf = ctx.get_table(self.right_table)
 
         left_mapping = {}
         right_mapping = {}
@@ -125,7 +100,4 @@ class Join(PStep, tag="join"):
                 coalesce=self.coalesce # Pass the coalesce flag to Polars
             )
 
-        updated_table_space = table_space.copy()
-        updated_table_space[self.output_table] = joined_lf
-
-        return updated_table_space, []
+        ctx.put_table(self.output_table, joined_lf)

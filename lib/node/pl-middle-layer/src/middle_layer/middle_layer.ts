@@ -26,7 +26,7 @@ import {
 } from './ops';
 import { randomUUID } from 'node:crypto';
 import type { ProjectListEntry } from '../model';
-import type { AuthorMarker, ProjectMeta } from '@milaboratories/pl-model-middle-layer';
+import type { AuthorMarker, ProjectMeta, BlockPlatform } from '@milaboratories/pl-model-middle-layer';
 import { BlockUpdateWatcher } from '../block_registry/watcher';
 import type { QuickJSWASMModule } from 'quickjs-emscripten';
 import { getQuickJS } from 'quickjs-emscripten';
@@ -42,6 +42,7 @@ import { getDebugFlags } from '../debug';
 import { ProjectHelper } from '../model/project_helper';
 
 export interface MiddleLayerEnvironment {
+  dispose(): Promise<void>;
   readonly pl: PlClient;
   readonly runtimeCapabilities: RuntimeCapabilities;
   readonly logger: MiLogger;
@@ -90,6 +91,14 @@ export class MiddleLayer {
     this.pl = this.env.pl;
   }
 
+  /**
+   * Get the OS where backend is running.
+   * For old backend versions returns undefined.
+   */
+  public get serverPlatform(): BlockPlatform | undefined {
+    return this.pl.serverInfo.platform as BlockPlatform | undefined;
+  }
+
   /** Adds a runtime capability to the middle layer. */
   public addRuntimeCapability(requirement: SupportedRequirement, value: number | boolean = true): void {
     this.env.runtimeCapabilities.addSupportedRequirement(requirement, value);
@@ -124,7 +133,7 @@ export class MiddleLayer {
   ): Promise<void> {
     await withProjectAuthored(this.env.projectHelper, this.pl, rid, author, (prj) => {
       prj.setMeta(meta);
-    });
+    }, { name: 'setProjectMeta' });
     await this.projectListTree.refreshState();
   }
 
@@ -182,14 +191,16 @@ export class MiddleLayer {
     return prj;
   }
 
-  /** Deallocates all runtime resources consumed by this object and awaits
+  /**
+   * Deallocates all runtime resources consumed by this object and awaits
    * actual termination of event loops and other processes associated with
-   * them. */
+   * them.
+   */
   public async close() {
     await Promise.all([...this.openedProjectsByRid.values()].map((prj) => prj.destroy()));
     // this.env.quickJs;
     await this.projectListTree.terminate();
-    await this.env.retryHttpDispatcher.destroy();
+    await this.env.dispose();
     await this.pl.close();
   }
 
@@ -271,7 +282,7 @@ export class MiddleLayer {
       signer: driverKit.signer,
       logger,
       httpDispatcher: pl.httpDispatcher,
-      retryHttpDispatcher: retryHttpDispatcher,
+      retryHttpDispatcher,
       ops,
       bpPreparer,
       frontendDownloadDriver: driverKit.frontendDriver,
@@ -284,6 +295,10 @@ export class MiddleLayer {
       runtimeCapabilities,
       quickJs,
       projectHelper: new ProjectHelper(quickJs),
+      dispose: async () => {
+        await retryHttpDispatcher.destroy();
+        await driverKit.dispose();
+      },
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);

@@ -1,5 +1,29 @@
 # @milaboratories/helpers
 
+## 1.9.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+## 1.8.1
+
+### Patch Changes
+
+- 5cc2e06: Blob download time logging
+
+## 1.8.0
+
+### Minor Changes
+
+- fc0eb68: Vitest Worker Jitter
+
+## 1.7.0
+
+### Minor Changes
+
+- b2e7c82: - Introduce `getTestTimeout(fallback = 60_000)` that reads `TEST_TIMEOUT` from env.
+
 ## 1.6.22
 
 ### Patch Changes

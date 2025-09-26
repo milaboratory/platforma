@@ -15,3 +15,4 @@ export * from './ref';
 export * from './utag';
 export * from './value_or_error';
 export * from './base64';
+export * from './util';

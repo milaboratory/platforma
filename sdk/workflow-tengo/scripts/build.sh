@@ -14,9 +14,6 @@ cd "${script_dir}/.."
 echo "Cleaning unused imports in tengo code..."
 ./scripts/clean-imports.sh fix
 
-# echo "Removing comments before build to make templates more compact..."
-# ./scripts/cut-comments.sh compact
-
 echo "Running tengo check (pl-tengo check)..."
 pl-tengo check
 

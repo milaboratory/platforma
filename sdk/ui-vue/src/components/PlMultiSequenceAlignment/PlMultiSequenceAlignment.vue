@@ -17,12 +17,14 @@ import {
 import {
   computed,
   onBeforeMount,
+  onUnmounted,
   reactive,
+  useCssModule,
   useTemplateRef,
   watchEffect,
 } from 'vue';
 import {
-  sequenceLimit,
+  SEQUENCE_LIMIT,
   useLabelColumnsOptions,
   useMarkupColumnsOptions,
   useMultipleAlignmentData,
@@ -62,6 +64,8 @@ const props = defineProps<{
   readonly selection?: PlSelectionModel;
 }>();
 
+const classes = useCssModule();
+
 const sequenceColumns = reactive(useSequenceColumnsOptions(() => ({
   pFrame: props.pFrame,
   sequenceColumnPredicate: props.sequenceColumnPredicate,
@@ -84,6 +88,7 @@ const multipleAlignmentData = reactive(useMultipleAlignmentData(() => ({
   selection: props.selection,
   colorScheme: settings.colorScheme,
   alignmentParams: settings.alignmentParams,
+  shouldBuildPhylogeneticTree: settings.widgets.includes('tree'),
 })));
 
 const formatNumber = new Intl.NumberFormat('en').format;
@@ -104,7 +109,7 @@ const colorSchemeOptions = computed<
       label,
       value: {
         type: 'markup' as const,
-        columnId: value,
+        columnIds: value,
       },
     })),
   ],
@@ -167,15 +172,15 @@ watchEffect(() => {
     settingsToReset.push('labelColumnIds');
   }
 
-  const markupColumnId = settings.colorScheme?.type === 'markup'
-    ? settings.colorScheme.columnId
+  const markupColumnIds = settings.colorScheme?.type === 'markup'
+    ? settings.colorScheme.columnIds
     : undefined;
 
   if (
     !markupColumns.isLoading
-    && markupColumnId
+    && markupColumnIds
     && (markupColumns.data ?? []).every(
-      ({ value }) => !isJsonEqual(value, markupColumnId),
+      ({ value }) => !isJsonEqual(value, markupColumnIds),
     )
   ) {
     settingsToReset.push('colorScheme');
@@ -243,6 +248,10 @@ async function exportPdf() {
     }
   }
 }
+
+onUnmounted(() => {
+  multipleAlignmentData.data = undefined;
+});
 </script>
 
 <template>
@@ -258,8 +267,7 @@ async function exportPdf() {
     {{ error }}
   </PlAlert>
   <PlAlert
-    v-else-if="!multipleAlignmentData.isLoading
-      && (multipleAlignmentData.data?.sequences ?? []).length < 2"
+    v-else-if="!multipleAlignmentData.isLoading && !multipleAlignmentData.data"
     type="warn"
     icon
   >
@@ -274,25 +282,23 @@ async function exportPdf() {
       label="Visualization is limited"
     >
       MSA visualization supports {{ formatNumber(2) }} to
-      {{ formatNumber(sequenceLimit) }} sequences. Only the first
-      {{ formatNumber(sequenceLimit) }} will be displayed.
+      {{ formatNumber(SEQUENCE_LIMIT) }} sequences. Only the first
+      {{ formatNumber(SEQUENCE_LIMIT) }} will be displayed.
     </PlAlert>
     <PlSplash
       type="transparent"
-      :class="$style.splash"
+      :class="classes.splash"
       :loading="multipleAlignmentData.isLoading"
     >
-      <template v-if="multipleAlignmentData.data?.sequences.length">
-        <MultiSequenceAlignmentView
-          ref="msa"
-          :sequences="multipleAlignmentData.data.sequences"
-          :sequence-names="multipleAlignmentData.data.sequenceNames"
-          :label-rows="multipleAlignmentData.data.labelRows"
-          :residue-counts="multipleAlignmentData.data.residueCounts"
-          :highlight-image="multipleAlignmentData.data.highlightImage"
-          :widgets="settings.widgets"
-        />
-      </template>
+      <MultiSequenceAlignmentView
+        v-if="multipleAlignmentData.data"
+        ref="msa"
+        :sequences="multipleAlignmentData.data.sequences"
+        :labels="multipleAlignmentData.data.labels"
+        :highlight-legend="multipleAlignmentData.data.highlightLegend"
+        :phylogenetic-tree="multipleAlignmentData.data.phylogeneticTree"
+        :widgets="settings.widgets"
+      />
     </PlSplash>
   </template>
 </template>

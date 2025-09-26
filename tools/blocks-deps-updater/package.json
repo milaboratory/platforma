@@ -1,0 +1,22 @@
+{
+  "name": "@platforma-sdk/blocks-deps-updater",
+  "description": "Update dependencies in pnpm workspace catalog",
+  "type": "module",
+  "version": "2.0.0",
+  "scripts": {
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+  },
+  "files": [
+    "scripts/"
+  ],
+  "bin": {
+    "pl-blocks-deps-updater": "./scripts/updater.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "yaml": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/eslint-config": "workspace:*"
+  }
+}

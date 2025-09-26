@@ -245,7 +245,7 @@ class MyNewFeatureTests(unittest.TestCase):
 Run tests using:
 ```bash
 cd lib/ptabler/software
-../.venv/bin/python -m unittest discover --verbose -s src -p '*test*.py'
+.venv/bin/python -m unittest discover --verbose -s src -p '*test*.py'
 ```
 
 #### **Step 4: Tengo PT Library Implementation**

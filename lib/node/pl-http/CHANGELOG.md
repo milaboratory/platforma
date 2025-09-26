@@ -1,5 +1,11 @@
 # @milaboratories/pl-http
 
+## 1.1.8
+
+### Patch Changes
+
+- b979236: Undici tunning
+
 ## 1.1.7
 
 ### Patch Changes

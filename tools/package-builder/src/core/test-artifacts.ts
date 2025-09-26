@@ -9,8 +9,8 @@ export const BinaryCustomVersion: string = '4.4.4';
 
 export const EPNameAsset: string = 'pAsset';
 export const EPNameCustomName: string = 'custom-name';
-export const EPNameJavaEnvironment: string = 'java-test-entrypoint';
-export const EPNameJavaDependency: string = 'java-dep';
+export const EPNameJavaEnvironment: string = 'java-environment';
+export const EPNameJava: string = 'java-package';
 export const EPNameDocker: string = 'docker-test-entrypoint';
 
 export const PackageJsonNoSoftware = `{
@@ -35,7 +35,7 @@ export const CustomVersionArtifact = `{
   "root": "./src"
 }`;
 
-export const EnvironmentDependencyPackage = `{
+export const JavaPackage = `{
   "registry": {
     "name": "${BinaryRegistry}"
   },
@@ -45,7 +45,7 @@ export const EnvironmentDependencyPackage = `{
   "environment": ":${EPNameJavaEnvironment}"
 }`;
 
-export const EnvironmentPackage = `{
+export const JavaEnvironmentPackage = `{
   "registry": {
     "name": "${BinaryRegistry}"
   },
@@ -61,6 +61,22 @@ export const DockerAsset = `{
   "tag": "some-docker-tag",
   "entrypoint": ["/usr/bin/env", "printf"],
   "cmd": ["Hello, world!"]
+}`;
+
+export const EPNameMultiRootBinary = 'multi-root-bin';
+
+// This binary artifact intentionally has only part of roots, meaning
+// software is not available for some platforms.
+export const MultiRootBinary = `{
+  "type": "binary",
+  "registry": {
+    "name": "${BinaryRegistry}"
+  },
+
+  "roots": {
+    "linux-x64": "./linux-x64/",
+    "macosx-aarch64": "./macosx-aarch64/"
+  }
 }`;
 
 export const PackageJson = `{
@@ -82,12 +98,18 @@ export const PackageJson = `{
             "cmd": ["aaaa"]
           }
         },
-        "${EPNameJavaEnvironment}": {
-          "environment": { "artifact": ${EnvironmentPackage} }
-        },
-        "${EPNameJavaDependency}": {
+        "${EPNameMultiRootBinary}": {
           "binary": {
-            "artifact": ${EnvironmentDependencyPackage},
+            "artifact": ${MultiRootBinary},
+            "cmd": ["bbb"]
+          }
+        },
+        "${EPNameJavaEnvironment}": {
+          "environment": { "artifact": ${JavaEnvironmentPackage} }
+        },
+        "${EPNameJava}": {
+          "binary": {
+            "artifact": ${JavaPackage},
             "cmd": ["aaaa"]
           },
           "docker": {

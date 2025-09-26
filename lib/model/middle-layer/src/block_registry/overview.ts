@@ -18,7 +18,7 @@ export const BlockPackOverviewLegacy = z.object({
   meta: BlockPackMetaEmbeddedBytes,
   spec: BlockPackSpec,
   otherVersions: z.array(SemVer)
-});
+}).passthrough();
 export type BlockPackOverviewLegacy = z.infer<typeof BlockPackOverviewLegacy>;
 
 export const AnyChannel = 'any';
@@ -27,7 +27,7 @@ export const StableChannel = 'stable';
 export const VersionWithChannels = z.object({
   version: SemVer,
   channels: z.array(z.string())
-});
+}).passthrough();
 
 /**
  * Information about specific block pack version.
@@ -37,19 +37,23 @@ export const SingleBlockPackOverview = z.object({
   meta: BlockPackMetaEmbeddedBytes,
   featureFlags: FeatureFlags.optional(),
   spec: BlockPackSpec,
-});
+}).passthrough();
 export type SingleBlockPackOverview = z.infer<typeof SingleBlockPackOverview>;
 
 /**
  * Latest information about specific block pack. Contain information about latest version of the package.
  * */
-export const BlockPackOverview = z.object({
+export const BlockPackOverviewRaw = z.object({
   id: BlockPackIdNoVersion,
   latestByChannel: z.record(z.string(), SingleBlockPackOverview),
   allVersions: z.array(VersionWithChannels),
   registryId: z.string()
-});
+})
+export const BlockPackOverview = BlockPackOverviewRaw.passthrough();
 export type BlockPackOverview = z.infer<typeof BlockPackOverview>;
+
+export const BlockPackOverviewNoRegistryId = BlockPackOverviewRaw.omit({ registryId: true }).passthrough();
+export type BlockPackOverviewNoRegistryId = z.infer<typeof BlockPackOverviewNoRegistryId>;
 
 export const RegistryStatus = RegistryEntry.extend({
   status: z.union([z.literal('online'), z.literal('offline')])

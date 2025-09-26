@@ -1,5 +1,96 @@
 # @platforma-sdk/package-builder
 
+## 3.7.0
+
+### Minor Changes
+
+- f6ba1b9: Allow run environments to provide custom env variables for all runs
+
+## 3.6.0
+
+### Minor Changes
+
+- fff4606: Allow run environments to provide custom env variables for all runs
+
+## 3.5.4
+
+### Patch Changes
+
+- d635ab3: add docker descriptor validation
+
+## 3.5.3
+
+### Patch Changes
+
+- 6656782: render docker descriptor in dev mode
+
+## 3.5.2
+
+### Patch Changes
+
+- 44115b4: Check image existence in remote repo first (before push)
+- 44115b4: Fix autopush in ci
+
+## 3.5.1
+
+### Patch Changes
+
+- 5073f31: Fix autopush in ci
+
+## 3.5.0
+
+### Minor Changes
+
+- f127b97: Do not build docker images outside CI by default
+
+## 3.4.0
+
+### Minor Changes
+
+- 2aa207d: Nice error messages formatting for package-builder
+
+## 3.3.0
+
+### Minor Changes
+
+- ff7f75e: Allow to push docker image into alternative registry after building
+
+## 3.2.4
+
+### Patch Changes
+
+- 2b6f35f: add label for images
+
+## 3.2.3
+
+### Patch Changes
+
+- 7923343: Use arch-independent artifact info file when working with crossplatform package
+
+## 3.2.2
+
+### Patch Changes
+
+- 2a43498: Handle wrong ref name in docker entrypoint
+
+## 3.2.1
+
+### Patch Changes
+
+- 70bf87c: allow 'id-or-ref' back (BLAST example :) )
+
+## 3.2.0
+
+### Minor Changes
+
+- b20daba: Do read content-addressable docker tags and store intermediate build results in dist for correct pre-compilation
+
+## 3.1.0
+
+### Minor Changes
+
+- 7d7df12: Automatically publish all docker images from CI after build
+
 ## 3.0.2
 
 ### Patch Changes

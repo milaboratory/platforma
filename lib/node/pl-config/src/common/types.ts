@@ -21,9 +21,25 @@ export type PlLoggingSettings = {
 
 export type PlLogLevel = 'debug' | 'info' | 'error' | 'warn';
 
-export type PlLoggingDestination = {
+export type PlLoggingDestinationFile = {
+  type: 'file';
   path: string;
 };
+
+export type PlLoggingDestinationDir = {
+  type: 'dir';
+  path: string;
+};
+
+export type PlLoggingDestinationStream = {
+  type: 'stream';
+  name: 'stdout' | 'stderr';
+};
+
+export type PlLoggingDestination =
+  | PlLoggingDestinationFile
+  | PlLoggingDestinationDir
+  | PlLoggingDestinationStream;
 
 export type PlMonitoringSettings = {
   enabled: boolean;
@@ -131,7 +147,9 @@ export type PlControllerDataMainStoragesSettings = {
   downloadable: boolean;
 };
 
-export type PlControllerDataStoragesSettings = PlS3StorageSettings | PlFsStorageSettings;
+export type PlControllerDataStoragesSettings =
+  | PlS3StorageSettings
+  | PlFsStorageSettings;
 
 export type PlStorageID = { id: string };
 
@@ -139,10 +157,11 @@ export type PlCommonStorageSettings = {
   indexCachePeriod: string;
 };
 
-export type PlS3StorageSettings = PlStorageID &
-  PlS3StorageType &
-  PlCommonStorageSettings &
-  PlS3StorageTypeSettings;
+export type PlS3StorageSettings =
+  & PlStorageID
+  & PlS3StorageType
+  & PlCommonStorageSettings
+  & PlS3StorageTypeSettings;
 
 export type PlS3StorageType = { type: 'S3' };
 export type PlS3StorageTypeSettings = {
@@ -159,10 +178,11 @@ export type PlS3StorageTypeSettings = {
   uploadKeyPrefix: string;
 };
 
-export type PlFsStorageSettings = PlStorageID &
-  PlFsStorageType &
-  PlCommonStorageSettings &
-  PlFsStorageTypeSettings;
+export type PlFsStorageSettings =
+  & PlStorageID
+  & PlFsStorageType
+  & PlCommonStorageSettings
+  & PlFsStorageTypeSettings;
 
 type PlFsStorageType = { type: 'FS' };
 

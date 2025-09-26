@@ -1,8 +1,12 @@
 import type { DownloadDriver } from '@milaboratories/pl-drivers';
-import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
-import type { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
+import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
+import type { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import { isPlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import type { ComputableCtx, ComputableStableDefined } from '@milaboratories/computable';
+import type {
+  Computable,
+  ComputableCtx,
+  ComputableStableDefined,
+} from '@milaboratories/computable';
 import type {
   CalculateTableDataRequest,
   CalculateTableDataResponse,
@@ -31,6 +35,9 @@ import type {
   PColumnValues,
   DataInfo,
   PColumnValue,
+  RemoteBlobHandleAndSize,
+  RemoteBlobHandle,
+  ContentHandler,
 } from '@platforma-sdk/model';
 import {
   mapPObjectData,
@@ -42,11 +49,17 @@ import {
   PFrameDriverError,
   isAbortError,
   isPFrameDriverError,
+  uniqueBy,
 } from '@platforma-sdk/model';
 import { LRUCache } from 'lru-cache';
-import { allBlobs, makeDataInfoFromPColumnValues, mapBlobs, parseDataInfoResource, traverseParquetPartitionedResource } from './data';
+import {
+  makeDataInfoFromPColumnValues,
+  parseDataInfoResource,
+  traverseParquetChunkResource,
+} from './data';
 import { createHash } from 'node:crypto';
-import type { MiLogger } from '@milaboratories/ts-helpers';
+import { type MiLogger } from '@milaboratories/ts-helpers';
+import { mapValues } from 'es-toolkit';
 import {
   assertNever,
   emptyDir,
@@ -55,18 +68,185 @@ import {
   type PollResource,
 } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
-import { PFrameFactory } from '@milaboratories/pframes-rs-node';
-import * as fsp from 'node:fs/promises';
-import * as path from 'node:path';
+import { PFrameFactory, HttpHelpers } from '@milaboratories/pframes-rs-node';
+import path from 'node:path';
 import { getDebugFlags } from '../debug';
+import { Readable } from 'node:stream';
 
 type PColumnDataUniversal = PlTreeNodeAccessor | DataInfo<PlTreeNodeAccessor> | PColumnValues;
 
-function blobKey(res: ResourceInfo): string {
-  return String(res.id);
+function makeBlobId(res: PlTreeEntry): string {
+  return String(res.rid);
 }
 
-type InternalPFrameData = PFrameDef<PFrameInternal.DataInfo<ResourceInfo>>;
+type LocalBlobPoolEntry = PollResource<ComputableStableDefined<LocalBlobHandleAndSize>>;
+
+class LocalBlobPool
+  extends RefCountResourcePool<PlTreeEntry, ComputableStableDefined<LocalBlobHandleAndSize>>
+  implements PFrameInternal.PFrameDataSourceV2 {
+  constructor(private readonly blobDriver: DownloadDriver) {
+    super();
+  }
+
+  protected calculateParamsKey(params: PlTreeEntry): string {
+    return makeBlobId(params);
+  }
+
+  protected createNewResource(params: PlTreeEntry): ComputableStableDefined<LocalBlobHandleAndSize> {
+    return this.blobDriver.getDownloadedBlob(params);
+  }
+
+  public getByKey(blobId: string): ComputableStableDefined<LocalBlobHandleAndSize> {
+    const resource = super.tryGetByKey(blobId);
+    if (!resource) throw new PFrameDriverError(`Blob with id ${blobId} not found.`);
+    return resource;
+  }
+
+  public async preloadBlob(blobIds: string[], signal?: AbortSignal): Promise<void> {
+    try {
+      await Promise.all(blobIds.map((blobId) => this.getByKey(blobId).awaitStableFullValue(signal)));
+    } catch (err: unknown) {
+      if (!isAbortError(err)) throw err;
+    }
+  };
+
+  public async resolveBlobContent(blobId: string, signal?: AbortSignal): Promise<Uint8Array> {
+    const computable = this.getByKey(blobId);
+    const blob = await computable.awaitStableValue(signal);
+    return await this.blobDriver.getContent(blob.handle, { signal });
+  };
+}
+
+type RemoteBlobPoolEntry = PollResource<Computable<RemoteBlobHandleAndSize>>;
+
+class RemoteBlobPool
+  extends RefCountResourcePool<PlTreeEntry, Computable<RemoteBlobHandleAndSize>> {
+  constructor(private readonly blobDriver: DownloadDriver) {
+    super();
+  }
+
+  protected calculateParamsKey(params: PlTreeEntry): string {
+    return String(params.rid);
+  }
+
+  protected createNewResource(params: PlTreeEntry): Computable<RemoteBlobHandleAndSize> {
+    return this.blobDriver.getOnDemandBlob(params);
+  }
+
+  public async withContent<T>(
+    handle: RemoteBlobHandle,
+    options: {
+      range: PFrameInternal.FileRange;
+      signal: AbortSignal;
+      handler: ContentHandler<T>;
+    },
+  ): Promise<T> {
+    return await this.blobDriver.withContent(handle, {
+      range: {
+        from: options.range.start,
+        to: options.range.end + 1,
+      },
+      signal: options.signal,
+      handler: options.handler,
+    });
+  }
+}
+
+interface BlobStoreOptions extends PFrameInternal.ObjectStoreOptions {
+  remoteBlobPool: RemoteBlobPool;
+};
+
+class BlobStore extends PFrameInternal.BaseObjectStore {
+  private readonly remoteBlobPool: RemoteBlobPool;
+
+  constructor(options: BlobStoreOptions) {
+    super(options);
+    this.remoteBlobPool = options.remoteBlobPool;
+  }
+
+  public override async request(
+    filename: PFrameInternal.ParquetFileName,
+    params: {
+      method: PFrameInternal.HttpMethod;
+      range?: PFrameInternal.HttpRange;
+      signal: AbortSignal;
+      callback: (response: PFrameInternal.ObjectStoreResponse) => Promise<void>;
+    },
+  ): Promise<void> {
+    const blobId = filename.slice(0, -PFrameInternal.ParquetExtension.length);
+    const respond = async (response: PFrameInternal.ObjectStoreResponse): Promise<void> => {
+      try {
+        await params.callback(response);
+      } catch (error: unknown) {
+        this.logger(
+          'warn',
+          `PFrames blob store received unhandled rejection from HTTP handler: ${ensureError(error)}`,
+        );
+      }
+    };
+
+    try {
+      const computable = this.remoteBlobPool.tryGetByKey(blobId);
+      if (!computable) return await respond({ type: 'NotFound' });
+
+      let blob: RemoteBlobHandleAndSize;
+      try {
+        blob = await computable.getValue();
+      } catch (error: unknown) {
+        this.logger(
+          'error',
+          `PFrames blob store failed to get blob from computable: ${ensureError(error)}`,
+        );
+        return await respond({ type: 'InternalError' });
+      }
+      params.signal.throwIfAborted();
+
+      const translatedRange = this.translate(blob.size, params.range);
+      if (!translatedRange) {
+        return await respond({
+          type: 'RangeNotSatisfiable',
+          size: blob.size,
+        });
+      }
+
+      if (params.method === 'HEAD') {
+        return await respond({
+          type: 'Ok',
+          size: blob.size,
+          range: translatedRange,
+        });
+      }
+
+      this.logger(
+        'info',
+        `PFrames blob store requesting content for ${blobId}, range [${translatedRange.start}..=${translatedRange.end}]`,
+      );
+      return await this.remoteBlobPool.withContent(blob.handle, {
+        range: translatedRange,
+        signal: params.signal,
+        handler: async (data) => {
+          return await respond({
+            type: 'Ok',
+            size: blob.size,
+            range: translatedRange,
+            // eslint-disable-next-line n/no-unsupported-features/node-builtins
+            data: Readable.fromWeb(data),
+          });
+        },
+      });
+    } catch (error: unknown) {
+      if (!isAbortError(error)) {
+        this.logger(
+          'warn',
+          `PFrames blob store unhandled error: ${ensureError(error)}`,
+        );
+      }
+      return await respond({ type: 'InternalError' });
+    }
+  }
+}
+
+type InternalPFrameData = PFrameDef<PFrameInternal.DataInfo<PlTreeEntry>>;
 
 const valueTypes: ValueType[] = ['Int', 'Long', 'Float', 'Double', 'String', 'Bytes'] as const;
 
@@ -111,6 +291,24 @@ function migratePTableFilters<T>(
   };
 }
 
+function hasArtificialColumns<T>(entry: JoinEntry<T>): boolean {
+  switch (entry.type) {
+    case 'column':
+    case 'slicedColumn':
+    case 'inlineColumn':
+      return false;
+    case 'artificialColumn':
+      return true;
+    case 'full':
+    case 'inner':
+      return entry.entries.some(hasArtificialColumns);
+    case 'outer':
+      return hasArtificialColumns(entry.primary) || entry.secondary.some(hasArtificialColumns);
+    default:
+      assertNever(entry);
+  }
+}
+
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PTableCache {
@@ -119,7 +317,7 @@ class PTableCache {
   private readonly disposeListeners = new Map<PTableHandle, () => void>();
 
   constructor(
-    private readonly logger: MiLogger,
+    private readonly logger: PFrameInternal.Logger,
     private readonly ops: PFrameDriverOps,
   ) {
     this.global = new LRUCache<PTableHandle, PollResource<PTableHolder>>({
@@ -139,7 +337,7 @@ class PTableCache {
 
         resource.unref();
         if (getDebugFlags().logPFrameRequests) {
-          this.logger.info(`calculateTableData cache - removed PTable ${key}`);
+          this.logger('info', `calculateTableData cache - removed PTable ${key}`);
         }
       },
     });
@@ -148,10 +346,10 @@ class PTableCache {
   public cache(resource: PollResource<PTableHolder>, size: number): void {
     const key = resource.key as PTableHandle;
     if (getDebugFlags().logPFrameRequests) {
-      this.logger.info(`calculateTableData cache - added PTable ${key} with size ${size}`);
+      this.logger('info', `calculateTableData cache - added PTable ${key} with size ${size}`);
     }
 
-    this.global.set(key, resource, { size });
+    this.global.set(key, resource, { size: Math.max(size, 1) }); // 1 is minimum size to avoid cache evictions
 
     let perFrame = this.perFrame.get(resource.resource.pFrame);
     if (!perFrame) {
@@ -177,98 +375,99 @@ class PTableCache {
 }
 
 class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable {
-  public readonly pFramePromise: Promise<PFrameInternal.PFrameV11>;
+  public readonly pFramePromise: Promise<PFrameInternal.PFrameV12>;
   private readonly abortController = new AbortController();
-  private readonly blobIdToResource = new Map<string, ResourceInfo>();
-  private readonly blobHandleComputables = new Map<
-    string,
-    ComputableStableDefined<LocalBlobHandleAndSize>
-  >();
+  private readonly localBlobs: LocalBlobPoolEntry[] = [];
+  private readonly remoteBlobs: RemoteBlobPoolEntry[] = [];
 
   constructor(
-    private readonly blobDriver: DownloadDriver,
-    private readonly logger: MiLogger,
+    public readonly parquetServer: PFrameInternal.HttpServerInfo,
+    private readonly localBlobPool: LocalBlobPool,
+    private readonly remoteBlobPool: RemoteBlobPool,
+    logger: PFrameInternal.Logger,
     private readonly spillPath: string,
     columns: InternalPFrameData,
   ) {
-    const logFunc: PFrameInternal.Logger = (level, message) => this.logger[level](message);
+    const makeLocalBlobId = (blob: PlTreeEntry): string => {
+      const localBlob = this.localBlobPool.acquire(blob);
+      this.localBlobs.push(localBlob);
+      return localBlob.key;
+    };
 
-    for (const column of columns) {
-      for (const blob of allBlobs(column.data)) {
-        this.blobIdToResource.set(blobKey(blob), blob);
+    const makeRemoteBlobId = (blob: PlTreeEntry): string => {
+      const remoteBlob = this.remoteBlobPool.acquire(blob);
+      this.remoteBlobs.push(remoteBlob);
+      return remoteBlob.key + PFrameInternal.ParquetExtension;
+    };
+
+    const mapColumnData = (data: PFrameInternal.DataInfo<PlTreeEntry>): PFrameInternal.DataInfo<string> => {
+      switch (data.type) {
+        case 'Json':
+          return { ...data };
+        case 'JsonPartitioned':
+          return {
+            ...data,
+            parts: mapValues(data.parts, makeLocalBlobId),
+          };
+        case 'BinaryPartitioned':
+          return {
+            ...data,
+            parts: mapValues(data.parts, (v) => ({
+              index: makeLocalBlobId(v.index),
+              values: makeLocalBlobId(v.values),
+            })),
+          };
+        case 'ParquetPartitioned':
+          return {
+            ...data,
+            parts: mapValues(data.parts, (v) => ({
+              ...v,
+              data: makeRemoteBlobId(v.data),
+            })),
+          };
+        default:
+          assertNever(data);
       }
-    }
-    const distinctСolumns = [
-      ...new Map(columns.map((column) => ({
-        ...column,
-        data: mapBlobs(column.data, blobKey),
-      })).map(
-        (item) => [canonicalize(item)!, item] as const,
-      )).values(),
-    ];
+    };
+
+    const jsonifiedColumns = columns.map((column) => ({
+      ...column,
+      data: mapColumnData(column.data),
+    }));
 
     try {
-      const pFrame = PFrameFactory.createPFrame({ spillPath: this.spillPath, logger: logFunc });
+      const pFrame = PFrameFactory.createPFrame({ spillPath: this.spillPath, logger });
       pFrame.setDataSource(this);
+
       const promises: Promise<void>[] = [];
-      for (const column of distinctСolumns) {
+      for (const column of jsonifiedColumns) {
         pFrame.addColumnSpec(column.id, column.spec);
         promises.push(pFrame.setColumnData(column.id, column.data, { signal: this.disposeSignal }));
       }
+
       this.pFramePromise = Promise.all(promises)
         .then(() => pFrame)
         .catch((err) => {
           this.dispose();
           pFrame.dispose();
           throw new PFrameDriverError(
-            `PFrame creation failed asynchronously, columns: ${JSON.stringify(distinctСolumns)}, error: ${ensureError(err)}`,
+            `PFrame creation failed asynchronously, columns: ${JSON.stringify(jsonifiedColumns)}, error: ${ensureError(err)}`,
           );
         });
     } catch (err: unknown) {
       throw new PFrameDriverError(
-        `PFrame creation failed synchronously, columns: ${JSON.stringify(distinctСolumns)}, error: ${ensureError(err)}`,
+        `PFrame creation failed synchronously, columns: ${JSON.stringify(jsonifiedColumns)}, error: ${ensureError(err)}`,
       );
     }
   }
 
-  private getOrCreateComputableForBlob(blobId: string) {
-    let computable = this.blobHandleComputables.get(blobId);
-    if (computable !== undefined) return computable;
-
-    const blobResource = this.blobIdToResource.get(blobId);
-    if (blobResource === undefined) throw new PFrameDriverError(`Blob with id ${blobId} not found.`);
-
-    // precalculation of value tree will trigger the download proecess right away
-    computable = this.blobDriver.getDownloadedBlob(blobResource).withPreCalculatedValueTree();
-
-    this.blobHandleComputables.set(blobId, computable);
-
-    return computable;
-  }
-
   public readonly preloadBlob = async (blobIds: string[]): Promise<void> => {
-    const computables = blobIds.map((blobId) => this.getOrCreateComputableForBlob(blobId));
-    for (const computable of computables) {
-      try {
-        await computable.awaitStableFullValue(this.disposeSignal);
-      } catch (err: unknown) {
-        if (isAbortError(err)) {
-          break; // silence abort errors
-        }
-        throw err;
-      }
-    }
+    return await this.localBlobPool.preloadBlob(blobIds, this.disposeSignal);
   };
 
   public readonly resolveBlobContent = async (blobId: string): Promise<Uint8Array> => {
-    const computable = this.getOrCreateComputableForBlob(blobId);
-    const path = this.blobDriver.getLocalPath((await computable.awaitStableValue(this.disposeSignal)).handle);
-    return await fsp.readFile(path);
+    return await this.localBlobPool.resolveBlobContent(blobId, this.disposeSignal);
   };
-
-  public get parquetServer(): undefined {
-    return undefined;
-  }
 
   public get disposeSignal(): AbortSignal {
     return this.abortController.signal;
@@ -276,7 +475,8 @@ class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable
 
   private dispose(): void {
     this.abortController.abort();
-    for (const computable of this.blobHandleComputables.values()) computable.resetState();
+    this.localBlobs.forEach((entry) => entry.unref());
+    this.remoteBlobs.forEach((entry) => entry.unref());
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
@@ -319,15 +519,19 @@ type FullPTableDef = {
 };
 
 export type PFrameDriverOps = {
-  // Concurrency limits for `getUniqueValues` and `calculateTableData` requests
+  /** Port to run parquet HTTP server on. */
+  parquetServerPort: number;
+  /** Concurrency limits for `getUniqueValues` and `calculateTableData` requests */
   pFrameConcurrency: number;
-  // Concurrency limits for `getShape` and `getData` requests
+  /** Concurrency limits for `getShape` and `getData` requests */
   pTableConcurrency: number;
-  // Maximum number of `calculateTableData` results cached for each PFrame
+  /** Maximum number of `calculateTableData` results cached for each PFrame */
   pFrameCacheMaxCount: number;
-  // Maximum size of `calculateTableData` results cached for PFrames overall.
-  // The limit is soft, as the same table could be materialized with other requests and will not be deleted in such case.
-  // Also each table has predeccessors, overlapping predecessors will be counted twice, so the effective limit is smaller.
+  /**
+   * Maximum size of `calculateTableData` results cached for PFrames overall.
+   * The limit is soft, as the same table could be materialized with other requests and will not be deleted in such case.
+   * Also each table has predeccessors, overlapping predecessors will be counted twice, so the effective limit is smaller.
+   */
   pFramesCacheMaxSize: number;
 };
 
@@ -335,7 +539,10 @@ export type PFrameDriverOps = {
  * Extends public and safe SDK's driver API with methods used internally in the middle
  * layer and in tests.
  */
-export interface InternalPFrameDriver extends SdkPFrameDriver {
+export interface InternalPFrameDriver extends SdkPFrameDriver, AsyncDisposable {
+  /** Dispose the driver and all its resources. */
+  dispose(): Promise<void>;
+
   /**
    * Dump active PFrames allocations in pprof format.
    * The result of this function should be saved as `profile.pb.gz`.
@@ -407,31 +614,44 @@ export class PFrameDriver implements InternalPFrameDriver {
 
   public static async init(
     blobDriver: DownloadDriver,
-    logger: MiLogger,
+    miLogger: MiLogger,
     spillPath: string,
     ops: PFrameDriverOps,
   ): Promise<PFrameDriver> {
     const resolvedSpillPath = path.resolve(spillPath);
     await emptyDir(resolvedSpillPath);
-    return new PFrameDriver(blobDriver, logger, resolvedSpillPath, ops);
+
+    const logger: PFrameInternal.Logger = (level, message) => miLogger[level](message);
+    const localBlobPool = new LocalBlobPool(blobDriver);
+    const remoteBlobPool = new RemoteBlobPool(blobDriver);
+
+    const store = new BlobStore({ remoteBlobPool, logger });
+    const handler = HttpHelpers.createRequestHandler({ store: store });
+    const server = await HttpHelpers.createHttpServer({ handler, port: ops.parquetServerPort });
+
+    return new PFrameDriver(logger, server, localBlobPool, remoteBlobPool, resolvedSpillPath, ops);
   }
 
   private constructor(
-    private readonly blobDriver: DownloadDriver,
-    private readonly logger: MiLogger,
-    private readonly spillPath: string,
+    private readonly logger: PFrameInternal.Logger,
+    private readonly server: PFrameInternal.HttpServer,
+    localBlobPool: LocalBlobPool,
+    remoteBlobPool: RemoteBlobPool,
+    spillPath: string,
     ops: PFrameDriverOps,
   ) {
     const concurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pFrameConcurrency);
     this.frameConcurrencyLimiter = concurrencyLimiter;
     this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pTableConcurrency);
 
-    this.pTableCache = new PTableCache(this.logger, ops);
+    this.pTableCache = new PTableCache(logger, ops);
 
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
       constructor(
-        private readonly blobDriver: DownloadDriver,
-        private readonly logger: MiLogger,
+        private readonly parquetServer: PFrameInternal.HttpServerInfo,
+        private readonly localBlobPool: LocalBlobPool,
+        private readonly remoteBlobPool: RemoteBlobPool,
+        private readonly logger: PFrameInternal.Logger,
         private readonly spillPath: string,
       ) {
         super();
@@ -449,10 +669,10 @@ export class PFrameDriver implements InternalPFrameDriver {
 
       protected createNewResource(params: InternalPFrameData): PFrameHolder {
         if (getDebugFlags().logPFrameRequests)
-          logger.info(
+          this.logger('info',
             `PFrame creation (pFrameHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
           );
-        return new PFrameHolder(this.blobDriver, this.logger, this.spillPath, params);
+        return new PFrameHolder(this.parquetServer, this.localBlobPool, this.remoteBlobPool, this.logger, this.spillPath, params);
       }
 
       protected calculateParamsKey(params: InternalPFrameData): string {
@@ -463,7 +683,7 @@ export class PFrameDriver implements InternalPFrameDriver {
           throw new PFrameDriverError(`PFrame handle calculation failed, request: ${JSON.stringify(params, bigintReplacer)}, error: ${ensureError(err)}`);
         }
       }
-    })(this.blobDriver, this.logger, this.spillPath);
+    })(server.info, localBlobPool, remoteBlobPool, logger, spillPath);
 
     this.pTables = new (class extends RefCountResourcePool<
       FullPTableDef,
@@ -471,6 +691,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     > {
       constructor(
         private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>,
+        private readonly logger: PFrameInternal.Logger,
       ) {
         super();
       }
@@ -483,7 +704,7 @@ export class PFrameDriver implements InternalPFrameDriver {
 
       protected createNewResource(params: FullPTableDef): PTableHolder {
         if (getDebugFlags().logPFrameRequests) {
-          logger.info(
+          this.logger('info',
             `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
           );
         }
@@ -505,8 +726,8 @@ export class PFrameDriver implements InternalPFrameDriver {
           return new PTableHolder(handle, disposeSignal, sortedTable, predecessor);
         }
 
-        // 2. Filter
-        if (params.def.filters.length > 0) {
+        // 2. Filter (except the case with artificial columns where cartesian creates too many rows)
+        if (!hasArtificialColumns(params.def.src) && params.def.filters.length > 0) {
           const predecessor = this.acquire({
             ...params,
             def: {
@@ -522,7 +743,8 @@ export class PFrameDriver implements InternalPFrameDriver {
         // 1. Join
         const table = pFramePromise.then((pFrame) => pFrame.createTable({
           src: joinEntryToInternal(params.def.src),
-          filters: params.def.partitionFilters,
+          // `params.def.filters` would be non-empty only when join has artificial columns
+          filters: [...params.def.partitionFilters, ...params.def.filters],
         }));
         return new PTableHolder(handle, disposeSignal, table);
       }
@@ -534,7 +756,15 @@ export class PFrameDriver implements InternalPFrameDriver {
           throw new PFrameDriverError(`PTable handle calculation failed, request: ${JSON.stringify(params)}, error: ${ensureError(err)}`);
         }
       }
-    })(this.pFrames);
+    })(this.pFrames, logger);
+  }
+
+  async dispose(): Promise<void> {
+    return await this.server.stop();
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    return await this.dispose();
   }
 
   //
@@ -545,7 +775,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     def: PFrameDef<PColumnDataUniversal>,
     ctx: ComputableCtx,
   ): PFrameHandle {
-    const internalData: InternalPFrameData = def
+    const columns: InternalPFrameData = def
       .filter((c) => valueTypes.find((t) => t === c.spec.valueType))
       .map((c) =>
         mapPObjectData(c, (d) =>
@@ -553,12 +783,14 @@ export class PFrameDriver implements InternalPFrameDriver {
             ? parseDataInfoResource(d)
             : isDataInfo(d)
               ? d.type === 'ParquetPartitioned'
-                ? mapDataInfo(d, (a) => traverseParquetPartitionedResource(a))
-                : mapDataInfo(d, (a) => a.resourceInfo)
+                ? mapDataInfo(d, (a) => traverseParquetChunkResource(a))
+                : mapDataInfo(d, (a) => a.persist())
               : makeDataInfoFromPColumnValues(c.spec, d),
         ),
       );
-    const res = this.pFrames.acquire(internalData);
+    const distinctColumns = uniqueBy(columns, (column) => column.id);
+
+    const res = this.pFrames.acquire(distinctColumns);
     ctx.addOnDestroy(res.unref);
     return res.key as PFrameHandle;
   }
@@ -570,9 +802,10 @@ export class PFrameDriver implements InternalPFrameDriver {
     const def = migratePTableFilters(rawDef);
     const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
     const defIds = mapPTableDef(def, (c) => c.id);
+
     const res = this.pTables.acquire({ def: defIds, pFrameHandle });
     if (getDebugFlags().logPFrameRequests)
-      this.logger.info(
+      this.logger('info',
         `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${JSON.stringify(res)}): ${JSON.stringify(
           mapPTableDef(def, (c) => c.spec),
           bigintReplacer,
@@ -604,8 +837,10 @@ export class PFrameDriver implements InternalPFrameDriver {
             }]
           : [],
     };
+
     const { pFramePromise } = this.pFrames.getByKey(handle);
     const pFrame = await pFramePromise;
+
     const responce = await pFrame.findColumns(iRequest);
     return {
       hits: responce.hits
@@ -637,7 +872,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     signal?: AbortSignal,
   ): Promise<CalculateTableDataResponse> {
     if (getDebugFlags().logPFrameRequests) {
-      this.logger.info(
+      this.logger('info',
         `Call calculateTableData, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
     }
@@ -658,11 +893,19 @@ export class PFrameDriver implements InternalPFrameDriver {
           signal: combinedSignal,
         });
 
-        const size = await pTable.getFootprint({
+        const resultSize = await pTable.getFootprint({
+          withPredecessors: false,
+          signal: combinedSignal,
+        });
+        if (resultSize >= 2 * 1024 * 1024 * 1024) {
+          throw new PFrameDriverError(`Join results exceed 2GB, please add filters to shrink the result size`);
+        }
+
+        const overallSize = await pTable.getFootprint({
           withPredecessors: true,
           signal: combinedSignal,
         });
-        this.pTableCache.cache(table, size);
+        this.pTableCache.cache(table, overallSize);
 
         return spec.map((spec, i) => ({
           spec: spec,
@@ -681,7 +924,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     signal?: AbortSignal,
   ): Promise<UniqueValuesResponse> {
     if (getDebugFlags().logPFrameRequests) {
-      this.logger.info(
+      this.logger('info',
         `Call getUniqueValues, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
     }
@@ -741,8 +984,9 @@ export class PFrameDriver implements InternalPFrameDriver {
   }
 }
 
-function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEntryV3 {
-  switch (entry.type) {
+function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEntryV4 {
+  const type = entry.type;
+  switch (type) {
     case 'column':
       return {
         type: 'column',
@@ -754,6 +998,13 @@ function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEn
         columnId: entry.column,
         newId: entry.newId,
         axisFilters: entry.axisFilters,
+      };
+    case 'artificialColumn':
+      return {
+        type: 'artificialColumn',
+        columnId: entry.column,
+        newId: entry.newId,
+        axesIndices: entry.axesIndices,
       };
     case 'inlineColumn':
       return {
@@ -782,7 +1033,7 @@ function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEn
         secondary: entry.secondary.map((col) => joinEntryToInternal(col)),
       };
     default:
-      assertNever(entry);
+      throw new PFrameDriverError(`unsupported PFrame join entry type: ${type}`);
   }
 }
 
@@ -792,7 +1043,7 @@ function stableKeyFromFullPTableDef(data: FullPTableDef): string {
   return hash.digest().toString('hex');
 }
 
-function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<ResourceInfo>>[]): string {
+function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<PlTreeEntry>>[]): string {
   const orderedData = [...data].map((column) =>
     mapPObjectData(column, (r) => {
       let result: {
@@ -821,7 +1072,7 @@ function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<ResourceI
             keyLength: r.partitionKeyLength,
             payload: Object.entries(r.parts).map(([part, info]) => ({
               key: part,
-              value: blobKey(info),
+              value: makeBlobId(info),
             })),
           };
           break;
@@ -831,7 +1082,7 @@ function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<ResourceI
             keyLength: r.partitionKeyLength,
             payload: Object.entries(r.parts).map(([part, info]) => ({
               key: part,
-              value: [blobKey(info.index), blobKey(info.values)] as const,
+              value: [makeBlobId(info.index), makeBlobId(info.values)] as const,
             })),
           };
           break;
@@ -842,7 +1093,7 @@ function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<ResourceI
             payload: Object.entries(r.parts).map(([part, info]) => ({
               key: part,
               value: info.dataDigest || [
-                blobKey(info.data),
+                makeBlobId(info.data),
                 JSON.stringify({ axes: info.axes, column: info.column }),
               ] as const,
             })),

@@ -9,15 +9,19 @@ import {
   computed,
   onBeforeUnmount,
   shallowRef,
+  useCssModule,
   useTemplateRef,
   watchEffect,
 } from 'vue';
+import { cellSize } from './cell-size';
 import type { ResidueCounts } from './types';
 import { useMiPlots } from './useMiPlots';
 
-const { residueCounts } = defineProps<{
+const props = defineProps<{
   residueCounts: ResidueCounts;
 }>();
+
+const classes = useCssModule();
 
 const plotEl = useTemplateRef('plotEl');
 
@@ -59,84 +63,80 @@ const residueColors = {
   Z: palette.black,
 };
 
-const settings = computed<Settings | undefined>(() => {
-  return ({
-    type: 'discrete',
-    title: {
-      name: '',
-      show: false,
-    },
-    size: {
-      width: residueCounts.length * 20,
-      height: 80,
-      innerOffset: 0,
-      outerOffset: 0,
-    },
-    frame: {
-      type: 'empty',
-    },
-    xAxis: {
-      title: '',
-      showGrid: false,
-      showTicks: false,
-      hiddenLabels: true,
-    },
-    yAxis: {
-      title: '',
-      showGrid: false,
-      showTicks: false,
-      hiddenLabels: true,
-    },
-    y: {
+const settings = computed(() => ({
+  type: 'discrete',
+  title: {
+    name: '',
+    show: false,
+  },
+  size: {
+    width: props.residueCounts.length * cellSize.inline,
+    height: 80,
+    innerOffset: 0,
+    outerOffset: 0,
+  },
+  frame: {
+    type: 'empty',
+  },
+  xAxis: {
+    title: '',
+    showGrid: false,
+    showTicks: false,
+    hiddenLabels: true,
+  },
+  yAxis: {
+    title: '',
+    showGrid: false,
+    showTicks: false,
+    hiddenLabels: true,
+  },
+  y: {
+    type: 'column',
+    value: 'countKey',
+  },
+  primaryGrouping: {
+    columnName: {
       type: 'column',
-      value: 'countKey',
+      value: 'columnKey',
     },
-    primaryGrouping: {
-      columnName: {
-        type: 'column',
-        value: 'columnKey',
-      },
+  },
+  secondaryGrouping: {
+    columnName: {
+      type: 'column',
+      value: 'residueKey',
     },
-    secondaryGrouping: {
-      columnName: {
-        type: 'column',
-        value: 'residueKey',
-      },
-    },
-    layers: [{
-      type: 'logo',
-      aes: { fillColor: residueColors },
-    }],
+  },
+  layers: [{
+    type: 'logo',
+    aes: { fillColor: residueColors },
+  }],
+} satisfies Settings));
+
+const data = computed<DataByColumns>(() => {
+  const countKey: number[] = [];
+  const columnKey: number[] = [];
+  const residueKey: string[] = [];
+  for (const [columnIndex, column] of props.residueCounts.entries()) {
+    for (const [residue, count] of Object.entries(column)) {
+      if (residue === '-') continue;
+      countKey.push(count);
+      columnKey.push(columnIndex);
+      residueKey.push(residue);
+    }
+  }
+  return ({
+    type: 'columns',
+    id: `seq-logo-${crypto.randomUUID()}`,
+    values: { countKey, columnKey, residueKey },
   });
 });
-
-const data = computed<DataByColumns>(
-  () => {
-    const countKey: number[] = [];
-    const columnKey: number[] = [];
-    const residueKey: string[] = [];
-    for (const [columnIndex, column] of residueCounts.entries()) {
-      for (const [residue, count] of Object.entries(column)) {
-        if (residue === '-') continue;
-        countKey.push(count);
-        columnKey.push(columnIndex);
-        residueKey.push(residue);
-      }
-    }
-    return ({
-      type: 'columns',
-      id: `seq-logo-${crypto.randomUUID()}`,
-      values: { countKey, columnKey, residueKey },
-    });
-  },
-);
 
 const { miplots, error } = useMiPlots();
 
 const plot = shallowRef<ChartInterface>();
 
 watchEffect(async () => {
-  if (!settings.value || !plotEl.value || !miplots.value) return;
+  if (!plotEl.value || !miplots.value) return;
   if (!plot.value) {
     plot.value = miplots.value.newPlot(data.value, settings.value);
     plot.value.mount(plotEl.value);
@@ -154,5 +154,13 @@ onBeforeUnmount(() => {
   <PlAlert v-if="error" type="error">
     {{ error.message }}
   </PlAlert>
-  <div v-else ref="plotEl" />
+  <div v-else ref="plotEl" :class="classes.container" />
 </template>
+
+<style module>
+.container {
+  svg {
+    display: block;
+  }
+}
+</style>

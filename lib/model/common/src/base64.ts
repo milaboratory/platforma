@@ -1,3 +1,5 @@
+import type { WithImplicitCoercion } from 'node:buffer';
+
 export type Base64Compatible<T> = T extends WithImplicitCoercion<Uint8Array | readonly number[] | string> ? T : never;
 
 export type Base64Encoded<T = unknown> = Base64Compatible<T> extends never ? never : string & {

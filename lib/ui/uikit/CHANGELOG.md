@@ -1,5 +1,84 @@
 # @milaboratories/uikit
 
+## 2.4.19
+
+### Patch Changes
+
+- Updated dependencies [ed7a454]
+  - @platforma-sdk/model@1.43.21
+
+## 2.4.18
+
+### Patch Changes
+
+- Updated dependencies [0a11758]
+  - @platforma-sdk/model@1.43.18
+
+## 2.4.17
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/helpers@1.9.0
+  - @platforma-sdk/model@1.43.14
+
+## 2.4.16
+
+### Patch Changes
+
+- Updated dependencies [5cc2e06]
+  - @milaboratories/helpers@1.8.1
+  - @platforma-sdk/model@1.43.2
+
+## 2.4.15
+
+### Patch Changes
+
+- @platforma-sdk/model@1.43.2
+
+## 2.4.14
+
+### Patch Changes
+
+- Updated dependencies [d60cc17]
+  - @platforma-sdk/model@1.43.0
+
+## 2.4.13
+
+### Patch Changes
+
+- Updated dependencies [fc0eb68]
+  - @milaboratories/helpers@1.8.0
+  - @platforma-sdk/model@1.42.51
+
+## 2.4.12
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @platforma-sdk/model@1.42.51
+
+## 2.4.11
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @platforma-sdk/model@1.42.47
+
+## 2.4.10
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.46
+
+## 2.4.9
+
+### Patch Changes
+
+- Updated dependencies [b2e7c82]
+  - @milaboratories/helpers@1.7.0
+  - @platforma-sdk/model@1.42.36
+
 ## 2.4.8
 
 ### Patch Changes

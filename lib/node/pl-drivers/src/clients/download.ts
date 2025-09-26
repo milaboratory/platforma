@@ -2,6 +2,7 @@
 import type { GrpcClientProvider, GrpcClientProviderFactory } from '@milaboratories/pl-client';
 import { addRTypeToMetadata, stringifyWithResourceId } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
+import { PerfTimer } from '@milaboratories/helpers';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
@@ -11,11 +12,11 @@ import * as path from 'node:path';
 import { Readable } from 'node:stream';
 import type { Dispatcher } from 'undici';
 import type { LocalStorageProjection } from '../drivers/types';
-import type { DownloadOps, ContentHandler } from '../helpers/download';
-import { RemoteFileDownloader } from '../helpers/download';
+import { type ContentHandler, RemoteFileDownloader } from '../helpers/download';
 import { validateAbsolute } from '../helpers/validate';
 import type { DownloadAPI_GetDownloadURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
 import { DownloadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client';
+import { type GetContentOptions } from '@milaboratories/pl-model-common';
 
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
@@ -52,22 +53,33 @@ export class ClientDownload {
   async withBlobContent<T>(
     info: ResourceInfo,
     options: RpcOptions | undefined,
-    ops: DownloadOps,
+    ops: GetContentOptions,
     handler: ContentHandler<T>,
   ): Promise<T> {
     const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, ops.signal);
 
     const remoteHeaders = Object.fromEntries(headers.map(({ name, value }) => [name, value]));
-    this.logger.info(`download blob ${stringifyWithResourceId(info)} from url ${downloadUrl}, ops: ${JSON.stringify(ops)}`);
+    this.logger.info(
+      `blob ${stringifyWithResourceId(info)} download started, `
+      + `url: ${downloadUrl}, `
+      + `range: ${JSON.stringify(ops.range ?? null)}`,
+    );
 
-    return isLocal(downloadUrl)
+    const timer = PerfTimer.start();
+    const result = isLocal(downloadUrl)
       ? await this.withLocalFileContent(downloadUrl, ops, handler)
       : await this.remoteFileDownloader.withContent(downloadUrl, remoteHeaders, ops, handler);
+
+    this.logger.info(
+      `blob ${stringifyWithResourceId(info)} download finished, `
+      + `took: ${timer.elapsed()}`,
+    );
+    return result;
   }
 
   async withLocalFileContent<T>(
     url: string,
-    ops: DownloadOps,
+    ops: GetContentOptions,
     handler: ContentHandler<T>,
   ): Promise<T> {
     const { storageId, relativePath } = parseLocalUrl(url);
@@ -77,6 +89,7 @@ export class ClientDownload {
       const readOps = {
         start: ops.range?.from,
         end: ops.range?.to !== undefined ? ops.range.to - 1 : undefined,
+        signal: ops.signal,
       };
       let stream: fs.ReadStream | undefined;
       let handlerSuccess = false;
