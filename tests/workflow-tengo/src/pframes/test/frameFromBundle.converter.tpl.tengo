@@ -1,0 +1,43 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+
+maps := import("@platforma-sdk/workflow-tengo:maps")
+slices := import("@platforma-sdk/workflow-tengo:slices")
+
+self.awaitState("columnBundle", { wildcard: "*" }, "ref", "ResourceReady")
+self.awaitState("columnBundle", { wildcard: "*" }, "data", "InputsLocked")
+self.awaitState("columnBundle", { wildcard: "*" }, "spec", "ResourceReady")
+
+convertMapToPFrame := func(mapEntities) {
+	pf := pframes.pFrameBuilder()
+
+	for k, v in mapEntities {
+		pf.add(k, v.spec, v.data)
+	}
+
+	return pf.build()
+}
+
+self.body(func(inputs) {
+    axes := inputs.axes
+    columns := inputs.columns
+	columnBundle := inputs.columnBundle
+
+	wf := pt.workflow()
+	df := wf.frameFromColumnBundle(columnBundle, {
+        axes: axes,
+        columns: columns
+    }).save("file.tsv")
+
+	wfResult := wf.run()
+    fileResult := wfResult.getFile("file.tsv")
+
+    return {
+        file: fileResult
+    };
+})

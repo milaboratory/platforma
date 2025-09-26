@@ -1,0 +1,44 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+file := import("@platforma-sdk/workflow-tengo:file")
+render := import("@platforma-sdk/workflow-tengo:render")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+exportpframe := import("@platforma-sdk/workflow-tengo:pframes.export-pframe")
+
+converter := assets.importTemplate(":pframes.test.frameFromBundle.converter")
+
+axes := [
+    { column: "sampleId", spec: { name: "sampleId", type: "String" } },
+    { column: "cellId", spec: { name: "cellId", type: "String" } },
+    { column: "geneId", spec: { name: "geneId", type: "String" } }
+]
+
+wf.body(func(inputs) {
+    bundleBuilder := wf.createPBundleBuilder()
+    bundleBuilder.addAnchor("main", {
+        __isRef: true,
+        blockId: "b1",
+        name: "data"
+    })
+
+    for columnId in inputs.columnIds {
+        bundleBuilder.addById(columnId)
+    }
+
+	columnBundle := bundleBuilder.build()
+	
+    result := render.createEphemeral(converter, {
+        axes: axes,
+        columns: inputs.columnIds,
+        columnBundle: columnBundle
+    })
+
+    return {
+        exports: {},
+        outputs: {
+            file: file.exportFile(result.output("file"))
+        }
+    }
+})
