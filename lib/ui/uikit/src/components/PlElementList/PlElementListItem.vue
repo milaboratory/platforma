@@ -16,13 +16,17 @@ const props = defineProps<{
   isToggled: boolean;
   isPinnable: boolean;
   isPinned: boolean;
+  headClass: string | string[] | null;
+  bodyClass: string | string[] | null;
 }>();
 
 const slots = defineSlots<{
   title: (props: { item: T; index: number }) => unknown;
   content?: (props: { item: T; index: number }) => unknown;
+  after?: (props: { item: T; index: number }) => unknown;
 }>();
 const hasContentSlot = computed(() => slots['content'] !== undefined);
+const hasAfterSlot = computed(() => slots['after'] !== undefined);
 
 const emit = defineEmits<{
   (e: 'expand', item: T, index: number): void;
@@ -42,7 +46,7 @@ const emit = defineEmits<{
     }]"
   >
     <div
-      :class="[$style.head, {
+      :class="[$style.head, headClass, {
         [$style.clickable]: hasContentSlot,
       }]"
       @click="isExpandable && emit('expand', props.item, props.index)"
@@ -89,9 +93,12 @@ const emit = defineEmits<{
     </div>
     <div
       v-if="hasContentSlot && props.isExpanded"
-      :class="[$style.body, { [$style.disabled]: props.isToggled }]"
+      :class="[$style.body, bodyClass, { [$style.disabled]: props.isToggled }]"
     >
       <slot name="content" :item="props.item" :index="props.index" />
+    </div>
+    <div v-if="hasAfterSlot" >
+      <slot name="after" :item="props.item" :index="props.index" />
     </div>
   </div>
 </template>

@@ -14,6 +14,8 @@ const props = withDefaults(
     getItemKey?: (item: T, index: number) => K;
 
     itemClass?: string | string[] | ((item: T, index: number) => string | string[]);
+    itemClassHead?: string | string[] | ((item: T, index: number) => string | string[]);
+    itemClassBody?: string | string[] | ((item: T, index: number) => string | string[]);
     isActive?: (item: T, index: number) => boolean;
 
     disableDragging?: boolean;
@@ -43,6 +45,8 @@ const props = withDefaults(
     getItemKey: (item: T) => JSON.stringify(item) as K,
 
     itemClass: undefined,
+    itemClassHead: undefined,
+    itemClassBody: undefined,
     isActive: undefined,
 
     disableDragging: undefined,
@@ -78,6 +82,7 @@ const emits = defineEmits<{
 const slots = defineSlots<{
   ['item-title']: (props: { item: T; index: number }) => unknown;
   ['item-content']?: (props: { item: T; index: number }) => unknown;
+  ['item-after']?: (props: { item: T; index: number }) => unknown;
 }>();
 
 const dndSortingEnabled = computed((): boolean => {
@@ -243,6 +248,18 @@ const getItemClass = (item: T, index: number): null | string | string[] => {
   }
   return props.itemClass ?? null;
 };
+const getItemClassHead = (item: T, index: number): null | string | string[] => {
+  if (typeof props.itemClassHead === 'function') {
+    return props.itemClassHead(item, index);
+  }
+  return props.itemClassHead ?? null;
+};
+const getItemClassBody = (item: T, index: number): null | string | string[] => {
+  if (typeof props.itemClassBody === 'function') {
+    return props.itemClassBody(item, index);
+  }
+  return props.itemClassBody ?? null;
+};
 
 </script>
 
@@ -252,6 +269,8 @@ const getItemClass = (item: T, index: number): null | string | string[] => {
       <PlElementListItem
         v-for="(pinnedItem, pinnedIndex) in pinnedItemsRef" :key="pinnedKeysRef[pinnedIndex]"
         :class="[$style.item, getItemClass(pinnedItem, pinnedIndex)]"
+        :headClass="getItemClassHead(pinnedItem, pinnedIndex)"
+        :bodyClass="getItemClassBody(pinnedItem, pinnedIndex)"
 
         :index="pinnedIndex"
         :item="pinnedItem"
@@ -278,12 +297,17 @@ const getItemClass = (item: T, index: number): null | string | string[] => {
         <template v-if="slots['item-content']" #content="{ item, index }">
           <slot :index="index" :item="item" name="item-content" />
         </template>
+        <template v-if="slots['item-after']" #after="{ item, index }">
+          <slot :index="index" :item="item" name="item-after" />
+        </template>
       </PlElementListItem>
     </div>
     <div v-if="hasUnpinnedItems" ref="unpinnedContainerRef" :class="$style.list">
       <PlElementListItem
         v-for="(unpinnedItem, unpinnedIndex) in unpinnedItemsRef" :key="unpinnedKeysRef[unpinnedIndex]"
         :class="[$style.item, getItemClass(unpinnedItem, unpinnedIndex)]"
+        :headClass="getItemClassHead(unpinnedItem, unpinnedIndex)"
+        :bodyClass="getItemClassBody(unpinnedItem, unpinnedIndex)"
 
         :index="unpinnedIndex + (pinnedItemsRef?.length ?? 0)"
         :item="unpinnedItem"
@@ -309,6 +333,9 @@ const getItemClass = (item: T, index: number): null | string | string[] => {
         </template>
         <template v-if="slots['item-content']" #content="{ item, index }">
           <slot :index="index" :item="item" name="item-content" />
+        </template>
+        <template v-if="slots['item-after']" #after="{ item, index }">
+          <slot :index="index" :item="item" name="item-after" />
         </template>
       </PlElementListItem>
     </div>
