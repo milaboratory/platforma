@@ -35,7 +35,7 @@ export async function readBlobAsString(driverKit: MiddleLayerDriverKit, handle: 
 }
 
 tplTest(
-  'frameFromColumnBundle: should return frame from column bundle with filtered columns',
+  'pt frameFromColumnBundle test - should return frame from column bundle with filtered columns',
   async ({ helper, expect, driverKit }) => {
     const wf1 = await helper.renderWorkflow('pt.frameFromBundle.pool', false, {
       sampleIdAxesSpec,
