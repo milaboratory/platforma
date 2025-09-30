@@ -54,25 +54,28 @@ tplTest(
     const ctx = await awaitStableState(wf1.context());
 
     const wf2 = await helper.renderWorkflow('pt.frameFromBundle.exports', false, {
+      sampleIdAxesSpec,
+      cellIdAxesSpec,
+      geneIdAxesSpec,
       columnIds: [
         canonicalizeJson<AnchoredPColumnId>({
           name: 'clusterResolution',
-          axes: [{ name: 'sampleId', type: 'String' }],
+          axes: [sampleIdAxesSpec],
         }),
         canonicalizeJson<AnchoredPColumnId>({
           name: 'totalCounts',
           axes: [
-            { name: 'sampleId', type: 'String' },
-            { name: 'cellId', type: 'String' },
+            sampleIdAxesSpec,
+            cellIdAxesSpec,
           ],
         }),
         canonicalizeJson<FilteredPColumnId>({
           source: {
             name: 'expression',
             axes: [
-              { name: 'sampleId', type: 'String' },
-              { name: 'cellId', type: 'String' },
-              { name: 'geneId', type: 'String' },
+              sampleIdAxesSpec,
+              cellIdAxesSpec,
+              geneIdAxesSpec,
             ],
           },
           axisFilters: [[2, 'gene_1']],
@@ -81,9 +84,9 @@ tplTest(
           source: {
             name: 'complexity',
             axes: [
-              { name: 'sampleId', type: 'String' },
-              { name: 'cellId', type: 'String' },
-              { name: 'geneId', type: 'String' },
+              sampleIdAxesSpec,
+              cellIdAxesSpec,
+              geneIdAxesSpec,
             ],
           },
           axisFilters: [[2, 'gene_3']],
@@ -113,17 +116,17 @@ tplTest(
 const sampleIdAxesSpec = {
   name: 'sampleId',
   type: 'String',
-};
+} as const;
 
 const cellIdAxesSpec = {
   name: 'cellId',
   type: 'String',
-};
+} as const;
 
 const geneIdAxesSpec = {
   name: 'geneId',
   type: 'String',
-};
+} as const;
 
 const clusterResolutionSpec = {
   kind: 'PColumn',
@@ -132,7 +135,7 @@ const clusterResolutionSpec = {
   axesSpec: [
     sampleIdAxesSpec,
   ],
-};
+} as const;
 const clusterResolutionCSV = `sampleId,clusterResolution
 1,CL-1
 2,CL-2
@@ -146,7 +149,7 @@ const totalCountsSpec = {
     sampleIdAxesSpec,
     cellIdAxesSpec,
   ],
-};
+} as const;
 const totalCountsCSV = `sampleId,cellId,totalCounts
 1,cell_1,3000
 1,cell_2,4000
@@ -167,7 +170,7 @@ const complexitySpec = {
     cellIdAxesSpec,
     geneIdAxesSpec,
   ],
-};
+} as const;
 const complexityCSV = `sampleId,cellId,geneId,complexity
 1,cell_1,gene_1,0.75
 1,cell_1,gene_2,0.710
@@ -206,7 +209,7 @@ const expressionSpec = {
     cellIdAxesSpec,
     geneIdAxesSpec,
   ],
-};
+} as const;
 const expressionCSV = `sampleId,cellId,geneId,expression
 1,cell_1,gene_1,5
 1,cell_1,gene_2,10
