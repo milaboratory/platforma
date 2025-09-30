@@ -8,7 +8,7 @@ import { isAsyncDisposable, isDisposable } from './obj';
  */
 export type UnrefFn = () => void;
 
-export interface PollResource<R> {
+export interface PoolResource<R> {
   /** Resource itself */
   readonly resource: R;
 
@@ -22,6 +22,7 @@ export interface PollResource<R> {
 export abstract class RefCountResourcePool<P, R> {
   private readonly resources = new Map<string, RefCountEnvelop<R>>();
   private readonly disposeQueue = Promise.resolve();
+
   protected abstract createNewResource(params: P): R;
   protected abstract calculateParamsKey(params: P): string;
 
@@ -40,7 +41,7 @@ export abstract class RefCountResourcePool<P, R> {
     }
   }
 
-  public acquire(params: P): PollResource<R> {
+  public acquire(params: P): PoolResource<R> {
     const key = this.calculateParamsKey(params);
     let envelop = this.resources.get(key);
     if (envelop === undefined) {

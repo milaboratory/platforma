@@ -65,7 +65,7 @@ import {
   emptyDir,
   ConcurrencyLimitingExecutor,
   RefCountResourcePool,
-  type PollResource,
+  type PoolResource,
 } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
 import { PFrameFactory, HttpHelpers } from '@milaboratories/pframes-rs-node';
@@ -79,7 +79,7 @@ function makeBlobId(res: PlTreeEntry): string {
   return String(res.rid);
 }
 
-type LocalBlobPoolEntry = PollResource<ComputableStableDefined<LocalBlobHandleAndSize>>;
+type LocalBlobPoolEntry = PoolResource<ComputableStableDefined<LocalBlobHandleAndSize>>;
 
 class LocalBlobPool
   extends RefCountResourcePool<PlTreeEntry, ComputableStableDefined<LocalBlobHandleAndSize>>
@@ -117,7 +117,7 @@ class LocalBlobPool
   };
 }
 
-type RemoteBlobPoolEntry = PollResource<Computable<RemoteBlobHandleAndSize>>;
+type RemoteBlobPoolEntry = PoolResource<Computable<RemoteBlobHandleAndSize>>;
 
 class RemoteBlobPool
   extends RefCountResourcePool<PlTreeEntry, Computable<RemoteBlobHandleAndSize>> {
@@ -323,7 +323,7 @@ class PFramePool extends RefCountResourcePool<InternalPFrameData, PFrameHolder> 
     super();
   }
 
-  public acquire(params: InternalPFrameData): PollResource<PFrameHolder> {
+  public acquire(params: InternalPFrameData): PoolResource<PFrameHolder> {
     return super.acquire(params);
   }
 
@@ -425,7 +425,7 @@ class PTablePool extends RefCountResourcePool<FullPTableDef, PTableHolder> {
     return new PTableHolder(handle, disposeSignal, table);
   }
 
-  protected calculateParamsKey(params: FullPTableDef): string {
+  public calculateParamsKey(params: FullPTableDef): string {
     try {
       return stableKeyFromFullPTableDef(params);
     } catch (err: unknown) {
@@ -439,15 +439,15 @@ class PTablePool extends RefCountResourcePool<FullPTableDef, PTableHolder> {
 }
 
 class PTableCacheUi {
-  private readonly perFrame = new Map<PFrameHandle, LRUCache<PTableHandle, PollResource<PTableHolder>>>();
-  private readonly global: LRUCache<PTableHandle, PollResource<PTableHolder>>;
+  private readonly perFrame = new Map<PFrameHandle, LRUCache<PTableHandle, PoolResource<PTableHolder>>>();
+  private readonly global: LRUCache<PTableHandle, PoolResource<PTableHolder>>;
   private readonly disposeListeners = new Map<PTableHandle, () => void>();
 
   constructor(
     private readonly logger: PFrameInternal.Logger,
     private readonly ops: Pick<PFrameDriverOps, 'pFramesCacheMaxSize' | 'pFrameCacheMaxCount'>,
   ) {
-    this.global = new LRUCache<PTableHandle, PollResource<PTableHolder>>({
+    this.global = new LRUCache<PTableHandle, PoolResource<PTableHolder>>({
       maxSize: this.ops.pFramesCacheMaxSize,
       dispose: (resource, key, reason) => {
         if (reason === 'evict') {
@@ -470,7 +470,7 @@ class PTableCacheUi {
     });
   }
 
-  public cache(resource: PollResource<PTableHolder>, size: number): void {
+  public cache(resource: PoolResource<PTableHolder>, size: number): void {
     const key = resource.key as PTableHandle;
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info', `calculateTableData cache - added PTable ${key} with size ${size}`);
@@ -480,7 +480,7 @@ class PTableCacheUi {
 
     let perFrame = this.perFrame.get(resource.resource.pFrame);
     if (!perFrame) {
-      perFrame = new LRUCache<PTableHandle, PollResource<PTableHolder>>({
+      perFrame = new LRUCache<PTableHandle, PoolResource<PTableHolder>>({
         max: this.ops.pFrameCacheMaxCount,
         dispose: (_resource, key, reason) => {
           if (reason === 'evict') {
@@ -634,7 +634,7 @@ class PTableHolder implements AsyncDisposable {
     public readonly pFrame: PFrameHandle,
     pFrameDisposeSignal: AbortSignal,
     public readonly pTablePromise: Promise<PFrameInternal.PTableV7>,
-    public readonly predecessor?: PollResource<PTableHolder>,
+    private readonly predecessor?: PoolResource<PTableHolder>,
   ) {
     this.combinedDisposeSignal = AbortSignal.any([pFrameDisposeSignal, this.abortController.signal]);
   }
@@ -843,14 +843,14 @@ export class PFrameDriver implements InternalPFrameDriver {
     const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
     const defIds = mapPTableDef(def, (c) => c.id);
 
-    const res = this.pTables.acquire({ def: defIds, pFrameHandle });
+    const { key, unref } = this.pTables.acquire({ def: defIds, pFrameHandle });
     if (getDebugFlags().logPFrameRequests)
       this.logger('info',
-        `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${JSON.stringify(res)}): `
+        `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${key}): `
         + `${JSON.stringify(mapPTableDef(def, (c) => c.spec), bigintReplacer)}`,
       );
-    ctx.addOnDestroy(res.unref); // in addition to pframe unref added in createPFrame above
-    return res.key as PTableHandle;
+    ctx.addOnDestroy(unref); // in addition to pframe unref added in createPFrame above
+    return key as PTableHandle;
   }
 
   //
