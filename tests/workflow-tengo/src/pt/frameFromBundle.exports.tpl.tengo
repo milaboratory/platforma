@@ -7,7 +7,7 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 exportpframe := import("@platforma-sdk/workflow-tengo:pframes.export-pframe")
 
-converter := assets.importTemplate(":pframes.test.frameFromBundle.converter")
+converter := assets.importTemplate(":pt.frameFromBundle.converter")
 
 axes := [
     { column: "sampleId", spec: { name: "sampleId", type: "String" } },

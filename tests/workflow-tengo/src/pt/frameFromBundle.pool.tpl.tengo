@@ -1,0 +1,60 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+
+createCSVFile := func(csv) {
+    return exec.builder().
+        cpu(1).ram("50Mi").
+        cmd("env").
+        writeFile("data.csv", csv).
+        saveFile("data.csv").
+        run().
+        getFile("data.csv")
+}
+
+createPColumnsMap := func (csv, axes, columns) {
+    return xsv.importFile(createCSVFile(csv), "csv", {
+        axes: axes,
+        columns: columns
+    }, { splitDataAndSpec: true })
+}
+
+convertMapToPFrame := func(mapEntities) {
+	pf := pframes.pFrameBuilder()
+
+	for k, v in mapEntities {
+		pf.add(k, v.spec, v.data)
+	}
+
+	return pf.build()
+}
+
+wf.body(func(inputs) {
+    sampleIdAxesSpec := inputs.sampleIdAxesSpec
+    cellIdAxesSpec := inputs.cellIdAxesSpec
+    geneIdAxesSpec := inputs.geneIdAxesSpec
+    clusterResolutionSpec := inputs.clusterResolutionSpec
+    clusterResolutionCSV := inputs.clusterResolutionCSV
+    totalCountsSpec := inputs.totalCountsSpec
+    totalCountsCSV := inputs.totalCountsCSV
+    complexitySpec := inputs.complexitySpec
+    complexityCSV := inputs.complexityCSV
+    expressionSpec := inputs.expressionSpec
+    expressionCSV := inputs.expressionCSV    
+
+	clusterResolution := createPColumnsMap(clusterResolutionCSV, [{ column: "sampleId", spec: sampleIdAxesSpec }], [{ column: "clusterResolution", spec: clusterResolutionSpec }])
+    totalCounts := createPColumnsMap(totalCountsCSV, [{ column: "sampleId", spec: sampleIdAxesSpec }, { column: "cellId", spec: cellIdAxesSpec }], [{ column: "totalCounts", spec: totalCountsSpec }])
+    complexity := createPColumnsMap(complexityCSV, [{ column: "sampleId", spec: sampleIdAxesSpec }, { column: "cellId", spec: cellIdAxesSpec }, { column: "geneId", spec: geneIdAxesSpec }], [{ column: "complexity", spec: complexitySpec }])
+    expression := createPColumnsMap(expressionCSV, [{ column: "sampleId", spec: sampleIdAxesSpec }, { column: "cellId", spec: cellIdAxesSpec }, { column: "geneId", spec: geneIdAxesSpec }], [{ column: "expression", spec: expressionSpec }])
+
+	return {
+		exports: {
+            data: convertMapToPFrame(maps.merge(clusterResolution, totalCounts, complexity, expression))
+        },
+        outputs: {}
+	}
+})
