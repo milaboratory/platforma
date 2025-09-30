@@ -10,11 +10,7 @@ exportpframe := import("@platforma-sdk/workflow-tengo:pframes.export-pframe")
 converter := assets.importTemplate(":pt.frameFromBundle.converter")
 
 wf.body(func(inputs) {
-    axes := [
-        { column: inputs.sampleIdAxesSpec.name, spec: inputs.sampleIdAxesSpec },
-        { column: inputs.cellIdAxesSpec.name, spec: inputs.cellIdAxesSpec },
-        { column: inputs.geneIdAxesSpec.name, spec: inputs.geneIdAxesSpec }
-    ]
+    axes := inputs.axes
 
     bundleBuilder := wf.createPBundleBuilder()
     bundleBuilder.addAnchor("main", {
