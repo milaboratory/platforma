@@ -311,14 +311,126 @@ function hasArtificialColumns<T>(entry: JoinEntry<T>): boolean {
 
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
-class PTableCache {
+class PFramePool extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
+  constructor(
+    private readonly parquetServer: PFrameInternal.HttpServerInfo,
+    private readonly localBlobPool: LocalBlobPool,
+    private readonly remoteBlobPool: RemoteBlobPool,
+    private readonly logger: PFrameInternal.Logger,
+    private readonly spillPath: string,
+  ) {
+    super();
+  }
+
+  public acquire(params: InternalPFrameData): PollResource<PFrameHolder> {
+    return super.acquire(params);
+  }
+
+  public getByKey(key: PFrameHandle): PFrameHolder {
+    const resource = super.tryGetByKey(key);
+    if (!resource) throw new PFrameDriverError(`PFrame not found, handle = ${key}`);
+    return resource;
+  }
+
+  protected createNewResource(params: InternalPFrameData): PFrameHolder {
+    if (getDebugFlags().logPFrameRequests)
+      this.logger('info',
+        `PFrame creation (pFrameHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
+      );
+    return new PFrameHolder(this.parquetServer, this.localBlobPool, this.remoteBlobPool, this.logger, this.spillPath, params);
+  }
+
+  protected calculateParamsKey(params: InternalPFrameData): string {
+    try {
+      return stableKeyFromPFrameData(params);
+    } catch (err: unknown) {
+      if (isPFrameDriverError(err)) throw err;
+      throw new PFrameDriverError(`PFrame handle calculation failed, request: ${JSON.stringify(params, bigintReplacer)}, error: ${ensureError(err)}`);
+    }
+  }
+}
+
+class PTablePool extends RefCountResourcePool<
+  FullPTableDef,
+  PTableHolder
+> {
+  constructor(
+    private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>,
+    private readonly logger: PFrameInternal.Logger,
+  ) {
+    super();
+  }
+
+  public getByKey(key: PTableHandle): PTableHolder {
+    const resource = super.tryGetByKey(key);
+    if (!resource) throw new PFrameDriverError(`PTable not found, handle = ${key}`);
+    return resource;
+  }
+
+  protected createNewResource(params: FullPTableDef): PTableHolder {
+    if (getDebugFlags().logPFrameRequests) {
+      this.logger('info',
+        `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
+      );
+    }
+
+    const handle = params.pFrameHandle;
+    const { pFramePromise, disposeSignal } = this.pFrames.getByKey(handle);
+
+    // 3. Sort
+    if (params.def.sorting.length > 0) {
+      const predecessor = this.acquire({
+        ...params,
+        def: {
+          ...params.def,
+          sorting: [],
+        },
+      });
+      const { resource: { pTablePromise } } = predecessor;
+      const sortedTable = pTablePromise.then((pTable) => pTable.sort(params.def.sorting));
+      return new PTableHolder(handle, disposeSignal, sortedTable, predecessor);
+    }
+
+    // 2. Filter (except the case with artificial columns where cartesian creates too many rows)
+    if (!hasArtificialColumns(params.def.src) && params.def.filters.length > 0) {
+      const predecessor = this.acquire({
+        ...params,
+        def: {
+          ...params.def,
+          filters: [],
+        },
+      });
+      const { resource: { pTablePromise } } = predecessor;
+      const filteredTable = pTablePromise.then((pTable) => pTable.filter(params.def.filters));
+      return new PTableHolder(handle, disposeSignal, filteredTable, predecessor);
+    }
+
+    // 1. Join
+    const table = pFramePromise.then((pFrame) => pFrame.createTable({
+      src: joinEntryToInternal(params.def.src),
+      // `params.def.filters` would be non-empty only when join has artificial columns
+      filters: [...params.def.partitionFilters, ...params.def.filters],
+    }));
+    return new PTableHolder(handle, disposeSignal, table);
+  }
+
+  protected calculateParamsKey(params: FullPTableDef): string {
+    try {
+      return stableKeyFromFullPTableDef(params);
+    } catch (err: unknown) {
+      throw new PFrameDriverError(`PTable handle calculation failed, request: ${JSON.stringify(params)}, error: ${ensureError(err)}`);
+    }
+  }
+}
+
+class PTableCacheUi {
   private readonly perFrame = new Map<PFrameHandle, LRUCache<PTableHandle, PollResource<PTableHolder>>>();
   private readonly global: LRUCache<PTableHandle, PollResource<PTableHolder>>;
   private readonly disposeListeners = new Map<PTableHandle, () => void>();
 
   constructor(
     private readonly logger: PFrameInternal.Logger,
-    private readonly ops: PFrameDriverOps,
+    private readonly ops: Pick<PFrameDriverOps, 'pFramesCacheMaxSize' | 'pFrameCacheMaxCount'>,
   ) {
     this.global = new LRUCache<PTableHandle, PollResource<PTableHolder>>({
       maxSize: this.ops.pFramesCacheMaxSize,
@@ -602,9 +714,11 @@ export interface InternalPFrameDriver extends SdkPFrameDriver, AsyncDisposable {
 }
 
 export class PFrameDriver implements InternalPFrameDriver {
-  private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
-  private readonly pTables: RefCountResourcePool<FullPTableDef, PTableHolder>;
-  private readonly pTableCache: PTableCache;
+  private readonly pFrames: PFramePool;
+  private readonly pTables: PTablePool;
+
+  private readonly pTableCacheUi: PTableCacheUi;
+
   private readonly frameConcurrencyLimiter: ConcurrencyLimitingExecutor;
   private readonly tableConcurrencyLimiter: ConcurrencyLimitingExecutor;
 
@@ -644,119 +758,10 @@ export class PFrameDriver implements InternalPFrameDriver {
     this.frameConcurrencyLimiter = concurrencyLimiter;
     this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pTableConcurrency);
 
-    this.pTableCache = new PTableCache(logger, ops);
+    this.pFrames = new PFramePool(server.info, localBlobPool, remoteBlobPool, logger, spillPath);
+    this.pTables = new PTablePool(this.pFrames, logger);
 
-    this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
-      constructor(
-        private readonly parquetServer: PFrameInternal.HttpServerInfo,
-        private readonly localBlobPool: LocalBlobPool,
-        private readonly remoteBlobPool: RemoteBlobPool,
-        private readonly logger: PFrameInternal.Logger,
-        private readonly spillPath: string,
-      ) {
-        super();
-      }
-
-      public acquire(params: InternalPFrameData): PollResource<PFrameHolder> {
-        return super.acquire(params);
-      }
-
-      public getByKey(key: PFrameHandle): PFrameHolder {
-        const resource = super.tryGetByKey(key);
-        if (!resource) throw new PFrameDriverError(`PFrame not found, handle = ${key}`);
-        return resource;
-      }
-
-      protected createNewResource(params: InternalPFrameData): PFrameHolder {
-        if (getDebugFlags().logPFrameRequests)
-          this.logger('info',
-            `PFrame creation (pFrameHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
-          );
-        return new PFrameHolder(this.parquetServer, this.localBlobPool, this.remoteBlobPool, this.logger, this.spillPath, params);
-      }
-
-      protected calculateParamsKey(params: InternalPFrameData): string {
-        try {
-          return stableKeyFromPFrameData(params);
-        } catch (err: unknown) {
-          if (isPFrameDriverError(err)) throw err;
-          throw new PFrameDriverError(`PFrame handle calculation failed, request: ${JSON.stringify(params, bigintReplacer)}, error: ${ensureError(err)}`);
-        }
-      }
-    })(server.info, localBlobPool, remoteBlobPool, logger, spillPath);
-
-    this.pTables = new (class extends RefCountResourcePool<
-      FullPTableDef,
-      PTableHolder
-    > {
-      constructor(
-        private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>,
-        private readonly logger: PFrameInternal.Logger,
-      ) {
-        super();
-      }
-
-      public getByKey(key: PTableHandle): PTableHolder {
-        const resource = super.tryGetByKey(key);
-        if (!resource) throw new PFrameDriverError(`PTable not found, handle = ${key}`);
-        return resource;
-      }
-
-      protected createNewResource(params: FullPTableDef): PTableHolder {
-        if (getDebugFlags().logPFrameRequests) {
-          this.logger('info',
-            `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
-          );
-        }
-
-        const handle = params.pFrameHandle;
-        const { pFramePromise, disposeSignal } = this.pFrames.getByKey(handle);
-
-        // 3. Sort
-        if (params.def.sorting.length > 0) {
-          const predecessor = this.acquire({
-            ...params,
-            def: {
-              ...params.def,
-              sorting: [],
-            },
-          });
-          const { resource: { pTablePromise } } = predecessor;
-          const sortedTable = pTablePromise.then((pTable) => pTable.sort(params.def.sorting));
-          return new PTableHolder(handle, disposeSignal, sortedTable, predecessor);
-        }
-
-        // 2. Filter (except the case with artificial columns where cartesian creates too many rows)
-        if (!hasArtificialColumns(params.def.src) && params.def.filters.length > 0) {
-          const predecessor = this.acquire({
-            ...params,
-            def: {
-              ...params.def,
-              filters: [],
-            },
-          });
-          const { resource: { pTablePromise } } = predecessor;
-          const filteredTable = pTablePromise.then((pTable) => pTable.filter(params.def.filters));
-          return new PTableHolder(handle, disposeSignal, filteredTable, predecessor);
-        }
-
-        // 1. Join
-        const table = pFramePromise.then((pFrame) => pFrame.createTable({
-          src: joinEntryToInternal(params.def.src),
-          // `params.def.filters` would be non-empty only when join has artificial columns
-          filters: [...params.def.partitionFilters, ...params.def.filters],
-        }));
-        return new PTableHolder(handle, disposeSignal, table);
-      }
-
-      protected calculateParamsKey(params: FullPTableDef): string {
-        try {
-          return stableKeyFromFullPTableDef(params);
-        } catch (err: unknown) {
-          throw new PFrameDriverError(`PTable handle calculation failed, request: ${JSON.stringify(params)}, error: ${ensureError(err)}`);
-        }
-      }
-    })(this.pFrames, logger);
+    this.pTableCacheUi = new PTableCacheUi(logger, ops);
   }
 
   async dispose(): Promise<void> {
@@ -905,7 +910,7 @@ export class PFrameDriver implements InternalPFrameDriver {
           withPredecessors: true,
           signal: combinedSignal,
         });
-        this.pTableCache.cache(table, overallSize);
+        this.pTableCacheUi.cache(table, overallSize);
 
         return spec.map((spec, i) => ({
           spec: spec,
