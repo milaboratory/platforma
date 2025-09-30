@@ -23,8 +23,8 @@ export abstract class RefCountResourcePool<P, R> {
   private readonly resources = new Map<string, RefCountEnvelop<R>>();
   private readonly disposeQueue = Promise.resolve();
 
-  protected abstract createNewResource(params: P): R;
   protected abstract calculateParamsKey(params: P): string;
+  protected abstract createNewResource(params: P, key: string): R;
 
   private check(key: string) {
     const envelop = this.resources.get(key);
@@ -45,7 +45,7 @@ export abstract class RefCountResourcePool<P, R> {
     const key = this.calculateParamsKey(params);
     let envelop = this.resources.get(key);
     if (envelop === undefined) {
-      envelop = { refCount: 0, resource: this.createNewResource(params) };
+      envelop = { refCount: 0, resource: this.createNewResource(params, key) };
       this.resources.set(key, envelop);
     }
 
