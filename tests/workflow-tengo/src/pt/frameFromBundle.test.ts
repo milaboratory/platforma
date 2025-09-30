@@ -34,7 +34,7 @@ export async function readBlobAsString(driverKit: MiddleLayerDriverKit, handle: 
   return (await driverKit.blobDriver.getContent(handle)).toString();
 }
 
-tplTest(
+tplTest.concurrent(
   'pt frameFromColumnBundle test - should return frame from column bundle with filtered columns',
   async ({ helper, expect, driverKit }) => {
     const wf1 = await helper.renderWorkflow('pt.frameFromBundle.pool', false, {
@@ -110,7 +110,6 @@ tplTest(
       + `\n3\tcell_3\t7500\tCL-3\t124.0\t0.534\n`,
     );
   },
-  { concurrent: true },
 );
 
 const sampleIdAxesSpec = {
