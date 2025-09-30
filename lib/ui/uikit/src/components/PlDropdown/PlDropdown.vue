@@ -60,9 +60,9 @@ const props = withDefaults(
      */
     error?: unknown;
     /**
-     * If false there is only red border with non-empty error field, without a message
+     * Shows red border even without an error message
      */
-    showErrorMessage?: boolean;
+    errorStatus?: boolean;
     /**
      * Placeholder text shown when no value is selected.
      */
@@ -91,6 +91,10 @@ const props = withDefaults(
      * Option list item size
      */
     optionSize?: 'small' | 'medium';
+    /**
+     * Makes some of corners not rounded
+     * */
+    position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
   }>(),
   {
     label: '',
@@ -106,6 +110,7 @@ const props = withDefaults(
     arrowIconLarge: undefined,
     optionSize: 'small',
     options: undefined,
+    position: undefined,
   },
 );
 
@@ -146,10 +151,6 @@ const selectedIndex = computed(() => {
 });
 
 const computedError = computed(() => {
-  if (!props.showErrorMessage) {
-    return undefined;
-  }
-
   if (isLoadingOptions.value) {
     return undefined;
   }
@@ -324,7 +325,7 @@ watchPostEffect(() => {
       ref="rootRef"
       :tabindex="tabindex"
       class="pl-dropdown"
-      :class="{ open: data.open, error, disabled: isDisabled }"
+      :class="{ open: data.open, error: error || errorStatus, disabled: isDisabled }"
       @keydown="handleKeydown"
       @focusout="onFocusOut"
     >
@@ -375,7 +376,7 @@ watchPostEffect(() => {
           :option-size="optionSize"
           :select-option="selectOptionWrapper"
         />
-        <DoubleContour class="pl-dropdown__contour" />
+        <DoubleContour class="pl-dropdown__contour" :position="position" />
       </div>
     </div>
     <div v-if="computedError" class="pl-dropdown__error">{{ computedError }}</div>
