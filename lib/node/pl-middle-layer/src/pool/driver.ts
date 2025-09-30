@@ -178,8 +178,7 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
       try {
         await params.callback(response);
       } catch (error: unknown) {
-        this.logger(
-          'warn',
+        this.logger('warn',
           `PFrames blob store received unhandled rejection from HTTP handler: ${ensureError(error)}`,
         );
       }
@@ -193,8 +192,7 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
       try {
         blob = await computable.getValue();
       } catch (error: unknown) {
-        this.logger(
-          'error',
+        this.logger('error',
           `PFrames blob store failed to get blob from computable: ${ensureError(error)}`,
         );
         return await respond({ type: 'InternalError' });
@@ -217,9 +215,9 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
         });
       }
 
-      this.logger(
-        'info',
-        `PFrames blob store requesting content for ${blobId}, range [${translatedRange.start}..=${translatedRange.end}]`,
+      this.logger('info',
+        `PFrames blob store requesting content for ${blobId}, `
+        + `range [${translatedRange.start}..=${translatedRange.end}]`,
       );
       return await this.remoteBlobPool.withContent(blob.handle, {
         range: translatedRange,
@@ -236,8 +234,7 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
       });
     } catch (error: unknown) {
       if (!isAbortError(error)) {
-        this.logger(
-          'warn',
+        this.logger('warn',
           `PFrames blob store unhandled error: ${ensureError(error)}`,
         );
       }
@@ -250,7 +247,10 @@ type InternalPFrameData = PFrameDef<PFrameInternal.DataInfo<PlTreeEntry>>;
 
 const valueTypes: ValueType[] = ['Int', 'Long', 'Float', 'Double', 'String', 'Bytes'] as const;
 
-function migrateFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
+function migrateFilters(
+  filters: PTableRecordFilter[],
+  logger: PFrameInternal.Logger,
+): PTableRecordFilter[] {
   const filtersV1 = [];
   const filtersV2: PTableRecordSingleValueFilterV2[] = [];
   for (const filter of filters) {
@@ -266,7 +266,7 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
   }
   if (filtersV1.length > 0) {
     const filtersV1Json = JSON.stringify(filtersV1);
-    console.warn(
+    logger('warn',
       `type overriten from 'bySingleColumn' to 'bySingleColumnV2' for filters: ${filtersV1Json}`,
     );
   }
@@ -275,19 +275,20 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
 
 function migratePTableFilters<T>(
   def: Omit<PTableDef<T>, 'partitionFilters'> | PTableDef<T>,
+  logger: PFrameInternal.Logger,
 ): PTableDef<T> {
   if (!('partitionFilters' in def)) {
     // For old blocks assume all axes filters to be partition filters
     return {
       ...def,
-      partitionFilters: migrateFilters(def.filters.filter((f) => f.column.type === 'axis')),
-      filters: migrateFilters(def.filters.filter((f) => f.column.type === 'column')),
+      partitionFilters: migrateFilters(def.filters.filter((f) => f.column.type === 'axis'), logger),
+      filters: migrateFilters(def.filters.filter((f) => f.column.type === 'column'), logger),
     };
   }
   return {
     ...def,
-    partitionFilters: migrateFilters(def.partitionFilters),
-    filters: migrateFilters(def.filters),
+    partitionFilters: migrateFilters(def.partitionFilters, logger),
+    filters: migrateFilters(def.filters, logger),
   };
 }
 
@@ -335,9 +336,17 @@ class PFramePool extends RefCountResourcePool<InternalPFrameData, PFrameHolder> 
   protected createNewResource(params: InternalPFrameData): PFrameHolder {
     if (getDebugFlags().logPFrameRequests)
       this.logger('info',
-        `PFrame creation (pFrameHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
+        `PFrame creation (pFrameHandle = ${this.calculateParamsKey(params)}): `
+        + `${JSON.stringify(params, bigintReplacer)}`,
       );
-    return new PFrameHolder(this.parquetServer, this.localBlobPool, this.remoteBlobPool, this.logger, this.spillPath, params);
+    return new PFrameHolder(
+      this.parquetServer,
+      this.localBlobPool,
+      this.remoteBlobPool,
+      this.logger,
+      this.spillPath,
+      params,
+    );
   }
 
   protected calculateParamsKey(params: InternalPFrameData): string {
@@ -345,17 +354,18 @@ class PFramePool extends RefCountResourcePool<InternalPFrameData, PFrameHolder> 
       return stableKeyFromPFrameData(params);
     } catch (err: unknown) {
       if (isPFrameDriverError(err)) throw err;
-      throw new PFrameDriverError(`PFrame handle calculation failed, request: ${JSON.stringify(params, bigintReplacer)}, error: ${ensureError(err)}`);
+      throw new PFrameDriverError(
+        `PFrame handle calculation failed, `
+        + `request: ${JSON.stringify(params, bigintReplacer)}, `
+        + `error: ${ensureError(err)}`,
+      );
     }
   }
 }
 
-class PTablePool extends RefCountResourcePool<
-  FullPTableDef,
-  PTableHolder
-> {
+class PTablePool extends RefCountResourcePool<FullPTableDef, PTableHolder> {
   constructor(
-    private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>,
+    private readonly pFrames: PFramePool,
     private readonly logger: PFrameInternal.Logger,
   ) {
     super();
@@ -370,7 +380,8 @@ class PTablePool extends RefCountResourcePool<
   protected createNewResource(params: FullPTableDef): PTableHolder {
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info',
-        `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
+        `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): `
+        + `${JSON.stringify(params, bigintReplacer)}`,
       );
     }
 
@@ -418,7 +429,11 @@ class PTablePool extends RefCountResourcePool<
     try {
       return stableKeyFromFullPTableDef(params);
     } catch (err: unknown) {
-      throw new PFrameDriverError(`PTable handle calculation failed, request: ${JSON.stringify(params)}, error: ${ensureError(err)}`);
+      throw new PFrameDriverError(
+        `PTable handle calculation failed, `
+        + `request: ${JSON.stringify(params)}, `
+        + `error: ${ensureError(err)}`,
+      );
     }
   }
 }
@@ -484,6 +499,14 @@ class PTableCacheUi {
     this.disposeListeners.set(key, disposeListener);
     resource.resource.disposeSignal.addEventListener('abort', disposeListener);
   }
+}
+
+class PTableProvider {
+  constructor(
+    private readonly pTables: PTablePool,
+    private readonly logger: PFrameInternal.Logger,
+    private readonly ops: Pick<PFrameDriverOps, 'pTablesCacheMaxSize'>,
+  ) {}
 }
 
 class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable {
@@ -563,12 +586,16 @@ class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable
           this.dispose();
           pFrame.dispose();
           throw new PFrameDriverError(
-            `PFrame creation failed asynchronously, columns: ${JSON.stringify(jsonifiedColumns)}, error: ${ensureError(err)}`,
+            `PFrame creation failed asynchronously, `
+            + `columns: ${JSON.stringify(jsonifiedColumns)}, `
+            + `error: ${ensureError(err)}`,
           );
         });
     } catch (err: unknown) {
       throw new PFrameDriverError(
-        `PFrame creation failed synchronously, columns: ${JSON.stringify(jsonifiedColumns)}, error: ${ensureError(err)}`,
+        `PFrame creation failed synchronously, `
+        + `columns: ${JSON.stringify(jsonifiedColumns)}, `
+        + `error: ${ensureError(err)}`,
       );
     }
   }
@@ -724,6 +751,7 @@ export class PFrameDriver implements InternalPFrameDriver {
   private readonly pTables: PTablePool;
 
   private readonly pTableCacheUi: PTableCacheUi;
+  private readonly pTableProvider: PTableProvider;
 
   private readonly frameConcurrencyLimiter: ConcurrencyLimitingExecutor;
   private readonly tableConcurrencyLimiter: ConcurrencyLimitingExecutor;
@@ -768,6 +796,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     this.pTables = new PTablePool(this.pFrames, logger);
 
     this.pTableCacheUi = new PTableCacheUi(logger, ops);
+    this.pTableProvider = new PTableProvider(this.pTables, logger, ops);
   }
 
   async dispose(): Promise<void> {
@@ -810,17 +839,15 @@ export class PFrameDriver implements InternalPFrameDriver {
     rawDef: PTableDef<PColumn<PColumnDataUniversal>>,
     ctx: ComputableCtx,
   ): PTableHandle {
-    const def = migratePTableFilters(rawDef);
+    const def = migratePTableFilters(rawDef, this.logger);
     const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
     const defIds = mapPTableDef(def, (c) => c.id);
 
     const res = this.pTables.acquire({ def: defIds, pFrameHandle });
     if (getDebugFlags().logPFrameRequests)
       this.logger('info',
-        `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${JSON.stringify(res)}): ${JSON.stringify(
-          mapPTableDef(def, (c) => c.spec),
-          bigintReplacer,
-        )}`,
+        `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${JSON.stringify(res)}): `
+        + `${JSON.stringify(mapPTableDef(def, (c) => c.spec), bigintReplacer)}`,
       );
     ctx.addOnDestroy(res.unref); // in addition to pframe unref added in createPFrame above
     return res.key as PTableHandle;
@@ -890,7 +917,7 @@ export class PFrameDriver implements InternalPFrameDriver {
 
     const table = this.pTables.acquire({
       pFrameHandle: handle,
-      def: migratePTableFilters(request),
+      def: migratePTableFilters(request, this.logger),
     });
     const { resource: { pTablePromise, disposeSignal } } = table;
     const pTable = await pTablePromise;
@@ -947,7 +974,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     return await this.frameConcurrencyLimiter.run(async () => {
       return await pFrame.getUniqueValues({
         ...request,
-        filters: migrateFilters(request.filters),
+        filters: migrateFilters(request.filters, this.logger),
       }, {
         signal: combinedSignal,
       });
