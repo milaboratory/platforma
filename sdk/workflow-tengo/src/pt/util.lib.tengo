@@ -19,7 +19,7 @@ _COLUMN_SCHEMA := {
 	`spec`: spec.P_COLUMN_OWN_SPEC_SCHEMA
 }
 
-_PARAMS_SCHEMA := {
+_SAVE_FRAME_DIRECT_PARAMS_SCHEMA := {
 	// DataFrame columns to use as PColumn axes, order of axes in resulting columns
 	// would match the order of spec entries provided here
 	`axes`: [_AXIS_SCHEMA],
@@ -33,8 +33,8 @@ _PARAMS_SCHEMA := {
     `strict,?` : `bool`
 }
 
-validateParams := func(params) {
-	validation.assertType(params, _PARAMS_SCHEMA, "Invalid params structure")
+validateParamsForSaveFrameDirect := func(params) {
+	validation.assertType(params, _SAVE_FRAME_DIRECT_PARAMS_SCHEMA, "Invalid params structure")
 
     columns := {}
     ll.assert(len(params.axes) > 0, "At least one axis is required")
@@ -80,6 +80,19 @@ validateParams := func(params) {
         params.partitionKeyLength,
         len(params.axes)
     )
+}
+
+_FRAME_FROM_COLUMN_BUNDLE_PARAMS_SCHEMA := {
+	// DataFrame axes definitions
+	`axes`: [_AXIS_SCHEMA],
+    // ColumnBundle column names to include in the resulting DataFrame
+	`columns`: [`string`]
+}
+
+validateParamsForFrameFromColumnBundle := func(params) {
+	validation.assertType(params, _FRAME_FROM_COLUMN_BUNDLE_PARAMS_SCHEMA, "Invalid params structure")
+    ll.assert(len(params.axes) > 0, "At least one axis is required")
+    ll.assert(len(params.columns) > 0, "At least one column is required")
 }
 
 unique := func(list) {
@@ -171,7 +184,8 @@ makeFrameColumnRef := func(frameName, columnId) {
 }
 
 export ll.toStrict({
-	validateParams: validateParams,
+    validateParamsForSaveFrameDirect: validateParamsForSaveFrameDirect,
+	validateParamsForFrameFromColumnBundle: validateParamsForFrameFromColumnBundle,
     makeFrameSpecs: makeFrameSpecs,
     makeWriteFrameStep: makeWriteFrameStep,
     makeFrameColumnRef: makeFrameColumnRef

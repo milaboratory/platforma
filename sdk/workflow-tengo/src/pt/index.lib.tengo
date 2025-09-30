@@ -347,7 +347,19 @@ workflow := func() {
 			return _newDataFrame(self, finalDataFrameId)
 		},
 
+		/**
+		 * Create a frame from a column bundle. This allows constructing a DataFrame by joining multiple columns,
+		 * potentially with filters applied to axes.
+		 * 
+		 * @param bundle {object} - A column bundle object, typically created using `wf.createPBundleBuilder`.
+		 * @param options {map} - A map with the following fields:
+		 *   - `axes` {array} - An array of axis definitions. Each entry should be a map with:
+		 *   - `columns` {array} - An array of column definitions. Each entry should be a map with:
+		 * @returns {object} - A DataFrame object constructed from the column bundle.
+		 */
 		frameFromColumnBundle: func(bundle, options) {
+			util.validateParamsForFrameFromColumnBundle(options)
+
 			decodeColumn := func(columnId) {
 				decoded := undefined
 				if is_string(columnId) {
@@ -365,25 +377,17 @@ workflow := func() {
 			}
 
 			axes := options.axes
-			ll.assert(is_array(axes) && len(axes) > 0, "options.axes must be a non-empty array")
-			
 			columns := options.columns
-			ll.assert(is_array(columns) && len(columns) > 0, "options.columns must be a non-empty array")
-
 			tsvBuilder := pframes.tsvFileBuilder()
-
 			axesHeaders := []
 
 			for idx, axis in axes {
-				ll.assert(is_map(axis), "each axis entry must be a map")
-				ll.assert(is_map(axis.spec) && is_string(axis.column), "each axis entry must have a column and spec")
 				tsvBuilder.setAxisHeader(axis.spec, axis.column)
 				axesHeaders = append(axesHeaders, axis.column)
 			}
 
 			filteredColumns := []
 			for column in columns {
-				ll.assert(is_string(column), "each column entry must be a string")
 				if (isFilteredColumn(column)) {
 					filteredColumns = append(filteredColumns, column)
 				} else {
@@ -900,7 +904,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 */
 		saveFrameDirect: func(frameName, params) {
 			ll.assert(len(frameName) > 0, "frameName must be a non-empty string")
-			util.validateParams(params)
+			util.validateParamsForSaveFrameDirect(params)
 
 			specs := util.makeFrameSpecs(params)
 			parentWorkflow._saveFrameSpecs(frameName, specs)
