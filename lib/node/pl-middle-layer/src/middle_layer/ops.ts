@@ -174,6 +174,7 @@ export const DefaultDriverKitOpsSettings: Pick<
     pTableConcurrency: 1, // 1 joined table is read from disk at a time, which matches 1 table the user can view in the UI
     pFrameCacheMaxCount: 18, // SHM trees create 3 PTables per graphic, we want to cache 6 graphics per PFrame
     pFramesCacheMaxSize: 8 * 1024 * 1024 * 1024, // 8 GB, same as blob driver cache
+    pTablesCacheMaxSize: 32 * 1024 * 1024 * 1024, // 32 GB
   },
 };
 

@@ -645,6 +645,12 @@ export type PFrameDriverOps = {
    * Also each table has predeccessors, overlapping predecessors will be counted twice, so the effective limit is smaller.
    */
   pFramesCacheMaxSize: number;
+  /**
+   * Maximum size of `createPTable` results cached on disk.
+   * The limit is soft, as the same table could be materialized with other requests and will not be deleted in such case.
+   * Also each table has predeccessors, overlapping predecessors will be counted twice, so the effective limit is smaller.
+   */
+  pTablesCacheMaxSize: number;
 };
 
 /**
