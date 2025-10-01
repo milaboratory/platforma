@@ -1,6 +1,7 @@
 import typing
 import polars as pl
 import polars_hash  # noqa: F401 - import for side effects
+import polars_pf  # noqa: F401 - import for side effects
 from typing import Mapping
 
 
