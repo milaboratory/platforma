@@ -337,11 +337,12 @@ class PFramePool extends RefCountResourcePool<InternalPFrameData, PFrameHolder> 
   }
 
   protected createNewResource(params: InternalPFrameData, key: string): PFrameHolder {
-    if (getDebugFlags().logPFrameRequests)
+    if (getDebugFlags().logPFrameRequests) {
       this.logger('info',
         `PFrame creation (pFrameHandle = ${key}): `
         + `${JSON.stringify(params, bigintReplacer)}`,
       );
+    }
     return new PFrameHolder(
       this.parquetServer,
       this.localBlobPool,
@@ -360,12 +361,16 @@ class PFramePool extends RefCountResourcePool<InternalPFrameData, PFrameHolder> 
 }
 
 class PTableDefPool extends RefCountResourcePool<FullPTableDef, PTableDefHolder> {
+  constructor(private readonly logger: PFrameInternal.Logger) {
+    super();
+  }
+
   protected calculateParamsKey(params: FullPTableDef): string {
     return stableKeyFromFullPTableDef(params);
   }
 
-  protected createNewResource(params: FullPTableDef, _key: string): PTableDefHolder {
-    return new PTableDefHolder(params);
+  protected createNewResource(params: FullPTableDef, key: string): PTableDefHolder {
+    return new PTableDefHolder(params, key as PTableHandle, this.logger);
   }
 
   public getByKey(key: PTableHandle): PTableDefHolder {
@@ -464,7 +469,7 @@ class PTableCacheUi {
 
         resource.unref();
         if (getDebugFlags().logPFrameRequests) {
-          this.logger('info', `calculateTableData cache - removed PTable ${key}`);
+          logger('info', `calculateTableData cache - removed PTable ${key} (reason: ${reason})`);
         }
       },
     });
@@ -512,14 +517,14 @@ class PTableCacheModel {
 
   constructor(
     private readonly logger: PFrameInternal.Logger,
-    private readonly ops: Pick<PFrameDriverOps, 'pTablesCacheMaxSize'>,
+    ops: Pick<PFrameDriverOps, 'pTablesCacheMaxSize'>,
   ) {
     this.global = new LRUCache<PTableHandle, PoolResource<PTableHolder>>({
-      maxSize: this.ops.pTablesCacheMaxSize,
-      dispose: (resource, key) => {
+      maxSize: ops.pTablesCacheMaxSize,
+      dispose: (resource, key, reason) => {
         resource.unref();
         if (getDebugFlags().logPFrameRequests) {
-          this.logger('info', `createPTable cache - removed PTable ${key}`);
+          logger('info', `createPTable cache - removed PTable ${key} (reason: ${reason})`);
         }
       },
     });
@@ -531,17 +536,25 @@ class PTableCacheModel {
       this.logger('info', `createPTable cache - added PTable ${key} with size ${size}`);
     }
 
-    this.global.set(key, resource, { size: Math.max(size, 1) }); // 1 is minimum size to avoid cache evictions
+    const status: LRUCache.Status<PoolResource<PTableHolder>> = {};
+    this.global.set(key, resource, { size: Math.max(size, 1), status }); // 1 is minimum size to avoid cache evictions
 
-    if (!this.disposeListeners.has(key)) {
-      const disposeListener = () => {
-        this.global.delete(key);
+    if (status.maxEntrySizeExceeded) {
+      resource.unref();
+      if (getDebugFlags().logPFrameRequests) {
+        this.logger('info', `createPTable cache - removed PTable ${key} (maxEntrySizeExceeded)`);
+      }
+    } else {
+      if (!this.disposeListeners.has(key)) {
+        const disposeListener = () => {
+          this.global.delete(key);
 
-        this.disposeListeners.delete(key);
-        defDisposeSignal.removeEventListener('abort', disposeListener);
-      };
-      this.disposeListeners.add(key);
-      defDisposeSignal.addEventListener('abort', disposeListener);
+          this.disposeListeners.delete(key);
+          defDisposeSignal.removeEventListener('abort', disposeListener);
+        };
+        this.disposeListeners.add(key);
+        defDisposeSignal.addEventListener('abort', disposeListener);
+      }
     }
   }
 }
@@ -666,7 +679,15 @@ class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable
 class PTableDefHolder implements Disposable {
   private readonly abortController = new AbortController();
 
-  constructor(public readonly def: FullPTableDef) {}
+  constructor(
+    public readonly def: FullPTableDef,
+    private readonly pTableHandle: PTableHandle,
+    private readonly logger: PFrameInternal.Logger,
+  ) {
+    if (getDebugFlags().logPFrameRequests) {
+      this.logger('info', `PTable definition saved (pTableHandle = ${this.pTableHandle})`);
+    }
+  }
 
   public get disposeSignal(): AbortSignal {
     return this.abortController.signal;
@@ -674,6 +695,9 @@ class PTableDefHolder implements Disposable {
 
   [Symbol.dispose](): void {
     this.abortController.abort();
+    if (getDebugFlags().logPFrameRequests) {
+      this.logger('info', `PTable definition disposed (pTableHandle = ${this.pTableHandle})`);
+    }
   }
 }
 
@@ -845,7 +869,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pTableConcurrency);
 
     this.pFrames = new PFramePool(server.info, localBlobPool, remoteBlobPool, logger, spillPath);
-    this.pTableDefs = new PTableDefPool();
+    this.pTableDefs = new PTableDefPool(logger);
     this.pTables = new PTablePool(this.pFrames, logger);
 
     this.pTableCacheUi = new PTableCacheUi(logger, ops);
@@ -896,12 +920,10 @@ export class PFrameDriver implements InternalPFrameDriver {
     const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
     const defIds = mapPTableDef(def, (c) => c.id);
 
-    const { key, unref } = this.pTables.acquire({ def: defIds, pFrameHandle });
-    if (getDebugFlags().logPFrameRequests)
-      this.logger('info',
-        `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${key}): `
-        + `${JSON.stringify(mapPTableDef(def, (c) => c.spec), bigintReplacer)}`,
-      );
+    const { key, unref } = this.pTableDefs.acquire({ def: defIds, pFrameHandle });
+    if (getDebugFlags().logPFrameRequests) {
+      this.logger('info', `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${key})`);
+    }
     ctx.addOnDestroy(unref); // in addition to pframe unref added in createPFrame above
     return key as PTableHandle;
   }
