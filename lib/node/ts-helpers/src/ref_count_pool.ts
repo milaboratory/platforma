@@ -8,7 +8,7 @@ import { isAsyncDisposable, isDisposable } from './obj';
  */
 export type UnrefFn = () => void;
 
-export interface PollResource<R> {
+export interface PoolResource<R> extends Disposable {
   /** Resource itself */
   readonly resource: R;
 
@@ -22,8 +22,9 @@ export interface PollResource<R> {
 export abstract class RefCountResourcePool<P, R> {
   private readonly resources = new Map<string, RefCountEnvelop<R>>();
   private readonly disposeQueue = Promise.resolve();
-  protected abstract createNewResource(params: P): R;
+
   protected abstract calculateParamsKey(params: P): string;
+  protected abstract createNewResource(params: P, key: string): R;
 
   private check(key: string) {
     const envelop = this.resources.get(key);
@@ -40,11 +41,11 @@ export abstract class RefCountResourcePool<P, R> {
     }
   }
 
-  public acquire(params: P): PollResource<R> {
+  public acquire(params: P): PoolResource<R> {
     const key = this.calculateParamsKey(params);
     let envelop = this.resources.get(key);
     if (envelop === undefined) {
-      envelop = { refCount: 0, resource: this.createNewResource(params) };
+      envelop = { refCount: 0, resource: this.createNewResource(params, key) };
       this.resources.set(key, envelop);
     }
 
@@ -52,16 +53,18 @@ export abstract class RefCountResourcePool<P, R> {
     envelop.refCount++;
 
     let unrefereced = false;
+    const unref = () => {
+      if (unrefereced) return; // unref is idempotent, calling it many times have no effect
+      // subtracting ref count
+      envelop.refCount--;
+      unrefereced = true;
+      this.check(key);
+    };
     return {
       resource: envelop.resource,
       key,
-      unref: () => {
-        if (unrefereced) return; // unref is idempotent, calling it many times have no effect
-        // subtracting ref count
-        envelop.refCount--;
-        unrefereced = true;
-        this.check(key);
-      },
+      unref,
+      [Symbol.dispose]: unref,
     };
   }
 

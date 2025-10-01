@@ -214,8 +214,8 @@ catalogs:
       specifier: ^5.3.2
       version: 5.3.2
     lru-cache:
-      specifier: ^11.1.0
-      version: 11.1.0
+      specifier: ^11.2.2
+      version: 11.2.2
     mime-types:
       specifier: ^2.1.35
       version: 2.1.35
@@ -1581,7 +1581,7 @@ importers:
         version: 5.3.2
       lru-cache:
         specifier: 'catalog:'
-        version: 11.1.0
+        version: 11.2.2
       undici:
         specifier: 'catalog:'
         version: 7.16.0
@@ -1983,7 +1983,7 @@ importers:
         version: 1.39.10
       lru-cache:
         specifier: 'catalog:'
-        version: 11.1.0
+        version: 11.2.2
       quickjs-emscripten:
         specifier: 'catalog:'
         version: 0.31.0
@@ -2510,7 +2510,7 @@ importers:
         version: 3.1.0
       lru-cache:
         specifier: 'catalog:'
-        version: 11.1.0
+        version: 11.2.2
       vue:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.6.3)
@@ -2888,7 +2888,7 @@ importers:
         version: 2.1.0
       lru-cache:
         specifier: 'catalog:'
-        version: 11.1.0
+        version: 11.2.2
       mime-types:
         specifier: 'catalog:'
         version: 2.1.35
@@ -9599,6 +9599,10 @@ packages:
 
   lru-cache@11.1.0:
     resolution: {integrity: sha512-QIXZUBJUx+2zHUdQujWejBkcD9+cs94tLn0+YL8UrCh+D5sCXZ4c7LaEH48pNwRY3MLDgqUFyhlCyjJPf1WP0A==}
+    engines: {node: 20 || >=22}
+
+  lru-cache@11.2.2:
+    resolution: {integrity: sha512-F9ODfyqML2coTIsQpSkRHnLSZMtkU8Q+mSfcaIyKwy58u+8k5nvAYeiNhsyMARvzNcXJ9QfWVrcPsC9e9rAxtg==}
     engines: {node: 20 || >=22}
 
   lru-cache@5.1.1:
@@ -19573,6 +19577,8 @@ snapshots:
   lru-cache@10.4.3: {}
 
   lru-cache@11.1.0: {}
+
+  lru-cache@11.2.2: {}
 
   lru-cache@5.1.1:
     dependencies:
