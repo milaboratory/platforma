@@ -1,4 +1,5 @@
 from typing import List, Optional
+import os
 
 import polars as pl
 import polars_pf as ppf
@@ -6,6 +7,7 @@ from polars._typing import ParallelStrategy
 from polars_pf import CreateTableRequest
 
 from .base import PStep, StepContext
+from .util import normalize_path
 from ptabler.steps.io import ColumnSchema
 from ptabler.common import toPolarsType
 
@@ -21,6 +23,8 @@ class ReadFrame(PStep, tag="read_frame"):
     """Name to assign to the loaded DataFrame in the tablespace"""
     request: CreateTableRequest
     """Request to create the table"""
+    spill_path: Optional[str] = None,
+    """Spill path for PFrames, OS /tmp by default"""
     parallel: ParallelStrategy = "auto",
     """Parallel strategy to use for the read"""
     low_memory: bool = False,
@@ -31,12 +35,29 @@ class ReadFrame(PStep, tag="read_frame"):
     """Number of rows to read"""
 
     def execute(self, ctx: StepContext) -> None:
+        if not self.directory or not self.directory.strip():
+            raise ValueError("The 'directory' cannot be empty.")
+        if self.directory != os.path.basename(self.directory):
+            raise ValueError("The 'directory' must be a directory name, not a path.")
+        
+        directory_path = os.path.join(ctx.settings.root_folder, self.directory)
+        if not os.path.isdir(directory_path):
+            raise ValueError(f"The 'directory' is not an existing directory: {directory_path}")
+
+        if self.spill_path is not None:
+            spill_path = os.path.join(ctx.settings.root_folder, normalize_path(self.spill_path))
+            if not os.path.isdir(spill_path):
+                raise ValueError(f"The 'spill_path' is not an existing directory: {spill_path}")
+        
         lf: pl.LazyFrame = ppf.pframe_source(
-            self.directory,
+            directory_path,
             self.request,
+            #logger=ppf.logger,
+            spill_path=spill_path,
             parallel=self.parallel,
             low_memory=self.low_memory,
         )
+
         if self.schema:
             columns: list[pl.Expr] = []
             for col_spec in self.schema:
@@ -49,6 +70,8 @@ class ReadFrame(PStep, tag="read_frame"):
                     col_expr = col_expr.cast(toPolarsType(col_spec.type))
                 columns.append(col_expr)
             lf = lf.select(columns)
+        
         if self.n_rows is not None:
             lf = lf.limit(self.n_rows)
+        
         ctx.put_table(self.name, lf)
