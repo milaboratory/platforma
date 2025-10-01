@@ -1,0 +1,48 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+slices := import("@platforma-sdk/workflow-tengo:slices")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+
+createCSVFile := func(csv) {
+    return exec.builder().
+        cpu(1).ram("50Mi").
+        cmd("env").
+        writeFile("data.csv", csv).
+        saveFile("data.csv").
+        run().
+        getFile("data.csv")
+}
+
+createPColumnsMap := func (csv, axes, columns) {
+    return xsv.importFile(createCSVFile(csv), "csv", {
+        axes: axes,
+        columns: columns
+    }, { splitDataAndSpec: true })
+}
+
+convertMapToPFrame := func(mapEntities) {
+	pf := pframes.pFrameBuilder()
+
+	for k, v in mapEntities {
+		pf.add(k, v.spec, v.data)
+	}
+
+	return pf.build()
+}
+
+wf.body(func(inputs) {
+	return {
+		exports: {
+            data: convertMapToPFrame(
+                maps.merge(
+                    slices.map(inputs.pColumnsData, func(v) { return createPColumnsMap(v.data, v.axes, v.columns) })...
+                )
+            )
+        },
+        outputs: {}
+	}
+})

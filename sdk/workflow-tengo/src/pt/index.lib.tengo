@@ -347,6 +347,81 @@ workflow := func() {
 			return _newDataFrame(self, finalDataFrameId)
 		},
 
+		/**
+		 * Create a frame from a column bundle. This allows constructing a DataFrame by joining multiple columns,
+		 * potentially with filters applied to axes.
+		 * 
+		 * @param bundle {object} - A column bundle object, typically created using `wf.createPBundleBuilder`.
+		 * @param options {map} - A map with the following fields:
+		 *   - `axes` {array} - An array of axis definitions. Each entry should be a map with:
+		 *   - `columns` {array} - An array of column definitions. Each entry should be a map with:
+		 * @returns {object} - A DataFrame object constructed from the column bundle.
+		 */
+		frameFromColumnBundle: func(bundle, options) {
+			util.validateParamsForFrameFromColumnBundle(options)
+
+			decodeColumn := func(columnId) {
+				decoded := undefined
+				if is_string(columnId) {
+					decoded = json.decode(columnId)
+				} else if is_map(columnId) {
+					decoded = columnId
+				} else {
+					ll.panic("Invalid column ID type. Expected string or object.")
+				}
+				return decoded
+			}
+			isFilteredColumn := func(columnId) {
+				decoded := decodeColumn(columnId)
+				return is_map(decoded) && !is_undefined(decoded.source) && !is_undefined(decoded.axisFilters)
+			}
+
+			axes := options.axes
+			columns := options.columns
+			tsvBuilder := pframes.tsvFileBuilder()
+			axesHeaders := []
+
+			for idx, axis in axes {
+				tsvBuilder.setAxisHeader(axis.spec, axis.column)
+				axesHeaders = append(axesHeaders, axis.column)
+			}
+
+			filteredColumns := []
+			for column in columns {
+				if (isFilteredColumn(column)) {
+					filteredColumns = append(filteredColumns, column)
+				} else {
+					tsvBuilder.add(bundle.getColumn(column))
+				}
+			}
+			
+			mainDF := self.frame(tsvBuilder.buildForPT())
+
+			for column in filteredColumns {
+				decoded := decodeColumn(column)
+				source := decoded.source
+				axisFilters := decoded.axisFilters
+
+				tsv := pframes.tsvFileBuilder()
+				for axis in axes {
+					tsv.setAxisHeader(axis.spec, axis.column)
+				}
+				tsv.add(bundle.getColumn(source), { header: column })
+				df := self.frame(tsv.buildForPT())
+				joinColumns := slices.map(axes, func(axis) { return axis.column })
+				for axisFilter in axisFilters {
+					id := axesHeaders[axisFilter[0]]
+					value := axisFilter[1]
+					df = df.filter(exp.col(id).eq(exp.lit(value))).withoutColumns(id)
+					joinColumns = slices.filter(joinColumns, func(c) { return c != id } )
+				}
+
+				mainDF = mainDF.join(df, { on: joinColumns })
+			}
+
+			return mainDF
+		},
+
 		_newAnonymousDataFrameId: func() {
 			anonymousDFCounter += 1
 			return "anonymous_" + string(anonymousDFCounter)
@@ -829,7 +904,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 */
 		saveFrameDirect: func(frameName, params) {
 			ll.assert(len(frameName) > 0, "frameName must be a non-empty string")
-			util.validateParams(params)
+			util.validateParamsForSaveFrameDirect(params)
 
 			specs := util.makeFrameSpecs(params)
 			parentWorkflow._saveFrameSpecs(frameName, specs)
