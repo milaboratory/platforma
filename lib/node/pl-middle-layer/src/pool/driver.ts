@@ -383,6 +383,7 @@ class PTableDefPool extends RefCountResourcePool<FullPTableDef, PTableDefHolder>
 class PTablePool extends RefCountResourcePool<FullPTableDef, PTableHolder> {
   constructor(
     private readonly pFrames: PFramePool,
+    private readonly pTableDefs: PTableDefPool,
     private readonly logger: PFrameInternal.Logger,
   ) {
     super();
@@ -403,6 +404,9 @@ class PTablePool extends RefCountResourcePool<FullPTableDef, PTableHolder> {
     const handle = params.pFrameHandle;
     const { pFramePromise, disposeSignal } = this.pFrames.getByKey(handle);
 
+    const defDisposeSignal = this.pTableDefs.tryGetByKey(key)?.disposeSignal;
+    const combinedSignal = AbortSignal.any([disposeSignal, defDisposeSignal].filter((s) => !!s));
+
     // 3. Sort
     if (params.def.sorting.length > 0) {
       const predecessor = this.acquire({
@@ -414,7 +418,7 @@ class PTablePool extends RefCountResourcePool<FullPTableDef, PTableHolder> {
       });
       const { resource: { pTablePromise } } = predecessor;
       const sortedTable = pTablePromise.then((pTable) => pTable.sort(params.def.sorting));
-      return new PTableHolder(handle, disposeSignal, sortedTable, predecessor);
+      return new PTableHolder(handle, combinedSignal, sortedTable, predecessor);
     }
 
     // 2. Filter (except the case with artificial columns where cartesian creates too many rows)
@@ -428,7 +432,7 @@ class PTablePool extends RefCountResourcePool<FullPTableDef, PTableHolder> {
       });
       const { resource: { pTablePromise } } = predecessor;
       const filteredTable = pTablePromise.then((pTable) => pTable.filter(params.def.filters));
-      return new PTableHolder(handle, disposeSignal, filteredTable, predecessor);
+      return new PTableHolder(handle, combinedSignal, filteredTable, predecessor);
     }
 
     // 1. Join
@@ -437,7 +441,7 @@ class PTablePool extends RefCountResourcePool<FullPTableDef, PTableHolder> {
       // `params.def.filters` would be non-empty only when join has artificial columns
       filters: [...params.def.partitionFilters, ...params.def.filters],
     }));
-    return new PTableHolder(handle, disposeSignal, table);
+    return new PTableHolder(handle, combinedSignal, table);
   }
 
   public getByKey(key: PTableHandle): PTableHolder {
@@ -870,7 +874,7 @@ export class PFrameDriver implements InternalPFrameDriver {
 
     this.pFrames = new PFramePool(server.info, localBlobPool, remoteBlobPool, logger, spillPath);
     this.pTableDefs = new PTableDefPool(logger);
-    this.pTables = new PTablePool(this.pFrames, logger);
+    this.pTables = new PTablePool(this.pFrames, this.pTableDefs, logger);
 
     this.pTableCacheUi = new PTableCacheUi(logger, ops);
     this.pTableCacheModel = new PTableCacheModel(logger, ops);
@@ -1062,15 +1066,12 @@ export class PFrameDriver implements InternalPFrameDriver {
 
   public async getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]> {
     const { def } = this.pTableDefs.getByKey(handle);
-    const table = this.pTables.acquire(def);
+    using table = this.pTables.acquire(def);
 
     const { pTablePromise } = table.resource;
     const pTable = await pTablePromise;
 
-    const spec = pTable.getSpec();
-
-    table.unref();
-    return spec;
+    return pTable.getSpec();
   }
 
   public async getShape(handle: PTableHandle, signal?: AbortSignal): Promise<PTableShape> {

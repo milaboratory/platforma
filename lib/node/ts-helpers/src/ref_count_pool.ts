@@ -8,7 +8,7 @@ import { isAsyncDisposable, isDisposable } from './obj';
  */
 export type UnrefFn = () => void;
 
-export interface PoolResource<R> {
+export interface PoolResource<R> extends Disposable {
   /** Resource itself */
   readonly resource: R;
 
@@ -53,16 +53,18 @@ export abstract class RefCountResourcePool<P, R> {
     envelop.refCount++;
 
     let unrefereced = false;
+    const unref = () => {
+      if (unrefereced) return; // unref is idempotent, calling it many times have no effect
+      // subtracting ref count
+      envelop.refCount--;
+      unrefereced = true;
+      this.check(key);
+    };
     return {
       resource: envelop.resource,
       key,
-      unref: () => {
-        if (unrefereced) return; // unref is idempotent, calling it many times have no effect
-        // subtracting ref count
-        envelop.refCount--;
-        unrefereced = true;
-        this.check(key);
-      },
+      unref,
+      [Symbol.dispose]: unref,
     };
   }
 
