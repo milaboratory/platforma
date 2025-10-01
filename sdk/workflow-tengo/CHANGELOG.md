@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.3.2
+
+### Patch Changes
+
+- eb65c7f: Add method for worflow for creating frame from bundle with filtredPColumns
+
 ## 5.3.1
 
 ### Patch Changes
