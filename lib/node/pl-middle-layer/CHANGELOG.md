@@ -1,5 +1,23 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.13
+
+### Patch Changes
+
+- 25c0fed: PFrames driver - limit disk footprint
+- Updated dependencies [25c0fed]
+  - @milaboratories/ts-helpers@1.5.1
+  - @milaboratories/computable@2.7.1
+  - @milaboratories/pl-client@2.13.3
+  - @milaboratories/pl-config@1.7.6
+  - @milaboratories/pl-deployments@2.8.2
+  - @milaboratories/pl-drivers@1.11.3
+  - @milaboratories/pl-errors@1.1.28
+  - @milaboratories/pl-tree@1.8.3
+  - @platforma-sdk/block-tools@2.6.9
+  - @milaboratories/pl-model-backend@1.1.13
+  - @platforma-sdk/workflow-tengo@5.3.2
+
 ## 1.43.12
 
 ### Patch Changes
