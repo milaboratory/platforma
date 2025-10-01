@@ -189,7 +189,7 @@ catalog:
   'testcontainers': ^10.18.0
   'utility-types': ^3.11.0
   'denque': ^2.1.0
-  'lru-cache': ^11.1.0
+  'lru-cache': ^11.2.2
   'canonicalize': ~2.1.0
   'long': ^5.3.2
   'mime-types': ^2.1.35
