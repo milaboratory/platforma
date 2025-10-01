@@ -9,32 +9,7 @@ import { expect } from 'vitest';
 
 const TIMEOUT = getTestTimeout(30_000);
 
-export async function getCsvHandle(
-  result: TestWorkflowResults,
-  driverKit: MiddleLayerDriverKit,
-  outputName: string,
-  timeout = TIMEOUT,
-) {
-  const handle = await awaitStableState(
-    result.output(outputName, (f: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
-      if (!f) {
-        return undefined;
-      }
-      return driverKit.blobDriver.getOnDemandBlob(f.persist(), ctx).handle;
-    }),
-    timeout,
-  );
-  expect(handle).toBeDefined();
-  return handle!;
-}
-
-type BlobHandle = ReturnType<MiddleLayerDriverKit['blobDriver']['getOnDemandBlob']>['handle'];
-
-export async function readBlobAsString(driverKit: MiddleLayerDriverKit, handle: BlobHandle) {
-  return (await driverKit.blobDriver.getContent(handle)).toString();
-}
-
-tplTest.concurrent(
+tplTest(
   'pt frameFromColumnBundle test - should return frame from column bundle with filtered columns',
   async ({ helper, expect, driverKit }) => {
     const wf1 = await helper.renderWorkflow('pt.frameFromBundle.pool', false, {
@@ -106,8 +81,36 @@ tplTest.concurrent(
       + `\n3\tcell_2\t8000\tCL-3\t122.0\t0.132`
       + `\n3\tcell_3\t7500\tCL-3\t124.0\t0.534\n`,
     );
+  }, {
+    concurrent: true,
+    timeout: TIMEOUT,
   },
 );
+
+export async function getCsvHandle(
+  result: TestWorkflowResults,
+  driverKit: MiddleLayerDriverKit,
+  outputName: string,
+  timeout = TIMEOUT,
+) {
+  const handle = await awaitStableState(
+    result.output(outputName, (f: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
+      if (!f) {
+        return undefined;
+      }
+      return driverKit.blobDriver.getOnDemandBlob(f.persist(), ctx).handle;
+    }),
+    timeout,
+  );
+  expect(handle).toBeDefined();
+  return handle!;
+}
+
+type BlobHandle = ReturnType<MiddleLayerDriverKit['blobDriver']['getOnDemandBlob']>['handle'];
+
+export async function readBlobAsString(driverKit: MiddleLayerDriverKit, handle: BlobHandle) {
+  return (await driverKit.blobDriver.getContent(handle)).toString();
+}
 
 const sampleIdAxesSpec = {
   name: 'sampleId',
