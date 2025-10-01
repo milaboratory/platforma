@@ -7,6 +7,7 @@ from .aggregate import Aggregate
 from .concatenate import Concatenate
 from .sort import Sort
 from .write_frame import WriteFrame
+from .read_frame import ReadFrame
 
 from typing import Union
 
@@ -27,6 +28,7 @@ type AnyPStep = Union[
     Concatenate,
     Sort,
     WriteFrame,
+    ReadFrame,
 ]
 
 __all__ = [
@@ -47,6 +49,7 @@ __all__ = [
     "Concatenate",
     "Sort",
     "WriteFrame",
+    "ReadFrame",
 
     "PStep",
     "GlobalSettings",
