@@ -445,7 +445,7 @@ class PTablePool extends RefCountResourcePool<FullPTableDef, PTableHolder> {
 class PTableCacheUi {
   private readonly perFrame = new Map<PFrameHandle, LRUCache<PTableHandle, PoolResource<PTableHolder>>>();
   private readonly global: LRUCache<PTableHandle, PoolResource<PTableHolder>>;
-  private readonly disposeListeners = new Map<PTableHandle, () => void>();
+  private readonly disposeListeners = new Set<PTableHandle>();
 
   constructor(
     private readonly logger: PFrameInternal.Logger,
@@ -461,10 +461,6 @@ class PTableCacheUi {
         if (this.perFrame.get(resource.resource.pFrame)?.size === 0) {
           this.perFrame.delete(resource.resource.pFrame);
         }
-
-        const disposeListener = this.disposeListeners.get(key)!;
-        this.disposeListeners.delete(key);
-        resource.resource.disposeSignal.removeEventListener('abort', disposeListener);
 
         resource.unref();
         if (getDebugFlags().logPFrameRequests) {
@@ -496,17 +492,23 @@ class PTableCacheUi {
     }
     perFrame.set(key, resource);
 
-    const disposeListener = () => {
-      this.perFrame.get(resource.resource.pFrame)?.delete(key);
-      this.global.delete(key);
-    };
-    this.disposeListeners.set(key, disposeListener);
-    resource.resource.disposeSignal.addEventListener('abort', disposeListener);
+    if (!this.disposeListeners.has(key)) {
+      const disposeListener = () => {
+        this.perFrame.get(resource.resource.pFrame)?.delete(key);
+        this.global.delete(key);
+
+        this.disposeListeners.delete(key);
+        resource.resource.disposeSignal.removeEventListener('abort', disposeListener);
+      };
+      this.disposeListeners.add(key);
+      resource.resource.disposeSignal.addEventListener('abort', disposeListener);
+    }
   }
 }
 
 class PTableCacheModel {
   private readonly global: LRUCache<PTableHandle, PoolResource<PTableHolder>>;
+  private readonly disposeListeners = new Set<PTableHandle>();
 
   constructor(
     private readonly logger: PFrameInternal.Logger,
@@ -523,7 +525,7 @@ class PTableCacheModel {
     });
   }
 
-  public cache(resource: PoolResource<PTableHolder>, size: number, _disposeSignal: AbortSignal): void {
+  public cache(resource: PoolResource<PTableHolder>, size: number, defDisposeSignal: AbortSignal): void {
     const key = resource.key as PTableHandle;
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info', `createPTable cache - added PTable ${key} with size ${size}`);
@@ -531,7 +533,16 @@ class PTableCacheModel {
 
     this.global.set(key, resource, { size: Math.max(size, 1) }); // 1 is minimum size to avoid cache evictions
 
-    // TODO: handle dispose signal
+    if (!this.disposeListeners.has(key)) {
+      const disposeListener = () => {
+        this.global.delete(key);
+
+        this.disposeListeners.delete(key);
+        defDisposeSignal.removeEventListener('abort', disposeListener);
+      };
+      this.disposeListeners.add(key);
+      defDisposeSignal.addEventListener('abort', disposeListener);
+    }
   }
 }
 
