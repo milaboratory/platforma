@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.5.1
+
+### Patch Changes
+
+- 25c0fed: PFrames driver - limit disk footprint
+
 ## 1.5.0
 
 ### Minor Changes
