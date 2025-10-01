@@ -2207,7 +2207,17 @@ importers:
         version: 2.1.9(@types/node@24.5.2)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   lib/ptabler/schema:
+    dependencies:
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../../model/common
     devDependencies:
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../tools/ts-configs
       '@platforma-sdk/eslint-config':
         specifier: workspace:*
         version: link:../../../sdk/eslint-config
@@ -2217,12 +2227,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@24.5.2)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-      vite-plugin-dts:
-        specifier: 'catalog:'
-        version: 4.5.3(@types/node@24.5.2)(rollup@4.52.4)(typescript@5.6.3)(vite@6.3.5(@types/node@24.5.2)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
 
   lib/ptabler/software:
     devDependencies:

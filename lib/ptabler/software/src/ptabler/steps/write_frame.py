@@ -9,8 +9,8 @@ import hashlib
 from .base import PStep, StepContext
 from ..common import toPolarsType
 
-AxisType = Literal['Int', 'Long', 'String']
-ColumnType = Literal['Int', 'Long', 'Float', 'Double', 'String']
+type AxisType = Literal['Int', 'Long', 'String']
+type ColumnType = Literal['Int', 'Long', 'Float', 'Double', 'String']
 
 class AxisMapping(Struct, rename="camel"):
     column: str
