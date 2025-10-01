@@ -311,6 +311,16 @@ class WriteFrameTests(unittest.TestCase):
             ).execute(None)
         self.assertIn("frame_name", str(cm.exception).lower())
     
+    def test_input_validation_frame_name_with_path(self):
+        with self.assertRaises(ValueError) as cm:
+            WriteFrame(
+                input_table="input_table",
+                frame_name="path/to/frame",
+                axes=[AxisMapping(column="id", type="Long")],
+                columns=[ColumnMapping(column="value", type="Double")]
+            ).execute(None)
+        self.assertIn("directory name, not a path", str(cm.exception))
+    
     def test_input_validation_no_axes(self):
         with self.assertRaises(ValueError) as cm:
             WriteFrame(

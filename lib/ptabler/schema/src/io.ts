@@ -133,6 +133,8 @@ export interface ReadFrameStep {
   name: string;
   /** Request to create the table from the PFrame. */
   request: PTableDef<PObjectId>;
+  /** Relative path to temporary directory for PFrames, OS /tmp by default. */
+  spill_path?: string;
   /** Polars parallel strategy to use for the read. Defaults to 'auto'. */
   parallel?: 'auto' | 'columns' | 'row_groups' | 'prefiltered' | 'none';
   /** Whether to use low memory mode for the polars read. Defaults to false. */
