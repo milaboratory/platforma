@@ -235,7 +235,31 @@ const expressionCSV = `sampleId,cellId,geneId,expression
 3,cell_3,gene_2,129
 3,cell_3,gene_3,134`;
 
-const clusterResolutionPColumnData = { data: clusterResolutionCSV, axes: [{ column: sampleIdAxesSpec.name, spec: sampleIdAxesSpec }], columns: [{ column: clusterResolutionSpec.name, spec: clusterResolutionSpec }] };
-const totalCountsPColumnData = { data: totalCountsCSV, axes: [{ column: sampleIdAxesSpec.name, spec: sampleIdAxesSpec }, { column: cellIdAxesSpec.name, spec: cellIdAxesSpec }], columns: [{ column: totalCountsSpec.name, spec: totalCountsSpec }] };
-const complexityPColumnData = { data: complexityCSV, axes: [{ column: sampleIdAxesSpec.name, spec: sampleIdAxesSpec }, { column: cellIdAxesSpec.name, spec: cellIdAxesSpec }, { column: geneIdAxesSpec.name, spec: geneIdAxesSpec }], columns: [{ column: complexitySpec.name, spec: complexitySpec }] };
-const expressionPColumnData = { data: expressionCSV, axes: [{ column: sampleIdAxesSpec.name, spec: sampleIdAxesSpec }, { column: cellIdAxesSpec.name, spec: cellIdAxesSpec }, { column: geneIdAxesSpec.name, spec: geneIdAxesSpec }], columns: [{ column: expressionSpec.name, spec: expressionSpec }] };
+const clusterResolutionPColumnData = {
+  data: clusterResolutionCSV,
+  axes: [{ column: sampleIdAxesSpec.name, spec: sampleIdAxesSpec }],
+  columns: [{ column: clusterResolutionSpec.name, spec: clusterResolutionSpec }],
+};
+const totalCountsPColumnData = {
+  data: totalCountsCSV,
+  axes: [{ column: sampleIdAxesSpec.name, spec: sampleIdAxesSpec }, { column: cellIdAxesSpec.name, spec: cellIdAxesSpec }],
+  columns: [{ column: totalCountsSpec.name, spec: totalCountsSpec }],
+};
+const complexityPColumnData = {
+  data: complexityCSV,
+  axes: [
+    { column: sampleIdAxesSpec.name, spec: sampleIdAxesSpec },
+    { column: cellIdAxesSpec.name, spec: cellIdAxesSpec },
+    { column: geneIdAxesSpec.name, spec: geneIdAxesSpec },
+  ],
+  columns: [{ column: complexitySpec.name, spec: complexitySpec }],
+};
+const expressionPColumnData = {
+  data: expressionCSV,
+  axes: [
+    { column: sampleIdAxesSpec.name, spec: sampleIdAxesSpec },
+    { column: cellIdAxesSpec.name, spec: cellIdAxesSpec },
+    { column: geneIdAxesSpec.name, spec: geneIdAxesSpec },
+  ],
+  columns: [{ column: expressionSpec.name, spec: expressionSpec }],
+};
