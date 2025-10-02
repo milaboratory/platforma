@@ -180,3 +180,32 @@ export interface WithoutColumnsStep {
    */
   columns: string[];
 }
+
+/**
+ * Defines a step that limits the number of rows in a table
+ * and outputs the result to a new table in the tablespace.
+ * This operation is similar to Polars' `limit` method.
+ */
+export interface LimitStep {
+  /**
+   * The type identifier for this step.
+   * Must be 'limit'.
+   */
+  type: 'limit';
+
+  /**
+   * The name of the input table in the tablespace from which rows will be limited.
+   */
+  inputTable: string;
+
+  /**
+   * The name for the resulting table that will be added to the tablespace.
+   * This new table will contain only the first n rows from the input table.
+   */
+  outputTable: string;
+
+  /**
+   * The maximum number of rows to include in the output table.
+   */
+  n: number;
+}
