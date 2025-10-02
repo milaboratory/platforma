@@ -9,8 +9,7 @@ global_settings = GlobalSettings(root_folder=".")
 
 
 class LimitTests(unittest.TestCase):
-
-    def test_limit_comprehensive(self):
+    def test_limit_step(self):
         test_df = pl.DataFrame({
             "id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             "category": ["A", "B", "A", "C", "B", "A", "C", "B", "A", "C"],

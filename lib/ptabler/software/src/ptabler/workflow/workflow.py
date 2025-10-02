@@ -1,5 +1,7 @@
 import msgspec
 import polars as pl
+import shutil
+from pathlib import Path
 from typing import List, overload, Literal, Union
 
 from ptabler.steps import AnyPStep, GlobalSettings, TableSpace, StepContext
@@ -77,30 +79,44 @@ class PWorkflow(msgspec.Struct):
             If `lazy` is False, executes sink operations and chained tasks,
             then returns `None`.
         """
-        ctx = StepContext(
-            settings=global_settings,
-            initial_table_space=initial_table_space
-        )
+        spill_dir_created = False
+        spill_path = None
+        
+        if global_settings.spill_folder is not None:
+            spill_path = Path(global_settings.spill_folder)
+            if not spill_path.exists():
+                spill_path.mkdir(parents=True, exist_ok=True)
+                spill_dir_created = True
+        
+        try:
+            ctx = StepContext(
+                settings=global_settings,
+                initial_table_space=initial_table_space
+            )
 
-        for step_obj in self.workflow:
-            step_obj.execute(ctx)
+            for step_obj in self.workflow:
+                step_obj.execute(ctx)
 
-        if lazy:
-            return ctx
-        else:
-            _, sink_frames, chained_tasks = ctx.into_parts()
-            
-            if sink_frames:
-                # Execute all collected sink operations (e.g., write_csv).
-                # The results of these operations (if any, usually None for writes)
-                # are ignored here. The primary purpose is to trigger the computation
-                # and I/O.
-                # `comm_subplan_elim=True` (default) is generally good for performance.
-                _ = pl.collect_all(sink_frames)
-                # Future consideration: Add logging for workflow completion or errors.
-            
-            # Execute all chained tasks in the order they were added
-            for task in chained_tasks:
-                task()
-            
-            return None
+            if lazy:
+                return ctx
+            else:
+                _, sink_frames, chained_tasks = ctx.into_parts()
+                
+                if sink_frames:
+                    # Execute all collected sink operations (e.g., write_csv).
+                    # The results of these operations (if any, usually None for writes)
+                    # are ignored here. The primary purpose is to trigger the computation
+                    # and I/O.
+                    # `comm_subplan_elim=True` (default) is generally good for performance.
+                    _ = pl.collect_all(sink_frames)
+                    # Future consideration: Add logging for workflow completion or errors.
+                
+                # Execute all chained tasks in the order they were added
+                for task in chained_tasks:
+                    task()
+                
+                return None
+        
+        finally:
+            if spill_dir_created and spill_path is not None and spill_path.exists():
+                shutil.rmtree(spill_path, ignore_errors=True)
