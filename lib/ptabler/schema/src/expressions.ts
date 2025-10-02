@@ -1,3 +1,4 @@
+import type { AxisSpec } from '@milaboratories/pl-model-common';
 import type { DataType } from './common';
 
 export type Expression =
@@ -11,6 +12,7 @@ export type Expression =
   | StringJoinExpression
   | HashExpression
   | ColumnReferenceExpression
+  | AxisReferenceExpression
   | ConstantValueExpression
   | RankExpression
   | CumsumExpression
@@ -184,6 +186,14 @@ export interface ColumnReferenceExpression {
   type: 'col';
   /** The name of the column to reference. */
   name: string;
+}
+
+/** Represents a reference to an axis by its specification (or id). */
+export interface AxisReferenceExpression {
+  /** The type of operation, always 'axis'. */
+  type: 'axis';
+  /** The axis to reference. */
+  spec: AxisSpec;
 }
 
 /** Represents a constant literal value (string, number, boolean, or null). */
