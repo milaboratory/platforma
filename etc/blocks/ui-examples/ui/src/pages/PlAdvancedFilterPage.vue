@@ -126,13 +126,13 @@ const filterStatesOptions = [
 ];
 
 watch(() => filtersModel.value, (m) => {
-  console.log('m', m);
+  console.log('Model changed: ', m);
 });
 </script>
 
 <template>
   <PlBlockPage style="max-width: 100%">
-    <div class="d-flex gap-16">
+    <div :class="$style.controls">
       <PlCheckbox v-model="dndMode" >Drag-n-Drop mode</PlCheckbox>
       <PlDropdown v-model="selectedSavedFilters" :options="filterStatesOptions" label="Examples" :style="{width: '300px'}" />
     </div>
@@ -165,6 +165,10 @@ watch(() => filtersModel.value, (m) => {
   </PlBlockPage>
 </template>
 <style module>
+.controls {
+  display: flex;
+  gap: 16px;
+}
 .block {
   display: flex;
   height: 100%;
@@ -182,7 +186,7 @@ watch(() => filtersModel.value, (m) => {
   overflow: auto;
 }
 .columnChip {
-  background: '#fff';
+  background: #fff;
   border: 1px solid black;
   border-radius: 6px;
   padding: 6px;

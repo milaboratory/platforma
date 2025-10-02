@@ -16,17 +16,22 @@ const props = defineProps<{
   isToggled: boolean;
   isPinnable: boolean;
   isPinned: boolean;
-  headClass: string | string[] | null;
-  bodyClass: string | string[] | null;
+  titleClass: string | string[] | null;
+  contentClass: string | string[] | null;
+  afterClass: string | string[] | null;
+  beforeClass: string | string[] | null;
 }>();
+defineOptions({ inheritAttrs: false });
 
 const slots = defineSlots<{
   title: (props: { item: T; index: number }) => unknown;
   content?: (props: { item: T; index: number }) => unknown;
   after?: (props: { item: T; index: number }) => unknown;
+  before?: (props: { item: T; index: number }) => unknown;
 }>();
 const hasContentSlot = computed(() => slots['content'] !== undefined);
 const hasAfterSlot = computed(() => slots['after'] !== undefined);
+const hasBeforeSlot = computed(() => slots['before'] !== undefined);
 
 const emit = defineEmits<{
   (e: 'expand', item: T, index: number): void;
@@ -37,67 +42,72 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div
-    :class="[$style.root, {
-      [$style.active]: props.isActive,
-      [$style.pinned]: props.isPinned,
-      [$style.opened]: props.isExpanded,
-      [$style.disabled]: props.isToggled,
-    }]"
-  >
+  <div>
+    <div v-if="hasBeforeSlot" :class="beforeClass">
+      <slot name="before" :item="props.item" :index="props.index" />
+    </div>
     <div
-      :class="[$style.head, headClass, {
-        [$style.clickable]: hasContentSlot,
+      :class="[$style.root, $attrs.class, {
+        [$style.active]: props.isActive,
+        [$style.pinned]: props.isPinned,
+        [$style.opened]: props.isExpanded,
+        [$style.disabled]: props.isToggled,
       }]"
-      @click="isExpandable && emit('expand', props.item, props.index)"
     >
       <div
-        v-if="props.showDragHandle"
-        :class="[$style.action, $style.draggable, { [$style.disable]: !props.isDraggable } ]"
-        :data-draggable="props.isDraggable"
+        :class="[$style.head, titleClass, {
+          [$style.clickable]: hasContentSlot,
+        }]"
+        @click="isExpandable && emit('expand', props.item, props.index)"
       >
-        <PlIcon16 name="drag-dots" />
-      </div>
-      <PlIcon16 v-if="isExpandable" :class="[$style.contentChevron, { [$style.opened]: props.isExpanded }]" name="chevron-down" />
+        <div
+          v-if="props.showDragHandle"
+          :class="[$style.action, $style.draggable, { [$style.disable]: !props.isDraggable } ]"
+          :data-draggable="props.isDraggable"
+        >
+          <PlIcon16 name="drag-dots" />
+        </div>
+        <PlIcon16 v-if="isExpandable" :class="[$style.contentChevron, { [$style.opened]: props.isExpanded }]" name="chevron-down" />
 
-      <div :class="$style.title">
-        <slot name="title" :item="props.item" :index="props.index" />
-      </div>
+        <div :class="$style.title">
+          <slot name="title" :item="props.item" :index="props.index" />
+        </div>
 
-      <div :class="[$style.actions, $style.showOnHover]">
-        <div
-          v-if="props.isToggable"
-          :class="[$style.action, $style.clickable, { [$style.disable]: !props.isToggable }]"
-          @click.stop="emit('toggle', props.item, props.index)"
-        >
-          <PlIcon24 :name="props.isToggled === true ? 'view-hide' : 'view-show'" size="16" />
+        <div :class="[$style.actions, $style.showOnHover]">
+          <div
+            v-if="props.isToggable"
+            :class="[$style.action, $style.clickable, { [$style.disable]: !props.isToggable }]"
+            @click.stop="emit('toggle', props.item, props.index)"
+          >
+            <PlIcon24 :name="props.isToggled === true ? 'view-hide' : 'view-show'" size="16" />
+          </div>
+          <div
+            v-if="props.isPinnable"
+            :class="[$style.action, $style.clickable, {
+              [$style.disable]: !props.isPinnable,
+              [$style.activated]: props.isPinned,
+            }]"
+            @click.stop="emit('pin', props.item, props.index)"
+          >
+            <PlIcon24 name="pin" size="16" />
+          </div>
+          <div
+            v-if="props.isRemovable"
+            :class="[$style.action, $style.clickable]"
+            @click.stop="emit('remove', props.item, props.index)"
+          >
+            <PlIcon16 name="close" />
+          </div>
         </div>
-        <div
-          v-if="props.isPinnable"
-          :class="[$style.action, $style.clickable, {
-            [$style.disable]: !props.isPinnable,
-            [$style.activated]: props.isPinned,
-          }]"
-          @click.stop="emit('pin', props.item, props.index)"
-        >
-          <PlIcon24 name="pin" size="16" />
-        </div>
-        <div
-          v-if="props.isRemovable"
-          :class="[$style.action, $style.clickable]"
-          @click.stop="emit('remove', props.item, props.index)"
-        >
-          <PlIcon16 name="close" />
-        </div>
+      </div>
+      <div
+        v-if="hasContentSlot && props.isExpanded"
+        :class="[$style.body, contentClass, { [$style.disabled]: props.isToggled }]"
+      >
+        <slot name="content" :item="props.item" :index="props.index" />
       </div>
     </div>
-    <div
-      v-if="hasContentSlot && props.isExpanded"
-      :class="[$style.body, bodyClass, { [$style.disabled]: props.isToggled }]"
-    >
-      <slot name="content" :item="props.item" :index="props.index" />
-    </div>
-    <div v-if="hasAfterSlot" >
+    <div v-if="hasAfterSlot" :class="afterClass">
       <slot name="after" :item="props.item" :index="props.index" />
     </div>
   </div>

@@ -4,63 +4,42 @@ import type { Filter, FilterType, Group, PlAdvancedFilterUI, SupportedFilterType
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, LOCAL_FILTERS_METADATA, SUPPORTED_FILTER_TYPES } from './constants';
 
 function toInnerFilter(filter: FilterUi): Filter | null {
-  if (filter.type === 'isNA' || filter.type === 'isNotNA') {
-    return {
-      type: filter.type,
-      sourceId: filter.column,
-    };
-  }
   if (
-    filter.type === 'greaterThan' || filter.type === 'greaterThanOrEqual'
+    filter.type === 'isNA' || filter.type === 'isNotNA'
+    || filter.type === 'greaterThan' || filter.type === 'greaterThanOrEqual'
     || filter.type === 'lessThan' || filter.type === 'lessThanOrEqual'
+    || filter.type === 'patternEquals' || filter.type === 'patternNotEquals'
+    || filter.type === 'patternContainSubsequence' || filter.type === 'patternNotContainSubsequence'
   ) {
-    return {
-      type: filter.type,
-      reference: filter.x,
-      sourceId: filter.column,
-    };
-  }
-  if (filter.type === 'patternEquals' || filter.type === 'patternNotEquals') {
-    return {
-      type: filter.type,
-      reference: filter.value,
-      sourceId: filter.column,
-    };
-  }
-  if (filter.type === 'patternContainSubsequence' || filter.type === 'patternNotContainSubsequence') {
-    return {
-      type: filter.type,
-      substring: filter.value,
-      sourceId: filter.column,
-    };
+    return filter;
   }
   if (filter.type === 'patternFuzzyContainSubsequence') {
     return {
       type: filter.type,
-      reference: filter.value,
+      value: filter.value,
       wildcard: filter.wildcard,
       maxEdits: filter.maxEdits ?? 2,
       substitutionsOnly: filter.substitutionsOnly ?? false,
-      sourceId: filter.column,
+      column: filter.column,
     };
   }
   if (filter.type === 'or' && filter.filters.every((f) => f.type === 'patternEquals')) { // different possible structures?
     const columnIds = new Set(filter.filters.map((f) => f.column));
     if (columnIds.size === 1) {
       return {
-        type: 'InSet',
-        reference: filter.filters.map((f) => f.value),
-        sourceId: filter.filters[0].column,
+        type: 'inSet',
+        value: filter.filters.map((f) => f.value),
+        column: filter.filters[0].column,
       };
     }
   }
   if (filter.type === 'not') { // different possible structures?
     const f = toInnerFilter(filter.filter);
-    if (f?.type === 'InSet') {
+    if (f?.type === 'inSet') {
       return {
-        type: 'NotInSet',
-        reference: f.reference,
-        sourceId: f.sourceId,
+        type: 'notInSet',
+        value: f.value,
+        column: f.column,
       };
     }
   }
@@ -127,46 +106,28 @@ export function toInnerModel(m: FilterUi): PlAdvancedFilterUI {
 }
 
 function toOuterFilter(filter: Filter): FilterUi | null {
-  const column = filter.sourceId as SUniversalPColumnId;
+  const column = filter.column;
   if (filter.type === 'isNA' || filter.type === 'isNotNA') {
-    return {
-      type: filter.type,
-      column,
-    };
+    return filter;
   }
   if (
-    filter.type === 'greaterThan' || filter.type === 'lessThan'
-    || filter.type === 'greaterThanOrEqual' || filter.type === 'lessThanOrEqual'
+    filter.type === 'greaterThanOrEqual' || filter.type === 'lessThanOrEqual'
+    || filter.type === 'greaterThan' || filter.type === 'lessThan'
+    || filter.type === 'numberEquals' || filter.type === 'numberNotEquals'
   ) {
-    return filter.reference !== undefined
-      ? {
-          type: filter.type,
-          x: filter.reference,
-          column,
-        }
-      : null;
+    return filter.x !== undefined ? { ...filter, x: filter.x } : null;
   }
-  if (filter.type === 'patternEquals' || filter.type === 'patternNotEquals') {
-    return filter.reference !== undefined
-      ? {
-          type: filter.type,
-          value: filter.reference,
-          column,
-        }
-      : null;
+  if (
+    filter.type === 'patternEquals' || filter.type === 'patternNotEquals'
+    || filter.type === 'patternContainSubsequence' || filter.type === 'patternNotContainSubsequence'
+  ) {
+    return filter.value !== undefined ? filter : null;
   }
-  if (filter.type === 'patternContainSubsequence' || filter.type === 'patternNotContainSubsequence') {
-    return {
-      type: filter.type,
-      value: filter.substring,
-      column,
-    };
-  }
-  if (filter.type === 'InSet') {
-    return filter.reference.length
+  if (filter.type === 'inSet') {
+    return filter.value.length
       ? {
           type: 'or',
-          filters: filter.reference.map((v) => ({
+          filters: filter.value.map((v) => ({
             type: 'patternEquals',
             value: v,
             column,
@@ -174,13 +135,13 @@ function toOuterFilter(filter: Filter): FilterUi | null {
         }
       : null;
   }
-  if (filter.type === 'NotInSet') {
-    return filter.reference.length
+  if (filter.type === 'notInSet') {
+    return filter.value.length
       ? {
           type: 'not',
           filter: {
             type: 'or',
-            filters: filter.reference.map((v) => ({
+            filters: filter.value.map((v) => ({
               type: 'patternEquals',
               value: v,
               column,
@@ -195,7 +156,7 @@ function toOuterFilter(filter: Filter): FilterUi | null {
 function toOuterFilterGroup(m: Group): FilterUi {
   const res: FilterUi = {
     type: m.operand,
-    filters: m.filters.map(toOuterFilter).filter((v) => v !== null),
+    filters: m.filters.map(toOuterFilter).filter((v): v is FilterUi => v !== null),
   };
   if (m.not) {
     return {
@@ -219,7 +180,7 @@ export function createNewGroup(selectedSourceId: string) {
     operand: 'and' as const,
     filters: [{
       ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
-      sourceId: selectedSourceId,
+      column: selectedSourceId as SUniversalPColumnId,
     }],
   };
 }
@@ -251,7 +212,7 @@ export function isStringValueType(spec?: PColumnSpec | AxisSpec): boolean {
 }
 
 export function getFilterInfo(filterType: FilterType): { label: string; supportedFor: (spec: NormalizedSpecData) => boolean } {
-  if (filterType === 'InSet' || filterType === 'NotInSet') {
+  if (filterType === 'inSet' || filterType === 'notInSet') {
     return LOCAL_FILTERS_METADATA[filterType];
   }
   return filterUiMetadata[filterType as keyof typeof filterUiMetadata];

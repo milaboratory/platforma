@@ -1,93 +1,37 @@
-import type { AxisSpec, FilterUi, ListOptionBase, PColumnSpec } from '@platforma-sdk/model';
+import type { AxisSpec, FilterUi, ListOptionBase, PColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
 
 // Not supported: topN, bottomN, lessThanColumn, lessThanColumnOrEqual
 // or, and, not - in groups
-export type SupportedFilterTypes = Exclude<FilterUi['type'], 'topN' | 'bottomN' | 'lessThanColumn' | 'lessThanColumnOrEqual' | 'or' | 'and' | 'not' | undefined>;
+export type SupportedFilterTypes = FilterUi['type'] &
+  'isNA' | 'isNotNA' |
+  'patternEquals' | 'patternNotEquals' |
+  'patternContainSubsequence' | 'patternNotContainSubsequence' |
+  'patternMatchesRegularExpression' |
+  'patternFuzzyContainSubsequence' |
+  'numberEquals' | 'numberNotEquals' |
+  'lessThan' | 'lessThanOrEqual' |
+  'greaterThan' | 'greaterThanOrEqual';
 
-export type FilterType = SupportedFilterTypes | 'InSet' | 'NotInSet';
+export type FilterType = SupportedFilterTypes | 'inSet' | 'notInSet';
 
 export type Operand = 'or' | 'and';
 
-interface FilterBase {
-  type: FilterType;
-  sourceId: string;
-}
-export interface IsNAFilter extends FilterBase {
-  type: 'isNA';
+type FilterUiBase = Exclude<FilterUi, 'id' | 'name' | 'isExpanded'> & {
+  type: SupportedFilterTypes;
+  column: SUniversalPColumnId;
 };
-export interface IsNotNAFilter extends FilterBase {
-  type: 'isNotNA';
-};
-export interface StringEqualsFilter extends FilterBase {
-  type: 'patternEquals';
-  reference?: string;
-};
-export interface StringNotEqualsFilter extends FilterBase {
-  type: 'patternNotEquals';
-  reference?: string;
-};
-export interface InSetFilter extends FilterBase {
-  type: 'InSet';
-  reference: string[];
-}
-export interface NotInSetFilter extends FilterBase {
-  type: 'NotInSet';
-  reference: string[];
-}
-export interface GreaterFilter extends FilterBase {
-  type: 'greaterThan';
-  reference?: number;
-};
-export interface GreaterOrEqualFilter extends FilterBase {
-  type: 'greaterThanOrEqual';
-  reference?: number;
-};
-export interface LessFilter extends FilterBase {
-  type: 'lessThan';
-  reference?: number;
-};
-export interface LessOrEqualFilter extends FilterBase {
-  type: 'lessThanOrEqual';
-  reference?: number;
-};
-export interface StringContainsFilter extends FilterBase {
-  type: 'patternContainSubsequence';
-  substring: string;
-}
-export interface StringNotContainsFilter extends FilterBase {
-  type: 'patternNotContainSubsequence';
-  substring: string;
-}
-export interface NumberEqualsFilter extends FilterBase {
-  type: 'numberEquals';
-  reference?: number;
-};
-export interface NumberNotEqualsFilter extends FilterBase {
-  type: 'numberNotEquals';
-  reference?: number;
-};
-export interface StringContainsFuzzyFilter extends FilterBase {
-  type: 'patternFuzzyContainSubsequence';
-  reference: string;
-  maxEdits: number;
-  substitutionsOnly: boolean;
-  wildcard?: string;
-}
-export interface StringMatches extends FilterBase {
-  type: 'patternMatchesRegularExpression';
-  reference: string;
-}
 
+type RequireFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
+type OptionalFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+type NumericalWithOptionalX = 'lessThan' | 'lessThanOrEqual' | 'greaterThan' | 'greaterThanOrEqual' | 'numberEquals' | 'numberNotEquals';
+type EditedTypes = 'patternFuzzyContainSubsequence' | NumericalWithOptionalX;
 export type Filter =
-  IsNAFilter | IsNotNAFilter
-  | StringEqualsFilter | StringNotEqualsFilter
-  | NumberEqualsFilter | NumberNotEqualsFilter
-  | InSetFilter | NotInSetFilter
-  | GreaterFilter | GreaterOrEqualFilter
-  | LessFilter | LessOrEqualFilter
-  | StringContainsFilter | StringNotContainsFilter
-  | StringContainsFuzzyFilter
-  | StringMatches;
+  Exclude<FilterUiBase, { type: EditedTypes }> |
+  RequireFields<Extract<FilterUiBase, { type: 'patternFuzzyContainSubsequence' }>, 'maxEdits' | 'substitutionsOnly'> |
+  OptionalFields<Extract<FilterUiBase, { type: NumericalWithOptionalX }>, 'x'> |
+  { type: 'inSet'; column: SUniversalPColumnId; value: string[] } |
+  { type: 'notInSet'; column: SUniversalPColumnId;value: string[] };
 
 export type Group = {
   id: string;

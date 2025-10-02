@@ -14,8 +14,10 @@ const props = withDefaults(
     getItemKey?: (item: T, index: number) => K;
 
     itemClass?: string | string[] | ((item: T, index: number) => string | string[]);
-    itemClassHead?: string | string[] | ((item: T, index: number) => string | string[]);
-    itemClassBody?: string | string[] | ((item: T, index: number) => string | string[]);
+    itemClassTitle?: string | string[] | ((item: T, index: number) => string | string[]);
+    itemClassBefore?: string | string[] | ((item: T, index: number) => string | string[]);
+    itemClassAfter?: string | string[] | ((item: T, index: number) => string | string[]);
+    itemClassContent?: string | string[] | ((item: T, index: number) => string | string[]);
     isActive?: (item: T, index: number) => boolean;
 
     disableDragging?: boolean;
@@ -45,8 +47,10 @@ const props = withDefaults(
     getItemKey: (item: T) => JSON.stringify(item) as K,
 
     itemClass: undefined,
-    itemClassHead: undefined,
-    itemClassBody: undefined,
+    itemClassTitle: undefined,
+    itemClassContent: undefined,
+    itemClassBefore: undefined,
+    itemClassAfter: undefined,
     isActive: undefined,
 
     disableDragging: undefined,
@@ -82,6 +86,7 @@ const emits = defineEmits<{
 const slots = defineSlots<{
   ['item-title']: (props: { item: T; index: number }) => unknown;
   ['item-content']?: (props: { item: T; index: number }) => unknown;
+  ['item-before']?: (props: { item: T; index: number }) => unknown;
   ['item-after']?: (props: { item: T; index: number }) => unknown;
 }>();
 
@@ -242,24 +247,19 @@ function handleRemove(item: T, index: number) {
   itemsRef.value.splice(index, 1);
 }
 
-const getItemClass = (item: T, index: number): null | string | string[] => {
-  if (typeof props.itemClass === 'function') {
-    return props.itemClass(item, index);
-  }
-  return props.itemClass ?? null;
-};
-const getItemClassHead = (item: T, index: number): null | string | string[] => {
-  if (typeof props.itemClassHead === 'function') {
-    return props.itemClassHead(item, index);
-  }
-  return props.itemClassHead ?? null;
-};
-const getItemClassBody = (item: T, index: number): null | string | string[] => {
-  if (typeof props.itemClassBody === 'function') {
-    return props.itemClassBody(item, index);
-  }
-  return props.itemClassBody ?? null;
-};
+function getClassFunction(propsItemClass: string | string[] | ((item: T, index: number) => string | string[]) | undefined): (item: T, index: number) => null | string | string[] {
+  return (item: T, index: number): null | string | string[] => {
+    if (typeof propsItemClass === 'function') {
+      return propsItemClass(item, index);
+    }
+    return propsItemClass ?? null;
+  };
+}
+const getItemClass = getClassFunction(props.itemClass);
+const getItemClassTitle = getClassFunction(props.itemClassTitle);
+const getItemClassContent = getClassFunction(props.itemClassContent);
+const getItemClassBefore = getClassFunction(props.itemClassBefore);
+const getItemClassAfter = getClassFunction(props.itemClassAfter);
 
 </script>
 
@@ -269,8 +269,10 @@ const getItemClassBody = (item: T, index: number): null | string | string[] => {
       <PlElementListItem
         v-for="(pinnedItem, pinnedIndex) in pinnedItemsRef" :key="pinnedKeysRef[pinnedIndex]"
         :class="[$style.item, getItemClass(pinnedItem, pinnedIndex)]"
-        :headClass="getItemClassHead(pinnedItem, pinnedIndex)"
-        :bodyClass="getItemClassBody(pinnedItem, pinnedIndex)"
+        :titleClass="getItemClassTitle(pinnedItem, pinnedIndex)"
+        :contentClass="getItemClassContent(pinnedItem, pinnedIndex)"
+        :beforeClass="getItemClassBefore(pinnedItem, pinnedIndex)"
+        :afterClass="getItemClassAfter(pinnedItem, pinnedIndex)"
 
         :index="pinnedIndex"
         :item="pinnedItem"
@@ -291,6 +293,9 @@ const getItemClassBody = (item: T, index: number): null | string | string[] => {
         @pin="handlePin"
         @expand="handleExpand"
       >
+        <template v-if="slots['item-before']" #before="{ item, index }">
+          <slot :index="index" :item="item" name="item-before" />
+        </template>
         <template #title="{ item, index }">
           <slot :index="index" :item="item" name="item-title" />
         </template>
@@ -306,8 +311,10 @@ const getItemClassBody = (item: T, index: number): null | string | string[] => {
       <PlElementListItem
         v-for="(unpinnedItem, unpinnedIndex) in unpinnedItemsRef" :key="unpinnedKeysRef[unpinnedIndex]"
         :class="[$style.item, getItemClass(unpinnedItem, unpinnedIndex)]"
-        :headClass="getItemClassHead(unpinnedItem, unpinnedIndex)"
-        :bodyClass="getItemClassBody(unpinnedItem, unpinnedIndex)"
+        :titleClass="getItemClassTitle(unpinnedItem, unpinnedIndex)"
+        :contentClass="getItemClassContent(unpinnedItem, unpinnedIndex)"
+        :beforeClass="getItemClassBefore(unpinnedItem, unpinnedIndex)"
+        :afterClass="getItemClassAfter(unpinnedItem, unpinnedIndex)"
 
         :index="unpinnedIndex + (pinnedItemsRef?.length ?? 0)"
         :item="unpinnedItem"
