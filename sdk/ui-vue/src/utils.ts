@@ -6,6 +6,10 @@ export class UnresolvedError extends Error {
   name = 'UnresolvedError';
 }
 
+const ensureArray = <T>(value: T | T[]): T[] => {
+  return Array.isArray(value) ? value : value ? [value] : [];
+};
+
 // @TODO use AggregateError
 export class MultiError extends Error {
   name = 'MultiError';
@@ -13,6 +17,7 @@ export class MultiError extends Error {
   public readonly fullMessage: string;
 
   constructor(public readonly errors: (ErrorLike | string)[]) {
+    errors = ensureArray(errors);
     super(errors.map((e) => typeof e == 'string' ? e : e.message).join('\n'));
     this.fullMessage = errors.map((e) => {
       if (typeof e == 'string') {

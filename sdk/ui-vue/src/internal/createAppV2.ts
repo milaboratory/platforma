@@ -122,7 +122,7 @@ export function createAppV2<
   });
 
   const outputErrors = computed<OutputErrors<Outputs>>(() => {
-    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr && !vOrErr.ok ? new MultiError(vOrErr.errors) : undefined]);
+    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr && vOrErr.ok === false ? new MultiError(vOrErr.errors) : undefined]);
     return Object.fromEntries(entries);
   });
 
@@ -326,7 +326,14 @@ export function createAppV2<
     hasErrors: computed(() => Object.values(snapshot.value.outputs as Partial<Readonly<Outputs>>).some((v) => !v?.ok)),
   };
 
-  return reactive(Object.assign(appModel, methods, getters));
+  const app = reactive(Object.assign(appModel, methods, getters));
+
+  if (settings.debug) {
+    // @ts-expect-error (to inspect in console in debug mode)
+    globalThis.__block_app__ = app;
+  }
+
+  return app;
 }
 
 export type BaseAppV2<
