@@ -20,7 +20,7 @@ class MatchesEcmaRegexExpression(Expression, tag='matches_ecma_regex'):
 
     def to_polars(self) -> pl.Expr:
         """Converts the expression to a Polars boolean expression using polars-pf."""
-        return cast(ppf.Expr, pl.col(self.value)).pfexpr.matches_ecma_regex(self.ecma_regex)
+        return cast(ppf.Expr, self.value.to_polars()).pfexpr.matches_ecma_regex(self.ecma_regex)
 
 
 class ContainsFuzzyMatchExpression(Expression, tag='contains_fuzzy_match'):
@@ -34,11 +34,16 @@ class ContainsFuzzyMatchExpression(Expression, tag='contains_fuzzy_match'):
     """The string reference to compare against."""
     max_edits: int
     """The maximum number of edits allowed to be considered a match."""
-    wildcard: Optional[str] = None,
+    wildcard: Optional[str] = None
     """The wildcard character to use."""
-    substitutions_only: Optional[bool] = None,
+    substitutions_only: Optional[bool] = None
     """If true, only substitutions are allowed (deletions and insertions are also allowed by default)."""
 
     def to_polars(self) -> pl.Expr:
         """Converts the expression to a Polars boolean expression using polars-pf."""
-        return cast(ppf.Expr, pl.col(self.value)).pfexpr.contains_fuzzy_match(self.reference)
+        return cast(ppf.Expr, self.value.to_polars()).pfexpr.contains_fuzzy_match(
+            self.reference,
+            self.max_edits,
+            wildcard=self.wildcard,
+            substitutions_only=self.substitutions_only,
+        )
