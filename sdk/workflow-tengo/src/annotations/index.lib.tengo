@@ -1,7 +1,6 @@
 pt := import(":pt")
 wf := import(":workflow")
 ll := import(":ll")
-pFrames := import(":pframes")
 slices := import(":slices")
 util := import(":annotations.util")
 
@@ -41,41 +40,26 @@ computeAnnotations := func(inputs) {
 		return outputs
 	}
 
-	columnsFromExpressions := util.extractColumnsFromExpressions(slices.map(steps, func(step) {
-		return step.expression
-	}))
-
 	annotationsAxisSpec := createAxisSpec("String", ANNOTATION_HEADER, title)
 
 	createAnnotationsDataAndSpec := util.createAnnotationsDataAndSpecFactory(mainAxis, createColumnSpec, title)
 	createFilterDataAndSpec := util.createFilterDataAndSpecFactory(mainAxis, createColumnSpec)
-
-	tableBuilder := pFrames.tsvFileBuilder().cpu(1).mem(string(1 + len(columnsFromExpressions) * 2) + "GiB")
-	tableBuilder.setAxisHeader(mainAxis.spec, mainAxis.column)
-	for colId in columnsFromExpressions {
-		tableBuilder.add(columnBundle.getColumn(colId))
-	}
-	sourceFile := tableBuilder.build()
-
+	columnsFromExpressions := util.extractColumnsFromExpressions(slices.map(steps, func(step) { return step.expression }))
 	columnNameManager := util.createColumnNameManager()
 
 	finalExpressions := slices.map(steps, func(step) {
 		return {
 			name: columnNameManager.toSafe(step.name),
-			expression: util.mapExpressionColumnNames(step.expression, func(colId) {
-				return tableBuilder.getHeader(colId)
-			})
+			expression: step.expression
 		}
 	})
 
-	safeColumnNames := slices.map(finalExpressions, func(spec) {
-		return spec.name
-	})
-	filterSafeColumnNames := shouldComputeFilters ? safeColumnNames : [];
-	safeColumnNamesReversed := slices.reverse(safeColumnNames)
+	columnNames := slices.map(finalExpressions, func(spec) { return spec.name })
+	filterColumnNames := shouldComputeFilters ? columnNames : [];
+	columnNamesReversed := slices.reverse(columnNames)
 
 	annotationColumnExpr := slices.
-		reduce(safeColumnNamesReversed, func(exp, colName) {
+		reduce(columnNamesReversed, func(exp, colName) {
 			return exp.when(pt.col(colName)).then(pt.lit(columnNameManager.fromSafe(colName)))
 		}, pt).
 		otherwise(pt.lit(undefined)).
@@ -83,7 +67,10 @@ computeAnnotations := func(inputs) {
 
 	wf := pt.workflow()
 	
-	dfData := wf.frame(sourceFile, { format: "tsv" }).
+	dfData := wf.frameFromColumnBundle(columnBundle, {
+        axes: [mainAxis],
+        columns: columnsFromExpressions
+    }).
 		withColumns(finalExpressions...).
 		withColumns(annotationColumnExpr)
 
@@ -91,7 +78,7 @@ computeAnnotations := func(inputs) {
 		select(mainAxis.column, ANNOTATION_HEADER).
 	    save(DATA_FILE)
 
-	for colName in filterSafeColumnNames {
+	for colName in filterColumnNames {
 		dfData.
 			filter(pt.col(ANNOTATION_HEADER).eq(pt.lit(columnNameManager.fromSafe(colName)))).
 			withColumns(pt.lit(1).alias(ANNOTATION_HEADER).alias(colName)).
@@ -102,7 +89,7 @@ computeAnnotations := func(inputs) {
     wfResult := wf.run()
 
 	dataFile := wfResult.getFile(DATA_FILE)
-	filterFiles := slices.map(filterSafeColumnNames, func(colName) {
+	filterFiles := slices.map(filterColumnNames, func(colName) {
 		return { name: colName, file: wfResult.getFile(util.createFilterFileName(colName)) }
 	})
 
