@@ -1,5 +1,6 @@
 from typing import List, Optional
 import os
+import shutil
 
 import polars as pl
 import polars_pf as ppf
@@ -49,7 +50,9 @@ class ReadFrame(PStep, tag="read_frame"):
             if self.spill_path != os.path.basename(self.spill_path):
                 raise ValueError("The 'spill_path' must be a directory name, not a path.")
             spill_path = os.path.join(ctx.settings.root_folder, normalize_path(self.spill_path))
-            os.makedirs(spill_path, exist_ok=True)
+            if not os.path.isdir(spill_path):
+                os.makedirs(spill_path)
+                ctx.chain_task(lambda: shutil.rmtree(spill_path, ignore_errors=True))
         
         lf: pl.LazyFrame = ppf.pframe_source(
             directory_path,
@@ -70,7 +73,7 @@ class ReadFrame(PStep, tag="read_frame"):
                     ).then(pl.lit(None)).otherwise(col_expr)
                 if col_spec.type:
                     col_expr = col_expr.cast(toPolarsType(col_spec.type))
-                columns.append(col_expr)
+                columns.append(col_expr.alias(col_spec.column))
             lf = lf.select(columns)
         
         if self.n_rows is not None:
