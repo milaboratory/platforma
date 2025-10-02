@@ -1,5 +1,12 @@
 # @platforma-sdk/ui-vue
 
+## 1.43.28
+
+### Patch Changes
+
+- d390d04: Fix setting args on outputs change
+- d390d04: Fix [sdk/ui] Broken error propagation: block errors are not showing anymore
+
 ## 1.43.21
 
 ### Patch Changes
