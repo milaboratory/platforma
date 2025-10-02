@@ -45,9 +45,10 @@ class ReadFrame(PStep, tag="read_frame"):
             raise ValueError(f"The 'directory' is not an existing directory: {directory_path}")
 
         if self.spill_path is not None:
+            if self.spill_path != os.path.basename(self.spill_path):
+                raise ValueError("The 'spill_path' must be a directory name, not a path.")
             spill_path = os.path.join(ctx.settings.root_folder, normalize_path(self.spill_path))
-            if not os.path.isdir(spill_path):
-                raise ValueError(f"The 'spill_path' is not an existing directory: {spill_path}")
+            os.makedirs(spill_path, exist_ok=True)
         
         lf: pl.LazyFrame = ppf.pframe_source(
             directory_path,
