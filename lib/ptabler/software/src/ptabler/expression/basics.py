@@ -1,6 +1,7 @@
 from math import log
 import typing
 import polars as pl
+from polars_pf import axis_ref, AxisSpec
 
 from ptabler.common import PType, toPolarsType
 
@@ -190,6 +191,14 @@ class ColumnReferenceExpression(Expression, tag='col'):
 
     def to_polars(self) -> pl.Expr:
         return pl.col(self.name)
+
+
+# Axis Reference Expression
+class AxisReferenceExpression(Expression, tag='axis'):
+    spec: AxisSpec
+
+    def to_polars(self) -> pl.Expr:
+        return pl.col(axis_ref(self.axis))
 
 
 # Constant Value Expression

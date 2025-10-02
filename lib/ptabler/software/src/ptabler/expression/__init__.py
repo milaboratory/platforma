@@ -16,7 +16,7 @@ from .basics import (
     Log10Expression, LogExpression, Log2Expression, AbsExpression, SqrtExpression, UnaryMinusExpression,
     FloorExpression, RoundExpression, CeilExpression, CastExpression,
     OrExpression, NotExpression, ColumnReferenceExpression, ConstantValueExpression, MinExpression, MaxExpression,
-    AndExpression,
+    AndExpression, AxisReferenceExpression,
 )
 from .string import (
     StringJoinExpression, ToUpperExpression, ToLowerExpression, StrLenExpression, SubstringExpression,
@@ -77,6 +77,7 @@ AnyExpression = typing.Union[
     IsNotNaExpression,
     # Core Types
     ColumnReferenceExpression,
+    AxisReferenceExpression,
     ConstantValueExpression,
     # Min/Max
     MinExpression,

@@ -1,8 +1,8 @@
-import typing
 import polars as pl
 import polars_hash  # noqa: F401 - import for side effects
 import polars_pf  # noqa: F401 - import for side effects
-from typing import Mapping
+import polars_ds  # noqa: F401 - import for side effects
+from typing import Literal, Mapping
 
 
 STRING_TO_POLARS_TYPE: Mapping[str, pl.DataType] = {
@@ -29,7 +29,7 @@ STRING_TO_POLARS_TYPE: Mapping[str, pl.DataType] = {
     "Double": pl.Float64,
 }
 
-PType = typing.Literal[
+PType = Literal[
     "Int8",
     "Int16",
     "Int32",
