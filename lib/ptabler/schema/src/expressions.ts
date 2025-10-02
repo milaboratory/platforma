@@ -34,7 +34,8 @@ export type Expression =
   | WindowExpression
   | StructFieldExpression
   | MatchesEcmaRegexExpression
-  | ContainsFuzzyMatchExpression;
+  | ContainsFuzzyMatchExpression
+  | InSetExpression;
 
 /** Represents all possible expression types in the system. */
 export type ComparisonOperator = 'gt' | 'ge' | 'eq' | 'lt' | 'le' | 'neq';
@@ -612,4 +613,18 @@ export interface ContainsFuzzyMatchExpression {
   wildcard?: string;
   /** If true, only substitutions are allowed (deletions and insertions are also allowed by default). */
   substitutions_only?: boolean;
+}
+
+/**
+ * Represents an "in set" operation.
+ * Checks if the value of an expression is contained within a specified set of values.
+ * Returns true if the expression's value is found in the set, false otherwise.
+ */
+export interface InSetExpression {
+  /** The type of operation, always 'in_set'. */
+  type: 'in_set';
+  /** The expression whose value will be checked for membership in the set. */
+  value: Expression;
+  /** The set of values to check membership against. */
+  set: (string | number | boolean | null)[];
 }
