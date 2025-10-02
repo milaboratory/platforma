@@ -5,6 +5,8 @@ from .expression_test import ExpressionTests
 from .join_test import JoinTests
 from .ndjson_test import NdjsonTests
 from .parquet_test import ParquetTests
+from .write_frame_test import WriteFrameTests
+from .read_frame_test import ReadFrameTests
 from .sort_test import SortTests
 
 __all__ = [
@@ -15,5 +17,7 @@ __all__ = [
     "JoinTests",
     "NdjsonTests",
     "ParquetTests",
+    "WriteFrameTests",
+    "ReadFrameTests",
     "SortTests",
 ]
