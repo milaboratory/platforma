@@ -2,6 +2,7 @@ from .base import PStep, GlobalSettings, TableSpace, StepContext
 from .io import ColumnSchema, ReadCsv, ReadNdjson, ReadParquet, WriteCsv, WriteNdjson, WriteParquet
 from .basics import AddColumns, Select, WithColumns, WithoutColumns
 from .filter import Filter
+from .limit import Limit
 from .join import Join
 from .aggregate import Aggregate
 from .concatenate import Concatenate
@@ -23,6 +24,7 @@ type AnyPStep = Union[
     WithColumns,
     WithoutColumns,
     Filter,
+    Limit,
     Join,
     Aggregate,
     Concatenate,
@@ -44,6 +46,7 @@ __all__ = [
     "WithColumns",
     "WithoutColumns",
     "Filter",
+    "Limit",
     "Join",
     "Aggregate",
     "Concatenate",
