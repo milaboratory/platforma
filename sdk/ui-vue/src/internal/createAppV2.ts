@@ -12,7 +12,7 @@ import { applyPatch } from 'fast-json-patch';
 import { UpdateSerializer } from './UpdateSerializer';
 import { watchIgnorable } from '@vueuse/core';
 
-export const patchPoolingDelay = 100;
+export const patchPoolingDelay = 150;
 
 export const createNextAuthorMarker = (marker: AuthorMarker | undefined): AuthorMarker => ({
   authorId: marker?.authorId ?? uniqueId(),
@@ -148,7 +148,7 @@ export function createAppV2<
     () => appModel.model,
     (_newData) => {
       const newData = deepClone(_newData);
-      debug('setArgsAndUiStateQueue appModel.model', newData);
+      debug('setArgsAndUiStateQueue appModel.model, args', newData.args, 'ui', newData.ui);
       setArgsAndUiStateQueue.run(() => setBlockArgsAndUiState(newData.args, newData.ui).then(unwrapResult));
     },
     { deep: true },
@@ -192,7 +192,7 @@ export function createAppV2<
 
         // Immutable behavior, apply external changes to the snapshot
         if (isAuthorChanged || data.isExternalSnapshot) {
-          debug('got external changes, applying them to the snapshot', snapshot.value);
+          debug('got external changes, applying them to the snapshot', patches.value);
           ignoreUpdates(() => {
             snapshot.value = applyPatch(snapshot.value, patches.value, false, false).newDocument;
             updateAppModel({ args: snapshot.value.args, ui: snapshot.value.ui });
@@ -200,7 +200,10 @@ export function createAppV2<
           });
         } else {
           // Mutable behavior
-          snapshot.value = applyPatch(snapshot.value, patches.value).newDocument;
+          debug('outputs changed', patches.value);
+          ignoreUpdates(() => {
+            snapshot.value = applyPatch(snapshot.value, patches.value).newDocument;
+          });
         }
 
         await new Promise((resolve) => setTimeout(resolve, patchPoolingDelay));
