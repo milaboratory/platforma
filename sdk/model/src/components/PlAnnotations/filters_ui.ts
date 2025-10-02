@@ -447,7 +447,7 @@ export const filterUiMetadata = {
       type: {
         label: 'Predicate',
         fieldType: 'FilterUiType',
-        defaultValue: () => 'numberEquals',
+        defaultValue: () => 'numberNotEquals',
       },
       x: {
         label: 'Number',
@@ -540,13 +540,31 @@ export const filterUiMetadata = {
 } satisfies CreateFilterUiMetadataMap<FilterUiType>;
 
 // exist in PlAdvancedFilter
-const ignoredFilters = new Set<FilterUiType>(['numberEquals', 'numberNotEquals', 'patternFuzzyContainSubsequence', 'patternMatchesRegularExpression']);
+const filtersInPlAnnotation = new Set<FilterUiType>([
+  'lessThan',
+  'greaterThan',
+  'lessThanOrEqual',
+  'greaterThanOrEqual',
+  'lessThanColumn',
+  'lessThanColumnOrEqual',
+  'patternEquals',
+  'patternNotEquals',
+  'patternContainSubsequence',
+  'patternNotContainSubsequence',
+  'and',
+  'or',
+  'not',
+  'isNA',
+  'isNotNA',
+  'topN',
+  'bottomN',
+]); // 'numberEquals', 'numberNotEquals', 'patternFuzzyContainSubsequence', 'patternMatchesRegularExpression' are not supported in PlAnnotation
 export function getFilterUiTypeOptions(columnSpec?: SimplifiedPColumnSpec) {
   if (!columnSpec) {
     return [];
   }
 
-  return Object.entries(filterUiMetadata).filter(([filterName, metadata]) => !ignoredFilters.has(filterName as FilterUiType)
+  return Object.entries(filterUiMetadata).filter(([filterName, metadata]) => !filtersInPlAnnotation.has(filterName as FilterUiType)
     && metadata.supportedFor(columnSpec)).map(([type, metadata]) => ({
     label: metadata.label,
     value: type,
@@ -722,10 +740,7 @@ export function compileFilter(ui: FilterUi): AnnotationFilter {
     || ui.type === 'numberNotEquals'
     || ui.type === 'patternFuzzyContainSubsequence'
     || ui.type === 'patternMatchesRegularExpression') {
-    return {
-      type: 'or' as const,
-      filters: [],
-    };
+    throw new Error(`Filter "${ui.type}" is not supported in PlAnnotation`);
   }
 
   if (ui.type === undefined) {
