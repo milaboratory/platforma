@@ -20,6 +20,7 @@ from ptabler.expression import (
     FillNullExpression,
     UnaryMinusExpression,
     MatchesEcmaRegexExpression, ContainsFuzzyMatchExpression,
+    InSetExpression,
 )
 
 # Minimal global_settings for tests not relying on file I/O from a specific root_folder
@@ -1309,6 +1310,45 @@ class ExpressionTests(unittest.TestCase):
         expected_df = pl.DataFrame({
             "text": ["hello_world", "hullo_world", "goodbye"],
             "fuzzy_match": [True, True, False]
+        })
+
+        result_df = ctx.get_table("test_data").collect()
+        result_df = result_df.select(expected_df.columns)
+        assert_frame_equal(result_df, expected_df, check_dtypes=True)
+
+    def test_in_set_expression(self):
+        """
+        Tests AddColumns step with InSetExpression.
+        Checks if values are in a given set.
+        """
+        initial_df = pl.DataFrame({
+            "category": ["A", "B", "C", "D"]
+        }).lazy()
+        initial_table_space: TableSpace = {"test_data": initial_df}
+
+        in_set_step = AddColumns(
+            table="test_data",
+            columns=[
+                ColumnDefinition(
+                    name="in_set",
+                    expression=InSetExpression(
+                        value=ColumnReferenceExpression(name="category"),
+                        set=["A", "B"]
+                    )
+                )
+            ]
+        )
+
+        workflow = PWorkflow(workflow=[in_set_step])
+        ctx = workflow.execute(
+            global_settings=global_settings,
+            lazy=True,
+            initial_table_space=initial_table_space
+        )
+
+        expected_df = pl.DataFrame({
+            "category": ["A", "B", "C", "D"],
+            "in_set": [True, True, False, False]
         })
 
         result_df = ctx.get_table("test_data").collect()

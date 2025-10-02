@@ -1,5 +1,5 @@
 from math import log
-import typing
+from typing import Optional, Union
 import polars as pl
 from polars_pf import axis_ref, AxisSpec
 
@@ -130,7 +130,7 @@ class UnaryMinusExpression(UnaryArithmeticBaseExpression, tag='negate'):
 class CastExpression(Expression, tag='cast'):
     value: 'AnyExpression'
     dtype: PType
-    strict: typing.Optional[bool] = None
+    strict: Optional[bool] = None
 
     def to_polars(self) -> pl.Expr:
         return self.value.to_polars().cast(toPolarsType(self.dtype), strict=self.strict or False)
@@ -203,10 +203,18 @@ class AxisReferenceExpression(Expression, tag='axis'):
 
 # Constant Value Expression
 class ConstantValueExpression(Expression, tag='const'):
-    value: typing.Union[str, int, float, bool, None]
+    value: Union[str, int, float, bool, None]
 
     def to_polars(self) -> pl.Expr:
         return pl.lit(self.value)
+
+# In Set Expression
+class InSetExpression(Expression, tag='in_set'):
+    value: 'AnyExpression'
+    set: list[Union[str, int, float, bool, None]]
+
+    def to_polars(self) -> pl.Expr:
+        return self.value.to_polars().is_in(self.set)
 
 
 # Min/Max Expressions
