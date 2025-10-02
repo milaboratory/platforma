@@ -1,9 +1,8 @@
-/* eslint-disable @stylistic/no-tabs */
 import type { AnchoredPColumnId, FilteredPColumnId } from '@milaboratories/pl-middle-layer';
 import { canonicalizeJson, createPlRef } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import { vi } from 'vitest';
 import dedent from 'dedent';
+import { vi } from 'vitest';
 import { Timeout, getFileContent } from './helpers';
 
 vi.setConfig({ testTimeout: Timeout });
