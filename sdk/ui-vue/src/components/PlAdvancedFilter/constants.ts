@@ -1,3 +1,4 @@
+import type { SUniversalPColumnId } from '@platforma-sdk/model';
 import type { Filter, FilterType, SupportedFilterTypes } from './types';
 import type { NormalizedSpecData } from './utils';
 
@@ -18,15 +19,15 @@ export const SUPPORTED_FILTER_TYPES = new Set<SupportedFilterTypes>([
   'patternMatchesRegularExpression',
 ]);
 
-const LOCAL_FILTER_TYPES: FilterType[] = ['InSet', 'NotInSet'];
+const LOCAL_FILTER_TYPES: FilterType[] = ['inSet', 'notInSet'];
 export const ALL_FILTER_TYPES = new Set<FilterType>([...SUPPORTED_FILTER_TYPES, ...LOCAL_FILTER_TYPES]);
 
-export const LOCAL_FILTERS_METADATA: Record<'InSet' | 'NotInSet', { label: string; supportedFor: (spec: NormalizedSpecData) => boolean }> = {
-  InSet: {
+export const LOCAL_FILTERS_METADATA: Record<'inSet' | 'notInSet', { label: string; supportedFor: (spec: NormalizedSpecData) => boolean }> = {
+  inSet: {
     label: 'In set',
     supportedFor: (spec) => spec.valueType === 'String',
   },
-  NotInSet: {
+  notInSet: {
     label: 'Not in set',
     supportedFor: (spec) => spec.valueType === 'String',
   },
@@ -34,21 +35,22 @@ export const LOCAL_FILTERS_METADATA: Record<'InSet' | 'NotInSet', { label: strin
 
 export const DEFAULT_FILTER_TYPE: FilterType = 'isNA';
 
+const emptyColumnId = '' as SUniversalPColumnId;
 export const DEFAULT_FILTERS: Record<FilterType, Filter> = {
-  isNA: { type: 'isNA', sourceId: '' },
-  isNotNA: { type: 'isNotNA', sourceId: '' },
-  lessThan: { type: 'lessThan', sourceId: '', reference: undefined },
-  lessThanOrEqual: { type: 'lessThanOrEqual', sourceId: '', reference: undefined },
-  patternEquals: { type: 'patternEquals', sourceId: '', reference: undefined },
-  patternNotEquals: { type: 'patternNotEquals', sourceId: '', reference: undefined },
-  greaterThan: { type: 'greaterThan', sourceId: '', reference: undefined },
-  greaterThanOrEqual: { type: 'greaterThanOrEqual', sourceId: '', reference: undefined },
-  patternContainSubsequence: { type: 'patternContainSubsequence', sourceId: '', substring: '' },
-  patternNotContainSubsequence: { type: 'patternNotContainSubsequence', sourceId: '', substring: '' },
-  patternFuzzyContainSubsequence: { type: 'patternFuzzyContainSubsequence', sourceId: '', maxEdits: 2, substitutionsOnly: false, wildcard: undefined, reference: '' },
-  patternMatchesRegularExpression: { type: 'patternMatchesRegularExpression', sourceId: '', reference: '' },
-  numberEquals: { type: 'numberEquals', sourceId: '', reference: undefined },
-  numberNotEquals: { type: 'numberNotEquals', sourceId: '', reference: undefined },
-  InSet: { type: 'InSet', sourceId: '', reference: [] },
-  NotInSet: { type: 'InSet', sourceId: '', reference: [] },
+  isNA: { type: 'isNA', column: emptyColumnId },
+  isNotNA: { type: 'isNotNA', column: emptyColumnId },
+  lessThan: { type: 'lessThan', column: emptyColumnId, x: undefined },
+  lessThanOrEqual: { type: 'lessThanOrEqual', column: emptyColumnId, x: undefined },
+  patternEquals: { type: 'patternEquals', column: emptyColumnId, value: '' },
+  patternNotEquals: { type: 'patternNotEquals', column: emptyColumnId, value: '' },
+  greaterThan: { type: 'greaterThan', column: emptyColumnId, x: undefined },
+  greaterThanOrEqual: { type: 'greaterThanOrEqual', column: emptyColumnId, x: undefined },
+  patternContainSubsequence: { type: 'patternContainSubsequence', column: emptyColumnId, value: '' },
+  patternNotContainSubsequence: { type: 'patternNotContainSubsequence', column: emptyColumnId, value: '' },
+  patternFuzzyContainSubsequence: { type: 'patternFuzzyContainSubsequence', column: emptyColumnId, maxEdits: 2, substitutionsOnly: false, wildcard: undefined, value: '' },
+  patternMatchesRegularExpression: { type: 'patternMatchesRegularExpression', column: emptyColumnId, value: '' },
+  numberEquals: { type: 'numberEquals', column: emptyColumnId, x: undefined },
+  numberNotEquals: { type: 'numberNotEquals', column: emptyColumnId, x: undefined },
+  inSet: { type: 'inSet', column: emptyColumnId, value: [] },
+  notInSet: { type: 'notInSet', column: emptyColumnId, value: [] },
 };

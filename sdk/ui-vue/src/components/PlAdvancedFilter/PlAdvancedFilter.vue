@@ -5,7 +5,7 @@ import type { PlAdvancedFilterUI, SourceOptionsInfo, UniqueValuesInfo } from './
 import { computed, reactive, ref, watch } from 'vue';
 import OperandButton from './OperandButton.vue';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
-import type { FilterUi, ListOptionBase } from '@platforma-sdk/model';
+import type { FilterUi, ListOptionBase, SUniversalPColumnId } from '@platforma-sdk/model';
 import { createNewGroup, toInnerModel, toOuterModel } from './utils';
 
 const props = withDefaults(defineProps<{
@@ -21,12 +21,14 @@ const props = withDefaults(defineProps<{
    * If sourceId missed here values PlAutocomplete component used */
   uniqueValuesBySourceId: UniqueValuesInfo;
   /** Loading function for unique values for Equal/InSet filters. Used if there are not ready list of unique values in uniqueValuesBySourceId */
-  searchOptions: (id: string, str: string) => Promise<ListOptionBase<string | number>[]>;
+  searchOptionsFn?: (id: string, str: string) => (Promise<ListOptionBase<string | number>[]>) | ((id: string, str: string) => ListOptionBase<string | number>[]);
   /** Loading function for label of selected value for Equal/InSet filters. Used if there are not ready list of unique values in uniqueValuesBySourceId */
-  searchModel: (id: string, str: string) => Promise<ListOptionBase<string | number>>;
+  searchModelFn?: (id: string, str: string) => (Promise<ListOptionBase<string | number>>) | ((id: string, str: string) => ListOptionBase<string | number>);
 }>(), {
   dndMode: false,
   draggedId: undefined,
+  searchOptionsFn: undefined,
+  searchModelFn: undefined,
 });
 
 const model = defineModel<FilterUi>({ required: true });
@@ -55,7 +57,7 @@ const expanded = reactive<Record<string, boolean>>(innerModel.value.groups.reduc
 function addColumnToGroup(groupIdx: number, selectedSourceId: string) {
   innerModel.value.groups[groupIdx].filters.push({
     ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
-    sourceId: selectedSourceId,
+    column: selectedSourceId as SUniversalPColumnId,
   });
 }
 
@@ -97,12 +99,10 @@ function dragOver(event: DragEvent) {
       :get-item-key="(group) => group.id"
 
       :item-class="$style.filterGroup"
-      :item-class-body="$style.filterGroup__body"
-      :item-class-head="$style.filterGroup__head"
+      :item-class-content="$style.filterGroupContent"
+      :item-class-title="$style.filterGroupTitle"
 
       :is-expanded="(group) => expanded[group.id] ?? false"
-      :is-expandable="() => true"
-      :is-removable="() => true"
 
       :disableDragging="false"
       :disableRemoving="false"
@@ -122,15 +122,15 @@ function dragOver(event: DragEvent) {
         >
           <PlCheckbox v-model="item.not">NOT</PlCheckbox>
           <FilterComponent
-            v-for="filterIdx of new Array(item.filters.length).fill(0).map((_v, idx)=> idx)"
+            v-for="(filter, filterIdx) in item.filters"
             :key="filterIdx"
             v-model="item.filters[filterIdx]"
             :operand="item.operand"
             :source-info-by-source-id="sourceInfoBySourceId"
             :unique-values-by-source-id="uniqueValuesBySourceId"
             :source-ids="sourceIds"
-            :search-model="searchModel"
-            :search-options="searchOptions"
+            :search-model-fn="searchModelFn"
+            :search-options-fn="searchOptionsFn"
             :dnd-mode="dndMode"
             :last="filterIdx === item.filters.length - 1"
             @change-operand="(v) => item.operand = v"
@@ -145,7 +145,7 @@ function dragOver(event: DragEvent) {
         </div>
       </template>
       <template #item-after="{ index }">
-        <div :class="$style.button_wrapper">
+        <div :class="$style.buttonWrapper">
           <OperandButton
             :active="innerModel.operand"
             :disabled="index === innerModel.groups.length - 1"
@@ -160,8 +160,8 @@ function dragOver(event: DragEvent) {
       v-model:items="emptyGroup"
       :get-item-key="(group) => group.id"
       :item-class="$style.filterGroup"
-      :item-class-body="$style.filterGroup__body"
-      :item-class-head="$style.filterGroup__head"
+      :item-class-content="$style.filterGroupContent"
+      :item-class-title="$style.filterGroupTitle"
 
       :is-expanded="() => true"
 
@@ -188,23 +188,14 @@ function dragOver(event: DragEvent) {
 </template>
 <style lang="scss" module>
   .filterGroup {
-    margin-bottom: 72px;
-    overflow: visible;
     background: var(--bg-base-light);
-
-    &:hover {
-      background: rgba(99, 224, 36, 0.12);
-    }
-
-    &__body {
-      background: none;
-      padding: 8px 12px;
-    }
-    &__head {
-      background: none;
-    }
+      &:hover {
+        background: rgba(99, 224, 36, 0.12);
+      }
   }
-
+  .filterGroupTitle {
+    background: none;
+  }
   .groupContent {
     display: flex;
     flex-direction: column;
@@ -224,11 +215,12 @@ function dragOver(event: DragEvent) {
     justify-content: center;
     align-items: center;
   }
-  .button_wrapper {
-    height: 0;
-    transform: translateY(25px);
+  .buttonWrapper {
+    height: 72px;
+    display: flex;
+    align-items: center;
   }
-  :global(.sortable-chosen) .button_wrapper{
+  :global(.sortable-chosen) .buttonWrapper{
     visibility: hidden;
   }
 </style>

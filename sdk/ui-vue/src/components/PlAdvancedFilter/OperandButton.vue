@@ -31,23 +31,23 @@ const OPTIONS: Operand[] = ['and', 'or'];
   justify-content: center;
 }
 .operand {
-    border-radius: 120px;
-    width: 64px;
-    height: 32px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-transform: uppercase;
-    font-weight: 600;
+  border-radius: 16px;
+  width: 64px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-transform: uppercase;
+  font-weight: 600;
 
-    color: var(--txt-03);
-    border: 1px solid var(--color-div-grey);
-    background: transparent;
-    cursor: pointer;
+  color: var(--txt-03);
+  border: 1px solid var(--color-div-grey);
+  background: transparent;
+  cursor: pointer;
 }
 .operand.active {
-    color: var(--txt-01);
-    background: #fff;
-    border: 1px solid var(--txt-01);
+  color: var(--txt-01);
+  background: #fff;
+  border: 1px solid var(--txt-01);
 }
 </style>
