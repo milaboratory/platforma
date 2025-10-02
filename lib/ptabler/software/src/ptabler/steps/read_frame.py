@@ -23,11 +23,11 @@ class ReadFrame(PStep, tag="read_frame"):
     """Name to assign to the loaded DataFrame in the tablespace"""
     request: CreateTableRequest
     """Request to create the table"""
-    spill_path: Optional[str] = None,
+    spill_path: Optional[str] = None
     """Spill path for PFrames, OS /tmp by default"""
-    parallel: ParallelStrategy = "auto",
+    parallel: ParallelStrategy = "auto"
     """Parallel strategy to use for the read"""
-    low_memory: bool = False,
+    low_memory: bool = False
     """Whether to use low memory mode for the read"""
     schema: Optional[List[ColumnSchema]] = None
     """Schema to use for the table, will be applied as a series of cast expressions"""
@@ -44,6 +44,7 @@ class ReadFrame(PStep, tag="read_frame"):
         if not os.path.isdir(directory_path):
             raise ValueError(f"The 'directory' is not an existing directory: {directory_path}")
 
+        spill_path = None
         if self.spill_path is not None:
             if self.spill_path != os.path.basename(self.spill_path):
                 raise ValueError("The 'spill_path' must be a directory name, not a path.")

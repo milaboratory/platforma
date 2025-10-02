@@ -198,7 +198,7 @@ class AxisReferenceExpression(Expression, tag='axis'):
     spec: AxisSpec
 
     def to_polars(self) -> pl.Expr:
-        return pl.col(axis_ref(self.axis))
+        return pl.col(axis_ref(self.spec))
 
 
 # Constant Value Expression
