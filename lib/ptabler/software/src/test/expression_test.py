@@ -19,6 +19,7 @@ from ptabler.expression import (
     StringExtractExpression, StringStartsWithExpression, StringEndsWithExpression,
     FillNullExpression,
     UnaryMinusExpression,
+    MatchesEcmaRegexExpression, ContainsFuzzyMatchExpression,
 )
 
 # Minimal global_settings for tests not relying on file I/O from a specific root_folder
@@ -1229,6 +1230,85 @@ class ExpressionTests(unittest.TestCase):
             "text": ["Apple", "BANANA", "orange", "GRAPE"],
             # Case insensitive matching
             "contains_fruit_ci": [True, True, False, False]
+        })
+
+        result_df = ctx.get_table("test_data").collect()
+        result_df = result_df.select(expected_df.columns)
+        assert_frame_equal(result_df, expected_df, check_dtypes=True)
+
+    def test_matches_ecma_regex_expression(self):
+        """
+        Simple test for MatchesEcmaRegexExpression using the reference test pattern.
+        """
+        initial_df = pl.DataFrame({
+            "text": ["hello_world", "goodbye"]
+        }).lazy()
+        initial_table_space: TableSpace = {"test_data": initial_df}
+
+        matches_regex_step = AddColumns(
+            table="test_data",
+            columns=[
+                ColumnDefinition(
+                    name="matches_hello",
+                    expression=MatchesEcmaRegexExpression(
+                        value=ColumnReferenceExpression(name="text"),
+                        ecma_regex="^h(e+)llo"
+                    )
+                )
+            ]
+        )
+
+        workflow = PWorkflow(workflow=[matches_regex_step])
+        ctx = workflow.execute(
+            global_settings=global_settings,
+            lazy=True,
+            initial_table_space=initial_table_space
+        )
+
+        expected_df = pl.DataFrame({
+            "text": ["hello_world", "goodbye"],
+            "matches_hello": [True, False]
+        })
+
+        result_df = ctx.get_table("test_data").collect()
+        result_df = result_df.select(expected_df.columns)
+        assert_frame_equal(result_df, expected_df, check_dtypes=True)
+
+    def test_contains_fuzzy_match_expression(self):
+        """
+        Simple test for ContainsFuzzyMatchExpression with basic functionality.
+        Note: Currently failing due to plugin parameter parsing issue.
+        """
+        initial_df = pl.DataFrame({
+            "text": ["hello_world", "hullo_world", "goodbye"]
+        }).lazy()
+        initial_table_space: TableSpace = {"test_data": initial_df}
+
+        fuzzy_match_step = AddColumns(
+            table="test_data",
+            columns=[
+                ColumnDefinition(
+                    name="fuzzy_match",
+                    expression=ContainsFuzzyMatchExpression(
+                        value=ColumnReferenceExpression(name="text"),
+                        reference="hullo*",
+                        max_edits=1,
+                        wildcard="*"
+                    )
+                )
+            ]
+        )
+
+        workflow = PWorkflow(workflow=[fuzzy_match_step])
+        ctx = workflow.execute(
+            global_settings=global_settings,
+            lazy=True,
+            initial_table_space=initial_table_space
+        )
+
+        expected_df = pl.DataFrame({
+            "text": ["hello_world", "hullo_world", "goodbye"],
+            "fuzzy_match": [True, True, False]
         })
 
         result_df = ctx.get_table("test_data").collect()
