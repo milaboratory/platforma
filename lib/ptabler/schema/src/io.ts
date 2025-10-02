@@ -1,5 +1,4 @@
 import type { DataType } from './common';
-import type { PTableDef, PObjectId } from '@milaboratories/pl-model-common';
 
 /**
  * Represents the schema definition for a single column.
@@ -118,29 +117,4 @@ export interface WriteNdjsonStep extends BaseFileWriteStep {
 export interface WriteParquetStep extends BaseFileWriteStep {
   /** The type of the step, which is always 'write_parquet' for this operation. */
   type: 'write_parquet';
-}
-
-/**
- * Represents the configuration for a step that reads data from a PFrame directory into the tablespace.
- * Creates a lazy table from the provided PFrame using polars-pf.
- */
-export interface ReadFrameStep {
-  /** The type of the step, which is always 'read_frame' for this operation. */
-  type: 'read_frame';
-  /** Path to the PFrame directory. */
-  directory: string;
-  /** The name assigned to the loaded DataFrame in the tablespace. */
-  name: string;
-  /** Request to create the table from the PFrame. */
-  request: PTableDef<PObjectId>;
-  /** Relative path to temporary directory for PFrames, OS /tmp by default. */
-  spill_path?: string;
-  /** Polars parallel strategy to use for the read. Defaults to 'auto'. */
-  parallel?: 'auto' | 'columns' | 'row_groups' | 'prefiltered' | 'none';
-  /** Whether to use low memory mode for the polars read. Defaults to false. */
-  low_memory?: boolean;
-  /** Optional: Schema to use for the table, will be applied as a series of cast expressions. */
-  schema?: ColumnSchema[];
-  /** Optional: Number of rows to read. If not specified, all rows will be read. */
-  n_rows?: number;
 }

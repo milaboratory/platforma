@@ -24,11 +24,25 @@ def main():
         default=pathlib.Path.cwd(),
         help="Root directory for resolving relative paths in the workflow. Defaults to the current working directory.",
     )
+    parser.add_argument(
+        "--frame-dir",
+        type=pathlib.Path,
+        default=None,
+        help="Directory where PFrames are stored. Defaults to None (will allow workflows without frames to run).",
+    )
+    parser.add_argument(
+        "--spill-dir",
+        type=pathlib.Path,
+        default=None,
+        help="Directory where PFrames can create temporary files. Defaults to None (resolves to OS default /tmp).",
+    )
 
     args = parser.parse_args()
 
     workflow_file_path = args.workflow_file.resolve()
     root_directory = args.root_dir.resolve()
+    frame_directory = args.frame_dir.resolve() if args.frame_dir is not None else None
+    spill_directory = args.spill_dir.resolve() if args.spill_dir is not None else None
 
     if not workflow_file_path.is_file():
         print(
@@ -75,7 +89,11 @@ def main():
     # 3. Process the steps in the workflow
     try:
         print("Executing workflow...")
-        global_settings = GlobalSettings(root_folder=root_directory)
+        global_settings = GlobalSettings(
+            root_folder=root_directory,
+            frame_folder=frame_directory,
+            spill_folder=spill_directory,
+        )
         ptw.execute(global_settings=global_settings)
         print("Workflow execution finished.")
     except Exception as e:
