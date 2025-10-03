@@ -46,12 +46,12 @@ export class Migrator {
       const newID = toApply + 1;
       toApply++;
 
+      pkg.migrations[this.packageName] = newID;
+
       // Update version preserving formatting if possible
       if (this.updateMigrationVersion(oldID, newID)) {
         continue;
       }
-
-      pkg.migrations[this.packageName] = newID;
       this.writePackageJsonObj(pkg);
     }
   }
