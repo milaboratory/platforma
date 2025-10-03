@@ -87,7 +87,7 @@ export class Migrator {
     const text = this.readPackageJson();
     const newline = text.includes('\r\n') ? '\r\n' : '\n';
 
-    const migBlockRe = /("migrations"\s*:\s*\{)([\s\S]*?)(\n\s*\})/s;
+    const migBlockRe = /("migrations"\s*:\s*\{)([\s\S]*?)(\n*\s*\})/s;
     const m = text.match(migBlockRe);
     if (!m || m.index == null) return false;
 
