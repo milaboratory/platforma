@@ -70,7 +70,8 @@ class ReadFrameTests(unittest.TestCase):
                     ColumnJoinEntry(column_id=column.name) for column in columns
                 ]),
                 filters=[],
-            )
+            ),
+            translation={column.name: column.name for column in columns}
         )
         read_workflow = PWorkflow(workflow=[read_step])
         
@@ -106,7 +107,8 @@ class ReadFrameTests(unittest.TestCase):
             request=CreateTableRequest(
                 src=ColumnJoinEntry(column_id="value"),
                 filters=[]
-            )
+            ),
+            translation={}
         )
         workflow = PWorkflow(workflow=[read_step])
         
