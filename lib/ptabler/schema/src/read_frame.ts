@@ -11,6 +11,8 @@ export interface ReadFrameStep {
   name: string;
   /** Request to create the table from the PFrame. */
   request: PTableDef<PObjectId>;
+  /** Translation of PFrame column ids into Polars column names. */
+  translation: Record<string, string>;
   /** Polars parallel strategy to use for the read. Defaults to 'auto'. */
   parallel?: 'auto' | 'columns' | 'row_groups' | 'prefiltered' | 'none';
   /** Whether to use low memory mode for the polars read. Defaults to false. */
