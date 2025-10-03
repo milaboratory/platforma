@@ -63,7 +63,11 @@ export default class BuildAll extends Command {
         packageIds: flags['package-id'] ? flags['package-id'] : undefined,
       });
 
-      const autopush = docker.shouldDoAction(envs.isCI(), flags['docker-autopush'], flags['docker-no-autopush']);
+      const autopush = docker.shouldDoAction(
+        envs.isCI() && !core.pkgInfo.isPrivate, // do not push docker images of private packages
+        flags['docker-autopush'],
+        flags['docker-no-autopush'],
+      );
       if (buildDocker && autopush) {
         // TODO: as we do not create content-addressable archives for binary packages, we should not upload them
         //       for each build to not spoil release process with dev archives cached by CDN.
