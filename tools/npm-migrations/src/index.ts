@@ -6,15 +6,54 @@ export type Migration = () => void | Promise<void>;
 export class Migrator {
   private readonly packageName: string;
   private readonly projectRoot: string;
+  private readonly onFirstInstall: 'apply-all' | 'skip-all';
   private migrations: Migration[] = [];
 
-  constructor(packageName: string, opts?: { projectRoot?: string }) {
+  constructor(packageName: string, opts?: {
+    projectRoot?: string;
+    onFirstInstall?: 'apply-all' | 'skip-all';
+  }) {
     this.packageName = packageName;
     this.projectRoot = opts?.projectRoot ?? (process.env.INIT_CWD || process.cwd());
+    this.onFirstInstall = opts?.onFirstInstall ?? 'skip-all';
   }
 
-  public addMigrations(...migrations: Migration[]): void {
+  public addMigration(...migrations: Migration[]): void {
     this.migrations.push(...migrations);
+  }
+
+  public async applyMigrations(): Promise<void> {
+    const pkg = this.readPackageJsonObj();
+    pkg.migrations = pkg.migrations ?? {};
+
+    const pkgMigrationValue = pkg.migrations[this.packageName];
+    const nextToApply: number | null = Number.isInteger(pkgMigrationValue) ? pkgMigrationValue : null;
+
+    // If no record: set to latest immediately, do NOT run migrations
+    if (nextToApply === null && this.onFirstInstall === 'skip-all') {
+      pkg.migrations[this.packageName] = this.migrations.length;
+      this.writePackageJsonObj(pkg);
+      return;
+    }
+
+    // Apply pending migrations one-by-one
+    let toApply = nextToApply ?? 0;
+    while (toApply < this.migrations.length) {
+      const migration = this.migrations[toApply];
+      await migration?.();
+
+      const oldID = toApply;
+      const newID = toApply + 1;
+      toApply++;
+
+      // Update version preserving formatting if possible
+      if (this.updateMigrationVersion(oldID, newID)) {
+        continue;
+      }
+
+      pkg.migrations[this.packageName] = newID;
+      this.writePackageJsonObj(pkg);
+    }
   }
 
   private readPackageJson(): string {
@@ -90,37 +129,5 @@ export class Migrator {
     this.writePackageJson(updated);
 
     return found;
-  }
-
-  public async run(): Promise<void> {
-    const pkg = this.readPackageJsonObj();
-    pkg.migrations = pkg.migrations ?? {};
-
-    const currentVal = pkg.migrations[this.packageName];
-    const current: number | null = Number.isInteger(currentVal) ? currentVal : null;
-
-    // If no record: set to latest immediately, do NOT run migrations
-    if (current === null) {
-      pkg.migrations[this.packageName] = this.migrations.length;
-      this.writePackageJsonObj(pkg);
-      return;
-    }
-
-    // Apply pending migrations one-by-one
-    let migrationID = current;
-    while (migrationID < this.migrations.length) {
-      const migration = this.migrations[migrationID];
-      await migration?.();
-
-      // Update version preserving formatting if possible
-      if (this.updateMigrationVersion(migrationID, migrationID + 1)) {
-        migrationID++;
-        continue;
-      }
-
-      migrationID++;
-      pkg.migrations[this.packageName] = migrationID;
-      this.writePackageJsonObj(pkg);
-    }
   }
 }

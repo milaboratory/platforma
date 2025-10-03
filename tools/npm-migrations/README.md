@@ -13,13 +13,13 @@ import { Migrator } from '@platforma-sdk/npm-migrations';
 
 const migrator = new Migrator('your-package-name');
 
-async function migration001() {
+migrator.addMigration(() => {
   // do stuff
-}
-async function migration002() {
-  // do more stuff
-}
+})
 
-migrator.addMigrations(migration001, migration002);
-await migrator.run();
+migrator.addMigration(() => {
+  // do stuff
+})
+
+await migrator.applyMigrations()
 ```

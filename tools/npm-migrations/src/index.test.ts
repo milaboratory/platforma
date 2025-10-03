@@ -15,51 +15,19 @@ describe('Apply migrations', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  test("no migrations entry", async () => {
-    const pkgPath = path.join(tempDir, 'package.json');
-    const pkgName = '@pkg/example';
-
-    const initialText = `{
-  "name": "test",
-  "version": "1.0.0"
-}
-`;
-    const expectText = `{
-  "name": "test",
-  "version": "1.0.0",
-  "migrations": {
-    "@pkg/example": 2
-  }
-}
-`
-
-    await fs.writeFile(pkgPath, initialText);
-
-    let migrationCalled = false;
-    const migration = async () => {migrationCalled = true;};
-
-    const migrator = new Migrator(pkgName, { projectRoot: tempDir });
-    migrator.addMigrations(migration, migration); // 2 migrations
-    await migrator.run();
-
-    const updated = await fs.readFile(pkgPath, 'utf8');
-    expect(updated).toBe(expectText);
-    expect(migrationCalled).toBe(false);
-  });
-
-  test('no package migrations entry', async () => {
-    const pkgPath = path.join(tempDir, 'package.json');
-    const pkgName = '@pkg/example';
-
-    const initialText = `{
+  test.for([
+    {
+      name: 'no package migrations',
+      initialText: `{
   "name": "test",
   "version": "1.0.0",
   "migrations": {
     "@pkg/example-1": 1
   }
 }
-`;
-    const expectText = `{
+`,
+      expectMigrations: [],
+      expectText: `{
   "name": "test",
   "version": "1.0.0",
   "migrations": {
@@ -67,19 +35,40 @@ describe('Apply migrations', () => {
     "@pkg/example": 3
   }
 }
-`
+`,
+    },
+    {
+      name: 'no migrations entry',
+      initialText: `{
+  "name": "test",
+  "version": "1.0.0"
+}`,
+      expectMigrations: [],
+      expectText: `{
+  "name": "test",
+  "version": "1.0.0",
+  "migrations": {
+    "@pkg/example": 3
+  }
+}
+`,
+    }
+  ])('new package installation ($name)', async ({ initialText, expectText, expectMigrations }) => {
+    const pkgPath = path.join(tempDir, 'package.json');
+    const pkgName = '@pkg/example';
+
     await fs.writeFile(pkgPath, initialText);
 
-    let migrationCalled = false;
-    const migration = async () => {migrationCalled = true;};
+    let called: number[] = [];
+    const migration = (i: number) => { return () => {called.push(i);} };
 
     const migrator = new Migrator(pkgName, { projectRoot: tempDir });
-    migrator.addMigrations(migration, migration, migration); // 3 migrations
-    await migrator.run();
+    migrator.addMigration(migration(0), migration(1), migration(2)); // 3 migrations
+    await migrator.applyMigrations();
 
     const updated = await fs.readFile(pkgPath, 'utf8');
     expect(updated).toBe(expectText);
-    expect(migrationCalled).toBe(false);
+    expect(called).toStrictEqual(expectMigrations);
   });
 
   test.for([
@@ -91,6 +80,7 @@ describe('Apply migrations', () => {
       "@pkg/example"  :   1 }
 }
 `,
+      expectMigrations: [1,2],
       expectText: `{
   "name": "test", "version": "1.0.0",
   "migrations": {
@@ -103,10 +93,11 @@ describe('Apply migrations', () => {
       initialText: `{
   "name": "test", "version": "1.0.0",
   "migrations": {
-      "@pkg/example"  :   1
+      "@pkg/example"  :   0
   }
 }
 `,
+      expectMigrations: [0,1,2],
       expectText: `{
   "name": "test", "version": "1.0.0",
   "migrations": {
@@ -120,11 +111,12 @@ describe('Apply migrations', () => {
       initialText: `{
   "name": "test", "version": "1.0.0",
   "migrations": {
-    "@pkg/example"  :   1,
+    "@pkg/example"  :   2,
     "@pkg/example-2":   4
   }
 }
 `,
+      expectMigrations: [2],
       expectText: `{
   "name": "test", "version": "1.0.0",
   "migrations": {
@@ -134,28 +126,22 @@ describe('Apply migrations', () => {
 }
 `,
     },
-  ])('preserve formatting ($name)', async ({ initialText, expectText }) => {
+  ])('preserve formatting ($name)', async ({ initialText, expectText, expectMigrations }) => {
     const pkgPath = path.join(tempDir, 'package.json');
     const pkgName = '@pkg/example';
 
     await fs.writeFile(pkgPath, initialText);
     
-    let m1Applied = false;
-    let m2Applied = false;
-    let m3Applied = false;
-    const migration1 = async () => {m1Applied = true;};
-    const migration2 = async () => {m2Applied = true;};
-    const migration3 = async () => {m3Applied = true;};
+    let called: number[] = [];
+    const migration = (i: number) => { return () => {called.push(i);} };
 
     const migrator = new Migrator(pkgName, { projectRoot: tempDir });
-    migrator.addMigrations(migration1, migration2, migration3); // 3 migrations
-    await migrator.run();
+    migrator.addMigration(migration(0), migration(1), migration(2));
+    await migrator.applyMigrations();
 
     const updated = await fs.readFile(pkgPath, 'utf8');
     expect(updated).toBe(expectText);
-    expect(m1Applied).toBe(false);
-    expect(m2Applied).toBe(true);
-    expect(m3Applied).toBe(true);
+    expect(called).toStrictEqual(expectMigrations);
   });
 });
 
