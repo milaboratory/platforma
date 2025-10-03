@@ -1,15 +1,7 @@
-import type { AnnotationScriptUi, FilterUi, TypeFieldRecord } from '@platforma-sdk/model';
+import type { FilterSpecTypeFieldRecord } from '@milaboratories/uikit';
+import type { FilterSpec } from './types';
 
-export function getDefaultAnnotationScript(): AnnotationScriptUi {
-  return {
-    isCreated: false,
-    title: 'My Annotation',
-    mode: 'byClonotype',
-    steps: [],
-  };
-}
-
-export function createDefaultFilterMetadata<T extends Extract<FilterUi, { column: unknown }>>(): TypeFieldRecord<T> {
+export function createDefaultFilterMetadata<T extends Extract<FilterSpec, { column: unknown }>>(): FilterSpecTypeFieldRecord<T> {
   return {
     column: {
       label: 'Column',
@@ -18,8 +10,8 @@ export function createDefaultFilterMetadata<T extends Extract<FilterUi, { column
     },
     type: {
       label: 'Predicate',
-      fieldType: 'FilterUiType',
+      fieldType: 'FilterType',
       defaultValue: () => undefined,
     },
-  } as TypeFieldRecord<T>;
+  } as FilterSpecTypeFieldRecord<T>;
 };
