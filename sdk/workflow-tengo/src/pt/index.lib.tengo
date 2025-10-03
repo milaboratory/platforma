@@ -393,9 +393,9 @@ workflow := func() {
 			for column in columns {
 				if (isFilteredColumn(column)) {
 					filteredColumns = append(filteredColumns, column)
-				} else {
-					tsvBuilder.add(bundle.getColumn(column), { header: column })
 				}
+
+				tsvBuilder.add(bundle.getColumn(column), { header: column })
 			}
 			
 			mainDF := self.frame(tsvBuilder.buildForPT())
