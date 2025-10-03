@@ -112,19 +112,33 @@ export function readDomainJson<T extends keyof DomainJson>(
 
 /// Well-known annotations
 export const Annotation = {
+  AxisNature: 'pl7.app/axisNature',
   Alphabet: 'pl7.app/alphabet',
   Description: 'pl7.app/description',
   DiscreteValues: 'pl7.app/discreteValues',
   Format: 'pl7.app/format',
   Graph: {
+    Axis: {
+      HighCardinality: 'pl7.app/graph/axis/highCardinality',
+      LowerLimit: 'pl7.app/graph/axis/lowerLimit',
+      SymmetricRange: 'pl7.app/graph/axis/symmetricRange',
+      UpperLimit: 'pl7.app/graph/axis/upperLimit',
+    },
+    IsDenseAxis: 'pl7.app/graph/isDenseAxis',
     IsVirtual: 'pl7.app/graph/isVirtual',
+    Palette: 'pl7.app/graph/palette',
+    Thresholds: 'pl7.app/graph/thresholds',
+    TreatAbsentValuesAs: 'pl7.app/graph/treatAbsentValuesAs',
   },
   HideDataFromUi: 'pl7.app/hideDataFromUi',
   HideDataFromGraphs: 'pl7.app/hideDataFromGraphs',
+  IsDiscreteFilter: 'pl7.app/isDiscreteFilter',
   IsLinkerColumn: 'pl7.app/isLinkerColumn',
+  IsSubset: 'pl7.app/isSubset',
   Label: 'pl7.app/label',
   Max: 'pl7.app/max',
   Min: 'pl7.app/min',
+  MultipliesBy: 'pl7.app/multipliesBy',
   Parents: 'pl7.app/parents',
   Sequence: {
     Annotation: {
@@ -142,16 +156,28 @@ export const Annotation = {
 
 export type Annotation = Metadata & Partial<{
   [Annotation.Alphabet]: 'nucleotide' | 'aminoacid' | string;
+  [Annotation.AxisNature]: 'homogeneous' | 'heterogeneous' | 'scaleCompatible' | string;
   [Annotation.Description]: string;
   [Annotation.DiscreteValues]: StringifiedJson<number[]> | StringifiedJson<string[]>;
   [Annotation.Format]: string;
+  [Annotation.Graph.Axis.HighCardinality]: StringifiedJson<boolean>;
+  [Annotation.Graph.Axis.LowerLimit]: StringifiedJson<number>;
+  [Annotation.Graph.Axis.SymmetricRange]: StringifiedJson<boolean>;
+  [Annotation.Graph.Axis.UpperLimit]: StringifiedJson<number>;
+  [Annotation.Graph.IsDenseAxis]: StringifiedJson<boolean>;
   [Annotation.Graph.IsVirtual]: StringifiedJson<boolean>;
+  [Annotation.Graph.Palette]: StringifiedJson<{ mapping: Record<string, number>; name: string }>;
+  [Annotation.Graph.Thresholds]: StringifiedJson<{ columnId: { valueType: ValueType; name: string }; value: number }[]>;
+  [Annotation.Graph.TreatAbsentValuesAs]: StringifiedJson<number>;
   [Annotation.HideDataFromUi]: StringifiedJson<boolean>;
   [Annotation.HideDataFromGraphs]: StringifiedJson<boolean>;
+  [Annotation.IsDiscreteFilter]: StringifiedJson<boolean>;
   [Annotation.IsLinkerColumn]: StringifiedJson<boolean>;
+  [Annotation.IsSubset]: StringifiedJson<boolean>;
   [Annotation.Label]: string;
   [Annotation.Max]: StringifiedJson<number>;
   [Annotation.Min]: StringifiedJson<number>;
+  [Annotation.MultipliesBy]: StringifiedJson<AxisSpec['name'][]>;
   [Annotation.Parents]: StringifiedJson<AxisSpec['name'][]>;
   [Annotation.Sequence.Annotation.Mapping]: StringifiedJson<Record<string, string>>;
   [Annotation.Sequence.IsAnnotation]: StringifiedJson<boolean>;
@@ -179,14 +205,32 @@ export type Annotation = Metadata & Partial<{
 // >>;
 
 export type AnnotationJson = MetadataJson<Annotation>;
+
+const ValueTypeSchema = z.enum(['Int', 'Long', 'Float', 'Double', 'String'] as const);
 export const AnnotationJson: AnnotationJson = {
   [Annotation.DiscreteValues]: z.array(z.string()).or(z.array(z.number())),
+  [Annotation.Graph.Axis.HighCardinality]: z.boolean(),
+  [Annotation.Graph.Axis.LowerLimit]: z.number(),
+  [Annotation.Graph.Axis.UpperLimit]: z.number(),
+  [Annotation.Graph.Axis.SymmetricRange]: z.boolean(),
+  [Annotation.Graph.IsDenseAxis]: z.boolean(),
+  [Annotation.Graph.Palette]: z.object({ mapping: z.record(z.number()), name: z.string() }),
+  [Annotation.Graph.Thresholds]: z.array(
+    z.object({
+      columnId: z.object({ valueType: ValueTypeSchema, name: z.string() }),
+      value: z.number(),
+    }),
+  ),
+  [Annotation.Graph.TreatAbsentValuesAs]: z.number(),
   [Annotation.Graph.IsVirtual]: z.boolean(),
   [Annotation.HideDataFromUi]: z.boolean(),
   [Annotation.HideDataFromGraphs]: z.boolean(),
+  [Annotation.IsDiscreteFilter]: z.boolean(),
   [Annotation.IsLinkerColumn]: z.boolean(),
+  [Annotation.IsSubset]: z.boolean(),
   [Annotation.Max]: z.number(),
   [Annotation.Min]: z.number(),
+  [Annotation.MultipliesBy]: z.array(z.string()),
   [Annotation.Parents]: z.array(z.string()),
   [Annotation.Sequence.Annotation.Mapping]: z.record(z.string(), z.string()),
   [Annotation.Sequence.IsAnnotation]: z.boolean(),
