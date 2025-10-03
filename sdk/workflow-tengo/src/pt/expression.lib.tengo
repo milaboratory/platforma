@@ -3,6 +3,7 @@ maps := import(":maps")
 slices := import(":slices")
 validation := import(":validation")
 fmt := import("fmt")
+objects := import(":objects")
 
 
 // Forward declarations
@@ -854,6 +855,83 @@ _newExpression = func(expression, currentAlias) {
 		/** Converts the expression to a string. */
 		toString: func() {
 			return self.cast("string")
+		},
+
+		/**
+		 * Boolean expression indicating if the parent expression row values are in a given set of values.
+		 * @param ...values - varargs - The values to match against.
+		 * @returns {object} - A boolean expression object.
+		 */
+		inSet: func(...values) {
+			ll.assert(len(values) > 0, "inSet method requires at least one value.")
+
+			set := []
+			for v in values {
+				ll.assert(
+					is_undefined(v) || is_bool(v) || is_int(v) || is_float(v) || is_string(v),
+					"Invalid argument in inSet: Expected primitive value, got %T", v)
+				set = append(set, v)
+			}
+			uniqueSet := slices.sortUnique(set)
+
+			return _newExpression({
+				type: "in_set",
+				value: expression,
+				set: uniqueSet
+			}, undefined)
+		},
+
+		/**
+		 * Boolean expression indicating if the parent expression row values match a given ECMAScript regular expression.
+		 * @param ecma_regex - string - The ECMAScript regular expression to match against.
+		 * @returns {object} - A boolean expression object.
+		 */
+		matchesEcmaRegex: func(ecmaRegex) {
+			ll.assert(is_string(ecmaRegex) && len(ecmaRegex) > 0, "ecma_regex must be a non-empty string.")
+
+			return _newExpression({
+				type: "matches_ecma_regex",
+				value: expression,
+				ecmaRegex: ecmaRegex
+			}, undefined)
+		},
+
+		/**
+		 * Boolean expression indicating if the parent expression row values contain a close match to a given reference string.
+		 * @param reference - string - The reference string to compare against.
+		 * @param maxEdits - number - The maximum number of edits allowed to be considered a match.
+		 * @param ...args - varargs - Optional arguments map {wildcard?: string, substitutionsOnly?: boolean}:
+		 *   - wildcard: string - The wildcard character to use.
+		 *   - substitutionsOnly: boolean - If true, only substitutions are allowed (deletions and insertions are also allowed by default).
+		 * @returns {object} - A boolean expression object.
+		 */
+		containsFuzzyMatch: func(reference, maxEdits, ...args) {
+			ll.assert(is_string(reference) && len(reference) > 0, "pattern must be a non-empty string.")
+			ll.assert(is_int(maxEdits) && maxEdits > 0, "maxEdits must be a positive integer.")
+
+			wildcard := undefined
+			substitutionsOnly := undefined
+			if len(args) > 0 {
+				ops := _validateOptions(args, {
+					"__options__,closed": "",
+					"wildcard,?": "string",
+					"substitutionsOnly,?": "bool"
+				}, "containsFuzzyMatch")
+				if !is_undefined(ops.wildcard) {
+					ll.assert(len(ops.wildcard) == 1, "wildcard must be a single character.")
+				}
+				wildcard = ops.wildcard
+				substitutionsOnly = ops.substitutionsOnly
+			}
+
+			return _newExpression(objects.deleteUndefined({
+				type: "contains_fuzzy_match",
+				value: expression,
+				reference: reference,
+				maxEdits: maxEdits,
+				wildcard: wildcard,
+				substitutionsOnly: substitutionsOnly
+			}), undefined)
 		}
 	})
 	return self

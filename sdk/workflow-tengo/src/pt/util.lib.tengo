@@ -95,18 +95,6 @@ validateParamsForFrameFromColumnBundle := func(params) {
     ll.assert(len(params.columns) > 0, "At least one column is required")
 }
 
-unique := func(list) {
-    uniqueMap := {}
-    for _, item in list {
-        uniqueMap[item] = item
-    }
-    uniqueList := []
-    for _, item in uniqueMap {
-        uniqueList = append(uniqueList, item)
-    }
-    return uniqueList
-}
-
 makeFrameSpecs := func(params) {
 	axes := []
     for entry in params.axes {
@@ -121,7 +109,7 @@ makeFrameSpecs := func(params) {
             spec.annotations = entry.spec.annotations
         }
         if !is_undefined(entry.spec.parentAxes) && len(entry.spec.parentAxes) > 0 {
-            spec.parentAxes = unique(entry.spec.parentAxes)
+            spec.parentAxes = slices.sortUnique(entry.spec.parentAxes)
         }
         axes = append(axes, spec)
     }
@@ -140,7 +128,7 @@ makeFrameSpecs := func(params) {
             spec.annotations = entry.spec.annotations
         }
         if !is_undefined(entry.spec.parentAxes) && len(entry.spec.parentAxes) > 0 {
-            spec.parentAxes = unique(entry.spec.parentAxes)
+            spec.parentAxes = slices.sortUnique(entry.spec.parentAxes)
         }
         columns[entry.column] = spec
     }
