@@ -14,7 +14,8 @@ export function defaultHttpDispatcher(
 ): Dispatcher {
   const httpOptions: Client.Options = {
     allowH2: true,
-    autoSelectFamily: false,
+    // autoSelectFamily: true,
+    // autoSelectFamilyAttemptTimeout: 3e3,
     headersTimeout: 15e3,
     bodyTimeout: 30e3, // Reset connection after 30 seconds of inactivity, better retry
     keepAliveTimeout: 15e3,
