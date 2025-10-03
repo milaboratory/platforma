@@ -1,5 +1,23 @@
 # @milaboratories/computable
 
+## 2.7.1
+
+### Patch Changes
+
+- Updated dependencies [25c0fed]
+  - @milaboratories/ts-helpers@1.5.1
+
+## 2.7.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/ts-helpers@1.5.0
+
 ## 2.6.8
 
 ### Patch Changes

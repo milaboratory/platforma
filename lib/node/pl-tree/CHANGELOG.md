@@ -1,5 +1,44 @@
 # @milaboratories/pl-tree
 
+## 1.8.3
+
+### Patch Changes
+
+- Updated dependencies [25c0fed]
+  - @milaboratories/ts-helpers@1.5.1
+  - @milaboratories/computable@2.7.1
+  - @milaboratories/pl-client@2.13.3
+  - @milaboratories/pl-errors@1.1.28
+
+## 1.8.2
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.13.2
+- @milaboratories/pl-errors@1.1.27
+
+## 1.8.1
+
+### Patch Changes
+
+- Updated dependencies [ee46338]
+  - @milaboratories/pl-client@2.13.1
+  - @milaboratories/pl-errors@1.1.26
+
+## 1.8.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/computable@2.7.0
+  - @milaboratories/ts-helpers@1.5.0
+  - @milaboratories/pl-client@2.13.0
+  - @milaboratories/pl-errors@1.1.25
+
 ## 1.7.13
 
 ### Patch Changes

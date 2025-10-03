@@ -176,7 +176,7 @@ catalog:
 
   # Net
 
-  'undici': ~7.13.0
+  'undici': ~7.16.0
   '@grpc/grpc-js': ~1.13.4
   '@protobuf-ts/grpc-transport': *protobuf-ts
   '@protobuf-ts/runtime': *protobuf-ts
@@ -190,7 +190,7 @@ catalog:
   'testcontainers': ^10.18.0
   'utility-types': ^3.11.0
   'denque': ^2.1.0
-  'lru-cache': ^11.1.0
+  'lru-cache': ^11.2.2
   'canonicalize': ~2.1.0
   'long': ^5.3.2
   'mime-types': ^2.1.35
@@ -220,7 +220,7 @@ catalog:
   'winston': ^3.17.0
 
   '@milaboratories/tengo-tester': ^1.6.4
-  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.77
+  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.82
 
   'remeda': ^2.28.0
 
@@ -262,7 +262,7 @@ catalog:
   '@platforma-open/milaboratories.software-small-binaries': ^1.15.21
   '@biowasm/aioli': ~3.2.1
 
-  '@platforma-open/milaboratories.runenv-python-3': 1.4.5
+  '@platforma-open/milaboratories.runenv-python-3': 1.4.12
 
   # Test
 
@@ -284,7 +284,7 @@ catalog:
   '@types/readline-sync': ^1.4.8
   '@types/jest': ^29.5.14
   '@types/http-proxy': ^1.17.16
-  '@types/node': ~20.16.15
+  '@types/node': ~24.5.2
   '@types/eslint__js': ^8.42.3
   '@types/semver': ^7.7.0
   '@types/mime-types': ^2.1.4

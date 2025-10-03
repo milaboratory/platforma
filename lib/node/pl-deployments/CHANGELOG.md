@@ -1,5 +1,44 @@
 # @milaboratories/pl-local
 
+## 2.8.2
+
+### Patch Changes
+
+- Updated dependencies [25c0fed]
+  - @milaboratories/ts-helpers@1.5.1
+  - @milaboratories/pl-config@1.7.6
+
+## 2.8.1
+
+### Patch Changes
+
+- Updated dependencies [213d0c2]
+  - @milaboratories/pl-config@1.7.5
+
+## 2.8.0
+
+### Minor Changes
+
+- 923913e: Update backend version for Built-In mode
+
+## 2.7.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/ts-helpers@1.5.0
+  - @milaboratories/pl-config@1.7.4
+
+## 2.6.0
+
+### Minor Changes
+
+- c11cf91: Release pl=1.42.0
+
 ## 2.5.5
 
 ### Patch Changes

@@ -3,12 +3,14 @@ import path from 'node:path';
 import os from 'node:os';
 import { randomBytes } from 'node:crypto';
 
-import type { DockerPackage, PackageConfig } from './package-info';
+import type { DockerPackage, PackageConfig } from './schemas/entrypoint';
 import { PackageInfo } from './package-info';
 import {
-  Renderer,
   descriptorFilePath,
   readDescriptorFile,
+} from './resolver';
+import {
+  Renderer,
   writeBuiltArtifactInfo,
   validateDockerDescriptor,
 } from './renderer';

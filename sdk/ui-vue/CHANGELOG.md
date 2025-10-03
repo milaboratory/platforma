@@ -1,5 +1,42 @@
 # @platforma-sdk/ui-vue
 
+## 1.43.29
+
+### Patch Changes
+
+- @platforma-sdk/model@1.43.29
+- @milaboratories/uikit@2.4.20
+
+## 1.43.28
+
+### Patch Changes
+
+- d390d04: Fix setting args on outputs change
+- d390d04: Fix [sdk/ui] Broken error propagation: block errors are not showing anymore
+
+## 1.43.21
+
+### Patch Changes
+
+- Updated dependencies [ed7a454]
+  - @platforma-sdk/model@1.43.21
+  - @milaboratories/uikit@2.4.19
+
+## 1.43.18
+
+### Patch Changes
+
+- Updated dependencies [0a11758]
+  - @platforma-sdk/model@1.43.18
+  - @milaboratories/uikit@2.4.18
+
+## 1.43.14
+
+### Patch Changes
+
+- @platforma-sdk/model@1.43.14
+- @milaboratories/uikit@2.4.17
+
 ## 1.43.11
 
 ### Patch Changes

@@ -1,5 +1,54 @@
 # @milaboratories/pl-drivers
 
+## 1.11.4
+
+### Patch Changes
+
+- Updated dependencies [5d4774c]
+  - @milaboratories/pl-model-common@1.20.1
+
+## 1.11.3
+
+### Patch Changes
+
+- Updated dependencies [25c0fed]
+  - @milaboratories/ts-helpers@1.5.1
+  - @milaboratories/computable@2.7.1
+  - @milaboratories/pl-client@2.13.3
+  - @milaboratories/pl-tree@1.8.3
+
+## 1.11.2
+
+### Patch Changes
+
+- b979236: Undici tunning
+  - @milaboratories/pl-client@2.13.2
+  - @milaboratories/pl-tree@1.8.2
+
+## 1.11.1
+
+### Patch Changes
+
+- Updated dependencies [ee46338]
+  - @milaboratories/pl-client@2.13.1
+  - @milaboratories/pl-tree@1.8.1
+
+## 1.11.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/computable@2.7.0
+  - @milaboratories/ts-helpers@1.5.0
+  - @milaboratories/pl-client@2.13.0
+  - @milaboratories/pl-model-common@1.20.0
+  - @milaboratories/pl-tree@1.8.0
+  - @milaboratories/helpers@1.9.0
+
 ## 1.10.18
 
 ### Patch Changes

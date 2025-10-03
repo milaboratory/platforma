@@ -69,13 +69,15 @@ const archiveRulesSchema = z.object({
 });
 export type archiveRules = z.infer<typeof archiveRulesSchema>;
 
-const artifactIDSchema = z
+export const artifactIDSchema = z
   .string()
   .regex(/:/, {
     message:
       'tengo artifact ID must have <npmPackage>:<artifactName> format, e.g @milaboratory/runenv-java-corretto:21.2.0.4.1',
   })
   .describe('ID of tengo build artifact');
+
+export type artifactIDString = z.infer<typeof artifactIDSchema>;
 
 export const assetPackageSchema = archiveRulesSchema
   .omit({ roots: true })
@@ -94,7 +96,21 @@ export const environmentPackageSchema = archiveRulesSchema.extend({
   runtime: z
     .enum(runEnvironmentTypes)
     .describe('type of runtime this run environment provides: \'java\', \'python\' and so on'),
+
   ['r-version']: z.string().optional(),
+  ['python-version']: z.string().optional(),
+  ['java-version']: z.string().optional(),
+
+  envVars: z
+    .array(
+      z
+        .string()
+        .regex(
+          /=/,
+          'environment variable should be specified in format: <var-name>=<var-value>, i.e.: MY_ENV=value',
+        ),
+    )
+    .optional(),
 
   binDir: z
     .string()

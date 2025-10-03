@@ -1,5 +1,167 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.14
+
+### Patch Changes
+
+- Updated dependencies [5d4774c]
+  - @milaboratories/pl-model-common@1.20.1
+  - @milaboratories/pl-model-middle-layer@1.8.30
+  - @milaboratories/pl-drivers@1.11.4
+  - @platforma-sdk/model@1.43.29
+  - @platforma-sdk/block-tools@2.6.10
+
+## 1.43.13
+
+### Patch Changes
+
+- 25c0fed: PFrames driver - limit disk footprint
+- Updated dependencies [25c0fed]
+  - @milaboratories/ts-helpers@1.5.1
+  - @milaboratories/computable@2.7.1
+  - @milaboratories/pl-client@2.13.3
+  - @milaboratories/pl-config@1.7.6
+  - @milaboratories/pl-deployments@2.8.2
+  - @milaboratories/pl-drivers@1.11.3
+  - @milaboratories/pl-errors@1.1.28
+  - @milaboratories/pl-tree@1.8.3
+  - @platforma-sdk/block-tools@2.6.9
+  - @milaboratories/pl-model-backend@1.1.13
+  - @platforma-sdk/workflow-tengo@5.3.2
+
+## 1.43.12
+
+### Patch Changes
+
+- Updated dependencies [eb65c7f]
+  - @platforma-sdk/workflow-tengo@5.3.2
+
+## 1.43.11
+
+### Patch Changes
+
+- Updated dependencies [8f68937]
+  - @platforma-sdk/workflow-tengo@5.3.1
+
+## 1.43.10
+
+### Patch Changes
+
+- Updated dependencies [b979236]
+  - @milaboratories/pl-drivers@1.11.2
+  - @milaboratories/pl-http@1.1.8
+  - @milaboratories/pl-client@2.13.2
+  - @platforma-sdk/block-tools@2.6.8
+  - @milaboratories/pl-model-backend@1.1.12
+  - @milaboratories/pl-errors@1.1.27
+  - @milaboratories/pl-tree@1.8.2
+  - @platforma-sdk/workflow-tengo@5.3.0
+
+## 1.43.9
+
+### Patch Changes
+
+- ee46338: [blocks/mixcr-clonotyping] after running the latest version of MiXCR errors during adding new blocks
+- Updated dependencies [ee46338]
+  - @milaboratories/pl-client@2.13.1
+  - @milaboratories/pl-model-backend@1.1.11
+  - @milaboratories/pl-drivers@1.11.1
+  - @milaboratories/pl-errors@1.1.26
+  - @milaboratories/pl-tree@1.8.1
+  - @platforma-sdk/workflow-tengo@5.3.0
+
+## 1.43.8
+
+### Patch Changes
+
+- d0d85ee: PFrames version bump
+
+## 1.43.7
+
+### Patch Changes
+
+- Updated dependencies [ed7a454]
+  - @platforma-sdk/model@1.43.21
+
+## 1.43.6
+
+### Patch Changes
+
+- Updated dependencies [213d0c2]
+  - @milaboratories/pl-config@1.7.5
+  - @milaboratories/pl-deployments@2.8.1
+
+## 1.43.5
+
+### Patch Changes
+
+- Updated dependencies [923913e]
+  - @milaboratories/pl-deployments@2.8.0
+
+## 1.43.4
+
+### Patch Changes
+
+- Updated dependencies [0a11758]
+  - @platforma-sdk/model@1.43.18
+
+## 1.43.3
+
+### Patch Changes
+
+- Updated dependencies [f948c9c]
+  - @platforma-sdk/workflow-tengo@5.3.0
+
+## 1.43.2
+
+### Patch Changes
+
+- 9d1a3db: PFrames version bump
+
+## 1.43.1
+
+### Patch Changes
+
+- Updated dependencies [32715b4]
+  - @platforma-sdk/workflow-tengo@5.2.3
+
+## 1.43.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/pl-deployments@2.7.0
+  - @milaboratories/computable@2.7.0
+  - @milaboratories/pl-drivers@1.11.0
+  - @milaboratories/ts-helpers@1.5.0
+  - @milaboratories/pl-client@2.13.0
+  - @milaboratories/pl-model-common@1.20.0
+  - @milaboratories/pl-tree@1.8.0
+  - @milaboratories/pl-config@1.7.4
+  - @milaboratories/pl-errors@1.1.25
+  - @platforma-sdk/block-tools@2.6.7
+  - @platforma-sdk/workflow-tengo@5.2.2
+  - @milaboratories/pl-model-backend@1.1.10
+  - @milaboratories/pl-model-middle-layer@1.8.29
+  - @platforma-sdk/model@1.43.14
+
+## 1.42.48
+
+### Patch Changes
+
+- a2b9886: PFrames version bump
+
+## 1.42.47
+
+### Patch Changes
+
+- Updated dependencies [c11cf91]
+  - @milaboratories/pl-deployments@2.6.0
+
 ## 1.42.46
 
 ### Patch Changes

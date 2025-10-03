@@ -1,5 +1,31 @@
 # @platforma-sdk/model
 
+## 1.43.29
+
+### Patch Changes
+
+- Updated dependencies [5d4774c]
+  - @milaboratories/pl-model-common@1.20.1
+
+## 1.43.21
+
+### Patch Changes
+
+- ed7a454: createPlDataTableV2 - update to migrate Table block
+
+## 1.43.18
+
+### Patch Changes
+
+- 0a11758: fix columns filtering for createPFrameForGraphs
+
+## 1.43.14
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/pl-model-common@1.20.0
+
 ## 1.43.2
 
 ### Patch Changes

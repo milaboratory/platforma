@@ -1,5 +1,36 @@
 # @milaboratories/pl-client
 
+## 2.13.3
+
+### Patch Changes
+
+- Updated dependencies [25c0fed]
+  - @milaboratories/ts-helpers@1.5.1
+
+## 2.13.2
+
+### Patch Changes
+
+- Updated dependencies [b979236]
+  - @milaboratories/pl-http@1.1.8
+
+## 2.13.1
+
+### Patch Changes
+
+- ee46338: [blocks/mixcr-clonotyping] after running the latest version of MiXCR errors during adding new blocks
+
+## 2.13.0
+
+### Minor Changes
+
+- 916de57: node version bump
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/ts-helpers@1.5.0
+
 ## 2.12.2
 
 ### Patch Changes

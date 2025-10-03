@@ -1,5 +1,25 @@
 # @milaboratories/pl-config
 
+## 1.7.6
+
+### Patch Changes
+
+- Updated dependencies [25c0fed]
+  - @milaboratories/ts-helpers@1.5.1
+
+## 1.7.5
+
+### Patch Changes
+
+- 213d0c2: Make sure built-in backend has a log file
+
+## 1.7.4
+
+### Patch Changes
+
+- Updated dependencies [916de57]
+  - @milaboratories/ts-helpers@1.5.0
+
 ## 1.7.3
 
 ### Patch Changes

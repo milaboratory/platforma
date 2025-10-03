@@ -1,5 +1,29 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.3.2
+
+### Patch Changes
+
+- eb65c7f: Add method for worflow for creating frame from bundle with filtredPColumns
+
+## 5.3.1
+
+### Patch Changes
+
+- 8f68937: Drop deprecated unused code to trigger rebuild (check CI tests)
+
+## 5.3.0
+
+### Minor Changes
+
+- f948c9c: Bumb runenv-python-3 v1.4.5 -> 1.4.12
+
+## 5.2.3
+
+### Patch Changes
+
+- 32715b4: Pass env vars from run environment to pip install and final command execution
+
 ## 5.2.2
 
 ### Patch Changes
