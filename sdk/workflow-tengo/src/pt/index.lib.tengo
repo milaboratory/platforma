@@ -976,6 +976,27 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		},
 
 		/**
+		 * Limits the number of rows in the DataFrame.
+		 *
+		 * @param nRows {number} - The number of rows to limit the DataFrame to.
+		 * @returns {object} - A new DataFrame object containing no more than nRows rows.
+		 * @example
+		 *   limitedDf := df.limit(100)
+		 */
+		limit: func(nRows) {
+			ll.assert(is_int(nRows) && nRows > 0, "limit argument must be a positive number.")
+
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			parentWorkflow.addRawStep({
+				type: "limit",
+				inputTable: dfName,
+				outputTable: outputDfName,
+				n: nRows
+			})
+			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		/**
 		 * Sorts the DataFrame by one or more columns or expressions.
 		 * Sorting is always stable (maintains relative order of equivalent rows).
 		 *
