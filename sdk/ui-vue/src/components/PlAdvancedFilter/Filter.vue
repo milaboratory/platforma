@@ -20,17 +20,17 @@ const props = defineProps<{
   onChangeOperand: (op: Operand) => void;
 }>();
 
-const model = defineModel<Filter>({ required: true });
+const filter = defineModel<Filter>({ required: true });
 
-async function modelSearchMulti(id: string, v: string[]): Promise<ListOptionBase<string>[]> {
+async function searchModelMulti(id: string, v: string[]): Promise<ListOptionBase<string>[]> {
   const searchFn = props.searchModelFn;
   return Promise.all(v.map((v) => searchFn ? searchFn(id, v) as Promise<ListOptionBase<string>> : Promise.resolve({ label: '', value: '' })));
 }
-async function modelSearch(id: string, v: string): Promise<ListOptionBase<string>> {
+async function searchModel(id: string, v: string): Promise<ListOptionBase<string>> {
   const searchFn = props.searchModelFn;
   return searchFn ? searchFn(id, v) as Promise<ListOptionBase<string>> : Promise.resolve({ label: '', value: '' });
 }
-async function optionsSearch(id: string, str: string): Promise<ListOptionBase<string>[]> {
+async function searchOptions(id: string, str: string): Promise<ListOptionBase<string>[]> {
   const searchFn = props.searchOptionsFn;
   return searchFn ? searchFn(id, str) as Promise<ListOptionBase<string>[]> : Promise.resolve([]);
 }
@@ -41,21 +41,21 @@ function changeFilterType(newFilterType?: FilterType) {
   }
   const nextFilterInfo = getFilterInfo(newFilterType);
   if (currentSpec.value && nextFilterInfo.supportedFor(currentSpec.value) && isNumericValueType(currentInfo.value.spec)) {
-    model.value = {
-      ...model.value,
-      column: model.value.column,
+    filter.value = {
+      ...filter.value,
+      column: filter.value.column,
     };
   } else if (
-    currentSpec.value && nextFilterInfo.supportedFor(currentSpec.value) && 'substring' in model.value && 'substring' in DEFAULT_FILTERS[newFilterType]
+    currentSpec.value && nextFilterInfo.supportedFor(currentSpec.value) && 'substring' in filter.value && 'substring' in DEFAULT_FILTERS[newFilterType]
   ) {
-    model.value = {
-      ...model.value,
-      column: model.value.column,
+    filter.value = {
+      ...filter.value,
+      column: filter.value.column,
     };
   } else {
-    model.value = {
+    filter.value = {
       ...DEFAULT_FILTERS[newFilterType],
-      column: model.value.column,
+      column: filter.value.column,
     };
   }
 }
@@ -64,39 +64,39 @@ function changeSourceId(newSourceId?: string) {
   if (!newSourceId) {
     return;
   }
-  const filterInfo = getFilterInfo(model.value.type);
+  const filterInfo = getFilterInfo(filter.value.type);
   const newSourceSpec = getNormalizedSpec(props.sourceInfoBySourceId[newSourceId]?.spec);
   if (filterInfo.supportedFor(newSourceSpec)) { // don't do anything except update source id
     return;
   } else { // new source id doesn't fit current filter by type (string/number), reset to default filter
-    model.value = {
+    filter.value = {
       ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
-      column: model.value.column,
+      column: filter.value.column,
     };
   }
 }
 
-const inconsistentSourceSelected = computed(() => !props.sourceIds.includes(model.value.column));
+const inconsistentSourceSelected = computed(() => !props.sourceIds.includes(filter.value.column));
 const sourceOptions = computed(() => {
   const options = props.sourceIds.map((v) => ({ value: v, label: props.sourceInfoBySourceId[v]?.label ?? v }));
   if (inconsistentSourceSelected.value) {
-    options.unshift({ value: model.value.column, label: 'Inconsistent value' });
+    options.unshift({ value: filter.value.column, label: 'Inconsistent value' });
   }
   return options;
 });
 
-const currentInfo = computed(() => props.sourceInfoBySourceId[model.value.column]);
+const currentInfo = computed(() => props.sourceInfoBySourceId[filter.value.column]);
 const currentSpec = computed(() => currentInfo.value?.spec ? getNormalizedSpec(currentInfo.value.spec) : null);
 const currentType = computed(() => currentSpec.value?.valueType);
 const currentError = computed(() => currentInfo.value?.error || inconsistentSourceSelected.value);
 
 const filterTypesOptions = computed(() => [...ALL_FILTER_TYPES].filter((v) =>
-  model.value.type === v || (currentSpec.value ? getFilterInfo(v).supportedFor(currentSpec.value) : true),
+  filter.value.type === v || (currentSpec.value ? getFilterInfo(v).supportedFor(currentSpec.value) : true),
 ).map((v) => ({ value: v, label: getFilterInfo(v).label })),
 );
 
 const wildcardOptions = computed(() => {
-  if (model.value.type === 'patternFuzzyContainSubsequence') {
+  if (filter.value.type === 'patternFuzzyContainSubsequence') {
     const alphabet = currentSpec.value ? readDomain(currentSpec.value, Domain.Alphabet) ?? readAnnotation(currentSpec.value, Annotation.Alphabet) : null;
     if (alphabet === 'nucleotide') {
       return [{ label: 'N', value: 'N' }];
@@ -104,17 +104,17 @@ const wildcardOptions = computed(() => {
     if (alphabet === 'aminoacid') {
       return [{ label: 'X', value: 'X' }];
     }
-    return [...new Set(model.value.value.split(''))].sort().map((v) => ({ value: v, label: v }));
+    return [...new Set(filter.value.value.split(''))].sort().map((v) => ({ value: v, label: v }));
   }
   return [];
 });
 
 const stringMatchesError = computed(() => {
-  if (model.value.type !== 'patternMatchesRegularExpression') {
+  if (filter.value.type !== 'patternMatchesRegularExpression') {
     return false;
   }
   try {
-    new RegExp(model.value.value);
+    new RegExp(filter.value.value);
     return false;
   } catch {
     return true;
@@ -122,13 +122,13 @@ const stringMatchesError = computed(() => {
 });
 
 const preloadedOptions = computed(() => {
-  if (!isStringValueType(props.sourceInfoBySourceId[model.value.column]?.spec) || inconsistentSourceSelected.value) {
+  if (!isStringValueType(props.sourceInfoBySourceId[filter.value.column]?.spec) || inconsistentSourceSelected.value) {
     return null;
   }
-  if (model.value.type !== 'patternEquals' && model.value.type !== 'patternNotEquals' && model.value.type !== 'inSet' && model.value.type !== 'notInSet') {
+  if (filter.value.type !== 'patternEquals' && filter.value.type !== 'patternNotEquals' && filter.value.type !== 'inSet' && filter.value.type !== 'notInSet') {
     return null;
   }
-  const uniqueValues = props.uniqueValuesBySourceId[model.value.column];
+  const uniqueValues = props.uniqueValuesBySourceId[filter.value.column];
   if (uniqueValues) {
     return uniqueValues;
   }
@@ -156,54 +156,54 @@ function isNumberType(v: Filter): v is Filter & { type: 'numberEquals' | 'number
       </div>
       <div :class="$style.titleWrapper" :title="currentInfo?.label ?? ''">
         <div :class="$style.title">
-          {{ inconsistentSourceSelected ? 'Inconsistent value' : currentInfo?.label ?? model.column }}
+          {{ inconsistentSourceSelected ? 'Inconsistent value' : currentInfo?.label ?? filter.column }}
         </div>
       </div>
-      <div :class="$style.closeIcon" @click="onDelete(model.column)">
+      <div :class="$style.closeIcon" @click="onDelete(filter.column)">
         <PlIcon16 name="close"/>
       </div>
     </div>
     <div v-else :class="$style.top" >
       <PlDropdown
-        v-model="model.column"
+        v-model="filter.column"
         :errorStatus="currentError"
         :options="sourceOptions"
         :style="{width: '100%'}"
         position="top-left"
         @update:model-value="changeSourceId"
       />
-      <div :class="$style.closeButton" @click="onDelete(model.column)">
+      <div :class="$style.closeButton" @click="onDelete(filter.column)">
         <PlIcon16 name="close"/>
       </div>
     </div>
 
     <!-- middle - filter type selector -  for all filter types -->
-    <div :class="model.type === 'isNA' || model.type === 'isNotNA' ? $style.bottom : $style.middle">
+    <div :class="filter.type === 'isNA' || filter.type === 'isNotNA' ? $style.bottom : $style.middle">
       <PlDropdown
-        v-model="model.type"
+        v-model="filter.type"
         :options="filterTypesOptions"
-        :position="model.type === 'isNA' || model.type === 'isNotNA' ? 'bottom' : 'middle'"
+        :position="filter.type === 'isNA' || filter.type === 'isNotNA' ? 'bottom' : 'middle'"
         @update:model-value="changeFilterType"
       />
     </div>
 
     <!-- middle - for fuzzy contains filter -->
-    <template v-if="model.type === 'patternFuzzyContainSubsequence'">
+    <template v-if="filter.type === 'patternFuzzyContainSubsequence'">
       <div :class="$style.middle">
         <PlTextField
-          v-model="model.value"
+          v-model="filter.value"
           placeholder="Substring"
           position="middle"
         />
       </div>
       <div :class="$style.innerSection">
         <Slider
-          v-model="model.maxEdits"
+          v-model="filter.maxEdits"
           :max="5"
           breakpoints label="Maximum number of substitutions and indels"
         />
         <PlToggleSwitch
-          v-model="model.substitutionsOnly"
+          v-model="filter.substitutionsOnly"
           label="Substitutions only"
         />
       </div>
@@ -211,61 +211,61 @@ function isNumberType(v: Filter): v is Filter & { type: 'numberEquals' | 'number
 
     <!-- bottom element - individual settings for every filter type -->
     <div :class="$style.bottom">
-      <template v-if="model.type === 'patternEquals' || model.type === 'patternNotEquals'" >
+      <template v-if="filter.type === 'patternEquals' || filter.type === 'patternNotEquals'" >
         <PlDropdown
           v-if="preloadedOptions !== null"
-          v-model="model.value"
+          v-model="filter.value"
           :options="preloadedOptions"
           :disabled="inconsistentSourceSelected"
           position="bottom"
         />
         <PlAutocomplete
           v-else
-          v-model="model.value"
-          :options-search="(str) => optionsSearch(model.column, str)"
-          :model-search="(v) => modelSearch(model.column, v as string)"
+          v-model="filter.value"
+          :options-search="(str) => searchOptions(filter.column, str)"
+          :model-search="(v) => searchModel(filter.column, v as string)"
           :disabled="inconsistentSourceSelected"
           position="bottom"
         />
       </template>
-      <template v-if="model.type === 'inSet' || model.type === 'notInSet'" >
+      <template v-if="filter.type === 'inSet' || filter.type === 'notInSet'" >
         <PlDropdownMulti
           v-if="preloadedOptions !== null"
-          v-model="model.value"
+          v-model="filter.value"
           :options="preloadedOptions"
           :disabled="inconsistentSourceSelected"
           position="bottom"
         />
         <PlAutocompleteMulti
           v-else
-          v-model="model.value"
-          :options-search="(str) => optionsSearch(model.column, str)"
-          :model-search="(v) => modelSearchMulti(model.column, v as string[])"
+          v-model="filter.value"
+          :options-search="(str) => searchOptions(filter.column, str)"
+          :model-search="(v) => searchModelMulti(filter.column, v as string[])"
           :disabled="inconsistentSourceSelected"
           position="bottom"
         />
       </template>
       <PlNumberField
-        v-if="isNumberType(model)"
-        v-model="model.x"
+        v-if="isNumberType(filter)"
+        v-model="filter.x"
         position="bottom"
       />
       <PlTextField
-        v-if="model.type === 'patternContainSubsequence' || model.type === 'patternNotContainSubsequence'"
-        v-model="model.value"
+        v-if="filter.type === 'patternContainSubsequence' || filter.type === 'patternNotContainSubsequence'"
+        v-model="filter.value"
         placeholder="Substring"
         position="bottom"
       />
       <PlTextField
-        v-if="model.type === 'patternMatchesRegularExpression'"
-        v-model="model.value"
+        v-if="filter.type === 'patternMatchesRegularExpression'"
+        v-model="filter.value"
         :error="stringMatchesError ? 'Regular expression is not valid' : undefined"
         placeholder="Regular expression"
         position="bottom"
       />
       <PlDropdown
-        v-if="model.type === 'patternFuzzyContainSubsequence'"
-        v-model="model.wildcard"
+        v-if="filter.type === 'patternFuzzyContainSubsequence'"
+        v-model="filter.wildcard"
         clearable
         placeholder="Wildcard value"
         :options="wildcardOptions"
