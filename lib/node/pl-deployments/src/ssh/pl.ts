@@ -446,13 +446,14 @@ export class SshPl {
     const attempts = 5;
     for (let i = 1; i <= attempts; i++) {
       try {
-        downloadBinaryResult = await downloadBinaryNoExtract(
-          this.logger,
-          localWorkdir,
+        downloadBinaryResult = await downloadBinaryNoExtract({
+          logger: this.logger,
+          baseDir: localWorkdir,
           softwareName,
           tgzName,
-          arch.arch, arch.platform,
-        );
+          arch: arch.arch,
+          platform: arch.platform,
+        });
         break;
       } catch (e: unknown) {
         await sleep(300);
