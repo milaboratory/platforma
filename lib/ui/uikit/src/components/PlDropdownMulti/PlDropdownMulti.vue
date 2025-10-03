@@ -65,6 +65,10 @@ const props = withDefaults(
      * If `true`, the dropdown component is disabled and cannot be interacted with.
      */
     disabled?: boolean;
+    /**
+     * Makes some of corners not rounded
+     * */
+    position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
   }>(),
   {
     modelValue: () => [],
@@ -75,6 +79,7 @@ const props = withDefaults(
     required: false,
     disabled: false,
     options: undefined,
+    position: undefined,
   },
 );
 
@@ -307,7 +312,7 @@ watchPostEffect(() => {
           />
           <div v-if="!filteredOptionsRef.length" class="nothing-found">Nothing found</div>
         </DropdownOverlay>
-        <DoubleContour class="pl-dropdown-multi__contour" />
+        <DoubleContour class="pl-dropdown-multi__contour" :position="position" />
       </div>
     </div>
     <div v-if="error" class="pl-dropdown-multi__error">{{ getErrorMessage(error) }}</div>
