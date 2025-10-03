@@ -71,6 +71,35 @@ describe('Apply migrations', () => {
     expect(called).toStrictEqual(expectMigrations);
   });
 
+  test('on first install apply all', async () => {
+    const pkgPath = path.join(tempDir, 'package.json');
+    const pkgName = '@pkg/example';
+
+    await fs.writeFile(pkgPath, `{
+  "name": "test",
+  "version": "1.0.0"
+}
+`);
+
+    let called: number[] = [];
+    const migration = (i: number) => { return () => {called.push(i);} };
+
+    const migrator = new Migrator(pkgName, { projectRoot: tempDir, onFirstInstall: 'apply-all' });
+    migrator.addMigration(migration(0), migration(1), migration(2));
+    await migrator.applyMigrations();
+
+    const updated = await fs.readFile(pkgPath, 'utf8');
+    expect(updated).toBe(`{
+  "name": "test",
+  "version": "1.0.0",
+  "migrations": {
+    "@pkg/example": 3
+  }
+}
+`);
+    expect(called).toStrictEqual([0,1,2]);
+  })
+
   test.for([
     {
       name: 'ends with bracket',
