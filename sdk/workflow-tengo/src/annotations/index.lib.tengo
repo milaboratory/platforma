@@ -13,7 +13,7 @@ ANNOTATION_HEADER := util.ANNOTATION_HEADER
  * @param inputs: A map containing the following keys:
  *   - title: The title for the annotations.
  *   - steps: An array of steps, each containing a name and an expression.
- *   - mainAxis: The main axis specification.
+ *   - mainAxes: The main axes specification.
  *   - columnBundle: The column bundle to extract columns from.
  *   - shouldComputeFilters: A boolean indicating whether to compute filters.
  *   - createAxisSpec: A function to create axis specifications.
@@ -29,7 +29,7 @@ computeAnnotations := func(inputs) {
 	title := inputs.title
 	steps := inputs.steps
 
-	mainAxis := inputs.mainAxis
+	mainAxes := inputs.mainAxes
 	columnBundle := inputs.columnBundle
 	shouldComputeFilters := inputs.shouldComputeFilters
 
@@ -42,8 +42,8 @@ computeAnnotations := func(inputs) {
 
 	annotationsAxisSpec := createAxisSpec("String", ANNOTATION_HEADER, title)
 
-	createAnnotationsDataAndSpec := util.createAnnotationsDataAndSpecFactory(mainAxis, createColumnSpec, title)
-	createFilterDataAndSpec := util.createFilterDataAndSpecFactory(mainAxis, createColumnSpec)
+	createAnnotationsDataAndSpec := util.createAnnotationsDataAndSpecFactory(mainAxes, createColumnSpec, title)
+	createFilterDataAndSpec := util.createFilterDataAndSpecFactory(mainAxes, createColumnSpec)
 	columnsFromExpressions := util.extractColumnsFromExpressions(slices.map(steps, func(step) { return step.expression }))
 	columnNameManager := util.createColumnNameManager()
 
@@ -68,21 +68,21 @@ computeAnnotations := func(inputs) {
 	wf := pt.workflow()
 	
 	dfData := wf.frameFromColumnBundle(columnBundle, {
-        axes: [mainAxis],
+        axes: [mainAxes],
         columns: columnsFromExpressions
     }).
 		withColumns(finalExpressions...).
 		withColumns(annotationColumnExpr)
 
 	dfData.
-		select(mainAxis.column, ANNOTATION_HEADER).
+		select(mainAxes.column, ANNOTATION_HEADER).
 	    save(DATA_FILE)
 
 	for colName in filterColumnNames {
 		dfData.
 			filter(pt.col(ANNOTATION_HEADER).eq(pt.lit(columnNameManager.fromSafe(colName)))).
 			withColumns(pt.lit(1).alias(ANNOTATION_HEADER).alias(colName)).
-			select(mainAxis.column, colName).
+			select(mainAxes.column, colName).
 			save(util.createFilterFileName(colName))
 	}
 	
