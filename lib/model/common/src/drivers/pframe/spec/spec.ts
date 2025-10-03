@@ -156,7 +156,7 @@ export const Annotation = {
 
 export type Annotation = Metadata & Partial<{
   [Annotation.Alphabet]: 'nucleotide' | 'aminoacid' | string;
-  [Annotation.AxisNature]: 'homogeneous' | 'heterogeneous' | 'scaleCompatible';
+  [Annotation.AxisNature]: 'homogeneous' | 'heterogeneous' | 'scaleCompatible' | string;
   [Annotation.Description]: string;
   [Annotation.DiscreteValues]: StringifiedJson<number[]> | StringifiedJson<string[]>;
   [Annotation.Format]: string;
@@ -206,13 +206,7 @@ export type Annotation = Metadata & Partial<{
 
 export type AnnotationJson = MetadataJson<Annotation>;
 
-const ValueTypeSchema = z.union([
-  z.literal('Int'),
-  z.literal('Double'),
-  z.literal('Float'),
-  z.literal('Long'),
-  z.literal('String'),
-]);
+const ValueTypeSchema = z.enum(['Int', 'Long', 'Float', 'Double', 'String'] as const);
 export const AnnotationJson: AnnotationJson = {
   [Annotation.DiscreteValues]: z.array(z.string()).or(z.array(z.number())),
   [Annotation.Graph.Axis.HighCardinality]: z.boolean(),
