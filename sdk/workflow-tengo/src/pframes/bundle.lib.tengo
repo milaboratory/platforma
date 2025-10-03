@@ -458,6 +458,9 @@ pColumnBundleUnmarshaller := func() {
 						sliceDataTemplate := assets.importTemplate(":pframes.slice-data")
 						currentData = render.createEphemeral(sliceDataTemplate, {
 							data: currentData,
+							keepColumns: true,
+							ignoreUnknownAxes: true,
+							ignoreNonPartitioned: true,
 							slicingParams: smart.createJsonResource(columnAxisFilters)
 						}).output("result")
 					}
