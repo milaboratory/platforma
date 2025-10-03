@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.20.1
+
+### Patch Changes
+
+- 5d4774c: add annotations
+
 ## 1.20.0
 
 ### Minor Changes
