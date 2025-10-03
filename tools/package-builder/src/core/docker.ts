@@ -65,9 +65,11 @@ export function remoteImageExists(tag: string): boolean {
 
 export function shouldDoAction(isCI: boolean, doFlag: boolean, noDoFlag: boolean): boolean {
   if (noDoFlag) {
+    // Action was deliberately disabled by CLI flag or env variable
     return false;
   }
   if (doFlag) {
+    // Action was deliberately enabled by CLI flag or env variable
     return true;
   }
 
