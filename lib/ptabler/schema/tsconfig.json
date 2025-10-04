@@ -1,16 +1,9 @@
 {
+  "extends": "@milaboratories/ts-configs/tsconfig.node.json",
   "compilerOptions": {
-    "target": "es2022",
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "strict": true,
     "outDir": "./dist",
-    "rootDir": "./src",
-    "sourceMap": true,
-    "declaration": true
+    "rootDir": "./src"
   },
-  "types": [],
   "include": [
     "src/**/*"
   ],

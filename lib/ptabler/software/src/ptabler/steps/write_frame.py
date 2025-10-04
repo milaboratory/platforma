@@ -9,8 +9,8 @@ import hashlib
 from .base import PStep, StepContext
 from ..common import toPolarsType
 
-AxisType = Literal['Int', 'Long', 'String']
-ColumnType = Literal['Int', 'Long', 'Float', 'Double', 'String']
+type AxisType = Literal['Int', 'Long', 'String']
+type ColumnType = Literal['Int', 'Long', 'Float', 'Double', 'String']
 
 class AxisMapping(Struct, rename="camel"):
     column: str
@@ -228,6 +228,10 @@ class WriteFrame(PStep, tag="write_frame"):
                         ORDER BY {', '.join(axis_identifiers)}
                     """
                 
+                # To disable bloom filters set `FORMAT PARQUET, DICTIONARY_SIZE_LIMIT 1`
+                # <https://duckdb.org/2025/03/07/parquet-bloom-filters-in-duckdb.html>
+                # Changes in bloom filters and compression level must change data_digest
+                # or add a new field to the stats to ensure correct deduplication!
                 duckdb_conn.execute(f"""
                     COPY ({query})
                     TO '{os.path.join(frame_dir, data_file)}'
