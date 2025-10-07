@@ -1,5 +1,13 @@
 # @milaboratories/pl-tree
 
+## 1.8.4
+
+### Patch Changes
+
+- Updated dependencies [a9517a8]
+  - @milaboratories/pl-client@2.14.0
+  - @milaboratories/pl-errors@1.1.29
+
 ## 1.8.3
 
 ### Patch Changes

@@ -21,8 +21,8 @@ export function serializeHttpAuth(input: HttpAuth): string {
   if (input.scheme === 'Basic') {
     return `Basic ${btoa(`${input.username}:${input.password}`)}`;
   }
-  assertNever(input.scheme);
-  throw new Error(`Unsupported auth scheme`); // calm down the linter
+  // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+  throw new Error(`Unsupported auth scheme: ${input.scheme}.`);
 }
 
 export type HttpAuth = BasicHttpAuth;
@@ -31,8 +31,4 @@ export interface BasicHttpAuth {
   scheme: 'Basic';
   username: string;
   password: string;
-}
-
-function assertNever(x: never) {
-  throw new Error(`assertNever(${JSON.stringify(x)}) call`);
 }

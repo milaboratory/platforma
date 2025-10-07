@@ -1,5 +1,20 @@
 # @milaboratories/pl-local
 
+## 2.9.0
+
+### Minor Changes
+
+- a9517a8: Add HTTP(S) proxy support in built-in mode
+
+### Patch Changes
+
+- Updated dependencies [261a742]
+- Updated dependencies [a9517a8]
+- Updated dependencies [a9517a8]
+- Updated dependencies [d5cbbd8]
+  - @milaboratories/helpers@1.10.0
+  - @milaboratories/pl-http@1.2.0
+
 ## 2.8.2
 
 ### Patch Changes
