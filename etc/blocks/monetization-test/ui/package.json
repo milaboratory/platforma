@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.monetization-test.ui",
-  "version": "1.1.102",
+  "version": "1.1.103",
   "type": "module",
   "scripts": {
     "dev": "ts-builder serve --target browser",

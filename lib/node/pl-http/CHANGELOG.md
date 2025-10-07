@@ -1,5 +1,11 @@
 # @milaboratories/pl-http
 
+## 1.2.0
+
+### Minor Changes
+
+- a9517a8: Add HTTP(S) proxy support in built-in mode
+
 ## 1.1.8
 
 ### Patch Changes

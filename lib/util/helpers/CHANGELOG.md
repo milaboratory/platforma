@@ -1,5 +1,16 @@
 # @milaboratories/helpers
 
+## 1.10.0
+
+### Minor Changes
+
+- 261a742: Fixed: [blocks/mixcr-clonotyping] in the end of calculations results table starts to blink
+- a9517a8: Added a HTTP Authorization header parser/serializer
+
+### Patch Changes
+
+- d5cbbd8: Fix lint issue
+
 ## 1.9.0
 
 ### Minor Changes

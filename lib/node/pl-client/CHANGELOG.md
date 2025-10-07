@@ -1,5 +1,16 @@
 # @milaboratories/pl-client
 
+## 2.14.0
+
+### Minor Changes
+
+- a9517a8: Add HTTP(S) proxy support in built-in mode
+
+### Patch Changes
+
+- Updated dependencies [a9517a8]
+  - @milaboratories/pl-http@1.2.0
+
 ## 2.13.3
 
 ### Patch Changes
