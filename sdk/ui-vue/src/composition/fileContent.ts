@@ -91,6 +91,7 @@ export class ReactiveFileContent {
   }
 
   public stopScope() {
+    scopes.delete(this.currentScope);
     this.currentScope.stop();
   }
 
@@ -140,7 +141,7 @@ export class ReactiveFileContent {
     const refsMap = this.getRefsMap();
 
     if (!refsMap) {
-      throw new Error('ReactiveFileContent must be used within a Vue component or effect scope. Call useGlobalInstance() first.');
+      throw new Error('ReactiveFileContent must be used within a Vue component or effect scope.');
     }
 
     this.withHandle(handle);
