@@ -6,6 +6,7 @@ import os from 'node:os';
 import upath from 'upath';
 import type { OSType } from './os_and_arch';
 import { newOs } from './os_and_arch';
+import type { Dispatcher } from 'undici';
 
 /** Shows how the binary should be got. */
 export type PlBinarySource = PlBinarySourceDownload | PlBinarySourceLocal;
@@ -25,14 +26,25 @@ export function newDefaultPlBinarySource(): PlBinarySourceDownload {
 }
 
 export async function resolveLocalPlBinaryPath(
-  logger: MiLogger,
-  downloadDir: string,
-  src: PlBinarySource,
+  { logger, downloadDir, src, dispatcher }: {
+    logger: MiLogger;
+    downloadDir: string;
+    src: PlBinarySource;
+    dispatcher?: Dispatcher;
+  },
 ): Promise<string> {
   switch (src.type) {
     case 'Download':
       // eslint-disable-next-line no-case-declarations
-      const ops = await downloadBinary(logger, downloadDir, 'pl', `pl-${src.version}`, os.arch(), os.platform());
+      const ops = await downloadBinary({
+        logger,
+        baseDir: downloadDir,
+        softwareName: 'pl',
+        archiveName: `pl-${src.version}`,
+        arch: os.arch(),
+        platform: os.platform(),
+        dispatcher,
+      });
       return upath.join(ops.baseName, 'binaries', osToBinaryName[newOs(os.platform())]);
 
     case 'Local':

@@ -1,3 +1,4 @@
+import type { ProxySettings } from '@milaboratories/pl-http';
 import type { ExponentialBackoffRetryOptions } from '@milaboratories/ts-helpers';
 
 /** Base configuration structure for PL client */
@@ -35,9 +36,9 @@ export interface PlClientConfig {
 
   /** Proxy server URL to use for pl connection. */
   grpcProxy?: string;
-  /** Proxy server URL to use for http connections of pl drivers, like file
+  /** Proxy server config to use for http connections of pl drivers, like file
    * downloading. */
-  httpProxy?: string;
+  httpProxy?: string | ProxySettings;
 
   /** Username extracted from pl URL. Ignored by {@link PlClient}, picked up by {@link defaultPlClient}. */
   user?: string;
@@ -61,7 +62,7 @@ export interface PlClientConfig {
   /**
    * What type of backoff strategy to use in transaction retries
    * (pl uses optimistic transaction model with regular retries in write transactions)
-   * */
+   */
   retryBackoffAlgorithm: 'exponential' | 'linear';
 
   /** Maximal number of attempts in */
@@ -212,7 +213,7 @@ export function plAddressToConfig(
 /**
  * Authorization data / JWT Token.
  * Absent JWT Token tells the client to connect as anonymous user.
- * */
+ */
 export interface AuthInformation {
   /** Absent token means anonymous access */
   jwtToken?: string;

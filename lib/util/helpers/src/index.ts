@@ -21,6 +21,7 @@ export * from './hash';
 export * from './random';
 export * from './uniqId';
 export * from './perfTimer';
+export * from './httpAuth';
 
 export {
   utils,
