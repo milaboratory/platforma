@@ -255,3 +255,17 @@ export function unionize<K extends keyof O, V, O extends Record<K, V>>(obj: O): 
     value,
   })) as Unionize<O>[];
 }
+
+export class Fetcher<K, V> {
+  private promises = new Map<K, Promise<V>>();
+  fetch(key: K, callback: () => Promise<V>) {
+    if (this.promises.has(key)) {
+      return this.promises.get(key)!;
+    }
+    const promise = callback().finally(() => {
+      this.promises.delete(key);
+    });
+    this.promises.set(key, promise);
+    return promise;
+  }
+}
