@@ -5,6 +5,9 @@ WORKDIR ${PKG}
 
 ${RUNENV_ENVS}
 
+# Always keep basic python packaging tools fresh to avoid CVEs even in old python versions
+RUN ${TOOLSET} install --upgrade pip wheel setuptools
+
 # Install dependencies to leverage Docker cache
 COPY ${REQUIREMENTS_PATH} .
 RUN ${TOOLSET} install --no-cache-dir -r ${REQUIREMENTS_FILENAME}
