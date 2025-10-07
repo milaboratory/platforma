@@ -33,6 +33,6 @@ export interface BasicHttpAuth {
   password: string;
 }
 
-function assertNever(_: never) {
-  throw new Error('assertNever() call');
+function assertNever(x: never) {
+  throw new Error(`assertNever(${JSON.stringify(x)}) call`);
 }
