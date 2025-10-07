@@ -18,7 +18,7 @@ const PYTHON_VERSION_PATTERNS = {
 };
 
 export interface PythonOptions {
-  pythonVersion: string;
+  baseImageTag: string;
   toolset: string;
   requirements: string;
   pkg: string;
@@ -44,7 +44,7 @@ function generatePythonDockerfileContent(options: PythonOptions): string {
   // Generate Dockerfile with dependencies
   return templateContent
     .replace(/\$\{RUNENV_ENVS\}/g, envVars)
-    .replace(/\$\{PYTHON_VERSION\}/g, options.pythonVersion)
+    .replace(/\$\{BASE_IMAGE_TAG\}/g, options.baseImageTag)
     .replace(/\$\{REQUIREMENTS_PATH\}/g, options.requirements)
     .replace(/\$\{REQUIREMENTS_FILENAME\}/g, path.basename(options.requirements))
     .replace(/\$\{TOOLSET\}/g, options.toolset)
@@ -65,9 +65,9 @@ export function prepareDockerOptions(
   const pythonInfo = getRunEnvironmentPythonInfo(logger, currentPackageRoot, currentPackageName, buildParams.environment);
   if (pythonInfo.pythonVersion) {
     logger.debug(`Extracted Python version from environment: ${pythonInfo.pythonVersion}`);
-    options.pythonVersion = pythonInfo.pythonVersion;
+    options.baseImageTag = pythonVersionToDockerTag(pythonInfo.pythonVersion);
   } else {
-    logger.debug(`No Python version found in environment, using default: ${options.pythonVersion}`);
+    logger.debug(`No Python version found in environment, using default: ${options.baseImageTag}`);
   }
   options.envVars = pythonInfo.envVars;
 
@@ -230,7 +230,7 @@ export function getRunEnvironmentPythonInfo(
 
 function getDefaultPythonOptions(): PythonOptions {
   return {
-    pythonVersion: '3.12.10-slim',
+    baseImageTag: 'python:3.12-slim',
     toolset: 'pip',
     requirements: 'requirements.txt',
     pkg: '/app/',
@@ -246,4 +246,15 @@ function verifyDockerOptions(options: DockerOptions) {
   if (!fs.existsSync(options.context)) {
     throw util.CLIError(`Context '${options.context}' not found`);
   }
+}
+
+function pythonVersionToDockerTag(pythonVersion: string): string {
+  const parts = pythonVersion.split('.');
+  if (parts.length > 2) {
+    const major = parts[0];
+    const minor = parts[1];
+    return `python:${major}.${minor}-slim`;
+  }
+
+  return `python:${pythonVersion}-slim`;
 }

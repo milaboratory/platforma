@@ -1,5 +1,5 @@
 # Auto-generated Dockerfile for Python package
-FROM python:${PYTHON_VERSION}
+FROM ${BASE_IMAGE_TAG}
 
 WORKDIR ${PKG}
 
