@@ -1686,9 +1686,15 @@ importers:
 
   lib/node/pl-deployments:
     dependencies:
+      '@milaboratories/helpers':
+        specifier: workspace:^
+        version: link:../../util/helpers
       '@milaboratories/pl-config':
         specifier: workspace:*
         version: link:../pl-config
+      '@milaboratories/pl-http':
+        specifier: workspace:*
+        version: link:../pl-http
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../ts-helpers
