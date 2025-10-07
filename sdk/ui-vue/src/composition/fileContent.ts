@@ -1,15 +1,18 @@
 import type { BlobHandleAndSize } from '@platforma-sdk/model';
 import { getRawPlatformaInstance } from '@platforma-sdk/model';
 import { LRUCache } from 'lru-cache';
-import type { ComputedRef, ShallowRef } from 'vue';
-import { computed, shallowRef } from 'vue';
-import type { ZodSchema } from 'zod';
+import type { ComputedRef, ShallowRef, EffectScope } from 'vue';
+import { computed, shallowRef, getCurrentScope, onScopeDispose, effectScope } from 'vue';
+import type { ZodSchema, SafeParseReturnType } from 'zod';
+import { Fetcher } from '@milaboratories/helpers';
 
 type FileHandle = BlobHandleAndSize['handle'];
 
 export type ReactiveFileContentOps = {
   /** Maximum size in bytes of file content to cache */
   cacheSize: number;
+  lruCache?: LRUCache<FileHandle, FileContentData>;
+  fetcher?: Fetcher<FileHandle, FileContentData>;
 };
 
 const DefaultReactiveFileContentOps: ReactiveFileContentOps = {
@@ -20,7 +23,7 @@ class FileContentData {
   private _str: string | undefined = undefined;
   private _rawJson: unknown | undefined = undefined;
   private _zodSchema: ZodSchema | undefined = undefined;
-  private _validatedJson: Zod.SafeParseReturnType<unknown, unknown> | undefined = undefined;
+  private _validatedJson: SafeParseReturnType<unknown, unknown> | undefined = undefined;
 
   constructor(public readonly bytes: Uint8Array) {}
 
@@ -43,36 +46,122 @@ class FileContentData {
   }
 }
 
+const scopes = new WeakMap<EffectScope, Map<FileHandle, ShallowRef<FileContentData | undefined>>>();
+
+function addScope(scope: EffectScope) {
+  scopes.set(scope, new Map<FileHandle, ShallowRef<FileContentData | undefined>>());
+}
+
+const globalCache = new LRUCache<FileHandle, FileContentData>({
+  maxSize: DefaultReactiveFileContentOps.cacheSize,
+  sizeCalculation: (value) => value.bytes.length,
+});
+
+const globalFetcher = new Fetcher<FileHandle, FileContentData>();
+
 export class ReactiveFileContent {
   private readonly fileDataCache: LRUCache<FileHandle, FileContentData>;
-  private readonly fileDataRefs = new Map<FileHandle, ShallowRef<FileContentData | undefined>>();
-  constructor(_ops?: Partial<ReactiveFileContentOps>) {
+  private readonly fetcher: Fetcher<FileHandle, FileContentData>;
+  private ns = new Map<string, Set<FileHandle>>();
+  private currentKey: string | undefined;
+
+  private constructor(private currentScope: EffectScope, _ops?: Partial<ReactiveFileContentOps>) {
     const ops: ReactiveFileContentOps = { ...DefaultReactiveFileContentOps, ...(_ops ?? {}) };
-    this.fileDataCache = new LRUCache<FileHandle, FileContentData>({
+    this.fileDataCache = ops.lruCache ?? new LRUCache<FileHandle, FileContentData>({
       maxSize: ops.cacheSize,
-      fetchMethod: async (key) => new FileContentData(await getRawPlatformaInstance().blobDriver.getContent(key)),
       sizeCalculation: (value) => value.bytes.length,
-      /** Will also be called on error fetching the file */
-      dispose: (_, key) => {
-        this.fileDataRefs.delete(key);
-      },
     });
+    this.fetcher = ops.fetcher ?? new Fetcher<FileHandle, FileContentData>();
+  }
+
+  /**
+   * Experimental method to invalidate the refs map cache for a given key.
+   */
+  public withInvalidate<T>(key: string, cb: () => T) {
+    const previous = this.ns.get(key);
+    this.ns.set(key, new Set());
+    this.currentKey = key;
+    try {
+      const res = cb();
+      this.invalidate(key, previous);
+      return res;
+    } finally {
+      this.currentKey = undefined;
+    }
+  }
+
+  public stopScope() {
+    this.currentScope.stop();
+  }
+
+  private async doFetch(handle: FileHandle) {
+    if (!this.fileDataCache.has(handle)) {
+      const fileContentData = await this.fetcher.fetch(handle, async () => new FileContentData(await getRawPlatformaInstance().blobDriver.getContent(handle)));
+      this.fileDataCache.set(handle, fileContentData);
+    }
+
+    return this.fileDataCache.get(handle)!;
+  }
+
+  private getSize() {
+    const refsMap = this.getRefsMap();
+    return refsMap ? refsMap.size : 0;
+  }
+
+  private getRefsMap() {
+    return scopes.get(this.currentScope);
+  }
+
+  private invalidate(key: string, previous: Set<FileHandle> | undefined) {
+    if (!previous) {
+      return;
+    }
+
+    const actual = this.ns.get(key)!;
+
+    for (const handle of actual) {
+      previous.delete(handle);
+    }
+
+    const map = this.getRefsMap();
+
+    for (const handle of previous) {
+      map?.delete(handle);
+    }
+  }
+
+  private withHandle(handle: FileHandle) {
+    if (this.currentKey) {
+      this.ns.get(this.currentKey)?.add(handle);
+    }
   }
 
   private getDataRef(handle: FileHandle): ShallowRef<FileContentData | undefined> {
-    const refFromMap = this.fileDataRefs.get(handle);
-    if (refFromMap !== undefined) return refFromMap;
+    const refsMap = this.getRefsMap();
+
+    if (!refsMap) {
+      throw new Error('ReactiveFileContent must be used within a Vue component or effect scope. Call useGlobalInstance() first.');
+    }
+
+    this.withHandle(handle);
+
+    const refFromMap = refsMap.get(handle);
+
+    if (refFromMap !== undefined) {
+      return refFromMap;
+    }
+
     const newRef = shallowRef<FileContentData>();
-    this.fileDataRefs.set(handle, newRef);
+    refsMap.set(handle, newRef);
 
     // Initiating actual fetch from the cache, that will in turn initiate upload
     (async () => {
-      const maxRetries = 4;
+      const maxRetries = 8;
       const retryDelay = 1000; // 1 second
 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-          const data = await this.fileDataCache.fetch(handle);
+          const data = await this.doFetch(handle);
           newRef.value = data;
           return;
         } catch (err: unknown) {
@@ -103,7 +192,7 @@ export class ReactiveFileContent {
   public getContentString(handle: FileHandle | undefined): ComputedRef<string | undefined> | undefined {
     if (handle === undefined) return undefined;
     const dataRef = this.getDataRef(handle);
-    return computed(() => dataRef?.value?.str);
+    return computed(() => dataRef.value?.str);
   }
 
   public getContentJson<T>(handle: FileHandle, schema: ZodSchema<T>): ComputedRef<T | undefined>;
@@ -114,28 +203,70 @@ export class ReactiveFileContent {
   public getContentJson<T>(handle: FileHandle | undefined, schema?: ZodSchema<T>): ComputedRef<T | undefined> | undefined {
     if (handle === undefined) return undefined;
     const dataRef = this.getDataRef(handle);
-    return computed(() => (schema === undefined ? dataRef?.value?.rawJson : dataRef?.value?.validatedJson(schema)) as T);
+    return computed(() => (schema === undefined ? dataRef.value?.rawJson : dataRef.value?.validatedJson(schema)) as T);
   }
 
-  private static globalInstance = new ReactiveFileContent();
+  private static initScope(_scope: EffectScope | undefined) {
+    let scope = getCurrentScope() ?? _scope;
 
-  public static getContentBytes(handle: FileHandle): ComputedRef<Uint8Array | undefined>;
-  public static getContentBytes(handle: FileHandle | undefined): ComputedRef<Uint8Array | undefined> | undefined;
-  public static getContentBytes(handle: FileHandle | undefined): ComputedRef<Uint8Array | undefined> | undefined {
-    return ReactiveFileContent.globalInstance.getContentBytes(handle);
+    if (!scope) {
+      console.warn('Current scope not found, using new detached scope...');
+      scope = effectScope(true);
+    }
+
+    addScope(scope);
+
+    onScopeDispose(() => {
+      scopes.delete(scope);
+    });
+
+    return scope;
   }
 
-  public static getContentString(handle: FileHandle): ComputedRef<string | undefined>;
-  public static getContentString(handle: FileHandle | undefined): ComputedRef<string | undefined> | undefined;
-  public static getContentString(handle: FileHandle | undefined): ComputedRef<string | undefined> | undefined {
-    return ReactiveFileContent.globalInstance.getContentString(handle);
+  /**
+   * Creates a ReactiveFileContent instance with isolated cache and fetcher.
+   * Use this when you need component-specific caching.
+   *
+   * @example
+   * ```ts
+   * import { ReactiveFileContent } from '@platforma-sdk/ui-vue';
+   * import { computed } from 'vue';
+   *
+   * const fileContent = ReactiveFileContent.use();
+   *
+   * const processedData = computed(() => {
+   *   const content = fileContent.getContentString(fileHandle).value;
+   *   return content?.split('\n').length ?? 0;
+   * });
+   * ```
+   */
+  public static use(_ops?: Partial<ReactiveFileContentOps>, _scope?: EffectScope) {
+    const scope = this.initScope(_scope);
+
+    return new ReactiveFileContent(scope, { ..._ops });
   }
 
-  public static getContentJson<T>(handle: FileHandle, schema: ZodSchema<T>): ComputedRef<T | undefined>;
-  public static getContentJson<T>(handle: FileHandle | undefined, schema: ZodSchema<T>): ComputedRef<T | undefined> | undefined;
-  public static getContentJson<T = unknown>(handle: FileHandle): ComputedRef<T | undefined>;
-  public static getContentJson<T = unknown>(handle: FileHandle | undefined): ComputedRef<T | undefined> | undefined;
-  public static getContentJson<T>(handle: FileHandle | undefined, schema?: ZodSchema<T>): ComputedRef<T | undefined> | undefined {
-    return ReactiveFileContent.globalInstance.getContentJson(handle, schema);
+  /**
+   * Creates a ReactiveFileContent instance with globally shared cache and fetcher.
+   * Use this to share file content cache across multiple components.
+   *
+   * @example
+   * ```ts
+   * import { ReactiveFileContent } from '@platforma-sdk/ui-vue';
+   * import { computed } from 'vue';
+   *
+   * const fileContent = ReactiveFileContent.useGlobal();
+   *
+   * const combinedData = computed(() => {
+   *   const data1 = fileContent.getContentJson(handle1).value;
+   *   const data2 = fileContent.getContentJson(handle2).value;
+   *   return { data1, data2 };
+   * });
+   * ```
+   */
+  public static useGlobal(_ops?: Partial<ReactiveFileContentOps>, _scope?: EffectScope) {
+    const scope = this.initScope(_scope);
+
+    return new ReactiveFileContent(scope, { ..._ops, lruCache: globalCache, fetcher: globalFetcher });
   }
 }
