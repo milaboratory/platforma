@@ -70,7 +70,7 @@ tplTest(
     const csvContent = await readBlobAsString(driverKit, csvHandle);
 
     expect(csvContent).eq(
-      `sampleId\tcellId\t_axes_name_sampleId_type_String_name_cellId_type_String_name_totalCounts_\t_axes_name_sampleId_type_String_name_clusterResolution_\t"{""axisFilters"":[[2,""gene_1""]],""source"":{""axes"":[{""name"":""sampleId"",""type"":""String""},{""name"":""cellId"",""type"":""String""},{""name"":""geneId"",""type"":""String""}],""name"":""expression""}}"\t"{""axisFilters"":[[2,""gene_3""]],""source"":{""axes"":[{""name"":""sampleId"",""type"":""String""},{""name"":""cellId"",""type"":""String""},{""name"":""geneId"",""type"":""String""}],""name"":""complexity""}}"`
+      `sampleId\tcellId\t"{""axes"":[{""name"":""sampleId"",""type"":""String""},{""name"":""cellId"",""type"":""String""}],""name"":""totalCounts""}"\t"{""axes"":[{""name"":""sampleId"",""type"":""String""}],""name"":""clusterResolution""}"\t"{""axisFilters"":[[2,""gene_1""]],""source"":{""axes"":[{""name"":""sampleId"",""type"":""String""},{""name"":""cellId"",""type"":""String""},{""name"":""geneId"",""type"":""String""}],""name"":""expression""}}"\t"{""axisFilters"":[[2,""gene_3""]],""source"":{""axes"":[{""name"":""sampleId"",""type"":""String""},{""name"":""cellId"",""type"":""String""},{""name"":""geneId"",""type"":""String""}],""name"":""complexity""}}"`
       + `\n1\tcell_1\t3000\tCL-1\t5.0\t0.815`
       + `\n1\tcell_2\t4000\tCL-1\t7.0\t0.513`
       + `\n1\tcell_3\t3500\tCL-1\t8.0\t0.914`

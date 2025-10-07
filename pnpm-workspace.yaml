@@ -27,6 +27,7 @@ packages:
   - lib/node/pl-deployments
   - lib/node/pl-config
 
+  - lib/ptabler/js
   - lib/ptabler/schema
   - lib/ptabler/software
 
@@ -51,6 +52,9 @@ packages:
   - sdk/test
   - sdk/ui-vue
   - sdk/eslint-config
+
+  # SDK Annotations
+  - sdk/annotations/workflow
 
   # Test blocks
 
