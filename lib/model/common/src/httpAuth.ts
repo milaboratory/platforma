@@ -4,7 +4,7 @@ export function parseHttpAuth(input: string): HttpAuth {
   const match = /(?<scheme>.*?) (?<parameters>.*)/.exec(input);
   if (match?.groups?.scheme === 'Basic') {
     const credentialsMatch = /(?<username>.*?):(?<password>.*)/
-      .exec(atob(match.groups.parameters))
+      .exec(atob(match.groups.parameters));
     if (!credentialsMatch?.groups) {
       throw new Error(`Malformed credentials.`);
     }
