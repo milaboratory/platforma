@@ -1,9 +1,12 @@
 # Auto-generated Dockerfile for Python package
-FROM python:${PYTHON_VERSION}
+FROM ${BASE_IMAGE_TAG}
 
 WORKDIR ${PKG}
 
 ${RUNENV_ENVS}
+
+# Always keep basic python packaging tools fresh to avoid CVEs even in old python versions
+RUN ${TOOLSET} install --upgrade pip wheel setuptools
 
 # Install dependencies to leverage Docker cache
 COPY ${REQUIREMENTS_PATH} .

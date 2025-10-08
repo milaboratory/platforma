@@ -152,7 +152,7 @@ describe('Docker Python Functions', () => {
 
       const result = prepareDockerOptions(mockLogger, testPackageRoot, 'test-package', 'artifact-id', packageWithoutVersion);
 
-      expect(mockLogger.debug).toHaveBeenCalledWith('No Python version found in environment, using default: 3.12.10-slim');
+      expect(mockLogger.debug).toHaveBeenCalledWith('No Python version found in environment, using default: python:3.12-slim');
       expect(result).toBeDefined();
     });
 
@@ -162,7 +162,7 @@ describe('Docker Python Functions', () => {
       const dockerfileContent = fs.readFileSync(result.dockerfile, 'utf-8');
 
       // Check essential Dockerfile components
-      expect(dockerfileContent).toContain('FROM python:3.12.10');
+      expect(dockerfileContent).toContain('FROM python:3.12-slim');
       expect(dockerfileContent).toContain('WORKDIR /app/');
       expect(dockerfileContent).toContain('COPY . /app/');
       expect(dockerfileContent).toContain('COPY');
