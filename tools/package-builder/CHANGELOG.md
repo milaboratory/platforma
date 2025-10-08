@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.8.0
+
+### Minor Changes
+
+- 9ca9923: Use freshest python base images because of CVEs in old
+
 ## 3.7.0
 
 ### Minor Changes
