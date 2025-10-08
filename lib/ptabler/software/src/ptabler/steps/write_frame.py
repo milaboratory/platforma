@@ -228,14 +228,25 @@ class WriteFrame(PStep, tag="write_frame"):
                         ORDER BY {', '.join(axis_identifiers)}
                     """
                 
-                # To disable bloom filters set `FORMAT PARQUET, DICTIONARY_SIZE_LIMIT 1`
+                # To disable bloom filters set `DICTIONARY_SIZE_LIMIT 1`
                 # <https://duckdb.org/2025/03/07/parquet-bloom-filters-in-duckdb.html>
-                # Changes in bloom filters and compression level must change data_digest
-                # or add a new field to the stats to ensure correct deduplication!
+                # PARQUET_VERSION ensures consistent uncompressed byte sizes across DuckDB versions
+                # <https://duckdb.org/2025/01/22/parquet-encodings.html>
+                # Changes in COPY parameters must be indicated as a new field in stats
+                # to ensure correct deduplication!
                 duckdb_conn.execute(f"""
                     COPY ({query})
                     TO '{os.path.join(frame_dir, data_file)}'
-                    (FORMAT PARQUET, COMPRESSION 'ZSTD', COMPRESSION_LEVEL 3)
+                    (
+                        PRESERVE_ORDER TRUE,
+                        FORMAT PARQUET,
+                        PARQUET_VERSION 'V2',
+                        ROW_GROUP_SIZE 122880,
+                        DICTIONARY_SIZE_LIMIT 12288,
+                        BLOOM_FILTER_FALSE_POSITIVE_RATIO 0.01,
+                        COMPRESSION 'ZSTD',
+                        COMPRESSION_LEVEL 3
+                    )
                 """, query_params)
             
             if self.partition_key_length > 0:
