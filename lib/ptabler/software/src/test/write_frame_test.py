@@ -21,6 +21,8 @@ test_data_root_dir = os.path.join(
 global_settings = GlobalSettings(root_folder=test_data_root_dir)
 
 class WriteFrameTests(unittest.TestCase):
+    maxDiff = None
+    
     def test_empty_parquet_write_and_read(self):
         output_file_abs_path = os.path.join(test_data_root_dir, "outputs", "empty.parquet")
 
