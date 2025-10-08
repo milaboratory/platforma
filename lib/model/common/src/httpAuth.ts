@@ -1,10 +1,10 @@
 /* TODO: replace atob/btoa with Uint8Array.toBase64/fromBase64 in the future */
 
 export function parseHttpAuth(input: string): HttpAuth {
-  const match = input.match(/(?<scheme>.*?) (?<parameters>.*)/);
+  const match = /(?<scheme>.*?) (?<parameters>.*)/.exec(input);
   if (match?.groups?.scheme === 'Basic') {
-    const credentialsMatch = atob(match.groups.credentials)
-      .match(/(?<username>.*?):(?<password>.*)/);
+    const credentialsMatch = /(?<username>.*?):(?<password>.*)/
+      .exec(atob(match.groups.parameters))
     if (!credentialsMatch?.groups) {
       throw new Error(`Malformed credentials.`);
     }
