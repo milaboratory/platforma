@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.11.0
+
+### Minor Changes
+
+- ef22c49: Moved HTTP Authorization header parser/serializer from helpers to pl-model-common
+
 ## 1.10.0
 
 ### Minor Changes
