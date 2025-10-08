@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.104
+
+### Patch Changes
+
+- @platforma-sdk/model@1.44.1
+- @platforma-sdk/ui-vue@1.44.1
+- @milaboratories/milaboratories.monetization-test.model@1.0.19
+
 ## 1.1.103
 
 ### Patch Changes

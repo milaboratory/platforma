@@ -1,5 +1,14 @@
 # @milaboratories/pl-local
 
+## 2.9.1
+
+### Patch Changes
+
+- ef22c49: Moved HTTP Authorization header parser/serializer from helpers to pl-model-common
+- Updated dependencies [ef22c49]
+- Updated dependencies [5ecb368]
+  - @milaboratories/pl-model-common@1.21.0
+
 ## 2.9.0
 
 ### Minor Changes
