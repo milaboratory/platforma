@@ -11,6 +11,7 @@ validation := import(":validation")
 execConstants := import(":exec.constants")
 oop := import(":oop")
 pframes := import(":pframes")
+pframesConstants := import(":pframes.constants")
 
 // import p-frame from directory tpl
 importDirTpl := assets.importTemplate(":pt.import-dir")
@@ -82,6 +83,8 @@ workflow := func() {
 
 	// { file?: ResourceRef, content?: string, name: string }[]
 	inFiles := []
+	// { frame: ResourceRef, rename: { [frameUniqueColumnId]: workflowUniqueColumnId } }[]
+	inFrames := []
 	// string[]
 	outFiles := []
 	// string[]
@@ -91,6 +94,7 @@ workflow := func() {
 
 	anonymousFilesCounter := 0
 	anonymousDFCounter := 0
+	pcolumnCounter := 0
 
 	cpu := undefined
 	mem := undefined
@@ -174,6 +178,7 @@ workflow := func() {
 				}
 			}
 
+			frameResource := undefined
 			fileRef := undefined
 			fileContent := undefined
 			inputSchema := undefined
@@ -202,7 +207,16 @@ workflow := func() {
 				finalFormat = inputXsvType
 			} else {
 				if smart.isReference(frameInput) {
-					fileRef = frameInput
+					frameInputResource := frameInput
+					if smart.isField(frameInputResource) {
+						frameInputResource = frameInputResource.getValue()
+					}
+					if frameInputResource.checkResourceType(pframesConstants.RTYPE_P_FRAME) {
+						frameResource = frameInputResource
+						finalFormat = "pframe"
+					} else {
+						fileRef = frameInput
+					}
 				} else {
 					validation.assertType(frameInput, ["or", "string", "bytes"])
 					fileContent = frameInput
@@ -279,22 +293,50 @@ workflow := func() {
 				ignoreErrorsOpt = opts.ignoreErrors
 			}
 
-			// Validation
-			if !is_undefined(fileRef) && !smart.isReference(fileRef) {
-				ll.panic("frameInput.file (for structural input) or frameInput (for direct reference) must be a valid resource reference. Got: %v", fileRef)
-			} else if !is_undefined(fileContent) && !is_string(fileContent) {
-				ll.panic("frameInput (for direct content) must be a string. Got: %v", fileContent)
-			}
-
 			if !is_undefined(fileRef) {
+				ll.assert(
+					smart.isReference(fileRef),
+					"frameInput.file (for structural input) or frameInput (for direct reference) must be a valid resource reference, got: %v",
+					fileRef)
 				inFiles = append(inFiles, { file: fileRef, name: finalFileName })
-			} else {
+			} else if !is_undefined(fileContent) {
+				ll.assert(is_string(fileContent), "frameInput (for direct content) must be a string, got: %v", fileContent)
 				inFiles = append(inFiles, { content: fileContent, name: finalFileName })
 			}
 
 			// Generate appropriate step based on format
 			step := undefined
-			if finalFormat == "parquet" {
+			if finalFormat == "pframe" {
+				rename := {}
+				translation := {}
+				columnEntries := []
+				for key, _ in frameResource.inputs() {
+					if text.has_suffix(key, ".spec") {
+						frameUniqueColumnId := text.trim_suffix(key, ".spec")
+						workflowUniqueColumnId := self._newUniqueColumnId()
+						rename[frameUniqueColumnId] = workflowUniqueColumnId
+						translation[workflowUniqueColumnId] = frameUniqueColumnId
+						columnEntries = append(columnEntries, {
+							type: "column",
+							columnId: workflowUniqueColumnId
+						})
+					}
+				}
+				inFrames = append(inFrames, { frame: frameResource, rename: rename })
+				request := {
+					src: {
+						type: "full",
+						entries: columnEntries
+					},
+					filters: []
+				}
+				step = {
+					type: "read_frame",
+					name: finalDataFrameId,
+					request: request,
+					translation: translation
+				}
+			} else if finalFormat == "parquet" {
 				step = {
 					type: "read_parquet",
 					file: finalFileName,
@@ -431,6 +473,10 @@ workflow := func() {
 		_newAnonymousFileId: func(extension) {
 			anonymousFilesCounter += 1
 			return "anonymous_" + string(anonymousFilesCounter) + "." + extension
+		},
+		_newUniqueColumnId: func() {
+			pcolumnCounter += 1
+			return "pcolumn_" + string(pcolumnCounter)
 		},
 		_saveFile: func(name) {
 			outFiles = append(outFiles, name)
