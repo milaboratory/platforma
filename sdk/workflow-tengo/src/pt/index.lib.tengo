@@ -111,6 +111,8 @@ workflow := func() {
 		 * @returns {object} - The workflow object, allowing for method chaining.
 		 */
 		addRawStep: func(step) {
+			ll.assert(is_map(step), "step must be a map")
+			ll.assert(is_string(step.type), "step.type must be a string discriminator")
 			steps = append(steps, step)
 			return self
 		},
