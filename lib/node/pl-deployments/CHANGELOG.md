@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.10.0
+
+### Minor Changes
+
+- 1ec2268: Update Built-In backend version
+
 ## 2.9.1
 
 ### Patch Changes
