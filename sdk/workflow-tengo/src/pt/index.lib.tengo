@@ -9,12 +9,9 @@ text := import("text")
 slices := import(":slices")
 validation := import(":validation")
 execConstants := import(":exec.constants")
-oop := import(":oop")
 pframes := import(":pframes")
 pframesConstants := import(":pframes.constants")
-
-// import p-frame from directory tpl
-importDirTpl := assets.importTemplate(":pt.import-dir")
+render := import(":render")
 
 /**
  * This library provides a high-level API, inspired by Polars DataFrames, for building and executing
@@ -558,59 +555,72 @@ workflow := func() {
 		 * @returns {object} - A result object from `exec.run()`, typically providing access to output files via `getFile()` or `getFileContent()`.
 		 */
 		run: func() {
-			ptablerSw := assets.importSoftware("@platforma-open/milaboratories.software-ptabler:main")
-			ptablerCmdBuilder := exec.builder().
-				setQueue(queue).
-				printErrStreamToStdout().
-				dontSaveStdoutOrStderr().
-				software(ptablerSw).
-				envExpr("POLARS_MAX_THREADS", "{system.cpu}").
-				arg("workflow_sc.json").
-				writeFile("workflow_sc.json", json.encode({
-					workflow: steps
-				}));
+			workflowRunTpl := assets.importTemplate(":pt.workflow-run")
 
-			if !is_undefined(cpu) {
-				ptablerCmdBuilder.cpu(cpu)
+			workflowJsonStruct := {
+				workflow: steps
 			}
 
-			if !is_undefined(mem) {
-				ptablerCmdBuilder.mem(mem)
-			}
-
+			inFilesMap := {}
+			inFilesContentMap := {}
 			for inFile in inFiles {
 				if !is_undefined(inFile.file) {
-					ptablerCmdBuilder.addFile(inFile.name, inFile.file)
+					inFilesMap[inFile.name] = inFile.file
+				} else if !is_undefined(inFile.content) {
+					inFilesContentMap[inFile.name] = inFile.content
 				} else {
-					ptablerCmdBuilder.writeFile(inFile.name, inFile.content)
+					ll.panic("inFile must have either file or content, got: %v", inFile)
 				}
 			}
-
-			for outFile in outFiles {
-				ptablerCmdBuilder.saveFile(outFile)
-			}
-
-			for outContentFile in outContentFiles {
-				ptablerCmdBuilder.saveFileContent(outContentFile)
-			}
-
-			tplArgs := {}
+			
+			outFrames := {}
 			for frameName, specsById in outFramesSpecs {
 				columnIds := []
 				for columnId, _ in specsById {
 					columnIds = append(columnIds, columnId)
 				}
-				tplArgs[frameName] = columnIds;
-			}
-            workdirProcessorName := "import_dir";
-			if len(tplArgs) > 0 {
-				ptablerCmdBuilder.processWorkdir(workdirProcessorName, importDirTpl, tplArgs)
+				outFrames[frameName] = columnIds;
 			}
 
-			execResult := ptablerCmdBuilder.run()
+			ptRunInputs := {
+				workflowJsonStruct: workflowJsonStruct,
+				inFiles: inFilesMap,
+				inFilesContent: inFilesContentMap,
+				outFiles: outFiles,
+				outFilesContent: outContentFiles,
+				outFrames: outFrames
+			}
+			ptRunMetaInputs := {
+				queue: queue,
+				cpu: cpu,
+				mem: mem
+			}
+			ptResult := render.create(workflowRunTpl, ptRunInputs, {
+				metaInputs: ptRunMetaInputs
+			});
 
 			self := undefined
-			self = ll.toStrict(oop.inherit(execResult, {
+			self = ll.toStrict({
+				/**
+				 * Retrieves a file.
+				 *
+				 * @param fileName: string
+				 * @return field - a reference to the file resource.
+				 */
+				getFile: func(fileName) {
+					return ptResult.resolveOutput(["outFiles", fileName])
+				},
+
+				/**
+				 * Retrieves the content of a file.
+				 *
+				 * @param fileName: string
+				 * @return field - a reference to the file content resource.
+				 */
+				getFileContent: func(fileName) {
+					return ptResult.resolveOutput(["outFilesContent", fileName])
+				},
+
 				/**
 				 * Retrieves exported frame.
 				 *
@@ -620,17 +630,15 @@ workflow := func() {
 				getFrameDirect: func(frameName) {
 					specs := outFramesSpecs[frameName]
 					ll.assert(!is_undefined(specs), "saveFrameDirect was not called for frame '%s'", frameName)
-					savedFrames := execResult.getProcessorResult(workdirProcessorName)
 
 					pf := pframes.pFrameBuilder()
-					for pColumnId, pColumnSpec in specs {
-						pColumnRef := util.makeFrameColumnRef(frameName, pColumnId)
-						pColumnData := savedFrames.getFutureInputField(pColumnRef)
-						pf.add(pColumnId, pColumnSpec, pColumnData)
+					for columnId, columnSpec in specs {
+						columnData := ptResult.resolveOutput(["outFrames", frameName, columnId])
+						pf.add(columnId, columnSpec, columnData)
 					}
 					return pf.build()
 				}
-			}))
+			})
 			return self
 		}
 	}
