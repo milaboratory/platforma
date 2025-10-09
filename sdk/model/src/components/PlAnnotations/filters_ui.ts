@@ -27,12 +27,16 @@ export type FilterUi = { id?: number; name?: string; isExpanded?: boolean }
     | { type: 'patternNotEquals'; column: SUniversalPColumnId; value: string }
     | { type: 'patternContainSubsequence'; column: SUniversalPColumnId; value: string }
     | { type: 'patternNotContainSubsequence'; column: SUniversalPColumnId; value: string }
+    | { type: 'patternMatchesRegularExpression'; column: SUniversalPColumnId; value: string }
+    | { type: 'patternFuzzyContainSubsequence'; column: SUniversalPColumnId; value: string; maxEdits?: number; substitutionsOnly?: boolean; wildcard?: string }
     | { type: 'topN'; column: SUniversalPColumnId; n: number }
     | { type: 'bottomN'; column: SUniversalPColumnId; n: number }
     | { type: 'lessThan'; column: SUniversalPColumnId; x: number }
     | { type: 'greaterThan'; column: SUniversalPColumnId; x: number }
     | { type: 'lessThanOrEqual'; column: SUniversalPColumnId; x: number }
     | { type: 'greaterThanOrEqual'; column: SUniversalPColumnId; x: number }
+    | { type: 'numberEquals'; column: SUniversalPColumnId; x: number }
+    | { type: 'numberNotEquals'; column: SUniversalPColumnId; x: number }
     | { type: 'lessThanColumn'; column: SUniversalPColumnId; rhs: SUniversalPColumnId; minDiff?: number }
     | { type: 'lessThanColumnOrEqual'; column: SUniversalPColumnId; rhs: SUniversalPColumnId; minDiff?: number });
 
@@ -327,6 +331,48 @@ export const filterUiMetadata = {
     },
     supportedFor: isStringValueType,
   },
+  patternMatchesRegularExpression: {
+    label: 'Col ~ X (Matches Regular Expression)',
+    form: {
+      column: {
+        label: 'Column',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: 'Predicate',
+        fieldType: 'FilterUiType',
+        defaultValue: () => 'patternMatchesRegularExpression',
+      },
+      value: {
+        label: 'Seq',
+        fieldType: 'string',
+        defaultValue: () => '',
+      },
+    },
+    supportedFor: isStringValueType,
+  },
+  patternFuzzyContainSubsequence: {
+    label: 'Col ~ Seq (Fuzzy Contain Subsequence)',
+    form: {
+      column: {
+        label: 'Column',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: 'Predicate',
+        fieldType: 'FilterUiType',
+        defaultValue: () => 'patternFuzzyContainSubsequence',
+      },
+      value: {
+        label: 'Seq',
+        fieldType: 'string',
+        defaultValue: () => '',
+      },
+    },
+    supportedFor: isStringValueType,
+  },
   patternEquals: {
     label: 'Col = Seq (Equals)',
     form: {
@@ -368,6 +414,48 @@ export const filterUiMetadata = {
       },
     },
     supportedFor: isStringValueType,
+  },
+  numberEquals: {
+    label: 'Col = X (Equals)',
+    form: {
+      column: {
+        label: 'Column',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: 'Predicate',
+        fieldType: 'FilterUiType',
+        defaultValue: () => 'numberEquals',
+      },
+      x: {
+        label: 'Number',
+        fieldType: 'number',
+        defaultValue: () => 0,
+      },
+    },
+    supportedFor: isNumericValueType,
+  },
+  numberNotEquals: {
+    label: 'Col ≠ X (Not Equal)',
+    form: {
+      column: {
+        label: 'Column',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: 'Predicate',
+        fieldType: 'FilterUiType',
+        defaultValue: () => 'numberNotEquals',
+      },
+      x: {
+        label: 'Number',
+        fieldType: 'number',
+        defaultValue: () => 0,
+      },
+    },
+    supportedFor: isNumericValueType,
   },
   isNA: {
     label: 'Is NA',
@@ -451,12 +539,33 @@ export const filterUiMetadata = {
   },
 } satisfies CreateFilterUiMetadataMap<FilterUiType>;
 
+// exist in PlAdvancedFilter
+const filtersInPlAnnotation = new Set<FilterUiType>([
+  'lessThan',
+  'greaterThan',
+  'lessThanOrEqual',
+  'greaterThanOrEqual',
+  'lessThanColumn',
+  'lessThanColumnOrEqual',
+  'patternEquals',
+  'patternNotEquals',
+  'patternContainSubsequence',
+  'patternNotContainSubsequence',
+  'and',
+  'or',
+  'not',
+  'isNA',
+  'isNotNA',
+  'topN',
+  'bottomN',
+]); // 'numberEquals', 'numberNotEquals', 'patternFuzzyContainSubsequence', 'patternMatchesRegularExpression' are not supported in PlAnnotation
 export function getFilterUiTypeOptions(columnSpec?: SimplifiedPColumnSpec) {
   if (!columnSpec) {
     return [];
   }
 
-  return Object.entries(filterUiMetadata).filter(([_, metadata]) => metadata.supportedFor(columnSpec)).map(([type, metadata]) => ({
+  return Object.entries(filterUiMetadata).filter(([filterName, metadata]) => !filtersInPlAnnotation.has(filterName as FilterUiType)
+    && metadata.supportedFor(columnSpec)).map(([type, metadata]) => ({
     label: metadata.label,
     value: type,
   }));
@@ -624,6 +733,14 @@ export function compileFilter(ui: FilterUi): AnnotationFilter {
       minDiff: ui.minDiff,
       allowEqual: true,
     };
+  }
+
+  // not implemented in annotations
+  if (ui.type === 'numberEquals'
+    || ui.type === 'numberNotEquals'
+    || ui.type === 'patternFuzzyContainSubsequence'
+    || ui.type === 'patternMatchesRegularExpression') {
+    throw new Error(`Filter "${ui.type}" is not supported in PlAnnotation`);
   }
 
   if (ui.type === undefined) {
