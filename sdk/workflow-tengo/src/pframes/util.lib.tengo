@@ -605,9 +605,10 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 
     } else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED)) {
 
-        // write jdata
+		// write binary data
         i := 0
         parts := {}
+
         // using maps.getKeys to iterate over keys in the alphabetical order
 		inputs := data.inputs()
         for k in maps.getKeys(inputs) {
@@ -667,7 +668,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		superPartitionKeyLength := data.getDataAsJson().superPartitionKeyLength
 		partitionKeyLength := data.getDataAsJson().partitionKeyLength
 
-		// write jdata
+		// write binary data
         i := 0
         parts := {}
 
@@ -730,6 +731,101 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		// write data info
 		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
 			type: "BinaryPartitioned",
+			partitionKeyLength: superPartitionKeyLength + partitionKeyLength,
+			parts: parts
+		}))
+
+        // write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED)) {
+
+		// write parquet data
+        i := 0
+        parts := {}
+
+		// using maps.getKeys to iterate over keys in the alphabetical order
+		inputs := data.inputs()
+        for k in maps.getKeys(inputs) {
+			v := inputs[k]
+
+			if !acceptPartition(json.decode(k)) {
+				continue
+			}
+
+			parquetChunkResource := v.getValue()
+			parquetChunkMetadata := parquetChunkResource.getDataAsJson()
+			parquetChunkMapping := parquetChunkResource.getMetaInputs()["mapping"].getDataAsJson()
+			parquetChunkDataResource := parquetChunkResource.getMetaInputs()["blob"]
+
+            parquetChunkDataPath := "__resource__" + parquetChunkDataResource.id + ".parquet"
+			parquetChunkDataFile := parquetChunkDataResource.getValue()
+
+            parts[k] = maps.merge({ data: parquetChunkDataPath }, parquetChunkMetadata, parquetChunkMapping)
+
+            execBuilder.addFile(makePath(parquetChunkDataPath), parquetChunkDataFile)
+
+            i = i + 1
+        }
+
+        // write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "ParquetPartitioned",
+			partitionKeyLength: data.getDataAsJson().partitionKeyLength,
+			parts: parts
+		}))
+
+        // write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED)) {
+
+		superPartitionKeyLength := data.getDataAsJson().superPartitionKeyLength
+		partitionKeyLength := data.getDataAsJson().partitionKeyLength
+
+		// write jdata
+        i := 0
+        parts := {}
+
+		// iterate over super index
+		for supKey, supData in data.inputs() {
+
+			supKeyArray := json.decode(supKey)
+
+			// iterate over inner index
+			inputs := supData.getValue().inputs()
+			for k in maps.getKeys(inputs) {
+				v := inputs[k]
+
+				innerKeyArray := json.decode(k)
+
+				keyArray := supKeyArray + innerKeyArray
+
+				if !acceptPartition(keyArray) {
+					continue
+				}
+
+				key := json.encode(keyArray)
+
+				parquetChunkResource := v.getValue()
+				parquetChunkMetadata := parquetChunkResource.getDataAsJson()
+				parquetChunkMapping := parquetChunkResource.getMetaInputs()["mapping"].getDataAsJson()
+				parquetChunkDataResource := parquetChunkResource.getMetaInputs()["blob"]
+
+				parquetChunkDataPath := "__resource__" + parquetChunkDataResource.id + ".parquet"
+				parquetChunkDataFile := parquetChunkDataResource.getValue()
+
+				parts[key] = maps.merge({ data: parquetChunkDataPath }, parquetChunkMetadata, parquetChunkMapping)
+
+				execBuilder.addFile(makePath(parquetChunkDataPath), parquetChunkDataFile)
+
+            	i = i + 1
+			}
+		}
+
+		// write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "ParquetPartitioned",
 			partitionKeyLength: superPartitionKeyLength + partitionKeyLength,
 			parts: parts
 		}))
