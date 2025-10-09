@@ -13,8 +13,9 @@ const data = reactive({
   optionsHeight: 0,
 });
 
-const optionsStyle = reactive({
-  top: '0px',
+const optionsStyle = reactive<Record<string, string | undefined>>({
+  top: undefined,
+  bottom: undefined,
   left: '0px',
   width: '0px',
 });
@@ -62,9 +63,13 @@ useElementPosition(rootRef, (pos) => {
   const downTopOffset = top + pos.height + gap;
 
   if (downTopOffset + data.optionsHeight > pos.clientHeight) {
-    optionsStyle.top = top - data.optionsHeight - gap + 'px';
+    const bottom = bodyRect.bottom - pos.bottom;
+    const upBottomOffset = bottom + pos.height + gap;
+    optionsStyle.bottom = upBottomOffset + 'px';
+    optionsStyle.top = undefined;
   } else {
     optionsStyle.top = downTopOffset + 'px';
+    optionsStyle.bottom = undefined;
   }
 
   optionsStyle.left = left + 'px';
