@@ -11,6 +11,7 @@ validation := import(":validation")
 execConstants := import(":exec.constants")
 pframes := import(":pframes")
 pframesConstants := import(":pframes.constants")
+pframesUtil := import(":pframes.util")
 render := import(":render")
 
 /**
@@ -80,18 +81,21 @@ workflow := func() {
 
 	// { file?: ResourceRef, content?: string, name: string }[]
 	inFiles := []
-	// { frame: ResourceRef, rename: { [frameUniqueColumnId]: workflowUniqueColumnId } }[]
-	inFrames := []
+	// { [uniqueFrameName]: { [workflowUniqueColumnId]: { spec: json, data: resource } } }
+	inFrames := {}
 	// string[]
 	outFiles := []
 	// string[]
 	outContentFiles := []
 	// { [frameName]: { [pColumnId]: pColumnSpec } }
 	outFramesSpecs := {}
+	// { [frameName]: sequentialFrameName }
+	outFramesRename := {}
 
 	anonymousFilesCounter := 0
 	anonymousDFCounter := 0
 	pcolumnCounter := 0
+	pframeCounter := 0
 
 	cpu := undefined
 	mem := undefined
@@ -304,22 +308,28 @@ workflow := func() {
 			// Generate appropriate step based on format
 			step := undefined
 			if finalFormat == "pframe" {
-				rename := {}
+				columnsMap := pframesUtil.pFrameToColumnsMap(frameResource)
+
 				translation := {}
+				renamedColumnsMap := {}
 				columnEntries := []
-				for key, _ in frameResource.inputs() {
-					if text.has_suffix(key, ".spec") {
-						frameUniqueColumnId := text.trim_suffix(key, ".spec")
-						workflowUniqueColumnId := self._newUniqueColumnId()
-						rename[frameUniqueColumnId] = workflowUniqueColumnId
-						translation[workflowUniqueColumnId] = frameUniqueColumnId
-						columnEntries = append(columnEntries, {
-							type: "column",
-							columnId: workflowUniqueColumnId
-						})
-					}
+
+				for frameUniqueColumnId, columnInfo in columnsMap {
+					workflowUniqueColumnId := self._newUniqueColumnId()
+
+					translation[workflowUniqueColumnId] = frameUniqueColumnId
+					renamedColumnsMap[frameUniqueColumnId] = columnInfo
+					
+					columnEntries = append(columnEntries, {
+						type: "column",
+						columnId: workflowUniqueColumnId
+					})
 				}
-				inFrames = append(inFrames, { frame: frameResource, rename: rename })
+
+				ll.assert(is_undefined(inFrames[finalDataFrameId]),
+					"frame with name '%s' already added", finalDataFrameId)
+				inFrames[finalDataFrameId] = renamedColumnsMap
+
 				request := {
 					src: {
 						type: "full",
@@ -327,6 +337,7 @@ workflow := func() {
 					},
 					filters: []
 				}
+
 				step = {
 					type: "read_frame",
 					name: finalDataFrameId,
@@ -475,19 +486,24 @@ workflow := func() {
 			pcolumnCounter += 1
 			return "pcolumn_" + string(pcolumnCounter)
 		},
+		_newUniquePFrameName: func() {
+			pframeCounter += 1
+			return "pframe_" + string(pframeCounter)
+		},
 		_saveFile: func(name) {
 			outFiles = append(outFiles, name)
 		},
 		_saveFileContent: func(name) {
 			outContentFiles = append(outContentFiles, name)
 		},
-		_saveFrameSpecs: func(name, specs) {
+		_saveFrameSpecs: func(name, rename, specs) {
 			ll.assert(
 				outFramesSpecs[name] == undefined,
 				"frame with name '%s' already saved, please pick a different name",
 				name
 			)
 			outFramesSpecs[name] = specs
+			outFramesRename[name] = rename
 		},
 
 		/**
@@ -579,13 +595,14 @@ workflow := func() {
 				for columnId, _ in specsById {
 					columnIds = append(columnIds, columnId)
 				}
-				outFrames[frameName] = columnIds;
+				outFrames[outFramesRename[frameName]] = columnIds;
 			}
 
 			ptRunInputs := {
 				workflowJsonStruct: workflowJsonStruct,
 				inFiles: inFilesMap,
 				inFilesContent: inFilesContentMap,
+				inFrames: inFrames,
 				outFiles: outFiles,
 				outFilesContent: outContentFiles,
 				outFrames: outFrames
@@ -633,7 +650,7 @@ workflow := func() {
 
 					pf := pframes.pFrameBuilder()
 					for columnId, columnSpec in specs {
-						columnData := ptResult.resolveOutput(["outFrames", frameName, columnId])
+						columnData := ptResult.resolveOutput(["outFrames", outFramesRename[frameName], columnId])
 						pf.add(columnId, columnSpec, columnData)
 					}
 					return pf.build()
@@ -963,9 +980,10 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			util.validateParamsForSaveFrameDirect(params)
 
 			specs := util.makeFrameSpecs(params)
-			parentWorkflow._saveFrameSpecs(frameName, specs)
+			sequentialFrameName := parentWorkflow._newUniquePFrameName()
+			parentWorkflow._saveFrameSpecs(frameName, sequentialFrameName, specs)
 
-			step := util.makeWriteFrameStep(frameName, dfName, params)
+			step := util.makeWriteFrameStep(sequentialFrameName, dfName, params)
 			parentWorkflow.addRawStep(step)
 		},
 

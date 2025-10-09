@@ -3,6 +3,7 @@ exec := import(":exec")
 json := import("json")
 ll := import(":ll")
 util := import(":pt.util")
+pframesUtil := import(":pframes.util")
 
 self := import(":tpl.light")
 
@@ -18,6 +19,7 @@ self.body(func(inputs) {
     workflowJsonStruct := inputs.workflowJsonStruct
     inFiles := inputs.inFiles
     inFilesContent := inputs.inFilesContent
+    inFrames := inputs.inFrames
     outFiles := inputs.outFiles
     outFilesContent := inputs.outFilesContent
     outFrames := inputs.outFrames
@@ -27,7 +29,9 @@ self.body(func(inputs) {
     mem := inputs.mem
 
     workdirProcessorName := "import_dir";
-    
+    inFramesFolder := "input_frame"
+    spillFolder := "pframes_spill"
+
     ptCmd := exec.builder().
         setQueue(queue).
         printErrStreamToStdout().
@@ -35,6 +39,8 @@ self.body(func(inputs) {
         software(ptSoftware).
         envExpr("POLARS_MAX_THREADS", "{system.cpu}").
         arg("workflow_sc.json").
+        arg("--frame-dir").arg(inFramesFolder).
+        arg("--spill-dir").arg(spillFolder).
         writeFile("workflow_sc.json", json.encode(workflowJsonStruct));
     if !is_undefined(cpu) {
         ptCmd.cpu(cpu)
@@ -47,9 +53,22 @@ self.body(func(inputs) {
     for name, file in inFiles {
         ptCmd.addFile(name, file)
     }
+
     ll.assert(is_map(inFilesContent), "inFilesContent must be a map, got: %v", inFilesContent)
     for name, content in inFilesContent {
         ptCmd.writeFile(name, content)
+    }
+
+    ll.assert(is_map(inFrames), "inFrames must be a map, got: %v", inFrames)
+    for _, columnsById in inFrames {
+        ll.assert(!is_map(columnsById), "columnsById must be a map, got: %v", columnsById)
+        for columnId, columnInfo in columnsById {
+            ll.assert(!is_undefined(columnInfo.spec), "spec must be defined in columnInfo for column '%s'", columnId)
+            ll.assert(!is_undefined(columnInfo.data), "data must be defined in columnInfo for column '%s'", columnId)
+            pframesUtil.addColumnToWd(columnId, columnInfo.spec, columnInfo.data, ptCmd, {
+                folder: inFramesFolder
+            })
+        }
     }
 
     ll.assert(is_array(outFiles), "outFiles must be an array, got: %v", outFiles)

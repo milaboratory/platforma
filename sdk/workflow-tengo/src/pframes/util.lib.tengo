@@ -2,6 +2,14 @@ ll := import(":ll")
 validation := import(":validation")
 objects := import(":objects")
 slices := import(":slices")
+text := import("text")
+smart := import(":smart")
+constants := import(":pframes.constants")
+pSpec := import(":pframes.spec")
+path := import(":path")
+json := import("json")
+sets := import(":sets")
+maps := import(":maps")
 
 _PRE_PROCESS_STEP_SCHEMA := [`or`,
 	{
@@ -397,6 +405,343 @@ calculateGroupAxesIndices := func(numberOfAxes, aggregationIndices) {
 	return groupIndices
 }
 
+/**
+ * Unpack p-frame resource into `{ [columnId]: { spec: json, data: resource } }` map
+ */
+pFrameToColumnsMap := func(pf) {
+	columnsById := {}
+
+	addColumn := func(key, value) {
+		columnId := key[0:(len(key) - 5)]
+		if is_undefined(columnsById[columnId]) {
+			columnsById[columnId] = {}
+		}
+
+		if text.has_suffix(key, ".spec") {
+			if smart.isResource(value) {
+				value = value.getDataAsJson()
+			}
+			columnsById[columnId].spec = value
+		} else if text.has_suffix(key, ".data") {
+			columnsById[columnId].data = value
+		} else {
+			ll.panic("unknown suffix: %s", key)
+		}
+	}
+
+	if smart.isResource(pf) {
+		ll.assert(pf.checkResourceType(constants.RTYPE_P_FRAME), "Unexpected resource type: %v", pf.info().Type)
+		for key, field in pf.inputs() {
+			addColumn(key, field.getValue())
+		}
+	} else if ll.isMap(pf) {
+		for key, value in pf {
+			addColumn(key, value)
+		}
+	} else {
+		ll.panic("unknown pf format: %v", pf)
+	}
+
+	return columnsById
+}
+
+/**
+ * @param name: string - column name as to name it in the workdir
+ * @param spec: json - column specification
+ * @param data: resource - column data resource
+ * @param exec: string - exec instance
+ * @param ops: map - exec options
+ *   - partitions: map - partitions filter
+ *   - folder: string - folder to save the column in
+ */
+addColumnToWd := func(name, spec, data, execBuilder, ops) {
+	ll.assert(is_string(name), "name must be a string, got: %v", name)
+
+	ll.assert(!is_undefined(spec), "spec must be defined")
+	validation.assertType(spec, pSpec.P_COLUMN_SPEC_SCHEMA)
+	vt := spec.valueType
+	ll.assert(vt == "Int" || vt == "Long" || vt == "Float" || vt == "Double" || vt == "String",
+		"Unsupported value type: ", vt, spec)
+	
+    ll.assert(!is_undefined(data) && smart.isResource(data), "data must be a resource, got: %v", data)
+
+	ll.assert(!is_undefined(execBuilder), "execBuilder must be defined")
+	if !is_undefined(ops) {
+		ll.assert(is_map(ops), "ops must be a map, got: %v", ops)
+		validation.assertType(ops, {
+			`__options__,closed`: true,
+			`partitions,?`: { any: ["or", ["number"], ["string"]] },
+			`folder,?`: "string"
+		})
+	}
+
+	partitions := undefined
+	if !is_undefined(ops.partitions) {
+		partitions = {}
+		for idx, keys in ops.partitions {
+			partitions[idx] = sets.fromSlice(keys)
+		}
+	}
+
+	acceptPartition := func(part) {
+		if is_undefined(partitions) {
+			return true
+		}
+
+		for idx, keys in partitions {
+			if !sets.hasElement(keys, part[text.atoi(idx)]) {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	makePath := func(fileName) {
+		if is_undefined(ops.folder) {
+			return fileName
+		}
+		return path.join(ops.folder, fileName)
+	}
+
+	if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_JSON)) {
+
+		ll.assert(is_undefined(partitions), "Partitions filter enabled while non-partitioned column exported")
+
+		// write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "JsonPartitioned",
+			partitionKeyLength: 0,
+			parts: { "[]": name + ".jdata" }
+		}))
+
+		// write jdata
+		execBuilder.writeFile(makePath(name + ".jdata"), json.encode(data.getDataAsJson().data))
+
+		// write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED)) {
+
+        // write jdata
+        i := 0
+        parts := {}
+
+		// using maps.getKeys to iterate over keys in the alphabetical order
+		inputs := data.inputs()
+        for k in maps.getKeys(inputs) {
+			v := inputs[k]
+
+			if !acceptPartition(json.decode(k)) {
+				continue
+			}
+
+            part := name + i + ".jdata"
+            parts[k] = part
+
+            execBuilder.addFile(makePath(part), v.getValue())
+
+            i = i + 1
+        }
+
+        // write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "JsonPartitioned",
+			partitionKeyLength: data.getDataAsJson().partitionKeyLength,
+			parts: parts
+		}))
+
+        // write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED)) {
+
+		superPartitionKeyLength := data.getDataAsJson().superPartitionKeyLength
+		partitionKeyLength := data.getDataAsJson().partitionKeyLength
+
+		// write jdata
+        i := 0
+        parts := {}
+
+		// iterate over super index
+		for supKey, supData in data.inputs() {
+
+			supKeyArray := json.decode(supKey)
+
+			// iterate over inner index
+			inputs := supData.getValue().inputs()
+			for k in maps.getKeys(inputs) {
+				v := inputs[k]
+
+				part := name + i + ".jdata"
+
+				innerKeyArray := json.decode(k)
+
+				keyArray := supKeyArray + innerKeyArray
+
+				if !acceptPartition(keyArray) {
+					continue
+				}
+
+				key := json.encode(keyArray)
+
+				parts[key] = part
+
+            	execBuilder.addFile(makePath(part), v.getValue())
+
+            	i = i + 1
+			}
+		}
+
+		// write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "JsonPartitioned",
+			partitionKeyLength: superPartitionKeyLength + partitionKeyLength,
+			parts: parts
+		}))
+
+        // write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+    } else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED)) {
+
+        // write jdata
+        i := 0
+        parts := {}
+        // using maps.getKeys to iterate over keys in the alphabetical order
+		inputs := data.inputs()
+        for k in maps.getKeys(inputs) {
+			v := inputs[k]
+
+            part := undefined
+
+            if text.has_suffix(k, ".index") {
+                part = k[0:(len(k) - 6)]
+
+				if !acceptPartition(json.decode(part)) {
+					continue
+				}
+
+                if is_undefined(parts[part]) {
+                    parts[part] = {}
+                }
+
+                indexFile := name + i + ".index"
+
+                execBuilder.addFile(makePath(indexFile), v.getValue())
+                parts[part].index = indexFile
+            } else if text.has_suffix(k, ".values") {
+                part = k[0:(len(k) - 7)]
+
+				if !acceptPartition(json.decode(part)) {
+					continue
+				}
+
+                if is_undefined(parts[part]) {
+                    parts[part] = {}
+                }
+
+                valuesFile := name + i + ".values"
+
+                execBuilder.addFile(makePath(valuesFile), v.getValue())
+                parts[part].values = valuesFile
+            } else {
+                ll.panic("unknown suffix: expected .index or .values, got ", k)
+            }
+
+			i = i + 1
+        }
+
+        // write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "BinaryPartitioned",
+			partitionKeyLength: data.getDataAsJson().partitionKeyLength,
+			parts: parts
+		}))
+
+        // write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED)) {
+
+		superPartitionKeyLength := data.getDataAsJson().superPartitionKeyLength
+		partitionKeyLength := data.getDataAsJson().partitionKeyLength
+
+		// write jdata
+        i := 0
+        parts := {}
+
+		// iterate over super index
+		for supKey, supData in data.inputs() {
+
+			supKeyArray := json.decode(supKey)
+
+			// iterate over inner index
+			inputs := supData.getValue().inputs()
+			for k in maps.getKeys(inputs) {
+				v := inputs[k]
+
+				if text.has_suffix(k, ".index") {
+					innerKeyArray := json.decode(k[0:(len(k) - 6)])
+					keyArray := supKeyArray + innerKeyArray
+
+					if !acceptPartition(keyArray) {
+						continue
+					}
+
+					key := json.encode(keyArray)
+
+					if is_undefined(parts[key]) {
+						parts[key] = {}
+					}
+
+					indexFile := name + i + ".index"
+
+					execBuilder.addFile(makePath(indexFile), v.getValue())
+					parts[key].index = indexFile
+				} else if text.has_suffix(k, ".values") {
+
+					innerKeyArray := json.decode(k[0:(len(k) - 7)])
+
+					keyArray := supKeyArray + innerKeyArray
+
+					if !acceptPartition(keyArray) {
+						continue
+					}
+
+					key := json.encode(keyArray)
+
+					if is_undefined(parts[key]) {
+						parts[key] = {}
+					}
+
+					valuesFile := name + i + ".values"
+
+					execBuilder.addFile(makePath(valuesFile), v.getValue())
+					parts[key].values = valuesFile
+				} else {
+					ll.panic("unknown suffix: expected .index or .values, got ", k)
+				}
+
+				i = i + 1
+			}
+		}
+
+		// write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "BinaryPartitioned",
+			partitionKeyLength: superPartitionKeyLength + partitionKeyLength,
+			parts: parts
+		}))
+
+        // write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+	} else {
+		ll.panic("unsupported p-column data type", data.info().Type)
+	}
+}
+
 export ll.toStrict({
 	PFCONV_IMPORT_CFG_SCHEMA: PFCONV_IMPORT_CFG_SCHEMA,
 	PFCONV_EXPORT_CFG_SCHEMA: PFCONV_EXPORT_CFG_SCHEMA,
@@ -405,5 +750,7 @@ export ll.toStrict({
 	xsvColumnId: xsvColumnId,
 	purifySpec: purifySpec,
 	decomposePfconvImportCfg: decomposePfconvImportCfg,
-	calculateGroupAxesIndices: calculateGroupAxesIndices
+	calculateGroupAxesIndices: calculateGroupAxesIndices,
+	pFrameToColumnsMap: pFrameToColumnsMap,
+	addColumnToWd: addColumnToWd
 })
