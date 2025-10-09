@@ -12,7 +12,9 @@ execConstants := import(":exec.constants")
 pframes := import(":pframes")
 pframesConstants := import(":pframes.constants")
 pframesUtil := import(":pframes.util")
+pframesSpec := import(":pframes.spec")
 render := import(":render")
+maps := import(":maps")
 
 /**
  * This library provides a high-level API, inspired by Polars DataFrames, for building and executing
@@ -573,6 +575,14 @@ workflow := func() {
 		run: func() {
 			workflowRunTpl := assets.importTemplate(":pt.workflow-run")
 
+			rawColumnSpecs := []
+			for _, columns in inFrames {
+				for columnId, columnInfo in columns {
+					rawColumnSpecs = append(rawColumnSpecs, columnInfo.spec)
+				}
+			}
+			specDistiller := pframesSpec.createSpecDistiller(rawColumnSpecs)
+
 			workflowJsonStruct := {
 				workflow: steps
 			}
@@ -598,11 +608,20 @@ workflow := func() {
 				outFrames[outFramesRename[frameName]] = columnIds;
 			}
 
+			inFramesDistilled := maps.mapValues(inFrames, func(columns) {
+				return maps.mapValues(columns, func(columnInfo) {
+					return {
+						spec: specDistiller.distill(columnInfo.spec),
+						data: columnInfo.data
+					}
+				})
+			})
+
 			ptRunInputs := {
 				workflowJsonStruct: workflowJsonStruct,
 				inFiles: inFilesMap,
 				inFilesContent: inFilesContentMap,
-				inFrames: inFrames,
+				inFrames: inFramesDistilled,
 				outFiles: outFiles,
 				outFilesContent: outContentFiles,
 				outFrames: outFrames
