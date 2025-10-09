@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.4.23
+
+### Patch Changes
+
+- 900b8fa: fix dropdown list position
+
 ## 2.4.22
 
 ### Patch Changes
