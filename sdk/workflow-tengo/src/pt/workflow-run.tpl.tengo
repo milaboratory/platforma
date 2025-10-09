@@ -1,0 +1,100 @@
+assets := import(":assets")
+exec := import(":exec")
+json := import("json")
+ll := import(":ll")
+util := import(":pt.util")
+
+self := import(":tpl.light")
+
+ptSoftware := assets.importSoftware("@platforma-open/milaboratories.software-ptabler:main")
+
+self.defineOutputs([
+    "outFiles",
+    "outFilesContent",
+    "outFrames"
+])
+
+self.body(func(inputs) {
+    workflowJsonStruct := inputs.workflowJsonStruct
+    inFiles := inputs.inFiles
+    inFilesContent := inputs.inFilesContent
+    outFiles := inputs.outFiles
+    outFilesContent := inputs.outFilesContent
+    outFrames := inputs.outFrames
+
+    queue := inputs.queue
+    cpu := inputs.cpu
+    mem := inputs.mem
+
+    workdirProcessorName := "import_dir";
+    
+    ptCmd := exec.builder().
+        setQueue(queue).
+        printErrStreamToStdout().
+        dontSaveStdoutOrStderr().
+        software(ptSoftware).
+        envExpr("POLARS_MAX_THREADS", "{system.cpu}").
+        arg("workflow_sc.json").
+        writeFile("workflow_sc.json", json.encode(workflowJsonStruct));
+    if !is_undefined(cpu) {
+        ptCmd.cpu(cpu)
+    }
+    if !is_undefined(mem) {
+        ptCmd.mem(mem)
+    }
+
+    ll.assert(is_map(inFiles), "inFiles must be a map, got: %v", inFiles)
+    for name, file in inFiles {
+        ptCmd.addFile(name, file)
+    }
+    ll.assert(is_map(inFilesContent), "inFilesContent must be a map, got: %v", inFilesContent)
+    for name, content in inFilesContent {
+        ptCmd.writeFile(name, content)
+    }
+
+    ll.assert(is_array(outFiles), "outFiles must be an array, got: %v", outFiles)
+    for outFile in outFiles {
+        ptCmd.saveFile(outFile)
+    }
+
+    ll.assert(is_array(outFilesContent), "outFilesContent must be an array, got: %v", outFilesContent)
+    for outFileContent in outFilesContent {
+        ptCmd.saveFileContent(outFileContent)
+    }
+
+    ll.assert(is_map(outFrames), "outFrames must be a map, got: %v", outFrames)
+    if len(outFrames) > 0 {
+        ptImportFrameTpl := assets.importTemplate(":pt.import-dir")
+        ptCmd.processWorkdir(workdirProcessorName, ptImportFrameTpl, outFrames)
+    }
+
+    ptRun := ptCmd.run()
+
+    outFilesMap := {}
+    for outFile in outFiles {
+        outFilesMap[outFile] = ptRun.getFile(outFile)
+    }
+
+    outFilesContentMap := {}
+    for outFileContent in outFilesContent {
+        outFilesContentMap[outFileContent] = ptRun.getFileContent(outFileContent)
+    }
+
+    outFramesMap := {}
+    savedFrames := ptRun.getProcessorResult(workdirProcessorName)
+    for frameName, columnIds in outFrames {
+        columns := {}
+        for columnId in columnIds {
+            columnRef := util.makeFrameColumnRef(frameName, columnId)
+            columnData := savedFrames.getFutureInputField(columnRef)
+            columns[columnId] = columnData
+        }
+        outFramesMap[frameName] = columns
+    }
+
+    return {
+        outFiles: outFilesMap,
+        outFilesContent: outFilesContentMap,
+        outFrames: outFramesMap
+    }
+})
