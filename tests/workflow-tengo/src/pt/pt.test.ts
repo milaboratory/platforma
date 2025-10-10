@@ -238,7 +238,7 @@ C\t50\t300.0`;
 );
 
 tplTest.concurrent(
-  'pt ex2 test - filter and sort operations',
+  'pt ex2 test - filter, sort, limit operations',
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = `category\tuser_id\tscore\tvalue
 A\tuser1\t100\t10
@@ -265,18 +265,26 @@ A\tuser4\t120\t105
 B\tuser3\t200\t130
 B\tuser7\t190\t110`;
 
+    const expectedOutputLimitedTsvData = `category\tuser_id\tscore\tvalue
+A\tuser2\t150\t120
+A\tuser4\t120\t105`;
+
     const result = await helper.renderTemplate(
       false,
       'pt.ex2',
-      ['out_filtered_sorted'],
+      ['out_filtered_sorted', 'out_limited'],
       (tx) => ({
         inputTsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputTsvData)),
       }),
     );
 
-    const outputContent = await getFileContent(result, 'out_filtered_sorted', driverKit);
+    const [outputContent, outputLimitedContent] = await Promise.all([
+      getFileContent(result, 'out_filtered_sorted', driverKit),
+      getFileContent(result, 'out_limited', driverKit),
+    ]);
 
     expect(normalizeTsv(outputContent)).toEqual(normalizeTsv(expectedOutputTsvData));
+    expect(normalizeTsv(outputLimitedContent)).toEqual(normalizeTsv(expectedOutputLimitedTsvData));
   },
 );
 
