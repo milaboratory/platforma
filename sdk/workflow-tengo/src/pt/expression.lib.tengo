@@ -1376,6 +1376,7 @@ export ll.toStrict({
 	rank: rank,
 	when: when,
 	rawExp: rawExp,
+	_newExpression: _newExpression,
 	_isExpression: _isExpression,
 	_isAggregation: _isAggregation,
 	_mapToExpressionStructList: _mapToExpressionStructList,

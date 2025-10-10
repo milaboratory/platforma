@@ -1,3 +1,4 @@
+from pathlib import Path
 import argparse
 import pathlib
 import sys
@@ -39,10 +40,10 @@ def main():
 
     args = parser.parse_args()
 
-    workflow_file_path = args.workflow_file.resolve()
-    root_directory = args.root_dir.resolve()
-    frame_directory = args.frame_dir.resolve() if args.frame_dir is not None else None
-    spill_directory = args.spill_dir.resolve() if args.spill_dir is not None else None
+    workflow_file_path: Path = args.workflow_file.resolve()
+    root_directory: Path = args.root_dir.resolve()
+    frame_directory: str | None = str(args.frame_dir.resolve()) if args.frame_dir is not None else None
+    spill_directory: str | None = str(args.spill_dir.resolve()) if args.spill_dir is not None else None
 
     if not workflow_file_path.is_file():
         print(

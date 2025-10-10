@@ -1,0 +1,55 @@
+pt := import("@platforma-sdk/workflow-tengo:pt")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+self := import("@platforma-sdk/workflow-tengo:workflow")
+
+self.prepare(func(inputs){
+    columnNames := inputs.columnNames
+
+    columnsByName := {}
+    for name in columnNames {
+        columnsByName[name] = self.query({type: "Name", name: name}, {
+            single: true,
+            errIfMissing: true
+        })
+    }
+    
+	return {
+		columns: columnsByName
+	}
+})
+
+self.body(func(inputs) {
+    axes := inputs.axes
+    columnNames := inputs.columnNames
+    columns := inputs.columns
+
+    builder := pframes.pFrameBuilder()
+    for name, column in columns {
+        builder.add(name, column.spec, column.data)
+    }
+    pf := builder.build()
+
+    wf := pt.workflow()
+    df := wf.frame(pf)
+
+    projection := []
+    for axis in axes {
+        projection = append(projection, wf.axis(axis))
+    }
+    for name in columnNames {
+        projection = append(projection, pt.col(name))
+    }
+    
+    df.select(projection...).save("file.csv")
+	wfResult := wf.run()
+
+	return {
+		outputs: {
+            file: file.exportFile(wfResult.getFile("file.csv"))
+        },
+		exports: {}
+	}
+})

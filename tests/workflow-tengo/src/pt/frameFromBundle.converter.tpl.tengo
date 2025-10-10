@@ -13,16 +13,6 @@ self.awaitState("columnBundle", { wildcard: "*" }, "ref", "ResourceReady")
 self.awaitState("columnBundle", { wildcard: "*" }, "data", "InputsLocked")
 self.awaitState("columnBundle", { wildcard: "*" }, "spec", "ResourceReady")
 
-convertMapToPFrame := func(mapEntities) {
-	pf := pframes.pFrameBuilder()
-
-	for k, v in mapEntities {
-		pf.add(k, v.spec, v.data)
-	}
-
-	return pf.build()
-}
-
 self.body(func(inputs) {
     axes := inputs.axes
     columns := inputs.columns
