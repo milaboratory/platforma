@@ -38,6 +38,30 @@ describe('Apply migrations', () => {
 `);
   })
 
+  test('version rollback', async () => {
+    const pkgPath = path.join(tempDir, 'package.json');
+    const pkgName = '@pkg/example';
+
+    const pkgText = `{
+  "name": "test",
+  "version": "1.0.0",
+  "migrations": {
+    "@pkg/example": 10
+  }
+}
+`
+
+    await fs.writeFile(pkgPath, pkgText);
+
+    const migrator = new Migrator(pkgName, { projectRoot: tempDir });
+    migrator.addMigration(() => {
+      throw new Error('test');
+    });
+    await migrator.applyMigrations();
+    const updated = await fs.readFile(pkgPath, 'utf8');
+    expect(updated).toBe(pkgText);
+  })
+
   test.for([
     {
       name: 'no package migrations',
