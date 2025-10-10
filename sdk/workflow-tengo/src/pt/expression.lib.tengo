@@ -4,11 +4,13 @@ slices := import(":slices")
 validation := import(":validation")
 fmt := import("fmt")
 objects := import(":objects")
+pframesSpec := import(":pframes.spec")
 
 
 // Forward declarations
 _newExpression := undefined
 _newWindowExpression := undefined
+axis := undefined
 col := undefined
 lit := undefined
 allHorizontal := undefined
@@ -38,7 +40,7 @@ _validateOptions := func(options, schema, functionName) {
 
 // Helper function to check if an item is a valid expression object
 _isExpression := func(item) {
-	return ll.isMap(item) && ll.methodExists(item, "getExpression")
+	return ll.isMap(item) && ll.methodExists(item, "_getExpression")
 }
 
 // Helper function to check if an item is a valid aggregation object
@@ -47,7 +49,7 @@ _isAggregation := func(item) {
 }
 
 // Helper function to map string column names or expression objects to their JSON structure
-_mapToExpressionStructList := func(itemsList, stringInterpretation) {
+_mapToExpressionStructList := func(itemsList, stringInterpretation, ctx) {
 	if !is_array(itemsList) {
 		itemsList = [itemsList] // Allow single item to be passed
 	}
@@ -58,12 +60,12 @@ _mapToExpressionStructList := func(itemsList, stringInterpretation) {
 	return slices.map(itemsList, func(item) {
 		if is_string(item) {
 			if stringInterpretation == "col" {
-				return col(item).getExpression()
+				return col(item)._getExpression(ctx)
 			} else { // Must be "lit" due to the check above
-				return lit(item).getExpression()
+				return lit(item)._getExpression(ctx)
 			}
 		} else if _isExpression(item) {
-			return item.getExpression()
+			return item._getExpression(ctx)
 		} else {
 			ll.panic("Invalid item type in list: %T. Must be a string (interpreted as '%s') or an expression object.", item, stringInterpretation)
 			return undefined // Unreachable
@@ -71,16 +73,16 @@ _mapToExpressionStructList := func(itemsList, stringInterpretation) {
 	})
 }
 
-_mapToSingleExpressionStruct := func(item, stringInterpretation) {
+_mapToSingleExpressionStruct := func(item, stringInterpretation, ctx) {
 	if _isExpression(item) {
-		return item.getExpression()
+		return item._getExpression(ctx)
 	} else if is_int(item) || is_float(item) || is_bool(item) { // These are always literals
-		return lit(item).getExpression()
+		return lit(item)._getExpression(ctx)
 	} else if is_string(item) {
 		if stringInterpretation == "col" {
-			return col(item).getExpression()
+			return col(item)._getExpression(ctx)
 		} else if stringInterpretation == "lit" {
-			return lit(item).getExpression()
+			return lit(item)._getExpression(ctx)
 		} else { // stringInterpretation is undefined or an invalid value
 			ll.panic("String item '%v' provided, but its interpretation as 'col' or 'lit' was not specified or is not applicable in this context. (stringInterpretation: '%v')", item, stringInterpretation)
 			return undefined
@@ -101,19 +103,23 @@ _mapToSingleExpressionStruct := func(item, stringInterpretation) {
 _newWindowExpression = func(expression, aggregation, currentAlias) {
 	self := undefined
 	self = ll.toStrict({
-		/** Returns the underlying PTabler expression structure. */
-		getExpression: func() {
+		/**
+		 * Returns the underlying PTabler expression structure.
+		 * @param ctx - map - Expression evaluation context
+		 */
+		_getExpression: func(ctx) {
+			ll.assert(is_map(ctx), "ctx must be a map")
 			if expression == undefined {
 				ll.panic("Using this operation as a window expression is not allowed. Use it as a group by expression instead. %v", aggregation)
 			}
-			return expression()
+			return expression(ctx)
 		},
 		/** Returns the aggregation for group by operations. */
-		getAggregation: func() {
+		getAggregation: func(ctx) {
 			if aggregation == undefined {
 				ll.panic("Using this operation as a group by expression is not allowed, most probably because you applied .over() to it. %v", expression)
 			}
-			aggStruct := aggregation()
+			aggStruct := aggregation(ctx)
 			return maps.deepMerge(aggStruct, {name: self.getAlias()})
 		},
 		/** Returns the current alias of the expression, if defined. Panics if no alias is set. */
@@ -144,15 +150,15 @@ _newWindowExpression = func(expression, aggregation, currentAlias) {
 			ll.assert(is_array(partitionBy) || is_string(partitionBy) || _isExpression(partitionBy), "partitionBy must be an array of strings/expressions or a single string/expression")
 
 			// Create a materialization lambda for the new expression
-			newExpr := func() {
-				baseExpr := expression()
+			newExpr := func(ctx) {
+				baseExpr := expression(ctx)
 
 				if len(baseExpr.partitionBy) > 0 {
 					ll.warn("partitionBy already set on this window expression, overriding.")
 				}
 
 				return maps.deepMerge(baseExpr, {
-					partitionBy: _mapToExpressionStructList(partitionBy, "col")
+					partitionBy: _mapToExpressionStructList(partitionBy, "col", ctx)
 				})
 			}
 
@@ -173,13 +179,13 @@ _newExpression = func(expression, currentAlias) {
 	// Helper for binary operations
 	binaryOp := func(opType, other) {
 		return _newExpression(
-			func() {
-				lhsExpr := expression()
+			func(ctx) {
+				lhsExpr := expression(ctx)
 				rhsExpr := undefined
 				if _isExpression(other) {
-					rhsExpr = other.getExpression()
+					rhsExpr = other._getExpression(ctx)
 				} else if is_int(other) || is_float(other) || is_bool(other) || is_string(other) {
-					rhsExpr = lit(other).getExpression()
+					rhsExpr = lit(other)._getExpression(ctx)
 				} else {
 					ll.panic(opType + " expects an expression object or a literal (number, boolean, null) as argument. Got type: %T", other)
 				}
@@ -192,8 +198,8 @@ _newExpression = func(expression, currentAlias) {
 	// Helper for unary operations
 	unaryOp := func(opType) {
 		return _newExpression(
-			func() {
-				valueExpr := expression()
+			func(ctx) {
+				valueExpr := expression(ctx)
 				return {type: opType, value: valueExpr}
 			},
 			undefined
@@ -203,8 +209,8 @@ _newExpression = func(expression, currentAlias) {
 	// Helper for string unary operations (operates on `value.str`)
 	unaryStrOp := func(opType) {
 		return _newExpression(
-			func() {
-				valueExpr := expression()
+			func(ctx) {
+				valueExpr := expression(ctx)
 				return {type: opType, value: valueExpr}
 			},
 			undefined
@@ -214,12 +220,12 @@ _newExpression = func(expression, currentAlias) {
 	// Helper for aggregation functions that return a WindowExpression
 	aggOp := func(aggType) {
 		return _newWindowExpression(
-			func() {
-				valueExpr := expression()
+			func(ctx) {
+				valueExpr := expression(ctx)
 				return {type: "aggregate", aggregation: aggType, value: valueExpr, partitionBy: []}
 			},
-			func() {
-				valueExpr := expression()
+			func(ctx) {
+				valueExpr := expression(ctx)
 				return {aggregation: aggType, expression: valueExpr}
 			},
 			undefined // Alias of underlying col, window expression itself is typically aliased later
@@ -229,9 +235,9 @@ _newExpression = func(expression, currentAlias) {
 	aggOpBy := func(aggType, by) {
 		return _newWindowExpression(
 			undefined,
-			func() {
-				baseExpr := expression()
-				return {aggregation: aggType, expression: baseExpr, by: _mapToExpressionStructList(by, "col")}
+			func(ctx) {
+				baseExpr := expression(ctx)
+				return {aggregation: aggType, expression: baseExpr, by: _mapToExpressionStructList(by, "col", {})}
 			},
 			undefined // Alias of underlying col, window expression itself is typically aliased later
 		)
@@ -239,7 +245,7 @@ _newExpression = func(expression, currentAlias) {
 
 	self = ll.toStrict({
 		/** Returns the underlying PTabler expression structure. */
-		getExpression: expression,
+		_getExpression: expression,
 		/** Returns the current alias of the expression, if defined. Panics if no alias is set. */
 		getAlias: func() {
 			if currentAlias == undefined {
@@ -320,8 +326,8 @@ _newExpression = func(expression, currentAlias) {
 			if !is_undefined(ops.strict) {
 				strictVal = ops.strict
 			}
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {type: "cast", value: valueExpr, dtype: dtype, strict: strictVal}
 			}, undefined)
 		},
@@ -408,10 +414,10 @@ _newExpression = func(expression, currentAlias) {
 			}, "structField")
 
 			// Build the struct field expression with new features
-			return _newExpression(func() {
+			return _newExpression(func(ctx) {
 				structExpr := {
 					type: "struct_field",
-					struct: expression(),
+					struct: expression(ctx),
 					fields: fields
 				}
 
@@ -472,19 +478,19 @@ _newExpression = func(expression, currentAlias) {
 				}
 			}
 
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				expr := {
 					type: "substring",
 					value: valueExpr,
-					start: _mapToSingleExpressionStruct(start, "col")
+					start: _mapToSingleExpressionStruct(start, "col", ctx)
 				}
 
 				if !is_undefined(length) {
-					expr.length = _mapToSingleExpressionStruct(length, "col")
+					expr.length = _mapToSingleExpressionStruct(length, "col", ctx)
 				}
 				if !is_undefined(end) {
-					expr.end = _mapToSingleExpressionStruct(end, "col")
+					expr.end = _mapToSingleExpressionStruct(end, "col", ctx)
 				}
 
 				return expr
@@ -516,13 +522,13 @@ _newExpression = func(expression, currentAlias) {
 				literalVal = ops.literal
 			}
 
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {
 					type: "str_replace",
 					value: valueExpr,
-					pattern: _mapToSingleExpressionStruct(pattern, "lit"),
-					replacement: _mapToSingleExpressionStruct(replacement, "lit"),
+					pattern: _mapToSingleExpressionStruct(pattern, "lit", ctx),
+					replacement: _mapToSingleExpressionStruct(replacement, "lit", ctx),
 					replaceAll: replaceAllVal,
 					literal: literalVal
 				}
@@ -570,12 +576,12 @@ _newExpression = func(expression, currentAlias) {
 				strictVal = ops.strict
 			}
 
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {
 					type: "str_contains",
 					value: valueExpr,
-					pattern: _mapToSingleExpressionStruct(pattern, "lit"),
+					pattern: _mapToSingleExpressionStruct(pattern, "lit", ctx),
 					literal: literalVal,
 					strict: strictVal
 				}
@@ -604,8 +610,8 @@ _newExpression = func(expression, currentAlias) {
 				asciiCaseInsensitiveVal = ops.asciiCaseInsensitive
 			}
 
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {
 					type: "str_contains_any",
 					value: valueExpr,
@@ -633,12 +639,12 @@ _newExpression = func(expression, currentAlias) {
 				literalVal = ops.literal
 			}
 
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {
 					type: "str_count_matches",
 					value: valueExpr,
-					pattern: _mapToSingleExpressionStruct(pattern, "lit"),
+					pattern: _mapToSingleExpressionStruct(pattern, "lit", ctx),
 					literal: literalVal
 				}
 			}, undefined)
@@ -662,12 +668,12 @@ _newExpression = func(expression, currentAlias) {
 				groupIndexVal = ops.groupIndex
 			}
 
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {
 					type: "str_extract",
 					value: valueExpr,
-					pattern: _mapToSingleExpressionStruct(pattern, "lit"),
+					pattern: _mapToSingleExpressionStruct(pattern, "lit", ctx),
 					groupIndex: groupIndexVal
 				}
 			}, undefined)
@@ -679,12 +685,12 @@ _newExpression = func(expression, currentAlias) {
 		 * @returns {object} - A boolean expression object.
 		 */
 		strStartsWith: func(prefix) {
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {
 					type: "str_starts_with",
 					value: valueExpr,
-					prefix: _mapToSingleExpressionStruct(prefix, "lit")
+					prefix: _mapToSingleExpressionStruct(prefix, "lit", ctx)
 				}
 			}, undefined)
 		},
@@ -695,12 +701,12 @@ _newExpression = func(expression, currentAlias) {
 		 * @returns {object} - A boolean expression object.
 		 */
 		strEndsWith: func(suffix) {
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {
 					type: "str_ends_with",
 					value: valueExpr,
-					suffix: _mapToSingleExpressionStruct(suffix, "lit")
+					suffix: _mapToSingleExpressionStruct(suffix, "lit", ctx)
 				}
 			}, undefined)
 		},
@@ -723,9 +729,9 @@ _newExpression = func(expression, currentAlias) {
 				returnSimilarityVal = returnSimilarity
 			}
 
-			return _newExpression(func() {
-				lhsExpr := expression()
-				rhsExpr := string2.getExpression()
+			return _newExpression(func(ctx) {
+				lhsExpr := expression(ctx)
+				rhsExpr := string2._getExpression(ctx)
 				return {
 					type: "string_distance",
 					string1: lhsExpr,
@@ -749,9 +755,9 @@ _newExpression = func(expression, currentAlias) {
 			ll.assert(is_string(metric), "metric must be a string")
 			ll.assert(is_int(bound) || is_float(bound), "bound must be a number")
 
-			return _newExpression(func() {
-				lhsExpr := expression()
-				rhsExpr := patternExpr.getExpression()
+			return _newExpression(func(ctx) {
+				lhsExpr := expression(ctx)
+				rhsExpr := patternExpr._getExpression(ctx)
 				return {
 					type: "fuzzy_string_filter",
 					value: lhsExpr,
@@ -777,8 +783,8 @@ _newExpression = func(expression, currentAlias) {
 				ll.assert(is_int(bits), "bits must be a number")
 			}
 
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				hashExpr := {
 					type: "hash",
 					value: valueExpr,
@@ -799,12 +805,12 @@ _newExpression = func(expression, currentAlias) {
 		 * @returns {object} - A new expression object.
 		 */
 		fillNull: func(fillValueExpr) {
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {
 					type: "fill_null",
 					input: valueExpr,
-					fillValue: _mapToSingleExpressionStruct(fillValueExpr, "lit")
+					fillValue: _mapToSingleExpressionStruct(fillValueExpr, "lit", ctx)
 				}
 			}, undefined)
 		},
@@ -815,12 +821,12 @@ _newExpression = func(expression, currentAlias) {
 		 * @returns {object} - A new expression object.
 		 */
 		fillNaN: func(fillValueExpr) {
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {
 					type: "fill_nan",
 					input: valueExpr,
-					fillValue: _mapToSingleExpressionStruct(fillValueExpr, "lit")
+					fillValue: _mapToSingleExpressionStruct(fillValueExpr, "lit", ctx)
 				}
 			}, undefined)
 		},
@@ -867,8 +873,8 @@ _newExpression = func(expression, currentAlias) {
 				ll.assert(is_bool(descendingArgs[0]), "descending argument for rank must be a boolean")
 				descendingVal = descendingArgs[0]
 			}
-			return _newWindowExpression(func() {
-				valueExpr := expression()
+			return _newWindowExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {
 					type: "rank",
 					orderBy: [valueExpr],
@@ -931,12 +937,12 @@ _newExpression = func(expression, currentAlias) {
 				}
 			}
 
-			return _newWindowExpression(func() {
-				valueExpr := expression()
+			return _newWindowExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {
 					type: "cumsum",
 					value: valueExpr,
-					additionalOrderBy: _mapToExpressionStructList(additionalOrderByVal, "col"),
+					additionalOrderBy: _mapToExpressionStructList(additionalOrderByVal, "col", ctx),
 					partitionBy: [],
 					descending: descendingVal
 				}
@@ -965,8 +971,8 @@ _newExpression = func(expression, currentAlias) {
 			}
 			uniqueSet := slices.sortUnique(set)
 
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {
 					type: "in_set",
 					value: valueExpr,
@@ -983,8 +989,8 @@ _newExpression = func(expression, currentAlias) {
 		matchesEcmaRegex: func(ecmaRegex) {
 			ll.assert(is_string(ecmaRegex) && len(ecmaRegex) > 0, "ecma_regex must be a non-empty string.")
 
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return {
 					type: "matches_ecma_regex",
 					value: valueExpr,
@@ -1021,8 +1027,8 @@ _newExpression = func(expression, currentAlias) {
 				substitutionsOnly = ops.substitutionsOnly
 			}
 
-			return _newExpression(func() {
-				valueExpr := expression()
+			return _newExpression(func(ctx) {
+				valueExpr := expression(ctx)
 				return objects.deleteUndefined({
 					type: "contains_fuzzy_match",
 					value: valueExpr,
@@ -1042,13 +1048,29 @@ _newExpression = func(expression, currentAlias) {
 //
 
 /**
+ * Creates an expression that references an axis by its spec.
+ * @param spec - object - The spec of the axis.
+ * @returns {object} - An expression object.
+ */
+axis = func(spec) {
+	validation.assertType(spec, pframesSpec.P_AXIS_SPEC_SCHEMA)
+	return _newExpression(func(ctx) {
+		distilledSpec := ctx.specDistiller.distill(spec)
+		return {
+			type: "axis",
+			spec: distilledSpec
+		}
+	}, spec.name)
+}
+
+/**
  * Creates an expression that references a column by its name.
  * @param name - string - The name of the column.
  * @returns {object} - An expression object.
  */
 col = func(name) {
 	ll.assert(is_string(name), "col name must be a string")
-	return _newExpression(func() {
+	return _newExpression(func(ctx) {
 		return {
 			type: "col",
 			name: name
@@ -1062,7 +1084,7 @@ col = func(name) {
  * @returns {object} - An expression object.
  */
 lit = func(value) {
-	return _newExpression(func() {
+	return _newExpression(func(ctx) {
 		return {
 			type: "const",
 			value: value
@@ -1090,10 +1112,10 @@ concatStr := func(expressions, ...options) {
 		delimiterVal = ops.delimiter
 	}
 
-	return _newExpression(func() {
+	return _newExpression(func(ctx) {
 		return {
 			type: "str_join",
-			operands: _mapToExpressionStructList(expressions, "lit"),
+			operands: _mapToExpressionStructList(expressions, "lit", ctx),
 			delimiter: delimiterVal
 		}
 	}, undefined)
@@ -1107,10 +1129,10 @@ concatStr := func(expressions, ...options) {
 minHorizontal := func(expressions) {
 	ll.assert(is_array(expressions), "Argument to minHorizontal must be an array of expressions")
 	ll.assert(len(expressions) > 0, "Expression array for minHorizontal cannot be empty")
-	return _newExpression(func() {
+	return _newExpression(func(ctx) {
 		return {
 			type: "min",
-			operands: _mapToExpressionStructList(expressions, "col")
+			operands: _mapToExpressionStructList(expressions, "col", ctx)
 		}
 	}, undefined)
 }
@@ -1123,10 +1145,10 @@ minHorizontal := func(expressions) {
 maxHorizontal := func(expressions) {
 	ll.assert(is_array(expressions), "Argument to maxHorizontal must be an array of expressions")
 	ll.assert(len(expressions) > 0, "Expression array for maxHorizontal cannot be empty")
-	return _newExpression(func() {
+	return _newExpression(func(ctx) {
 		return {
 			type: "max",
-			operands: _mapToExpressionStructList(expressions, "col")
+			operands: _mapToExpressionStructList(expressions, "col", ctx)
 		}
 	}, undefined)
 }
@@ -1137,14 +1159,14 @@ maxHorizontal := func(expressions) {
  * @returns {object} - An expression object representing the logical AND.
  */
 allHorizontal = func(...args){
-    return _newExpression(func() {
+    return _newExpression(func(ctx) {
         processedOperands := []
         for arg in args {
             exprStruct := undefined
             if _isExpression(arg) {
-                exprStruct = arg.getExpression()
+                exprStruct = arg._getExpression(ctx)
             } else if is_string(arg) {
-                exprStruct = col(arg).getExpression()
+                exprStruct = col(arg)._getExpression(ctx)
             } else {
                 ll.panic("Invalid argument type for allHorizontal: %T. Must be an expression object or string.", arg)
             }
@@ -1171,14 +1193,14 @@ allHorizontal = func(...args){
  * @returns {object} - An expression object representing the logical OR.
  */
 anyHorizontal = func(...args){
-    return _newExpression(func() {
+    return _newExpression(func(ctx) {
         processedOperands := []
         for arg in args {
             exprStruct := undefined
             if _isExpression(arg) {
-                exprStruct = arg.getExpression()
+                exprStruct = arg._getExpression(ctx)
             } else if is_string(arg) {
-                exprStruct = col(arg).getExpression()
+                exprStruct = col(arg)._getExpression(ctx)
             } else {
                 ll.panic("Invalid argument type for anyHorizontal: %T. Must be an expression object or string.", arg)
             }
@@ -1250,8 +1272,8 @@ rank = func(orderByExpressions, ...options) {
 		descendingVal = ops.descending
 	}
 
-	return _newWindowExpression(func() {
-		orderByVal := _mapToExpressionStructList(orderByExpressions, "col")
+	return _newWindowExpression(func(ctx) {
+		orderByVal := _mapToExpressionStructList(orderByExpressions, "col", ctx)
 		ll.assert(len(orderByVal) > 0, "rank() 'orderBy' list cannot be empty after processing arguments.")
 		return {
 			type: "rank",
@@ -1276,12 +1298,12 @@ _newWhenThenBuilder := func(currentClauses, currentWhenExprOrUndefined) {
 			ll.assert(_isExpression(thenExpr), ".then() expects an expression object argument.")
 
 			// Create new list of clauses for the new builder state
-			newClausesExpr := func() {
-				existingClauses := currentClauses()
+			newClausesExpr := func(ctx) {
+				existingClauses := currentClauses(ctx)
 				newClauses := maps.clone(existingClauses) // Deep copy existing clauses
 				return append(newClauses, {
-					when: currentWhenExprOrUndefined.getExpression(),
-					then: thenExpr.getExpression()
+					when: currentWhenExprOrUndefined._getExpression(ctx),
+					then: thenExpr._getExpression(ctx)
 				})
 			}
 
@@ -1313,13 +1335,13 @@ _newWhenThenBuilder := func(currentClauses, currentWhenExprOrUndefined) {
 			ll.assert(_isExpression(otherwiseExpr), ".otherwise() expects an expression object argument.")
 
 			// Final expression construction, ensure to use a deep copy of clauses for safety
-			return _newExpression(func() {
-				finalClauses := maps.clone(currentClauses())
+			return _newExpression(func(ctx) {
+				finalClauses := maps.clone(currentClauses(ctx))
 				ll.assert(len(finalClauses) > 0, "At least one .when().then() clause is required before .otherwise().")
 				return {
 					type: "when_then_otherwise",
 					conditions: finalClauses,
-					otherwise: otherwiseExpr.getExpression()
+					otherwise: otherwiseExpr._getExpression(ctx)
 				}
 			}, undefined)
 		}
@@ -1339,7 +1361,7 @@ _newWhenThenBuilder := func(currentClauses, currentWhenExprOrUndefined) {
  */
 when = func(conditionExpr) {
 	ll.assert(_isExpression(conditionExpr), "Initial when() expects an expression object argument.")
-	return _newWhenThenBuilder(func() { return [] }, conditionExpr)
+	return _newWhenThenBuilder(func(ctx) { return [] }, conditionExpr)
 }
 
 /**
@@ -1351,7 +1373,7 @@ when = func(conditionExpr) {
  * @returns {object} - An expression object.
  * @example
  *   rawExp({type: "col", name: "my_column"}, "optional_alias")
- *   rawExp({type: "plus", lhs: col("a").getExpression(), rhs: lit(1).getExpression()})
+ *   rawExp({type: "plus", lhs: {type: "col", name: "a"}, rhs: {type: "const", value: 1}})
  */
 rawExp := func(expression, ...alias) {
 	ll.assert(len(alias) <= 1, "rawExpression expects at most one alias argument")
@@ -1364,6 +1386,7 @@ rawExp := func(expression, ...alias) {
 }
 
 export ll.toStrict({
+	axis: axis,
 	col: col,
 	lit: lit,
 	concatStr: concatStr,
