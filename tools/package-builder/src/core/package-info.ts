@@ -23,6 +23,7 @@ type binaryRegistryPresets = z.infer<typeof binaryRegistryPresetsSchema>;
 const packageJsonSchema = z.object({
   'name': z.string(),
   'version': z.string(),
+  'private': z.boolean().optional(),
 
   'block-software': z.object({
     registries: z
@@ -124,6 +125,10 @@ export class PackageInfo {
     this.packageName = this.pkgJson.name;
 
     logger.debug('  package information loaded successfully.');
+  }
+
+  get isPrivate(): boolean {
+    return this.pkgJson.private ?? false;
   }
 
   get binaryRegistries(): binaryRegistryPresets {
