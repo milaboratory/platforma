@@ -1,5 +1,30 @@
 # @platforma-sdk/ui-vue
 
+## 1.44.2
+
+### Patch Changes
+
+- Updated dependencies [900b8fa]
+  - @milaboratories/uikit@2.4.23
+
+## 1.44.1
+
+### Patch Changes
+
+- @platforma-sdk/model@1.44.1
+- @milaboratories/uikit@2.4.22
+
+## 1.44.0
+
+### Minor Changes
+
+- 261a742: Fixed: [blocks/mixcr-clonotyping] in the end of calculations results table starts to blink
+
+### Patch Changes
+
+- @milaboratories/uikit@2.4.21
+- @platforma-sdk/model@1.43.29
+
 ## 1.43.29
 
 ### Patch Changes

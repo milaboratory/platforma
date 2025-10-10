@@ -1,5 +1,35 @@
 # @milaboratories/pl-local
 
+## 2.10.0
+
+### Minor Changes
+
+- 1ec2268: Update Built-In backend version
+
+## 2.9.1
+
+### Patch Changes
+
+- ef22c49: Moved HTTP Authorization header parser/serializer from helpers to pl-model-common
+- Updated dependencies [ef22c49]
+- Updated dependencies [5ecb368]
+  - @milaboratories/pl-model-common@1.21.0
+
+## 2.9.0
+
+### Minor Changes
+
+- a9517a8: Add HTTP(S) proxy support in built-in mode
+
+### Patch Changes
+
+- Updated dependencies [261a742]
+- Updated dependencies [a9517a8]
+- Updated dependencies [a9517a8]
+- Updated dependencies [d5cbbd8]
+  - @milaboratories/helpers@1.10.0
+  - @milaboratories/pl-http@1.2.0
+
 ## 2.8.2
 
 ### Patch Changes

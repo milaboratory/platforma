@@ -1,5 +1,17 @@
 # @platforma-sdk/package-builder
 
+## 3.8.1
+
+### Patch Changes
+
+- 7b8fcc4: Do not publish docker images for private packages
+
+## 3.8.0
+
+### Minor Changes
+
+- 9ca9923: Use freshest python base images because of CVEs in old
+
 ## 3.7.0
 
 ### Minor Changes

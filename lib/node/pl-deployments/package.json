@@ -1,7 +1,7 @@
 {
   "name": "@milaboratories/pl-deployments",
-  "version": "2.8.2",
-  "pl-version": "1.42.1",
+  "version": "2.10.0",
+  "pl-version": "1.42.5",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
   "engines": {
     "node": ">=22.19.0"
@@ -39,8 +39,9 @@
   "keywords": [],
   "license": "UNLICENSED",
   "devDependencies": {
-    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@types/decompress": "catalog:",
     "@types/jest": "catalog:",
@@ -54,17 +55,18 @@
     "tsconfig-paths": "catalog:",
     "typescript": "catalog:",
     "utility-types": "catalog:",
-    "vitest": "catalog:",
-    "@milaboratories/ts-builder": "workspace:*"
+    "vitest": "catalog:"
   },
   "dependencies": {
     "@milaboratories/pl-config": "workspace:*",
+    "@milaboratories/pl-http": "workspace:*",
+    "@milaboratories/pl-model-common": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:*",
     "decompress": "catalog:",
-    "upath": "catalog:",
     "ssh2": "catalog:",
     "tar": "catalog:",
     "undici": "catalog:",
+    "upath": "catalog:",
     "yaml": "catalog:",
     "zod": "catalog:"
   }

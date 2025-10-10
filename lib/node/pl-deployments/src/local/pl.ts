@@ -1,5 +1,4 @@
-import type {
-  ProcessOptions } from './process';
+import type { ProcessOptions } from './process';
 import {
   isProcessAlive,
   processStop,
@@ -18,6 +17,9 @@ import upath from 'upath';
 import fsp from 'node:fs/promises';
 import type { Required } from 'utility-types';
 import * as os from 'node:os';
+import type { ProxySettings } from '@milaboratories/pl-http';
+import { defaultHttpDispatcher } from '@milaboratories/pl-http';
+import { parseHttpAuth } from '@milaboratories/pl-model-common';
 
 export const LocalConfigYaml = 'config-local.yaml';
 
@@ -128,6 +130,12 @@ export type LocalPlOptions = {
    * (default: true)
    */
   readonly closeOld?: boolean;
+  /**
+   * Proxy settings to use to fetch the binary and pass it down
+   * as a HTTPS_PROXY/HTTP_PROXY environment variable;
+   * Backend only supports Basic auth.
+   */
+  readonly proxy?: ProxySettings;
 
   readonly onClose?: (pl: LocalPl) => Promise<void>;
   readonly onError?: (pl: LocalPl) => Promise<void>;
@@ -163,10 +171,33 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
     await fsp.writeFile(configPath, ops.config);
 
     const plBinPath = upath.join(workDir, 'binaries');
-    const baseBinaryPath = await resolveLocalPlBinaryPath(logger, plBinPath, ops.plBinary);
+    const baseBinaryPath = await resolveLocalPlBinaryPath({
+      logger,
+      downloadDir: plBinPath,
+      src: ops.plBinary,
+      dispatcher: defaultHttpDispatcher(ops.proxy),
+    });
     const binaryPath = trace('binaryPath', upath.join('binaries', baseBinaryPath));
 
-    const processOpts = plProcessOps(binaryPath, configPath, ops, workDir, process.env);
+    const env = { ...process.env };
+
+    if (ops.proxy?.url) {
+      const url = new URL(ops.proxy.url);
+      if (ops.proxy.auth) {
+        const parsed = parseHttpAuth(ops.proxy.auth);
+        if (parsed.scheme !== 'Basic') {
+          throw new Error(`\
+Unsupported auth scheme: ${parsed.scheme}. \
+Only Basic auth is supported by the backend.`);
+        }
+        url.username = parsed.username;
+        url.password = parsed.password;
+      }
+      env.http_proxy = url.toString();
+      env.https_proxy = url.toString();
+    }
+
+    const processOpts = plProcessOps(binaryPath, configPath, ops, workDir, env);
     trace('processOpts', {
       cmd: processOpts.cmd,
       args: processOpts.args,

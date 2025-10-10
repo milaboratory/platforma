@@ -92,13 +92,14 @@ describe('SshPl', async () => {
   it('Transfer Platforma to server', async () => {
     const arch = await sshPl.getArch();
 
-    const plPath = await downloadBinary(
-      new ConsoleLoggerAdapter(),
-      downloadDestination,
-      'pl', `pl-${getDefaultPlVersion()}`,
-      arch.arch,
-      arch.platform,
-    );
+    const plPath = await downloadBinary({
+      logger: new ConsoleLoggerAdapter(),
+      baseDir: downloadDestination,
+      softwareName: 'pl',
+      archiveName: `pl-${getDefaultPlVersion()}`,
+      arch: arch.arch,
+      platform: arch.platform,
+    });
 
     const plFolderName = upath.basename(plPath.targetFolder);
     const dirPath = upath.resolve(downloadDestination, plFolderName);
@@ -200,13 +201,14 @@ describe('SshPl', async () => {
   it('Download pl. We have archive and extracted data', async () => {
     const arch = await sshPl.getArch();
 
-    const result = await downloadBinary(
-      new ConsoleLoggerAdapter(),
-      downloadDestination,
-      'pl', `pl-${getDefaultPlVersion()}`,
-      arch.arch,
-      arch.platform,
-    );
+    const result = await downloadBinary({
+      logger: new ConsoleLoggerAdapter(),
+      baseDir: downloadDestination,
+      softwareName: 'pl',
+      archiveName: `pl-${getDefaultPlVersion()}`,
+      arch: arch.arch,
+      platform: arch.platform,
+    });
 
     const version = getDefaultPlVersion();
     expect(!!result).toBe(true);
@@ -219,13 +221,14 @@ describe('SshPl', async () => {
     const softwareName = 'supervisord';
     const tgzName = 'supervisord-0.7.3';
 
-    const result = await downloadBinary(
-      new ConsoleLoggerAdapter(),
-      downloadDestination,
-      softwareName, tgzName,
-      arch.arch,
-      arch.platform,
-    );
+    const result = await downloadBinary({
+      logger: new ConsoleLoggerAdapter(),
+      baseDir: downloadDestination,
+      softwareName,
+      archiveName: tgzName,
+      arch: arch.arch,
+      platform: arch.platform,
+    });
 
     expect(!!result).toBe(true);
     expect(existsSync(`${downloadDestination}/${tgzName}-${newArch(arch.arch)}.tgz`)).toBe(true);
