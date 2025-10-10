@@ -15,6 +15,29 @@ describe('Apply migrations', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
+  test('zero migrations', async () => {
+    const pkgPath = path.join(tempDir, 'package.json');
+    const pkgName = '@pkg/example';
+
+    await fs.writeFile(pkgPath, `{
+  "name": "test",
+  "version": "1.0.0"
+}
+`);
+
+    const migrator = new Migrator(pkgName, { projectRoot: tempDir });
+    await migrator.applyMigrations();
+    const updated = await fs.readFile(pkgPath, 'utf8');
+    expect(updated).toBe(`{
+  "name": "test",
+  "version": "1.0.0",
+  "migrations": {
+    "@pkg/example": 0
+  }
+}
+`);
+  })
+
   test.for([
     {
       name: 'no package migrations',
