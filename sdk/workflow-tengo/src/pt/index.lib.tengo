@@ -9,11 +9,12 @@ text := import("text")
 slices := import(":slices")
 validation := import(":validation")
 execConstants := import(":exec.constants")
-oop := import(":oop")
 pframes := import(":pframes")
-
-// import p-frame from directory tpl
-importDirTpl := assets.importTemplate(":pt.import-dir")
+pframesConstants := import(":pframes.constants")
+pframesUtil := import(":pframes.util")
+pframesSpec := import(":pframes.spec")
+render := import(":render")
+maps := import(":maps")
 
 /**
  * This library provides a high-level API, inspired by Polars DataFrames, for building and executing
@@ -82,15 +83,22 @@ workflow := func() {
 
 	// { file?: ResourceRef, content?: string, name: string }[]
 	inFiles := []
+	// { [uniqueFrameName]: { [workflowUniqueColumnId]: { spec: json, data: resource } } }
+	inFrames := {}
 	// string[]
 	outFiles := []
 	// string[]
 	outContentFiles := []
 	// { [frameName]: { [pColumnId]: pColumnSpec } }
 	outFramesSpecs := {}
+	// { [frameName]: sequentialFrameName }
+	outFramesRename := {}
 
 	anonymousFilesCounter := 0
 	anonymousDFCounter := 0
+	pcolumnCounter := 0
+	pframeCounter := 0
+	specDistillerSingleton := undefined
 
 	cpu := undefined
 	mem := undefined
@@ -111,8 +119,17 @@ workflow := func() {
 		 * @returns {object} - The workflow object, allowing for method chaining.
 		 */
 		addRawStep: func(step) {
-			steps = append(steps, step)
+			ll.assert(is_map(step), "step must be a map")
+			ll.assert(is_string(step.type), "step.type must be a string discriminator")
+			self._addStep(func(ctx) {
+				return step
+			})
 			return self
+		},
+
+		_addStep: func(step) {
+			ll.assert(is_callable(step), "step must be a function")
+			steps = append(steps, step)
 		},
 
 		/**
@@ -163,6 +180,8 @@ workflow := func() {
 		 *   // df3 := wf.frame(xsvBuilderOutput) // xsvBuilderOutput contains {file, xsvType, schema}
 		 */
 		frame: func(frameInput, ...optionsRaw) {
+			ll.assert(!is_undefined(frameInput), "frameInput must be provided")
+			
 			opts := {}
 			if len(optionsRaw) > 0 {
 				if len(optionsRaw) == 1 && is_map(optionsRaw[0]) {
@@ -172,6 +191,7 @@ workflow := func() {
 				}
 			}
 
+			frameResource := undefined
 			fileRef := undefined
 			fileContent := undefined
 			inputSchema := undefined
@@ -200,7 +220,16 @@ workflow := func() {
 				finalFormat = inputXsvType
 			} else {
 				if smart.isReference(frameInput) {
-					fileRef = frameInput
+					frameInputResource := frameInput
+					if smart.isField(frameInputResource) {
+						frameInputResource = frameInputResource.getValue()
+					}
+					if frameInputResource.checkResourceType(pframesConstants.RTYPE_P_FRAME) {
+						frameResource = frameInputResource
+						finalFormat = "pframe"
+					} else {
+						fileRef = frameInput
+					}
 				} else {
 					validation.assertType(frameInput, ["or", "string", "bytes"])
 					fileContent = frameInput
@@ -277,22 +306,57 @@ workflow := func() {
 				ignoreErrorsOpt = opts.ignoreErrors
 			}
 
-			// Validation
-			if !is_undefined(fileRef) && !smart.isReference(fileRef) {
-				ll.panic("frameInput.file (for structural input) or frameInput (for direct reference) must be a valid resource reference. Got: %v", fileRef)
-			} else if !is_undefined(fileContent) && !is_string(fileContent) {
-				ll.panic("frameInput (for direct content) must be a string. Got: %v", fileContent)
-			}
-
 			if !is_undefined(fileRef) {
+				ll.assert(
+					smart.isReference(fileRef),
+					"frameInput.file (for structural input) or frameInput (for direct reference) must be a valid resource reference, got: %v",
+					fileRef)
 				inFiles = append(inFiles, { file: fileRef, name: finalFileName })
-			} else {
+			} else if !is_undefined(fileContent) {
+				ll.assert(is_string(fileContent), "frameInput (for direct content) must be a string, got: %v", fileContent)
 				inFiles = append(inFiles, { content: fileContent, name: finalFileName })
 			}
 
 			// Generate appropriate step based on format
 			step := undefined
-			if finalFormat == "parquet" {
+			if finalFormat == "pframe" {
+				columnsMap := pframesUtil.pFrameToColumnsMap(frameResource)
+
+				translation := {}
+				renamedColumnsMap := {}
+				columnEntries := []
+
+				for frameUniqueColumnId, columnInfo in columnsMap {
+					workflowUniqueColumnId := self._newUniqueColumnId()
+
+					translation[workflowUniqueColumnId] = frameUniqueColumnId
+					renamedColumnsMap[workflowUniqueColumnId] = columnInfo
+					
+					columnEntries = append(columnEntries, {
+						type: "column",
+						columnId: workflowUniqueColumnId
+					})
+				}
+
+				ll.assert(is_undefined(inFrames[finalDataFrameId]),
+					"frame with name '%s' already added", finalDataFrameId)
+				inFrames[finalDataFrameId] = renamedColumnsMap
+
+				request := {
+					src: {
+						type: "full",
+						entries: columnEntries
+					},
+					filters: []
+				}
+
+				step = {
+					type: "read_frame",
+					name: finalDataFrameId,
+					request: request,
+					translation: translation
+				}
+			} else if finalFormat == "parquet" {
 				step = {
 					type: "read_parquet",
 					file: finalFileName,
@@ -430,19 +494,40 @@ workflow := func() {
 			anonymousFilesCounter += 1
 			return "anonymous_" + string(anonymousFilesCounter) + "." + extension
 		},
+		_newUniqueColumnId: func() {
+			pcolumnCounter += 1
+			return "pcolumn_" + string(pcolumnCounter)
+		},
+		_newUniquePFrameName: func() {
+			pframeCounter += 1
+			return "pframe_" + string(pframeCounter)
+		},
 		_saveFile: func(name) {
 			outFiles = append(outFiles, name)
 		},
 		_saveFileContent: func(name) {
 			outContentFiles = append(outContentFiles, name)
 		},
-		_saveFrameSpecs: func(name, specs) {
+		_saveFrameSpecs: func(name, rename, specs) {
 			ll.assert(
 				outFramesSpecs[name] == undefined,
 				"frame with name '%s' already saved, please pick a different name",
 				name
 			)
 			outFramesSpecs[name] = specs
+			outFramesRename[name] = rename
+		},
+		_getSpecDistiller: func() {
+			if is_undefined(specDistillerSingleton) {
+				rawColumnSpecs := []
+				for _, columns in inFrames {
+					for columnId, columnInfo in columns {
+						rawColumnSpecs = append(rawColumnSpecs, columnInfo.spec)
+					}
+				}
+				specDistillerSingleton = pframesSpec.createSpecDistiller(rawColumnSpecs)
+			}
+			return specDistillerSingleton
 		},
 
 		/**
@@ -510,59 +595,88 @@ workflow := func() {
 		 * @returns {object} - A result object from `exec.run()`, typically providing access to output files via `getFile()` or `getFileContent()`.
 		 */
 		run: func() {
-			ptablerSw := assets.importSoftware("@platforma-open/milaboratories.software-ptabler:main")
-			ptablerCmdBuilder := exec.builder().
-				setQueue(queue).
-				printErrStreamToStdout().
-				dontSaveStdoutOrStderr().
-				software(ptablerSw).
-				envExpr("POLARS_MAX_THREADS", "{system.cpu}").
-				arg("workflow_sc.json").
-				writeFile("workflow_sc.json", json.encode({
-					workflow: steps
-				}));
+			workflowRunTpl := assets.importTemplate(":pt.workflow-run")
 
-			if !is_undefined(cpu) {
-				ptablerCmdBuilder.cpu(cpu)
+			specDistiller := self._getSpecDistiller()
+			ctx := {
+				specDistiller: specDistiller
+			}
+			workflowJsonStruct := {
+				workflow: slices.map(steps, func(step) {
+					return step(ctx)
+				})
 			}
 
-			if !is_undefined(mem) {
-				ptablerCmdBuilder.mem(mem)
-			}
-
+			inFilesMap := {}
+			inFilesContentMap := {}
 			for inFile in inFiles {
 				if !is_undefined(inFile.file) {
-					ptablerCmdBuilder.addFile(inFile.name, inFile.file)
+					inFilesMap[inFile.name] = inFile.file
+				} else if !is_undefined(inFile.content) {
+					inFilesContentMap[inFile.name] = inFile.content
 				} else {
-					ptablerCmdBuilder.writeFile(inFile.name, inFile.content)
+					ll.panic("inFile must have either file or content, got: %v", inFile)
 				}
 			}
-
-			for outFile in outFiles {
-				ptablerCmdBuilder.saveFile(outFile)
-			}
-
-			for outContentFile in outContentFiles {
-				ptablerCmdBuilder.saveFileContent(outContentFile)
-			}
-
-			tplArgs := {}
+			
+			outFrames := {}
 			for frameName, specsById in outFramesSpecs {
 				columnIds := []
 				for columnId, _ in specsById {
 					columnIds = append(columnIds, columnId)
 				}
-				tplArgs[frameName] = columnIds;
-			}
-            workdirProcessorName := "import_dir";
-			if len(tplArgs) > 0 {
-				ptablerCmdBuilder.processWorkdir(workdirProcessorName, importDirTpl, tplArgs)
+				outFrames[outFramesRename[frameName]] = columnIds;
 			}
 
-			execResult := ptablerCmdBuilder.run()
+			inFramesDistilled := maps.mapValues(inFrames, func(columns) {
+				return maps.mapValues(columns, func(columnInfo) {
+					return {
+						spec: specDistiller.distill(columnInfo.spec),
+						data: columnInfo.data
+					}
+				})
+			})
+
+			ptRunInputs := {
+				workflowJsonStruct: workflowJsonStruct,
+				inFiles: inFilesMap,
+				inFilesContent: inFilesContentMap,
+				inFrames: inFramesDistilled,
+				outFiles: outFiles,
+				outFilesContent: outContentFiles,
+				outFrames: outFrames
+			}
+			ptRunMetaInputs := {
+				queue: queue,
+				cpu: cpu,
+				mem: mem
+			}
+			ptResult := render.create(workflowRunTpl, ptRunInputs, {
+				metaInputs: ptRunMetaInputs
+			});
 
 			self := undefined
-			self = ll.toStrict(oop.inherit(execResult, {
+			self = ll.toStrict({
+				/**
+				 * Retrieves a file.
+				 *
+				 * @param fileName: string
+				 * @return field - a reference to the file resource.
+				 */
+				getFile: func(fileName) {
+					return ptResult.resolveOutput(["outFiles", fileName])
+				},
+
+				/**
+				 * Retrieves the content of a file.
+				 *
+				 * @param fileName: string
+				 * @return field - a reference to the file content resource.
+				 */
+				getFileContent: func(fileName) {
+					return ptResult.resolveOutput(["outFilesContent", fileName])
+				},
+
 				/**
 				 * Retrieves exported frame.
 				 *
@@ -572,17 +686,15 @@ workflow := func() {
 				getFrameDirect: func(frameName) {
 					specs := outFramesSpecs[frameName]
 					ll.assert(!is_undefined(specs), "saveFrameDirect was not called for frame '%s'", frameName)
-					savedFrames := execResult.getProcessorResult(workdirProcessorName)
 
 					pf := pframes.pFrameBuilder()
-					for pColumnId, pColumnSpec in specs {
-						pColumnRef := util.makeFrameColumnRef(frameName, pColumnId)
-						pColumnData := savedFrames.getFutureInputField(pColumnRef)
-						pf.add(pColumnId, pColumnSpec, pColumnData)
+					for columnId, columnSpec in specs {
+						columnData := ptResult.resolveOutput(["outFrames", outFramesRename[frameName], columnId])
+						pf.add(columnId, columnSpec, columnData)
 					}
 					return pf.build()
 				}
-			}))
+			})
 			return self
 		}
 	}
@@ -612,20 +724,22 @@ _newDataFrameGroupBy = func(parentWorkflow, dfName, groupByExpressions) {
 		agg: func(...aggExpressions) {
 			ll.assert(len(aggExpressions) > 0, "agg method requires at least one aggregation expression.")
 
-			aggregations := slices.map(aggExpressions, func(aggExpr) {
-				if !exp._isAggregation(aggExpr) {
-					ll.panic("Invalid argument to agg: Expected an aggregation expression object, got %v", aggExpr)
-				}
-				return aggExpr.getAggregation()
-			})
-
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
-			parentWorkflow.addRawStep({
-				type: "aggregate",
-				inputTable: dfName,
-				outputTable: outputDfName,
-				groupBy: exp._mapToExpressionStructList(groupByExpressions, "col"),
-				aggregations: aggregations
+			parentWorkflow._addStep(func(ctx) {
+				aggregations := slices.map(aggExpressions, func(aggExpr) {
+					if !exp._isAggregation(aggExpr) {
+						ll.panic("Invalid argument to agg: Expected an aggregation expression object, got %v", aggExpr)
+					}
+					return aggExpr.getAggregation(ctx)
+				})
+				
+				return {
+					type: "aggregate",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					groupBy: exp._mapToExpressionStructList(groupByExpressions, "col", ctx),
+					aggregations: aggregations
+				}
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		}
@@ -634,7 +748,7 @@ _newDataFrameGroupBy = func(parentWorkflow, dfName, groupByExpressions) {
 }
 
 _newDataFrame = func(parentWorkflow, dfName) {
-	_mapExprsToStepCols := func(exprs, methodName) {
+	_mapExprsToStepCols := func(exprs, methodName, ctx) {
 		ll.assert(len(exprs) > 0, methodName + " requires at least one expression argument.")
 		cols := []
 		for expr in exprs {
@@ -643,13 +757,13 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			}
 			cols = append(cols, {
 				name: expr.getAlias(),
-				expression: expr.getExpression()
+				expression: expr._getExpression(ctx)
 			})
 		}
 		return cols
 	}
 
-	_mapExprsToStepColsAllowingStrings := func(exprs, methodName) {
+	_mapExprsToStepColsAllowingStrings := func(exprs, methodName, ctx) {
 		ll.assert(len(exprs) > 0, methodName + " requires at least one expression argument.")
 		cols := []
 		for expr in exprs {
@@ -658,12 +772,12 @@ _newDataFrame = func(parentWorkflow, dfName) {
 				colExpr := exp.col(expr)
 				cols = append(cols, {
 					name: colExpr.getAlias(),
-					expression: colExpr.getExpression()
+					expression: colExpr._getExpression(ctx)
 				})
 			} else if exp._isExpression(expr) {
 				cols = append(cols, {
 					name: expr.getAlias(),
-					expression: expr.getExpression()
+					expression: expr._getExpression(ctx)
 				})
 			} else {
 				ll.panic("Invalid argument to " + methodName + ": Expected an expression object or string column name, got %v", expr)
@@ -763,13 +877,15 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *   )
 		 */
 		withColumns: func(...expressions) {
-			stepCols := _mapExprsToStepCols(expressions, "withColumns")
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
-			parentWorkflow.addRawStep({
-				type: "with_columns",
-				inputTable: dfName,
-				outputTable: outputDfName,
-				columns: stepCols
+			parentWorkflow._addStep(func(ctx) {
+				stepCols := _mapExprsToStepCols(expressions, "withColumns", ctx)
+				return {
+					type: "with_columns",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					columns: stepCols
+				}
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},
@@ -789,13 +905,15 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *   )
 		 */
 		select: func(...expressions) {
-			stepCols := _mapExprsToStepColsAllowingStrings(expressions, "select")
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
-			parentWorkflow.addRawStep({
-				type: "select",
-				inputTable: dfName,
-				outputTable: outputDfName,
-				columns: stepCols
+			parentWorkflow._addStep(func(ctx) {
+				stepCols := _mapExprsToStepColsAllowingStrings(expressions, "select", ctx)
+				return {
+					type: "select",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					columns: stepCols
+				}
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},
@@ -814,11 +932,13 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *   ) // df is modified
 		 */
 		addColumns: func(...expressions) {
-			stepCols := _mapExprsToStepCols(expressions, "addColumns")
-			parentWorkflow.addRawStep({
-				type: "add_columns",
-				table: dfName,
-				columns: stepCols
+			parentWorkflow._addStep(func(ctx) {
+				stepCols := _mapExprsToStepCols(expressions, "addColumns", ctx)
+				return {
+					type: "add_columns",
+					table: dfName,
+					columns: stepCols
+				}
 			})
 			return self
 		},
@@ -907,9 +1027,10 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			util.validateParamsForSaveFrameDirect(params)
 
 			specs := util.makeFrameSpecs(params)
-			parentWorkflow._saveFrameSpecs(frameName, specs)
+			sequentialFrameName := parentWorkflow._newUniquePFrameName()
+			parentWorkflow._saveFrameSpecs(frameName, sequentialFrameName, specs)
 
-			step := util.makeWriteFrameStep(frameName, dfName, params)
+			step := util.makeWriteFrameStep(sequentialFrameName, dfName, params)
 			parentWorkflow.addRawStep(step)
 		},
 
@@ -966,11 +1087,34 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			}
 
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			parentWorkflow._addStep(func(ctx) {
+				return {
+					type: "filter",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					condition: condition._getExpression(ctx)
+				}
+			})
+			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		/**
+		 * Limits the number of rows in the DataFrame.
+		 *
+		 * @param nRows {number} - The number of rows to limit the DataFrame to.
+		 * @returns {object} - A new DataFrame object containing no more than nRows rows.
+		 * @example
+		 *   limitedDf := df.limit(100)
+		 */
+		limit: func(nRows) {
+			ll.assert(is_int(nRows) && nRows > 0, "limit argument must be a positive number.")
+
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
 			parentWorkflow.addRawStep({
-				type: "filter",
+				type: "limit",
 				inputTable: dfName,
 				outputTable: outputDfName,
-				condition: condition.getExpression()
+				n: nRows
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},
@@ -1029,60 +1173,58 @@ _newDataFrame = func(parentWorkflow, dfName) {
 				ll.panic("sort 'nulls_last' array length (%d) must match the number of sort keys (%d).", len(nullsLastOpt), len(by))
 			}
 
-
-
-			sortDirectives := []
-			for i, item in by {
-				directive := { value: undefined }
-
-				if is_string(item) {
-					directive.value = exp.col(item).getExpression()
-				} else if exp._isExpression(item) {
-					directive.value = item.getExpression()
-				} else {
-					ll.panic("Invalid sort key at index %d in array: Expected a column name (string) or an expression object, got %T", i, item)
-				}
-
-				// Handle 'descending'
-				itemDesc := false // Polars default
-				if is_array(descendingOpt) {
-					val := descendingOpt[i]
-					ll.assert(is_bool(val), "Elements of 'descending' array (at index %d) must be booleans. Got: %T", i, val)
-					itemDesc = val
-				} else if is_bool(descendingOpt) {
-					itemDesc = descendingOpt
-				}
-				if itemDesc { // Only include if true, as PTabler 'descending' defaults to false
-					directive.descending = true
-				}
-
-				// Handle 'nulls_last'
-				itemNullsLast := undefined // Let PTabler use its default if not specified
-				if is_array(nullsLastOpt) {
-					val := nullsLastOpt[i]
-					ll.assert(is_bool(val), "Elements of 'nulls_last' array (at index %d) must be booleans. Got: %T", i, val)
-					itemNullsLast = val
-				} else if is_bool(nullsLastOpt) {
-					itemNullsLast = nullsLastOpt
-				}
-
-				if !is_undefined(itemNullsLast) { // Only include if explicitly set
-					directive.nullsLast = itemNullsLast
-				}
-
-				sortDirectives = append(sortDirectives, directive)
-			}
-
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
 
-			sortStep := {
-				type: "sort",
-				inputTable: dfName,
-				outputTable: outputDfName,
-				by: sortDirectives
-			}
+			parentWorkflow._addStep(func(ctx) {
+				sortDirectives := []
+				for i, item in by {
+					directive := { value: undefined }
 
-			parentWorkflow.addRawStep(sortStep)
+					if is_string(item) {
+						directive.value = exp.col(item)._getExpression(ctx)
+					} else if exp._isExpression(item) {
+						directive.value = item._getExpression(ctx)
+					} else {
+						ll.panic("Invalid sort key at index %d in array: Expected a column name (string) or an expression object, got %T", i, item)
+					}
+
+					// Handle 'descending'
+					itemDesc := false // Polars default
+					if is_array(descendingOpt) {
+						val := descendingOpt[i]
+						ll.assert(is_bool(val), "Elements of 'descending' array (at index %d) must be booleans. Got: %T", i, val)
+						itemDesc = val
+					} else if is_bool(descendingOpt) {
+						itemDesc = descendingOpt
+					}
+					if itemDesc { // Only include if true, as PTabler 'descending' defaults to false
+						directive.descending = true
+					}
+
+					// Handle 'nulls_last'
+					itemNullsLast := undefined // Let PTabler use its default if not specified
+					if is_array(nullsLastOpt) {
+						val := nullsLastOpt[i]
+						ll.assert(is_bool(val), "Elements of 'nulls_last' array (at index %d) must be booleans. Got: %T", i, val)
+						itemNullsLast = val
+					} else if is_bool(nullsLastOpt) {
+						itemNullsLast = nullsLastOpt
+					}
+
+					if !is_undefined(itemNullsLast) { // Only include if explicitly set
+						directive.nullsLast = itemNullsLast
+					}
+
+					sortDirectives = append(sortDirectives, directive)
+				}
+
+				return {
+					type: "sort",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					by: sortDirectives
+				}
+			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},
 
@@ -1442,6 +1584,7 @@ export ll.toStrict({
 	concat: concat,
 	treeJoin: treeJoin,
 
+	axis: exp.axis,
 	col: exp.col,
 	lit: exp.lit,
 	concatStr: exp.concatStr,

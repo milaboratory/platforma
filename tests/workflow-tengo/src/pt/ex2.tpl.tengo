@@ -2,7 +2,7 @@ self := import("@platforma-sdk/workflow-tengo:tpl")
 pt := import("@platforma-sdk/workflow-tengo:pt")
 file := import("@platforma-sdk/workflow-tengo:file")
 
-self.defineOutputs("out_filtered_sorted")
+self.defineOutputs("out_filtered_sorted", "out_limited")
 
 self.body(func(inputs){
     tsvInput := inputs.inputTsv
@@ -27,9 +27,13 @@ self.body(func(inputs){
 
     sortedDf.save("output_filtered_sorted.tsv")
 
+    limitedDf := sortedDf.limit(2)
+    limitedDf.save("output_limited.tsv")
+
     ptablerResult := wf.run()
 
     return {
-        out_filtered_sorted: file.exportFile(ptablerResult.getFile("output_filtered_sorted.tsv"))
+        out_filtered_sorted: file.exportFile(ptablerResult.getFile("output_filtered_sorted.tsv")),
+        out_limited: file.exportFile(ptablerResult.getFile("output_limited.tsv"))
     }
 })

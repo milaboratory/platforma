@@ -349,6 +349,24 @@ normalize := func(s) {
 	return copy(s)
 }
 
+/**
+ * Returns a sorted slice with only unique elements.
+ *
+ * @param list: []any - a slice of elements
+ * @return unique slice: []any - a slice with unique elements
+ */
+sortUnique := func(list) {
+    uniqueMap := {}
+    for _, item in list {
+        uniqueMap[item] = item
+    }
+    uniqueList := []
+    for _, item in uniqueMap {
+        uniqueList = append(uniqueList, item)
+    }
+    return quickSortInPlace(uniqueList)
+}
+
 export ll.toStrict({
 	length: length,
 	safeAppend: safeAppend,
@@ -367,5 +385,6 @@ export ll.toStrict({
 	sortByFn: sortByFn,
 	fromSet: fromSet,
 	slice: slice,
-	normalize: normalize
+	normalize: normalize,
+	sortUnique: sortUnique
 })

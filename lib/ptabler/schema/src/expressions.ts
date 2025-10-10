@@ -1,3 +1,4 @@
+import type { AxisSpec } from '@milaboratories/pl-model-common';
 import type { DataType } from './common';
 
 export type Expression =
@@ -11,6 +12,7 @@ export type Expression =
   | StringJoinExpression
   | HashExpression
   | ColumnReferenceExpression
+  | AxisReferenceExpression
   | ConstantValueExpression
   | RankExpression
   | CumsumExpression
@@ -30,7 +32,10 @@ export type Expression =
   | FillNullExpression
   | FillNaNExpression
   | WindowExpression
-  | StructFieldExpression;
+  | StructFieldExpression
+  | MatchesEcmaRegexExpression
+  | ContainsFuzzyMatchExpression
+  | InSetExpression;
 
 /** Represents all possible expression types in the system. */
 export type ComparisonOperator = 'gt' | 'ge' | 'eq' | 'lt' | 'le' | 'neq';
@@ -182,6 +187,14 @@ export interface ColumnReferenceExpression {
   type: 'col';
   /** The name of the column to reference. */
   name: string;
+}
+
+/** Represents a reference to an axis by its specification (or id). */
+export interface AxisReferenceExpression {
+  /** The type of operation, always 'axis'. */
+  type: 'axis';
+  /** The axis to reference. */
+  spec: AxisSpec;
 }
 
 /** Represents a constant literal value (string, number, boolean, or null). */
@@ -566,4 +579,52 @@ export interface StructFieldExpression {
    * Only constant scalar values are supported.
    */
   default?: string | number | boolean | null;
+}
+
+/**
+ * Represents a regex matching operation using ECMAScript regular expressions.
+ * Takes a string expression as input and returns a boolean indicating if the input value
+ * matches the provided ECMAScript regular expression.
+ */
+export interface MatchesEcmaRegexExpression {
+  /** The type of operation, always 'matches_ecma_regex'. */
+  type: 'matches_ecma_regex';
+  /** The string expression whose value will be compared. */
+  value: Expression;
+  /** The ECMAScript regular expression to match against. */
+  ecma_regex: string;
+}
+
+/**
+ * Represents a fuzzy string matching operation.
+ * Takes a string expression as input and returns a boolean indicating if the input value
+ * contains a close match to the provided reference string.
+ */
+export interface ContainsFuzzyMatchExpression {
+  /** The type of operation, always 'contains_fuzzy_match'. */
+  type: 'contains_fuzzy_match';
+  /** The string expression whose value will be compared. */
+  value: Expression;
+  /** The string reference to compare against. */
+  reference: string;
+  /** The maximum number of edits allowed to be considered a match. */
+  max_edits: number;
+  /** The wildcard character to use. */
+  wildcard?: string;
+  /** If true, only substitutions are allowed (deletions and insertions are also allowed by default). */
+  substitutions_only?: boolean;
+}
+
+/**
+ * Represents an "in set" operation.
+ * Checks if the value of an expression is contained within a specified set of values.
+ * Returns true if the expression's value is found in the set, false otherwise.
+ */
+export interface InSetExpression {
+  /** The type of operation, always 'in_set'. */
+  type: 'in_set';
+  /** The expression whose value will be checked for membership in the set. */
+  value: Expression;
+  /** The set of values to check membership against. */
+  set: (string | number | boolean | null)[];
 }

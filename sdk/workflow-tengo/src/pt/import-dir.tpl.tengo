@@ -85,8 +85,11 @@ self.body(func(inputs) {
     columnIdsByFrameName := inputs.args
 
     outputs := {}
+    ll.assert(is_map(columnIdsByFrameName), "columnIdsByFrameName must be a map, got: %v", columnIdsByFrameName)
     for frameName, columnIds in columnIdsByFrameName {
+        ll.assert(is_array(columnIds) && len(columnIds) > 0, "columnIds must be an array, got: %v", columnIds)
         for columnId in columnIds {
+            ll.assert(is_string(columnId), "columnId must be a string, got: %v", columnId)
             columnRef := util.makeFrameColumnRef(frameName, columnId)
 
             dataInfo := inputs[columnRef].getDataAsJson()
