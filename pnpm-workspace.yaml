@@ -276,6 +276,7 @@ catalog:
   'jsdom': ^25.0.1
   '@vue/test-utils': ^2.4.6
   'resize-observer-polyfill': ^1.5.1
+  'dedent': ^1.7.0
 
   # Types
 
