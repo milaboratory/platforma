@@ -3,7 +3,7 @@ pt := import(":pt")
 
 // Helper to get the raw expression for easier comparison
 getExpr := func(exprObj) {
-	return exprObj.getExpression()
+	return exprObj._getExpression({})
 }
 
 // Helper for checking alias (and that getAlias doesn't throw for defined aliases)

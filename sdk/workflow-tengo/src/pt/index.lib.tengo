@@ -121,8 +121,15 @@ workflow := func() {
 		addRawStep: func(step) {
 			ll.assert(is_map(step), "step must be a map")
 			ll.assert(is_string(step.type), "step.type must be a string discriminator")
-			steps = append(steps, step)
+			self._addStep(func(ctx) {
+				return step
+			})
 			return self
+		},
+
+		_addStep: func(step) {
+			ll.assert(is_callable(step), "step must be a function")
+			steps = append(steps, step)
 		},
 
 		/**
@@ -582,23 +589,6 @@ workflow := func() {
 		},
 
 		/**
-		 * Creates an expression that references an axis by its spec.
-		 * @param spec - object - The spec of the axis.
-		 * @returns {object} - An expression object.
-		 */
-		axis: func(spec) {
-			validation.assertType(spec, pframesSpec.P_AXIS_SPEC_SCHEMA)
-			return exp._newExpression(func() {
-				specDistiller := self._getSpecDistiller()
-				distilledSpec := specDistiller.distill(spec)
-				return {
-					type: "axis",
-					spec: distilledSpec
-				}
-			}, spec.name)
-		},
-
-		/**
 		 * Executes the defined PTabler workflow.
 		 * This compiles all the added steps and input/output file configurations,
 		 * then runs the PTabler command.
@@ -608,9 +598,13 @@ workflow := func() {
 			workflowRunTpl := assets.importTemplate(":pt.workflow-run")
 
 			specDistiller := self._getSpecDistiller()
-
+			ctx := {
+				specDistiller: specDistiller
+			}
 			workflowJsonStruct := {
-				workflow: steps
+				workflow: slices.map(steps, func(step) {
+					return step(ctx)
+				})
 			}
 
 			inFilesMap := {}
@@ -730,20 +724,22 @@ _newDataFrameGroupBy = func(parentWorkflow, dfName, groupByExpressions) {
 		agg: func(...aggExpressions) {
 			ll.assert(len(aggExpressions) > 0, "agg method requires at least one aggregation expression.")
 
-			aggregations := slices.map(aggExpressions, func(aggExpr) {
-				if !exp._isAggregation(aggExpr) {
-					ll.panic("Invalid argument to agg: Expected an aggregation expression object, got %v", aggExpr)
-				}
-				return aggExpr.getAggregation()
-			})
-
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
-			parentWorkflow.addRawStep({
-				type: "aggregate",
-				inputTable: dfName,
-				outputTable: outputDfName,
-				groupBy: exp._mapToExpressionStructList(groupByExpressions, "col"),
-				aggregations: aggregations
+			parentWorkflow._addStep(func(ctx) {
+				aggregations := slices.map(aggExpressions, func(aggExpr) {
+					if !exp._isAggregation(aggExpr) {
+						ll.panic("Invalid argument to agg: Expected an aggregation expression object, got %v", aggExpr)
+					}
+					return aggExpr.getAggregation(ctx)
+				})
+				
+				return {
+					type: "aggregate",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					groupBy: exp._mapToExpressionStructList(groupByExpressions, "col", ctx),
+					aggregations: aggregations
+				}
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		}
@@ -752,7 +748,7 @@ _newDataFrameGroupBy = func(parentWorkflow, dfName, groupByExpressions) {
 }
 
 _newDataFrame = func(parentWorkflow, dfName) {
-	_mapExprsToStepCols := func(exprs, methodName) {
+	_mapExprsToStepCols := func(exprs, methodName, ctx) {
 		ll.assert(len(exprs) > 0, methodName + " requires at least one expression argument.")
 		cols := []
 		for expr in exprs {
@@ -761,13 +757,13 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			}
 			cols = append(cols, {
 				name: expr.getAlias(),
-				expression: expr.getExpression()
+				expression: expr._getExpression(ctx)
 			})
 		}
 		return cols
 	}
 
-	_mapExprsToStepColsAllowingStrings := func(exprs, methodName) {
+	_mapExprsToStepColsAllowingStrings := func(exprs, methodName, ctx) {
 		ll.assert(len(exprs) > 0, methodName + " requires at least one expression argument.")
 		cols := []
 		for expr in exprs {
@@ -776,12 +772,12 @@ _newDataFrame = func(parentWorkflow, dfName) {
 				colExpr := exp.col(expr)
 				cols = append(cols, {
 					name: colExpr.getAlias(),
-					expression: colExpr.getExpression()
+					expression: colExpr._getExpression(ctx)
 				})
 			} else if exp._isExpression(expr) {
 				cols = append(cols, {
 					name: expr.getAlias(),
-					expression: expr.getExpression()
+					expression: expr._getExpression(ctx)
 				})
 			} else {
 				ll.panic("Invalid argument to " + methodName + ": Expected an expression object or string column name, got %v", expr)
@@ -881,13 +877,15 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *   )
 		 */
 		withColumns: func(...expressions) {
-			stepCols := _mapExprsToStepCols(expressions, "withColumns")
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
-			parentWorkflow.addRawStep({
-				type: "with_columns",
-				inputTable: dfName,
-				outputTable: outputDfName,
-				columns: stepCols
+			parentWorkflow._addStep(func(ctx) {
+				stepCols := _mapExprsToStepCols(expressions, "withColumns", ctx)
+				return {
+					type: "with_columns",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					columns: stepCols
+				}
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},
@@ -907,13 +905,15 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *   )
 		 */
 		select: func(...expressions) {
-			stepCols := _mapExprsToStepColsAllowingStrings(expressions, "select")
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
-			parentWorkflow.addRawStep({
-				type: "select",
-				inputTable: dfName,
-				outputTable: outputDfName,
-				columns: stepCols
+			parentWorkflow._addStep(func(ctx) {
+				stepCols := _mapExprsToStepColsAllowingStrings(expressions, "select", ctx)
+				return {
+					type: "select",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					columns: stepCols
+				}
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},
@@ -932,11 +932,13 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *   ) // df is modified
 		 */
 		addColumns: func(...expressions) {
-			stepCols := _mapExprsToStepCols(expressions, "addColumns")
-			parentWorkflow.addRawStep({
-				type: "add_columns",
-				table: dfName,
-				columns: stepCols
+			parentWorkflow._addStep(func(ctx) {
+				stepCols := _mapExprsToStepCols(expressions, "addColumns", ctx)
+				return {
+					type: "add_columns",
+					table: dfName,
+					columns: stepCols
+				}
 			})
 			return self
 		},
@@ -1085,11 +1087,13 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			}
 
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
-			parentWorkflow.addRawStep({
-				type: "filter",
-				inputTable: dfName,
-				outputTable: outputDfName,
-				condition: condition.getExpression()
+			parentWorkflow._addStep(func(ctx) {
+				return {
+					type: "filter",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					condition: condition._getExpression(ctx)
+				}
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},
@@ -1169,60 +1173,58 @@ _newDataFrame = func(parentWorkflow, dfName) {
 				ll.panic("sort 'nulls_last' array length (%d) must match the number of sort keys (%d).", len(nullsLastOpt), len(by))
 			}
 
-
-
-			sortDirectives := []
-			for i, item in by {
-				directive := { value: undefined }
-
-				if is_string(item) {
-					directive.value = exp.col(item).getExpression()
-				} else if exp._isExpression(item) {
-					directive.value = item.getExpression()
-				} else {
-					ll.panic("Invalid sort key at index %d in array: Expected a column name (string) or an expression object, got %T", i, item)
-				}
-
-				// Handle 'descending'
-				itemDesc := false // Polars default
-				if is_array(descendingOpt) {
-					val := descendingOpt[i]
-					ll.assert(is_bool(val), "Elements of 'descending' array (at index %d) must be booleans. Got: %T", i, val)
-					itemDesc = val
-				} else if is_bool(descendingOpt) {
-					itemDesc = descendingOpt
-				}
-				if itemDesc { // Only include if true, as PTabler 'descending' defaults to false
-					directive.descending = true
-				}
-
-				// Handle 'nulls_last'
-				itemNullsLast := undefined // Let PTabler use its default if not specified
-				if is_array(nullsLastOpt) {
-					val := nullsLastOpt[i]
-					ll.assert(is_bool(val), "Elements of 'nulls_last' array (at index %d) must be booleans. Got: %T", i, val)
-					itemNullsLast = val
-				} else if is_bool(nullsLastOpt) {
-					itemNullsLast = nullsLastOpt
-				}
-
-				if !is_undefined(itemNullsLast) { // Only include if explicitly set
-					directive.nullsLast = itemNullsLast
-				}
-
-				sortDirectives = append(sortDirectives, directive)
-			}
-
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
 
-			sortStep := {
-				type: "sort",
-				inputTable: dfName,
-				outputTable: outputDfName,
-				by: sortDirectives
-			}
+			parentWorkflow._addStep(func(ctx) {
+				sortDirectives := []
+				for i, item in by {
+					directive := { value: undefined }
 
-			parentWorkflow.addRawStep(sortStep)
+					if is_string(item) {
+						directive.value = exp.col(item)._getExpression(ctx)
+					} else if exp._isExpression(item) {
+						directive.value = item._getExpression(ctx)
+					} else {
+						ll.panic("Invalid sort key at index %d in array: Expected a column name (string) or an expression object, got %T", i, item)
+					}
+
+					// Handle 'descending'
+					itemDesc := false // Polars default
+					if is_array(descendingOpt) {
+						val := descendingOpt[i]
+						ll.assert(is_bool(val), "Elements of 'descending' array (at index %d) must be booleans. Got: %T", i, val)
+						itemDesc = val
+					} else if is_bool(descendingOpt) {
+						itemDesc = descendingOpt
+					}
+					if itemDesc { // Only include if true, as PTabler 'descending' defaults to false
+						directive.descending = true
+					}
+
+					// Handle 'nulls_last'
+					itemNullsLast := undefined // Let PTabler use its default if not specified
+					if is_array(nullsLastOpt) {
+						val := nullsLastOpt[i]
+						ll.assert(is_bool(val), "Elements of 'nulls_last' array (at index %d) must be booleans. Got: %T", i, val)
+						itemNullsLast = val
+					} else if is_bool(nullsLastOpt) {
+						itemNullsLast = nullsLastOpt
+					}
+
+					if !is_undefined(itemNullsLast) { // Only include if explicitly set
+						directive.nullsLast = itemNullsLast
+					}
+
+					sortDirectives = append(sortDirectives, directive)
+				}
+
+				return {
+					type: "sort",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					by: sortDirectives
+				}
+			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},
 
@@ -1582,6 +1584,7 @@ export ll.toStrict({
 	concat: concat,
 	treeJoin: treeJoin,
 
+	axis: exp.axis,
 	col: exp.col,
 	lit: exp.lit,
 	concatStr: exp.concatStr,

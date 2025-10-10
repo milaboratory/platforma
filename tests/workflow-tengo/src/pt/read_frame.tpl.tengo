@@ -26,6 +26,14 @@ self.body(func(inputs) {
     columnNames := inputs.columnNames
     columns := inputs.columns
 
+    projection := []
+    for axis in axes {
+        projection = append(projection, pt.axis(axis))
+    }
+    for name in columnNames {
+        projection = append(projection, pt.col(name))
+    }
+
     builder := pframes.pFrameBuilder()
     for name, column in columns {
         builder.add(name, column.spec, column.data)
@@ -33,17 +41,7 @@ self.body(func(inputs) {
     pf := builder.build()
 
     wf := pt.workflow()
-    df := wf.frame(pf)
-
-    projection := []
-    for axis in axes {
-        projection = append(projection, wf.axis(axis))
-    }
-    for name in columnNames {
-        projection = append(projection, pt.col(name))
-    }
-    
-    df.select(projection...).save("file.csv")
+    wf.frame(pf).select(projection...).save("file.csv")
 	wfResult := wf.run()
 
 	return {
