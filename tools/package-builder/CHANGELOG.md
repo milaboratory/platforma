@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.8.1
+
+### Patch Changes
+
+- 7b8fcc4: Do not publish docker images for private packages
+
 ## 3.8.0
 
 ### Minor Changes
