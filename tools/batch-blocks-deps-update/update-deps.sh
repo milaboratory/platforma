@@ -233,21 +233,43 @@ update_deps() {
     # Auto-generate a changeset for all packages if .changeset exists
     if [ -d ".changeset" ]; then
       msg_info "Generating changeset for all packages..."
-      ROOT_NAME=$(node -p "try{require('./package.json').name}catch(e){''}" 2>/dev/null || true)
-      PKG_NAMES=$(pnpm -r --silent exec node -p "require('./package.json').name" 2>/dev/null || true)
-      ALL_NAMES=$(printf "%s\n%s\n" "$ROOT_NAME" "$PKG_NAMES" | sed '/^$/d' | sort -u)
+      ROOT_NAME=$(node -p "try{require('./package.json').name ?? ''}catch(e){''}" 2>/dev/null || true)
+      PKG_NAMES=$(pnpm -r --silent exec node -p "try{require('./package.json').name ?? ''}catch(e){''}" 2>/dev/null || true)
+      ALL_NAMES=$(printf "%s\n%s\n" "$ROOT_NAME" "$PKG_NAMES" | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//' -e '/^$/d' -e '/^undefined$/d' -e '/^null$/d' | sort -u)
       if [ -n "$ALL_NAMES" ]; then
         CHANGESET_FILE=".changeset/auto-$(date +%Y%m%d%H%M%S).md"
         {
           echo '---'
           while IFS= read -r name; do
-            printf '"%s": patch\n' "$name"
+            if [ -n "$name" ] && [ "$name" != "undefined" ] && [ "$name" != "null" ]; then
+              printf '"%s": patch\n' "$name"
+            fi
           done <<< "$ALL_NAMES"
           echo '---'
           echo ''
           echo 'technical release'
         } > "$CHANGESET_FILE"
-        msg_success "Changeset written to $CHANGESET_FILE"
+        # Verify last entry format is "...": patch and fix if necessary
+        LAST_ENTRY=$(awk 'flag{ if($0~/---/){exit}; if($0!=""){print} } $0~/---/{flag=1}' "$CHANGESET_FILE" | tail -n 1)
+        if [[ -z "$LAST_ENTRY" || ! "$LAST_ENTRY" =~ ^\".+\":\ patch$ ]]; then
+          msg_warn "Invalid last changeset entry: '$LAST_ENTRY'. Attempting to correct..."
+          GOOD_ENTRIES=$(awk 'flag{ if($0~/---/){exit}; if($0 ~ /^[\t ]*\".*\": patch[\t ]*$/){print} } $0~/---/{flag=1}' "$CHANGESET_FILE")
+          if [[ -z "$GOOD_ENTRIES" ]]; then
+            msg_warn "No valid changeset entries found; removing $CHANGESET_FILE"
+            rm -f "$CHANGESET_FILE"
+          else
+            {
+              echo '---'
+              printf "%s\n" "$GOOD_ENTRIES"
+              echo '---'
+              echo ''
+              echo 'technical release'
+            } > "$CHANGESET_FILE"
+            msg_success "Changeset corrected in $CHANGESET_FILE"
+          fi
+        else
+          msg_success "Changeset written to $CHANGESET_FILE"
+        fi
       else
         msg_warn "No packages found for changeset."
       fi
