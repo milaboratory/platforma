@@ -11,18 +11,13 @@ converter := assets.importTemplate(":pt.frameFromBundle.converter")
 
 wf.body(func(inputs) {
     axes := inputs.axes
+    anchor := inputs.anchor
 
     bundleBuilder := wf.createPBundleBuilder()
-    bundleBuilder.addAnchor("main", {
-        __isRef: true,
-        blockId: "b1",
-        name: "data"
-    })
-
+    bundleBuilder.addAnchor("main", anchor)
     for columnId in inputs.columnIds {
-        bundleBuilder.addById(columnId)
+        bundleBuilder.addSingle(columnId)
     }
-
 	columnBundle := bundleBuilder.build()
 	
     result := render.createEphemeral(converter, {
@@ -32,9 +27,9 @@ wf.body(func(inputs) {
     })
 
     return {
-        exports: {},
         outputs: {
             file: file.exportFile(result.output("file"))
-        }
+        },
+        exports: {}
     }
 })

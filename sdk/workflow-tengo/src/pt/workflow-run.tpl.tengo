@@ -61,7 +61,7 @@ self.body(func(inputs) {
 
     ll.assert(is_map(inFrames), "inFrames must be a map, got: %v", inFrames)
     for _, columnsById in inFrames {
-        ll.assert(!is_map(columnsById), "columnsById must be a map, got: %v", columnsById)
+        ll.assert(is_map(columnsById), "columnsById must be a map, got: %v", columnsById)
         for columnId, columnInfo in columnsById {
             ll.assert(!is_undefined(columnInfo.spec), "spec must be defined in columnInfo for column '%s'", columnId)
             ll.assert(!is_undefined(columnInfo.data), "data must be defined in columnInfo for column '%s'", columnId)

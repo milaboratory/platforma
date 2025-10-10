@@ -2,7 +2,7 @@
 import type { ComputableCtx } from '@milaboratories/computable';
 import { getTestTimeout } from '@milaboratories/test-helpers';
 import type { AnchoredPColumnId, FilteredPColumnId, MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
-import { canonicalizeJson } from '@milaboratories/pl-middle-layer';
+import { canonicalizeJson, createPlRef } from '@milaboratories/pl-middle-layer';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type { TestWorkflowResults } from '@platforma-sdk/test';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
@@ -32,6 +32,7 @@ tplTest.concurrent(
         { column: cellIdAxesSpec.name, spec: cellIdAxesSpec },
         { column: geneIdAxesSpec.name, spec: geneIdAxesSpec },
       ],
+      anchor: createPlRef('b1', 'data'),
       columnIds: [
         canonicalizeJson<AnchoredPColumnId>({
           name: 'clusterResolution',

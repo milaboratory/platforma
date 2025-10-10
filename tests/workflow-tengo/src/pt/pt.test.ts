@@ -1,14 +1,26 @@
 /* eslint-disable @stylistic/no-tabs */
-import { isPColumn, parseFinalPObjectCollection, Pl, pTableValue } from '@milaboratories/pl-middle-layer';
-import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import { assert, expect } from 'vitest';
-import type { TestRenderResults } from '@platforma-sdk/test';
-import type { CalculateTableDataResponse, MiddleLayerDriverKit, PObjectId, PTableColumnSpec } from '@milaboratories/pl-middle-layer';
+import {
+  deriveLocalPObjectId,
+  isPColumn,
+  parseFinalPObjectCollection,
+  Pl,
+  pTableValue,
+  type CalculateTableDataResponse,
+  type MiddleLayerDriverKit,
+  type PTableColumnSpec,
+} from '@milaboratories/pl-middle-layer';
+import {
+  awaitStableState,
+  tplTest,
+  type TestRenderResults,
+  type TestWorkflowResults,
+} from '@platforma-sdk/test';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type { ComputableCtx } from '@milaboratories/computable';
-import { getTestTimeout } from '@milaboratories/test-helpers';
-import { vi } from 'vitest';
+import { getTestTimeout } from '@milaboratories/helpers';
+import { assert, expect, vi } from 'vitest';
 import dedent from 'dedent';
+import { getCsvHandle, readBlobAsString } from './frameFromBundle.test';
 
 const TIMEOUT = getTestTimeout(60_000);
 
@@ -34,13 +46,13 @@ const getFileContent = async (
 };
 
 const getTableData = async (
-  result: TestRenderResults<string>,
+  result: TestWorkflowResults,
   outputName: string,
   driverKit: MiddleLayerDriverKit,
   timeout = TIMEOUT,
 ): Promise<CalculateTableDataResponse> => {
   const handle = await awaitStableState(
-    result.computeOutput(outputName, (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
+    result.output(outputName, (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
       if (!acc || !acc.getIsReadyOrError()) return undefined;
       const pObjects = parseFinalPObjectCollection(acc, false, '', [outputName]);
       const pColumns = Object.entries(pObjects).map(([, obj]) => {
@@ -127,65 +139,42 @@ tplTest.concurrent(
 tplTest.concurrent(
   'pt write frame test',
   async ({ helper, expect, driverKit }) => {
-    const inputCsvData = dedent`
-      a,b
-      1,X
-      9,Z
-      4,Y
-    `;
-    const saveFrameParams = {
-      axes: [{
-        column: 'a',
-        spec: {
-          name: 'a',
-          type: 'Int',
-        },
-      }],
-      columns: [{
-        column: 'b',
-        spec: {
-          name: 'b',
-          valueType: 'String',
-        },
-      }],
-    };
+    const workflow = await helper.renderWorkflow('pt.write_frame', false, {
+      inputCsv: dedent`
+          a,b
+          1,X
+          9,Z
+          4,Y
+        `,
+      saveFrameParams: {
+        axes: [{
+          column: 'a',
+          spec: { name: 'a', type: 'Int' },
+        }],
+        columns: [{
+          column: 'b',
+          spec: { name: 'b', valueType: 'String' },
+        }],
+      },
+    });
 
-    const result = await helper.renderTemplate(
-      false,
-      'pt.write_frame',
-      ['out'],
-      (tx) => ({
-        inputCsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputCsvData)),
-        saveFrameParams: tx.createValue(Pl.JsonObject, JSON.stringify(saveFrameParams)),
-      }),
-    );
-
-    const pTable = await getTableData(result, 'out', driverKit);
+    const pTable = await getTableData(workflow, 'pf', driverKit);
 
     const pTableSpecs = pTable.map((col) => col.spec);
     expect(pTableSpecs).toEqual([
       {
         type: 'axis',
-        id: {
-          name: 'a',
-          type: 'Int',
-        },
-        spec: {
-          name: 'a',
-          type: 'Int',
-        },
+        id: { name: 'a', type: 'Int' },
+        spec: { name: 'a', type: 'Int' },
       },
       {
         type: 'column',
-        id: `{"name":"b","resolvePath":["out"]}` as PObjectId,
+        id: deriveLocalPObjectId(['pf'], 'b'),
         spec: {
           kind: 'PColumn',
           name: 'b',
           valueType: 'String',
-          axesSpec: [{
-            name: 'a',
-            type: 'Int',
-          }],
+          axesSpec: [{ name: 'a', type: 'Int' }],
         },
       },
     ] satisfies PTableColumnSpec[]);
@@ -204,12 +193,46 @@ tplTest.concurrent(
   },
 );
 
-// tplTest.concurrent(
-//   'pt frame roundtrip test',
-//   async ({ helper, expect, driverKit }) => {
+tplTest.concurrent(
+  'pt frame roundtrip test',
+  async ({ helper, expect, driverKit }) => {
+    const workflow1 = await helper.renderWorkflow('pt.write_frame', false, {
+      inputCsv: dedent`
+        a,b
+        1,X
+        9,Z
+        4,Y
+      `,
+      saveFrameParams: {
+        axes: [{
+          column: 'a',
+          spec: { name: 'a', type: 'Int' },
+        }],
+        columns: [{
+          column: 'b',
+          spec: { name: 'b', valueType: 'String' },
+        }],
+      },
+    }, { blockId: 'block1' });
 
-//   },
-// );
+    const context1 = await awaitStableState(workflow1.context());
+
+    const workflow2 = await helper.renderWorkflow('pt.read_frame', false, {
+      axes: [{ name: 'a', type: 'Int' }],
+      columnNames: ['b'],
+    }, { blockId: 'block2', parent: context1 });
+
+    const csvHandle = await getCsvHandle(workflow2, driverKit, 'file');
+    const csvContent = await readBlobAsString(driverKit, csvHandle);
+
+    expect(csvContent.trim()).eq(dedent`
+      a,b
+      1,X
+      4,Y
+      9,Z
+    `);
+  },
+);
 
 tplTest.concurrent(
   'pt ex1 test - window and groupBy operations',

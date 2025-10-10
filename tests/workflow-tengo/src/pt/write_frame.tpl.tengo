@@ -1,8 +1,7 @@
-self := import("@platforma-sdk/workflow-tengo:tpl")
 pt := import("@platforma-sdk/workflow-tengo:pt")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 
-self.defineOutputs("out")
+self := import("@platforma-sdk/workflow-tengo:workflow")
 
 self.body(func(inputs) {
 	csv := inputs.inputCsv
@@ -17,6 +16,11 @@ self.body(func(inputs) {
 	pf := ptResult.getFrameDirect("output")
 
 	return {
-		out: pframes.exportFrame(pf)
+		outputs: {
+			pf: pframes.exportFrame(pf)
+		},
+		exports: {
+			pf: pf
+		}
 	}
 })

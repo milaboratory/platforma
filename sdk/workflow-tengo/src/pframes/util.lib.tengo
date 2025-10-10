@@ -755,15 +755,13 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 
 			parquetChunkResource := v.getValue()
 			parquetChunkMetadata := parquetChunkResource.getDataAsJson()
-			parquetChunkMapping := parquetChunkResource.getMetaInputs()["mapping"].getDataAsJson()
-			parquetChunkDataResource := parquetChunkResource.getMetaInputs()["blob"]
+			parquetChunkMapping := parquetChunkResource.metaInputs()["mapping"].getValue().getDataAsJson()
+			parquetChunkData := parquetChunkResource.metaInputs()["blob"].getValue()
 
-            parquetChunkDataPath := "__resource__" + parquetChunkDataResource.id + ".parquet"
-			parquetChunkDataFile := parquetChunkDataResource.getValue()
-
+            parquetChunkDataPath := "res" + parquetChunkData.id + ".parquet"
             parts[k] = maps.merge({ data: parquetChunkDataPath }, parquetChunkMetadata, parquetChunkMapping)
 
-            execBuilder.addFile(makePath(parquetChunkDataPath), parquetChunkDataFile)
+            execBuilder.addFile(makePath(parquetChunkDataPath), parquetChunkData)
 
             i = i + 1
         }
@@ -809,15 +807,13 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 
 				parquetChunkResource := v.getValue()
 				parquetChunkMetadata := parquetChunkResource.getDataAsJson()
-				parquetChunkMapping := parquetChunkResource.getMetaInputs()["mapping"].getDataAsJson()
-				parquetChunkDataResource := parquetChunkResource.getMetaInputs()["blob"]
+				parquetChunkMapping := parquetChunkResource.metaInputs()["mapping"].getValue().getDataAsJson()
+				parquetChunkData := parquetChunkResource.metaInputs()["blob"].getValue()
 
-				parquetChunkDataPath := "__resource__" + parquetChunkDataResource.id + ".parquet"
-				parquetChunkDataFile := parquetChunkDataResource.getValue()
-
+				parquetChunkDataPath := "res" + parquetChunkData.id + ".parquet"
 				parts[key] = maps.merge({ data: parquetChunkDataPath }, parquetChunkMetadata, parquetChunkMapping)
 
-				execBuilder.addFile(makePath(parquetChunkDataPath), parquetChunkDataFile)
+				execBuilder.addFile(makePath(parquetChunkDataPath), parquetChunkData)
 
             	i = i + 1
 			}
