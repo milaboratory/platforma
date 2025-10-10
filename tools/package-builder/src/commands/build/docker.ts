@@ -3,6 +3,7 @@ import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
 import * as envs from '../../core/envs';
+import * as docker from '../../core/docker';
 
 export default class Docker extends Command {
   static override description = 'build docker images';
@@ -28,8 +29,12 @@ export default class Docker extends Command {
       ids: flags['package-id'],
     });
 
-    const autopush = flags['docker-autopush'] || (envs.isCI() && core.buildMode === 'release');
-    if (autopush) {
+    const autopush = docker.shouldDoAction(
+      envs.isCI() && !core.pkgInfo.isPrivate, // do not push docker images of private packages
+      flags['docker-autopush'],
+      flags['docker-no-autopush'],
+    );
+    if (autopush && !core.pkgInfo.isPrivate) {
       core.publishDockerImages({
         ids: flags['package-id'],
       });
