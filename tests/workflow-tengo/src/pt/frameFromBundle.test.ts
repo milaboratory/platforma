@@ -9,8 +9,9 @@ import { expect } from 'vitest';
 
 const TIMEOUT = getTestTimeout(30_000);
 
-tplTest(
+tplTest.concurrent(
   'pt frameFromColumnBundle test - should return frame from column bundle with filtered columns',
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     const wf1 = await helper.renderWorkflow('pt.frameFromBundle.pool', false, {
       pColumnsData: [
@@ -81,9 +82,6 @@ tplTest(
       + `\n3\tcell_2\t8000\tCL-3\t122.0\t0.132`
       + `\n3\tcell_3\t7500\tCL-3\t124.0\t0.534\n`,
     );
-  }, {
-    concurrent: true,
-    timeout: TIMEOUT,
   },
 );
 
