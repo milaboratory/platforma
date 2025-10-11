@@ -60,7 +60,7 @@
   "dependencies": {
     "@milaboratories/pl-config": "workspace:*",
     "@milaboratories/pl-http": "workspace:*",
-    "@milaboratories/pl-model-common": "workspace:^",
+    "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
     "decompress": "catalog:",
     "ssh2": "catalog:",

@@ -34,8 +34,8 @@ export interface PlClientConfig {
    * expiration time. */
   authMaxRefreshSeconds: number;
 
-  /** Proxy server URL to use for pl connection. */
-  grpcProxy?: string;
+  /** Proxy server config to use for pl connection. */
+  grpcProxy?: string | ProxySettings;
   /** Proxy server config to use for http connections of pl drivers, like file
    * downloading. */
   httpProxy?: string | ProxySettings;
