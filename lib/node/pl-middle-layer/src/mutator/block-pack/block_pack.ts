@@ -9,6 +9,7 @@ import type { Dispatcher } from 'undici';
 import { request } from 'undici';
 import { createFrontend } from './frontend';
 import type { BlockConfigContainer } from '@platforma-sdk/model';
+import { Code } from '@platforma-sdk/model';
 import { loadPackDescription, RegistryV1 } from '@platforma-sdk/block-tools';
 import type { BlockPackInfo } from '../../model/block_pack';
 import { resolveDevPacket } from '../../dev_env';
@@ -17,6 +18,7 @@ import type { V2RegistryProvider } from '../../block_registry/registry-v2-provid
 import { LRUCache } from 'lru-cache';
 import type { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
 import { WorkerManager } from '../../worker/WorkerManager';
+import { z } from 'zod';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';
@@ -28,12 +30,22 @@ function tSlash(str: string): string {
   else return `${str}/`;
 }
 
-function bufferToString(buffer: ArrayBuffer): string {
-  return Buffer.from(buffer).toString('utf8');
+function parseStringConfig(configContent: string): BlockConfigContainer {
+  const res = z.record(z.string(), z.unknown()).safeParse(JSON.parse(configContent));
+
+  if (!res.success) {
+    throw new Error('Invalid config content');
+  }
+
+  if (!Code.safeParse(res.data.code).success) {
+    throw new Error('No code bundle');
+  }
+
+  return res.data as BlockConfigContainer;
 }
 
-function bufferToJson(buffer: ArrayBuffer): unknown {
-  return JSON.parse(bufferToString(buffer));
+function parseBufferConfig(buffer: ArrayBuffer): BlockConfigContainer {
+  return parseStringConfig(Buffer.from(buffer).toString('utf8'));
 }
 
 export class BlockPackPreparer {
@@ -64,7 +76,7 @@ export class BlockPackPreparer {
       case 'dev-v1': {
         const devPaths = await resolveDevPacket(spec.folder, false);
         const configContent = await fs.promises.readFile(devPaths.config, { encoding: 'utf-8' });
-        return JSON.parse(configContent) as BlockConfigContainer;
+        return parseStringConfig(configContent);
       }
 
       case 'dev-v2': {
@@ -72,21 +84,21 @@ export class BlockPackPreparer {
         const configContent = await fs.promises.readFile(description.components.model.file, {
           encoding: 'utf-8',
         });
-        return JSON.parse(configContent) as BlockConfigContainer;
+        return parseStringConfig(configContent);
       }
 
       case 'from-registry-v1': {
         const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix({ organization: spec.id.organization, package: spec.id.name, version: spec.id.version })}`;
 
         const configResponse = await this.remoteContentCache.forceFetch(`${urlPrefix}/config.json`);
-        return bufferToJson(configResponse) as BlockConfigContainer;
+        return parseBufferConfig(configResponse);
       }
 
       case 'from-registry-v2': {
         const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
         const components = await registry.getComponents(spec.id);
         const configResponse = await this.remoteContentCache.forceFetch(components.model.url);
-        return bufferToJson(configResponse) as BlockConfigContainer;
+        return parseBufferConfig(configResponse);
       }
 
       default:
@@ -125,9 +137,9 @@ export class BlockPackPreparer {
         const templateContent = await fs.promises.readFile(devPaths.workflow);
 
         // config
-        const config = JSON.parse(
+        const config = parseStringConfig(
           await fs.promises.readFile(devPaths.config, 'utf-8'),
-        ) as BlockConfigContainer;
+        );
 
         // frontend
         const frontendPath = devPaths.ui;
@@ -150,11 +162,11 @@ export class BlockPackPreparer {
 
       case 'dev-v2': {
         const description = await loadPackDescription(spec.folder);
-        const config = JSON.parse(
+        const config = parseStringConfig(
           await fs.promises.readFile(description.components.model.file, {
             encoding: 'utf-8',
           }),
-        ) as BlockConfigContainer;
+        );
         const workflowContent = await fs.promises.readFile(
           description.components.workflow.main.file,
         );
@@ -189,7 +201,7 @@ export class BlockPackPreparer {
 
         // config
         const configResponse = await this.remoteContentCache.forceFetch(`${urlPrefix}/config.json`);
-        const config = bufferToJson(configResponse) as BlockConfigContainer;
+        const config = parseBufferConfig(configResponse);
 
         return {
           type: 'explicit',
@@ -210,7 +222,7 @@ export class BlockPackPreparer {
         const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
         const components = await registry.getComponents(spec.id);
         const getModel = async () =>
-          bufferToJson(await this.remoteContentCache.forceFetch(components.model.url)) as BlockConfigContainer;
+          parseBufferConfig(await this.remoteContentCache.forceFetch(components.model.url));
         const getWorkflow = async () =>
           await this.remoteContentCache.forceFetch(components.workflow.main.url);
 

@@ -74,12 +74,13 @@ export function computableFromRF(
   configKey: string,
   ops: Partial<ComputableRenderingOps> = {},
 ): Computable<unknown> {
-  const { code, featureFlags } = codeWithInfo;
   // adding configKey to reload all outputs on block-pack update
   const key = `${ctx.blockId}#lambda#${configKey}#${fh.handle}`;
   ops = { ...ops, key };
   if (ops.mode === undefined && fh.retentive === true) ops.mode = 'StableOnlyRetentive';
   return Computable.makeRaw((cCtx) => {
+    const { code, featureFlags } = codeWithInfo;
+
     if (getDebugFlags().logOutputRecalculations)
       console.log(`Block lambda recalculation : ${key} (${cCtx.changeSourceMarker}; ${cCtx.bodyInvocations} invocations)`);
 

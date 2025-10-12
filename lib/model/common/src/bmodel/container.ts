@@ -7,7 +7,7 @@ export type BlockConfigContainer = {
   /** Actual config */
   readonly v3: Omit<BlockConfigV3Generic, 'code'>;
 
-  /** Config code bundle */
+  /** Config code bundle. Actually is required, but we keep it optional for backward compatibility */
   readonly code?: Code;
 
   //

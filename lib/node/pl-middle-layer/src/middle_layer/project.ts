@@ -490,6 +490,10 @@ export class Project {
     await this.destroy();
   }
 
+  public dumpState(): ExtendedResourceData[] {
+    return this.projectTree.dumpState();
+  }
+
   public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {
     // Applying migrations to the project resource, if needed
     await applyProjectMigrations(env.pl, rid);
