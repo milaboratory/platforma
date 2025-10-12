@@ -75,8 +75,9 @@ export class BlockPackPreparer {
 
       case 'dev-v1': {
         const devPaths = await resolveDevPacket(spec.folder, false);
+        console.log('devPaths', devPaths);
         const configContent = await fs.promises.readFile(devPaths.config, { encoding: 'utf-8' });
-        return parseStringConfig(configContent);
+        return JSON.parse(configContent);
       }
 
       case 'dev-v2': {
@@ -91,7 +92,7 @@ export class BlockPackPreparer {
         const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix({ organization: spec.id.organization, package: spec.id.name, version: spec.id.version })}`;
 
         const configResponse = await this.remoteContentCache.forceFetch(`${urlPrefix}/config.json`);
-        return parseBufferConfig(configResponse);
+        return JSON.parse(Buffer.from(configResponse).toString('utf8'));
       }
 
       case 'from-registry-v2': {
@@ -137,7 +138,7 @@ export class BlockPackPreparer {
         const templateContent = await fs.promises.readFile(devPaths.workflow);
 
         // config
-        const config = parseStringConfig(
+        const config = JSON.parse(
           await fs.promises.readFile(devPaths.config, 'utf-8'),
         );
 
