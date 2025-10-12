@@ -25,7 +25,8 @@ import type {
 } from '@milaboratories/pl-model-middle-layer';
 import { constructBlockContextArgsOnly } from './block_ctx';
 import { ifNotUndef } from '../cfg_render/util';
-import { extractCodeWithInfo, type BlockSection } from '@platforma-sdk/model';
+import { type BlockSection } from '@platforma-sdk/model';
+import { extractCodeWithInfo, wrapCallback } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
 import type { NavigationStates } from './navigation_states';
 import { getBlockPackInfo } from './util';
@@ -163,7 +164,15 @@ export function projectOverview(
               };
             }
             const blockCtxArgsOnly = constructBlockContextArgsOnly(prjEntry, id);
-            const codeWithInfo = extractCodeWithInfo(cfg);
+            const codeWithInfoOrError = wrapCallback(() => extractCodeWithInfo(cfg));
+            if (codeWithInfoOrError.error) {
+              return {
+                title: codeWithInfoOrError.error.message,
+                isIncompatibleWithRuntime: true,
+                featureFlags: cfg.featureFlags,
+              };
+            }
+            const codeWithInfo = codeWithInfoOrError.value;
             return {
               sections: computableFromCfgOrRF(
                 env,

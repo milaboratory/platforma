@@ -1,9 +1,12 @@
 import type { BlockCodeFeatureFlags } from '../flags';
+import { z } from 'zod';
 
-export type Code = {
-  type: 'plain';
-  content: string;
-};
+export const Code = z.object({
+  type: z.literal('plain'),
+  content: z.string(),
+});
+
+export type Code = z.infer<typeof Code>;
 
 export type BlockCodeWithInfo = {
   readonly code: Code;

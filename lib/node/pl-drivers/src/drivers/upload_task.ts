@@ -126,7 +126,7 @@ export class UploadTask {
       this.setRetriableError(e);
 
       if ((e.name == 'RpcError' && e.code == 'DEADLINE_EXCEEDED') || e?.message?.includes('DEADLINE_EXCEEDED')) {
-        this.logger.warn(`deadline exceeded while getting a status of BlobImport`);
+        this.logger.warn(`deadline exceeded while getting a status of BlobImport: ${e.message}`);
         return;
       }
 
