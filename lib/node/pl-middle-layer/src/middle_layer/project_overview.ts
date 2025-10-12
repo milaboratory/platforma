@@ -293,7 +293,6 @@ export function projectOverview(
               updateSuggestions: b.updates?.suggestions ?? [],
               updatedBlockPack: b.updates?.mainSuggestion,
             };
-            console.log(bb.updates);
             delete bb['updates'];
             return bb;
           }),
