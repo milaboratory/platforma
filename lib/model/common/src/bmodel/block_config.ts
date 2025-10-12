@@ -59,8 +59,8 @@ export type BlockConfigV3Generic<
 
 export type BlockConfigGeneric = BlockConfigV3Generic;
 
-export function extractCodeWithInfo(cfg: BlockConfigV3Generic): BlockCodeWithInfo | undefined {
-  if (cfg.code === undefined) return undefined;
+export function extractCodeWithInfo(cfg: BlockConfigV3Generic): BlockCodeWithInfo {
+  if (cfg.code === undefined) throw new Error('No code bundle');
   return {
     code: cfg.code,
     sdkVersion: cfg.sdkVersion,
