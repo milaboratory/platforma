@@ -201,7 +201,7 @@ export class BlockPackPreparer {
 
         // config
         const configResponse = await this.remoteContentCache.forceFetch(`${urlPrefix}/config.json`);
-        const config = parseBufferConfig(configResponse);
+        const config = JSON.parse(Buffer.from(configResponse).toString('utf8')) as BlockConfigContainer;
 
         return {
           type: 'explicit',
