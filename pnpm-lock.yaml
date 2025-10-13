@@ -1555,6 +1555,9 @@ importers:
       '@milaboratories/pl-http':
         specifier: workspace:*
         version: link:../pl-http
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../../model/common
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../ts-helpers
@@ -1693,7 +1696,7 @@ importers:
         specifier: workspace:*
         version: link:../pl-http
       '@milaboratories/pl-model-common':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../model/common
       '@milaboratories/ts-helpers':
         specifier: workspace:*
