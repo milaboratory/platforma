@@ -4,7 +4,7 @@ import { dumpSoftware } from '../../shared/dump';
 import { stdout } from 'node:process';
 
 export default class DumpSoftware extends Command {
-  static override description = 'parse sources in current package and dump all found software to stdout';
+  static override description = 'parse sources in current package and dump all software descriptors used by templates';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',

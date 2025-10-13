@@ -18,6 +18,6 @@ export default class DumpLibs extends Command {
     const { flags } = await this.parse(DumpLibs);
 
     const logger = createLogger();
-    dumpLibs(logger, flags.deps, stdout);
+    dumpLibs(logger, stdout, flags.deps);
   }
 }

@@ -26,3 +26,11 @@ export const CtagsFlags = {
     delimiter: ',',
   }),
 };
+
+export const RecusiveFlag = {
+  recursive: Flags.boolean({
+    aliases: ['r'],
+    description: 'recursive',
+    default: false,
+  }),
+};

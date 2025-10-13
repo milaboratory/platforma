@@ -1,7 +1,8 @@
 import type winston from 'winston';
-import { getPackageInfo, newCompiler, parseSources } from '../compiler/main';
+import { getPackageInfo, newCompiler, compile, parseSources } from '../compiler/main';
 import type { ArtifactType } from '../compiler/package';
 import { typedArtifactNameToString } from '../compiler/package';
+import type { TemplateDataV3 } from '@milaboratories/pl-model-backend';
 
 export function dumpAll(
   logger: winston.Logger,
@@ -110,14 +111,14 @@ export function dumpAll(
 
 export function dumpLibs(
   logger: winston.Logger,
-  dumpDeps: boolean,
   stream: NodeJS.WritableStream,
+  recursive: boolean,
 ): void {
   const packageInfo = getPackageInfo(process.cwd(), logger);
 
   const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
 
-  if (!dumpDeps) {
+  if (!recursive) {
     for (const src of sources) {
       if (src.fullName.type === 'library') {
         stream.write(JSON.stringify(src) + '\n');
@@ -147,7 +148,6 @@ function dumpArtifacts(
   const packageInfo = getPackageInfo(process.cwd(), logger);
 
   const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
-
   for (const src of sources) {
     if (src.fullName.type === aType) {
       stream.write(JSON.stringify(src) + '\n');
@@ -166,7 +166,39 @@ export function dumpSoftware(
   logger: winston.Logger,
   stream: NodeJS.WritableStream,
 ): void {
-  dumpArtifacts(logger, stream, 'software');
+  const packageInfo = getPackageInfo(process.cwd(), logger);
+  const compiled = compile(logger, packageInfo, 'dist');
+
+  const hashes = new Set<string>();
+  const sourceMap = new Map<string, string>();
+  for (const tpl of compiled.templates) {
+    Object.entries(tpl.data.hashToSource).forEach(([hash, src]) => sourceMap.set(hash, src));
+    getTemplateSoftware(stream, tpl.data.template).forEach((hash) => hashes.add(hash));
+  }
+
+  for (const hash of hashes) {
+    const src = sourceMap.get(hash);
+    if (src) {
+      stream.write(src);
+      if (!src.endsWith('\n')) {
+        stream.write('\n');
+      }
+    } else {
+      throw new Error(`Source not found for hash: ${hash}`);
+    }
+  }
+}
+
+function getTemplateSoftware(stream: NodeJS.WritableStream, tpl: TemplateDataV3): Set<string> {
+  const hashes = new Set<string>();
+  for (const sw of Object.values(tpl.software)) {
+    hashes.add(sw.sourceHash);
+  }
+  for (const subTpl of Object.values(tpl.templates)) {
+    getTemplateSoftware(stream, subTpl).forEach((hash) => hashes.add(hash));
+  }
+
+  return new Set(hashes);
 }
 
 export function dumpAssets(
