@@ -171,10 +171,231 @@ makeFrameColumnRef := func(frameName, columnId) {
 	})
 }
 
+// Validation of recursive schema requires forward declaration
+_JOIN_ENTRY_SCHEMA := undefined
+// Validation of recursive schema requires lazy evaluation
+_JOIN_LEAF_SCHEMA := func(js, _, _) {
+	return validation.checkJson(js, _JOIN_ENTRY_SCHEMA)
+}
+_JOIN_SUBTREE_SCHEMA := func(js, _, _) {
+	return validation.checkJson(js, [_JOIN_ENTRY_SCHEMA])
+}
+// Validation of recursive schema instantiation
+_JOIN_ENTRY_SCHEMA = [`or`,
+    {
+		// Node type discriminator
+		`type`: `string,regex=column`,
+		// Column id
+		`columnId`: `string`
+	},
+    {
+        // Node type discriminator
+        `type`: `string,regex=slicedColumn`,
+        // Column id
+		`columnId`: `string`,
+        // New column id
+        `newId`: `string`,
+        // Non-empty list of axis filters
+        `axisFilters`: [{
+            // Axis index
+            `axisIndex`: `number`,
+            // Filter value
+            `constant`: [`or`, `number`, `string`]
+        }]
+    },
+    {
+        // Node type discriminator
+        `type`: `string,regex=artificialColumn`,
+        // Column id
+		`columnId`: `string`,
+        // New column id
+        `newId`: `string`,
+        // Non-empty list of axis indices
+        `axesIndices`: [`number`]
+    },
+    {
+        // Node type discriminator
+        `type`: `string,regex=inlineColumn`,
+        // New column id
+        `newId`: `string`,
+        // Column spec
+        `spec`: spec.P_COLUMN_STRICT_SPEC_SCHEMA,
+        // Data info
+        `dataInfo`: {
+            // Type discriminator
+            `type`: `string,regex=Json`,
+            // Key length
+            `keyLength`: `number`,
+            // Data
+            `data`: {
+                any: [`or`, `null`, `number`, `string`]
+            }
+        }
+    },
+	{
+		// Node type discriminator
+		`type`: `string,regex=inner`,
+		// Child nodes to be inner joined
+		`entries`: _JOIN_SUBTREE_SCHEMA
+	},
+	{
+		// Node type discriminator
+		`type`: `string,regex=full`,
+		// Child nodes to be full joined
+		`entries`: _JOIN_SUBTREE_SCHEMA
+	},
+	{
+		// Node type discriminator
+		`type`: `string,regex=outer`,
+		// Primes the join operation (left part of LEFT OUTER JOIN chain)
+		`primary`: _JOIN_LEAF_SCHEMA,
+		// Driven nodes, giving their values only if primary node have corresponding
+		// nodes (right parts of LEFT OUTER JOIN chain)
+		`secondary`: _JOIN_SUBTREE_SCHEMA
+	}]
+
+// Validation of recursive schema requires forward declaration
+_PREDICATE_SCHEMA := undefined
+// Validation of recursive schema requires lazy evaluation
+_PREDICATE_LEAF_SCHEMA := func(js, _, _) {
+	return validation.checkJson(js, _PREDICATE_SCHEMA)
+}
+_PREDICATE_SUBTREE_SCHEMA := func(js, _, _) {
+	return validation.checkJson(js, [_PREDICATE_SCHEMA])
+}
+_PREDICATE_SCHEMA = [`or`,
+    {
+		// Node type discriminator
+		`operator`: `string,regex=IsNA`
+	},
+    {
+		// Node type discriminator
+		`operator`: `string,regex=Equal|Less|LessOrEqual|Greater|GreaterOrEqual`,
+        // Reference value
+        `reference`: [`or`, `number`, `string`]
+	},
+    {
+        // Node type discriminator
+		`operator`: `string,regex=InSet`,
+        // Set values
+        `values`: [`or`, [`number`], [`string`]]
+    },
+    {
+		// Node type discriminator
+		`operator`: `string,regex=IEqual`,
+        // Reference value
+        `reference`: `string`
+	},
+    {
+		// Node type discriminator
+		`operator`: `string,regex=StringContains|StringIContains`,
+        // Substring value
+        `substring`: `string`
+	},
+    {
+		// Node type discriminator
+		`operator`: `string,regex=Matches`,
+        // Regular expression
+        `regex`: `string`
+	},
+    {
+		// Node type discriminator
+		`operator`: `string,regex=StringContainsFuzzy|StringIContainsFuzzy`,
+        // Reference value
+        `reference`: `string`,
+        // Maximum number of edits allowed to be considered a match
+        `maxEdits`: `number`,
+        // Wildcard character to use
+        `wildcard,?`: `string`,
+        // If true, only substitutions are allowed (deletions and insertions are also allowed by default)
+        `substitutionsOnly,?`: `bool`
+	},
+    {
+        // Node type discriminator
+		`operator`: `string,regex=Not`,
+        // Operand
+        `operand`: _PREDICATE_LEAF_SCHEMA
+    },
+    {
+        // Node type discriminator
+		`operator`: `string,regex=And|Or`,
+        // Operands
+        `operands`: [_PREDICATE_SUBTREE_SCHEMA]
+    }]
+
+_P_TABLE_COLUMN_ID_SCHEMA := [`or`,
+    {
+        // Node type discriminator
+        `type`: `string,regex=column`,
+        // Column id
+        `id`: `string`
+    },
+    {
+        // Node type discriminator
+        `type`: `string,regex=axis`,
+        // Axis id
+        `axisId`: {
+            `name`: `string`,
+            `type`: `string,regex=Int|Long|String`,
+            `domain,?`: { any: `string` }
+        }
+    }]
+
+_FILTER_SCHEMA := {
+    // Column id or axis id
+    `column`: _P_TABLE_COLUMN_ID_SCHEMA,
+    // Filter predicate
+    `predicate`: _PREDICATE_SCHEMA
+}
+
+// Validation of recursive schema instantiation
+_JOIN_REQUEST_SCHEMA := {
+    `__options__,closed`: true,
+    // Source
+    `src`: _JOIN_ENTRY_SCHEMA,
+    // Filters
+    `filters`: [_FILTER_SCHEMA]
+}
+
+_renameJoinEntry := func(entry, rename) {
+    if entry.type == "column" || entry.type == "slicedColumn" || entry.type == "artificialColumn" {
+        entry.columnId = rename[entry.columnId]
+    } else if entry.type == "inner" || entry.type == "full" {
+        entry.entries = slices.map(entry.entries, func(entry) {
+            return _renameJoinEntry(entry, rename)
+        })
+    } else if entry.type == "outer" {
+        entry.primary = _renameJoinEntry(entry.primary, rename)
+        entry.secondary = slices.map(entry.secondary, func(entry) {
+            return _renameJoinEntry(entry, rename)
+        })
+    }
+    return entry
+}
+
+_renameJoinFilter := func(filter, rename) {
+    if filter.column.type == "column" {
+        filter.column.id = rename[filter.column.id]
+    }
+    return filter
+}
+
+renameJoinColumns := func(request, rename) {
+    validation.assertType(request, _JOIN_REQUEST_SCHEMA)
+    validation.assertType(rename, {any: `string`})
+    return {
+        src: _renameJoinEntry(request.src, rename),
+        filters: slices.map(request.filters, func(filter) {
+            return _renameJoinFilter(filter, rename)
+        })
+    }
+}
+
 export ll.toStrict({
     validateParamsForSaveFrameDirect: validateParamsForSaveFrameDirect,
 	validateParamsForFrameFromColumnBundle: validateParamsForFrameFromColumnBundle,
     makeFrameSpecs: makeFrameSpecs,
     makeWriteFrameStep: makeWriteFrameStep,
-    makeFrameColumnRef: makeFrameColumnRef
+    makeFrameColumnRef: makeFrameColumnRef,
+    renameJoinColumns: renameJoinColumns
 })

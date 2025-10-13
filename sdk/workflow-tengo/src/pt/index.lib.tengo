@@ -323,18 +323,20 @@ workflow := func() {
 				columnsMap := pframesUtil.pFrameToColumnsMap(frameResource)
 
 				translation := {}
+				rename := {}
 				renamedColumnsMap := {}
-				columnEntries := []
 
+				columnEntries := []
 				for frameUniqueColumnId, columnInfo in columnsMap {
 					workflowUniqueColumnId := self._newUniqueColumnId()
 
 					translation[workflowUniqueColumnId] = frameUniqueColumnId
+					rename[frameUniqueColumnId] = workflowUniqueColumnId
 					renamedColumnsMap[workflowUniqueColumnId] = columnInfo
 					
 					columnEntries = append(columnEntries, {
 						type: "column",
-						columnId: workflowUniqueColumnId
+						columnId: frameUniqueColumnId
 					})
 				}
 
@@ -349,11 +351,12 @@ workflow := func() {
 					},
 					filters: []
 				}
+				renamedRequest := util.renameJoinColumns(request, rename)
 
 				step = {
 					type: "read_frame",
 					name: finalDataFrameId,
-					request: request,
+					request: renamedRequest,
 					translation: translation
 				}
 			} else if finalFormat == "parquet" {
