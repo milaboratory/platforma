@@ -529,6 +529,47 @@ workflow := func() {
 			}
 			return specDistillerSingleton
 		},
+		_getDistilledAxesSpecs: func() {
+			specDistiller := self._getSpecDistiller()
+			distilledAxesSpecs := {}
+			for _, columns in inFrames {
+				for _, columnInfo in columns {
+					for axis in columnInfo.spec.axesSpec {
+						distilledAxisSpec := specDistiller.distill(axis)
+						if is_undefined(distilledAxesSpecs[distilledAxisSpec.name]) {
+							distilledAxesSpecs[distilledAxisSpec.name] = []
+						}
+						found := false
+						for _, appendedSpec in distilledAxesSpecs[distilledAxisSpec.name] {
+							if distilledAxisSpec.type != appendedSpec.type {
+								continue
+							}
+							if is_undefined(distilledAxisSpec.domain) && is_undefined(appendedSpec.domain) {
+								found = true
+								break
+							}
+							if is_undefined(distilledAxisSpec.domain) || is_undefined(appendedSpec.domain) {
+								continue
+							}
+							if len(distilledAxisSpec.domain) != len(appendedSpec.domain) {
+								continue
+							}
+							for domainKey, domainValue in distilledAxisSpec.domain {
+								if appendedSpec.domain[domainKey] != domainValue {
+									continue
+								}
+							}
+							found = true
+							break
+						}
+						if !found {
+							distilledAxesSpecs[distilledAxisSpec.name] = append(distilledAxesSpecs[distilledAxisSpec.name], distilledAxisSpec)
+						}
+					}
+				}
+			}
+			return distilledAxesSpecs
+		},
 
 		/**
 		 * Execute pt in the 'heavy' queue.
@@ -598,8 +639,10 @@ workflow := func() {
 			workflowRunTpl := assets.importTemplate(":pt.workflow-run")
 
 			specDistiller := self._getSpecDistiller()
+			distilledAxesSpecs := self._getDistilledAxesSpecs()
 			ctx := {
-				specDistiller: specDistiller
+				specDistiller: specDistiller,
+				distilledAxesSpecs: distilledAxesSpecs
 			}
 			workflowJsonStruct := {
 				workflow: slices.map(steps, func(step) {

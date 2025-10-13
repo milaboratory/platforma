@@ -218,7 +218,7 @@ tplTest.concurrent(
     const context1 = await awaitStableState(workflow1.context());
 
     const workflow2 = await helper.renderWorkflow('pt.read_frame', false, {
-      axes: [{ name: 'a', type: 'Int' }],
+      axesNames: ['a'],
       columnNames: ['b'],
     }, { blockId: 'block2', parent: context1 });
 

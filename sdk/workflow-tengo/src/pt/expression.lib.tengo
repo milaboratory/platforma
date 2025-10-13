@@ -1049,18 +1049,59 @@ _newExpression = func(expression, currentAlias) {
 
 /**
  * Creates an expression that references an axis by its spec.
- * @param spec - object - The spec of the axis.
+ * @param matcher (string|map) - Identifies the axis.
+ *   - If string: Interpreted as the axis `name`.
+ *   - If map: It must be an AxisSpec-like object (minimally containing string fields 'name' and 'type').
+ *             It will be processed by `pframesSpec.axisSpecToMatcher` to extract `name`, `type`, and `domain` for matching.
+ *     The `domain` map allows matching axes with specific domain key-value pairs.
+ *     Only discriminative domains (those that vary among columns added to the builder) are considered for matching.
  * @returns {object} - An expression object.
  */
-axis = func(spec) {
-	validation.assertType(spec, pframesSpec.P_AXIS_SPEC_SCHEMA)
+axis = func(matcher) {
+	processedMatcher := undefined
+	if is_string(matcher) {
+		processedMatcher = { name: matcher, domain: {} }
+	} else if is_map(matcher) {
+		processedMatcher = pframesSpec.axisSpecToMatcher(matcher)
+	} else {
+		ll.panic("Matcher for axis must be a string (axis name) or an AxisSpec-like map (with at least 'name' and 'type' fields).")
+	}
 	return _newExpression(func(ctx) {
-		distilledSpec := ctx.specDistiller.distill(spec)
+		ll.assert(!is_undefined(ctx.specDistiller), "specDistiller must be defined")
+		ll.assert(is_map(ctx.distilledAxesSpecs), "distilledAxesSpecs must be a map")
+
+		distilledMatcher := ctx.specDistiller.distill(processedMatcher)
+		discriminativeDomains := ctx.specDistiller.getDiscriminativeDomainsSet(distilledMatcher.name)
+        if ((!is_undefined(distilledMatcher.domain) && len(distilledMatcher.domain) > 0) != (!is_undefined(discriminativeDomains) && len(discriminativeDomains) > 0)) ||
+			(!is_undefined(distilledMatcher.domain) && !is_undefined(discriminativeDomains) && len(distilledMatcher.domain) != len(discriminativeDomains)) {
+            ll.panic("Axis matcher %v is not specific enough. Expected discriminative domains %v, got %v", distilledMatcher.name, discriminativeDomains, distilledMatcher.domain)
+        }
+		
+		axisSpec := undefined
+		for spec in ctx.distilledAxesSpecs[distilledMatcher.name] {
+			if !is_undefined(distilledMatcher.type) {
+				if distilledMatcher.type != spec.type {
+					continue
+				}
+			}
+			if !is_undefined(distilledMatcher.domain) {
+				if is_undefined(spec.domain) || len(spec.domain) < len(distilledMatcher.domain) {
+					continue
+				}
+				for domainKey, domainValue in distilledMatcher.domain {
+					if spec.domain[domainKey] != domainValue {
+						continue
+					}
+				}
+			}
+			axisSpec = spec
+			break
+		}
 		return {
 			type: "axis",
-			spec: distilledSpec
+			spec: axisSpec
 		}
-	}, spec.name)
+	}, processedMatcher.name)
 }
 
 /**
