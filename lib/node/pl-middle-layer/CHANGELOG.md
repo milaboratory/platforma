@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.18
+
+### Patch Changes
+
+- e8adc3b: Fix Unmatched condition error, disappeared blocks
+- Updated dependencies [e8adc3b]
+  - @milaboratories/pl-drivers@1.11.7
+  - @milaboratories/pl-model-common@1.21.1
+  - @milaboratories/pl-model-middle-layer@1.8.32
+  - @platforma-sdk/model@1.44.4
+  - @platforma-sdk/block-tools@2.6.13
+
 ## 1.43.17
 
 ### Patch Changes
