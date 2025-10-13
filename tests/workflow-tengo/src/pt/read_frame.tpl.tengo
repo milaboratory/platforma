@@ -2,6 +2,7 @@ pt := import("@platforma-sdk/workflow-tengo:pt")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 file := import("@platforma-sdk/workflow-tengo:file")
+times := import("times")
 
 self := import("@platforma-sdk/workflow-tengo:workflow")
 
@@ -40,7 +41,7 @@ self.body(func(inputs) {
     }
     pf := builder.build()
 
-    wf := pt.workflow()
+    wf := pt.workflow().cacheInputs(times.second)
     wf.frame(pf).select(projection...).save("file.csv")
 	wfResult := wf.run()
 

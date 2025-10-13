@@ -7,7 +7,6 @@ exec := import(":exec")
 json := import("json")
 text := import("text")
 slices := import(":slices")
-validation := import(":validation")
 execConstants := import(":exec.constants")
 pframes := import(":pframes")
 pframesConstants := import(":pframes.constants")
@@ -143,12 +142,13 @@ workflow := func() {
 		 * `@platforma-sdk/workflow-tengo:pframes.xsv-builder`.
 		 *
 		 * @param frameInput {object|string} - The input source. Can be:
-		 *   - A resource reference (e.g., `inputs.myFile`).
+		 *   - A file resource reference (e.g., `inputs.myFile`).
 		 *   - A string containing the raw content of the file (e.g., "colA\\tcolB\\n1\\t2" or NDJSON content).
 		 *   - A map with the following fields (i.e. result of `xsvFileBuilder.buildForPT()`):
 		 *     - `file` {object}: A resource reference to the input file.
 		 *     - `xsvType` {string}: The type of the file, either "csv" or "tsv".
 		 *     - `schema` {map} (optional): A PTabler schema definition for the input file.
+		 *   - A p-frame resource or frame-like map (acceptable by `pframes.util.pFrameToColumnsMap()`)
 		 * @param ...optionsRaw {map} (optional) - A single map argument for additional options:
 		 *   - `format` {string}: The file format ("csv", "tsv", or "ndjson"). Takes priority over `xsvType`.
 		 *                        If not provided, auto-detects from file extension or uses `xsvType`.
@@ -219,22 +219,24 @@ workflow := func() {
 				}
 
 				finalFormat = inputXsvType
-			} else {
-				if smart.isReference(frameInput) {
-					frameInputResource := frameInput
-					if smart.isField(frameInputResource) {
-						frameInputResource = frameInputResource.getValue()
-					}
-					if frameInputResource.checkResourceType(pframesConstants.RTYPE_P_FRAME) {
-						frameResource = frameInputResource
-						finalFormat = "pframe"
-					} else {
-						fileRef = frameInput
-					}
-				} else {
-					validation.assertType(frameInput, ["or", "string", "bytes"])
-					fileContent = frameInput
+			} else if smart.isReference(frameInput) {
+				frameInputResource := frameInput
+				if smart.isField(frameInputResource) {
+					frameInputResource = frameInputResource.getValue()
 				}
+				if frameInputResource.checkResourceType(pframesConstants.RTYPE_P_FRAME) {
+					frameResource = frameInputResource
+					finalFormat = "pframe"
+				} else {
+					fileRef = frameInput
+				}
+			} else if is_string(frameInput) || is_bytes(frameInput) {
+				fileContent = frameInput
+			} else if ll.isMap(frameInput) {
+				frameResource = frameInput
+				finalFormat = "pframe"
+			} else {
+				ll.panic("unknown frame input type: %v", frameInput)
 			}
 
 			// Format resolution logic: format > xsvType > auto-detection
