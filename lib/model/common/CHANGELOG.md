@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.21.2
+
+### Patch Changes
+
+- d5a8713: Lint/type fix
+
 ## 1.21.1
 
 ### Patch Changes

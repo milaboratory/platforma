@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.4.25
+
+### Patch Changes
+
+- @platforma-sdk/model@1.44.5
+
 ## 2.4.24
 
 ### Patch Changes
