@@ -102,6 +102,7 @@ workflow := func() {
 
 	cpu := undefined
 	mem := undefined
+	inputCache := undefined
 	queue := execConstants.MEDIUM_QUEUE
 
 	self := undefined
@@ -633,6 +634,24 @@ workflow := func() {
 		},
 
 		/**
+		 * Sets the cache duration for the execution's inputs.
+		 *
+		 * This is useful for an execution that is part of a sequence that might be re-rendered soon.
+		 * Caching allows the inputs to be reused by the recovery mechanism, avoiding the need to
+		 * recalculate them. A duration of one minute is recommended.
+		 *
+		 * @param time: duration - the cache time from 'times' library.
+		 */
+		cacheInputs: func(time) {
+			ll.assert(
+				is_int(time),
+				"input cache time must be an integer. " +
+					"Did you forget to import a standard tengo library 'times'?")
+			inputCache = time
+			return self
+		},
+
+		/**
 		 * Executes the defined PTabler workflow.
 		 * This compiles all the added steps and input/output file configurations,
 		 * then runs the PTabler command.
@@ -695,7 +714,8 @@ workflow := func() {
 			ptRunMetaInputs := {
 				queue: queue,
 				cpu: cpu,
-				mem: mem
+				mem: mem,
+				inputCache: inputCache
 			}
 			ptResult := render.create(workflowRunTpl, ptRunInputs, {
 				metaInputs: ptRunMetaInputs
