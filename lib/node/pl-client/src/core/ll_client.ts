@@ -22,6 +22,7 @@ import type { Dispatcher } from 'undici';
 import { inferAuthRefreshTime } from './auth';
 import { defaultHttpDispatcher } from '@milaboratories/pl-http';
 import type { GrpcClientProvider, GrpcClientProviderFactory } from './grpc';
+import { parseHttpAuth } from '@milaboratories/pl-model-common';
 
 export interface PlCallOps {
   timeout?: number;
@@ -78,8 +79,9 @@ export class LLPlClient implements GrpcClientProviderFactory {
       shouldUseGzip?: boolean;
     } = {},
   ) {
-    this.conf
-      = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
+    this.conf = typeof configOrAddress === 'string'
+      ? plAddressToConfig(configOrAddress)
+      : configOrAddress;
 
     this.grpcInterceptors = [];
 
@@ -140,8 +142,24 @@ export class LLPlClient implements GrpcClientProviderFactory {
       clientOptions,
     };
 
-    if (this.conf.grpcProxy) process.env.grpc_proxy = this.conf.grpcProxy;
-    else delete process.env.grpc_proxy;
+    const grpcProxy = typeof this.conf.grpcProxy === 'string'
+      ? { url: this.conf.grpcProxy }
+      : this.conf.grpcProxy;
+
+    if (grpcProxy?.url) {
+      const url = new URL(grpcProxy.url);
+      if (grpcProxy.auth) {
+        const parsed = parseHttpAuth(grpcProxy.auth);
+        if (parsed.scheme !== 'Basic') {
+          throw new Error(`Unsupported auth scheme: ${parsed.scheme as string}.`);
+        }
+        url.username = parsed.username;
+        url.password = parsed.password;
+      }
+      process.env.grpc_proxy = url.toString();
+    } else {
+      delete process.env.grpc_proxy;
+    }
 
     const oldTransport = this._grpcTransport;
 
@@ -302,8 +320,7 @@ export class LLPlClient implements GrpcClientProviderFactory {
       if (ops.abortSignal) totalAbortSignal = AbortSignal.any([totalAbortSignal, ops.abortSignal]);
       return this.grpcPl.get().tx({
         abort: totalAbortSignal,
-        timeout:
-          ops.timeout
+        timeout: ops.timeout
           ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout),
       });
     });
