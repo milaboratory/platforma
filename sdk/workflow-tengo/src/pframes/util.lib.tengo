@@ -451,7 +451,6 @@ pFrameToColumnsMap := func(pf) {
  * @param data: resource - column data resource
  * @param exec: string - exec instance
  * @param ops: map - exec options
- *   - partitions: map - partitions filter
  *   - folder: string - folder to save the column in
  */
 addColumnToWd := func(name, spec, data, execBuilder, ops) {
@@ -470,7 +469,6 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		ll.assert(is_map(ops), "ops must be a map, got: %v", ops)
 		validation.assertType(ops, {
 			`__options__,closed`: true,
-			`partitions,?`: { any: ["or", ["number"], ["string"]] },
 			`folder,?`: "string"
 		})
 	}
@@ -481,20 +479,6 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		for idx, keys in ops.partitions {
 			partitions[idx] = sets.fromSlice(keys)
 		}
-	}
-
-	acceptPartition := func(part) {
-		if is_undefined(partitions) {
-			return true
-		}
-
-		for idx, keys in partitions {
-			if !sets.hasElement(keys, part[text.atoi(idx)]) {
-				return false
-			}
-		}
-
-		return true
 	}
 
 	makePath := func(fileName) {
@@ -531,10 +515,6 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		inputs := data.inputs()
         for k in maps.getKeys(inputs) {
 			v := inputs[k]
-
-			if !acceptPartition(json.decode(k)) {
-				continue
-			}
 
             part := name + i + ".jdata"
             parts[k] = part
@@ -579,10 +559,6 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 
 				keyArray := supKeyArray + innerKeyArray
 
-				if !acceptPartition(keyArray) {
-					continue
-				}
-
 				key := json.encode(keyArray)
 
 				parts[key] = part
@@ -619,10 +595,6 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
             if text.has_suffix(k, ".index") {
                 part = k[0:(len(k) - 6)]
 
-				if !acceptPartition(json.decode(part)) {
-					continue
-				}
-
                 if is_undefined(parts[part]) {
                     parts[part] = {}
                 }
@@ -633,10 +605,6 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
                 parts[part].index = indexFile
             } else if text.has_suffix(k, ".values") {
                 part = k[0:(len(k) - 7)]
-
-				if !acceptPartition(json.decode(part)) {
-					continue
-				}
 
                 if is_undefined(parts[part]) {
                     parts[part] = {}
@@ -686,10 +654,6 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 					innerKeyArray := json.decode(k[0:(len(k) - 6)])
 					keyArray := supKeyArray + innerKeyArray
 
-					if !acceptPartition(keyArray) {
-						continue
-					}
-
 					key := json.encode(keyArray)
 
 					if is_undefined(parts[key]) {
@@ -705,10 +669,6 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 					innerKeyArray := json.decode(k[0:(len(k) - 7)])
 
 					keyArray := supKeyArray + innerKeyArray
-
-					if !acceptPartition(keyArray) {
-						continue
-					}
 
 					key := json.encode(keyArray)
 
@@ -748,10 +708,6 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		inputs := data.inputs()
         for k in maps.getKeys(inputs) {
 			v := inputs[k]
-
-			if !acceptPartition(json.decode(k)) {
-				continue
-			}
 
 			parquetChunkResource := v.getValue()
 			parquetChunkMetadata := parquetChunkResource.getDataAsJson()
@@ -798,10 +754,6 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 				innerKeyArray := json.decode(k)
 
 				keyArray := supKeyArray + innerKeyArray
-
-				if !acceptPartition(keyArray) {
-					continue
-				}
 
 				key := json.encode(keyArray)
 

@@ -70,8 +70,7 @@ self.body(func(inputs) {
             ll.assert(!is_undefined(columnInfo.spec), "spec must be defined in columnInfo for column '%s'", columnId)
             ll.assert(!is_undefined(columnInfo.data), "data must be defined in columnInfo for column '%s'", columnId)
             pframesUtil.addColumnToWd(columnId, columnInfo.spec, columnInfo.data, ptCmd, {
-                folder: inFramesFolder,
-                partitions: frame.partitions
+                folder: inFramesFolder
             })
         }
     }

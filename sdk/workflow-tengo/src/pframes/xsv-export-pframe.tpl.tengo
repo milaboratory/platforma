@@ -69,7 +69,6 @@ self.body(func(inputs) {
 			ds.data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED),
 			"p-column type %v is not supported by pfconv", ds.data.info().Type)
 		util.addColumnToWd(name, ds.spec, ds.data, pfconv, {
-			partitions: ops.partitions,
 			folder: frameFolder
 		})
 	}

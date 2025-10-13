@@ -245,7 +245,6 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
  *                      }
  * @param ops: object - additional options
  *               {
- *                 partitions: {axisIdx: [keys]} - map of partitions to export; if not specified, all data is exported
  *                 cpu: number - (optional) number of cores requested for command.
  *                 mem: number | string - (optional) amount of RAM in bytes or string with size suffix
  *                 queue: string - (optional) the name of the queue. Defaults to the light queue.
@@ -257,6 +256,7 @@ exportFrame := func(pf, xsvType, params, ...ops) {
 	exportPfTpl := assets.importTemplate(":pframes.xsv-export-pframe")
 
 	ops := renderOps({}, ops...)
+	ll.assert(is_undefined(ops.partitions), "partitions option is no longer supported")
 
 	if is_array(pf) {
 		// transform into .data .spec map

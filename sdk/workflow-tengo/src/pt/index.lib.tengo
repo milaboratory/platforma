@@ -15,7 +15,6 @@ pframesUtil := import(":pframes.util")
 pframesSpec := import(":pframes.spec")
 render := import(":render")
 maps := import(":maps")
-validation := import(":validation")
 
 /**
  * This library provides a high-level API, inspired by Polars DataFrames, for building and executing
@@ -84,10 +83,7 @@ workflow := func() {
 
 	// { file?: ResourceRef, content?: string, name: string }[]
 	inFiles := []
-	// { [uniqueFrameName]: {
-	//   columns: { [workflowUniqueColumnId]: { spec: json, data: resource } },
-	//   partitions: { axisIdx: [keys] }
-	// } }
+	// { [uniqueFrameName]: { columns: { [workflowUniqueColumnId]: { spec: json, data: resource } } } }
 	inFrames := {}
 	// string[]
 	outFiles := []
@@ -165,7 +161,6 @@ workflow := func() {
 		 *                                        type inference is disabled, and types will rely on the `schema` field or PTabler's defaults.
 		 *   - `nRows` {int} (optional): Stop reading after this many rows. If not specified, all rows will be read.
 		 *   - `ignoreErrors` {boolean} (optional): Return null if parsing fails due to schema mismatches. Defaults to `false`.
-		 *   - `partitions` {axisIdx: [keys]}: Map of p-frame partitions to export; if not specified, all data is exported
 		 * @returns {object} - A DataFrame object representing the loaded data.
 		 * @example
 		 *   // NDJSON from file reference
@@ -370,12 +365,8 @@ workflow := func() {
 
 				ll.assert(is_undefined(inFrames[finalDataFrameId]),
 					"frame with name '%s' already added", finalDataFrameId)
-				if !is_undefined(opts.partitions) {
-					validation.assertType(opts.partitions, { any: ["or", ["number"], ["string"] ] })
-				}
 				inFrames[finalDataFrameId] = {
-					columns: renamedColumnsMap,
-					partitions: opts.partitions
+					columns: renamedColumnsMap
 				}
 
 				request := {
@@ -727,7 +718,7 @@ workflow := func() {
 			}
 
 			inFramesDistilled := maps.mapValues(inFrames, func(frame) {
-				mappedFrame := {
+				return {
 					columns: maps.mapValues(frame.columns, func(columnInfo) {
 						return {
 							spec: specDistiller.distill(columnInfo.spec),
@@ -735,10 +726,6 @@ workflow := func() {
 						}
 					})
 				}
-				if !is_undefined(frame.partitions) {
-					mappedFrame.partitions = frame.partitions
-				}
-				return mappedFrame
 			})
 
 			ptRunInputs := {
