@@ -834,6 +834,44 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 	}
 }
 
+isFlatPfMap := func(pf) {
+	if !is_map(pf) {
+		return false
+	}
+
+	for key, _ in pf {
+		if !text.has_suffix(key, ".spec") && !text.has_suffix(key, ".data") {
+			return false
+		}
+	}
+
+	return true
+}
+
+isStructuredPfMap := func(pf) {
+	if !is_map(pf) {
+		return false
+	}
+
+	for _, value in pf {
+		if !is_map(value) {
+			return false
+		}
+
+		for k, _ in value {
+			if k != "spec" && k != "data" {
+				return false
+			}
+		}
+
+		if is_undefined(value.spec) || is_undefined(value.data) {
+			return false
+		}
+	}
+
+	return true
+}
+
 export ll.toStrict({
 	PFCONV_IMPORT_CFG_SCHEMA: PFCONV_IMPORT_CFG_SCHEMA,
 	PFCONV_EXPORT_CFG_SCHEMA: PFCONV_EXPORT_CFG_SCHEMA,
@@ -844,5 +882,7 @@ export ll.toStrict({
 	decomposePfconvImportCfg: decomposePfconvImportCfg,
 	calculateGroupAxesIndices: calculateGroupAxesIndices,
 	pFrameToColumnsMap: pFrameToColumnsMap,
-	addColumnToWd: addColumnToWd
+	addColumnToWd: addColumnToWd,
+	isFlatPfMap: isFlatPfMap,
+	isStructuredPfMap: isStructuredPfMap
 })

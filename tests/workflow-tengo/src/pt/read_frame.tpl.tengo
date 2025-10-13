@@ -45,10 +45,13 @@ self.body(func(inputs) {
     wf.frame(pf).select(projection...).save("file.csv")
 	wfResult := wf.run()
 
+    csv := wfResult.getFile("file.csv")
 	return {
 		outputs: {
-            file: file.exportFile(wfResult.getFile("file.csv"))
+            csv: file.exportFile(csv)
         },
-		exports: {}
+		exports: {
+            csv: csv
+        }
 	}
 })

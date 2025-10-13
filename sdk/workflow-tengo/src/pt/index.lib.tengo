@@ -9,11 +9,13 @@ text := import("text")
 slices := import(":slices")
 execConstants := import(":exec.constants")
 pframes := import(":pframes")
+pframesBuilder := import(":pframes.builder")
 pframesConstants := import(":pframes.constants")
 pframesUtil := import(":pframes.util")
 pframesSpec := import(":pframes.spec")
 render := import(":render")
 maps := import(":maps")
+validation := import(":validation")
 
 /**
  * This library provides a high-level API, inspired by Polars DataFrames, for building and executing
@@ -82,7 +84,10 @@ workflow := func() {
 
 	// { file?: ResourceRef, content?: string, name: string }[]
 	inFiles := []
-	// { [uniqueFrameName]: { [workflowUniqueColumnId]: { spec: json, data: resource } } }
+	// { [uniqueFrameName]: {
+	//   columns: { [workflowUniqueColumnId]: { spec: json, data: resource } },
+	//   partitions: { axisIdx: [keys] }
+	// } }
 	inFrames := {}
 	// string[]
 	outFiles := []
@@ -160,6 +165,7 @@ workflow := func() {
 		 *                                        type inference is disabled, and types will rely on the `schema` field or PTabler's defaults.
 		 *   - `nRows` {int} (optional): Stop reading after this many rows. If not specified, all rows will be read.
 		 *   - `ignoreErrors` {boolean} (optional): Return null if parsing fails due to schema mismatches. Defaults to `false`.
+		 *   - `partitions` {axisIdx: [keys]}: Map of p-frame partitions to export; if not specified, all data is exported
 		 * @returns {object} - A DataFrame object representing the loaded data.
 		 * @example
 		 *   // NDJSON from file reference
@@ -228,12 +234,31 @@ workflow := func() {
 					frameResource = frameInputResource
 					finalFormat = "pframe"
 				} else {
+					// TODO: check if it's a file reference
 					fileRef = frameInput
 				}
 			} else if is_string(frameInput) || is_bytes(frameInput) {
 				fileContent = frameInput
-			} else if ll.isMap(frameInput) {
+			} else if pframesUtil.isFlatPfMap(frameInput) {
 				frameResource = frameInput
+				finalFormat = "pframe"
+			} else if pframesUtil.isStructuredPfMap(frameInput) {
+				pfBuilder := pframesBuilder.pFrameBuilder()
+				for key, value in frameInput {
+					pfBuilder.add(key, value.spec, value.data)
+				}
+				frameResource = pfBuilder.build()
+				finalFormat = "pframe"
+			} else if is_array(frameInput) {
+				pfBuilder := pframesBuilder.pFrameBuilder()
+				i := 0
+				for col in frameInput {
+					ll.assert(!is_undefined(col.spec), "expected array of {spec, data} maps as a list of columns, but spec is undefined for: ", col)
+					ll.assert(!is_undefined(col.data), "expected array of {spec, data} maps as a list of columns, but data is undefined for: ", col)
+					pfBuilder.add(string(i), col.spec, col.data)
+					i = i + 1
+				}
+				frameResource = pfBuilder.build()
 				finalFormat = "pframe"
 			} else {
 				ll.panic("unknown frame input type: %v", frameInput)
@@ -345,7 +370,13 @@ workflow := func() {
 
 				ll.assert(is_undefined(inFrames[finalDataFrameId]),
 					"frame with name '%s' already added", finalDataFrameId)
-				inFrames[finalDataFrameId] = renamedColumnsMap
+				if !is_undefined(opts.partitions) {
+					validation.assertType(opts.partitions, { any: ["or", ["number"], ["string"] ] })
+				}
+				inFrames[finalDataFrameId] = {
+					columns: renamedColumnsMap,
+					partitions: opts.partitions
+				}
 
 				request := {
 					src: {
@@ -538,8 +569,8 @@ workflow := func() {
 		_getDistilledAxesSpecs: func() {
 			specDistiller := self._getSpecDistiller()
 			distilledAxesSpecs := {}
-			for _, columns in inFrames {
-				for _, columnInfo in columns {
+			for _, frame in inFrames {
+				for _, columnInfo in frame.columns {
 					for axis in columnInfo.spec.axesSpec {
 						distilledAxisSpec := specDistiller.distill(axis)
 						if is_undefined(distilledAxesSpecs[distilledAxisSpec.name]) {
@@ -695,13 +726,19 @@ workflow := func() {
 				outFrames[outFramesRename[frameName]] = columnIds;
 			}
 
-			inFramesDistilled := maps.mapValues(inFrames, func(columns) {
-				return maps.mapValues(columns, func(columnInfo) {
-					return {
-						spec: specDistiller.distill(columnInfo.spec),
-						data: columnInfo.data
-					}
-				})
+			inFramesDistilled := maps.mapValues(inFrames, func(frame) {
+				mappedFrame := {
+					columns: maps.mapValues(frame.columns, func(columnInfo) {
+						return {
+							spec: specDistiller.distill(columnInfo.spec),
+							data: columnInfo.data
+						}
+					})
+				}
+				if !is_undefined(frame.partitions) {
+					mappedFrame.partitions = frame.partitions
+				}
+				return mappedFrame
 			})
 
 			ptRunInputs := {

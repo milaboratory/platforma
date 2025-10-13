@@ -222,7 +222,7 @@ tplTest.concurrent(
       columnNames: ['b'],
     }, { blockId: 'block2', parent: context1 });
 
-    const csvHandle = await getCsvHandle(workflow2, driverKit, 'file');
+    const csvHandle = await getCsvHandle(workflow2, driverKit, 'csv');
     const csvContent = await readBlobAsString(driverKit, csvHandle);
 
     expect(csvContent.trim()).eq(dedent`

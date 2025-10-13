@@ -210,44 +210,6 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 	return result
 }
 
-isFlatPfMap := func(pf) {
-	if !is_map(pf) {
-		return false
-	}
-
-	for key, _ in pf {
-		if !text.has_suffix(key, ".spec") && !text.has_suffix(key, ".data") {
-			return false
-		}
-	}
-
-	return true
-}
-
-isStructuredPfMap := func(pf) {
-	if !is_map(pf) {
-		return false
-	}
-
-	for _, value in pf {
-		if !is_map(value) {
-			return false
-		}
-
-		for k, _ in value {
-			if k != "spec" && k != "data" {
-				return false
-			}
-		}
-
-		if is_undefined(value.spec) || is_undefined(value.data) {
-			return false
-		}
-	}
-
-	return true
-}
-
 /**
  * Export p-frame into xsv file
  *
@@ -308,7 +270,7 @@ exportFrame := func(pf, xsvType, params, ...ops) {
 			i = i + 1
 		}
 		pf = pfBuilder.build()
-	} else if isStructuredPfMap(pf) {
+	} else if util.isStructuredPfMap(pf) {
 		pfBuilder := pBuilder.pFrameBuilder()
 		for key, value in pf {
 			pfBuilder.add(key, value.spec, value.data)
@@ -318,7 +280,7 @@ exportFrame := func(pf, xsvType, params, ...ops) {
 		if !pf.checkResourceType(constants.RTYPE_P_FRAME) {
 			ll.panic("Unexpected resource type: %s", pf.info().Type.Name)
 		}
-	} else if !isFlatPfMap(pf) && !smart.isReference(pf) {
+	} else if !util.isFlatPfMap(pf) && !smart.isReference(pf) {
 		ll.panic("Unexpected p-frame format: %s", pf)
 	}
 
