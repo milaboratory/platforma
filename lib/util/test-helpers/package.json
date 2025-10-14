@@ -16,7 +16,7 @@
   "scripts": {
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
-    "test": "vitest run --coverage",
+    "test": "echo 'No tests for test-helpers package'",
     "watch": "ts-builder build --target node --watch",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "lint": "eslint ."
@@ -36,8 +36,6 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*",
-    "@vitest/coverage-v8": "catalog:",
-    "vitest": "catalog:"
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }
