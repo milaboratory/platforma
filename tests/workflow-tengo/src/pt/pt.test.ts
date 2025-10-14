@@ -17,7 +17,7 @@ import {
 } from '@platforma-sdk/test';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type { ComputableCtx } from '@milaboratories/computable';
-import { getTestTimeout } from '@milaboratories/helpers';
+import { getTestTimeout } from '@milaboratories/test-helpers';
 import { assert, expect, vi } from 'vitest';
 import dedent from 'dedent';
 import { getCsvHandle, readBlobAsString } from './frameFromBundle.test';
