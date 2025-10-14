@@ -3,6 +3,7 @@ catalogMode: strict
 packages:
   - lib/util/helpers
   - lib/util/sequences
+  - lib/util/test-helpers
 
   - lib/other/biowasm-tools
 
