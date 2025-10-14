@@ -912,7 +912,7 @@ workflow := func() {
 				}
 			})
 
-			ptRunInputs := {
+			runInputs := {
 				workflowJsonStruct: workflowJsonStruct,
 				inFiles: inFilesMap,
 				inFilesContent: inFilesContentMap,
@@ -921,14 +921,14 @@ workflow := func() {
 				outFilesContent: outContentFiles,
 				outFrames: outFrames
 			}
-			ptRunMetaInputs := {
+			runMetaInputs := {
 				queue: queue,
 				cpu: cpu,
 				mem: mem,
 				inputCache: inputCache
 			}
-			ptResult := render.create(workflowRunTpl, ptRunInputs, {
-				metaInputs: ptRunMetaInputs
+			ptResult := render.create(workflowRunTpl, runInputs, {
+				metaInputs: runMetaInputs
 			});
 
 			self := undefined

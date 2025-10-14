@@ -2,7 +2,6 @@
 // export p-frame to csv
 //
 
-validation := import(":validation")
 exec := import(":exec")
 json := import("json")
 text := import("text")
@@ -21,9 +20,11 @@ self.body(func(inputs) {
     pf := inputs.pf
     xsvType := inputs.xsvType
     params := inputs.params
-	ops := inputs.ops
 
-	validation.assertType(params, util.PFCONV_EXPORT_CFG_SCHEMA)
+	queue := inputs.queue
+	cpu := inputs.cpu
+	mem := inputs.mem
+	inputCache := inputs.inputCache
 
     resultFile := "result." + xsvType
 	frameFolder := "frame"
@@ -39,26 +40,15 @@ self.body(func(inputs) {
         writeFile("params.json", json.encode(params)).
 		saveFile(resultFile)
 
-	if !is_undefined(ops) {
-		if !is_undefined(ops.queue) {
-			pfconv.setQueue(ops.queue)
-		} else {
-			pfconv.inLightQueue()
-		}
-
-		if !is_undefined(ops.cpu) {
-			pfconv.cpu(ops.cpu)
-		}
-
-		if !is_undefined(ops.mem) {
-			pfconv.mem(ops.mem)
-		}
-
-		if !is_undefined(ops.inputCache) {
-			pfconv.cacheInputs(ops.inputCache)
-		}
-	} else {
-		pfconv.inLightQueue()
+	pfconv.setQueue(queue)
+	if !is_undefined(cpu) {
+		pfconv.cpu(cpu)
+	}
+	if !is_undefined(mem) {
+		pfconv.mem(mem)
+	}
+	if !is_undefined(inputCache) {
+		pfconv.cacheInputs(inputCache)
 	}
 
 	for name, ds in util.pFrameToColumnsMap(pf) {
