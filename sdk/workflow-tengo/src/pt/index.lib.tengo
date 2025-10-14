@@ -421,17 +421,6 @@ workflow := func() {
 				}
 				frameResource = pfBuilder.build()
 				finalFormat = "pframe"
-			} else if is_array(frameInput) {
-				pfBuilder := pframesBuilder.pFrameBuilder()
-				i := 0
-				for col in frameInput {
-					ll.assert(!is_undefined(col.spec), "expected array of {spec, data} maps as a list of columns, but spec is undefined for: ", col)
-					ll.assert(!is_undefined(col.data), "expected array of {spec, data} maps as a list of columns, but data is undefined for: ", col)
-					pfBuilder.add(string(i), col.spec, col.data)
-					i = i + 1
-				}
-				frameResource = pfBuilder.build()
-				finalFormat = "pframe"
 			} else if _isPEntry(frameInput) {
 				finalFormat = "pentry"
 			} else {
