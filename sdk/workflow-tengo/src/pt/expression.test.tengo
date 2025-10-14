@@ -6,15 +6,9 @@ getExpr := func(exprObj) {
 	return exprObj._getExpression({})
 }
 
-// Helper for checking alias (and that _getAlias doesn't throw for defined aliases)
-_getAlias := func(exprObj) {
-    return exprObj.__getAlias()
-}
-
 TestBasicExpressions := func() {
 	c1 := pt.col("age")
 	test.isEqual(getExpr(c1), {type: "col", name: "age"})
-	test.isEqual(_getAlias(c1), "age")
 
 	l_num := pt.lit(10)
 	test.isEqual(getExpr(l_num), {type: "const", value: 10})
@@ -194,38 +188,54 @@ TestWindowExpressions := func() {
 	department := pt.col("department")
 	employeeId := pt.col("employeeId")
 
-	expr1 := salary.sum().over("department")
+	expr1 := salary.sum().over("department").alias("total_salary_by_department")
 	test.isEqual(getExpr(expr1), {
-		type: "aggregate",
-		aggregation: "sum",
-		value: {type: "col", name: "salary"},
-		partitionBy: [{type: "col", name: "department"}]
+        type: "alias",
+        value: {
+            type: "aggregate",
+            aggregation: "sum",
+            value: {type: "col", name: "salary"},
+            partitionBy: [{type: "col", name: "department"}]
+        },
+        name: "total_salary_by_department"
 	})
 
-	expr2 := pt.rank(salary, {descending: true}).over(department)
+	expr2 := pt.rank(salary, {descending: true}).over(department).alias("rank_salary_by_department")
 	test.isEqual(getExpr(expr2), {
-		type: "rank",
-		orderBy: [{type: "col", name: "salary"}],
-		partitionBy: [{type: "col", name: "department"}],
-		descending: true
+		type: "alias",
+		value: {
+			type: "rank",
+			orderBy: [{type: "col", name: "salary"}],
+			partitionBy: [{type: "col", name: "department"}],
+			descending: true
+		},
+		name: "rank_salary_by_department"
 	})
 
-    expr3 := salary.cumsum({orderBy: employeeId}).over(department)
+    expr3 := salary.cumsum({orderBy: employeeId}).over(department).alias("cumsum_salary_by_department")
     test.isEqual(getExpr(expr3), {
-        type: "cumsum",
-        value: {type:"col", name:"salary"},
-        additionalOrderBy: [{type:"col", name:"employeeId"}],
-        partitionBy: [{type:"col", name:"department"}],
-        descending: false
+        type: "alias",
+        value: {
+            type: "cumsum",
+            value: {type:"col", name:"salary"},
+            additionalOrderBy: [{type:"col", name:"employeeId"}],
+            partitionBy: [{type:"col", name:"department"}],
+            descending: false
+        },
+        name: "cumsum_salary_by_department"
     })
 
-    expr4 := salary.cumsum({orderBy: [employeeId], descending: true}).over(department)
-     test.isEqual(getExpr(expr4), {
-        type: "cumsum",
-        value: {type:"col", name:"salary"},
-        additionalOrderBy: [{type:"col", name:"employeeId"}],
-        partitionBy: [{type:"col", name:"department"}],
-        descending: true
+    expr4 := salary.cumsum({orderBy: [employeeId], descending: true}).over(department).alias("cumsum_salary_by_department")
+    test.isEqual(getExpr(expr4), {
+        type: "alias",
+        value: {
+            type: "cumsum",
+            value: {type:"col", name:"salary"},
+            additionalOrderBy: [{type:"col", name:"employeeId"}],
+            partitionBy: [{type:"col", name:"department"}],
+            descending: true
+        },
+        name: "cumsum_salary_by_department"
     })
 }
 
@@ -282,20 +292,13 @@ TestAliasing := func() {
 	age := pt.col("age")
 
 	aliasedAge := age.alias("yearsOld")
-	test.isEqual(getExpr(aliasedAge), {type: "col", name: "age"})
-	test.isEqual(_getAlias(aliasedAge), "yearsOld")
+	test.isEqual(getExpr(aliasedAge), {type: "alias", value: {type: "col", name: "age"}, name: "yearsOld"})
 
 	calculated := age.plus(pt.lit(5)).alias("ageInFiveYears")
-	test.isEqual(getExpr(calculated), {type: "plus", lhs: {type: "col", name: "age"}, rhs: {type: "const", value: 5}})
-	test.isEqual(_getAlias(calculated), "ageInFiveYears")
+	test.isEqual(getExpr(calculated), {type: "alias", value: {type: "plus", lhs: {type: "col", name: "age"}, rhs: {type: "const", value: 5}}, name: "ageInFiveYears"})
 
     litVal := pt.lit(100).alias("hundred")
-    test.isEqual(getExpr(litVal), {type:"const", value:100})
-    test.isEqual(_getAlias(litVal), "hundred")
-
-    sumSalary := pt.col("salary").sum().over("dept").alias("total_dept_salary")
-    test.isEqual(_getAlias(sumSalary), "total_dept_salary")
-    test.isEqual(getExpr(sumSalary).type, "aggregate")
+    test.isEqual(getExpr(litVal), {type:"alias", value: {type:"const", value:100}, name: "hundred"})
 }
 
 TestChainingAndComplex := func() {
@@ -308,31 +311,39 @@ TestChainingAndComplex := func() {
     condition := age.gt(pt.lit(18)).and(country.eq(pt.lit("USA")))
     condition = condition.or(age.lt(pt.lit(10)))
 
-    finalExpr := pt.when(condition).then(complexStr).otherwise(pt.lit("N/A"))
+    finalExpr := pt.when(condition).then(complexStr).otherwise(pt.lit("N/A")).alias("finalExpr")
 
     expectedFinal := {
-        type: "when_then_otherwise",
-        conditions: [{
-            when: {
-                type: "or",
-                operands: [
-                    {
-                        type: "and",
-                        operands: [
-                            {type: "gt", lhs: {type: "col", name: "age"}, rhs: {type: "const", value: 18}},
-                            {type: "eq", lhs: {type: "col", name: "country"}, rhs: {type: "const", value: "USA"}}
-                        ]
+        type: "alias",
+        value: {
+            type: "when_then_otherwise",
+            conditions: [{
+                when: {
+                    type: "or",
+                    operands: [
+                        {
+                            type: "and",
+                            operands: [
+                                {type: "gt", lhs: {type: "col", name: "age"}, rhs: {type: "const", value: 18}},
+                                {type: "eq", lhs: {type: "col", name: "country"}, rhs: {type: "const", value: "USA"}}
+                            ]
+                        },
+                        {type: "lt", lhs: {type: "col", name: "age"}, rhs: {type: "const", value: 10}}
+                    ]
+                },
+                then: {
+                    type: "alias",
+                    value: {
+                    type: "plus",
+                        lhs: {type: "to_upper", value: {type: "col", name: "name"}},
+                        rhs: {type: "const", value: "_processed"}
                     },
-                    {type: "lt", lhs: {type: "col", name: "age"}, rhs: {type: "const", value: 10}}
-                ]
-            },
-            then: {
-                type: "plus",
-                lhs: {type: "to_upper", value: {type: "col", name: "name"}},
-                rhs: {type: "const", value: "_processed"}
-            }
-        }],
-        otherwise: {type: "const", value: "N/A"}
+                    name: "processedName"
+                }
+            }],
+            otherwise: {type: "const", value: "N/A"}
+        },
+        name: "finalExpr"
     }
     test.isEqual(getExpr(finalExpr), expectedFinal)
 }
@@ -342,36 +353,59 @@ TestRankWithOptions := func() {
     score2 := pt.col("score2")
     group := pt.col("group")
 
-    rank1 := pt.rank(score1).over(group)
+    rank1 := pt.rank(score1).over(group).alias("rank_by_group")
     test.isEqual(getExpr(rank1), {
-        type: "rank",
-        orderBy: [{type: "col", name: "score1"}],
-        partitionBy: [{type:"col", name:"group"}],
-        descending: false
+        type: "alias",
+        value: {
+            type: "rank",
+            orderBy: [{type: "col", name: "score1"}],
+            partitionBy: [{type:"col", name:"group"}],
+            descending: false
+        },
+        name: "rank_by_group"
     })
 
-    rank2 := pt.rank(score1, {descending: true}).over(group)
+    rank2 := pt.rank(score1, {descending: true}).over(group).alias("rank_by_group")
     test.isEqual(getExpr(rank2), {
-        type: "rank",
-        orderBy: [{type: "col", name: "score1"}],
-        partitionBy: [{type:"col", name:"group"}],
-        descending: true
+        type: "alias",
+        value: {
+            type: "rank",
+            orderBy: [{type: "col", name: "score1"}],
+            partitionBy: [{type:"col", name:"group"}],
+            descending: true
+        },
+        name: "rank_by_group"
     })
 
-    rank3 := pt.rank([score1, score2], { descending: false })
+    rank3 := pt.rank([score1, score2], { descending: false }).alias("rank_by_group")
+    test.isEqual(getExpr(rank3), {
+        type: "alias",
+        value: {
+            type: "rank",
+            orderBy: [
+                {type: "col", name: "score1"},
+                {type: "col", name: "score2"}
+            ],
+            partitionBy: [],
+            descending: false
+        },
+        name: "rank_by_group"
+    })
 
-    test.isEqual(getExpr(rank3).orderBy, [
-        {type: "col", name: "score1"},
-        {type: "col", name: "score2"}
-    ])
-    test.isEqual(getExpr(rank3).descending, false)
-
-    rank4 := pt.rank([score1, score2], {descending: true}).over(group)
-     test.isEqual(getExpr(rank4).orderBy, [
-        {type: "col", name: "score1"},
-        {type: "col", name: "score2"}
-    ])
-    test.isEqual(getExpr(rank4).descending, true)
+    rank4 := pt.rank([score1, score2], {descending: true}).over(group).alias("rank_by_group")
+    test.isEqual(getExpr(rank4), {
+        type: "alias",
+        value: {
+            type: "rank",
+            orderBy: [
+                {type: "col", name: "score1"},
+                {type: "col", name: "score2"}
+            ],
+            partitionBy: [{type:"col", name:"group"}],
+            descending: true
+        },
+        name: "rank_by_group"
+    })
 }
 
 TestSelectWithStrings := func() {

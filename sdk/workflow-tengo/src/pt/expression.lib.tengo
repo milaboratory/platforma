@@ -93,7 +93,6 @@ _mapToSingleExpressionStruct := func(item, stringInterpretation, ctx) {
 	}
 }
 
-
 /**
  * @param expression - WindowExpression - ptabler window expression
  * @param aggregation - Aggregation - ptabler aggregation
@@ -109,25 +108,22 @@ _newWindowExpression = func(expression, aggregation, currentAlias) {
 		 */
 		_getExpression: func(ctx) {
 			ll.assert(is_map(ctx), "ctx must be a map")
-			if expression == undefined {
-				ll.panic("Using this operation as a window expression is not allowed. Use it as a group by expression instead. %v", aggregation)
-			}
-			return expression(ctx)
+			ll.assert(!is_undefined(expression), "Using this operation as a window expression is not allowed. Use it as a group by expression instead. %v", aggregation)
+			ll.assert(!is_undefined(currentAlias), "Alias is not defined for this window expression.")
+
+			valueExpr := expression(ctx)
+			return {type: "alias", value: valueExpr, name: currentAlias}
 		},
 		/** Returns the aggregation for group by operations. */
 		_getAggregation: func(ctx) {
 			if aggregation == undefined {
 				ll.panic("Using this operation as a group by expression is not allowed, most probably because you applied .over() to it. %v", expression)
 			}
-			aggStruct := aggregation(ctx)
-			return maps.deepMerge(aggStruct, {name: self._getAlias()})
-		},
-		/** Returns the current alias of the expression, if defined. Panics if no alias is set. */
-		_getAlias: func() {
 			if currentAlias == undefined {
 				ll.panic("Alias is not defined for this window expression.")
 			}
-			return currentAlias
+			aggStruct := aggregation(ctx)
+			return maps.deepMerge(aggStruct, {name: currentAlias})
 		},
 
 		/**
@@ -170,17 +166,16 @@ _newWindowExpression = func(expression, aggregation, currentAlias) {
 
 /**
  * @param expression - Expression - ptabler expression
- * @param currentAlias - string - The alias to use for the expression if passed to steps like withColumns
  * @returns {object} - The expression object.
  */
-_newExpression = func(expression, currentAlias) {
+_newExpression = func(expression) {
 	self := undefined // forward declaration
 
 	// Helper for binary operations
 	binaryOp := func(opType, other) {
 		return _newExpression(
 			func(ctx) {
-				lhsExpr := expression(ctx)
+				lhsExpr := self._getExpression(ctx)
 				rhsExpr := undefined
 				if _isExpression(other) {
 					rhsExpr = other._getExpression(ctx)
@@ -190,8 +185,7 @@ _newExpression = func(expression, currentAlias) {
 					ll.panic(opType + " expects an expression object or a literal (number, boolean, null) as argument. Got type: %T", other)
 				}
 				return {type: opType, lhs: lhsExpr, rhs: rhsExpr}
-			},
-			undefined // Result of operation typically doesn't carry forward alias
+			}
 		)
 	}
 
@@ -199,10 +193,9 @@ _newExpression = func(expression, currentAlias) {
 	unaryOp := func(opType) {
 		return _newExpression(
 			func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {type: opType, value: valueExpr}
-			},
-			undefined
+			}
 		)
 	}
 
@@ -210,10 +203,9 @@ _newExpression = func(expression, currentAlias) {
 	unaryStrOp := func(opType) {
 		return _newExpression(
 			func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {type: opType, value: valueExpr}
-			},
-			undefined
+			}
 		)
 	}
 
@@ -221,11 +213,11 @@ _newExpression = func(expression, currentAlias) {
 	aggOp := func(aggType) {
 		return _newWindowExpression(
 			func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {type: "aggregate", aggregation: aggType, value: valueExpr, partitionBy: []}
 			},
 			func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {aggregation: aggType, expression: valueExpr}
 			},
 			undefined // Alias of underlying col, window expression itself is typically aliased later
@@ -236,7 +228,7 @@ _newExpression = func(expression, currentAlias) {
 		return _newWindowExpression(
 			undefined,
 			func(ctx) {
-				baseExpr := expression(ctx)
+				baseExpr := self._getExpression(ctx)
 				return {aggregation: aggType, expression: baseExpr, by: _mapToExpressionStructList(by, "col", {})}
 			},
 			undefined // Alias of underlying col, window expression itself is typically aliased later
@@ -245,13 +237,9 @@ _newExpression = func(expression, currentAlias) {
 
 	self = ll.toStrict({
 		/** Returns the underlying PTabler expression structure. */
-		_getExpression: expression,
-		/** Returns the current alias of the expression, if defined. Panics if no alias is set. */
-		_getAlias: func() {
-			if currentAlias == undefined {
-				ll.panic("Alias is not defined for this expression.")
-			}
-			return currentAlias
+		_getExpression: func(ctx) {
+			ll.assert(is_map(ctx), "ctx must be a map")
+			return expression(ctx)
 		},
 		/**
 		 * Sets an alias for this expression.
@@ -260,7 +248,10 @@ _newExpression = func(expression, currentAlias) {
 		 * @returns {object} - A new expression object with the updated alias.
 		 */
 		alias: func(newAlias) {
-			return _newExpression(expression, newAlias)
+			return _newExpression(func (ctx) {
+				valueExpr := self._getExpression(ctx)
+				return {type: "alias", value: valueExpr, name: newAlias}
+			})
 		},
 
 		// Comparison
@@ -327,9 +318,9 @@ _newExpression = func(expression, currentAlias) {
 				strictVal = ops.strict
 			}
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {type: "cast", value: valueExpr, dtype: dtype, strict: strictVal}
-			}, undefined)
+			})
 		},
 
 		// Boolean
@@ -417,7 +408,7 @@ _newExpression = func(expression, currentAlias) {
 			return _newExpression(func(ctx) {
 				structExpr := {
 					type: "struct_field",
-					struct: expression(ctx),
+					struct: self._getExpression(ctx),
 					fields: fields
 				}
 
@@ -430,7 +421,7 @@ _newExpression = func(expression, currentAlias) {
 				}
 
 				return structExpr
-			}, undefined)
+			})
 		},
 
 		// String operations
@@ -479,7 +470,7 @@ _newExpression = func(expression, currentAlias) {
 			}
 
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				expr := {
 					type: "substring",
 					value: valueExpr,
@@ -494,7 +485,7 @@ _newExpression = func(expression, currentAlias) {
 				}
 
 				return expr
-			}, undefined)
+			})
 		},
 
 		/**
@@ -523,7 +514,7 @@ _newExpression = func(expression, currentAlias) {
 			}
 
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {
 					type: "str_replace",
 					value: valueExpr,
@@ -532,7 +523,7 @@ _newExpression = func(expression, currentAlias) {
 					replaceAll: replaceAllVal,
 					literal: literalVal
 				}
-			}, undefined)
+			})
 		},
 
 		/**
@@ -577,7 +568,7 @@ _newExpression = func(expression, currentAlias) {
 			}
 
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {
 					type: "str_contains",
 					value: valueExpr,
@@ -585,7 +576,7 @@ _newExpression = func(expression, currentAlias) {
 					literal: literalVal,
 					strict: strictVal
 				}
-			}, undefined)
+			})
 		},
 
 		/**
@@ -611,14 +602,14 @@ _newExpression = func(expression, currentAlias) {
 			}
 
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {
 					type: "str_contains_any",
 					value: valueExpr,
 					patterns: patterns,
 					asciiCaseInsensitive: asciiCaseInsensitiveVal
 				}
-			}, undefined)
+			})
 		},
 
 		/**
@@ -640,14 +631,14 @@ _newExpression = func(expression, currentAlias) {
 			}
 
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {
 					type: "str_count_matches",
 					value: valueExpr,
 					pattern: _mapToSingleExpressionStruct(pattern, "lit", ctx),
 					literal: literalVal
 				}
-			}, undefined)
+			})
 		},
 
 		/**
@@ -669,14 +660,14 @@ _newExpression = func(expression, currentAlias) {
 			}
 
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {
 					type: "str_extract",
 					value: valueExpr,
 					pattern: _mapToSingleExpressionStruct(pattern, "lit", ctx),
 					groupIndex: groupIndexVal
 				}
-			}, undefined)
+			})
 		},
 
 		/**
@@ -686,13 +677,13 @@ _newExpression = func(expression, currentAlias) {
 		 */
 		strStartsWith: func(prefix) {
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {
 					type: "str_starts_with",
 					value: valueExpr,
 					prefix: _mapToSingleExpressionStruct(prefix, "lit", ctx)
 				}
-			}, undefined)
+			})
 		},
 
 		/**
@@ -702,13 +693,13 @@ _newExpression = func(expression, currentAlias) {
 		 */
 		strEndsWith: func(suffix) {
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {
 					type: "str_ends_with",
 					value: valueExpr,
 					suffix: _mapToSingleExpressionStruct(suffix, "lit", ctx)
 				}
-			}, undefined)
+			})
 		},
 
 		// Fuzzy string
@@ -730,7 +721,7 @@ _newExpression = func(expression, currentAlias) {
 			}
 
 			return _newExpression(func(ctx) {
-				lhsExpr := expression(ctx)
+				lhsExpr := self._getExpression(ctx)
 				rhsExpr := string2._getExpression(ctx)
 				return {
 					type: "string_distance",
@@ -739,7 +730,7 @@ _newExpression = func(expression, currentAlias) {
 					metric: metric,
 					returnSimilarity: returnSimilarityVal
 				}
-			}, undefined)
+			})
 		},
 
 		/**
@@ -756,7 +747,7 @@ _newExpression = func(expression, currentAlias) {
 			ll.assert(is_int(bound) || is_float(bound), "bound must be a number")
 
 			return _newExpression(func(ctx) {
-				lhsExpr := expression(ctx)
+				lhsExpr := self._getExpression(ctx)
 				rhsExpr := patternExpr._getExpression(ctx)
 				return {
 					type: "fuzzy_string_filter",
@@ -765,7 +756,7 @@ _newExpression = func(expression, currentAlias) {
 					metric: metric,
 					bound: bound
 				}
-			}, undefined)
+			})
 		},
 
 		// Hash
@@ -784,7 +775,7 @@ _newExpression = func(expression, currentAlias) {
 			}
 
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				hashExpr := {
 					type: "hash",
 					value: valueExpr,
@@ -795,7 +786,7 @@ _newExpression = func(expression, currentAlias) {
 					hashExpr.bits = bits
 				}
 				return hashExpr
-			}, undefined)
+			})
 		},
 
 		// Conditional
@@ -806,13 +797,13 @@ _newExpression = func(expression, currentAlias) {
 		 */
 		fillNull: func(fillValueExpr) {
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {
 					type: "fill_null",
 					input: valueExpr,
 					fillValue: _mapToSingleExpressionStruct(fillValueExpr, "lit", ctx)
 				}
-			}, undefined)
+			})
 		},
 
 		/**
@@ -822,13 +813,13 @@ _newExpression = func(expression, currentAlias) {
 		 */
 		fillNaN: func(fillValueExpr) {
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {
 					type: "fill_nan",
 					input: valueExpr,
 					fillValue: _mapToSingleExpressionStruct(fillValueExpr, "lit", ctx)
 				}
-			}, undefined)
+			})
 		},
 
 		// Window/Aggregations
@@ -874,7 +865,7 @@ _newExpression = func(expression, currentAlias) {
 				descendingVal = descendingArgs[0]
 			}
 			return _newWindowExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {
 					type: "rank",
 					orderBy: [valueExpr],
@@ -938,7 +929,7 @@ _newExpression = func(expression, currentAlias) {
 			}
 
 			return _newWindowExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {
 					type: "cumsum",
 					value: valueExpr,
@@ -972,13 +963,13 @@ _newExpression = func(expression, currentAlias) {
 			uniqueSet := slices.sortUnique(set)
 
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {
 					type: "in_set",
 					value: valueExpr,
 					set: uniqueSet
 				}
-			}, undefined)
+			})
 		},
 
 		/**
@@ -990,13 +981,13 @@ _newExpression = func(expression, currentAlias) {
 			ll.assert(is_string(ecmaRegex) && len(ecmaRegex) > 0, "ecma_regex must be a non-empty string.")
 
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return {
 					type: "matches_ecma_regex",
 					value: valueExpr,
 					ecmaRegex: ecmaRegex
 				}
-			}, undefined)
+			})
 		},
 
 		/**
@@ -1028,7 +1019,7 @@ _newExpression = func(expression, currentAlias) {
 			}
 
 			return _newExpression(func(ctx) {
-				valueExpr := expression(ctx)
+				valueExpr := self._getExpression(ctx)
 				return objects.deleteUndefined({
 					type: "contains_fuzzy_match",
 					value: valueExpr,
@@ -1037,7 +1028,7 @@ _newExpression = func(expression, currentAlias) {
 					wildcard: wildcard,
 					substitutionsOnly: substitutionsOnly
 				})
-			}, undefined)
+			})
 		}
 	})
 	return self
@@ -1101,7 +1092,7 @@ axis = func(matcher) {
 			type: "axis",
 			spec: axisSpec
 		}
-	}, processedMatcher.name)
+	}).alias(processedMatcher.name)
 }
 
 /**
@@ -1116,7 +1107,7 @@ col = func(name) {
 			type: "col",
 			name: name
 		}
-	}, name)
+	})
 }
 
 /**
@@ -1130,7 +1121,7 @@ lit = func(value) {
 			type: "const",
 			value: value
 		}
-	}, undefined)
+	})
 }
 
 /**
@@ -1159,7 +1150,7 @@ concatStr := func(expressions, ...options) {
 			operands: _mapToExpressionStructList(expressions, "lit", ctx),
 			delimiter: delimiterVal
 		}
-	}, undefined)
+	})
 }
 
 /**
@@ -1175,7 +1166,7 @@ minHorizontal := func(expressions) {
 			type: "min",
 			operands: _mapToExpressionStructList(expressions, "col", ctx)
 		}
-	}, undefined)
+	})
 }
 
 /**
@@ -1191,7 +1182,7 @@ maxHorizontal := func(expressions) {
 			type: "max",
 			operands: _mapToExpressionStructList(expressions, "col", ctx)
 		}
-	}, undefined)
+	})
 }
 
 /**
@@ -1225,7 +1216,7 @@ allHorizontal = func(...args){
             type: "and",
             operands: processedOperands
         }
-    }, undefined)
+    })
 }
 
 /**
@@ -1259,7 +1250,7 @@ anyHorizontal = func(...args){
             type: "or",
             operands: processedOperands
         }
-    }, undefined)
+    })
 }
 
 /**
@@ -1384,7 +1375,7 @@ _newWhenThenBuilder := func(currentClauses, currentWhenExprOrUndefined) {
 					conditions: finalClauses,
 					otherwise: otherwiseExpr._getExpression(ctx)
 				}
-			}, undefined)
+			})
 		}
 	})
 	return builderSelf
@@ -1410,20 +1401,14 @@ when = func(conditionExpr) {
  * Useful for advanced use cases or for expression types not yet covered by dedicated helper functions.
  * The structure should conform to the PTabler expression schema.
  * @param expression - map - The raw PTabler expression definition map.
- * @param alias - string (optional) - An optional alias for this expression.
  * @returns {object} - An expression object.
  * @example
- *   rawExp({type: "col", name: "my_column"}, "optional_alias")
+ *   rawExp({type: "col", name: "my_column"})
  *   rawExp({type: "plus", lhs: {type: "col", name: "a"}, rhs: {type: "const", value: 1}})
  */
-rawExp := func(expression, ...alias) {
-	ll.assert(len(alias) <= 1, "rawExpression expects at most one alias argument")
-	aliasVal := undefined
-	if len(alias) > 0 {
-		aliasVal = alias[0]
-	}
+rawExp := func(expression) {
 	ll.assert(is_map(expression), "rawExpression expects a map as argument")
-	return _newExpression(func() { return expression }, aliasVal)
+	return _newExpression(func(ctx) { return expression })
 }
 
 export ll.toStrict({

@@ -5,7 +5,6 @@ import math  # Added for math.ceil in expected value generation logic
 
 from ptabler.workflow import PWorkflow
 from ptabler.steps import GlobalSettings, AddColumns, Filter, TableSpace
-from ptabler.steps.basics import ColumnDefinition
 from ptabler.expression import (
     ColumnReferenceExpression, ConstantValueExpression,
     PlusExpression, EqExpression, GtExpression, AndExpression,
@@ -20,7 +19,7 @@ from ptabler.expression import (
     FillNullExpression,
     UnaryMinusExpression,
     MatchesEcmaRegexExpression, ContainsFuzzyMatchExpression,
-    InSetExpression,
+    InSetExpression, AliasExpression,
 )
 
 # Minimal global_settings for tests not relying on file I/O from a specific root_folder
@@ -44,9 +43,9 @@ class ExpressionTests(unittest.TestCase):
         add_col_step = AddColumns(
             table="input_table",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="c_sum",
-                    expression=PlusExpression(
+                    value=PlusExpression(
                         lhs=ColumnReferenceExpression(name="a"),
                         rhs=ColumnReferenceExpression(name="b")
                     )
@@ -135,9 +134,9 @@ class ExpressionTests(unittest.TestCase):
         add_upper_step = AddColumns(
             table="names_table",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="first_upper",
-                    expression=ToUpperExpression(
+                    value=ToUpperExpression(
                         value=ColumnReferenceExpression(name="first")
                     )
                 )
@@ -147,9 +146,9 @@ class ExpressionTests(unittest.TestCase):
         add_full_name_step = AddColumns(
             table="names_table",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="full_name",
-                    expression=StringJoinExpression(
+                    value=StringJoinExpression(
                         operands=[
                             ColumnReferenceExpression(name="first_upper"),
                             ConstantValueExpression(value=" "),
@@ -197,9 +196,9 @@ class ExpressionTests(unittest.TestCase):
         cumsum_step = AddColumns(
             table="data_table",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="value_cumsum",
-                    expression=CumsumExpression(
+                    value=CumsumExpression(
                         value=ColumnReferenceExpression(name="value"),
                         partition_by=[
                             ColumnReferenceExpression(name="category")],
@@ -245,9 +244,9 @@ class ExpressionTests(unittest.TestCase):
         rank_step = AddColumns(
             table="data_table",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="value_rank_desc",
-                    expression=RankExpression(
+                    value=RankExpression(
                         order_by=[
                             ColumnReferenceExpression(name="value"),
                             ColumnReferenceExpression(name="id")
@@ -297,9 +296,9 @@ class ExpressionTests(unittest.TestCase):
         add_dist_step = AddColumns(
             table="strings_table",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="lev_dist",
-                    expression=StringDistanceExpression(
+                    value=StringDistanceExpression(
                         metric="levenshtein",
                         string1=ColumnReferenceExpression(name="s1"),
                         string2=ColumnReferenceExpression(name="s2"),
@@ -341,9 +340,9 @@ class ExpressionTests(unittest.TestCase):
         add_dist_step = AddColumns(
             table="strings_table",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="s1s2_hash",
-                    expression=SubstringExpression(
+                    value=SubstringExpression(
                         value=ToUpperExpression(HashExpression("sha256", "base64", StringJoinExpression([
                             ColumnReferenceExpression("s1"),
                             ColumnReferenceExpression("s2")
@@ -389,52 +388,52 @@ class ExpressionTests(unittest.TestCase):
         add_hash_cols_step = AddColumns(
             table="source_table",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="sha256_hex_16b",
-                    expression=HashExpression(
+                    value=HashExpression(
                         hash_type='sha256', encoding='hex',
                         value=ColumnReferenceExpression(name="text"), bits=16)
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="sha256_b64_24b",
-                    expression=HashExpression(
+                    value=HashExpression(
                         hash_type='sha256', encoding='base64',
                         value=ColumnReferenceExpression(name="text"), bits=24)
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="sha256_b64_alnum_30b",
-                    expression=HashExpression(
+                    value=HashExpression(
                         hash_type='sha256', encoding='base64_alphanumeric',
                         value=ColumnReferenceExpression(name="text"), bits=30)
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="sha256_b64_alnum_upper_30b",
-                    expression=HashExpression(
+                    value=HashExpression(
                         hash_type='sha256', encoding='base64_alphanumeric_upper',
                         value=ColumnReferenceExpression(name="text"), bits=30)
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="sha256_b64_alnum_full",  # No bits, full length after filter
-                    expression=HashExpression(
+                    value=HashExpression(
                         hash_type='sha256', encoding='base64_alphanumeric',
                         value=ColumnReferenceExpression(name="text"))
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="wyhash_hex_20b",  # wyhash produces 64 bits
-                    expression=HashExpression(
+                    value=HashExpression(
                         hash_type='wyhash', encoding='hex',
                         value=ColumnReferenceExpression(name="text"), bits=20)
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="wyhash_b64_alnum_upper_40b",
-                    expression=HashExpression(
+                    value=HashExpression(
                         hash_type='wyhash', encoding='base64_alphanumeric_upper',
                         value=ColumnReferenceExpression(name="text"), bits=40)
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     # bits > 256, should use full hash (256 bits for sha256)
                     name="sha256_hex_bits_gt_max",
-                    expression=HashExpression(
+                    value=HashExpression(
                         hash_type='sha256', encoding='hex',
                         value=ColumnReferenceExpression(name="text"), bits=300)
                 ),
@@ -557,9 +556,9 @@ class ExpressionTests(unittest.TestCase):
         conditional_step = AddColumns(
             table="source_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="category",
-                    expression=WhenThenOtherwiseExpression(
+                    value=WhenThenOtherwiseExpression(
                         conditions=[
                             WhenThenClause(
                                 when=GtExpression(
@@ -624,9 +623,9 @@ class ExpressionTests(unittest.TestCase):
         replace_step = AddColumns(
             table="source_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="replace_capture_groups",
-                    expression=StringReplaceExpression(
+                    value=StringReplaceExpression(
                         value=ColumnReferenceExpression(name="text_col"),
                         pattern=r"name: (\w+\s\w+), age: (\d+)",
                         replacement="Person: $1, Years: $2"
@@ -674,17 +673,17 @@ class ExpressionTests(unittest.TestCase):
         fillna_step = AddColumns(
             table="source_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="filled_with_col",
-                    expression=FillNullExpression(
+                    value=FillNullExpression(
                         input=ColumnReferenceExpression(name="col_with_nulls"),
                         fill_value=ColumnReferenceExpression(
                             name="fallback_col")
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="filled_with_const",
-                    expression=FillNullExpression(
+                    value=FillNullExpression(
                         input=ColumnReferenceExpression(name="col_with_nulls"),
                         fill_value=ConstantValueExpression(value=-1)
                     )
@@ -743,44 +742,44 @@ class ExpressionTests(unittest.TestCase):
         window_agg_step = AddColumns(
             table="data_table",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="sum_val_by_cat",
-                    expression=WindowExpression(
+                    value=WindowExpression(
                         aggregation='sum',
                         value=ColumnReferenceExpression(name="value"),
                         partition_by=[
                             ColumnReferenceExpression(name="category")]
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="mean_val_by_cat",
-                    expression=WindowExpression(
+                    value=WindowExpression(
                         aggregation='mean',
                         value=ColumnReferenceExpression(name="value"),
                         partition_by=[
                             ColumnReferenceExpression(name="category")]
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="total_count",  # Count all IDs over the whole frame
-                    expression=WindowExpression(
+                    value=WindowExpression(
                         aggregation='count',
                         value=ColumnReferenceExpression(name="id"),
                         partition_by=[]  # Empty partition_by for whole frame window
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="min_val_by_cat",
-                    expression=WindowExpression(
+                    value=WindowExpression(
                         aggregation='min',
                         value=ColumnReferenceExpression(name="value"),
                         partition_by=[
                             ColumnReferenceExpression(name="category")]
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="first_val_by_cat",
-                    expression=WindowExpression(
+                    value=WindowExpression(
                         aggregation='first',
                         value=ColumnReferenceExpression(name="value"),
                         partition_by=[
@@ -834,9 +833,9 @@ class ExpressionTests(unittest.TestCase):
         add_col_step = AddColumns(
             table="input_table",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="negated_value",
-                    expression=UnaryMinusExpression(
+                    value=UnaryMinusExpression(
                         value=ColumnReferenceExpression(name="value")
                     )
                 )
@@ -875,9 +874,9 @@ class ExpressionTests(unittest.TestCase):
         contains_step = AddColumns(
             table="test_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="contains_hello_literal",
-                    expression=StringContainsExpression(
+                    value=StringContainsExpression(
                         value=ColumnReferenceExpression(name="text"),
                         pattern="hello",  # Using string directly instead of ConstantValueExpression
                         literal=True
@@ -917,9 +916,9 @@ class ExpressionTests(unittest.TestCase):
         contains_step = AddColumns(
             table="test_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="contains_hello_digits",
-                    expression=StringContainsExpression(
+                    value=StringContainsExpression(
                         value=ColumnReferenceExpression(name="text"),
                         pattern=ConstantValueExpression(
                             # Case insensitive + digits
@@ -961,9 +960,9 @@ class ExpressionTests(unittest.TestCase):
         contains_any_step = AddColumns(
             table="test_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="contains_citrus",
-                    expression=StringContainsAnyExpression(
+                    value=StringContainsAnyExpression(
                         value=ColumnReferenceExpression(name="text"),
                         patterns=["orange", "lemon", "lime", "grapefruit"]
                     )
@@ -1003,17 +1002,17 @@ class ExpressionTests(unittest.TestCase):
         count_matches_step = AddColumns(
             table="test_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="count_ab_literal",
-                    expression=StringCountMatchesExpression(
+                    value=StringCountMatchesExpression(
                         value=ColumnReferenceExpression(name="text"),
                         pattern="ab",  # Using string directly
                         literal=True
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="count_a_regex",
-                    expression=StringCountMatchesExpression(
+                    value=StringCountMatchesExpression(
                         value=ColumnReferenceExpression(name="text"),
                         pattern=ConstantValueExpression(
                             value="a+"),  # One or more 'a'
@@ -1057,18 +1056,18 @@ class ExpressionTests(unittest.TestCase):
         extract_step = AddColumns(
             table="test_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="username",
-                    expression=StringExtractExpression(
+                    value=StringExtractExpression(
                         value=ColumnReferenceExpression(name="email"),
                         pattern=ConstantValueExpression(value=r"^([^@]+)@.*"),
                         # Extract the first capture group (username part)
                         group_index=1
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="domain",
-                    expression=StringExtractExpression(
+                    value=StringExtractExpression(
                         value=ColumnReferenceExpression(name="email"),
                         pattern=ConstantValueExpression(value=r"^[^@]+@(.+)"),
                         group_index=1  # Extract the domain part
@@ -1110,16 +1109,16 @@ class ExpressionTests(unittest.TestCase):
         starts_with_step = AddColumns(
             table="test_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="starts_with_doc",
-                    expression=StringStartsWithExpression(
+                    value=StringStartsWithExpression(
                         value=ColumnReferenceExpression(name="filename"),
                         prefix="document"  # Using string directly
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="starts_with_data",
-                    expression=StringStartsWithExpression(
+                    value=StringStartsWithExpression(
                         value=ColumnReferenceExpression(name="filename"),
                         prefix="data"  # Using string directly
                     )
@@ -1160,16 +1159,16 @@ class ExpressionTests(unittest.TestCase):
         ends_with_step = AddColumns(
             table="test_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="is_pdf",
-                    expression=StringEndsWithExpression(
+                    value=StringEndsWithExpression(
                         value=ColumnReferenceExpression(name="filename"),
                         suffix=".pdf"  # Using string directly
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="is_image",
-                    expression=StringEndsWithExpression(
+                    value=StringEndsWithExpression(
                         value=ColumnReferenceExpression(name="filename"),
                         suffix=".jpg"  # Using string directly
                     )
@@ -1208,9 +1207,9 @@ class ExpressionTests(unittest.TestCase):
         contains_any_step = AddColumns(
             table="test_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="contains_fruit_ci",
-                    expression=StringContainsAnyExpression(
+                    value=StringContainsAnyExpression(
                         value=ColumnReferenceExpression(name="text"),
                         patterns=["apple", "banana"],
                         ascii_case_insensitive=True
@@ -1249,9 +1248,9 @@ class ExpressionTests(unittest.TestCase):
         matches_regex_step = AddColumns(
             table="test_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="matches_hello",
-                    expression=MatchesEcmaRegexExpression(
+                    value=MatchesEcmaRegexExpression(
                         value=ColumnReferenceExpression(name="text"),
                         ecma_regex="^h(e+)llo"
                     )
@@ -1288,9 +1287,9 @@ class ExpressionTests(unittest.TestCase):
         fuzzy_match_step = AddColumns(
             table="test_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="fuzzy_match",
-                    expression=ContainsFuzzyMatchExpression(
+                    value=ContainsFuzzyMatchExpression(
                         value=ColumnReferenceExpression(name="text"),
                         reference="hullo*",
                         max_edits=1,
@@ -1329,9 +1328,9 @@ class ExpressionTests(unittest.TestCase):
         in_set_step = AddColumns(
             table="test_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="in_set",
-                    expression=InSetExpression(
+                    value=InSetExpression(
                         value=ColumnReferenceExpression(name="category"),
                         set=["A", "B"]
                     )

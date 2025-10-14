@@ -16,7 +16,7 @@ from .basics import (
     Log10Expression, LogExpression, Log2Expression, AbsExpression, SqrtExpression, UnaryMinusExpression,
     FloorExpression, RoundExpression, CeilExpression, CastExpression,
     OrExpression, NotExpression, ColumnReferenceExpression, ConstantValueExpression, MinExpression, MaxExpression,
-    AndExpression, AxisReferenceExpression, InSetExpression
+    AndExpression, AxisReferenceExpression, InSetExpression, AliasExpression
 )
 from .string import (
     StringJoinExpression, ToUpperExpression, ToLowerExpression, StrLenExpression, SubstringExpression,
@@ -52,6 +52,7 @@ AnyExpression = typing.Union[
     LeExpression,
     NeqExpression,
     InSetExpression,
+    AliasExpression,
     # Basic Binary Arithmetic
     PlusExpression,
     MinusExpression,
@@ -139,6 +140,8 @@ __all__ = [
     "LtExpression",
     "LeExpression",
     "NeqExpression",
+    "InSetExpression",
+    "AliasExpression",
     "PlusExpression",
     "MinusExpression",
     "MultiplyExpression",

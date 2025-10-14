@@ -2,8 +2,7 @@ import unittest
 import os
 from ptabler.workflow import PWorkflow
 from ptabler.steps import GlobalSettings, ReadCsv, ReadNdjson, WriteCsv, WriteNdjson, AddColumns
-from ptabler.steps.basics import ColumnDefinition
-from ptabler.expression import ColumnReferenceExpression, StructFieldExpression
+from ptabler.expression import ColumnReferenceExpression, StructFieldExpression, AliasExpression
 
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
 test_data_root_dir = os.path.join(
@@ -210,25 +209,25 @@ class NdjsonTests(unittest.TestCase):
         add_columns_step = AddColumns(
             table="input_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="created_by",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="metadata"),
                         fields="created_by",
                         dtype="String"
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="country",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields="country",
                         dtype="String"
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="city",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields="city",
                         dtype="String"
@@ -281,17 +280,17 @@ class NdjsonTests(unittest.TestCase):
         add_columns_step = AddColumns(
             table="input_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="location_country",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields="country",
                         dtype="String"
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="location_city",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields="city",
                         dtype="String"
@@ -345,17 +344,17 @@ class NdjsonTests(unittest.TestCase):
         add_columns_step = AddColumns(
             table="input_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="latitude",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields=["coordinates", "lat"],
                         dtype="Float64"
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="longitude",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields=["coordinates", "lng"],
                         dtype="Float64"
@@ -407,17 +406,17 @@ class NdjsonTests(unittest.TestCase):
         add_columns_step = AddColumns(
             table="input_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="timestamp",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="metadata"),
                         fields="timestamp",
                         dtype="String"
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="created_by",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="metadata"),
                         fields="created_by",
                         dtype="String"
@@ -469,9 +468,9 @@ class NdjsonTests(unittest.TestCase):
         add_columns_step = AddColumns(
             table="input_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="created_by_from_missing_struct",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="metadata"),
                         fields="created_by",
                         dtype="String"
@@ -521,9 +520,9 @@ class NdjsonTests(unittest.TestCase):
         add_columns_step = AddColumns(
             table="input_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="coordinates_data",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields="coordinates",
                         dtype="String"
@@ -575,17 +574,17 @@ class NdjsonTests(unittest.TestCase):
         add_columns_step = AddColumns(
             table="input_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="deeply_nested_nonexistent",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields=["evenMoreNonExistentField", "andNestedNonExistentField", "finalNonExistentField"],
                         dtype="String"
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="mixed_existing_nonexistent",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="metadata"),  # This exists
                         fields=["nonExistentSubField", "evenDeeperNonExistent"],  # But these don't
                         dtype="String"
@@ -642,9 +641,9 @@ class NdjsonTests(unittest.TestCase):
         add_columns_step = AddColumns(
             table="input_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="latitude_array_access",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=StructFieldExpression(
                             struct=ColumnReferenceExpression(name="location"),
                             fields="coordinates"
@@ -653,9 +652,9 @@ class NdjsonTests(unittest.TestCase):
                         dtype="Float64"
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="longitude_array_access",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields=["coordinates", "lng"],  # Array for recursive access
                         dtype="Float64"
@@ -707,36 +706,36 @@ class NdjsonTests(unittest.TestCase):
         add_columns_step = AddColumns(
             table="input_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="timestamp_with_default",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="metadata"),
                         fields="timestamp",
                         default="2023-01-01T00:00:00Z",  # String default
                         dtype="String"
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="missing_field_with_default",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="metadata"),
                         fields="nonexistent_field",
                         default="default_value",  # String default for missing field
                         dtype="String"
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="missing_numeric_with_default",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields="elevation",  # This field doesn't exist
                         default=0,  # Numeric default
                         dtype="Int64"
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="missing_bool_with_default",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="metadata"),
                         fields="is_verified",  # This field doesn't exist
                         default=False,  # Boolean default
@@ -792,18 +791,18 @@ class NdjsonTests(unittest.TestCase):
         add_columns_step = AddColumns(
             table="input_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="altitude_with_default",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields=["coordinates", "altitude"],  # This nested field doesn't exist
                         default=100.0,  # Numeric default for missing deeply nested field
                         dtype="Float64"
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="deep_missing_with_default",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields=["nonexistent", "also_missing", "deeply_missing"],  # All missing
                         default="not_found",  # String default for completely missing path
@@ -856,25 +855,25 @@ class NdjsonTests(unittest.TestCase):
         add_columns_step = AddColumns(
             table="input_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="latitude_as_string",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields=["coordinates", "lat"],
                         dtype="String"  # Cast numeric to string
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="created_by_as_string",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="metadata"),
                         fields="created_by",  # Single field access with casting
                         dtype="String"  # Cast to string
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="country_as_string",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields="country",  # Extract country from location struct
                         dtype="String"  # Cast to string
@@ -926,18 +925,18 @@ class NdjsonTests(unittest.TestCase):
         add_columns_step = AddColumns(
             table="input_data",
             columns=[
-                ColumnDefinition(
+                AliasExpression(
                     name="combined_feature_test",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="location"),
                         fields=["details", "population"],  # Recursive access to missing nested field
                         default=1000000,  # Numeric default
                         dtype="Int64"  # Cast to integer
                     )
                 ),
-                ColumnDefinition(
+                AliasExpression(
                     name="string_combined_test",
-                    expression=StructFieldExpression(
+                    value=StructFieldExpression(
                         struct=ColumnReferenceExpression(name="metadata"),
                         fields=["info", "description"],  # Recursive access to missing nested field
                         default="No description available",  # String default

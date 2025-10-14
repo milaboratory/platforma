@@ -35,7 +35,8 @@ export type Expression =
   | StructFieldExpression
   | MatchesEcmaRegexExpression
   | ContainsFuzzyMatchExpression
-  | InSetExpression;
+  | InSetExpression
+  | AliasExpression;
 
 /** Represents all possible expression types in the system. */
 export type ComparisonOperator = 'gt' | 'ge' | 'eq' | 'lt' | 'le' | 'neq';
@@ -627,4 +628,17 @@ export interface InSetExpression {
   value: Expression;
   /** The set of values to check membership against. */
   set: (string | number | boolean | null)[];
+}
+
+/**
+ * Represents an alias operation.
+ * This operation creates a new expression with a specified alias.
+ */
+export interface AliasExpression {
+  /** The type of operation, always 'alias'. */
+  type: 'alias';
+  /** The expression to alias. */
+  value: Expression;
+  /** The alias name. */
+  name: string;
 }

@@ -1022,10 +1022,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			if !exp._isExpression(expr) {
 				ll.panic("Invalid argument to " + methodName + ": Expected an expression object, got %v", expr)
 			}
-			cols = append(cols, {
-				name: expr._getAlias(),
-				expression: expr._getExpression(ctx)
-			})
+			cols = append(cols, expr._getExpression(ctx))
 		}
 		return cols
 	}
@@ -1037,15 +1034,9 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			if is_string(expr) {
 				// For strings, interpret as column name
 				colExpr := exp.col(expr)
-				cols = append(cols, {
-					name: colExpr._getAlias(),
-					expression: colExpr._getExpression(ctx)
-				})
+				cols = append(cols, colExpr._getExpression(ctx))
 			} else if exp._isExpression(expr) {
-				cols = append(cols, {
-					name: expr._getAlias(),
-					expression: expr._getExpression(ctx)
-				})
+				cols = append(cols, expr._getExpression(ctx))
 			} else {
 				ll.panic("Invalid argument to " + methodName + ": Expected an expression object or string column name, got %v", expr)
 			}

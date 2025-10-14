@@ -20,18 +20,7 @@ export interface AddColumnsStep {
    * An array defining the new columns to be added.
    * Each object in the array specifies the name of a new column and the expression to compute its values.
    */
-  columns: {
-    /**
-     * The name of the new column.
-     */
-    name: string;
-
-    /**
-     * An Expression object defining how to compute the column's values.
-     * The expression will be evaluated for each row to generate the values for the new column.
-     */
-    expression: Expression;
-  }[];
+  columns: Expression[];
 }
 
 /**
@@ -93,19 +82,7 @@ export interface SelectStep {
    * Each object in the array specifies the name of a column in the output table
    * and the expression to compute its values.
    */
-  columns: {
-    /**
-     * The name of the column in the output table.
-     */
-    name: string;
-
-    /**
-     * An Expression object defining how to compute the column's values.
-     * This expression will be evaluated to generate the values for this column
-     * in the output table.
-     */
-    expression: Expression;
-  }[];
+  columns: Expression[];
 }
 
 /**
@@ -138,18 +115,7 @@ export interface WithColumnsStep {
    * Each object in the array specifies the name of a column and the
    * expression to compute its values.
    */
-  columns: {
-    /**
-     * The name of the new or replacement column.
-     */
-    name: string;
-
-    /**
-     * An Expression object defining how to compute the column's values.
-     * The expression will be evaluated for each row to generate the values for the column.
-     */
-    expression: Expression;
-  }[];
+  columns: Expression[];
 }
 
 /**

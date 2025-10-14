@@ -216,6 +216,14 @@ class InSetExpression(Expression, tag='in_set'):
     def to_polars(self) -> pl.Expr:
         return self.value.to_polars().is_in(self.set)
 
+# Alias Expression
+class AliasExpression(Expression, tag='alias'):
+    value: 'AnyExpression'
+    name: str
+
+    def to_polars(self) -> pl.Expr:
+        return self.value.to_polars().alias(self.name)
+
 
 # Min/Max Expressions
 
