@@ -259,7 +259,7 @@ catalog:
   # SW
 
   '@milaboratories/software-pframes-conv': &pframes-version 2.2.7
-  '@platforma-open/milaboratories.software-small-binaries': ^1.15.21
+  '@platforma-open/milaboratories.software-small-binaries': ^1.15.23
   '@biowasm/aioli': ~3.2.1
 
   '@platforma-open/milaboratories.runenv-python-3': 1.4.12
