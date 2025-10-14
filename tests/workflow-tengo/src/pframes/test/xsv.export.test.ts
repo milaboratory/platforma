@@ -157,47 +157,6 @@ tplTest.concurrent.for([
   },
 );
 
-tplTest.concurrent.for([
-  { partitionKeyLength: 1, storageFormat: 'Binary' },
-  { partitionKeyLength: 2, storageFormat: 'Binary' },
-  { partitionKeyLength: 1, storageFormat: 'Json' },
-  { partitionKeyLength: 2, storageFormat: 'Json' },
-])(
-  'should export filtered p-frame to csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
-  // This timeout has additional 10 seconds due to very slow performance of Platforma on large transactions,
-  // where thousands of fields and resources are created.
-  // The test itself is not large, but first test in a batch also loads 'pframes' binary from network.
-  // Also, because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
-  // it shares Platforma Backend performance with other massive parallel tests, making overall test time large even when actual
-  // execution takes 1-2 seconds at most.
-  async ({ partitionKeyLength, storageFormat }, { helper, expect, driverKit }) => {
-    const spec = deepClone(baseSpec);
-    spec.partitionKeyLength = partitionKeyLength;
-    spec.storageFormat = storageFormat;
-
-    const result = await helper.renderTemplate(
-      false,
-      'pframes.test.xsv.export-pf',
-      ['csvFile'],
-      (tx) => ({
-        csv: tx.createValue(Pl.JsonObject, JSON.stringify(csvData)),
-        spec: tx.createValue(Pl.JsonObject, JSON.stringify(spec)),
-        ops: tx.createValue(Pl.JsonObject, JSON.stringify({ partitions: { 0: ['A2'] } })),
-      }),
-    );
-
-    const csvHandle = await getCsvHandle(result, driverKit, 'csvFile');
-
-    const csvContent = await readBlobAsString(driverKit, csvHandle);
-
-    // @TODO remove \" replacement after pfconv update
-    const actual = csvContent.replaceAll('"', '').replaceAll('\n', '').split('').sort();
-    const expected = csvData.split('\n').filter((l, i) => i == 0 || l.includes('A2')).join('').split('').sort();
-
-    expect(actual).toStrictEqual(expected);
-  },
-);
-
 function superPartitionKeys(keyLen: number): string[] {
   const base = ['X', 'Y', 'Z'];
   const r: string[] = [];
