@@ -52,12 +52,190 @@ maps := import(":maps")
  *   // return { outputResult: file.exportFile(ptablerResult.getFile("result.tsv")) }
  */
 
+
 _newDataFrame := undefined
 _newDataFrameGroupBy := undefined
-_isPEntry := undefined
 
 workflowCounter := 0
 
+
+_validateColumn := func(name, columnStruct) {
+	ll.assert(is_string(name), "column name must be a string")
+	ll.assert(is_map(columnStruct), "columnStruct must be a map")
+	ll.assert(!is_undefined(columnStruct.spec), "columnStruct must have 'spec' field defined")
+	ll.assert(!is_undefined(columnStruct.data), "columnStruct must have 'data' field defined")
+}
+
+_newPEntry := func(columnsByName, joinTree) {
+	return {
+		_getColumnsMap: func() {
+			return columnsByName
+		},
+		_getJoinTree: func() {
+			return joinTree
+		}
+	}
+}
+
+_isPEntry := func(entry) {
+	return is_map(entry) && is_callable(entry._getColumnsMap) && is_callable(entry._getJoinTree);
+}
+
+slicedColumnCounter := 0
+
+p := ll.toStrict({
+	/**
+	 * Creates a new column join builder entry.
+	 * @param name {string} - The name of the column.
+	 * @param columnStruct { spec: json, data: resource } - The column object.
+	 * @returns {object} - A join builder entry object.
+	 */
+	column: func(name, columnStruct) {
+		_validateColumn(name, columnStruct)
+		columnsByName := {}
+		columnsByName[name] = columnStruct
+		return _newPEntry(columnsByName, {
+			type: "column",
+			columnId: name
+		})
+	},
+	/**
+	 * Creates a new sliced column join builder entry.
+	 * @param name {string} - The name of the column.
+	 * @param columnMap { spec: json, data: resource } - The column object.
+	 * @param axisFilters {array} - The array of axis filters.
+	 * @returns {object} - A join builder entry object.
+	 */
+	slicedColumn: func(name, columnMap, axisFilters) {
+		_validateColumn(name, columnMap)
+		ll.assert(is_array(axisFilters), "axisFilters must be an array")
+		
+		slicedColumnCounter += 1
+		oldName := "p_sliced_" + slicedColumnCounter
+
+		columnsByName := {}
+		columnsByName[oldName] = columnMap
+		return _newPEntry(columnsByName, {
+			type: "slicedColumn",
+			columnId: oldName,
+			newId: name,
+			axisFilters: axisFilters
+		})
+	},
+	/**
+	 * Creates a new inner join builder entry.
+	 * @param entries {array} - The array of join builder entry objects.
+	 * @returns {object} - A join builder entry object.
+	 */
+	inner: func(...entries) {
+		ll.assert(len(entries) > 0, "inner join requires at least one entry")
+		
+		mergedColMap := {}
+		joinTreeEntries := []
+		
+		for entry in entries {
+			ll.assert(_isPEntry(entry), "all entries must be PEntry objects")
+			
+			entryColMap := entry._getColumnsMap()
+			entryJoinTree := entry._getJoinTree()
+			
+			for colName, colInfo in entryColMap {
+				if !is_undefined(mergedColMap[colName]) {
+					ll.panic("column name %s is already used, please pick a different name", colName)
+				}
+				mergedColMap[colName] = colInfo
+			}
+			
+			joinTreeEntries = append(joinTreeEntries, entryJoinTree)
+		}
+		
+		joinTree := {
+			type: "inner",
+			entries: joinTreeEntries
+		}
+		
+		return _newPEntry(mergedColMap, joinTree)
+	},
+	/**
+	 * Creates a new full join builder entry.
+	 * @param entries {array} - The array of join builder entry objects.
+	 * @returns {object} - A join builder entry object.
+	 */
+	full: func(...entries) {
+		ll.assert(len(entries) > 0, "full join requires at least one entry")
+		
+		mergedColMap := {}
+		joinTreeEntries := []
+		
+		for entry in entries {
+			ll.assert(_isPEntry(entry), "all entries must be PEntry objects")
+			
+			entryColMap := entry._getColumnsMap()
+			entryJoinTree := entry._getJoinTree()
+			
+			for colName, colInfo in entryColMap {
+				if !is_undefined(mergedColMap[colName]) {
+					ll.panic("column name %s is already used, please pick a different name", colName)
+				}
+				mergedColMap[colName] = colInfo
+			}
+			
+			joinTreeEntries = append(joinTreeEntries, entryJoinTree)
+		}
+		
+		joinTree := {
+			type: "full",
+			entries: joinTreeEntries
+		}
+		
+		return _newPEntry(mergedColMap, joinTree)
+	},
+	/**
+	 * Creates a new outer join builder entry.
+	 * @param primary {object} - The primary join builder entry object.
+	 * @param secondary {array} - The array of secondary join builder entry objects.
+	 * @returns {object} - A join builder entry object.
+	 */
+	outer: func(primary, ...secondary) {
+		ll.assert(_isPEntry(primary), "primary entry must be a PEntry object")
+		ll.assert(len(secondary) > 0, "outer join requires at least one secondary entry")
+		
+		mergedColMap := {}
+		
+		primaryColMap := primary._getColumnsMap()
+		primaryJoinTree := primary._getJoinTree()
+		
+		for colName, colInfo in primaryColMap {
+			mergedColMap[colName] = colInfo
+		}
+		
+		secondaryJoinTrees := []
+		
+		for entry in secondary {
+			ll.assert(_isPEntry(entry), "all secondary entries must be PEntry objects")
+			
+			entryColMap := entry._getColumnsMap()
+			entryJoinTree := entry._getJoinTree()
+			
+			for colName, colInfo in entryColMap {
+				if !is_undefined(mergedColMap[colName]) {
+					ll.panic("column name %s is already used, please pick a different name", colName)
+				}
+				mergedColMap[colName] = colInfo
+			}
+			
+			secondaryJoinTrees = append(secondaryJoinTrees, entryJoinTree)
+		}
+		
+		joinTree := {
+			type: "outer",
+			primary: primaryJoinTree,
+			secondary: secondaryJoinTrees
+		}
+		
+		return _newPEntry(mergedColMap, joinTree)
+	}
+})
 
 // Helper function to detect file format from file name extension
 _detectFormatFromFileName := func(fileName) {
@@ -341,85 +519,56 @@ workflow := func() {
 				inFiles = append(inFiles, { content: fileContent, name: finalFileName })
 			}
 
-			// Generate appropriate step based on format
-			step := undefined
-			if finalFormat == "pentry" {
-				columnsMap := frameInput._getColumnsMap()
-				joinTree := frameInput._getJoinTree()
-
-				translation := {}
-				rename := {}
-				renamedColumnsMap := {}
-
-				for frameUniqueColumnId, columnInfo in columnsMap {
-					workflowUniqueColumnId := self._newUniqueColumnId()
-
-					translation[workflowUniqueColumnId] = frameUniqueColumnId
-					rename[frameUniqueColumnId] = workflowUniqueColumnId
-					renamedColumnsMap[workflowUniqueColumnId] = columnInfo
-				}
-
-				request := {
-					src: joinTree,
-					filters: []
-				}
-				renamedRequest := util.renameJoinColumns(request, rename)
-
-				ll.assert(is_undefined(inFrames[finalDataFrameId]),
-					"frame with name '%s' already added", finalDataFrameId)
-				inFrames[finalDataFrameId] = {
-					columns: renamedColumnsMap
-				}
-
-				step = {
-					type: "read_frame",
-					name: finalDataFrameId,
-					request: renamedRequest,
-					translation: translation
-				}
-			} else if finalFormat == "pframe" {
+		// Generate appropriate step based on format
+		step := undefined
+		if finalFormat == "pentry" || finalFormat == "pframe" {
+			if finalFormat == "pframe" {
 				columnsMap := pframesUtil.pFrameToColumnsMap(frameResource)
-
-				translation := {}
-				rename := {}
-				renamedColumnsMap := {}
-
 				columnEntries := []
 				for frameUniqueColumnId, columnInfo in columnsMap {
-					workflowUniqueColumnId := self._newUniqueColumnId()
-
-					translation[workflowUniqueColumnId] = frameUniqueColumnId
-					rename[frameUniqueColumnId] = workflowUniqueColumnId
-					renamedColumnsMap[workflowUniqueColumnId] = columnInfo
-					
-					columnEntries = append(columnEntries, {
-						type: "column",
-						columnId: frameUniqueColumnId
-					})
+					columnEntry := p.column(frameUniqueColumnId, columnInfo)
+					columnEntries = append(columnEntries, columnEntry)
 				}
+				frameInput = p.full(columnEntries...)
+			}
 
-				ll.assert(is_undefined(inFrames[finalDataFrameId]),
-					"frame with name '%s' already added", finalDataFrameId)
-				inFrames[finalDataFrameId] = {
-					columns: renamedColumnsMap
-				}
+			columnsMap := frameInput._getColumnsMap()
+			src := frameInput._getJoinTree()
 
-				request := {
-					src: {
-						type: "full",
-						entries: columnEntries
-					},
-					filters: []
-				}
-				renamedRequest := util.renameJoinColumns(request, rename)
+			// Build translation and rename mappings
+			translation := {}
+			rename := {}
+			renamedColumnsMap := {}
 
-				step = {
-					type: "read_frame",
-					name: finalDataFrameId,
-					request: renamedRequest,
-					translation: translation
-				}
-			} else if finalFormat == "parquet" {
+			for frameUniqueColumnId, columnInfo in columnsMap {
+				workflowUniqueColumnId := self._newUniqueColumnId()
+
+				translation[workflowUniqueColumnId] = frameUniqueColumnId
+				rename[frameUniqueColumnId] = workflowUniqueColumnId
+				renamedColumnsMap[workflowUniqueColumnId] = columnInfo
+			}
+
+			// Create request and rename columns
+			request := {
+				src: src,
+				filters: []
+			}
+			renamedRequest := util.renameJoinColumns(request, rename)
+
+			// Register frame and create step
+			ll.assert(is_undefined(inFrames[finalDataFrameId]),
+				"frame with name '%s' already added", finalDataFrameId)
+			inFrames[finalDataFrameId] = {
+				columns: renamedColumnsMap
+			}
+
+			step = {
+				type: "read_frame",
+				name: finalDataFrameId,
+				request: renamedRequest,
+				translation: translation
+			}
+		} else if finalFormat == "parquet" {
 				step = {
 					type: "read_parquet",
 					file: finalFileName,
@@ -1706,188 +1855,11 @@ treeJoin := func(dataframes, opts) {
 	return pfs[0]
 }
 
-_validateColumn := func(name, columnStruct) {
-	ll.assert(is_string(name), "column name must be a string")
-	ll.assert(is_map(columnStruct), "columnStruct must be a map")
-	ll.assert(!is_undefined(columnStruct.spec), "columnStruct must have 'spec' field defined")
-	ll.assert(!is_undefined(columnStruct.data), "columnStruct must have 'data' field defined")
-}
-
-_newPEntry := func(columnsByName, joinTree) {
-	return {
-		_getColumnsMap: func() {
-			return columnsByName
-		},
-		_getJoinTree: func() {
-			return joinTree
-		}
-	}
-}
-
-_isPEntry = func(entry) {
-	return is_map(entry) && is_callable(entry._getColumnsMap) && is_callable(entry._getJoinTree);
-}
-
-slicedColumnCounter := 0
-
-p := ll.toStrict({
-	/**
-	 * Creates a new column join builder entry.
-	 * @param name {string} - The name of the column.
-	 * @param columnStruct { spec: json, data: resource } - The column object.
-	 * @returns {object} - A join builder entry object.
-	 */
-	column: func(name, columnStruct) {
-		_validateColumn(name, columnStruct)
-		return _newPEntry({
-			name: columnStruct
-		}, {
-			type: "column",
-			columnId: name
-		})
-	},
-	/**
-	 * Creates a new sliced column join builder entry.
-	 * @param name {string} - The name of the column.
-	 * @param columnMap { spec: json, data: resource } - The column object.
-	 * @param axisFilters {array} - The array of axis filters.
-	 * @returns {object} - A join builder entry object.
-	 */
-	slicedColumn: func(name, columnMap, axisFilters) {
-		_validateColumn(name, columnMap)
-		ll.assert(is_array(axisFilters), "axisFilters must be an array")
-		
-		slicedColumnCounter += 1
-		oldName := "p_sliced_" + slicedColumnCounter
-		return _newPEntry({
-			oldName: columnMap
-		}, {
-			type: "slicedColumn",
-			columnId: oldName,
-			newId: name,
-			axisFilters: axisFilters
-		})
-	},
-	/**
-	 * Creates a new inner join builder entry.
-	 * @param entries {array} - The array of join builder entry objects.
-	 * @returns {object} - A join builder entry object.
-	 */
-	inner: func(...entries) {
-		ll.assert(len(entries) > 0, "inner join requires at least one entry")
-		
-		mergedColMap := {}
-		joinTreeEntries := []
-		
-		for entry in entries {
-			ll.assert(_isPEntry(entry), "all entries must be PEntry objects")
-			
-			entryColMap := entry._getColumnsMap()
-			entryJoinTree := entry._getJoinTree()
-			
-			for colName, colInfo in entryColMap {
-				if !is_undefined(mergedColMap[colName]) {
-					ll.panic("column name %s is already used, please pick a different name", colName)
-				}
-				mergedColMap[colName] = colInfo
-			}
-			
-			joinTreeEntries = append(joinTreeEntries, entryJoinTree)
-		}
-		
-		joinTree := {
-			type: "inner",
-			entries: joinTreeEntries
-		}
-		
-		return _newPEntry(mergedColMap, joinTree)
-	},
-	/**
-	 * Creates a new full join builder entry.
-	 * @param entries {array} - The array of join builder entry objects.
-	 * @returns {object} - A join builder entry object.
-	 */
-	full: func(...entries) {
-		ll.assert(len(entries) > 0, "full join requires at least one entry")
-		
-		mergedColMap := {}
-		joinTreeEntries := []
-		
-		for entry in entries {
-			ll.assert(_isPEntry(entry), "all entries must be PEntry objects")
-			
-			entryColMap := entry._getColumnsMap()
-			entryJoinTree := entry._getJoinTree()
-			
-			for colName, colInfo in entryColMap {
-				if !is_undefined(mergedColMap[colName]) {
-					ll.panic("column name %s is already used, please pick a different name", colName)
-				}
-				mergedColMap[colName] = colInfo
-			}
-			
-			joinTreeEntries = append(joinTreeEntries, entryJoinTree)
-		}
-		
-		joinTree := {
-			type: "full",
-			entries: joinTreeEntries
-		}
-		
-		return _newPEntry(mergedColMap, joinTree)
-	},
-	/**
-	 * Creates a new outer join builder entry.
-	 * @param primary {object} - The primary join builder entry object.
-	 * @param secondary {array} - The array of secondary join builder entry objects.
-	 * @returns {object} - A join builder entry object.
-	 */
-	outer: func(primary, ...secondary) {
-		ll.assert(_isPEntry(primary), "primary entry must be a PEntry object")
-		ll.assert(len(secondary) > 0, "outer join requires at least one secondary entry")
-		
-		mergedColMap := {}
-		
-		primaryColMap := primary._getColumnsMap()
-		primaryJoinTree := primary._getJoinTree()
-		
-		for colName, colInfo in primaryColMap {
-			mergedColMap[colName] = colInfo
-		}
-		
-		secondaryJoinTrees := []
-		
-		for entry in secondary {
-			ll.assert(_isPEntry(entry), "all secondary entries must be PEntry objects")
-			
-			entryColMap := entry._getColumnsMap()
-			entryJoinTree := entry._getJoinTree()
-			
-			for colName, colInfo in entryColMap {
-				if !is_undefined(mergedColMap[colName]) {
-					ll.panic("column name %s is already used, please pick a different name", colName)
-				}
-				mergedColMap[colName] = colInfo
-			}
-			
-			secondaryJoinTrees = append(secondaryJoinTrees, entryJoinTree)
-		}
-		
-		joinTree := {
-			type: "outer",
-			primary: primaryJoinTree,
-			secondary: secondaryJoinTrees
-		}
-		
-		return _newPEntry(mergedColMap, joinTree)
-	}
-})
-
 export ll.toStrict({
+	p: p,
 	workflow: workflow,
 	concat: concat,
 	treeJoin: treeJoin,
-	p: p,
 
 	axis: exp.axis,
 	col: exp.col,
