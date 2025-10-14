@@ -8,7 +8,7 @@ import {
 import { tplTest } from '@platforma-sdk/test';
 import path from 'path';
 import * as env from '../env';
-import { getTestTimeout } from '@milaboratories/helpers';
+import { getTestTimeout } from '@milaboratories/test-utils';
 import { vi } from 'vitest';
 
 const TIMEOUT = getTestTimeout(60_000);

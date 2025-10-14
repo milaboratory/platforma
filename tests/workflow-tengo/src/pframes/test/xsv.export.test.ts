@@ -1,5 +1,5 @@
 import type { ComputableCtx } from '@milaboratories/computable';
-import { deepClone, getTestTimeout } from '@milaboratories/helpers';
+import { deepClone, getTestTimeout } from '@milaboratories/test-helpers';
 import type { MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
 import { Annotation, field, Pl } from '@milaboratories/pl-middle-layer';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';

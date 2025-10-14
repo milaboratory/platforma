@@ -4,7 +4,7 @@ import { awaitStableState } from '@platforma-sdk/test';
 import { assertJson, assertResource, eTplTest } from './extended_tpl_test';
 import { expect } from 'vitest';
 import type { Computable } from '@milaboratories/computable';
-import { getTestTimeout } from '@milaboratories/helpers';
+import { getTestTimeout } from '@milaboratories/test-utils';
 import { vi } from 'vitest';
 
 const TIMEOUT = getTestTimeout(15_000);
