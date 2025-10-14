@@ -1,7 +1,7 @@
 // This file is imported by Vitest once per worker (via test.setupFiles).
 // It applies a single startup jitter per worker.
 
-import { applyWorkerJitter, envOptionsFromProcess } from '@milaboratories/helpers';
+import { applyWorkerJitter, envOptionsFromProcess } from '@milaboratories/test-helpers';
 
 // Prefer env-driven config so CI and local runs stay adjustable without code edits.
 await applyWorkerJitter(envOptionsFromProcess(process.env));

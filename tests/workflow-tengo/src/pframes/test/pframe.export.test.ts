@@ -1,7 +1,7 @@
 import { Annotation, type DriverKit, Pl, stringifyJson } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import * as env from '../../test/env';
-import { getTestTimeout } from '@milaboratories/helpers';
+import { getTestTimeout } from '@milaboratories/test-helpers';
 import { vi } from 'vitest';
 
 const TIMEOUT = getTestTimeout(40_000);

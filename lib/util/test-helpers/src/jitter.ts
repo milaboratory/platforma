@@ -8,7 +8,7 @@
 //   - Uniform or exponential distributions
 //   - Safe bounds, input sanitation, optional logging
 
-import { parseBool, parseDurationMs, parseInt } from './parse';
+import { parseBool, parseDurationMs, parseInt } from '@milaboratories/helpers';
 
 export type JitterSeed = string | number | undefined;
 
