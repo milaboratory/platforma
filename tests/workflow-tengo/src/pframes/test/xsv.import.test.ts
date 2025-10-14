@@ -2,7 +2,7 @@
 import { field, Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { Templates } from '../../../dist';
-import { deepClone, getTestTimeout } from '@milaboratories/test-utils';
+import { deepClone, getTestTimeout } from '@milaboratories/test-helpers';
 import { vi } from 'vitest';
 
 const TIMEOUT = getTestTimeout(60_000);

@@ -1,5 +1,5 @@
 {
-  "name": "@milaboratories/test-utils",
+  "name": "@milaboratories/test-helpers",
   "version": "1.0.0",
   "description": "Test utilities for Node.js environments including jitter and timeout helpers",
   "type": "module",
