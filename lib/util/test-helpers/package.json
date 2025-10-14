@@ -1,0 +1,41 @@
+{
+  "name": "@milaboratories/test-helpers",
+  "version": "1.0.0",
+  "description": "Test utilities for Node.js environments including jitter and timeout helpers",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "sources": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "test": "echo 'No tests for test-helpers package'",
+    "watch": "ts-builder build --target node --watch",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "lint": "eslint ."
+  },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@milaboratories/helpers": "workspace:*"
+  },
+  "devDependencies": {
+    "@milaboratories/eslint-config": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "typescript": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
+  }
+}
