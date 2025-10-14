@@ -13,13 +13,13 @@ export default class DumpArtifacts extends Command {
   ];
 
   static override flags = {
+    ...opts.GlobalFlags,
     ...opts.ArtifactTypeFlag,
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(DumpArtifacts);
-
-    const logger = createLogger();
+    const logger = createLogger(flags['log-level']);
     dumpArtifacts(
       logger, stdout,
       flags.type == 'all' ? undefined : flags.type as ArtifactType,

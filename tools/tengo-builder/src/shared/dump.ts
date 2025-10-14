@@ -103,6 +103,7 @@ export function dumpArtifacts(
       }
     }
   }
+
   // Tests
 
   if (!aType || aType === 'test') {
@@ -167,6 +168,10 @@ export function dumpSoftware(
   for (const hash of hashes) {
     const src = sourceMap.get(hash);
     if (src) {
+      if (Object.hasOwn(JSON.parse(src) as object, 'asset')) {
+        // Skip assets. They are kept in templates software because of backward compatibility with backend.
+        continue;
+      }
       stream.write(src);
       if (!src.endsWith('\n')) {
         stream.write('\n');
