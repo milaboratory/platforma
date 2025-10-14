@@ -39,6 +39,7 @@ class AddColumns(PStep, tag="add_columns"):
 
         if polars_expressions_to_add:
             lf = lf.with_columns(polars_expressions_to_add)
+            pl.col("123").name.map(lambda x: x + "123")
 
         # Update the tablespace with the modified LazyFrame
         ctx.put_table(self.table, lf)
@@ -65,7 +66,7 @@ class Select(PStep, tag="select"):
             # If user wants all columns, they should use specific expressions or a future pl.all() like expression.
             # For now, an empty columns list will result in an empty DataFrame for select.
             pass # lf_output will be lf_input.select([]) which is an empty DF
-        
+
         for col_def in self.columns:
             polars_expr = col_def.expression.to_polars().alias(col_def.name)
             polars_expressions_to_select.append(polars_expr)

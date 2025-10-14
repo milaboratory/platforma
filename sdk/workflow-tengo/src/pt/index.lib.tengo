@@ -67,18 +67,20 @@ _validateColumn := func(name, columnStruct) {
 }
 
 _newPEntry := func(columnsByName, joinTree) {
-	return {
+	return ll.toStrict({
+		/** Returns the columns map of the entry. */
 		_getColumnsMap: func() {
 			return columnsByName
 		},
+		/** Returns the join tree of the entry. */
 		_getJoinTree: func() {
 			return joinTree
 		}
-	}
+	})
 }
 
 _isPEntry := func(entry) {
-	return is_map(entry) && is_callable(entry._getColumnsMap) && is_callable(entry._getJoinTree);
+	return ll.isMap(entry) && ll.methodExists(entry, "_getColumnsMap") && ll.methodExists(entry, "_getJoinTree");
 }
 
 slicedColumnCounter := 0
@@ -995,7 +997,7 @@ _newDataFrameGroupBy = func(parentWorkflow, dfName, groupByExpressions) {
 					if !exp._isAggregation(aggExpr) {
 						ll.panic("Invalid argument to agg: Expected an aggregation expression object, got %v", aggExpr)
 					}
-					return aggExpr.getAggregation(ctx)
+					return aggExpr._getAggregation(ctx)
 				})
 				
 				return {
@@ -1021,7 +1023,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 				ll.panic("Invalid argument to " + methodName + ": Expected an expression object, got %v", expr)
 			}
 			cols = append(cols, {
-				name: expr.getAlias(),
+				name: expr._getAlias(),
 				expression: expr._getExpression(ctx)
 			})
 		}
@@ -1036,12 +1038,12 @@ _newDataFrame = func(parentWorkflow, dfName) {
 				// For strings, interpret as column name
 				colExpr := exp.col(expr)
 				cols = append(cols, {
-					name: colExpr.getAlias(),
+					name: colExpr._getAlias(),
 					expression: colExpr._getExpression(ctx)
 				})
 			} else if exp._isExpression(expr) {
 				cols = append(cols, {
-					name: expr.getAlias(),
+					name: expr._getAlias(),
 					expression: expr._getExpression(ctx)
 				})
 			} else {

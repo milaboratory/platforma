@@ -45,7 +45,7 @@ _isExpression := func(item) {
 
 // Helper function to check if an item is a valid aggregation object
 _isAggregation := func(item) {
-	return ll.isMap(item) && ll.methodExists(item, "getAggregation")
+	return ll.isMap(item) && ll.methodExists(item, "_getAggregation")
 }
 
 // Helper function to map string column names or expression objects to their JSON structure
@@ -115,15 +115,15 @@ _newWindowExpression = func(expression, aggregation, currentAlias) {
 			return expression(ctx)
 		},
 		/** Returns the aggregation for group by operations. */
-		getAggregation: func(ctx) {
+		_getAggregation: func(ctx) {
 			if aggregation == undefined {
 				ll.panic("Using this operation as a group by expression is not allowed, most probably because you applied .over() to it. %v", expression)
 			}
 			aggStruct := aggregation(ctx)
-			return maps.deepMerge(aggStruct, {name: self.getAlias()})
+			return maps.deepMerge(aggStruct, {name: self._getAlias()})
 		},
 		/** Returns the current alias of the expression, if defined. Panics if no alias is set. */
-		getAlias: func() {
+		_getAlias: func() {
 			if currentAlias == undefined {
 				ll.panic("Alias is not defined for this window expression.")
 			}
@@ -247,7 +247,7 @@ _newExpression = func(expression, currentAlias) {
 		/** Returns the underlying PTabler expression structure. */
 		_getExpression: expression,
 		/** Returns the current alias of the expression, if defined. Panics if no alias is set. */
-		getAlias: func() {
+		_getAlias: func() {
 			if currentAlias == undefined {
 				ll.panic("Alias is not defined for this expression.")
 			}

@@ -6,15 +6,15 @@ getExpr := func(exprObj) {
 	return exprObj._getExpression({})
 }
 
-// Helper for checking alias (and that getAlias doesn't throw for defined aliases)
-getAlias := func(exprObj) {
-    return exprObj.getAlias()
+// Helper for checking alias (and that _getAlias doesn't throw for defined aliases)
+_getAlias := func(exprObj) {
+    return exprObj.__getAlias()
 }
 
 TestBasicExpressions := func() {
 	c1 := pt.col("age")
 	test.isEqual(getExpr(c1), {type: "col", name: "age"})
-	test.isEqual(getAlias(c1), "age")
+	test.isEqual(_getAlias(c1), "age")
 
 	l_num := pt.lit(10)
 	test.isEqual(getExpr(l_num), {type: "const", value: 10})
@@ -283,18 +283,18 @@ TestAliasing := func() {
 
 	aliasedAge := age.alias("yearsOld")
 	test.isEqual(getExpr(aliasedAge), {type: "col", name: "age"})
-	test.isEqual(getAlias(aliasedAge), "yearsOld")
+	test.isEqual(_getAlias(aliasedAge), "yearsOld")
 
 	calculated := age.plus(pt.lit(5)).alias("ageInFiveYears")
 	test.isEqual(getExpr(calculated), {type: "plus", lhs: {type: "col", name: "age"}, rhs: {type: "const", value: 5}})
-	test.isEqual(getAlias(calculated), "ageInFiveYears")
+	test.isEqual(_getAlias(calculated), "ageInFiveYears")
 
     litVal := pt.lit(100).alias("hundred")
     test.isEqual(getExpr(litVal), {type:"const", value:100})
-    test.isEqual(getAlias(litVal), "hundred")
+    test.isEqual(_getAlias(litVal), "hundred")
 
     sumSalary := pt.col("salary").sum().over("dept").alias("total_dept_salary")
-    test.isEqual(getAlias(sumSalary), "total_dept_salary")
+    test.isEqual(_getAlias(sumSalary), "total_dept_salary")
     test.isEqual(getExpr(sumSalary).type, "aggregate")
 }
 
