@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { Command } from '@oclif/core';
 import { compile, savePacks, getPackageInfo } from '../compiler/main';
 import { createLogger } from '../compiler/util';
-import { CtagsFlags, GlobalFlags } from '../shared/basecmd';
+import * as opts from '../shared/basecmd';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
@@ -16,8 +16,8 @@ export default class Build extends Command {
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
   static override flags = {
-    ...GlobalFlags,
-    ...CtagsFlags,
+    ...opts.GlobalFlags,
+    ...opts.CtagsFlags,
   };
 
   public async run(): Promise<void> {
