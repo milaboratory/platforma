@@ -4,9 +4,10 @@ import type { ArtifactType } from '../compiler/package';
 import { typedArtifactNameToString } from '../compiler/package';
 import type { TemplateDataV3 } from '@milaboratories/pl-model-backend';
 
-export function dumpAll(
+export function dumpArtifacts(
   logger: winston.Logger,
   stream: NodeJS.WritableStream,
+  aType?: ArtifactType,
 ): void {
   const packageInfo = getPackageInfo(process.cwd(), logger);
 
@@ -23,88 +24,97 @@ export function dumpAll(
 
   // Libs
 
-  for (const lib of compiler.allLibs()) {
-    logger.debug(
-      `Dumping to pl-tester: ${typedArtifactNameToString(lib.fullName)}`,
-    );
-    stream.write(JSON.stringify(lib) + '\n');
-  }
-
-  for (const src of sources) {
-    if (src.fullName.type === 'library') {
+  if (!aType || aType === 'library') {
+    for (const lib of compiler.allLibs()) {
       logger.debug(
-        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`,
+        `Dumping to pl-tester: ${typedArtifactNameToString(lib.fullName)}`,
       );
-      stream.write(JSON.stringify(src) + '\n');
+      stream.write(JSON.stringify(lib) + '\n');
+    }
+
+    for (const src of sources) {
+      if (src.fullName.type === 'library') {
+        logger.debug(
+          `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`,
+        );
+        stream.write(JSON.stringify(src) + '\n');
+      }
     }
   }
 
   // Templates
 
-  for (const tpl of compiler.allTemplates()) {
-    logger.debug(
-      `Dumping to pl-tester: ${typedArtifactNameToString(tpl.fullName)}`,
-    );
-    stream.write(JSON.stringify(tpl) + '\n');
-  }
-
-  for (const src of sources) {
-    if (src.fullName.type === 'template') {
+  if (!aType || aType === 'template') {
+    for (const tpl of compiler.allTemplates()) {
       logger.debug(
-        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${
-          src.srcName
-        }`,
+        `Dumping to pl-tester: ${typedArtifactNameToString(tpl.fullName)}`,
       );
-      stream.write(JSON.stringify(src) + '\n');
+      stream.write(JSON.stringify(tpl) + '\n');
+    }
+
+    for (const src of sources) {
+      if (src.fullName.type === 'template') {
+        logger.debug(
+          `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${
+            src.srcName
+          }`,
+        );
+        stream.write(JSON.stringify(src) + '\n');
+      }
     }
   }
 
   // Software
 
-  for (const sw of compiler.allSoftware()) {
-    logger.debug(
-      `Dumping to pl-tester: ${typedArtifactNameToString(sw.fullName)}`,
-    );
-    stream.write(JSON.stringify(sw) + '\n');
-  }
-
-  for (const src of sources) {
-    if (src.fullName.type === 'software') {
+  if (!aType || aType === 'software') {
+    for (const sw of compiler.allSoftware()) {
       logger.debug(
-        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`,
+        `Dumping to pl-tester: ${typedArtifactNameToString(sw.fullName)}`,
       );
-      stream.write(JSON.stringify(src) + '\n');
+      stream.write(JSON.stringify(sw) + '\n');
+    }
+
+    for (const src of sources) {
+      if (src.fullName.type === 'software') {
+        logger.debug(
+          `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`,
+        );
+        stream.write(JSON.stringify(src) + '\n');
+      }
     }
   }
 
   // Assets
 
-  for (const asset of compiler.allAssets()) {
-    logger.debug(
-      `Dumping to pl-tester: ${typedArtifactNameToString(asset.fullName)}`,
-    );
-    stream.write(JSON.stringify(asset) + '\n');
-  }
-
-  for (const src of sources) {
-    if (src.fullName.type === 'asset') {
+  if (!aType || aType === 'asset') {
+    for (const asset of compiler.allAssets()) {
       logger.debug(
-        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`,
+        `Dumping to pl-tester: ${typedArtifactNameToString(asset.fullName)}`,
       );
-      stream.write(JSON.stringify(src) + '\n');
+      stream.write(JSON.stringify(asset) + '\n');
+    }
+
+    for (const src of sources) {
+      if (src.fullName.type === 'asset') {
+        logger.debug(
+          `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`,
+        );
+        stream.write(JSON.stringify(src) + '\n');
+      }
     }
   }
-
   // Tests
 
-  for (const src of sources) {
-    if (src.fullName.type === 'test') {
-      logger.debug(
-        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${
-          src.srcName
-        }`,
-      );
-      stream.write(JSON.stringify(src) + '\n');
+  if (!aType || aType === 'test') {
+    for (const src of sources) {
+      if (src.fullName.type === 'test') {
+        logger.debug(
+          `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${
+            src.srcName
+          }`,
+        );
+        stream.write(JSON.stringify(src) + '\n');
+      }
     }
   }
 }
@@ -138,28 +148,6 @@ export function dumpLibs(
   for (const lib of compiler.allLibs()) {
     stream.write(JSON.stringify(lib) + '\n');
   }
-}
-
-function dumpArtifacts(
-  logger: winston.Logger,
-  stream: NodeJS.WritableStream,
-  aType: ArtifactType,
-): void {
-  const packageInfo = getPackageInfo(process.cwd(), logger);
-
-  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
-  for (const src of sources) {
-    if (src.fullName.type === aType) {
-      stream.write(JSON.stringify(src) + '\n');
-    }
-  }
-}
-
-export function dumpTemplates(
-  logger: winston.Logger,
-  stream: NodeJS.WritableStream,
-): void {
-  dumpArtifacts(logger, stream, 'template');
 }
 
 export function dumpSoftware(
@@ -199,18 +187,4 @@ function getTemplateSoftware(stream: NodeJS.WritableStream, tpl: TemplateDataV3)
   }
 
   return new Set(hashes);
-}
-
-export function dumpAssets(
-  logger: winston.Logger,
-  stream: NodeJS.WritableStream,
-): void {
-  dumpArtifacts(logger, stream, 'asset');
-}
-
-export function dumpTests(
-  logger: winston.Logger,
-  stream: NodeJS.WritableStream,
-): void {
-  dumpArtifacts(logger, stream, 'test');
 }

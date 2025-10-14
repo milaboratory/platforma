@@ -27,10 +27,11 @@ export const CtagsFlags = {
   }),
 };
 
-export const RecusiveFlag = {
-  recursive: Flags.boolean({
-    aliases: ['r'],
-    description: 'recursive',
-    default: false,
+export const ArtifactTypeFlag = {
+  type: Flags.string({
+    aliases: ['t'],
+    description: 'artifact type',
+    options: ['all', 'library', 'template', 'test', 'software', 'asset'],
+    default: 'all',
   }),
 };
