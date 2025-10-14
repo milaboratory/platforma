@@ -1,5 +1,39 @@
 # @milaboratories/uikit
 
+## 2.4.26
+
+### Patch Changes
+
+- Updated dependencies [18203d0]
+  - @milaboratories/helpers@1.12.0
+  - @platforma-sdk/model@1.44.5
+
+## 2.4.25
+
+### Patch Changes
+
+- @platforma-sdk/model@1.44.5
+
+## 2.4.24
+
+### Patch Changes
+
+- @platforma-sdk/model@1.44.4
+
+## 2.4.23
+
+### Patch Changes
+
+- 900b8fa: fix dropdown list position
+
+## 2.4.22
+
+### Patch Changes
+
+- Updated dependencies [ef22c49]
+  - @milaboratories/helpers@1.11.0
+  - @platforma-sdk/model@1.44.1
+
 ## 2.4.21
 
 ### Patch Changes

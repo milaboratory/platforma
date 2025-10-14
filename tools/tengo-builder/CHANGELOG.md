@@ -1,5 +1,17 @@
 # @platforma-sdk/tengo-builder
 
+## 2.3.0
+
+### Minor Changes
+
+- 8c66270: Allow to dump all software used by tengo code (with transitive dependencies)
+
+## 2.2.5
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.1.15
+
 ## 2.2.4
 
 ### Patch Changes

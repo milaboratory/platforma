@@ -2,7 +2,7 @@ import type { AnyRef } from '@milaboratories/pl-middle-layer';
 import { Annotation, Pl, field, resourceType } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { assertBlob, assertResource, eTplTest } from './extended_tpl_test';
-import { getTestTimeout } from '@milaboratories/helpers';
+import { getTestTimeout } from '@milaboratories/test-helpers';
 import { vi } from 'vitest';
 
 const TIMEOUT = getTestTimeout(10_000);

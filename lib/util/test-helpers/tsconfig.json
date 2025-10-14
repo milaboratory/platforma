@@ -1,0 +1,10 @@
+{
+  "extends": "@milaboratories/ts-configs/tsconfig.node.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "lib": ["ES2020"]
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}

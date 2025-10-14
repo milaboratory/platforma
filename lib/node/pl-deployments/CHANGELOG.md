@@ -1,5 +1,28 @@
 # @milaboratories/pl-local
 
+## 2.10.1
+
+### Patch Changes
+
+- d5a8713: Fix @milaboratories/pl-model-common dependency version
+- Updated dependencies [d5a8713]
+  - @milaboratories/pl-model-common@1.21.2
+
+## 2.10.0
+
+### Minor Changes
+
+- 1ec2268: Update Built-In backend version
+
+## 2.9.1
+
+### Patch Changes
+
+- ef22c49: Moved HTTP Authorization header parser/serializer from helpers to pl-model-common
+- Updated dependencies [ef22c49]
+- Updated dependencies [5ecb368]
+  - @milaboratories/pl-model-common@1.21.0
+
 ## 2.9.0
 
 ### Minor Changes

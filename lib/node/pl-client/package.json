@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-client",
-  "version": "2.14.0",
+  "version": "2.15.0",
   "engines": {
     "node": ">=22.19.0"
   },
@@ -29,32 +29,33 @@
     "./src/**/*"
   ],
   "dependencies": {
-    "@milaboratories/pl-http": "workspace:*",
-    "@milaboratories/ts-helpers": "workspace:*",
     "@grpc/grpc-js": "catalog:",
+    "@milaboratories/pl-http": "workspace:*",
+    "@milaboratories/pl-model-common": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
     "@protobuf-ts/grpc-transport": "catalog:",
     "@protobuf-ts/runtime": "catalog:",
     "@protobuf-ts/runtime-rpc": "catalog:",
     "canonicalize": "catalog:",
     "denque": "catalog:",
-    "lru-cache": "catalog:",
     "https-proxy-agent": "catalog:",
     "long": "catalog:",
+    "lru-cache": "catalog:",
     "undici": "catalog:",
     "utility-types": "catalog:",
     "yaml": "catalog:"
   },
   "devDependencies": {
+    "@jest/globals": "catalog:",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "@types/node": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@protobuf-ts/plugin": "catalog:",
     "@types/http-proxy": "catalog:",
     "@types/jest": "catalog:",
+    "@types/node": "catalog:",
     "jest": "catalog:",
-    "@jest/globals": "catalog:",
     "ts-jest": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "typescript": "catalog:"
   }
 }

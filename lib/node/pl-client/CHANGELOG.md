@@ -1,5 +1,16 @@
 # @milaboratories/pl-client
 
+## 2.15.0
+
+### Minor Changes
+
+- d5a8713: Extend grpcProxy to accept auth
+
+### Patch Changes
+
+- Updated dependencies [d5a8713]
+  - @milaboratories/pl-model-common@1.21.2
+
 ## 2.14.0
 
 ### Minor Changes

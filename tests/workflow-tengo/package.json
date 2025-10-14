@@ -36,6 +36,7 @@
     "@platforma-sdk/tengo-builder": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
     "@platforma-sdk/test": "workspace:*",
+    "@milaboratories/test-helpers": "workspace:*",
     "@types/node": "catalog:",
     "vitest": "catalog:",
     "@milaboratories/eslint-config": "workspace:*",

@@ -5,7 +5,7 @@ import type { TestRenderResults } from '@platforma-sdk/test';
 import type { CalculateTableDataResponse, MiddleLayerDriverKit, PObjectId, PTableColumnSpec } from '@milaboratories/pl-middle-layer';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type { ComputableCtx } from '@milaboratories/computable';
-import { getTestTimeout } from '@milaboratories/helpers';
+import { getTestTimeout } from '@milaboratories/test-helpers';
 import { vi } from 'vitest';
 
 const TIMEOUT = getTestTimeout(60_000);

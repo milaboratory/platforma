@@ -26,7 +26,7 @@ jobs:
       app-name-slug: 'platforma-sdk'
       gha-runner-label: 'dev-pl-sdk'
       node-version: '22.x'
-      team-id: 'ci-010010'
+      team-id: 'ci-010011'
       build-script-name: 'build'
       test: true
       test-script-name: 'test'

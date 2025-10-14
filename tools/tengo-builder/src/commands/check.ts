@@ -1,6 +1,6 @@
 import { Command } from '@oclif/core';
 import { createLogger } from '../compiler/util';
-import { dumpAll } from '../shared/dump';
+import { dumpArtifacts } from '../shared/dump';
 import { GlobalFlags } from '../shared/basecmd';
 import { spawnEmbed, waitFor } from '../shared/proc';
 import { TengoTesterBinaryPath } from '@milaboratories/tengo-tester';
@@ -33,7 +33,7 @@ export default class Check extends Command {
     );
 
     try {
-      dumpAll(logger, tester.stdin);
+      dumpArtifacts(logger, tester.stdin);
     } catch (err: unknown) {
       logger.error(err);
     } finally {

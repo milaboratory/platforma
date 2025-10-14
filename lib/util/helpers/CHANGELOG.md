@@ -1,5 +1,17 @@
 # @milaboratories/helpers
 
+## 1.12.0
+
+### Minor Changes
+
+- 18203d0: Move test utilities (test_jitter, test_timeouts) to dedicated package
+
+## 1.11.0
+
+### Minor Changes
+
+- ef22c49: Moved HTTP Authorization header parser/serializer from helpers to pl-model-common
+
 ## 1.10.0
 
 ### Minor Changes

@@ -19,7 +19,7 @@ import type { Required } from 'utility-types';
 import * as os from 'node:os';
 import type { ProxySettings } from '@milaboratories/pl-http';
 import { defaultHttpDispatcher } from '@milaboratories/pl-http';
-import { parseHttpAuth } from '@milaboratories/helpers';
+import { parseHttpAuth } from '@milaboratories/pl-model-common';
 
 export const LocalConfigYaml = 'config-local.yaml';
 

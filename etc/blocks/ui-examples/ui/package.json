@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples.ui",
-  "version": "1.5.46",
+  "version": "1.5.49",
   "type": "module",
   "scripts": {
     "dev": "ts-builder serve --target browser",

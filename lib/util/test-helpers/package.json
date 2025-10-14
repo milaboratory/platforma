@@ -1,39 +1,40 @@
 {
-  "name": "@milaboratories/pl-model-backend",
-  "version": "1.1.15",
+  "name": "@milaboratories/test-helpers",
+  "version": "1.1.0",
+  "description": "Test utilities for Node.js environments including jitter and timeout helpers",
   "type": "module",
-  "description": "Backend model for Platforma.bio",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
   "exports": {
     ".": {
+      "sources": "./src/index.ts",
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
+    "test": "echo 'No tests for test-helpers package'",
     "watch": "ts-builder build --target node --watch",
-    "lint": "eslint .",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "lint": "eslint ."
   },
   "files": [
     "./dist/**/*",
     "./src/**/*"
   ],
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
-    "zod": "catalog:",
-    "canonicalize": "catalog:",
-    "@milaboratories/pl-client": "workspace:*"
+    "@milaboratories/helpers": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "@types/node": "catalog:",
     "typescript": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }

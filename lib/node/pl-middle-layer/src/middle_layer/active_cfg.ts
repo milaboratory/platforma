@@ -8,7 +8,7 @@ import { allBlocks } from '../model/project_model_util';
 import { constructBlockContext } from './block_ctx';
 import { computableFromCfgOrRF, isActive } from './render';
 import { getBlockPackInfo } from './util';
-import { extractCodeWithInfo } from '@platforma-sdk/model';
+import { extractCodeWithInfo, wrapCallback } from '@platforma-sdk/model';
 
 /** Returns derived general project state form the project resource */
 export function activeConfigs(
@@ -24,6 +24,9 @@ export function activeConfigs(
       const bp = getBlockPackInfo(prj, id);
       if (bp === undefined) continue;
 
+      const codeWithInfoOrError = wrapCallback(() => extractCodeWithInfo(bp.cfg));
+      if (codeWithInfoOrError.error) continue;
+
       const activeOutputConfigs = Object.entries(bp.cfg.outputs)
         .map(([, cfg]) => cfg)
         .filter((cfg) => isActive(cfg))
@@ -33,10 +36,11 @@ export function activeConfigs(
 
       const blockCtx = constructBlockContext(prj.persist(), id);
 
-      for (const cfg of activeOutputConfigs)
+      for (const cfg of activeOutputConfigs) {
         ret.push(
-          Computable.wrapError(computableFromCfgOrRF(env, blockCtx, cfg, extractCodeWithInfo(bp.cfg), bp.bpId)),
+          Computable.wrapError(computableFromCfgOrRF(env, blockCtx, cfg, codeWithInfoOrError.value, bp.bpId)),
         );
+      }
     }
 
     return ret;
