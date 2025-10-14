@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.20
+
+### Patch Changes
+
+- @milaboratories/pl-drivers@1.11.9
+- @platforma-sdk/model@1.44.5
+
 ## 1.43.19
 
 ### Patch Changes
