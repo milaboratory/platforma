@@ -4,6 +4,7 @@ slices := import(":slices")
 validation := import(":validation")
 fmt := import("fmt")
 objects := import(":objects")
+oop := import(":oop")
 pframesSpec := import(":pframes.spec")
 
 
@@ -1411,6 +1412,301 @@ rawExp := func(expression) {
 	return _newExpression(func(ctx) { return expression })
 }
 
+_isSelector := func(expression) {
+	return _isExpression(expression) && ll.methodExists(expression, "complement")
+}
+
+_newSelectorExpression := func(expression) {
+	self := undefined
+	newExpression := _newExpression(expression)
+	self = ll.toStrict(oop.inherit(newExpression, {
+		/**
+		 * Returns the complement of this selector.
+		 * Selects all columns that are NOT selected by this selector.
+		 * @returns {object} - A new selector expression.
+		 */
+		complement: func() {
+			return _newSelectorExpression(func(ctx) {
+				return {
+					type: "selector_complement",
+					selector: self._getExpression(ctx)
+				}
+			})
+		},
+		
+		/**
+		 * Returns the union of this selector with other selectors.
+		 * Selects columns that match ANY of the provided selectors (logical OR).
+		 * @param ...others - The other selector expressions to union with.
+		 * @returns {object} - A new selector expression.
+		 */
+		union: func(...others) {
+			ll.assert(len(others) > 0, "union requires at least one other selector")
+			return _newSelectorExpression(func(ctx) {
+				selectors := [self._getExpression(ctx)]
+				for other in others {
+					ll.assert(_isSelector(other), "union requires selector expressions, got: %T", other)
+					selectors = append(selectors, other._getExpression(ctx))
+				}
+				return {
+					type: "selector_union",
+					selectors: selectors
+				}
+			})
+		},
+		
+		/**
+		 * Returns the intersection of this selector with other selectors.
+		 * Selects columns that match ALL of the provided selectors (logical AND).
+		 * @param ...others - The other selector expressions to intersect with.
+		 * @returns {object} - A new selector expression.
+		 */
+		intersection: func(...others) {
+			ll.assert(len(others) > 0, "intersection requires at least one other selector")
+			return _newSelectorExpression(func(ctx) {
+				selectors := [self._getExpression(ctx)]
+				for other in others {
+					ll.assert(_isSelector(other), "intersection requires selector expressions, got: %T", other)
+					selectors = append(selectors, other._getExpression(ctx))
+				}
+				return {
+					type: "selector_intersection",
+					selectors: selectors
+				}
+			})
+		},
+		
+		/**
+		 * Returns the difference of this selector with other selectors.
+		 * Selects columns from this selector minus those selected by subsequent selectors.
+		 * @param ...others - The other selector expressions to subtract.
+		 * @returns {object} - A new selector expression.
+		 */
+		difference: func(...others) {
+			ll.assert(len(others) > 0, "difference requires at least one other selector")
+			return _newSelectorExpression(func(ctx) {
+				selectors := [self._getExpression(ctx)]
+				for other in others {
+					ll.assert(_isSelector(other), "difference requires selector expressions, got: %T", other)
+					selectors = append(selectors, other._getExpression(ctx))
+				}
+				return {
+					type: "selector_difference",
+					selectors: selectors
+				}
+			})
+		},
+		
+		/**
+		 * Returns the symmetric difference of this selector with other selectors.
+		 * Selects columns that are in an odd number of the provided selectors (logical XOR).
+		 * @param ...others - The other selector expressions.
+		 * @returns {object} - A new selector expression.
+		 */
+		symmetricDifference: func(...others) {
+			ll.assert(len(others) > 0, "symmetricDifference requires at least one other selector")
+			return _newSelectorExpression(func(ctx) {
+				selectors := [self._getExpression(ctx)]
+				for other in others {
+					ll.assert(_isSelector(other), "symmetricDifference requires selector expressions, got: %T", other)
+					selectors = append(selectors, other._getExpression(ctx))
+				}
+				return {
+					type: "selector_symmetric_difference",
+					selectors: selectors
+				}
+			})
+		}
+	}))
+	return self
+}
+
+/**
+ * Selector namespace for column selection operations.
+ * Provides functions to select columns based on various criteria.
+ */
+sc := ll.toStrict({
+	/**
+	 * Selects all columns in the DataFrame.
+	 * @returns {object} - A selector expression.
+	 * @example
+	 *   sc.all()
+	 */
+	all: func() {
+		return _newSelectorExpression(func(ctx) {
+			return {type: "selector_all"}
+		})
+	},
+	
+	/**
+	 * Selects all columns with string data types.
+	 * @returns {object} - A selector expression.
+	 * @example
+	 *   sc.string()
+	 */
+	string: func() {
+		return _newSelectorExpression(func(ctx) {
+			return {type: "selector_string"}
+		})
+	},
+	
+	/**
+	 * Selects all columns with numeric data types (integers and floats).
+	 * @returns {object} - A selector expression.
+	 * @example
+	 *   sc.numeric()
+	 */
+	numeric: func() {
+		return _newSelectorExpression(func(ctx) {
+			return {type: "selector_numeric"}
+		})
+	},
+	
+	/**
+	 * Selects all columns with integer data types.
+	 * @returns {object} - A selector expression.
+	 * @example
+	 *   sc.integer()
+	 */
+	integer: func() {
+		return _newSelectorExpression(func(ctx) {
+			return {type: "selector_integer"}
+		})
+	},
+	
+	/**
+	 * Selects all columns with floating-point data types.
+	 * @returns {object} - A selector expression.
+	 * @example
+	 *   sc.float()
+	 */
+	float: func() {
+		return _newSelectorExpression(func(ctx) {
+			return {type: "selector_float"}
+		})
+	},
+	
+	/**
+	 * Selects columns whose names start with the specified prefix.
+	 * @param prefix - string - The prefix to match column names against.
+	 * @returns {object} - A selector expression.
+	 * @example
+	 *   sc.startsWith("test_")
+	 */
+	startsWith: func(prefix) {
+		ll.assert(is_string(prefix), "startsWith requires a string argument, got: %T", prefix)
+		return _newSelectorExpression(func(ctx) {
+			return {
+				type: "selector_starts_with",
+				prefix: prefix
+			}
+		})
+	},
+	
+	/**
+	 * Selects columns whose names end with the specified suffix.
+	 * @param suffix - string - The suffix to match column names against.
+	 * @returns {object} - A selector expression.
+	 * @example
+	 *   sc.endsWith("_id")
+	 */
+	endsWith: func(suffix) {
+		ll.assert(is_string(suffix), "endsWith requires a string argument, got: %T", suffix)
+		return _newSelectorExpression(func(ctx) {
+			return {
+				type: "selector_ends_with",
+				suffix: suffix
+			}
+		})
+	},
+	
+	/**
+	 * Selects columns whose names contain the specified substring.
+	 * @param substring - string - The substring to match within column names.
+	 * @returns {object} - A selector expression.
+	 * @example
+	 *   sc.contains("age")
+	 */
+	contains: func(substring) {
+		ll.assert(is_string(substring), "contains requires a string argument, got: %T", substring)
+		return _newSelectorExpression(func(ctx) {
+			return {
+				type: "selector_contains",
+				substring: substring
+			}
+		})
+	},
+	
+	/**
+	 * Selects columns whose names match the specified regular expression pattern.
+	 * @param pattern - string - The regex pattern to match column names against.
+	 * @returns {object} - A selector expression.
+	 * @example
+	 *   sc.matches("^col_[0-9]+$")
+	 */
+	matches: func(pattern) {
+		ll.assert(is_string(pattern), "matches requires a string argument, got: %T", pattern)
+		return _newSelectorExpression(func(ctx) {
+			return {
+				type: "selector_matches",
+				pattern: pattern
+			}
+		})
+	},
+	
+	/**
+	 * Selects all columns except those explicitly listed.
+	 * @param ...columns - string - The column names to exclude from selection.
+	 * @returns {object} - A selector expression.
+	 * @example
+	 *   sc.exclude("id", "timestamp")
+	 */
+	exclude: func(...columns) {
+		ll.assert(len(columns) > 0, "exclude requires at least one column name")
+		for col in columns {
+			ll.assert(is_string(col), "exclude requires string arguments, got: %T", col)
+		}
+		return _newSelectorExpression(func(ctx) {
+			return {
+				type: "selector_exclude",
+				columns: columns
+			}
+		})
+	},
+	
+	/**
+	 * Selects columns that match any of the specified names.
+	 * @param ...names - string - The column names to select.
+	 * @returns {object} - A selector expression.
+	 * @example
+	 *   sc.byName("name", "age", "email")
+	 */
+	byName: func(...names) {
+		ll.assert(len(names) > 0, "byName requires at least one column name")
+		for name in names {
+			ll.assert(is_string(name), "byName requires string arguments, got: %T", name)
+		}
+		return _newSelectorExpression(func(ctx) {
+			return {
+				type: "selector_by_name",
+				names: names
+			}
+		})
+	},
+	
+	/**
+	 * Selects columns that have nested/complex data types (e.g., structs, lists).
+	 * @returns {object} - A selector expression.
+	 * @example
+	 *   sc.nested()
+	 */
+	nested: func() {
+		return _newSelectorExpression(func(ctx) {
+			return {type: "selector_nested"}
+		})
+	}
+})
+
 export ll.toStrict({
 	axis: axis,
 	col: col,
@@ -1425,6 +1721,7 @@ export ll.toStrict({
 	rank: rank,
 	when: when,
 	rawExp: rawExp,
+	sc: sc,
 	_newExpression: _newExpression,
 	_isExpression: _isExpression,
 	_isAggregation: _isAggregation,

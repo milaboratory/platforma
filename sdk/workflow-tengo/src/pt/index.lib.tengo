@@ -1855,5 +1855,6 @@ export ll.toStrict({
 	or: exp.or,
 	rank: exp.rank,
 	when: exp.when,
-	rawExp: exp.rawExp
+	rawExp: exp.rawExp,
+	sc: exp.sc
 })

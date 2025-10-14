@@ -528,3 +528,125 @@ TestNdjsonParameterValidation := func() {
     // Note: In a real test environment, we would test that invalid parameters cause panics
     // For now, we just ensure valid parameters don't cause issues
 }
+
+TestSelectorExpressions := func() {
+    // Basic selectors
+    expr1 := pt.sc.all()
+    test.isEqual(getExpr(expr1), {type: "selector_all"})
+
+    expr2 := pt.sc.string()
+    test.isEqual(getExpr(expr2), {type: "selector_string"})
+
+    expr3 := pt.sc.numeric()
+    test.isEqual(getExpr(expr3), {type: "selector_numeric"})
+
+    expr4 := pt.sc.integer()
+    test.isEqual(getExpr(expr4), {type: "selector_integer"})
+
+    expr5 := pt.sc.float()
+    test.isEqual(getExpr(expr5), {type: "selector_float"})
+
+    expr6 := pt.sc.nested()
+    test.isEqual(getExpr(expr6), {type: "selector_nested"})
+
+    // Name-based selectors
+    expr7 := pt.sc.startsWith("test_")
+    test.isEqual(getExpr(expr7), {type: "selector_starts_with", prefix: "test_"})
+
+    expr8 := pt.sc.endsWith("_id")
+    test.isEqual(getExpr(expr8), {type: "selector_ends_with", suffix: "_id"})
+
+    expr9 := pt.sc.contains("age")
+    test.isEqual(getExpr(expr9), {type: "selector_contains", substring: "age"})
+
+    expr10 := pt.sc.matches("^col_[0-9]+$")
+    test.isEqual(getExpr(expr10), {type: "selector_matches", pattern: "^col_[0-9]+$"})
+
+    expr11 := pt.sc.exclude("id", "timestamp")
+    test.isEqual(getExpr(expr11), {type: "selector_exclude", columns: ["id", "timestamp"]})
+
+    expr12 := pt.sc.byName("name", "age", "email")
+    test.isEqual(getExpr(expr12), {type: "selector_by_name", names: ["name", "age", "email"]})
+
+    // Complement
+    expr13 := pt.sc.string().complement()
+    test.isEqual(getExpr(expr13), {
+        type: "selector_complement",
+        selector: {type: "selector_string"}
+    })
+
+    // Union
+    expr14 := pt.sc.string().union(pt.sc.numeric())
+    test.isEqual(getExpr(expr14), {
+        type: "selector_union",
+        selectors: [
+            {type: "selector_string"},
+            {type: "selector_numeric"}
+        ]
+    })
+
+    // Union with multiple selectors
+    expr15 := pt.sc.string().union(pt.sc.numeric(), pt.sc.nested())
+    test.isEqual(getExpr(expr15), {
+        type: "selector_union",
+        selectors: [
+            {type: "selector_string"},
+            {type: "selector_numeric"},
+            {type: "selector_nested"}
+        ]
+    })
+
+    // Intersection
+    expr16 := pt.sc.numeric().intersection(pt.sc.startsWith("test_"))
+    test.isEqual(getExpr(expr16), {
+        type: "selector_intersection",
+        selectors: [
+            {type: "selector_numeric"},
+            {type: "selector_starts_with", prefix: "test_"}
+        ]
+    })
+
+    // Difference
+    expr17 := pt.sc.all().difference(pt.sc.string())
+    test.isEqual(getExpr(expr17), {
+        type: "selector_difference",
+        selectors: [
+            {type: "selector_all"},
+            {type: "selector_string"}
+        ]
+    })
+
+    // Symmetric difference
+    expr18 := pt.sc.string().symmetricDifference(pt.sc.startsWith("temp_"))
+    test.isEqual(getExpr(expr18), {
+        type: "selector_symmetric_difference",
+        selectors: [
+            {type: "selector_string"},
+            {type: "selector_starts_with", prefix: "temp_"}
+        ]
+    })
+
+    // Complex chaining
+    expr19 := pt.sc.numeric().intersection(pt.sc.startsWith("test_")).complement()
+    test.isEqual(getExpr(expr19), {
+        type: "selector_complement",
+        selector: {
+            type: "selector_intersection",
+            selectors: [
+                {type: "selector_numeric"},
+                {type: "selector_starts_with", prefix: "test_"}
+            ]
+        }
+    })
+
+    // Complex union with difference
+    expr20 := pt.sc.all().difference(pt.sc.string(), pt.sc.nested())
+    test.isEqual(getExpr(expr20), {
+        type: "selector_difference",
+        selectors: [
+            {type: "selector_all"},
+            {type: "selector_string"},
+            {type: "selector_nested"}
+        ]
+    })
+}
