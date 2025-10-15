@@ -91,6 +91,10 @@ const props = withDefaults(
      * Formatter for the selected value if its label is absent
      */
     formatValue?: (value: M) => string;
+    /**
+     * Makes some of corners not rounded
+     * */
+    position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
   }>(),
   {
     modelSearch: undefined,
@@ -106,6 +110,7 @@ const props = withDefaults(
     arrowIconLarge: undefined,
     optionSize: 'small',
     formatValue: (v: M) => String(v),
+    position: undefined,
   },
 );
 
@@ -396,7 +401,7 @@ watch(() => optionsRequest.loading || modelOptionRequest.loading, (loading) => {
           />
           <div v-if="!renderedOptionsRef.length" class="nothing-found">Nothing found</div>
         </DropdownOverlay>
-        <DoubleContour class="pl-autocomplete__contour" />
+        <DoubleContour class="pl-autocomplete__contour" :position="position" />
       </div>
     </div>
     <div v-if="computedError" class="pl-autocomplete__error">{{ computedError }}</div>
