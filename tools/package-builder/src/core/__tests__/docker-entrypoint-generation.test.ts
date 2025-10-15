@@ -75,7 +75,7 @@ describe('Docker Entrypoint Generation', () => {
     const dockerEntrypoint = entrypoints.get('script1:docker')!;
     expect(dockerEntrypoint.type).toBe('software');
     if (dockerEntrypoint.type === 'software') {
-      expect(dockerEntrypoint.package.type).toBe('docker');
+      expect(dockerEntrypoint.artifact.type).toBe('docker');
       expect(dockerEntrypoint.cmd).toEqual(['{pkg}/script1']);
     }
   });
@@ -90,7 +90,9 @@ describe('Docker Entrypoint Generation', () => {
             binary: {
               artifact: {
                 type: 'binary',
-                root: './src',
+                roots: {
+                  'linux-x64': './src',
+                },
                 registry: 'test-registry',
               },
               cmd: ['{pkg}/script1'],

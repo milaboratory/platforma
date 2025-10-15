@@ -3,13 +3,13 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import type winston from 'winston';
 import { PackageInfo } from './package-info';
-import type * as artifacts from './schemas/artifacts';
-import type * as entrypoint from './schemas/entrypoint';
+import * as artifacts from './schemas/artifacts';
+import type * as entrypoint from './schemas/entrypoints';
 import {
-  Renderer,
+  SwJsonRenderer,
   readBuiltArtifactInfo,
   writeBuiltArtifactInfo,
-} from './renderer';
+} from './sw-json-render';
 import * as util from './util';
 import * as archive from './archive';
 import * as storage from './storage';
@@ -18,7 +18,7 @@ import * as docker from './docker';
 export class Core {
   private readonly logger: winston.Logger;
   private _entrypoints: Map<string, entrypoint.Entrypoint> | undefined;
-  private _renderer: Renderer | undefined;
+  private _renderer: SwJsonRenderer | undefined;
 
   public readonly pkgInfo: PackageInfo;
   public buildMode: util.BuildMode;
@@ -38,20 +38,24 @@ export class Core {
     this.fullDirHash = false;
   }
 
-  public binArchivePath(pkg: entrypoint.PackageConfig, os: util.OSType, arch: util.ArchType): string {
-    return archive.getPath(this.archiveOptions(pkg, os, arch, 'tgz'));
+  public binArchivePath(artifact: artifacts.withId<artifacts.config>, os: util.OSType, arch: util.ArchType): string {
+    const name = this.pkgInfo.artifactName(artifact);
+    const version = this.pkgInfo.artifactVersion(artifact);
+    return archive.getPath(this.archiveOptions(artifact, name, version, os, arch, 'tgz'));
   }
 
-  public assetArchivePath(pkg: entrypoint.PackageConfig, os: util.OSType, arch: util.ArchType): string {
-    return archive.getPath(this.archiveOptions(pkg, os, arch, 'zip'));
+  public assetArchivePath(artifact: artifacts.withId<artifacts.config>, os: util.OSType, arch: util.ArchType): string {
+    const name = this.pkgInfo.artifactName(artifact);
+    const version = this.pkgInfo.artifactVersion(artifact);
+    return archive.getPath(this.archiveOptions(artifact, name, version, os, arch, 'zip'));
   }
 
-  public archivePath(pkg: entrypoint.PackageConfig, os: util.OSType, arch: util.ArchType): string {
-    if (pkg.type === 'asset') {
-      return this.assetArchivePath(pkg, os, arch);
+  public archivePath(artifact: artifacts.withId<artifacts.config>, os: util.OSType, arch: util.ArchType): string {
+    if (artifact.type === 'asset') {
+      return this.assetArchivePath(artifact, os, arch);
     }
 
-    return this.binArchivePath(pkg, os, arch);
+    return this.binArchivePath(artifact, os, arch);
   }
 
   public get entrypoints(): Map<string, entrypoint.Entrypoint> {
@@ -62,8 +66,8 @@ export class Core {
     return this._entrypoints;
   }
 
-  public get packages(): Map<string, entrypoint.PackageConfig> {
-    const pkgs = new Map<string, entrypoint.PackageConfig>();
+  public get packages(): Map<string, artifacts.withId<artifacts.config>> {
+    const pkgs = new Map<string, artifacts.withId<artifacts.config>>();
 
     for (const [_, ep] of this.entrypoints.entries()) {
       if (ep.type === 'reference') {
@@ -71,8 +75,8 @@ export class Core {
         continue;
       }
 
-      const key = ep.package.type === 'docker' ? docker.entrypointName(ep.package.id) : ep.package.id;
-      pkgs.set(key, ep.package);
+      const key = ep.artifact.type === 'docker' ? docker.entrypointName(ep.artifact.id) : ep.artifact.id;
+      pkgs.set(key, ep.artifact);
     }
 
     return pkgs;
@@ -87,18 +91,18 @@ export class Core {
         continue;
       }
 
-      if (!result.has(ep.package.id)) {
-        result.set(ep.package.id, []);
+      if (!result.has(ep.artifact.id)) {
+        result.set(ep.artifact.id, []);
       }
 
-      result.get(ep.package.id)!.push(epName);
+      result.get(ep.artifact.id)!.push(epName);
     }
 
     return result;
   }
 
-  public get buildablePackages(): Map<string, entrypoint.PackageConfig> {
-    return new Map(Array.from(this.packages.entries()).filter(([, value]) => value.isBuildable));
+  public get buildablePackages(): Map<string, artifacts.withId<artifacts.config>> {
+    return new Map(Array.from(this.packages.entries()).filter(([, value]) => artifacts.isBuildable(value.type)));
   }
 
   public packageHasType(id: string, type: artifacts.artifactType): boolean {
@@ -116,19 +120,19 @@ export class Core {
     return false;
   }
 
-  public getPackage(id: string, type?: 'docker' | 'archive'): entrypoint.PackageConfig {
-    const pkg = this.packages.get(id);
-    if (pkg) {
-      // If we request docker package and current package is not docker - continue searching
-      if (type !== 'docker' || pkg.type === 'docker') {
-        return pkg;
+  public getArtifact(id: string, type?: 'docker' | 'archive'): artifacts.withId<artifacts.config> {
+    const artifact = this.packages.get(id);
+    if (artifact) {
+      // If we request docker artifact and current artifact is not docker - continue searching
+      if (type !== 'docker' || artifact.type === 'docker') {
+        return artifact;
       }
     }
 
     // 'magic' entrypoint name with suffix.
-    const dockerPkg = this.packages.get(docker.entrypointName(id));
-    if (dockerPkg) {
-      return dockerPkg;
+    const dockerArtifact = this.packages.get(docker.entrypointName(id));
+    if (dockerArtifact) {
+      return dockerArtifact;
     }
 
     throw util.CLIError(`package with id '${id}' not found in ${util.softwareConfigName} file`);
@@ -171,13 +175,13 @@ export class Core {
     });
 
     for (const swJson of infos.values()) {
-      this.renderer.writeEntrypointDescriptor(swJson);
+      this.renderer.writeSwJson(swJson);
     }
 
     for (const [epName, ep] of entrypoints) {
       if (ep.type === 'reference') {
         const srcPath = this.pkgInfo.resolveReference(epName, ep);
-        this.renderer.copyEntrypointDescriptor(epName, srcPath);
+        this.renderer.copySwJson(epName, srcPath);
       }
     }
   }
@@ -199,29 +203,23 @@ export class Core {
       throw util.CLIError('attempt to build several packages using the same software package archive');
     }
 
-    for (const pkgID of packagesToBuild) {
-      const pkg = this.getPackage(pkgID);
+    for (const artifactID of packagesToBuild) {
+      const artifact = this.getArtifact(artifactID);
 
-      if (pkg.type === 'docker') {
+      if (artifact.type === 'docker') {
         continue;
       }
 
-      if (pkg.crossplatform) {
-        await this.buildPackage(pkg, util.currentPlatform(), options);
+      if (artifacts.isCrossPlatform(artifact.type)) {
+        await this.buildPackage(artifact, util.currentPlatform(), options);
       } else if (this.targetPlatform) {
-        await this.buildPackage(pkg, this.targetPlatform, options);
-      } else if (this.allPlatforms && !pkg.isMultiroot) {
-        const currentPlatform = util.currentPlatform();
-        this.logger.warn(
-          `packages are requested to be build for all supported platforms, but package '${pkgID}' has single archive root for all platforms and will be built only for '${currentPlatform}'`,
-        );
-        await this.buildPackage(pkg, currentPlatform, options);
+        await this.buildPackage(artifact, this.targetPlatform, options);
       } else if (this.allPlatforms) {
-        for (const platform of pkg.platforms) {
-          await this.buildPackage(pkg, platform, options);
+        for (const platform of this.pkgInfo.artifactPlatforms(artifact)) {
+          await this.buildPackage(artifact, platform, options);
         }
       } else {
-        await this.buildPackage(pkg, util.currentPlatform(), options);
+        await this.buildPackage(artifact, util.currentPlatform(), options);
       }
     }
   }
@@ -234,7 +232,7 @@ export class Core {
   //  (when unique content of archive produces unique location, i.e. hash of archive)
   // package location files are used to build entrypoint descriptor (sw.json file)
   public async buildPackage(
-    pkg: entrypoint.PackageConfig,
+    artifact: artifacts.withId<artifacts.config>,
     platform: util.PlatformType,
     options?: {
       archivePath?: string;
@@ -242,24 +240,25 @@ export class Core {
       skipIfEmpty?: boolean;
     },
   ) {
-    this.logger.info(`Building software package '${pkg.id}' for platform '${platform}'...`);
+    this.logger.info(`Building software package '${artifact.id}' for platform '${platform}'...`);
     const { os, arch } = util.splitPlatform(platform);
 
-    if (!pkg.isBuildable) {
+    if (!(artifact.type in artifacts.archiveTypes)) {
       if (options?.skipIfEmpty) {
-        this.logger.info(`  archive build was skipped: package '${pkg.id}' is not buildable`);
+        this.logger.info(`  archive build was skipped: package '${artifact.id}' is not buildable`);
       }
       this.logger.error(
-        `  not buildable: artifact '${pkg.id}' archive build is impossible for configuration inside '${util.softwareConfigName}'`,
+        `  not buildable: artifact '${artifact.id}' archive build is impossible for configuration inside '${util.softwareConfigName}'`,
       );
+
       throw util.CLIError('not a buildable artifact');
     }
 
-    const contentRoot = options?.contentRoot ?? pkg.contentRoot(platform);
+    const contentRoot = options?.contentRoot ?? this.pkgInfo.artifactContentRoot(artifact, platform);
 
-    if (pkg.type === 'asset') {
-      const archivePath = options?.archivePath ?? this.assetArchivePath(pkg, os, arch);
-      await this.createPackageArchive('assets', pkg, archivePath, contentRoot, os, arch);
+    if (artifact.type === 'asset') {
+      const archivePath = options?.archivePath ?? this.assetArchivePath(artifact, os, arch);
+      await this.createPackageArchive('assets', artifact, archivePath, contentRoot, os, arch);
       return;
     }
 
@@ -270,9 +269,9 @@ export class Core {
       return;
     }
 
-    const archivePath = options?.archivePath ?? this.binArchivePath(pkg, os, arch);
+    const archivePath = options?.archivePath ?? this.binArchivePath(artifact, os, arch);
 
-    await this.createPackageArchive('software', pkg, archivePath, contentRoot, os, arch);
+    await this.createPackageArchive('software', artifact, archivePath, contentRoot, os, arch);
   }
 
   public buildDockerImages(
@@ -288,15 +287,15 @@ export class Core {
         continue;
       }
 
-      const pkg = this.getPackage(pkgID, 'docker');
-      this.buildDockerImage(pkg.id, pkg as entrypoint.DockerPackage, options?.registry);
+      const artifact = this.getArtifact(pkgID, 'docker');
+      this.buildDockerImage(artifact.id, artifact as artifacts.withId<artifacts.dockerPackageConfig>, options?.registry);
     }
   }
 
-  private buildDockerImage(pkgID: string, pkg: entrypoint.DockerPackage, registry?: string) {
-    const dockerfile = path.resolve(this.pkgInfo.packageRoot, pkg.dockerfile ?? 'Dockerfile');
-    const context = path.resolve(this.pkgInfo.packageRoot, pkg.context ?? '.');
-    const entrypoint = pkg.entrypoint ?? [];
+  private buildDockerImage(pkgID: string, artifact: artifacts.withId<artifacts.dockerPackageConfig>, registry?: string) {
+    const dockerfile = path.resolve(this.pkgInfo.packageRoot, artifact.dockerfile ?? 'Dockerfile');
+    const context = path.resolve(this.pkgInfo.packageRoot, artifact.context ?? '.');
+    registry = registry ?? artifact.registry;
 
     if (!fs.existsSync(dockerfile)) {
       throw util.CLIError(`Dockerfile '${dockerfile}' not found`);
@@ -306,25 +305,26 @@ export class Core {
       throw util.CLIError(`Context '${context}' not found`);
     }
 
-    const localTag = docker.generateLocalTagName(this.pkgInfo.packageRoot, pkg);
+    const localTag = docker.generateLocalTagName(this.pkgInfo.packageRoot, artifact);
 
     this.logger.info(`Building docker image...`);
     this.logger.debug(`dockerfile: '${dockerfile}'
 context: '${context}'
 localTag: '${localTag}'
-entrypoint: '${entrypoint.join('\', \'')}'
     `);
 
-    docker.build(context, dockerfile, localTag, pkg.name, this.pkgInfo.version);
+    const name = this.pkgInfo.artifactName(artifact);
+
+    docker.build(context, dockerfile, localTag, name, this.pkgInfo.version);
 
     const imageHash = docker.getImageHash(localTag);
-    const dstTag = docker.generateRemoteTagName(pkg, imageHash, registry);
+    const dstTag = docker.generateRemoteTagName(name, imageHash, registry);
 
     this.logger.debug(`Adding destination tag to docker image:
       dstTag: "${dstTag}"
     `);
     docker.addTag(localTag, dstTag);
-    docker.removeTag(localTag);
+    // do not remove local tag to make 'local' builds to also work with docker.
 
     const artInfoPath = this.pkgInfo.artifactInfoLocation(pkgID, 'docker', util.currentArch());
     writeBuiltArtifactInfo(artInfoPath, {
@@ -340,14 +340,14 @@ entrypoint: '${entrypoint.join('\', \'')}'
 
   private async createPackageArchive(
     packageContentType: string,
-    pkg: entrypoint.PackageConfig,
+    artifact: artifacts.withId<artifacts.config>,
     archivePath: string,
     contentRoot: string,
     os: util.OSType,
     arch: util.ArchType,
   ) {
     this.logger.debug(`  packing ${packageContentType} into a package`);
-    if (pkg.crossplatform) {
+    if (artifacts.isCrossPlatform(artifact.type)) {
       this.logger.debug(`    generating cross-platform package`);
     } else {
       this.logger.debug(`    generating package for os='${os}', arch='${arch}'`);
@@ -358,18 +358,20 @@ entrypoint: '${entrypoint.join('\', \'')}'
     await archive.create(this.logger, contentRoot, archivePath);
 
     const artInfoPath = this.pkgInfo.artifactInfoLocation(
-      pkg.id,
+      artifact.id,
       'archive',
-      pkg.crossplatform ? undefined : util.joinPlatform(os, arch),
+      artifacts.isCrossPlatform(artifact.type) ? undefined : util.joinPlatform(os, arch),
     );
 
+    const registry = this.pkgInfo.artifactRegistrySettings(artifact);
+
     writeBuiltArtifactInfo(artInfoPath, {
-      type: pkg.type,
+      type: artifact.type,
       platform: util.joinPlatform(os, arch),
-      registryURL: pkg.registry.downloadURL,
-      registryName: pkg.registry.name,
-      remoteArtifactLocation: pkg.namePattern,
-      uploadPath: pkg.fullName(util.joinPlatform(os, arch)),
+      registryURL: registry.downloadURL,
+      registryName: registry.name,
+      remoteArtifactLocation: this.pkgInfo.artifactArchiveAddressPattern(artifact),
+      uploadPath: this.pkgInfo.artifactArchiveFullName(artifact, util.joinPlatform(os, arch)),
     });
 
     this.logger.info(`${packageContentType} archive is built:
@@ -392,14 +394,14 @@ entrypoint: '${entrypoint.join('\', \'')}'
 
     const uploads: Promise<void>[] = [];
     for (const pkgID of packagesToPublish) {
-      const pkg = this.getPackage(pkgID);
+      const pkg = this.getArtifact(pkgID);
 
-      if (pkg.crossplatform) {
+      if (artifacts.isCrossPlatform(pkg.type)) {
         uploads.push(this.publishPackage(pkg, util.currentPlatform(), options));
       } else if (this.targetPlatform) {
         uploads.push(this.publishPackage(pkg, this.targetPlatform, options));
       } else if (this.allPlatforms) {
-        for (const platform of pkg.platforms) {
+        for (const platform of this.pkgInfo.artifactPlatforms(pkg)) {
           uploads.push(this.publishPackage(pkg, platform, options));
         }
       } else {
@@ -411,7 +413,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
   }
 
   private async publishPackage(
-    pkg: entrypoint.PackageConfig,
+    artifact: artifacts.withId<artifacts.config>,
     platform: util.PlatformType,
     options?: {
       archivePath?: string;
@@ -421,15 +423,15 @@ entrypoint: '${entrypoint.join('\', \'')}'
       forceReupload?: boolean;
     },
   ) {
-    if (pkg.type === 'docker') {
-      this.publishDockerImage(pkg);
+    if (artifact.type === 'docker') {
+      this.publishDockerImage(artifact);
       return;
     }
 
-    await this.publishArchive(pkg, platform, options);
+    await this.publishArchive(artifact, platform, options);
   }
 
-  private async publishArchive(pkg: entrypoint.PackageConfig, platform: util.PlatformType, options?: {
+  private async publishArchive(artifact: artifacts.withId<artifacts.config>, platform: util.PlatformType, options?: {
     archivePath?: string;
     storageURL?: string;
     failExisting?: boolean;
@@ -437,26 +439,28 @@ entrypoint: '${entrypoint.join('\', \'')}'
   }) {
     const { os, arch } = util.splitPlatform(platform);
 
-    const storageURL = options?.storageURL ?? pkg.registry.storageURL;
+    const artifactName = this.pkgInfo.artifactName(artifact);
+    const registry = this.pkgInfo.artifactRegistrySettings(artifact);
+    const storageURL = options?.storageURL ?? registry.storageURL;
 
-    const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch);
+    const archivePath = options?.archivePath ?? this.archivePath(artifact, os, arch);
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkg.id, 'archive', pkg.crossplatform ? undefined : util.joinPlatform(os, arch));
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(artifact.id, 'archive', artifacts.isCrossPlatform(artifact.type) ? undefined : util.joinPlatform(os, arch));
     const artInfo = readBuiltArtifactInfo(artInfoPath);
     const dstName = artInfo.uploadPath ?? artInfo.remoteArtifactLocation;
 
     if (!storageURL) {
-      const regNameUpper = pkg.registry.name.toUpperCase().replaceAll(/[^A-Z0-9_]/g, '_');
-      this.logger.error(`no storage URL is set for registry ${pkg.registry.name}`);
+      const regNameUpper = registry.name.toUpperCase().replaceAll(/[^A-Z0-9_]/g, '_');
+      this.logger.error(`no storage URL is set for registry ${registry.name}`);
       throw util.CLIError(
-        `'registry.storageURL' of package '${pkg.id}' is empty. Set it as command option, in '${util.softwareConfigName}' file or via environment variable 'PL_REGISTRY_${regNameUpper}_UPLOAD_URL'`,
+        `'registry.storageURL' of package '${artifact.id}' is empty. Set it as command option, in '${util.softwareConfigName}' file or via environment variable 'PL_REGISTRY_${regNameUpper}_UPLOAD_URL'`,
       );
     }
 
     const signatureSuffixes = this.findSignatures(archivePath);
 
     this.logger.info(
-      `Publishing package '${pkg.name}' for platform '${platform}' into registry '${pkg.registry.name}'`,
+      `Publishing package '${artifactName}' for platform '${platform}' into registry '${registry.name}'`,
     );
     this.logger.debug(`  registry storage URL: '${storageURL}'`);
     this.logger.debug(`  archive to publish: '${archivePath}'`);
@@ -470,12 +474,12 @@ entrypoint: '${entrypoint.join('\', \'')}'
     if (exists && !options?.forceReupload) {
       if (options?.failExisting) {
         throw util.CLIError(
-          `software package '${dstName}' already exists in registry '${pkg.registry.name}'. To re-upload it, use 'force' flag. To not fail, remove 'fail-existing-packages' flag`,
+          `software package '${dstName}' already exists in registry '${registry.name}'. To re-upload it, use 'force' flag. To not fail, remove 'fail-existing-packages' flag`,
         );
       }
 
       this.logger.warn(
-        `software package '${dstName}' already exists in registry '${pkg.registry.name}'. Upload was skipped.`,
+        `software package '${dstName}' already exists in registry '${registry.name}'. Upload was skipped.`,
       );
       return;
     }
@@ -501,7 +505,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
     }
 
     return Promise.all(uploads).then(() => {
-      this.logger.info(`Package '${pkg.name}' was published to '${pkg.registry.name}:${dstName}'`);
+      this.logger.info(`Package '${artifactName}' was published to '${registry.name}:${dstName}'`);
       return;
     });
   }
@@ -513,7 +517,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
 
     for (const pkgID of packagesToPublish) {
-      const pkg = this.getPackage(pkgID);
+      const pkg = this.getArtifact(pkgID);
       if (pkg.type !== 'docker') {
         continue;
       }
@@ -522,12 +526,12 @@ entrypoint: '${entrypoint.join('\', \'')}'
     }
   }
 
-  private publishDockerImage(pkg: entrypoint.PackageConfig, pushTo?: string) {
-    if (pkg.type !== 'docker') {
-      throw util.CLIError(`package '${pkg.id}' is not a docker package`);
+  private publishDockerImage(artifact: artifacts.withId<artifacts.config>, pushTo?: string) {
+    if (artifact.type !== 'docker') {
+      throw util.CLIError(`package '${artifact.id}' is not a docker package`);
     }
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkg.id, 'docker', util.currentArch());
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(artifact.id, 'docker', util.currentArch());
     const artInfo = readBuiltArtifactInfo(artInfoPath);
     const tag = artInfo.remoteArtifactLocation;
     const pushTag = pushTo ? `${pushTo}:${tag.split(':').slice(-1)[0]}` : tag;
@@ -549,7 +553,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
       docker.addTag(tag, pushTag);
       this.logger.info(`Publishing docker image '${tag}' using alternative tag '${pushTag}'`);
     } else {
-      this.logger.info(`Publishing docker image '${tag}' into registry '${pkg.registry.name}'`);
+      this.logger.info(`Publishing docker image '${tag}' with tag '${pushTag}'`);
     }
 
     docker.push(pushTag);
@@ -571,14 +575,14 @@ entrypoint: '${entrypoint.join('\', \'')}'
 
     const uploads: Promise<void>[] = [];
     for (const pkgID of packagesToSign) {
-      const pkg = this.getPackage(pkgID);
+      const pkg = this.getArtifact(pkgID);
 
-      if (pkg.crossplatform) {
+      if (artifacts.isCrossPlatform(pkg.type)) {
         this.signPackage(pkg, util.currentPlatform(), options);
       } else if (this.targetPlatform) {
         this.signPackage(pkg, this.targetPlatform, options);
       } else if (this.allPlatforms) {
-        for (const platform of pkg.platforms) {
+        for (const platform of this.pkgInfo.artifactPlatforms(pkg)) {
           this.signPackage(pkg, platform, options);
         }
       } else {
@@ -590,7 +594,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
   }
 
   private signPackage(
-    pkg: entrypoint.PackageConfig,
+    artifact: artifacts.withId<artifacts.config>,
     platform: util.PlatformType,
     options?: {
       archivePath?: string;
@@ -611,12 +615,13 @@ entrypoint: '${entrypoint.join('\', \'')}'
       );
     }
 
+    const artifactName = this.pkgInfo.artifactName(artifact);
     const { os, arch } = util.splitPlatform(platform);
 
-    const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch);
+    const archivePath = options?.archivePath ?? this.archivePath(artifact, os, arch);
     const toExecute = signCommand.map((v: string) => v.replaceAll('{pkg}', archivePath));
 
-    this.logger.info(`Signing package '${pkg.name}' for platform '${platform}'...`);
+    this.logger.info(`Signing package '${artifactName}' for platform '${platform}'...`);
     this.logger.debug(`  archive: '${archivePath}'`);
     this.logger.debug(`  sign command: ${JSON.stringify(toExecute)}`);
 
@@ -653,26 +658,28 @@ entrypoint: '${entrypoint.join('\', \'')}'
     return foundSuffixes;
   }
 
-  private get renderer(): Renderer {
+  private get renderer(): SwJsonRenderer {
     if (!this._renderer) {
-      this._renderer = new Renderer(this.logger, this.pkgInfo);
+      this._renderer = new SwJsonRenderer(this.logger, this.pkgInfo);
     }
 
     return this._renderer;
   }
 
   private archiveOptions(
-    pkg: entrypoint.PackageConfig,
+    pkg: artifacts.config,
+    name: string,
+    version: string,
     os: util.OSType,
     arch: util.ArchType,
     archiveType: archive.archiveType,
   ): archive.archiveOptions {
     return {
       packageRoot: this.pkgInfo.packageRoot,
-      packageName: pkg.name,
-      packageVersion: pkg.version,
+      packageName: name,
+      packageVersion: version,
 
-      crossplatform: pkg.crossplatform,
+      crossplatform: artifacts.isCrossPlatform(pkg.type),
       os: os,
       arch: arch,
       ext: archiveType,

@@ -5,7 +5,7 @@ import type winston from 'winston';
 
 import * as swJson from './schemas/sw-json';
 import type * as artifacts from './schemas/artifacts';
-import type * as entrypoint from './schemas/entrypoint';
+import type * as entrypoint from './schemas/entrypoints';
 import * as util from './util';
 
 export const compiledSoftwareSuffix = '.sw.json';

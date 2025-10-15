@@ -1,6 +1,5 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type * as entrypoint from './schemas/entrypoint';
 import type winston from 'winston';
 import * as paths from './paths';
 import * as util from './util';
@@ -56,7 +55,7 @@ export function prepareDockerOptions(
   currentPackageRoot: string,
   currentPackageName: string,
   artifactID: string,
-  buildParams: entrypoint.PythonPackage,
+  buildParams: artifacts.pythonPackageConfig,
 ): DockerOptions {
   logger.debug(`Preparing Docker options for Python package: ${buildParams.name} (id: ${artifactID})`);
 

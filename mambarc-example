@@ -1,0 +1,125 @@
+# Micromamba Configuration File
+# This configuration sets up all directories under /home/runner/work/github-ci-tests/github-ci-tests/exports/
+
+# Root prefix - this is crucial for micromamba
+root_prefix: /home/runner/work/github-ci-tests/github-ci-tests/exports
+
+# Channel configuration
+channels:
+  - conda-forge
+  - defaults
+  - bioconda
+
+# Channel settings for better performance
+channel_settings:
+  - channel: conda-forge
+    ssl_verify: true
+    max_retries: 3
+  - channel: defaults
+    ssl_verify: true
+    max_retries: 3
+  - channel: bioconda
+    ssl_verify: true
+    max_retries: 3
+
+# Environment directories - where conda environments are stored
+envs_dirs:
+  - /home/runner/work/github-ci-tests/github-ci-tests/exports/envs
+
+# Package cache directories - where downloaded packages are stored
+pkgs_dirs:
+  - /home/runner/work/github-ci-tests/github-ci-tests/exports/pkgs
+
+# Micromamba specific settings
+# Set the default environment prefix
+default_prefix: /home/runner/work/github-ci-tests/github-ci-tests/exports/envs/base
+
+# Environment variables for micromamba
+env_vars:
+  MAMBA_ROOT_PREFIX: /home/runner/work/github-ci-tests/github-ci-tests/exports
+  CONDA_PKGS_DIRS: /home/runner/work/github-ci-tests/github-ci-tests/exports/pkgs
+
+# General configuration
+always_yes: true
+show_channel_urls: true
+changeps1: true
+auto_update_conda: false
+add_pip_as_python_dependency: true
+use_pip: true
+
+# SSL and security settings
+ssl_verify: true
+offline: false
+
+# Proxy configuration (uncomment and configure if needed)
+# proxy_servers:
+#   http: http://proxy.company.com:8080
+#   https: https://proxy.company.com:8080
+
+# Advanced configuration
+allow_softlinks: true
+create_default_packages:
+  - pip
+  - setuptools
+  - wheel
+
+# Conda-build configuration for building packages
+conda-build:
+  # Root directory for conda-build output
+  root-dir: /home/runner/work/github-ci-tests/github-ci-tests/exports/conda-bld
+  
+  # Output folder for built packages
+  output_folder: /home/runner/work/github-ci-tests/github-ci-tests/exports/conda-bld
+  
+  # Package format (2 for .conda packages, 1 for .tar.bz2)
+  pkg_format: 2
+  
+  # Upload settings
+  anaconda_upload: false
+  
+  # Build settings
+  quiet: false
+  filename_hashing: true
+  no_verify: false
+  set_build_id: true
+  skip_existing: false
+  include_recipe: true
+  activate: true
+  long_test_prefix: true
+
+# Threading configuration for better performance
+repodata_threads: 4
+verify_threads: 2
+execute_threads: 2
+
+# Logging configuration
+log_level: info
+
+# Channel priority
+channel_priority: flexible
+
+# Solver configuration
+solver: libmamba
+
+# Target prefix fallback settings
+use_target_prefix_fallback: true
+use_default_prefix_fallback: true
+use_root_prefix_fallback: true
+
+# Additional paths
+# Custom channels (if needed)
+# custom_channels:
+#   mychannel: https://my.private.channel.com
+
+# Environment variables expansion is supported for:
+# - channels
+# - channel_alias
+# - custom_channels
+# - envs_dirs
+# - pkgs_dirs
+# - proxy_servers
+# - ssl_verify
+
+# Micromamba specific: Ensure proper initialization
+auto_activate_base: false
+auto_update_conda: false

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import * as artifacts from './artifacts';
 import * as util from '../util';
 
-export const externalPackageLocationSchema = z.object({
+export const remoteLocationSchema = z.object({
   registry: z.string().describe('name of the registry to use for package download'),
   package: z
     .string()
@@ -10,22 +10,32 @@ export const externalPackageLocationSchema = z.object({
 });
 
 export const assetSchema = z.object({
-  ...externalPackageLocationSchema.shape,
+  ...remoteLocationSchema.shape,
   url: z.string().describe('asset download URL'),
 });
 export type assetInfo = z.infer<typeof assetSchema>;
 
 export const dockerSchema = z.object({
-  tag: z.string().describe('name of the image to be built instead of custom one'),
-  entrypoint: z.array(z.string()).describe('entrypoint command to be run in the container'),
-  cmd: z.array(z.string()).describe('command to be run in the container'),
-  pkg: z.string().optional().describe('custom working directory in Docker container (only for Python packages)'),
+  tag: z
+    .string()
+    .describe('full image tag to pull on backend side to execute this software'),
+  entrypoint: z
+    .array(z.string())
+    .describe('override image\'s entrypoint'),
+  cmd: z
+    .array(z.string())
+    .describe('command to be run in the container'),
+
+  pkg: z
+    .string()
+    .default('/')
+    .describe('what to substitute in place of "{pkg}" variable in "cmd" (for artifacts with docker autogeneration)'),
 });
 export type dockerInfo = z.infer<typeof dockerSchema>;
 
 export const runEnvironmentSchema = z.object({
   type: z.enum(artifacts.runEnvironmentTypes),
-  ...externalPackageLocationSchema.shape,
+  ...remoteLocationSchema.shape,
 
   ['r-version']: z.string().optional(),
   ['python-version']: z.string().optional(),
@@ -71,17 +81,9 @@ export const runDependencyRSchema = runEnvironmentSchema.extend({
 });
 export type runEnvDependencyR = z.infer<typeof runDependencyRSchema>;
 
-export const runDependencyCondaSchema = runEnvironmentSchema.extend({
-  type: z.literal('conda'),
-  name: z
-    .string()
-    .describe('name used to import this package as software dependency of tengo script'),
-});
-export type runEnvDependencyConda = z.infer<typeof runDependencyCondaSchema>;
+export type runEnvDependency = runEnvDependencyJava | runEnvDependencyPython | runEnvDependencyR;
 
-export type runEnvDependency = runEnvDependencyJava | runEnvDependencyPython | runEnvDependencyR | runEnvDependencyConda;
-
-export const anyPackageSettingsSchema = z.object({
+export const commonPackageSettingsSchema = z.object({
   cmd: z.array(z.string()).min(1).describe('run given command, appended by args from workflow'),
 
   envVars: z
@@ -96,25 +98,25 @@ export const anyPackageSettingsSchema = z.object({
     .optional(),
 });
 
-export const binaryPackageSettingsSchema = z.object({
+export const binaryPackageSchema = z.object({
   type: z.literal('binary'),
-  ...anyPackageSettingsSchema.shape,
+  ...commonPackageSettingsSchema.shape,
 
   runEnv: z.undefined(),
-  pkg: z.string().optional().describe('custom working directory in Docker container (default: /app)'),
+  pkg: z.string().optional().describe('location of all package contents in Docker container (default: /app)'),
 });
 
 export const javaPackageSettingsSchema = z.object({
   type: z.literal('java'),
 
-  ...anyPackageSettingsSchema.shape,
+  ...commonPackageSettingsSchema.shape,
   runEnv: runDependencyJavaSchema,
 });
 
 export const pythonPackageSettingsSchema = z.object({
   type: z.literal('python'),
 
-  ...anyPackageSettingsSchema.shape,
+  ...commonPackageSettingsSchema.shape,
   runEnv: runDependencyPythonSchema,
 
   toolset: z.string(),
@@ -123,13 +125,12 @@ export const pythonPackageSettingsSchema = z.object({
     .describe(
       'paths of files that describe dependencies for given toolset: say, requirements.txt for \'pip\'',
     ),
-  pkg: z.string().optional().describe('custom working directory in Docker container (default: /app)'),
 });
 
 export const rPackageSettingsSchema = z.object({
   type: z.literal('R'),
 
-  ...anyPackageSettingsSchema.shape,
+  ...commonPackageSettingsSchema.shape,
   runEnv: runDependencyRSchema,
 
   toolset: z.string(),
@@ -140,28 +141,29 @@ export const rPackageSettingsSchema = z.object({
     ),
 });
 
-export const condaPackageSettingsSchema = z.object({
+export const condaPackageSchema = z.object({
   type: z.literal('conda'),
+  ...commonPackageSettingsSchema.shape,
 
-  ...anyPackageSettingsSchema.shape,
-  runEnv: runDependencyCondaSchema,
-
-  renvLock: z
+  runEnv: z.undefined(),
+  ['micromamba-version']: z
     .string()
-    .optional()
-    .describe('contents of renv.lock for R language virtual env bootstrap'),
+    .describe('version of micromamba to be used to operate with conda environments'),
+  spec: z
+    .string()
+    .describe('location of spec.yaml describing conda environment, relative to package root.'),
 });
 
-export const binarySchema = z.union([
-  externalPackageLocationSchema.extend(binaryPackageSettingsSchema.shape),
-  externalPackageLocationSchema.extend(javaPackageSettingsSchema.shape),
-  externalPackageLocationSchema.extend(pythonPackageSettingsSchema.shape),
-  externalPackageLocationSchema.extend(rPackageSettingsSchema.shape),
-  externalPackageLocationSchema.extend(condaPackageSettingsSchema.shape),
+export const remoteSoftwareSchema = z.union([
+  remoteLocationSchema.extend(binaryPackageSchema.shape),
+  remoteLocationSchema.extend(javaPackageSettingsSchema.shape),
+  remoteLocationSchema.extend(pythonPackageSettingsSchema.shape),
+  remoteLocationSchema.extend(rPackageSettingsSchema.shape),
+  remoteLocationSchema.extend(condaPackageSchema.shape),
 ]);
-export type binaryInfo = z.infer<typeof binarySchema>;
+export type remotePackageInfo = z.infer<typeof remoteSoftwareSchema>;
 
-export const localPackageLocationSchema = z.object({
+export const localLocationSchema = z.object({
   hash: z
     .string()
     .describe(
@@ -170,14 +172,15 @@ export const localPackageLocationSchema = z.object({
   path: z.string().describe('absolute path to root directory of software on local host'),
 });
 
-export const localSchema = z.discriminatedUnion('type', [
-  localPackageLocationSchema.extend(binaryPackageSettingsSchema.shape),
-  localPackageLocationSchema.extend(javaPackageSettingsSchema.shape),
-  localPackageLocationSchema.extend(pythonPackageSettingsSchema.shape),
-  localPackageLocationSchema.extend(rPackageSettingsSchema.shape),
-  localPackageLocationSchema.extend(condaPackageSettingsSchema.shape),
+export const localSoftwareSchema = z.discriminatedUnion('type', [
+  localLocationSchema.extend(binaryPackageSchema.shape),
+  localLocationSchema.extend(javaPackageSettingsSchema.shape),
+  localLocationSchema.extend(pythonPackageSettingsSchema.shape),
+  localLocationSchema.extend(rPackageSettingsSchema.shape),
+  localLocationSchema.extend(condaPackageSchema.shape),
+  // Docker can be used 'as usual' without any special 'local' section magic
 ]);
-export type localInfo = z.infer<typeof localSchema>;
+export type localPackageInfo = z.infer<typeof localSoftwareSchema>;
 
 // Full .sw.json file schema
 export const entrypointSchema = z
@@ -185,10 +188,10 @@ export const entrypointSchema = z
     isDev: z.boolean().optional(),
 
     asset: assetSchema.optional(),
-    binary: binarySchema.optional(),
+    binary: remoteSoftwareSchema.optional(),
     docker: dockerSchema.optional(),
     runEnv: runEnvironmentSchema.optional(),
-    local: localSchema.optional(),
+    local: localSoftwareSchema.optional(),
   })
   .refine(
     (data) =>
@@ -199,8 +202,8 @@ export const entrypointSchema = z
       == 1,
     {
       message:
-          'entrypoint cannot point to several packages at once: choose \'environment\', \'binary\', \'asset\' or \'local\'',
-      path: ['environment | binary | asset | local'],
+          'entrypoint cannot point to several packages at once: choose \'environment\', \'binary\', \'asset\', \'conda\' or \'local\'',
+      path: ['environment | binary | asset | conda | local'],
     },
   );
 
