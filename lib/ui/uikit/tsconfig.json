@@ -9,5 +9,5 @@
     "src/**/*.tsx", 
     "src/**/*.vue", 
     "src/**/*.json"
-, "../../../sdk/model/src/filters/metadata.test.ts"  ]
+  ]
 }

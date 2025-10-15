@@ -54,9 +54,6 @@ packages:
   - sdk/ui-vue
   - sdk/eslint-config
 
-  # SDK Annotations
-  - sdk/annotations/workflow
-
   # Test blocks
 
   - etc/blocks/enter-numbers/workflow
