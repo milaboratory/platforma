@@ -1,6 +1,7 @@
 from typing import Union
 import polars.selectors as cs
 import polars as pl
+from polars_pf import axis_ref, AxisSpec
 
 from .base import Expression
 
@@ -67,6 +68,12 @@ class ByNameSelectorExpression(Expression, tag='selector_by_name'):
         return cs.by_name(*self.names)
 
 
+class AxisSelectorExpression(Expression, tag='selector_axis'):
+    spec: AxisSpec
+    def to_polars(self) -> pl.Expr:
+        return cs.by_name(axis_ref(self.spec))
+
+
 class NestedSelectorExpression(Expression, tag='selector_nested'):
     def to_polars(self) -> pl.Expr:
         return cs.nested()
@@ -84,6 +91,7 @@ type AnySelectorExpression = Union[
     MatchesSelectorExpression,
     ExcludeSelectorExpression,
     ByNameSelectorExpression,
+    AxisSelectorExpression,
     NestedSelectorExpression,
 ]
 

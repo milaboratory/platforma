@@ -20,7 +20,7 @@ from .basics import (
 )
 from .selectors import (
     AllSelectorExpression, StringSelectorExpression, NumericSelectorExpression, IntegerSelectorExpression, FloatSelectorExpression, StartsWithSelectorExpression, EndsWithSelectorExpression, ContainsSelectorExpression, MatchesSelectorExpression, ExcludeSelectorExpression, ByNameSelectorExpression, NestedSelectorExpression, SelectorComplementExpression, SelectorUnionExpression, SelectorIntersectionExpression, SelectorDifferenceExpression, SelectorSymmetricDifferenceExpression,
-    AnySelectorExpression,
+    AnySelectorExpression, AxisSelectorExpression,
 )
 from .string import (
     StringJoinExpression, ToUpperExpression, ToLowerExpression, StrLenExpression, SubstringExpression,
@@ -69,6 +69,7 @@ AnyExpression = typing.Union[
     MatchesSelectorExpression,
     ExcludeSelectorExpression,
     ByNameSelectorExpression,
+    AxisSelectorExpression,
     NestedSelectorExpression,
     # Selector Combinations
     SelectorComplementExpression,
@@ -176,6 +177,7 @@ __all__ = [
     "MatchesSelectorExpression",
     "ExcludeSelectorExpression",
     "ByNameSelectorExpression",
+    "AxisSelectorExpression",
     "NestedSelectorExpression",
     "SelectorComplementExpression",
     "SelectorUnionExpression",

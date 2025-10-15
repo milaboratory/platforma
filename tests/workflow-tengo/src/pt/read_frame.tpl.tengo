@@ -29,7 +29,7 @@ self.body(func(inputs) {
 
     projection := []
     for name in axesNames {
-        projection = append(projection, pt.axis(name))
+        projection = append(projection, pt.axis(name).alias(name))
     }
     for name in columnNames {
         projection = append(projection, pt.col(name))

@@ -629,7 +629,7 @@ workflow := func() {
 			entries := []
 			aliases := []
 			for axis in options.axes {
-				aliases = append(aliases, exp.axis(axis.spec))
+				aliases = append(aliases, exp.axis(axis.spec).alias(axis.column))
 			}
 			for column in options.columns {
 				decoded := json.decode(column)

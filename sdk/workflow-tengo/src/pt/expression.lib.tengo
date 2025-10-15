@@ -1093,7 +1093,7 @@ axis = func(matcher) {
 			type: "axis",
 			spec: axisSpec
 		}
-	}).alias(processedMatcher.name)
+	})
 }
 
 /**
@@ -1691,6 +1691,20 @@ sc := ll.toStrict({
 				type: "selector_by_name",
 				names: names
 			}
+		})
+	},
+
+	/**
+	 * Selects axis with the given spec if it exists in the result.
+	 * @param spec - object - The axis spec to select.
+	 * @returns {object} - A selector expression.
+	 * @example
+	 *   sc.axis({name: "my_axis", type: "string"})
+	 */
+	axis: func(spec) {
+		validation.assertType(spec, pframesSpec.P_AXIS_SPEC_SCHEMA)
+		return _newSelectorExpression(func(ctx) {
+			return {type: "selector_axis", spec: spec}
 		})
 	},
 	

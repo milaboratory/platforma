@@ -48,6 +48,7 @@ export type Expression =
   | MatchesSelectorExpression
   | ExcludeSelectorExpression
   | ByNameSelectorExpression
+  | AxisSelectorExpression
   | NestedSelectorExpression
   | SelectorComplementExpression
   | SelectorUnionExpression
@@ -772,6 +773,17 @@ export interface ByNameSelectorExpression {
 }
 
 /**
+ * Represents a selector for axis.
+ * Selects axis with the given spec if it exists in the result.
+ */
+export interface AxisSelectorExpression {
+  /** The type of operation, always 'axis'. */
+  type: 'selector_axis';
+  /** The axis to select. */
+  axis: AxisSpec;
+}
+
+/**
  * Represents a selector for nested columns.
  * Selects columns that have nested/complex data types (e.g., structs, lists).
  */
@@ -793,6 +805,7 @@ export type SelectorExpression =
   | MatchesSelectorExpression
   | ExcludeSelectorExpression
   | ByNameSelectorExpression
+  | AxisSelectorExpression
   | NestedSelectorExpression;
 
 /**

@@ -1,49 +1,19 @@
-import type { ComputableCtx } from '@milaboratories/computable';
 import { deepClone } from '@milaboratories/helpers';
-import { getTestTimeout } from '@milaboratories/test-helpers';
-import type { MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
 import { Annotation, field, Pl } from '@milaboratories/pl-middle-layer';
-import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import type { TestRenderResults } from '@platforma-sdk/test';
-import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import { expect, vi } from 'vitest';
+import { tplTest } from '@platforma-sdk/test';
+import { vi } from 'vitest';
+import dedent from 'dedent';
+import { Timeout, getFileContent } from '../../pt/helpers';
 
-const TIMEOUT = getTestTimeout(30_000);
-
-vi.setConfig({
-  testTimeout: TIMEOUT,
-});
-
-async function getCsvHandle(
-  result: TestRenderResults<string>,
-  driverKit: MiddleLayerDriverKit,
-  outputName: string,
-  timeout = TIMEOUT,
-) {
-  const handle = await awaitStableState(
-    result.computeOutput(outputName, (f: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
-      if (!f) {
-        return undefined;
-      }
-      return driverKit.blobDriver.getOnDemandBlob(f.persist(), ctx).handle;
-    }),
-    timeout,
-  );
-  expect(handle).toBeDefined();
-  return handle!;
-}
-
-type BlobHandle = ReturnType<MiddleLayerDriverKit['blobDriver']['getOnDemandBlob']>['handle'];
-
-async function readBlobAsString(driverKit: MiddleLayerDriverKit, handle: BlobHandle) {
-  return (await driverKit.blobDriver.getContent(handle)).toString();
-}
+vi.setConfig({ testTimeout: Timeout });
 
 // dummy csv data
-const csvData = `ax1,ax2,ax3,col1,col2
-A1,B1,C1,X1,Y1
-A2,B2,C2,X2,Y2
-A3,B2,C3,X3,Y3`;
+const csvData = dedent`
+  ax1,ax2,ax3,col1,col2
+  A1,B1,C1,X1,Y1
+  A2,B2,C2,X2,Y2
+  A3,B2,C3,X3,Y3
+`;
 
 // pfconv spec
 const baseSpec = {
@@ -139,21 +109,8 @@ tplTest.concurrent.for([
       }),
     );
 
-    const csvHandle = await getCsvHandle(result, driverKit, 'csvFile');
-
-    const csvContent = await readBlobAsString(driverKit, csvHandle);
-
-    // @TODO remove \" replacement after pfconv update
-    const actual = csvContent.replaceAll('"', '').replaceAll('\n', '').split('').sort();
-    const expected = csvData.replaceAll('\n', '').split('').sort();
-
-    // console.log(actual);
-    // console.log(expected);
-
-    // console.log(csvContent);
-    // console.log(csvData);
-
-    expect(actual).toStrictEqual(expected);
+    const csvContent = await getFileContent(result, 'csvFile', driverKit);
+    expect(csvContent.trim()).toStrictEqual(csvData.trim());
   },
 );
 
@@ -258,20 +215,7 @@ tplTest.concurrent.for([
       },
     );
 
-    const csvHandle = await getCsvHandle(result, driverKit, 'csvFile');
-
-    const csvContent = await readBlobAsString(driverKit, csvHandle);
-
-    // @TODO remove \" replacement after pfconv update
-    const actual = csvContent.replaceAll('"', '').replaceAll('\n', '').split('').sort();
-    const expected = csvData.replaceAll('\n', '').split('').sort();
-
-    // console.log(actual);
-    // console.log(expected);
-
-    // console.log(csvContent);
-    // console.log(csvData);
-
-    if (superPartitionKeyLength === 0) expect(actual).toStrictEqual(expected);
+    const csvContent = await getFileContent(result, 'csvFile', driverKit);
+    if (superPartitionKeyLength === 0) expect(csvContent.trim()).toStrictEqual(csvData.trim());
   },
 );

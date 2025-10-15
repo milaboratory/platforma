@@ -312,6 +312,7 @@ makeTrace := func(input, ...steps) {
  * @return an object with a distill method
  */
 createSpecDistiller := func(specs) {
+	ll.assert(is_array(specs), "specs must be an array")
 	// Map to collect all domain values by name
 	// Structure: { name: { domainName: Set<values> } }
 	domainsValues := {}
