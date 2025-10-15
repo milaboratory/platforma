@@ -1,17 +1,21 @@
 import type { FilterSpec, FilterSpecOfType, FilterSpecType, SimplifiedPColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
 
+/** Metadata about a single field in FilterSpec */
 export type FilterSpecTypeField<V> = {
   label: string;
   fieldType: FilterSpecTypeToLiteral<V>;
   defaultValue: () => V | undefined;
 };
 
+/** Converts each field in FilterSpec to FilterSpecTypeField */
 export type FilterSpecTypeFieldRecord<T extends FilterSpec> = { [K in keyof T]: FilterSpecTypeField<T[K]>; };
 
+/** Extracts FilterSpecOfType from FilterSpecType */
 export type FilterSpecFormField<T extends FilterSpec> = {
   [K in keyof T]: FilterSpecTypeField<T[K]>
 };
 
+/** Metadata about all supported filter types */
 export type FilterSpecMetadataRecord<T extends FilterSpecType> = {
   [P in T]: {
     label: string;
@@ -21,6 +25,7 @@ export type FilterSpecMetadataRecord<T extends FilterSpecType> = {
   }
 };
 
+/** Converts FilterSpecType to a literal string representing the type */
 export type FilterSpecTypeToLiteral<T> =
     [T] extends [FilterSpecType] ? 'FilterType' :
         [T] extends [SUniversalPColumnId] ? 'SUniversalPColumnId' :

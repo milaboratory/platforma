@@ -265,7 +265,7 @@ export abstract class ExpressionImpl {
 }
 
 export class ColumnExpressionImpl extends ExpressionImpl {
-  constructor(private columnName: string) {
+  constructor(private readonly columnName: string) {
     super();
   }
 
@@ -305,7 +305,7 @@ export function coerceToExpression(value: ExpressionImpl | LiteralValue): Expres
 }
 
 export class MinMaxExpressionImpl extends ExpressionImpl {
-  constructor(private op: MinMaxOperator, private ops: ExpressionImpl[]) {
+  constructor(private readonly op: MinMaxOperator, private readonly ops: ExpressionImpl[]) {
     super();
   }
 
@@ -331,9 +331,9 @@ export class MinMaxExpressionImpl extends ExpressionImpl {
 // These will be imported from their respective modules
 export class ArithmeticExpressionImpl extends ExpressionImpl {
   constructor(
-    private operator: BinaryArithmeticOperator,
-    private lhs: ExpressionImpl,
-    private rhs: ExpressionImpl,
+    private readonly operator: BinaryArithmeticOperator,
+    private readonly lhs: ExpressionImpl,
+    private readonly rhs: ExpressionImpl,
   ) {
     super();
   }
@@ -359,9 +359,9 @@ export class ArithmeticExpressionImpl extends ExpressionImpl {
 
 export class ComparisonExpressionImpl extends ExpressionImpl {
   constructor(
-    private operator: ComparisonOperator,
-    private lhs: ExpressionImpl,
-    private rhs: ExpressionImpl,
+    private readonly operator: ComparisonOperator,
+    private readonly lhs: ExpressionImpl,
+    private readonly rhs: ExpressionImpl,
   ) {
     super();
   }
@@ -387,8 +387,8 @@ export class ComparisonExpressionImpl extends ExpressionImpl {
 
 export class LogicalExpressionImpl extends ExpressionImpl {
   constructor(
-    private operator: 'and' | 'or' | 'not',
-    private operands: ExpressionImpl[],
+    private readonly operator: 'and' | 'or' | 'not',
+    private readonly operands: ExpressionImpl[],
   ) {
     super();
   }
@@ -423,8 +423,8 @@ export class LogicalExpressionImpl extends ExpressionImpl {
 
 export class UnaryArithmeticExpressionImpl extends ExpressionImpl {
   constructor(
-    private operator: UnaryArithmeticOperator,
-    private value: ExpressionImpl,
+    private readonly operator: UnaryArithmeticOperator,
+    private readonly value: ExpressionImpl,
   ) {
     super();
   }
@@ -449,8 +449,8 @@ export class UnaryArithmeticExpressionImpl extends ExpressionImpl {
 
 export class NullCheckExpressionImpl extends ExpressionImpl {
   constructor(
-    private operator: 'is_na' | 'is_not_na',
-    private value: ExpressionImpl,
+    private readonly operator: 'is_na' | 'is_not_na',
+    private readonly value: ExpressionImpl,
   ) {
     super();
   }
@@ -476,7 +476,7 @@ export class NullCheckExpressionImpl extends ExpressionImpl {
 export type LiteralValue = string | number | boolean | null;
 
 export class LiteralExpressionImpl extends ExpressionImpl {
-  constructor(private value: LiteralValue) {
+  constructor(private readonly value: LiteralValue) {
     super();
   }
 
@@ -533,7 +533,7 @@ export class LiteralExpressionImpl extends ExpressionImpl {
 }
 
 export class FillNullExpressionImpl extends ExpressionImpl {
-  constructor(private expr: ExpressionImpl, private fillValue: ExpressionImpl) {
+  constructor(private readonly expr: ExpressionImpl, private readonly fillValue: ExpressionImpl) {
     super();
   }
 
@@ -557,7 +557,7 @@ export class FillNullExpressionImpl extends ExpressionImpl {
 }
 
 export class FillNaNExpressionImpl extends ExpressionImpl {
-  constructor(private expr: ExpressionImpl, private fillValue: ExpressionImpl) {
+  constructor(private readonly expr: ExpressionImpl, private readonly fillValue: ExpressionImpl) {
     super();
   }
 
@@ -581,7 +581,7 @@ export class FillNaNExpressionImpl extends ExpressionImpl {
 }
 
 export class StringConcatExpressionImpl extends ExpressionImpl {
-  constructor(private operands: ExpressionImpl[], private delimiter: string = '') {
+  constructor(private readonly operands: ExpressionImpl[], private readonly delimiter: string = '') {
     super();
   }
 
@@ -605,7 +605,7 @@ export class StringConcatExpressionImpl extends ExpressionImpl {
 }
 
 export class SubstringExpressionImpl extends ExpressionImpl {
-  constructor(private expr: ExpressionImpl, private start: number, private length?: number) {
+  constructor(private readonly expr: ExpressionImpl, private readonly start: number, private readonly length?: number) {
     super();
   }
 
@@ -630,7 +630,7 @@ export class SubstringExpressionImpl extends ExpressionImpl {
 }
 
 export class StringReplaceExpressionImpl extends ExpressionImpl {
-  constructor(private expr: ExpressionImpl, private pattern: string, private value: string, private options?: Pick<StringReplaceExpression, 'replaceAll' | 'literal'>) {
+  constructor(private readonly expr: ExpressionImpl, private readonly pattern: string, private readonly value: string, private readonly options?: Pick<StringReplaceExpression, 'replaceAll' | 'literal'>) {
     super();
   }
 
@@ -657,7 +657,7 @@ export class StringReplaceExpressionImpl extends ExpressionImpl {
 }
 
 export class StringContainsExpressionImpl extends ExpressionImpl {
-  constructor(private expr: ExpressionImpl, private pattern: ExpressionImpl, private literal?: boolean, private strict?: boolean) {
+  constructor(private readonly expr: ExpressionImpl, private readonly pattern: ExpressionImpl, private readonly literal?: boolean, private readonly strict?: boolean) {
     super();
   }
 
@@ -683,7 +683,7 @@ export class StringContainsExpressionImpl extends ExpressionImpl {
 }
 
 export class StringCaseExpressionImpl extends ExpressionImpl {
-  constructor(private operation: 'to_upper' | 'to_lower', private expr: ExpressionImpl) {
+  constructor(private readonly operation: 'to_upper' | 'to_lower', private readonly expr: ExpressionImpl) {
     super();
   }
 
@@ -706,7 +706,7 @@ export class StringCaseExpressionImpl extends ExpressionImpl {
 }
 
 export class StringStartsWithExpressionImpl extends ExpressionImpl {
-  constructor(private expr: ExpressionImpl, private pattern: ExpressionImpl) {
+  constructor(private readonly expr: ExpressionImpl, private readonly pattern: ExpressionImpl) {
     super();
   }
 
@@ -730,7 +730,7 @@ export class StringStartsWithExpressionImpl extends ExpressionImpl {
 }
 
 export class StringEndsWithExpressionImpl extends ExpressionImpl {
-  constructor(private expr: ExpressionImpl, private pattern: ExpressionImpl) {
+  constructor(private readonly expr: ExpressionImpl, private readonly pattern: ExpressionImpl) {
     super();
   }
 
@@ -754,7 +754,7 @@ export class StringEndsWithExpressionImpl extends ExpressionImpl {
 }
 
 export class CumsumExpressionImpl extends ExpressionImpl {
-  constructor(private value: ExpressionImpl, private additionalOrderBy: ExpressionImpl[] = [], private partitionBy: ExpressionImpl[] = [], private descending?: boolean) {
+  constructor(private readonly value: ExpressionImpl, private readonly additionalOrderBy: ExpressionImpl[] = [], private readonly partitionBy: ExpressionImpl[] = [], private readonly descending?: boolean) {
     super();
   }
 
@@ -805,7 +805,7 @@ export class AggregationExpressionImpl extends ExpressionImpl {
 }
 
 export class WindowExpressionImpl extends ExpressionImpl {
-  constructor(private expr: ExpressionImpl, private aggregation: AggregationType, private partitionBy: ExpressionImpl[]) {
+  constructor(private readonly expr: ExpressionImpl, private readonly aggregation: AggregationType, private readonly partitionBy: ExpressionImpl[]) {
     super();
   }
 
@@ -830,7 +830,7 @@ export class WindowExpressionImpl extends ExpressionImpl {
 }
 
 export class StringDistanceExpressionImpl extends ExpressionImpl {
-  constructor(private string1: ExpressionImpl, private string2: ExpressionImpl, private metric: StringDistanceMetric, private returnSimilarity?: boolean) {
+  constructor(private readonly string1: ExpressionImpl, private readonly string2: ExpressionImpl, private readonly metric: StringDistanceMetric, private readonly returnSimilarity?: boolean) {
     super();
   }
 
@@ -856,7 +856,7 @@ export class StringDistanceExpressionImpl extends ExpressionImpl {
 }
 
 export class FuzzyStringFilterExpressionImpl extends ExpressionImpl {
-  constructor(private expr: ExpressionImpl, private pattern: ExpressionImpl, private metric: FuzzyFilterDistanceMetric, private bound: number) {
+  constructor(private readonly expr: ExpressionImpl, private readonly pattern: ExpressionImpl, private readonly metric: FuzzyFilterDistanceMetric, private readonly bound: number) {
     super();
   }
 
@@ -915,8 +915,8 @@ export class RankExpressionImpl extends ExpressionImpl {
 
 export class WhenThenOtherwiseExpressionImpl extends ExpressionImpl {
   constructor(
-    private conditions: Array<{ when: ExpressionImpl; then: ExpressionImpl }>,
-    private otherwiseValue: ExpressionImpl,
+    private readonly conditions: Array<{ when: ExpressionImpl; then: ExpressionImpl }>,
+    private readonly otherwiseValue: ExpressionImpl,
   ) {
     super();
   }

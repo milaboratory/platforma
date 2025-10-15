@@ -43,7 +43,7 @@ self.body(func(inputs) {
 
 	wf := pt.workflow()
 
-	dfData := wf.frameFromColumnBundle(columnBundle).
+	dfData := wf.frameFromColumnBundle(columnBundle, { columns: columns }).
 		withColumns(finalExpressions...).
 		withColumns(annotationColumnExpr)
 
