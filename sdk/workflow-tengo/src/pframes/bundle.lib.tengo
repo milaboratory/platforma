@@ -394,11 +394,6 @@ pColumnBundleUnmarshaller := func() {
 				}
 			}
 
-			// Holds overrides to default headers for axes in xsv exported outputs
-			// Array of:
-			//   [{ name: string, domain: {[domainKey: string]: string} }, header: string]
-			axisHeaderOverrides := []
-
 			get := func(resultKey) {
 				if !is_string(resultKey) {
 					resultKey = canonical.encode(resultKey)
@@ -435,7 +430,8 @@ pColumnBundleUnmarshaller := func() {
 				 * @returns The column object with its spec, data.
 				 *          The column object has the structure: `{ key: string, spec: object, data: object }`.
 				 */
-				getColumn: func(resultKey) {
+				getColumn: func(resultKey, ...options) {
+					options = is_array(options) && is_map(options[0]) ? options[0] : {}
 					processedId := processColumnId(resultKey)
 					columnKeyForPool := processedId.columnKey // Key to fetch from the pool (source for filtered)
 					columnAxisFilters := processedId.axisFilters // Filters from FilteredPColumnId
@@ -450,7 +446,7 @@ pColumnBundleUnmarshaller := func() {
 						ll.panic("Cannot get a single column from a multi-column result: %v. Use getColumns() instead.", columnKeyForPool)
 					}
 
-					currentSpec := bundle.getSpec(resultKey) // getSpec already handles filtering for the spec
+					currentSpec := bundle.getSpec(resultKey, options) // getSpec already handles filtering for the spec
 					currentData := result.data
 
 					// If axis filters are present, slice the data
@@ -458,10 +454,10 @@ pColumnBundleUnmarshaller := func() {
 						sliceDataTemplate := assets.importTemplate(":pframes.slice-data")
 						currentData = render.createEphemeral(sliceDataTemplate, {
 							data: currentData,
-							keepColumns: true,
-							ignoreUnknownAxes: true,
-							ignoreNonPartitioned: true,
-							slicingParams: smart.createJsonResource(columnAxisFilters)
+							slicingParams: smart.createJsonResource(columnAxisFilters),
+							keepColumns: options.keepColumns,
+							ignoreUnknownAxes: options.ignoreUnknownAxes,
+							ignoreNonPartitioned: options.ignoreNonPartitioned
 						}).output("result")
 					}
 
@@ -476,12 +472,17 @@ pColumnBundleUnmarshaller := func() {
 				 * Gets the spec for a column, applying axis filters if the ID is a FilteredPColumnId.
 				 * @param id - The ID of the column (string SUniversalPColumnId or UniversalPColumnId object)
 				 *             If the ID is a FilteredPColumnId, its axisFilters will be applied.
+				 * @param options - object (optional) - Options, can include:
+				 *   - keepColumns: boolean (default: false) - If true, keeps the columns used in axis filters in the resulting spec.
 				 * @returns The column spec object after applying filters.
 				 */
-				getSpec: func(id) {
+				getSpec: func(id, ...options) {
 					processedId := processColumnId(id)
 					columnKey := processedId.columnKey
 					columnAxisFilters := processedId.axisFilters // Filters from FilteredPColumnId
+
+					options = is_array(options) && is_map(options[0]) ? options[0] : {}
+					keepColumns := is_bool(options.keepColumns) ? options.keepColumns : false
 
 					if is_undefined(pool[columnKey]) {
 						ll.panic("Column not found in bundle: " + columnKey)
@@ -495,9 +496,11 @@ pColumnBundleUnmarshaller := func() {
 					baseSpec := result.spec
 
 					// If filters are present, prepare them and get the resulting spec
-					if !is_undefined(columnAxisFilters) && len(columnAxisFilters) > 0 {
-						prepared := pSpec.prepareAxisFilters(columnAxisFilters, baseSpec)
-						return prepared.columnSpec
+					if !keepColumns && !is_undefined(columnAxisFilters) && len(columnAxisFilters) > 0 {
+						prepared := pSpec.prepareAxisFiltersAndAxesSpec(columnAxisFilters, baseSpec.axesSpec)
+						clonedSpec := maps.clone(baseSpec)
+						clonedSpec.axesSpec = prepared.axesSpec
+						return clonedSpec
 					} else {
 						// Otherwise, return the base spec
 						return baseSpec
@@ -505,18 +508,81 @@ pColumnBundleUnmarshaller := func() {
 				},
 
 				/**
-				 * Sets a header override for a specific axis or column
-				 * @param matcher - Either a matcher object {name, domain} or a string (which will be used as the name)
-				 * @param header - The header text to use instead of the default
-				 * @returns The bundle object for chaining
+				 * Gets all column keys available in the bundle.
+				 * @returns An array of all column keys present in the bundle's pool.
 				 */
-				setAxisHeader: func(matcher, header) {
-					if is_string(matcher) {
-						matcher = { name: matcher, domain: {} }
+				getColumnKeys: func() {
+					return maps.getKeys(pool)
+				},
+
+				/**
+				 * Gets all unique axes from columns in the bundle.
+				 * Returns an array of unique AxisSpec objects, where uniqueness is determined by
+				 * name, type, and domain keys.
+				 * 
+				 * @param columnIds - Optional array of column IDs to process. If not provided, all columns will be processed.
+				 *                    Each ID can be a string (SUniversalPColumnId) or object (UniversalPColumnId).
+				 * @returns Array of unique AxisSpec objects from the specified (or all) columns in the bundle
+				 */
+				getAxesSpec: func(...columnIds) {
+					// Map to track unique axes by their canonical representation
+					uniqueAxesMap := {}
+					allAxes := []
+
+					// Helper function to process axes from a single column spec
+					processAxesSpec := func(spec) {
+						if !is_undefined(spec) && !is_undefined(spec.axesSpec) {
+							for _, axis in spec.axesSpec {
+								// Create a canonical key for this axis (name + type + domain)
+								axisKey := canonical.encode({
+									name: axis.name,
+									type: axis.type,
+									domain: is_undefined(axis.domain) ? {} : axis.domain
+								})
+								
+								// Only add if we haven't seen this axis before
+								if is_undefined(uniqueAxesMap[axisKey]) {
+									uniqueAxesMap[axisKey] = true
+									allAxes = append(allAxes, axis)
+								}
+							}
+						}
 					}
 
-					axisHeaderOverrides = [[matcher, header]] + axisHeaderOverrides
-					return bundle
+					// Helper function to process a pool result (single or multi-column)
+					processResult := func(result) {
+						if is_array(result) {
+							// Handle multi-column results
+							for _, col in result {
+								processAxesSpec(col.spec)
+							}
+						} else {
+							// Handle single column results
+							processAxesSpec(result.spec)
+						}
+					}
+
+					// If specific column IDs are provided, process only those
+					if len(columnIds) > 0 {
+						for id in columnIds {
+							processedId := processColumnId(id)
+							columnKey := processedId.columnKey
+							
+							result := pool[columnKey]
+							if is_undefined(result) {
+								ll.panic("Column not found: %v. Pool: %v", columnKey, maps.getKeys(pool))
+							}
+							
+							processResult(result)
+						}
+					} else {
+						// Process all columns in the pool
+						for result in pool {
+							processResult(result)
+						}
+					}
+
+					return allAxes
 				}
 			})
 

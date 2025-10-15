@@ -19,10 +19,12 @@ self.awaitState("data", "InputsLocked")
 thisTpl := assets.importTemplate(":pframes.slice-data")
 
 // Core filtering function
-filterPColumnData := func(data, slicingParams, options) {
-    keepColumns := is_bool(options.keepColumns) ? options.keepColumns : false
-    ignoreUnknownAxes := is_bool(options.ignoreUnknownAxes) ? options.ignoreUnknownAxes : false
-    ignoreNonPartitioned := is_bool(options.ignoreNonPartitioned) ? options.ignoreNonPartitioned : false
+filterPColumnData := func(params) {
+    data := params.data
+    slicingParams := params.slicingParams
+    keepColumns := is_bool(params.keepColumns) ? params.keepColumns : false
+    ignoreUnknownAxes := is_bool(params.ignoreUnknownAxes) ? params.ignoreUnknownAxes : false
+    ignoreNonPartitioned := is_bool(params.ignoreNonPartitioned) ? params.ignoreNonPartitioned : false
 
     // Build a set of fixed axis indices
     fixedAxes := {}
@@ -68,19 +70,25 @@ filterPColumnData := func(data, slicingParams, options) {
                 axisIdx := param[0]
                 if axisIdx > maxAxisIdx {
                     ll.panic("Invalid axisIdx %v for data type %v. Maximum axis index is %v",
-                            axisIdx, dataType, maxAxisIdx)
+                            axisIdx, dataType)
                 }
             }
         }
     }
 
     // get slicing params that are valid for the given data type
-    getFilteredSlicingParams := func(dataType, partitionKeyLength, superPartitionKeyLength) {
+    getFilteredSlicingParams := func(partitionKeyLength, superPartitionKeyLength) {
         maxAxisIdx := getMaxAxisIdx(partitionKeyLength, superPartitionKeyLength)
 
-        return slices.slice(slicingParams, 0, maxAxisIdx + 1)
-    }
+        // If maxAxisIdx < 0, no partitioning exists, return empty params
+        if maxAxisIdx < 0 {
+            return []
+        }
 
+        return slices.filter(slicingParams, func(param) {
+            return param[0] <= maxAxisIdx
+        })
+    }
 
     // Check if a partition key matches our filtering criteria
     matchesFilter := func(partitionKey, slicingParams) {
@@ -133,7 +141,14 @@ filterPColumnData := func(data, slicingParams, options) {
 
         validateFilteringParams(data.info().Type.Name, partitionKeyLength, superPartitionKeyLength)
 
-        filteredSlicingParams := getFilteredSlicingParams(data.info().Type.Name, partitionKeyLength, superPartitionKeyLength)
+        filteredSlicingParams := getFilteredSlicingParams(partitionKeyLength, superPartitionKeyLength)
+        
+        if (len(filteredSlicingParams) == 0) {
+            // No valid filtering params, return original data
+            return data
+        }
+
+        maxAxisIdx := getMaxAxisIdx(partitionKeyLength, superPartitionKeyLength)
 
         // Count fixed axes in super partition and nested partition
         fixedSuperAxes := 0
@@ -206,7 +221,14 @@ filterPColumnData := func(data, slicingParams, options) {
 
         validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
 
-        filteredSlicingParams := getFilteredSlicingParams(data.info().Type.Name, partitionKeyLength, undefined)
+        filteredSlicingParams := getFilteredSlicingParams(partitionKeyLength, undefined)
+        
+        if (len(filteredSlicingParams) == 0) {
+            // No valid filtering params, return original data
+            return data
+        }
+
+        maxAxisIdx := getMaxAxisIdx(partitionKeyLength, undefined)
 
         // Calculate new partition key length after removing fixed axes
         newPartitionKeyLength := partitionKeyLength - len(filteredSlicingParams)
@@ -234,7 +256,14 @@ filterPColumnData := func(data, slicingParams, options) {
 
         validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
 
-        filteredSlicingParams := getFilteredSlicingParams(data.info().Type.Name, partitionKeyLength, undefined)
+        filteredSlicingParams := getFilteredSlicingParams(partitionKeyLength, undefined)
+        
+        if (len(filteredSlicingParams) == 0) {
+            // No valid filtering params, return original data
+            return data
+        }
+
+        maxAxisIdx := getMaxAxisIdx(partitionKeyLength, undefined)
 
         // Calculate new partition key length after removing fixed axes
         newPartitionKeyLength := partitionKeyLength - len(filteredSlicingParams)
@@ -272,7 +301,14 @@ filterPColumnData := func(data, slicingParams, options) {
 
         validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
 
-        filteredSlicingParams := getFilteredSlicingParams(data.info().Type.Name, partitionKeyLength, undefined)
+        filteredSlicingParams := getFilteredSlicingParams(partitionKeyLength, undefined)
+        
+        if (len(filteredSlicingParams) == 0) {
+            // No valid filtering params, return original data
+            return data
+        }
+
+        maxAxisIdx := getMaxAxisIdx(partitionKeyLength, undefined)
 
         // Calculate new partition key length after removing fixed axes
         newPartitionKeyLength := partitionKeyLength - len(filteredSlicingParams)
@@ -316,10 +352,6 @@ self.body(func(inputs) {
     }
 
     return {
-        "result": filterPColumnData(inputs.data, inputs.slicingParams, {
-            keepColumns: inputs.keepColumns,
-            ignoreUnknownAxes: inputs.ignoreUnknownAxes,
-            ignoreNonPartitioned: inputs.ignoreNonPartitioned
-        })
+        "result": filterPColumnData(inputs)
     }
 })

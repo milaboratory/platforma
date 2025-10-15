@@ -6,6 +6,7 @@ smart := import(":smart")
 exec := import(":exec")
 json := import("json")
 text := import("text")
+pSpec := import(":pframes.spec")
 slices := import(":slices")
 execConstants := import(":exec.constants")
 pframesBuilder := import(":pframes.builder")
@@ -649,7 +650,8 @@ workflow := func() {
 		 *   - `columns` {array} - An array of column definitions. Each entry should be a map with:
 		 * @returns {object} - A DataFrame object constructed from the column bundle.
 		 */
-		frameFromColumnBundle: func(bundle, options) {
+		frameFromColumnBundle: func(bundle, ...options) {
+			options = len(options) > 0 && is_map(options[0]) ? options[0] : {}
 			util.validateParamsForFrameFromColumnBundle(options)
 
 			entries := []
