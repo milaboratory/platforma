@@ -8,7 +8,6 @@ json := import("json")
 text := import("text")
 slices := import(":slices")
 execConstants := import(":exec.constants")
-pframes := import(":pframes")
 pframesBuilder := import(":pframes.builder")
 pframesConstants := import(":pframes.constants")
 pframesUtil := import(":pframes.util")
@@ -110,7 +109,7 @@ p := ll.toStrict({
 	 */
 	slicedColumn: func(name, columnMap, axisFilters) {
 		_validateColumn(name, columnMap)
-		ll.assert(is_array(axisFilters), "axisFilters must be an array")
+		util.validateAxisFilters(axisFilters)
 		
 		slicedColumnCounter += 1
 		oldName := "p_sliced_" + slicedColumnCounter
@@ -627,66 +626,33 @@ workflow := func() {
 		frameFromColumnBundle: func(bundle, options) {
 			util.validateParamsForFrameFromColumnBundle(options)
 
-			decodeColumn := func(columnId) {
-				decoded := undefined
-				if is_string(columnId) {
-					decoded = json.decode(columnId)
-				} else if is_map(columnId) {
-					decoded = columnId
+			entries := []
+			aliases := []
+			for axis in options.axes {
+				aliases = append(aliases, exp.axis(axis.spec))
+			}
+			for column in options.columns {
+				decoded := json.decode(column)
+				if (is_undefined(decoded.axisFilters)) {
+					aliases = append(aliases, exp.col(decoded.name))
+					entry := p.column(decoded.name, bundle.getColumn(decoded))
+					entries = append(entries, entry)
 				} else {
-					ll.panic("Invalid column ID type. Expected string or object.")
-				}
-				return decoded
-			}
-			isFilteredColumn := func(columnId) {
-				decoded := decodeColumn(columnId)
-				return is_map(decoded) && !is_undefined(decoded.source) && !is_undefined(decoded.axisFilters)
-			}
-
-			axes := options.axes
-			columns := options.columns
-			tsvBuilder := pframes.tsvFileBuilder()
-			axesHeaders := []
-
-			for idx, axis in axes {
-				tsvBuilder.setAxisHeader(axis.spec, axis.column)
-				axesHeaders = append(axesHeaders, axis.column)
-			}
-
-			filteredColumns := []
-			for column in columns {
-				if (isFilteredColumn(column)) {
-					filteredColumns = append(filteredColumns, column)
-				} else {
-					tsvBuilder.add(bundle.getColumn(column))
+					aliases = append(aliases, exp.col(decoded.source.name))
+					entry := p.slicedColumn(
+						decoded.source.name,
+						bundle.getColumn(decoded.source),
+						slices.map(decoded.axisFilters, func(axisFilter) {
+							return {
+								axisIndex: axisFilter[0],
+								constant: axisFilter[1]
+							}
+						})
+					)
+					entries = append(entries, entry)
 				}
 			}
-			
-			mainDF := self.frame(tsvBuilder.buildForPT())
-
-			for column in filteredColumns {
-				decoded := decodeColumn(column)
-				source := decoded.source
-				axisFilters := decoded.axisFilters
-
-				tsv := pframes.tsvFileBuilder()
-				for axis in axes {
-					tsv.setAxisHeader(axis.spec, axis.column)
-				}
-				tsv.add(bundle.getColumn(source), { header: column })
-				df := self.frame(tsv.buildForPT())
-				joinColumns := slices.map(axes, func(axis) { return axis.column })
-				for axisFilter in axisFilters {
-					id := axesHeaders[axisFilter[0]]
-					value := axisFilter[1]
-					df = df.filter(exp.col(id).eq(exp.lit(value))).withoutColumns(id)
-					joinColumns = slices.filter(joinColumns, func(c) { return c != id } )
-				}
-
-				mainDF = mainDF.join(df, { on: joinColumns })
-			}
-
-			return mainDF
+			return self.frame(p.full(entries...)).select(aliases...)
 		},
 
 		_newAnonymousDataFrameId: func() {
@@ -954,7 +920,7 @@ workflow := func() {
 					specs := outFramesSpecs[frameName]
 					ll.assert(!is_undefined(specs), "saveFrameDirect was not called for frame '%s'", frameName)
 
-					pf := pframes.pFrameBuilder()
+					pf := pframesBuilder.pFrameBuilder()
 					for columnId, columnSpec in specs {
 						columnData := ptResult.resolveOutput(["outFrames", outFramesRename[frameName], columnId])
 						pf.add(columnId, columnSpec, columnData)

@@ -171,6 +171,17 @@ makeFrameColumnRef := func(frameName, columnId) {
 	})
 }
 
+_AXIS_FILTER_SCHEMA := {
+	// Axis index
+	`axisIndex`: `number`,
+	// Filter value
+	`constant`: [`or`, `number`, `string`]
+}
+
+validateAxisFilters := func(axisFilter) {
+	validation.assertType(axisFilter, [_AXIS_FILTER_SCHEMA])
+}
+
 // Validation of recursive schema requires forward declaration
 _JOIN_ENTRY_SCHEMA := undefined
 // Validation of recursive schema requires lazy evaluation
@@ -196,12 +207,7 @@ _JOIN_ENTRY_SCHEMA = [`or`,
         // New column id
         `newId`: `string`,
         // Non-empty list of axis filters
-        `axisFilters`: [{
-            // Axis index
-            `axisIndex`: `number`,
-            // Filter value
-            `constant`: [`or`, `number`, `string`]
-        }]
+        `axisFilters`: [_AXIS_FILTER_SCHEMA]
     },
     {
         // Node type discriminator
@@ -397,5 +403,6 @@ export ll.toStrict({
     makeFrameSpecs: makeFrameSpecs,
     makeWriteFrameStep: makeWriteFrameStep,
     makeFrameColumnRef: makeFrameColumnRef,
-    renameJoinColumns: renameJoinColumns
+    renameJoinColumns: renameJoinColumns,
+    validateAxisFilters: validateAxisFilters
 })

@@ -26,20 +26,19 @@ tplTest.concurrent(
       axes: [
         { column: sampleIdAxesSpec.name, spec: sampleIdAxesSpec },
         { column: cellIdAxesSpec.name, spec: cellIdAxesSpec },
-        { column: geneIdAxesSpec.name, spec: geneIdAxesSpec },
       ],
       anchor: createPlRef('b1', 'data'),
       columnIds: [
-        canonicalizeJson<AnchoredPColumnId>({
-          name: 'clusterResolution',
-          axes: [sampleIdAxesSpec],
-        }),
         canonicalizeJson<AnchoredPColumnId>({
           name: 'totalCounts',
           axes: [
             sampleIdAxesSpec,
             cellIdAxesSpec,
           ],
+        }),
+        canonicalizeJson<AnchoredPColumnId>({
+          name: 'clusterResolution',
+          axes: [sampleIdAxesSpec],
         }),
         canonicalizeJson<FilteredPColumnId>({
           source: {
@@ -69,7 +68,7 @@ tplTest.concurrent(
     const csvContent = await getFileContent(wf2, 'file', driverKit);
 
     expect(csvContent.trim()).eq(dedent`
-      sampleId	cellId	_axes_name_sampleId_type_String_name_cellId_type_String_name_totalCounts_	_axes_name_sampleId_type_String_name_clusterResolution_	"{""axisFilters"":[[2,""gene_1""]],""source"":{""axes"":[{""name"":""sampleId"",""type"":""String""},{""name"":""cellId"",""type"":""String""},{""name"":""geneId"",""type"":""String""}],""name"":""expression""}}"	"{""axisFilters"":[[2,""gene_3""]],""source"":{""axes"":[{""name"":""sampleId"",""type"":""String""},{""name"":""cellId"",""type"":""String""},{""name"":""geneId"",""type"":""String""}],""name"":""complexity""}}"
+      sampleId	cellId	totalCounts	clusterResolution	expression	complexity
       1	cell_1	3000	CL-1	5.0	0.815
       1	cell_2	4000	CL-1	7.0	0.513
       1	cell_3	3500	CL-1	8.0	0.914

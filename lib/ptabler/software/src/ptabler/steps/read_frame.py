@@ -28,7 +28,9 @@ class ReadFrame(PStep, tag="read_frame"):
     def column_ref(self, spec: PTableColumnSpec) -> str:
         if isinstance(spec, PTableColumnSpecAxis):
             return axis_ref(spec.spec)
-        return self.translation[spec.id]
+        if spec.id in self.translation:
+            return self.translation[spec.id]
+        return spec.id # sliced columns do not require renaming
 
     def execute(self, ctx: StepContext) -> None:
         if not os.path.isdir(ctx.settings.frame_folder):
