@@ -1,103 +1,36 @@
 /* eslint-disable @stylistic/no-tabs */
 import {
+  canonicalizeJson,
   deriveLocalPObjectId,
-  isPColumn,
-  parseFinalPObjectCollection,
   Pl,
   pTableValue,
-  type CalculateTableDataResponse,
-  type MiddleLayerDriverKit,
   type PTableColumnSpec,
 } from '@milaboratories/pl-middle-layer';
-import {
-  awaitStableState,
-  tplTest,
-  type TestRenderResults,
-  type TestWorkflowResults,
-} from '@platforma-sdk/test';
-import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import type { ComputableCtx } from '@milaboratories/computable';
-import { getTestTimeout } from '@milaboratories/test-helpers';
-import { assert, expect, vi } from 'vitest';
+import { awaitStableState, tplTest } from '@platforma-sdk/test';
+import { vi } from 'vitest';
 import dedent from 'dedent';
-import { getCsvHandle, readBlobAsString } from './frameFromBundle.test';
+import { Timeout, getFileContent, getTableData } from './helpers';
 
-const TIMEOUT = getTestTimeout(60_000);
+vi.setConfig({ testTimeout: Timeout });
 
-vi.setConfig({
-  testTimeout: TIMEOUT,
-});
+const normalizeCsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
+const normalizeTsv = normalizeCsv;
+const normalizeNdjson = normalizeCsv;
 
-const getFileContent = async (
-  result: TestRenderResults<string>,
-  outputName: string,
-  driverKit: MiddleLayerDriverKit,
-  timeout = TIMEOUT,
-): Promise<string> => {
-  const handle = await awaitStableState(
-    result.computeOutput(outputName, (fileHandle: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
-      if (!fileHandle) return undefined;
-      return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
-    }),
-    timeout,
-  );
-  expect(handle).toBeDefined();
-  return (await driverKit.blobDriver.getContent(handle!)).toString();
-};
-
-const getTableData = async (
-  result: TestWorkflowResults,
-  outputName: string,
-  driverKit: MiddleLayerDriverKit,
-  timeout = TIMEOUT,
-): Promise<CalculateTableDataResponse> => {
-  const handle = await awaitStableState(
-    result.output(outputName, (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
-      if (!acc || !acc.getIsReadyOrError()) return undefined;
-      const pObjects = parseFinalPObjectCollection(acc, false, '', [outputName]);
-      const pColumns = Object.entries(pObjects).map(([, obj]) => {
-        if (!isPColumn(obj)) throw new Error(`not a PColumn (kind = ${obj.spec.kind})`);
-        return obj;
-      });
-      return driverKit.pFrameDriver.createPFrame(pColumns, ctx);
-    }),
-    timeout,
-  );
-  assert(handle);
-
-  const pColumns = await driverKit.pFrameDriver.listColumns(handle);
-  const pTable = await driverKit.pFrameDriver.calculateTableData(handle, {
-    src: {
-      type: 'full',
-      entries: pColumns.map((col) => ({
-        type: 'column',
-        column: col.columnId,
-      })),
-    },
-    filters: [],
-    sorting: [],
-  }, undefined);
-  return pTable;
-};
-
-const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
-
-const normalizeAndSortTsv = (str: string) => {
-  const lines = str.replace(/\r\n/g, '\n').trim().split('\n');
+const normalizeAndSortCsv = (str: string) => {
+  const lines = normalizeCsv(str).split('\n');
   const header = lines.shift();
   lines.sort();
   return [header, ...lines].join('\n');
 };
-
-const normalizeNdjson = (str: string) =>
-  str
-    .replace(/\r\n/g, '\n')
-    .trim()
+const normalizeAndSortTsv = normalizeAndSortCsv;
+const normalizeAndSortNdjson = (str: string) =>
+  normalizeNdjson(str)
     .split('\n')
     .map((line) => {
       // Parse and re-stringify to normalize JSON formatting
       try {
-        return JSON.stringify(JSON.parse(line));
+        return canonicalizeJson(JSON.parse(line));
       } catch {
         return line; // Return as-is if not valid JSON
       }
@@ -193,44 +126,70 @@ tplTest.concurrent(
   },
 );
 
-tplTest.concurrent(
-  'pt frame roundtrip test',
-  async ({ helper, expect, driverKit }) => {
+tplTest.concurrent.for([
+  {
+    case: '1 axis, 1 column',
+    csvData: dedent`
+      a,b
+      1,X
+      9,Z
+      4,Y
+    `,
+    axes: [
+      { column: 'a', spec: { name: 'a', type: 'Int' } },
+    ],
+    columns: [
+      { column: 'b', spec: { name: 'b', valueType: 'String' } },
+    ],
+  },
+  {
+    case: '1 axis, 2 columns',
+    csvData: dedent`
+      a,b,c
+      1,X,0.1
+      9,Z,0.2
+      4,Y,0.3
+    `,
+    axes: [
+      { column: 'a', spec: { name: 'a', type: 'Int' } },
+    ],
+    columns: [
+      { column: 'b', spec: { name: 'b', valueType: 'String' } },
+      { column: 'c', spec: { name: 'c', valueType: 'Float' } },
+    ],
+  },
+  {
+    case: '2 axes, 1 column',
+    csvData: dedent`
+      a,b,c
+      1,X,0.1
+      9,Z,0.2
+      4,Y,0.3
+    `,
+    axes: [
+      { column: 'a', spec: { name: 'a', type: 'Int' } },
+      { column: 'b', spec: { name: 'b', type: 'String' } },
+    ],
+    columns: [
+      { column: 'c', spec: { name: 'c', valueType: 'Float' } },
+    ],
+  },
+])(
+  'pt frame roundtrip test - $case',
+  async ({ csvData, axes, columns }, { helper, expect, driverKit }) => {
     const workflow1 = await helper.renderWorkflow('pt.write_frame', false, {
-      inputCsv: dedent`
-        a,b
-        1,X
-        9,Z
-        4,Y
-      `,
-      saveFrameParams: {
-        axes: [{
-          column: 'a',
-          spec: { name: 'a', type: 'Int' },
-        }],
-        columns: [{
-          column: 'b',
-          spec: { name: 'b', valueType: 'String' },
-        }],
-      },
+      inputCsv: csvData,
+      saveFrameParams: { axes, columns },
     }, { blockId: 'block1' });
 
     const context1 = await awaitStableState(workflow1.context());
-
     const workflow2 = await helper.renderWorkflow('pt.read_frame', false, {
-      axesNames: ['a'],
-      columnNames: ['b'],
+      axesNames: axes.map((axis) => axis.spec.name),
+      columnNames: columns.map((column) => column.spec.name),
     }, { blockId: 'block2', parent: context1 });
 
-    const csvHandle = await getCsvHandle(workflow2, driverKit, 'csv');
-    const csvContent = await readBlobAsString(driverKit, csvHandle);
-
-    expect(csvContent.trim()).eq(dedent`
-      a,b
-      1,X
-      4,Y
-      9,Z
-    `);
+    const csvContent = await getFileContent(workflow2, 'csv', driverKit);
+    expect(normalizeCsv(csvContent)).eq(normalizeAndSortCsv(csvData));
   },
 );
 
@@ -571,21 +530,18 @@ tplTest.concurrent(
       getFileContent(result, 'out_csv_to_ndjson', driverKit),
     ]);
 
-    // Helper functions for normalization
-    const normalizeCsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
-
     // Test all outputs
-    expect(normalizeNdjson(ndjsonBasicContent)).toEqual(
-      normalizeNdjson(expectedOutputNdjsonBasic),
+    expect(normalizeAndSortNdjson(ndjsonBasicContent)).toEqual(
+      normalizeAndSortNdjson(expectedOutputNdjsonBasic),
     );
-    expect(normalizeNdjson(ndjsonLimitedContent)).toEqual(
-      normalizeNdjson(expectedOutputNdjsonLimited),
+    expect(normalizeAndSortNdjson(ndjsonLimitedContent)).toEqual(
+      normalizeAndSortNdjson(expectedOutputNdjsonLimited),
     );
     expect(normalizeCsv(ndjsonToCsvContent)).toEqual(
       normalizeCsv(expectedOutputNdjsonToCsv),
     );
-    expect(normalizeNdjson(csvToNdjsonContent)).toEqual(
-      normalizeNdjson(expectedOutputCsvToNdjson),
+    expect(normalizeAndSortNdjson(csvToNdjsonContent)).toEqual(
+      normalizeAndSortNdjson(expectedOutputCsvToNdjson),
     );
   },
 );

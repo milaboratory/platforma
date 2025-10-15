@@ -1,19 +1,15 @@
 /* eslint-disable @stylistic/no-tabs */
-import type { ComputableCtx } from '@milaboratories/computable';
-import { getTestTimeout } from '@milaboratories/test-helpers';
-import type { AnchoredPColumnId, FilteredPColumnId, MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
+import type { AnchoredPColumnId, FilteredPColumnId } from '@milaboratories/pl-middle-layer';
 import { canonicalizeJson, createPlRef } from '@milaboratories/pl-middle-layer';
-import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import type { TestWorkflowResults } from '@platforma-sdk/test';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import { expect } from 'vitest';
+import { vi } from 'vitest';
 import dedent from 'dedent';
+import { Timeout, getFileContent } from './helpers';
 
-const TIMEOUT = getTestTimeout(30_000);
+vi.setConfig({ testTimeout: Timeout });
 
 tplTest.concurrent(
   'pt frameFromColumnBundle test - should return frame from column bundle with filtered columns',
-  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     const wf1 = await helper.renderWorkflow('pt.frameFromBundle.pool', false, {
       pColumnsData: [
@@ -70,8 +66,7 @@ tplTest.concurrent(
       ],
     }, { blockId: 'b2', parent: ctx });
 
-    const csvHandle = await getCsvHandle(wf2, driverKit, 'file');
-    const csvContent = await readBlobAsString(driverKit, csvHandle);
+    const csvContent = await getFileContent(wf2, 'file', driverKit);
 
     expect(csvContent.trim()).eq(dedent`
       sampleId	cellId	_axes_name_sampleId_type_String_name_cellId_type_String_name_totalCounts_	_axes_name_sampleId_type_String_name_clusterResolution_	"{""axisFilters"":[[2,""gene_1""]],""source"":{""axes"":[{""name"":""sampleId"",""type"":""String""},{""name"":""cellId"",""type"":""String""},{""name"":""geneId"",""type"":""String""}],""name"":""expression""}}"	"{""axisFilters"":[[2,""gene_3""]],""source"":{""axes"":[{""name"":""sampleId"",""type"":""String""},{""name"":""cellId"",""type"":""String""},{""name"":""geneId"",""type"":""String""}],""name"":""complexity""}}"
@@ -87,31 +82,6 @@ tplTest.concurrent(
     `);
   },
 );
-
-export async function getCsvHandle(
-  result: TestWorkflowResults,
-  driverKit: MiddleLayerDriverKit,
-  outputName: string,
-  timeout = TIMEOUT,
-) {
-  const handle = await awaitStableState(
-    result.output(outputName, (f: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
-      if (!f) {
-        return undefined;
-      }
-      return driverKit.blobDriver.getOnDemandBlob(f.persist(), ctx).handle;
-    }),
-    timeout,
-  );
-  expect(handle).toBeDefined();
-  return handle!;
-}
-
-type BlobHandle = ReturnType<MiddleLayerDriverKit['blobDriver']['getOnDemandBlob']>['handle'];
-
-export async function readBlobAsString(driverKit: MiddleLayerDriverKit, handle: BlobHandle) {
-  return (await driverKit.blobDriver.getContent(handle)).toString();
-}
 
 const sampleIdAxesSpec = {
   name: 'sampleId',
