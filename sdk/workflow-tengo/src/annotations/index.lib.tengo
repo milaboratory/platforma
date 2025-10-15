@@ -1,121 +1,80 @@
-pt := import(":pt")
-wf := import(":workflow")
 ll := import(":ll")
-slices := import(":slices")
+wf := import(":workflow")
+maps := import(":maps")
 util := import(":annotations.util")
+render := import(":render")
+assets := import(":assets")
+slices := import(":slices")
 
-DATA_FILE := "data.tsv"
-ANNOTATION_HEADER := util.ANNOTATION_HEADER
+compute := assets.importTemplate(":annotations.compute")
 
 /**
  * Computes annotations and optional filters based on the provided steps and column bundle.
  *
  * @param inputs: A map containing the following keys:
- *   - title: The title for the annotations.
  *   - steps: An array of steps, each containing a name and an expression.
- *   - mainAxes: The main axes specification.
- *   - columnBundle: The column bundle to extract columns from.
- *   - shouldComputeFilters: A boolean indicating whether to compute filters.
- *   - createAxisSpec: A function to create axis specifications.
- *   - createColumnSpec: A function to create column specifications.
+ *   - inputAnchor: The input anchor for the workflow.
+ *   - resultColumnSpec: The specification for the result column.
+ *   - additionalColumns?: Additional column for the column bundle.
+ *   - shouldComputeFilters?: A boolean indicating whether to compute filters.
  *
  * @returns: A map containing:
  *   - annotations: The computed annotations with their data and specification.
  *   - annotationsFilters (optional): An array of computed filters with their data and specifications.
  */
 computeAnnotations := func(inputs) {
-	outputs := {}
-
-	title := inputs.title
-	steps := inputs.steps
-
-	mainAxes := inputs.mainAxes
-	columnBundle := inputs.columnBundle
-	shouldComputeFilters := inputs.shouldComputeFilters
-
-	createAxisSpec := inputs.createAxisSpec
-	createColumnSpec := inputs.createColumnSpec
-
-	if len(steps) == 0 || is_undefined(columnBundle) {
-		return outputs
+	if len(inputs.steps) == 0 {
+		return {}
 	}
 
-	annotationsAxisSpec := createAxisSpec("String", ANNOTATION_HEADER, title)
-
-	createAnnotationsDataAndSpec := util.createAnnotationsDataAndSpecFactory(mainAxes, createColumnSpec, title)
-	createFilterDataAndSpec := util.createFilterDataAndSpecFactory(mainAxes, createColumnSpec)
+	steps := inputs.steps
+	inputAnchor := inputs.inputAnchor
+	shouldComputeFilters := is_bool(inputs.shouldComputeFilters) ? inputs.shouldComputeFilters : false
+	
 	columnsFromExpressions := util.extractColumnsFromExpressions(slices.map(steps, func(step) { return step.expression }))
-	columnNameManager := util.createColumnNameManager()
+	additionalColumns := is_array(inputs.additionalColumns) ? inputs.additionalColumns : []
+	columns := columnsFromExpressions + additionalColumns
+	
+	bundleBuilder := wf.createPBundleBuilder()
+	bundleBuilder.addAnchor("main", inputAnchor)
+	for column in columns { bundleBuilder.addById(column) }
+	columnBundle := bundleBuilder.build()
 
-	finalExpressions := slices.map(steps, func(step) {
-		return {
-			name: columnNameManager.toSafe(step.name),
-			expression: step.expression
+	result := render.create(compute, {
+		columnBundle: columnBundle,
+		params: {
+			steps: steps,
+			columns: columns,
+			resultColumnSpec: inputs.resultColumnSpec,
+			shouldComputeFilters: shouldComputeFilters
 		}
 	})
 
-	columnNames := slices.map(finalExpressions, func(spec) { return spec.name })
-	filterColumnNames := shouldComputeFilters ? columnNames : [];
-	columnNamesReversed := slices.reverse(columnNames)
+	annotationsFile := result.output("annotationsFile")
+	annotationColumn := maps.deepMerge(
+		util.createAnnotationsDataAndSpec(annotationsFile, inputs.resultColumnSpec)[util.ANNOTATION_HEADER],
+		{ column: util.ANNOTATION_HEADER }
+	)
 
-	annotationColumnExpr := slices.
-		reduce(columnNamesReversed, func(exp, colName) {
-			return exp.when(pt.col(colName)).then(pt.lit(columnNameManager.fromSafe(colName)))
-		}, pt).
-		otherwise(pt.lit(undefined)).
-		alias(ANNOTATION_HEADER)
-
-	wf := pt.workflow()
-	
-	dfData := wf.frameFromColumnBundle(columnBundle, {
-        axes: [mainAxes],
-        columns: columnsFromExpressions
-    }).
-		withColumns(finalExpressions...).
-		withColumns(annotationColumnExpr)
-
-	dfData.
-		select(mainAxes.column, ANNOTATION_HEADER).
-	    save(DATA_FILE)
-
-	for colName in filterColumnNames {
-		dfData.
-			filter(pt.col(ANNOTATION_HEADER).eq(pt.lit(columnNameManager.fromSafe(colName)))).
-			withColumns(pt.lit(1).alias(ANNOTATION_HEADER).alias(colName)).
-			select(mainAxes.column, colName).
-			save(util.createFilterFileName(colName))
-	}
-	
-    wfResult := wf.run()
-
-	dataFile := wfResult.getFile(DATA_FILE)
-	filterFiles := slices.map(filterColumnNames, func(colName) {
-		return { name: colName, file: wfResult.getFile(util.createFilterFileName(colName)) }
-	})
-
-	annotationsDataAndSpec := createAnnotationsDataAndSpec(dataFile)
-	outputs["annotations"] = {
-		column: ANNOTATION_HEADER,
-		file: dataFile,
-		data: annotationsDataAndSpec[ANNOTATION_HEADER].data,
-		spec: annotationsDataAndSpec[ANNOTATION_HEADER].spec
-	}
-
-	outputs["annotationsFilters"] = slices.map(filterFiles, func(v) {
-		label := columnNameManager.fromSafe(v.name)
-		specAndData := createFilterDataAndSpec(v.file, v.name, label)
+	idx := 0
+	annotationFilterColumns := shouldComputeFilters ? slices.map(steps, func(v) {
+		idx += 1
+		column := util.encodeColumnName(v.name, idx)
+		file := result.resolveOutput(["filtersFiles", column])
+		specAndData := util.createFilterDataAndSpec(file, inputs.resultColumnSpec, column, v.name)
 		return {
 			column: v.name,
-			file: v.file,
-			data: specAndData[v.name].data,
-			spec: specAndData[v.name].spec
+			data: specAndData[column].data,
+			spec: specAndData[column].spec
 		}
-	})
+	}) : []
 
-	return outputs
+	return {
+		annotationColumn: annotationColumn,
+		annotationFilterColumns: annotationFilterColumns
+	}
 }
 
 export ll.toStrict({
-	computeAnnotations: computeAnnotations,
-	extractColumnsFromExpressions: util.extractColumnsFromExpressions
+	computeAnnotations: computeAnnotations
 })

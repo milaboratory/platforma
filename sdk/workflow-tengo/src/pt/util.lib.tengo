@@ -84,15 +84,13 @@ validateParamsForSaveFrameDirect := func(params) {
 
 _FRAME_FROM_COLUMN_BUNDLE_PARAMS_SCHEMA := {
 	// DataFrame axes definitions
-	`axes`: [_AXIS_SCHEMA],
+	`axes,?`: [_AXIS_SCHEMA],
     // ColumnBundle column names to include in the resulting DataFrame
-	`columns`: [`string`]
+	`columns,?`: [`string`]
 }
 
 validateParamsForFrameFromColumnBundle := func(params) {
 	validation.assertType(params, _FRAME_FROM_COLUMN_BUNDLE_PARAMS_SCHEMA, "Invalid params structure")
-    ll.assert(len(params.axes) > 0, "At least one axis is required")
-    ll.assert(len(params.columns) > 0, "At least one column is required")
 }
 
 makeFrameSpecs := func(params) {

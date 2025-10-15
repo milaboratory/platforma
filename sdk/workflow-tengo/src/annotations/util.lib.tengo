@@ -1,10 +1,14 @@
+hex := import("hex")
 rand := import("rand")
+text := import("text")
+
 ll := import(":ll")
-xsv := import(":pframes.xsv")
 sets := import(":sets")
 maps := import(":maps")
 slices := import(":slices")
-strings := import(":strings")
+
+xsv := import(":pframes.xsv")
+pSpec := import(":pframes.spec")
 
 ANNOTATION_HEADER := "annotation"
 
@@ -12,96 +16,59 @@ createFilterFileName := func(colName) {
 	return colName + "_filter.tsv"
 }
 
-createAxisSpecFactory := func(blockId) {
-	return func(type, name, label) {
-		return {
-			type: type,
-			name: "pl7.app/clonotypeAnnotation/" + name,
-			domain: {
-				"pl7.app/clonotypeAnnotationRunId": blockId
-			},
-			annotations: {
-				"pl7.app/label": label
-			}
-		}
+createAnnotationsDataAndSpec := func(dataFile, columnSpec) {
+	importSpec := {
+		cpu: 1,
+		mem: "12GiB",
+		storageFormat: "Binary",
+		partitionKeyLength: 0,
+		axes: slices.map(columnSpec.axesSpec, func(v) { return { column: pSpec.getAxisId(v), spec: v } }),
+		columns: [{
+			column: ANNOTATION_HEADER,
+			spec: columnSpec
+		}]
 	}
+
+	return xsv.importFile(dataFile, "tsv", importSpec, { splitDataAndSpec: true })
 }
 
-createColumnSpecFactory := func(trace, blockId) {
-	return func(type, name, label, axesSpec) {
-		return trace.inject({
-			kind: "PColumn",
-			valueType: type,
-			name: "pl7.app/clonotypeAnnotation/" + name,
-			domain: {
-				"pl7.app/clonotypeAnnotationRunId": blockId
-			},
-			axesSpec: axesSpec,
-			annotations: {
-				"pl7.app/label": label
-			}
-		})
+createFilterDataAndSpec := func(file, columnSpec, colName, label) {
+	filterColumnSpec := maps.deepMerge(columnSpec, {
+		kind: "PColumn",
+		valueType: "Int",
+		name: columnSpec.name + "/filter/" + colName,
+		annotations: {
+			"pl7.app/label": columnSpec.annotations["pl7.app/label"] + "/" + label,
+			"pl7.app/isSubset": "true"
+		}
+	});
+	
+	importSpec := {
+		cpu: 1,
+		mem: "8GiB",
+		storageFormat: "Binary",
+		partitionKeyLength: 0,
+		axes: slices.map(columnSpec.axesSpec, func(v) { return { column: pSpec.getAxisId(v), spec: v } }),
+		columns: [{
+			column: colName,
+			spec: filterColumnSpec
+		}]
 	}
+
+	return xsv.importFile(file, "tsv", importSpec, { splitDataAndSpec: true })
 }
 
-createAnnotationsDataAndSpecFactory := func(mainAxes, createColumnSpec, annotationLabel) {
-	return func(dataFile) {
-		importSpec := {
-			cpu: 1,
-			mem: "12GiB",
-			storageFormat: "Binary",
-			partitionKeyLength: 0,
-			axes: mainAxes,
-			columns: [{
-				column: ANNOTATION_HEADER,
-				spec: createColumnSpec("String", ANNOTATION_HEADER, annotationLabel, slices.map(mainAxes, func(a) { return a.spec }))
-			}]
-		}
-
-		return xsv.importFile(dataFile, "tsv", importSpec, { splitDataAndSpec: true })
-	}
+encodeColumnName := func(name, idx) {
+	return hex.encode(name) + "_encoded_" + string(idx)
 }
 
-createFilterDataAndSpecFactory := func(mainAxes, createColumnSpec) {
-	return func(file, colName, label) {
-		filterColumnSpec := maps.deepMerge(createColumnSpec("Int", "filter", label, slices.map(mainAxes, func(a) { return a.spec })), {
-			domain: {
-				"pl7.app/filterLabel": label
-			},
-			annotations: {
-				"pl7.app/isSubset": "true"
-			}
-		});
-		
-		importSpec := {
-			cpu: 1,
-			mem: "8GiB",
-			storageFormat: "Binary",
-			partitionKeyLength: 0,
-			axes: mainAxes,
-			columns: [{
-				column: colName,
-				spec: filterColumnSpec
-			}]
-		}
-
-		return xsv.importFile(file, "tsv", importSpec, { splitDataAndSpec: true })
+decodeColumnName := func(encoded) {
+	parts := text.split(encoded, "_encoded_")
+	if len(parts) != 2 {
+		ll.panic("Invalid encoded column name: " + encoded)
 	}
-}
 
-createColumnNameManager := func() {
-	safeToName := {}
-
-	return {
-		toSafe: func(name) {
-			safe := strings.substituteSpecialCharacters(name) + "_" + string(rand.int())
-			safeToName[safe] = name;
-			return safe
-		},
-		fromSafe: func(safe) {
-			return safeToName[safe]
-		}
-	}
+	return string(hex.decode(parts[0]))
 }
 
 isExpression := func(v) {
@@ -342,12 +309,11 @@ extractColumnsFromExpressions := func(expressions) {
 export ll.toStrict({
 	ANNOTATION_HEADER: ANNOTATION_HEADER,
 
+	encodeColumnName: encodeColumnName,
+	decodeColumnName: decodeColumnName,
 	createFilterFileName: createFilterFileName,
-	createAxisSpecFactory: createAxisSpecFactory,
-	createColumnSpecFactory: createColumnSpecFactory,
-	createAnnotationsDataAndSpecFactory: createAnnotationsDataAndSpecFactory,
-	createFilterDataAndSpecFactory: createFilterDataAndSpecFactory,
-	createColumnNameManager: createColumnNameManager,
+	createAnnotationsDataAndSpec: createAnnotationsDataAndSpec,
+	createFilterDataAndSpec: createFilterDataAndSpec,
 	mapExpressionColumnNames: mapExpressionColumnNames,
 	extractColumnsFromExpressions: extractColumnsFromExpressions
 })

@@ -1,0 +1,72 @@
+pt := import(":pt")
+wf := import(":workflow")
+self := import(":tpl")
+util := import(":annotations.util")
+pSpec := import(":pframes.spec")
+slices := import(":slices")
+
+DATA_FILE := "data.tsv"
+ANNOTATION_HEADER := util.ANNOTATION_HEADER
+
+self.defineOutputs(["annotationsFile", "filtersFiles"])
+
+self.body(func(inputs) {
+	outputs := {}
+
+    columnBundle := inputs.columnBundle
+    // combined to one field to simplify inner tpl resource allocation
+	steps := inputs.params.steps
+    columns := inputs.params.columns
+	resultColumnSpec := inputs.params.resultColumnSpec
+	shouldComputeFilters := inputs.params.shouldComputeFilters
+
+    idx := 0
+	finalExpressions := slices.map(steps, func(step) {
+        idx += 1
+		return {
+			name: util.encodeColumnName(step.name, idx),
+			expression: step.expression
+		}
+	})
+
+	columnNames := slices.map(finalExpressions, func(spec) { return spec.name })
+	filterColumnNames := shouldComputeFilters ? columnNames : [];
+	columnNamesReversed := slices.reverse(columnNames)
+	resultAxesSpecName := slices.map(resultColumnSpec.axesSpec, func(axis) { return pSpec.getAxisId(axis) })
+
+	annotationColumnExpr := slices.
+		reduce(columnNamesReversed, func(exp, colName) {
+			return exp.when(pt.col(colName)).then(pt.lit(util.decodeColumnName(colName)))
+		}, pt).
+		otherwise(pt.lit(undefined)).
+		alias(ANNOTATION_HEADER)
+
+	wf := pt.workflow()
+
+	dfData := wf.frameFromColumnBundle(columnBundle).
+		withColumns(finalExpressions...).
+		withColumns(annotationColumnExpr)
+
+	dfData.
+		select(ANNOTATION_HEADER, resultAxesSpecName...).
+	    save(DATA_FILE)
+
+	for colName in filterColumnNames {
+		dfData.
+			filter(pt.col(ANNOTATION_HEADER).eq(pt.lit(util.decodeColumnName(colName)))).
+			withColumns(pt.lit(1).alias(colName)).
+			select(colName, resultAxesSpecName...).
+			save(util.createFilterFileName(colName))
+	}
+	
+    wfResult := wf.run()
+
+	outputs["annotationsFile"] = wfResult.getFile(DATA_FILE)
+    outputs["filtersFiles"] = {}
+
+    for colName in filterColumnNames {
+        outputs["filtersFiles"][colName] = wfResult.getFile(util.createFilterFileName(colName))
+	}
+
+	return outputs	
+})
