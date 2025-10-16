@@ -10,6 +10,8 @@ slices := import(":slices")
 xsv := import(":pframes.xsv")
 pSpec := import(":pframes.spec")
 
+expr := import(":pt.expression-traverse")
+
 ANNOTATION_HEADER := "annotation"
 
 createFilterFileName := func(colName) {
@@ -71,200 +73,8 @@ decodeColumnName := func(encoded) {
 	return string(hex.decode(parts[0]))
 }
 
-isExpression := func(v) {
-	return !is_undefined(v) && is_map(v) && is_string(v.type)
-}
-
-expressionTraverse := func(expression, visitFn) {
-	if (!isExpression(expression)) {
-		return
-	}
-
-	visitFn(expression)
-
-	// Main switch by expression.type
-	t := expression.type
-
-	if t == "col" {
-		return
-	}
-
-	if t == "const" {
-		return
-	}
-
-	// Comparisons
-	if t == "eq" || t == "neq" || t == "gt" || t == "lt" || t == "ge" || t == "le" {
-		expressionTraverse(expression.lhs, visitFn)
-		expressionTraverse(expression.rhs, visitFn)
-		return
-	}
-
-	// Boolean logic
-	if t == "and" || t == "or" {
-		if is_array(expression.operands) {
-			for _, op in expression.operands { expressionTraverse(op, visitFn) }
-		}
-		return
-	}
-	if t == "not" {
-		expressionTraverse(expression.value, visitFn)
-		return
-	}
-
-	// Arithmetic binary
-	if t == "plus" || t == "minus" || t == "multiply" || t == "truediv" || t == "floordiv" {
-		expressionTraverse(expression.lhs, visitFn)
-		expressionTraverse(expression.rhs, visitFn)
-		return
-	}
-
-	// Unary math
-	if t == "log10" || t == "log" || t == "log2" || t == "abs" || t == "sqrt" || t == "negate" || t == "floor" || t == "round" || t == "ceil" {
-		expressionTraverse(expression.value, visitFn)
-		return
-	}
-
-	if t == "cast" {
-		expressionTraverse(expression.value, visitFn)
-		return
-	}
-
-	// Null checks
-	if t == "is_na" || t == "is_not_na" {
-		expressionTraverse(expression.value, visitFn)
-		return
-	}
-
-	// String ops
-	if t == "str_join" {
-		if is_array(expression.operands) {
-			for _, op in expression.operands { expressionTraverse(op, visitFn) }
-		}
-		return
-	}
-	if t == "hash" {
-		expressionTraverse(expression.value, visitFn)
-		return
-	}
-	if t == "to_upper" || t == "to_lower" || t == "str_len" {
-		expressionTraverse(expression.value, visitFn)
-		return
-	}
-	if t == "string_distance" {
-		expressionTraverse(expression.string1, visitFn)
-		expressionTraverse(expression.string2, visitFn)
-		return
-	}
-	if t == "fuzzy_string_filter" {
-		expressionTraverse(expression.value, visitFn)
-		if isExpression(expression.pattern) { expressionTraverse(expression.pattern, visitFn) }
-		return
-	}
-	if t == "when_then_otherwise" {
-		if is_array(expression.conditions) {
-			for _, c in expression.conditions {
-				// c expected to be a map with when/then
-				if is_map(c) {
-					expressionTraverse(c.when, visitFn)
-					expressionTraverse(c.then, visitFn)
-				}
-			}
-		}
-		expressionTraverse(expression.otherwise, visitFn)
-		return
-	}
-	if t == "substring" {
-		expressionTraverse(expression.value, visitFn)
-		expressionTraverse(expression.start, visitFn)
-		if !is_undefined(expression.length) { expressionTraverse(expression.length, visitFn) }
-		if !is_undefined(expression.end) { expressionTraverse(expression.end, visitFn) }
-		return
-	}
-	if t == "str_replace" {
-		expressionTraverse(expression.value, visitFn)
-		if isExpression(expression.pattern) { expressionTraverse(expression.pattern, visitFn) }
-		if isExpression(expression.replacement) { expressionTraverse(expression.replacement, visitFn) }
-		return
-	}
-	if t == "str_contains" {
-		expressionTraverse(expression.value, visitFn)
-		if isExpression(expression.pattern) { expressionTraverse(expression.pattern, visitFn) }
-		return
-	}
-	if t == "str_starts_with" {
-		expressionTraverse(expression.value, visitFn)
-		if isExpression(expression.prefix) { expressionTraverse(expression.prefix, visitFn) }
-		return
-	}
-	if t == "str_ends_with" {
-		expressionTraverse(expression.value, visitFn)
-		if isExpression(expression.suffix) { expressionTraverse(expression.suffix, visitFn) }
-		return
-	}
-	if t == "str_contains_any" {
-		expressionTraverse(expression.value, visitFn)
-		return
-	}
-	if t == "str_count_matches" {
-		expressionTraverse(expression.value, visitFn)
-		if isExpression(expression.pattern) { expressionTraverse(expression.pattern, visitFn) }
-		return
-	}
-	if t == "str_extract" {
-		expressionTraverse(expression.value, visitFn)
-		if isExpression(expression.pattern) { expressionTraverse(expression.pattern, visitFn) }
-		return
-	}
-
-	// Aggregations / window / others
-	if t == "min" || t == "max" {
-		if is_array(expression.operands) {
-			for _, op in expression.operands { expressionTraverse(op, visitFn) }
-		}
-		return
-	}
-	if t == "fill_null" || t == "fill_nan" {
-		expressionTraverse(expression.input, visitFn)
-		expressionTraverse(expression.fillValue, visitFn)
-		return
-	}
-	if t == "aggregate" {
-		expressionTraverse(expression.value, visitFn)
-		if is_array(expression.partitionBy) {
-			for _, p in expression.partitionBy { expressionTraverse(p, visitFn) }
-		}
-		return
-	}
-	if t == "rank" {
-		if is_array(expression.partitionBy) {
-			for _, p in expression.partitionBy { expressionTraverse(p, visitFn) }
-		}
-		if is_array(expression.orderBy) {
-			for _, o in expression.orderBy { expressionTraverse(o, visitFn) }
-		}
-		return
-	}
-	if t == "cumsum" {
-		expressionTraverse(expression.value, visitFn)
-		if is_array(expression.additionalOrderBy) {
-			for _, o in expression.additionalOrderBy { expressionTraverse(o, visitFn) }
-		}
-		if is_array(expression.partitionBy) {
-			for _, p in expression.partitionBy { expressionTraverse(p, visitFn) }
-		}
-		return
-	}
-	if t == "struct_field" {
-		expressionTraverse(expression.struct, visitFn)
-		return
-	}
-
-	// Unknown type: do nothing
-}
-
 addColumnsFromExpression := func(expression, columnsSet) {
-	expressionTraverse(expression, func(node) {
+	expr.expressionTraverse(expression, func(node) {
 		if node.type == "col" {
 			// Direct column reference
 			if is_string(node.name) {
@@ -278,7 +88,7 @@ addColumnsFromExpression := func(expression, columnsSet) {
 mapExpressionColumnNames := func(expression, transformFn) {
 	copy := maps.clone(expression)
 	
-	expressionTraverse(copy, func(node) {
+	expr.expressionTraverse(copy, func(node) {
 		if node.type == "col" {
 			// Direct column reference
 			if is_string(node.name) {
@@ -290,12 +100,6 @@ mapExpressionColumnNames := func(expression, transformFn) {
 	return copy
 }
 
-/**
- * Given a list of annotation steps with expressions, computes the annotations data and specifications.
- *
- * @param expressions - An array of annotation steps, each containing a name and an expression.
- * @return - A list of unique column names extracted from the expressions.
- */
 extractColumnsFromExpressions := func(expressions) {
 	columnsSet := {}
 

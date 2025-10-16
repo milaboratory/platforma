@@ -1,4 +1,5 @@
-import { and, col, lit, or, rank, type Expression, type ExpressionImpl } from '@milaboratories/ptabler-js';
+import { assertNever } from '@milaboratories/pl-model-common';
+import { and, col, lit, or, rank, type Expression, type ExpressionImpl } from '@milaboratories/ptabler-expression-js';
 import type { FilterSpec } from '../filters';
 
 export function convertFilterUiToExpressionImpl(value: FilterSpec): ExpressionImpl {
@@ -110,7 +111,7 @@ export function convertFilterUiToExpressionImpl(value: FilterSpec): ExpressionIm
     throw new Error('Filter type is undefined, this should not happen');
   }
 
-  throw new Error('Unhandled filter type');
+  assertNever(value);
 }
 
 export function convertFilterUiToExpressions(value: FilterSpec): Expression {

@@ -14,7 +14,6 @@ self.body(func(inputs) {
 	outputs := {}
 
     columnBundle := inputs.columnBundle
-    // combined to one field to simplify inner tpl resource allocation
 	steps := inputs.params.steps
     columns := inputs.params.columns
 	resultColumnSpec := inputs.params.resultColumnSpec

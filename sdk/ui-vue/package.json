@@ -23,7 +23,7 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
-    "@milaboratories/ptabler-js": "workspace:*",
+    "@milaboratories/ptabler-expression-js": "workspace:*",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "@types/d3-format": "catalog:",

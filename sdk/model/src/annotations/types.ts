@@ -1,4 +1,4 @@
-import type { Expression } from '@milaboratories/ptabler-js';
+import type { Expression } from '@milaboratories/ptabler-expression-js';
 import type { FilterSpec } from '../filters';
 
 export type AnnotationSpec<T extends ExpressionSpec = ExpressionSpec> = {

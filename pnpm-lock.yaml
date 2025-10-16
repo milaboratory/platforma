@@ -2476,7 +2476,7 @@ importers:
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../../lib/model/common
-      '@milaboratories/ptabler-js':
+      '@milaboratories/ptabler-expression-js':
         specifier: workspace:*
         version: link:../../lib/ptabler/js
       canonicalize:
@@ -2562,7 +2562,7 @@ importers:
       '@milaboratories/miplots4':
         specifier: 'catalog:'
         version: 1.0.145(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)
-      '@milaboratories/ptabler-js':
+      '@milaboratories/ptabler-expression-js':
         specifier: workspace:*
         version: link:../../lib/ptabler/js
       '@milaboratories/uikit':
