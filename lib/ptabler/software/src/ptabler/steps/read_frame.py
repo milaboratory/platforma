@@ -40,6 +40,8 @@ class ReadFrame(PStep, tag="read_frame"):
             ctx.settings.frame_folder,
             self.request,
             spill_path=ctx.settings.spill_folder,
+            # column_ref is a function which takes a PTableColumnSpec and returns a polars column name
+            # effectively pframe_source applies select with aliases to names returned by column_ref
             column_ref=self.column_ref,
             logger=ppf.logger,
             parallel=self.parallel,

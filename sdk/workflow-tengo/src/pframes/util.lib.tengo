@@ -411,7 +411,7 @@ calculateGroupAxesIndices := func(numberOfAxes, aggregationIndices) {
 pFrameToColumnsMap := func(pf) {
 	columnsById := {}
 
-	addColumn := func(key, value) {
+	addColumnSegment := func(key, value) {
 		columnId := key[0:(len(key) - 5)]
 		if is_undefined(columnsById[columnId]) {
 			columnsById[columnId] = {}
@@ -419,6 +419,7 @@ pFrameToColumnsMap := func(pf) {
 
 		if text.has_suffix(key, ".spec") {
 			if smart.isResource(value) {
+				ll.assert(value.isFinal(), "Resource is not final")
 				value = value.getDataAsJson()
 			}
 			columnsById[columnId].spec = value
@@ -431,12 +432,13 @@ pFrameToColumnsMap := func(pf) {
 
 	if smart.isResource(pf) {
 		ll.assert(pf.checkResourceType(constants.RTYPE_P_FRAME), "Unexpected resource type: %v", pf.info().Type)
+		ll.assert(pf.info().InputsLocked, "PFrame resource does not have inputs locked")
 		for key, field in pf.inputs() {
-			addColumn(key, field.getValue())
+			addColumnSegment(key, field.getValue())
 		}
 	} else if ll.isMap(pf) {
 		for key, value in pf {
-			addColumn(key, value)
+			addColumnSegment(key, value)
 		}
 	} else {
 		ll.panic("unknown pf format: %v", pf)
@@ -452,6 +454,11 @@ pFrameToColumnsMap := func(pf) {
  * @param exec: string - exec instance
  * @param ops: map - exec options
  *   - folder: string - folder to save the column in
+ *
+ * Multiple columns can refer to the same column data resource,
+ * so we ensure that the column data is written only once
+ * by using resource.id as a fileName, and use that execBuilder.writeFile()
+ * and execBuilder.addFile() will write a file with a given filename only once.
  */
 addColumnToWd := func(name, spec, data, execBuilder, ops) {
 	ll.assert(is_string(name), "name must be a string, got: %v", name)
@@ -492,15 +499,17 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 
 		ll.assert(is_undefined(partitions), "Partitions filter enabled while non-partitioned column exported")
 
+		jdataFile := "res" + data.id + ".jdata"
+
+		// write jdata
+		execBuilder.writeFile(makePath(jdataFile), json.encode(data.getDataAsJson().data))
+
 		// write data info
 		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
 			type: "JsonPartitioned",
 			partitionKeyLength: 0,
-			parts: { "[]": name + ".jdata" }
+			parts: { "[]": jdataFile }
 		}))
-
-		// write jdata
-		execBuilder.writeFile(makePath(name + ".jdata"), json.encode(data.getDataAsJson().data))
 
 		// write spec
 		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
@@ -514,14 +523,12 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		// using maps.getKeys to iterate over keys in the alphabetical order
 		inputs := data.inputs()
         for k in maps.getKeys(inputs) {
-			v := inputs[k]
+			v := inputs[k].getValue()
 
-            part := name + i + ".jdata"
+            part := "res" + v.id + ".jdata"
+
             parts[k] = part
-
-            execBuilder.addFile(makePath(part), v.getValue())
-
-            i = i + 1
+            execBuilder.addFile(makePath(part), v)
         }
 
         // write data info
@@ -540,32 +547,24 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		partitionKeyLength := data.getDataAsJson().partitionKeyLength
 
 		// write jdata
-        i := 0
         parts := {}
 
 		// iterate over super index
 		for supKey, supData in data.inputs() {
-
 			supKeyArray := json.decode(supKey)
 
 			// iterate over inner index
 			inputs := supData.getValue().inputs()
 			for k in maps.getKeys(inputs) {
-				v := inputs[k]
-
-				part := name + i + ".jdata"
+				v := inputs[k].getValue()
 
 				innerKeyArray := json.decode(k)
-
 				keyArray := supKeyArray + innerKeyArray
-
 				key := json.encode(keyArray)
 
+				part := "res" + v.id + ".jdata"
 				parts[key] = part
-
-            	execBuilder.addFile(makePath(part), v.getValue())
-
-            	i = i + 1
+            	execBuilder.addFile(makePath(part), v)
 			}
 		}
 
@@ -582,43 +581,34 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
     } else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED)) {
 
 		// write binary data
-        i := 0
         parts := {}
 
         // using maps.getKeys to iterate over keys in the alphabetical order
 		inputs := data.inputs()
         for k in maps.getKeys(inputs) {
-			v := inputs[k]
-
-            part := undefined
+			v := inputs[k].getValue()
 
             if text.has_suffix(k, ".index") {
-                part = k[0:(len(k) - 6)]
+                key := k[0:(len(k) - 6)]
+				indexFile := "res" + v.id + ".index"
 
-                if is_undefined(parts[part]) {
-                    parts[part] = {}
+                if is_undefined(parts[key]) {
+                    parts[key] = {}
                 }
-
-                indexFile := name + i + ".index"
-
-                execBuilder.addFile(makePath(indexFile), v.getValue())
-                parts[part].index = indexFile
+                parts[key].index = indexFile
+                execBuilder.addFile(makePath(indexFile), v)
             } else if text.has_suffix(k, ".values") {
-                part = k[0:(len(k) - 7)]
+                key := k[0:(len(k) - 7)]
+                valuesFile := "res" + v.id + ".values"
 
-                if is_undefined(parts[part]) {
-                    parts[part] = {}
+                if is_undefined(parts[key]) {
+                    parts[key] = {}
                 }
-
-                valuesFile := name + i + ".values"
-
-                execBuilder.addFile(makePath(valuesFile), v.getValue())
-                parts[part].values = valuesFile
+                parts[key].values = valuesFile
+                execBuilder.addFile(makePath(valuesFile), v)
             } else {
                 ll.panic("unknown suffix: expected .index or .values, got ", k)
             }
-
-			i = i + 1
         }
 
         // write data info
@@ -637,54 +627,45 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		partitionKeyLength := data.getDataAsJson().partitionKeyLength
 
 		// write binary data
-        i := 0
         parts := {}
 
 		// iterate over super index
 		for supKey, supData in data.inputs() {
-
 			supKeyArray := json.decode(supKey)
 
 			// iterate over inner index
 			inputs := supData.getValue().inputs()
 			for k in maps.getKeys(inputs) {
-				v := inputs[k]
+				v := inputs[k].getValue()
 
 				if text.has_suffix(k, ".index") {
 					innerKeyArray := json.decode(k[0:(len(k) - 6)])
 					keyArray := supKeyArray + innerKeyArray
 
 					key := json.encode(keyArray)
+					indexFile := "res" + v.id + ".index"
 
 					if is_undefined(parts[key]) {
 						parts[key] = {}
 					}
-
-					indexFile := name + i + ".index"
-
-					execBuilder.addFile(makePath(indexFile), v.getValue())
 					parts[key].index = indexFile
+					execBuilder.addFile(makePath(indexFile), v)
+
 				} else if text.has_suffix(k, ".values") {
-
 					innerKeyArray := json.decode(k[0:(len(k) - 7)])
-
 					keyArray := supKeyArray + innerKeyArray
 
 					key := json.encode(keyArray)
+					valuesFile := "res" + v.id + ".values"
 
 					if is_undefined(parts[key]) {
 						parts[key] = {}
 					}
-
-					valuesFile := name + i + ".values"
-
-					execBuilder.addFile(makePath(valuesFile), v.getValue())
 					parts[key].values = valuesFile
+					execBuilder.addFile(makePath(valuesFile), v)
 				} else {
 					ll.panic("unknown suffix: expected .index or .values, got ", k)
 				}
-
-				i = i + 1
 			}
 		}
 
@@ -701,7 +682,6 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED)) {
 
 		// write parquet data
-        i := 0
         parts := {}
 
 		// using maps.getKeys to iterate over keys in the alphabetical order
@@ -718,8 +698,6 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
             parts[k] = maps.merge({ data: parquetChunkDataPath }, parquetChunkMetadata, parquetChunkMapping)
 
             execBuilder.addFile(makePath(parquetChunkDataPath), parquetChunkData)
-
-            i = i + 1
         }
 
         // write data info
@@ -737,24 +715,20 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		superPartitionKeyLength := data.getDataAsJson().superPartitionKeyLength
 		partitionKeyLength := data.getDataAsJson().partitionKeyLength
 
-		// write jdata
-        i := 0
+		// write parquet data
         parts := {}
 
 		// iterate over super index
 		for supKey, supData in data.inputs() {
-
 			supKeyArray := json.decode(supKey)
 
 			// iterate over inner index
 			inputs := supData.getValue().inputs()
 			for k in maps.getKeys(inputs) {
 				v := inputs[k]
-
 				innerKeyArray := json.decode(k)
 
 				keyArray := supKeyArray + innerKeyArray
-
 				key := json.encode(keyArray)
 
 				parquetChunkResource := v.getValue()
@@ -766,8 +740,6 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 				parts[key] = maps.merge({ data: parquetChunkDataPath }, parquetChunkMetadata, parquetChunkMapping)
 
 				execBuilder.addFile(makePath(parquetChunkDataPath), parquetChunkData)
-
-            	i = i + 1
 			}
 		}
 

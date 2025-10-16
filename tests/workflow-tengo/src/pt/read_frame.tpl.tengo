@@ -50,8 +50,6 @@ self.body(func(inputs) {
 		outputs: {
             csv: file.exportFile(csv)
         },
-		exports: {
-            csv: csv
-        }
+		exports: {}
 	}
 })

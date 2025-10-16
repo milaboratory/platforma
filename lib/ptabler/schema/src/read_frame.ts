@@ -11,9 +11,15 @@ export interface ReadFrameStep {
   name: string;
   /** Request to create the table from the PFrame. */
   request: PTableDef<PObjectId>;
-  /** Translation of PFrame column ids into Polars column names. */
+  /**
+   * Translation from PFrame column ids (file names) into Polars column names
+   * (which will be referenced via pt.col(...)).
+   */
   translation: Record<string, string>;
-  /** Polars parallel strategy to use for the read. Defaults to 'auto'. */
+  /**
+   * Polars parallel strategy to use for the read. Defaults to 'auto'.
+   * @see Parallel option in [scan_parquet](https://docs.pola.rs/api/python/stable/reference/api/polars.scan_parquet.html#polars.scan_parquet) documentation.
+   */
   parallel?: 'auto' | 'columns' | 'row_groups' | 'prefiltered' | 'none';
   /** Whether to use low memory mode for the polars read. Defaults to false. */
   low_memory?: boolean;

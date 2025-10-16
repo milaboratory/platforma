@@ -24,7 +24,6 @@ class AddColumns(PStep, tag="add_columns"):
         polars_expressions = [expr.to_polars() for expr in self.columns]
         if polars_expressions:
             lf = lf.with_columns(polars_expressions)
-            pl.col("123").name.map(lambda x: x + "123")
 
         ctx.put_table(self.table, lf)
 

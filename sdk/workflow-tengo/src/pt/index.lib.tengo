@@ -407,7 +407,6 @@ workflow := func() {
 					frameResource = frameInputResource
 					finalFormat = "pframe"
 				} else {
-					// TODO: check if it's a file reference
 					fileRef = frameInput
 				}
 			} else if is_string(frameInput) || is_bytes(frameInput) {
