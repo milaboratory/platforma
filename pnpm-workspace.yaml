@@ -220,7 +220,7 @@ catalog:
   'winston': ^3.17.0
 
   '@milaboratories/tengo-tester': ^1.6.4
-  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.82
+  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.93
 
   'remeda': ^2.28.0
 
@@ -258,11 +258,11 @@ catalog:
 
   # SW
 
-  '@milaboratories/software-pframes-conv': &pframes-version 2.2.7
+  '@milaboratories/software-pframes-conv': &pframes-version 2.2.9
   '@platforma-open/milaboratories.software-small-binaries': ^1.15.23
   '@biowasm/aioli': ~3.2.1
 
-  '@platforma-open/milaboratories.runenv-python-3': 1.4.16
+  '@platforma-open/milaboratories.runenv-python-3': 1.5.3
 
   # Test
 
