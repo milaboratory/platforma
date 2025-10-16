@@ -161,8 +161,11 @@ tplTest.concurrent.for([
   { partitionKeyLength: 0, storageFormat: 'Json' },
   { partitionKeyLength: 1, storageFormat: 'Json' },
   { partitionKeyLength: 2, storageFormat: 'Json' },
+  { partitionKeyLength: 0, storageFormat: 'Parquet' },
+  { partitionKeyLength: 1, storageFormat: 'Parquet' },
+  { partitionKeyLength: 2, storageFormat: 'Parquet' },
 ])(
-  'should read p-frame from csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
+  'should read p-frame from csv file for partitionKeyLength = $partitionKeyLength $storageFormat',
   // This timeout has additional 10 seconds due to very slow performance of Platforma on large transactions,
   // where thousands of fields and resources are created.
   // The test itself is not large, but first test in a batch also loads 'pframes' binary from network.
@@ -302,8 +305,13 @@ tplTest.concurrent.for([
   { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Json' },
   { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Json' },
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
+
+  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Parquet' },
 ])(
-  'should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
+  'should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength partitionKeyLength: $partitionKeyLength $storageFormat',
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
     const spec = deepClone(baseSpec);
@@ -449,8 +457,13 @@ tplTest.concurrent.for([
   { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Json' },
   { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Json' },
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
+
+  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Parquet' },
 ])(
-  '[in workflow] should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
+  '[in workflow] should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength partitionKeyLength: $partitionKeyLength $storageFormat',
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
     const spec = deepClone(baseSpec);
