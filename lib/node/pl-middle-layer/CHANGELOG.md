@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.24
+
+### Patch Changes
+
+- 15d75b4: FlatBuffer validation options maxed
+- Updated dependencies [15d75b4]
+  - @platforma-sdk/workflow-tengo@5.3.5
+
 ## 1.43.23
 
 ### Patch Changes

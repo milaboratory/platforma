@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.12.6
+
+### Patch Changes
+
+- 15d75b4: FlatBuffer validation options maxed
+
 ## 1.12.5
 
 ### Patch Changes
