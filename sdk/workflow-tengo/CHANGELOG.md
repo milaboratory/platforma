@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.3.4
+
+### Patch Changes
+
+- bb07805: xsv.exportFrame migration to ptabler
+- Updated dependencies [bb07805]
+  - @platforma-open/milaboratories.software-ptabler@1.12.5
+
 ## 5.3.3
 
 ### Patch Changes

@@ -1,5 +1,23 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.22
+
+### Patch Changes
+
+- bb07805: xsv.exportFrame migration to ptabler
+- Updated dependencies [bb07805]
+  - @platforma-sdk/workflow-tengo@5.3.4
+  - @milaboratories/pl-model-common@1.21.3
+  - @milaboratories/pl-model-middle-layer@1.8.34
+  - @milaboratories/pl-client@2.15.1
+  - @milaboratories/pl-deployments@2.10.2
+  - @milaboratories/pl-drivers@1.11.10
+  - @platforma-sdk/model@1.44.8
+  - @platforma-sdk/block-tools@2.6.15
+  - @milaboratories/pl-model-backend@1.1.16
+  - @milaboratories/pl-errors@1.1.31
+  - @milaboratories/pl-tree@1.8.6
+
 ## 1.43.21
 
 ### Patch Changes
