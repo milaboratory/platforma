@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.12.5
+
+### Patch Changes
+
+- bb07805: xsv.exportFrame migration to ptabler
+
 ## 1.12.4
 
 ### Patch Changes

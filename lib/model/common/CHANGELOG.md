@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.21.3
+
+### Patch Changes
+
+- bb07805: xsv.exportFrame migration to ptabler
+
 ## 1.21.2
 
 ### Patch Changes
