@@ -1,5 +1,3 @@
-from typing import Union
-from typing import Sequence
 import polars as pl
 import os
 from typing import List, Optional, Dict, Any 
@@ -87,7 +85,6 @@ class ReadCsv(BaseReadLogic, tag="read_csv"):
 
     delimiter: Optional[str] = None
     comment_prefix: Optional[str] = None
-    null_values: Optional[Union[str, Sequence[str], Dict[str, str]]] = None
 
     schema: Optional[List[ColumnSchema]] = None
     infer_schema: Optional[bool] = None
@@ -102,8 +99,6 @@ class ReadCsv(BaseReadLogic, tag="read_csv"):
             scan_kwargs["separator"] = self.delimiter
         if self.comment_prefix is not None:
             scan_kwargs["comment_prefix"] = self.comment_prefix
-        if self.null_values is not None:
-            scan_kwargs["null_values"] = self.null_values
     
         return pl.scan_csv(file_path, **scan_kwargs)
 

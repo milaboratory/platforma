@@ -58,13 +58,6 @@ export interface ReadCsvStep extends BaseFileReadStep {
   delimiter?: string;
   /** Optional: The prefix string used to comment out lines in the CSV file. */
   commentPrefix?: string;
-  /**
-   * Optional: A strings to be interpreted as a null values:
-   * - one value, for all columns
-   * - set of values, for all columns
-   * - map from column name to one value
-   */
-  nullValues?: string | string[] | Record<string, string>;
 }
 
 /** Represents the configuration for a step that reads data from an NDJSON file into the tablespace. */
