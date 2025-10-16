@@ -235,27 +235,33 @@ _TRACE_SCHEMA := [_TRACE_STEP_SCHEMA]
  *
  * Basically validates and adds provided steps.
  */
-makeTrace := func(input, ...steps) {
-	// validating input step structure
-	validation.assertType(steps, _TRACE_SCHEMA)
-
-	currentTraceContent := undefined
-	if is_string(input) {
-		currentTraceContent = input
-	} else if is_string(input[A_TRACE]) {
-		currentTraceContent = input[A_TRACE]
-	} else if is_string(input["annotations"][A_TRACE]) {
-		currentTraceContent = input["annotations"][A_TRACE]
-	}
-
+makeTrace := func(...steps) {
+	ll.assert(len(steps) > 0, "makeTrace: expects at least one argument")
+	
+	// First element can be encoded traces(string), struct like column spec or annotations section,
+	input := steps[0]
+	steps = steps[1:]
 	currentTrace := []
-	if !is_undefined(currentTraceContent) {
-		currentTrace = json.decode(currentTraceContent)
-		// validating trace we just parsed
-		validation.assertType(currentTrace, _TRACE_SCHEMA)
+	
+	if (!validation.isValid(input, _TRACE_STEP_SCHEMA)) {
+		inputTraceContent := undefined
+
+		if is_string(input) {
+			inputTraceContent = input
+		} else if is_map(input) && is_string(input[A_TRACE]) {
+			inputTraceContent = input[A_TRACE]
+		} else if is_map(input["annotations"]) && is_map(input["annotations"]) && is_string(input["annotations"][A_TRACE]) {
+			inputTraceContent = input["annotations"][A_TRACE]
+		}
+
+		if !is_undefined(inputTraceContent) {
+			currentTrace = json.decode(inputTraceContent)
+			validation.assertType(currentTrace, _TRACE_SCHEMA)
+		}
 	}
 
 	if len(steps) > 0 {
+		validation.assertType(steps, _TRACE_SCHEMA)
 		currentTrace = append(currentTrace, steps...)
 	}
 	currentTraceStr := string(json.encode(currentTrace))
