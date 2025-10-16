@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import * as artifacts from './artifacts';
 import * as util from '../util';
 
@@ -102,7 +102,6 @@ export const binaryPackageSchema = z.object({
   type: z.literal('binary'),
   ...commonPackageSettingsSchema.shape,
 
-  runEnv: z.undefined(),
   pkg: z.string().optional().describe('location of all package contents in Docker container (default: /app)'),
 });
 
@@ -145,7 +144,6 @@ export const condaPackageSchema = z.object({
   type: z.literal('conda'),
   ...commonPackageSettingsSchema.shape,
 
-  runEnv: z.undefined(),
   ['micromamba-version']: z
     .string()
     .describe('version of micromamba to be used to operate with conda environments'),

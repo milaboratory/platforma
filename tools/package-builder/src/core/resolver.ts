@@ -1,6 +1,5 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { ZodError } from 'zod';
 import type winston from 'winston';
 
 import * as swJson from './schemas/sw-json';
@@ -62,30 +61,24 @@ export function readDescriptorFile(
   entrypointForDescriptor: string,
   descriptorFilePath: string,
 ): swJson.entrypoint {
-  try {
-    if (!fs.existsSync(descriptorFilePath)) {
-      throw util.CLIError(`entrypoint '${entrypointForDescriptor}' not found in '${descriptorFilePath}'`);
-    }
-
-    const swJsonContent = fs.readFileSync(descriptorFilePath);
-    const swJsonValue = swJson.entrypointSchema.parse(JSON.parse(swJsonContent.toString()));
-
-    return {
-      id: {
-        package: packageNameForDescriptor,
-        name: entrypointForDescriptor,
-      },
-      ...swJsonValue,
-    };
-  } catch (e) {
-    if (e instanceof ZodError) {
-      const errLines: string[] = [`Failed to read and parse entrypoint '${entrypointForDescriptor}' from '${descriptorFilePath}':`];
-      errLines.push(...(util.formatZodError(e).map((line) => `  ${line}`)));
-      throw util.CLIError(errLines.join('\n'));
-    }
-
-    throw e;
+  if (!fs.existsSync(descriptorFilePath)) {
+    throw util.CLIError(`entrypoint '${entrypointForDescriptor}' not found in '${descriptorFilePath}'`);
   }
+
+  const swJsonContent = fs.readFileSync(descriptorFilePath);
+  const result = swJson.entrypointSchema.safeParse(JSON.parse(swJsonContent.toString()));
+
+  if (!result.success) {
+    throw util.CLIError(util.formatZodIssues(result.error.issues));
+  }
+
+  return {
+    id: {
+      package: packageNameForDescriptor,
+      name: entrypointForDescriptor,
+    },
+    ...result.data,
+  };
 }
 
 /**

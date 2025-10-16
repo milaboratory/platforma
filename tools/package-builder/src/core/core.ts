@@ -243,7 +243,7 @@ export class Core {
     this.logger.info(`Building software package '${artifact.id}' for platform '${platform}'...`);
     const { os, arch } = util.splitPlatform(platform);
 
-    if (!(artifact.type in artifacts.archiveArtifactTypes)) {
+    if (!artifacts.archiveArtifactTypes.includes(artifact.type)) {
       if (options?.skipIfEmpty) {
         this.logger.info(`  archive build was skipped: package '${artifact.id}' is not buildable`);
       }

@@ -2,7 +2,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import type winston from 'winston';
 
-import { z, ZodError } from 'zod';
+import { z } from 'zod/v4';
 import * as util from './util';
 import * as envs from './envs';
 import * as artifacts from './schemas/artifacts';
@@ -94,31 +94,27 @@ export class PackageInfo {
 
     this.packageRoot = options?.packageRoot ?? util.findPackageRoot(logger);
 
+    let pkgJsonData: string;
     if (options?.pkgJsonData) {
-      this.pkgJson = parsePackageJson(options.pkgJsonData);
+      pkgJsonData = options.pkgJsonData;
     } else {
       const pkgJsonPath = path.resolve(this.packageRoot, util.packageJsonName);
 
-      try {
-        this.logger.debug(`  - loading '${pkgJsonPath}'`);
-        if (!fs.existsSync(pkgJsonPath)) {
-          this.logger.error(`no '${util.packageJsonName}' file found at '${this.packageRoot}'`);
-          throw util.CLIError('not a platform software package directory');
-        }
-
-        this.pkgJson = readPackageJson(pkgJsonPath);
-        this.logger.debug('    ' + JSON.stringify(this.pkgJson));
-      } catch (e) {
-        if (e instanceof ZodError) {
-          const errLines: string[] = [`Failed to read and parse '${util.packageJsonName}':`];
-          errLines.push(...(util.formatZodError(e).map((line) => `  ${line}`)));
-          throw util.CLIError(errLines.join('\n'));
-        }
-
-        this.logger.error(`Failed to read and parse '${util.packageJsonName}':`, e);
-        throw e;
+      this.logger.debug(`  - loading '${pkgJsonPath}'`);
+      if (!fs.existsSync(pkgJsonPath)) {
+        this.logger.error(`no '${util.packageJsonName}' file found at '${this.packageRoot}'`);
+        throw util.CLIError('not a platform software package directory');
       }
+
+      pkgJsonData = fs.readFileSync(pkgJsonPath, 'utf8');
     }
+
+    const result = parsePackageJson(pkgJsonData);
+    if (!result.success) {
+      throw util.CLIError(`\n` + util.formatZodIssues(result.error.issues));
+    }
+    this.pkgJson = result.data;
+    this.logger.debug('    ' + JSON.stringify(this.pkgJson));
 
     this.validateConfig();
 
@@ -699,10 +695,9 @@ export class PackageInfo {
   }
 }
 
-const readPackageJson = (filePath: string) => parsePackageJson(fs.readFileSync(filePath, 'utf8'));
-function parsePackageJson(data: string) {
+function parsePackageJson(data: string): z.ZodSafeParseResult<packageJson> {
   const parsedData: unknown = JSON.parse(data);
-  return packageJsonSchema.parse(parsedData);
+  return packageJsonSchema.safeParse(parsedData);
 }
 
 function requireArtifactType(artifact: artifacts.anyType, type: 'asset', errMsg: string): artifacts.withType<'asset', artifacts.assetType>;

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import type { Hash } from 'node:crypto';
 import { createHash } from 'node:crypto';
 import winston from 'winston';
-import type { ZodError, ZodIssue } from 'zod';
+import type { z } from 'zod/v4';
 import { Errors as OclifErrors } from '@oclif/core';
 
 export const packageJsonName = 'package.json';
@@ -317,23 +317,25 @@ export function artifactIDToString(a: artifactID): string {
   return `${a.package}:${a.name}`;
 }
 
-export const formatZodError = (err: ZodError): string[] => {
-  const { formErrors, fieldErrors } = err.flatten(
-    (issue: ZodIssue) => ({ path: issue.path.join('.'), message: issue.message }),
-  );
-
+export const formatZodIssues = (issues: z.core.$ZodIssue[], i: string = ''): string => {
   const _errors: string[] = [];
-  for (const e of formErrors ?? []) {
-    _errors.push(`${e.path}: ${e.message}`);
-  }
 
-  for (const [_, issues] of Object.entries(fieldErrors)) {
-    for (const e of issues ?? []) {
-      _errors.push(`${e.path}: ${e.message}`);
+  for (const issue of issues) {
+    if (issue.code === 'invalid_union') {
+      _errors.push(`${i}✖ Expected one of several possible values`);
+      _errors.push(`${i}  → at '${issue.path.join('.')}':`);
+      for (const errGrp of issue.errors) {
+        _errors.push(formatZodIssues(errGrp, `${i}    `));
+      }
+    } else if (issue.code === 'invalid_element' || issue.code === 'invalid_key') {
+      _errors.push(`${i}✖ ${issue.code.replaceAll('_', ' ')}:`);
+      _errors.push(formatZodIssues(issue.issues, `${i}  `));
+    } else {
+      _errors.push(`${i}✖ ${issue.code.replaceAll('_', ' ')}: .${issue.path.join('.')}: ${issue.message}`);
     }
   }
 
-  return _errors;
+  return _errors.join('\n');
 };
 
 export function CLIError(msg: string): OclifErrors.CLIError {
