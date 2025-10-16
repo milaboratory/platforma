@@ -1,4 +1,4 @@
-import { when } from '@milaboratories/ptabler-js';
+import { when } from '@milaboratories/ptabler-expression-js';
 import { convertFilterUiToExpressionImpl } from '../filters/converter';
 import type { ExpressionSpec, FilterSpecUi } from './types';
 

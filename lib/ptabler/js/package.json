@@ -1,5 +1,5 @@
 {
-  "name": "@milaboratories/ptabler-js",
+  "name": "@milaboratories/ptabler-expression-js",
   "version": "1.0.0",
   "description": "JavaScript/TypeScript implementation of PTabler expression system",
   "type": "module",
