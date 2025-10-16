@@ -38,19 +38,19 @@ export class Core {
     this.fullDirHash = false;
   }
 
-  public binArchivePath(artifact: artifacts.withId<artifacts.config>, os: util.OSType, arch: util.ArchType): string {
+  public binArchivePath(artifact: artifacts.withId<artifacts.anyType>, os: util.OSType, arch: util.ArchType): string {
     const name = this.pkgInfo.artifactName(artifact);
     const version = this.pkgInfo.artifactVersion(artifact);
     return archive.getPath(this.archiveOptions(artifact, name, version, os, arch, 'tgz'));
   }
 
-  public assetArchivePath(artifact: artifacts.withId<artifacts.config>, os: util.OSType, arch: util.ArchType): string {
+  public assetArchivePath(artifact: artifacts.withId<artifacts.anyType>, os: util.OSType, arch: util.ArchType): string {
     const name = this.pkgInfo.artifactName(artifact);
     const version = this.pkgInfo.artifactVersion(artifact);
     return archive.getPath(this.archiveOptions(artifact, name, version, os, arch, 'zip'));
   }
 
-  public archivePath(artifact: artifacts.withId<artifacts.config>, os: util.OSType, arch: util.ArchType): string {
+  public archivePath(artifact: artifacts.withId<artifacts.anyType>, os: util.OSType, arch: util.ArchType): string {
     if (artifact.type === 'asset') {
       return this.assetArchivePath(artifact, os, arch);
     }
@@ -66,8 +66,8 @@ export class Core {
     return this._entrypoints;
   }
 
-  public get packages(): Map<string, artifacts.withId<artifacts.config>> {
-    const pkgs = new Map<string, artifacts.withId<artifacts.config>>();
+  public get packages(): Map<string, artifacts.withId<artifacts.anyType>> {
+    const pkgs = new Map<string, artifacts.withId<artifacts.anyType>>();
 
     for (const [_, ep] of this.entrypoints.entries()) {
       if (ep.type === 'reference') {
@@ -101,7 +101,7 @@ export class Core {
     return result;
   }
 
-  public get buildablePackages(): Map<string, artifacts.withId<artifacts.config>> {
+  public get buildablePackages(): Map<string, artifacts.withId<artifacts.anyType>> {
     return new Map(Array.from(this.packages.entries()).filter(([, value]) => artifacts.isBuildable(value.type)));
   }
 
@@ -120,7 +120,7 @@ export class Core {
     return false;
   }
 
-  public getArtifact(id: string, type?: 'docker' | 'archive'): artifacts.withId<artifacts.config> {
+  public getArtifact(id: string, type?: 'docker' | 'archive'): artifacts.withId<artifacts.anyType> {
     const artifact = this.packages.get(id);
     if (artifact) {
       // If we request docker artifact and current artifact is not docker - continue searching
@@ -232,7 +232,7 @@ export class Core {
   //  (when unique content of archive produces unique location, i.e. hash of archive)
   // package location files are used to build entrypoint descriptor (sw.json file)
   public async buildPackage(
-    artifact: artifacts.withId<artifacts.config>,
+    artifact: artifacts.withId<artifacts.anyType>,
     platform: util.PlatformType,
     options?: {
       archivePath?: string;
@@ -243,7 +243,7 @@ export class Core {
     this.logger.info(`Building software package '${artifact.id}' for platform '${platform}'...`);
     const { os, arch } = util.splitPlatform(platform);
 
-    if (!(artifact.type in artifacts.archiveTypes)) {
+    if (!(artifact.type in artifacts.archiveArtifactTypes)) {
       if (options?.skipIfEmpty) {
         this.logger.info(`  archive build was skipped: package '${artifact.id}' is not buildable`);
       }
@@ -288,11 +288,11 @@ export class Core {
       }
 
       const artifact = this.getArtifact(pkgID, 'docker');
-      this.buildDockerImage(artifact.id, artifact as artifacts.withId<artifacts.dockerPackageConfig>, options?.registry);
+      this.buildDockerImage(artifact.id, artifact as artifacts.withId<artifacts.dockerType>, options?.registry);
     }
   }
 
-  private buildDockerImage(pkgID: string, artifact: artifacts.withId<artifacts.dockerPackageConfig>, registry?: string) {
+  private buildDockerImage(pkgID: string, artifact: artifacts.withId<artifacts.dockerType>, registry?: string) {
     const dockerfile = path.resolve(this.pkgInfo.packageRoot, artifact.dockerfile ?? 'Dockerfile');
     const context = path.resolve(this.pkgInfo.packageRoot, artifact.context ?? '.');
     registry = registry ?? artifact.registry;
@@ -340,7 +340,7 @@ localTag: '${localTag}'
 
   private async createPackageArchive(
     packageContentType: string,
-    artifact: artifacts.withId<artifacts.config>,
+    artifact: artifacts.withId<artifacts.anyType>,
     archivePath: string,
     contentRoot: string,
     os: util.OSType,
@@ -413,7 +413,7 @@ localTag: '${localTag}'
   }
 
   private async publishPackage(
-    artifact: artifacts.withId<artifacts.config>,
+    artifact: artifacts.withId<artifacts.anyType>,
     platform: util.PlatformType,
     options?: {
       archivePath?: string;
@@ -431,7 +431,7 @@ localTag: '${localTag}'
     await this.publishArchive(artifact, platform, options);
   }
 
-  private async publishArchive(artifact: artifacts.withId<artifacts.config>, platform: util.PlatformType, options?: {
+  private async publishArchive(artifact: artifacts.withId<artifacts.anyType>, platform: util.PlatformType, options?: {
     archivePath?: string;
     storageURL?: string;
     failExisting?: boolean;
@@ -526,7 +526,7 @@ localTag: '${localTag}'
     }
   }
 
-  private publishDockerImage(artifact: artifacts.withId<artifacts.config>, pushTo?: string) {
+  private publishDockerImage(artifact: artifacts.withId<artifacts.anyType>, pushTo?: string) {
     if (artifact.type !== 'docker') {
       throw util.CLIError(`package '${artifact.id}' is not a docker package`);
     }
@@ -594,7 +594,7 @@ localTag: '${localTag}'
   }
 
   private signPackage(
-    artifact: artifacts.withId<artifacts.config>,
+    artifact: artifacts.withId<artifacts.anyType>,
     platform: util.PlatformType,
     options?: {
       archivePath?: string;
@@ -667,7 +667,7 @@ localTag: '${localTag}'
   }
 
   private archiveOptions(
-    pkg: artifacts.config,
+    pkg: artifacts.anyType,
     name: string,
     version: string,
     os: util.OSType,

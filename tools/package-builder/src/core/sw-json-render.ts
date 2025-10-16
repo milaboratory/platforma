@@ -531,15 +531,15 @@ function requireEntrypointType(ep: entrypoint.PackageEntrypoint, type: entrypoin
   );
 }
 
-function requireArtifactType(pkg: artifacts.withId<artifacts.config>, type: 'asset', errMsg: string): artifacts.withId<artifacts.assetPackageConfig>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.config>, type: 'environment', errMsg: string): artifacts.withId<artifacts.environmentConfig>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.config>, type: 'java', errMsg: string): artifacts.withId<artifacts.javaPackageConfig>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.config>, type: 'python', errMsg: string): artifacts.withId<artifacts.pythonPackageConfig>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.config>, type: 'R', errMsg: string): artifacts.withId<artifacts.rPackageConfig>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.config>, type: 'binary', errMsg: string): artifacts.withId<artifacts.binaryPackageConfig>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.config>, type: 'docker', errMsg: string): artifacts.withId<artifacts.dockerPackageConfig>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.config>, type: 'conda', errMsg: string): artifacts.withId<artifacts.condaPackageConfig>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.config>, type: artifacts.artifactType, errMsg: string): artifacts.withId<artifacts.config> {
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'asset', errMsg: string): artifacts.withId<artifacts.assetType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'environment', errMsg: string): artifacts.withId<artifacts.environmentType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'java', errMsg: string): artifacts.withId<artifacts.javaType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'python', errMsg: string): artifacts.withId<artifacts.pythonType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'R', errMsg: string): artifacts.withId<artifacts.rType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'binary', errMsg: string): artifacts.withId<artifacts.binaryType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'docker', errMsg: string): artifacts.withId<artifacts.dockerType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'conda', errMsg: string): artifacts.withId<artifacts.condaType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: artifacts.artifactType, errMsg: string): artifacts.withId<artifacts.anyType> {
   if (pkg.type === type) {
     return pkg;
   }

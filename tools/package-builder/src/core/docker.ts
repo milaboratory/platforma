@@ -164,7 +164,7 @@ export function generateRemoteTagName(artifactName: string, imageID: string, reg
  * @param artifact: docker artifact configuration
  * @returns full image tag in format: <registry>/repository:<artifactName>.<contentHash>
  */
-export function generateLocalTagName(packageRoot: string, artifact: artifacts.dockerPackageConfig): string {
+export function generateLocalTagName(packageRoot: string, artifact: artifacts.dockerType): string {
   const dockerfile = dockerfileAbsPath(packageRoot, artifact);
   const context = contextAbsPath(packageRoot, artifact);
   const hash = contentHash(context, dockerfile);
@@ -178,7 +178,7 @@ export function generateLocalTagName(packageRoot: string, artifact: artifacts.do
  * @param artifact: docker artifact configuration
  * @returns absolute path to Dockerfile
  */
-function dockerfileAbsPath(packageRoot: string, artifact: artifacts.dockerPackageConfig): string {
+function dockerfileAbsPath(packageRoot: string, artifact: artifacts.dockerType): string {
   return path.resolve(packageRoot, artifact.dockerfile ?? 'Dockerfile');
 }
 
@@ -188,7 +188,7 @@ function dockerfileAbsPath(packageRoot: string, artifact: artifacts.dockerPackag
  * @param artifact: docker artifact configuration
  * @returns absolute path to docker build context directory
  */
-function contextAbsPath(packageRoot: string, artifact: artifacts.dockerPackageConfig): string {
+function contextAbsPath(packageRoot: string, artifact: artifacts.dockerType): string {
   if (artifact.context === './' || artifact.context === '.') {
     throw util.CLIError(`Invalid Docker context: "${artifact.context}". Context cannot be "./" or "." - use absolute path or relative path without "./" prefix`);
   }

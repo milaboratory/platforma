@@ -55,7 +55,7 @@ export function prepareDockerOptions(
   currentPackageRoot: string,
   currentPackageName: string,
   artifactID: string,
-  buildParams: artifacts.pythonPackageConfig,
+  buildParams: artifacts.pythonType,
 ): DockerOptions {
   logger.debug(`Preparing Docker options for Python package: ${buildParams.name} (id: ${artifactID})`);
 

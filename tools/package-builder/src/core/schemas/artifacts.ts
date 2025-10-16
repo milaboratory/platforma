@@ -1,40 +1,25 @@
 import { z } from 'zod';
 import * as util from '../util';
 
-export type withType<Typ, Orig> = Orig & { type: Typ };
-export type withId<T> = T & { id: string };
-
+// All known artifact types
 export const artifactTypes = ['asset', 'environment', 'binary', 'java', 'python', 'R', 'docker', 'conda'] as const;
 export type artifactType = (typeof artifactTypes)[number];
 
-// Artifacts that are built to archive
-export const archiveTypes = ['asset', 'environment', 'binary', 'java', 'python', 'R', 'conda'] as const;
-export type archiveArtifactType = (typeof archiveTypes)[number];
-
-export const buildableTypes: artifactType[] = [
-  'asset',
-  'environment',
-  'binary',
-  'java',
-  'python',
-  'R',
-  'docker',
-  'conda',
-] as const;
+export const archiveArtifactTypes: artifactType[] = ['asset', 'environment', 'binary', 'java', 'python', 'R', 'conda'] as const;
 export const crossplatformTypes: artifactType[] = ['asset', 'java', 'python', 'R'] as const;
-
-export const dockerRequiredTypes: artifactType[] = ['python'] as const;
+export const dockerAutogenTypes: artifactType[] = ['python'] as const;
 
 export function isBuildable(aType: artifactType): boolean {
-  return buildableTypes.includes(aType);
+  // All known artifact types are buildable so far. No exceptions so far.
+  return artifactTypes.includes(aType);
 }
 
 export function isCrossPlatform(aType: artifactType): boolean {
   return crossplatformTypes.includes(aType);
 }
 
-export function isDockerRequired(aType: artifactType): boolean {
-  return dockerRequiredTypes.includes(aType);
+export function isDockerAutogen(aType: artifactType): boolean {
+  return dockerAutogenTypes.includes(aType);
 }
 
 export const runEnvironmentTypes = ['java', 'python', 'R'] as const;
@@ -87,13 +72,13 @@ export const artifactIDSchema = z
 
 export type artifactIDString = z.infer<typeof artifactIDSchema>;
 
-export const assetPackageSchema = archiveRulesSchema
+export const assetSchema = archiveRulesSchema
   .omit({ roots: true })
   .extend({ type: z.literal('asset') })
   .strict();
-export type assetPackageConfig = z.infer<typeof assetPackageSchema>;
+export type assetType = z.infer<typeof assetSchema>;
 
-export const environmentPackageSchema = archiveRulesSchema
+export const environmentSchema = archiveRulesSchema
   .omit({ root: true })
   .extend({
     type: z.literal('environment'),
@@ -122,22 +107,22 @@ export const environmentPackageSchema = archiveRulesSchema
       .describe('path to \'bin\' directory to be added to PATH when software uses this run environment'),
   });
 
-export type environmentConfig = z.infer<typeof environmentPackageSchema>;
+export type environmentType = z.infer<typeof environmentSchema>;
 
-export const binaryPackageSchema = archiveRulesSchema
+export const binarySchema = archiveRulesSchema
   .omit({ root: true })
   .extend({
     type: z.literal('binary'),
   });
-export type binaryPackageConfig = z.infer<typeof binaryPackageSchema>;
+export type binaryType = z.infer<typeof binarySchema>;
 
-export const javaPackageSchema = archiveRulesSchema
+export const javaSchema = archiveRulesSchema
   .omit({ roots: true })
   .extend({
     type: z.literal('java'),
     environment: artifactIDSchema,
   });
-export type javaPackageConfig = z.infer<typeof javaPackageSchema>;
+export type javaType = z.infer<typeof javaSchema>;
 
 const pipToolsetSchema = z.strictObject({
   toolset: z.literal('pip'),
@@ -146,7 +131,7 @@ const pipToolsetSchema = z.strictObject({
 
 export const pythonToolsetSchema = z.discriminatedUnion('toolset', [pipToolsetSchema]);
 
-export const pythonPackageSchema = archiveRulesSchema
+export const pythonSchema = archiveRulesSchema
   .omit({ roots: true })
   .extend({
     type: z.literal('python'),
@@ -154,17 +139,17 @@ export const pythonPackageSchema = archiveRulesSchema
     dependencies: pythonToolsetSchema.optional(),
     pkg: z.string().optional().describe('custom working directory in Docker container (default: /app/)'),
   });
-export type pythonPackageConfig = z.infer<typeof pythonPackageSchema>;
+export type pythonType = z.infer<typeof pythonSchema>;
 
-export const rPackageSchema = archiveRulesSchema
+export const rSchema = archiveRulesSchema
   .omit({ roots: true })
   .extend({
     type: z.literal('R'),
     environment: artifactIDSchema,
   });
-export type rPackageConfig = z.infer<typeof rPackageSchema>;
+export type rType = z.infer<typeof rSchema>;
 
-export const condaPackageSchema = archiveRulesSchema
+export const condaSchema = archiveRulesSchema
   .omit({ root: true })
   .extend({
     type: z.literal('conda'),
@@ -179,10 +164,10 @@ export const condaPackageSchema = archiveRulesSchema
       .default('./conda-spec.yaml')
       .describe('path to \'spec.yaml\' file relative to package.json path (default: ./conda-spec.yaml)'),
   });
-export type condaPackageConfig = z.infer<typeof condaPackageSchema>;
+export type condaType = z.infer<typeof condaSchema>;
 
 export const defaultDockerRegistry = 'containers.pl-open.science/milaboratories/pl-containers';
-export const dockerPackageSchema = z.object({
+export const dockerSchema = z.object({
   type: z.literal('docker'),
 
   registry: z
@@ -210,21 +195,23 @@ export const dockerPackageSchema = z.object({
   //   .optional()
   //   .describe('replace image\'s ENTRYPOINT with this value when running container'),
 });
-export type dockerPackageConfig = z.infer<typeof dockerPackageSchema>;
+export type dockerType = z.infer<typeof dockerSchema>;
 
-export const configSchema = z.discriminatedUnion('type', [
-  assetPackageSchema,
-  environmentPackageSchema,
-  binaryPackageSchema,
-  javaPackageSchema,
-  pythonPackageSchema,
-  rPackageSchema,
-  condaPackageSchema,
-  dockerPackageSchema,
+export const anyArtifactSchema = z.discriminatedUnion('type', [
+  assetSchema,
+  environmentSchema,
+  binarySchema,
+  javaSchema,
+  pythonSchema,
+  rSchema,
+  condaSchema,
+  dockerSchema,
 ]);
 
-export type config = z.infer<typeof configSchema>;
-export type archivePackageConfig = Extract<config, { type: archiveArtifactType }>;
+export type anyType = z.infer<typeof anyArtifactSchema>;
 
-export const listSchema = z.record(z.string(), configSchema);
+export const listSchema = z.record(z.string(), anyArtifactSchema);
 export type list = z.infer<typeof listSchema>;
+
+export type withType<Typ, Orig> = Orig & { type: Typ };
+export type withId<T> = T & { id: string };

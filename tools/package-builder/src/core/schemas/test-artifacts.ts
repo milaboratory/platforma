@@ -16,13 +16,17 @@ export const EPNameREnvironment: string = 'R-environment';
 export const EPNameJava: string = 'java-package';
 export const EPNameDocker: string = 'docker-test-entrypoint';
 
+const merge = (data: string, patch: Record<string, unknown>): string => {
+  const v = JSON.parse(data) as Record<string, unknown>;
+  return JSON.stringify({ ...v, ...patch });
+};
+
 export const PackageJsonNoSoftware = `{
     "name": "${PackageName}",
     "version": "${PackageVersion}"
 }`;
 
 export const AssetArtifact = `{
-  "type": "asset",
   "registry": "${BinaryRegistry}",
   "root": "./src"
 }`;
@@ -43,7 +47,6 @@ export const BinaryArtifact = `{
 export const CondaArtifact = `{
   "registry": "platforma-open",
 
-  "type": "conda",
   "roots": {
     "linux-x64": "./src/",
     "linux-aarch64": "./src/",
@@ -53,42 +56,40 @@ export const CondaArtifact = `{
   }
 }`;
 
-export const CondaArtifactWithSpec = `{
-  "registry": "platforma-open",
-
-  "type": "conda",
-  "roots": {
-    "linux-x64": "./src/",
-    "linux-aarch64": "./src/",
-    "macosx-x64": "./src/",
-    "macosx-aarch64": "./src/",
-    "windows-x64": "./src/"
+export const CondaArtifactWithType = merge(CondaArtifact, { type: 'conda' });
+export const CondaArtifactWithSpec = merge(
+  CondaArtifact,
+  {
+    type: 'conda',
+    spec: './some-specification.yaml',
   },
-  'spec': './some-specification.yaml'
-}`;
+);
 
 export const PythonArtifact = `{
-  "registry": "platforma-open",
   "type": "python",
+
+  "registry": "platforma-open",
   "root": "./src",
   "environment": ":${EPNamePythonEnvironment}"
 }`;
 
 export const RArtifact = `{
-  "registry": "platforma-open",
   "type": "R",
+
+  "registry": "platforma-open",
   "root": "./src",
   "environment": ":${EPNameREnvironment}"
 }`;
 
 export const CustomVersionArtifact = `{
+  "type": "binary",
+
   "registry": {
     "name": "${BinaryRegistry}"
   },
   "name": "${BinaryCustomName1}",
   "version": "${BinaryCustomVersion}",
 
-  "type": "binary",
   "roots": {
     "linux-x64": "./src/",
     "linux-aarch64": "./src/",
@@ -99,22 +100,23 @@ export const CustomVersionArtifact = `{
 }`;
 
 export const JavaArtifact = `{
+  "type": "java",
+
   "registry": {
     "name": "${BinaryRegistry}"
   },
 
   "root": "./src",
-  "type": "java",
   "environment": ":${EPNameJavaEnvironment}"
 }`;
 
 export const JavaEnvironmentArtifact = `{
+  "runtime": "java",
+
   "registry": {
     "name": "${BinaryRegistry}"
   },
 
-  "type": "environment",
-  "runtime": "java",
   "roots": {
     "linux-x64": "./src/",
     "linux-aarch64": "./src/",
@@ -125,25 +127,17 @@ export const JavaEnvironmentArtifact = `{
   "binDir": "."
 }`;
 
+export const JavaEnvironmentArtifactWithType = merge(JavaEnvironmentArtifact, { type: 'environment' });
+
 export const DockerArtifact = `{
-  "type": "docker",
   "context": "./src"
 }`;
 
-export const DockerArtifactWithPkg = `{
-  "type": "docker",
-  "context": "./src",
-  "pkg": "/app"
-}`;
-
-export const DockerArtifactWithDockerfile = `{
-  "type": "docker",
-  "context": "./src",
-  "dockerfile": "some-dir/Dockerfile"
-}`;
+export const DockerArtifactWithType = merge(DockerArtifact, { type: 'docker' });
+export const DockerArtifactWithPkg = merge(DockerArtifactWithType, { pkg: '/app' });
+export const DockerArtifactWithDockerfile = merge(DockerArtifactWithType, { dockerfile: 'Dockerfile' });
 
 export const DockerAsset = `{
-  "type": "docker",
   "tag": "some-docker-tag",
   "entrypoint": ["/usr/bin/env", "printf"],
   "cmd": ["Hello, world!"]
@@ -155,6 +149,7 @@ export const EPNameLimitedPlatformsBinary = 'multi-root-bin';
 // software is not available for some platforms.
 export const LimitedPlatformsBinary = `{
   "type": "binary",
+
   "registry": {
     "name": "${BinaryRegistry}"
   },
@@ -292,6 +287,31 @@ export const REntrypointWithDocker = `{
   "docker": {
     "artifact": ${DockerArtifact},
     "cmd": ["Rscript", "hello.R"]
+  }
+}`;
+
+export const CondaEntrypoint = `{
+  "conda": {
+    "artifact": ${CondaArtifact},
+    "cmd": ["python", "hello.py"]
+  }
+}`;
+
+export const CondaEntrypointWithReference = `{
+  "conda": {
+    "artifact": "condaArtifactID",
+    "cmd": ["ANARCI"]
+  }
+}`;
+
+export const CondaEntrypointWithDocker = `{
+  "conda": {
+    "artifact": ${CondaArtifact},
+    "cmd": ["ls"]
+  },
+  "docker": {
+    "artifact": ${DockerArtifact},
+    "cmd": ["ls"]
   }
 }`;
 

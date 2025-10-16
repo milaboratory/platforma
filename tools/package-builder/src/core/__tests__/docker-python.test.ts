@@ -22,7 +22,7 @@ const mockLogger = {
 } as unknown as winston.Logger;
 
 // Mock Python package for testing - will be set in beforeEach
-let mockPythonPackage: artifacts.pythonPackageConfig;
+let mockPythonPackage: artifacts.pythonType;
 
 const createRunEnvironmentSwJson = (packageRoot: string, runenvArtifactID: string, pythonVersion: string, envVars: string[]) => {
   const [runenvPackageName, runenvEntrypointName] = util.rSplit(runenvArtifactID, ':', 2);
@@ -139,7 +139,7 @@ describe('Docker Python Functions', () => {
     it('should use default Python version when environment has no version', () => {
       createRunEnvironmentSwJson(testPackageRoot, '@platforma-open/milaboratories.runenv-python-3:aaa', '', []);
 
-      const packageWithoutVersion: artifacts.pythonPackageConfig = {
+      const packageWithoutVersion: artifacts.pythonType = {
         ...mockPythonPackage,
         environment: '@platforma-open/milaboratories.runenv-python-3:aaa',
         root: path.join(testPackageRoot, 'src'), // Use absolute path

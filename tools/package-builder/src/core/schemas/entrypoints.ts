@@ -21,16 +21,9 @@ export const referenceSchema = z
     'entrypoint reference must contain full package name and path to the file inside',
   );
 
-const orRef = <T extends z.ZodTypeAny>(schema: T): z.ZodUnion<[z.ZodString, T]> => z.union([z.string(), schema]);
+const orRef = <T extends z.ZodTypeAny>(schema: T) => z.union([z.string(), schema]);
 
-const withArtifact = <
-  S extends z.ZodObject<z.ZodRawShape>,
-  A extends z.ZodTypeAny,
->(schema: S, art: A) => {
-  type ResultShape = S['shape'] & { artifact: z.ZodUnion<[z.ZodString, A]> };
-  return schema.extend({ artifact: orRef(art) }) as z.ZodObject<ResultShape, S['_def']['unknownKeys'], S['_def']['catchall']>;
-};
-
+// Common options for all software packages: everything that can be run on backend side.
 export const softwareOptionsSchema = z.strictObject({
   cmd: z
     .array(z.string())
@@ -43,7 +36,7 @@ export const softwareOptionsSchema = z.strictObject({
 });
 
 export const environmentOptionsSchema = z.strictObject({
-  artifact: orRef(artifacts.environmentPackageSchema),
+  artifact: orRef(artifacts.environmentSchema.omit({ type: true })),
   envVars: envVarsSchema
     .optional()
     .describe('list of environment variables to be set for any command inside this run environment'),
@@ -53,20 +46,18 @@ export const environmentOptionsSchema = z.strictObject({
 export const entrypointSchema = z
   .strictObject({
     reference: referenceSchema.optional(),
-    asset: z.union([z.string(), artifacts.assetPackageSchema]).optional(),
-
-    binary: z.union([
-      softwareOptionsSchema.extend({ artifact: z.union([z.string(), artifacts.binaryPackageSchema]) }),
-      softwareOptionsSchema.extend({ artifact: z.union([z.string(), artifacts.javaPackageSchema]) }),
-      softwareOptionsSchema.extend({ artifact: z.union([z.string(), artifacts.pythonPackageSchema]) }),
-      softwareOptionsSchema.extend({ artifact: z.union([z.string(), artifacts.rPackageSchema]) }),
-    ]).optional(), // TODO: reduce nesting: put java, python and r to the level of binary, like conda.
-
-    conda: withArtifact(softwareOptionsSchema, artifacts.condaPackageSchema).optional(),
-
+    asset: orRef(artifacts.assetSchema.omit({ type: true })).optional(),
     environment: environmentOptionsSchema.optional(),
 
-    docker: withArtifact(softwareOptionsSchema, artifacts.dockerPackageSchema).optional(),
+    binary: z.union([
+      softwareOptionsSchema.extend({ artifact: orRef(artifacts.binarySchema) }),
+      softwareOptionsSchema.extend({ artifact: orRef(artifacts.javaSchema) }),
+      softwareOptionsSchema.extend({ artifact: orRef(artifacts.pythonSchema) }),
+      softwareOptionsSchema.extend({ artifact: orRef(artifacts.rSchema) }),
+    ]).optional(), // TODO: reduce nesting: put java, python and r to the level of binary, like conda.
+
+    conda: softwareOptionsSchema.extend({ artifact: orRef(artifacts.condaSchema.omit({ type: true })) }).optional(),
+    docker: softwareOptionsSchema.extend({ artifact: orRef(artifacts.dockerSchema.omit({ type: true })) }).optional(),
   })
   .refine(
     (data) => {
@@ -88,11 +79,10 @@ export const entrypointSchema = z
       path: ['reference | asset | binary | environment | docker'],
     },
   );
-
-export type info = z.infer<typeof entrypointSchema>;
+export type entrypointType = z.infer<typeof entrypointSchema>;
 
 // Full block-software.entrypoints list schema
-export const listSchema = z.record(
+export const entrypointListSchema = z.record(
   z
     .string()
     .regex(/[-_a-z0-9.]/)
@@ -101,85 +91,7 @@ export const listSchema = z.record(
     ),
   entrypointSchema,
 );
-export type list = z.infer<typeof listSchema>;
-
-// export interface PackageArchiveInfo extends artifacts.archiveRules {
-//   name: string;
-//   version: string;
-
-//   fullName: (platform: util.PlatformType) => string; // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
-//   contentRoot: (platform: util.PlatformType) => string; // absolute path to package's content root
-// }
-
-// const _softwareEntrypointsList = z.record(z.string(), softwareOptionsSchema);
-// export type SoftwareEntrypoints = z.infer<typeof _softwareEntrypointsList>;
-
-// const _environmentEntrypointsList = z.record(z.string(), environmentOptionsSchema);
-// export type EnvironmentEntrypoints = z.infer<typeof _environmentEntrypointsList>;
-
-// export interface AssetPackage extends artifacts.assetPackageConfig, PackageArchiveInfo {
-//   type: 'asset';
-//   registry: artifacts.registry;
-//   name: string;
-//   version: string;
-// }
-
-// export interface RunEnvironmentPackage extends artifacts.environmentConfig, PackageArchiveInfo {
-//   registry: artifacts.registry;
-//   name: string;
-//   version: string;
-
-//   namePattern: string; // address to put into sw.json (common/sleep/1.2.3-{os}-{arch}.tgz)
-// }
-
-// export interface BinaryPackage extends artifacts.binaryPackageConfig, PackageArchiveInfo {
-//   registry: artifacts.registry;
-//   name: string;
-//   version: string;
-
-//   namePattern: string; // address to put into sw.json (common/sleep/1.2.3-{os}-{arch}.tgz)
-// }
-
-// export interface CondaPackage extends artifacts.condaPackageConfig, PackageArchiveInfo {
-//   registry: artifacts.registry;
-//   name: string;
-//   version: string;
-
-//   namePattern: string; // address to put into sw.json (common/sleep/1.2.3-{os}-{arch}.tgz)
-// }
-
-// export interface JavaPackage extends artifacts.javaPackageConfig, PackageArchiveInfo {
-//   registry: artifacts.registry;
-//   name: string;
-//   version: string;
-// }
-
-// export interface PythonPackage extends artifacts.pythonPackageConfig, PackageArchiveInfo {
-//   registry: artifacts.registry;
-//   name: string;
-//   version: string;
-// }
-
-// export interface RPackage extends artifacts.rPackageConfig, PackageArchiveInfo {
-//   registry: artifacts.registry;
-//   name: string;
-//   version: string;
-// }
-
-// export interface DockerPackage extends artifacts.dockerPackageConfig {
-//   name: string;
-//   version: string;
-
-//   fullName: (platform: util.PlatformType) => string; // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
-//   contentRoot: (platform: util.PlatformType) => string; // absolute path to package's content root
-// }
-
-// export type Package = AssetPackage | RunEnvironmentPackage | BinaryPackage | CondaPackage | JavaPackage | PythonPackage | RPackage | DockerPackage;
-// export type PackageType = Package['type'];
-
-export type withID<T> = T & {
-  id: string;
-};
+export type entrypointListType = z.infer<typeof entrypointListSchema>;
 
 export interface ReferenceEntrypoint {
   type: 'reference';
@@ -190,19 +102,19 @@ export interface ReferenceEntrypoint {
 export interface AssetEntrypoint {
   type: 'asset';
   name: string;
-  artifact: artifacts.withId<artifacts.assetPackageConfig>;
+  artifact: artifacts.withId<artifacts.assetType>;
 }
 
 export interface SoftwareEntrypoint {
   type: 'software';
   name: string;
   artifact: artifacts.withId<
-    artifacts.binaryPackageConfig
-    | artifacts.condaPackageConfig
-    | artifacts.javaPackageConfig
-    | artifacts.pythonPackageConfig
-    | artifacts.rPackageConfig
-    | artifacts.dockerPackageConfig
+    artifacts.binaryType
+    | artifacts.condaType
+    | artifacts.javaType
+    | artifacts.pythonType
+    | artifacts.rType
+    | artifacts.dockerType
   >;
   cmd: string[];
   env: string[];
@@ -211,7 +123,7 @@ export interface SoftwareEntrypoint {
 export interface EnvironmentEntrypoint {
   type: 'environment';
   name: string;
-  artifact: artifacts.withId<artifacts.environmentConfig>;
+  artifact: artifacts.withId<artifacts.environmentType>;
   env: string[];
 }
 
