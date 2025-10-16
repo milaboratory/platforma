@@ -84,6 +84,8 @@ class ReadCsv(BaseReadLogic, tag="read_csv"):
     name: str  # Name to assign to the loaded DataFrame in the tablespace
 
     delimiter: Optional[str] = None
+    comment_prefix: Optional[str] = None
+
     schema: Optional[List[ColumnSchema]] = None
     infer_schema: Optional[bool] = None
     ignore_errors: Optional[bool] = None
@@ -95,6 +97,8 @@ class ReadCsv(BaseReadLogic, tag="read_csv"):
         """
         if self.delimiter is not None:
             scan_kwargs["separator"] = self.delimiter
+        if self.comment_prefix is not None:
+            scan_kwargs["comment_prefix"] = self.comment_prefix
     
         return pl.scan_csv(file_path, **scan_kwargs)
 

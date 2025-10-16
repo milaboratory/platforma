@@ -3,18 +3,12 @@ pt := import(":pt")
 
 // Helper to get the raw expression for easier comparison
 getExpr := func(exprObj) {
-	return exprObj.getExpression()
-}
-
-// Helper for checking alias (and that getAlias doesn't throw for defined aliases)
-getAlias := func(exprObj) {
-    return exprObj.getAlias()
+	return exprObj._getExpression({})
 }
 
 TestBasicExpressions := func() {
 	c1 := pt.col("age")
 	test.isEqual(getExpr(c1), {type: "col", name: "age"})
-	test.isEqual(getAlias(c1), "age")
 
 	l_num := pt.lit(10)
 	test.isEqual(getExpr(l_num), {type: "const", value: 10})
@@ -63,6 +57,9 @@ TestComparisonExpressions := func() {
 
 	expr3 := age.eq(height)
 	test.isEqual(getExpr(expr3), {type: "eq", lhs: {type: "col", name: "age"}, rhs: {type: "col", name: "height"}})
+
+    expr4 := age.inSet(18, 20, 22, 20)
+    test.isEqual(getExpr(expr4), {type: "in_set", value: {type: "col", name: "age"}, set: [18, 20, 22]})
 }
 
 TestLogicalExpressions := func() {
@@ -171,6 +168,19 @@ TestStringExpressions := func() {
 
     expr14 := name.strEndsWith(".com")
     test.isEqual(getExpr(expr14), {type: "str_ends_with", value: {type: "col", name: "name"}, suffix: {type: "const", value: ".com"}})
+
+    expr15 := name.matchesEcmaRegex("^[0-9]+$")
+    test.isEqual(getExpr(expr15), {type: "matches_ecma_regex", value: {type: "col", name: "name"}, ecmaRegex: "^[0-9]+$"})
+
+    expr16 := name.containsFuzzyMatch("hello", 1, {wildcard: "*", substitutionsOnly: true})
+    test.isEqual(getExpr(expr16), {
+        type: "contains_fuzzy_match",
+        value: {type: "col", name: "name"},
+        reference: "hello",
+        maxEdits: 1,
+        wildcard: "*",
+        substitutionsOnly: true
+    })
 }
 
 TestWindowExpressions := func() {
@@ -178,38 +188,54 @@ TestWindowExpressions := func() {
 	department := pt.col("department")
 	employeeId := pt.col("employeeId")
 
-	expr1 := salary.sum().over("department")
+	expr1 := salary.sum().over("department").alias("total_salary_by_department")
 	test.isEqual(getExpr(expr1), {
-		type: "aggregate",
-		aggregation: "sum",
-		value: {type: "col", name: "salary"},
-		partitionBy: [{type: "col", name: "department"}]
+        type: "alias",
+        value: {
+            type: "aggregate",
+            aggregation: "sum",
+            value: {type: "col", name: "salary"},
+            partitionBy: [{type: "col", name: "department"}]
+        },
+        name: "total_salary_by_department"
 	})
 
-	expr2 := pt.rank(salary, {descending: true}).over(department)
+	expr2 := pt.rank(salary, {descending: true}).over(department).alias("rank_salary_by_department")
 	test.isEqual(getExpr(expr2), {
-		type: "rank",
-		orderBy: [{type: "col", name: "salary"}],
-		partitionBy: [{type: "col", name: "department"}],
-		descending: true
+		type: "alias",
+		value: {
+			type: "rank",
+			orderBy: [{type: "col", name: "salary"}],
+			partitionBy: [{type: "col", name: "department"}],
+			descending: true
+		},
+		name: "rank_salary_by_department"
 	})
 
-    expr3 := salary.cumsum({orderBy: employeeId}).over(department)
+    expr3 := salary.cumsum({orderBy: employeeId}).over(department).alias("cumsum_salary_by_department")
     test.isEqual(getExpr(expr3), {
-        type: "cumsum",
-        value: {type:"col", name:"salary"},
-        additionalOrderBy: [{type:"col", name:"employeeId"}],
-        partitionBy: [{type:"col", name:"department"}],
-        descending: false
+        type: "alias",
+        value: {
+            type: "cumsum",
+            value: {type:"col", name:"salary"},
+            additionalOrderBy: [{type:"col", name:"employeeId"}],
+            partitionBy: [{type:"col", name:"department"}],
+            descending: false
+        },
+        name: "cumsum_salary_by_department"
     })
 
-    expr4 := salary.cumsum({orderBy: [employeeId], descending: true}).over(department)
-     test.isEqual(getExpr(expr4), {
-        type: "cumsum",
-        value: {type:"col", name:"salary"},
-        additionalOrderBy: [{type:"col", name:"employeeId"}],
-        partitionBy: [{type:"col", name:"department"}],
-        descending: true
+    expr4 := salary.cumsum({orderBy: [employeeId], descending: true}).over(department).alias("cumsum_salary_by_department")
+    test.isEqual(getExpr(expr4), {
+        type: "alias",
+        value: {
+            type: "cumsum",
+            value: {type:"col", name:"salary"},
+            additionalOrderBy: [{type:"col", name:"employeeId"}],
+            partitionBy: [{type:"col", name:"department"}],
+            descending: true
+        },
+        name: "cumsum_salary_by_department"
     })
 }
 
@@ -266,20 +292,13 @@ TestAliasing := func() {
 	age := pt.col("age")
 
 	aliasedAge := age.alias("yearsOld")
-	test.isEqual(getExpr(aliasedAge), {type: "col", name: "age"})
-	test.isEqual(getAlias(aliasedAge), "yearsOld")
+	test.isEqual(getExpr(aliasedAge), {type: "alias", value: {type: "col", name: "age"}, name: "yearsOld"})
 
 	calculated := age.plus(pt.lit(5)).alias("ageInFiveYears")
-	test.isEqual(getExpr(calculated), {type: "plus", lhs: {type: "col", name: "age"}, rhs: {type: "const", value: 5}})
-	test.isEqual(getAlias(calculated), "ageInFiveYears")
+	test.isEqual(getExpr(calculated), {type: "alias", value: {type: "plus", lhs: {type: "col", name: "age"}, rhs: {type: "const", value: 5}}, name: "ageInFiveYears"})
 
     litVal := pt.lit(100).alias("hundred")
-    test.isEqual(getExpr(litVal), {type:"const", value:100})
-    test.isEqual(getAlias(litVal), "hundred")
-
-    sumSalary := pt.col("salary").sum().over("dept").alias("total_dept_salary")
-    test.isEqual(getAlias(sumSalary), "total_dept_salary")
-    test.isEqual(getExpr(sumSalary).type, "aggregate")
+    test.isEqual(getExpr(litVal), {type:"alias", value: {type:"const", value:100}, name: "hundred"})
 }
 
 TestChainingAndComplex := func() {
@@ -292,31 +311,39 @@ TestChainingAndComplex := func() {
     condition := age.gt(pt.lit(18)).and(country.eq(pt.lit("USA")))
     condition = condition.or(age.lt(pt.lit(10)))
 
-    finalExpr := pt.when(condition).then(complexStr).otherwise(pt.lit("N/A"))
+    finalExpr := pt.when(condition).then(complexStr).otherwise(pt.lit("N/A")).alias("finalExpr")
 
     expectedFinal := {
-        type: "when_then_otherwise",
-        conditions: [{
-            when: {
-                type: "or",
-                operands: [
-                    {
-                        type: "and",
-                        operands: [
-                            {type: "gt", lhs: {type: "col", name: "age"}, rhs: {type: "const", value: 18}},
-                            {type: "eq", lhs: {type: "col", name: "country"}, rhs: {type: "const", value: "USA"}}
-                        ]
+        type: "alias",
+        value: {
+            type: "when_then_otherwise",
+            conditions: [{
+                when: {
+                    type: "or",
+                    operands: [
+                        {
+                            type: "and",
+                            operands: [
+                                {type: "gt", lhs: {type: "col", name: "age"}, rhs: {type: "const", value: 18}},
+                                {type: "eq", lhs: {type: "col", name: "country"}, rhs: {type: "const", value: "USA"}}
+                            ]
+                        },
+                        {type: "lt", lhs: {type: "col", name: "age"}, rhs: {type: "const", value: 10}}
+                    ]
+                },
+                then: {
+                    type: "alias",
+                    value: {
+                    type: "plus",
+                        lhs: {type: "to_upper", value: {type: "col", name: "name"}},
+                        rhs: {type: "const", value: "_processed"}
                     },
-                    {type: "lt", lhs: {type: "col", name: "age"}, rhs: {type: "const", value: 10}}
-                ]
-            },
-            then: {
-                type: "plus",
-                lhs: {type: "to_upper", value: {type: "col", name: "name"}},
-                rhs: {type: "const", value: "_processed"}
-            }
-        }],
-        otherwise: {type: "const", value: "N/A"}
+                    name: "processedName"
+                }
+            }],
+            otherwise: {type: "const", value: "N/A"}
+        },
+        name: "finalExpr"
     }
     test.isEqual(getExpr(finalExpr), expectedFinal)
 }
@@ -326,36 +353,59 @@ TestRankWithOptions := func() {
     score2 := pt.col("score2")
     group := pt.col("group")
 
-    rank1 := pt.rank(score1).over(group)
+    rank1 := pt.rank(score1).over(group).alias("rank_by_group")
     test.isEqual(getExpr(rank1), {
-        type: "rank",
-        orderBy: [{type: "col", name: "score1"}],
-        partitionBy: [{type:"col", name:"group"}],
-        descending: false
+        type: "alias",
+        value: {
+            type: "rank",
+            orderBy: [{type: "col", name: "score1"}],
+            partitionBy: [{type:"col", name:"group"}],
+            descending: false
+        },
+        name: "rank_by_group"
     })
 
-    rank2 := pt.rank(score1, {descending: true}).over(group)
+    rank2 := pt.rank(score1, {descending: true}).over(group).alias("rank_by_group")
     test.isEqual(getExpr(rank2), {
-        type: "rank",
-        orderBy: [{type: "col", name: "score1"}],
-        partitionBy: [{type:"col", name:"group"}],
-        descending: true
+        type: "alias",
+        value: {
+            type: "rank",
+            orderBy: [{type: "col", name: "score1"}],
+            partitionBy: [{type:"col", name:"group"}],
+            descending: true
+        },
+        name: "rank_by_group"
     })
 
-    rank3 := pt.rank([score1, score2], { descending: false })
+    rank3 := pt.rank([score1, score2], { descending: false }).alias("rank_by_group")
+    test.isEqual(getExpr(rank3), {
+        type: "alias",
+        value: {
+            type: "rank",
+            orderBy: [
+                {type: "col", name: "score1"},
+                {type: "col", name: "score2"}
+            ],
+            partitionBy: [],
+            descending: false
+        },
+        name: "rank_by_group"
+    })
 
-    test.isEqual(getExpr(rank3).orderBy, [
-        {type: "col", name: "score1"},
-        {type: "col", name: "score2"}
-    ])
-    test.isEqual(getExpr(rank3).descending, false)
-
-    rank4 := pt.rank([score1, score2], {descending: true}).over(group)
-     test.isEqual(getExpr(rank4).orderBy, [
-        {type: "col", name: "score1"},
-        {type: "col", name: "score2"}
-    ])
-    test.isEqual(getExpr(rank4).descending, true)
+    rank4 := pt.rank([score1, score2], {descending: true}).over(group).alias("rank_by_group")
+    test.isEqual(getExpr(rank4), {
+        type: "alias",
+        value: {
+            type: "rank",
+            orderBy: [
+                {type: "col", name: "score1"},
+                {type: "col", name: "score2"}
+            ],
+            partitionBy: [{type:"col", name:"group"}],
+            descending: true
+        },
+        name: "rank_by_group"
+    })
 }
 
 TestSelectWithStrings := func() {
@@ -477,4 +527,126 @@ TestNdjsonParameterValidation := func() {
     // Test that the new parameters are properly validated
     // Note: In a real test environment, we would test that invalid parameters cause panics
     // For now, we just ensure valid parameters don't cause issues
+}
+
+TestSelectorExpressions := func() {
+    // Basic selectors
+    expr1 := pt.sc.all()
+    test.isEqual(getExpr(expr1), {type: "selector_all"})
+
+    expr2 := pt.sc.string()
+    test.isEqual(getExpr(expr2), {type: "selector_string"})
+
+    expr3 := pt.sc.numeric()
+    test.isEqual(getExpr(expr3), {type: "selector_numeric"})
+
+    expr4 := pt.sc.integer()
+    test.isEqual(getExpr(expr4), {type: "selector_integer"})
+
+    expr5 := pt.sc.float()
+    test.isEqual(getExpr(expr5), {type: "selector_float"})
+
+    expr6 := pt.sc.nested()
+    test.isEqual(getExpr(expr6), {type: "selector_nested"})
+
+    // Name-based selectors
+    expr7 := pt.sc.startsWith("test_")
+    test.isEqual(getExpr(expr7), {type: "selector_starts_with", prefix: "test_"})
+
+    expr8 := pt.sc.endsWith("_id")
+    test.isEqual(getExpr(expr8), {type: "selector_ends_with", suffix: "_id"})
+
+    expr9 := pt.sc.contains("age")
+    test.isEqual(getExpr(expr9), {type: "selector_contains", substring: "age"})
+
+    expr10 := pt.sc.matches("^col_[0-9]+$")
+    test.isEqual(getExpr(expr10), {type: "selector_matches", pattern: "^col_[0-9]+$"})
+
+    expr11 := pt.sc.exclude("id", "timestamp")
+    test.isEqual(getExpr(expr11), {type: "selector_exclude", columns: ["id", "timestamp"]})
+
+    expr12 := pt.sc.byName("name", "age", "email")
+    test.isEqual(getExpr(expr12), {type: "selector_by_name", names: ["name", "age", "email"]})
+
+    // Complement
+    expr13 := pt.sc.string().complement()
+    test.isEqual(getExpr(expr13), {
+        type: "selector_complement",
+        selector: {type: "selector_string"}
+    })
+
+    // Union
+    expr14 := pt.sc.string().union(pt.sc.numeric())
+    test.isEqual(getExpr(expr14), {
+        type: "selector_union",
+        selectors: [
+            {type: "selector_string"},
+            {type: "selector_numeric"}
+        ]
+    })
+
+    // Union with multiple selectors
+    expr15 := pt.sc.string().union(pt.sc.numeric(), pt.sc.nested())
+    test.isEqual(getExpr(expr15), {
+        type: "selector_union",
+        selectors: [
+            {type: "selector_string"},
+            {type: "selector_numeric"},
+            {type: "selector_nested"}
+        ]
+    })
+
+    // Intersection
+    expr16 := pt.sc.numeric().intersection(pt.sc.startsWith("test_"))
+    test.isEqual(getExpr(expr16), {
+        type: "selector_intersection",
+        selectors: [
+            {type: "selector_numeric"},
+            {type: "selector_starts_with", prefix: "test_"}
+        ]
+    })
+
+    // Difference
+    expr17 := pt.sc.all().difference(pt.sc.string())
+    test.isEqual(getExpr(expr17), {
+        type: "selector_difference",
+        selectors: [
+            {type: "selector_all"},
+            {type: "selector_string"}
+        ]
+    })
+
+    // Symmetric difference
+    expr18 := pt.sc.string().symmetricDifference(pt.sc.startsWith("temp_"))
+    test.isEqual(getExpr(expr18), {
+        type: "selector_symmetric_difference",
+        selectors: [
+            {type: "selector_string"},
+            {type: "selector_starts_with", prefix: "temp_"}
+        ]
+    })
+
+    // Complex chaining
+    expr19 := pt.sc.numeric().intersection(pt.sc.startsWith("test_")).complement()
+    test.isEqual(getExpr(expr19), {
+        type: "selector_complement",
+        selector: {
+            type: "selector_intersection",
+            selectors: [
+                {type: "selector_numeric"},
+                {type: "selector_starts_with", prefix: "test_"}
+            ]
+        }
+    })
+
+    // Complex union with difference
+    expr20 := pt.sc.all().difference(pt.sc.string(), pt.sc.nested())
+    test.isEqual(getExpr(expr20), {
+        type: "selector_difference",
+        selectors: [
+            {type: "selector_all"},
+            {type: "selector_string"},
+            {type: "selector_nested"}
+        ]
+    })
 }

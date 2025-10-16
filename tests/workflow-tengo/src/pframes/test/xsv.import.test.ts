@@ -1,10 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { field, Pl } from '@milaboratories/pl-middle-layer';
+import type { TestRenderResults } from '@platforma-sdk/test';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { Templates } from '../../../dist';
 import { deepClone } from '@milaboratories/helpers';
 import { getTestTimeout } from '@milaboratories/test-helpers';
-import { vi } from 'vitest';
+import { assert, vi } from 'vitest';
+import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import type { ComputableCtx } from '@milaboratories/computable';
 
 const TIMEOUT = getTestTimeout(60_000);
 
@@ -135,9 +137,9 @@ const expectedColMeta = (superLen: number, partLen: number, storageFormat: strin
   };
 };
 
-const getColMeta = async (result: any, colName: string, timeout = TIMEOUT) =>
+const getColMeta = async (result: TestRenderResults<string>, colName: string, timeout = TIMEOUT) =>
   await awaitStableState(
-    result.computeOutput('pf', (pf: any, ctx: any) => {
+    result.computeOutput('pf', (pf: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
       const r = pf?.traverse(colName + '.data');
       if (!r || !r.getIsReadyOrError()) {
         ctx.markUnstable('not_ready');
@@ -193,6 +195,7 @@ tplTest.concurrent.for([
     await Promise.all(
       ['col1', 'col2'].map(async (colName) => {
         const col = await getColMeta(result, colName);
+        assert(col);
 
         expect(col.type).toEqual(`PColumnData/${spec.storageFormat}Partitioned`);
         expect(col.data).toEqual({ partitionKeyLength: spec.partitionKeyLength });
@@ -347,6 +350,7 @@ tplTest.concurrent.for([
           }),
           TIMEOUT,
         );
+        assert(col);
 
         const exp = expectedColMeta(superPartitionKeyLength, partitionKeyLength, spec.storageFormat);
         expect(col.type).toEqual(exp.type);
@@ -373,6 +377,7 @@ tplTest.concurrent.for([
                 }),
                 TIMEOUT,
               );
+              assert(inner);
 
               expect(inner.type).toEqual(`PColumnData/${spec.storageFormat}Partitioned`);
               expect(inner.data).toEqual({ partitionKeyLength: spec.partitionKeyLength });
@@ -479,6 +484,7 @@ tplTest.concurrent.for([
           }),
           TIMEOUT,
         );
+        assert(col);
 
         const exp = expectedColMeta(superPartitionKeyLength, partitionKeyLength, spec.storageFormat);
         expect(col.type).toEqual(exp.type);
@@ -502,6 +508,7 @@ tplTest.concurrent.for([
                 }),
                 TIMEOUT,
               );
+              assert(inner);
 
               expect(inner.type).toEqual(`PColumnData/${spec.storageFormat}Partitioned`);
               expect(inner.data).toEqual({ partitionKeyLength: spec.partitionKeyLength });

@@ -1,6 +1,7 @@
 from math import log
-import typing
+from typing import Optional, Union
 import polars as pl
+from polars_pf import axis_ref, AxisSpec
 
 from ptabler.common import PType, toPolarsType
 
@@ -129,7 +130,7 @@ class UnaryMinusExpression(UnaryArithmeticBaseExpression, tag='negate'):
 class CastExpression(Expression, tag='cast'):
     value: 'AnyExpression'
     dtype: PType
-    strict: typing.Optional[bool] = None
+    strict: Optional[bool] = None
 
     def to_polars(self) -> pl.Expr:
         return self.value.to_polars().cast(toPolarsType(self.dtype), strict=self.strict or False)
@@ -192,12 +193,36 @@ class ColumnReferenceExpression(Expression, tag='col'):
         return pl.col(self.name)
 
 
+# Axis Reference Expression
+class AxisReferenceExpression(Expression, tag='axis'):
+    spec: AxisSpec
+
+    def to_polars(self) -> pl.Expr:
+        return pl.col(axis_ref(self.spec))
+
+
 # Constant Value Expression
 class ConstantValueExpression(Expression, tag='const'):
-    value: typing.Union[str, int, float, bool, None]
+    value: Union[str, int, float, bool, None]
 
     def to_polars(self) -> pl.Expr:
         return pl.lit(self.value)
+
+# In Set Expression
+class InSetExpression(Expression, tag='in_set'):
+    value: 'AnyExpression'
+    set: list[Union[str, int, float, bool, None]]
+
+    def to_polars(self) -> pl.Expr:
+        return self.value.to_polars().is_in(self.set)
+
+# Alias Expression
+class AliasExpression(Expression, tag='alias'):
+    value: 'AnyExpression'
+    name: str
+
+    def to_polars(self) -> pl.Expr:
+        return self.value.to_polars().alias(self.name)
 
 
 # Min/Max Expressions
