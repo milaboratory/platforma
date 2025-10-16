@@ -64,10 +64,8 @@ export interface StringReplaceExpression {
   /** The input string expression to operate on. */
   value: Expression;
   /** The pattern (regex or literal string) to search for. Can be a string literal or an expression evaluating to a string. */
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   pattern: Expression | string;
   /** The replacement string. Can be a string literal or an expression evaluating to a string. Can use $n or ${name} for captured groups if pattern is a regex. */
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   replacement: Expression | string;
   /** If true, replace all occurrences of the pattern. If false or undefined, replace only the first. Defaults to false. */
   replaceAll?: boolean;
@@ -86,7 +84,6 @@ export interface StringContainsExpression {
   /** The input string expression to search in. */
   value: Expression;
   /** The pattern to search for. Can be a regex pattern (default) or literal string when literal=true. */
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   pattern: Expression | string;
   /** If true, treat the pattern as a literal string. If false, treat it as a regex pattern. Defaults to false. */
   literal?: boolean;
@@ -105,7 +102,6 @@ export interface StringStartsWithExpression {
   /** The input string expression to check. */
   value: Expression;
   /** The prefix to check for (always treated as literal string, no regex support). */
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   prefix: Expression | string;
 }
 
@@ -120,7 +116,6 @@ export interface StringEndsWithExpression {
   /** The input string expression to check. */
   value: Expression;
   /** The suffix to check for (always treated as literal string, no regex support). */
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   suffix: Expression | string;
 }
 
@@ -151,7 +146,6 @@ export interface StringCountMatchesExpression {
   /** The input string expression to count matches in. */
   value: Expression;
   /** The pattern to count occurrences of. Can be a regex pattern (default) or literal string when literal=true. */
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   pattern: Expression | string;
   /** If true, treat the pattern as a literal string. If false, treat it as a regex pattern. Defaults to false. */
   literal?: boolean;
@@ -168,7 +162,6 @@ export interface StringExtractExpression {
   /** The input string expression to extract from. */
   value: Expression;
   /** The regex pattern to extract. Must be a valid regex pattern - no literal string mode is supported. */
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   pattern: Expression | string;
   /** The capture group index to extract. Group 0 is the entire match, group 1 is the first capture group, etc. Defaults to 0. */
   groupIndex?: number;
