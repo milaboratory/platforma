@@ -20,18 +20,7 @@ export interface AddColumnsStep {
    * An array defining the new columns to be added.
    * Each object in the array specifies the name of a new column and the expression to compute its values.
    */
-  columns: {
-    /**
-     * The name of the new column.
-     */
-    name: string;
-
-    /**
-     * An Expression object defining how to compute the column's values.
-     * The expression will be evaluated for each row to generate the values for the new column.
-     */
-    expression: Expression;
-  }[];
+  columns: Expression[];
 }
 
 /**
@@ -93,19 +82,7 @@ export interface SelectStep {
    * Each object in the array specifies the name of a column in the output table
    * and the expression to compute its values.
    */
-  columns: {
-    /**
-     * The name of the column in the output table.
-     */
-    name: string;
-
-    /**
-     * An Expression object defining how to compute the column's values.
-     * This expression will be evaluated to generate the values for this column
-     * in the output table.
-     */
-    expression: Expression;
-  }[];
+  columns: Expression[];
 }
 
 /**
@@ -138,18 +115,7 @@ export interface WithColumnsStep {
    * Each object in the array specifies the name of a column and the
    * expression to compute its values.
    */
-  columns: {
-    /**
-     * The name of the new or replacement column.
-     */
-    name: string;
-
-    /**
-     * An Expression object defining how to compute the column's values.
-     * The expression will be evaluated for each row to generate the values for the column.
-     */
-    expression: Expression;
-  }[];
+  columns: Expression[];
 }
 
 /**
@@ -179,4 +145,33 @@ export interface WithoutColumnsStep {
    * An array of column names to be excluded from the input table.
    */
   columns: string[];
+}
+
+/**
+ * Defines a step that limits the number of rows in a table
+ * and outputs the result to a new table in the tablespace.
+ * This operation is similar to Polars' `limit` method.
+ */
+export interface LimitStep {
+  /**
+   * The type identifier for this step.
+   * Must be 'limit'.
+   */
+  type: 'limit';
+
+  /**
+   * The name of the input table in the tablespace from which rows will be limited.
+   */
+  inputTable: string;
+
+  /**
+   * The name for the resulting table that will be added to the tablespace.
+   * This new table will contain only the first n rows from the input table.
+   */
+  outputTable: string;
+
+  /**
+   * The maximum number of rows to include in the output table.
+   */
+  n: number;
 }

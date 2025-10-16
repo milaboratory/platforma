@@ -141,7 +141,11 @@ _validateArgToLastRun := func(arg) {
 	}), "monetization.validateArgToLastRun(): params in 'metrics' must be either 'size', 'lines' or 'sha256'")
 }
 
-/** Adds monetization parameters to the last run. */
+/**
+ * Adds monetization parameters to the last run.
+ * When called with the same fileName multiple times,
+ * the last call will overwrite the previous ones.
+ */
 addArgToLastRun := func(mnz, fileName, arg) {
 	validation.assertType(mnz, schema,
 		"monetization.addArgToLastRun(): monetization object does not fit json schema")
@@ -289,7 +293,11 @@ _extractOption := func(...opts) {
 	return is_undefined(opt) ? undefined : opt
 }
 
-/** Adds a monetization option if it's defined into the last run. */
+/**
+ * Adds a monetization option if it's defined into the last run.
+ * When called with the same fileName multiple times,
+ * the last call will overwrite the previous ones.
+ */
 addOptionalArg := func(mnz, fileName, ...opts) {
 	opt := _extractOption(opts...)
 	if !is_undefined(opt) {

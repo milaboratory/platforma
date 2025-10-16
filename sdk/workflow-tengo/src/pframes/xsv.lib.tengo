@@ -10,10 +10,15 @@ render := import(":render")
 maps := import(":maps")
 util := import(":pframes.util")
 pBuilder := import(":pframes.builder")
+pframesSpec := import(":pframes.spec")
 ll := import(":ll")
 assets := import(":assets")
 xsvIF := import(":pframes.xsv-import-file")
 text := import("text")
+execConstants := import(":exec.constants")
+pt := import(":pt")
+slices := import(":slices")
+canonical := import(":canonical")
 
 importXsvIfNullTpl := assets.importTemplate(":pframes.xsv-import-if-not-null")
 
@@ -210,44 +215,6 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 	return result
 }
 
-isFlatPfMap := func(pf) {
-	if !is_map(pf) {
-		return false
-	}
-
-	for key, _ in pf {
-		if !text.has_suffix(key, ".spec") && !text.has_suffix(key, ".data") {
-			return false
-		}
-	}
-
-	return true
-}
-
-isStructuredPfMap := func(pf) {
-	if !is_map(pf) {
-		return false
-	}
-
-	for _, value in pf {
-		if !is_map(value) {
-			return false
-		}
-
-		for k, _ in value {
-			if k != "spec" && k != "data" {
-				return false
-			}
-		}
-
-		if is_undefined(value.spec) || is_undefined(value.data) {
-			return false
-		}
-	}
-
-	return true
-}
-
 /**
  * Export p-frame into xsv file
  *
@@ -259,31 +226,12 @@ isStructuredPfMap := func(pf) {
  *                                           - Default: "NaN"
  *                        nullStr?: string   - String to represent NA and missing values of text types (String, Bytes)
  *                                           - Default: "null"
- *                        exportBytes?: bool - Toggle to export or skip axes and columns of type Bytes
- *                                           - Default: false
- *                        separator?: string - Single ASCII character to be used as separator
- *                                           - Default: ',' for .csv, '\t' for .tsv
- *                        columnSelector?: object
- *                                           - Only columns matching the selector are exported
- *                                           - Default: all columns are exported
- *                                           {
- *                                             type?: []string          - Match any of the types listed (Int, Long, Float, Double, String, Bytes)
- *                                             name?: []string          - Match any of the names listed
- *                                             annotationValue?: object - Match requires all the listed annotations to have provided values
- *                                             annotationPattern?: object - Match requires all the listed annotations to match provided regex patterns
- *                                           }
- *                        coreJoin?: object - Explicitly specify core part of a join. The join would take there steps:
- *                                           1. From the PFrame specified columns are filtered using `columnSelector`;
- *                                           2. Core join is performed following the provided specification;
- *                                           3. Remaining selected columns are joined using the `joinType`.
- *                                           - Default: all selected columns are joined using `joinType`
  *                        joinType?: string  - Join type for columns with equal axes specifications
  *                                           - Options: "Full" | "Inner"
  *                                           - Default: "Full"
  *                      }
  * @param ops: object - additional options
  *               {
- *                 partitions: {axisIdx: [keys]} - map of partitions to export; if not specified, all data is exported
  *                 cpu: number - (optional) number of cores requested for command.
  *                 mem: number | string - (optional) amount of RAM in bytes or string with size suffix
  *                 queue: string - (optional) the name of the queue. Defaults to the light queue.
@@ -292,9 +240,43 @@ isStructuredPfMap := func(pf) {
  * @return object: reference - a reference to exported xsv file.
  */
 exportFrame := func(pf, xsvType, params, ...ops) {
-	exportPfTpl := assets.importTemplate(":pframes.xsv-export-pframe")
+	validation.assertType(params, util.PFCONV_EXPORT_CFG_SCHEMA)
+	partialParams := objects.deleteUndefined({
+		naStr: params.naStr,
+		nullStr: params.nullStr,
+		joinType: params.joinType
+	})
 
 	ops := renderOps({}, ops...)
+	ll.assert(is_undefined(ops.partitions), "partitions option is no longer supported")
+
+	runMetaInputs := {
+		queue: ops.queue,
+		cpu: ops.cpu,
+		mem: ops.mem,
+		inputCache: ops.inputCache
+	}
+	// Many blocks mistakengly put ops and params together, so we need to handle this gracefully
+	if !is_undefined(params.queue) {
+		runMetaInputs.queue = params.queue
+		delete(params, "queue")
+	}
+	if !is_undefined(params.cpu) {
+		runMetaInputs.cpu = params.cpu
+		delete(params, "cpu")
+	}
+	if !is_undefined(params.mem) {
+		runMetaInputs.mem = params.mem
+		delete(params, "mem")
+	}
+	if !is_undefined(params.inputCache) {
+		runMetaInputs.inputCache = params.inputCache
+		delete(params, "inputCache")
+	}
+
+	if len(partialParams) < len(params) {
+		ll.panic("Some params are not supported: %v", params)
+	}
 
 	if is_array(pf) {
 		// transform into .data .spec map
@@ -308,7 +290,7 @@ exportFrame := func(pf, xsvType, params, ...ops) {
 			i = i + 1
 		}
 		pf = pfBuilder.build()
-	} else if isStructuredPfMap(pf) {
+	} else if util.isStructuredPfMap(pf) {
 		pfBuilder := pBuilder.pFrameBuilder()
 		for key, value in pf {
 			pfBuilder.add(key, value.spec, value.data)
@@ -318,18 +300,88 @@ exportFrame := func(pf, xsvType, params, ...ops) {
 		if !pf.checkResourceType(constants.RTYPE_P_FRAME) {
 			ll.panic("Unexpected resource type: %s", pf.info().Type.Name)
 		}
-	} else if !isFlatPfMap(pf) && !smart.isReference(pf) {
+	} else if !util.isFlatPfMap(pf) && !smart.isReference(pf) {
 		ll.panic("Unexpected p-frame format: %s", pf)
 	}
 
-	r := render.create(exportPfTpl, {
-		pf: pf,
-		xsvType: xsvType,
-		params: params,
-		ops: ops
+	resultFile := "result." + xsvType
+
+	columnEntries := []
+	rawColumns := []
+	maps.forEach(util.pFrameToColumnsMap(pf), func(frameUniqueColumnId, columnInfo) {
+		columnEntries = append(columnEntries, pt.p.column(frameUniqueColumnId, columnInfo))
+		rawColumns = append(rawColumns, { id: frameUniqueColumnId, spec: columnInfo.spec })
 	})
 
-	return r.output("result")
+	frameInput := undefined
+	if params.joinType == "Inner" {
+		frameInput = pt.p.inner(columnEntries...)
+	} else {
+		frameInput = pt.p.full(columnEntries...)
+	}
+
+	numericSelector := pt.sc.numeric()
+	if is_string(params.naStr) {
+		numericSelector = numericSelector.fillNull(params.naStr)
+	}
+	stringSelector := pt.sc.string()
+	if is_string(params.nullStr) {
+		stringSelector = stringSelector.fillNull(params.nullStr)
+	}
+
+	specDistiller := pframesSpec.createSpecDistiller(slices.map(rawColumns, func(c) { return c.spec }))
+	canonicalMap := {}
+	uniqueAxes := []
+	for column in rawColumns {
+		for axis in column.spec.axesSpec {
+			distilledAxis := specDistiller.distill(axis)
+			canonicalizedAxisSpec := canonical.encode(distilledAxis)
+			if is_undefined(canonicalMap[canonicalizedAxisSpec]) {
+				canonicalMap[canonicalizedAxisSpec] = true
+				distilledAxis.label = axis.annotations["pl7.app/label"]
+				uniqueAxes = append(uniqueAxes, distilledAxis)
+			}
+		}
+	}
+
+	columnSelectors := []
+	for axis in uniqueAxes {
+		label := axis.label
+		delete(axis, "label")
+		columnSelectors = append(columnSelectors, pt.sc.axis(axis).alias(label))
+	}
+	for column in rawColumns {
+		columnSelectors = append(columnSelectors, pt.col(column.id).alias(column.spec.annotations["pl7.app/label"]))
+	}
+
+	wf := pt.workflow()
+	if runMetaInputs.queue == execConstants.LIGHT_QUEUE {
+		wf = wf.inLightQueue()
+	} else if runMetaInputs.queue == execConstants.MEDIUM_QUEUE {
+		wf = wf.inMediumQueue()
+	} else if runMetaInputs.queue == execConstants.HEAVY_QUEUE {
+		wf = wf.inHeavyQueue()
+	} else if runMetaInputs.queue == execConstants.UI_TASKS_QUEUE {
+		wf = wf.inUiQueue()
+	} else if !is_undefined(runMetaInputs.queue) {
+		ll.panic("Unsupported queue: %v", runMetaInputs.queue)
+	}
+	if !is_undefined(runMetaInputs.cpu) {
+		wf = wf.cpu(runMetaInputs.cpu)
+	}
+	if !is_undefined(runMetaInputs.mem) {
+		wf = wf.mem(runMetaInputs.mem)
+	}
+	if !is_undefined(runMetaInputs.inputCache) {
+		wf = wf.cacheInputs(runMetaInputs.inputCache)
+	}
+	wf.frame(frameInput).
+		select(numericSelector, stringSelector).
+		select(columnSelectors...).
+		save(resultFile)
+
+	result := wf.run()
+	return result.getFile(resultFile)
 }
 
 export ll.toStrict({

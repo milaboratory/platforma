@@ -13,8 +13,8 @@
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "build": "ts-builder build --target node",
+    "type-check": "ts-builder types --target node",
     "lint": "eslint .",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
@@ -22,12 +22,14 @@
     "./dist/**/*",
     "./src/**/*"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "@milaboratories/pl-model-common": "workspace:*"
+  },
   "devDependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "@platforma-sdk/eslint-config": "workspace:*",
-    "vite-plugin-dts": "catalog:",
     "eslint": "catalog:",
-    "typescript": "catalog:",
-    "vite": "catalog:"
+    "typescript": "catalog:"
   }
 }

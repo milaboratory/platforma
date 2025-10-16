@@ -56,6 +56,8 @@ export interface ReadCsvStep extends BaseFileReadStep {
   type: 'read_csv';
   /** Optional: The delimiter character used in the CSV file. */
   delimiter?: string;
+  /** Optional: The prefix string used to comment out lines in the CSV file. */
+  commentPrefix?: string;
 }
 
 /** Represents the configuration for a step that reads data from an NDJSON file into the tablespace. */

@@ -686,7 +686,9 @@ builder := func() {
 		},
 
 		/**
-		 * Adds a file to the working directory
+		 * Adds a file to the working directory.
+		 * When called with the same fileName multiple times,
+		 * the last call will overwrite the previous ones.
 		 *
 		 * @param fileName: string - the name of the input file.
 		 * @param file: reference - a resource id of the file or a field that points to it.
@@ -716,6 +718,8 @@ builder := func() {
 
 		/**
 		 * Writes a file with a given content.
+		 * When called with the same fileName multiple times,
+		 * the last call will overwrite the previous ones.
 		 *
 		 * @param fileName: string - the name of the content.
 		 * @param data: bytes|reference - a primitive tengo value (map or array) or a reference to

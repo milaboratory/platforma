@@ -1,13 +1,13 @@
 import type { BlockConfigGeneric } from './block_config';
 import type { BlockConfigContainer } from './container';
 
-function upgradeCfgOrLambda(data: any): any;
+function upgradeCfgOrLambda(data: unknown): unknown;
 function upgradeCfgOrLambda(
-  data: any | undefined
-): any | undefined;
+  data: unknown | undefined
+): unknown | undefined;
 function upgradeCfgOrLambda(
-  data: any | undefined,
-): any | undefined {
+  data: unknown | undefined,
+): unknown | undefined {
   if (data === undefined) return undefined;
   if (typeof data === 'string') return { __renderLambda: true, handle: data, retentive: false };
   return data;

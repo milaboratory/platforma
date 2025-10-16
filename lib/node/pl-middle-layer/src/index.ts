@@ -22,3 +22,4 @@ export * from './mutator/template/template_loading';
 export * from './mutator/template/render_template';
 export * from './model/template_spec';
 export { parseFinalPObjectCollection } from './pool/p_object_collection';
+export { deriveGlobalPObjectId, deriveLocalPObjectId } from './pool/data';

@@ -520,7 +520,6 @@ resource = func(r) {
 		// cached meta fields (smart.Field)
 		_metaInputs: undefined,
 		/**
-		 * @deprecated Use metaInputs instead.
 		 * Returns resource meta fields map name -> smart.Field
 		 */
 		metaInputs: func() {

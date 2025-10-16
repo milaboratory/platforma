@@ -75,7 +75,7 @@ export class TestWorkflowResults {
   public export<R>(
     name: string,
     cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R,
-  ) {
+  ): Computable<UnwrapComputables<R> | undefined> {
     if (this.processedExportsResult !== undefined)
       return this.processedExportsResult.computeOutput('result', (acc, ctx) => {
         return cb(acc?.traverse({ field: name, assertFieldType: 'Input' }), ctx);
@@ -89,7 +89,7 @@ export class TestWorkflowResults {
   public output<R>(
     name: string,
     cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R,
-  ) {
+  ): Computable<UnwrapComputables<R> | undefined> {
     return this.renderResult.computeOutput('result', (acc, ctx) => {
       return cb(acc?.traverse({ field: name, assertFieldType: 'Input' }), ctx);
     });
@@ -135,7 +135,7 @@ export class TplTestHelpers {
     return new TestRenderResults(this.resultRootTree.entry(resultMapRid));
   }
 
-  createObject(tx: PlTransaction, value: unknown) {
+  createObject(tx: PlTransaction, value: unknown): AnyRef {
     return tx.createValue(Pl.JsonObject, JSON.stringify(value));
   }
 
@@ -183,7 +183,7 @@ export const tplTest = plTest.extend<{
   helper: TplTestHelpers;
   driverKit: MiddleLayerDriverKit;
 }>({
-  helper: async ({ pl, createTree }, use) => {
+  helper: async ({ pl, createTree }, use): Promise<void> => {
     const resultMap = await pl.withWriteTx('CreatingHelpers', async (tx) => {
       const map = tx.createEphemeral(Pl.EphStdMap);
       const rootField = field(tx.clientRoot, 'templateTeste');
@@ -194,7 +194,7 @@ export const tplTest = plTest.extend<{
     const resultMapTree = await createTree(resultMap);
     await use(new TplTestHelpers(pl, resultMap, resultMapTree));
   },
-  driverKit: async ({ pl, tmpFolder }, use) => {
+  driverKit: async ({ pl, tmpFolder }, use): Promise<void> => {
     const frontendDownloadPath = path.join(tmpFolder, 'frontend');
 
     const driverKit = await initDriverKit(pl, tmpFolder, frontendDownloadPath, {
