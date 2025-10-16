@@ -532,13 +532,8 @@ pColumnBundleUnmarshaller := func() {
 					// Helper function to process axes from a single column spec
 					processAxesSpec := func(spec) {
 						if !is_undefined(spec) && !is_undefined(spec.axesSpec) {
-							for _, axis in spec.axesSpec {
-								// Create a canonical key for this axis (name + type + domain)
-								axisKey := canonical.encode({
-									name: axis.name,
-									type: axis.type,
-									domain: is_undefined(axis.domain) ? {} : axis.domain
-								})
+							for axis in spec.axesSpec {
+								axisKey := pSpec.getAxisId(axis)
 								
 								// Only add if we haven't seen this axis before
 								if is_undefined(uniqueAxesMap[axisKey]) {
@@ -567,7 +562,7 @@ pColumnBundleUnmarshaller := func() {
 						for id in columnIds {
 							processedId := processColumnId(id)
 							columnKey := processedId.columnKey
-							
+
 							result := pool[columnKey]
 							if is_undefined(result) {
 								ll.panic("Column not found: %v. Pool: %v", columnKey, maps.getKeys(pool))

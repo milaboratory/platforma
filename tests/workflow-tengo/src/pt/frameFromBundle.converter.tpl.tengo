@@ -20,7 +20,6 @@ self.body(func(inputs) {
 
 	wf := pt.workflow()
 	df := wf.frameFromColumnBundle(columnBundle, {
-        axes: axes,
         columns: columns
     }).save("file.tsv")
 
