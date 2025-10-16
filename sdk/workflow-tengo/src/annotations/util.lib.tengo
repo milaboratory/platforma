@@ -3,6 +3,7 @@ rand := import("rand")
 text := import("text")
 
 ll := import(":ll")
+wf := import(":workflow")
 sets := import(":sets")
 maps := import(":maps")
 slices := import(":slices")
@@ -110,12 +111,35 @@ extractColumnsFromExpressions := func(expressions) {
 	return sets.toSlice(columnsSet)
 }
 
+prepareResultColumnSpec := func(args) {
+	blockId := wf.getBlockId()
+	
+	steps := slices.filter([args.trace, {
+		id: blockId,
+		type: "milaboratories.annotation",
+		label: args.title,
+		importance: 20
+	}], func(v) { return !is_undefined(v) })
+	
+	trace := pSpec.makeTrace(steps...)
+
+	return trace.inject({
+		kind: "PColumn",
+		valueType: "String",
+		name: "pl7.app/annotation/result",
+		domain: { "pl7.app/annotationRunId": blockId },
+		axesSpec: args.resultAxesSpec,
+		annotations: { "pl7.app/label": args.title }
+	})
+}
+
 export ll.toStrict({
 	ANNOTATION_HEADER: ANNOTATION_HEADER,
 
 	encodeColumnName: encodeColumnName,
 	decodeColumnName: decodeColumnName,
 	createFilterFileName: createFilterFileName,
+	prepareResultColumnSpec: prepareResultColumnSpec,
 	createAnnotationsDataAndSpec: createAnnotationsDataAndSpec,
 	createFilterDataAndSpec: createFilterDataAndSpec,
 	mapExpressionColumnNames: mapExpressionColumnNames,
