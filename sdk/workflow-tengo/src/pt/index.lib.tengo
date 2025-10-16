@@ -403,15 +403,18 @@ workflow := func() {
 				finalFormat = inputXsvType
 			} else if smart.isReference(frameInput) {
 				frameInputResource := frameInput
-				if smart.isField(frameInputResource) {
+				if smart.isField(frameInputResource) && frameInputResource.isSet() {
 					frameInputResource = frameInputResource.getValue()
-				}
-				if frameInputResource.checkResourceType(pframesConstants.RTYPE_P_FRAME) {
-					frameResource = frameInputResource
-					finalFormat = "pframe"
+					if frameInputResource.checkResourceType(pframesConstants.RTYPE_P_FRAME) {
+						frameResource = frameInputResource
+						finalFormat = "pframe"
+					} else {
+						fileRef = frameInput
+					}
 				} else {
 					fileRef = frameInput
 				}
+				
 			} else if is_string(frameInput) || is_bytes(frameInput) {
 				fileContent = frameInput
 			} else if pframesUtil.isFlatPfMap(frameInput) {

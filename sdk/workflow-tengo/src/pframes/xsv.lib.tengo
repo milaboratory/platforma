@@ -10,15 +10,10 @@ render := import(":render")
 maps := import(":maps")
 util := import(":pframes.util")
 pBuilder := import(":pframes.builder")
-pframesSpec := import(":pframes.spec")
 ll := import(":ll")
 assets := import(":assets")
 xsvIF := import(":pframes.xsv-import-file")
 text := import("text")
-execConstants := import(":exec.constants")
-pt := import(":pt")
-slices := import(":slices")
-canonical := import(":canonical")
 
 importXsvIfNullTpl := assets.importTemplate(":pframes.xsv-import-if-not-null")
 
@@ -304,84 +299,16 @@ exportFrame := func(pf, xsvType, params, ...ops) {
 		ll.panic("Unexpected p-frame format: %s", pf)
 	}
 
-	resultFile := "result." + xsvType
-
-	columnEntries := []
-	rawColumns := []
-	maps.forEach(util.pFrameToColumnsMap(pf), func(frameUniqueColumnId, columnInfo) {
-		columnEntries = append(columnEntries, pt.p.column(frameUniqueColumnId, columnInfo))
-		rawColumns = append(rawColumns, { id: frameUniqueColumnId, spec: columnInfo.spec })
+	exportPfTpl := assets.importTemplate(":pframes.xsv-export-pframe")
+	r := render.create(exportPfTpl, {
+		pf: pf,
+		xsvType: xsvType,
+		params: partialParams
+	}, {
+		metaInputs: objects.deleteUndefined(runMetaInputs)
 	})
 
-	frameInput := undefined
-	if params.joinType == "Inner" {
-		frameInput = pt.p.inner(columnEntries...)
-	} else {
-		frameInput = pt.p.full(columnEntries...)
-	}
-
-	numericSelector := pt.sc.numeric()
-	if is_string(params.naStr) {
-		numericSelector = numericSelector.fillNull(params.naStr)
-	}
-	stringSelector := pt.sc.string()
-	if is_string(params.nullStr) {
-		stringSelector = stringSelector.fillNull(params.nullStr)
-	}
-
-	specDistiller := pframesSpec.createSpecDistiller(slices.map(rawColumns, func(c) { return c.spec }))
-	canonicalMap := {}
-	uniqueAxes := []
-	for column in rawColumns {
-		for axis in column.spec.axesSpec {
-			distilledAxis := specDistiller.distill(axis)
-			canonicalizedAxisSpec := canonical.encode(distilledAxis)
-			if is_undefined(canonicalMap[canonicalizedAxisSpec]) {
-				canonicalMap[canonicalizedAxisSpec] = true
-				distilledAxis.label = axis.annotations["pl7.app/label"]
-				uniqueAxes = append(uniqueAxes, distilledAxis)
-			}
-		}
-	}
-
-	columnSelectors := []
-	for axis in uniqueAxes {
-		label := axis.label
-		delete(axis, "label")
-		columnSelectors = append(columnSelectors, pt.sc.axis(axis).alias(label))
-	}
-	for column in rawColumns {
-		columnSelectors = append(columnSelectors, pt.col(column.id).alias(column.spec.annotations["pl7.app/label"]))
-	}
-
-	wf := pt.workflow()
-	if runMetaInputs.queue == execConstants.LIGHT_QUEUE {
-		wf = wf.inLightQueue()
-	} else if runMetaInputs.queue == execConstants.MEDIUM_QUEUE {
-		wf = wf.inMediumQueue()
-	} else if runMetaInputs.queue == execConstants.HEAVY_QUEUE {
-		wf = wf.inHeavyQueue()
-	} else if runMetaInputs.queue == execConstants.UI_TASKS_QUEUE {
-		wf = wf.inUiQueue()
-	} else if !is_undefined(runMetaInputs.queue) {
-		ll.panic("Unsupported queue: %v", runMetaInputs.queue)
-	}
-	if !is_undefined(runMetaInputs.cpu) {
-		wf = wf.cpu(runMetaInputs.cpu)
-	}
-	if !is_undefined(runMetaInputs.mem) {
-		wf = wf.mem(runMetaInputs.mem)
-	}
-	if !is_undefined(runMetaInputs.inputCache) {
-		wf = wf.cacheInputs(runMetaInputs.inputCache)
-	}
-	wf.frame(frameInput).
-		select(numericSelector, stringSelector).
-		select(columnSelectors...).
-		save(resultFile)
-
-	result := wf.run()
-	return result.getFile(resultFile)
+	return r.output("result")
 }
 
 export ll.toStrict({

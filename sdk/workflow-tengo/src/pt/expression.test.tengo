@@ -181,6 +181,21 @@ TestStringExpressions := func() {
         wildcard: "*",
         substitutionsOnly: true
     })
+
+    expr17 := name.replaceEcmaRegex("^.*(P\\d+)_(W\\d+).*$", "$2-$1")
+    test.isEqual(getExpr(expr17), {
+        type: "replace_ecma_regex",
+        value: {type: "col", name: "name"},
+        ecmaRegex: "^.*(P\\d+)_(W\\d+).*$",
+        replacement: "$2-$1"
+    })
+
+    expr18 := name.extractEcmaRegex("\\d+___([a-z]+).xlsx")
+    test.isEqual(getExpr(expr18), {
+        type: "extract_ecma_regex",
+        value: {type: "col", name: "name"},
+        ecmaRegex: "\\d+___([a-z]+).xlsx"
+    })
 }
 
 TestWindowExpressions := func() {

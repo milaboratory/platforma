@@ -4,25 +4,18 @@ objects := import(":objects")
 util := import(":pframes.util")
 pt := import(":pt")
 execConstants := import(":exec.constants")
+maps := import(":maps")
+slices := import(":slices")
 
 getAxesSpec := func(spec) {
-	axes := []
-	for ax in spec.axes {
-		axes = append(axes, ax.spec)
-	}
-	return axes
+	return slices.map(spec.axes, func(ax) { return ax.spec })
 }
 
 getColumnSpec := func(axesSpec, col) {
-	spec := {
+	spec := maps.deepMerge(col.spec, {
 		kind: "PColumn",
 		axesSpec: axesSpec
-	}
-
-	for k, v in col.spec {
-		spec[k] = v
-	}
-
+	})
 	return objects.deleteUndefined(spec)
 }
 
@@ -30,9 +23,9 @@ applyPreProcessSteps := func(colExpr, preProcessSteps) {
 	result := colExpr
 	for step in preProcessSteps {
 		if step.type == "regexpExtract" {
-			result = result.strExtract(step.pattern, { groupIndex: 1 })
+			result = result.extractEcmaRegex(step.pattern)
 		} else if step.type == "regexpReplace" {
-			result = result.strReplaceAll(step.pattern, step.replacement)
+			result = result.replaceEcmaRegex(step.pattern, step.replacement)
 		} else {
 			ll.panic("unknown preProcess step type: %v", step.type)
 		}
@@ -300,4 +293,3 @@ importFileParquet := func(xsvFile, xsvType, spec, ...opsArgs) {
 export ll.toStrict({
 	importFileParquet: importFileParquet
 })
-

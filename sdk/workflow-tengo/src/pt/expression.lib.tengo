@@ -1030,6 +1030,83 @@ _newExpression = func(expression) {
 					substitutionsOnly: substitutionsOnly
 				})
 			})
+		},
+
+		/**
+		 * Replaces occurrences of an ECMAScript regular expression pattern with a replacement string.
+		 * Performs JavaScript String.prototype.replace() operation.
+		 * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replace
+		 *
+		 * @param ecmaRegex - string - String representing ECMAScript RegEx with at least one capturing group.
+		 *   If you need to reorder capturing groups - use RegExp matching the whole string
+		 *   (must start with string begin anchor ^, end with string end anchor $).
+		 *   Use regex playground https://regexr.com/ to test your ideas.
+		 * @param replacement - string - Replacement pattern used to construct result string from captured groups.
+		 *   Empty string as result would become NA.
+		 *   @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replace#specifying_a_string_as_the_replacement
+		 * @returns {object} - A string expression object.
+		 * @example
+		 *   // Reorder capture groups
+		 *   col("filename").replaceEcmaRegex("^.*(P\\d+)_(W\\d+).*$", "$2-$1")
+		 *   // Input: "result.POIS_P001_W104_PBMC_2.clns" => Output: "W104-P001"
+		 */
+		replaceEcmaRegex: func(ecmaRegex, replacement) {
+			ll.assert(is_string(ecmaRegex) && len(ecmaRegex) > 0, "ecmaRegex must be a non-empty string.")
+			ll.assert(is_string(replacement), "replacement must be a string.")
+
+			return _newExpression(func(ctx) {
+				valueExpr := self._getExpression(ctx)
+				return {
+					type: "replace_ecma_regex",
+					value: valueExpr,
+					ecmaRegex: ecmaRegex,
+					replacement: replacement
+				}
+			})
+		},
+
+		/**
+		 * Extracts parts of a string using an ECMAScript regular expression.
+		 * Simplified 'regexpReplace' with replacement set to $1 (first capture group).
+		 * RegEx must match the entire string, this would be enforced even when ^ and $ are skipped.
+		 * If there are no matches - value would be replaced with empty string.
+		 *
+		 * @param ecmaRegex - string - String representing ECMAScript RegEx with at least one capturing group.
+		 *   RegEx must match the entire string, this would be enforced even when ^ and $ are skipped.
+		 *   If there are no matches - value would be replaced with empty string.
+		 * @returns {object} - A string expression object.
+		 * @example
+		 *   // Extract second part after separator
+		 *   col("filename").extractEcmaRegex("\\d+___([a-z]+).xlsx")
+		 *   // Input: "123___abc.xlsx" => Output: "abc"
+		 * @example
+		 *   // Extract first capture group (when multiple groups exist)
+		 *   col("filename").extractEcmaRegex("(\\d+)___([a-z]+).xlsx")
+		 *   // Input: "123___abc.xlsx" => Output: "123"
+		 * @example
+		 *   // Extract nested groups
+		 *   col("filename").extractEcmaRegex("((\\d+)___([a-z]+)).xlsx")
+		 *   // Input: "123___abc.xlsx" => Output: "123___abc"
+		 * @example
+		 *   // Wrong: pattern doesn't match entire string
+		 *   col("filename").extractEcmaRegex("(\\d+___[a-z]+)")
+		 *   // Input: "123___abc.xlsx" => Output: "" (empty, .xlsx part missing)
+		 * @example
+		 *   // Correct: pattern matches entire string
+		 *   col("filename").extractEcmaRegex("(\\d+___[a-z]+).xlsx")
+		 *   // Input: "123___abc.xlsx" => Output: "123___abc"
+		 */
+		extractEcmaRegex: func(ecmaRegex) {
+			ll.assert(is_string(ecmaRegex) && len(ecmaRegex) > 0, "ecmaRegex must be a non-empty string.")
+
+			return _newExpression(func(ctx) {
+				valueExpr := self._getExpression(ctx)
+				return {
+					type: "extract_ecma_regex",
+					value: valueExpr,
+					ecmaRegex: ecmaRegex
+				}
+			})
 		}
 	})
 	return self
