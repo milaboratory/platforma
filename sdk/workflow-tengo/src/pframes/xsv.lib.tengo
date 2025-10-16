@@ -18,6 +18,7 @@ text := import("text")
 execConstants := import(":exec.constants")
 pt := import(":pt")
 slices := import(":slices")
+canonical := import(":canonical")
 
 importXsvIfNullTpl := assets.importTemplate(":pframes.xsv-import-if-not-null")
 
@@ -329,38 +330,15 @@ exportFrame := func(pf, xsvType, params, ...ops) {
 	}
 
 	specDistiller := pframesSpec.createSpecDistiller(slices.map(rawColumns, func(c) { return c.spec }))
+	canonicalMap := {}
 	uniqueAxes := []
 	for column in rawColumns {
 		for axis in column.spec.axesSpec {
 			distilledAxis := specDistiller.distill(axis)
-			distilledAxis.label = axis.annotations["pl7.app/label"]
-			found := false
-			for appendedSpec in uniqueAxes {
-				if distilledAxis.name != appendedSpec.name {
-					continue
-				}
-				if distilledAxis.type != appendedSpec.type {
-					continue
-				}
-				if is_undefined(distilledAxis.domain) && is_undefined(appendedSpec.domain) {
-					found = true
-					break
-				}
-				if is_undefined(distilledAxis.domain) || is_undefined(appendedSpec.domain) {
-					continue
-				}
-				if len(distilledAxis.domain) != len(appendedSpec.domain) {
-					continue
-				}
-				for domainKey, domainValue in distilledAxis.domain {
-					if appendedSpec.domain[domainKey] != domainValue {
-						continue
-					}
-				}
-				found = true
-				break
-			}
-			if !found {
+			canonicalizedAxisSpec := canonical.encode(distilledAxis)
+			if is_undefined(canonicalMap[canonicalizedAxisSpec]) {
+				canonicalMap[canonicalizedAxisSpec] = true
+				distilledAxis.label = axis.annotations["pl7.app/label"]
 				uniqueAxes = append(uniqueAxes, distilledAxis)
 			}
 		}

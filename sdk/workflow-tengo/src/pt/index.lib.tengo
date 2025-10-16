@@ -14,6 +14,7 @@ pframesUtil := import(":pframes.util")
 pframesSpec := import(":pframes.spec")
 render := import(":render")
 maps := import(":maps")
+canonical := import(":canonical")
 
 /**
  * This library provides a high-level API, inspired by Polars DataFrames, for building and executing
@@ -699,39 +700,21 @@ workflow := func() {
 		},
 		_getDistilledAxesSpecs: func() {
 			specDistiller := self._getSpecDistiller()
+			canonicalMap := {}
 			distilledAxesSpecs := {}
 			for _, frame in inFrames {
 				for _, columnInfo in frame.columns {
 					for axis in columnInfo.spec.axesSpec {
-						distilledAxisSpec := specDistiller.distill(axis)
-						if is_undefined(distilledAxesSpecs[distilledAxisSpec.name]) {
-							distilledAxesSpecs[distilledAxisSpec.name] = []
+						if is_undefined(canonicalMap[axis.name]) {
+							canonicalMap[axis.name] = {}
 						}
-						found := false
-						for _, appendedSpec in distilledAxesSpecs[distilledAxisSpec.name] {
-							if distilledAxisSpec.type != appendedSpec.type {
-								continue
+						canonicalizedAxisSpec := canonical.encode(axis)
+						if is_undefined(canonicalMap[axis.name][canonicalizedAxisSpec]) {
+							canonicalMap[axis.name][canonicalizedAxisSpec] = true
+							if is_undefined(distilledAxesSpecs[axis.name]) {
+								distilledAxesSpecs[axis.name] = []
 							}
-							if is_undefined(distilledAxisSpec.domain) && is_undefined(appendedSpec.domain) {
-								found = true
-								break
-							}
-							if is_undefined(distilledAxisSpec.domain) || is_undefined(appendedSpec.domain) {
-								continue
-							}
-							if len(distilledAxisSpec.domain) != len(appendedSpec.domain) {
-								continue
-							}
-							for domainKey, domainValue in distilledAxisSpec.domain {
-								if appendedSpec.domain[domainKey] != domainValue {
-									continue
-								}
-							}
-							found = true
-							break
-						}
-						if !found {
-							distilledAxesSpecs[distilledAxisSpec.name] = append(distilledAxesSpecs[distilledAxisSpec.name], distilledAxisSpec)
+							distilledAxesSpecs[axis.name] = append(distilledAxesSpecs[axis.name], axis)
 						}
 					}
 				}
