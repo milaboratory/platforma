@@ -29,6 +29,8 @@ _getPColumnRtype := func(supKeyLen, keyLen, storageFormat) {
 			return constants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED
 		} else if storageFormat == "Binary" {
 			return constants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED
+		} else if storageFormat == "Parquet" {
+			return constants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED
 		} else {
 			ll.panic("unknown storage format: ", storageFormat)
 		}
@@ -37,6 +39,8 @@ _getPColumnRtype := func(supKeyLen, keyLen, storageFormat) {
 			return constants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED
 		} else if storageFormat == "Binary" {
 			return constants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED
+		} else if storageFormat == "Parquet" {
+			return constants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED
 		} else {
 			ll.panic("unknown storage format: ", storageFormat)
 		}
@@ -118,6 +122,10 @@ self.body(func(inputs) {
 							result[id].createInputField(key + suffix).set(pCol.getFutureInputField(util.EMPTY_JSON_KEY + suffix))
 						}
 					} else if spec.storageFormat == "Json" {
+						// p has only one field: []
+
+						result[id].createInputField(key).set(pCol.getFutureInputField(util.EMPTY_JSON_KEY))
+					} else if spec.storageFormat == "Parquet" {
 						// p has only one field: []
 
 						result[id].createInputField(key).set(pCol.getFutureInputField(util.EMPTY_JSON_KEY))

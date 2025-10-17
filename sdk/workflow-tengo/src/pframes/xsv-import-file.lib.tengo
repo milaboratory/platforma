@@ -7,6 +7,7 @@ util := import(":pframes.util")
 json := import("json")
 constants := import(":pframes.constants")
 execConstants := import(":exec.constants")
+xsvImportPt := import(":pframes.xsv-import-pt")
 
 transposeXsvSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:table-converter")
 pfconvSw := assets.importSoftware("@milaboratories/software-pframes-conv:main")
@@ -95,6 +96,11 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 		len(spec.axes)
 	)
 
+	storageFormat := spec.storageFormat
+	if is_undefined(storageFormat) {
+		storageFormat = "Binary"
+	}
+
 	xsvFileName := "file." + xsvType
 
 	ops := renderOps({ dataOnly: false, splitDataAndSpec: false, queue: execConstants.LIGHT_QUEUE, inputCache: undefined }, ops...)
@@ -159,6 +165,10 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 			run()
 
 		xsvFile = transposeXsv.getFile(transposedFileName)
+	}
+
+	if storageFormat == "Parquet" {
+		return xsvImportPt.importFileParquet(xsvFile, xsvType, spec, ops)
 	}
 
 	// spec without any metadata (for caching purposes)

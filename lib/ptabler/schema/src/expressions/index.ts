@@ -81,6 +81,8 @@ import type { StructFieldExpression } from './struct';
 import type {
   MatchesEcmaRegexExpression,
   ContainsFuzzyMatchExpression,
+  ReplaceEcmaRegexExpression,
+  ExtractEcmaRegexExpression,
 } from './pframes';
 
 /**
@@ -121,6 +123,8 @@ export type Expression =
   | StructFieldExpression
   | MatchesEcmaRegexExpression
   | ContainsFuzzyMatchExpression
+  | ReplaceEcmaRegexExpression
+  | ExtractEcmaRegexExpression
   | InSetExpression
   | AliasExpression
   | AllSelectorExpression

@@ -2,6 +2,7 @@ import polars as pl
 import polars_hash  # noqa: F401 - import for side effects
 import polars_pf  # noqa: F401 - import for side effects
 import polars_ds  # noqa: F401 - import for side effects
+from polars_pf import canonicalize, AxisId, AxisSpec
 from typing import Literal, Mapping
 
 
@@ -60,3 +61,5 @@ def toPolarsType(pType: PType) -> pl.DataType:
     else:
         raise ValueError(f"Unknown Polars type string '{pType}'.")
 
+def axis_ref(spec: AxisSpec) -> str:
+    return canonicalize(AxisId(name=spec.name, type=spec.type, domain=spec.domain)).decode('utf-8')

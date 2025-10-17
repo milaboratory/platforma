@@ -43,7 +43,7 @@ from .struct import (
     StructFieldExpression,
 )
 from .pframes import (
-    MatchesEcmaRegexExpression, ContainsFuzzyMatchExpression
+    MatchesEcmaRegexExpression, ContainsFuzzyMatchExpression, ReplaceEcmaRegexExpression, ExtractEcmaRegexExpression
 )
 
 # Define a Union type that includes all concrete expression types
@@ -142,6 +142,8 @@ AnyExpression = typing.Union[
     # PFrames Operations
     MatchesEcmaRegexExpression,
     ContainsFuzzyMatchExpression,
+    ReplaceEcmaRegexExpression,
+    ExtractEcmaRegexExpression,
 ]
 
 basics.AnyExpression = AnyExpression
@@ -235,4 +237,6 @@ __all__ = [
     "StructFieldExpression",
     "MatchesEcmaRegexExpression",
     "ContainsFuzzyMatchExpression",
+    "ReplaceEcmaRegexExpression",
+    "ExtractEcmaRegexExpression",
 ]

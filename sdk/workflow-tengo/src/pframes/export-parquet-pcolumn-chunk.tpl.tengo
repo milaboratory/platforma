@@ -1,0 +1,38 @@
+ll := import(":ll")
+pConstants := import(":pframes.constants")
+smart := import(":smart")
+json := import("json")
+file := import(":file")
+
+tpl := import(":tpl.light")
+
+tpl.awaitState("data", "InputsLocked")
+
+tpl.body(func(inputs) {
+    key := inputs.key
+    data := inputs.data
+
+    ll.assert(
+        data.checkResourceType(pConstants.RTYPE_PARQUET_CHUNK),
+        "expected resource %v for axis key %v, got %v",
+        pConstants.RTYPE_PARQUET_CHUNK,
+        key,
+        data.info().Type
+    )
+
+    // Important Hack:
+    // Here we add a flag to parquet metadata to prevent deduplication of parquetChunkResource with normal Blob and
+    // parquetChunkResource with downloadable Blob
+    chunkMetadata := data.getDataAsJson()
+    chunkMetadata.isDownloadable = true
+
+    parquetChunkResource := smart.structBuilder(data.info().Type, json.encode(chunkMetadata))
+
+    partDataFields := data.metaInputs()
+    parquetChunkResource.createMetaField("blob").set(file.exportFile(partDataFields["blob"]))
+    parquetChunkResource.createMetaField("mapping").set(partDataFields["mapping"])
+    
+	return {
+		result: parquetChunkResource.lockAndBuild()
+	}
+})

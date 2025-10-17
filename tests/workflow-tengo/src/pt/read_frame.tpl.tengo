@@ -42,7 +42,7 @@ self.body(func(inputs) {
     pf := builder.build()
 
     wf := pt.workflow().cacheInputs(times.second)
-    wf.frame(pf).select(projection...).save("file.csv")
+    wf.frame(pt.p.full(pf)).select(projection...).save("file.csv")
 	wfResult := wf.run()
 
     csv := wfResult.getFile("file.csv")

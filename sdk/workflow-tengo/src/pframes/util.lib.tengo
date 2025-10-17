@@ -177,7 +177,7 @@ PFCONV_IMPORT_CFG_SCHEMA := {
 	`columnNamePrefix,?`: `string`,
 	// Columns would be stored using specified format;
 	// default: Binary
-	`storageFormat,?` : `string,regex=Binary|Json`,
+	`storageFormat,?` : `string,regex=Binary|Json|Parquet`,
 	// Partitioning key length;
 	// default: 0
 	`partitionKeyLength,?` : `number`
@@ -468,7 +468,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 	vt := spec.valueType
 	ll.assert(vt == "Int" || vt == "Long" || vt == "Float" || vt == "Double" || vt == "String",
 		"Unsupported value type: ", vt, spec)
-	
+
     ll.assert(!is_undefined(data) && smart.isResource(data), "data must be a resource, got: %v", data)
 
 	ll.assert(!is_undefined(execBuilder), "execBuilder must be defined")
