@@ -51,22 +51,18 @@ dependencies:
   - python=3.10
 `);
 
-  tool.createEnvironment({
-    environmentPrefix: path.join(tempDir, 'my-env'),
-    specFile: envSpecPath,
-  });
+  const envPrefix = path.join(tempDir, 'my-env');
+  tool.createEnvironment({ environmentPrefix: envPrefix, specFile: envSpecPath });
 
   const exportSpecPath = path.join(tempDir, 'exported-env.yaml');
-
-  tool.exportEnvironment({
-    environmentPrefix: path.join(tempDir, 'my-env'),
-    outputFile: exportSpecPath,
-  });
+  tool.exportEnvironment({ environmentPrefix: envPrefix, outputFile: exportSpecPath });
 
   const exportedEnv = await fsp.readFile(exportSpecPath, 'utf-8');
   expect(exportedEnv).toContain('python');
   expect(exportedEnv).toContain('channels:');
   expect(exportedEnv).toContain('dependencies:');
+
+  tool.deleteEnvironment({ environmentPrefix: envPrefix });
 
   await fsp.rm(tempDir, { recursive: true });
 });

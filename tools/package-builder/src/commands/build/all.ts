@@ -50,7 +50,7 @@ export default class BuildAll extends Command {
         });
       }
 
-      await core.buildPackages({
+      await core.buildSoftwarePackages({
         ids: flags['package-id'],
         forceBuild: flags.force,
 

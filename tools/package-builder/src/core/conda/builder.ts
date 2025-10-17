@@ -7,6 +7,8 @@ import type winston from 'winston';
 
 import * as util from '../util';
 
+const defaultEnvironmentName = 'default';
+
 export interface BuilderOptions {
   mambaRootPrefix: string; // root directory for all conda data
   logger: winston.Logger;
@@ -21,45 +23,60 @@ export interface MicromambaDownloadOptions {
 }
 
 export interface EnvCreateOptions {
+  /** Environment name */
+  environmentName?: string;
   /** Prefix where to create the environment */
-  environmentPrefix: string;
+  environmentPrefix?: string;
   /** Path to the environment specification file */
   specFile: string;
 }
 
 export interface EnvExportOptions {
+  /** Name of the environment to export */
+  environmentName?: string;
   /** Prefix of the environment to export */
-  environmentPrefix: string;
+  environmentPrefix?: string;
+  /** Export in JSON format */
+  json?: boolean;
   /** Output file path for the exported specification */
-  outputFile: string;
+  outputFile?: string;
+}
+
+export interface EnvDeleteOptions {
+  /** Environment name */
+  environmentName?: string;
+  /** Prefix where to create the environment */
+  environmentPrefix?: string;
 }
 
 export class micromamba {
   constructor(
     private readonly logger: winston.Logger,
     private readonly rootPrefix: string,
-    private readonly micromambaPath: string = '',
+    private readonly binaryVersion: string = 'latest',
+    private readonly binaryPath: string = '',
   ) {
-    if (!micromambaPath) {
-      this.micromambaPath = path.join(rootPrefix, 'micromamba');
+    if (!binaryPath) {
+      this.binaryPath = path.join(rootPrefix, 'micromamba');
     }
   }
 
   public async downloadBinary(): Promise<void> {
-    if (fs.existsSync(this.micromambaPath)) {
+    if (fs.existsSync(this.binaryPath)) {
       try {
-        await fsp.access(this.micromambaPath, fs.constants.X_OK);
-        this.logger.debug(`micromamba binary '${this.micromambaPath}' exists and executable. Download was skipped`);
+        await fsp.access(this.binaryPath, fs.constants.X_OK);
+        this.logger.debug(`micromamba binary '${this.binaryPath}' exists and executable. Download was skipped`);
         return;
       } catch {
-        this.logger.debug(`file exists but is not executable: ${this.micromambaPath}. Fixing permissions`);
-        await fsp.chmod(this.micromambaPath, 0o755);
+        this.logger.debug(`file exists but is not executable: ${this.binaryPath}. Fixing permissions`);
+        await fsp.chmod(this.binaryPath, 0o755);
       }
     }
 
     await downloadMicromamba(this.logger, {
       platform: util.currentPlatform(),
-      outputPath: this.micromambaPath,
+      outputPath: this.binaryPath,
+      version: this.binaryVersion,
     });
   }
 
@@ -68,35 +85,87 @@ export class micromamba {
   }
 
   public createEnvironment(opts: EnvCreateOptions): void {
-    const { environmentPrefix, specFile } = opts;
-    this.execSync(['env', 'create', '--prefix', environmentPrefix, '--file', specFile, '--yes'], {
+    const { environmentName, environmentPrefix, specFile } = opts;
+
+    const args = ['env', 'create', '--file', specFile, '--yes'];
+    if (environmentPrefix) {
+      args.push('--prefix', environmentPrefix);
+    } else if (environmentName) {
+      args.push('--name', environmentName);
+    } else {
+      args.push('--name', defaultEnvironmentName);
+    }
+
+    this.execSync(args, {
       stdio: 'inherit',
     });
   }
 
-  public exportEnvironment(opts: EnvExportOptions): void {
-    const { environmentPrefix, outputFile } = opts;
+  public exportEnvironment(opts: { environmentName?: string; environmentPrefix?: string; json?: boolean }): string;
+  public exportEnvironment(opts: { environmentName?: string; environmentPrefix?: string; json?: boolean; outputFile: string }): void;
+  public exportEnvironment(opts: EnvExportOptions): void | string {
+    const { environmentName, environmentPrefix, json, outputFile } = opts;
 
-    const file = fs.openSync(outputFile, 'w');
+    const file = outputFile ? fs.openSync(outputFile, 'w') : 'pipe';
+
+    const args = ['env', 'export'];
+    if (environmentPrefix) {
+      args.push('--prefix', environmentPrefix);
+    } else if (environmentName) {
+      args.push('--name', environmentName);
+    } else {
+      args.push('--name', defaultEnvironmentName);
+    }
+    if (json) {
+      args.push('--json');
+    }
 
     try {
-      this.execSync(['env', 'export', '--prefix', environmentPrefix], {
+      const envInfo = this.execSync(args, {
         stdio: ['inherit', file, 'inherit'],
       });
+
+      if (!outputFile) {
+        return envInfo;
+      }
     } catch (error) {
-      fs.closeSync(file);
-      fs.rmSync(outputFile, { force: true });
+      if (file !== 'pipe') {
+        fs.closeSync(file);
+      }
+      if (outputFile) {
+        fs.rmSync(outputFile, { force: true });
+      }
       throw error;
     }
 
-    fs.closeSync(file);
+    if (file !== 'pipe') {
+      fs.closeSync(file);
+    }
+  }
+
+  public deleteEnvironment(opts: EnvDeleteOptions): void {
+    const { environmentName, environmentPrefix } = opts;
+
+    if (environmentPrefix) {
+      fs.rmSync(environmentPrefix, { recursive: true });
+      return;
+    }
+
+    const result = this.exportEnvironment({ environmentName, environmentPrefix });
+    const envInfo = JSON.parse(result ?? '{}') as Record<string, unknown>;
+
+    if (envInfo.prefix) {
+      fs.rmSync(envInfo.prefix as string, { recursive: true });
+    } else {
+      throw new Error('Failed to delete environment: cannot get environment location from micromamba tool');
+    }
   }
 
   // FIXME: IMHO better to have async exec with promises. I just am not skilled enough to implement it fast. :(
   private execSync(args: string[], opts?: SpawnSyncOptions): string | void {
-    this.logger.debug(`Executing micromamba: ${this.micromambaPath} ${args.join(' ')}`);
+    this.logger.debug(`Executing micromamba: ${this.binaryPath} ${args.join(' ')}`);
 
-    const result = spawnSync(this.micromambaPath, args, {
+    const result = spawnSync(this.binaryPath, args, {
       encoding: 'utf8',
       stdio: 'pipe',
       ...opts,

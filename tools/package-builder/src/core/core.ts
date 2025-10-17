@@ -1,10 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import type winston from 'winston';
+
+import * as defaults from '../defaults';
 import { PackageInfo } from './package-info';
 import * as artifacts from './schemas/artifacts';
 import type * as entrypoint from './schemas/entrypoints';
+import { micromamba } from './conda/builder';
 import {
   SwJsonRenderer,
   readBuiltArtifactInfo,
@@ -186,7 +188,7 @@ export class Core {
     }
   }
 
-  public async buildPackages(options?: {
+  public async buildSoftwarePackages(options?: {
     ids?: string[];
     forceBuild?: boolean;
 
@@ -211,15 +213,15 @@ export class Core {
       }
 
       if (artifacts.isCrossPlatform(artifact.type)) {
-        await this.buildPackage(artifact, util.currentPlatform(), options);
+        await this.buildSoftwarePackage(artifact, util.currentPlatform(), options);
       } else if (this.targetPlatform) {
-        await this.buildPackage(artifact, this.targetPlatform, options);
+        await this.buildSoftwarePackage(artifact, this.targetPlatform, options);
       } else if (this.allPlatforms) {
         for (const platform of this.pkgInfo.artifactPlatforms(artifact)) {
-          await this.buildPackage(artifact, platform, options);
+          await this.buildSoftwarePackage(artifact, platform, options);
         }
       } else {
-        await this.buildPackage(artifact, util.currentPlatform(), options);
+        await this.buildSoftwarePackage(artifact, util.currentPlatform(), options);
       }
     }
   }
@@ -231,7 +233,7 @@ export class Core {
   // package archive can be uploaded to the registry after build, when location is content-addressable
   //  (when unique content of archive produces unique location, i.e. hash of archive)
   // package location files are used to build entrypoint descriptor (sw.json file)
-  public async buildPackage(
+  public async buildSoftwarePackage(
     artifact: artifacts.withId<artifacts.anyType>,
     platform: util.PlatformType,
     options?: {
@@ -262,6 +264,12 @@ export class Core {
       return;
     }
 
+    const artType = artifact.type;
+    switch (artType) {
+      case 'conda':
+        await this.buildCondaPackage({ artifact, platform, contentRoot });
+    }
+
     if (this.buildMode === 'dev-local') {
       this.logger.info(
         `  no need to build software archive in '${this.buildMode}' mode: archive build was skipped`,
@@ -270,7 +278,6 @@ export class Core {
     }
 
     const archivePath = options?.archivePath ?? this.binArchivePath(artifact, os, arch);
-
     await this.createPackageArchive('software', artifact, archivePath, contentRoot, os, arch);
   }
 
@@ -336,6 +343,31 @@ localTag: '${localTag}'
     this.logger.info(`Docker image is built:
   tag: '${dstTag}'
   location file: '${artInfoPath}'`);
+  }
+
+  private async buildCondaPackage(opts: {
+    artifact: artifacts.withId<artifacts.condaType>;
+    platform: util.PlatformType;
+    contentRoot: string;
+  }) {
+    const { artifact, platform, contentRoot } = opts;
+
+    if (platform !== util.currentPlatform()) {
+      this.logger.warn(
+        `Conda package cannot be built cross-platform:\n`
+        + `  current platform is '${util.currentPlatform()}', requested platform is '${platform}'\n`
+        + `Conda environment automatic build was skipped`,
+      );
+      return;
+    }
+
+    const micromambaRoot = path.join(contentRoot, defaults.CONDA_DATA_LOCATION);
+    const m = new micromamba(this.logger, micromambaRoot, artifact['micromamba-version']);
+
+    await m.downloadBinary();
+    m.createEnvironment({ specFile: artifact.spec });
+    m.exportEnvironment({ outputFile: path.join(contentRoot, defaults.CONDA_FROEZEN_ENV_SPEC_FILE) });
+    m.deleteEnvironment({});
   }
 
   private async createPackageArchive(
@@ -457,15 +489,11 @@ localTag: '${localTag}'
       );
     }
 
-    const signatureSuffixes = this.findSignatures(archivePath);
-
     this.logger.info(
       `Publishing package '${artifactName}' for platform '${platform}' into registry '${registry.name}'`,
     );
     this.logger.debug(`  registry storage URL: '${storageURL}'`);
     this.logger.debug(`  archive to publish: '${archivePath}'`);
-    if (signatureSuffixes.length > 0)
-      this.logger.debug(`  detected signatures: ${signatureSuffixes.join(', ')}`);
     this.logger.debug(`  target package name: '${dstName}'`);
 
     const s = await storage.initByUrl(storageURL, this.pkgInfo.packageRoot);
@@ -493,16 +521,6 @@ localTag: '${localTag}'
         return;
       }),
     );
-
-    for (const sig of signatureSuffixes) {
-      const signature = fs.createReadStream(`${archivePath}${sig}`);
-      uploads.push(
-        s.putFile(`${dstName}${sig}`, signature).finally(() => {
-          signature.close();
-          return;
-        }),
-      );
-    }
 
     return Promise.all(uploads).then(() => {
       this.logger.info(`Package '${artifactName}' was published to '${registry.name}:${dstName}'`);
@@ -557,105 +575,6 @@ localTag: '${localTag}'
     }
 
     docker.push(pushTag);
-  }
-
-  public signPackages(options?: {
-    ids?: string[];
-
-    archivePath?: string;
-    signCommand?: string;
-  }) {
-    const packagesToSign = options?.ids ?? Array.from(this.buildablePackages.keys());
-
-    if (packagesToSign.length > 1 && options?.archivePath) {
-      this.logger.warn(
-        'Call of \'sign\' action for several packages targeting single package archive.',
-      );
-    }
-
-    const uploads: Promise<void>[] = [];
-    for (const pkgID of packagesToSign) {
-      const pkg = this.getArtifact(pkgID);
-
-      if (artifacts.isCrossPlatform(pkg.type)) {
-        this.signPackage(pkg, util.currentPlatform(), options);
-      } else if (this.targetPlatform) {
-        this.signPackage(pkg, this.targetPlatform, options);
-      } else if (this.allPlatforms) {
-        for (const platform of this.pkgInfo.artifactPlatforms(pkg)) {
-          this.signPackage(pkg, platform, options);
-        }
-      } else {
-        this.signPackage(pkg, util.currentPlatform(), options);
-      }
-    }
-
-    return Promise.all(uploads);
-  }
-
-  private signPackage(
-    artifact: artifacts.withId<artifacts.anyType>,
-    platform: util.PlatformType,
-    options?: {
-      archivePath?: string;
-      signCommand?: string;
-    },
-  ) {
-    if (!options?.signCommand) {
-      throw util.CLIError(
-        'current version of pl-package-builder supports only package signature with external utility. Provide \'sign command\' option to sign package',
-      );
-    }
-    const signCommand: unknown = JSON.parse(options.signCommand);
-    const commandFormatIsValid
-      = Array.isArray(signCommand) && signCommand.every((item) => typeof item === 'string');
-    if (!commandFormatIsValid) {
-      throw util.CLIError(
-        'sign command must be valid JSON array with command and arguments (["cmd", "arg", "arg", "..."])',
-      );
-    }
-
-    const artifactName = this.pkgInfo.artifactName(artifact);
-    const { os, arch } = util.splitPlatform(platform);
-
-    const archivePath = options?.archivePath ?? this.archivePath(artifact, os, arch);
-    const toExecute = signCommand.map((v: string) => v.replaceAll('{pkg}', archivePath));
-
-    this.logger.info(`Signing package '${artifactName}' for platform '${platform}'...`);
-    this.logger.debug(`  archive: '${archivePath}'`);
-    this.logger.debug(`  sign command: ${JSON.stringify(toExecute)}`);
-
-    const result = spawnSync(toExecute[0], toExecute.slice(1), {
-      stdio: 'inherit',
-      cwd: this.pkgInfo.packageRoot,
-    });
-    if (result.error) {
-      throw result.error;
-    }
-    if (result.status !== 0) {
-      throw util.CLIError(`${JSON.stringify(toExecute)} failed with non-zero exit code`);
-    }
-  }
-
-  /**
-   * Get list of actual signature suffiexes existing for given archive
-   */
-  private findSignatures(archivePath: string): string[] {
-    const signSuffixes: string[] = ['.sig', '.p7s'];
-    const dirName = path.dirname(archivePath);
-    const archiveName = path.basename(archivePath);
-
-    const files = fs.readdirSync(dirName);
-
-    const foundSuffixes: string[] = [];
-    files.map((fileName: string) => {
-      for (const suffix of signSuffixes) {
-        if (fileName === `${archiveName}${suffix}`) {
-          foundSuffixes.push(suffix);
-        }
-      }
-    });
-    return foundSuffixes;
   }
 
   private get renderer(): SwJsonRenderer {
