@@ -5,7 +5,6 @@ import * as testArtifacts from './test-artifacts';
 
 const parseJSON = <T extends z.ZodTypeAny>(data: string, schema: T): z.infer<T> => {
   const parsedData: unknown = JSON.parse(data);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return schema.parse(parsedData);
 };
 
