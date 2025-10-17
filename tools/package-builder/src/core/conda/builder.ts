@@ -291,7 +291,10 @@ async function downloadFile(logger: winston.Logger, url: string, outputPath: str
   const maxAttempts = 3;
 
   let redirCount = 0;
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  let attempt = 0;
+  for (; attempt <= maxAttempts;) {
+    attempt++;
+
     logger.debug(`Trying to download: ${url}`);
     try {
       const requestResult = await undici.request(url, {
@@ -314,7 +317,6 @@ async function downloadFile(logger: winston.Logger, url: string, outputPath: str
 
       logger.debug(`Processing redirect. New location: ${response.location}`);
       redirCount++;
-      attempt--;
       url = response.location;
       continue;
     }
@@ -323,7 +325,7 @@ async function downloadFile(logger: winston.Logger, url: string, outputPath: str
       break;
     }
 
-    logger.error(`Failed to download: ${response.statusCode}, attempt ${attempt + 1}`);
+    logger.error(`Failed to download: ${response.statusCode}, attempt ${attempt}`);
   }
 
   if (response!.statusCode !== 200) {

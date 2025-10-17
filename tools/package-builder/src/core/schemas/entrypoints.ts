@@ -75,10 +75,10 @@ export const entrypointSchema = z
   .refine(
     (data) => {
       const n = util.toInt(data.reference)
-        + util.toInt(data.asset)
+        + util.toInt(data.asset && !data.docker) // no docker for assets
         + util.toInt(data.binary || (data.binary && data.docker)) // allow both docker and binary to be set in single entrypoint
         + util.toInt(data.conda || (data.conda && data.docker)) // allow both docker and conda to be set in single entrypoint
-        + util.toInt(data.environment);
+        + util.toInt(data.environment && !data.docker); // no docker for environments
 
       if (n === 0) {
         return Boolean(data.docker); // allow separate docker entrypoints (without binary/conda/...)
