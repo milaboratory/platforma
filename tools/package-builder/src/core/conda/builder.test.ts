@@ -46,9 +46,9 @@ test('cli wrapper full cycle', { timeout: 90_000 }, async (): Promise<void> => {
   await fsp.writeFile(envSpecPath, `
 name: my-env
 channels:
-  - defaults
+  - conda-forge
 dependencies:
-  - python=3.10
+  - python=3.12
 `);
 
   const envPrefix = path.join(tempDir, 'my-env');

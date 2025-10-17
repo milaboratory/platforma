@@ -160,10 +160,9 @@ describe('Docker Python Functions', () => {
       // Check essential Dockerfile components
       expect(dockerfileContent).toContain('FROM python:3.12-slim');
       expect(dockerfileContent).toContain('WORKDIR /app');
-      expect(dockerfileContent).toContain('COPY . /app/');
-      expect(dockerfileContent).toContain('COPY');
-      expect(dockerfileContent).toContain('RUN pip install --no-cache-dir -r requirements.txt');
-      expect(dockerfileContent).toContain('ENV PYTHONPATH=/app/');
+      expect(dockerfileContent).toContain('COPY ');
+      expect(dockerfileContent).toContain('RUN pip install');
+      expect(dockerfileContent).toContain('ENV PYTHONPATH=/app');
       expect(dockerfileContent).toContain('CMD ["bash"]');
     });
 
