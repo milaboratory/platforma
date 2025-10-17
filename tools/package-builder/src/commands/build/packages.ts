@@ -2,6 +2,7 @@ import { Command } from '@oclif/core';
 import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
+import * as envs from '../../core/envs';
 
 export default class Packages extends Command {
   static override description
@@ -14,6 +15,7 @@ export default class Packages extends Command {
     ...cmdOpts.BuildFlags,
     ...cmdOpts.PlatformFlags,
     ...cmdOpts.DockerFlags,
+    ...cmdOpts.CondaFlags,
 
     ...cmdOpts.VersionFlag,
     ...cmdOpts.ArchiveFlag,
@@ -41,6 +43,9 @@ export default class Packages extends Command {
       archivePath: flags.archive,
       contentRoot: flags['content-root'],
       skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
+
+      // Automated builds settings
+      condaBuild: cmdOpts.shouldDoAction(envs.isCI(), flags['conda-build'], flags['conda-no-build']),
     });
 
     core.buildDescriptors({

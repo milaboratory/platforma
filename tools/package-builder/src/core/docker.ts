@@ -62,21 +62,6 @@ export function remoteImageExists(tag: string): boolean {
   return true;
 }
 
-export function shouldDoAction(isCI: boolean, doFlag: boolean, noDoFlag: boolean): boolean {
-  if (noDoFlag) {
-    // Action was deliberately disabled by CLI flag or env variable
-    return false;
-  }
-  if (doFlag) {
-    // Action was deliberately enabled by CLI flag or env variable
-    return true;
-  }
-
-  // Build docker images in CI by default
-  // Do not build docker images automatically outside CI for now.
-  return isCI;
-}
-
 export function build(context: string, dockerfile: string, tag: string, softwarePackage: string, softwareVersion: string | undefined) {
   const result = spawnSync('docker', [
     'build', '-t', tag, context, '-f', dockerfile,

@@ -197,6 +197,9 @@ export class Core {
     archivePath?: string;
     contentRoot?: string;
     skipIfEmpty?: boolean;
+
+    // Automated builds settings
+    condaBuild?: boolean;
   }) {
     const packagesToBuild = options?.ids ?? Array.from(this.buildablePackages.keys());
 
@@ -242,6 +245,9 @@ export class Core {
       archivePath?: string;
       contentRoot?: string;
       skipIfEmpty?: boolean;
+
+      // Automated builds settings
+      condaBuild?: boolean;
     },
   ) {
     this.logger.info(`Building software package '${artifact.id}' for platform '${platform}'...`);
@@ -268,8 +274,14 @@ export class Core {
 
     const artType = artifact.type;
     switch (artType) {
-      case 'conda':
-        await this.buildCondaPackage({ artifact, platform, contentRoot });
+      case 'conda': {
+        if (options?.condaBuild === undefined || options.condaBuild) { // build by default, skip if explicitly disabled
+          await this.buildCondaPackage({ artifact, platform, contentRoot });
+        } else {
+          this.logger.debug(`Conda environment build was skipped.`);
+        }
+        break;
+      }
     }
 
     if (this.buildMode === 'dev-local') {
