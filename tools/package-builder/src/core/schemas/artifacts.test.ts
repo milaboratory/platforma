@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import type { z } from 'zod';
+import type { z } from 'zod/v4';
 import * as artifacts from './artifacts';
 import * as testArtifacts from './test-artifacts';
 
