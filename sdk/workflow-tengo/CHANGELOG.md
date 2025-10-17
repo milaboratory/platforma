@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.3.6
+
+### Patch Changes
+
+- 60083a1: Parquet write
+- Updated dependencies [60083a1]
+  - @platforma-open/milaboratories.software-ptabler@1.12.7
+
 ## 5.3.5
 
 ### Patch Changes
