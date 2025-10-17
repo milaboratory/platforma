@@ -6,7 +6,6 @@ smart := import(":smart")
 exec := import(":exec")
 json := import("json")
 text := import("text")
-pSpec := import(":pframes.spec")
 slices := import(":slices")
 execConstants := import(":exec.constants")
 pframesBuilder := import(":pframes.builder")
@@ -58,10 +57,6 @@ _newDataFrame := undefined
 _newDataFrameGroupBy := undefined
 
 workflowCounter := 0
-
-_isStepCol := func(obj) {
-	return ll.isMap(obj) && is_string(obj.name) && ll.isMap(obj.expression)
-}
 
 _validateColumn := func(name, columnStruct) {
 	ll.assert(is_string(name), "column name must be a string")
@@ -654,21 +649,27 @@ workflow := func() {
 			options = len(options) > 0 && is_map(options[0]) ? options[0] : {}
 			util.validateParamsForFrameFromColumnBundle(options)
 
+			columns := is_array(options.columns) ? options.columns : bundle.getColumnKeys()
+			axes := is_array(options.axes) ? options.axes : slices.map(
+				bundle.getAxesSpec(columns...),
+				func(spec) { return { column: pframesSpec.getAxisId(spec), spec: spec }
+			})
+
 			entries := []
 			aliases := []
 			for axis in options.axes {
 				aliases = append(aliases, exp.sc.axis(axis.spec).alias(axis.column))
 			}
-			for column in options.columns {
+			for column in columns {
 				decoded := json.decode(column)
 				if (is_undefined(decoded.axisFilters)) {
-					aliases = append(aliases, exp.col(decoded.name))
-					entry := p.column(decoded.name, bundle.getColumn(decoded))
+					aliases = append(aliases, exp.col(column))
+					entry := p.column(column, bundle.getColumn(decoded))
 					entries = append(entries, entry)
 				} else {
-					aliases = append(aliases, exp.col(decoded.source.name))
+					aliases = append(aliases, exp.col(column))
 					entry := p.slicedColumn(
-						decoded.source.name,
+						column,
 						bundle.getColumn(decoded.source),
 						slices.map(decoded.axisFilters, func(axisFilter) {
 							return {
@@ -989,8 +990,6 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		for item in items {
 			if exp._isExpression(item) {
 				cols = append(cols, item._getExpression(ctx))
-			} else if _isStepCol(item) {
-				cols = append(cols, item)
 			} else {
 				ll.panic("Invalid argument to " + methodName + ": Expected an expression/column object, got %v", item)
 			}
@@ -1008,8 +1007,6 @@ _newDataFrame = func(parentWorkflow, dfName) {
 				cols = append(cols, colExpr._getExpression(ctx))
 			} else if exp._isExpression(item) {
 				cols = append(cols, item._getExpression(ctx))
-			} else if _isStepCol(item) {
-				cols = append(cols, item)
 			} else {
 				ll.panic("Invalid argument to " + methodName + ": Expected an expression/column object or string column name, got %v", item)
 			}
@@ -1108,7 +1105,6 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *   )
 		 */
 		withColumns: func(...expressions) {
-			stepCols := _mapExprsToStepCols(expressions, "withColumns")
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
 			parentWorkflow._addStep(func(ctx) {
 				stepCols := _mapExprsToStepCols(expressions, "withColumns", ctx)

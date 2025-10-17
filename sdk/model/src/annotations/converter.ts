@@ -21,7 +21,8 @@ export function convertFilterSpecsToExpressionSpecs(annotationsUI: FilterSpecUi[
       return false;
     })
     .map((step): ExpressionSpec => ({
+      type: 'alias',
       name: step.label.trim(),
-      expression: when(convertFilterUiToExpressionImpl(step.filter)).then(true).otherwise(false).toJSON(),
+      value: when(convertFilterUiToExpressionImpl(step.filter)).then(true).otherwise(false).toJSON(),
     }));
 }

@@ -36,7 +36,7 @@ computeAnnotations := func(inputs) {
 	resultColumnSpec := util.prepareResultColumnSpec(inputs)
 	shouldComputeFilters := is_bool(inputs.shouldComputeFilters) ? inputs.shouldComputeFilters : false
 	
-	columnsFromExpressions := util.extractColumnsFromExpressions(slices.map(steps, func(step) { return step.expression }))
+	columnsFromExpressions := util.extractColumnsFromExpressions(slices.map(steps, func(step) { return step.value }))
 	additionalColumns := is_array(inputs.additionalColumns) ? inputs.additionalColumns : []
 	columns := columnsFromExpressions + additionalColumns
 	

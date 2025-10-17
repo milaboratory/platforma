@@ -23,12 +23,14 @@ self.body(func(inputs) {
 	finalExpressions := slices.map(steps, func(step) {
         idx += 1
 		return {
+			type: step.type,
 			name: util.encodeColumnName(step.name, idx),
-			expression: step.expression
+			value: step.value
 		}
 	})
-
+	finalRawExpressions := slices.map(finalExpressions, func(step) { return pt.rawExp(step) })
 	columnNames := slices.map(finalExpressions, func(spec) { return spec.name })
+
 	filterColumnNames := shouldComputeFilters ? columnNames : [];
 	columnNamesReversed := slices.reverse(columnNames)
 	resultAxesSpecName := slices.map(resultColumnSpec.axesSpec, func(axis) { return pSpec.getAxisId(axis) })
@@ -43,7 +45,7 @@ self.body(func(inputs) {
 	wf := pt.workflow()
 
 	dfData := wf.frameFromColumnBundle(columnBundle, { columns: columns }).
-		withColumns(finalExpressions...).
+		withColumns(finalRawExpressions...).
 		withColumns(annotationColumnExpr)
 
 	dfData.

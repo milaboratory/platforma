@@ -7,9 +7,10 @@ export type AnnotationSpec<T extends ExpressionSpec = ExpressionSpec> = {
 };
 
 export type ExpressionSpec<T extends Expression = Expression> = {
+  type: 'alias';
   name: string;
-  expression: T;
-};
+  value: T;
+}; // | OtherExpressionSpecTypesInFuture;
 
 export type AnnotationSpecUi<T extends FilterSpecUi = FilterSpecUi> = {
   title: string;
