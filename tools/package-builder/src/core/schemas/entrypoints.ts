@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import * as artifacts from './artifacts';
 import * as util from '../util';
 
@@ -21,12 +21,17 @@ export const referenceSchema = z
     'entrypoint reference must contain full package name and path to the file inside',
   );
 
-const orRef = <T extends z.ZodTypeAny>(schema: T) => z.union([z.string(), schema]);
+const orRef = <T extends z.ZodTypeAny>(schema: T) =>
+  z.union([
+    z.string('not a reference to artifact')
+      .describe('reference to artifact in "artifacts" section'),
+    schema,
+  ]);
 
 // Common options for all software packages: everything that can be run on backend side.
 export const softwareOptionsSchema = z.strictObject({
   cmd: z
-    .array(z.string())
+    .array(z.string('command artument must be a string'))
     .describe(
       'command to run for this entrypoint. This command will be appended by <args> set inside workflow',
     ),

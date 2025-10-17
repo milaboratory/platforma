@@ -45,17 +45,28 @@ const archiveRulesSchema = z.object({
   name: z.string().optional(),
   version: z.string().optional(),
 
-  root: z.string(),
+  root: z.string('package archive content directory is required'),
   roots: z
-    .record(
+    .partialRecord(
       z.enum(
-        util.AllPlatforms as [
-          (typeof util.AllPlatforms)[number],
-          ...(typeof util.AllPlatforms)[number][],
-        ],
+        util.AllPlatforms as [(typeof util.AllPlatforms)[number], ...(typeof util.AllPlatforms)[number][]],
       ),
-      z.string().min(1),
+      z.string('path to package archive content directory cannot be empty').min(1),
+      {
+        error: (iss) => {
+          if (iss.input === undefined) {
+            return 'list of supported platforms is required: { <platform>: <dir> }\n'
+              + 'supported platforms:\n  ' + util.AllPlatforms.join('\n  ');
+          }
+          return null;
+        },
+      },
     )
+    .refine(
+      (val) => Object.keys(val).length > 0, {
+        message: 'specify at least one platform supported by this software in format: { <platform>: <dir> }\n'
+          + 'supported platforms:\n  ' + util.AllPlatforms.join('\n  '),
+      })
     .describe(
       'please, provide settings only for supported platforms: ' + util.AllPlatforms.join(', '),
     ),
