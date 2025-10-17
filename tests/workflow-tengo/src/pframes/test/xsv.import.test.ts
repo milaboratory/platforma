@@ -7,6 +7,7 @@ import { getTestTimeout } from '@milaboratories/test-helpers';
 import { assert, vi } from 'vitest';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type { ComputableCtx } from '@milaboratories/computable';
+import dedent from 'dedent';
 
 const TIMEOUT = getTestTimeout(60_000);
 
@@ -15,10 +16,12 @@ vi.setConfig({
 });
 
 // dummy csv data
-const csvData = `ax1,ax2,ax3,col1,col2
-A1,B1,C1,X1,Y1
-A2,B2,C2,X2,Y2
-A3,B2,C3,X3,Y3`;
+const csvData = dedent`
+  ax1,ax2,ax3,col1,col2
+  A1,B1,C1,X1,Y1
+  A2,B2,C2,X2,Y2
+  A3,B2,C3,X3,Y3
+`;
 
 // map xsv header -> xsv column content
 const csvDataMap = (() => {
