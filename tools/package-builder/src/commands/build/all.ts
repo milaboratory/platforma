@@ -59,7 +59,7 @@ export default class BuildAll extends Command {
         skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
 
         // Automated builds settings
-        condaBuild: cmdOpts.shouldDoAction(envs.isCI(), flags['conda-build'], flags['conda-no-build']),
+        condaBuild: cmdOpts.shouldDoAction(true, flags['conda-build'], flags['conda-no-build']),
       });
 
       core.buildDescriptors({
