@@ -3148,6 +3148,9 @@ importers:
       tar:
         specifier: 'catalog:'
         version: 7.4.3
+      undici:
+        specifier: 'catalog:'
+        version: 7.16.0
       winston:
         specifier: 'catalog:'
         version: 3.17.0

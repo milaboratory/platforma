@@ -57,13 +57,12 @@ export const CondaArtifact = `{
 }`;
 
 export const CondaArtifactWithType = merge(CondaArtifact, { type: 'conda' });
-export const CondaArtifactWithSpec = merge(
-  CondaArtifact,
-  {
-    type: 'conda',
-    spec: './some-specification.yaml',
-  },
-);
+export const CondaArtifactWithSpec = merge(CondaArtifactWithType, {
+  spec: './some-specification.yaml',
+});
+export const CondaArtifactWithMicromambaVersion = merge(CondaArtifactWithSpec, {
+  'micromamba-version': '2.3.2-0',
+});
 
 export const PythonArtifact = `{
   "type": "python",
@@ -306,7 +305,7 @@ export const CondaEntrypointWithReference = `{
 
 export const CondaEntrypointWithDocker = `{
   "conda": {
-    "artifact": ${CondaArtifact},
+    "artifact": ${CondaArtifactWithMicromambaVersion},
     "cmd": ["ls"]
   },
   "docker": {

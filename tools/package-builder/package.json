@@ -32,6 +32,7 @@
     "archiver": "^7.0.1",
     "canonicalize": "catalog:",
     "tar": "catalog:",
+    "undici": "catalog:",
     "winston": "catalog:",
     "yaml": "catalog:",
     "zod": "4.1.12"

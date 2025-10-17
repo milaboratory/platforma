@@ -11,7 +11,7 @@ export const packageJsonName = 'package.json';
 export const softwareConfigName = 'package.json';
 
 export function assertNever(_a: never) {
-  throw new Error('code logic error: assertNever() call');
+  throw new Error(`code logic error: assertNever() call for ${JSON.stringify(_a)}`);
 }
 
 export function trimPrefix(str: string, prefix: string): string {
