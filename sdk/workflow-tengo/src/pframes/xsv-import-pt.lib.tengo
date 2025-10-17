@@ -1,0 +1,220 @@
+ll := import(":ll")
+validation := import(":validation")
+objects := import(":objects")
+util := import(":pframes.util")
+pt := import(":pt")
+execConstants := import(":exec.constants")
+maps := import(":maps")
+slices := import(":slices")
+smart := import(":smart")
+
+getColumnSpec := func(axesSpec, col) {
+	spec := maps.deepMerge(col.spec, {
+		kind: "PColumn",
+		axesSpec: axesSpec
+	})
+	return objects.deleteUndefined(spec)
+}
+
+applyPreProcessSteps := func(colExpr, preProcessSteps) {
+	result := colExpr
+	if !is_undefined(preProcessSteps) {
+		for step in preProcessSteps {
+			if step.type == "regexpExtract" {
+				result = result.extractEcmaRegex(step.pattern)
+			} else if step.type == "regexpReplace" {
+				result = result.replaceEcmaRegex(step.pattern, step.replacement)
+			} else {
+				ll.panic("unknown preProcess step type: %v", step.type)
+			}
+		}
+	}
+	return result
+}
+
+applyNaRegex := func(colExpr, naRegex, colType) {
+	if is_undefined(naRegex) {
+		return colExpr
+	}
+	return pt.when(colExpr.matchesEcmaRegex(naRegex)).
+		then(pt.lit(undefined).cast(colType)).
+		otherwise(colExpr)
+}
+
+/**
+ * Import XSV file into parquet-based PFrame using PT workflow
+ *
+ * @param xsvFile: resource - XSV file resource
+ * @param xsvType: string - "csv" or "tsv"
+ * @param spec: object - import specification conforming to PFCONV_IMPORT_CFG_SCHEMA
+ * @param ops: object - optional parameters
+ *               {
+ *                 dataOnly: bool - (optional) return only data resources without specs
+ *                 splitDataAndSpec: bool - (optional) return as { data, spec } instead of flat map
+ *                 cpu: number - (optional) number of cores requested for command
+ *                 mem: number | string - (optional) amount of RAM in bytes or string with size suffix
+ *                 queue: string - (optional) the name of the queue
+ *                 inputCache: duration - (optional) cache duration for execution inputs
+ *               }
+ * @return map: reference - a reference to a map resource storing imported data
+ */
+importFileParquet := func(xsvFile, xsvType, spec, ops) {
+	ll.assert(xsvType == "csv" || xsvType == "tsv", "unknown xsv type: %v", xsvType)
+
+	validation.assertType(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
+	// Index can easily be supported by adding pl.int_range like in the examile
+	// <https://docs.pola.rs/api/python/stable/reference/dataframe/api/polars.DataFrame.with_row_index.html#polars.DataFrame.with_row_index>
+	ll.assert(is_undefined(spec.index), "index axis is not supported with Parquet storage format")
+	// Artificial columns can be supported by adding a new column with NA values
+	ll.assert(is_undefined(spec.allowArtificialColumns), "allowArtificialColumns are not supported with Parquet storage format")
+	// Calling site effectively ignores separator option in favor of xsvType, so we need to warn user here
+	if !is_undefined(spec.separator) {
+		expectedSeparator := ","
+		if xsvType == "tsv" {
+			expectedSeparator = "\t"
+		}
+		ll.assert(spec.separator == expectedSeparator,
+			"separator does not match xsvType %v, expected '%v', got '%v'",
+			xsvType, expectedSeparator, spec.separator)
+	}
+
+	wf := pt.workflow()
+	if !is_undefined(ops.queue) {
+		if ops.queue == execConstants.HEAVY_QUEUE {
+			wf.inHeavyQueue()
+		} else if ops.queue == execConstants.MEDIUM_QUEUE {
+			wf.inMediumQueue()
+		} else if ops.queue == execConstants.LIGHT_QUEUE {
+			wf.inLightQueue()
+		} else if ops.queue == execConstants.UI_TASKS_QUEUE {
+			wf.inUiQueue()
+		} else {
+			ll.panic("Unsupported queue: %v", ops.queue)
+		}
+	}
+	if !is_undefined(ops.cpu) {
+		wf.cpu(ops.cpu)
+	}
+	if !is_undefined(ops.mem) {
+		wf.mem(ops.mem)
+	}
+	if !is_undefined(ops.inputCache) {
+		wf.cacheInputs(ops.inputCache)
+	}
+
+	df := wf.frame(xsvFile, {
+		xsvType: xsvType,
+		ignoreErrors: spec.skipEmptyLines == true,
+		commentPrefix: spec.commentLinePrefix
+	})
+
+	allColumns := []
+	for ax in spec.axes {
+		allColumns = append(allColumns, ax.column)
+	}
+	for col in spec.columns {
+		allColumns = append(allColumns, col.column)
+	}
+	df = df.select(allColumns...)
+
+	filterConditions := []
+	for ax in spec.axes {
+		if !is_undefined(ax.filterOutRegex) {
+			filterConditions = append(filterConditions, pt.col(ax.column).matchesEcmaRegex(ax.filterOutRegex).not())
+		}
+	}
+	for col in spec.columns {
+		if !is_undefined(col.filterOutRegex) {
+			filterConditions = append(filterConditions, pt.col(col.column).matchesEcmaRegex(col.filterOutRegex).not())
+		}
+	}
+	if len(filterConditions) > 0 {
+		df = df.filter(pt.and(filterConditions...))
+	}
+
+	projection := []
+	for ax in spec.axes {
+		colExpr := pt.col(ax.column)
+		colExpr = applyPreProcessSteps(colExpr, ax.preProcess)
+		colExpr = applyNaRegex(colExpr, ax.naRegex, ax.spec.type)
+		projection = append(projection, colExpr.alias(ax.column))
+	}
+	for col in spec.columns {
+		colExpr := pt.col(col.column)
+		colExpr = applyPreProcessSteps(colExpr, col.preProcess)
+		colExpr = applyNaRegex(colExpr, col.naRegex, col.spec.valueType)
+		projection = append(projection, colExpr.alias(col.column))
+	}
+	df = df.withColumns(projection...)
+
+	notNullConditions := []
+	// allowNA for axes is ignored as we no longer support NA values in axes
+	// it support would eventually be needed, pass strict = false to the write_frame step
+	for col in spec.columns {
+		if col.allowNA == false {
+			// warning: pfconv raised an error, we cannot do that and instead silently filter-out NULLs
+			notNullConditions = append(notNullConditions, pt.col(col.column).isNotNull())
+		}
+	}
+	if len(notNullConditions) > 0 {
+		df = df.filter(pt.and(notNullConditions...))
+	}
+
+	saveParams := {
+		axes: [],
+		columns: [],
+		partitionKeyLength: 0
+	}
+	if !is_undefined(spec.partitionKeyLength) {
+		saveParams.partitionKeyLength = spec.partitionKeyLength
+	}
+	for ax in spec.axes {
+		saveParams.axes = append(saveParams.axes, {
+			column: ax.column,
+			spec: maps.deepMerge({ name: ax.column }, ax.spec)
+		})
+	}
+	for col in spec.columns {
+		saveParams.columns = append(saveParams.columns, {
+			column: col.column,
+			spec: maps.deepMerge({ name: col.column }, col.spec)
+		})
+	}
+
+	frameName := "xsv_import_output"
+	df.saveFrameDirect(frameName, saveParams)
+	pf := wf.run().getFrameDirect(frameName)
+
+	if ops.dataOnly {
+		pfd := smart.mapBuilder()
+		for col in spec.columns {
+			id := util.xsvColumnId(col)
+			field := pf.getFutureInputField(col.column + ".data")
+			pfd.createInputField(id).set(field)
+		}
+		return pfd.lockAndBuild()
+	}
+
+	result := {}
+	axesSpec := slices.map(spec.axes, func(ax) { return ax.spec })
+	for col in spec.columns {
+		colSpec := getColumnSpec(axesSpec, col)
+		data := pf.getFutureInputField(col.column + ".data")
+
+		id := util.xsvColumnId(col)
+		if ops.splitDataAndSpec {
+			result[id] = {
+				spec: colSpec,
+				data: data
+			}
+		} else {
+			result[id + ".spec"] = colSpec
+			result[id + ".data"] = data
+		}
+	}
+	return result
+}
+
+export ll.toStrict({
+	importFileParquet: importFileParquet
+})

@@ -1,7 +1,9 @@
-import typing
 import polars as pl
 import polars_hash  # noqa: F401 - import for side effects
-from typing import Mapping
+import polars_pf  # noqa: F401 - import for side effects
+import polars_ds  # noqa: F401 - import for side effects
+from polars_pf import canonicalize, AxisId, AxisSpec
+from typing import Literal, Mapping
 
 
 STRING_TO_POLARS_TYPE: Mapping[str, pl.DataType] = {
@@ -28,7 +30,7 @@ STRING_TO_POLARS_TYPE: Mapping[str, pl.DataType] = {
     "Double": pl.Float64,
 }
 
-PType = typing.Literal[
+PType = Literal[
     "Int8",
     "Int16",
     "Int32",
@@ -59,3 +61,5 @@ def toPolarsType(pType: PType) -> pl.DataType:
     else:
         raise ValueError(f"Unknown Polars type string '{pType}'.")
 
+def axis_ref(spec: AxisSpec) -> str:
+    return canonicalize(AxisId(name=spec.name, type=spec.type, domain=spec.domain)).decode('utf-8')

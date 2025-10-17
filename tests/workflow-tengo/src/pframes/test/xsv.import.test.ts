@@ -1,10 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { field, Pl } from '@milaboratories/pl-middle-layer';
+import type { TestRenderResults } from '@platforma-sdk/test';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { Templates } from '../../../dist';
 import { deepClone } from '@milaboratories/helpers';
 import { getTestTimeout } from '@milaboratories/test-helpers';
-import { vi } from 'vitest';
+import { assert, vi } from 'vitest';
+import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import type { ComputableCtx } from '@milaboratories/computable';
+import dedent from 'dedent';
 
 const TIMEOUT = getTestTimeout(60_000);
 
@@ -13,10 +16,12 @@ vi.setConfig({
 });
 
 // dummy csv data
-const csvData = `ax1,ax2,ax3,col1,col2
-A1,B1,C1,X1,Y1
-A2,B2,C2,X2,Y2
-A3,B2,C3,X3,Y3`;
+const csvData = dedent`
+  ax1,ax2,ax3,col1,col2
+  A1,B1,C1,X1,Y1
+  A2,B2,C2,X2,Y2
+  A3,B2,C3,X3,Y3
+`;
 
 // map xsv header -> xsv column content
 const csvDataMap = (() => {
@@ -135,9 +140,9 @@ const expectedColMeta = (superLen: number, partLen: number, storageFormat: strin
   };
 };
 
-const getColMeta = async (result: any, colName: string, timeout = TIMEOUT) =>
+const getColMeta = async (result: TestRenderResults<string>, colName: string, timeout = TIMEOUT) =>
   await awaitStableState(
-    result.computeOutput('pf', (pf: any, ctx: any) => {
+    result.computeOutput('pf', (pf: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
       const r = pf?.traverse(colName + '.data');
       if (!r || !r.getIsReadyOrError()) {
         ctx.markUnstable('not_ready');
@@ -159,8 +164,11 @@ tplTest.concurrent.for([
   { partitionKeyLength: 0, storageFormat: 'Json' },
   { partitionKeyLength: 1, storageFormat: 'Json' },
   { partitionKeyLength: 2, storageFormat: 'Json' },
+  { partitionKeyLength: 0, storageFormat: 'Parquet' },
+  { partitionKeyLength: 1, storageFormat: 'Parquet' },
+  { partitionKeyLength: 2, storageFormat: 'Parquet' },
 ])(
-  'should read p-frame from csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
+  'should read p-frame from csv file for partitionKeyLength = $partitionKeyLength $storageFormat',
   // This timeout has additional 10 seconds due to very slow performance of Platforma on large transactions,
   // where thousands of fields and resources are created.
   // The test itself is not large, but first test in a batch also loads 'pframes' binary from network.
@@ -193,6 +201,7 @@ tplTest.concurrent.for([
     await Promise.all(
       ['col1', 'col2'].map(async (colName) => {
         const col = await getColMeta(result, colName);
+        assert(col);
 
         expect(col.type).toEqual(`PColumnData/${spec.storageFormat}Partitioned`);
         expect(col.data).toEqual({ partitionKeyLength: spec.partitionKeyLength });
@@ -299,8 +308,13 @@ tplTest.concurrent.for([
   { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Json' },
   { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Json' },
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
+
+  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Parquet' },
 ])(
-  'should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
+  'should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength partitionKeyLength: $partitionKeyLength $storageFormat',
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
     const spec = deepClone(baseSpec);
@@ -347,6 +361,7 @@ tplTest.concurrent.for([
           }),
           TIMEOUT,
         );
+        assert(col);
 
         const exp = expectedColMeta(superPartitionKeyLength, partitionKeyLength, spec.storageFormat);
         expect(col.type).toEqual(exp.type);
@@ -373,6 +388,7 @@ tplTest.concurrent.for([
                 }),
                 TIMEOUT,
               );
+              assert(inner);
 
               expect(inner.type).toEqual(`PColumnData/${spec.storageFormat}Partitioned`);
               expect(inner.data).toEqual({ partitionKeyLength: spec.partitionKeyLength });
@@ -444,8 +460,13 @@ tplTest.concurrent.for([
   { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Json' },
   { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Json' },
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
+
+  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Parquet' },
 ])(
-  '[in workflow] should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
+  '[in workflow] should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength partitionKeyLength: $partitionKeyLength $storageFormat',
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
     const spec = deepClone(baseSpec);
@@ -479,6 +500,7 @@ tplTest.concurrent.for([
           }),
           TIMEOUT,
         );
+        assert(col);
 
         const exp = expectedColMeta(superPartitionKeyLength, partitionKeyLength, spec.storageFormat);
         expect(col.type).toEqual(exp.type);
@@ -502,6 +524,7 @@ tplTest.concurrent.for([
                 }),
                 TIMEOUT,
               );
+              assert(inner);
 
               expect(inner.type).toEqual(`PColumnData/${spec.storageFormat}Partitioned`);
               expect(inner.data).toEqual({ partitionKeyLength: spec.partitionKeyLength });

@@ -1,5 +1,19 @@
 # @platforma-open/software-ptabler.types
 
+## 1.11.5
+
+### Patch Changes
+
+- 60083a1: Parquet write
+
+## 1.11.4
+
+### Patch Changes
+
+- bb07805: xsv.exportFrame migration to ptabler
+- Updated dependencies [bb07805]
+  - @milaboratories/pl-model-common@1.21.3
+
 ## 1.11.3
 
 ### Patch Changes

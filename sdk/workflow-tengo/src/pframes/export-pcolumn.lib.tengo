@@ -9,6 +9,8 @@ json := import("json")
 // reference to the template doing nested super-partitioned export
 nestedTpl := assets.importTemplate(":pframes.export-single-pcolumn")
 
+parquetChunkTpl := assets.importTemplate(":pframes.export-parquet-pcolumn-chunk")
+
 /** Implements core export logic for export-single-pcolumn and export-multiple-pcolumns templates */
 exportPColumnData := func(data) {
 	ll.assert(data.info().InputsLocked, "column data resource not locked for export: %v", data.info().Type)
@@ -41,29 +43,11 @@ exportPColumnData := func(data) {
 
 		newData := smart.structBuilder(data.info().Type, data.info().Data)
 		for key, partData in data.inputs() {
-			partDataResource := partData.getValue()
-			ll.assert(
-				partDataResource.checkResourceType(pConstants.RTYPE_PARQUET_CHUNK),
-				"expected resource %v for axis key %v, got %v",
-				pConstants.RTYPE_PARQUET_CHUNK,
-				key,
-				partDataResource.info().Type
-			)
-			ll.assert(partDataResource.info().InputsLocked, "resource %v inputs not locked", partDataResource.info().Type)
-
-			// Important Hack:
-			// Here we add a flag to parquet metadata to prevent deduplication of parquetChunkResource with normal Blob and
-			// parquetChunkResource with downloadable Blob
-			chunkMetadata := partDataResource.getDataAsJson()
-			chunkMetadata.isDownloadable = true
-
-			parquetChunkResource := smart.structBuilder(partDataResource.info().Type, json.encode(chunkMetadata))
-
-			partDataFields := partDataResource.metaInputs()
-			parquetChunkResource.createMetaField("blob").set(file.exportFile(partDataFields["blob"]))
-			parquetChunkResource.createMetaField("mapping").set(partDataFields["mapping"])
-
-			newData.createInputField(key).set(parquetChunkResource.lockAndBuild())
+			exportedDataPart := render.createEphemeral(parquetChunkTpl, {
+				key: key,
+				data: partData
+			}).output("result")
+			newData.createInputField(key).set(exportedDataPart)
 		}
 		return newData.lockAndBuild()
 

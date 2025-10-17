@@ -1,5 +1,18 @@
 # @milaboratories/pl-client
 
+## 2.16.0
+
+### Minor Changes
+
+- 7af7faf: Fix bug where pl-client would remove 80/443 ports from the URL
+
+## 2.15.1
+
+### Patch Changes
+
+- Updated dependencies [bb07805]
+  - @milaboratories/pl-model-common@1.21.3
+
 ## 2.15.0
 
 ### Minor Changes

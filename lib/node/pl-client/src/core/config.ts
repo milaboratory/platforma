@@ -167,8 +167,22 @@ export function plAddressToConfig(
   if (url.pathname !== '/' && url.pathname !== '')
     throw new Error(`Unexpected URL path: ${url.pathname}`);
 
+  let port = url.port;
+  if (!port) {
+    switch (url.protocol) {
+      case 'http:':
+        port = '80';
+        break;
+      case 'https:':
+        port = '443';
+        break;
+      default:
+        throw new Error(`Port must be specified explicitly for ${url.protocol} protocol.`);
+    }
+  }
+
   return {
-    hostAndPort: url.host, // this also includes port
+    hostAndPort: `${url.hostname}:${port}`,
     alternativeRoot: url.searchParams.get('alternative-root') ?? undefined,
     ssl: url.protocol === 'https:' || url.protocol === 'tls:',
     defaultRequestTimeout:

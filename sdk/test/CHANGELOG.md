@@ -1,5 +1,38 @@
 # @platforma-sdk/test
 
+## 1.44.11
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.43.25
+
+## 1.44.10
+
+### Patch Changes
+
+- Updated dependencies [15d75b4]
+  - @milaboratories/pl-middle-layer@1.43.24
+
+## 1.44.9
+
+### Patch Changes
+
+- Updated dependencies [7af7faf]
+  - @milaboratories/pl-client@2.16.0
+  - @milaboratories/pl-middle-layer@1.43.23
+  - @milaboratories/pl-tree@1.8.7
+
+## 1.44.8
+
+### Patch Changes
+
+- bb07805: xsv.exportFrame migration to ptabler
+- Updated dependencies [bb07805]
+  - @milaboratories/pl-middle-layer@1.43.22
+  - @milaboratories/pl-client@2.15.1
+  - @platforma-sdk/model@1.44.8
+  - @milaboratories/pl-tree@1.8.6
+
 ## 1.44.7
 
 ### Patch Changes

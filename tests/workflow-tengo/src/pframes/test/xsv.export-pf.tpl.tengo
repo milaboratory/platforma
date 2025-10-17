@@ -4,6 +4,7 @@ self := import("@platforma-sdk/workflow-tengo:tpl")
 file := import("@platforma-sdk/workflow-tengo:file")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+times := import("times")
 
 self.defineOutputs("csvFile")
 
@@ -26,7 +27,9 @@ self.body(func(inputs){
 
 	pf := xsv.importFile(csvFile, "csv", spec)
 
-	ops := {}
+	ops := {
+		inputCache: times.second
+	}
 	if !is_undefined(inputs.ops) {
 		ops = inputs.ops
 	}

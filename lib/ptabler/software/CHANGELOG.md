@@ -1,5 +1,23 @@
 # @platforma-open/software-ptabler
 
+## 1.12.7
+
+### Patch Changes
+
+- 60083a1: Parquet write
+
+## 1.12.6
+
+### Patch Changes
+
+- 15d75b4: FlatBuffer validation options maxed
+
+## 1.12.5
+
+### Patch Changes
+
+- bb07805: xsv.exportFrame migration to ptabler
+
 ## 1.12.4
 
 ### Patch Changes

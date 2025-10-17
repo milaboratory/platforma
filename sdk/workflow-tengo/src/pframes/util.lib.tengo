@@ -2,6 +2,14 @@ ll := import(":ll")
 validation := import(":validation")
 objects := import(":objects")
 slices := import(":slices")
+text := import("text")
+smart := import(":smart")
+constants := import(":pframes.constants")
+pSpec := import(":pframes.spec")
+path := import(":path")
+json := import("json")
+sets := import(":sets")
+maps := import(":maps")
 
 _PRE_PROCESS_STEP_SCHEMA := [`or`,
 	{
@@ -169,7 +177,7 @@ PFCONV_IMPORT_CFG_SCHEMA := {
 	`columnNamePrefix,?`: `string`,
 	// Columns would be stored using specified format;
 	// default: Binary
-	`storageFormat,?` : `string,regex=Binary|Json`,
+	`storageFormat,?` : `string,regex=Binary|Json|Parquet`,
 	// Partitioning key length;
 	// default: 0
 	`partitionKeyLength,?` : `number`
@@ -397,6 +405,397 @@ calculateGroupAxesIndices := func(numberOfAxes, aggregationIndices) {
 	return groupIndices
 }
 
+/**
+ * Unpack p-frame resource into `{ [columnId]: { spec: json, data: resource } }` map
+ */
+pFrameToColumnsMap := func(pf) {
+	columnsById := {}
+
+	addColumnSegment := func(key, value) {
+		columnId := key[0:(len(key) - 5)]
+		if is_undefined(columnsById[columnId]) {
+			columnsById[columnId] = {}
+		}
+
+		if text.has_suffix(key, ".spec") {
+			if smart.isResource(value) {
+				ll.assert(value.isFinal(), "Resource is not final")
+				value = value.getDataAsJson()
+			}
+			columnsById[columnId].spec = value
+		} else if text.has_suffix(key, ".data") {
+			columnsById[columnId].data = value
+		} else {
+			ll.panic("unknown suffix: %s", key)
+		}
+	}
+
+	if smart.isResource(pf) {
+		ll.assert(pf.checkResourceType(constants.RTYPE_P_FRAME), "Unexpected resource type: %v", pf.info().Type)
+		ll.assert(pf.info().InputsLocked, "PFrame resource does not have inputs locked")
+		for key, field in pf.inputs() {
+			addColumnSegment(key, field.getValue())
+		}
+	} else if ll.isMap(pf) {
+		for key, value in pf {
+			addColumnSegment(key, value)
+		}
+	} else {
+		ll.panic("unknown pf format: %v", pf)
+	}
+
+	return columnsById
+}
+
+/**
+ * @param name: string - column name as to name it in the workdir
+ * @param spec: json - column specification
+ * @param data: resource - column data resource
+ * @param exec: string - exec instance
+ * @param ops: map - exec options
+ *   - folder: string - folder to save the column in
+ *
+ * Multiple columns can refer to the same column data resource,
+ * so we ensure that the column data is written only once
+ * by using resource.id as a fileName, and use that execBuilder.writeFile()
+ * and execBuilder.addFile() will write a file with a given filename only once.
+ */
+addColumnToWd := func(name, spec, data, execBuilder, ops) {
+	ll.assert(is_string(name), "name must be a string, got: %v", name)
+
+	ll.assert(!is_undefined(spec), "spec must be defined")
+	validation.assertType(spec, pSpec.P_COLUMN_SPEC_SCHEMA)
+	vt := spec.valueType
+	ll.assert(vt == "Int" || vt == "Long" || vt == "Float" || vt == "Double" || vt == "String",
+		"Unsupported value type: ", vt, spec)
+
+    ll.assert(!is_undefined(data) && smart.isResource(data), "data must be a resource, got: %v", data)
+
+	ll.assert(!is_undefined(execBuilder), "execBuilder must be defined")
+	if !is_undefined(ops) {
+		ll.assert(is_map(ops), "ops must be a map, got: %v", ops)
+		validation.assertType(ops, {
+			`__options__,closed`: true,
+			`folder,?`: "string"
+		})
+	}
+
+	partitions := undefined
+	if !is_undefined(ops.partitions) {
+		partitions = {}
+		for idx, keys in ops.partitions {
+			partitions[idx] = sets.fromSlice(keys)
+		}
+	}
+
+	makePath := func(fileName) {
+		if is_undefined(ops.folder) {
+			return fileName
+		}
+		return path.join(ops.folder, fileName)
+	}
+
+	if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_JSON)) {
+
+		ll.assert(is_undefined(partitions), "Partitions filter enabled while non-partitioned column exported")
+
+		jdataFile := "res" + data.id + ".jdata"
+
+		// write jdata
+		execBuilder.writeFile(makePath(jdataFile), json.encode(data.getDataAsJson().data))
+
+		// write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "JsonPartitioned",
+			partitionKeyLength: 0,
+			parts: { "[]": jdataFile }
+		}))
+
+		// write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED)) {
+
+        // write jdata
+        i := 0
+        parts := {}
+
+		// using maps.getKeys to iterate over keys in the alphabetical order
+		inputs := data.inputs()
+        for k in maps.getKeys(inputs) {
+			v := inputs[k].getValue()
+
+            part := "res" + v.id + ".jdata"
+
+            parts[k] = part
+            execBuilder.addFile(makePath(part), v)
+        }
+
+        // write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "JsonPartitioned",
+			partitionKeyLength: data.getDataAsJson().partitionKeyLength,
+			parts: parts
+		}))
+
+        // write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED)) {
+
+		superPartitionKeyLength := data.getDataAsJson().superPartitionKeyLength
+		partitionKeyLength := data.getDataAsJson().partitionKeyLength
+
+		// write jdata
+        parts := {}
+
+		// iterate over super index
+		for supKey, supData in data.inputs() {
+			supKeyArray := json.decode(supKey)
+
+			// iterate over inner index
+			inputs := supData.getValue().inputs()
+			for k in maps.getKeys(inputs) {
+				v := inputs[k].getValue()
+
+				innerKeyArray := json.decode(k)
+				keyArray := supKeyArray + innerKeyArray
+				key := json.encode(keyArray)
+
+				part := "res" + v.id + ".jdata"
+				parts[key] = part
+            	execBuilder.addFile(makePath(part), v)
+			}
+		}
+
+		// write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "JsonPartitioned",
+			partitionKeyLength: superPartitionKeyLength + partitionKeyLength,
+			parts: parts
+		}))
+
+        // write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+    } else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED)) {
+
+		// write binary data
+        parts := {}
+
+        // using maps.getKeys to iterate over keys in the alphabetical order
+		inputs := data.inputs()
+        for k in maps.getKeys(inputs) {
+			v := inputs[k].getValue()
+
+            if text.has_suffix(k, ".index") {
+                key := k[0:(len(k) - 6)]
+				indexFile := "res" + v.id + ".index"
+
+                if is_undefined(parts[key]) {
+                    parts[key] = {}
+                }
+                parts[key].index = indexFile
+                execBuilder.addFile(makePath(indexFile), v)
+            } else if text.has_suffix(k, ".values") {
+                key := k[0:(len(k) - 7)]
+                valuesFile := "res" + v.id + ".values"
+
+                if is_undefined(parts[key]) {
+                    parts[key] = {}
+                }
+                parts[key].values = valuesFile
+                execBuilder.addFile(makePath(valuesFile), v)
+            } else {
+                ll.panic("unknown suffix: expected .index or .values, got ", k)
+            }
+        }
+
+        // write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "BinaryPartitioned",
+			partitionKeyLength: data.getDataAsJson().partitionKeyLength,
+			parts: parts
+		}))
+
+        // write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED)) {
+
+		superPartitionKeyLength := data.getDataAsJson().superPartitionKeyLength
+		partitionKeyLength := data.getDataAsJson().partitionKeyLength
+
+		// write binary data
+        parts := {}
+
+		// iterate over super index
+		for supKey, supData in data.inputs() {
+			supKeyArray := json.decode(supKey)
+
+			// iterate over inner index
+			inputs := supData.getValue().inputs()
+			for k in maps.getKeys(inputs) {
+				v := inputs[k].getValue()
+
+				if text.has_suffix(k, ".index") {
+					innerKeyArray := json.decode(k[0:(len(k) - 6)])
+					keyArray := supKeyArray + innerKeyArray
+
+					key := json.encode(keyArray)
+					indexFile := "res" + v.id + ".index"
+
+					if is_undefined(parts[key]) {
+						parts[key] = {}
+					}
+					parts[key].index = indexFile
+					execBuilder.addFile(makePath(indexFile), v)
+
+				} else if text.has_suffix(k, ".values") {
+					innerKeyArray := json.decode(k[0:(len(k) - 7)])
+					keyArray := supKeyArray + innerKeyArray
+
+					key := json.encode(keyArray)
+					valuesFile := "res" + v.id + ".values"
+
+					if is_undefined(parts[key]) {
+						parts[key] = {}
+					}
+					parts[key].values = valuesFile
+					execBuilder.addFile(makePath(valuesFile), v)
+				} else {
+					ll.panic("unknown suffix: expected .index or .values, got ", k)
+				}
+			}
+		}
+
+		// write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "BinaryPartitioned",
+			partitionKeyLength: superPartitionKeyLength + partitionKeyLength,
+			parts: parts
+		}))
+
+        // write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED)) {
+
+		// write parquet data
+        parts := {}
+
+		// using maps.getKeys to iterate over keys in the alphabetical order
+		inputs := data.inputs()
+        for k in maps.getKeys(inputs) {
+			v := inputs[k]
+
+			parquetChunkResource := v.getValue()
+			parquetChunkMetadata := parquetChunkResource.getDataAsJson()
+			parquetChunkMapping := parquetChunkResource.metaInputs()["mapping"].getValue().getDataAsJson()
+			parquetChunkData := parquetChunkResource.metaInputs()["blob"].getValue()
+
+            parquetChunkDataPath := "res" + parquetChunkData.id + ".parquet"
+            parts[k] = maps.merge({ data: parquetChunkDataPath }, parquetChunkMetadata, parquetChunkMapping)
+
+            execBuilder.addFile(makePath(parquetChunkDataPath), parquetChunkData)
+        }
+
+        // write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "ParquetPartitioned",
+			partitionKeyLength: data.getDataAsJson().partitionKeyLength,
+			parts: parts
+		}))
+
+        // write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED)) {
+
+		superPartitionKeyLength := data.getDataAsJson().superPartitionKeyLength
+		partitionKeyLength := data.getDataAsJson().partitionKeyLength
+
+		// write parquet data
+        parts := {}
+
+		// iterate over super index
+		for supKey, supData in data.inputs() {
+			supKeyArray := json.decode(supKey)
+
+			// iterate over inner index
+			inputs := supData.getValue().inputs()
+			for k in maps.getKeys(inputs) {
+				v := inputs[k]
+				innerKeyArray := json.decode(k)
+
+				keyArray := supKeyArray + innerKeyArray
+				key := json.encode(keyArray)
+
+				parquetChunkResource := v.getValue()
+				parquetChunkMetadata := parquetChunkResource.getDataAsJson()
+				parquetChunkMapping := parquetChunkResource.metaInputs()["mapping"].getValue().getDataAsJson()
+				parquetChunkData := parquetChunkResource.metaInputs()["blob"].getValue()
+
+				parquetChunkDataPath := "res" + parquetChunkData.id + ".parquet"
+				parts[key] = maps.merge({ data: parquetChunkDataPath }, parquetChunkMetadata, parquetChunkMapping)
+
+				execBuilder.addFile(makePath(parquetChunkDataPath), parquetChunkData)
+			}
+		}
+
+		// write data info
+		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+			type: "ParquetPartitioned",
+			partitionKeyLength: superPartitionKeyLength + partitionKeyLength,
+			parts: parts
+		}))
+
+        // write spec
+		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+
+	} else {
+		ll.panic("unsupported p-column data type", data.info().Type)
+	}
+}
+
+isFlatPfMap := func(pf) {
+	if !is_map(pf) {
+		return false
+	}
+
+	for key, _ in pf {
+		if !text.has_suffix(key, ".spec") && !text.has_suffix(key, ".data") {
+			return false
+		}
+	}
+
+	return true
+}
+
+isStructuredPfMap := func(pf) {
+	if !is_map(pf) {
+		return false
+	}
+
+	for _, value in pf {
+		if !is_map(value) {
+			return false
+		}
+
+		for k, _ in value {
+			if k != "spec" && k != "data" {
+				return false
+			}
+		}
+
+		if is_undefined(value.spec) || is_undefined(value.data) {
+			return false
+		}
+	}
+
+	return true
+}
+
 export ll.toStrict({
 	PFCONV_IMPORT_CFG_SCHEMA: PFCONV_IMPORT_CFG_SCHEMA,
 	PFCONV_EXPORT_CFG_SCHEMA: PFCONV_EXPORT_CFG_SCHEMA,
@@ -405,5 +804,9 @@ export ll.toStrict({
 	xsvColumnId: xsvColumnId,
 	purifySpec: purifySpec,
 	decomposePfconvImportCfg: decomposePfconvImportCfg,
-	calculateGroupAxesIndices: calculateGroupAxesIndices
+	calculateGroupAxesIndices: calculateGroupAxesIndices,
+	pFrameToColumnsMap: pFrameToColumnsMap,
+	addColumnToWd: addColumnToWd,
+	isFlatPfMap: isFlatPfMap,
+	isStructuredPfMap: isStructuredPfMap
 })

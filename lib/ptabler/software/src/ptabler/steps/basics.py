@@ -6,15 +6,6 @@ from .base import PStep, StepContext
 from ..expression import AnyExpression
 
 
-class ColumnDefinition(msgspec.Struct, frozen=True, rename="camel"):
-    """
-    Defines a new column to be added to a table.
-    It specifies the name of the new column and the expression used to compute its values.
-    """
-    name: str
-    expression: AnyExpression
-
-
 class AddColumns(PStep, tag="add_columns"):
     """
     PStep to add one or more new columns to an existing table in the tablespace.
@@ -25,22 +16,15 @@ class AddColumns(PStep, tag="add_columns"):
     Corresponds to the AddColumnsStep defined in the TypeScript type definitions.
     """
     table: str
-    columns: List[ColumnDefinition]
+    columns: List[AnyExpression]
 
     def execute(self, ctx: StepContext):
         lf = ctx.get_table(self.table)
 
-        polars_expressions_to_add = []
-        for col_def in self.columns:
-            # Each Expression object has a to_polars() method that converts it
-            # to a Polars expression. It's then aliased to the new column name.
-            polars_expr = col_def.expression.to_polars().alias(col_def.name)
-            polars_expressions_to_add.append(polars_expr)
+        polars_expressions = [expr.to_polars() for expr in self.columns]
+        if polars_expressions:
+            lf = lf.with_columns(polars_expressions)
 
-        if polars_expressions_to_add:
-            lf = lf.with_columns(polars_expressions_to_add)
-
-        # Update the tablespace with the modified LazyFrame
         ctx.put_table(self.table, lf)
 
 
@@ -53,24 +37,13 @@ class Select(PStep, tag="select"):
     """
     input_table: str = msgspec.field(name="inputTable")
     output_table: str = msgspec.field(name="outputTable")
-    columns: List[ColumnDefinition]
+    columns: List[AnyExpression]
 
     def execute(self, ctx: StepContext):
         lf_input = ctx.get_table(self.input_table)
 
-        polars_expressions_to_select = []
-        if not self.columns:
-            # According to Polars docs, select with no arguments is pl.DataFrame() (empty)
-            # pl.select([]) also seems to produce an empty df. 
-            # If user wants all columns, they should use specific expressions or a future pl.all() like expression.
-            # For now, an empty columns list will result in an empty DataFrame for select.
-            pass # lf_output will be lf_input.select([]) which is an empty DF
-        
-        for col_def in self.columns:
-            polars_expr = col_def.expression.to_polars().alias(col_def.name)
-            polars_expressions_to_select.append(polars_expr)
-
-        lf_output = lf_input.select(polars_expressions_to_select)
+        polars_expressions = [expr.to_polars() for expr in self.columns]
+        lf_output = lf_input.select(polars_expressions)
 
         ctx.put_table(self.output_table, lf_output)
 
@@ -84,18 +57,13 @@ class WithColumns(PStep, tag="with_columns"):
     """
     input_table: str = msgspec.field(name="inputTable")
     output_table: str = msgspec.field(name="outputTable")
-    columns: List[ColumnDefinition]
+    columns: List[AnyExpression]
 
     def execute(self, ctx: StepContext):
         lf_input = ctx.get_table(self.input_table)
 
-        polars_expressions_to_add = []
-        for col_def in self.columns:
-            polars_expr = col_def.expression.to_polars().alias(col_def.name)
-            polars_expressions_to_add.append(polars_expr)
-
-        # If polars_expressions_to_add is empty, lf.with_columns([]) is a no-op, returning the original lf.
-        lf_output = lf_input.with_columns(polars_expressions_to_add)
+        polars_expressions = [expr.to_polars() for expr in self.columns]
+        lf_output = lf_input.with_columns(polars_expressions)
 
         ctx.put_table(self.output_table, lf_output)
 

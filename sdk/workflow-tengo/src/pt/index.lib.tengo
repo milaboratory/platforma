@@ -7,13 +7,14 @@ exec := import(":exec")
 json := import("json")
 text := import("text")
 slices := import(":slices")
-validation := import(":validation")
 execConstants := import(":exec.constants")
-oop := import(":oop")
-pframes := import(":pframes")
-
-// import p-frame from directory tpl
-importDirTpl := assets.importTemplate(":pt.import-dir")
+pframesBuilder := import(":pframes.builder")
+pframesConstants := import(":pframes.constants")
+pframesUtil := import(":pframes.util")
+pframesSpec := import(":pframes.spec")
+render := import(":render")
+maps := import(":maps")
+canonical := import(":canonical")
 
 /**
  * This library provides a high-level API, inspired by Polars DataFrames, for building and executing
@@ -51,11 +52,233 @@ importDirTpl := assets.importTemplate(":pt.import-dir")
  *   // return { outputResult: file.exportFile(ptablerResult.getFile("result.tsv")) }
  */
 
+
 _newDataFrame := undefined
 _newDataFrameGroupBy := undefined
 
 workflowCounter := 0
 
+
+_validateColumn := func(name, columnStruct) {
+	ll.assert(is_string(name), "column name must be a string")
+	ll.assert(is_map(columnStruct), "columnStruct must be a map")
+	ll.assert(!is_undefined(columnStruct.spec), "columnStruct must have 'spec' field defined")
+	ll.assert(!is_undefined(columnStruct.data), "columnStruct must have 'data' field defined")
+}
+
+_newPEntry := func(columnsByName, joinTree) {
+	return ll.toStrict({
+		/** Returns the columns map of the entry. */
+		_getColumnsMap: func() {
+			return columnsByName
+		},
+		/** Returns the join tree of the entry. */
+		_getJoinTree: func() {
+			return joinTree
+		}
+	})
+}
+
+_isPEntry := func(entry) {
+	return ll.isMap(entry) && ll.methodExists(entry, "_getColumnsMap") && ll.methodExists(entry, "_getJoinTree");
+}
+
+_frameToPEntries := undefined
+
+slicedColumnCounter := 0
+
+p := ll.toStrict({
+	/**
+	 * Creates a new column join builder entry.
+	 * @param name {string} - The name of the column.
+	 * @param columnStruct { spec: json, data: resource } - The column object.
+	 * @returns {object} - A join builder entry object.
+	 */
+	column: func(name, columnStruct) {
+		_validateColumn(name, columnStruct)
+		columnsByName := {}
+		columnsByName[name] = columnStruct
+		return _newPEntry(columnsByName, {
+			type: "column",
+			columnId: name
+		})
+	},
+	/**
+	 * Creates a new sliced column join builder entry.
+	 * @param name {string} - The name of the column.
+	 * @param columnMap { spec: json, data: resource } - The column object.
+	 * @param axisFilters {array} - The array of axis filters.
+	 * @returns {object} - A join builder entry object.
+	 */
+	slicedColumn: func(name, columnMap, axisFilters) {
+		_validateColumn(name, columnMap)
+		util.validateAxisFilters(axisFilters)
+
+		slicedColumnCounter += 1
+		oldName := "p_sliced_" + slicedColumnCounter
+
+		columnsByName := {}
+		columnsByName[oldName] = columnMap
+		return _newPEntry(columnsByName, {
+			type: "slicedColumn",
+			columnId: oldName,
+			newId: name,
+			axisFilters: axisFilters
+		})
+	},
+	/**
+	 * Creates a new inner join builder entry.
+	 * @param entries {array} - The array of join builder entry objects.
+	 * @returns {object} - A join builder entry object.
+	 */
+	inner: func(...entries) {
+		ll.assert(len(entries) > 0, "inner join requires at least one entry")
+
+		if len(entries) == 1 && !_isPEntry(entries[0]) {
+			entries = _frameToPEntries(entries[0])
+		}
+
+		mergedColMap := {}
+		joinTreeEntries := []
+
+		for entry in entries {
+			ll.assert(_isPEntry(entry), "all entries must be PEntry objects")
+
+			entryColMap := entry._getColumnsMap()
+			entryJoinTree := entry._getJoinTree()
+
+			for colName, colInfo in entryColMap {
+				if !is_undefined(mergedColMap[colName]) {
+					ll.panic("column name %s is already used, please pick a different name", colName)
+				}
+				mergedColMap[colName] = colInfo
+			}
+
+			joinTreeEntries = append(joinTreeEntries, entryJoinTree)
+		}
+
+		joinTree := {
+			type: "inner",
+			entries: joinTreeEntries
+		}
+
+		return _newPEntry(mergedColMap, joinTree)
+	},
+	/**
+	 * Creates a new full join builder entry.
+	 * @param entries {array} - The array of join builder entry objects.
+	 * @returns {object} - A join builder entry object.
+	 */
+	full: func(...entries) {
+		ll.assert(len(entries) > 0, "full join requires at least one entry")
+
+		if len(entries) == 1 && !_isPEntry(entries[0]) {
+			entries = _frameToPEntries(entries[0])
+		}
+
+		mergedColMap := {}
+		joinTreeEntries := []
+
+		for entry in entries {
+			ll.assert(_isPEntry(entry), "all entries must be PEntry objects")
+
+			entryColMap := entry._getColumnsMap()
+			entryJoinTree := entry._getJoinTree()
+
+			for colName, colInfo in entryColMap {
+				if !is_undefined(mergedColMap[colName]) {
+					ll.panic("column name %s is already used, please pick a different name", colName)
+				}
+				mergedColMap[colName] = colInfo
+			}
+
+			joinTreeEntries = append(joinTreeEntries, entryJoinTree)
+		}
+
+		joinTree := {
+			type: "full",
+			entries: joinTreeEntries
+		}
+
+		return _newPEntry(mergedColMap, joinTree)
+	},
+	/**
+	 * Creates a new outer join builder entry.
+	 * @param primary {object} - The primary join builder entry object.
+	 * @param secondary {array} - The array of secondary join builder entry objects.
+	 * @returns {object} - A join builder entry object.
+	 */
+	outer: func(primary, ...secondary) {
+		ll.assert(_isPEntry(primary), "primary entry must be a PEntry object")
+		ll.assert(len(secondary) > 0, "outer join requires at least one secondary entry")
+
+		mergedColMap := {}
+
+		primaryColMap := primary._getColumnsMap()
+		primaryJoinTree := primary._getJoinTree()
+
+		for colName, colInfo in primaryColMap {
+			mergedColMap[colName] = colInfo
+		}
+
+		secondaryJoinTrees := []
+
+		for entry in secondary {
+			ll.assert(_isPEntry(entry), "all secondary entries must be PEntry objects")
+
+			entryColMap := entry._getColumnsMap()
+			entryJoinTree := entry._getJoinTree()
+
+			for colName, colInfo in entryColMap {
+				if !is_undefined(mergedColMap[colName]) {
+					ll.panic("column name %s is already used, please pick a different name", colName)
+				}
+				mergedColMap[colName] = colInfo
+			}
+
+			secondaryJoinTrees = append(secondaryJoinTrees, entryJoinTree)
+		}
+
+		joinTree := {
+			type: "outer",
+			primary: primaryJoinTree,
+			secondary: secondaryJoinTrees
+		}
+
+		return _newPEntry(mergedColMap, joinTree)
+	}
+})
+
+_frameToPEntries = func(frameInput) {
+	frameResource := undefined
+	if pframesUtil.isFlatPfMap(frameInput) {
+		frameResource = frameInput
+	} else if pframesUtil.isStructuredPfMap(frameInput) {
+		pfBuilder := pframesBuilder.pFrameBuilder()
+		for key, value in frameInput {
+			pfBuilder.add(key, value.spec, value.data)
+		}
+		frameResource = pfBuilder.build()
+	} else if smart.isReference(frameInput) {
+		if smart.isField(frameInput) {
+			ll.assert(frameInput.isSet(), "frameInput must be set")
+			frameResource = frameInput.getValue()
+		} else {
+			frameResource = frameInput
+		}
+		ll.assert(frameResource.checkResourceType(pframesConstants.RTYPE_P_FRAME), "frameResource must be a PFrame resource")
+	} else {
+		ll.panic("unsupported frameInput type: %v", frameInput)
+	}
+
+	columnsMap := pframesUtil.pFrameToColumnsMap(frameResource)
+	columnEntries := []
+	maps.forEach(columnsMap, func(frameUniqueColumnId, columnInfo) {
+		columnEntry := p.column(frameUniqueColumnId, columnInfo)
+		columnEntries = append(columnEntries, columnEntry)
+	})
+	return columnEntries
+}
 
 // Helper function to detect file format from file name extension
 _detectFormatFromFileName := func(fileName) {
@@ -82,18 +305,26 @@ workflow := func() {
 
 	// { file?: ResourceRef, content?: string, name: string }[]
 	inFiles := []
+	// { [uniqueFrameName]: { columns: { [workflowUniqueColumnId]: { spec: json, data: resource } } } }
+	inFrames := {}
 	// string[]
 	outFiles := []
 	// string[]
 	outContentFiles := []
 	// { [frameName]: { [pColumnId]: pColumnSpec } }
 	outFramesSpecs := {}
+	// { [frameName]: sequentialFrameName }
+	outFramesRename := {}
 
 	anonymousFilesCounter := 0
 	anonymousDFCounter := 0
+	pcolumnCounter := 0
+	pframeCounter := 0
+	specDistillerSingleton := undefined
 
 	cpu := undefined
 	mem := undefined
+	inputCache := undefined
 	queue := execConstants.MEDIUM_QUEUE
 
 	self := undefined
@@ -111,8 +342,17 @@ workflow := func() {
 		 * @returns {object} - The workflow object, allowing for method chaining.
 		 */
 		addRawStep: func(step) {
-			steps = append(steps, step)
+			ll.assert(is_map(step), "step must be a map")
+			ll.assert(is_string(step.type), "step.type must be a string discriminator")
+			self._addStep(func(ctx) {
+				return step
+			})
 			return self
+		},
+
+		_addStep: func(step) {
+			ll.assert(is_callable(step), "step must be a function")
+			steps = append(steps, step)
 		},
 
 		/**
@@ -125,12 +365,13 @@ workflow := func() {
 		 * `@platforma-sdk/workflow-tengo:pframes.xsv-builder`.
 		 *
 		 * @param frameInput {object|string} - The input source. Can be:
-		 *   - A resource reference (e.g., `inputs.myFile`).
+		 *   - A file resource reference (e.g., `inputs.myFile`).
 		 *   - A string containing the raw content of the file (e.g., "colA\\tcolB\\n1\\t2" or NDJSON content).
 		 *   - A map with the following fields (i.e. result of `xsvFileBuilder.buildForPT()`):
 		 *     - `file` {object}: A resource reference to the input file.
 		 *     - `xsvType` {string}: The type of the file, either "csv" or "tsv".
 		 *     - `schema` {map} (optional): A PTabler schema definition for the input file.
+		 *   - A p-frame resource or frame-like map (acceptable by `pframes.util.pFrameToColumnsMap()`)
 		 * @param ...optionsRaw {map} (optional) - A single map argument for additional options:
 		 *   - `format` {string}: The file format ("csv", "tsv", or "ndjson"). Takes priority over `xsvType`.
 		 *                        If not provided, auto-detects from file extension or uses `xsvType`.
@@ -142,6 +383,7 @@ workflow := func() {
 		 *                                        type inference is disabled, and types will rely on the `schema` field or PTabler's defaults.
 		 *   - `nRows` {int} (optional): Stop reading after this many rows. If not specified, all rows will be read.
 		 *   - `ignoreErrors` {boolean} (optional): Return null if parsing fails due to schema mismatches. Defaults to `false`.
+		 *   - `commentPrefix` {string} (optional): The prefix string used to comment out lines in the CSV file.
 		 * @returns {object} - A DataFrame object representing the loaded data.
 		 * @example
 		 *   // NDJSON from file reference
@@ -163,6 +405,8 @@ workflow := func() {
 		 *   // df3 := wf.frame(xsvBuilderOutput) // xsvBuilderOutput contains {file, xsvType, schema}
 		 */
 		frame: func(frameInput, ...optionsRaw) {
+			ll.assert(!is_undefined(frameInput), "frameInput must be provided")
+
 			opts := {}
 			if len(optionsRaw) > 0 {
 				if len(optionsRaw) == 1 && is_map(optionsRaw[0]) {
@@ -183,10 +427,9 @@ workflow := func() {
 			optionsSchema := undefined
 			nRowsOpt := undefined
 			ignoreErrorsOpt := undefined
+			commentPrefixOpt := undefined
 
-			isStructuralInput := is_map(frameInput) && !is_undefined(frameInput.file)
-
-			if isStructuralInput {
+			if is_map(frameInput) && !is_undefined(frameInput.file) {
 				fileRef = frameInput.file
 				inputXsvType = frameInput.xsvType
 				// schema might be undefined in the input, which is fine
@@ -198,13 +441,14 @@ workflow := func() {
 				}
 
 				finalFormat = inputXsvType
+			} else if smart.isReference(frameInput) {
+				fileRef = frameInput
+			} else if is_string(frameInput) || is_bytes(frameInput) {
+				fileContent = frameInput
+			} else if _isPEntry(frameInput) {
+				finalFormat = "pentry"
 			} else {
-				if smart.isReference(frameInput) {
-					fileRef = frameInput
-				} else {
-					validation.assertType(frameInput, ["or", "string", "bytes"])
-					fileContent = frameInput
-				}
+				ll.panic("unknown frame input type: %v", frameInput)
 			}
 
 			// Format resolution logic: format > xsvType > auto-detection
@@ -277,22 +521,64 @@ workflow := func() {
 				ignoreErrorsOpt = opts.ignoreErrors
 			}
 
-			// Validation
-			if !is_undefined(fileRef) && !smart.isReference(fileRef) {
-				ll.panic("frameInput.file (for structural input) or frameInput (for direct reference) must be a valid resource reference. Got: %v", fileRef)
-			} else if !is_undefined(fileContent) && !is_string(fileContent) {
-				ll.panic("frameInput (for direct content) must be a string. Got: %v", fileContent)
+			if !is_undefined(opts.commentPrefix) {
+				if !is_string(opts.commentPrefix) {
+					ll.panic("'commentPrefix' option must be a string. Got: %T", opts.commentPrefix)
+				}
+				commentPrefixOpt = opts.commentPrefix
 			}
 
 			if !is_undefined(fileRef) {
+				ll.assert(
+					smart.isReference(fileRef),
+					"frameInput.file (for structural input) or frameInput (for direct reference) must be a valid resource reference, got: %v",
+					fileRef)
 				inFiles = append(inFiles, { file: fileRef, name: finalFileName })
-			} else {
+			} else if !is_undefined(fileContent) {
+				ll.assert(is_string(fileContent), "frameInput (for direct content) must be a string, got: %v", fileContent)
 				inFiles = append(inFiles, { content: fileContent, name: finalFileName })
 			}
 
-			// Generate appropriate step based on format
-			step := undefined
-			if finalFormat == "parquet" {
+		// Generate appropriate step based on format
+		step := undefined
+		if finalFormat == "pentry" {
+			columnsMap := frameInput._getColumnsMap()
+			src := frameInput._getJoinTree()
+
+			// Build translation and rename mappings
+			translation := {}
+			rename := {}
+			renamedColumnsMap := {}
+
+			for frameUniqueColumnId, columnInfo in columnsMap {
+				workflowUniqueColumnId := self._newUniqueColumnId()
+
+				translation[workflowUniqueColumnId] = frameUniqueColumnId
+				rename[frameUniqueColumnId] = workflowUniqueColumnId
+				renamedColumnsMap[workflowUniqueColumnId] = columnInfo
+			}
+
+			// Create request and rename columns
+			request := {
+				src: src,
+				filters: []
+			}
+			renamedRequest := util.renameJoinColumns(request, rename)
+
+			// Register frame and create step
+			ll.assert(is_undefined(inFrames[finalDataFrameId]),
+				"frame with name '%s' already added", finalDataFrameId)
+			inFrames[finalDataFrameId] = {
+				columns: renamedColumnsMap
+			}
+
+			step = {
+				type: "read_frame",
+				name: finalDataFrameId,
+				request: renamedRequest,
+				translation: translation
+			}
+		} else if finalFormat == "parquet" {
 				step = {
 					type: "read_parquet",
 					file: finalFileName,
@@ -311,14 +597,18 @@ workflow := func() {
 					name: finalDataFrameId
 				}
 
-				if finalFormat == "csv" {
-					step.delimiter = ","
-				} else if finalFormat == "tsv" {
-					step.delimiter = "\t"
-				}
+			if finalFormat == "csv" {
+				step.delimiter = ","
+			} else if finalFormat == "tsv" {
+				step.delimiter = "\t"
 			}
 
-			// Determine final schema for PTabler: optionsSchema (from opts) overrides inputSchema (from structural input)
+			if !is_undefined(commentPrefixOpt) {
+				step.commentPrefix = commentPrefixOpt
+			}
+		}
+
+		// Determine final schema for PTabler: optionsSchema (from opts) overrides inputSchema (from structural input)
 			finalSchemaToUse := undefined
 			if !is_undefined(optionsSchema) {
 				finalSchemaToUse = optionsSchema
@@ -350,7 +640,7 @@ workflow := func() {
 		/**
 		 * Create a frame from a column bundle. This allows constructing a DataFrame by joining multiple columns,
 		 * potentially with filters applied to axes.
-		 * 
+		 *
 		 * @param bundle {object} - A column bundle object, typically created using `wf.createPBundleBuilder`.
 		 * @param options {map} - A map with the following fields:
 		 *   - `axes` {array} - An array of axis definitions. Each entry should be a map with:
@@ -360,66 +650,33 @@ workflow := func() {
 		frameFromColumnBundle: func(bundle, options) {
 			util.validateParamsForFrameFromColumnBundle(options)
 
-			decodeColumn := func(columnId) {
-				decoded := undefined
-				if is_string(columnId) {
-					decoded = json.decode(columnId)
-				} else if is_map(columnId) {
-					decoded = columnId
+			entries := []
+			aliases := []
+			for axis in options.axes {
+				aliases = append(aliases, exp.axis(axis.spec).alias(axis.column))
+			}
+			for column in options.columns {
+				decoded := json.decode(column)
+				if (is_undefined(decoded.axisFilters)) {
+					aliases = append(aliases, exp.col(decoded.name))
+					entry := p.column(decoded.name, bundle.getColumn(decoded))
+					entries = append(entries, entry)
 				} else {
-					ll.panic("Invalid column ID type. Expected string or object.")
-				}
-				return decoded
-			}
-			isFilteredColumn := func(columnId) {
-				decoded := decodeColumn(columnId)
-				return is_map(decoded) && !is_undefined(decoded.source) && !is_undefined(decoded.axisFilters)
-			}
-
-			axes := options.axes
-			columns := options.columns
-			tsvBuilder := pframes.tsvFileBuilder()
-			axesHeaders := []
-
-			for idx, axis in axes {
-				tsvBuilder.setAxisHeader(axis.spec, axis.column)
-				axesHeaders = append(axesHeaders, axis.column)
-			}
-
-			filteredColumns := []
-			for column in columns {
-				if (isFilteredColumn(column)) {
-					filteredColumns = append(filteredColumns, column)
-				} else {
-					tsvBuilder.add(bundle.getColumn(column))
+					aliases = append(aliases, exp.col(decoded.source.name))
+					entry := p.slicedColumn(
+						decoded.source.name,
+						bundle.getColumn(decoded.source),
+						slices.map(decoded.axisFilters, func(axisFilter) {
+							return {
+								axisIndex: axisFilter[0],
+								constant: axisFilter[1]
+							}
+						})
+					)
+					entries = append(entries, entry)
 				}
 			}
-			
-			mainDF := self.frame(tsvBuilder.buildForPT())
-
-			for column in filteredColumns {
-				decoded := decodeColumn(column)
-				source := decoded.source
-				axisFilters := decoded.axisFilters
-
-				tsv := pframes.tsvFileBuilder()
-				for axis in axes {
-					tsv.setAxisHeader(axis.spec, axis.column)
-				}
-				tsv.add(bundle.getColumn(source), { header: column })
-				df := self.frame(tsv.buildForPT())
-				joinColumns := slices.map(axes, func(axis) { return axis.column })
-				for axisFilter in axisFilters {
-					id := axesHeaders[axisFilter[0]]
-					value := axisFilter[1]
-					df = df.filter(exp.col(id).eq(exp.lit(value))).withoutColumns(id)
-					joinColumns = slices.filter(joinColumns, func(c) { return c != id } )
-				}
-
-				mainDF = mainDF.join(df, { on: joinColumns })
-			}
-
-			return mainDF
+			return self.frame(p.full(entries...)).select(aliases...)
 		},
 
 		_newAnonymousDataFrameId: func() {
@@ -430,19 +687,64 @@ workflow := func() {
 			anonymousFilesCounter += 1
 			return "anonymous_" + string(anonymousFilesCounter) + "." + extension
 		},
+		_newUniqueColumnId: func() {
+			pcolumnCounter += 1
+			return "pcolumn_" + string(pcolumnCounter)
+		},
+		_newUniquePFrameName: func() {
+			pframeCounter += 1
+			return "pframe_" + string(pframeCounter)
+		},
 		_saveFile: func(name) {
 			outFiles = append(outFiles, name)
 		},
 		_saveFileContent: func(name) {
 			outContentFiles = append(outContentFiles, name)
 		},
-		_saveFrameSpecs: func(name, specs) {
+		_saveFrameSpecs: func(name, rename, specs) {
 			ll.assert(
 				outFramesSpecs[name] == undefined,
 				"frame with name '%s' already saved, please pick a different name",
 				name
 			)
 			outFramesSpecs[name] = specs
+			outFramesRename[name] = rename
+		},
+		_getSpecDistiller: func() {
+			if is_undefined(specDistillerSingleton) {
+				rawColumnSpecs := []
+				for _, columns in inFrames {
+					for columnId, columnInfo in columns {
+						rawColumnSpecs = append(rawColumnSpecs, columnInfo.spec)
+					}
+				}
+				specDistillerSingleton = pframesSpec.createSpecDistiller(rawColumnSpecs)
+			}
+			return specDistillerSingleton
+		},
+		_getDistilledAxesSpecs: func() {
+			specDistiller := self._getSpecDistiller()
+			canonicalMap := {}
+			distilledAxesSpecs := {}
+			for _, frame in inFrames {
+				for _, columnInfo in frame.columns {
+					for axis in columnInfo.spec.axesSpec {
+						distilledAxis := specDistiller.distill(axis)
+						if is_undefined(canonicalMap[distilledAxis.name]) {
+							canonicalMap[distilledAxis.name] = {}
+						}
+						canonicalizedAxisSpec := canonical.encode(distilledAxis)
+						if is_undefined(canonicalMap[distilledAxis.name][canonicalizedAxisSpec]) {
+							canonicalMap[distilledAxis.name][canonicalizedAxisSpec] = true
+							if is_undefined(distilledAxesSpecs[distilledAxis.name]) {
+								distilledAxesSpecs[distilledAxis.name] = []
+							}
+							distilledAxesSpecs[distilledAxis.name] = append(distilledAxesSpecs[distilledAxis.name], distilledAxis)
+						}
+					}
+				}
+			}
+			return distilledAxesSpecs
 		},
 
 		/**
@@ -504,65 +806,117 @@ workflow := func() {
 		},
 
 		/**
+		 * Sets the cache duration for the execution's inputs.
+		 *
+		 * This is useful for an execution that is part of a sequence that might be re-rendered soon.
+		 * Caching allows the inputs to be reused by the recovery mechanism, avoiding the need to
+		 * recalculate them. A duration of one minute is recommended.
+		 *
+		 * @param time: duration - the cache time from 'times' library.
+		 */
+		cacheInputs: func(time) {
+			ll.assert(
+				is_int(time),
+				"input cache time must be an integer. " +
+					"Did you forget to import a standard tengo library 'times'?")
+			inputCache = time
+			return self
+		},
+
+		/**
 		 * Executes the defined PTabler workflow.
 		 * This compiles all the added steps and input/output file configurations,
 		 * then runs the PTabler command.
 		 * @returns {object} - A result object from `exec.run()`, typically providing access to output files via `getFile()` or `getFileContent()`.
 		 */
 		run: func() {
-			ptablerSw := assets.importSoftware("@platforma-open/milaboratories.software-ptabler:main")
-			ptablerCmdBuilder := exec.builder().
-				setQueue(queue).
-				printErrStreamToStdout().
-				dontSaveStdoutOrStderr().
-				software(ptablerSw).
-				envExpr("POLARS_MAX_THREADS", "{system.cpu}").
-				arg("workflow_sc.json").
-				writeFile("workflow_sc.json", json.encode({
-					workflow: steps
-				}));
+			workflowRunTpl := assets.importTemplate(":pt.workflow-run")
 
-			if !is_undefined(cpu) {
-				ptablerCmdBuilder.cpu(cpu)
+			specDistiller := self._getSpecDistiller()
+			distilledAxesSpecs := self._getDistilledAxesSpecs()
+			ctx := {
+				specDistiller: specDistiller,
+				distilledAxesSpecs: distilledAxesSpecs
+			}
+			workflowJsonStruct := {
+				workflow: slices.map(steps, func(step) {
+					return step(ctx)
+				})
 			}
 
-			if !is_undefined(mem) {
-				ptablerCmdBuilder.mem(mem)
-			}
-
+			inFilesMap := {}
+			inFilesContentMap := {}
 			for inFile in inFiles {
 				if !is_undefined(inFile.file) {
-					ptablerCmdBuilder.addFile(inFile.name, inFile.file)
+					inFilesMap[inFile.name] = inFile.file
+				} else if !is_undefined(inFile.content) {
+					inFilesContentMap[inFile.name] = inFile.content
 				} else {
-					ptablerCmdBuilder.writeFile(inFile.name, inFile.content)
+					ll.panic("inFile must have either file or content, got: %v", inFile)
 				}
 			}
 
-			for outFile in outFiles {
-				ptablerCmdBuilder.saveFile(outFile)
-			}
-
-			for outContentFile in outContentFiles {
-				ptablerCmdBuilder.saveFileContent(outContentFile)
-			}
-
-			tplArgs := {}
+			outFrames := {}
 			for frameName, specsById in outFramesSpecs {
 				columnIds := []
 				for columnId, _ in specsById {
 					columnIds = append(columnIds, columnId)
 				}
-				tplArgs[frameName] = columnIds;
-			}
-            workdirProcessorName := "import_dir";
-			if len(tplArgs) > 0 {
-				ptablerCmdBuilder.processWorkdir(workdirProcessorName, importDirTpl, tplArgs)
+				outFrames[outFramesRename[frameName]] = columnIds;
 			}
 
-			execResult := ptablerCmdBuilder.run()
+			inFramesDistilled := maps.mapValues(inFrames, func(frame) {
+				return {
+					columns: maps.mapValues(frame.columns, func(columnInfo) {
+						return {
+							spec: specDistiller.distill(columnInfo.spec),
+							data: columnInfo.data
+						}
+					})
+				}
+			})
+
+			runInputs := {
+				workflowJsonStruct: workflowJsonStruct,
+				inFiles: inFilesMap,
+				inFilesContent: inFilesContentMap,
+				inFrames: inFramesDistilled,
+				outFiles: outFiles,
+				outFilesContent: outContentFiles,
+				outFrames: outFrames
+			}
+			runMetaInputs := {
+				queue: queue,
+				cpu: cpu,
+				mem: mem,
+				inputCache: inputCache
+			}
+			ptResult := render.create(workflowRunTpl, runInputs, {
+				metaInputs: runMetaInputs
+			});
 
 			self := undefined
-			self = ll.toStrict(oop.inherit(execResult, {
+			self = ll.toStrict({
+				/**
+				 * Retrieves a file.
+				 *
+				 * @param fileName: string
+				 * @return field - a reference to the file resource.
+				 */
+				getFile: func(fileName) {
+					return ptResult.resolveOutput(["outFiles", fileName])
+				},
+
+				/**
+				 * Retrieves the content of a file.
+				 *
+				 * @param fileName: string
+				 * @return field - a reference to the file content resource.
+				 */
+				getFileContent: func(fileName) {
+					return ptResult.resolveOutput(["outFilesContent", fileName])
+				},
+
 				/**
 				 * Retrieves exported frame.
 				 *
@@ -572,17 +926,15 @@ workflow := func() {
 				getFrameDirect: func(frameName) {
 					specs := outFramesSpecs[frameName]
 					ll.assert(!is_undefined(specs), "saveFrameDirect was not called for frame '%s'", frameName)
-					savedFrames := execResult.getProcessorResult(workdirProcessorName)
 
-					pf := pframes.pFrameBuilder()
-					for pColumnId, pColumnSpec in specs {
-						pColumnRef := util.makeFrameColumnRef(frameName, pColumnId)
-						pColumnData := savedFrames.getFutureInputField(pColumnRef)
-						pf.add(pColumnId, pColumnSpec, pColumnData)
+					pf := pframesBuilder.pFrameBuilder()
+					for columnId, columnSpec in specs {
+						columnData := ptResult.resolveOutput(["outFrames", outFramesRename[frameName], columnId])
+						pf.add(columnId, columnSpec, columnData)
 					}
 					return pf.build()
 				}
-			}))
+			})
 			return self
 		}
 	}
@@ -612,20 +964,22 @@ _newDataFrameGroupBy = func(parentWorkflow, dfName, groupByExpressions) {
 		agg: func(...aggExpressions) {
 			ll.assert(len(aggExpressions) > 0, "agg method requires at least one aggregation expression.")
 
-			aggregations := slices.map(aggExpressions, func(aggExpr) {
-				if !exp._isAggregation(aggExpr) {
-					ll.panic("Invalid argument to agg: Expected an aggregation expression object, got %v", aggExpr)
-				}
-				return aggExpr.getAggregation()
-			})
-
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
-			parentWorkflow.addRawStep({
-				type: "aggregate",
-				inputTable: dfName,
-				outputTable: outputDfName,
-				groupBy: exp._mapToExpressionStructList(groupByExpressions, "col"),
-				aggregations: aggregations
+			parentWorkflow._addStep(func(ctx) {
+				aggregations := slices.map(aggExpressions, func(aggExpr) {
+					if !exp._isAggregation(aggExpr) {
+						ll.panic("Invalid argument to agg: Expected an aggregation expression object, got %v", aggExpr)
+					}
+					return aggExpr._getAggregation(ctx)
+				})
+
+				return {
+					type: "aggregate",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					groupBy: exp._mapToExpressionStructList(groupByExpressions, "col", ctx),
+					aggregations: aggregations
+				}
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		}
@@ -634,37 +988,28 @@ _newDataFrameGroupBy = func(parentWorkflow, dfName, groupByExpressions) {
 }
 
 _newDataFrame = func(parentWorkflow, dfName) {
-	_mapExprsToStepCols := func(exprs, methodName) {
+	_mapExprsToStepCols := func(exprs, methodName, ctx) {
 		ll.assert(len(exprs) > 0, methodName + " requires at least one expression argument.")
 		cols := []
 		for expr in exprs {
 			if !exp._isExpression(expr) {
 				ll.panic("Invalid argument to " + methodName + ": Expected an expression object, got %v", expr)
 			}
-			cols = append(cols, {
-				name: expr.getAlias(),
-				expression: expr.getExpression()
-			})
+			cols = append(cols, expr._getExpression(ctx))
 		}
 		return cols
 	}
 
-	_mapExprsToStepColsAllowingStrings := func(exprs, methodName) {
+	_mapExprsToStepColsAllowingStrings := func(exprs, methodName, ctx) {
 		ll.assert(len(exprs) > 0, methodName + " requires at least one expression argument.")
 		cols := []
 		for expr in exprs {
 			if is_string(expr) {
 				// For strings, interpret as column name
 				colExpr := exp.col(expr)
-				cols = append(cols, {
-					name: colExpr.getAlias(),
-					expression: colExpr.getExpression()
-				})
+				cols = append(cols, colExpr._getExpression(ctx))
 			} else if exp._isExpression(expr) {
-				cols = append(cols, {
-					name: expr.getAlias(),
-					expression: expr.getExpression()
-				})
+				cols = append(cols, expr._getExpression(ctx))
 			} else {
 				ll.panic("Invalid argument to " + methodName + ": Expected an expression object or string column name, got %v", expr)
 			}
@@ -763,13 +1108,15 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *   )
 		 */
 		withColumns: func(...expressions) {
-			stepCols := _mapExprsToStepCols(expressions, "withColumns")
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
-			parentWorkflow.addRawStep({
-				type: "with_columns",
-				inputTable: dfName,
-				outputTable: outputDfName,
-				columns: stepCols
+			parentWorkflow._addStep(func(ctx) {
+				stepCols := _mapExprsToStepCols(expressions, "withColumns", ctx)
+				return {
+					type: "with_columns",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					columns: stepCols
+				}
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},
@@ -789,13 +1136,15 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *   )
 		 */
 		select: func(...expressions) {
-			stepCols := _mapExprsToStepColsAllowingStrings(expressions, "select")
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
-			parentWorkflow.addRawStep({
-				type: "select",
-				inputTable: dfName,
-				outputTable: outputDfName,
-				columns: stepCols
+			parentWorkflow._addStep(func(ctx) {
+				stepCols := _mapExprsToStepColsAllowingStrings(expressions, "select", ctx)
+				return {
+					type: "select",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					columns: stepCols
+				}
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},
@@ -814,11 +1163,13 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *   ) // df is modified
 		 */
 		addColumns: func(...expressions) {
-			stepCols := _mapExprsToStepCols(expressions, "addColumns")
-			parentWorkflow.addRawStep({
-				type: "add_columns",
-				table: dfName,
-				columns: stepCols
+			parentWorkflow._addStep(func(ctx) {
+				stepCols := _mapExprsToStepCols(expressions, "addColumns", ctx)
+				return {
+					type: "add_columns",
+					table: dfName,
+					columns: stepCols
+				}
 			})
 			return self
 		},
@@ -890,7 +1241,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 
 		/**
 		 * Saves the DataFrame as a PFrame and registers it to have its content accessible after `wf.run()`.
-		 * 
+		 *
 		 * @param frameName {string} - The name of the PFrame.
 		 * @param params {object} - PFrame creation parameters.
 		 * @returns {void} - No other operation could be chained after this call.
@@ -907,9 +1258,10 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			util.validateParamsForSaveFrameDirect(params)
 
 			specs := util.makeFrameSpecs(params)
-			parentWorkflow._saveFrameSpecs(frameName, specs)
+			sequentialFrameName := parentWorkflow._newUniquePFrameName()
+			parentWorkflow._saveFrameSpecs(frameName, sequentialFrameName, specs)
 
-			step := util.makeWriteFrameStep(frameName, dfName, params)
+			step := util.makeWriteFrameStep(sequentialFrameName, dfName, params)
 			parentWorkflow.addRawStep(step)
 		},
 
@@ -966,11 +1318,34 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			}
 
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			parentWorkflow._addStep(func(ctx) {
+				return {
+					type: "filter",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					condition: condition._getExpression(ctx)
+				}
+			})
+			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		/**
+		 * Limits the number of rows in the DataFrame.
+		 *
+		 * @param nRows {number} - The number of rows to limit the DataFrame to.
+		 * @returns {object} - A new DataFrame object containing no more than nRows rows.
+		 * @example
+		 *   limitedDf := df.limit(100)
+		 */
+		limit: func(nRows) {
+			ll.assert(is_int(nRows) && nRows > 0, "limit argument must be a positive number.")
+
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
 			parentWorkflow.addRawStep({
-				type: "filter",
+				type: "limit",
 				inputTable: dfName,
 				outputTable: outputDfName,
-				condition: condition.getExpression()
+				n: nRows
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},
@@ -1029,60 +1404,58 @@ _newDataFrame = func(parentWorkflow, dfName) {
 				ll.panic("sort 'nulls_last' array length (%d) must match the number of sort keys (%d).", len(nullsLastOpt), len(by))
 			}
 
-
-
-			sortDirectives := []
-			for i, item in by {
-				directive := { value: undefined }
-
-				if is_string(item) {
-					directive.value = exp.col(item).getExpression()
-				} else if exp._isExpression(item) {
-					directive.value = item.getExpression()
-				} else {
-					ll.panic("Invalid sort key at index %d in array: Expected a column name (string) or an expression object, got %T", i, item)
-				}
-
-				// Handle 'descending'
-				itemDesc := false // Polars default
-				if is_array(descendingOpt) {
-					val := descendingOpt[i]
-					ll.assert(is_bool(val), "Elements of 'descending' array (at index %d) must be booleans. Got: %T", i, val)
-					itemDesc = val
-				} else if is_bool(descendingOpt) {
-					itemDesc = descendingOpt
-				}
-				if itemDesc { // Only include if true, as PTabler 'descending' defaults to false
-					directive.descending = true
-				}
-
-				// Handle 'nulls_last'
-				itemNullsLast := undefined // Let PTabler use its default if not specified
-				if is_array(nullsLastOpt) {
-					val := nullsLastOpt[i]
-					ll.assert(is_bool(val), "Elements of 'nulls_last' array (at index %d) must be booleans. Got: %T", i, val)
-					itemNullsLast = val
-				} else if is_bool(nullsLastOpt) {
-					itemNullsLast = nullsLastOpt
-				}
-
-				if !is_undefined(itemNullsLast) { // Only include if explicitly set
-					directive.nullsLast = itemNullsLast
-				}
-
-				sortDirectives = append(sortDirectives, directive)
-			}
-
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
 
-			sortStep := {
-				type: "sort",
-				inputTable: dfName,
-				outputTable: outputDfName,
-				by: sortDirectives
-			}
+			parentWorkflow._addStep(func(ctx) {
+				sortDirectives := []
+				for i, item in by {
+					directive := { value: undefined }
 
-			parentWorkflow.addRawStep(sortStep)
+					if is_string(item) {
+						directive.value = exp.col(item)._getExpression(ctx)
+					} else if exp._isExpression(item) {
+						directive.value = item._getExpression(ctx)
+					} else {
+						ll.panic("Invalid sort key at index %d in array: Expected a column name (string) or an expression object, got %T", i, item)
+					}
+
+					// Handle 'descending'
+					itemDesc := false // Polars default
+					if is_array(descendingOpt) {
+						val := descendingOpt[i]
+						ll.assert(is_bool(val), "Elements of 'descending' array (at index %d) must be booleans. Got: %T", i, val)
+						itemDesc = val
+					} else if is_bool(descendingOpt) {
+						itemDesc = descendingOpt
+					}
+					if itemDesc { // Only include if true, as PTabler 'descending' defaults to false
+						directive.descending = true
+					}
+
+					// Handle 'nulls_last'
+					itemNullsLast := undefined // Let PTabler use its default if not specified
+					if is_array(nullsLastOpt) {
+						val := nullsLastOpt[i]
+						ll.assert(is_bool(val), "Elements of 'nulls_last' array (at index %d) must be booleans. Got: %T", i, val)
+						itemNullsLast = val
+					} else if is_bool(nullsLastOpt) {
+						itemNullsLast = nullsLastOpt
+					}
+
+					if !is_undefined(itemNullsLast) { // Only include if explicitly set
+						directive.nullsLast = itemNullsLast
+					}
+
+					sortDirectives = append(sortDirectives, directive)
+				}
+
+				return {
+					type: "sort",
+					inputTable: dfName,
+					outputTable: outputDfName,
+					by: sortDirectives
+				}
+			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},
 
@@ -1438,10 +1811,12 @@ treeJoin := func(dataframes, opts) {
 }
 
 export ll.toStrict({
+	p: p,
 	workflow: workflow,
 	concat: concat,
 	treeJoin: treeJoin,
 
+	axis: exp.axis,
 	col: exp.col,
 	lit: exp.lit,
 	concatStr: exp.concatStr,
@@ -1453,5 +1828,6 @@ export ll.toStrict({
 	or: exp.or,
 	rank: exp.rank,
 	when: exp.when,
-	rawExp: exp.rawExp
+	rawExp: exp.rawExp,
+	sc: exp.sc
 })

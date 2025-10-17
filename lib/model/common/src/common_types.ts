@@ -1,6 +1,7 @@
 import type { ErrorLike } from '@milaboratories/pl-error-like';
 
 /** Use this as constraint instead of `Function` */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AnyFunction = (...args: any[]) => any;
 
 /** Value or errors */

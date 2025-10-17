@@ -8,6 +8,7 @@ from . import conditional
 from . import window
 from . import hash
 from . import struct
+from . import pframes
 
 from .basics import (
     GtExpression, GeExpression, EqExpression, LtExpression, LeExpression, NeqExpression, PlusExpression,
@@ -15,7 +16,11 @@ from .basics import (
     Log10Expression, LogExpression, Log2Expression, AbsExpression, SqrtExpression, UnaryMinusExpression,
     FloorExpression, RoundExpression, CeilExpression, CastExpression,
     OrExpression, NotExpression, ColumnReferenceExpression, ConstantValueExpression, MinExpression, MaxExpression,
-    AndExpression,
+    AndExpression, AxisReferenceExpression, InSetExpression, AliasExpression
+)
+from .selectors import (
+    AllSelectorExpression, StringSelectorExpression, NumericSelectorExpression, IntegerSelectorExpression, FloatSelectorExpression, StartsWithSelectorExpression, EndsWithSelectorExpression, ContainsSelectorExpression, MatchesSelectorExpression, ExcludeSelectorExpression, ByNameSelectorExpression, NestedSelectorExpression, SelectorComplementExpression, SelectorUnionExpression, SelectorIntersectionExpression, SelectorDifferenceExpression, SelectorSymmetricDifferenceExpression,
+    AnySelectorExpression, AxisSelectorExpression,
 )
 from .string import (
     StringJoinExpression, ToUpperExpression, ToLowerExpression, StrLenExpression, SubstringExpression,
@@ -37,6 +42,9 @@ from .hash import (
 from .struct import (
     StructFieldExpression,
 )
+from .pframes import (
+    MatchesEcmaRegexExpression, ContainsFuzzyMatchExpression, ReplaceEcmaRegexExpression, ExtractEcmaRegexExpression
+)
 
 # Define a Union type that includes all concrete expression types
 AnyExpression = typing.Union[
@@ -47,6 +55,28 @@ AnyExpression = typing.Union[
     LtExpression,
     LeExpression,
     NeqExpression,
+    InSetExpression,
+    AliasExpression,
+    # Selectors
+    AllSelectorExpression,
+    StringSelectorExpression,
+    NumericSelectorExpression,
+    IntegerSelectorExpression,
+    FloatSelectorExpression,
+    StartsWithSelectorExpression,
+    EndsWithSelectorExpression,
+    ContainsSelectorExpression,
+    MatchesSelectorExpression,
+    ExcludeSelectorExpression,
+    ByNameSelectorExpression,
+    AxisSelectorExpression,
+    NestedSelectorExpression,
+    # Selector Combinations
+    SelectorComplementExpression,
+    SelectorUnionExpression,
+    SelectorIntersectionExpression,
+    SelectorDifferenceExpression,
+    SelectorSymmetricDifferenceExpression,
     # Basic Binary Arithmetic
     PlusExpression,
     MinusExpression,
@@ -73,6 +103,7 @@ AnyExpression = typing.Union[
     IsNotNaExpression,
     # Core Types
     ColumnReferenceExpression,
+    AxisReferenceExpression,
     ConstantValueExpression,
     # Min/Max
     MinExpression,
@@ -108,6 +139,11 @@ AnyExpression = typing.Union[
     FuzzyStringFilterExpression,
     # Struct Operations
     StructFieldExpression,
+    # PFrames Operations
+    MatchesEcmaRegexExpression,
+    ContainsFuzzyMatchExpression,
+    ReplaceEcmaRegexExpression,
+    ExtractEcmaRegexExpression,
 ]
 
 basics.AnyExpression = AnyExpression
@@ -117,6 +153,7 @@ conditional.AnyExpression = AnyExpression
 window.AnyExpression = AnyExpression
 hash.AnyExpression = AnyExpression
 struct.AnyExpression = AnyExpression
+pframes.AnyExpression = AnyExpression
 
 
 __all__ = [
@@ -129,6 +166,27 @@ __all__ = [
     "LtExpression",
     "LeExpression",
     "NeqExpression",
+    "InSetExpression",
+    "AliasExpression",
+    "AllSelectorExpression",
+    "StringSelectorExpression",
+    "NumericSelectorExpression",
+    "IntegerSelectorExpression",
+    "FloatSelectorExpression",
+    "StartsWithSelectorExpression",
+    "EndsWithSelectorExpression",
+    "ContainsSelectorExpression",
+    "MatchesSelectorExpression",
+    "ExcludeSelectorExpression",
+    "ByNameSelectorExpression",
+    "AxisSelectorExpression",
+    "NestedSelectorExpression",
+    "SelectorComplementExpression",
+    "SelectorUnionExpression",
+    "SelectorIntersectionExpression",
+    "SelectorDifferenceExpression",
+    "SelectorSymmetricDifferenceExpression",
+    "AnySelectorExpression",
     "PlusExpression",
     "MinusExpression",
     "MultiplyExpression",
@@ -176,5 +234,9 @@ __all__ = [
     "HashExpression",
     "StringDistanceExpression",
     "FuzzyStringFilterExpression",
-    "StructFieldExpression"
+    "StructFieldExpression",
+    "MatchesEcmaRegexExpression",
+    "ContainsFuzzyMatchExpression",
+    "ReplaceEcmaRegexExpression",
+    "ExtractEcmaRegexExpression",
 ]
