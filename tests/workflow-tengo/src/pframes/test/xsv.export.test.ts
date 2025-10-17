@@ -86,6 +86,9 @@ tplTest.concurrent.for([
   { partitionKeyLength: 0, storageFormat: 'Json' },
   { partitionKeyLength: 1, storageFormat: 'Json' },
   { partitionKeyLength: 2, storageFormat: 'Json' },
+  { partitionKeyLength: 0, storageFormat: 'Parquet' },
+  { partitionKeyLength: 1, storageFormat: 'Parquet' },
+  { partitionKeyLength: 2, storageFormat: 'Parquet' },
 ])(
   'should export p-frame to csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
   // This timeout has additional 10 seconds due to very slow performance of Platforma on large transactions,
@@ -183,6 +186,10 @@ tplTest.concurrent.for([
   { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Json' },
   { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Json' },
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
+  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Parquet' },
 ])(
   'should export super-partitioned p-frame to csv file - superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
   async (

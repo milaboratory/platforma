@@ -1,0 +1,104 @@
+util := import(":pframes.util")
+canonical := import(":canonical")
+execConstants := import(":exec.constants")
+pframesSpec := import(":pframes.spec")
+slices := import(":slices")
+pt := import(":pt")
+ll := import(":ll")
+maps := import(":maps")
+
+self := import(":tpl.light")
+
+self.defineOutputs(["result"])
+
+self.body(func(inputs) {
+    pf := inputs.pf
+    xsvType := inputs.xsvType
+    params := inputs.params
+
+    queue := inputs.queue
+    cpu := inputs.cpu
+    mem := inputs.mem
+    inputCache := inputs.inputCache
+    
+    resultFile := "result." + xsvType
+
+	columnEntries := []
+	rawColumns := []
+	maps.forEach(util.pFrameToColumnsMap(pf), func(frameUniqueColumnId, columnInfo) {
+		columnEntries = append(columnEntries, pt.p.column(frameUniqueColumnId, columnInfo))
+		rawColumns = append(rawColumns, { id: frameUniqueColumnId, spec: columnInfo.spec })
+	})
+
+	frameInput := undefined
+	if params.joinType == "Inner" {
+		frameInput = pt.p.inner(columnEntries...)
+	} else {
+		frameInput = pt.p.full(columnEntries...)
+	}
+
+	numericSelector := pt.sc.numeric()
+	if is_string(params.naStr) {
+		numericSelector = numericSelector.fillNull(params.naStr)
+	}
+	stringSelector := pt.sc.string()
+	if is_string(params.nullStr) {
+		stringSelector = stringSelector.fillNull(params.nullStr)
+	}
+
+	specDistiller := pframesSpec.createSpecDistiller(slices.map(rawColumns, func(c) { return c.spec }))
+	canonicalMap := {}
+	uniqueAxes := []
+	for column in rawColumns {
+		for axis in column.spec.axesSpec {
+			distilledAxis := specDistiller.distill(axis)
+			canonicalizedAxisSpec := canonical.encode(distilledAxis)
+			if is_undefined(canonicalMap[canonicalizedAxisSpec]) {
+				canonicalMap[canonicalizedAxisSpec] = true
+				distilledAxis.label = axis.annotations["pl7.app/label"]
+				uniqueAxes = append(uniqueAxes, distilledAxis)
+			}
+		}
+	}
+
+	columnSelectors := []
+	for axis in uniqueAxes {
+		label := axis.label
+		delete(axis, "label")
+		columnSelectors = append(columnSelectors, pt.sc.axis(axis).alias(label))
+	}
+	for column in rawColumns {
+		columnSelectors = append(columnSelectors, pt.col(column.id).alias(column.spec.annotations["pl7.app/label"]))
+	}
+
+	wf := pt.workflow()
+	if queue == execConstants.LIGHT_QUEUE {
+		wf.inLightQueue()
+	} else if queue == execConstants.MEDIUM_QUEUE {
+		wf.inMediumQueue()
+	} else if queue == execConstants.HEAVY_QUEUE {
+		wf.inHeavyQueue()
+	} else if queue == execConstants.UI_TASKS_QUEUE {
+		wf.inUiQueue()
+	} else if !is_undefined(queue) {
+		ll.panic("Unsupported queue: %v", queue)
+	}
+	if !is_undefined(cpu) {
+		wf.cpu(cpu)
+	}
+	if !is_undefined(mem) {
+		wf.mem(mem)
+	}
+	if !is_undefined(inputCache) {
+		wf.cacheInputs(inputCache)
+	}
+	wf.frame(frameInput).
+		select(numericSelector, stringSelector).
+		select(columnSelectors...).
+		save(resultFile)
+
+	result := wf.run()
+    return {
+        result: result.getFile(resultFile)
+    }
+})

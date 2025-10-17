@@ -47,3 +47,38 @@ class ContainsFuzzyMatchExpression(Expression, tag='contains_fuzzy_match'):
             wildcard=self.wildcard,
             substitutions_only=self.substitutions_only,
         )
+
+
+class ReplaceEcmaRegexExpression(Expression, tag='replace_ecma_regex'):
+    """
+    Replaces the ECMA regex match with the provided replacement string.
+    """
+    value: 'AnyExpression'
+    """The string expression whose value will be replaced."""
+    ecma_regex: str
+    """The ECMA regex to match against."""
+    replacement: str
+    """The replacement string."""
+
+    def to_polars(self) -> pl.Expr:
+        """Converts the expression to a Polars string expression using polars-pf."""
+        return cast(ppf.Expr, self.value.to_polars()).pfexpr.ecma_regexp_replace(
+            self.ecma_regex,
+            self.replacement,
+        )
+
+
+class ExtractEcmaRegexExpression(Expression, tag='extract_ecma_regex'):
+    """
+    Extracts the ECMA regex match from the input string.
+    """
+    value: 'AnyExpression'
+    """The string expression whose value will be extracted."""
+    ecma_regex: str
+    """The ECMA regex to match against."""
+
+    def to_polars(self) -> pl.Expr:
+        """Converts the expression to a Polars string expression using polars-pf."""
+        return cast(ppf.Expr, self.value.to_polars()).pfexpr.ecma_regexp_extract(
+            self.ecma_regex,
+        )

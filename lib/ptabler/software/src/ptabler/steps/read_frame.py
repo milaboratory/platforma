@@ -4,9 +4,10 @@ from typing import Mapping
 import polars as pl
 import polars_pf as ppf
 from polars._typing import ParallelStrategy
-from polars_pf import axis_ref, CreateTableRequest, PTableColumnSpec, PTableColumnSpecAxis
+from polars_pf import CreateTableRequest, PTableColumnSpec, PTableColumnSpecAxis
 
 from .base import PStep, StepContext
+from ptabler.common import axis_ref
 
 class ReadFrame(PStep, tag="read_frame"):
     """

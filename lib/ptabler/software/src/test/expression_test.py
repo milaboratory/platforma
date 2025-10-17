@@ -18,7 +18,7 @@ from ptabler.expression import (
     StringExtractExpression, StringStartsWithExpression, StringEndsWithExpression,
     FillNullExpression,
     UnaryMinusExpression,
-    MatchesEcmaRegexExpression, ContainsFuzzyMatchExpression,
+    MatchesEcmaRegexExpression, ContainsFuzzyMatchExpression, ReplaceEcmaRegexExpression, ExtractEcmaRegexExpression,
     InSetExpression, AliasExpression,
 )
 
@@ -1348,6 +1348,77 @@ class ExpressionTests(unittest.TestCase):
         expected_df = pl.DataFrame({
             "category": ["A", "B", "C", "D"],
             "in_set": [True, True, False, False]
+        })
+
+        result_df = ctx.get_table("test_data").collect()
+        result_df = result_df.select(expected_df.columns)
+        assert_frame_equal(result_df, expected_df, check_dtypes=True)
+
+    def test_extract_ecma_regex_expression(self):
+        initial_df = pl.DataFrame({
+            "text": ["123___abc", "456___def"]
+        }).lazy()
+        initial_table_space: TableSpace = {"test_data": initial_df}
+
+        extract_first_step = AddColumns(
+            table="test_data",
+            columns=[
+                AliasExpression(
+                    name="extracted_first",
+                    value=ExtractEcmaRegexExpression(
+                        value=ColumnReferenceExpression(name="text"),
+                        ecma_regex=r"(.*)___.*"
+                    )
+                )
+            ]
+        )
+
+        workflow = PWorkflow(workflow=[extract_first_step])
+        ctx = workflow.execute(
+            global_settings=global_settings,
+            lazy=True,
+            initial_table_space=initial_table_space
+        )
+
+        expected_df = pl.DataFrame({
+            "text": ["123___abc", "456___def"],
+            "extracted_first": ["123", "456"]
+        })
+
+        result_df = ctx.get_table("test_data").collect()
+        result_df = result_df.select(expected_df.columns)
+        assert_frame_equal(result_df, expected_df, check_dtypes=True)
+
+    def test_replace_ecma_regex_expression(self):
+        initial_df = pl.DataFrame({
+            "text": ["result.POIS_P001_W104_PBMC_2.clns", "result.POIS_P002_W105_PBMC_1.clns"]
+        }).lazy()
+        initial_table_space: TableSpace = {"test_data": initial_df}
+
+        replace_step = AddColumns(
+            table="test_data",
+            columns=[
+                AliasExpression(
+                    name="replaced",
+                    value=ReplaceEcmaRegexExpression(
+                        value=ColumnReferenceExpression(name="text"),
+                        ecma_regex=r"^.*(P\d+)_(W\d+).*$",
+                        replacement="$2-$1"
+                    )
+                )
+            ]
+        )
+
+        workflow = PWorkflow(workflow=[replace_step])
+        ctx = workflow.execute(
+            global_settings=global_settings,
+            lazy=True,
+            initial_table_space=initial_table_space
+        )
+
+        expected_df = pl.DataFrame({
+            "text": ["result.POIS_P001_W104_PBMC_2.clns", "result.POIS_P002_W105_PBMC_1.clns"],
+            "replaced": ["W104-P001", "W105-P002"]
         })
 
         result_df = ctx.get_table("test_data").collect()

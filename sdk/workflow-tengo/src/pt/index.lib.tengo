@@ -83,6 +83,8 @@ _isPEntry := func(entry) {
 	return ll.isMap(entry) && ll.methodExists(entry, "_getColumnsMap") && ll.methodExists(entry, "_getJoinTree");
 }
 
+_frameToPEntries := undefined
+
 slicedColumnCounter := 0
 
 p := ll.toStrict({
@@ -111,7 +113,7 @@ p := ll.toStrict({
 	slicedColumn: func(name, columnMap, axisFilters) {
 		_validateColumn(name, columnMap)
 		util.validateAxisFilters(axisFilters)
-		
+
 		slicedColumnCounter += 1
 		oldName := "p_sliced_" + slicedColumnCounter
 
@@ -131,31 +133,35 @@ p := ll.toStrict({
 	 */
 	inner: func(...entries) {
 		ll.assert(len(entries) > 0, "inner join requires at least one entry")
-		
+
+		if len(entries) == 1 && !_isPEntry(entries[0]) {
+			entries = _frameToPEntries(entries[0])
+		}
+
 		mergedColMap := {}
 		joinTreeEntries := []
-		
+
 		for entry in entries {
 			ll.assert(_isPEntry(entry), "all entries must be PEntry objects")
-			
+
 			entryColMap := entry._getColumnsMap()
 			entryJoinTree := entry._getJoinTree()
-			
+
 			for colName, colInfo in entryColMap {
 				if !is_undefined(mergedColMap[colName]) {
 					ll.panic("column name %s is already used, please pick a different name", colName)
 				}
 				mergedColMap[colName] = colInfo
 			}
-			
+
 			joinTreeEntries = append(joinTreeEntries, entryJoinTree)
 		}
-		
+
 		joinTree := {
 			type: "inner",
 			entries: joinTreeEntries
 		}
-		
+
 		return _newPEntry(mergedColMap, joinTree)
 	},
 	/**
@@ -165,31 +171,35 @@ p := ll.toStrict({
 	 */
 	full: func(...entries) {
 		ll.assert(len(entries) > 0, "full join requires at least one entry")
-		
+
+		if len(entries) == 1 && !_isPEntry(entries[0]) {
+			entries = _frameToPEntries(entries[0])
+		}
+
 		mergedColMap := {}
 		joinTreeEntries := []
-		
+
 		for entry in entries {
 			ll.assert(_isPEntry(entry), "all entries must be PEntry objects")
-			
+
 			entryColMap := entry._getColumnsMap()
 			entryJoinTree := entry._getJoinTree()
-			
+
 			for colName, colInfo in entryColMap {
 				if !is_undefined(mergedColMap[colName]) {
 					ll.panic("column name %s is already used, please pick a different name", colName)
 				}
 				mergedColMap[colName] = colInfo
 			}
-			
+
 			joinTreeEntries = append(joinTreeEntries, entryJoinTree)
 		}
-		
+
 		joinTree := {
 			type: "full",
 			entries: joinTreeEntries
 		}
-		
+
 		return _newPEntry(mergedColMap, joinTree)
 	},
 	/**
@@ -201,43 +211,74 @@ p := ll.toStrict({
 	outer: func(primary, ...secondary) {
 		ll.assert(_isPEntry(primary), "primary entry must be a PEntry object")
 		ll.assert(len(secondary) > 0, "outer join requires at least one secondary entry")
-		
+
 		mergedColMap := {}
-		
+
 		primaryColMap := primary._getColumnsMap()
 		primaryJoinTree := primary._getJoinTree()
-		
+
 		for colName, colInfo in primaryColMap {
 			mergedColMap[colName] = colInfo
 		}
-		
+
 		secondaryJoinTrees := []
-		
+
 		for entry in secondary {
 			ll.assert(_isPEntry(entry), "all secondary entries must be PEntry objects")
-			
+
 			entryColMap := entry._getColumnsMap()
 			entryJoinTree := entry._getJoinTree()
-			
+
 			for colName, colInfo in entryColMap {
 				if !is_undefined(mergedColMap[colName]) {
 					ll.panic("column name %s is already used, please pick a different name", colName)
 				}
 				mergedColMap[colName] = colInfo
 			}
-			
+
 			secondaryJoinTrees = append(secondaryJoinTrees, entryJoinTree)
 		}
-		
+
 		joinTree := {
 			type: "outer",
 			primary: primaryJoinTree,
 			secondary: secondaryJoinTrees
 		}
-		
+
 		return _newPEntry(mergedColMap, joinTree)
 	}
 })
+
+_frameToPEntries = func(frameInput) {
+	frameResource := undefined
+	if pframesUtil.isFlatPfMap(frameInput) {
+		frameResource = frameInput
+	} else if pframesUtil.isStructuredPfMap(frameInput) {
+		pfBuilder := pframesBuilder.pFrameBuilder()
+		for key, value in frameInput {
+			pfBuilder.add(key, value.spec, value.data)
+		}
+		frameResource = pfBuilder.build()
+	} else if smart.isReference(frameInput) {
+		if smart.isField(frameInput) {
+			ll.assert(frameInput.isSet(), "frameInput must be set")
+			frameResource = frameInput.getValue()
+		} else {
+			frameResource = frameInput
+		}
+		ll.assert(frameResource.checkResourceType(pframesConstants.RTYPE_P_FRAME), "frameResource must be a PFrame resource")
+	} else {
+		ll.panic("unsupported frameInput type: %v", frameInput)
+	}
+
+	columnsMap := pframesUtil.pFrameToColumnsMap(frameResource)
+	columnEntries := []
+	maps.forEach(columnsMap, func(frameUniqueColumnId, columnInfo) {
+		columnEntry := p.column(frameUniqueColumnId, columnInfo)
+		columnEntries = append(columnEntries, columnEntry)
+	})
+	return columnEntries
+}
 
 // Helper function to detect file format from file name extension
 _detectFormatFromFileName := func(fileName) {
@@ -342,6 +383,7 @@ workflow := func() {
 		 *                                        type inference is disabled, and types will rely on the `schema` field or PTabler's defaults.
 		 *   - `nRows` {int} (optional): Stop reading after this many rows. If not specified, all rows will be read.
 		 *   - `ignoreErrors` {boolean} (optional): Return null if parsing fails due to schema mismatches. Defaults to `false`.
+		 *   - `commentPrefix` {string} (optional): The prefix string used to comment out lines in the CSV file.
 		 * @returns {object} - A DataFrame object representing the loaded data.
 		 * @example
 		 *   // NDJSON from file reference
@@ -364,7 +406,7 @@ workflow := func() {
 		 */
 		frame: func(frameInput, ...optionsRaw) {
 			ll.assert(!is_undefined(frameInput), "frameInput must be provided")
-			
+
 			opts := {}
 			if len(optionsRaw) > 0 {
 				if len(optionsRaw) == 1 && is_map(optionsRaw[0]) {
@@ -374,7 +416,6 @@ workflow := func() {
 				}
 			}
 
-			frameResource := undefined
 			fileRef := undefined
 			fileContent := undefined
 			inputSchema := undefined
@@ -386,6 +427,7 @@ workflow := func() {
 			optionsSchema := undefined
 			nRowsOpt := undefined
 			ignoreErrorsOpt := undefined
+			commentPrefixOpt := undefined
 
 			if is_map(frameInput) && !is_undefined(frameInput.file) {
 				fileRef = frameInput.file
@@ -400,28 +442,9 @@ workflow := func() {
 
 				finalFormat = inputXsvType
 			} else if smart.isReference(frameInput) {
-				frameInputResource := frameInput
-				if smart.isField(frameInputResource) {
-					frameInputResource = frameInputResource.getValue()
-				}
-				if frameInputResource.checkResourceType(pframesConstants.RTYPE_P_FRAME) {
-					frameResource = frameInputResource
-					finalFormat = "pframe"
-				} else {
-					fileRef = frameInput
-				}
+				fileRef = frameInput
 			} else if is_string(frameInput) || is_bytes(frameInput) {
 				fileContent = frameInput
-			} else if pframesUtil.isFlatPfMap(frameInput) {
-				frameResource = frameInput
-				finalFormat = "pframe"
-			} else if pframesUtil.isStructuredPfMap(frameInput) {
-				pfBuilder := pframesBuilder.pFrameBuilder()
-				for key, value in frameInput {
-					pfBuilder.add(key, value.spec, value.data)
-				}
-				frameResource = pfBuilder.build()
-				finalFormat = "pframe"
 			} else if _isPEntry(frameInput) {
 				finalFormat = "pentry"
 			} else {
@@ -498,6 +521,13 @@ workflow := func() {
 				ignoreErrorsOpt = opts.ignoreErrors
 			}
 
+			if !is_undefined(opts.commentPrefix) {
+				if !is_string(opts.commentPrefix) {
+					ll.panic("'commentPrefix' option must be a string. Got: %T", opts.commentPrefix)
+				}
+				commentPrefixOpt = opts.commentPrefix
+			}
+
 			if !is_undefined(fileRef) {
 				ll.assert(
 					smart.isReference(fileRef),
@@ -511,17 +541,7 @@ workflow := func() {
 
 		// Generate appropriate step based on format
 		step := undefined
-		if finalFormat == "pentry" || finalFormat == "pframe" {
-			if finalFormat == "pframe" {
-				columnsMap := pframesUtil.pFrameToColumnsMap(frameResource)
-				columnEntries := []
-				for frameUniqueColumnId, columnInfo in columnsMap {
-					columnEntry := p.column(frameUniqueColumnId, columnInfo)
-					columnEntries = append(columnEntries, columnEntry)
-				}
-				frameInput = p.full(columnEntries...)
-			}
-
+		if finalFormat == "pentry" {
 			columnsMap := frameInput._getColumnsMap()
 			src := frameInput._getJoinTree()
 
@@ -577,14 +597,18 @@ workflow := func() {
 					name: finalDataFrameId
 				}
 
-				if finalFormat == "csv" {
-					step.delimiter = ","
-				} else if finalFormat == "tsv" {
-					step.delimiter = "\t"
-				}
+			if finalFormat == "csv" {
+				step.delimiter = ","
+			} else if finalFormat == "tsv" {
+				step.delimiter = "\t"
 			}
 
-			// Determine final schema for PTabler: optionsSchema (from opts) overrides inputSchema (from structural input)
+			if !is_undefined(commentPrefixOpt) {
+				step.commentPrefix = commentPrefixOpt
+			}
+		}
+
+		// Determine final schema for PTabler: optionsSchema (from opts) overrides inputSchema (from structural input)
 			finalSchemaToUse := undefined
 			if !is_undefined(optionsSchema) {
 				finalSchemaToUse = optionsSchema
@@ -616,7 +640,7 @@ workflow := func() {
 		/**
 		 * Create a frame from a column bundle. This allows constructing a DataFrame by joining multiple columns,
 		 * potentially with filters applied to axes.
-		 * 
+		 *
 		 * @param bundle {object} - A column bundle object, typically created using `wf.createPBundleBuilder`.
 		 * @param options {map} - A map with the following fields:
 		 *   - `axes` {array} - An array of axis definitions. Each entry should be a map with:
@@ -705,16 +729,17 @@ workflow := func() {
 			for _, frame in inFrames {
 				for _, columnInfo in frame.columns {
 					for axis in columnInfo.spec.axesSpec {
-						if is_undefined(canonicalMap[axis.name]) {
-							canonicalMap[axis.name] = {}
+						distilledAxis := specDistiller.distill(axis)
+						if is_undefined(canonicalMap[distilledAxis.name]) {
+							canonicalMap[distilledAxis.name] = {}
 						}
-						canonicalizedAxisSpec := canonical.encode(axis)
-						if is_undefined(canonicalMap[axis.name][canonicalizedAxisSpec]) {
-							canonicalMap[axis.name][canonicalizedAxisSpec] = true
-							if is_undefined(distilledAxesSpecs[axis.name]) {
-								distilledAxesSpecs[axis.name] = []
+						canonicalizedAxisSpec := canonical.encode(distilledAxis)
+						if is_undefined(canonicalMap[distilledAxis.name][canonicalizedAxisSpec]) {
+							canonicalMap[distilledAxis.name][canonicalizedAxisSpec] = true
+							if is_undefined(distilledAxesSpecs[distilledAxis.name]) {
+								distilledAxesSpecs[distilledAxis.name] = []
 							}
-							distilledAxesSpecs[axis.name] = append(distilledAxesSpecs[axis.name], axis)
+							distilledAxesSpecs[distilledAxis.name] = append(distilledAxesSpecs[distilledAxis.name], distilledAxis)
 						}
 					}
 				}
@@ -830,7 +855,7 @@ workflow := func() {
 					ll.panic("inFile must have either file or content, got: %v", inFile)
 				}
 			}
-			
+
 			outFrames := {}
 			for frameName, specsById in outFramesSpecs {
 				columnIds := []
@@ -947,7 +972,7 @@ _newDataFrameGroupBy = func(parentWorkflow, dfName, groupByExpressions) {
 					}
 					return aggExpr._getAggregation(ctx)
 				})
-				
+
 				return {
 					type: "aggregate",
 					inputTable: dfName,
@@ -1216,7 +1241,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 
 		/**
 		 * Saves the DataFrame as a PFrame and registers it to have its content accessible after `wf.run()`.
-		 * 
+		 *
 		 * @param frameName {string} - The name of the PFrame.
 		 * @param params {object} - PFrame creation parameters.
 		 * @returns {void} - No other operation could be chained after this call.
