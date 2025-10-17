@@ -101,10 +101,6 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 		storageFormat = "Binary"
 	}
 
-	if storageFormat == "Parquet" {
-		return xsvImportPt.importFileParquet(xsvFile, xsvType, spec, ops...)
-	}
-
 	xsvFileName := "file." + xsvType
 
 	ops := renderOps({ dataOnly: false, splitDataAndSpec: false, queue: execConstants.LIGHT_QUEUE, inputCache: undefined }, ops...)
@@ -169,6 +165,10 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 			run()
 
 		xsvFile = transposeXsv.getFile(transposedFileName)
+	}
+
+	if storageFormat == "Parquet" {
+		return xsvImportPt.importFileParquet(xsvFile, xsvType, spec, ops)
 	}
 
 	// spec without any metadata (for caching purposes)

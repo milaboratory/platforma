@@ -6,10 +6,7 @@ pt := import(":pt")
 execConstants := import(":exec.constants")
 maps := import(":maps")
 slices := import(":slices")
-
-getAxesSpec := func(spec) {
-	return slices.map(spec.axes, func(ax) { return ax.spec })
-}
+smart := import(":smart")
 
 getColumnSpec := func(axesSpec, col) {
 	spec := maps.deepMerge(col.spec, {
@@ -21,13 +18,15 @@ getColumnSpec := func(axesSpec, col) {
 
 applyPreProcessSteps := func(colExpr, preProcessSteps) {
 	result := colExpr
-	for step in preProcessSteps {
-		if step.type == "regexpExtract" {
-			result = result.extractEcmaRegex(step.pattern)
-		} else if step.type == "regexpReplace" {
-			result = result.replaceEcmaRegex(step.pattern, step.replacement)
-		} else {
-			ll.panic("unknown preProcess step type: %v", step.type)
+	if !is_undefined(preProcessSteps) {
+		for step in preProcessSteps {
+			if step.type == "regexpExtract" {
+				result = result.extractEcmaRegex(step.pattern)
+			} else if step.type == "regexpReplace" {
+				result = result.replaceEcmaRegex(step.pattern, step.replacement)
+			} else {
+				ll.panic("unknown preProcess step type: %v", step.type)
+			}
 		}
 	}
 	return result
@@ -59,43 +58,27 @@ applyNaRegex := func(colExpr, naRegex, colType) {
  *               }
  * @return map: reference - a reference to a map resource storing imported data
  */
-importFileParquet := func(xsvFile, xsvType, spec, ...opsArgs) {
-	ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types, found: " + xsvType)
+importFileParquet := func(xsvFile, xsvType, spec, ops) {
+	ll.assert(xsvType == "csv" || xsvType == "tsv", "unknown xsv type: %v", xsvType)
 
 	validation.assertType(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
-
-	ll.assert(
-		spec.partitionKeyLength == undefined || spec.partitionKeyLength < len(spec.axes),
-		"partitionKeyLength (%d) must be strictly less than the number of axes (%d)",
-		spec.partitionKeyLength,
-		len(spec.axes)
-	)
-
+	// Index can easily be supported by adding pl.int_range like in the examile
+	// <https://docs.pola.rs/api/python/stable/reference/dataframe/api/polars.DataFrame.with_row_index.html#polars.DataFrame.with_row_index>
 	ll.assert(is_undefined(spec.index), "index axis is not supported with Parquet storage format")
-
-	ops := {}
-	if len(opsArgs) > 0 {
-		ops = opsArgs[0]
-	}
-	defaultOps := { dataOnly: false, splitDataAndSpec: false, queue: execConstants.LIGHT_QUEUE, inputCache: undefined }
-	for k, v in defaultOps {
-		if is_undefined(ops[k]) {
-			ops[k] = v
-		}
-	}
-
+	// Artificial columns can be supported by adding a new column with NA values
+	ll.assert(is_undefined(spec.allowArtificialColumns), "allowArtificialColumns are not supported with Parquet storage format")
+	// Calling site effectively ignores separator option in favor of xsvType, so we need to warn user here
 	if !is_undefined(spec.separator) {
 		expectedSeparator := ","
 		if xsvType == "tsv" {
 			expectedSeparator = "\t"
 		}
 		ll.assert(spec.separator == expectedSeparator,
-			"custom separator is not supported with Parquet storage format, expected '%v' for %v",
-			expectedSeparator, xsvType)
+			"separator does not match xsvType %v, expected '%v', got '%v'",
+			xsvType, expectedSeparator, spec.separator)
 	}
 
 	wf := pt.workflow()
-
 	if !is_undefined(ops.queue) {
 		if ops.queue == execConstants.HEAVY_QUEUE {
 			wf.inHeavyQueue()
@@ -105,29 +88,25 @@ importFileParquet := func(xsvFile, xsvType, spec, ...opsArgs) {
 			wf.inLightQueue()
 		} else if ops.queue == execConstants.UI_TASKS_QUEUE {
 			wf.inUiQueue()
+		} else {
+			ll.panic("Unsupported queue: %v", ops.queue)
 		}
 	}
-
 	if !is_undefined(ops.cpu) {
 		wf.cpu(ops.cpu)
 	}
-
 	if !is_undefined(ops.mem) {
 		wf.mem(ops.mem)
 	}
-
 	if !is_undefined(ops.inputCache) {
 		wf.cacheInputs(ops.inputCache)
 	}
 
-	readOpts := { xsvType: xsvType, ignoreErrors: true }
-
-	if !is_undefined(spec.commentLinePrefix) {
-		ll.assert(len(spec.commentLinePrefix) == 1, "commentLinePrefix must be a single character, got: %v", spec.commentLinePrefix)
-		readOpts.commentPrefix = spec.commentLinePrefix
-	}
-
-	df := wf.frame(xsvFile, readOpts)
+	df := wf.frame(xsvFile, {
+		xsvType: xsvType,
+		ignoreErrors: spec.skipEmptyLines == true,
+		commentPrefix: spec.commentLinePrefix
+	})
 
 	allColumns := []
 	for ax in spec.axes {
@@ -136,96 +115,49 @@ importFileParquet := func(xsvFile, xsvType, spec, ...opsArgs) {
 	for col in spec.columns {
 		allColumns = append(allColumns, col.column)
 	}
-
 	df = df.select(allColumns...)
 
-	hasFilterOutRegex := false
+	filterConditions := []
 	for ax in spec.axes {
 		if !is_undefined(ax.filterOutRegex) {
-			hasFilterOutRegex = true
-			break
+			filterConditions = append(filterConditions, pt.col(ax.column).matchesEcmaRegex(ax.filterOutRegex).not())
 		}
 	}
-	if !hasFilterOutRegex {
-		for col in spec.columns {
-			if !is_undefined(col.filterOutRegex) {
-				hasFilterOutRegex = true
-				break
-			}
+	for col in spec.columns {
+		if !is_undefined(col.filterOutRegex) {
+			filterConditions = append(filterConditions, pt.col(col.column).matchesEcmaRegex(col.filterOutRegex).not())
 		}
 	}
-
-	if hasFilterOutRegex {
-		filterConditions := []
-		for ax in spec.axes {
-			if !is_undefined(ax.filterOutRegex) {
-				filterConditions = append(filterConditions, pt.col(ax.column).matchesEcmaRegex(ax.filterOutRegex).not())
-			}
-		}
-		for col in spec.columns {
-			if !is_undefined(col.filterOutRegex) {
-				filterConditions = append(filterConditions, pt.col(col.column).matchesEcmaRegex(col.filterOutRegex).not())
-			}
-		}
-		if len(filterConditions) > 0 {
-			df = df.filter(pt.and(filterConditions...))
-		}
+	if len(filterConditions) > 0 {
+		df = df.filter(pt.and(filterConditions...))
 	}
 
-	transformedColumns := []
+	projection := []
 	for ax in spec.axes {
 		colExpr := pt.col(ax.column)
-		if !is_undefined(ax.preProcess) && len(ax.preProcess) > 0 {
-			colExpr = applyPreProcessSteps(colExpr, ax.preProcess)
-		}
+		colExpr = applyPreProcessSteps(colExpr, ax.preProcess)
 		colExpr = applyNaRegex(colExpr, ax.naRegex, ax.spec.type)
-		transformedColumns = append(transformedColumns, colExpr.alias(ax.column))
+		projection = append(projection, colExpr.alias(ax.column))
 	}
-
 	for col in spec.columns {
 		colExpr := pt.col(col.column)
-		if !is_undefined(col.preProcess) && len(col.preProcess) > 0 {
-			colExpr = applyPreProcessSteps(colExpr, col.preProcess)
-		}
+		colExpr = applyPreProcessSteps(colExpr, col.preProcess)
 		colExpr = applyNaRegex(colExpr, col.naRegex, col.spec.valueType)
-		transformedColumns = append(transformedColumns, colExpr.alias(col.column))
+		projection = append(projection, colExpr.alias(col.column))
 	}
+	df = df.withColumns(projection...)
 
-	if len(transformedColumns) > 0 {
-		df = df.withColumns(transformedColumns...)
-	}
-
-	hasAllowNAFalse := false
-	for ax in spec.axes {
-		if !is_undefined(ax.allowNA) && ax.allowNA == false {
-			hasAllowNAFalse = true
-			break
+	notNullConditions := []
+	// allowNA for axes is ignored as we no longer support NA values in axes
+	// it support would eventually be needed, pass strict = false to the write_frame step
+	for col in spec.columns {
+		if col.allowNA == false {
+			// warning: pfconv raised an error, we cannot do that and instead silently filter-out NULLs
+			notNullConditions = append(notNullConditions, pt.col(col.column).isNotNull())
 		}
 	}
-	if !hasAllowNAFalse {
-		for col in spec.columns {
-			if !is_undefined(col.allowNA) && col.allowNA == false {
-				hasAllowNAFalse = true
-				break
-			}
-		}
-	}
-
-	if hasAllowNAFalse {
-		notNullConditions := []
-		for ax in spec.axes {
-			if !is_undefined(ax.allowNA) && ax.allowNA == false {
-				notNullConditions = append(notNullConditions, pt.col(ax.column).isNotNull())
-			}
-		}
-		for col in spec.columns {
-			if !is_undefined(col.allowNA) && col.allowNA == false {
-				notNullConditions = append(notNullConditions, pt.col(col.column).isNotNull())
-			}
-		}
-		if len(notNullConditions) > 0 {
-			df = df.filter(pt.and(notNullConditions...))
-		}
+	if len(notNullConditions) > 0 {
+		df = df.filter(pt.and(notNullConditions...))
 	}
 
 	saveParams := {
@@ -233,60 +165,53 @@ importFileParquet := func(xsvFile, xsvType, spec, ...opsArgs) {
 		columns: [],
 		partitionKeyLength: 0
 	}
-
 	if !is_undefined(spec.partitionKeyLength) {
 		saveParams.partitionKeyLength = spec.partitionKeyLength
 	}
-
 	for ax in spec.axes {
 		saveParams.axes = append(saveParams.axes, {
 			column: ax.column,
-			spec: ax.spec
+			spec: maps.deepMerge({ name: ax.column }, ax.spec)
 		})
 	}
-
 	for col in spec.columns {
 		saveParams.columns = append(saveParams.columns, {
 			column: col.column,
-			spec: col.spec
+			spec: maps.deepMerge({ name: col.column }, col.spec)
 		})
 	}
 
 	frameName := "xsv_import_output"
 	df.saveFrameDirect(frameName, saveParams)
-
-	ptResult := wf.run()
-
-	pf := ptResult.getFrameDirect(frameName)
-
-	axesSpec := getAxesSpec(spec)
+	pf := wf.run().getFrameDirect(frameName)
 
 	if ops.dataOnly {
-		result := {}
+		pfd := smart.mapBuilder()
 		for col in spec.columns {
 			id := util.xsvColumnId(col)
-			dfColumnName := col.column
-			result[id] = pf.getFutureInputField(dfColumnName + ".data")
+			field := pf.getFutureInputField(col.column + ".data")
+			pfd.createInputField(id).set(field)
 		}
-		return result
+		return pfd.lockAndBuild()
 	}
 
 	result := {}
+	axesSpec := slices.map(spec.axes, func(ax) { return ax.spec })
 	for col in spec.columns {
-		id := util.xsvColumnId(col)
-		dfColumnName := col.column
+		colSpec := getColumnSpec(axesSpec, col)
+		data := pf.getFutureInputField(col.column + ".data")
 
+		id := util.xsvColumnId(col)
 		if ops.splitDataAndSpec {
 			result[id] = {
-				data: pf.getFutureInputField(dfColumnName + ".data"),
-				spec: getColumnSpec(axesSpec, col)
+				spec: colSpec,
+				data: data
 			}
 		} else {
-			result[id + ".data"] = pf.getFutureInputField(dfColumnName + ".data")
-			result[id + ".spec"] = getColumnSpec(axesSpec, col)
+			result[id + ".spec"] = colSpec
+			result[id + ".data"] = data
 		}
 	}
-
 	return result
 }
 
