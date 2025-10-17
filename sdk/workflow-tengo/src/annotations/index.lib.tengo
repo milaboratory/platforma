@@ -1,0 +1,85 @@
+ll := import(":ll")
+wf := import(":workflow")
+maps := import(":maps")
+util := import(":annotations.util")
+render := import(":render")
+assets := import(":assets")
+slices := import(":slices")
+
+compute := assets.importTemplate(":annotations.compute")
+
+/**
+ * Computes annotations and optional filters based on the provided steps and column bundle.
+ *
+ * @param inputs: A map containing the following keys:
+ *	 = trace?: Trace information for the annotation trace
+ *	 = title: The title for the annotation trace.
+ *   - steps: An array of steps, each containing a name and an expression.
+ *   - inputAnchor: The input anchor for the workflow.
+ *   - resultAxesSpec: The specification for the result axes.
+ *   - additionalColumns?: Additional column for the column bundle.
+ *   - shouldComputeFilters?: A boolean indicating whether to compute filters.
+ *
+ * @returns: A map containing:
+ *   - annotations: The computed annotations with their data and specification.
+ *   - annotationsFilters (optional): An array of computed filters with their data and specifications.
+ */
+computeAnnotations := func(inputs) {
+	if len(inputs.steps) == 0 {
+		return {}
+	}
+
+	steps := inputs.steps
+	title := inputs.title
+	inputAnchor := inputs.inputAnchor
+	resultAxesSpec := inputs.resultAxesSpec
+	resultColumnSpec := util.prepareResultColumnSpec(inputs)
+	shouldComputeFilters := is_bool(inputs.shouldComputeFilters) ? inputs.shouldComputeFilters : false
+	
+	columnsFromExpressions := util.extractColumnsFromExpressions(slices.map(steps, func(step) { return step.value }))
+	additionalColumns := is_array(inputs.additionalColumns) ? inputs.additionalColumns : []
+	columns := columnsFromExpressions + additionalColumns
+	
+	bundleBuilder := wf.createPBundleBuilder()
+	bundleBuilder.addAnchor("main", inputAnchor)
+	for column in columns { bundleBuilder.addById(column) }
+	columnBundle := bundleBuilder.build()
+
+	result := render.create(compute, {
+		columnBundle: columnBundle,
+		params: {
+			steps: steps,
+			columns: columns,
+			resultColumnSpec: resultColumnSpec,
+			shouldComputeFilters: shouldComputeFilters
+		}
+	})
+
+	annotationsFile := result.output("annotationsFile")
+	annotationColumn := maps.deepMerge(
+		util.createAnnotationsDataAndSpec(annotationsFile, resultColumnSpec)[util.ANNOTATION_HEADER],
+		{ column: util.ANNOTATION_HEADER }
+	)
+
+	idx := 0
+	annotationFilterColumns := shouldComputeFilters ? slices.map(steps, func(v) {
+		idx += 1
+		column := util.encodeColumnName(v.name, idx)
+		file := result.resolveOutput(["filtersFiles", column])
+		specAndData := util.createFilterDataAndSpec(file, resultColumnSpec, column, v.name)
+		return {
+			column: v.name,
+			data: specAndData[column].data,
+			spec: specAndData[column].spec
+		}
+	}) : []
+
+	return {
+		annotationColumn: annotationColumn,
+		annotationFilterColumns: annotationFilterColumns
+	}
+}
+
+export ll.toStrict({
+	computeAnnotations: computeAnnotations
+})
