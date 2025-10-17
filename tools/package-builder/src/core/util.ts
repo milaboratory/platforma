@@ -320,6 +320,13 @@ export function artifactIDToString(a: artifactID): string {
 export const formatZodIssues = (issues: z.core.$ZodIssue[], i: string = '', p: PropertyKey[] = []): string => {
   const _errors: string[] = [];
 
+  const formatSubpath = (path: PropertyKey[], prefix: string = '') => {
+    let pp = path.join('.');
+    if (pp != '' && p.length > 0) pp = `.${pp}`;
+    if (pp != '') pp = `${prefix}${pp}`;
+    return pp;
+  };
+
   const indentText = (txt: string, idt: string = i, skipFirst: boolean = false) =>
     txt.split('\n')
       .map((line, index) => (index === 0 && skipFirst ? line : `${idt}${line}`))
@@ -330,24 +337,21 @@ export const formatZodIssues = (issues: z.core.$ZodIssue[], i: string = '', p: P
   for (const issue of issues) {
     if (issue.code === 'invalid_union') {
       addItem(`✖ Expected one of several possible values`);
-      addItem(`  → at '${[...p, ...issue.path].join('.')}':`);
+      const path = formatSubpath(issue.path, '');
+      addItem(`  → at '${path}':`);
       for (const errGrp of issue.errors) {
-        _errors.push(formatZodIssues(errGrp, `${i}    `, issue.path));
+        _errors.push(formatZodIssues(errGrp, `${i}    `, [...p, ...issue.path]));
       }
     } else if (issue.code === 'invalid_element' || issue.code === 'invalid_key') {
       addItem(`✖ ${issue.code.replaceAll('_', ' ')}:`);
-      _errors.push(formatZodIssues(issue.issues, `${i}  `, issue.path));
+      _errors.push(formatZodIssues(issue.issues, `${i}  `, [...p, ...issue.path]));
     } else if (issue.code === 'invalid_type') {
-      let path = issue.path.join('.');
-      if (path != '' && p.length > 0) path = `.${path}`;
-      if (path != '') path = ` ${path}`;
+      const path = formatSubpath(issue.path, ' ');
       const prefix = `✖ (${issue.expected})${path}: `;
       const msg = indentText(issue.message, ' '.repeat(Math.min(prefix.length, 20)), true);
       addItem(`${prefix}${msg}`);
     } else {
-      let path = issue.path.join('.');
-      if (path != '' && p.length > 0) path = `.${path}`;
-      if (path != '') path = ` ${path}`;
+      const path = formatSubpath(issue.path, ' ');
       const prefix = `✖ (${issue.code.replaceAll('_', ' ')})${path}: `;
       const msg = indentText(issue.message, ' '.repeat(Math.min(prefix.length, 20)), true);
       addItem(`${prefix}${msg}`);

@@ -31,7 +31,14 @@ const orRef = <T extends z.ZodTypeAny>(schema: T) =>
 // Common options for all software packages: everything that can be run on backend side.
 export const softwareOptionsSchema = z.strictObject({
   cmd: z
-    .array(z.string('command artument must be a string'))
+    .array(
+      z.string('command artument must be a string'),
+    )
+    .min(1, { error: 'at least one argument is required' })
+    .refine(
+      (cmd) => cmd[0].trim() != '',
+      { error: 'first cmd argument must be non-empty string' },
+    )
     .describe(
       'command to run for this entrypoint. This command will be appended by <args> set inside workflow',
     ),

@@ -92,6 +92,21 @@
           ]
         }
       },
+      "hello-conda": {
+        "conda": {
+          "artifact": {
+            "registry": "platforma-open",
+            "roots": {
+              "linux-x64": "./x64/",
+              "linux-aarch64": "./arm64/",
+              "macosx-x64": "./x64/",
+              "macosx-aarch64": "./arm64/",
+              "windows-x64": "./x64/"
+            }
+          },
+          "cmd": ["echo", ""]
+        }
+      },
       "hello2": {
         "binary": {
           "artifact": {

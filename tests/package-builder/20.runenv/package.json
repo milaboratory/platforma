@@ -34,7 +34,6 @@
         "environment": {
           "artifact": {
             "registry": "example-java-registry",
-            "type": "environment",
             "runtime": "java",
             "java-version": "21",
             "roots": {
