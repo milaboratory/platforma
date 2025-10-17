@@ -80,11 +80,11 @@ def main():
 
     except (msgspec.DecodeError, msgspec.ValidationError) as e:
         print(
-            f"Error parsing workflow file {workflow_file_path}: {e}", file=sys.stderr)
+            f"Error parsing workflow file {workflow_file_path}: {e}, content: {workflow_content}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:  # Catch other potential errors during conversion/parsing
         print(
-            f"An unexpected error occurred during workflow parsing: {e}", file=sys.stderr)
+            f"An unexpected error occurred during workflow parsing: {e}, content: {workflow_content}", file=sys.stderr)
         sys.exit(1)
 
     # 3. Process the steps in the workflow
@@ -98,7 +98,7 @@ def main():
         ptw.execute(global_settings=global_settings)
         print("Workflow execution finished.")
     except Exception as e:
-        print(f"Error during workflow execution: {e}", file=sys.stderr)
+        print(f"Error during workflow execution: {e}, content: {workflow_content}", file=sys.stderr)
         traceback.print_exc()
         sys.exit(1)
 
