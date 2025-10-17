@@ -1,9 +1,10 @@
 from typing import Union
 import polars.selectors as cs
 import polars as pl
-from polars_pf import axis_ref, AxisSpec
+from polars_pf import AxisSpec
 
 from .base import Expression
+from ptabler.common import axis_ref
 
 type AnyExpression = Expression
 

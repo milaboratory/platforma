@@ -729,16 +729,17 @@ workflow := func() {
 			for _, frame in inFrames {
 				for _, columnInfo in frame.columns {
 					for axis in columnInfo.spec.axesSpec {
-						if is_undefined(canonicalMap[axis.name]) {
-							canonicalMap[axis.name] = {}
+						distilledAxis := specDistiller.distill(axis)
+						if is_undefined(canonicalMap[distilledAxis.name]) {
+							canonicalMap[distilledAxis.name] = {}
 						}
-						canonicalizedAxisSpec := canonical.encode(axis)
-						if is_undefined(canonicalMap[axis.name][canonicalizedAxisSpec]) {
-							canonicalMap[axis.name][canonicalizedAxisSpec] = true
-							if is_undefined(distilledAxesSpecs[axis.name]) {
-								distilledAxesSpecs[axis.name] = []
+						canonicalizedAxisSpec := canonical.encode(distilledAxis)
+						if is_undefined(canonicalMap[distilledAxis.name][canonicalizedAxisSpec]) {
+							canonicalMap[distilledAxis.name][canonicalizedAxisSpec] = true
+							if is_undefined(distilledAxesSpecs[distilledAxis.name]) {
+								distilledAxesSpecs[distilledAxis.name] = []
 							}
-							distilledAxesSpecs[axis.name] = append(distilledAxesSpecs[axis.name], axis)
+							distilledAxesSpecs[distilledAxis.name] = append(distilledAxesSpecs[distilledAxis.name], distilledAxis)
 						}
 					}
 				}

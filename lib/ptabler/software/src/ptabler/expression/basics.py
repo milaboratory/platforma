@@ -1,9 +1,9 @@
 from math import log
 from typing import Optional, Union
 import polars as pl
-from polars_pf import axis_ref, AxisSpec
+from polars_pf import AxisSpec
 
-from ptabler.common import PType, toPolarsType
+from ptabler.common import PType, toPolarsType, axis_ref
 
 from .base import Expression
 
