@@ -83,6 +83,8 @@ _isPEntry := func(entry) {
 	return ll.isMap(entry) && ll.methodExists(entry, "_getColumnsMap") && ll.methodExists(entry, "_getJoinTree");
 }
 
+_frameToPEntries := undefined
+
 slicedColumnCounter := 0
 
 p := ll.toStrict({
@@ -132,6 +134,10 @@ p := ll.toStrict({
 	inner: func(...entries) {
 		ll.assert(len(entries) > 0, "inner join requires at least one entry")
 
+		if len(entries) == 1 && !_isPEntry(entries[0]) {
+			entries = _frameToPEntries(entries[0])
+		}
+
 		mergedColMap := {}
 		joinTreeEntries := []
 
@@ -165,6 +171,10 @@ p := ll.toStrict({
 	 */
 	full: func(...entries) {
 		ll.assert(len(entries) > 0, "full join requires at least one entry")
+
+		if len(entries) == 1 && !_isPEntry(entries[0]) {
+			entries = _frameToPEntries(entries[0])
+		}
 
 		mergedColMap := {}
 		joinTreeEntries := []
@@ -238,6 +248,37 @@ p := ll.toStrict({
 		return _newPEntry(mergedColMap, joinTree)
 	}
 })
+
+_frameToPEntries = func(frameInput) {
+	frameResource := undefined
+	if pframesUtil.isFlatPfMap(frameInput) {
+		frameResource = frameInput
+	} else if pframesUtil.isStructuredPfMap(frameInput) {
+		pfBuilder := pframesBuilder.pFrameBuilder()
+		for key, value in frameInput {
+			pfBuilder.add(key, value.spec, value.data)
+		}
+		frameResource = pfBuilder.build()
+	} else if smart.isReference(frameInput) {
+		if smart.isField(frameInput) {
+			ll.assert(frameInput.isSet(), "frameInput must be set")
+			frameResource = frameInput.getValue()
+		} else {
+			frameResource = frameInput
+		}
+		ll.assert(frameResource.checkResourceType(pframesConstants.RTYPE_P_FRAME), "frameResource must be a PFrame resource")
+	} else {
+		ll.panic("unsupported frameInput type: %v", frameInput)
+	}
+
+	columnsMap := pframesUtil.pFrameToColumnsMap(frameResource)
+	columnEntries := []
+	maps.forEach(columnsMap, func(frameUniqueColumnId, columnInfo) {
+		columnEntry := p.column(frameUniqueColumnId, columnInfo)
+		columnEntries = append(columnEntries, columnEntry)
+	})
+	return columnEntries
+}
 
 // Helper function to detect file format from file name extension
 _detectFormatFromFileName := func(fileName) {
@@ -375,7 +416,6 @@ workflow := func() {
 				}
 			}
 
-			frameResource := undefined
 			fileRef := undefined
 			fileContent := undefined
 			inputSchema := undefined
@@ -402,31 +442,9 @@ workflow := func() {
 
 				finalFormat = inputXsvType
 			} else if smart.isReference(frameInput) {
-				frameInputResource := frameInput
-				if smart.isField(frameInputResource) && frameInputResource.isSet() {
-					frameInputResource = frameInputResource.getValue()
-					if frameInputResource.checkResourceType(pframesConstants.RTYPE_P_FRAME) {
-						frameResource = frameInputResource
-						finalFormat = "pframe"
-					} else {
-						fileRef = frameInput
-					}
-				} else {
-					fileRef = frameInput
-				}
-				
+				fileRef = frameInput
 			} else if is_string(frameInput) || is_bytes(frameInput) {
 				fileContent = frameInput
-			} else if pframesUtil.isFlatPfMap(frameInput) {
-				frameResource = frameInput
-				finalFormat = "pframe"
-			} else if pframesUtil.isStructuredPfMap(frameInput) {
-				pfBuilder := pframesBuilder.pFrameBuilder()
-				for key, value in frameInput {
-					pfBuilder.add(key, value.spec, value.data)
-				}
-				frameResource = pfBuilder.build()
-				finalFormat = "pframe"
 			} else if _isPEntry(frameInput) {
 				finalFormat = "pentry"
 			} else {
@@ -523,17 +541,7 @@ workflow := func() {
 
 		// Generate appropriate step based on format
 		step := undefined
-		if finalFormat == "pentry" || finalFormat == "pframe" {
-			if finalFormat == "pframe" {
-				columnsMap := pframesUtil.pFrameToColumnsMap(frameResource)
-				columnEntries := []
-				for frameUniqueColumnId, columnInfo in columnsMap {
-					columnEntry := p.column(frameUniqueColumnId, columnInfo)
-					columnEntries = append(columnEntries, columnEntry)
-				}
-				frameInput = p.full(columnEntries...)
-			}
-
+		if finalFormat == "pentry" {
 			columnsMap := frameInput._getColumnsMap()
 			src := frameInput._getJoinTree()
 
