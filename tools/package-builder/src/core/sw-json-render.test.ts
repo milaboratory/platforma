@@ -3,6 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { randomBytes } from 'node:crypto';
 
+import * as defaults from '../defaults';
 import * as artifacts from './schemas/artifacts';
 import { PackageInfo } from './package-info';
 import {
@@ -150,7 +151,7 @@ describe('Renderer tests', () => {
     const javaDescriptor = render.renderSoftwareEntrypoints('release', eps).get(javaEpName)!;
     render.writeSwJson(javaDescriptor);
 
-    const expectedTag = new RegExp(`${docker.defaultDockerRegistry}:${test_assets.PackageNameNoAt}\\.${javaEpName}\\.(?<hash>.*)`);
+    const expectedTag = new RegExp(`${defaults.DOCKER_REGISTRY}:${test_assets.PackageNameNoAt}\\.${javaEpName}\\.(?<hash>.*)`);
     expect(javaDescriptor.docker).toBeDefined();
     expect(javaDescriptor.docker!.tag).toMatch(expectedTag);
     expect(javaDescriptor.docker!.cmd).toEqual(['java', '-jar', 'hello.jar']);
@@ -171,7 +172,7 @@ describe('Renderer tests', () => {
     const eps = new Map([[dockerEpName, i.getMainEntrypoint(dockerEpName)]]);
     const dockerDescriptor = render.renderSoftwareEntrypoints('release', eps).get(dockerEpName)!;
 
-    const expectedTag = new RegExp(`${docker.defaultDockerRegistry}:${test_assets.PackageNameNoAt}\\.${dockerEpName}\\.(?<hash>.*)`);
+    const expectedTag = new RegExp(`${defaults.DOCKER_REGISTRY}:${test_assets.PackageNameNoAt}\\.${dockerEpName}\\.(?<hash>.*)`);
     expect(dockerDescriptor.docker).toBeDefined();
     expect(dockerDescriptor.docker!.tag).toMatch(expectedTag);
     expect(dockerDescriptor.docker!.cmd).toEqual(['echo', 'hello']);

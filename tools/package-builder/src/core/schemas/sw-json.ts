@@ -1,4 +1,5 @@
 import { z } from 'zod/v4';
+import * as defaults from '../../defaults';
 import * as artifacts from './artifacts';
 import * as util from '../util';
 
@@ -28,7 +29,7 @@ export const dockerSchema = z.object({
 
   pkg: z
     .string()
-    .default('/')
+    .default(defaults.DOCKER_PLACEHOLDER_PKG)
     .describe('what to substitute in place of "{pkg}" variable in "cmd" (for artifacts with docker autogeneration)'),
 });
 export type dockerInfo = z.infer<typeof dockerSchema>;

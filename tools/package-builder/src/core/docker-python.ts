@@ -1,8 +1,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type winston from 'winston';
+
+import * as defaults from '../defaults';
 import * as paths from './paths';
 import * as util from './util';
+
 import type * as artifacts from './schemas/artifacts';
 import { resolveRunEnvironment } from './resolver';
 
@@ -229,10 +232,10 @@ export function getRunEnvironmentPythonInfo(
 
 function getDefaultPythonOptions(): PythonOptions {
   return {
-    baseImageTag: 'python:3.12-slim',
-    toolset: 'pip',
-    requirements: 'requirements.txt',
-    pkg: '/app/',
+    baseImageTag: defaults.PYTHON_DOCKER_BASE_IMAGE,
+    toolset: defaults.PYTHON_TOOLSET,
+    requirements: defaults.PYTHON_REQUIREMENTS_FILE,
+    pkg: defaults.DOCKER_PLACEHOLDER_PKG,
     envVars: [],
   };
 }

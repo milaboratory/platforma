@@ -317,6 +317,14 @@ export function artifactIDToString(a: artifactID): string {
   return `${a.package}:${a.name}`;
 }
 
+export function indentText(txt: string, indent: string | number, skipFirstLine: boolean = false) {
+  indent = typeof indent === 'number' ? ' '.repeat(indent) : indent;
+
+  return txt.split('\n')
+    .map((line, index) => (index === 0 && skipFirstLine ? line : `${indent}${line}`))
+    .join('\n');
+}
+
 export const formatZodIssues = (issues: z.core.$ZodIssue[], i: string = '', p: PropertyKey[] = []): string => {
   const _errors: string[] = [];
 
@@ -327,12 +335,7 @@ export const formatZodIssues = (issues: z.core.$ZodIssue[], i: string = '', p: P
     return pp;
   };
 
-  const indentText = (txt: string, idt: string = i, skipFirst: boolean = false) =>
-    txt.split('\n')
-      .map((line, index) => (index === 0 && skipFirst ? line : `${idt}${line}`))
-      .join('\n');
-
-  const addItem = (item: string) => _errors.push(indentText(item));
+  const addItem = (item: string) => _errors.push(indentText(item, i));
 
   for (const issue of issues) {
     if (issue.code === 'invalid_union') {
@@ -348,12 +351,12 @@ export const formatZodIssues = (issues: z.core.$ZodIssue[], i: string = '', p: P
     } else if (issue.code === 'invalid_type') {
       const path = formatSubpath(issue.path, ' ');
       const prefix = `✖ (${issue.expected})${path}: `;
-      const msg = indentText(issue.message, ' '.repeat(Math.min(prefix.length, 20)), true);
+      const msg = indentText(issue.message, Math.min(prefix.length, 20), true);
       addItem(`${prefix}${msg}`);
     } else {
       const path = formatSubpath(issue.path, ' ');
       const prefix = `✖ (${issue.code.replaceAll('_', ' ')})${path}: `;
-      const msg = indentText(issue.message, ' '.repeat(Math.min(prefix.length, 20)), true);
+      const msg = indentText(issue.message, Math.min(prefix.length, 20), true);
       addItem(`${prefix}${msg}`);
     }
   }

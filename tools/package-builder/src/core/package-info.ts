@@ -138,6 +138,7 @@ export class PackageInfo {
       if (ep.docker) {
         const artifactID = typeof ep.docker.artifact === 'string' ? ep.docker.artifact : epName;
         const artifact = this.getArtifact(artifactID, 'docker');
+
         // will mix docker to separate entrypoint
         // render function have to merge
         list.set(docker.entrypointName(epName), {
@@ -158,8 +159,10 @@ export class PackageInfo {
         continue;
       }
 
-      if (ep.binary) {
-        const artifactID = typeof ep.binary.artifact === 'string' ? ep.binary.artifact : epName;
+      if (ep.binary || ep.conda) {
+        const swOptions: entrypoints.softwareOptionsType = ep.binary ? ep.binary : ep.conda!;
+        const artifactOrRef = ep.binary ? ep.binary.artifact : ep.conda!.artifact;
+        const artifactID = typeof artifactOrRef === 'string' ? artifactOrRef : epName;
         const artifact = this.getArtifact(artifactID, 'any');
         if (artifact.type === 'asset') {
           throw util.CLIError(`binary entrypoint cannot point to asset artifact: ${epName}`);
@@ -172,8 +175,8 @@ export class PackageInfo {
           type: 'software',
           name: epName,
           artifact: artifact,
-          cmd: ep.binary.cmd,
-          env: ep.binary.envVars ?? [],
+          cmd: swOptions.cmd,
+          env: swOptions.envVars ?? [],
         });
 
         const shouldGenerateDockerEntrypoint = !ep.docker && artifacts.isDockerAutogen(artifact.type);
@@ -182,8 +185,8 @@ export class PackageInfo {
             type: 'software',
             name: epName,
             artifact: this.prepareDockerPackage(artifact),
-            cmd: ep.binary.cmd ?? [],
-            env: ep.binary.envVars ?? [],
+            cmd: swOptions.cmd,
+            env: swOptions.envVars ?? [],
           });
         }
         continue;
@@ -290,7 +293,7 @@ export class PackageInfo {
     return {
       id: artifact.id,
       type: 'docker',
-      registry: docker.defaultDockerRegistry,
+      registry: artifact['docker-registry'],
       ...options,
     };
   }

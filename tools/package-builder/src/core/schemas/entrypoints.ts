@@ -46,6 +46,7 @@ export const softwareOptionsSchema = z.strictObject({
     .optional()
     .describe('list of environment variables to be set for this entrypoint'),
 });
+export type softwareOptionsType = z.infer<typeof softwareOptionsSchema>;
 
 export const environmentOptionsSchema = z.strictObject({
   artifact: orRef(artifacts.environmentSchema.omit({ type: true })),

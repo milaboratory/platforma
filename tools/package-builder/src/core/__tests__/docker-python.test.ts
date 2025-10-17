@@ -76,12 +76,13 @@ describe('Docker Python Functions', () => {
 
     // Initialize mockPythonPackage with absolute path
     mockPythonPackage = {
-      name: 'test-python-package',
-      version: '1.0.0',
-      type: 'python',
-      environment: '@platforma-open/milaboratories.runenv-python-3:3.12.10',
-      registry: { name: 'test' },
-      root: path.join(testPackageRoot, 'src'), // Use absolute path
+      'name': 'test-python-package',
+      'version': '1.0.0',
+      'type': 'python',
+      'environment': '@platforma-open/milaboratories.runenv-python-3:3.12.10',
+      'registry': { name: 'test' },
+      'docker-registry': 'test-docker-registry',
+      'root': path.join(testPackageRoot, 'src'), // Use absolute path
     };
 
     // Clear all mocks

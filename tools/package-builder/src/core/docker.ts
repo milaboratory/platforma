@@ -1,11 +1,10 @@
 import { spawnSync } from 'node:child_process';
-import * as artifacts from './schemas/artifacts';
+import * as defaults from '../defaults';
+import type * as artifacts from './schemas/artifacts';
 import * as util from './util';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-
-export const defaultDockerRegistry = 'containers.pl-open.science/milaboratories/pl-containers';
 
 export function entrypointName(name: string): string {
   return name + ':docker';
@@ -221,6 +220,6 @@ function contentHash(contextFullPath: string, dockerfileFullPath: string): strin
 }
 
 function dockerTag(packageName: string, contentHash: string, registry?: string): string {
-  const dockerRegistry = registry ?? artifacts.defaultDockerRegistry;
+  const dockerRegistry = registry ?? defaults.DOCKER_REGISTRY;
   return `${dockerRegistry}:${packageName.replaceAll('/', '.')}.${contentHash}`;
 }

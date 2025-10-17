@@ -7,6 +7,7 @@ import type * as swJson from './schemas/sw-json';
 import type * as entrypoint from './schemas/entrypoints';
 import * as util from './util';
 import * as docker from './docker';
+import * as defaults from '../defaults';
 import { descriptorFilePath } from './resolver';
 import { resolveRunEnvironment } from './resolver';
 
@@ -215,7 +216,7 @@ export class SwJsonRenderer {
               cmd: ep.cmd,
               envVars: ep.env,
               runEnv: resolveRunEnvironment(this.logger, this.pkgInfo.packageRoot, this.pkgInfo.packageName, artifact.environment, artifact.type),
-              toolset: toolset ?? 'pip',
+              toolset: toolset ?? defaults.PYTHON_TOOLSET,
               dependencies: deps,
             };
           }
@@ -244,7 +245,7 @@ export class SwJsonRenderer {
               cmd: ep.cmd,
               envVars: ep.env,
 
-              ['micromamba-version']: '',
+              ['micromamba-version']: defaults.CONDA_MICROMAMBA_VERSION,
               spec: artifact.spec,
             };
           }
@@ -317,8 +318,8 @@ export class SwJsonRenderer {
           cmd: ep.cmd,
           envVars: ep.env,
 
-          ['micromamba-version']: artInfo['micromamba-version']!,
-          spec: artInfo.spec!,
+          ['micromamba-version']: binPkg['micromamba-version'],
+          spec: defaults.CONDA_FROEZEN_ENV_SPEC_FILE,
         };
       }
       case 'binary':{
