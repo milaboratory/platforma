@@ -1,5 +1,7 @@
 import fs from 'node:fs';
+import fsp from 'node:fs/promises';
 import path from 'node:path';
+import yaml from 'yaml';
 import type winston from 'winston';
 
 import * as defaults from '../defaults';
@@ -361,13 +363,38 @@ localTag: '${localTag}'
       return;
     }
 
+    this.logger.info(`Building conda environment for current platform...`);
+
+    const srcSpecPath = path.resolve(this.pkgInfo.packageRoot, artifact.spec);
+    if (!fs.existsSync(srcSpecPath)) {
+      this.logger.error(`Conda environment specification file '${artifact.spec}' not found at '${srcSpecPath}'`);
+      throw util.CLIError(`Cannot build conda environment '${artifact.id}': no specification file.`);
+    }
+
     const micromambaRoot = path.join(contentRoot, defaults.CONDA_DATA_LOCATION);
+
+    this.logger.debug(`Creating micromamba root directory: '${micromambaRoot}'`);
+    await fsp.mkdir(micromambaRoot, { recursive: true });
+
+    this.logger.debug(`Creating micromamba instance...`);
     const m = new micromamba(this.logger, micromambaRoot, artifact['micromamba-version']);
 
+    const resultSpecPath = path.join(contentRoot, defaults.CONDA_FROEZEN_ENV_SPEC_FILE);
+
     await m.downloadBinary();
-    m.createEnvironment({ specFile: artifact.spec });
-    m.exportEnvironment({ outputFile: path.join(contentRoot, defaults.CONDA_FROEZEN_ENV_SPEC_FILE) });
+    m.createEnvironment({ specFile: srcSpecPath });
+    m.exportEnvironment({ outputFile: resultSpecPath });
     m.deleteEnvironment({});
+
+    this.logger.debug(`Conda environment was built at '${micromambaRoot}'.`);
+
+    this.logger.debug(`Cutting prefix from conda environment file...`);
+
+    const resultSpec = yaml.parse(await fsp.readFile(resultSpecPath, 'utf-8')) as Record<string, unknown>;
+    resultSpec.prefix = undefined;
+    await fsp.writeFile(resultSpecPath, yaml.stringify(resultSpec));
+
+    this.logger.debug(`Conda environment file is ready: '${resultSpecPath}'`);
   }
 
   private async createPackageArchive(

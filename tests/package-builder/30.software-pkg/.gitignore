@@ -1,2 +1,6 @@
 /src/package.sw.json
 *.tgz
+/x64/data/
+/x64/environment-spec.yaml
+/arm64/data/
+/arm64/environment-spec.yaml

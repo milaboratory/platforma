@@ -86,6 +86,7 @@ export class micromamba {
 
   public createEnvironment(opts: EnvCreateOptions): void {
     const { environmentName, environmentPrefix, specFile } = opts;
+    this.logger.debug(`Creating conda environment '${environmentName ?? environmentPrefix ?? defaultEnvironmentName}'...`);
 
     const args = ['env', 'create', '--file', specFile, '--yes'];
     if (environmentPrefix) {
@@ -105,6 +106,7 @@ export class micromamba {
   public exportEnvironment(opts: { environmentName?: string; environmentPrefix?: string; json?: boolean; outputFile: string }): void;
   public exportEnvironment(opts: EnvExportOptions): void | string {
     const { environmentName, environmentPrefix, json, outputFile } = opts;
+    this.logger.debug(`Exporting conda environment '${environmentName ?? environmentPrefix ?? defaultEnvironmentName}'...`);
 
     const file = outputFile ? fs.openSync(outputFile, 'w') : 'pipe';
 
@@ -147,17 +149,21 @@ export class micromamba {
     const { environmentName, environmentPrefix } = opts;
 
     if (environmentPrefix) {
+      this.logger.debug(`Deleting conda environment '${environmentName ?? environmentPrefix ?? defaultEnvironmentName}'...`);
       fs.rmSync(environmentPrefix, { recursive: true });
       return;
     }
 
-    const result = this.exportEnvironment({ environmentName, environmentPrefix });
+    const result = this.exportEnvironment({ environmentName, environmentPrefix, json: true });
     const envInfo = JSON.parse(result ?? '{}') as Record<string, unknown>;
 
     if (envInfo.prefix) {
+      this.logger.debug(`Deleting conda environment '${environmentName ?? environmentPrefix ?? defaultEnvironmentName}'...`);
       fs.rmSync(envInfo.prefix as string, { recursive: true });
     } else {
-      throw new Error('Failed to delete environment: cannot get environment location from micromamba tool');
+      const errMsg = 'Failed to delete environment: cannot get environment location from micromamba tool';
+      this.logger.error(errMsg);
+      throw new Error(errMsg);
     }
   }
 
