@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.12.7
+
+### Patch Changes
+
+- 60083a1: Parquet write
+
 ## 1.12.6
 
 ### Patch Changes
