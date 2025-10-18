@@ -110,9 +110,11 @@ _newWindowExpression = func(expression, aggregation, currentAlias) {
 		_getExpression: func(ctx) {
 			ll.assert(is_map(ctx), "ctx must be a map")
 			ll.assert(!is_undefined(expression), "Using this operation as a window expression is not allowed. Use it as a group by expression instead. %v", aggregation)
-			ll.assert(!is_undefined(currentAlias), "Alias is not defined for this window expression.")
 
 			valueExpr := expression(ctx)
+			if is_undefined(currentAlias) {
+				return valueExpr
+			}
 			return {type: "alias", value: valueExpr, name: currentAlias}
 		},
 		/** Returns the aggregation for group by operations. */
@@ -979,7 +981,11 @@ _newExpression = func(expression) {
 		 * @returns {object} - A boolean expression object.
 		 */
 		matchesEcmaRegex: func(ecmaRegex) {
-			ll.assert(is_string(ecmaRegex) && len(ecmaRegex) > 0, "ecma_regex must be a non-empty string.")
+			ll.assert(is_string(ecmaRegex), "ecma_regex must be a string.")
+
+			if len(ecmaRegex) == 0 {
+				return self.eq("")
+			}
 
 			return _newExpression(func(ctx) {
 				valueExpr := self._getExpression(ctx)

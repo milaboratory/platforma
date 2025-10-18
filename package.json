@@ -17,6 +17,7 @@
     "test:no-cache": "PL_PKG_DEV=local turbo run test --concurrency 1 --force",
     "publish-to-local-registry": "turbo run publish-to-local-registry",
     "do-pack": "PL_PKG_DEV=local turbo run do-pack",
+    "do-pack:remote": "turbo run do-pack",
     "lint": "turbo run lint",
     "changeset": "changeset",
     "version-packages": "changeset version",
