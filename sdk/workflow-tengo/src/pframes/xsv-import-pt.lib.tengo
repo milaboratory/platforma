@@ -34,11 +34,11 @@ applyPreProcessSteps := func(colExpr, preProcessSteps) {
 
 applyNaRegex := func(colExpr, naRegex, colType) {
 	if is_undefined(naRegex) {
-		return colExpr
+		return colExpr.cast(colType)
 	}
 	return pt.when(colExpr.matchesEcmaRegex(naRegex)).
 		then(pt.lit(undefined).cast(colType)).
-		otherwise(colExpr)
+		otherwise(colExpr.cast(colType))
 }
 
 /**
@@ -102,10 +102,24 @@ importFileParquet := func(xsvFile, xsvType, spec, ops) {
 		wf.cacheInputs(ops.inputCache)
 	}
 
+	schema := []
+	for ax in spec.axes {
+		schema = append(schema, {
+			column: ax.column,
+			type: "String"
+		})
+	}
+	for col in spec.columns {
+		schema = append(schema, {
+			column: col.column,
+			type: "String"
+		})
+	}
 	df := wf.frame(xsvFile, {
 		xsvType: xsvType,
 		ignoreErrors: spec.skipEmptyLines == true,
-		commentPrefix: spec.commentLinePrefix
+		commentPrefix: spec.commentLinePrefix,
+		schema: schema
 	})
 
 	allColumns := []

@@ -475,13 +475,6 @@ self.body(func(inputs) {
 					partitionKeyLength = output.settings.partitionKeyLength
 				}
 
-				binary := false // json or binary
-				if output.settings.storageFormat == "Binary" {
-					binary = true
-				} else if output.settings.storageFormat != "Json" {
-					ll.panic("Unknow storage format: %v", output.settings.storageFormat)
-				}
-
 				// if nested xsv import is known to produce unpartitioned output we don't create
 				// redundant super-partitioned structures
 				unwrapZeroPartition := partitionKeyLength == 0
@@ -491,18 +484,26 @@ self.body(func(inputs) {
 
 				dataResType := undefined
 
-				if binary {
+				if output.settings.storageFormat == "Binary" {
 					if unwrapZeroPartition {
 						dataResType = pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED
 					} else {
 						dataResType = pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED
 					}
-				} else {
+				} else if output.settings.storageFormat == "Json" {
 					if unwrapZeroPartition {
 						dataResType = pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED
 					} else {
 						dataResType = pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED
 					}
+				} else if output.settings.storageFormat == "Parquet" {
+					if unwrapZeroPartition {
+						dataResType = pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED
+					} else {
+						dataResType = pConstants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED
+					}
+				} else {
+					ll.panic("Unknown storage format: %v", output.settings.storageFormat)
 				}
 
 				dataResData := undefined
@@ -533,7 +534,7 @@ self.body(func(inputs) {
 						dataRes := smart.structBuilder(dataResType, dataResData)
 						for sGroupKey, partData in parts {
 							if unwrapZeroPartition {
-								if binary {
+								if output.settings.storageFormat == "Binary" {
 									for suffix in [".index", ".values"] {
 										applyCache(dataRes.createInputField(sGroupKey + suffix)).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY + suffix, optional: true}))
 									}
