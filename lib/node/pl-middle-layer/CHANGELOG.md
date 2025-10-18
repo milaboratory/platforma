@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.26
+
+### Patch Changes
+
+- 45dd202: PFrames version bump, workflow-tengo fixes for parquet support
+- Updated dependencies [45dd202]
+  - @platforma-sdk/workflow-tengo@5.3.7
+
 ## 1.43.25
 
 ### Patch Changes
