@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.9.0
+
+### Minor Changes
+
+- 5b0c0d1: Conda automatic builds support
+
 ## 3.8.1
 
 ### Patch Changes
