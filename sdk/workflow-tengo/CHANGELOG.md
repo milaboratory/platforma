@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.3.7
+
+### Patch Changes
+
+- 45dd202: PFrames version bump, workflow-tengo fixes for parquet support
+- Updated dependencies [45dd202]
+  - @platforma-open/milaboratories.software-ptabler@1.12.8
+
 ## 5.3.6
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.12.8
+
+### Patch Changes
+
+- 45dd202: PFrames version bump, workflow-tengo fixes for parquet support
+
 ## 1.12.7
 
 ### Patch Changes
