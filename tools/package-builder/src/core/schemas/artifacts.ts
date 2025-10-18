@@ -176,7 +176,11 @@ export const condaSchema = archiveRulesSchema
     ['micromamba-version']: z
       .string()
       .default(defaults.CONDA_MICROMAMBA_VERSION)
-      .describe('version of micromamba to be used to operate with conda environments (default: 2.3.2-0)'),
+      .describe('version of micromamba to be used to operate with conda environments'),
+    ['conda-root-dir']: z
+      .string()
+      .default(defaults.CONDA_DATA_LOCATION)
+      .describe('root directory of conda environment inside package root'),
 
     spec: z
       .string()
