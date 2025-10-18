@@ -384,12 +384,14 @@ localTag: '${localTag}'
     }
 
     const micromambaRoot = path.join(contentRoot, defaults.CONDA_DATA_LOCATION);
+    const binName = platform.startsWith('windows') ? 'micromamba.exe' : 'micromamba';
+    const micromambaBin = path.join(contentRoot, binName);
 
     this.logger.debug(`Creating micromamba root directory: '${micromambaRoot}'`);
     await fsp.mkdir(micromambaRoot, { recursive: true });
 
     this.logger.debug(`Creating micromamba instance...`);
-    const m = new micromamba(this.logger, micromambaRoot, artifact['micromamba-version']);
+    const m = new micromamba(this.logger, micromambaRoot, artifact['micromamba-version'], micromambaBin);
 
     const resultSpecPath = path.join(contentRoot, defaults.CONDA_FROEZEN_ENV_SPEC_FILE);
 
