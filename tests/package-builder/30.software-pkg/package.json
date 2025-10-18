@@ -104,7 +104,10 @@
               "windows-x64": "./conda/x64/"
             }
           },
-          "cmd": ["echo", ""]
+          "cmd": [
+            "echo",
+            ""
+          ]
         }
       },
       "hello2": {
