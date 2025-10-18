@@ -1,9 +1,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type * as entrypoint from './schemas/entrypoint';
 import type winston from 'winston';
+
+import * as defaults from '../defaults';
 import * as paths from './paths';
 import * as util from './util';
+
 import type * as artifacts from './schemas/artifacts';
 import { resolveRunEnvironment } from './resolver';
 
@@ -56,7 +58,7 @@ export function prepareDockerOptions(
   currentPackageRoot: string,
   currentPackageName: string,
   artifactID: string,
-  buildParams: entrypoint.PythonPackage,
+  buildParams: artifacts.pythonType,
 ): DockerOptions {
   logger.debug(`Preparing Docker options for Python package: ${buildParams.name} (id: ${artifactID})`);
 
@@ -230,10 +232,10 @@ export function getRunEnvironmentPythonInfo(
 
 function getDefaultPythonOptions(): PythonOptions {
   return {
-    baseImageTag: 'python:3.12-slim',
-    toolset: 'pip',
-    requirements: 'requirements.txt',
-    pkg: '/app/',
+    baseImageTag: defaults.PYTHON_DOCKER_BASE_IMAGE,
+    toolset: defaults.PYTHON_TOOLSET,
+    requirements: defaults.PYTHON_REQUIREMENTS_FILE,
+    pkg: defaults.DOCKER_PLACEHOLDER_PKG,
     envVars: [],
   };
 }

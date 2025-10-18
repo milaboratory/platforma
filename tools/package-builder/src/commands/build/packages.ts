@@ -14,6 +14,7 @@ export default class Packages extends Command {
     ...cmdOpts.BuildFlags,
     ...cmdOpts.PlatformFlags,
     ...cmdOpts.DockerFlags,
+    ...cmdOpts.CondaFlags,
 
     ...cmdOpts.VersionFlag,
     ...cmdOpts.ArchiveFlag,
@@ -34,13 +35,16 @@ export default class Packages extends Command {
     core.allPlatforms = flags['all-platforms'];
     core.fullDirHash = flags['full-dir-hash'];
 
-    await core.buildPackages({
+    await core.buildSoftwarePackages({
       ids: flags['package-id'],
       forceBuild: flags.force as boolean,
 
       archivePath: flags.archive,
       contentRoot: flags['content-root'],
       skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
+
+      // Automated builds settings
+      condaBuild: cmdOpts.shouldDoAction(true, flags['conda-build'], flags['conda-no-build']),
     });
 
     core.buildDescriptors({

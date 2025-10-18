@@ -43,6 +43,21 @@ export const BuildFlags = {
   }),
 };
 
+export const CondaFlags = {
+  'conda-build': Flags.boolean({
+    description: 'build conda environment before packing archive',
+    env: envs.PL_CONDA_BUILD,
+    default: false,
+    required: false,
+  }),
+  'conda-no-build': Flags.boolean({
+    description: 'do not build conda environment before packing archive',
+    env: envs.PL_CONDA_NO_BUILD,
+    default: false,
+    required: false,
+  }),
+};
+
 export const DockerFlags = {
   'docker-registry': Flags.string({
     env: envs.PL_DOCKER_REGISTRY,
@@ -201,4 +216,19 @@ export function modeFromFlag(dev?: devModeName): util.BuildMode {
       util.assertNever(dev);
       throw util.CLIError('unknown dev mode'); // just to calm down TS type analyzer
   }
+}
+
+export function shouldDoAction(defaultValue: boolean, doFlag: boolean, noDoFlag: boolean): boolean {
+  if (noDoFlag) {
+    // Action was deliberately disabled by CLI flag or env variable
+    return false;
+  }
+  if (doFlag) {
+    // Action was deliberately enabled by CLI flag or env variable
+    return true;
+  }
+
+  // Build docker images in CI by default
+  // Do not build docker images automatically outside CI for now.
+  return defaultValue;
 }

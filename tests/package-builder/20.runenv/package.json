@@ -20,7 +20,12 @@
             "envVars": [
               "MY_ENV_VAR=1234"
             ],
-            "root": "./src",
+            "roots": {
+                "linux-x64": "./src",
+                "linux-aarch64": "./src",
+                "macosx-x64": "./src",
+                "macosx-aarch64": "./src"
+            },
             "binDir": "."
           }
         }
@@ -29,10 +34,15 @@
         "environment": {
           "artifact": {
             "registry": "example-java-registry",
-            "type": "environment",
             "runtime": "java",
             "java-version": "21",
-            "root": "./src",
+            "roots": {
+                "linux-x64": "./src",
+                "linux-aarch64": "./src",
+                "macosx-x64": "./src",
+                "macosx-aarch64": "./src",
+                "windows-x64": "./src"
+            },
             "binDir": "."
           }
         }
@@ -44,7 +54,13 @@
             "type": "environment",
             "runtime": "R",
             "r-version": "4.3.1",
-            "root": "./src",
+            "roots": {
+                "linux-x64": "./src",
+                "linux-aarch64": "./src",
+                "macosx-x64": "./src",
+                "macosx-aarch64": "./src",
+                "windows-x64": "./src"
+            },
             "binDir": "."
           }
         }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dockerPackageSchema } from '../core/schemas/artifacts';
+import { dockerSchema } from '../core/schemas/artifacts';
 
 describe('Docker Package Schema Validation', () => {
   it('should reject context with "./"', () => {
@@ -9,7 +9,7 @@ describe('Docker Package Schema Validation', () => {
       dockerfile: 'Dockerfile',
     };
 
-    const result = dockerPackageSchema.safeParse(invalidPackage);
+    const result = dockerSchema.safeParse(invalidPackage);
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0].message).toContain('Context cannot be "./" or "."');
@@ -23,7 +23,7 @@ describe('Docker Package Schema Validation', () => {
       dockerfile: 'Dockerfile',
     };
 
-    const result = dockerPackageSchema.safeParse(invalidPackage);
+    const result = dockerSchema.safeParse(invalidPackage);
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0].message).toContain('Context cannot be "./" or "."');
@@ -50,7 +50,7 @@ describe('Docker Package Schema Validation', () => {
     ];
 
     for (const validPackage of validPackages) {
-      const result = dockerPackageSchema.safeParse(validPackage);
+      const result = dockerSchema.safeParse(validPackage);
       expect(result.success).toBe(true);
     }
   });
@@ -61,7 +61,7 @@ describe('Docker Package Schema Validation', () => {
       context: 'valid-context',
     };
 
-    const result = dockerPackageSchema.safeParse(minimalPackage);
+    const result = dockerSchema.safeParse(minimalPackage);
     expect(result.success).toBe(true);
   });
 });

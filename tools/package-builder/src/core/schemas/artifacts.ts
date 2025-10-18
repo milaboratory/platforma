@@ -1,32 +1,26 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
+import * as defaults from '../../defaults';
 import * as util from '../util';
 
-export const artifactTypes = ['environment', 'binary', 'java', 'python', 'R', 'asset', 'docker'] as const;
+// All known artifact types
+export const artifactTypes = ['asset', 'environment', 'binary', 'java', 'python', 'R', 'docker', 'conda'] as const;
 export type artifactType = (typeof artifactTypes)[number];
 
-export const buildableTypes: artifactType[] = [
-  'environment',
-  'binary',
-  'java',
-  'python',
-  'R',
-  'asset',
-  'docker',
-] as const;
+export const archiveArtifactTypes: artifactType[] = ['asset', 'environment', 'binary', 'java', 'python', 'R', 'conda'] as const;
 export const crossplatformTypes: artifactType[] = ['asset', 'java', 'python', 'R'] as const;
-
-export const dockerRequiredTypes: artifactType[] = ['python'] as const;
+export const dockerAutogenTypes: artifactType[] = ['python'] as const;
 
 export function isBuildable(aType: artifactType): boolean {
-  return buildableTypes.includes(aType);
+  // All known artifact types are buildable so far. No exceptions so far.
+  return artifactTypes.includes(aType);
 }
 
 export function isCrossPlatform(aType: artifactType): boolean {
   return crossplatformTypes.includes(aType);
 }
 
-export function isDockerRequired(aType: artifactType): boolean {
-  return dockerRequiredTypes.includes(aType);
+export function isDockerAutogen(aType: artifactType): boolean {
+  return dockerAutogenTypes.includes(aType);
 }
 
 export const runEnvironmentTypes = ['java', 'python', 'R'] as const;
@@ -48,21 +42,32 @@ export const registryOrRef = z.union([z.string(), registrySchema]);
 // TODO: create new type for binary packages
 const archiveRulesSchema = z.object({
   registry: registryOrRef,
+
   name: z.string().optional(),
   version: z.string().optional(),
 
-  root: z.string().optional(),
+  root: z.string('package archive content directory is required'),
   roots: z
-    .record(
+    .partialRecord(
       z.enum(
-        util.AllPlatforms as [
-          (typeof util.AllPlatforms)[number],
-          ...(typeof util.AllPlatforms)[number][],
-        ],
+        util.AllPlatforms as [(typeof util.AllPlatforms)[number], ...(typeof util.AllPlatforms)[number][]],
       ),
-      z.string().min(1),
+      z.string('path to package archive content directory cannot be empty').min(1),
+      {
+        error: (iss) => {
+          if (iss.input === undefined) {
+            return 'list of supported platforms is required: { <platform>: <dir> }\n'
+              + 'supported platforms:\n  ' + util.AllPlatforms.join('\n  ');
+          }
+          return null;
+        },
+      },
     )
-    .optional()
+    .refine(
+      (val) => Object.keys(val).length > 0, {
+        message: 'specify at least one platform supported by this software in format: { <platform>: <dir> }\n'
+          + 'supported platforms:\n  ' + util.AllPlatforms.join('\n  '),
+      })
     .describe(
       'please, provide settings only for supported platforms: ' + util.AllPlatforms.join(', '),
     ),
@@ -79,56 +84,57 @@ export const artifactIDSchema = z
 
 export type artifactIDString = z.infer<typeof artifactIDSchema>;
 
-export const assetPackageSchema = archiveRulesSchema
+export const assetSchema = archiveRulesSchema
+  .omit({ roots: true })
+  .extend({ type: z.literal('asset') })
+  .strict();
+export type assetType = z.infer<typeof assetSchema>;
+
+export const environmentSchema = archiveRulesSchema
+  .omit({ root: true })
+  .extend({
+    type: z.literal('environment'),
+
+    runtime: z
+      .enum(runEnvironmentTypes)
+      .describe('type of runtime this run environment provides: \'java\', \'python\' and so on'),
+
+    ['r-version']: z.string().optional(),
+    ['python-version']: z.string().optional(),
+    ['java-version']: z.string().optional(),
+
+    envVars: z
+      .array(
+        z
+          .string()
+          .regex(
+            /=/,
+            'environment variable should be specified in format: <var-name>=<var-value>, i.e.: MY_ENV=value',
+          ),
+      )
+      .optional(),
+
+    binDir: z
+      .string()
+      .describe('path to \'bin\' directory to be added to PATH when software uses this run environment'),
+  });
+
+export type environmentType = z.infer<typeof environmentSchema>;
+
+export const binarySchema = archiveRulesSchema
+  .omit({ root: true })
+  .extend({
+    type: z.literal('binary'),
+  });
+export type binaryType = z.infer<typeof binarySchema>;
+
+export const javaSchema = archiveRulesSchema
   .omit({ roots: true })
   .extend({
-    type: z.literal('asset').optional(),
-  })
-  .strict();
-export const typedAssetPackageSchema = archiveRulesSchema.extend({
-  type: z.literal('asset'),
-});
-export type assetPackageConfig = z.infer<typeof assetPackageSchema>;
-
-export const environmentPackageSchema = archiveRulesSchema.extend({
-  type: z.literal('environment'),
-
-  runtime: z
-    .enum(runEnvironmentTypes)
-    .describe('type of runtime this run environment provides: \'java\', \'python\' and so on'),
-
-  ['r-version']: z.string().optional(),
-  ['python-version']: z.string().optional(),
-  ['java-version']: z.string().optional(),
-
-  envVars: z
-    .array(
-      z
-        .string()
-        .regex(
-          /=/,
-          'environment variable should be specified in format: <var-name>=<var-value>, i.e.: MY_ENV=value',
-        ),
-    )
-    .optional(),
-
-  binDir: z
-    .string()
-    .describe('path to \'bin\' directory to be added to PATH when software uses this run environment'),
-});
-
-export type environmentConfig = z.infer<typeof environmentPackageSchema>;
-
-export const binaryPackageSchema = archiveRulesSchema.extend({
-  type: z.literal('binary'),
-});
-export type binaryPackageConfig = z.infer<typeof binaryPackageSchema>;
-
-export const javaPackageSchema = archiveRulesSchema.extend({
-  type: z.literal('java'),
-  environment: artifactIDSchema,
-});
-export type javaPackageConfig = z.infer<typeof javaPackageSchema>;
+    type: z.literal('java'),
+    environment: artifactIDSchema,
+  });
+export type javaType = z.infer<typeof javaSchema>;
 
 const pipToolsetSchema = z.strictObject({
   toolset: z.literal('pip'),
@@ -137,30 +143,55 @@ const pipToolsetSchema = z.strictObject({
 
 export const pythonToolsetSchema = z.discriminatedUnion('toolset', [pipToolsetSchema]);
 
-export const pythonPackageSchema = archiveRulesSchema.extend({
-  type: z.literal('python'),
-  environment: artifactIDSchema,
-  dependencies: pythonToolsetSchema.optional(),
-  pkg: z.string().optional().describe('custom working directory in Docker container (default: /app/)'),
-});
-export type pythonPackageConfig = z.infer<typeof pythonPackageSchema>;
+export const pythonSchema = archiveRulesSchema
+  .omit({ roots: true })
+  .extend({
+    type: z.literal('python'),
 
-export const rPackageSchema = archiveRulesSchema.extend({
-  type: z.literal('R'),
-  environment: artifactIDSchema,
-});
-export type rPackageConfig = z.infer<typeof rPackageSchema>;
+    ['docker-registry']: z
+      .string('python software is also automatically shipped as docker image. Docker registry cannot be empty')
+      .min(1)
+      .default(defaults.DOCKER_REGISTRY)
+      .describe('registry to use for pushing autogenerated docker image'),
 
-export const condaPackageSchema = archiveRulesSchema.extend({
-  type: z.literal('conda'),
-  environment: artifactIDSchema,
-  lockFile: z.string().describe('path to \'renv.lock\' file inside package archive'),
-});
-export type condaPackageConfig = z.infer<typeof condaPackageSchema>;
+    environment: artifactIDSchema,
+    dependencies: pythonToolsetSchema.optional(),
+    pkg: z.string().optional().describe('custom working directory in Docker container (default: /app/)'),
+  });
+export type pythonType = z.infer<typeof pythonSchema>;
 
-export const dockerPackageSchema = archiveRulesSchema.extend({
+export const rSchema = archiveRulesSchema
+  .omit({ roots: true })
+  .extend({
+    type: z.literal('R'),
+    environment: artifactIDSchema,
+  });
+export type rType = z.infer<typeof rSchema>;
+
+export const condaSchema = archiveRulesSchema
+  .omit({ root: true })
+  .extend({
+    type: z.literal('conda'),
+
+    ['micromamba-version']: z
+      .string()
+      .default(defaults.CONDA_MICROMAMBA_VERSION)
+      .describe('version of micromamba to be used to operate with conda environments (default: 2.3.2-0)'),
+
+    spec: z
+      .string()
+      .default(defaults.CONDA_SOURCE_ENV_SPEC_FILE)
+      .describe(`path to conda environment yaml specification relative to package.json (default: './${defaults.CONDA_SOURCE_ENV_SPEC_FILE}')`),
+  });
+export type condaType = z.infer<typeof condaSchema>;
+
+export const dockerSchema = z.object({
   type: z.literal('docker'),
-  registry: registryOrRef.optional(),
+
+  registry: z
+    .string()
+    .default(defaults.DOCKER_REGISTRY)
+    .describe('registry+repository URL to use for pulling this image'),
 
   // build from custom Dockerfile
   context: z.string()
@@ -168,25 +199,40 @@ export const dockerPackageSchema = archiveRulesSchema.extend({
       message: 'Context cannot be "./" or "." - use absolute path or relative path without "./" prefix',
     })
     .describe('relative path to context directory from folder where command is executed or absolute path to context folder (cannot be "./" or ".")'),
-  dockerfile: z.string().optional().describe('relative path to \'Dockerfile\' file from folder where command is executed or absolute path to the file'),
 
-  entrypoint: z.array(z.string()).optional().describe('replace image\'s ENTRYPOINT with this value when running container'),
-  pkg: z.string().optional().describe('{pkg} placeholder value to be used in "cmd" and arguments'),
+  dockerfile: z
+    .string()
+    .default(defaults.DOCKER_DOCKERFILE)
+    .describe('relative path to \'Dockerfile\' file from folder where command is executed or absolute path to the file'),
+
+  pkg: z
+    .string()
+    .default(defaults.DOCKER_PLACEHOLDER_PKG)
+    .describe('{pkg} placeholder value to be used in "cmd" and arguments'),
+
+  // import existing image
+  // entrypoint: z
+  //   .array(z.string())
+  //   .optional()
+  //   .describe('replace image\'s ENTRYPOINT with this value when running container'),
 });
-export type dockerPackageConfig = z.infer<typeof dockerPackageSchema>;
+export type dockerType = z.infer<typeof dockerSchema>;
 
-export const configSchema = z.discriminatedUnion('type', [
-  typedAssetPackageSchema,
-  environmentPackageSchema,
-  binaryPackageSchema,
-  javaPackageSchema,
-  pythonPackageSchema,
-  rPackageSchema,
-  dockerPackageSchema,
-  // condaPackageSchema,
+export const anyArtifactSchema = z.discriminatedUnion('type', [
+  assetSchema,
+  environmentSchema,
+  binarySchema,
+  javaSchema,
+  pythonSchema,
+  rSchema,
+  condaSchema,
+  dockerSchema,
 ]);
 
-export type config = z.infer<typeof configSchema>;
+export type anyType = z.infer<typeof anyArtifactSchema>;
 
-export const listSchema = z.record(z.string(), configSchema);
+export const listSchema = z.record(z.string(), anyArtifactSchema);
 export type list = z.infer<typeof listSchema>;
+
+export type withType<Typ, Orig> = Orig & { type: Typ };
+export type withId<T> = T & { id: string };
