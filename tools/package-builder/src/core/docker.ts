@@ -1,11 +1,10 @@
 import { spawnSync } from 'node:child_process';
-import type { DockerPackage } from './schemas/entrypoint';
+import * as defaults from '../defaults';
+import type * as artifacts from './schemas/artifacts';
 import * as util from './util';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-
-export const defaultDockerRegistry = 'containers.pl-open.science/milaboratories/pl-containers';
 
 export function entrypointName(name: string): string {
   return name + ':docker';
@@ -61,21 +60,6 @@ export function remoteImageExists(tag: string): boolean {
   }
 
   return true;
-}
-
-export function shouldDoAction(isCI: boolean, doFlag: boolean, noDoFlag: boolean): boolean {
-  if (noDoFlag) {
-    // Action was deliberately disabled by CLI flag or env variable
-    return false;
-  }
-  if (doFlag) {
-    // Action was deliberately enabled by CLI flag or env variable
-    return true;
-  }
-
-  // Build docker images in CI by default
-  // Do not build docker images automatically outside CI for now.
-  return isCI;
 }
 
 export function build(context: string, dockerfile: string, tag: string, softwarePackage: string, softwareVersion: string | undefined) {
@@ -147,37 +131,63 @@ export function removeTag(imageTag: string) {
   }
 }
 
-export function generateRemoteTagName(pkg: DockerPackage, imageID: string, registry?: string): string {
-  if (pkg.type !== 'docker') {
-    throw util.CLIError(`package '${pkg.name}' is not a docker package`);
-  }
-
-  return dockerTag(pkg.name, imageID, registry);
+/**
+ * Generate unique content-addressable image tag
+ * @param artifactName: artifact name generated from package name and artifact ID (or explicitly set for artifact in .name field)
+ * @param imageID: unique image content hash (docker image ID in docker ls)
+ * @param registry: custom registry and repository to use for this image
+ * @returns full image tag in format: <registry>/repository:<artifactName>.<imageID>
+ */
+export function generateRemoteTagName(artifactName: string, imageID: string, registry?: string): string {
+  return dockerTag(artifactName, imageID, registry);
 }
 
-export function generateLocalTagName(packageRoot: string, pkg: DockerPackage): string {
-  if (pkg.type !== 'docker') {
-    throw util.CLIError(`package '${pkg.name}' is not a docker package`);
-  }
-
-  const dockerfile = dockerfileFullPath(packageRoot, pkg);
-  const context = contextFullPath(packageRoot, pkg);
+/**
+ * Generate unique content-addressable image tag out of directories and Dockerfile.
+ * @param packageRoot: package root path from where to resolve artifact's paths (context, Dockerfile, ...)
+ * @param artifact: docker artifact configuration
+ * @returns full image tag in format: <registry>/repository:<artifactName>.<contentHash>
+ */
+export function generateLocalTagName(packageRoot: string, artifact: artifacts.dockerType): string {
+  const dockerfile = dockerfileAbsPath(packageRoot, artifact);
+  const context = contextAbsPath(packageRoot, artifact);
   const hash = contentHash(context, dockerfile);
 
   return dockerTag('local-image', hash);
 }
 
-function dockerfileFullPath(packageRoot: string, pkg: DockerPackage): string {
-  return path.resolve(packageRoot, pkg.dockerfile ?? 'Dockerfile');
+/**
+ * Resolve path to Dockerfile.
+ * @param packageRoot: package root path from where to resolve artifact's paths (context, Dockerfile, ...)
+ * @param artifact: docker artifact configuration
+ * @returns absolute path to Dockerfile
+ */
+function dockerfileAbsPath(packageRoot: string, artifact: artifacts.dockerType): string {
+  return path.resolve(packageRoot, artifact.dockerfile ?? 'Dockerfile');
 }
 
-function contextFullPath(packageRoot: string, pkg: DockerPackage): string {
-  if (pkg.context === './' || pkg.context === '.') {
-    throw util.CLIError(`Invalid Docker context: "${pkg.context}". Context cannot be "./" or "." - use absolute path or relative path without "./" prefix`);
+/**
+ * Resolve path to docker build context directory.
+ * @param packageRoot: package root path from where to resolve artifact's paths (context, Dockerfile, ...)
+ * @param artifact: docker artifact configuration
+ * @returns absolute path to docker build context directory
+ */
+function contextAbsPath(packageRoot: string, artifact: artifacts.dockerType): string {
+  if (artifact.context === './' || artifact.context === '.') {
+    throw util.CLIError(`Invalid Docker context: "${artifact.context}". Context cannot be "./" or "." - use absolute path or relative path without "./" prefix`);
   }
-  return path.resolve(packageRoot, pkg.context ?? '.');
+  return path.resolve(packageRoot, artifact.context ?? '.');
 }
 
+/**
+ * Calculate cummulative hash of docker build context directory context and Dockerfile.
+ * To speedup hash calculation, we do not read contents of each item in context dir but
+ * use metadata (size, mtime, ...).
+ *
+ * @param contextFullPath: abs path to docker build context
+ * @param dockerfileFullPath: abs path to Dockerfile
+ * @returns hash of what the keep
+ */
 function contentHash(contextFullPath: string, dockerfileFullPath: string): string {
   if (!fs.existsSync(dockerfileFullPath)) {
     throw util.CLIError(`Dockerfile '${dockerfileFullPath}' not found`);
@@ -195,6 +205,6 @@ function contentHash(contextFullPath: string, dockerfileFullPath: string): strin
 }
 
 function dockerTag(packageName: string, contentHash: string, registry?: string): string {
-  const dockerRegistry = registry ?? defaultDockerRegistry;
+  const dockerRegistry = registry ?? defaults.DOCKER_REGISTRY;
   return `${dockerRegistry}:${packageName.replaceAll('/', '.')}.${contentHash}`;
 }

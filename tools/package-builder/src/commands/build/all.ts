@@ -3,7 +3,6 @@ import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
 import * as envs from '../../core/envs';
-import * as docker from '../../core/docker';
 
 export default class BuildAll extends Command {
   static override description
@@ -19,6 +18,7 @@ export default class BuildAll extends Command {
     ...cmdOpts.PlatformFlags,
     ...cmdOpts.VersionFlag,
     ...cmdOpts.DockerFlags,
+    ...cmdOpts.CondaFlags,
 
     ...cmdOpts.EntrypointNameFlag,
     ...cmdOpts.PackageIDFlag,
@@ -41,7 +41,7 @@ export default class BuildAll extends Command {
       core.allPlatforms = flags['all-platforms'];
       core.fullDirHash = flags['full-dir-hash'];
 
-      const buildDocker = docker.shouldDoAction(envs.isCI(), flags['docker-build'], flags['docker-no-build']);
+      const buildDocker = cmdOpts.shouldDoAction(envs.isCI(), flags['docker-build'], flags['docker-no-build']);
 
       if (buildDocker) {
         core.buildDockerImages({
@@ -50,20 +50,23 @@ export default class BuildAll extends Command {
         });
       }
 
-      await core.buildPackages({
+      await core.buildSoftwarePackages({
         ids: flags['package-id'],
         forceBuild: flags.force,
 
         archivePath: flags.archive,
         contentRoot: flags['content-root'],
         skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
+
+        // Automated builds settings
+        condaBuild: cmdOpts.shouldDoAction(true, flags['conda-build'], flags['conda-no-build']),
       });
 
       core.buildDescriptors({
         packageIds: flags['package-id'] ? flags['package-id'] : undefined,
       });
 
-      const autopush = docker.shouldDoAction(
+      const autopush = cmdOpts.shouldDoAction(
         envs.isCI() && !core.pkgInfo.isPrivate, // do not push docker images of private packages
         flags['docker-autopush'],
         flags['docker-no-autopush'],

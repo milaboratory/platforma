@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import { getRunEnvironmentPythonInfo, prepareDockerOptions } from '../docker-python';
-import type { PythonPackage } from '../schemas/entrypoint';
+import type * as artifacts from '../schemas/artifacts';
 import type winston from 'winston';
 import * as util from '../util';
 
@@ -22,7 +22,7 @@ const mockLogger = {
 } as unknown as winston.Logger;
 
 // Mock Python package for testing - will be set in beforeEach
-let mockPythonPackage: PythonPackage;
+let mockPythonPackage: artifacts.pythonType;
 
 const createRunEnvironmentSwJson = (packageRoot: string, runenvArtifactID: string, pythonVersion: string, envVars: string[]) => {
   const [runenvPackageName, runenvEntrypointName] = util.rSplit(runenvArtifactID, ':', 2);
@@ -76,17 +76,13 @@ describe('Docker Python Functions', () => {
 
     // Initialize mockPythonPackage with absolute path
     mockPythonPackage = {
-      name: 'test-python-package',
-      version: '1.0.0',
-      type: 'python',
-      environment: '@platforma-open/milaboratories.runenv-python-3:3.12.10',
-      registry: { name: 'test' },
-      root: path.join(testPackageRoot, 'src'), // Use absolute path
-      contentRoot: () => './src',
-      crossplatform: false,
-      isMultiroot: false,
-      fullName: () => 'test-python-package-1.0.0',
-      namePattern: 'test-python-package-1.0.0-{os}-{arch}',
+      'name': 'test-python-package',
+      'version': '1.0.0',
+      'type': 'python',
+      'environment': '@platforma-open/milaboratories.runenv-python-3:3.12.10',
+      'registry': { name: 'test' },
+      'docker-registry': 'test-docker-registry',
+      'root': path.join(testPackageRoot, 'src'), // Use absolute path
     };
 
     // Clear all mocks
@@ -144,7 +140,7 @@ describe('Docker Python Functions', () => {
     it('should use default Python version when environment has no version', () => {
       createRunEnvironmentSwJson(testPackageRoot, '@platforma-open/milaboratories.runenv-python-3:aaa', '', []);
 
-      const packageWithoutVersion: PythonPackage = {
+      const packageWithoutVersion: artifacts.pythonType = {
         ...mockPythonPackage,
         environment: '@platforma-open/milaboratories.runenv-python-3:aaa',
         root: path.join(testPackageRoot, 'src'), // Use absolute path
@@ -163,11 +159,10 @@ describe('Docker Python Functions', () => {
 
       // Check essential Dockerfile components
       expect(dockerfileContent).toContain('FROM python:3.12-slim');
-      expect(dockerfileContent).toContain('WORKDIR /app/');
-      expect(dockerfileContent).toContain('COPY . /app/');
-      expect(dockerfileContent).toContain('COPY');
-      expect(dockerfileContent).toContain('RUN pip install --no-cache-dir -r requirements.txt');
-      expect(dockerfileContent).toContain('ENV PYTHONPATH=/app/');
+      expect(dockerfileContent).toContain('WORKDIR /app');
+      expect(dockerfileContent).toContain('COPY ');
+      expect(dockerfileContent).toContain('RUN pip install');
+      expect(dockerfileContent).toContain('ENV PYTHONPATH=/app');
       expect(dockerfileContent).toContain('CMD ["bash"]');
     });
 

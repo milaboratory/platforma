@@ -4,14 +4,14 @@ import fs from 'node:fs';
 import type { Hash } from 'node:crypto';
 import { createHash } from 'node:crypto';
 import winston from 'winston';
-import type { ZodError, ZodIssue } from 'zod';
+import type { z } from 'zod/v4';
 import { Errors as OclifErrors } from '@oclif/core';
 
 export const packageJsonName = 'package.json';
 export const softwareConfigName = 'package.json';
 
 export function assertNever(_a: never) {
-  throw new Error('code logic error: assertNever() call');
+  throw new Error(`code logic error: assertNever() call for ${JSON.stringify(_a)}`);
 }
 
 export function trimPrefix(str: string, prefix: string): string {
@@ -317,23 +317,51 @@ export function artifactIDToString(a: artifactID): string {
   return `${a.package}:${a.name}`;
 }
 
-export const formatZodError = (err: ZodError): string[] => {
-  const { formErrors, fieldErrors } = err.flatten(
-    (issue: ZodIssue) => ({ path: issue.path.join('.'), message: issue.message }),
-  );
+export function indentText(txt: string, indent: string | number, skipFirstLine: boolean = false) {
+  indent = typeof indent === 'number' ? ' '.repeat(indent) : indent;
 
+  return txt.split('\n')
+    .map((line, index) => (index === 0 && skipFirstLine ? line : `${indent}${line}`))
+    .join('\n');
+}
+
+export const formatZodIssues = (issues: z.core.$ZodIssue[], i: string = '', p: PropertyKey[] = []): string => {
   const _errors: string[] = [];
-  for (const e of formErrors ?? []) {
-    _errors.push(`${e.path}: ${e.message}`);
-  }
 
-  for (const [_, issues] of Object.entries(fieldErrors)) {
-    for (const e of issues ?? []) {
-      _errors.push(`${e.path}: ${e.message}`);
+  const formatSubpath = (path: PropertyKey[], prefix: string = '') => {
+    let pp = path.join('.');
+    if (pp != '' && p.length > 0) pp = `.${pp}`;
+    if (pp != '') pp = `${prefix}${pp}`;
+    return pp;
+  };
+
+  const addItem = (item: string) => _errors.push(indentText(item, i));
+
+  for (const issue of issues) {
+    if (issue.code === 'invalid_union') {
+      addItem(`✖ Expected one of several possible values`);
+      const path = formatSubpath(issue.path, '');
+      addItem(`  → at '${path}':`);
+      for (const errGrp of issue.errors) {
+        _errors.push(formatZodIssues(errGrp, `${i}    `, [...p, ...issue.path]));
+      }
+    } else if (issue.code === 'invalid_element' || issue.code === 'invalid_key') {
+      addItem(`✖ ${issue.code.replaceAll('_', ' ')}:`);
+      _errors.push(formatZodIssues(issue.issues, `${i}  `, [...p, ...issue.path]));
+    } else if (issue.code === 'invalid_type') {
+      const path = formatSubpath(issue.path, ' ');
+      const prefix = `✖ (${issue.expected})${path}: `;
+      const msg = indentText(issue.message, Math.min(prefix.length, 20), true);
+      addItem(`${prefix}${msg}`);
+    } else {
+      const path = formatSubpath(issue.path, ' ');
+      const prefix = `✖ (${issue.code.replaceAll('_', ' ')})${path}: `;
+      const msg = indentText(issue.message, Math.min(prefix.length, 20), true);
+      addItem(`${prefix}${msg}`);
     }
   }
 
-  return _errors;
+  return _errors.join('\n');
 };
 
 export function CLIError(msg: string): OclifErrors.CLIError {

@@ -3,18 +3,18 @@ import path from 'node:path';
 import os from 'node:os';
 import { randomBytes } from 'node:crypto';
 
-import type { DockerPackage, PackageConfig } from './schemas/entrypoint';
+import * as defaults from '../defaults';
+import * as artifacts from './schemas/artifacts';
 import { PackageInfo } from './package-info';
 import {
   descriptorFilePath,
   readDescriptorFile,
 } from './resolver';
 import {
-  Renderer,
+  SwJsonRenderer,
   writeBuiltArtifactInfo,
-  validateDockerDescriptor,
-} from './renderer';
-import * as test_assets from './test-artifacts';
+} from './sw-json-render';
+import * as test_assets from './schemas/test-artifacts';
 import { createLogger } from './util';
 import { describe, test, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import * as docker from './docker';
@@ -40,8 +40,8 @@ describe('Renderer tests', () => {
 
   test('render asset', () => {
     const epName = test_assets.EPNameAsset;
-    const assetPkg = i.getPackage(epName);
-    const sw = new Renderer(l, i);
+    const assetPkg = i.getArtifact(epName, 'asset');
+    const sw = new SwJsonRenderer(l, i);
 
     writeTestArtifactInfo(i, 'archive', assetPkg);
     const eps = new Map([[epName, i.getMainEntrypoint(epName)]]);
@@ -54,8 +54,8 @@ describe('Renderer tests', () => {
 
   test('render os-dependant', () => {
     const epName = test_assets.EPNameCustomName;
-    const binPkg = i.getPackage(epName);
-    const sw = new Renderer(l, i);
+    const binPkg = i.getArtifact(epName, 'binary');
+    const sw = new SwJsonRenderer(l, i);
 
     writeTestArtifactInfo(i, 'archive', binPkg);
     const eps = new Map([[epName, i.getMainEntrypoint(epName)]]);
@@ -68,8 +68,8 @@ describe('Renderer tests', () => {
 
   test('render environment', () => {
     const epName = test_assets.EPNameJavaEnvironment;
-    const envPkg = i.getPackage(epName);
-    const sw = new Renderer(l, i);
+    const envPkg = i.getArtifact(epName, 'environment');
+    const sw = new SwJsonRenderer(l, i);
 
     writeTestArtifactInfo(i, 'archive', envPkg);
     const eps = new Map([[epName, i.entrypoints.get(epName)!]]);
@@ -84,13 +84,13 @@ describe('Renderer tests', () => {
 
   test('read descriptor after render', () => {
     const epName = test_assets.EPNameCustomName;
-    const binPkg = i.getPackage(epName);
-    const sw = new Renderer(l, i);
+    const binPkg = i.getArtifact(epName, 'binary');
+    const sw = new SwJsonRenderer(l, i);
 
     writeTestArtifactInfo(i, 'archive', binPkg);
     const eps = new Map([[epName, i.getMainEntrypoint(epName)]]);
     const renderedDescriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
-    sw.writeEntrypointDescriptor(renderedDescriptor);
+    sw.writeSwJson(renderedDescriptor);
 
     const epPath = descriptorFilePath(
       i.packageRoot,
@@ -104,16 +104,16 @@ describe('Renderer tests', () => {
 
   test('render with environment dependency', () => {
     const envEpName = test_assets.EPNameJavaEnvironment;
-    const envPkg = i.getPackage(envEpName);
+    const envPkg = i.getArtifact(envEpName, 'environment');
     const epName = test_assets.EPNameJava;
-    const javaPkg = i.getPackage(epName);
+    const javaPkg = i.getArtifact(epName, 'java');
 
-    const renderer = new Renderer(l, i);
+    const renderer = new SwJsonRenderer(l, i);
 
     writeTestArtifactInfo(i, 'archive', envPkg);
     const envEps = new Map([[envEpName, i.getMainEntrypoint(envEpName)]]);
     const envDescriptor = renderer.renderSoftwareEntrypoints('release', envEps).get(envEpName)!;
-    renderer.writeEntrypointDescriptor(envDescriptor);
+    renderer.writeSwJson(envDescriptor);
 
     writeTestArtifactInfo(i, 'archive', javaPkg);
     const eps = new Map([[epName, i.getMainEntrypoint(epName)]]);
@@ -125,15 +125,15 @@ describe('Renderer tests', () => {
 
   test('render docker with binary', () => {
     const envEpName = test_assets.EPNameJavaEnvironment;
-    const envPkg = i.getPackage(envEpName);
-    writeTestArtifactInfo(i, 'archive', envPkg);
+    const envArtifact = i.getArtifact(envEpName, 'environment');
+    writeTestArtifactInfo(i, 'archive', envArtifact);
 
     const javaEpName = test_assets.EPNameJava;
-    const javaPkg = i.getPackage(javaEpName);
-    writeTestArtifactInfo(i, 'archive', javaPkg);
+    const javaArtifact = i.getArtifact(javaEpName, 'java');
+    writeTestArtifactInfo(i, 'archive', javaArtifact);
 
     const javaDockerEpName = docker.entrypointName(javaEpName);
-    const dockerPkg = i.getPackage(javaEpName, 'docker');
+    const dockerPkg = i.getArtifact(javaEpName, 'docker');
     writeTestArtifactInfo(i, 'docker', dockerPkg);
 
     fs.mkdirSync(path.join(i.packageRoot, i.packageRoot), { recursive: true });
@@ -141,26 +141,25 @@ describe('Renderer tests', () => {
     fs.writeFileSync(path.join(i.packageRoot, 'Dockerfile'), 'FROM scratch');
     fs.writeFileSync(path.join(i.packageRoot, 'package.json'), test_assets.PackageJson);
 
-    const render = new Renderer(l, i);
+    const render = new SwJsonRenderer(l, i);
 
     const envEps = new Map([[envEpName, i.getMainEntrypoint(envEpName)]]);
     const envDescriptor = render.renderSoftwareEntrypoints('release', envEps).get(envEpName)!;
-    render.writeEntrypointDescriptor(envDescriptor);
+    render.writeSwJson(envDescriptor);
 
     const eps = new Map([[javaDockerEpName, i.getMainEntrypoint(javaDockerEpName)], [javaEpName, i.getMainEntrypoint(javaEpName)]]);
     const javaDescriptor = render.renderSoftwareEntrypoints('release', eps).get(javaEpName)!;
-    render.writeEntrypointDescriptor(javaDescriptor);
+    render.writeSwJson(javaDescriptor);
 
-    const expectedTag = new RegExp(`${docker.defaultDockerRegistry}:${test_assets.PackageNameNoAt}\\.${javaEpName}\\.(?<hash>.*)`);
+    const expectedTag = new RegExp(`${defaults.DOCKER_REGISTRY}:${test_assets.PackageNameNoAt}\\.${javaEpName}\\.(?<hash>.*)`);
     expect(javaDescriptor.docker).toBeDefined();
     expect(javaDescriptor.docker!.tag).toMatch(expectedTag);
-    expect(javaDescriptor.docker!.cmd).toEqual(['echo', 'hello']);
-    expect(javaDescriptor.docker!.entrypoint).toEqual(['/usr/bin/env', 'printf']);
+    expect(javaDescriptor.docker!.cmd).toEqual(['java', '-jar', 'hello.jar']);
   });
 
   test('render docker indinvidual entrypoint', () => {
     const dockerEpName = test_assets.EPNameDocker;
-    const dockerPkg = i.getPackage(dockerEpName, 'docker');
+    const dockerPkg = i.getArtifact(dockerEpName, 'docker');
     writeTestArtifactInfo(i, 'docker', dockerPkg);
 
     fs.mkdirSync(path.join(i.packageRoot, i.packageRoot), { recursive: true });
@@ -168,122 +167,40 @@ describe('Renderer tests', () => {
     fs.writeFileSync(path.join(i.packageRoot, 'Dockerfile'), 'FROM scratch');
     fs.writeFileSync(path.join(i.packageRoot, 'package.json'), test_assets.PackageJson);
 
-    const render = new Renderer(l, i);
+    const render = new SwJsonRenderer(l, i);
 
     const eps = new Map([[dockerEpName, i.getMainEntrypoint(dockerEpName)]]);
     const dockerDescriptor = render.renderSoftwareEntrypoints('release', eps).get(dockerEpName)!;
 
-    const expectedTag = new RegExp(`${docker.defaultDockerRegistry}:${test_assets.PackageNameNoAt}\\.${dockerEpName}\\.(?<hash>.*)`);
+    const expectedTag = new RegExp(`${defaults.DOCKER_REGISTRY}:${test_assets.PackageNameNoAt}\\.${dockerEpName}\\.(?<hash>.*)`);
     expect(dockerDescriptor.docker).toBeDefined();
     expect(dockerDescriptor.docker!.tag).toMatch(expectedTag);
     expect(dockerDescriptor.docker!.cmd).toEqual(['echo', 'hello']);
-    expect(dockerDescriptor.docker!.entrypoint).toEqual(['/usr/bin/env', 'printf']);
-  });
-
-  describe('validateDockerDescriptor', () => {
-    test('should pass with valid docker descriptor', () => {
-      const validDescriptor = {
-        tag: 'test:latest',
-        entrypoint: ['/bin/sh'],
-        cmd: ['echo', 'hello'],
-      };
-
-      expect(() => validateDockerDescriptor(validDescriptor)).not.toThrow();
-    });
-
-    test('should pass with valid docker descriptor containing pkg placeholder and pkg property', () => {
-      const validDescriptor = {
-        tag: 'test:latest',
-        entrypoint: ['/bin/sh'],
-        cmd: ['python', '-m', '{pkg}'],
-        pkg: 'my-package',
-      };
-
-      expect(() => validateDockerDescriptor(validDescriptor)).not.toThrow();
-    });
-
-    test('should throw when cmd contains {pkg} placeholder but pkg property is missing', () => {
-      const invalidDescriptor = {
-        tag: 'test:latest',
-        entrypoint: ['/bin/sh'],
-        cmd: ['python', '-m', '{pkg}'],
-      };
-
-      expect(() => validateDockerDescriptor(invalidDescriptor)).toThrow(
-        'docker descriptor is invalid: \'pkg\' is required when \'cmd\' contains \'{pkg}\'',
-      );
-    });
-
-    test('should throw when cmd contains {pkg} placeholder but pkg property is undefined', () => {
-      const invalidDescriptor = {
-        tag: 'test:latest',
-        entrypoint: ['/bin/sh'],
-        cmd: ['python', '-m', '{pkg}'],
-        pkg: undefined,
-      };
-
-      expect(() => validateDockerDescriptor(invalidDescriptor)).toThrow(
-        'docker descriptor is invalid: \'pkg\' is required when \'cmd\' contains \'{pkg}\'',
-      );
-    });
-
-    test('should handle multiple cmd entries with pkg placeholder', () => {
-      const invalidDescriptor = {
-        tag: 'test:latest',
-        entrypoint: ['/bin/sh'],
-        cmd: ['echo', 'start', 'python -m {pkg}', 'echo', 'end'],
-      };
-
-      expect(() => validateDockerDescriptor(invalidDescriptor)).toThrow(
-        'docker descriptor is invalid: \'pkg\' is required when \'cmd\' contains \'{pkg}\'',
-      );
-    });
-
-    test('should pass when pkg placeholder is not present', () => {
-      const validDescriptor = {
-        tag: 'test:latest',
-        entrypoint: ['/bin/sh'],
-        cmd: ['echo', 'hello', 'world'],
-      };
-
-      expect(() => validateDockerDescriptor(validDescriptor)).not.toThrow();
-    });
-
-    test('should throw when pkg is provided with empty string', () => {
-      const invalidDescriptor = {
-        tag: 'test:latest',
-        entrypoint: ['/bin/sh'],
-        cmd: ['python', '-m', '{pkg}'],
-        pkg: '',
-      };
-
-      expect(() => validateDockerDescriptor(invalidDescriptor)).toThrow(
-        'docker descriptor is invalid: \'pkg\' is required when \'cmd\' contains \'{pkg}\'',
-      );
-    });
   });
 });
 
 function writeTestArtifactInfo(
   i: PackageInfo,
   artifactType: 'docker' | 'archive',
-  pkg: PackageConfig,
+  artifact: artifacts.withId<artifacts.anyType>,
 ) {
   let artInfoPath: string;
   if (artifactType === 'docker') {
-    artInfoPath = i.artifactInfoLocation(pkg.id, 'docker', util.currentArch());
-  } else if (pkg.crossplatform) {
-    artInfoPath = i.artifactInfoLocation(pkg.id, 'archive', undefined);
+    artInfoPath = i.artifactInfoLocation(artifact.id, 'docker', util.currentArch());
+  } else if (artifacts.isCrossPlatform(artifact.type)) {
+    artInfoPath = i.artifactInfoLocation(artifact.id, 'archive', undefined);
   } else {
-    artInfoPath = i.artifactInfoLocation(pkg.id, 'archive', util.currentPlatform());
+    artInfoPath = i.artifactInfoLocation(artifact.id, 'archive', util.currentPlatform());
   }
 
+  const registry = i.artifactRegistrySettings(artifact);
+
   writeBuiltArtifactInfo(artInfoPath, {
-    type: pkg.type,
+    type: artifact.type,
     platform: util.currentPlatform(),
-    registryURL: pkg.type === 'asset' ? pkg.registry.downloadURL : undefined,
-    registryName: pkg.registry.name,
-    remoteArtifactLocation: artifactType === 'docker' ? docker.generateRemoteTagName(pkg as DockerPackage, 'beefface') : pkg.namePattern,
-    uploadPath: artifactType === 'docker' ? undefined : pkg.fullName(util.currentPlatform()),
+    registryURL: artifact.type === 'asset' ? registry.downloadURL : undefined,
+    registryName: registry.name,
+    remoteArtifactLocation: artifactType === 'docker' ? docker.generateRemoteTagName(i.artifactName(artifact), 'beefface') : i.artifactArchiveAddressPattern(artifact),
+    uploadPath: artifactType === 'docker' ? undefined : i.artifactArchiveFullName(artifact, util.currentPlatform()),
   });
 }
