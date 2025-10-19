@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.44.14
+
+### Patch Changes
+
+- 31a1ac2: Parquet unique keys
+
 ## 1.44.13
 
 ### Patch Changes
