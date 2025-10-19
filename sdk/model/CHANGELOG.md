@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.44.13
+
+### Patch Changes
+
+- fcdb249: Parquet support
+
 ## 1.44.8
 
 ### Patch Changes
