@@ -142,11 +142,13 @@ export function getPartitionKeysList(
 
     case RT_JSON_PARTITIONED:
     case RT_BINARY_PARTITIONED:
+    case RT_PARQUET_PARTITIONED:
       keyLength = meta['partitionKeyLength'];
       break;
 
     case RT_BINARY_SUPER_PARTITIONED:
     case RT_JSON_SUPER_PARTITIONED:
+    case RT_PARQUET_SUPER_PARTITIONED:
       keyLength = meta['superPartitionKeyLength'] + meta['partitionKeyLength'];
       break;
   }
@@ -155,6 +157,7 @@ export function getPartitionKeysList(
     case RT_RESOURCE_MAP:
     case RT_JSON_PARTITIONED:
     case RT_BINARY_PARTITIONED:
+    case RT_PARQUET_PARTITIONED:
       for (let keyStr of acc.listInputFields()) {
         if (rt === RT_BINARY_PARTITIONED) {
           keyStr = removeIndexSuffix(keyStr).baseKey;
@@ -168,6 +171,7 @@ export function getPartitionKeysList(
     case RT_RESOURCE_MAP_PARTITIONED:
     case RT_BINARY_SUPER_PARTITIONED:
     case RT_JSON_SUPER_PARTITIONED:
+    case RT_PARQUET_SUPER_PARTITIONED:
       for (const supKeyStr of acc.listInputFields()) {
         const keyPrefix = [...JSON.parse(supKeyStr)] as PColumnKey;
 
