@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import FilterComponent from './Filter.vue';
 import { PlBtnSecondary, PlElementList, PlCheckbox, PlIcon16 } from '@milaboratories/uikit';
-import type { PlAdvancedFilterUI, SourceOptionsInfo, UniqueValuesInfo } from './types';
+import type { PlAdvancedFilterUI, SourceOptionInfo } from './types';
 import { computed, reactive, ref, watch } from 'vue';
 import OperandButton from './OperandButton.vue';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
@@ -10,16 +10,11 @@ import { createNewGroup, toInnerModel, toOuterModel } from './utils';
 
 const props = withDefaults(defineProps<{
   /** List of ids of sources (columns, axes) that can be selected in filters */
-  sourceIds: string[];
+  items: SourceOptionInfo[];
   /** If true - new filter can be added by droppind element into filter group; else new column is added by button click */
   dndMode?: boolean;
   /** If dnd mode on - used for column adding */
   draggedId?: string;
-  /** Contains info about every source id to render: type (string/int...), label, error */
-  sourceInfoBySourceId: SourceOptionsInfo;
-  /** List of unique values of source (column, axis) for Equal/InSet filters.
-   * If sourceId missed here values PlAutocomplete component used */
-  uniqueValuesBySourceId: UniqueValuesInfo;
   /** Loading function for unique values for Equal/InSet filters. Used if there are not ready list of unique values in uniqueValuesBySourceId */
   searchOptionsFn?: (id: string, str: string) => (Promise<ListOptionBase<string | number>[]>) | ((id: string, str: string) => ListOptionBase<string | number>[]);
   /** Loading function for label of selected value for Equal/InSet filters. Used if there are not ready list of unique values in uniqueValuesBySourceId */
@@ -41,7 +36,7 @@ watch(() => innerModel.value, (v: PlAdvancedFilterUI) => {
   updateOuterModelValue(v);
 }, { deep: true });
 
-const defaultColumnId = computed(() => props.sourceIds[0]);
+const defaultColumnId = computed(() => props.items[0]?.id);
 const emptyGroup = [{
   id: 'empty',
   not: false,
@@ -126,9 +121,7 @@ function dragOver(event: DragEvent) {
             :key="filterIdx"
             v-model="item.filters[filterIdx]"
             :operand="item.operand"
-            :source-info-by-source-id="sourceInfoBySourceId"
-            :unique-values-by-source-id="uniqueValuesBySourceId"
-            :source-ids="sourceIds"
+            :column-options="items"
             :search-model-fn="searchModelFn"
             :search-options-fn="searchOptionsFn"
             :dnd-mode="dndMode"
@@ -220,7 +213,7 @@ function dragOver(event: DragEvent) {
     display: flex;
     align-items: center;
   }
-  :global(.sortable-chosen) .buttonWrapper{
+  :global(.sortable-chosen) .buttonWrapper {
     visibility: hidden;
   }
 </style>
