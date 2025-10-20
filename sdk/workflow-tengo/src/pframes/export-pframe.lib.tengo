@@ -129,6 +129,6 @@ exportPFrame := func(pfResource, skipHideDataFromUI) {
 	return result.build()
 }
 
-export {
+export ll.toStrict({
 	exportPFrame: exportPFrame
-}
+})

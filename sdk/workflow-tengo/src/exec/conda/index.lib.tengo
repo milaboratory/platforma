@@ -1,3 +1,4 @@
+json := import("json")
 times := import("times")
 
 ll := import(":ll")
@@ -8,7 +9,6 @@ smart := import(":smart")
 render := import(":render")
 pkg := import(":exec.package")
 internal := import(":exec.conda.internal")
-runenv := import(":exec.runenv")
 desc := import(":exec.descriptor")
 
 _OUTPUT_RUN_ENV       := "runEnv"
@@ -16,19 +16,34 @@ _OUTPUT_RUN_ENV       := "runEnv"
 createEnvTpl := assets.importTemplate(":exec.conda.create-env")
 
 /**
- * Build conda environment out of software package containing pre-downloaded 
- * packages and frozen environment spec.
+ * Create conda environment builder for given conda-based software.
+ *
+ * @param descriptor: desc.condaScheme - conda software package descriptor.
+ * @return condaBuilder: condaBuilder - conda builder object.
  */
 condaBuilder := func(descriptor) {
 	self := undefined
 
-    validation.assertType(descriptor, desc.condaScheme, "exec.conda.builder: <descriptor> must be conda software specification")
-    ll.assert(descriptor.type == "conda", "exec.conda.builder: <descriptor> must be conda software specification, not %q", descriptor.type)
-    condaDescriptor = ll.fromStrict(condaDescriptor)
+	validation.assertType(descriptor, desc.condaScheme, "exec.conda.builder: <descriptor> must be conda software specification")
+	ll.assert(descriptor.type == "conda", "exec.conda.builder: <descriptor> must be conda software specification, not %q", descriptor.type)
+	condaDescriptor := ll.fromStrict(descriptor)
+	softwareRef := undefined
 
 	cache := 0
 
 	self = {
+		/**
+		 * Use already installed software intead of installing it from descriptor.
+		 *
+		 * @param pkgRef: smart.reference - reference to already installed software package.
+		 */
+		software: func(pkgRef) {
+			validation.assertType(pkgRef, validation.reference, "exec.python.software: <pkgRef> must be a reference to software package")
+
+			softwareRef = pkgRef
+			return self
+		},
+
 		/**
 		 * Sets the cache time in milliseconds.
 		 *
@@ -84,35 +99,43 @@ condaBuilder := func(descriptor) {
 			return self
 		},
 
+		/**
+		 * Build conda environment out of software package containing pre-downloaded
+		 * packages and frozen environment spec.
+		 *
+		 * @return { conda: smart.reference, env: smart.reference }
+		 */
 		build: func() {
-			archive := pkg.get(condaDescriptor.registry, condaDescriptor.package).archive()
-			condaPkg := pkg.install(archive).package()
+			if (is_undefined(softwareRef)) {
+				// Install software from descriptor if not installed by caller.
+				archive := pkg.get(condaDescriptor.registry, condaDescriptor.package).archive()
+				softwareRef = pkg.install(archive).package()
+			}
 
-			condaEnvInputs := {
-				software: condaPkg,
+			envInputs := {
+				software: softwareRef,
 				condaDescriptor: condaDescriptor,
 
 				forceRecreate: 1 // increment to force venv re-creation in blocks
 			}
 
-			validation.assertType(condaEnvInputs, internal.condaEnvInputSchema, "incorrect conda environment configuration")
-
-			tpl := render.create(createEnvTpl, condaEnvInputs)
+			validation.assertType(envInputs, internal.condaEnvInputSchema, "invalid conda environment configuration")
+			tpl := render.create(createEnvTpl, envInputs)
 
 			self := undefined
 			self = ll.toStrict(oop.inherit(tpl, {
 				/**
-				 * conda software package reference. 
-                 * (place, where {pkg} should point)
+				 * conda software package reference.
+				 * (place, where {pkg} should point)
 				 * @return conda: smart.field - a reference to installed conda software package.
 				 */
 				conda: func() {
-					return condaPkg
+					return softwareRef
 				},
 
 				/**
 				 * Conda environment restored on runner side from frozen spec file.
-                 * (place, where --prefix in micromamba run command should point)
+				 * (place, where --prefix in micromamba run command should point)
 				 *
 				 * @return env: smart.field - a reference to the restored conda environment.
 				 */

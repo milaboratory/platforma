@@ -1,7 +1,8 @@
 /** Everything about software descriptors
  * The scheme is here:
- * https://github.com/milaboratory/platforma/blob/main/tools/package-builder/src/core/renderer.ts#L161 */
+ * https://github.com/milaboratory/platforma/blob/main/tools/package-builder/src/core/schemas/sw-json.ts */
 
+ll := import(":ll")
 
 runEnvScheme := {
 	registry: "string",
@@ -28,8 +29,8 @@ condaScheme := {
 	cmd: ["string"],
 	"envVars,?": ["string"],
 
-	['micromamba-version']: "string",
-	['conda-root-dir']: "string",
+	"micromamba-version": "string",
+	"conda-root-dir": "string",
 	spec: "string"
 }
 
@@ -54,10 +55,11 @@ scheme := {
 	"local,?": localScheme
 }
 
-export {
+export ll.toStrict({
 	runEnvScheme: runEnvScheme,
 	binaryScheme: binaryScheme,
+	condaScheme: condaScheme,
 	assetScheme: assetScheme,
 	localScheme: localScheme,
 	scheme: scheme
-}
+})

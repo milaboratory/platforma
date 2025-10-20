@@ -6,7 +6,7 @@ condaEnvInputSchema := {
 	"software": validation.reference,
 	"condaDescriptor": desc.condaScheme,
 
-    "forceRecreate,?": "number"
+	"forceRecreate,?": "number"
 }
 
 export ll.toStrict({

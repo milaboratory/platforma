@@ -27,6 +27,7 @@
     "@platforma-sdk/workflow-tengo": "workspace:*"
   },
   "devDependencies": {
+    "@platforma-open/milaboratories.software-anarci": "catalog:",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/computable": "workspace:*",
     "@milaboratories/helpers": "workspace:*",
