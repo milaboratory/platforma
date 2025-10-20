@@ -1,0 +1,98 @@
+/**
+ * Creates new conda virtual environment.
+ */
+
+self := import(":tpl.light")
+
+feats := import(":feats")
+text := import("text")
+render := import(":render")
+workdir := import(":workdir")
+runcmd := import(":exec.runcmd")
+assets := import(":assets")
+path := import(":path")
+validation := import(":validation")
+runenv := import(":exec.runenv")
+internal := import(":exec.conda.internal")
+constants := import(":exec.constants")
+pkg := import(":exec.package")
+
+/**
+ * Creates new conda environment using micromamba binary and frozen spec file 
+ * provided along with software package.
+ *
+ * @param condaPackage: smart.reference - conda software package.
+ * @param condaDescriptor: desc.runEnvScheme - conda software package descriptor.
+ * @return env: smart.reference - conda environment with installed packages.
+ */
+_createEnv := func(condaPackage, condaDescriptor) {
+    pkgFiles := runenv.loadFilesFromPackage(condaPackage, {
+        spec: condaDescriptor.spec
+    })
+
+	wdWithSpec := workdir.builder().
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
+        addFile(pkgFiles.spec, "env-spec.yaml").
+		build()
+
+    envDirCreator := runenv.saveBuilder(wdWithSpec).
+		envType("conda").
+		addPath("env-spec.yaml"). // Spec file uniquely describes environment, as it keeps hashes of cached packages.
+		addPackage("conda", condaPackage)
+
+	env := envDirCreator.build().runEnv()
+
+    wdBefore := workdir.builder().
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
+        build()
+
+    micromamba := runcmd.builder(wdBefore)
+
+    micromamba.
+		ref("pkg", condaPackage).substitutionRule("pkg", "pkg").
+        ref("env-dir", env).substitutionRule("env-dir", "env-dir").
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
+		envExpression("MAMBA_ROOT_PREFIX", path.join("{pkg}", condaDescriptor["conda-root-dir"])).
+        envExpression("CONDA_PKGS_DIRS", path.join("{pkg}", condaDescriptor["conda-root-dir"], "pkgs")).
+        cmd("{pkg}/micromamba").
+        arg("env").arg("create").
+            arg("--yes").
+            arg("--offline").
+            arg("--override-channels").
+            arg("--name").arg("default").
+            arg("--prefix").arg("{env-dir}/env").
+            arg("--file").arg("{env-dir}/env-spec.yaml")
+
+    micromamba.
+        stdout("./output").
+        stderr("./output").
+        nErrorLines(20)
+
+    return {
+        runEnv: env,
+        workdir: micromamba.build().workdir,
+    }
+}
+
+self.defineOutputs("env")
+self.validateInputs(internal.condaEnvInputSchema)
+
+self.prepare(func(inputs) {
+    result := _createEnv(inputs.conda, inputs.condaDescriptor)
+    return {
+        runEnv: result.runEnv,
+        workdir: result.workdir, // We have to wait for env to be ready before using it. Workdir is a marker of readiness.
+    }
+})
+
+self.body(func(inputs) {
+    return {
+        runEnv: inputs.runEnv // wait for prepare statement to finish and re-export env
+    }
+})

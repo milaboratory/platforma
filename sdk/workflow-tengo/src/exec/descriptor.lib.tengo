@@ -22,6 +22,17 @@ binaryScheme := {
 	"runEnv,?": runEnvScheme
 }
 
+condaScheme := {
+	registry: "string",
+	package: "string",
+	cmd: ["string"],
+	"envVars,?": ["string"],
+
+	['micromamba-version']: "string",
+	['conda-root-dir']: "string",
+	spec: "string"
+}
+
 assetScheme := {
 	registry: "string",
 	package: "string",
