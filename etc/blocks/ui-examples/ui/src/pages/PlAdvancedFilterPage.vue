@@ -1,19 +1,45 @@
 <script setup lang="ts">
-import type { FilterUi, PColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { FilterUi, SUniversalPColumnId } from '@platforma-sdk/model';
 import { PlAdvancedFilter, PlBlockPage, PlCheckbox, PlDropdown } from '@platforma-sdk/ui-vue';
 import { computed, ref, watch } from 'vue';
 
-const columnsIdList = ['1', '2', '3'];
-const info: Record<string, { error: boolean; label: string; spec: PColumnSpec }> = {
-  1: { error: false, label: 'Column 1', spec: { kind: 'PColumn' as const, valueType: 'Int' as const, name: 'c1', axesSpec: [] } },
-  2: { error: false, label: 'Column 2', spec: { kind: 'PColumn' as const, valueType: 'String' as const, name: 'c2', axesSpec: [] } },
-  3: { error: false, label: 'Column 3', spec: { kind: 'PColumn' as const, valueType: 'Double' as const, name: 'c3', axesSpec: [] } },
-};
-const uniqueValues = {
-  1: [{ value: 1, label: 'v1' }, { value: 2, label: 'v2' }, { value: 3, label: 'v3' }],
-  2: [{ value: '21', label: 'v21' }, { value: '22', label: 'v22' }],
-  3: [{ value: '31', label: 'v31' }, { value: '32', label: 'v32' }, { value: '33', label: 'v33' }],
-};
+const options = [
+  {
+    id: '1' as SUniversalPColumnId,
+    info: {
+      label: 'Column 1',
+      error: false,
+      axesToBeFixed: [{
+        id: 'axis1',
+        info: {
+          label: 'Axis 1 label',
+          spec: { type: 'String' as const, name: 'nameAxis1' },
+          uniqueValues: [{ value: 'axisValue1', label: 'Axis Value 1' }, { value: 'axisValue2', label: 'Axis Value 2' }],
+        },
+      }],
+      spec: { kind: 'PColumn' as const, valueType: 'Int' as const, name: 'c1', axesSpec: [] },
+      uniqueValues: [{ value: '1', label: 'Value 1' }, { value: '2', label: 'Value 2' }],
+    },
+  },
+  {
+    id: '2' as SUniversalPColumnId,
+    info: {
+      label: 'Column 2',
+      error: false,
+      spec: { kind: 'PColumn' as const, valueType: 'String' as const, name: 'c2', axesSpec: [] },
+      uniqueValues: [{ value: '3', label: 'Value 3' }, { value: '4', label: 'Value 4' }],
+    },
+  },
+  {
+    id: '3' as SUniversalPColumnId,
+    info: {
+      label: 'Column 3',
+      error: false,
+      spec: { kind: 'PColumn' as const, valueType: 'Double' as const, name: 'c3', axesSpec: [] },
+      uniqueValues: [{ value: '5', label: 'Value 5' }, { value: '6', label: 'Value 6' }],
+    },
+  },
+];
 const dndMode = ref(false);
 const draggedId = ref<string | undefined>();
 
@@ -32,7 +58,7 @@ const errorState = {
       filters: [
         {
           type: 'patternEquals' as const,
-          column: 'someColumn' as SUniversalPColumnId,
+          column: 'someColumn' as SUniversalPColumnId, // error - column id is not from available columns
           value: 'A',
         },
         {
@@ -40,7 +66,7 @@ const errorState = {
           filters: [
             {
               type: 'patternEquals' as const,
-              column: 'someColumn' as SUniversalPColumnId,
+              column: 'someColumn' as SUniversalPColumnId, // error - column id is not from available columns
               value: 'A',
             },
           ],
@@ -51,11 +77,11 @@ const errorState = {
       filters: [
         {
           type: 'isNA' as const,
-          column: 'someColumn' as SUniversalPColumnId,
+          column: 'someColumn' as SUniversalPColumnId, // error - column id is not from available columns
         },
         {
           type: 'isNotNA' as const,
-          column: 'someColumn' as SUniversalPColumnId,
+          column: 'someColumn' as SUniversalPColumnId, // error - column id is not from available columns
         },
       ],
     }, {
@@ -63,7 +89,7 @@ const errorState = {
       filters: [
         {
           type: 'patternContainSubsequence' as const,
-          column: 'someColumn' as SUniversalPColumnId,
+          column: 'someColumn' as SUniversalPColumnId, // error - column id is not from available columns
           value: 'someString',
         },
       ],
@@ -131,30 +157,28 @@ watch(() => filtersModel.value, (m) => {
 </script>
 
 <template>
-  <PlBlockPage style="max-width: 100%">
+  <PlBlockPage>
     <div :class="$style.controls">
       <PlCheckbox v-model="dndMode" >Drag-n-Drop mode</PlCheckbox>
       <PlDropdown v-model="selectedSavedFilters" :options="filterStatesOptions" label="Examples" :style="{width: '300px'}" />
     </div>
     <div :class="$style.block">
-      <div v-if="dndMode" class="d-flex flex-column gap-16" :class="$style.leftColumn">
+      <div v-if="dndMode" :class="$style.leftColumn">
         <div
-          v-for="id in columnsIdList"
-          :key="id"
+          v-for="option in options"
+          :key="option.id"
           :draggable="dndMode ? 'true' : undefined"
           :class="$style.columnChip"
-          @dragstart="() => draggedId = id"
+          @dragstart="() => draggedId = option.id"
           @dragend="() => draggedId = undefined"
         >
-          {{ info[id].label }}
+          {{ option.info.label }}
         </div>
       </div>
-      <div :key="selectedSavedFilters" class="d-flex flex-column gap-16" :class="$style.rightColumn" >
+      <div :key="selectedSavedFilters" :class="$style.rightColumn" >
         <PlAdvancedFilter
           v-model="filtersModel"
-          :source-info-by-source-id="info"
-          :unique-values-by-source-id="uniqueValues"
-          :source-ids="columnsIdList"
+          :items="options"
           :dnd-mode="dndMode"
           :dragged-id="draggedId"
           :search-options="searchOptions"
@@ -175,12 +199,17 @@ watch(() => filtersModel.value, (m) => {
   overflow: hidden;
 }
 .leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   width: 280px;
   padding: 10px;
   margin: 10px;
   border: 1px solid grey;
 }
 .rightColumn {
+  display: flex;
+  flex-direction: column;
   width: 280px;
   height: 100%;
   overflow: auto;

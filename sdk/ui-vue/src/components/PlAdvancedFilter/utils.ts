@@ -3,7 +3,8 @@ import { filterUiMetadata, type AxisSpec, type FilterUi, type PColumnSpec, type 
 import type { Filter, FilterType, Group, PlAdvancedFilterUI, SupportedFilterTypes } from './types';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, LOCAL_FILTERS_METADATA, SUPPORTED_FILTER_TYPES } from './constants';
 
-function toInnerFilter(filter: FilterUi): Filter | null {
+function toInnerFilter(filterWithoutFixedAxes: FilterUi): Filter | null {
+  const filter = { ...filterWithoutFixedAxes, fixedAxes: {} };
   if (
     filter.type === 'isNA' || filter.type === 'isNotNA'
     || filter.type === 'greaterThan' || filter.type === 'greaterThanOrEqual'
@@ -21,6 +22,7 @@ function toInnerFilter(filter: FilterUi): Filter | null {
       maxEdits: filter.maxEdits ?? 2,
       substitutionsOnly: filter.substitutionsOnly ?? false,
       column: filter.column,
+      fixedAxes: {},
     };
   }
   if (filter.type === 'or' && filter.filters.every((f) => f.type === 'patternEquals')) { // different possible structures?
@@ -30,6 +32,7 @@ function toInnerFilter(filter: FilterUi): Filter | null {
         type: 'inSet',
         value: filter.filters.map((f) => f.value),
         column: filter.filters[0].column,
+        fixedAxes: {},
       };
     }
   }
@@ -40,6 +43,7 @@ function toInnerFilter(filter: FilterUi): Filter | null {
         type: 'notInSet',
         value: f.value,
         column: f.column,
+        fixedAxes: {},
       };
     }
   }
@@ -121,7 +125,7 @@ function toOuterFilter(filter: Filter): FilterUi | null {
     filter.type === 'patternEquals' || filter.type === 'patternNotEquals'
     || filter.type === 'patternContainSubsequence' || filter.type === 'patternNotContainSubsequence'
   ) {
-    return filter.value !== undefined ? filter : null;
+    return filter.value !== undefined ? { ...filter, value: filter.value } : null;
   }
   if (filter.type === 'inSet') {
     return filter.value.length

@@ -25,13 +25,15 @@ type RequireFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 type OptionalFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 type NumericalWithOptionalX = 'lessThan' | 'lessThanOrEqual' | 'greaterThan' | 'greaterThanOrEqual' | 'numberEquals' | 'numberNotEquals';
-type EditedTypes = 'patternFuzzyContainSubsequence' | NumericalWithOptionalX;
+type StringWithOptionalValue = 'patternEquals' | 'patternNotEquals';
+type EditedTypes = 'patternFuzzyContainSubsequence' | NumericalWithOptionalX | StringWithOptionalValue; // types from ui with some changed by optionality fields
 export type Filter =
-  Exclude<FilterUiBase, { type: EditedTypes }> |
-  RequireFields<Extract<FilterUiBase, { type: 'patternFuzzyContainSubsequence' }>, 'maxEdits' | 'substitutionsOnly'> |
-  OptionalFields<Extract<FilterUiBase, { type: NumericalWithOptionalX }>, 'x'> |
-  { type: 'inSet'; column: SUniversalPColumnId; value: string[] } |
-  { type: 'notInSet'; column: SUniversalPColumnId;value: string[] };
+  (Exclude<FilterUiBase, { type: EditedTypes }> |
+    RequireFields<Extract<FilterUiBase, { type: 'patternFuzzyContainSubsequence' }>, 'maxEdits' | 'substitutionsOnly'> |
+    OptionalFields<Extract<FilterUiBase, { type: NumericalWithOptionalX }>, 'x'> |
+    OptionalFields<Extract<FilterUiBase, { type: StringWithOptionalValue }>, 'value'> |
+    { type: 'inSet'; column: SUniversalPColumnId; value: string[] } |
+    { type: 'notInSet'; column: SUniversalPColumnId; value: string[] }) & { fixedAxes: Record<string, string> };
 
 export type Group = {
   id: string;
@@ -45,8 +47,25 @@ export type PlAdvancedFilterUI = {
   operand: Operand;
 };
 
-export type OptionInfo = { error: boolean; label: string; spec: PColumnSpec | AxisSpec };
-export type SourceOptionsInfo = Record<string, OptionInfo>;
-
 export type UniqueValuesList = ListOptionBase<string | number>[];
-export type UniqueValuesInfo = Record<string, UniqueValuesList>;
+export type OptionInfo = { error: boolean; label: string; spec: PColumnSpec | AxisSpec };
+export type FixedAxisInfo = {
+  id: string; // ?
+  info: {
+    label: string;
+    spec: AxisSpec;
+    uniqueValues: UniqueValuesList | null;
+  };
+};
+
+export type SourceOptionInfo = {
+  id: SUniversalPColumnId;
+  info: {
+    label: string;
+    error: boolean;
+    uniqueValues: UniqueValuesList | null;
+    spec: PColumnSpec | AxisSpec;
+    axesToBeFixed?: FixedAxisInfo[];
+    alphabet?: 'nucleotide' | 'aminoacid' | string;
+  };
+};
