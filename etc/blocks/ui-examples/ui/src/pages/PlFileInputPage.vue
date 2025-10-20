@@ -15,6 +15,8 @@ const props = reactive({
         v-model="props.model"
         :extensions="['txt']"
         :progress="{ done: true, isUpload: true, status: { progress: 1, bytesTotal: 1000, bytesProcessed: 1000 }}"
+        :label="'Upload file'"
+        required
       />
 
       <h2>Errors</h2>
