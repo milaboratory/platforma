@@ -12,6 +12,8 @@ runenv := import(":exec.runenv")
 internal := import(":exec.conda.internal")
 pkg := import(":exec.package")
 
+waiter := import(":waiter")
+
 /**
  * Creates new conda environment using micromamba binary and frozen spec file
  * provided along with software package.
@@ -29,7 +31,7 @@ _createEnv := func(condaPackage, condaDescriptor) {
 		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
 		cpu(pkg.DEFAULT_ALLOCATION_CPU).
 		mem(pkg.DEFAULT_ALLOCATION_RAM).
-		addFile(pkgFiles.spec, "env-spec.yaml").
+		addFile("env-spec.yaml", pkgFiles.spec).
 		build()
 
 	envDirCreator := runenv.saveBuilder(wdWithSpec).
@@ -49,7 +51,7 @@ _createEnv := func(condaPackage, condaDescriptor) {
 
 	micromamba.
 		ref("pkg", condaPackage).substitutionRule("pkg", "pkg").
-		ref("env-dir", env).substitutionRule("env-dir", "env-dir").
+		ref("env_dir", env).substitutionRule("env_dir", "env_dir").
 		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
 		cpu(pkg.DEFAULT_ALLOCATION_CPU).
 		mem(pkg.DEFAULT_ALLOCATION_RAM).
@@ -60,9 +62,8 @@ _createEnv := func(condaPackage, condaDescriptor) {
 		arg("--yes").
 		arg("--offline").
 		arg("--override-channels").
-		arg("--name").arg("default").
-		arg("--prefix").argExpression("{env-dir}/env").
-		arg("--file").argExpression("{env-dir}/env-spec.yaml")
+		arg("--prefix").argExpression("{env_dir}/env").
+		arg("--file").argExpression("{env_dir}/env-spec.yaml")
 
 	micromamba.
 		stdout("./output").
@@ -75,19 +76,16 @@ _createEnv := func(condaPackage, condaDescriptor) {
 	}
 }
 
-self.defineOutputs("env")
+self.defineOutputs("runEnv")
 self.validateInputs(internal.condaEnvInputSchema)
 
-self.prepare(func(inputs) {
-	result := _createEnv(inputs.conda, inputs.condaDescriptor)
-	return {
-		runEnv: result.runEnv,
-		workdir: result.workdir // We have to wait for env to be ready before using it. Workdir is a marker of readiness.
-	}
-})
-
 self.body(func(inputs) {
+	result := _createEnv(inputs.condaPackage, inputs.condaDescriptor)
+
+	w := waiter.builder(result.runEnv)
+	w.wait(result.workdir)
+
 	return {
-		runEnv: inputs.runEnv // wait for prepare statement to finish and re-export env
+		runEnv: w.build().output()
 	}
 })

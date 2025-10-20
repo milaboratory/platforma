@@ -8,8 +8,8 @@ file := import("@platforma-sdk/workflow-tengo:file")
 
 self.defineOutputs(["main"])
 
-sw := assets.importSoftware("@platforma-open/milaboratories.software-anarci:main")
-// sw := assets.importSoftware("@platforma-open/milaboratories.software-conda-empty:main")
+// sw := assets.importSoftware("@platforma-open/milaboratories.software-anarci:main")
+sw := assets.importSoftware("@platforma-open/milaboratories.software-conda-empty:main")
 
 self.body(func(inputs) {
 	/* Checks, that default limits are applied based

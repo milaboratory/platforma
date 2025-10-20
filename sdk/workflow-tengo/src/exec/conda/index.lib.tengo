@@ -113,7 +113,7 @@ condaBuilder := func(descriptor) {
 			}
 
 			envInputs := {
-				software: softwareRef,
+				condaPackage: softwareRef,
 				condaDescriptor: condaDescriptor,
 
 				forceRecreate: 1 // increment to force venv re-creation in blocks

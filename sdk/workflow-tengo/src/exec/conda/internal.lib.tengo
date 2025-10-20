@@ -3,7 +3,7 @@ validation := import(":validation")
 desc := import(":exec.descriptor")
 
 condaEnvInputSchema := {
-	"software": validation.reference,
+	"condaPackage": validation.reference,
 	"condaDescriptor": desc.condaScheme,
 
 	"forceRecreate,?": "number"
