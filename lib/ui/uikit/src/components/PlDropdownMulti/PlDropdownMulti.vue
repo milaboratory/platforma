@@ -8,21 +8,21 @@ export default {
 </script>
 
 <script lang="ts" setup generic="M = unknown">
-import './pl-dropdown-multi.scss';
 import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
-import { PlTooltip } from '../PlTooltip';
-import { PlChip } from '../PlChip';
-import DoubleContour from '../../utils/DoubleContour.vue';
-import { useLabelNotch } from '../../utils/useLabelNotch';
-import type { ListOption } from '../../types';
-import DropdownListItem from '../DropdownListItem.vue';
+import SvgRequired from '../../assets/images/required.svg?raw';
+import { getErrorMessage } from '../../helpers/error.ts';
 import { deepEqual, deepIncludes } from '../../helpers/objects';
 import { normalizeListOptions } from '../../helpers/utils';
+import type { ListOption } from '../../types';
+import DoubleContour from '../../utils/DoubleContour.vue';
 import DropdownOverlay from '../../utils/DropdownOverlay/DropdownOverlay.vue';
+import { useLabelNotch } from '../../utils/useLabelNotch';
+import DropdownListItem from '../DropdownListItem.vue';
+import { PlChip } from '../PlChip';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
-import { getErrorMessage } from '../../helpers/error.ts';
 import { PlSvg } from '../PlSvg';
-import SvgRequired from '../../assets/images/required.svg?raw';
+import { PlTooltip } from '../PlTooltip';
+import './pl-dropdown-multi.scss';
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: M[]): void;
@@ -273,7 +273,7 @@ watchPostEffect(() => {
           </div>
         </div>
         <label v-if="label">
-          <SvgRequired v-if="required" />
+          <PlSvg v-if="required" :uri="SvgRequired" />
           <span>{{ label }}</span>
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
             <template #tooltip>
