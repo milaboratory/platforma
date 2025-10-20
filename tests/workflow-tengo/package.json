@@ -27,7 +27,6 @@
     "@platforma-sdk/workflow-tengo": "workspace:*"
   },
   "devDependencies": {
-    "@platforma-open/milaboratories.software-conda-empty": "catalog:",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/computable": "workspace:*",
     "@milaboratories/helpers": "workspace:*",
