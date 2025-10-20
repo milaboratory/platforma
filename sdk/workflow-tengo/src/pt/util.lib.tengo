@@ -84,7 +84,7 @@ validateParamsForSaveFrameDirect := func(params) {
 
 _FRAME_FROM_COLUMN_BUNDLE_PARAMS_SCHEMA := {
 	// DataFrame axes definitions
-	`axes,?`: [_AXIS_SCHEMA],
+	`axes,?`: [spec.P_AXIS_SPEC_SCHEMA],
     // ColumnBundle column names to include in the resulting DataFrame
 	`columns,?`: [`string`]
 }

@@ -650,8 +650,8 @@ workflow := func() {
 			util.validateParamsForFrameFromColumnBundle(options)
 
 			columns := is_array(options.columns) ? options.columns : bundle.getColumnKeys()
-			axes := is_array(options.axes) ? options.axes : slices.map(
-				bundle.getAxesSpec(columns...),
+			axes := slices.map(
+				is_array(options.axes) ? options.axes : bundle.getAxesSpec(columns...),
 				func(spec) { return { column: pframesSpec.getAxisId(spec), spec: spec }
 			})
 

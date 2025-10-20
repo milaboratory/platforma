@@ -44,7 +44,10 @@ self.body(func(inputs) {
 
 	wf := pt.workflow()
 
-	dfData := wf.frameFromColumnBundle(columnBundle, { columns: columns }).
+	dfData := wf.frameFromColumnBundle(columnBundle, {
+		axes: resultColumnSpec.axesSpec,
+		columns: columns
+	}).
 		withColumns(finalRawExpressions...).
 		withColumns(annotationColumnExpr)
 
