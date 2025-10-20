@@ -39,20 +39,23 @@ export default {
 
 <script lang="ts" setup generic="M = unknown">
 import './pl-autocomplete-multi.scss';
-import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, toRef } from 'vue';
-import { PlTooltip } from '../PlTooltip';
-import { PlChip } from '../PlChip';
+
+import type { ListOptionBase } from '@platforma-sdk/model';
+import canonicalize from 'canonicalize';
+import { computed, reactive, ref, toRef, unref, useSlots, useTemplateRef, watch } from 'vue';
+import { useWatchFetch } from '../../composition/useWatchFetch.ts';
+import { getErrorMessage } from '../../helpers/error.ts';
+import { deepEqual, deepIncludes } from '../../helpers/objects';
 import DoubleContour from '../../utils/DoubleContour.vue';
+import DropdownOverlay from '../../utils/DropdownOverlay/DropdownOverlay.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
 import DropdownListItem from '../DropdownListItem.vue';
-import { deepEqual, deepIncludes } from '../../helpers/objects';
-import DropdownOverlay from '../../utils/DropdownOverlay/DropdownOverlay.vue';
+import { PlChip } from '../PlChip';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
-import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
-import { getErrorMessage } from '../../helpers/error.ts';
-import { useWatchFetch } from '../../composition/useWatchFetch.ts';
-import canonicalize from 'canonicalize';
-import type { ListOptionBase } from '@platforma-sdk/model';
+import { PlTooltip } from '../PlTooltip';
+
+import SvgRequired from '../../assets/images/required.svg?raw';
+import { PlSvg } from '../PlSvg';
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: M[]): void;
@@ -362,7 +365,7 @@ const computedError = computed(() => {
           </div>
         </div>
         <label v-if="label">
-          <SvgRequired v-if="required" />
+          <PlSvg v-if="required" :uri="SvgRequired" />
           <span>{{ label }}</span>
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
             <template #tooltip>
