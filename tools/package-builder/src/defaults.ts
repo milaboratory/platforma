@@ -16,6 +16,8 @@ export const CONDA_SOURCE_ENV_SPEC_FILE = 'conda-spec.yaml'; // inside git repo:
 export const CONDA_FROEZEN_ENV_SPEC_FILE = 'frozen-spec.yaml'; // inside built package: how to restore env on backend side
 export const CONDA_DATA_LOCATION = 'conda-env-data'; // inside built package: where MICROMAMBA_ROOT_PREFIX should point on backend side
 
+export const CONDA_DOCKER_BASE_IMAGE = 'ubuntu:22.04';
+
 // Docker
 export const DOCKER_REGISTRY = 'containers.pl-open.science/milaboratories/pl-containers';
 export const DOCKER_DOCKERFILE = 'Dockerfile'; // inside git repo: path to Dockerfile to build by default
