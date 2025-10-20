@@ -297,7 +297,7 @@ const optionsRequest = useWatchFetch(() => searchDebounced.value, async (v) => {
   if (v !== null) { // search is null when dropdown is closed;
     return props.optionsSearch(v);
   }
-  return [];
+  return undefined;
 });
 
 const modelOptionRequest = useWatchFetch(() => model.value, async (v) => {
