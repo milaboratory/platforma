@@ -1122,6 +1122,41 @@ _newExpression = func(expression) {
 // Top-level functions
 //
 
+_matcherToAxisSpec := func(ctx, processedMatcher) {
+	ll.assert(!is_undefined(ctx.specDistiller), "specDistiller must be defined")
+	ll.assert(is_map(ctx.distilledAxesSpecs), "distilledAxesSpecs must be a map")
+
+	distilledMatcher := ctx.specDistiller.distill(processedMatcher)
+	discriminativeDomains := ctx.specDistiller.getDiscriminativeDomainsSet(distilledMatcher.name)
+	if ((!is_undefined(distilledMatcher.domain) && len(distilledMatcher.domain) > 0) != (!is_undefined(discriminativeDomains) && len(discriminativeDomains) > 0)) ||
+		(!is_undefined(distilledMatcher.domain) && !is_undefined(discriminativeDomains) && len(distilledMatcher.domain) != len(discriminativeDomains)) {
+		ll.panic("Axis matcher %v is not specific enough. Expected discriminative domains %v, got %v", distilledMatcher.name, discriminativeDomains, distilledMatcher.domain)
+	}
+
+	axisSpec := undefined
+	for spec in ctx.distilledAxesSpecs[distilledMatcher.name] {
+		if !is_undefined(distilledMatcher.type) {
+			if distilledMatcher.type != spec.type {
+				continue
+			}
+		}
+		if !is_undefined(distilledMatcher.domain) {
+			if is_undefined(spec.domain) || len(spec.domain) < len(distilledMatcher.domain) {
+				continue
+			}
+			for domainKey, domainValue in distilledMatcher.domain {
+				if spec.domain[domainKey] != domainValue {
+					continue
+				}
+			}
+		}
+		axisSpec = spec
+		break
+	}
+	ll.assert(!is_undefined(axisSpec), "axis spec not found for matcher %v", processedMatcher)
+	return axisSpec
+}
+
 /**
  * Creates an expression that references an axis by its spec.
  * @param matcher (string|map) - Identifies the axis.
@@ -1142,36 +1177,7 @@ axis = func(matcher) {
 		ll.panic("Matcher for axis must be a string (axis name) or an AxisSpec-like map (with at least 'name' and 'type' fields).")
 	}
 	return _newExpression(func(ctx) {
-		ll.assert(!is_undefined(ctx.specDistiller), "specDistiller must be defined")
-		ll.assert(is_map(ctx.distilledAxesSpecs), "distilledAxesSpecs must be a map")
-
-		distilledMatcher := ctx.specDistiller.distill(processedMatcher)
-		discriminativeDomains := ctx.specDistiller.getDiscriminativeDomainsSet(distilledMatcher.name)
-        if ((!is_undefined(distilledMatcher.domain) && len(distilledMatcher.domain) > 0) != (!is_undefined(discriminativeDomains) && len(discriminativeDomains) > 0)) ||
-			(!is_undefined(distilledMatcher.domain) && !is_undefined(discriminativeDomains) && len(distilledMatcher.domain) != len(discriminativeDomains)) {
-            ll.panic("Axis matcher %v is not specific enough. Expected discriminative domains %v, got %v", distilledMatcher.name, discriminativeDomains, distilledMatcher.domain)
-        }
-		
-		axisSpec := undefined
-		for spec in ctx.distilledAxesSpecs[distilledMatcher.name] {
-			if !is_undefined(distilledMatcher.type) {
-				if distilledMatcher.type != spec.type {
-					continue
-				}
-			}
-			if !is_undefined(distilledMatcher.domain) {
-				if is_undefined(spec.domain) || len(spec.domain) < len(distilledMatcher.domain) {
-					continue
-				}
-				for domainKey, domainValue in distilledMatcher.domain {
-					if spec.domain[domainKey] != domainValue {
-						continue
-					}
-				}
-			}
-			axisSpec = spec
-			break
-		}
+		axisSpec := _matcherToAxisSpec(ctx, processedMatcher)
 		return {
 			type: "axis",
 			spec: axisSpec
@@ -1778,16 +1784,30 @@ sc := ll.toStrict({
 	},
 
 	/**
-	 * Selects axis with the given spec if it exists in the result.
-	 * @param spec - object - The axis spec to select.
+	 * Creates an expression that selects axis with the given spec if it exists in the result.
+	 * @param matcher (string|map) - Identifies the axis.
+	 *   - If string: Interpreted as the axis `name`.
+	 *   - If map: It must be an AxisSpec-like object (minimally containing string fields 'name' and 'type').
+	 *             It will be processed by `pframesSpec.axisSpecToMatcher` to extract `name`, `type`, and `domain` for matching.
+	 *     The `domain` map allows matching axes with specific domain key-value pairs.
+	 *     Only discriminative domains (those that vary among columns added to the builder) are considered for matching.
 	 * @returns {object} - A selector expression.
-	 * @example
-	 *   sc.axis({name: "my_axis", type: "string"})
 	 */
-	axis: func(spec) {
-		validation.assertType(spec, pframesSpec.P_AXIS_SPEC_SCHEMA)
+	axis: func(matcher) {
+		processedMatcher := undefined
+		if is_string(matcher) {
+			processedMatcher = { name: matcher, domain: {} }
+		} else if is_map(matcher) {
+			processedMatcher = pframesSpec.axisSpecToMatcher(matcher)
+		} else {
+			ll.panic("Matcher for axis must be a string (axis name) or an AxisSpec-like map (with at least 'name' and 'type' fields).")
+		}
 		return _newSelectorExpression(func(ctx) {
-			return {type: "selector_axis", spec: spec}
+			axisSpec := _matcherToAxisSpec(ctx, processedMatcher)
+			return {
+				type: "selector_axis",
+				spec: axisSpec
+			}
 		})
 	},
 	
