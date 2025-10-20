@@ -31,7 +31,7 @@ tplTest.concurrent(
 tplTest.concurrent(
   'run-empty-conda-env',
   async ({ helper, expect }) => {
-    const helloText = 'Hello from go!';
+    const helloText = '2.3.2';
 
     const result = await helper.renderTemplate(
       false,
