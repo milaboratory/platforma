@@ -657,7 +657,7 @@ workflow := func() {
 
 			entries := []
 			aliases := []
-			for axis in options.axes {
+			for axis in axes {
 				aliases = append(aliases, exp.sc.axis(axis.spec).alias(axis.column))
 			}
 			for column in columns {
