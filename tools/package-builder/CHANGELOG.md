@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.10.2
+
+### Patch Changes
+
+- 4763644: Skip docker build on arm hosts. Skip docker build on Mac OS in CI
+
 ## 3.10.1
 
 ### Patch Changes
