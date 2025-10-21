@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.3.9
+
+### Patch Changes
+
+- 9b1156e: Fix axis selector
+- Updated dependencies [9b1156e]
+  - @platforma-open/milaboratories.software-ptabler@1.12.9
+
 ## 5.3.8
 
 ### Patch Changes

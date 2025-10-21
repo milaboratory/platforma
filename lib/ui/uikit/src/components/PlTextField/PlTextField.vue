@@ -8,17 +8,18 @@ export default {
 </script>
 
 <script lang="ts" setup generic="M, E = string, C = E">
-import './pl-text-field.scss';
+import type { Equal } from '@milaboratories/helpers';
 import { computed, reactive, ref, useSlots } from 'vue';
-import { PlTooltip } from '../PlTooltip';
+import SvgRequired from '../../assets/images/required.svg?raw';
+import { getErrorMessage } from '../../helpers/error.ts';
 import DoubleContour from '../../utils/DoubleContour.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
 import { useValidation } from '../../utils/useValidation';
 import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
-import type { Equal } from '@milaboratories/helpers';
-import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
-import { getErrorMessage } from '../../helpers/error.ts';
+import { PlSvg } from '../PlSvg';
+import { PlTooltip } from '../PlTooltip';
+import './pl-text-field.scss';
 
 const slots = useSlots();
 
@@ -191,7 +192,7 @@ useLabelNotch(rootRef);
       }"
     >
       <label v-if="label" ref="label">
-        <SvgRequired v-if="required" />
+        <PlSvg v-if="required" :uri="SvgRequired" />
         <span>{{ label }}</span>
         <PlTooltip v-if="slots.tooltip" class="info" position="top">
           <template #tooltip>

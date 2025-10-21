@@ -66,13 +66,13 @@ class ExcludeSelectorExpression(Expression, tag='selector_exclude'):
 class ByNameSelectorExpression(Expression, tag='selector_by_name'):
     names: list[str]
     def to_polars(self) -> pl.Expr:
-        return cs.by_name(*self.names)
+        return cs.by_name(*self.names, require_all=False)
 
 
 class AxisSelectorExpression(Expression, tag='selector_axis'):
     spec: AxisSpec
     def to_polars(self) -> pl.Expr:
-        return cs.by_name(axis_ref(self.spec))
+        return cs.by_name(axis_ref(self.spec), require_all=False)
 
 
 class NestedSelectorExpression(Expression, tag='selector_nested'):

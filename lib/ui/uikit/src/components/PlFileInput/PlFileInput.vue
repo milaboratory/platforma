@@ -1,9 +1,10 @@
 <script lang="ts" setup>
+import './pl-file-input.scss';
+
 import { prettyBytes } from '@milaboratories/helpers';
 import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
 import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/model';
 import { computed, reactive, ref, useSlots, watch } from 'vue';
-import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 import { getErrorMessage } from '../../helpers/error.ts';
 import type { ImportedFiles } from '../../types';
 import DoubleContour from '../../utils/DoubleContour.vue';
@@ -11,7 +12,9 @@ import { useLabelNotch } from '../../utils/useLabelNotch';
 import { PlFileDialog } from '../PlFileDialog';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import { PlTooltip } from '../PlTooltip';
-import './pl-file-input.scss';
+
+import SvgRequired from '../../assets/images/required.svg?raw';
+import { PlSvg } from '../PlSvg';
 
 const data = reactive({
   fileDialogOpen: false,
@@ -176,7 +179,7 @@ if (!props.cellStyle) {
     >
       <div :style="progressStyle" class="pl-file-input__progress" />
       <label v-if="!cellStyle && label" ref="label">
-        <SvgRequired v-if="required" />
+        <PlSvg v-if="required" :uri="SvgRequired" />
         <span>{{ label }}</span>
         <PlTooltip v-if="slots.tooltip || filePath" class="info" position="top">
           <template #tooltip>
