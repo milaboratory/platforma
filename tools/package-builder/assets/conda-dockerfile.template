@@ -3,8 +3,14 @@ FROM ${BASE_IMAGE_TAG} AS build
 RUN apt-get update && \
     apt-get install --yes --no-install-recommends \
         ca-certificates \
+        wget \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
+RUN wget \
+        -O /usr/bin/yq \
+        'https://github.com/mikefarah/yq/releases/download/v4.48.1/yq_linux_amd64' \
+    && chmod a+x /usr/bin/yq
 
 ENV MAMBA_ROOT_PREFIX=${MAMBA_ROOT_PREFIX}
 ENV CONDA_PKGS_DIRS=${CONDA_PKGS_DIRS}
@@ -18,9 +24,9 @@ RUN chmod +x ${PKG}/micromamba \
 
 RUN micromamba env create --prefix /conda-env --yes --file ${PKG}/${TMP_SPEC_FILE} \
     && micromamba env export --prefix /conda-env \
-        | grep --invert-match 'prefix: "/conda-env"' \
-        | sed --regexp-extended 's/channels:( *null)?( *)$/channels: \[\]\2/g' \
-        | sed --regexp-extended 's/dependencies:( *null)?( *)$/dependencies: \[\]\2/g' \
+        | yq eval 'del(.prefix)' \
+        | yq eval '.channels = (.channels // [])' \
+        | yq eval '.dependencies = (.dependencies // [])' \
         > ${PKG}/${FROZEN_SPEC_FILE} \
     && rm ${PKG}/${TMP_SPEC_FILE}
 
