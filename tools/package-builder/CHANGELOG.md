@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.10.3
+
+### Patch Changes
+
+- c6c8305: Technical release
+
 ## 3.10.2
 
 ### Patch Changes
