@@ -306,7 +306,7 @@ export class PackageInfo {
         };
       }
       case 'conda': {
-        const options = condaDockerOptions(this.logger, this.packageRoot, artifact.id, artifact);
+        const options = condaDockerOptions(this.logger, this.packageRoot, artifact.id, artifact, util.currentArch());
 
         return {
           id: artifact.id,
