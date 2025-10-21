@@ -49,6 +49,7 @@ export function prepareDockerOptions(
   currentPackageRoot: string,
   artifactID: string,
   buildParams: artifacts.condaType,
+  arch: util.ArchType,
 ): DockerOptions {
   logger.debug(`Preparing Docker options for Python package: ${buildParams.name} (id: ${artifactID})`);
 
@@ -59,14 +60,16 @@ export function prepareDockerOptions(
     options.pkg = buildParams.pkg;
   }
 
+  const platform: util.PlatformType = `linux-${arch}`;
+
   if (!buildParams.roots) {
     throw util.CLIError('Cannot prepare Docker options: package root directory is not specified. Please ensure the "root" property is set in the build parameters.');
   }
-  if (!buildParams.roots['linux-x64']) {
+  if (!buildParams.roots[platform]) {
     throw util.CLIError('Cannot prepare Docker options: linux-x64 root directory is not specified. Please ensure the "roots" property is set for artifact.');
   }
 
-  const contextDir = path.resolve(currentPackageRoot, buildParams.roots['linux-x64']);
+  const contextDir = path.resolve(currentPackageRoot, buildParams.roots[platform]);
   if (!fs.existsSync(contextDir)) {
     fs.mkdirSync(contextDir, { recursive: true });
   }
