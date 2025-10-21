@@ -1,13 +1,13 @@
 import type {
-  DataInfo } from '@milaboratories/pl-model-common';
+  DataInfo,
+  PartitionedDataInfoEntries,
+} from '@milaboratories/pl-model-common';
 import {
   dataInfoToEntries,
   isDataInfo,
   isDataInfoEntries,
   type BinaryChunk,
-  type BinaryPartitionedDataInfoEntries,
   type DataInfoEntries,
-  type JsonPartitionedDataInfoEntries,
   type PColumnDataEntry,
   type PColumnKey,
 } from '@milaboratories/pl-model-common';
@@ -20,10 +20,12 @@ export const RT_RESOURCE_MAP_PARTITIONED = PCD_PREFIX + 'Partitioned/ResourceMap
 
 export const RT_JSON_PARTITIONED = PCD_PREFIX + 'JsonPartitioned';
 export const RT_BINARY_PARTITIONED = PCD_PREFIX + 'BinaryPartitioned';
+export const RT_PARQUET_PARTITIONED = PCD_PREFIX + 'ParquetPartitioned';
 
 const PCD_SUP_PREFIX = PCD_PREFIX + 'Partitioned/';
 export const RT_JSON_SUPER_PARTITIONED = PCD_SUP_PREFIX + 'JsonPartitioned';
 export const RT_BINARY_SUPER_PARTITIONED = PCD_SUP_PREFIX + 'BinaryPartitioned';
+export const RT_PARQUET_SUPER_PARTITIONED = PCD_SUP_PREFIX + 'ParquetPartitioned';
 
 export type PColumnResourceMapEntry<T> = {
   key: PColumnKey;
@@ -140,11 +142,13 @@ export function getPartitionKeysList(
 
     case RT_JSON_PARTITIONED:
     case RT_BINARY_PARTITIONED:
+    case RT_PARQUET_PARTITIONED:
       keyLength = meta['partitionKeyLength'];
       break;
 
     case RT_BINARY_SUPER_PARTITIONED:
     case RT_JSON_SUPER_PARTITIONED:
+    case RT_PARQUET_SUPER_PARTITIONED:
       keyLength = meta['superPartitionKeyLength'] + meta['partitionKeyLength'];
       break;
   }
@@ -153,6 +157,7 @@ export function getPartitionKeysList(
     case RT_RESOURCE_MAP:
     case RT_JSON_PARTITIONED:
     case RT_BINARY_PARTITIONED:
+    case RT_PARQUET_PARTITIONED:
       for (let keyStr of acc.listInputFields()) {
         if (rt === RT_BINARY_PARTITIONED) {
           keyStr = removeIndexSuffix(keyStr).baseKey;
@@ -166,6 +171,7 @@ export function getPartitionKeysList(
     case RT_RESOURCE_MAP_PARTITIONED:
     case RT_BINARY_SUPER_PARTITIONED:
     case RT_JSON_SUPER_PARTITIONED:
+    case RT_PARQUET_SUPER_PARTITIONED:
       for (const supKeyStr of acc.listInputFields()) {
         const keyPrefix = [...JSON.parse(supKeyStr)] as PColumnKey;
 
@@ -187,7 +193,7 @@ export function getPartitionKeysList(
 }
 
 function getUniquePartitionKeysForDataEntries(list: DataInfoEntries<unknown>): (string | number)[][] {
-  if (list.type !== 'JsonPartitioned' && list.type !== 'BinaryPartitioned')
+  if (list.type !== 'JsonPartitioned' && list.type !== 'BinaryPartitioned' && list.type !== 'ParquetPartitioned')
     throw new Error(`Splitting requires Partitioned DataInfoEntries, got ${list.type}`);
 
   const { parts, partitionKeyLength } = list;
@@ -260,7 +266,7 @@ export function getUniquePartitionKeys(
 export function parsePColumnData(
   acc: TreeNodeAccessor | undefined,
   keyPrefix: PColumnKey = [],
-): JsonPartitionedDataInfoEntries<TreeNodeAccessor> | BinaryPartitionedDataInfoEntries<TreeNodeAccessor> | undefined {
+): PartitionedDataInfoEntries<TreeNodeAccessor> | undefined {
   if (acc === undefined) return undefined;
 
   if (!acc.getIsReadyOrError()) return undefined;
@@ -270,7 +276,9 @@ export function parsePColumnData(
 
   // Prevent recursive super-partitioned resources
   if (keyPrefix.length > 0
-    && (resourceType === RT_JSON_SUPER_PARTITIONED || resourceType === RT_BINARY_SUPER_PARTITIONED)) {
+    && (resourceType === RT_JSON_SUPER_PARTITIONED
+      || resourceType === RT_BINARY_SUPER_PARTITIONED
+      || resourceType === RT_PARQUET_SUPER_PARTITIONED)) {
     throw new Error(`Unexpected nested super-partitioned resource: ${resourceType}`);
   }
 
@@ -349,6 +357,27 @@ export function parsePColumnData(
       };
     }
 
+    case RT_PARQUET_PARTITIONED: {
+      if (typeof meta?.partitionKeyLength !== 'number') {
+        throw new Error(`Missing partitionKeyLength in metadata for ${resourceType}`);
+      }
+
+      const parts: PColumnDataEntry<TreeNodeAccessor>[] = [];
+      for (const keyStr of acc.listInputFields()) {
+        const value = acc.resolve({ field: keyStr, assertFieldType: 'Input' });
+        if (value === undefined) return undefined;
+
+        const key = [...keyPrefix, ...JSON.parse(keyStr)];
+        parts.push({ key, value });
+      }
+
+      return {
+        type: 'ParquetPartitioned',
+        partitionKeyLength: meta.partitionKeyLength,
+        parts,
+      };
+    }
+
     case RT_JSON_SUPER_PARTITIONED: {
       if (typeof meta?.superPartitionKeyLength !== 'number'
         || typeof meta?.partitionKeyLength !== 'number') {
@@ -416,6 +445,42 @@ export function parsePColumnData(
 
       return {
         type: 'BinaryPartitioned',
+        partitionKeyLength: totalKeyLength,
+        parts,
+      };
+    }
+
+    case RT_PARQUET_SUPER_PARTITIONED: {
+      if (typeof meta?.superPartitionKeyLength !== 'number'
+        || typeof meta?.partitionKeyLength !== 'number') {
+        throw new Error(`Missing superPartitionKeyLength or partitionKeyLength in metadata for ${resourceType}`);
+      }
+
+      const totalKeyLength = meta.superPartitionKeyLength + meta.partitionKeyLength;
+      const parts: PColumnDataEntry<TreeNodeAccessor>[] = [];
+
+      // Process all super partitions
+      for (const supKeyStr of acc.listInputFields()) {
+        const superPartition = acc.resolve({ field: supKeyStr, assertFieldType: 'Input' });
+        if (superPartition === undefined) return undefined;
+
+        // Validate inner type
+        if (superPartition.resourceType.name !== RT_PARQUET_PARTITIONED) {
+          throw new Error(`Expected ${RT_PARQUET_PARTITIONED} inside ${resourceType}, but got ${superPartition.resourceType.name}`);
+        }
+
+        const innerResult = parsePColumnData(superPartition, JSON.parse(supKeyStr) as PColumnKey);
+
+        if (innerResult === undefined) return undefined;
+
+        if (innerResult.type !== 'ParquetPartitioned')
+          throw new Error(`Unexpected inner result type for ${resourceType}: ${innerResult.type}`);
+
+        parts.push(...innerResult.parts);
+      }
+
+      return {
+        type: 'ParquetPartitioned',
         partitionKeyLength: totalKeyLength,
         parts,
       };

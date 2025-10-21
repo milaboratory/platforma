@@ -1,5 +1,19 @@
 # @milaboratories/uikit
 
+## 2.4.29
+
+### Patch Changes
+
+- Updated dependencies [31a1ac2]
+  - @platforma-sdk/model@1.44.14
+
+## 2.4.28
+
+### Patch Changes
+
+- Updated dependencies [fcdb249]
+  - @platforma-sdk/model@1.44.13
+
 ## 2.4.27
 
 ### Patch Changes

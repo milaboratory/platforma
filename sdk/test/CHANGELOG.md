@@ -1,5 +1,21 @@
 # @platforma-sdk/test
 
+## 1.44.14
+
+### Patch Changes
+
+- Updated dependencies [31a1ac2]
+  - @platforma-sdk/model@1.44.14
+  - @milaboratories/pl-middle-layer@1.43.28
+
+## 1.44.13
+
+### Patch Changes
+
+- Updated dependencies [fcdb249]
+  - @platforma-sdk/model@1.44.13
+  - @milaboratories/pl-middle-layer@1.43.27
+
 ## 1.44.12
 
 ### Patch Changes

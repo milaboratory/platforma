@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.3.8
+
+### Patch Changes
+
+- 31a1ac2: Polars fix
+
 ## 5.3.7
 
 ### Patch Changes
