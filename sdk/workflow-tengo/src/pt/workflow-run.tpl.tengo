@@ -38,7 +38,7 @@ self.body(func(inputs) {
         printErrStreamToStdout().
         dontSaveStdoutOrStderr().
         software(ptSoftware).
-        envExpr("POLARS_MAX_THREADS", "{max(2,system.cpu)}").
+        envExpr("POLARS_MAX_THREADS", "{max(3,system.cpu)}").
         arg("workflow_sc.json").
         arg("--frame-dir").arg(inFramesFolder).
         arg("--spill-dir").arg(spillFolder).
