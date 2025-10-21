@@ -28,7 +28,7 @@ export interface DockerOptions {
 
 export interface CondaDockerOptions extends CondaOptions, DockerOptions {}
 
-function generateCondaDockerfileContent(options: CondaOptions): string {
+function generateCondaDockerfileContent(options: CondaOptions, arch: util.ArchType): string {
   // Read template from assets
   const templatePath = paths.assets('conda-dockerfile.template');
   const templateContent = fs.readFileSync(templatePath, 'utf-8');
@@ -38,7 +38,7 @@ function generateCondaDockerfileContent(options: CondaOptions): string {
     .replaceAll('${BASE_IMAGE_TAG}', options.baseImageTag)
     .replaceAll('${MAMBA_ROOT_PREFIX}', path.posix.join(options.pkg, defaults.CONDA_DATA_LOCATION))
     .replaceAll('${CONDA_PKGS_DIRS}', path.posix.join(options.pkg, defaults.CONDA_DATA_LOCATION, 'pkgs'))
-    .replaceAll('${MICROMAMBA_DOWNLOAD_URL}', micromambaDownloadUrl(options.micromambaVersion, 'linux-x64'))
+    .replaceAll('${MICROMAMBA_DOWNLOAD_URL}', micromambaDownloadUrl(options.micromambaVersion, `linux-${arch}`))
     .replaceAll('${PKG}', options.pkg)
     .replaceAll('${TMP_SPEC_FILE}', tmpSpecFile)
     .replaceAll('${FROZEN_SPEC_FILE}', options.frozenSpecFile);
@@ -84,7 +84,7 @@ export function prepareDockerOptions(
   logger.debug(`Copied spec file to context directory`);
 
   const dockerfile = {
-    content: generateCondaDockerfileContent(options),
+    content: generateCondaDockerfileContent(options, arch),
     path: dockerfilePath,
   };
 
