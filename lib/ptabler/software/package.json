@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.software-ptabler",
-  "version": "1.12.8",
+  "version": "1.12.9",
   "scripts": {
     "init-python:create-venv": "mise exec python@3.12.10 -- python -m venv --clear .venv",
     "init-python:pip-install": ".venv/bin/pip install --quiet --disable-pip-version-check",
