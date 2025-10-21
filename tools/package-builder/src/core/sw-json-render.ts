@@ -24,8 +24,8 @@ export class SwJsonRenderer {
       requireAllArtifacts?: boolean;
       fullDirHash?: boolean;
     },
-  ): Map<string, swJson.entrypoint> {
-    const result = new Map<string, swJson.entrypoint>();
+  ): Map<string, swJson.swJsonType> {
+    const result = new Map<string, swJson.swJsonType>();
     let hasReferences = false;
 
     const fullDirHash = options?.fullDirHash ?? false;
@@ -119,7 +119,7 @@ export class SwJsonRenderer {
     return result;
   }
 
-  public writeSwJson(info: swJson.entrypoint, dstFile?: string) {
+  public writeSwJson(info: swJson.swJsonType, dstFile?: string) {
     const epType = info.asset ? 'asset' : 'software';
     const dstSwInfoPath = dstFile ?? descriptorFilePath(this.pkgInfo.packageRoot, epType, info.id.name);
 
@@ -156,7 +156,7 @@ export class SwJsonRenderer {
     epName: string,
     ep: entrypoint.PackageEntrypoint,
     fullDirHash: boolean,
-  ): swJson.localPackageInfo {
+  ): swJson.localSoftwareType {
     const artifact = ep.artifact;
     const rootDir = this.pkgInfo.artifactContentRoot(artifact, util.currentPlatform());
     const hash = fullDirHash ? util.hashDirSync(rootDir) : util.hashDirMetaSync(rootDir);
@@ -271,7 +271,7 @@ export class SwJsonRenderer {
     epName: string,
     ep: entrypoint.PackageEntrypoint,
     requireArtifactInfo?: boolean,
-  ): swJson.remotePackageInfo | undefined {
+  ): swJson.remoteSoftwareType | undefined {
     switch (mode) {
       case 'release':
         break;
@@ -535,15 +535,15 @@ function requireEntrypointType(ep: entrypoint.PackageEntrypoint, type: entrypoin
   );
 }
 
-function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'asset', errMsg: string): artifacts.withId<artifacts.assetType>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'environment', errMsg: string): artifacts.withId<artifacts.environmentType>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'java', errMsg: string): artifacts.withId<artifacts.javaType>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'python', errMsg: string): artifacts.withId<artifacts.pythonType>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'R', errMsg: string): artifacts.withId<artifacts.rType>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'binary', errMsg: string): artifacts.withId<artifacts.binaryType>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'docker', errMsg: string): artifacts.withId<artifacts.dockerType>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: 'conda', errMsg: string): artifacts.withId<artifacts.condaType>;
-function requireArtifactType(pkg: artifacts.withId<artifacts.anyType>, type: artifacts.artifactType, errMsg: string): artifacts.withId<artifacts.anyType> {
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyArtifactType>, type: 'asset', errMsg: string): artifacts.withId<artifacts.assetType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyArtifactType>, type: 'environment', errMsg: string): artifacts.withId<artifacts.environmentType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyArtifactType>, type: 'java', errMsg: string): artifacts.withId<artifacts.javaType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyArtifactType>, type: 'python', errMsg: string): artifacts.withId<artifacts.pythonType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyArtifactType>, type: 'R', errMsg: string): artifacts.withId<artifacts.rType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyArtifactType>, type: 'binary', errMsg: string): artifacts.withId<artifacts.binaryType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyArtifactType>, type: 'docker', errMsg: string): artifacts.withId<artifacts.dockerType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyArtifactType>, type: 'conda', errMsg: string): artifacts.withId<artifacts.condaType>;
+function requireArtifactType(pkg: artifacts.withId<artifacts.anyArtifactType>, type: artifacts.artifactType, errMsg: string): artifacts.withId<artifacts.anyArtifactType> {
   if (pkg.type === type) {
     return pkg;
   }

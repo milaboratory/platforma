@@ -240,10 +240,10 @@ export const anyArtifactSchema = z.discriminatedUnion('type', [
   dockerSchema,
 ]);
 
-export type anyType = z.infer<typeof anyArtifactSchema>;
+export type anyArtifactType = z.infer<typeof anyArtifactSchema>;
 
-export const listSchema = z.record(z.string(), anyArtifactSchema);
-export type list = z.infer<typeof listSchema>;
+export const artifactIndexSchema = z.record(z.string(), anyArtifactSchema);
+export type artifactIndexType = z.infer<typeof artifactIndexSchema>;
 
 export type withType<Typ, Orig> = Orig & { type: Typ };
 export type withId<T> = T & { id: string };

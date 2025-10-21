@@ -165,7 +165,7 @@ export const remoteSoftwareSchema = z.union([
   remoteLocationSchema.extend(rPackageSettingsSchema.shape),
   remoteLocationSchema.extend(condaPackageSchema.shape),
 ]);
-export type remotePackageInfo = z.infer<typeof remoteSoftwareSchema>;
+export type remoteSoftwareType = z.infer<typeof remoteSoftwareSchema>;
 
 export const localLocationSchema = z.object({
   hash: z
@@ -184,10 +184,10 @@ export const localSoftwareSchema = z.discriminatedUnion('type', [
   localLocationSchema.extend(condaPackageSchema.shape),
   // Docker can be used 'as usual' without any special 'local' section magic
 ]);
-export type localPackageInfo = z.infer<typeof localSoftwareSchema>;
+export type localSoftwareType = z.infer<typeof localSoftwareSchema>;
 
 // Full .sw.json file schema
-export const entrypointSchema = z
+export const swJsonSchema = z
   .object({
     isDev: z.boolean().optional(),
 
@@ -211,6 +211,6 @@ export const entrypointSchema = z
     },
   );
 
-export type entrypoint = z.infer<typeof entrypointSchema> & {
+export type swJsonType = z.infer<typeof swJsonSchema> & {
   id: util.artifactID;
 };

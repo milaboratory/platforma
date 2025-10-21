@@ -50,7 +50,7 @@ export default class BuildAll extends Command {
         });
       }
 
-      await core.buildSoftwarePackages({
+      await core.buildSoftwareArchives({
         ids: flags['package-id'],
         forceBuild: flags.force,
 
@@ -62,7 +62,7 @@ export default class BuildAll extends Command {
         condaBuild: cmdOpts.shouldDoAction(true, flags['conda-build'], flags['conda-no-build']),
       });
 
-      core.buildDescriptors({
+      core.buildSwJsonFiles({
         packageIds: flags['package-id'] ? flags['package-id'] : undefined,
       });
 

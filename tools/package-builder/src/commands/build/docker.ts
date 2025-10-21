@@ -39,7 +39,7 @@ export default class Docker extends Command {
       });
     }
 
-    core.buildDescriptors({
+    core.buildSwJsonFiles({
       packageIds: flags['package-id'] ? flags['package-id'] : undefined,
     });
   }
