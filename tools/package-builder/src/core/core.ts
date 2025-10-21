@@ -413,7 +413,7 @@ localTag: '${localTag}'
     this.logger.debug(`Cutting prefix from conda environment file...`);
 
     const resultSpec = yaml.parse(await fsp.readFile(resultSpecPath, 'utf-8')) as Record<string, unknown>;
-    resultSpec.prefix = undefined;
+    resultSpec.prefix = undefined; // cut original env location (with path from CI) from the resulting spec file
 
     // Fixup the structure: for empty lists export produces YAML that cannot be then read back on server side for restoration.
     if (!resultSpec.channels) {

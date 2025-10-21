@@ -17,7 +17,11 @@ RUN chmod +x ${PKG}/micromamba \
     && ln -s ${PKG}/micromamba /usr/bin/micromamba
 
 RUN micromamba env create --prefix /conda-env --yes --file ${PKG}/${TMP_SPEC_FILE} \
-    && micromamba env export --prefix /conda-env > ${PKG}/${FROZEN_SPEC_FILE} \
+    && micromamba env export --prefix /conda-env \
+        | grep --invert-match 'prefix: "/conda-env"' \
+        | sed --regexp-extended 's/channels:( *null)?( *)$/channels: \[\]\2/g' \
+        | sed --regexp-extended 's/dependencies:( *null)?( *)$/dependencies: \[\]\2/g' \
+        > ${PKG}/${FROZEN_SPEC_FILE} \
     && rm ${PKG}/${TMP_SPEC_FILE}
 
 # In case original spec file has any secrets (no idea if it can) - we better re-export full environment to keep only frozen spec.
