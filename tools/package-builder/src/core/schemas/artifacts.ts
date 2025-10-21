@@ -12,7 +12,7 @@ export const crossplatformTypes: artifactType[] = ['asset', 'java', 'python', 'R
 export const dockerAutogenTypes: artifactType[] = ['python', 'conda'] as const;
 
 export function isBuildable(aType: artifactType): boolean {
-  // All known artifact types are buildable so far. No exceptions so far.
+  // All known artifact types are buildable. No exceptions so far.
   return artifactTypes.includes(aType);
 }
 

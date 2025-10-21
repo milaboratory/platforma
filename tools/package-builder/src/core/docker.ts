@@ -6,16 +6,23 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 
+/**
+ * To allow entrypoint keep both docker and binary package at the same time, we create virtual entrypoint with ':docker' suffix,
+ * as entrypoints could not keep two different artifacts at the same time.
+ */
 export function entrypointName(name: string): string {
   return name + ':docker';
 }
 
+export function isDockerEntrypointName(name: string): boolean {
+  return name.endsWith(':docker');
+}
+
 export function entrypointNameToOrigin(name: string): string {
-  const suffixIndex = name.indexOf(':docker');
-  if (suffixIndex === -1) {
+  if (!isDockerEntrypointName(name)) {
     return name;
   }
-  return name.substring(0, suffixIndex);
+  return name.substring(0, name.length - ':docker'.length);
 }
 
 export function getImageHash(tag: string): string {

@@ -1,5 +1,11 @@
 FROM ${BASE_IMAGE_TAG} AS build
 
+RUN apt-get update && \
+    apt-get install --yes --no-install-recommends \
+        ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
 ENV MAMBA_ROOT_PREFIX=${MAMBA_ROOT_PREFIX}
 ENV CONDA_PKGS_DIRS=${CONDA_PKGS_DIRS}
 
@@ -8,10 +14,11 @@ COPY . ${PKG}
 
 ADD ${MICROMAMBA_DOWNLOAD_URL} ${PKG}/micromamba
 RUN chmod +x ${PKG}/micromamba \
-    && ln -s /usr/bin/micromamba ${PKG}/micromamba
+    && ln -s ${PKG}/micromamba /usr/bin/micromamba
 
-RUN micromamba env create --name 'default' --yes --file ${PKG}/${FROZEN_SPEC_FILE} \
-    && micromamba env export --name 'default' > ${PKG}/${FROZEN_SPEC_FILE}
+RUN micromamba env create --prefix /conda-env --yes --file ${PKG}/${TMP_SPEC_FILE} \
+    && micromamba env export --prefix /conda-env > ${PKG}/${FROZEN_SPEC_FILE} \
+    && rm ${PKG}/${TMP_SPEC_FILE}
 
 # In case original spec file has any secrets (no idea if it can) - we better re-export full environment to keep only frozen spec.
 FROM ${BASE_IMAGE_TAG} AS app
@@ -20,6 +27,9 @@ ENV MAMBA_ROOT_PREFIX=${MAMBA_ROOT_PREFIX}
 ENV CONDA_PKGS_DIRS=${CONDA_PKGS_DIRS}
 
 COPY --from=build ${PKG} ${PKG}
-RUN ln -s /bin/micromamba ${PKG}/micromamba
+RUN ln -s ${PKG}/micromamba /usr/bin/micromamba
 
-ENTRYPOINT ["micromamba", "run", "--name", "default"]
+# Imitate the same procedure of environment restoration as we do on host in binary execution mode.
+RUN micromamba env create --prefix /conda-env --yes --offline --override-channels --file ${PKG}/${FROZEN_SPEC_FILE}
+
+ENTRYPOINT ["micromamba", "run", "--prefix", "/conda-env"]
