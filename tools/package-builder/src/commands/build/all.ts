@@ -47,6 +47,7 @@ export default class BuildAll extends Command {
         core.buildDockerImages({
           ids: flags['package-id'],
           registry: flags['docker-registry'],
+          strictPlatformMatching: envs.isCI(),
         });
       }
 

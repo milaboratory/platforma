@@ -26,6 +26,7 @@ export default class Docker extends Command {
 
     core.buildDockerImages({
       ids: flags['package-id'],
+      strictPlatformMatching: envs.isCI(),
     });
 
     const autopush = cmdOpts.shouldDoAction(

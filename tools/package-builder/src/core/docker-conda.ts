@@ -28,7 +28,7 @@ export interface DockerOptions {
 
 export interface CondaDockerOptions extends CondaOptions, DockerOptions {}
 
-function generateCondaDockerfileContent(options: CondaOptions): string {
+function generateCondaDockerfileContent(options: CondaOptions, arch: util.ArchType): string {
   // Read template from assets
   const templatePath = paths.assets('conda-dockerfile.template');
   const templateContent = fs.readFileSync(templatePath, 'utf-8');
@@ -38,7 +38,7 @@ function generateCondaDockerfileContent(options: CondaOptions): string {
     .replaceAll('${BASE_IMAGE_TAG}', options.baseImageTag)
     .replaceAll('${MAMBA_ROOT_PREFIX}', path.posix.join(options.pkg, defaults.CONDA_DATA_LOCATION))
     .replaceAll('${CONDA_PKGS_DIRS}', path.posix.join(options.pkg, defaults.CONDA_DATA_LOCATION, 'pkgs'))
-    .replaceAll('${MICROMAMBA_DOWNLOAD_URL}', micromambaDownloadUrl(options.micromambaVersion, 'linux-x64'))
+    .replaceAll('${MICROMAMBA_DOWNLOAD_URL}', micromambaDownloadUrl(options.micromambaVersion, `linux-${arch}`))
     .replaceAll('${PKG}', options.pkg)
     .replaceAll('${TMP_SPEC_FILE}', tmpSpecFile)
     .replaceAll('${FROZEN_SPEC_FILE}', options.frozenSpecFile);
@@ -49,6 +49,7 @@ export function prepareDockerOptions(
   currentPackageRoot: string,
   artifactID: string,
   buildParams: artifacts.condaType,
+  arch: util.ArchType,
 ): DockerOptions {
   logger.debug(`Preparing Docker options for Python package: ${buildParams.name} (id: ${artifactID})`);
 
@@ -59,14 +60,16 @@ export function prepareDockerOptions(
     options.pkg = buildParams.pkg;
   }
 
+  const platform: util.PlatformType = `linux-${arch}`;
+
   if (!buildParams.roots) {
     throw util.CLIError('Cannot prepare Docker options: package root directory is not specified. Please ensure the "root" property is set in the build parameters.');
   }
-  if (!buildParams.roots['linux-x64']) {
-    throw util.CLIError('Cannot prepare Docker options: linux-x64 root directory is not specified. Please ensure the "roots" property is set for artifact.');
+  if (!buildParams.roots[platform]) {
+    throw util.CLIError(`Cannot prepare Docker options: ${platform} root directory is not specified. Please ensure the 'roots' property is set for artifact.`);
   }
 
-  const contextDir = path.resolve(currentPackageRoot, buildParams.roots['linux-x64']);
+  const contextDir = path.resolve(currentPackageRoot, buildParams.roots[platform]);
   if (!fs.existsSync(contextDir)) {
     fs.mkdirSync(contextDir, { recursive: true });
   }
@@ -81,7 +84,7 @@ export function prepareDockerOptions(
   logger.debug(`Copied spec file to context directory`);
 
   const dockerfile = {
-    content: generateCondaDockerfileContent(options),
+    content: generateCondaDockerfileContent(options, arch),
     path: dockerfilePath,
   };
 

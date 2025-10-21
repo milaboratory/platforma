@@ -10,6 +10,7 @@ export type artifactType = (typeof artifactTypes)[number];
 export const archiveArtifactTypes: artifactType[] = ['asset', 'environment', 'binary', 'java', 'python', 'R', 'conda'] as const;
 export const crossplatformTypes: artifactType[] = ['asset', 'java', 'python', 'R'] as const;
 export const dockerAutogenTypes: artifactType[] = ['python', 'conda'] as const;
+export const dockerArchitectures: util.ArchType[] = ['x64'] as const;
 
 export function isBuildable(aType: artifactType): boolean {
   // All known artifact types are buildable. No exceptions so far.
