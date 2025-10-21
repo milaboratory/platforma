@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.10.4
+
+### Patch Changes
+
+- add8a40: Do not fail build on ARM hosts because of docker
+
 ## 3.10.3
 
 ### Patch Changes
