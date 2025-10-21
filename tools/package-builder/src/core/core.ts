@@ -128,7 +128,9 @@ export class Core {
     return false;
   }
 
-  public getArtifact(id: string, type?: 'docker' | 'archive'): artifacts.withId<artifacts.anyType> {
+  public getArtifact(id: string, type: 'docker'): artifacts.withId<artifacts.dockerType> | undefined;
+  public getArtifact(id: string, type: 'archive'): artifacts.withId<artifacts.anyType> | undefined;
+  public getArtifact(id: string, type?: 'docker' | 'archive'): artifacts.withId<artifacts.anyType> | undefined {
     const artifact = this.packages.get(id);
     if (artifact) {
       // If we request docker artifact and current artifact is not docker - continue searching
@@ -137,7 +139,7 @@ export class Core {
       }
     }
 
-    // 'magic' entrypoint name with suffix.
+    // Virtual entrypoint with suffix specially for docker artifacts.
     const dockerArtifact = this.packages.get(docker.entrypointName(id));
     if (dockerArtifact) {
       return dockerArtifact;
@@ -215,9 +217,9 @@ export class Core {
     }
 
     for (const artifactID of packagesToBuild) {
-      const artifact = this.getArtifact(artifactID);
+      const artifact = this.getArtifact(artifactID, 'archive');
 
-      if (artifact.type === 'docker') {
+      if (!artifact) {
         continue;
       }
 
@@ -329,7 +331,10 @@ export class Core {
       }
 
       const artifact = this.getArtifact(pkgID, 'docker');
-      this.buildDockerImage(artifact.id, artifact as artifacts.withId<artifacts.dockerType>, options?.registry);
+      if (!artifact) {
+        continue;
+      }
+      this.buildDockerImage(artifact.id, artifact, options?.registry);
     }
   }
 
@@ -499,7 +504,14 @@ localTag: '${localTag}'
 
     const uploads: Promise<void>[] = [];
     for (const pkgID of packagesToPublish) {
-      const pkg = this.getArtifact(pkgID);
+      const pkg = this.getArtifact(pkgID, 'archive');
+
+      if (!pkg) {
+        if (options?.ids) {
+          this.logger.warn(`Package '${pkgID}' is not buildable into archive. Cannot publish archive artifact.`);
+        }
+        continue;
+      }
 
       if (artifacts.isCrossPlatform(pkg.type)) {
         uploads.push(this.publishPackage(pkg, util.currentPlatform(), options));
@@ -608,8 +620,8 @@ localTag: '${localTag}'
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
 
     for (const pkgID of packagesToPublish) {
-      const pkg = this.getArtifact(pkgID);
-      if (pkg.type !== 'docker') {
+      const pkg = this.getArtifact(pkgID, 'docker');
+      if (!pkg) {
         continue;
       }
 
