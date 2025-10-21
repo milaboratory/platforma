@@ -322,7 +322,7 @@ export class SwJsonRenderer {
           ['micromamba-version']: binPkg['micromamba-version'],
           ['conda-root-dir']: binPkg['conda-root-dir'],
 
-          spec: defaults.CONDA_FROEZEN_ENV_SPEC_FILE,
+          spec: defaults.CONDA_FROZEN_ENV_SPEC_FILE,
         };
       }
       case 'binary':{

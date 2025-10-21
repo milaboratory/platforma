@@ -401,7 +401,7 @@ localTag: '${localTag}'
     this.logger.debug(`Creating micromamba instance...`);
     const m = new micromamba(this.logger, micromambaRoot, artifact['micromamba-version'], micromambaBin);
 
-    const resultSpecPath = path.join(contentRoot, defaults.CONDA_FROEZEN_ENV_SPEC_FILE);
+    const resultSpecPath = path.join(contentRoot, defaults.CONDA_FROZEN_ENV_SPEC_FILE);
 
     await m.downloadBinary();
     m.createEnvironment({ specFile: srcSpecPath });

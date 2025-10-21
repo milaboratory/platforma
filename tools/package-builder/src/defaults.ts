@@ -13,7 +13,7 @@ export const PYTHON_DOCKER_BASE_IMAGE = 'python:3.12-slim';
 // Conda
 export const CONDA_MICROMAMBA_VERSION = '2.3.2-0';
 export const CONDA_SOURCE_ENV_SPEC_FILE = 'conda-spec.yaml'; // inside git repo: what env to build in CI
-export const CONDA_FROEZEN_ENV_SPEC_FILE = 'frozen-spec.yaml'; // inside built package: how to restore env on backend side
+export const CONDA_FROZEN_ENV_SPEC_FILE = 'frozen-spec.yaml'; // inside built package: how to restore env on backend side
 export const CONDA_DATA_LOCATION = 'conda-env-data'; // inside built package: where MICROMAMBA_ROOT_PREFIX should point on backend side
 
 export const CONDA_DOCKER_BASE_IMAGE = 'ubuntu:22.04';

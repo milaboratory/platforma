@@ -205,6 +205,8 @@ _binPackageCallOptions := func(operationMode, softwareName, variables, descripto
 	runEnvPlan := runcmd.createRunCommandPlan()
 	runEnvType := "binary"
 
+	cmd := descriptor.cmd
+
 	// Real command should be:
 	//   [<runEnv bin>] [<runEnv options>] [<entrypoint bin>] [<entrypoint options>] <cmd> <args>
 	if (maps.containsKey(descriptor, "runEnv")) {
@@ -216,8 +218,8 @@ _binPackageCallOptions := func(operationMode, softwareName, variables, descripto
 		runEnvPlan = runEnvInfo.plan
 		runEnvType = runEnvInfo.runEnvType
 
-		origCmd := descriptor.cmd
-		descriptor.cmd = append([
+		origCmd := cmd
+		cmd = append([
 			path.join(_expr(_ARG_VAR_CONDA), "micromamba"),
 			"run",
 			"--prefix", path.join(_expr(_ARG_VAR_CONDA_ENV), "env")
@@ -225,7 +227,7 @@ _binPackageCallOptions := func(operationMode, softwareName, variables, descripto
 	}
 
 	ll.assert(
-		len(descriptor.cmd) != 0,
+		len(cmd) != 0,
 		"cannot render final command for software: empty 'cmd' in software descriptor")
 
 	plan := runcmd.createRunCommandPlan(runEnvPlan.state())
@@ -234,9 +236,9 @@ _binPackageCallOptions := func(operationMode, softwareName, variables, descripto
 		plan.refVar(v.varName, v.refName, v.reference)
 	}
 
-	plan.cmdExpression(descriptor.cmd[0])
+	plan.cmdExpression(cmd[0])
 
-	for arg in splice(descriptor.cmd, 1) {
+	for arg in splice(cmd, 1) {
 		plan.argExpression(arg)
 	}
 

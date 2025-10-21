@@ -104,7 +104,7 @@ function getDefaultCondaOptions(): CondaOptions {
   return {
     baseImageTag: defaults.CONDA_DOCKER_BASE_IMAGE,
     micromambaVersion: defaults.CONDA_MICROMAMBA_VERSION,
-    frozenSpecFile: defaults.CONDA_FROEZEN_ENV_SPEC_FILE,
+    frozenSpecFile: defaults.CONDA_FROZEN_ENV_SPEC_FILE,
     pkg: defaults.DOCKER_PLACEHOLDER_PKG,
   };
 }

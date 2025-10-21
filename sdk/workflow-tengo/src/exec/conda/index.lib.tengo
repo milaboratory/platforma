@@ -38,7 +38,7 @@ condaBuilder := func(descriptor) {
 		 * @param pkgRef: smart.reference - reference to already installed software package.
 		 */
 		software: func(pkgRef) {
-			validation.assertType(pkgRef, validation.reference, "exec.python.software: <pkgRef> must be a reference to software package")
+			validation.assertType(pkgRef, validation.reference, "exec.conda.software: <pkgRef> must be a reference to software package")
 
 			softwareRef = pkgRef
 			return self

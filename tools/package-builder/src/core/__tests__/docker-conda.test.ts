@@ -121,7 +121,7 @@ dependencies: []
       expect(dockerfileContent).toContain(`FROM ${defaults.CONDA_DOCKER_BASE_IMAGE}`);
       expect(dockerfileContent).toContain('COPY . /app');
       expect(dockerfileContent).toContain('RUN micromamba');
-      expect(dockerfileContent).toContain(defaults.CONDA_FROEZEN_ENV_SPEC_FILE);
+      expect(dockerfileContent).toContain(defaults.CONDA_FROZEN_ENV_SPEC_FILE);
       expect(dockerfileContent).toContain(defaults.CONDA_DATA_LOCATION);
     });
   });
