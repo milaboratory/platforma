@@ -130,22 +130,31 @@ export class Core {
 
   public getArtifact(id: string, type: 'docker'): artifacts.withId<artifacts.dockerType> | undefined;
   public getArtifact(id: string, type: 'archive'): artifacts.withId<artifacts.anyType> | undefined;
-  public getArtifact(id: string, type?: 'docker' | 'archive'): artifacts.withId<artifacts.anyType> | undefined {
+  public getArtifact(id: string, type: 'docker' | 'archive' | 'any'): artifacts.withId<artifacts.anyType> | undefined {
     const artifact = this.packages.get(id);
-    if (artifact) {
-      // If we request docker artifact and current artifact is not docker - continue searching
-      if (type !== 'docker' || artifact.type === 'docker') {
+
+    switch (type) {
+      case 'any': {
+        return artifact || this.packages.get(docker.entrypointName(id));
+      }
+      case 'docker': {
+        if (artifact?.type === 'docker') {
+          return artifact;
+        }
+        // Virtual entrypoint with suffix specially for docker artifacts.
+        return this.packages.get(docker.entrypointName(id));
+      }
+      case 'archive': {
+        if (artifact?.type === 'docker') {
+          return undefined;
+        }
         return artifact;
       }
+      default: {
+        util.assertNever(type);
+        return undefined;
+      }
     }
-
-    // Virtual entrypoint with suffix specially for docker artifacts.
-    const dockerArtifact = this.packages.get(docker.entrypointName(id));
-    if (dockerArtifact) {
-      return dockerArtifact;
-    }
-
-    return undefined;
   }
 
   /** Parses entrypoints from a package.json
@@ -626,6 +635,9 @@ export class Core {
     for (const pkgID of packagesToPublish) {
       const pkg = this.getArtifact(pkgID, 'docker');
       if (!pkg) {
+        if (options?.ids) {
+          this.logger.warn(`Package '${pkgID}' is not buildable into docker image. Cannot publish docker image.`);
+        }
         continue;
       }
 
