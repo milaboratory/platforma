@@ -393,8 +393,7 @@ localTag: '${localTag}'
     }
 
     const micromambaRoot = path.join(contentRoot, defaults.CONDA_DATA_LOCATION);
-    const binName = platform.startsWith('windows') ? 'micromamba.exe' : 'micromamba';
-    const micromambaBin = path.join(contentRoot, binName);
+    const micromambaBin = path.join(contentRoot, 'micromamba');
 
     this.logger.debug(`Creating micromamba root directory: '${micromambaRoot}'`);
     await fsp.mkdir(micromambaRoot, { recursive: true });

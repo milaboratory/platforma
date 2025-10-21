@@ -59,6 +59,10 @@ export class micromamba {
     if (!binaryPath) {
       this.binaryPath = path.join(rootPrefix, 'micromamba');
     }
+
+    if (util.currentOS() === 'windows' && !this.binaryPath.endsWith('.exe')) {
+      this.binaryPath += '.exe';
+    }
   }
 
   public async downloadBinary(): Promise<void> {
