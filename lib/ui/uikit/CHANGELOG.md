@@ -1,5 +1,12 @@
 # @milaboratories/uikit
 
+## 2.4.30
+
+### Patch Changes
+
+- 5da4817: Remove generated svg components to favor the PlSvg component
+- c521792: autocomplete - avoid empty options list on every opening
+
 ## 2.4.29
 
 ### Patch Changes

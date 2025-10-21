@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.12.9
+
+### Patch Changes
+
+- 9b1156e: Fix axis selector
+
 ## 1.12.8
 
 ### Patch Changes
