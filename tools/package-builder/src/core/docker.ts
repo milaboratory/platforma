@@ -14,12 +14,12 @@ export function entrypointName(name: string): string {
   return name + ':docker';
 }
 
-export function isDockerEntrypointName(name: string): boolean {
+export function isVirtualDockerEntrypointName(name: string): boolean {
   return name.endsWith(':docker');
 }
 
 export function entrypointNameToOrigin(name: string): string {
-  if (!isDockerEntrypointName(name)) {
+  if (!isVirtualDockerEntrypointName(name)) {
     return name;
   }
   return name.substring(0, name.length - ':docker'.length);

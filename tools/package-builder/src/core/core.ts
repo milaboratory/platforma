@@ -108,7 +108,7 @@ export class Core {
 
   public get buildablePackages(): Map<string, artifacts.withId<artifacts.anyType>> {
     return new Map(Array.from(this.packages.entries())
-      .filter(([id, _]) => !docker.isDockerEntrypointName(id)) // do not show virtual docker entrypoints
+      .filter(([id, _]) => !docker.isVirtualDockerEntrypointName(id)) // do not show virtual docker entrypoints
       .filter(([, value]) => artifacts.isBuildable(value.type)),
     );
   }

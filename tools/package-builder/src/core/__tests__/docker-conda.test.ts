@@ -43,8 +43,12 @@ describe('Docker Conda Functions', () => {
     // Create src directory for the root property
     fs.mkdirSync(path.join(testPackageRoot, 'src'), { recursive: true });
 
-    // Create a mock requirements.txt file
-    fs.writeFileSync(path.join(testPackageRoot, 'requirements.txt'), 'requests>=2.25.0\n');
+    // Create a mock spec file
+    fs.writeFileSync(path.join(testPackageRoot, 'some-spec.yaml'), `
+name: my-env
+channels: []
+dependencies: []
+`);
 
     // Initialize mockPythonPackage with absolute path
     mockCondaPackage = {
