@@ -50,7 +50,7 @@ export function prepareDockerOptions(
   artifactID: string,
   buildParams: artifacts.condaType,
 ): DockerOptions {
-  logger.debug(`Preparing Docker options for Python package: ${buildParams.name} (id: ${artifactID})`);
+  logger.debug(`Preparing Docker options for Conda package: ${buildParams.name} (id: ${artifactID})`);
 
   const options = getDefaultCondaOptions();
   options.micromambaVersion = buildParams['micromamba-version'];
