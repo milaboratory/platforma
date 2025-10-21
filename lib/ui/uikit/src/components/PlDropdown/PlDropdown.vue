@@ -8,23 +8,24 @@ export default {
 </script>
 
 <script lang="ts" setup generic="M = unknown">
-import './pl-dropdown.scss';
 import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from 'vue';
+import SvgRequired from '../../assets/images/required.svg?raw';
+import { getErrorMessage } from '../../helpers/error.ts';
 import { tap } from '../../helpers/functions';
-import { PlTooltip } from '../PlTooltip';
+import { deepEqual } from '../../helpers/objects';
+import { normalizeListOptions } from '../../helpers/utils';
+import type { ListOption, ListOptionNormalized, MaskIconName16, MaskIconName24 } from '../../types';
 import DoubleContour from '../../utils/DoubleContour.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
-import type { ListOption, ListOptionNormalized, MaskIconName16, MaskIconName24 } from '../../types';
-import { deepEqual } from '../../helpers/objects';
 import LongText from '../LongText.vue';
-import { normalizeListOptions } from '../../helpers/utils';
 import { PlIcon16 } from '../PlIcon16';
 import { PlIcon24 } from '../PlIcon24';
-import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
-import { getErrorMessage } from '../../helpers/error.ts';
+import { PlSvg } from '../PlSvg';
+import { PlTooltip } from '../PlTooltip';
 import OptionList from './OptionList.vue';
-import { useGroupBy } from './useGroupBy';
+import './pl-dropdown.scss';
 import type { LOption } from './types';
+import { useGroupBy } from './useGroupBy';
 
 const emit = defineEmits<{
   /**
@@ -349,7 +350,7 @@ watchPostEffect(() => {
           </div>
         </div>
         <label v-if="label">
-          <SvgRequired v-if="required" />
+          <PlSvg v-if="required" :uri="SvgRequired" />
           <span>{{ label }}</span>
           <PlTooltip v-if="$slots.tooltip" class="info" position="top">
             <template #tooltip>

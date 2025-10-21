@@ -12,8 +12,9 @@ import { PlTooltip } from '../PlTooltip';
 import DoubleContour from '../../utils/DoubleContour.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
 import { useValidation } from '../../utils/useValidation';
-import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 import { getErrorMessage } from '../../helpers/error.ts';
+import { PlSvg } from '../PlSvg';
+import SvgRequired from '../../assets/images/required.svg?raw';
 
 const slots = useSlots();
 
@@ -127,7 +128,7 @@ onMounted(() => {
   <div class="ui-text-area__envelope">
     <div ref="root" class="ui-text-area" :class="{ error: hasErrors, disabled, dashed, nonEmpty }">
       <label v-if="label" ref="label">
-        <SvgRequired v-if="required" />
+        <PlSvg v-if="required" :uri="SvgRequired" />
         <span>{{ label }}</span>
         <PlTooltip v-if="slots.tooltip" class="info" position="top">
           <template #tooltip>
