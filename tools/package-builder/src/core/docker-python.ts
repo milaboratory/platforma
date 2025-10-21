@@ -8,6 +8,7 @@ import * as util from './util';
 
 import type * as artifacts from './schemas/artifacts';
 import { resolveRunEnvironment } from './resolver';
+import { dockerfileAutogenPath } from './docker';
 
 const PYTHON_VERSION_PATTERNS = {
   PY3_PREFIX: /^3\./,
@@ -99,13 +100,15 @@ export function prepareDockerOptions(
   options.requirements = path.relative(contextDir, options.requirements);
 
   // Generate a temporary directory for the Dockerfile
-  const tmpDir = path.join(currentPackageRoot, 'dist', 'docker');
-  fs.mkdirSync(tmpDir, { recursive: true });
-  logger.debug(`Created temporary Docker directory: ${tmpDir}`);
+  const dockerfilePath = dockerfileAutogenPath(currentPackageRoot, artifactID);
+
+  const dockerfileDir = path.dirname(dockerfilePath);
+  fs.mkdirSync(dockerfileDir, { recursive: true });
+  logger.debug(`Created temporary Docker directory: ${dockerfileDir}`);
 
   const dockerfile = {
     content: generatePythonDockerfileContent(options),
-    path: path.resolve(tmpDir, `Dockerfile-${artifactID}`),
+    path: dockerfilePath,
   };
 
   fs.writeFileSync(dockerfile.path, dockerfile.content);

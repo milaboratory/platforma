@@ -245,7 +245,8 @@ export class SwJsonRenderer {
               cmd: ep.cmd,
               envVars: ep.env,
 
-              ['micromamba-version']: defaults.CONDA_MICROMAMBA_VERSION,
+              ['micromamba-version']: artifact['micromamba-version'],
+              ['conda-root-dir']: artifact['conda-root-dir'],
               spec: artifact.spec,
             };
           }
@@ -319,6 +320,8 @@ export class SwJsonRenderer {
           envVars: ep.env,
 
           ['micromamba-version']: binPkg['micromamba-version'],
+          ['conda-root-dir']: binPkg['conda-root-dir'],
+
           spec: defaults.CONDA_FROEZEN_ENV_SPEC_FILE,
         };
       }

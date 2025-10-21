@@ -9,7 +9,8 @@ import * as artifacts from './schemas/artifacts';
 import * as entrypoints from './schemas/entrypoints';
 import { tryResolve } from '@milaboratories/resolve-helper';
 import * as docker from './docker';
-import { prepareDockerOptions } from './docker-python';
+import { prepareDockerOptions as pythonDockerOptions } from './docker-python';
+import { prepareDockerOptions as condaDockerOptions } from './docker-conda';
 
 const storagePresetSchema = z.object({
   downloadURL: z.string().optional(),
@@ -179,17 +180,25 @@ export class PackageInfo {
           env: swOptions.envVars ?? [],
         });
 
-        const shouldGenerateDockerEntrypoint = !ep.docker && artifacts.isDockerAutogen(artifact.type);
-        if (shouldGenerateDockerEntrypoint) {
-          list.set(docker.entrypointName(epName), {
-            type: 'software',
-            name: epName,
-            artifact: this.prepareDockerPackage(artifact),
-            cmd: swOptions.cmd,
-            env: swOptions.envVars ?? [],
-          });
+        if (!ep.docker) {
+          if (artifacts.dockerAutogenTypes.includes(artifact.type)) {
+            switch (artifact.type) {
+              case 'conda':
+              case 'python':
+                list.set(docker.entrypointName(epName), {
+                  type: 'software',
+                  name: epName,
+                  artifact: this.generateDockerPackage(artifact),
+                  cmd: swOptions.cmd,
+                  env: swOptions.envVars ?? [],
+                });
+                continue;
+              default: {
+                throw new Error(`docker autogeneration is not defined for type: ${artifact.type}`);
+              }
+            }
+          }
         }
-        continue;
       }
 
       if (ep.environment) {
@@ -284,18 +293,33 @@ export class PackageInfo {
     return path.resolve(this.packageRoot, 'dist', 'artifacts', pkgID, `${artifactType}${platformPart}.json`);
   }
 
-  private prepareDockerPackage(artifact: artifacts.withId<artifacts.anyType>): artifacts.withId<artifacts.dockerType> {
-    if (artifact.type !== 'python') {
-      throw util.CLIError(`Auto Docker entrypoint only supported for Python, got '${artifact.type}'.`);
-    }
+  private generateDockerPackage(artifact: artifacts.withId<artifacts.pythonType | artifacts.condaType>): artifacts.withId<artifacts.dockerType> {
+    switch (artifact.type) {
+      case 'python': {
+        const options = pythonDockerOptions(this.logger, this.packageRoot, this.packageName, artifact.id, artifact);
 
-    const options = prepareDockerOptions(this.logger, this.packageRoot, this.packageName, artifact.id, artifact);
-    return {
-      id: artifact.id,
-      type: 'docker',
-      registry: artifact['docker-registry'],
-      ...options,
-    };
+        return {
+          id: artifact.id,
+          type: 'docker',
+          registry: artifact['docker-registry'],
+          ...options,
+        };
+      }
+      case 'conda': {
+        const options = condaDockerOptions(this.logger, this.packageRoot, artifact.id, artifact);
+
+        return {
+          id: artifact.id,
+          type: 'docker',
+          registry: artifact['docker-registry'],
+          ...options,
+        };
+      }
+      default: {
+        util.assertNever(artifact);
+        throw new Error('calm down the linter');
+      }
+    }
   }
 
   public getArtifact(id: string, type: 'asset'): artifacts.withId<artifacts.withType<'asset', artifacts.assetType>>;

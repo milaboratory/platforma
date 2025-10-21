@@ -148,6 +148,11 @@ export const condaPackageSchema = z.object({
   ['micromamba-version']: z
     .string()
     .describe('version of micromamba to be used to operate with conda environments'),
+  ['conda-root-dir']: z
+    .string()
+    .default(defaults.CONDA_DATA_LOCATION)
+    .describe('root directory of conda environment inside package root'),
+
   spec: z
     .string()
     .describe('location of spec.yaml describing conda environment, relative to package root.'),

@@ -18,6 +18,7 @@ import * as util from './util';
 import * as archive from './archive';
 import * as storage from './storage';
 import * as docker from './docker';
+import { tmpSpecFile } from './docker-conda';
 
 export class Core {
   private readonly logger: winston.Logger;
@@ -106,7 +107,10 @@ export class Core {
   }
 
   public get buildablePackages(): Map<string, artifacts.withId<artifacts.anyType>> {
-    return new Map(Array.from(this.packages.entries()).filter(([, value]) => artifacts.isBuildable(value.type)));
+    return new Map(Array.from(this.packages.entries())
+      .filter(([id, _]) => !docker.isVirtualDockerEntrypointName(id)) // do not show virtual docker entrypoints
+      .filter(([, value]) => artifacts.isBuildable(value.type)),
+    );
   }
 
   public packageHasType(id: string, type: artifacts.artifactType): boolean {
@@ -357,6 +361,11 @@ localTag: '${localTag}'
     this.logger.info(`Docker image is built:
   tag: '${dstTag}'
   location file: '${artInfoPath}'`);
+
+    this.logger.debug(`Clearing context directory from temporary files...`);
+    if (fs.existsSync(path.join(context, tmpSpecFile))) {
+      fs.unlinkSync(path.join(context, tmpSpecFile));
+    }
   }
 
   private async buildCondaPackage(opts: {
@@ -384,12 +393,13 @@ localTag: '${localTag}'
     }
 
     const micromambaRoot = path.join(contentRoot, defaults.CONDA_DATA_LOCATION);
+    const micromambaBin = path.join(contentRoot, 'micromamba');
 
     this.logger.debug(`Creating micromamba root directory: '${micromambaRoot}'`);
     await fsp.mkdir(micromambaRoot, { recursive: true });
 
     this.logger.debug(`Creating micromamba instance...`);
-    const m = new micromamba(this.logger, micromambaRoot, artifact['micromamba-version']);
+    const m = new micromamba(this.logger, micromambaRoot, artifact['micromamba-version'], micromambaBin);
 
     const resultSpecPath = path.join(contentRoot, defaults.CONDA_FROEZEN_ENV_SPEC_FILE);
 
@@ -403,7 +413,15 @@ localTag: '${localTag}'
     this.logger.debug(`Cutting prefix from conda environment file...`);
 
     const resultSpec = yaml.parse(await fsp.readFile(resultSpecPath, 'utf-8')) as Record<string, unknown>;
-    resultSpec.prefix = undefined;
+    resultSpec.prefix = undefined; // cut original env location (with path from CI) from the resulting spec file
+
+    // Fixup the structure: for empty lists export produces YAML that cannot be then read back on server side for restoration.
+    if (!resultSpec.channels) {
+      resultSpec.channels = [];
+    }
+    if (!resultSpec.dependencies) {
+      resultSpec.dependencies = [];
+    }
     await fsp.writeFile(resultSpecPath, yaml.stringify(resultSpec));
 
     this.logger.debug(`Conda environment file is ready: '${resultSpecPath}'`);
