@@ -24,9 +24,10 @@ import { PlMaskIcon24 } from '../PlMaskIcon24';
 import { DropdownOverlay } from '../../utils/DropdownOverlay';
 import { refDebounced } from '@vueuse/core';
 import { useWatchFetch } from '../../composition/useWatchFetch.ts';
-import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 import { getErrorMessage } from '../../helpers/error.ts';
 import type { ListOptionBase } from '@platforma-sdk/model';
+import { PlSvg } from '../PlSvg';
+import SvgRequired from '../../assets/images/required.svg?raw';
 
 /**
  * The current selected value.
@@ -376,7 +377,7 @@ watch(() => optionsRequest.loading || modelOptionRequest.loading, (loading) => {
           </div>
         </div>
         <label v-if="label">
-          <SvgRequired v-if="required" />
+          <PlSvg v-if="required" :uri="SvgRequired" />
           <span>{{ label }}</span>
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
             <template #tooltip>

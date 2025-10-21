@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { undef } from '@milaboratories/helpers';
+import type { ListOption } from '@platforma-sdk/ui-vue';
 import {
   PlBtnPrimary,
   PlCheckbox,
@@ -12,9 +13,9 @@ import {
   PlRow,
 } from '@platforma-sdk/ui-vue';
 import { computed, reactive, ref } from 'vue';
-import type { ListOption } from '@platforma-sdk/ui-vue';
 
 const data = reactive({
+  required: false,
   disabled: false,
   clearable: true,
   withGroups: false,
@@ -148,6 +149,7 @@ const showOptionsLoading = () => {
   <PlContainer>
     <PlRow>
       <PlCheckbox v-model="data.disabled">Disabled</PlCheckbox>
+      <PlCheckbox v-model="data.required">Required</PlCheckbox>
       <PlCheckbox v-model="data.clearable">Clearable</PlCheckbox>
       <PlCheckbox v-model="data.withGroups">With groups</PlCheckbox>
       <PlBtnPrimary @click="showOptionsLoading">Show options loading</PlBtnPrimary>
@@ -158,6 +160,7 @@ const showOptionsLoading = () => {
           v-model="data.model"
           :disabled="data.disabled"
           :clearable="data.clearable"
+          :required="data.required"
           label="PlDropdown"
           :options="simpleOptions"
         />
@@ -165,6 +168,7 @@ const showOptionsLoading = () => {
           v-model="data.model"
           :disabled="data.disabled"
           :clearable="data.clearable"
+          :required="data.required"
           label="PlDropdown"
           :options="simpleOptions"
         >
@@ -176,6 +180,7 @@ const showOptionsLoading = () => {
           v-model="data.model"
           :disabled="data.disabled"
           :clearable="data.clearable"
+          :required="data.required"
           label="PlDropdown"
           :options="simpleOptions"
         />
@@ -183,6 +188,7 @@ const showOptionsLoading = () => {
           v-model="data.model"
           :disabled="data.disabled"
           :clearable="data.clearable"
+          :required="data.required"
           label="PlDropdownRef (with regular options)"
           :options="simpleOptions"
         />
@@ -190,6 +196,7 @@ const showOptionsLoading = () => {
           v-model="data.ref"
           :disabled="data.disabled"
           :clearable="data.clearable"
+          :required="data.required"
           label="PlDropdownRef (with ref options)"
           :options="refOptions"
         />
@@ -197,6 +204,7 @@ const showOptionsLoading = () => {
         <PlDropdownMulti
           v-model="data.multi"
           :disabled="data.disabled"
+          :required="data.required"
           :options="simpleOptions"
           label="PlDropdownMulti"
         />
@@ -204,6 +212,7 @@ const showOptionsLoading = () => {
         <PlDropdownMulti
           v-model="data.multi"
           :disabled="data.disabled"
+          :required="data.required"
           :options="simpleOptions"
           label="PlDropdownMulti"
         >
@@ -215,6 +224,7 @@ const showOptionsLoading = () => {
         <PlDropdownMultiRef
           v-model="data.multiRefSelected"
           :disabled="data.disabled"
+          :required="data.required"
           :options="refOptionsMulti"
           label="PlDropdownMultiRef"
         />
