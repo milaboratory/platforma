@@ -66,7 +66,7 @@ export function prepareDockerOptions(
     throw util.CLIError('Cannot prepare Docker options: package root directory is not specified. Please ensure the "root" property is set in the build parameters.');
   }
   if (!buildParams.roots[platform]) {
-    throw util.CLIError('Cannot prepare Docker options: linux-x64 root directory is not specified. Please ensure the "roots" property is set for artifact.');
+    throw util.CLIError(`Cannot prepare Docker options: ${platform} root directory is not specified. Please ensure the 'roots' property is set for artifact.`);
   }
 
   const contextDir = path.resolve(currentPackageRoot, buildParams.roots[platform]);
