@@ -83,6 +83,7 @@ describe('Docker Python Functions', () => {
       'registry': { name: 'test' },
       'docker-registry': 'test-docker-registry',
       'root': path.join(testPackageRoot, 'src'), // Use absolute path
+      'pkg': '/app',
     };
 
     // Clear all mocks

@@ -59,6 +59,10 @@ export class micromamba {
     if (!binaryPath) {
       this.binaryPath = path.join(rootPrefix, 'micromamba');
     }
+
+    if (util.currentOS() === 'windows' && !this.binaryPath.endsWith('.exe')) {
+      this.binaryPath += '.exe';
+    }
   }
 
   public async downloadBinary(): Promise<void> {
@@ -201,6 +205,12 @@ export class micromamba {
   }
 }
 
+export function micromambaDownloadUrl(version: string, platform: util.PlatformType): string {
+  return (version === 'latest')
+    ? `https://github.com/mamba-org/micromamba-releases/releases/latest/download/${micromambaAssetName(platform)}`
+    : `https://github.com/mamba-org/micromamba-releases/releases/download/${version}/${micromambaAssetName(platform)}`;
+}
+
 /**
  * Downloads micromamba binary for the specified platform and version
  */
@@ -215,9 +225,7 @@ export async function downloadMicromamba(
 
   logger.debug(`Downloading micromamba version ${version} for platform ${targetPlatform}`);
 
-  const downloadUrl = (version === 'latest')
-    ? `https://github.com/mamba-org/micromamba-releases/releases/latest/download/${micromambaAssetName(targetPlatform)}`
-    : `https://github.com/mamba-org/micromamba-releases/releases/download/${version}/${micromambaAssetName(targetPlatform)}`;
+  const downloadUrl = micromambaDownloadUrl(version, targetPlatform);
 
   logger.debug(`Download URL: ${downloadUrl}`);
 
