@@ -145,7 +145,7 @@ export class Core {
       return dockerArtifact;
     }
 
-    throw util.CLIError(`package with id '${id}' not found in ${util.softwareConfigName} file`);
+    return undefined;
   }
 
   /** Parses entrypoints from a package.json
@@ -220,6 +220,9 @@ export class Core {
       const artifact = this.getArtifact(artifactID, 'archive');
 
       if (!artifact) {
+        if (options?.ids) {
+          this.logger.warn(`Package '${artifactID}' is not buildable into archive. Skipped.`);
+        }
         continue;
       }
 
@@ -311,7 +314,12 @@ export class Core {
     const packagesToBuild = options?.ids ?? Array.from(this.buildablePackages.keys());
 
     for (const pkgID of packagesToBuild) {
-      if (!this.packageHasType(pkgID, 'docker')) {
+      const artifact = this.getArtifact(pkgID, 'docker');
+
+      if (!artifact) {
+        if (options?.ids) {
+          this.logger.warn(`Package '${pkgID}' is not buildable into docker image. Skipped.`);
+        }
         continue;
       }
 
@@ -330,10 +338,6 @@ export class Core {
         continue;
       }
 
-      const artifact = this.getArtifact(pkgID, 'docker');
-      if (!artifact) {
-        continue;
-      }
       this.buildDockerImage(artifact.id, artifact, options?.registry);
     }
   }
@@ -354,9 +358,9 @@ export class Core {
     const localTag = docker.generateLocalTagName(this.pkgInfo.packageRoot, artifact);
 
     this.logger.info(`Building docker image...`);
-    this.logger.debug(`dockerfile: '${dockerfile}'
-context: '${context}'
-localTag: '${localTag}'
+    this.logger.debug(`  dockerfile: '${dockerfile}'
+  context: '${context}'
+  localTag: '${localTag}'
     `);
 
     const name = this.pkgInfo.artifactName(artifact);
