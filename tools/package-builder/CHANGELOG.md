@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.10.0
+
+### Minor Changes
+
+- 4b6a1af: Automatically generate docker images for conda software
+
 ## 3.9.0
 
 ### Minor Changes
