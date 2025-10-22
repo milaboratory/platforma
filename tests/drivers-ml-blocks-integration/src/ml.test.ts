@@ -1,4 +1,6 @@
 import { blockSpec as downloadFileSpec } from '@milaboratories/milaboratories.test-download-file';
+import { blockSpec as transferFilesSpec } from '@milaboratories/milaboratories.transfer-files';
+import { platforma as transferFilesModel } from '@milaboratories/milaboratories.transfer-files.model';
 import { platforma as downloadFileModel } from '@milaboratories/milaboratories.test-download-file.model';
 import { blockSpec as downloadBlobURLSpec } from '@milaboratories/milaboratories.test-blob-url-custom-protocol';
 import { platforma as downloadBlobURLModel } from '@milaboratories/milaboratories.test-blob-url-custom-protocol.model';
@@ -23,7 +25,9 @@ import {
 } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, blockTest } from '@platforma-sdk/test';
 import fs from 'fs';
+import * as fsp from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
+import os from 'os';
 import path from 'path';
 import { test } from 'vitest';
 
@@ -729,6 +733,196 @@ blockTest(
 );
 
 blockTest(
+  'transfer-files',
+  { timeout: 60000 },
+  async ({ rawPrj: project, ml, tmpFolder, expect }) => {
+    const blockId = await project.addBlock('TransferFiles', transferFilesSpec);
+
+    // Helper function to create random buffer
+    const createRandomBuffer = (size: number): Buffer => {
+      const buffer = Buffer.alloc(size);
+      for (let i = 0; i < size; i++) {
+        buffer[i] = Math.floor(Math.random() * 256);
+      }
+      return buffer;
+    };
+
+    // Create test files with known content (text and binary)
+    const testFiles: Array<{ name: string; buffer: Buffer }> = [
+      { name: 'test_small_text.txt', buffer: Buffer.from('Hello from file 1!') },
+      { name: 'test_medium_text.txt', buffer: Buffer.from('Hello from file 2! This is a longer file with more content. Lorem ipsum dolor sit amet.') },
+      { name: 'test_json.json', buffer: Buffer.from(JSON.stringify({ message: 'Hello from JSON', value: 42 })) },
+      // Small binary file (1 KB)
+      { name: 'test_small_binary.bin', buffer: createRandomBuffer(1024) },
+      // Medium binary file (100 KB)
+      { name: 'test_medium_binary.bin', buffer: createRandomBuffer(100 * 1024) },
+      // Large binary file (1 MB)
+      { name: 'test_large_binary.bin', buffer: createRandomBuffer(1024 * 1024) },
+      // Very large binary file (10 MB)
+      { name: 'test_very_large_binary.bin', buffer: createRandomBuffer(10 * 1024 * 1024) }
+    ];
+
+    const inputHandles: ImportFileHandle[] = [];
+    const originalBuffers: Buffer[] = [];
+
+    // Create temporary files and get their handles
+    const storages = await ml.driverKit.lsDriver.getStorageList();
+    const local = storages.find((s) => s.name == 'local');
+    expect(local).not.toBeUndefined();
+
+    const testDir = path.join(tmpFolder, 'test-files');
+    await fsp.mkdir(testDir, { recursive: true });
+    console.log('Created test directory:', testDir);
+
+    for (const testFile of testFiles) {
+      const filePath = path.join(testDir, testFile.name);
+      await fsp.writeFile(filePath, testFile.buffer);
+      console.log(`Created test file: ${testFile.name} (${testFile.buffer.length} bytes)`);
+      originalBuffers.push(testFile.buffer);
+
+      const files = await ml.driverKit.lsDriver.listFiles(local!.handle, testDir);
+      const ourFile = files.entries.find((f) => f.name == testFile.name);
+      expect(ourFile).not.toBeUndefined();
+      expect(ourFile?.type).toBe('file');
+
+      inputHandles.push((ourFile as any).handle);
+    }
+
+    await project.setBlockArgs(blockId, { inputHandles });
+    await project.runBlock(blockId);
+
+    while (true) {
+      const state = (await awaitStableState(
+        project.getBlockState(blockId),
+        25000
+      )) as InferBlockState<typeof transferFilesModel>;
+
+      const blockFrontend = await project.getBlockFrontend(blockId).awaitStableValue();
+      expect(blockFrontend).toBeDefined();
+
+      const outputs = state.outputs;
+
+      if (outputs.fileImports.ok && outputs.fileExports.ok) {
+        const fileImports = outputs.fileImports.value;
+        const fileExports = outputs.fileExports.value;
+
+        console.log('\n=== File Transfer Results ===');
+        console.log(`Files imported: ${Object.keys(fileImports).length}`);
+        console.log(`Files exported: ${Object.keys(fileExports).length}`);
+
+        // Verify all files were imported
+        expect(Object.keys(fileImports).length).toBe(testFiles.length);
+        expect(Object.keys(fileExports).length).toBe(testFiles.length);
+
+        // Test each file with comprehensive range testing
+        for (let i = 0; i < testFiles.length; i++) {
+          const handle = inputHandles[i];
+          const testFile = testFiles[i];
+          const originalBuffer = originalBuffers[i];
+
+          console.log(`\n--- Testing ${testFile.name} (${originalBuffer.length} bytes) ---`);
+
+          // Check import progress
+          const importProgress = fileImports[handle];
+          expect(importProgress).toBeDefined();
+          expect(importProgress.done).toBe(true);
+
+          // Check exported blob
+          const exportedBlob = fileExports[handle];
+          expect(exportedBlob).toBeDefined();
+          expect(exportedBlob).toHaveProperty('handle');
+          expect(exportedBlob).toHaveProperty('size');
+          expect(exportedBlob.size).toBe(originalBuffer.length);
+
+          // Test 1: Full content (no range)
+          console.log('  Test 1: Full content (no range)');
+          const fullContent = await ml.driverKit.blobDriver.getContent(exportedBlob.handle);
+          expect(Buffer.from(fullContent).equals(originalBuffer)).toBe(true);
+          console.log('  ✓ Full content matches');
+
+          // Test 2: First byte
+          if (originalBuffer.length > 0) {
+            console.log('  Test 2: First byte');
+            const firstByte = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, { from: 0, to: 1 });
+            expect(Buffer.from(firstByte).equals(originalBuffer.subarray(0, 1))).toBe(true);
+            console.log('  ✓ First byte matches');
+          }
+
+          // Test 3: First 10 bytes (if file is large enough)
+          if (originalBuffer.length >= 10) {
+            console.log('  Test 3: First 10 bytes');
+            const first10 = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, { from: 0, to: 10 });
+            expect(Buffer.from(first10).equals(originalBuffer.subarray(0, 10))).toBe(true);
+            console.log('  ✓ First 10 bytes match');
+          }
+
+          // Test 4: Middle chunk
+          if (originalBuffer.length >= 20) {
+            const midStart = Math.floor(originalBuffer.length / 2) - 5;
+            const midEnd = midStart + 10;
+            console.log(`  Test 4: Middle chunk (bytes ${midStart}-${midEnd})`);
+            const midChunk = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, { from: midStart, to: midEnd });
+            expect(Buffer.from(midChunk).equals(originalBuffer.subarray(midStart, midEnd))).toBe(true);
+            console.log('  ✓ Middle chunk matches');
+          }
+
+          // Test 5: Last 10 bytes (if file is large enough)
+          if (originalBuffer.length >= 10) {
+            const lastStart = originalBuffer.length - 10;
+            console.log(`  Test 5: Last 10 bytes (${lastStart}-${originalBuffer.length})`);
+            const last10 = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, { from: lastStart, to: originalBuffer.length });
+            expect(Buffer.from(last10).equals(originalBuffer.subarray(lastStart))).toBe(true);
+            console.log('  ✓ Last 10 bytes match');
+          }
+
+          // Test 6: Last byte
+          if (originalBuffer.length > 0) {
+            console.log('  Test 6: Last byte');
+            const lastByte = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, { from: originalBuffer.length - 1, to: originalBuffer.length });
+            expect(Buffer.from(lastByte).equals(originalBuffer.subarray(originalBuffer.length - 1))).toBe(true);
+            console.log('  ✓ Last byte matches');
+          }
+
+          // Test 7: Large chunk from beginning (for large files)
+          if (originalBuffer.length >= 1000) {
+            console.log('  Test 7: Large chunk from beginning (1000 bytes)');
+            const largeChunk = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, { from: 0, to: 1000 });
+            expect(Buffer.from(largeChunk).equals(originalBuffer.subarray(0, 1000))).toBe(true);
+            console.log('  ✓ Large chunk matches');
+          }
+
+          // Test 8: Very large chunk (for very large files)
+          if (originalBuffer.length >= 100000) {
+            console.log('  Test 8: Very large chunk (100KB)');
+            const veryLargeChunk = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, { from: 0, to: 100000 });
+            expect(Buffer.from(veryLargeChunk).equals(originalBuffer.subarray(0, 100000))).toBe(true);
+            console.log('  ✓ Very large chunk matches');
+          }
+
+          // Test 9: Multiple random ranges
+          if (originalBuffer.length >= 100) {
+            console.log('  Test 9: Multiple random ranges');
+            for (let j = 0; j < 3; j++) {
+              const rangeStart = Math.floor(Math.random() * (originalBuffer.length - 10));
+              const rangeEnd = rangeStart + Math.floor(Math.random() * Math.min(50, originalBuffer.length - rangeStart)) + 1;
+              const randomRange = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, { from: rangeStart, to: rangeEnd });
+              expect(Buffer.from(randomRange).equals(originalBuffer.subarray(rangeStart, rangeEnd))).toBe(true);
+            }
+            console.log('  ✓ Random ranges match');
+          }
+
+          console.log(`✅ All tests passed for ${testFile.name}`);
+        }
+
+        console.log('\n=== All transfer-files tests completed successfully ===');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return;
+      }
+    }
+  }
+);
+
+blockTest(
   'should create blob-url-custom-protocol block, render it and gets outputs from its config',
   {timeout: 30000},
   async ({ rawPrj: project, ml, expect }) => {
@@ -862,6 +1056,30 @@ async function lsDriverGetFileHandleFromAssets(
   const ourFile = files.entries.find((f) => f.name == fName);
   expect(ourFile).not.toBeUndefined();
   expect(ourFile?.type).toBe('file');
+
+  return (ourFile as any).handle;
+}
+
+async function getImportFileHandleFromTmp(
+  ml: MiddleLayer,
+  fName: string,
+  fileSize: number
+): Promise<ImportFileHandle> {
+  const storages = await ml.driverKit.lsDriver.getStorageList();
+
+  const local = storages.find((s) => s.name == 'local');
+
+  const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'tmp-'));
+  const filePath = path.join(tmpDir, fName);
+
+  console.log('filePath', filePath);
+
+  const buffer = Buffer.alloc(fileSize, 0);
+  fs.writeFileSync(filePath, buffer);
+
+  const files = await ml.driverKit.lsDriver.listFiles(local!.handle, tmpDir);
+
+  const ourFile = files.entries.find((f) => f.name == fName);
 
   return (ourFile as any).handle;
 }
