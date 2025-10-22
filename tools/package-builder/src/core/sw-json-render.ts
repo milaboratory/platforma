@@ -62,13 +62,11 @@ export class SwJsonRenderer {
         info.isDev = true;
       }
 
-      const expectDockerForCurrentArch = artifacts.dockerArchitectures.includes(util.currentArch());
-
       const pkg = ep.artifact;
       if (mode === 'dev-local') {
         switch (pkg.type) {
           case 'docker': {
-            info.docker = this.renderDockerInfo(epName, ep, options?.requireAllArtifacts && expectDockerForCurrentArch);
+            info.docker = this.renderDockerInfo(epName, ep, options?.requireAllArtifacts);
             break;
           }
           default:
@@ -95,7 +93,7 @@ export class SwJsonRenderer {
           info.binary = this.renderBinaryInfo(mode, epName, ep, options?.requireAllArtifacts);
           break;
         case 'docker':
-          info.docker = this.renderDockerInfo(epName, ep, options?.requireAllArtifacts && expectDockerForCurrentArch);
+          info.docker = this.renderDockerInfo(epName, ep, options?.requireAllArtifacts);
           break;
         case 'java':
           info.binary = this.renderBinaryInfo(mode, epName, ep, options?.requireAllArtifacts);

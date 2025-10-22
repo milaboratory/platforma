@@ -2,6 +2,7 @@ import { Command } from '@oclif/core';
 import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
+import * as envs from '../../core/envs';
 
 export default class PublishAll extends Command {
   static override description = 'publish entrypoint descriptors AND software package archive';
@@ -44,6 +45,7 @@ export default class PublishAll extends Command {
     core.publishDockerImages({
       ids: flags['package-id'],
       pushTo: flags['docker-push-to'],
+      strictPlatformMatching: envs.isCI(),
     });
   }
 }

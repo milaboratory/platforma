@@ -37,6 +37,7 @@ export default class Docker extends Command {
     if (autopush && !core.pkgInfo.isPrivate) {
       core.publishDockerImages({
         ids: flags['package-id'],
+        strictPlatformMatching: envs.isCI(),
       });
     }
 
