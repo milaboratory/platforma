@@ -1,5 +1,6 @@
 test := import(":test")
 pSpec := import(":pframes.spec")
+json := import("json")
 
 TestMakeTrace := func() {
 	trace1 := pSpec.makeTrace(undefined, {type: "type", label: "the label"})
@@ -148,4 +149,117 @@ TestAxisMatcher := func() {
 	]
 
 	test.isEqual(pSpec.matchAxis(axesSpec1, {name: "axis1", domain: {d1: "2"}}), 1)
+}
+
+TestSpecDistiller := func() {
+	specs := [
+		{
+			axesSpec: [
+				{
+					domain: {
+						`pl7.app/vdj/clustering/blockId`: "7c4a6044-088a-479b-ae23-d98c991db6ea"
+					},
+					name: "pl7.app/vdj/clusterId",
+					type: "String"
+				}
+			],
+			kind: "PColumn",
+			name: "pl7.app/vdj/clustering/clusterSize",
+			valueType: "Int"
+		},
+		{
+			axesSpec: [
+				{
+					name: "pl7.app/vdj/clonotypeKey",
+					type: "String"
+				}
+			],
+			kind: "PColumn",
+			name: "pl7.app/vdj/liabilitiesRisk",
+			valueType: "String"
+		},
+		{
+			axesSpec: [
+				{
+					type: "String",
+					domain: {
+						`pl7.app/vdj/clustering/blockId`: "7c4a6044-088a-479b-ae23-d98c991db6ea"
+					},
+					name: "pl7.app/vdj/clusterId"
+				}
+			],
+			kind: "PColumn",
+			name: "pl7.app/vdj/enrichment",
+			valueType: "Double"
+		},
+		{
+			axesSpec: [
+				{
+					name: "pl7.app/vdj/clonotypeKey",
+					type: "String"
+				}
+			],
+			kind: "PColumn",
+			name: "pl7.app/vdj/sampleCount",
+			valueType: "Int"
+		},
+		{
+			kind: "PColumn",
+			name: "pl7.app/vdj/link",
+			valueType: "Int",
+			axesSpec: [
+				{
+					name: "pl7.app/vdj/clonotypeKey",
+					type: "String"
+				},
+				{
+					domain: {
+						`pl7.app/vdj/clustering/blockId`: "0877c411-f4c0-4fe0-990f-18d9daeb7d5d"
+					},
+					name: "pl7.app/vdj/clusterId",
+					type: "String"
+				}
+			]
+		},
+		{
+			kind: "PColumn",
+			name: "pl7.app/vdj/link",
+			valueType: "Int",
+			axesSpec: [
+				{
+					name: "pl7.app/vdj/clonotypeKey",
+					type: "String"
+				},
+				{
+					domain: {
+						`pl7.app/vdj/clustering/blockId`: "7c4a6044-088a-479b-ae23-d98c991db6ea"
+					},
+					name: "pl7.app/vdj/clusterId",
+					type: "String"
+				}
+			]
+		},
+		{
+			name: "pl7.app/vdj/clustering/clusterSize",
+			valueType: "Int",
+			axesSpec: [
+				{
+					domain: {
+						`pl7.app/vdj/clustering/blockId`: "0877c411-f4c0-4fe0-990f-18d9daeb7d5d"
+					},
+					name: "pl7.app/vdj/clusterId",
+					type: "String"
+				}
+			],
+			kind: "PColumn"
+		}
+	]
+
+	distiller := pSpec.createSpecDistiller(specs)
+	distilledSpecs := []
+	for _, spec in specs {
+		distilledSpecs = append(distilledSpecs, distiller.distill(spec))
+	}
+
+	test.isEqual(distilledSpecs, specs)
 }
