@@ -216,7 +216,11 @@ export class Core {
     // Automated builds settings
     condaBuild?: boolean;
   }) {
+    this.logger.info(`Building package archives...`);
+
     const packagesToBuild = options?.ids ?? Array.from(this.buildablePackages.keys());
+    this.logger.debug(`Selected packages:\n  ${packagesToBuild.join('\n  ')}`);
+    this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join('\n  ')}`);
 
     if (packagesToBuild.length > 1 && options?.archivePath && !options.forceBuild) {
       this.logger.error(
@@ -317,10 +321,14 @@ export class Core {
     options?: {
       ids?: string[];
       registry?: string;
-      strictPlatformMatching?: boolean; // if true, build docker images only on linux OS. Used in CI.
+      strictPlatformMatching?: boolean; // if true, build docker images only on linux OS and only for supported architectures. Used in CI.
     },
   ) {
+    this.logger.info(`Building docker images...`);
+
     const packagesToBuild = options?.ids ?? Array.from(this.buildablePackages.keys());
+    this.logger.debug(`Selected packages:\n  ${packagesToBuild.join('\n  ')}`);
+    this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join('\n  ')}`);
 
     for (const pkgID of packagesToBuild) {
       const artifact = this.getArtifact(pkgID, 'docker');
@@ -511,9 +519,11 @@ export class Core {
     failExisting?: boolean; // do not warn if package already exists in storage, fail with error instead.
     forceReupload?: boolean; // re-upload packages even if they already exist in storage
   }) {
+    this.logger.info(`Publishing packages...`);
+
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
-    this.logger.info(`Publishing packages: ${packagesToPublish.join(', ')}`);
-    this.logger.info(`Publishable packages: ${Array.from(this.packages.keys()).join(', ')}`);
+    this.logger.debug(`Selected packages:\n  ${packagesToPublish.join('\n  ')}`);
+    this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join('\n  ')}`);
 
     const uploads: Promise<void>[] = [];
     for (const pkgID of packagesToPublish) {
@@ -629,8 +639,13 @@ export class Core {
   public publishDockerImages(options?: {
     ids?: string[];
     pushTo?: string;
+    strictPlatformMatching?: boolean; // if true, publish docker images only on linux OS and only for supported architectures. Used in CI.
   }) {
+    this.logger.info(`Publishing docker images...`);
+
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
+    this.logger.debug(`Selected packages:\n  ${packagesToPublish.join('\n  ')}`);
+    this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join('\n  ')}`);
 
     for (const pkgID of packagesToPublish) {
       const pkg = this.getArtifact(pkgID, 'docker');
@@ -638,6 +653,21 @@ export class Core {
         if (options?.ids) {
           this.logger.warn(`Package '${pkgID}' is not buildable into docker image. Cannot publish docker image.`);
         }
+        continue;
+      }
+
+      if (!artifacts.dockerArchitectures.includes(util.currentArch())) {
+        this.logger.log(options?.strictPlatformMatching ? 'debug' : 'warn',
+          `Docker image generation was skipped because host architecture '${util.currentArch()}'`
+          + ` is currently not supported by Platforma Backend docker feature`,
+        );
+        continue;
+      }
+
+      if (options?.strictPlatformMatching && util.currentOS() !== 'linux') {
+        this.logger.debug(
+          `Docker image generation was skipped: not a linux OS and 'strictPlatformMatching' is enabled`,
+        );
         continue;
       }
 
