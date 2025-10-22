@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.4.0
+
+### Minor Changes
+
+- 686de0b: Support conda-based software execution
+
 ## 5.3.10
 
 ### Patch Changes
