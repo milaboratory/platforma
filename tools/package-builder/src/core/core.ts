@@ -321,7 +321,7 @@ export class Core {
     options?: {
       ids?: string[];
       registry?: string;
-      strictPlatformMatching?: boolean; // if true, build docker images only on linux OS. Used in CI.
+      strictPlatformMatching?: boolean; // if true, build docker images only on linux OS and only for supported architectures. Used in CI.
     },
   ) {
     this.logger.info(`Building docker images...`);
@@ -639,7 +639,7 @@ export class Core {
   public publishDockerImages(options?: {
     ids?: string[];
     pushTo?: string;
-    strictPlatformMatching?: boolean; // if true, build docker images only on linux OS. Used in CI.
+    strictPlatformMatching?: boolean; // if true, publish docker images only on linux OS and only for supported architectures. Used in CI.
   }) {
     this.logger.info(`Publishing docker images...`);
 
