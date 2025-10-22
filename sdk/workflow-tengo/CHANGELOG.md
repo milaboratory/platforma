@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.4.1
+
+### Patch Changes
+
+- 6797432: Added xsv.export assert
+
 ## 5.4.0
 
 ### Minor Changes
