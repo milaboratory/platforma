@@ -21,7 +21,11 @@ export const PL_DOCKER_AUTOPUSH = 'PL_DOCKER_AUTOPUSH';
 export const PL_DOCKER_NO_AUTOPUSH = 'PL_DOCKER_NO_AUTOPUSH';
 
 export const CI = 'CI';
+export const RUNNER_DEBUG = 'RUNNER_DEBUG';
 
 export function isCI(): boolean {
   return process.env[CI] === 'true';
+}
+export function isRunnerDebug(): boolean {
+  return process.env[RUNNER_DEBUG] === 'true' || process.env[RUNNER_DEBUG] === '1';
 }
