@@ -48,6 +48,7 @@ self.body(func(inputs) {
 
 	specDistiller := pframesSpec.createSpecDistiller(slices.map(rawColumns, func(c) { return c.spec }))
 	canonicalMap := {}
+	labelsMap := {}
 	uniqueAxes := []
 	for column in rawColumns {
 		for axis in column.spec.axesSpec {
@@ -55,7 +56,15 @@ self.body(func(inputs) {
 			canonicalizedAxisSpec := canonical.encode(distilledAxis)
 			if is_undefined(canonicalMap[canonicalizedAxisSpec]) {
 				canonicalMap[canonicalizedAxisSpec] = true
-				distilledAxis.label = axis.annotations["pl7.app/label"]
+
+				label := axis.annotations["pl7.app/label"]
+				ll.assert(is_string(label), "Axis label must be defined, got %v", label)
+				if !is_undefined(labelsMap[label]) {
+					ll.panic("Axis label %s is not unique, it is already used by axis %v, and now the axis %v also tries to use it", label, labelsMap[label], distilledAxis)
+				}
+				labelsMap[label] = distilledAxis
+				
+				distilledAxis.label = label
 				uniqueAxes = append(uniqueAxes, distilledAxis)
 			}
 		}
