@@ -24,7 +24,9 @@ describe('convertFilterSpecsToExpressionSpecs', () => {
       ];
     const expected = [
       {
-        "expression": {
+        "name": "Step 1",
+        "type": "alias",
+        "value": {
           "conditions": [
             {
               "then": {
@@ -61,8 +63,7 @@ describe('convertFilterSpecsToExpressionSpecs', () => {
             "value": false,
           },
           "type": "when_then_otherwise",
-        },
-        "name": "Step 1",
+        }
       },
     ];
     const script = convertFilterSpecsToExpressionSpecs(filters);
