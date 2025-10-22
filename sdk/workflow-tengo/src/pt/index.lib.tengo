@@ -169,7 +169,7 @@ p := ll.toStrict({
 	 * @returns {object} - A join builder entry object.
 	 */
 	full: func(...entries) {
-		ll.assert(len(entries) > 0, "full join requires at least one entry")
+		ll.assert(len(entries) > 0, "full join requires at least one entry %v", entries)
 
 		if len(entries) == 1 && !_isPEntry(entries[0]) {
 			entries = _frameToPEntries(entries[0])
@@ -650,16 +650,15 @@ workflow := func() {
 			util.validateParamsForFrameFromColumnBundle(options)
 
 			columns := is_array(options.columns) ? options.columns : bundle.getColumnKeys()
-			axes := slices.map(
-				is_array(options.axes) ? options.axes : bundle.getAxesSpec(columns...),
-				func(spec) { return { column: pframesSpec.getAxisId(spec), spec: spec }
-			})
+			axes := is_array(options.axes) ? options.axes : bundle.getAxesSpec(columns...)
 
 			entries := []
 			aliases := []
+
 			for axis in axes {
-				aliases = append(aliases, exp.sc.axis(axis.spec).alias(axis.column))
+				aliases = append(aliases, exp.sc.axis(axis).alias(pframesSpec.getAxisId(axis)))
 			}
+
 			for column in columns {
 				decoded := json.decode(column)
 				if (is_undefined(decoded.axisFilters)) {
@@ -681,6 +680,7 @@ workflow := func() {
 					entries = append(entries, entry)
 				}
 			}
+
 			return self.frame(p.full(entries...)).select(aliases...)
 		},
 
