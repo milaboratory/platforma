@@ -629,6 +629,7 @@ export class Core {
   public publishDockerImages(options?: {
     ids?: string[];
     pushTo?: string;
+    strictPlatformMatching?: boolean; // if true, build docker images only on linux OS. Used in CI.
   }) {
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
 
@@ -638,6 +639,21 @@ export class Core {
         if (options?.ids) {
           this.logger.warn(`Package '${pkgID}' is not buildable into docker image. Cannot publish docker image.`);
         }
+        continue;
+      }
+
+      if (!artifacts.dockerArchitectures.includes(util.currentArch())) {
+        this.logger.log(options?.strictPlatformMatching ? 'debug' : 'warn',
+          `Docker image generation was skipped because host architecture '${util.currentArch()}'`
+          + ` is currently not supported by Platforma Backend docker feature`,
+        );
+        continue;
+      }
+
+      if (options?.strictPlatformMatching && util.currentOS() !== 'linux') {
+        this.logger.debug(
+          `Docker image generation was skipped: not a linux OS and 'strictPlatformMatching' is enabled`,
+        );
         continue;
       }
 
