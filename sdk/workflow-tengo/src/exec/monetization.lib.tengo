@@ -143,6 +143,6 @@ builder := func(productKey) {
 	return self
 }
 
-export {
+export ll.toStrict({
 	builder: builder
-}
+})

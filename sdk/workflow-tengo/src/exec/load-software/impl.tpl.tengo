@@ -8,6 +8,7 @@ path := import(":path")
 pkg := import(":exec.package")
 runcmd := import(":exec.runcmd")
 python := import(":exec.python")
+conda := import(":exec.conda")
 R := import(":exec.R")
 desc := import(":exec.descriptor")
 validation := import(":validation")
@@ -17,7 +18,11 @@ feats := import(":feats")
 // Variables, substituted in command arguments and environment variable values.
 //
 _ARG_VAR_PKG                 := "pkg"  // abs path to software package
+
 _ARG_VAR_JAVA                := "java" // abs path to 'java' run environment
+
+_ARG_VAR_CONDA               := "conda" // abs path to conda package (basically equal to {pkg}).
+_ARG_VAR_CONDA_ENV           := "conda_env" // abs path to conda environment restored on runner side.
 
 _ARG_VAR_PYTHON_VENV         := "python" // abs path to python virtual environment. WARNING: not change the name, it's used in other part of code
 _ARG_VAR_PYTHON_RUN_ENV      := "python_run_env" // abs path to python run environment used to create venv
@@ -59,6 +64,28 @@ _loadJavaRunEnvironment := func(operationMode, descriptor) {
 
 	return ll.toStrict({
 		runEnvType: "java",
+		plan:       plan
+	})
+}
+
+_loadCondaRunEnvironment := func(operationMode, condaDescriptor, softName, condaPkg) {
+	validation.assert(operationMode != "dev-local", "conda run environment does not support dev-local mode yet (not implemented)")
+
+	plan := runcmd.createRunCommandPlan()
+
+	env := conda.condaBuilder(condaDescriptor).
+		software(condaPkg).
+		cacheDays(7).
+		build()
+
+	plan.refVar(_ARG_VAR_CONDA, softName + "/conda", env.conda())
+	plan.refVar(_ARG_VAR_CONDA_ENV, softName + "/condaEnv", env.env())
+
+	plan.envExpression("MAMBA_ROOT_PREFIX", path.join(_expr(_ARG_VAR_CONDA), condaDescriptor["conda-root-dir"]))
+	plan.envExpression("CONDA_PKGS_DIRS", path.join(_expr(_ARG_VAR_CONDA), condaDescriptor["conda-root-dir"], "pkgs"))
+
+	return ll.toStrict({
+		runEnvType: "conda",
 		plan:       plan
 	})
 }
@@ -178,26 +205,40 @@ _binPackageCallOptions := func(operationMode, softwareName, variables, descripto
 	runEnvPlan := runcmd.createRunCommandPlan()
 	runEnvType := "binary"
 
+	cmd := descriptor.cmd
+
 	// Real command should be:
 	//   [<runEnv bin>] [<runEnv options>] [<entrypoint bin>] [<entrypoint options>] <cmd> <args>
 	if (maps.containsKey(descriptor, "runEnv")) {
 		runEnvInfo := _loadRunEnvironment(operationMode, descriptor, softwareName, softPackage)
 		runEnvPlan = runEnvInfo.plan
 		runEnvType = runEnvInfo.runEnvType
+	} else if descriptor.type == "conda" {
+		runEnvInfo := _loadCondaRunEnvironment(operationMode, descriptor, softwareName, softPackage)
+		runEnvPlan = runEnvInfo.plan
+		runEnvType = runEnvInfo.runEnvType
+
+		origCmd := cmd
+		cmd = append([
+			path.join(_expr(_ARG_VAR_CONDA), "micromamba"),
+			"run",
+			"--prefix", path.join(_expr(_ARG_VAR_CONDA_ENV), "env")
+			], origCmd...)
 	}
 
 	ll.assert(
-		len(descriptor.cmd) != 0,
-		"cannot render final command for software: empty 'cmd' and 'command' in software descriptor")
+		len(cmd) != 0,
+		"cannot render final command for software: empty 'cmd' in software descriptor")
 
 	plan := runcmd.createRunCommandPlan(runEnvPlan.state())
 
 	for _, v in variables {
 		plan.refVar(v.varName, v.refName, v.reference)
 	}
-	plan.cmdExpression(descriptor.cmd[0])
 
-	for arg in splice(descriptor.cmd, 1) {
+	plan.cmdExpression(cmd[0])
+
+	for arg in splice(cmd, 1) {
 		plan.argExpression(arg)
 	}
 
@@ -241,7 +282,7 @@ _dockerCallOptions := func(softwareName, dockerDescriptor) {
 
 	plan.cmdExpression(dockerDescriptor.cmd[0])
 
-    // FIXME: expression ref???
+	// FIXME: expression ref???
 	for arg in splice(dockerDescriptor.cmd, 1) {
 		plan.argExpression(arg)
 	}

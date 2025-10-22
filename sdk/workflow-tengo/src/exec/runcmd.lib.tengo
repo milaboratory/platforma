@@ -2,6 +2,8 @@
  * A library that creates RunCommand resource.
  */
 
+text := import("text")
+
 ll := import(":ll")
 validation := import(":validation")
 feats := import(":feats")
@@ -385,6 +387,8 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 		 * @param refKey: string - key of ref (added with .ref()) that points to installed software.
 		 */
 		substitutionRule: func(varName, refKey) {
+			validation.assert(!text.contains(varName, "-"), "runcmd.plan.substitutionRule: varName must not contain '-' character: it is interpreted as 'minus' sign")
+
 			state.options.substRules[varName] = refKey
 			return returnSelfFn()
 		},

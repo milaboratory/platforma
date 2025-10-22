@@ -2,10 +2,10 @@
  * Library for loading software packages.
  */
 
+ll := import(":ll")
 render := import(":render")
 smart := import(":smart")
 assets := import(":assets")
-ll := import(":ll")
 
 times := import("times")
 
@@ -27,6 +27,6 @@ loadSoftware := func(software) {
 	return loadSoftwareResult.output("plan", 9 * times.hour * 24)
 }
 
-export {
+export ll.toStrict({
 	loadSoftware: loadSoftware
-}
+})

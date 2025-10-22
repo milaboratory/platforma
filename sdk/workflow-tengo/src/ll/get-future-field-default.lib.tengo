@@ -132,6 +132,6 @@ getFutureFieldWithDefault := func(from, name, fieldType, isEph, ...options) {
 	return resultFieldId
 }
 
-export {
+export plapi.mapToStrict({
 	getFutureFieldWithDefault: getFutureFieldWithDefault
-}
+})

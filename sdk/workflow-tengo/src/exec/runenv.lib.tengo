@@ -94,7 +94,17 @@ saveBuilder := func(wd) {
 	return self
 }
 
-loadDependencyFiles := func(packageRef, dependencies) {
+/**
+ * Load from packge files described by paths in <dependencies>, providing a map of file references.
+ *
+ * @param packageRef: smart.reference - reference to software package
+ * @param dependencies: {"string": "string"} - maps arbitrary keys to file names.
+ *                     						   Example: {"readme": "README.md", "requirements": "requirements.txt"}
+ *
+ * @return {"string": smart.reference} - map of file references, with the same keys as in <dependencies> map.
+ *                                       Example: {"readme": smart.reference, "requirements": smart.reference}
+ */
+loadFilesFromPackage := func(packageRef, dependencies) {
 	if len(dependencies) == 0 {
 		return {}
 	}
@@ -115,6 +125,6 @@ loadDependencyFiles := func(packageRef, dependencies) {
 }
 
 export ll.toStrict({
-	saveBuilder                        : saveBuilder,
-	loadDependencyFiles                : loadDependencyFiles
+	saveBuilder                             : saveBuilder,
+	loadFilesFromPackage                    : loadFilesFromPackage
 })

@@ -129,7 +129,7 @@ pythonVenvBuilder := func() {
 		},
 
 		build: func() {
-			depsMap := runenv.loadDependencyFiles(softwareRef, dependencies)
+			depsMap := runenv.loadFilesFromPackage(softwareRef, dependencies)
 
 			archive := pkg.get(pythonDescriptor.registry, pythonDescriptor.package).archive()
 			pythonPkg := pkg.install(archive).package()

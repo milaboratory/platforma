@@ -381,7 +381,12 @@ assert := func(condition, msg, ...args) {
  * @param failMsg: string - optional parameter with custom message to be printed on validation error
  */
 assertType := func(value, schema, ...failMsg) {
-	r := _validateJson(value, schema, "")
+	r := undefined
+	if (is_undefined(schema)) {
+		r = fail("", "no schema provided for value. To require value to be undefined, simply use is_undefined() check")
+	} else {
+		r = _validateJson(value, schema, "")
+	}
 
 	msg := "type schema validation error"
 	if len(failMsg) > 0 {
