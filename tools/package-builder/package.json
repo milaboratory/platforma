@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/package-builder",
-  "version": "3.10.3",
+  "version": "3.10.5",
   "description": "MiLaboratories Platforma Package builder",
   "type": "module",
   "scripts": {
