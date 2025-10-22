@@ -24,7 +24,8 @@
     "emacs-tags": "./create_tags.sh ../TAGS false -e"
   },
   "dependencies": {
-    "@platforma-sdk/workflow-tengo": "workspace:*"
+    "@platforma-sdk/workflow-tengo": "workspace:*",
+    "@platforma-open/milaboratories.software-conda-empty": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

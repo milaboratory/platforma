@@ -260,7 +260,7 @@ catalog:
 
   '@milaboratories/software-pframes-conv': &pframes-version 2.2.9
   '@platforma-open/milaboratories.software-small-binaries': ^1.15.23
-  #'@platforma-open/milaboratories.software-conda-empty': ^0.0.2
+  '@platforma-open/milaboratories.software-conda-empty': ^0.0.3
   '@biowasm/aioli': ~3.2.1
 
   '@platforma-open/milaboratories.runenv-python-3': 1.5.7
