@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.10.5
+
+### Patch Changes
+
+- 51ca995: Do not try to autopush docker images on ARM hosts in CI
+
 ## 3.10.4
 
 ### Patch Changes
