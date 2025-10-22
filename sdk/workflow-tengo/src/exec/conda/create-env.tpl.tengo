@@ -1,0 +1,88 @@
+/**
+ * Creates new conda virtual environment.
+ */
+
+self := import(":tpl.light")
+
+text := import("text")
+workdir := import(":workdir")
+runcmd := import(":exec.runcmd")
+path := import(":path")
+runenv := import(":exec.runenv")
+internal := import(":exec.conda.internal")
+pkg := import(":exec.package")
+
+waiter := import(":waiter")
+
+/**
+ * Creates new conda environment using micromamba binary and frozen spec file
+ * provided along with software package.
+ *
+ * @param condaPackage: smart.reference - conda software package.
+ * @param condaDescriptor: desc.runEnvScheme - conda software package descriptor.
+ * @return env: smart.reference - conda environment with installed packages.
+ */
+_createEnv := func(condaPackage, condaDescriptor) {
+	pkgFiles := runenv.loadFilesFromPackage(condaPackage, {
+		spec: condaDescriptor.spec
+	})
+
+	wdWithSpec := workdir.builder().
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
+		addFile("env-spec.yaml", pkgFiles.spec).
+		build()
+
+	envDirCreator := runenv.saveBuilder(wdWithSpec).
+		envType("conda").
+		addPath("env-spec.yaml"). // Spec file uniquely describes environment, as it keeps hashes of cached packages.
+		addPackage("conda", condaPackage)
+
+	env := envDirCreator.build().runEnv()
+
+	wdBefore := workdir.builder().
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
+		build()
+
+	micromamba := runcmd.builder(wdBefore)
+
+	micromamba.
+		ref("pkg", condaPackage).substitutionRule("pkg", "pkg").
+		ref("env_dir", env).substitutionRule("env_dir", "env_dir").
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
+		envExpression("MAMBA_ROOT_PREFIX", path.join("{pkg}", condaDescriptor["conda-root-dir"])).
+		envExpression("CONDA_PKGS_DIRS", path.join("{pkg}", condaDescriptor["conda-root-dir"], "pkgs")).
+		cmdExpression("{pkg}/micromamba").
+		arg("env").arg("create").
+		arg("--yes").
+		arg("--offline").
+		arg("--override-channels").
+		arg("--prefix").argExpression("{env_dir}/env").
+		arg("--file").argExpression("{env_dir}/env-spec.yaml")
+
+	micromamba.
+		stdout("./output").
+		stderr("./output").
+		nErrorLines(20)
+
+	// runEnv becomes available before environment is restored inside it.
+	// We need to wait for restoration process to complete before returning the result.
+	w := waiter.builder(env)
+	w.wait(micromamba.build().workdir)
+
+	return {
+		runEnv: w.build().output()
+	}
+}
+
+self.defineOutputs("runEnv")
+self.validateInputs(internal.condaEnvInputSchema)
+
+self.body(func(inputs) {
+	return _createEnv(inputs.condaPackage, inputs.condaDescriptor)
+})

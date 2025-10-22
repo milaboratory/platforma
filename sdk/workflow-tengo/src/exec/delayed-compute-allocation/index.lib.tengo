@@ -1,3 +1,4 @@
+ll := import(":ll")
 render := import(":render")
 smart := import(":smart")
 assets := import(":assets")
@@ -38,6 +39,6 @@ create := func(workdir, req) {
 	return delayedComputeAllocation.output("allocation")
 }
 
-export {
+export ll.toStrict({
 	create: create
-}
+})

@@ -28,6 +28,27 @@ tplTest.concurrent(
   },
 );
 
+tplTest.concurrent(
+  'run-empty-conda-env',
+  async ({ helper, expect }) => {
+    const helloText = '2.3.2';
+
+    const result = await helper.renderTemplate(
+      false,
+      'exec.test.run.conda_empty_run',
+      ['main'],
+      (tx) => ({
+        text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText)),
+      }),
+    );
+    const mainResult = result.computeOutput('main', (a) =>
+      a?.getDataAsString(),
+    );
+
+    expect(await mainResult.awaitStableValue()).eq(helloText + '\n');
+  },
+);
+
 /*
  * Checks, that custom limits applied to the command do not
  * break anything it its execution. We can't check what _controller_ saw,

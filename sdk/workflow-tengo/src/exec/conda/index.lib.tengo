@@ -1,0 +1,156 @@
+json := import("json")
+times := import("times")
+
+ll := import(":ll")
+oop := import(":oop")
+validation := import(":validation")
+assets := import(":assets")
+smart := import(":smart")
+render := import(":render")
+pkg := import(":exec.package")
+internal := import(":exec.conda.internal")
+desc := import(":exec.descriptor")
+
+_OUTPUT_RUN_ENV       := "runEnv"
+
+createEnvTpl := assets.importTemplate(":exec.conda.create-env")
+
+/**
+ * Create conda environment builder for given conda-based software.
+ *
+ * @param descriptor: desc.condaScheme - conda software package descriptor.
+ * @return condaBuilder: condaBuilder - conda builder object.
+ */
+condaBuilder := func(descriptor) {
+	self := undefined
+
+	validation.assertType(descriptor, desc.condaScheme, "exec.conda.builder: <descriptor> must be conda software specification")
+	ll.assert(descriptor.type == "conda", "exec.conda.builder: <descriptor> must be conda software specification, not %q", descriptor.type)
+	condaDescriptor := ll.fromStrict(descriptor)
+	softwareRef := undefined
+
+	cache := 0
+
+	self = {
+		/**
+		 * Use already installed software intead of installing it from descriptor.
+		 *
+		 * @param pkgRef: smart.reference - reference to already installed software package.
+		 */
+		software: func(pkgRef) {
+			validation.assertType(pkgRef, validation.reference, "exec.conda.software: <pkgRef> must be a reference to software package")
+
+			softwareRef = pkgRef
+			return self
+		},
+
+		/**
+		 * Sets the cache time in milliseconds.
+		 *
+		 * @param millis: number
+		 */
+		cacheMillis: func(millis) {
+			ll.assert(is_int(millis) && millis > 0, "exec.conda.cacheMillis: cache time must be a number of milliseconds")
+			cache = millis * times.millisecond
+			return self
+		},
+
+		/**
+		 * Sets the cache time in seconds.
+		 *
+		 * @param seconds: number
+		 */
+		cacheSeconds: func(seconds) {
+			ll.assert(is_int(seconds) && seconds > 0, "exec.conda.cacheSeconds: cache time must be a number of seconds")
+			cache = seconds * times.second
+			return self
+		},
+
+		/**
+		 * Sets the cache time in minutes.
+		 *
+		 * @param minutes: number
+		 */
+		cacheMinutes: func(minutes) {
+			ll.assert(is_int(minutes) && minutes > 0, "exec.conda.cacheMinutes: cache time must be a number of minutes")
+			cache = minutes * times.minute
+			return self
+		},
+
+		/**
+		 * Sets the cache time in hours.
+		 *
+		 * @param hours: number
+		 */
+		cacheHours: func(hours) {
+			ll.assert(is_int(hours) && hours > 0, "exec.conda.cacheHours: cache time must be a number of hours")
+			cache = hours * times.hour
+			return self
+		},
+
+		/**
+		 * Sets the cache time in days
+		 *
+		 * @param days: number
+		 */
+		cacheDays: func(days) {
+			ll.assert(is_int(days) && days > 0, "exec.conda.cacheDays: cache time must be a number of days")
+			cache = days * times.hour * 24
+			return self
+		},
+
+		/**
+		 * Build conda environment out of software package containing pre-downloaded
+		 * packages and frozen environment spec.
+		 *
+		 * @return { conda: smart.reference, env: smart.reference }
+		 */
+		build: func() {
+			if (is_undefined(softwareRef)) {
+				// Install software from descriptor if not installed by caller.
+				archive := pkg.get(condaDescriptor.registry, condaDescriptor.package).archive()
+				softwareRef = pkg.install(archive).package()
+			}
+
+			envInputs := {
+				condaPackage: softwareRef,
+				condaDescriptor: condaDescriptor,
+
+				forceRecreate: 1 // increment to force venv re-creation in blocks
+			}
+
+			validation.assertType(envInputs, internal.condaEnvInputSchema, "invalid conda environment configuration")
+			tpl := render.create(createEnvTpl, envInputs)
+
+			self := undefined
+			self = ll.toStrict(oop.inherit(tpl, {
+				/**
+				 * conda software package reference.
+				 * (place, where {pkg} should point)
+				 * @return conda: smart.field - a reference to installed conda software package.
+				 */
+				conda: func() {
+					return softwareRef
+				},
+
+				/**
+				 * Conda environment restored on runner side from frozen spec file.
+				 * (place, where --prefix in micromamba run command should point)
+				 *
+				 * @return env: smart.field - a reference to the restored conda environment.
+				 */
+				env: func() {
+					return tpl.output(_OUTPUT_RUN_ENV, cache)
+				}
+			}))
+
+			return self
+		}
+	}
+
+	return self
+}
+
+export ll.toStrict({
+	condaBuilder                        : condaBuilder
+})

@@ -1,0 +1,14 @@
+ll := import(":ll")
+validation := import(":validation")
+desc := import(":exec.descriptor")
+
+condaEnvInputSchema := {
+	"condaPackage": validation.reference,
+	"condaDescriptor": desc.condaScheme,
+
+	"forceRecreate,?": "number"
+}
+
+export ll.toStrict({
+	condaEnvInputSchema                     : condaEnvInputSchema
+})

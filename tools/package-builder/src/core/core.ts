@@ -130,13 +130,10 @@ export class Core {
 
   public getArtifact(id: string, type: 'docker'): artifacts.withId<artifacts.dockerType> | undefined;
   public getArtifact(id: string, type: 'archive'): artifacts.withId<artifacts.anyType> | undefined;
-  public getArtifact(id: string, type: 'docker' | 'archive' | 'any'): artifacts.withId<artifacts.anyType> | undefined {
+  public getArtifact(id: string, type: 'docker' | 'archive'): artifacts.withId<artifacts.anyType> | undefined {
     const artifact = this.packages.get(id);
 
     switch (type) {
-      case 'any': {
-        return artifact || this.packages.get(docker.entrypointName(id));
-      }
       case 'docker': {
         if (artifact?.type === 'docker') {
           return artifact;
@@ -443,7 +440,7 @@ export class Core {
     this.logger.debug(`Creating micromamba instance...`);
     const m = new micromamba(this.logger, micromambaRoot, artifact['micromamba-version'], micromambaBin);
 
-    const resultSpecPath = path.join(contentRoot, defaults.CONDA_FROEZEN_ENV_SPEC_FILE);
+    const resultSpecPath = path.join(contentRoot, defaults.CONDA_FROZEN_ENV_SPEC_FILE);
 
     await m.downloadBinary();
     m.createEnvironment({ specFile: srcSpecPath });

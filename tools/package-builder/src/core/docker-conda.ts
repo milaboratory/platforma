@@ -51,7 +51,7 @@ export function prepareDockerOptions(
   buildParams: artifacts.condaType,
   arch: util.ArchType,
 ): DockerOptions {
-  logger.debug(`Preparing Docker options for Python package: ${buildParams.name} (id: ${artifactID})`);
+  logger.debug(`Preparing Docker options for Conda package: ${buildParams.name} (id: ${artifactID})`);
 
   const options = getDefaultCondaOptions();
   options.micromambaVersion = buildParams['micromamba-version'];
@@ -107,7 +107,7 @@ function getDefaultCondaOptions(): CondaOptions {
   return {
     baseImageTag: defaults.CONDA_DOCKER_BASE_IMAGE,
     micromambaVersion: defaults.CONDA_MICROMAMBA_VERSION,
-    frozenSpecFile: defaults.CONDA_FROEZEN_ENV_SPEC_FILE,
+    frozenSpecFile: defaults.CONDA_FROZEN_ENV_SPEC_FILE,
     pkg: defaults.DOCKER_PLACEHOLDER_PKG,
   };
 }
