@@ -108,7 +108,7 @@ class PWorkflow(msgspec.Struct):
                     # are ignored here. The primary purpose is to trigger the computation
                     # and I/O.
                     # `comm_subplan_elim=True` (default) is generally good for performance.
-                    _ = pl.collect_all(sink_frames)
+                    _ = pl.collect_all(sink_frames, engine="streaming")
                     # Future consideration: Add logging for workflow completion or errors.
                 
                 # Execute all chained tasks in the order they were added
