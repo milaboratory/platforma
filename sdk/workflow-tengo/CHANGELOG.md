@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.4.2
+
+### Patch Changes
+
+- 8fff09e: SpecDistiller usage fix in pt
+
 ## 5.4.1
 
 ### Patch Changes
