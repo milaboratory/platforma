@@ -320,7 +320,6 @@ workflow := func() {
 	anonymousDFCounter := 0
 	pcolumnCounter := 0
 	pframeCounter := 0
-	specDistillerSingleton := undefined
 
 	cpu := undefined
 	mem := undefined
@@ -710,42 +709,6 @@ workflow := func() {
 			outFramesSpecs[name] = specs
 			outFramesRename[name] = rename
 		},
-		_getSpecDistiller: func() {
-			if is_undefined(specDistillerSingleton) {
-				rawColumnSpecs := []
-				for _, columns in inFrames {
-					for columnId, columnInfo in columns {
-						rawColumnSpecs = append(rawColumnSpecs, columnInfo.spec)
-					}
-				}
-				specDistillerSingleton = pframesSpec.createSpecDistiller(rawColumnSpecs)
-			}
-			return specDistillerSingleton
-		},
-		_getDistilledAxesSpecs: func() {
-			specDistiller := self._getSpecDistiller()
-			canonicalMap := {}
-			distilledAxesSpecs := {}
-			for _, frame in inFrames {
-				for _, columnInfo in frame.columns {
-					for axis in columnInfo.spec.axesSpec {
-						distilledAxis := specDistiller.distill(axis)
-						if is_undefined(canonicalMap[distilledAxis.name]) {
-							canonicalMap[distilledAxis.name] = {}
-						}
-						canonicalizedAxisSpec := canonical.encode(distilledAxis)
-						if is_undefined(canonicalMap[distilledAxis.name][canonicalizedAxisSpec]) {
-							canonicalMap[distilledAxis.name][canonicalizedAxisSpec] = true
-							if is_undefined(distilledAxesSpecs[distilledAxis.name]) {
-								distilledAxesSpecs[distilledAxis.name] = []
-							}
-							distilledAxesSpecs[distilledAxis.name] = append(distilledAxesSpecs[distilledAxis.name], distilledAxis)
-						}
-					}
-				}
-			}
-			return distilledAxesSpecs
-		},
 
 		/**
 		 * Execute pt in the 'heavy' queue.
@@ -832,8 +795,35 @@ workflow := func() {
 		run: func() {
 			workflowRunTpl := assets.importTemplate(":pt.workflow-run")
 
-			specDistiller := self._getSpecDistiller()
-			distilledAxesSpecs := self._getDistilledAxesSpecs()
+			rawColumnSpecs := []
+			for _, frame in inFrames {
+				for _, columnInfo in frame.columns {
+					rawColumnSpecs = append(rawColumnSpecs, columnInfo.spec)
+				}
+			}
+			specDistiller := pframesSpec.createSpecDistiller(rawColumnSpecs)
+
+			canonicalMap := {}
+			distilledAxesSpecs := {}
+			for _, frame in inFrames {
+				for _, columnInfo in frame.columns {
+					for axis in columnInfo.spec.axesSpec {
+						distilledAxis := specDistiller.distill(axis)
+						if is_undefined(canonicalMap[distilledAxis.name]) {
+							canonicalMap[distilledAxis.name] = {}
+						}
+						canonicalizedAxisSpec := canonical.encode(distilledAxis)
+						if is_undefined(canonicalMap[distilledAxis.name][canonicalizedAxisSpec]) {
+							canonicalMap[distilledAxis.name][canonicalizedAxisSpec] = true
+							if is_undefined(distilledAxesSpecs[distilledAxis.name]) {
+								distilledAxesSpecs[distilledAxis.name] = []
+							}
+							distilledAxesSpecs[distilledAxis.name] = append(distilledAxesSpecs[distilledAxis.name], distilledAxis)
+						}
+					}
+				}
+			}
+
 			ctx := {
 				specDistiller: specDistiller,
 				distilledAxesSpecs: distilledAxesSpecs
