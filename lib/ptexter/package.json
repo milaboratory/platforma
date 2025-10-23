@@ -5,7 +5,7 @@
   "scripts": {
     "build": "rm -rf ./dist && pl-pkg build",
     "prepublishOnly": "pl-pkg prepublish",
-    "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv platforma-open-milaboratories.software-ptexter-*.tgz package.tgz"
   },
   "files": [
     "./dist/**/*"

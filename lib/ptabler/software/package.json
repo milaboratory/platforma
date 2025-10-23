@@ -9,7 +9,7 @@
     "build": "rm -rf ./dist && pl-pkg build",
     "prepublishOnly": "pl-pkg prepublish",
     "test": "[ ! -d .venv ] || (.venv/bin/coverage run -m unittest discover --verbose -s src -p '*.py' && .venv/bin/coverage report -m)",
-    "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv platforma-open-milaboratories.software-ptabler-*.tgz package.tgz"
   },
   "files": [
     "./dist/**/*"

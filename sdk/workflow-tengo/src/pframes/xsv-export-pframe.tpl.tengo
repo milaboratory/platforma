@@ -46,9 +46,19 @@ self.body(func(inputs) {
 		stringSelector = stringSelector.fillNull(params.nullStr)
 	}
 
+	labelsMap := {}
+	getLabel := func(spec) {
+		label := spec.annotations["pl7.app/label"]
+		ll.assert(is_string(label) && label != "", "label must be a non-empty string, got %v", label)
+		ll.assert(is_undefined(labelsMap[label]),
+			"label '%s' is not unique, it is used for %v, and now %v",
+			label, labelsMap[label], spec)
+		labelsMap[label] = spec
+		return label
+	}
+
 	specDistiller := pframesSpec.createSpecDistiller(slices.map(rawColumns, func(c) { return c.spec }))
 	canonicalMap := {}
-	labelsMap := {}
 	uniqueAxes := []
 	for column in rawColumns {
 		for axis in column.spec.axesSpec {
@@ -56,15 +66,7 @@ self.body(func(inputs) {
 			canonicalizedAxisSpec := canonical.encode(distilledAxis)
 			if is_undefined(canonicalMap[canonicalizedAxisSpec]) {
 				canonicalMap[canonicalizedAxisSpec] = true
-
-				label := axis.annotations["pl7.app/label"]
-				ll.assert(is_string(label), "Axis label must be defined, got %v", label)
-				if !is_undefined(labelsMap[label]) {
-					ll.panic("Axis label %s is not unique, it is already used by axis %v, and now the axis %v also tries to use it", label, labelsMap[label], distilledAxis)
-				}
-				labelsMap[label] = distilledAxis
-				
-				distilledAxis.label = label
+				distilledAxis.label = getLabel(axis)
 				uniqueAxes = append(uniqueAxes, distilledAxis)
 			}
 		}
@@ -77,7 +79,8 @@ self.body(func(inputs) {
 		columnSelectors = append(columnSelectors, pt.sc.axis(axis).alias(label))
 	}
 	for column in rawColumns {
-		columnSelectors = append(columnSelectors, pt.col(column.id).alias(column.spec.annotations["pl7.app/label"]))
+		label := getLabel(column.spec)
+		columnSelectors = append(columnSelectors, pt.col(column.id).alias(label))
 	}
 
 	wf := pt.workflow()
