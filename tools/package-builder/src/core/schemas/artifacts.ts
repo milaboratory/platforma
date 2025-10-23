@@ -39,7 +39,10 @@ export const registryOrRef = z.union([z.string(), registrySchema]);
 // common fields for all buildable artifacts
 // TODO: create new type for binary packages
 const archiveRulesSchema = z.object({
-  registry: registryOrRef,
+  registry: registryOrRef.default({
+    name: defaults.BIN_REGISTRY_NAME,
+    downloadURL: defaults.BIN_REGISTRY_DOWNLOAD_URL,
+  }),
 
   name: z.string().optional(),
   version: z.string().optional(),

@@ -1,8 +1,9 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import type winston from 'winston';
-
 import { z } from 'zod/v4';
+
+import * as defaults from '../defaults';
 import * as util from './util';
 import * as envs from './envs';
 import * as artifacts from './schemas/artifacts';
@@ -40,8 +41,8 @@ const packageJsonSchema = z.object({
 type packageJson = z.infer<typeof packageJsonSchema>;
 
 const wellKnownRegistries: Record<string, storagePreset> = {
-  'platforma-open': {
-    downloadURL: 'https://bin.pl-open.science/',
+  [defaults.BIN_REGISTRY_NAME]: {
+    downloadURL: defaults.BIN_REGISTRY_DOWNLOAD_URL,
   },
 };
 

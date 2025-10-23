@@ -38,44 +38,57 @@ The structure of `block-software` inside `package.json` looks like this:
   "block-software": {
     "entrypoints": { 
       "ep-name": { 
-        "binary|conda|environment|asset": {
+        "< asset | conda | docker | binary | environment >": {
           "artifact": { "// artifact definition" },
-          "cmd": [ "// command and args to run", "// args defined in workflow will be appended to this list" ],
-        }
+          "cmd": [ "command", "and", "args", "to", "run", "// args defined in workflow will be appended to this list" ],
+        },
       }
     }
   }
 }
 ```
 
-## Entrypoint structures
+Entrypoint is a thig that can be used in block workflow to reach the artifact, described by this entrypoint.
+For example, if entrypoint describes python software, workflow of a block will be able to call the python script of this entrypoint.
 
-### Reference entrypoint
-References another package's entrypoint:
+Full entrypoint ID consists of NPM package name, that contains this entrypoint, and entrypoint name in this package. I.e.
+```
+@platforma-open/milaboratories.software-binary-collection:7zip
+```
+
+## Before you go
+
+The result of any software build is two "artifacts": the archive with your software (or many archives, if software is OS/Arch-dependant)
+and npm package with software metadata, used by backend to get the software on it side when you run the block.
+
+Do NOT put software `binaries/scripts/whatever` into `dist/` directory, as it will be published as part of NPM package and most likely will be rejected by NPM registry because of the size.
+
+## Entrypoint configurations
+
+### Asset entrypoint
+
+You can provide static files as an archive that can be downloaded on demand by backend and used in workdirs along with software.
+This is useful for genome indexes packing to use them in several blocks or by different types of software in a single block workflow.
 
 ```json
 {
   "entrypoints": {
-    "my-reference": {
-      "reference": "@milaboratory/runenv-java-corretto:21.2.0.4.1/java"
+    "<ep-name>": {
+      "asset": {
+        "root": "<asset-content-dir>"
+      }
     }
   }
 }
 ```
 
-### Asset entrypoint
-Provides static files or data:
-
+Example:
 ```json
 {
   "entrypoints": {
-    "my-asset": {
+    "human-genome-index": {
       "asset": {
-        "type": "asset",
-        "registry": "my-registry.com",
-        "name": "my-asset",
-        "version": "1.0.0",
-        "root": "dist/assets"
+        "root": "./human-genome/"
       }
     }
   }
@@ -83,26 +96,75 @@ Provides static files or data:
 ```
 
 ### Binary entrypoint
-Executes binary software:
+
+Allows you to export arbitary binary software that is platform-dependent.
+Supported platforms are:
+- linux-x64
+- linux-aarh64
+- macosx-x64
+- macosx-aarch64
+- windows-x64
+
+The list of platforms that is supported by your software can be smaller. In that case, just define less platforms in configuration.
+
+When specifying the command to run, use `{pkg}` placeholder to reach installed software root directory on the remote end.
 
 ```json
 {
   "entrypoints": {
-    "my-binary": {
+    "<ep-name>": {
       "binary": {
         "artifact": {
           "type": "binary",
-          "registry": "my-registry.com",
-          "name": "my-binary",
-          "version": "1.0.0",
           "roots": {
-            "linux-x64": "dist/linux-x64",
-            "darwin-x64": "dist/darwin-x64",
-            "win32-x64": "dist/win32-x64"
+            "<platform-type>": "<path to dir with binaries>",
+            "...": "..."
           }
         },
-        "cmd": ["my-binary"],
-        "envVars": ["MY_VAR=value"]
+        "cmd": ["cmd", "to", "run"]
+      }
+    }
+  }
+}
+```
+
+Example:
+```json
+{
+  "entrypoints": {
+    "main": {
+      "binary": {
+        "artifact": {
+          "type": "binary",
+          "roots": {
+            "linux-x64": "build/linux-amd64",
+            "macosx-aarch64": "build/macos-apple-silicon",
+            "windows-x64": "build/windows"
+          }
+        },
+        "cmd": ["{pkg}/my-binary"]
+      }
+    }
+  }
+}
+```
+
+### Conda entrypoint
+
+Executes software with Conda environment:
+
+```json
+{
+  "entrypoints": {
+    "my-conda-app": {
+      "conda": {
+        "artifact": {
+          "roots": {
+            "linux-x64": "build/linux-x64",
+            "macosx-x64": "build/darwin-x64"
+          }
+        },
+        "cmd": ["ANARCI"]
       }
     }
   }
@@ -110,7 +172,10 @@ Executes binary software:
 ```
 
 ### Java entrypoint
-Executes Java software with runtime environment:
+
+Run java software with given Java runtime.
+The Java runtime can be packed separately using `run-environment` entrypoint type.
+This allows to split platform-dependent code (JVM itself) and platform-agnostic (java application implementation).
 
 ```json
 {
@@ -119,14 +184,10 @@ Executes Java software with runtime environment:
       "binary": {
         "artifact": {
           "type": "java",
-          "registry": "my-registry.com",
-          "name": "my-java-app",
-          "version": "1.0.0",
-          "root": "dist/java",
+          "root": "app/java",
           "environment": "@milaboratory/runenv-java-corretto:21.2.0.4.1"
         },
-        "cmd": ["java", "-jar", "my-app.jar"],
-        "envVars": ["JAVA_OPTS=-Xmx2g"]
+        "cmd": ["java", "-jar", "{pkg}/my-app.jar"]
       }
     }
   }
@@ -134,7 +195,10 @@ Executes Java software with runtime environment:
 ```
 
 ### Python entrypoint
-Executes Python software with pip dependencies:
+
+Run python software with given python runtime.
+The Python runtime can be packed separately using `run-environment` entrypoint type.
+This allows to split platform-dependent code (interpreter itself and libs) and platform-agnostic (python application implementation).
 
 ```json
 {
@@ -143,20 +207,13 @@ Executes Python software with pip dependencies:
       "binary": {
         "artifact": {
           "type": "python",
-          "registry": "my-registry.com",
-          "name": "my-python-script",
-          "version": "1.0.0",
-          "root": "dist/python",
+          "root": "src/",
           "environment": "@milaboratory/runenv-python:3.11.0",
           "dependencies": {
-            "toolset": "pip",
             "requirements": "requirements.txt"
-          },
-          "docker-registry": "my-docker-registry.com",
-          "pkg": "my-python-script"
+          }
         },
-        "cmd": ["python", "main.py"],
-        "envVars": ["PYTHONPATH=/app"]
+        "cmd": ["python", "main.py"]
       }
     }
   }
@@ -173,46 +230,10 @@ Executes R software with runtime environment:
       "binary": {
         "artifact": {
           "type": "R",
-          "registry": "my-registry.com",
-          "name": "my-r-script",
-          "version": "1.0.0",
-          "root": "dist/r",
+          "root": "src/",
           "environment": "@milaboratory/runenv-r:4.3.0"
         },
-        "cmd": ["Rscript", "main.R"],
-        "envVars": ["R_LIBS=/app/libs"]
-      }
-    }
-  }
-}
-```
-
-### Conda entrypoint
-Executes software with Conda environment:
-
-```json
-{
-  "entrypoints": {
-    "my-conda-app": {
-      "conda": {
-        "artifact": {
-          "type": "conda",
-          "registry": "my-registry.com",
-          "name": "my-conda-app",
-          "version": "1.0.0",
-          "roots": {
-            "linux-x64": "dist/linux-x64",
-            "darwin-x64": "dist/darwin-x64",
-            "win32-x64": "dist/win32-x64"
-          },
-          "micromamba-version": "1.4.0",
-          "conda-root-dir": "conda-env",
-          "spec": "environment.yml",
-          "docker-registry": "my-docker-registry.com",
-          "pkg": "my-conda-app"
-        },
-        "cmd": ["python", "main.py"],
-        "envVars": ["CONDA_DEFAULT_ENV=my-env"]
+        "cmd": ["Rscript", "{pkg}/main.R"]
       }
     }
   }
@@ -220,7 +241,12 @@ Executes software with Conda environment:
 ```
 
 ### Docker entrypoint
-Uses custom Docker image:
+
+For some sotware types Dockerfile is generated automatically and software is packed not only to archives, 
+but also to docker image.
+
+You can define custom way to build docker image for your software. This is useful for such cases like R and Java software, 
+which do not have autogenerated Dockerfiles.
 
 ```json
 {
@@ -228,22 +254,32 @@ Uses custom Docker image:
     "my-docker-app": {
       "docker": {
         "artifact": {
-          "type": "docker",
-          "registry": "my-docker-registry.com/my-app",
-          "context": "docker",
-          "dockerfile": "Dockerfile",
-          "pkg": "my-docker-app"
+          "context": "src/",
+          "dockerfile": "Dockerfile"
         },
-        "cmd": ["python", "main.py"],
-        "envVars": ["APP_ENV=production"]
+        "cmd": ["python", "main.py"]
       }
     }
   }
 }
 ```
 
+Docker settings can be placed next to the artifact settings of particular software:
+```json
+{
+  "entrypoints": {
+    "my-docker-app": {
+      "binary": { "..." },
+      "docker": { "..." }
+    }
+  }
+}
+```
+
 ### Environment entrypoint
-Provides runtime environment for other software:
+
+Allows to provide run environment for cross-platform software.
+We support following run environments: Python, Java, R.
 
 ```json
 {
@@ -251,22 +287,41 @@ Provides runtime environment for other software:
     "my-python-env": {
       "environment": {
         "artifact": {
-          "type": "environment",
-          "registry": "my-registry.com",
-          "name": "my-python-env",
-          "version": "1.0.0",
-          "roots": {
-            "linux-x64": "dist/linux-x64",
-            "darwin-x64": "dist/darwin-x64",
-            "win32-x64": "dist/win32-x64"
-          },
           "runtime": "python",
-          "python-version": "3.11.0",
-          "binDir": "bin",
-          "envVars": ["PYTHONPATH=/app"]
-        },
-        "envVars": ["GLOBAL_VAR=value"]
+          "roots": {
+            "linux-x64": "build/linux-x64",
+            "macosx-aarch64": "build/macos-x64",
+            "win32-x64": "build/win32"
+          }
+        }
       }
+    }
+  }
+}
+```
+
+### Reference entrypoint
+
+You can re-export existing entrypoint from another package with different name. 
+This allows block workflow to use the same software under different names or have a 'collection' 
+of different softwares under the same package name prefix.
+
+```json
+{
+  "entrypoints": {
+    "<ep-name>": {
+      "reference": "<other-entrypoint-ID>"
+    }
+  }
+}
+```
+
+Exmaple:
+```json:
+{
+  "entrypoints": {
+    "3.12.10": {
+      "reference": "@platforma-open/milaboratories.software-python-3.12.10:main"
     }
   }
 }
@@ -283,27 +338,6 @@ Provides runtime environment for other software:
 - `R` - R applications with runtime environment
 - `docker` - Custom Docker images
 - `conda` - Conda-based applications
-
-### Platform support
-- **Cross-platform**: `asset`, `java`, `python`, `R`
-- **Platform-specific**: `binary`, `environment`, `conda`
-- **Docker auto-generation**: `python`, `conda`
-
-### Registry configuration
-All artifacts support registry configuration:
-```json
-{
-  "registry": "my-registry.com"  // Simple string
-}
-// or
-{
-  "registry": {
-    "name": "my-registry",
-    "downloadURL": "https://downloads.example.com",
-    "storageURL": "https://storage.example.com"
-  }
-}
-```
 
 ## Building specific artifact types
 
