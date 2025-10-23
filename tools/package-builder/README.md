@@ -290,7 +290,7 @@ We support following run environments: Python, Java, R.
           "runtime": "python",
           "roots": {
             "linux-x64": "build/linux-x64",
-            "macosx-aarch64": "build/macos-x64",
+            "macosx-aarch64": "build/macos-aarch64",
             "win32-x64": "build/win32"
           }
         }
