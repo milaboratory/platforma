@@ -48,7 +48,7 @@ The structure of `block-software` inside `package.json` looks like this:
 }
 ```
 
-Entrypoint is a thig that can be used in block workflow to reach the artifact, described by this entrypoint.
+Entrypoint is a thing that can be used in block workflow to reach the artifact, described by this entrypoint.
 For example, if entrypoint describes python software, workflow of a block will be able to call the python script of this entrypoint.
 
 Full entrypoint ID consists of NPM package name, that contains this entrypoint, and entrypoint name in this package. I.e.
@@ -59,7 +59,7 @@ Full entrypoint ID consists of NPM package name, that contains this entrypoint, 
 ## Before you go
 
 The result of any software build is two "artifacts": the archive with your software (or many archives, if software is OS/Arch-dependant)
-and npm package with software metadata, used by backend to get the software on it side when you run the block.
+and npm package with software metadata, used by backend to get the software on its side when you run the block.
 
 Do NOT put software `binaries/scripts/whatever` into `dist/` directory, as it will be published as part of NPM package and most likely will be rejected by NPM registry because of the size.
 
@@ -97,10 +97,10 @@ Example:
 
 ### Binary entrypoint
 
-Allows you to export arbitary binary software that is platform-dependent.
+Allows you to export arbitrary binary software that is platform-dependent.
 Supported platforms are:
 - linux-x64
-- linux-aarh64
+- linux-aarch64
 - macosx-x64
 - macosx-aarch64
 - windows-x64
@@ -242,7 +242,7 @@ Executes R software with runtime environment:
 
 ### Docker entrypoint
 
-For some sotware types Dockerfile is generated automatically and software is packed not only to archives, 
+For some software types Dockerfile is generated automatically and software is packed not only to archives, 
 but also to docker image.
 
 You can define custom way to build docker image for your software. This is useful for such cases like R and Java software, 
@@ -316,8 +316,8 @@ of different softwares under the same package name prefix.
 }
 ```
 
-Exmaple:
-```json:
+Example:
+```json
 {
   "entrypoints": {
     "3.12.10": {

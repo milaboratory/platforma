@@ -3,9 +3,9 @@
 ## Type definitions
 
 All input data validation and structures we work with are defined in `src/core/schemas/` directory.
-Here are 3 'laters' of the data we have in `package-builder`:
+Here are 3 'layers' of the data we have in `package-builder`:
 - artifacts: configurations, that are buildable into archive/docker image/whatever and distributed separately from the meta software information. All artifact shapes are defined in `src/core/schemas/artifacts.ts`
-- entrypoints: configuraitons, that describe how to run particular software as part of Platforma Backen workflow. All entrypoint shapes are defined in `src/core/schemas/entrypoints.ts`
+- entrypoints: configurations, that describe how to run particular software as part of Platforma Backend workflow. All entrypoint shapes are defined in `src/core/schemas/entrypoints.ts`
 - sw.json (or as.json for assets): the metadata for built software, that describes how and where to obtain software artifact and how to run it on backend side (cmd+args, default environment variables and so on). All sw.json shapes are defined in `src/core/schemas/sw-json.ts`
 
 As node (javascript/typescript) does not support inversed definition of types and shapes, the most global and abstract definitions are on the bottom of each file. 
@@ -29,7 +29,7 @@ Init stage:
 - Run particular core action (build packages, build docker images and so on)
 
 Build artifacts stage:
-- software pacakges (archives with binaries) along with artifact location files
+- software packages (archives with binaries) along with artifact location files
 - docker images along with artifact location files
 - automatic publication of docker images (content-addressable push)
 
