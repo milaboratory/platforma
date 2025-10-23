@@ -16,6 +16,7 @@ xsvFileBuilder := func(xsvType) {
     naValueInternal := ""  // Default NA value, can be changed by setNA
 
     requests := []
+    headersMap := {}
     addedColumnInternalIds := {}
     localAxisHeaderOverrides := []
     distiller := undefined
@@ -254,6 +255,11 @@ xsvFileBuilder := func(xsvType) {
         pFrameKey := "col" + nextPFrameKeyIndex
         nextPFrameKeyIndex += 1
 
+        ll.assert(is_undefined(headersMap[header]),
+            "header '%s' is not unique, it is already used by %v, and now %v",
+            header, col.spec, headersMap[header])
+        headersMap[header] = col.spec
+
         requests = append(requests, {
             internalId: internalId,
             header: header,
@@ -312,6 +318,11 @@ xsvFileBuilder := func(xsvType) {
             // @TODO: Eventually migrate pFrameKey to use a stable hash of internalId or content
             pFrameKey := "col" + nextPFrameKeyIndex
             nextPFrameKeyIndex += 1
+
+            ll.assert(is_undefined(headersMap[header]),
+                "header '%s' is not unique, it is used for %v, and now %v",
+                header, col.spec, headersMap[header])
+            headersMap[header] = col.spec
 
             requests = append(requests, {
                 internalId: internalId,

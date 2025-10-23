@@ -411,19 +411,21 @@ calculateGroupAxesIndices := func(numberOfAxes, aggregationIndices) {
 pFrameToColumnsMap := func(pf) {
 	columnsById := {}
 
-	addColumnSegment := func(key, value) {
+	addColumnSegment := func(key, field) {
 		columnId := key[0:(len(key) - 5)]
 		if is_undefined(columnsById[columnId]) {
 			columnsById[columnId] = {}
 		}
 
 		if text.has_suffix(key, ".spec") {
+			value := smart.isField(field) ? field.getValue() : field
 			if smart.isResource(value) {
 				ll.assert(value.isFinal(), "Resource is not final")
 				value = value.getDataAsJson()
 			}
 			columnsById[columnId].spec = value
 		} else if text.has_suffix(key, ".data") {
+			value := smart.isField(field) && field.isSet() ? field.getValue() : field
 			columnsById[columnId].data = value
 		} else {
 			ll.panic("unknown suffix: %s", key)
