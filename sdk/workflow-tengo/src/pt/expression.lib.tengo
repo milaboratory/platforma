@@ -136,7 +136,7 @@ _newWindowExpression = func(expression, aggregation, currentAlias) {
 		 * @returns {object} - A new window expression object with the updated alias.
 		 */
 		alias: func(newAlias) {
-			ll.assert(is_string(newAlias), "alias must be a string")
+			ll.assert(is_string(newAlias) && newAlias != "", "alias must be a non-empty string")
 			return _newWindowExpression(expression, aggregation, newAlias)
 		},
 
@@ -251,6 +251,7 @@ _newExpression = func(expression) {
 		 * @returns {object} - A new expression object with the updated alias.
 		 */
 		alias: func(newAlias) {
+			ll.assert(is_string(newAlias) && newAlias != "", "alias must be a non-empty string")
 			return _newExpression(func (ctx) {
 				valueExpr := self._getExpression(ctx)
 				return {type: "alias", value: valueExpr, name: newAlias}

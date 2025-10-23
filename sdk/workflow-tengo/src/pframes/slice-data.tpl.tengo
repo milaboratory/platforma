@@ -102,7 +102,8 @@ filterPColumnData := func(data, slicingParams) {
 
     // Handle different types of PColumn data
     if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED) ||
-       data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED) {
+       data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED) ||
+       data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED) {
         // Super-partitioned data - we need to process each partition
         dataJson := data.getDataAsJson()
         superPartitionKeyLength := dataJson.superPartitionKeyLength
@@ -171,7 +172,8 @@ filterPColumnData := func(data, slicingParams) {
         }
         return newData.lockAndBuild()
 
-    } else if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED) {
+    } else if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED) ||
+              data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED) {
         // JSON partitioned data
         dataJson := data.getDataAsJson()
         partitionKeyLength := dataJson.partitionKeyLength
