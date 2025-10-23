@@ -23,73 +23,69 @@ pkg := import(":exec.package")
 _createRvenv := undefined
 _toolsetRenvCreate := undefined
 
-tplBody := func(inputs) {
-	// assert we have inputs we expect.
-	validation.assertType(inputs, internal.rVenvInputSchema)
-
-	venv := _createRvenv(
-		inputs.operationMode,
-		inputs.software,
-		inputs.R, inputs.rDescriptor,
-		inputs.toolset, inputs.dependencies
-	)
-
-	return {
-		runEnv: venv
-	}
-}
-
 // Create R virtual environment using selected toolset.
-_createRvenv = func(operationMode, swPackage, rPackage, rDescriptor, toolset, dependencies) {
+_createRvenv = func(operationMode, swPkgRef, rPkgRef, rRunEnvDescriptor, toolset, dependencies) {
 	if toolset == "renv" {
-		return _toolsetRenvCreate(operationMode, swPackage, rPackage, rDescriptor, dependencies)
+		return _toolsetRenvCreate(operationMode, swPkgRef, rPkgRef, rRunEnvDescriptor, dependencies)
 	}
 
 	ll.panic("R toolset %q is not supported by current version of workflow-sdk", toolset)
 }
 
-_toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, dependencies) {
-	wdBefore := workdir.builder().
+_toolsetRenvCreate = func(operationMode, swPkgRef, rPkgRef, rRunEnvDescriptor, dependencies) {
+	validation.assert(operationMode == "remote" || operationMode == "dev-local", "exec.R.create-renv: unknown operation mode: %q", operationMode)
+	validation.assertType(rPkgRef, validation.reference, "exec.R.create-renv: <rPkgRef> must be reference to R run environment package")
+	validation.assertType(rRunEnvDescriptor, desc.runEnvScheme, "exec.R.create-renv: <rRunEnvDescriptor> must be run environment descriptor")
+	validation.assert(rRunEnvDescriptor.type == "R", "exec.R.create-renv: <rRunEnvDescriptor> must be R run environment descriptor")
+	if (!is_undefined(dependencies)) {
+		validation.assertType(dependencies, { "any": "string" }, "exec.R.create-renv: <dependencies> must be map of reference file paths")
+	}
+
+	// We do not use <dependencies> map from software package as we shifted to single static renv.lock delivered with R run environment.
+	deps := runenv.loadFilesFromPackage(rPkgRef, { "renv.lock": path.join(internal.RENV_ROOT_DIR_NAME, "renv.lock") })
+
+	wdForRenv := workdir.builder().
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
+		addFile("renv.lock", deps["renv.lock"]).
+		build()
+
+	envDirCreator := runenv.saveBuilder(installDepsRun.workdir).
+		envType("R").
+		addPath("renv.lock").
+		addPackage("R", rPkgRef)
+
+	envDir := envDirCreator.build().runEnv()
+
+	//
+	// Activate run environment in new working directory
+	// Also creates basic renv structure inside <envDir> if it does not exist.
+	// Does not install any packages but renv itself into it.
+	//
+
+	plan := internal.runRPlan("init-R-venv", rPkgRef, rRunEnvDescriptor, envDir)
+
+	wdForDepsInstallation := workdir.builder().
 		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
 		cpu(pkg.DEFAULT_ALLOCATION_CPU).
 		mem(pkg.DEFAULT_ALLOCATION_RAM).
 		build()
 
-	//
-	// Activate run environment in current working directory
-	//
-	renvBuilder := internal.runRBuilder(operationMode, wdBefore, rPackage, rDescriptor).
-		env("RENV_PATHS_RENV", "./renv")
-
-	renvBuilder.
-		cmd("R").
-		arg("--no-echo").
-		arg("--no-restore").
-		arg("-e").arg("renv::activate()")
-
-	renvBuilder.
-		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
-		cpu(pkg.DEFAULT_ALLOCATION_CPU).
-		mem(pkg.DEFAULT_ALLOCATION_RAM).
-		stdout("./output").
-		stderr("./output").
-		nErrorLines(20)
-
-	activateRenvRun := renvBuilder.build()
+	activatedWD := internal.activateRenvInWD(
+		wdForDepsInstallation,
+		pkg.DEFAULT_ALLOCATION_QUEUE,
+		{ cpu: pkg.DEFAULT_ALLOCATION_CPU, ram: pkg.DEFAULT_ALLOCATION_RAM },
+		plan
+	)
 
 	//
 	// Install dependencies into activated run environment
+	// We cannot do it in single step without 'activate', as renv ignores then part of settings,
+	// putting renv dir into some location out of our control.
 	//
 
-	// DEPRECATED: remove after 15 Mar 2025
-	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
-	rule := feats.commandExpressions ? "pkg" : "{pkg}"
-
-	depsInstaller := internal.runRBuilder(operationMode, activateRenvRun.workdir, rPackage, rDescriptor).
-		env("RENV_PATHS_RENV", "./renv").
-		ref("r-software-pkg", swPackage).
-		substitutionRule(rule, "r-software-pkg").
-		envTyped("RENV_PATHS_LOCKFILE", t, path.join("{R}", "renv-root", "renv.lock"))
+	depsInstaller := runcmd.builder(activatedWD, plan)
 
 	depsInstaller.
 		cmd("R").
@@ -97,23 +93,25 @@ _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, depen
 		arg("--no-restore").
 		arg("-e").arg("renv::restore( clean = TRUE )")
 
-	depsInstaller.
-		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
-		cpu(pkg.DEFAULT_ALLOCATION_CPU).
-		mem(pkg.DEFAULT_ALLOCATION_RAM).
-		stdout("./output").
-		stderr("./output").
-		nErrorLines(20)
+	// R venv becomes available before environment is restored inside it.
+	// We need to wait for restoration process to complete before returning the result.
+	w := waiter.builder(env)
+	w.wait(depsInstaller.build().workdir)
 
-	installDepsRun := depsInstaller.build()
-
-	runEnvSaver := runenv.saveBuilder(installDepsRun.workdir).
-		envType("R").
-		addPath("renv").
-		addPackage("R", rPackage)
-
-	return runEnvSaver.build().runEnv()
+	return w.build().output()
 }
 
 self.defineOutputs("runEnv")
-self.body(tplBody)
+self.validateInputs(internal.rVenvInputSchema)
+self.body(func(inputs) {
+	venv := _createRvenv(
+		inputs.operationMode,
+		inputs.software,
+		inputs.R, inputs.rRunEnvDescriptor,
+		inputs.toolset, inputs.dependencies
+	)
+
+	return {
+		runEnv: venv
+	}
+})

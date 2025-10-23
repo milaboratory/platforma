@@ -14,37 +14,108 @@ rVenvInputSchema := {
 	dependencies: {"any": "string"},
 	software: validation.reference,
 
-	rDescriptor: desc.runEnvScheme,
+	rRunEnvDescriptor: desc.runEnvScheme,
 	R: validation.reference
 }
 
-runRBuilder := func(operationMode, wd, rPackage, rDescriptor) {
-	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
-	rule := feats.commandExpressions ? "R" : "{R}"
+ARG_VAR_R                   := "R"     // abs path to 'R' run environment runtime
+ARG_VAR_R_VENV              := "rVenv" // abs path to 'R' portable virtual environment, restored on runner side
 
-	builder := runcmd.builder(wd).
-		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
-		cpu(pkg.DEFAULT_ALLOCATION_CPU).
-		mem(pkg.DEFAULT_ALLOCATION_RAM).
-		ref("r-run-environment", rPackage).
-		substitutionRule(rule, "r-run-environment").
-		addPathTyped(t, path.join("{R}", rDescriptor.binDir)).
-		envTyped("RHOME", t, "{R}").
-		envTyped("R_HOME_DIR", t, "{R}").
-		envTyped("RENV_PATHS_ROOT", t, path.join("{R}", "renv-root")).
-		envTyped("RENV_PATHS_BINARY", t, path.join("{R}", "renv-root", "binaries")).
-		envTyped("RENV_PATHS_SOURCE", t, path.join("{R}", "renv-root", "sources")).
-		envTyped("RENV_PATHS_CACHE", t, path.join("{R}", "renv-root", "cache"))
+RENV_ROOT_DIR_NAME          := "renv-root" // directory inside R run environment package, where RENV_PATHS_ROOT is stored.
+
+_expr := func(varName) {
+	return "{" + varName + "}"
+}
+
+/**
+ * Creates a run command plan that allows command execution in R run environment.
+ *
+ * @return plan: runcmd.plan - run command plan.
+ */
+runRPlan := func(refsPrefix, rPkgRef, rRunEnvDescriptor, rVenvRef) {
+	validation.assertType(refsPrefix, "string", "exec.R.runRPlan: <refsPrefix> is expected to be string with prefix for all default references attached to R-based command")
+	validation.assertType(rPkgRef, validation.reference, "exec.R.runRPlan: <rPkgRef> is expected to be reference to R run environment package")
+	validation.assertType(rRunEnvDescriptor, desc.runEnvScheme, "exec.R.runRPlan: <rRunEnvDescriptor> is expected to be run environment descriptor")
+	validation.assert(rRunEnvDescriptor.type == "R", "exec.R.runRPlan: <rRunEnvDescriptor> is expected to be R run environment descriptor")
+	if (!is_undefined(rVenvRef)) {
+		validation.assertType(rVenvRef, validation.reference, "exec.R.runRPlan: <rVenvRef> is expected to be reference to R virtual environment")
+	}
+
+	plan := runcmd.createRunCommandPlan()
+
+	rRefKey := refsPrefix + "/R-runtime"
+	rEnvRefKey := refsPrefix + "/R-virtual-env"
+
+	rBinDir := path.join(_expr(ARG_VAR_R), rRunEnvDescriptor.binDir)
+	renvRootArg := path.join(_expr(ARG_VAR_R), RENV_ROOT_DIR_NAME)
+
+	plan.
+		refVar(ARG_VAR_R, rRefKey, rPkgRef).
+		addPathExpression(rBinDir).
+		envExpression("RHOME", _expr(ARG_VAR_R)).      // RScript uses this variable instead of R_HOME_DIR or R_HOME
+		envExpression("R_HOME_DIR", _expr(ARG_VAR_R)). // R starter sh script uses this to correctly set R_HOME and many others
+		envExpression("RENV_PATHS_ROOT", renvRootArg).
+		envExpression("RENV_PATHS_BINARY", path.join(renvRootArg, "binaries")).
+		envExpression("RENV_PATHS_SOURCE", path.join(renvRootArg, "sources")).
+		envExpression("RENV_PATHS_CACHE", path.join(renvRootArg, "cache"))
+
+	if (!is_undefined(rVenvRef)) {
+		plan.
+			refVar(ARG_VAR_R_VENV, rEnvRefKey, rVenvRef).
+			envExpression("RENV_PATHS_RENV", path.join(_expr(ARG_VAR_R_VENV), "r-venv")).
+			envExpression("RENV_PATHS_LOCKFILE", path.join(_expr(ARG_VAR_R_VENV), "renv.lock"))
+	}
 
 	// Force block developer to install R packages when building R run environment.
 	// Most of our commercial clients have very restricted network without access to pypi, CRAN and other external resources.
 	// The only firewall rule we're guaranteed to have is to our own registries.
-	builder.envTyped("RENV_CONFIG_REPOS_OVERRIDE", t, path.join("{R}", "packages"))
+	plan.envExpression("RENV_CONFIG_REPOS_OVERRIDE", path.join("{R}", "packages"))
 
-	return builder
+	return plan
+}
+
+activateRenvInWD := func(wd, queue, computeResources, plan) {
+	validation.assertType(wd, validation.reference, "exec.R.activateRenvInWD: <wd> must be a reference to workdir")
+	validation.assertType(queue, "string", "exec.R.activateRenvInWD: <queue> must be a string")
+	validation.assertType(computeResources,
+		["or",
+			validation.reference,
+			{ "cpu": "number", "ram": ["or", "number", "string"] }
+			],
+		"exec.R.activateRenvInWD: <computeResources> must be a reference to allocation, or a map with cpu and ram"
+	)
+	validation.assertType(plan, runcmd.RUN_CMD_PLAN_SCHEMA, "exec.R.activateRenvInWD: <plan> must be a run command plan")
+
+	activateRenv := runcmd.builder(wd, plan).
+		cmd("R").
+		inQueue(queue).
+		allocation(allocation).
+		resetArgs().
+		arg("--no-echo").
+		arg("--no-restore").
+		arg("-e").arg("renv::activate()")
+
+	if (smart.isReference(computeResources)) {
+		activateRenv.allocation(computeResources)
+	} else {
+		activateRenv.
+			cpu(computeResources.cpu).
+			mem(computeResources.ram)
+	}
+
+	return activateRenv.build().workdir
 }
 
 export ll.toStrict({
+	// Constants
+	ARG_VAR_R                          : ARG_VAR_R,
+	ARG_VAR_R_VENV                     : ARG_VAR_R_VENV,
+	RENV_ROOT_DIR_NAME:                : RENV_ROOT_DIR_NAME,
+
+	// Schemas
 	rVenvInputSchema                   : rVenvInputSchema,
-	runRBuilder                        : runRBuilder
+
+	// Functions
+	runRPlan                           : runRPlan,
+	activateRenvInWD                   : activateRenvInWD
 })

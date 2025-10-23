@@ -643,9 +643,12 @@ builder := func(workdir, ...initialState) {
 			 * Check that either allocation or compute resources are set, but not both.
 			 */
 			ll.assert(is_undefined(allocation) || (is_undefined(cpu) && is_undefined(ram)),
-				"runcmd.builder.build: allocation cannot be set along with cpu or ram")
+				"runcmd.builder.build: either allocation or CPU/RAM request must be set for the command")
 
-			ll.assert(!is_undefined(queue), "queue must be set")
+			ll.assert(!( is_undefined(allocation) && is_undefined(cpu) ),
+				"runcmd.builder.build: allocation CPU/RAM request cannot be set both for the same command run")
+
+			ll.assert(!is_undefined(queue), "runcmd.builder.build: queue is required for any command run")
 
 			useBatch := limits.useBatch(queue)
 
@@ -728,13 +731,16 @@ builder := func(workdir, ...initialState) {
 }
 
 export ll.toStrict({
+	// Schemas
+	ARG_SCHEMA: ARG_SCHEMA,
+	RUN_CMD_PLAN_REFS_SCHEMA: RUN_CMD_PLAN_REFS_SCHEMA,
+	RUN_CMD_PLAN_OPTIONS_SCHEMA: RUN_CMD_PLAN_OPTIONS_SCHEMA,
+	RUN_CMD_PLAN_SCHEMA: RUN_CMD_PLAN_SCHEMA,
+
+	// Functions
 	builder: builder,
 	simpleArg: simpleArg,
 	variableArg: variableArg,
 	expressionArg: expressionArg,
 	createRunCommandPlan: createRunCommandPlan,
-	ARG_SCHEMA: ARG_SCHEMA,
-	RUN_CMD_PLAN_REFS_SCHEMA: RUN_CMD_PLAN_REFS_SCHEMA,
-	RUN_CMD_PLAN_OPTIONS_SCHEMA: RUN_CMD_PLAN_OPTIONS_SCHEMA,
-	RUN_CMD_PLAN_SCHEMA: RUN_CMD_PLAN_SCHEMA
 })

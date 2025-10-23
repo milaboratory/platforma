@@ -17,6 +17,7 @@ desc := import(":exec.descriptor")
 monetization := import(":exec.monetization_internal")
 maps := import(":maps")
 runcmd := import(":exec.runcmd")
+R := import(":exec.R")
 
 delayedCompAlloc := import(":exec.delayed-compute-allocation")
 
@@ -170,7 +171,7 @@ self.body(func(inputs) {
 	// The same as wdBefore, but might get additional files if they are required for run environment,
 	// like .Rprofile for R with activated renv.
 	if (runEnvType == "R") {
-		wdBefore = _activateRenvForWD(wdBefore, runOptions.queue, computeAllocationRef, inputs.mainPlan)
+		wdBefore = R.activateRenvInWD(wdBefore, runOptions.queue, computeAllocationRef, inputs.mainPlan)
 	}
 
 	mainRunBuilder := runcmd.builder(wdBefore, mainPlanPreBuilder.state()).
