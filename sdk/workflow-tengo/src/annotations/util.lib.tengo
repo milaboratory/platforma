@@ -8,35 +8,18 @@ sets := import(":sets")
 maps := import(":maps")
 slices := import(":slices")
 
-xsv := import(":pframes.xsv")
 pSpec := import(":pframes.spec")
 
 expr := import(":pt.expression-traverse")
 
 ANNOTATION_HEADER := "annotation"
 
-createFilterFileName := func(colName) {
-	return colName + "_filter.tsv"
+createFilterFrameName := func(colName) {
+	return colName + "_filter_frame"
 }
 
-createAnnotationsDataAndSpec := func(dataFile, columnSpec) {
-	importSpec := {
-		cpu: 1,
-		mem: "12GiB",
-		storageFormat: "Binary",
-		partitionKeyLength: 0,
-		axes: slices.map(columnSpec.axesSpec, func(v) { return { column: pSpec.getAxisId(v), spec: v } }),
-		columns: [{
-			column: ANNOTATION_HEADER,
-			spec: columnSpec
-		}]
-	}
-
-	return xsv.importFile(dataFile, "tsv", importSpec, { splitDataAndSpec: true })
-}
-
-createFilterDataAndSpec := func(file, columnSpec, colName, label) {
-	filterColumnSpec := maps.deepMerge(columnSpec, {
+createFilterColumnSpec := func(columnSpec, colName, label) {
+	return maps.deepMerge(columnSpec, {
 		kind: "PColumn",
 		valueType: "Int",
 		name: columnSpec.name + "/filter/" + colName,
@@ -45,20 +28,6 @@ createFilterDataAndSpec := func(file, columnSpec, colName, label) {
 			"pl7.app/isSubset": "true"
 		}
 	});
-	
-	importSpec := {
-		cpu: 1,
-		mem: "8GiB",
-		storageFormat: "Binary",
-		partitionKeyLength: 0,
-		axes: slices.map(columnSpec.axesSpec, func(v) { return { column: pSpec.getAxisId(v), spec: v } }),
-		columns: [{
-			column: colName,
-			spec: filterColumnSpec
-		}]
-	}
-
-	return xsv.importFile(file, "tsv", importSpec, { splitDataAndSpec: true })
 }
 
 encodeColumnName := func(name, idx) {
@@ -138,10 +107,9 @@ export ll.toStrict({
 
 	encodeColumnName: encodeColumnName,
 	decodeColumnName: decodeColumnName,
-	createFilterFileName: createFilterFileName,
+	createFilterFrameName: createFilterFrameName,
 	prepareResultColumnSpec: prepareResultColumnSpec,
-	createAnnotationsDataAndSpec: createAnnotationsDataAndSpec,
-	createFilterDataAndSpec: createFilterDataAndSpec,
+	createFilterColumnSpec: createFilterColumnSpec,
 	mapExpressionColumnNames: mapExpressionColumnNames,
 	extractColumnsFromExpressions: extractColumnsFromExpressions
 })

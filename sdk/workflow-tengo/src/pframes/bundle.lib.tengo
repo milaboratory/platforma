@@ -456,7 +456,6 @@ pColumnBundleUnmarshaller := func() {
 							data: currentData,
 							slicingParams: smart.createJsonResource(columnAxisFilters),
 							keepColumns: options.keepColumns,
-							ignoreUnknownAxes: options.ignoreUnknownAxes,
 							ignoreNonPartitioned: options.ignoreNonPartitioned
 						}).output("result")
 					}

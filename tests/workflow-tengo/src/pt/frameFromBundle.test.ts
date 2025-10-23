@@ -22,10 +22,7 @@ tplTest.concurrent(
     const ctx = await awaitStableState(wf1.context());
 
     const wf2 = await helper.renderWorkflow('pt.frameFromBundle.exports', false, {
-      axes: [
-        { column: sampleIdAxesSpec.name, spec: sampleIdAxesSpec },
-        { column: cellIdAxesSpec.name, spec: cellIdAxesSpec },
-      ],
+      axes: [sampleIdAxesSpec, cellIdAxesSpec],
       anchor: createPlRef('b1', 'data'),
       columnIds: [
         canonicalizeJson<AnchoredPColumnId>({

@@ -650,7 +650,8 @@ workflow := func() {
 			util.validateParamsForFrameFromColumnBundle(options)
 
 			columns := is_array(options.columns) ? options.columns : bundle.getColumnKeys()
-			axes := is_array(options.axes) ? options.axes : bundle.getAxesSpec(columns...)
+			// axes := is_array(options.axes) ? options.axes : bundle.getAxesSpec(columns...)
+			axes := bundle.getAxesSpec(columns...)
 
 			entries := []
 			aliases := []
@@ -661,15 +662,18 @@ workflow := func() {
 
 			for column in columns {
 				decoded := json.decode(column)
+				aliases = append(aliases, exp.col(column))
+
 				if (is_undefined(decoded.axisFilters)) {
-					aliases = append(aliases, exp.col(column))
 					entry := p.column(column, bundle.getColumn(decoded))
 					entries = append(entries, entry)
 				} else {
-					aliases = append(aliases, exp.col(column))
 					entry := p.slicedColumn(
 						column,
-						bundle.getColumn(decoded.source),
+						bundle.getColumn(decoded, {
+							keepColumns: true,
+							ignoreNonPartitioned: true
+						}),
 						slices.map(decoded.axisFilters, func(axisFilter) {
 							return {
 								axisIndex: axisFilter[0],
@@ -1245,8 +1249,8 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 * @example
 		 *   // Save DataFrame as a PFrame with name "output_frame" and first axis partitioned
 		 *   df.saveFrameDirect("output_frame", {
-		 *     axes: [{name: "clusterId", type: "Long"}, {name: "name", type: "String"}],
-		 *     columns: [{name: "value", type: "Double"}],
+		 *     axes: [{column: "clusterId", spec: {name: "clusterId", type: "Long"}}],
+		 *     columns: [{column: "value", spec: {name: "value", valueType: "Double"}}],
 		 *     partitionKeyLength: 1
 		 *   })
 		 */

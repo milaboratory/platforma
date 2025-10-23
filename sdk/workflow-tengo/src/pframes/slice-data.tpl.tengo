@@ -23,7 +23,6 @@ filterPColumnData := func(params) {
     data := params.data
     slicingParams := params.slicingParams
     keepColumns := is_bool(params.keepColumns) ? params.keepColumns : false
-    ignoreUnknownAxes := is_bool(params.ignoreUnknownAxes) ? params.ignoreUnknownAxes : false
     ignoreNonPartitioned := is_bool(params.ignoreNonPartitioned) ? params.ignoreNonPartitioned : false
 
     // Build a set of fixed axis indices
@@ -58,14 +57,12 @@ filterPColumnData := func(params) {
     validateFilteringParams := func(dataType, partitionKeyLength, superPartitionKeyLength) {
         maxAxisIdx := getMaxAxisIdx(partitionKeyLength, superPartitionKeyLength)
  
-        if !ignoreNonPartitioned && maxAxisIdx < 0 {
+        if !ignoreNonPartitioned {
             // Non-partitioned data
-            if len(slicingParams) > 0 {
+            if maxAxisIdx < 0 && len(slicingParams) > 0 {
                 ll.panic("Cannot apply filtering parameters to non-partitioned data type %v", dataType)
             }
-        }
 
-        if !ignoreUnknownAxes { 
             for _, param in slicingParams {
                 axisIdx := param[0]
                 if axisIdx > maxAxisIdx {
@@ -200,7 +197,6 @@ filterPColumnData := func(params) {
                         data: partData,
                         slicingParams: nestedParamsResource,
                         keepColumns: keepColumns,
-                        ignoreUnknownAxes: ignoreUnknownAxes,
                         ignoreNonPartitioned: ignoreNonPartitioned
                     }).output("result")
 

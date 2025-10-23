@@ -4,11 +4,12 @@ self := import(":tpl")
 util := import(":annotations.util")
 pSpec := import(":pframes.spec")
 slices := import(":slices")
+pframesUtil := import(":pframes.util")
 
-DATA_FILE := "data.tsv"
+ANNOTATION_FRAME := "annotation_frame"
 ANNOTATION_HEADER := util.ANNOTATION_HEADER
 
-self.defineOutputs(["annotationsFile", "filtersFiles"])
+self.defineOutputs(["annotationsData", "filtersData"])
 
 self.body(func(inputs) {
 	outputs := {}
@@ -53,23 +54,35 @@ self.body(func(inputs) {
 
 	dfData.
 		select(ANNOTATION_HEADER, resultAxesSpecName...).
-	    save(DATA_FILE)
+		saveFrameDirect(ANNOTATION_FRAME, {
+			axes: slices.map(resultColumnSpec.axesSpec, func(v) { return { column: pSpec.getAxisId(v), spec: v } }),
+			columns: [{ column: ANNOTATION_HEADER, spec: resultColumnSpec }],
+			partitionKeyLength: 0
+		})
 
 	for colName in filterColumnNames {
+		label := util.decodeColumnName(colName)
 		dfData.
-			filter(pt.col(ANNOTATION_HEADER).eq(pt.lit(util.decodeColumnName(colName)))).
+			filter(pt.col(ANNOTATION_HEADER).eq(pt.lit(label))).
 			withColumns(pt.lit(1).alias(colName)).
 			select(colName, resultAxesSpecName...).
-			save(util.createFilterFileName(colName))
+			saveFrameDirect(util.createFilterFrameName(colName), {
+				axes: slices.map(resultColumnSpec.axesSpec, func(v) { return { column: pSpec.getAxisId(v), spec: v } }),
+				columns: [{ column: colName, spec: util.createFilterColumnSpec(resultColumnSpec, colName, label) }],
+				partitionKeyLength: 0
+			})
 	}
 	
     wfResult := wf.run()
 
-	outputs["annotationsFile"] = wfResult.getFile(DATA_FILE)
-    outputs["filtersFiles"] = {}
+	outputs["annotationsData"] = pframesUtil.pFrameToColumnsMap(wfResult.getFrameDirect(ANNOTATION_FRAME))[ANNOTATION_HEADER].data
+    outputs["filtersData"] = {}
 
-    for colName in filterColumnNames {
-        outputs["filtersFiles"][colName] = wfResult.getFile(util.createFilterFileName(colName))
+	for colName in filterColumnNames {
+		pFrame := pframesUtil.pFrameToColumnsMap(
+			wfResult.getFrameDirect(util.createFilterFrameName(colName))
+		)
+		outputs["filtersData"][colName] = pFrame[colName].data
 	}
 
 	return outputs	

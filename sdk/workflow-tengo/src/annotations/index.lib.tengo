@@ -1,12 +1,20 @@
 ll := import(":ll")
 wf := import(":workflow")
-maps := import(":maps")
 util := import(":annotations.util")
 render := import(":render")
 assets := import(":assets")
 slices := import(":slices")
+validation := import(":validation")
 
 compute := assets.importTemplate(":annotations.compute")
+
+_STEP_SCHEMA := {
+	type: "string",
+	name: "string",
+	value: { "any": "any" }
+}
+
+_STEP_SCHEMAS := [_STEP_SCHEMA]
 
 /**
  * Computes annotations and optional filters based on the provided steps and column bundle.
@@ -28,6 +36,8 @@ computeAnnotations := func(inputs) {
 	if len(inputs.steps) == 0 {
 		return {}
 	}
+
+	validation.assertType(inputs.steps, _STEP_SCHEMAS)
 
 	steps := inputs.steps
 	title := inputs.title
@@ -55,28 +65,25 @@ computeAnnotations := func(inputs) {
 		}
 	})
 
-	annotationsFile := result.output("annotationsFile")
-	annotationColumn := maps.deepMerge(
-		util.createAnnotationsDataAndSpec(annotationsFile, resultColumnSpec)[util.ANNOTATION_HEADER],
-		{ column: util.ANNOTATION_HEADER }
-	)
+	annotationsData := result.output("annotationsData")
+	annotationsColumn := { column: util.ANNOTATION_HEADER, data: annotationsData, spec: resultColumnSpec }
 
 	idx := 0
-	annotationFilterColumns := shouldComputeFilters ? slices.map(steps, func(v) {
+	annotationsFiltersColumns := shouldComputeFilters ? slices.map(steps, func(v) {
 		idx += 1
 		column := util.encodeColumnName(v.name, idx)
-		file := result.resolveOutput(["filtersFiles", column])
-		specAndData := util.createFilterDataAndSpec(file, resultColumnSpec, column, v.name)
+		filterData := result.resolveOutput(["filtersData", column])
+		filterSpec := util.createFilterColumnSpec(resultColumnSpec, column, v.name)
 		return {
 			column: v.name,
-			data: specAndData[column].data,
-			spec: specAndData[column].spec
+			data: filterData,
+			spec: filterSpec
 		}
 	}) : []
 
 	return {
-		annotationColumn: annotationColumn,
-		annotationFilterColumns: annotationFilterColumns
+		annotationsColumn: annotationsColumn,
+		annotationsFiltersColumns: annotationsFiltersColumns
 	}
 }
 
