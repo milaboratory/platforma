@@ -58,7 +58,7 @@ Full entrypoint ID consists of NPM package name, that contains this entrypoint, 
 
 ## Before you go
 
-The result of any software build is two "artifacts": the archive with your software (or many archives, if software is OS/Arch-dependant)
+The result of any software build is two "artifacts": the archive with your software (or many archives, if software is OS/Arch-dependent)
 and npm package with software metadata, used by backend to get the software on its side when you run the block.
 
 Do NOT put software `binaries/scripts/whatever` into `dist/` directory, as it will be published as part of NPM package and most likely will be rejected by NPM registry because of the size.
