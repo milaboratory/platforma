@@ -38,6 +38,7 @@ class ReadFrame(PStep, tag="read_frame"):
             raise ValueError(f"Frame folder does not exist: {ctx.settings.frame_folder}")
         
         lf: pl.LazyFrame = ppf.pframe_source(
+            self.name,
             ctx.settings.frame_folder,
             self.request,
             spill_path=ctx.settings.spill_folder,
