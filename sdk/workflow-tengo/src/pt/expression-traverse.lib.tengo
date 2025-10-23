@@ -189,7 +189,7 @@ expressionTraverse := func(expression, visitFn) {
 		return
 	}
 
-	// Unknown type: do nothing
+	ll.panic("Unknown expression type: " + t)
 }
 
 export ll.toStrict({

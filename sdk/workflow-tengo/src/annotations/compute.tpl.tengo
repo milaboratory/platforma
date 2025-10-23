@@ -43,7 +43,7 @@ self.body(func(inputs) {
 		otherwise(pt.lit(undefined)).
 		alias(ANNOTATION_HEADER)
 
-	wf := pt.workflow()
+	wf := pt.workflow().cpu(1).mem("12GiB")
 
 	dfData := wf.frameFromColumnBundle(columnBundle, {
 		axes: resultColumnSpec.axesSpec,

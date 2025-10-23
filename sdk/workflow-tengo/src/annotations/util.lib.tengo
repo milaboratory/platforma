@@ -30,12 +30,14 @@ createFilterColumnSpec := func(columnSpec, colName, label) {
 	});
 }
 
+ENCODE_SEPARATOR := "_encoded_"
+
 encodeColumnName := func(name, idx) {
-	return hex.encode(name) + "_encoded_" + string(idx)
+	return hex.encode(name) + ENCODE_SEPARATOR + string(idx)
 }
 
 decodeColumnName := func(encoded) {
-	parts := text.split(encoded, "_encoded_")
+	parts := text.split(encoded, ENCODE_SEPARATOR)
 	if len(parts) != 2 {
 		ll.panic("Invalid encoded column name: " + encoded)
 	}

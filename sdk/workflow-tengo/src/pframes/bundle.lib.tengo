@@ -427,6 +427,9 @@ pColumnBundleUnmarshaller := func() {
 				/**
 				 * Gets a specific column by its ID
 				 * @param resultKey - The ID of the column to retrieve
+				 * @param options - object (optional) - Options, can include:
+				 *   - keepColumns: boolean (default: false) - If true, keeps the columns used in axis filters in the resulting data.
+				 *   - ignoreNonPartitioned: boolean (default: false) - If true, ignores non-partitioned columns when slicing data.
 				 * @returns The column object with its spec, data.
 				 *          The column object has the structure: `{ key: string, spec: object, data: object }`.
 				 */

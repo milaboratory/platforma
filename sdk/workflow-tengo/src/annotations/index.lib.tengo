@@ -29,8 +29,8 @@ _STEP_SCHEMAS := [_STEP_SCHEMA]
  *   - shouldComputeFilters?: A boolean indicating whether to compute filters.
  *
  * @returns: A map containing:
- *   - annotations: The computed annotations with their data and specification.
- *   - annotationsFilters (optional): An array of computed filters with their data and specifications.
+ *   - annotationsColumn: The computed annotations column with its spec and data.
+ *   - annotationsFiltersColumns: An array of computed filter columns (if requested).
  */
 computeAnnotations := func(inputs) {
 	if len(inputs.steps) == 0 {

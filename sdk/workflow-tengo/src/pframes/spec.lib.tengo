@@ -505,7 +505,7 @@ prepareAxisFiltersAndAxesSpec := func(rules, axesSpec) {
 
 		valueStr := string(value)
 		axisFilters = append(axisFilters, [axisIdx, valueStr])
-		// filteredIndices[axisIdx] = true
+		filteredIndices[axisIdx] = true
 	}
 
 	newAxesSpec := []

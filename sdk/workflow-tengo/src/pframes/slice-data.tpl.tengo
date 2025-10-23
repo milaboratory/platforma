@@ -29,9 +29,7 @@ filterPColumnData := func(params) {
     fixedAxes := {}
     for _, param in slicingParams {
         axisIdx := param[0]
-        if fixedAxes[axisIdx] {
-            ll.panic("Duplicate axis index %v found in filtering parameters", axisIdx)
-        }
+        ll.assert(is_undefined(fixedAxes[axisIdx]), "Duplicate axis index %v found in filtering parameters", axisIdx)
         fixedAxes[axisIdx] = true
     }
 

@@ -169,7 +169,7 @@ p := ll.toStrict({
 	 * @returns {object} - A join builder entry object.
 	 */
 	full: func(...entries) {
-		ll.assert(len(entries) > 0, "full join requires at least one entry %v", entries)
+		ll.assert(len(entries) > 0, "full join requires at least one entry")
 
 		if len(entries) == 1 && !_isPEntry(entries[0]) {
 			entries = _frameToPEntries(entries[0])
