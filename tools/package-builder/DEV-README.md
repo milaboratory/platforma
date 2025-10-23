@@ -8,7 +8,7 @@ Here are 3 'layers' of the data we have in `package-builder`:
 - entrypoints: configurations, that describe how to run particular software as part of Platforma Backend workflow. All entrypoint shapes are defined in `src/core/schemas/entrypoints.ts`
 - sw.json (or as.json for assets): the metadata for built software, that describes how and where to obtain software artifact and how to run it on backend side (cmd+args, default environment variables and so on). All sw.json shapes are defined in `src/core/schemas/sw-json.ts`
 
-As node (javascript/typescript) does not support inversed definition of types and shapes, the most global and abstract definitions are on the bottom of each file. 
+As TypeScript processes files from top to bottom, types must be defined before they are used. Consequently, the most abstract and composite types are typically found at the bottom of each schema file. 
 All shape definition files follow the naming convention:
 - all zod shapes have `Schema` suffix in their names: i.e. `dockerSchema`, `condaSchema`, ...
 - all types, derived from zod shapes, have `Type` suffix in their name and are named after the shape they were derived from: `dockerType`, `condaType`, ...
