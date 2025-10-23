@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.4.4
+
+### Patch Changes
+
+- 885f4b3: Add label duplicates validation
+
 ## 5.4.3
 
 ### Patch Changes
