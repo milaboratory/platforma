@@ -1,5 +1,37 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.4.3
+
+### Patch Changes
+
+- Updated dependencies [ff47e1b]
+  - @platforma-open/milaboratories.software-ptabler@1.12.11
+
+## 5.4.2
+
+### Patch Changes
+
+- 8fff09e: SpecDistiller usage fix in pt
+
+## 5.4.1
+
+### Patch Changes
+
+- 6797432: Added xsv.export assert
+
+## 5.4.0
+
+### Minor Changes
+
+- 686de0b: Support conda-based software execution
+
+## 5.3.10
+
+### Patch Changes
+
+- Updated dependencies [4c0c064]
+  - @platforma-open/milaboratories.software-ptabler@1.12.10
+
 ## 5.3.9
 
 ### Patch Changes

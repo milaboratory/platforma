@@ -7,11 +7,13 @@ import type * as artifacts from '../schemas/artifacts';
 import type winston from 'winston';
 
 import * as defaults from '../../defaults';
+import * as util from '../util';
 
 // Mock the os module
 vi.mock('node:os', () => ({
   platform: vi.fn(),
   tmpdir: vi.fn(),
+  arch: vi.fn().mockReturnValue('x64'),
 }));
 
 // Mock winston logger
@@ -85,7 +87,7 @@ dependencies: []
       // Verify directories don't exist initially
       expect(fs.existsSync(path.join(testPackageRoot, 'dist'))).toBe(false);
 
-      const result = prepareDockerOptions(mockLogger, testPackageRoot, 'artifact-id', mockCondaPackage);
+      const result = prepareDockerOptions(mockLogger, testPackageRoot, 'artifact-id', mockCondaPackage, util.currentArch());
 
       // Verify directories were created
       expect(fs.existsSync(path.join(testPackageRoot, 'dist', 'docker'))).toBe(true);
@@ -103,7 +105,7 @@ dependencies: []
     });
 
     it('should generate Dockerfile with correct content', () => {
-      const result = prepareDockerOptions(mockLogger, testPackageRoot, 'artifact-id', mockCondaPackage);
+      const result = prepareDockerOptions(mockLogger, testPackageRoot, 'artifact-id', mockCondaPackage, util.currentArch());
 
       expect(result).toMatchObject({
         context: expect.stringContaining(testPackageRoot) as string,

@@ -65,9 +65,10 @@ export class SwJsonRenderer {
       const pkg = ep.artifact;
       if (mode === 'dev-local') {
         switch (pkg.type) {
-          case 'docker':
+          case 'docker': {
             info.docker = this.renderDockerInfo(epName, ep, options?.requireAllArtifacts);
             break;
+          }
           default:
             this.logger.debug('  rendering \'local\' source...');
             info.local = this.renderLocalPackage(epName, ep, fullDirHash);

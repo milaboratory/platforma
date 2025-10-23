@@ -28,27 +28,26 @@ tplTest.concurrent(
   },
 );
 
-// TODO: Chicken-and-egg problem. Add  "@platforma-open/milaboratories.software-conda-empty": "catalog:" to dependencies of this package + uncomment pnpm-workpace
-// tplTest.concurrent(
-//   'run-empty-conda-env',
-//   async ({ helper, expect }) => {
-//     const helloText = '2.3.2';
-//
-//     const result = await helper.renderTemplate(
-//       false,
-//       'exec.test.run.conda_empty_run',
-//       ['main'],
-//       (tx) => ({
-//         text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText)),
-//       }),
-//     );
-//     const mainResult = result.computeOutput('main', (a) =>
-//       a?.getDataAsString(),
-//     );
-//
-//     expect(await mainResult.awaitStableValue()).eq(helloText + '\n');
-//   },
-// );
+tplTest.concurrent(
+  'run-empty-conda-env',
+  async ({ helper, expect }) => {
+    const helloText = '2.3.2';
+
+    const result = await helper.renderTemplate(
+      false,
+      'exec.test.run.conda_empty_run',
+      ['main'],
+      (tx) => ({
+        text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText)),
+      }),
+    );
+    const mainResult = result.computeOutput('main', (a) =>
+      a?.getDataAsString(),
+    );
+
+    expect(await mainResult.awaitStableValue()).eq(helloText + '\n');
+  },
+);
 
 /*
  * Checks, that custom limits applied to the command do not

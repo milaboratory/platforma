@@ -26,6 +26,7 @@ export default class Docker extends Command {
 
     core.buildDockerImages({
       ids: flags['package-id'],
+      strictPlatformMatching: envs.isCI(),
     });
 
     const autopush = cmdOpts.shouldDoAction(
@@ -36,6 +37,7 @@ export default class Docker extends Command {
     if (autopush && !core.pkgInfo.isPrivate) {
       core.publishDockerImages({
         ids: flags['package-id'],
+        strictPlatformMatching: envs.isCI(),
       });
     }
 

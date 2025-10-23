@@ -70,9 +70,13 @@ _createEnv := func(condaPackage, condaDescriptor) {
 		stderr("./output").
 		nErrorLines(20)
 
+	// runEnv becomes available before environment is restored inside it.
+	// We need to wait for restoration process to complete before returning the result.
+	w := waiter.builder(env)
+	w.wait(micromamba.build().workdir)
+
 	return {
-		runEnv: env,
-		workdir: micromamba.build().workdir
+		runEnv: w.build().output()
 	}
 }
 
@@ -80,12 +84,5 @@ self.defineOutputs("runEnv")
 self.validateInputs(internal.condaEnvInputSchema)
 
 self.body(func(inputs) {
-	result := _createEnv(inputs.condaPackage, inputs.condaDescriptor)
-
-	w := waiter.builder(result.runEnv)
-	w.wait(result.workdir)
-
-	return {
-		runEnv: w.build().output()
-	}
+	return _createEnv(inputs.condaPackage, inputs.condaDescriptor)
 })

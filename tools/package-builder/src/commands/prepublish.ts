@@ -2,6 +2,7 @@ import { Command } from '@oclif/core';
 import * as cmdOpts from '../core/cmd-opts';
 import * as util from '../core/util';
 import { Core } from '../core/core';
+import * as envs from '../core/envs';
 
 export default class Prepublish extends Command {
   static override description = 'build *.sw.json files and do other preparations for publishing';
@@ -40,6 +41,6 @@ export default class Prepublish extends Command {
       storageURL: flags['storage-url'],
     });
 
-    core.publishDockerImages();
+    core.publishDockerImages({ strictPlatformMatching: envs.isCI() });
   }
 }

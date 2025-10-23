@@ -1,5 +1,17 @@
 # @platforma-open/software-ptabler
 
+## 1.12.11
+
+### Patch Changes
+
+- ff47e1b: PFrames version bump
+
+## 1.12.10
+
+### Patch Changes
+
+- 4c0c064: PFrames version bump in ptabler
+
 ## 1.12.9
 
 ### Patch Changes

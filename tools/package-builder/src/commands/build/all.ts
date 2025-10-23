@@ -47,6 +47,7 @@ export default class BuildAll extends Command {
         core.buildDockerImages({
           ids: flags['package-id'],
           registry: flags['docker-registry'],
+          strictPlatformMatching: envs.isCI(),
         });
       }
 
@@ -78,6 +79,7 @@ export default class BuildAll extends Command {
         core.publishDockerImages({
           ids: flags['package-id'],
           pushTo: flags['docker-push-to'],
+          strictPlatformMatching: envs.isCI(),
         });
       }
     } catch (e) {

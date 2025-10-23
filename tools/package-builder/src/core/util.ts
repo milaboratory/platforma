@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import winston from 'winston';
 import type { z } from 'zod/v4';
 import { Errors as OclifErrors } from '@oclif/core';
+import * as envs from './envs';
 
 export const packageJsonName = 'package.json';
 export const softwareConfigName = 'package.json';
@@ -146,6 +147,10 @@ function searchPathUp(startPath: string, pathToCheck: string, itemToCheck: strin
 }
 
 export function createLogger(level: string = 'debug'): winston.Logger {
+  if (envs.isCI() && envs.isRunnerDebug()) {
+    level = 'debug';
+  }
+
   return winston.createLogger({
     level: level,
 
