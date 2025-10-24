@@ -141,6 +141,9 @@ catalogs:
     '@vueuse/integrations':
       specifier: ^13.3.0
       version: 13.3.0
+    '@zip.js/zip.js':
+      specifier: ^2.8.2
+      version: 2.8.8
     ag-grid-enterprise:
       specifier: ^34.1.2
       version: 34.1.2
@@ -1082,6 +1085,100 @@ importers:
         version: 3.23.8
 
   etc/blocks/sum-numbers/workflow:
+    dependencies:
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
+    devDependencies:
+      '@platforma-sdk/tengo-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/tengo-builder
+
+  etc/blocks/transfer-files/block:
+    dependencies:
+      '@milaboratories/milaboratories.transfer-files.model':
+        specifier: workspace:*
+        version: link:../model
+      '@milaboratories/milaboratories.transfer-files.ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@milaboratories/milaboratories.transfer-files.workflow':
+        specifier: workspace:*
+        version: link:../workflow
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+
+  etc/blocks/transfer-files/model:
+    dependencies:
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+
+  etc/blocks/transfer-files/ui:
+    dependencies:
+      '@milaboratories/milaboratories.transfer-files.model':
+        specifier: workspace:*
+        version: link:../model
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+      '@platforma-sdk/ui-vue':
+        specifier: workspace:*
+        version: link:../../../../sdk/ui-vue
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 13.3.0(vue@3.5.13(typescript@5.6.3))
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.13(typescript@5.6.3)
+    devDependencies:
+      '@faker-js/faker':
+        specifier: 'catalog:'
+        version: 9.2.0
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
+      '@zip.js/zip.js':
+        specifier: 'catalog:'
+        version: 2.8.8
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+
+  etc/blocks/transfer-files/workflow:
     dependencies:
       '@platforma-sdk/workflow-tengo':
         specifier: workspace:*
@@ -2571,6 +2668,9 @@ importers:
       '@vueuse/integrations':
         specifier: 'catalog:'
         version: 13.3.0(axios@1.8.1)(focus-trap@7.6.0)(sortablejs@1.15.6)(vue@3.5.13(typescript@5.6.3))
+      '@zip.js/zip.js':
+        specifier: 'catalog:'
+        version: 2.8.8
       ag-grid-enterprise:
         specifier: 'catalog:'
         version: 34.1.2
@@ -2766,6 +2866,12 @@ importers:
       '@milaboratories/milaboratories.test-upload-file.model':
         specifier: workspace:*
         version: link:../../etc/blocks/upload-file/model
+      '@milaboratories/milaboratories.transfer-files':
+        specifier: workspace:*
+        version: link:../../etc/blocks/transfer-files/block
+      '@milaboratories/milaboratories.transfer-files.model':
+        specifier: workspace:*
+        version: link:../../etc/blocks/transfer-files/model
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../../lib/node/pl-client
@@ -7803,6 +7909,10 @@ packages:
     resolution: {integrity: sha512-L1QKsF0Eg9tiZSFXTgodYnu0Rsa2P0En2LuLrIs/jgrkyiDuJSsPZK+tx+wU0mMsYHUYEjNsuE41uqqkuR8VhA==}
     peerDependencies:
       vue: ^3.5.0
+
+  '@zip.js/zip.js@2.8.8':
+    resolution: {integrity: sha512-v0KutehhSAuaoFAFGLp+V4+UiZ1mIxQ8vNOYMD7k9ZJaBbtQV49MYlg568oRLiuwWDg2Di58Iw3Q0ESNWR+5JA==}
+    engines: {bun: '>=0.7.0', deno: '>=1.0.0', node: '>=18.0.0'}
 
   abbrev@2.0.0:
     resolution: {integrity: sha512-6/mh1E2u2YgEsCHdY0Yx5oW+61gZU+1vXaoiHHrpKeuRNNgFvS+/jrwHiQhB5apAf5oB7UB7E19ol2R2LKH8hQ==}
@@ -17419,6 +17529,8 @@ snapshots:
   '@vueuse/shared@13.3.0(vue@3.5.13(typescript@5.6.3))':
     dependencies:
       vue: 3.5.13(typescript@5.6.3)
+
+  '@zip.js/zip.js@2.8.8': {}
 
   abbrev@2.0.0: {}
 
