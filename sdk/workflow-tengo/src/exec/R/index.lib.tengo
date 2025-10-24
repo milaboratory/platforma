@@ -19,7 +19,7 @@ rVenvBuilder := func() {
 
 	opMode := "remote"
 	toolset := "renv"
-	rDescriptor := undefined
+	rRunEnvDescriptor := undefined
 	softwareRef := undefined
 	dependencies := undefined
 	cache := 0
@@ -47,9 +47,9 @@ rVenvBuilder := func() {
 
 		runEnvDescriptor: func(descriptor) {
 			validation.assertType(descriptor, desc.runEnvScheme, "exec.R.runEnvDescriptor: <descriptor> must be run environment specification")
-			ll.assert(descriptor.type == "R", "exec.R.runEnvDescriptor: not a 'R' run environment: %q", descriptor.type)
+			ll.assert(descriptor.type == "R", "exec.R.runEnvDescriptor: incorrect run environment type. Expected 'R', got %q", descriptor.type)
 
-			rDescriptor = ll.fromStrict(descriptor)
+			rRunEnvDescriptor = ll.fromStrict(descriptor)
 			return self
 		},
 
@@ -138,20 +138,19 @@ rVenvBuilder := func() {
 		},
 
 		build: func() {
-			archive := pkg.get(rDescriptor.registry, rDescriptor.package).archive()
-			rPkg := pkg.install(archive).package()
+			archiveRef := pkg.get(rRunEnvDescriptor.registry, rRunEnvDescriptor.package).archive()
+			rPkgRef := pkg.install(archiveRef).package()
 
 			rVenvInputs := {
 				operationMode: opMode,
 				toolset: toolset,
 				dependencies: dependencies,
 				software: softwareRef,
-				rDescriptor: rDescriptor,
-				R: rPkg
+				rRunEnvDescriptor: rRunEnvDescriptor,
+				R: rPkgRef
 			}
 
 			validation.assertType(rVenvInputs, internal.rVenvInputSchema, "incomplete R runenv configuration")
-
 			tpl := render.create(createRenvTpl, rVenvInputs)
 
 			self := undefined
@@ -168,10 +167,11 @@ rVenvBuilder := func() {
 				/**
 				 * R runtime used for R virtual environment creation.
 				 *
-				 * @return R: smart.Field - a reference to the R runtime.
+				 * @return R: smart.reference - a reference to the R runtime.
 				 */
 				R: func() {
-					return rPkg
+					// R run environment package is bound to venv and is kept from garbage collection by reference from venv to package.
+					return rPkgRef
 				}
 			}))
 
@@ -184,5 +184,7 @@ rVenvBuilder := func() {
 
 
 export ll.toStrict({
-	rVenvBuilder                        : rVenvBuilder
+	rVenvBuilder                        : rVenvBuilder,
+	runRPlan                            : internal.runRPlan,
+	activateRenvInWD                    : internal.activateRenvInWD
 })

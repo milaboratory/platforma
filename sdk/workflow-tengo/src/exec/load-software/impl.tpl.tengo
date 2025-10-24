@@ -30,9 +30,6 @@ _ARG_VAR_VENV_BIN_DIR        := "venv_bin_dir" // name of bin dir in python venv
 _ARG_PYTHON_LOCAL_SCRIPT_DIR := "python_local_script_dir" // abs path to directory with local python scripts.
 _ARG_PATH_DELIMETER          := "path_delimeter"
 
-_ARG_VAR_R                   := "R" // abs path to 'R' run environment runtime
-_ARG_VAR_R_VENV              := "rVenv" // abs path to 'R' portable virtual environment
-
 /** Converts the args above to the expressions. */
 _expr := func(varName) {
 	return "{" + varName + "}"
@@ -129,53 +126,26 @@ _loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) 
 }
 
 _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
-	plan := runcmd.createRunCommandPlan()
-
-	renvBuilder := R.rVenvBuilder().
+	rVenvBuilder := R.rVenvBuilder().
 		operationMode(operationMode).
 		software(softPkg).
 		runEnvDescriptor(descriptor.runEnv).
 		dependencies(descriptor.dependencies)
 
 	if !is_undefined(descriptor.toolset) && descriptor.toolset != "" {
-		renvBuilder.useToolset(descriptor.toolset)
+		rVenvBuilder.useToolset(descriptor.toolset)
 	}
 
-	rRuntime := renvBuilder.
+	rRuntime := rVenvBuilder.
 		cacheDays(7).
 		build()
 
-	rEnv := rRuntime.venv()
-	rPackage := rRuntime.R()
-
-	rBinDir := path.join(_expr(_ARG_VAR_R), descriptor.runEnv.binDir)
-
-	rRefKey := softName + "/R-runtime"
-	plan.refVar(_ARG_VAR_R, rRefKey, rPackage)
-
-	rEnvRefKey := softName + "/R-virtual-env"
-	plan.refVar(_ARG_VAR_R_VENV, rEnvRefKey, rEnv)
-
-	renvRootArg := path.join(_expr(_ARG_VAR_R), "renv-root")
-
-
-	plan.envExpression("RHOME", _expr(_ARG_VAR_R)) // for Rscript (it uses RHOME instead of R_HOME)
-	plan.envExpression("R_HOME_DIR", _expr(_ARG_VAR_R)) // for R startup script. It configures all the rest required for R to start.
-	plan.envExpression("RENV_PATHS_ROOT", renvRootArg)
-	plan.envExpression("RENV_PATHS_BINARY", path.join(renvRootArg, "binaries"))
-	plan.envExpression("RENV_PATHS_SOURCE", path.join(renvRootArg, "sources"))
-	plan.envExpression("RENV_PATHS_CACHE", path.join(renvRootArg, "cache"))
-	plan.envExpression("RENV_PATHS_RENV", path.join(_expr(_ARG_VAR_R_VENV), "renv"))
-	plan.envExpression("RENV_PATHS_LOCKFILE", path.join(renvRootArg, "renv.lock"))
-
-
-	// Force block developer to install R packages when building R run environment.
-	// Most of our commercial clients have very restricted network without access to pypi, CRAN and other external resources.
-	// The only firewall rule we're guaranteed to have is to our own registries.
-	plan.envExpression("RENV_CONFIG_REPOS_OVERRIDE", path.join(_expr(_ARG_VAR_R), "packages"))
-
-
-	plan.addPathExpression(rBinDir)
+	plan := R.runRPlan(
+		softName,
+		rRuntime.R(),
+		descriptor.runEnv,
+		rRuntime.venv()
+	)
 
 	return ll.toStrict({
 		runEnvType: "R",
