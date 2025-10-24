@@ -5,13 +5,17 @@ import { prettyBytes } from '@milaboratories/helpers';
 defineProps<{
   item: ExportItem;
 }>();
+
+const emit = defineEmits<{
+  (e: 'cancel'): void;
+}>();
 </script>
 
 <template>
   <div
-    :class="$style.item"
+    :class="$style.summary"
   >
-    <div :class="$style.name">{{ item.fileName }}</div>
+    <div :class="$style.name">{{ item.fileName }}<span v-if="false" @click.stop="emit('cancel')">[TODO: Cancel]</span></div>
     <div v-if="item.status === 'in-progress'" :class="$style.details">
       <span>{{ prettyBytes(item.current, {}) }}</span>
       <span>/</span>
@@ -27,14 +31,16 @@ defineProps<{
 </template>
 
 <style module>
-.item {
+.summary {
   display: flex;
   flex-direction: column;
   margin-bottom: 8px;
-  overflow: hidden;
-  --name-font-size: 12px;
-  --details-font-size: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+  --name-font-size: 14px;
+  --details-font-size: 12px;
 }
+
 .name {
   white-space: nowrap;
   overflow: hidden;

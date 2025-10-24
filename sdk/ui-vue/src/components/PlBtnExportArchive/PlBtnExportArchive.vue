@@ -5,26 +5,53 @@ import {
   PlIcon24,
   useClickOutside,
 } from '@platforma-sdk/ui-vue';
-import { useApp } from '../app';
 import { ZipWriter } from '@zip.js/zip.js';
-import { ChunkedStreamReader } from './ChunkedStreamReader';
 import { reactive, computed, ref } from 'vue';
-import type { ExportItem, ExportsMap } from './types';
+import type { ExportItem, ExportsMap, FileExportEntry } from './types';
 import Item from './Item.vue';
-import type { ImportFileHandle, RemoteBlobHandleAndSize } from '@platforma-sdk/model';
-import { getFileNameFromHandle } from '@platforma-sdk/model';
+import { getFileNameFromHandle, ChunkedStreamReader } from '@platforma-sdk/model';
+import { getRawPlatformaInstance } from '@platforma-sdk/model';
+import { uniqueId } from '@milaboratories/helpers';
+import { shallowRef } from 'vue';
+import Summary from './Summary.vue';
 
-const app = useApp();
+type FilePickerAcceptType = {
+  description?: string;
+  accept?: Record<string, string[]>;
+};
 
-const data = reactive({
+const props = defineProps<{
+  fileExports?: FileExportEntry[];
+  suggestedFileName?: string;
+  disabled?: boolean;
+  filePickerTypes?: FilePickerAcceptType[];
+  debug?: boolean;
+}>();
+
+const defaultData = () => ({
   loading: false,
   name: '',
   exports: undefined as ExportsMap | undefined,
   showExports: false,
 });
 
+const data = reactive(defaultData());
+
+const resetData = () => {
+  Object.assign(data, defaultData());
+};
+
+const cancel = shallowRef<() => void>();
+
+const updateExportsItem = (id: string, partial: Partial<ExportItem>) => {
+  const it = data.exports?.get(id);
+  if (it) {
+    data.exports?.set(id, { ...it, ...partial });
+  }
+};
+
 const isReadyToExport = computed(() => {
-  return app.model.outputs.fileImports !== undefined;
+  return props.fileExports !== undefined && !props.disabled;
 });
 
 const items = computed(() => {
@@ -37,6 +64,7 @@ const archive = computed<ExportItem>(() => {
     current: items.value.reduce((acc, item) => acc + item.current, 0),
     size: items.value.reduce((acc, item) => acc + item.size, 0),
     status: items.value.some((item) => item.status === 'in-progress') ? 'in-progress' : items.value.every((item) => item.status === 'completed') ? 'completed' : 'pending',
+    hasErrors: items.value.some((item) => item.status === 'error'),
   };
 });
 
@@ -44,7 +72,7 @@ type ZipRequest = {
   id: string;
   fileName: string;
   size: number;
-  stream: ChunkedStreamReader;
+  stream: ReadableStream<Uint8Array>;
 };
 
 const exportRawTsvs = async () => {
@@ -53,23 +81,22 @@ const exportRawTsvs = async () => {
     return;
   }
 
-  if (!isReadyToExport.value) {
+  if (!isReadyToExport.value || !props.fileExports) {
     return;
   }
 
-  const fileExports = app.model.outputs.fileExports as Record<ImportFileHandle, RemoteBlobHandleAndSize> | undefined;
-  if (fileExports === undefined) {
-    return;
-  }
+  const defaultFileName = `${new Date().toISOString().split('T')[0]}_Export.zip`;
+  const defaultTypes = [{
+    description: 'ZIP files',
+    accept: {
+      'application/zip': ['.zip'],
+    },
+  }];
 
-  console.log('fileExports', JSON.stringify(fileExports, null, 2));
-
-  // @ts-expect-error - showSaveFilePicker is not available in the browser
+  // @ts-expect-error - type definition issue TODO: fix this
   const newHandle = await window.showSaveFilePicker({
-    types: [{
-      description: 'Any files',
-    }],
-    suggestedName: `${new Date().toISOString().split('T')[0]}_TransferFiles.zip`,
+    types: props.filePickerTypes || defaultTypes,
+    suggestedName: props.suggestedFileName || defaultFileName,
   });
 
   data.loading = true;
@@ -82,23 +109,45 @@ const exportRawTsvs = async () => {
   try {
     const writableStream = await newHandle.createWritable();
     const zip = new ZipWriter(writableStream, { keepOrder: true, zip64: true, bufferedWrite: false });
-
+    cancel.value = () => {
+      zip.close();
+      resetData();
+    };
     try {
       const requests = [] as ZipRequest[];
 
-      for (const [importHandle, { handle, size }] of Object.entries(fileExports)) {
-        const fileName = getFileNameFromHandle(importHandle as ImportFileHandle);
-        data.exports?.set(handle, { fileName, current: 0, size, status: 'pending' });
+      for (const entry of props.fileExports) {
+        const { importHandle, blobHandle, fileName: customFileName } = entry;
+        const fileName = customFileName ?? getFileNameFromHandle(importHandle);
+        const { handle, size } = blobHandle;
 
-        console.log('fileName', importHandle, fileName);
-        console.log('size', size);
-        console.log('handle', handle);
+        const id = uniqueId();
+
+        data.exports?.set(id, { fileName, current: 0, size, status: 'pending' });
+
+        const stream = ChunkedStreamReader.create({
+          fetchChunk: async ({ from, to }) => {
+            if (props.debug) {
+              if (Math.random() < 0.1) {
+                throw new Error('Test error');
+              }
+            }
+
+            return await getRawPlatformaInstance().blobDriver.getContent(handle, { from, to });
+          },
+          totalSize: size,
+          onError: async (error) => {
+            updateExportsItem(id, { status: 'error', error });
+            await new Promise((resolve) => setTimeout(resolve, 1000)); // primitive for now
+            return 'continue';
+          },
+        });
 
         // Create a chunked stream reader for efficient streaming
-        requests.push({ id: handle, fileName, size, stream: new ChunkedStreamReader(handle, size) });
+        requests.push({ id, fileName, size, stream });
       }
 
-      Promise.all(requests.map(async (request) => {
+      await Promise.all(requests.map(async (request) => {
         const { id, fileName, size, stream } = request;
         const update = (partial: Partial<ExportItem>) => {
           const it = data.exports?.get(id);
@@ -106,14 +155,14 @@ const exportRawTsvs = async () => {
             data.exports?.set(id, { ...it, ...partial });
           }
         };
-        return zip.add(fileName, stream.createStream(), {
+        return zip.add(fileName, stream, {
           bufferedWrite: true,
           onstart: () => {
             update({ status: 'in-progress' });
             return undefined;
           },
           onprogress: (current: number) => {
-            update({ current });
+            update({ current, status: 'in-progress' });
             return undefined;
           },
           onend() {
@@ -124,6 +173,7 @@ const exportRawTsvs = async () => {
       }));
     } finally {
       await zip.close();
+      cancel.value = undefined;
     }
   } finally {
     data.loading = false;
@@ -144,7 +194,7 @@ useClickOutside([progressesRef], () => {
     :disabled="!isReadyToExport" :loading="data.loading" :class="{ [$style['has-exports']]: data.exports }"
     @click.stop="exportRawTsvs"
   >
-    Export Raw Results
+    <slot />
     <template #append>
       <PlIcon24 :class="$style.icon" name="download" />
     </template>
@@ -152,8 +202,8 @@ useClickOutside([progressesRef], () => {
   <Teleport to="body">
     <div v-if="data.exports && data.showExports" ref="progressesRef" :class="$style.progresses">
       <PlIcon16 :class="$style.close" name="close" @click.stop="data.showExports = false" />
-      <Item :item="archive" :class="$style.archive" />
-      <div :class="$style.items" class="pl-scrollable-y">
+      <Summary :item="archive" @cancel="cancel?.()" />
+      <div :class="$style.itemsContainer" class="pl-scrollable-y">
         <Item v-for="item in data.exports?.values()" :key="item.fileName" :item="item" />
       </div>
     </div>
@@ -161,16 +211,6 @@ useClickOutside([progressesRef], () => {
 </template>
 
 <style module>
-.archive {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 8px;
-  --name-font-size: 14px;
-  --details-font-size: 12px;
-}
-
 .progresses {
   position: fixed;
   top: 8px;
@@ -187,7 +227,7 @@ useClickOutside([progressesRef], () => {
   font-weight: 600;
   z-index: 1000;
 
-  .items {
+  .itemsContainer {
     max-height: 300px;
   }
 
