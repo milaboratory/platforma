@@ -104,8 +104,6 @@ const exportRawTsvs = async () => {
   data.showExports = true;
   data.exports = new Map();
 
-  const t1 = performance.now();
-
   try {
     const writableStream = await newHandle.createWritable();
     const zip = new ZipWriter(writableStream, { keepOrder: true, zip64: true, bufferedWrite: false });
@@ -177,8 +175,6 @@ const exportRawTsvs = async () => {
     }
   } finally {
     data.loading = false;
-    const t2 = performance.now();
-    console.log(`Time taken: ${t2 - t1} milliseconds`);
   }
 };
 
