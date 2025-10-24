@@ -4,6 +4,10 @@
 //
 // as these values could be used in different parts of the system (i.e. tengo code, go code of backend and so on).
 
+// Global
+export const BIN_REGISTRY_NAME = 'platforma-open';
+export const BIN_REGISTRY_DOWNLOAD_URL = 'https://bin.pl-open.science/';
+
 // Python
 export const PYTHON_TOOLSET = 'pip';
 export const PYTHON_REQUIREMENTS_FILE = 'requirements.txt';

@@ -1,8 +1,9 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import type winston from 'winston';
-
 import { z } from 'zod/v4';
+
+import * as defaults from '../defaults';
 import * as util from './util';
 import * as envs from './envs';
 import * as artifacts from './schemas/artifacts';
@@ -33,15 +34,15 @@ const packageJsonSchema = z.object({
       })
       .optional(),
 
-    artifacts: artifacts.listSchema.optional(),
+    artifacts: artifacts.artifactIndexSchema.optional(),
     entrypoints: entrypoints.entrypointListSchema,
   }),
 });
 type packageJson = z.infer<typeof packageJsonSchema>;
 
 const wellKnownRegistries: Record<string, storagePreset> = {
-  'platforma-open': {
-    downloadURL: 'https://bin.pl-open.science/',
+  [defaults.BIN_REGISTRY_NAME]: {
+    downloadURL: defaults.BIN_REGISTRY_DOWNLOAD_URL,
   },
 };
 
@@ -269,8 +270,8 @@ export class PackageInfo {
   }
 
   // Packages are buildable artifacts with entrypoints
-  get packages(): Map<string, artifacts.withId<artifacts.anyType>> {
-    const result = new Map<string, artifacts.withId<artifacts.anyType>>();
+  get packages(): Map<string, artifacts.withId<artifacts.anyArtifactType>> {
+    const result = new Map<string, artifacts.withId<artifacts.anyArtifactType>>();
 
     for (const ep of this.entrypoints.values()) {
       if (ep.type === 'reference') {
@@ -330,12 +331,12 @@ export class PackageInfo {
   public getArtifact(id: string, type: 'R'): artifacts.withId<artifacts.rType>;
   public getArtifact(id: string, type: 'docker'): artifacts.withId<artifacts.dockerType>;
   public getArtifact(id: string, type: 'conda'): artifacts.withId<artifacts.condaType>;
-  public getArtifact(id: string, type: 'any'): artifacts.withId<artifacts.anyType>;
-  public getArtifact(id: string, type: artifacts.artifactType | 'any'): artifacts.withId<artifacts.anyType> {
+  public getArtifact(id: string, type: 'any'): artifacts.withId<artifacts.anyArtifactType>;
+  public getArtifact(id: string, type: artifacts.artifactType | 'any'): artifacts.withId<artifacts.anyArtifactType> {
     const artifacts = this.pkgJson['block-software'].artifacts ?? {};
     const entrypoints = this.pkgJson['block-software'].entrypoints;
 
-    let artifact: artifacts.anyType | undefined;
+    let artifact: artifacts.anyArtifactType | undefined;
     let errMsg = '';
     if (artifacts[id]) {
       artifact = artifacts[id];
@@ -438,7 +439,7 @@ export class PackageInfo {
     this._versionOverride = v;
   }
 
-  public artifactName(artifact: artifacts.withId<artifacts.anyType>): string {
+  public artifactName(artifact: artifacts.withId<artifacts.anyArtifactType>): string {
     if (artifact.type !== 'docker') {
       if (artifact.name) {
         return artifact.name;
@@ -448,7 +449,7 @@ export class PackageInfo {
     return util.trimPrefix(this.pkgJson.name, '@') + '/' + artifact.id;
   }
 
-  public artifactVersion(artifact: artifacts.anyType): string {
+  public artifactVersion(artifact: artifacts.anyArtifactType): string {
     if (this._versionOverride) {
       return this._versionOverride;
     }
@@ -464,7 +465,7 @@ export class PackageInfo {
     return this.pkgJson.version;
   }
 
-  public artifactRegistrySettings(artifact: artifacts.anyType): artifacts.registry {
+  public artifactRegistrySettings(artifact: artifacts.anyArtifactType): artifacts.registry {
     if (artifact.type === 'docker') {
       return {
         name: artifact.registry,
@@ -520,7 +521,7 @@ export class PackageInfo {
     return result;
   }
 
-  public artifactContentRoot(artifact: artifacts.withId<artifacts.anyType>, platform: util.PlatformType): string {
+  public artifactContentRoot(artifact: artifacts.withId<artifacts.anyArtifactType>, platform: util.PlatformType): string {
     if (('root' in artifact) && artifact.root) {
       return path.resolve(this.packageRoot, artifact.root);
     }
@@ -533,7 +534,7 @@ export class PackageInfo {
     );
   }
 
-  public artifactPlatforms(artifact: artifacts.withId<artifacts.anyType>): util.PlatformType[] {
+  public artifactPlatforms(artifact: artifacts.withId<artifacts.anyArtifactType>): util.PlatformType[] {
     if (artifact.type === 'docker') {
       return [util.currentPlatform()];
     }
@@ -553,7 +554,7 @@ export class PackageInfo {
   }
 
   public artifactArchiveFullName(
-    artifact: artifacts.withId<artifacts.anyType>,
+    artifact: artifacts.withId<artifacts.anyArtifactType>,
     platform: util.PlatformType,
   ): string {
     const group = artifact.type === 'asset' ? 'assets' : 'software';
@@ -570,7 +571,7 @@ export class PackageInfo {
   }
 
   public artifactArchiveAddressPattern(
-    artifact: artifacts.withId<artifacts.anyType>,
+    artifact: artifacts.withId<artifacts.anyArtifactType>,
   ): string {
     const group = artifact.type === 'asset' ? 'assets' : 'software';
     const extension = artifact.type === 'asset' ? 'zip' : 'tgz';
@@ -682,7 +683,7 @@ export class PackageInfo {
     }
   }
 
-  private validateArtifact(artifactName: string, artifact: artifacts.anyType): boolean {
+  private validateArtifact(artifactName: string, artifact: artifacts.anyArtifactType): boolean {
     if (artifacts.isBuildable(artifact.type)) {
       // Validate that root is not equal to package root
       const resolvedRoots: string[] = [];
@@ -727,15 +728,15 @@ function parsePackageJson(data: string): z.ZodSafeParseResult<packageJson> {
   return packageJsonSchema.safeParse(parsedData);
 }
 
-function requireArtifactType(artifact: artifacts.anyType, type: 'asset', errMsg: string): artifacts.withType<'asset', artifacts.assetType>;
-function requireArtifactType(artifact: artifacts.anyType, type: 'environment', errMsg: string): artifacts.environmentType;
-function requireArtifactType(artifact: artifacts.anyType, type: 'java', errMsg: string): artifacts.javaType;
-function requireArtifactType(artifact: artifacts.anyType, type: 'python', errMsg: string): artifacts.pythonType;
-function requireArtifactType(artifact: artifacts.anyType, type: 'R', errMsg: string): artifacts.rType;
-function requireArtifactType(artifact: artifacts.anyType, type: 'binary', errMsg: string): artifacts.binaryType;
-function requireArtifactType(artifact: artifacts.anyType, type: 'docker', errMsg: string): artifacts.dockerType;
-function requireArtifactType(artifact: artifacts.anyType, type: 'conda', errMsg: string): artifacts.condaType;
-function requireArtifactType(artifact: artifacts.anyType, type: artifacts.artifactType, errMsg: string): artifacts.anyType {
+function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'asset', errMsg: string): artifacts.withType<'asset', artifacts.assetType>;
+function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'environment', errMsg: string): artifacts.environmentType;
+function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'java', errMsg: string): artifacts.javaType;
+function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'python', errMsg: string): artifacts.pythonType;
+function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'R', errMsg: string): artifacts.rType;
+function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'binary', errMsg: string): artifacts.binaryType;
+function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'docker', errMsg: string): artifacts.dockerType;
+function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'conda', errMsg: string): artifacts.condaType;
+function requireArtifactType(artifact: artifacts.anyArtifactType, type: artifacts.artifactType, errMsg: string): artifacts.anyArtifactType {
   if (artifact.type === type) {
     return artifact;
   }

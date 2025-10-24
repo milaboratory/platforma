@@ -35,7 +35,7 @@ export default class Packages extends Command {
     core.allPlatforms = flags['all-platforms'];
     core.fullDirHash = flags['full-dir-hash'];
 
-    await core.buildSoftwarePackages({
+    await core.buildSoftwareArchives({
       ids: flags['package-id'],
       forceBuild: flags.force as boolean,
 
@@ -47,7 +47,7 @@ export default class Packages extends Command {
       condaBuild: cmdOpts.shouldDoAction(true, flags['conda-build'], flags['conda-no-build']),
     });
 
-    core.buildDescriptors({
+    core.buildSwJsonFiles({
       packageIds: flags['package-id'] ? flags['package-id'] : undefined,
     });
   }

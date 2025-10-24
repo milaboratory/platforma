@@ -32,8 +32,6 @@ export const AssetArtifact = `{
 }`;
 
 export const BinaryArtifact = `{
-  "registry": "platforma-open",
-
   "type": "binary",
   "roots": {
     "linux-x64": "./src/",
@@ -45,8 +43,6 @@ export const BinaryArtifact = `{
 }`;
 
 export const CondaArtifact = `{
-  "registry": "platforma-open",
-
   "roots": {
     "linux-x64": "./src/",
     "linux-aarch64": "./src/",
@@ -67,7 +63,6 @@ export const CondaArtifactWithMicromambaVersion = merge(CondaArtifactWithSpec, {
 export const PythonArtifact = `{
   "type": "python",
 
-  "registry": "platforma-open",
   "root": "./src",
   "environment": ":${EPNamePythonEnvironment}"
 }`;
@@ -75,7 +70,6 @@ export const PythonArtifact = `{
 export const RArtifact = `{
   "type": "R",
 
-  "registry": "platforma-open",
   "root": "./src",
   "environment": ":${EPNameREnvironment}"
 }`;
@@ -362,22 +356,3 @@ export const SingleBinaryackageJson = `{
     }
   }
 }`;
-
-// export const PlPackageYamlCustomSettings: string = `
-// docker:
-//   registry: "${PlDockerRegistry}"
-//   name: "${PlDockerImageName}"
-//   version: "${PlDockerCustomVersion}"
-//   entrypoint: [ "/usr/bin/env", "printf" ]
-//   cmd: [ "Hello, world!" ]
-
-// binary:
-//   registry:
-//     name: "${PlBinaryRegistry}"
-//   name: "${PlBinaryCustomName}"
-//   version: "${PlBinaryCustomVersion}"
-//   root: ./src
-//   cmd: ./script1.py
-//   runEnv: python@3.12
-//   requirements: ./requirements.txt
-// `

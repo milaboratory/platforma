@@ -30,7 +30,7 @@ export default class Prepublish extends Command {
     core.fullDirHash = flags['full-dir-hash'];
     core.allPlatforms = true;
 
-    core.buildDescriptors({
+    core.buildSwJsonFiles({
       requireAllArtifacts: true,
     });
 
