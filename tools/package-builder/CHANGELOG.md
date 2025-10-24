@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.10.6
+
+### Patch Changes
+
+- 63fede8: Technical release, codebase cleanup + readme
+
 ## 3.10.5
 
 ### Patch Changes
