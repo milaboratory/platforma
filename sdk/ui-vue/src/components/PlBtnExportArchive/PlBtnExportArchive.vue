@@ -4,7 +4,7 @@ import {
   PlIcon16,
   PlIcon24,
   useClickOutside,
-} from '@platforma-sdk/ui-vue';
+} from '@milaboratories/uikit';
 import { ZipWriter } from '@zip.js/zip.js';
 import { reactive, computed, ref } from 'vue';
 import type { ExportItem, ExportsMap, FileExportEntry } from './types';
