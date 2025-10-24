@@ -39,7 +39,10 @@ export const registryOrRef = z.union([z.string(), registrySchema]);
 // common fields for all buildable artifacts
 // TODO: create new type for binary packages
 const archiveRulesSchema = z.object({
-  registry: registryOrRef,
+  registry: registryOrRef.default({
+    name: defaults.BIN_REGISTRY_NAME,
+    downloadURL: defaults.BIN_REGISTRY_DOWNLOAD_URL,
+  }),
 
   name: z.string().optional(),
   version: z.string().optional(),
@@ -241,10 +244,10 @@ export const anyArtifactSchema = z.discriminatedUnion('type', [
   dockerSchema,
 ]);
 
-export type anyType = z.infer<typeof anyArtifactSchema>;
+export type anyArtifactType = z.infer<typeof anyArtifactSchema>;
 
-export const listSchema = z.record(z.string(), anyArtifactSchema);
-export type list = z.infer<typeof listSchema>;
+export const artifactIndexSchema = z.record(z.string(), anyArtifactSchema);
+export type artifactIndexType = z.infer<typeof artifactIndexSchema>;
 
 export type withType<Typ, Orig> = Orig & { type: Typ };
 export type withId<T> = T & { id: string };

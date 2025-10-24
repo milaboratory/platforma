@@ -95,7 +95,6 @@
       "hello-conda": {
         "conda": {
           "artifact": {
-            "registry": "platforma-open",
             "roots": {
               "linux-x64": "./conda/x64/",
               "linux-aarch64": "./conda/arm64/",

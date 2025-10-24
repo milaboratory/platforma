@@ -43,7 +43,7 @@ export function readSwJsonFile(
   packageRoot: string,
   packageName: string,
   entrypointName: string,
-): swJson.entrypoint {
+): swJson.swJsonType {
   const filePath = descriptorFilePath(packageRoot, 'software', entrypointName);
   return readDescriptorFile(packageName, entrypointName, filePath);
 }
@@ -60,13 +60,13 @@ export function readDescriptorFile(
   packageNameForDescriptor: string,
   entrypointForDescriptor: string,
   descriptorFilePath: string,
-): swJson.entrypoint {
+): swJson.swJsonType {
   if (!fs.existsSync(descriptorFilePath)) {
     throw util.CLIError(`entrypoint '${entrypointForDescriptor}' not found in '${descriptorFilePath}'`);
   }
 
   const swJsonContent = fs.readFileSync(descriptorFilePath);
-  const result = swJson.entrypointSchema.safeParse(JSON.parse(swJsonContent.toString()));
+  const result = swJson.swJsonSchema.safeParse(JSON.parse(swJsonContent.toString()));
 
   if (!result.success) {
     throw util.CLIError(util.formatZodIssues(result.error.issues));
@@ -96,7 +96,7 @@ export function resolveDependency(
   currentPackageRoot: string,
   dependencyPackageName: string,
   dependencyEntrypointName: string,
-): swJson.entrypoint {
+): swJson.swJsonType {
   const dependencyPath = util.findInstalledModule(logger, dependencyPackageName, currentPackageRoot);
   return readSwJsonFile(dependencyPath, dependencyPackageName, dependencyEntrypointName);
 }

@@ -182,7 +182,7 @@ describe('Renderer tests', () => {
 function writeTestArtifactInfo(
   i: PackageInfo,
   artifactType: 'docker' | 'archive',
-  artifact: artifacts.withId<artifacts.anyType>,
+  artifact: artifacts.withId<artifacts.anyArtifactType>,
 ) {
   let artInfoPath: string;
   if (artifactType === 'docker') {
