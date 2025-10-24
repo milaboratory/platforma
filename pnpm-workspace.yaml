@@ -28,6 +28,7 @@ packages:
   - lib/node/pl-deployments
   - lib/node/pl-config
 
+  - lib/ptabler/js
   - lib/ptabler/schema
   - lib/ptabler/software
 

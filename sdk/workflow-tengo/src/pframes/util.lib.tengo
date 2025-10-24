@@ -436,7 +436,7 @@ pFrameToColumnsMap := func(pf) {
 		ll.assert(pf.checkResourceType(constants.RTYPE_P_FRAME), "Unexpected resource type: %v", pf.info().Type)
 		ll.assert(pf.info().InputsLocked, "PFrame resource does not have inputs locked")
 		for key, field in pf.inputs() {
-			addColumnSegment(key, field.getValue())
+			addColumnSegment(key, field)
 		}
 	} else if ll.isMap(pf) {
 		for key, value in pf {

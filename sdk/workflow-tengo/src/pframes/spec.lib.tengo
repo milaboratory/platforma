@@ -10,6 +10,7 @@ sets := import(":sets")
 slices := import(":slices")
 validation := import(":validation")
 json := import("json")
+canonical := import(":canonical")
 
 //
 // Common schemas
@@ -234,27 +235,33 @@ _TRACE_SCHEMA := [_TRACE_STEP_SCHEMA]
  *
  * Basically validates and adds provided steps.
  */
-makeTrace := func(input, ...steps) {
-	// validating input step structure
-	validation.assertType(steps, _TRACE_SCHEMA)
-
-	currentTraceContent := undefined
-	if is_string(input) {
-		currentTraceContent = input
-	} else if is_string(input[A_TRACE]) {
-		currentTraceContent = input[A_TRACE]
-	} else if is_string(input["annotations"][A_TRACE]) {
-		currentTraceContent = input["annotations"][A_TRACE]
-	}
-
+makeTrace := func(...steps) {
+	ll.assert(len(steps) > 0, "makeTrace: expects at least one argument")
+	
+	// First element can be encoded traces(string), struct like column spec or annotations section,
+	input := steps[0]
+	steps = steps[1:]
 	currentTrace := []
-	if !is_undefined(currentTraceContent) {
-		currentTrace = json.decode(currentTraceContent)
-		// validating trace we just parsed
-		validation.assertType(currentTrace, _TRACE_SCHEMA)
+	
+	if (!validation.isValid(input, _TRACE_STEP_SCHEMA)) {
+		inputTraceContent := undefined
+
+		if is_string(input) {
+			inputTraceContent = input
+		} else if is_map(input) && is_string(input[A_TRACE]) {
+			inputTraceContent = input[A_TRACE]
+		} else if is_map(input["annotations"]) && is_map(input["annotations"]) && is_string(input["annotations"][A_TRACE]) {
+			inputTraceContent = input["annotations"][A_TRACE]
+		}
+
+		if !is_undefined(inputTraceContent) {
+			currentTrace = json.decode(inputTraceContent)
+			validation.assertType(currentTrace, _TRACE_SCHEMA)
+		}
 	}
 
 	if len(steps) > 0 {
+		validation.assertType(steps, _TRACE_SCHEMA)
 		currentTrace = append(currentTrace, steps...)
 	}
 	currentTraceStr := string(json.encode(currentTrace))
@@ -465,7 +472,7 @@ createSpecDistiller := func(specs) {
  *    columnSpec: ColumnSpec - Transformed column spec with filtered axes removed
  * }
  */
-prepareAxisFilters := func(rules, spec) {
+prepareAxisFiltersAndAxesSpec := func(rules, axesSpec) {
 	axisFilters := []
 	filteredIndices := {}
 
@@ -480,7 +487,7 @@ prepareAxisFilters := func(rules, spec) {
 		axisIdx := axisIdentifier
 		if is_string(axisIdentifier) {
 			axisIdx = -1
-			for idx, axis in spec.axesSpec {
+			for idx, axis in axesSpec {
 				if axis.name == axisIdentifier {
 					axisIdx = idx
 					break
@@ -488,7 +495,7 @@ prepareAxisFilters := func(rules, spec) {
 			}
 
 			if axisIdx == -1 {
-				ll.panic("Cannot find axis with name '%v' in column spec %v", axisIdentifier, spec)
+				ll.panic("Cannot find axis with name '%v' in column spec %v", axisIdentifier, axesSpec)
 			}
 		}
 
@@ -501,18 +508,16 @@ prepareAxisFilters := func(rules, spec) {
 		filteredIndices[axisIdx] = true
 	}
 
-	transformedSpec := maps.clone(spec)
 	newAxesSpec := []
-	for idx, axis in spec.axesSpec {
+	for idx, axis in axesSpec {
 		if !filteredIndices[idx] {
 			newAxesSpec = append(newAxesSpec, maps.clone(axis))
 		}
 	}
-	transformedSpec.axesSpec = newAxesSpec
 
 	return {
 		axisFilters: axisFilters,
-		columnSpec: transformedSpec
+		axesSpec: newAxesSpec
 	}
 }
 
@@ -533,6 +538,15 @@ axisSpecToMatcher := func(axisSpec) {
 		matcher.domain = maps.clone(axisSpec.domain) // Clone to avoid modifying original spec's domain
 	}
 	return matcher
+}
+
+getAxisId := func(axisSpec) {
+	validation.assertType(axisSpec, P_AXIS_SPEC_SCHEMA)
+	return canonical.encode({
+		name: axisSpec.name,
+		type: axisSpec.type,
+		domain: axisSpec.domain
+	})
 }
 
 export ll.toStrict({
@@ -561,7 +575,9 @@ export ll.toStrict({
 
 	createSpecDistiller: createSpecDistiller,
 
-	prepareAxisFilters: prepareAxisFilters,
-	axisSpecToMatcher: axisSpecToMatcher
+	prepareAxisFiltersAndAxesSpec: prepareAxisFiltersAndAxesSpec,
+	axisSpecToMatcher: axisSpecToMatcher,
+
+	getAxisId: getAxisId
 })
 

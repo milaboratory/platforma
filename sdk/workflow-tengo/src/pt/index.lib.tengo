@@ -58,7 +58,6 @@ _newDataFrameGroupBy := undefined
 
 workflowCounter := 0
 
-
 _validateColumn := func(name, columnStruct) {
 	ll.assert(is_string(name), "column name must be a string")
 	ll.assert(is_map(columnStruct), "columnStruct must be a map")
@@ -646,25 +645,35 @@ workflow := func() {
 		 *   - `columns` {array} - An array of column definitions. Each entry should be a map with:
 		 * @returns {object} - A DataFrame object constructed from the column bundle.
 		 */
-		frameFromColumnBundle: func(bundle, options) {
+		frameFromColumnBundle: func(bundle, ...options) {
+			options = len(options) > 0 && is_map(options[0]) ? options[0] : {}
 			util.validateParamsForFrameFromColumnBundle(options)
+
+			columns := is_array(options.columns) ? options.columns : bundle.getColumnKeys()
+			// axes := is_array(options.axes) ? options.axes : bundle.getAxesSpec(columns...)
+			axes := bundle.getAxesSpec(columns...)
 
 			entries := []
 			aliases := []
-			for axis in options.axes {
-				aliases = append(aliases, exp.sc.axis(axis.spec).alias(axis.column))
+
+			for axis in axes {
+				aliases = append(aliases, exp.sc.axis(axis).alias(pframesSpec.getAxisId(axis)))
 			}
-			for column in options.columns {
+
+			for column in columns {
 				decoded := json.decode(column)
+				aliases = append(aliases, exp.col(column))
+
 				if (is_undefined(decoded.axisFilters)) {
-					aliases = append(aliases, exp.col(decoded.name))
-					entry := p.column(decoded.name, bundle.getColumn(decoded))
+					entry := p.column(column, bundle.getColumn(decoded))
 					entries = append(entries, entry)
 				} else {
-					aliases = append(aliases, exp.col(decoded.source.name))
 					entry := p.slicedColumn(
-						decoded.source.name,
-						bundle.getColumn(decoded.source),
+						column,
+						bundle.getColumn(decoded, {
+							keepColumns: true,
+							ignoreNonPartitioned: true
+						}),
 						slices.map(decoded.axisFilters, func(axisFilter) {
 							return {
 								axisIndex: axisFilter[0],
@@ -675,6 +684,7 @@ workflow := func() {
 					entries = append(entries, entry)
 				}
 			}
+
 			return self.frame(p.full(entries...)).select(aliases...)
 		},
 
@@ -978,30 +988,31 @@ _newDataFrameGroupBy = func(parentWorkflow, dfName, groupByExpressions) {
 }
 
 _newDataFrame = func(parentWorkflow, dfName) {
-	_mapExprsToStepCols := func(exprs, methodName, ctx) {
-		ll.assert(len(exprs) > 0, methodName + " requires at least one expression argument.")
+	_mapExprsToStepCols := func(items, methodName, ctx) {
+		ll.assert(len(items) > 0, methodName + " requires at least one expression argument.")
 		cols := []
-		for expr in exprs {
-			if !exp._isExpression(expr) {
-				ll.panic("Invalid argument to " + methodName + ": Expected an expression object, got %v", expr)
+		for item in items {
+			if exp._isExpression(item) {
+				cols = append(cols, item._getExpression(ctx))
+			} else {
+				ll.panic("Invalid argument to " + methodName + ": Expected an expression/column object, got %v", item)
 			}
-			cols = append(cols, expr._getExpression(ctx))
 		}
 		return cols
 	}
 
-	_mapExprsToStepColsAllowingStrings := func(exprs, methodName, ctx) {
-		ll.assert(len(exprs) > 0, methodName + " requires at least one expression argument.")
+	_mapExprsToStepColsAllowingStrings := func(items, methodName, ctx) {
+		ll.assert(len(items) > 0, methodName + " requires at least one expression argument.")
 		cols := []
-		for expr in exprs {
-			if is_string(expr) {
+		for item in items {
+			if is_string(item) {
 				// For strings, interpret as column name
-				colExpr := exp.col(expr)
+				colExpr := exp.col(item)
 				cols = append(cols, colExpr._getExpression(ctx))
-			} else if exp._isExpression(expr) {
-				cols = append(cols, expr._getExpression(ctx))
+			} else if exp._isExpression(item) {
+				cols = append(cols, item._getExpression(ctx))
 			} else {
-				ll.panic("Invalid argument to " + methodName + ": Expected an expression object or string column name, got %v", expr)
+				ll.panic("Invalid argument to " + methodName + ": Expected an expression/column object or string column name, got %v", item)
 			}
 		}
 		return cols
@@ -1238,8 +1249,8 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 * @example
 		 *   // Save DataFrame as a PFrame with name "output_frame" and first axis partitioned
 		 *   df.saveFrameDirect("output_frame", {
-		 *     axes: [{name: "clusterId", type: "Long"}, {name: "name", type: "String"}],
-		 *     columns: [{name: "value", type: "Double"}],
+		 *     axes: [{column: "clusterId", spec: {name: "clusterId", type: "Long"}}],
+		 *     columns: [{column: "value", spec: {name: "value", valueType: "Double"}}],
 		 *     partitionKeyLength: 1
 		 *   })
 		 */

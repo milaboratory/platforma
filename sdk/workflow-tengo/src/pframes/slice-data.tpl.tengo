@@ -19,14 +19,26 @@ self.awaitState("data", "InputsLocked")
 thisTpl := assets.importTemplate(":pframes.slice-data")
 
 // Core filtering function
-filterPColumnData := func(data, slicingParams) {
+filterPColumnData := func(params) {
+    data := params.data
+    slicingParams := params.slicingParams
+    keepColumns := is_bool(params.keepColumns) ? params.keepColumns : false
+    ignoreNonPartitioned := is_bool(params.ignoreNonPartitioned) ? params.ignoreNonPartitioned : false
+
+    // Build a set of fixed axis indices
+    fixedAxes := {}
+    for _, param in slicingParams {
+        axisIdx := param[0]
+        ll.assert(is_undefined(fixedAxes[axisIdx]), "Duplicate axis index %v found in filtering parameters", axisIdx)
+        fixedAxes[axisIdx] = true
+    }
+
     // Sort filtering params by axis index
     slicingParams = slices.quickSortFn(copy(slicingParams), func(a, b) {
         return a[0] < b[0]
     })
 
-    // Check if all axis indices are valid for the data structure
-    validateFilteringParams := func(dataType, partitionKeyLength, superPartitionKeyLength) {
+    getMaxAxisIdx := func(partitionKeyLength, superPartitionKeyLength) {
         maxAxisIdx := -1
 
         if !is_undefined(partitionKeyLength) {
@@ -36,36 +48,45 @@ filterPColumnData := func(data, slicingParams) {
         if !is_undefined(superPartitionKeyLength) {
             maxAxisIdx = superPartitionKeyLength + partitionKeyLength - 1
         }
+ 
+        return maxAxisIdx
+    }
 
-        if maxAxisIdx < 0 {
+    validateFilteringParams := func(dataType, partitionKeyLength, superPartitionKeyLength) {
+        maxAxisIdx := getMaxAxisIdx(partitionKeyLength, superPartitionKeyLength)
+ 
+        if !ignoreNonPartitioned {
             // Non-partitioned data
-            if len(slicingParams) > 0 {
+            if maxAxisIdx < 0 && len(slicingParams) > 0 {
                 ll.panic("Cannot apply filtering parameters to non-partitioned data type %v", dataType)
             }
-            return
-        }
 
-        for _, param in slicingParams {
-            axisIdx := param[0]
-            if axisIdx > maxAxisIdx {
-                ll.panic("Invalid axisIdx %v for data type %v. Maximum axis index is %v",
-                        axisIdx, dataType, maxAxisIdx)
+            for _, param in slicingParams {
+                axisIdx := param[0]
+                if axisIdx > maxAxisIdx {
+                    ll.panic("Invalid axisIdx %v for data type %v. Maximum axis index is %v",
+                            axisIdx, dataType)
+                }
             }
         }
     }
 
-    // Build a set of fixed axis indices
-    fixedAxes := {}
-    for _, param in slicingParams {
-        axisIdx := param[0]
-        if fixedAxes[axisIdx] {
-            ll.panic("Duplicate axis index %v found in filtering parameters", axisIdx)
+    // get slicing params that are valid for the given data type
+    getFilteredSlicingParams := func(partitionKeyLength, superPartitionKeyLength) {
+        maxAxisIdx := getMaxAxisIdx(partitionKeyLength, superPartitionKeyLength)
+
+        // If maxAxisIdx < 0, no partitioning exists, return empty params
+        if maxAxisIdx < 0 {
+            return []
         }
-        fixedAxes[axisIdx] = true
+
+        return slices.filter(slicingParams, func(param) {
+            return param[0] <= maxAxisIdx
+        })
     }
 
     // Check if a partition key matches our filtering criteria
-    matchesFilter := func(partitionKey) {
+    matchesFilter := func(partitionKey, slicingParams) {
         keyArray := json.decode(partitionKey)
 
         for _, param in slicingParams {
@@ -87,6 +108,10 @@ filterPColumnData := func(data, slicingParams) {
 
     // Create a new partition key by removing fixed axes
     transformKey := func(partitionKey) {
+        if (keepColumns) {
+            return partitionKey
+        }
+
         keyArray := json.decode(partitionKey)
         newKeyArray := []
 
@@ -109,13 +134,21 @@ filterPColumnData := func(data, slicingParams) {
         superPartitionKeyLength := dataJson.superPartitionKeyLength
         partitionKeyLength := dataJson.partitionKeyLength
 
-        // Validate parameters
         validateFilteringParams(data.info().Type.Name, partitionKeyLength, superPartitionKeyLength)
+
+        filteredSlicingParams := getFilteredSlicingParams(partitionKeyLength, superPartitionKeyLength)
+        
+        if (len(filteredSlicingParams) == 0) {
+            // No valid filtering params, return original data
+            return data
+        }
+
+        maxAxisIdx := getMaxAxisIdx(partitionKeyLength, superPartitionKeyLength)
 
         // Count fixed axes in super partition and nested partition
         fixedSuperAxes := 0
         fixedNestedAxes := 0
-        for axisIdx, _ in fixedAxes {
+        for axisIdx, _ in filteredSlicingParams {
             if axisIdx < superPartitionKeyLength {
                 fixedSuperAxes++
             } else if axisIdx < superPartitionKeyLength + partitionKeyLength {
@@ -137,7 +170,7 @@ filterPColumnData := func(data, slicingParams) {
 
         // Calculate nested parameters once (parameters that apply to nested resources)
         nestedParams := []
-        for _, param in slicingParams {
+        for _, param in filteredSlicingParams {
             axisIdx := param[0]
             if axisIdx >= superPartitionKeyLength {
                 // Calculate new index for nested resource - need to adjust for the axes removed at super level
@@ -152,7 +185,7 @@ filterPColumnData := func(data, slicingParams) {
 
         for key, partData in data.inputs() {
             // If the super partition key matches our filter, include it
-            if matchesFilter(key) {
+            if matchesFilter(key, filteredSlicingParams) {
                 // Transform key by removing fixed axes
                 newKey := transformKey(key)
 
@@ -160,7 +193,9 @@ filterPColumnData := func(data, slicingParams) {
                     // Only recursively render if there are applicable filters
                     slicedPartData := render.createEphemeral(thisTpl, {
                         data: partData,
-                        slicingParams: nestedParamsResource
+                        slicingParams: nestedParamsResource,
+                        keepColumns: keepColumns,
+                        ignoreNonPartitioned: ignoreNonPartitioned
                     }).output("result")
 
                     newData.createInputField(newKey).set(slicedPartData)
@@ -178,8 +213,19 @@ filterPColumnData := func(data, slicingParams) {
         dataJson := data.getDataAsJson()
         partitionKeyLength := dataJson.partitionKeyLength
 
+        validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
+
+        filteredSlicingParams := getFilteredSlicingParams(partitionKeyLength, undefined)
+        
+        if (len(filteredSlicingParams) == 0) {
+            // No valid filtering params, return original data
+            return data
+        }
+
+        maxAxisIdx := getMaxAxisIdx(partitionKeyLength, undefined)
+
         // Calculate new partition key length after removing fixed axes
-        newPartitionKeyLength := partitionKeyLength - len(fixedAxes)
+        newPartitionKeyLength := partitionKeyLength - len(filteredSlicingParams)
 
         // Update data info with new length
         newDataInfo := maps.clone(dataJson)
@@ -188,11 +234,8 @@ filterPColumnData := func(data, slicingParams) {
         // Create new data with adjusted key length
         newData := smart.structBuilder(data.info().Type, json.encode(newDataInfo))
 
-        // Validate parameters
-        validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
-
         for key, partData in data.inputs() {
-            if matchesFilter(key) {
+            if matchesFilter(key, filteredSlicingParams) {
                 // Transform key by removing fixed axes
                 newKey := transformKey(key)
                 newData.createInputField(newKey).set(partData)
@@ -205,8 +248,19 @@ filterPColumnData := func(data, slicingParams) {
         dataJson := data.getDataAsJson()
         partitionKeyLength := dataJson.partitionKeyLength
 
+        validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
+
+        filteredSlicingParams := getFilteredSlicingParams(partitionKeyLength, undefined)
+        
+        if (len(filteredSlicingParams) == 0) {
+            // No valid filtering params, return original data
+            return data
+        }
+
+        maxAxisIdx := getMaxAxisIdx(partitionKeyLength, undefined)
+
         // Calculate new partition key length after removing fixed axes
-        newPartitionKeyLength := partitionKeyLength - len(fixedAxes)
+        newPartitionKeyLength := partitionKeyLength - len(filteredSlicingParams)
 
         // Update data info with new length
         newDataInfo := maps.clone(dataJson)
@@ -215,20 +269,17 @@ filterPColumnData := func(data, slicingParams) {
         // Create new data with adjusted key length
         newData := smart.structBuilder(data.info().Type, json.encode(newDataInfo))
 
-        // Validate parameters
-        validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
-
         for key, partData in data.inputs() {
             if text.has_suffix(key, ".index") {
                 partKey := key[0:len(key)-6]
-                if matchesFilter(partKey) {
+                if matchesFilter(partKey, filteredSlicingParams) {
                     // Transform key by removing fixed axes
                     newPartKey := transformKey(partKey)
                     newData.createInputField(newPartKey + ".index").set(partData)
                 }
             } else if text.has_suffix(key, ".values") {
                 partKey := key[0:len(key)-7]
-                if matchesFilter(partKey) {
+                if matchesFilter(partKey, filteredSlicingParams) {
                     // Transform key by removing fixed axes
                     newPartKey := transformKey(partKey)
                     newData.createInputField(newPartKey + ".values").set(partData)
@@ -242,8 +293,19 @@ filterPColumnData := func(data, slicingParams) {
         dataJson := data.getDataAsJson()
         partitionKeyLength := dataJson.partitionKeyLength
 
+        validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
+
+        filteredSlicingParams := getFilteredSlicingParams(partitionKeyLength, undefined)
+        
+        if (len(filteredSlicingParams) == 0) {
+            // No valid filtering params, return original data
+            return data
+        }
+
+        maxAxisIdx := getMaxAxisIdx(partitionKeyLength, undefined)
+
         // Calculate new partition key length after removing fixed axes
-        newPartitionKeyLength := partitionKeyLength - len(fixedAxes)
+        newPartitionKeyLength := partitionKeyLength - len(filteredSlicingParams)
 
         // Update data info with new length
         newDataInfo := maps.clone(dataJson)
@@ -252,11 +314,8 @@ filterPColumnData := func(data, slicingParams) {
         // Create new data with adjusted key length
         newData := smart.structBuilder(data.info().Type, json.encode(newDataInfo))
 
-        // Validate parameters
-        validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
-
         for key, partData in data.inputs() {
-            if matchesFilter(key) {
+            if matchesFilter(key, filteredSlicingParams) {
                 // Transform key by removing fixed axes
                 newData.createInputField(transformKey(key)).set(partData)
             }
@@ -287,6 +346,6 @@ self.body(func(inputs) {
     }
 
     return {
-        "result": filterPColumnData(inputs.data, inputs.slicingParams)
+        "result": filterPColumnData(inputs)
     }
 })

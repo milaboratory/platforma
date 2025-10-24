@@ -165,6 +165,7 @@ transformTsvSettings := func(settings) {
  * downloaded from the UI side.
  */
 exportFrame := func(pf) {
+	ll.assert(!is_undefined(pf), "pframe reference is required")
 	return render.createEphemeral(assets.importTemplate(":pframes.export-pframe"), { pf: pf }).output("result")
 }
 

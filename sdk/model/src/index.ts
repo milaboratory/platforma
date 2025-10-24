@@ -12,6 +12,8 @@ export * from './sdk_info';
 export * from './raw_globals';
 export * from './block_api_v1';
 export * from './block_api_v2';
+export * from './filters';
+export * from './annotations';
 
 // reexporting everything from SDK model
 export * from '@milaboratories/pl-model-common';

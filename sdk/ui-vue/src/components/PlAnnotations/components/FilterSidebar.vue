@@ -1,25 +1,33 @@
+<script lang="ts">
+export type Props = {
+  columns: SimplifiedUniversalPColumnEntry[];
+  hasSelectedColumns?: boolean;
+  getValuesForSelectedColumns?: () => Promise<undefined | { columnId: PObjectId; values: string[] }>;
+};
+</script>
 <script setup lang="ts">
 import { isNil, randomInt } from '@milaboratories/helpers';
 import {
+  getFilterUiMetadata,
   PlBtnSecondary,
   PlEditableTitle,
   PlElementList,
   PlSidebarItem,
 } from '@milaboratories/uikit';
-import type { AnnotationStepUi, FilterUi, PObjectId, SUniversalPColumnId } from '@platforma-sdk/model';
-import { getFilterUiMetadata } from '@platforma-sdk/model';
-import type { SimplifiedUniversalPColumnEntry } from '../types';
+import type { PObjectId, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
+import { computed } from 'vue';
+import type { Filter, FilterSpec } from '../types';
 import { createDefaultFilterMetadata } from '../utils';
 import DynamicForm from './DynamicForm.vue';
 
 // Models
-const step = defineModel<AnnotationStepUi>('step', { required: true });
+const step = defineModel<Filter>('step', { required: true });
 // Props
-const props = defineProps<{
-  columns: SimplifiedUniversalPColumnEntry[];
-  hasSelectedColumns: boolean;
-  getValuesForSelectedColumns: () => Promise<undefined | { columnId: PObjectId; values: string[] }>;
-}>();
+const props = defineProps<Props>();
+// State
+const withSelection = computed(() => {
+  return props.hasSelectedColumns !== undefined && props.getValuesForSelectedColumns !== undefined;
+});
 // Actions
 const addFilterPlaceholder = () => {
   step.value.filter.filters.push({
@@ -30,6 +38,8 @@ const addFilterPlaceholder = () => {
 };
 
 async function addFilterFromSelected() {
+  if (props.hasSelectedColumns === undefined || props.getValuesForSelectedColumns === undefined) return;
+
   const data = await props.getValuesForSelectedColumns();
   if (!data || data.values.length === 0) return;
 
@@ -50,18 +60,18 @@ async function addFilterFromSelected() {
 }
 
 // Getters
-const getColumnLabel = (filter: FilterUi) => {
+const getColumnLabel = (filter: FilterSpec) => {
   if (!isNil(filter.name)) return filter.name;
   return props.columns
     .find((c) => 'column' in filter ? c.id === filter.column : false)?.label
     ?? filter.type;
 };
 
-const getFormMetadata = (filter: FilterUi) => {
+const getFormMetadata = (filter: FilterSpec) => {
   return !isNil(filter.type) ? getFilterUiMetadata(filter.type).form : createDefaultFilterMetadata();
 };
 
-const getFilterValues = (filter: FilterUi) => {
+const getFilterValues = (filter: FilterSpec) => {
   if (filter.type === 'or' || filter.type === 'and') {
     return filter.filters.map((f) => 'value' in f && !isNil(f.value) ? f.value : null).filter((v) => !isNil(v)).join (', ');
   }
@@ -87,7 +97,7 @@ const getFilterValues = (filter: FilterUi) => {
           <PlBtnSecondary style="width: 100%;" icon="add" @click="addFilterPlaceholder">
             Filter
           </PlBtnSecondary>
-          <PlBtnSecondary style="width: 100%;" icon="add" :disabled="!props.hasSelectedColumns" @click="addFilterFromSelected">
+          <PlBtnSecondary v-if="withSelection" style="width: 100%;" icon="add" :disabled="!props.hasSelectedColumns" @click="addFilterFromSelected">
             From selection
           </PlBtnSecondary>
         </div>
