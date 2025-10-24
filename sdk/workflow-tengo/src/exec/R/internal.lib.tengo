@@ -1,12 +1,11 @@
 ll := import(":ll")
-feats := import(":feats")
 
 validation := import(":validation")
-runcmd := import(":exec.runcmd")
 path := import(":path")
+smart := import(":smart")
+
+runcmd := import(":exec.runcmd")
 desc := import(":exec.descriptor")
-constants := import(":exec.constants")
-pkg := import(":exec.package")
 
 rVenvInputSchema := {
 	operationMode: "string",
@@ -89,7 +88,6 @@ activateRenvInWD := func(wd, queue, computeResources, plan) {
 	activateRenv := runcmd.builder(wd, plan).
 		cmd("R").
 		inQueue(queue).
-		allocation(allocation).
 		resetArgs().
 		arg("--no-echo").
 		arg("--no-restore").
@@ -110,7 +108,7 @@ export ll.toStrict({
 	// Constants
 	ARG_VAR_R                          : ARG_VAR_R,
 	ARG_VAR_R_VENV                     : ARG_VAR_R_VENV,
-	RENV_ROOT_DIR_NAME:                : RENV_ROOT_DIR_NAME,
+	RENV_ROOT_DIR_NAME                 : RENV_ROOT_DIR_NAME,
 
 	// Schemas
 	rVenvInputSchema                   : rVenvInputSchema,

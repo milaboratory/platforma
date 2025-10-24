@@ -7,14 +7,16 @@ times := import("times")
 self := import(":tpl.light")
 
 ll := import(":ll")
-feats := import(":feats")
+validation := import(":validation")
 
 workdir := import(":workdir")
 path := import(":path")
-validation := import(":validation")
+waiter := import(":waiter")
+
+desc := import(":exec.descriptor")
+runcmd := import(":exec.runcmd")
 runenv := import(":exec.runenv")
 internal := import(":exec.R.internal")
-constants := import(":exec.constants")
 pkg := import(":exec.package")
 
 //
@@ -51,20 +53,20 @@ _toolsetRenvCreate = func(operationMode, swPkgRef, rPkgRef, rRunEnvDescriptor, d
 		addFile("renv.lock", deps["renv.lock"]).
 		build()
 
-	envDirCreator := runenv.saveBuilder(installDepsRun.workdir).
+	envDirCreator := runenv.saveBuilder(wdForRenv).
 		envType("R").
 		addPath("renv.lock").
 		addPackage("R", rPkgRef)
 
-	envDir := envDirCreator.build().runEnv()
+	rVenv := envDirCreator.build().runEnv()
 
 	//
 	// Activate run environment in new working directory
-	// Also creates basic renv structure inside <envDir> if it does not exist.
+	// Also creates basic renv structure inside <rVenv> if it does not exist.
 	// Does not install any packages but renv itself into it.
 	//
 
-	plan := internal.runRPlan("init-R-venv", rPkgRef, rRunEnvDescriptor, envDir)
+	plan := internal.runRPlan("init-R-venv", rPkgRef, rRunEnvDescriptor, rVenv)
 
 	wdForDepsInstallation := workdir.builder().
 		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
@@ -95,7 +97,7 @@ _toolsetRenvCreate = func(operationMode, swPkgRef, rPkgRef, rRunEnvDescriptor, d
 
 	// R venv becomes available before environment is restored inside it.
 	// We need to wait for restoration process to complete before returning the result.
-	w := waiter.builder(env)
+	w := waiter.builder(rVenv)
 	w.wait(depsInstaller.build().workdir)
 
 	return w.build().output()
