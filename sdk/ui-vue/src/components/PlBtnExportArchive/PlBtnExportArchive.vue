@@ -12,7 +12,6 @@ import Item from './Item.vue';
 import { getFileNameFromHandle, ChunkedStreamReader } from '@platforma-sdk/model';
 import { getRawPlatformaInstance } from '@platforma-sdk/model';
 import { uniqueId } from '@milaboratories/helpers';
-import { shallowRef } from 'vue';
 import Summary from './Summary.vue';
 
 type FilePickerAcceptType = {
@@ -40,8 +39,6 @@ const data = reactive(defaultData());
 const resetData = () => {
   Object.assign(data, defaultData());
 };
-
-const cancel = shallowRef<() => void>();
 
 const updateExportsItem = (id: string, partial: Partial<ExportItem>) => {
   const it = data.exports?.get(id);
@@ -107,10 +104,6 @@ const exportRawTsvs = async () => {
   try {
     const writableStream = await newHandle.createWritable();
     const zip = new ZipWriter(writableStream, { keepOrder: true, zip64: true, bufferedWrite: false });
-    cancel.value = () => {
-      zip.close();
-      resetData();
-    };
     try {
       const requests = [] as ZipRequest[];
 
@@ -145,7 +138,7 @@ const exportRawTsvs = async () => {
         requests.push({ id, fileName, size, stream });
       }
 
-      await Promise.all(requests.map(async (request) => {
+      for (const request of requests) {
         const { id, fileName, size, stream } = request;
         const update = (partial: Partial<ExportItem>) => {
           const it = data.exports?.get(id);
@@ -153,7 +146,7 @@ const exportRawTsvs = async () => {
             data.exports?.set(id, { ...it, ...partial });
           }
         };
-        return zip.add(fileName, stream, {
+        await zip.add(fileName, stream, {
           bufferedWrite: true,
           onstart: () => {
             update({ status: 'in-progress' });
@@ -168,10 +161,11 @@ const exportRawTsvs = async () => {
             return undefined;
           },
         });
-      }));
+      }
     } finally {
-      await zip.close();
-      cancel.value = undefined;
+      await zip.close().catch((error) => {
+        console.error('Error closing zip', error);
+      });
     }
   } finally {
     data.loading = false;
@@ -198,7 +192,7 @@ useClickOutside([progressesRef], () => {
   <Teleport to="body">
     <div v-if="data.exports && data.showExports" ref="progressesRef" :class="$style.progresses">
       <PlIcon16 :class="$style.close" name="close" @click.stop="data.showExports = false" />
-      <Summary :item="archive" @cancel="cancel?.()" />
+      <Summary :item="archive" />
       <div :class="$style.itemsContainer" class="pl-scrollable-y">
         <Item v-for="item in data.exports?.values()" :key="item.fileName" :item="item" />
       </div>
