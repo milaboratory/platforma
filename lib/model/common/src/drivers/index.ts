@@ -7,3 +7,4 @@ export * from './log';
 export * from './ls';
 
 export * from './pframe';
+export * from './ChunkedStreamReader';

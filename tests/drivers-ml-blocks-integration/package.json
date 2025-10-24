@@ -26,7 +26,9 @@
     "@milaboratories/milaboratories.test-sum-numbers.model": "workspace:*",
     "@milaboratories/milaboratories.test-upload-file.model": "workspace:*",
     "@milaboratories/milaboratories.test-download-file.model": "workspace:*",
-    "@milaboratories/milaboratories.test-read-logs.model": "workspace:*"
+    "@milaboratories/milaboratories.test-read-logs.model": "workspace:*",
+    "@milaboratories/milaboratories.transfer-files": "workspace:*",
+    "@milaboratories/milaboratories.transfer-files.model": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

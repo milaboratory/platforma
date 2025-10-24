@@ -1,0 +1,38 @@
+{
+  "name": "@milaboratories/milaboratories.transfer-files",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf ./block-pack && block-tools pack"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/milaboratories.transfer-files.workflow": "workspace:*",
+    "@milaboratories/milaboratories.transfer-files.model": "workspace:*",
+    "@milaboratories/milaboratories.transfer-files.ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.transfer-files.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.transfer-files.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.transfer-files.ui/dist"
+    },
+    "meta": {
+      "title": "Transfer Files",
+      "description": "Transfer Files",
+      "logo": "file:logos/block-logo.png",
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/",
+        "logo": "file:logos/organization-logo.png"
+      }
+    }
+  }
+}

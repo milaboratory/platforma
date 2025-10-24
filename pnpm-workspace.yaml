@@ -106,6 +106,11 @@ packages:
   - etc/blocks/pool-explorer/ui
   - etc/blocks/pool-explorer/block
 
+  - etc/blocks/transfer-files/workflow
+  - etc/blocks/transfer-files/model
+  - etc/blocks/transfer-files/ui
+  - etc/blocks/transfer-files/block
+
   # Tests
 
   - tests/workflow-tengo
@@ -256,6 +261,8 @@ catalog:
 
   'sortablejs': ^1.15.6
   '@types/sortablejs': ^1.15.6
+
+  '@zip.js/zip.js': ^2.8.2
 
   # SW
 

@@ -1,0 +1,40 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+text := import("text")
+file := import("@platforma-sdk/workflow-tengo:file")
+json := import("json")
+
+wf.body(func(args) {
+	fileImports := {}
+	fileExports := {}
+
+	importFile := func(importHandle) {
+		fromMap := fileImports[importHandle]
+		if fromMap == undefined {
+			fImport := file.importFile(importHandle)
+			fExport := file.exportFile(fImport.file)
+			fileImports[importHandle] = fImport
+			fileExports[importHandle] = fExport
+		}
+	}
+
+	for importHandle in args.inputHandles {
+		importFile(importHandle)
+	}
+
+	return {
+		outputs: {
+			fileImports: smart.createMapResource(maps.mapValues(fileImports, func(im) {
+				ll.print("__THE_LOG__ im: " + json.encode(im.handle))
+				return im.handle
+			})),
+			fileExports: smart.createMapResource(maps.mapValues(fileExports, func(ex) {
+				ll.print("__THE_LOG__ ex: " + json.encode(ex))
+				return ex
+			}))
+		},
+		exports: {}
+	}
+})
