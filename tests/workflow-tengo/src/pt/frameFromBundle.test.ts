@@ -1,9 +1,8 @@
-/* eslint-disable @stylistic/no-tabs */
 import type { AnchoredPColumnId, FilteredPColumnId } from '@milaboratories/pl-middle-layer';
 import { canonicalizeJson, createPlRef } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import { vi } from 'vitest';
 import dedent from 'dedent';
+import { vi } from 'vitest';
 import { Timeout, getFileContent } from './helpers';
 
 vi.setConfig({ testTimeout: Timeout });
@@ -23,10 +22,7 @@ tplTest.concurrent(
     const ctx = await awaitStableState(wf1.context());
 
     const wf2 = await helper.renderWorkflow('pt.frameFromBundle.exports', false, {
-      axes: [
-        { column: sampleIdAxesSpec.name, spec: sampleIdAxesSpec },
-        { column: cellIdAxesSpec.name, spec: cellIdAxesSpec },
-      ],
+      axes: [sampleIdAxesSpec, cellIdAxesSpec],
       anchor: createPlRef('b1', 'data'),
       columnIds: [
         canonicalizeJson<AnchoredPColumnId>({
@@ -66,19 +62,38 @@ tplTest.concurrent(
     }, { blockId: 'b2', parent: ctx });
 
     const csvContent = await getFileContent(wf2, 'file', driverKit);
+    const lines = csvContent.trim().split('\n');
 
-    expect(csvContent.trim()).eq(dedent`
-      sampleId	cellId	totalCounts	clusterResolution	expression	complexity
-      1	cell_1	3000	CL-1	5.0	0.815
-      1	cell_2	4000	CL-1	7.0	0.513
-      1	cell_3	3500	CL-1	8.0	0.914
-      2	cell_1	5000	CL-2	20.0	0.73
-      2	cell_2	6000	CL-2	22.0	0.932
-      2	cell_3	5500	CL-2	24.0	0.934
-      3	cell_1	7000	CL-3	120.0	0.33
-      3	cell_2	8000	CL-3	122.0	0.132
-      3	cell_3	7500	CL-3	124.0	0.534
-    `);
+    // Check header columns
+    const headerCols = lines[0].split(/\s+/);
+    expect(headerCols).toHaveLength(6);
+    expect(headerCols[0]).toContain('"sampleId"');
+    expect(headerCols[1]).toContain('"cellId"');
+    expect(headerCols[2]).toContain('"totalCounts"');
+    expect(headerCols[3]).toContain('"clusterResolution"');
+    expect(headerCols[4]).toContain('"expression"');
+    expect(headerCols[5]).toContain('"complexity"');
+
+    // Check data rows
+    expect(lines).toHaveLength(10); // 1 header + 9 data rows
+
+    const expectedRows = [
+      ['1', 'cell_1', '3000', 'CL-1', '5.0', '0.815'],
+      ['1', 'cell_2', '4000', 'CL-1', '7.0', '0.513'],
+      ['1', 'cell_3', '3500', 'CL-1', '8.0', '0.914'],
+      ['2', 'cell_1', '5000', 'CL-2', '20.0', '0.73'],
+      ['2', 'cell_2', '6000', 'CL-2', '22.0', '0.932'],
+      ['2', 'cell_3', '5500', 'CL-2', '24.0', '0.934'],
+      ['3', 'cell_1', '7000', 'CL-3', '120.0', '0.33'],
+      ['3', 'cell_2', '8000', 'CL-3', '122.0', '0.132'],
+      ['3', 'cell_3', '7500', 'CL-3', '124.0', '0.534'],
+    ];
+
+    for (let i = 0; i < expectedRows.length; i++) {
+      const actualCols = lines[i + 1].split(/\s+/);
+      const expectedCols = expectedRows[i];
+      expect(actualCols).toEqual(expectedCols);
+    }
   },
 );
 

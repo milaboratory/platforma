@@ -114,9 +114,10 @@ export { useSortable } from './composition/useSortable';
 export { useSortable2 } from './composition/useSortable2';
 export { useTheme } from './composition/useTheme';
 
+export * from './composition/computedCached';
+export * from './composition/filters';
 export * from './composition/useWatchFetch';
 export * from './composition/watchCached';
-export * from './composition/computedCached';
 
 /**
  * Utils/Partials

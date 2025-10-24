@@ -1,0 +1,89 @@
+pt := import(":pt")
+wf := import(":workflow")
+self := import(":tpl")
+util := import(":annotations.util")
+pSpec := import(":pframes.spec")
+slices := import(":slices")
+pframesUtil := import(":pframes.util")
+
+ANNOTATION_FRAME := "annotation_frame"
+ANNOTATION_HEADER := util.ANNOTATION_HEADER
+
+self.defineOutputs(["annotationsData", "filtersData"])
+
+self.body(func(inputs) {
+	outputs := {}
+
+    columnBundle := inputs.columnBundle
+	steps := inputs.params.steps
+    columns := inputs.params.columns
+	resultColumnSpec := inputs.params.resultColumnSpec
+	shouldComputeFilters := inputs.params.shouldComputeFilters
+
+    idx := 0
+	finalExpressions := slices.map(steps, func(step) {
+        idx += 1
+		return {
+			type: step.type,
+			name: util.encodeColumnName(step.name, idx),
+			value: step.value
+		}
+	})
+	finalRawExpressions := slices.map(finalExpressions, func(step) { return pt.rawExp(step) })
+	columnNames := slices.map(finalExpressions, func(spec) { return spec.name })
+
+	filterColumnNames := shouldComputeFilters ? columnNames : [];
+	columnNamesReversed := slices.reverse(columnNames)
+	resultAxesSpecName := slices.map(resultColumnSpec.axesSpec, func(axis) { return pSpec.getAxisId(axis) })
+
+	annotationColumnExpr := slices.
+		reduce(columnNamesReversed, func(exp, colName) {
+			return exp.when(pt.col(colName)).then(pt.lit(util.decodeColumnName(colName)))
+		}, pt).
+		otherwise(pt.lit(undefined)).
+		alias(ANNOTATION_HEADER)
+
+	wf := pt.workflow().cpu(1).mem("12GiB")
+
+	dfData := wf.frameFromColumnBundle(columnBundle, {
+		axes: resultColumnSpec.axesSpec,
+		columns: columns
+	}).
+		withColumns(finalRawExpressions...).
+		withColumns(annotationColumnExpr)
+
+	dfData.
+		select(ANNOTATION_HEADER, resultAxesSpecName...).
+		saveFrameDirect(ANNOTATION_FRAME, {
+			axes: slices.map(resultColumnSpec.axesSpec, func(v) { return { column: pSpec.getAxisId(v), spec: v } }),
+			columns: [{ column: ANNOTATION_HEADER, spec: resultColumnSpec }],
+			partitionKeyLength: 0
+		})
+
+	for colName in filterColumnNames {
+		label := util.decodeColumnName(colName)
+		dfData.
+			filter(pt.col(ANNOTATION_HEADER).eq(pt.lit(label))).
+			withColumns(pt.lit(1).alias(colName)).
+			select(colName, resultAxesSpecName...).
+			saveFrameDirect(util.createFilterFrameName(colName), {
+				axes: slices.map(resultColumnSpec.axesSpec, func(v) { return { column: pSpec.getAxisId(v), spec: v } }),
+				columns: [{ column: colName, spec: util.createFilterColumnSpec(resultColumnSpec, colName, label) }],
+				partitionKeyLength: 0
+			})
+	}
+	
+    wfResult := wf.run()
+
+	outputs["annotationsData"] = pframesUtil.pFrameToColumnsMap(wfResult.getFrameDirect(ANNOTATION_FRAME))[ANNOTATION_HEADER].data
+    outputs["filtersData"] = {}
+
+	for colName in filterColumnNames {
+		pFrame := pframesUtil.pFrameToColumnsMap(
+			wfResult.getFrameDirect(util.createFilterFrameName(colName))
+		)
+		outputs["filtersData"][colName] = pFrame[colName].data
+	}
+
+	return outputs	
+})

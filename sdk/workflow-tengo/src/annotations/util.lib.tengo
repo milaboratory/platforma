@@ -1,0 +1,117 @@
+hex := import("hex")
+rand := import("rand")
+text := import("text")
+
+ll := import(":ll")
+wf := import(":workflow")
+sets := import(":sets")
+maps := import(":maps")
+slices := import(":slices")
+
+pSpec := import(":pframes.spec")
+
+expr := import(":pt.expression-traverse")
+
+ANNOTATION_HEADER := "annotation"
+
+createFilterFrameName := func(colName) {
+	return colName + "_filter_frame"
+}
+
+createFilterColumnSpec := func(columnSpec, colName, label) {
+	return maps.deepMerge(columnSpec, {
+		kind: "PColumn",
+		valueType: "Int",
+		name: columnSpec.name + "/filter/" + colName,
+		annotations: {
+			"pl7.app/label": columnSpec.annotations["pl7.app/label"] + "/" + label,
+			"pl7.app/isSubset": "true"
+		}
+	});
+}
+
+ENCODE_SEPARATOR := "_encoded_"
+
+encodeColumnName := func(name, idx) {
+	return hex.encode(name) + ENCODE_SEPARATOR + string(idx)
+}
+
+decodeColumnName := func(encoded) {
+	parts := text.split(encoded, ENCODE_SEPARATOR)
+	if len(parts) != 2 {
+		ll.panic("Invalid encoded column name: " + encoded)
+	}
+
+	return string(hex.decode(parts[0]))
+}
+
+addColumnsFromExpression := func(expression, columnsSet) {
+	expr.expressionTraverse(expression, func(node) {
+		if node.type == "col" {
+			// Direct column reference
+			if is_string(node.name) {
+				sets.add(columnsSet, node.name)
+			}
+			return
+		}
+	})
+}
+
+mapExpressionColumnNames := func(expression, transformFn) {
+	copy := maps.clone(expression)
+	
+	expr.expressionTraverse(copy, func(node) {
+		if node.type == "col" {
+			// Direct column reference
+			if is_string(node.name) {
+				node.name = transformFn(node.name)
+			}
+		}
+	})
+
+	return copy
+}
+
+extractColumnsFromExpressions := func(expressions) {
+	columnsSet := {}
+
+	for expression in expressions {
+		addColumnsFromExpression(expression, columnsSet)
+	}
+
+	return sets.toSlice(columnsSet)
+}
+
+prepareResultColumnSpec := func(args) {
+	blockId := wf.getBlockId()
+	
+	steps := slices.filter([args.trace, {
+		id: blockId,
+		type: "milaboratories.annotation",
+		label: args.title,
+		importance: 20
+	}], func(v) { return !is_undefined(v) })
+	
+	trace := pSpec.makeTrace(steps...)
+
+	return trace.inject({
+		kind: "PColumn",
+		valueType: "String",
+		name: "pl7.app/annotation/result",
+		domain: { "pl7.app/annotationRunId": blockId },
+		axesSpec: args.resultAxesSpec,
+		annotations: { "pl7.app/label": args.title }
+	})
+}
+
+export ll.toStrict({
+	ANNOTATION_HEADER: ANNOTATION_HEADER,
+
+	encodeColumnName: encodeColumnName,
+	decodeColumnName: decodeColumnName,
+	createFilterFrameName: createFilterFrameName,
+	prepareResultColumnSpec: prepareResultColumnSpec,
+	createFilterColumnSpec: createFilterColumnSpec,
+	mapExpressionColumnNames: mapExpressionColumnNames,
+	extractColumnsFromExpressions: extractColumnsFromExpressions
+})
