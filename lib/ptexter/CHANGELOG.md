@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.software-ptexter
 
+## 1.2.0
+
+### Minor Changes
+
+- 3ef2381: Generelazation filters and annotations
+
 ## 1.1.1
 
 ### Patch Changes

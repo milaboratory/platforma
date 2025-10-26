@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.13.0
+
+### Minor Changes
+
+- 3ef2381: Generelazation filters and annotations
+
 ## 1.12.12
 
 ### Patch Changes
