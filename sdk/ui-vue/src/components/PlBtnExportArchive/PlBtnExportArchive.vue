@@ -24,7 +24,8 @@ const props = defineProps<{
   suggestedFileName?: string;
   disabled?: boolean;
   filePickerTypes?: FilePickerAcceptType[];
-  debug?: boolean;
+  strategy?: 'parallel'; // default is sequential
+  debugFn?: (fileName: string) => Promise<void>;
 }>();
 
 const defaultData = () => ({
@@ -35,10 +36,6 @@ const defaultData = () => ({
 });
 
 const data = reactive(defaultData());
-
-const resetData = () => {
-  Object.assign(data, defaultData());
-};
 
 const updateExportsItem = (id: string, partial: Partial<ExportItem>) => {
   const it = data.exports?.get(id);
@@ -118,10 +115,8 @@ const exportRawTsvs = async () => {
 
         const stream = ChunkedStreamReader.create({
           fetchChunk: async ({ from, to }) => {
-            if (props.debug) {
-              if (Math.random() < 0.1) {
-                throw new Error('Test error');
-              }
+            if (props.debugFn) {
+              await props.debugFn(fileName);
             }
 
             return await getRawPlatformaInstance().blobDriver.getContent(handle, { from, to });
@@ -138,7 +133,7 @@ const exportRawTsvs = async () => {
         requests.push({ id, fileName, size, stream });
       }
 
-      for (const request of requests) {
+      const processRequest = async (request: ZipRequest) => {
         const { id, fileName, size, stream } = request;
         const update = (partial: Partial<ExportItem>) => {
           const it = data.exports?.get(id);
@@ -161,6 +156,14 @@ const exportRawTsvs = async () => {
             return undefined;
           },
         });
+      };
+
+      if (props.strategy === 'parallel') {
+        await Promise.all(requests.map(processRequest));
+      } else {
+        for (const request of requests) {
+          await processRequest(request);
+        }
       }
     } finally {
       await zip.close().catch((error) => {
