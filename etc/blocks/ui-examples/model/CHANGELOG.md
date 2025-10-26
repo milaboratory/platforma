@@ -1,5 +1,16 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.3.0
+
+### Minor Changes
+
+- 3ef2381: Generelazation filters and annotations
+
+### Patch Changes
+
+- Updated dependencies [3ef2381]
+  - @platforma-sdk/model@1.45.0
+
 ## 1.2.46
 
 ### Patch Changes

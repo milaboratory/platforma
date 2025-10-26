@@ -1,5 +1,17 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.5.0
+
+### Minor Changes
+
+- 3ef2381: Generelazation filters and annotations
+
+### Patch Changes
+
+- Updated dependencies [3ef2381]
+  - @platforma-open/milaboratories.software-ptabler@1.13.0
+  - @platforma-open/milaboratories.software-ptexter@1.2.0
+
 ## 5.4.5
 
 ### Patch Changes

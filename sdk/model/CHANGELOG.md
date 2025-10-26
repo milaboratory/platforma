@@ -1,5 +1,19 @@
 # @platforma-sdk/model
 
+## 1.45.0
+
+### Minor Changes
+
+- 3ef2381: Generelazation filters and annotations
+
+### Patch Changes
+
+- Updated dependencies [468b585]
+- Updated dependencies [38da155]
+- Updated dependencies [3ef2381]
+  - @milaboratories/ptabler-expression-js@1.1.0
+  - @milaboratories/pl-model-common@1.21.4
+
 ## 1.44.14
 
 ### Patch Changes

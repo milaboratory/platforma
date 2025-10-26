@@ -1,5 +1,16 @@
 # @platforma-open/software-ptabler.types
 
+## 1.12.0
+
+### Minor Changes
+
+- 3ef2381: Generelazation filters and annotations
+
+### Patch Changes
+
+- Updated dependencies [38da155]
+  - @milaboratories/pl-model-common@1.21.4
+
 ## 1.11.5
 
 ### Patch Changes
