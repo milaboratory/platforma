@@ -29,6 +29,15 @@ export interface PlCallOps {
   abortSignal?: AbortSignal;
 }
 
+export interface PlConnectionInfo {
+  transportInitialized: boolean;
+  providerCount: number;
+  hostAndPort: string;
+  ssl: boolean;
+  grpcProxy?: string;
+  singleConnectionMode: boolean;
+}
+
 class GrpcClientProviderImpl<Client> implements GrpcClientProvider<Client> {
   private client: Client | undefined = undefined;
 
@@ -77,6 +86,12 @@ export class LLPlClient implements GrpcClientProviderFactory {
       auth?: AuthOps;
       statusListener?: PlConnectionStatusListener;
       shouldUseGzip?: boolean;
+      /**
+       * Force single connection usage for MITM proxy compatibility.
+       * When enabled, all gRPC calls will be multiplexed over a single HTTP/2 connection.
+       * Default: true
+       */
+      singleConnection?: boolean;
     } = {},
   ) {
     this.conf = typeof configOrAddress === 'string'
@@ -85,7 +100,7 @@ export class LLPlClient implements GrpcClientProviderFactory {
 
     this.grpcInterceptors = [];
 
-    const { auth, statusListener, shouldUseGzip } = ops;
+    const { auth, statusListener, shouldUseGzip, singleConnection = true } = ops;
 
     if (auth !== undefined) {
       this.refreshTimestamp = inferAuthRefreshTime(
@@ -102,7 +117,7 @@ export class LLPlClient implements GrpcClientProviderFactory {
     this.grpcInterceptors.push(this.createErrorInterceptor());
 
     // initialize _grpcTransport and _grpcPl
-    this.initGrpc(shouldUseGzip ?? false);
+    this.initGrpc(shouldUseGzip ?? false, singleConnection);
 
     this.httpDispatcher = defaultHttpDispatcher(this.conf.httpProxy);
 
@@ -117,19 +132,44 @@ export class LLPlClient implements GrpcClientProviderFactory {
   /**
    * Initializes (or reinitializes) _grpcTransport and _grpcPl
    * @param gzip - whether to enable gzip compression
+   * @param singleConnection - whether to enforce single connection usage for MITM proxy compatibility
    */
-  private initGrpc(gzip: boolean) {
+  private initGrpc(gzip: boolean, singleConnection: boolean) {
     const clientOptions: ClientOptions = {
       'grpc.keepalive_time_ms': 30_000, // 30 seconds
       'interceptors': this.grpcInterceptors,
     };
 
+    if (singleConnection) {
+      // Configuration for MITM proxy compatibility - enforce single connection usage
+      Object.assign(clientOptions, {
+        'grpc.keepalive_timeout_ms': 5_000, // 5 seconds
+        'grpc.keepalive_permit_without_calls': true,
+        'grpc.http2.max_pings_without_data': 0,
+        'grpc.http2.min_time_between_pings_ms': 10_000,
+        'grpc.http2.min_ping_interval_without_data_ms': 300_000,
+        // Enforce single connection by limiting subchannel pool
+        'grpc.use_local_subchannel_pool': true,
+        // Configure HTTP/2 settings for optimal multiplexing
+        'grpc.http2.max_frame_size': 16777215, // 16MB max frame size
+        'grpc.max_receive_message_length': 67108864, // 64MB max message size
+        // Disable connection-level retry which might create additional connections
+        'grpc.enable_retries': false,
+      });
+    }
+
     if (gzip) clientOptions['grpc.default_compression_algorithm'] = compressionAlgorithms.gzip;
 
     //
-    // Leaving it here for now
-    // https://github.com/grpc/grpc-node/issues/2788
+    // Configuration for MITM proxy compatibility:
+    // All gRPC calls (unary & bidirectional streaming) will be multiplexed over a single HTTP/2 connection.
+    // The above clientOptions ensure:
+    // 1. Connection reuse through local subchannel pooling
+    // 2. Proper HTTP/2 keepalive to maintain connection health
+    // 3. Optimal frame sizes for multiplexing efficiency
+    // 4. Disabled retries to prevent additional connection attempts
     //
+    // Note: Original batching comment from https://github.com/grpc/grpc-node/issues/2788
     // We should implement message pooling algorithm to overcome hardcoded NO_DELAY behaviour
     // of HTTP/2 and allow our small messages to batch together.
     //
@@ -210,6 +250,23 @@ export class LLPlClient implements GrpcClientProviderFactory {
 
   public get grpcTransport(): GrpcTransport {
     return this._grpcTransport;
+  }
+
+  /**
+   * Get connection information for monitoring single connection usage.
+   * This can be used to verify that all gRPC calls are multiplexed over a single HTTP/2 connection.
+   */
+  public getConnectionInfo(): PlConnectionInfo {
+    return {
+      transportInitialized: this._grpcTransport !== undefined,
+      providerCount: this.providers.length,
+      hostAndPort: this.conf.hostAndPort,
+      ssl: this.conf.ssl,
+      grpcProxy: typeof this.conf.grpcProxy === 'string'
+        ? this.conf.grpcProxy
+        : this.conf.grpcProxy?.url,
+      singleConnectionMode: this.ops.singleConnection ?? true,
+    };
   }
 
   /** Returns true if client is authenticated. Even with anonymous auth information

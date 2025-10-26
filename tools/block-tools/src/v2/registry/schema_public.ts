@@ -14,6 +14,7 @@ import {
 } from '@milaboratories/pl-model-middle-layer';
 import { z } from 'zod';
 import { RelativeContentReader, relativeToExplicitBytes, relativeToExplicitString } from '../model';
+import { schemaPassthrough } from '@milaboratories/pl-model-common';
 
 export const MainPrefix = 'v2/';
 
@@ -40,17 +41,17 @@ export const ManifestSuffix = '/' + ManifestFileName;
 //   return `${MainPrefix}${bp.organization}/${bp.name}/${bp.version}/${file}`;
 // }
 
-export const PackageOverviewVersionEntry = z.object({
+export const PackageOverviewVersionEntry = schemaPassthrough(z.object({
   description: BlockPackDescriptionManifest,
   channels: z.array(z.string()).default(() => []),
   manifestSha256: Sha256Schema
-}).passthrough();
+}));
 export type PackageOverviewVersionEntry = z.infer<typeof PackageOverviewVersionEntry>;
 
-export const PackageOverview = z.object({
+export const PackageOverview = schemaPassthrough(z.object({
   schema: z.literal('v2'),
   versions: z.array(PackageOverviewVersionEntry)
-}).passthrough();
+}));
 export type PackageOverview = z.infer<typeof PackageOverview>;
 
 export function packageOverviewPathInsideV2(bp: BlockPackIdNoVersion): string {
@@ -78,7 +79,7 @@ export const GlobalOverviewGzPath = `${MainPrefix}${GlobalOverviewGzFileName}`;
 export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
   descriptionType: Description
 ) {
-  const universalSchema = z.object({
+  const universalSchema = schemaPassthrough(z.object({
     id: BlockPackIdNoVersion,
     /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
     allVersions: z.array(z.string()).optional(),
@@ -90,13 +91,13 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
     latestByChannel: z
       .record(
         z.string(),
-        z.object({
+        schemaPassthrough(z.object({
           description: descriptionType,
           manifestSha256: Sha256Schema
-        }).passthrough()
+        }))
       )
       .default({})
-  }).passthrough();
+  }));
   return (
     universalSchema
       .transform((o) => {
@@ -108,7 +109,7 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
           };
       })
       // make sure "any" channel set from main body
-      .transform((o: any) =>
+      .transform((o) =>
         o.latestByChannel[AnyChannel]
           ? o
           : {
@@ -128,10 +129,10 @@ export type GlobalOverviewEntryReg = z.infer<typeof GlobalOverviewEntryReg>;
 export function GlobalOverview<const Description extends z.ZodTypeAny>(
   descriptionType: Description
 ) {
-  return z.object({
+  return schemaPassthrough(z.object({
     schema: z.literal('v2'),
     packages: z.array(GlobalOverviewEntry(descriptionType))
-  }).passthrough();
+  }));
 }
 
 export const GlobalOverviewReg = GlobalOverview(BlockPackDescriptionManifest);

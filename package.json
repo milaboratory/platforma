@@ -6,6 +6,7 @@
     "reset:turbo-cache": "find . -type d -name '.turbo' | grep -v '\\.pnpm' | xargs rm -r",
     "reset": "pnpm run reset:node_modules && pnpm run reset:turbo-cache",
     "reset:etc-blocks": "rimraf etc/blocks/**/.turbo !**/.pnpm/** etc/blocks/**/ui/dist etc/blocks/**/model/dist --glob",
+    "reset:test-auth": "rimraf **/.test_auth.json --glob",
     "type-check": "turbo run type-check",
     "build": "turbo run build --output-logs=errors-only",
     "build:dev": "PL_PKG_DEV=local turbo run build --output-logs=errors-only",

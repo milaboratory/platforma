@@ -7,9 +7,10 @@ export default defineConfig({
     watch: false,
     testTimeout: 80000,
     hookTimeout: 80000,
+    minWorkers: 1,
+    maxWorkers: 1,
   },
   define: {
     __WORKER_PATH__: JSON.stringify(resolve(__dirname, 'dist', 'worker', 'worker.js')),
   },
 });
-

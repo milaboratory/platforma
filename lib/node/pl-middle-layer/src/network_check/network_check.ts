@@ -239,7 +239,7 @@ export async function initNetworkCheck(
 
   const client = await PlClient.init(plCredentials, { authInformation: auth });
 
-  const httpClient = uaClient.ll.httpDispatcher;
+  const httpClient = client.httpDispatcher;
   const logger = new ConsoleLoggerAdapter();
 
   // FIXME: do we need to get an actual secret?

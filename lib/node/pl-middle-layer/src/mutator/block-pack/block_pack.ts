@@ -19,6 +19,7 @@ import { LRUCache } from 'lru-cache';
 import type { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
 import { WorkerManager } from '../../worker/WorkerManager';
 import { z } from 'zod';
+import { defaultHttpDispatcher } from '@milaboratories/pl-http';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';
@@ -52,15 +53,14 @@ export class BlockPackPreparer {
   constructor(
     private readonly v2RegistryProvider: V2RegistryProvider,
     private readonly signer: Signer,
-    private readonly http?: Dispatcher,
+    private readonly http: Dispatcher = defaultHttpDispatcher(),
   ) {}
 
   private readonly remoteContentCache = new LRUCache<string, ArrayBuffer>({
     max: 500,
     maxSize: 128 * 1024 * 1024,
     fetchMethod: async (key) => {
-      const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
-      return await (await request(key, httpOptions)).body.arrayBuffer();
+      return await (await request(key, { dispatcher: this.http })).body.arrayBuffer();
     },
     sizeCalculation: (value) => value.byteLength,
   });

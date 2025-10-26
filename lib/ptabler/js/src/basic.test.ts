@@ -3,7 +3,8 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { col, ColumnExpressionImpl, lit, LiteralExpressionImpl } from '../../src';
+import { ColumnExpressionImpl, LiteralExpressionImpl } from './expressions';
+import { col, lit } from './functions';
 
 describe('Factory Functions', () => {
   test('col() creates ColumnExpression', () => {

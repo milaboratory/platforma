@@ -7,30 +7,55 @@ import { LLPlClient } from './ll_client';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { UnauthenticatedError } from './errors';
 
-/** Primarily used for initial authentication (login) */
+/**
+ * Primarily used for initial authentication (login).
+ * Creates ephemeral connections for each request to prevent hanging connections.
+ */
 export class UnauthenticatedPlClient {
-  public readonly ll: LLPlClient;
+  private readonly config: PlClientConfig | string;
 
   constructor(configOrAddress: PlClientConfig | string) {
-    this.ll = new LLPlClient(configOrAddress);
+    this.config = configOrAddress;
+  }
+
+  /**
+   * Creates an ephemeral LLPlClient for a single request.
+   * The client should be closed after use to prevent hanging connections.
+   */
+  private createEphemeralClient(): LLPlClient {
+    return new LLPlClient(this.config, {
+      singleConnection: true, // Ensure single connection for ephemeral usage
+    });
   }
 
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {
-    return (await this.ll.grpcPl.get().ping({})).response;
+    const client = this.createEphemeralClient();
+    try {
+      return (await client.grpcPl.get().ping({})).response;
+    } finally {
+      await client.close();
+    }
   }
 
   public async authMethods(): Promise<AuthAPI_ListMethods_Response> {
-    return (await this.ll.grpcPl.get().authMethods({})).response;
+    const client = this.createEphemeralClient();
+    try {
+      return (await client.grpcPl.get().authMethods({})).response;
+    } finally {
+      await client.close();
+    }
   }
 
   public async requireAuth(): Promise<boolean> {
-    return (await this.authMethods()).methods.length > 0;
+    const authMethods = await this.authMethods();
+    return authMethods.methods.length > 0;
   }
 
   public async login(user: string, password: string): Promise<AuthInformation> {
+    const client = this.createEphemeralClient();
     try {
-      const response = await this.ll.grpcPl.get().getJWTToken(
-        { expiration: { seconds: BigInt(this.ll.conf.authTTLSeconds), nanos: 0 } },
+      const response = await client.grpcPl.get().getJWTToken(
+        { expiration: { seconds: BigInt(client.conf.authTTLSeconds), nanos: 0 } },
         {
           meta: {
             authorization: 'Basic ' + Buffer.from(user + ':' + password).toString('base64'),
@@ -43,6 +68,8 @@ export class UnauthenticatedPlClient {
     } catch (e: any) {
       if (e.code === 'UNAUTHENTICATED') throw new UnauthenticatedError(e.message);
       throw new Error(e);
+    } finally {
+      await client.close();
     }
   }
 }
