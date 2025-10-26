@@ -1,10 +1,12 @@
 {
   "extends": "@milaboratories/ts-configs/tsconfig.node.json",
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "tests/**/*"
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "vitest.config.mjs"
   ]
 }

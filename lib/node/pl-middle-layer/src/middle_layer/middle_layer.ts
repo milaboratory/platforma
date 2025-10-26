@@ -37,7 +37,6 @@ import { RuntimeCapabilities } from '@platforma-sdk/model';
 import type { DownloadUrlDriver } from '@milaboratories/pl-drivers';
 import { V2RegistryProvider } from '../block_registry';
 import type { Dispatcher } from 'undici';
-import { RetryAgent } from 'undici';
 import { getDebugFlags } from '../debug';
 import { ProjectHelper } from '../model/project_helper';
 
@@ -259,7 +258,7 @@ export class MiddleLayer {
     const driverKit = await initDriverKit(pl, workdir, ops.frontendDownloadPath, ops);
 
     // passed to components having no own retry logic
-    const retryHttpDispatcher = new RetryAgent(pl.httpDispatcher);
+    const retryHttpDispatcher = pl.httpDispatcher;
 
     const v2RegistryProvider = new V2RegistryProvider(retryHttpDispatcher);
 

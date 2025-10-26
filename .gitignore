@@ -29,3 +29,4 @@ work/
 .venv
 __pycache__/
 .ruff_cache
+*.pcapng

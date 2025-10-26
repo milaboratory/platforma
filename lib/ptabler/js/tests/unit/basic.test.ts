@@ -38,29 +38,29 @@ describe('JSON Serialization', () => {
     const expr = col('username');
     expect(expr.toJSON()).toEqual({
       type: 'col',
-      name: 'username'
+      name: 'username',
     });
   });
 
   test('LiteralExpression serializes correctly', () => {
     expect(lit(123).toJSON()).toEqual({
       type: 'const',
-      value: 123
+      value: 123,
     });
 
     expect(lit('test').toJSON()).toEqual({
       type: 'const',
-      value: 'test'
+      value: 'test',
     });
 
     expect(lit(true).toJSON()).toEqual({
       type: 'const',
-      value: true
+      value: true,
     });
 
     expect(lit(null).toJSON()).toEqual({
       type: 'const',
-      value: null
+      value: null,
     });
   });
 });
@@ -71,7 +71,7 @@ describe('Basic Arithmetic Operations', () => {
     expect(expr.toJSON()).toEqual({
       type: 'plus',
       lhs: { type: 'col', name: 'age' },
-      rhs: { type: 'const', value: 10 }
+      rhs: { type: 'const', value: 10 },
     });
   });
 
@@ -80,7 +80,7 @@ describe('Basic Arithmetic Operations', () => {
     expect(expr.toJSON()).toEqual({
       type: 'minus',
       lhs: { type: 'col', name: 'score' },
-      rhs: { type: 'col', name: 'penalty' }
+      rhs: { type: 'col', name: 'penalty' },
     });
   });
 
@@ -89,7 +89,7 @@ describe('Basic Arithmetic Operations', () => {
     expect(expr.toJSON()).toEqual({
       type: 'multiply',
       lhs: { type: 'col', name: 'price' },
-      rhs: { type: 'const', value: 1.2 }
+      rhs: { type: 'const', value: 1.2 },
     });
   });
 
@@ -98,7 +98,7 @@ describe('Basic Arithmetic Operations', () => {
     expect(expr.toJSON()).toEqual({
       type: 'truediv',
       lhs: { type: 'col', name: 'total' },
-      rhs: { type: 'const', value: 2 }
+      rhs: { type: 'const', value: 2 },
     });
   });
 });
@@ -109,7 +109,7 @@ describe('Comparison Operations', () => {
     expect(expr.toJSON()).toEqual({
       type: 'gt',
       lhs: { type: 'col', name: 'age' },
-      rhs: { type: 'const', value: 18 }
+      rhs: { type: 'const', value: 18 },
     });
   });
 
@@ -118,7 +118,7 @@ describe('Comparison Operations', () => {
     expect(expr.toJSON()).toEqual({
       type: 'eq',
       lhs: { type: 'col', name: 'status' },
-      rhs: { type: 'const', value: 'active' }
+      rhs: { type: 'const', value: 'active' },
     });
   });
 
@@ -127,7 +127,7 @@ describe('Comparison Operations', () => {
     expect(expr.toJSON()).toEqual({
       type: 'le',
       lhs: { type: 'col', name: 'score' },
-      rhs: { type: 'const', value: 100 }
+      rhs: { type: 'const', value: 100 },
     });
   });
 });
@@ -139,8 +139,8 @@ describe('Logical Operations', () => {
       type: 'and',
       operands: [
         { type: 'col', name: 'isActive' },
-        { type: 'col', name: 'hasPermission' }
-      ]
+        { type: 'col', name: 'hasPermission' },
+      ],
     });
   });
 
@@ -150,8 +150,8 @@ describe('Logical Operations', () => {
       type: 'or',
       operands: [
         { type: 'col', name: 'isAdmin' },
-        { type: 'col', name: 'isOwner' }
-      ]
+        { type: 'col', name: 'isOwner' },
+      ],
     });
   });
 
@@ -159,7 +159,7 @@ describe('Logical Operations', () => {
     const expr = col('isDeleted').not();
     expect(expr.toJSON()).toEqual({
       type: 'not',
-      value: { type: 'col', name: 'isDeleted' }
+      value: { type: 'col', name: 'isDeleted' },
     });
   });
 });
@@ -169,7 +169,7 @@ describe('Unary Operations', () => {
     const expr = col('difference').abs();
     expect(expr.toJSON()).toEqual({
       type: 'abs',
-      value: { type: 'col', name: 'difference' }
+      value: { type: 'col', name: 'difference' },
     });
   });
 
@@ -177,7 +177,7 @@ describe('Unary Operations', () => {
     const expr = col('area').sqrt();
     expect(expr.toJSON()).toEqual({
       type: 'sqrt',
-      value: { type: 'col', name: 'area' }
+      value: { type: 'col', name: 'area' },
     });
   });
 
@@ -185,7 +185,7 @@ describe('Unary Operations', () => {
     const expr = col('value').log10();
     expect(expr.toJSON()).toEqual({
       type: 'log10',
-      value: { type: 'col', name: 'value' }
+      value: { type: 'col', name: 'value' },
     });
   });
 });
@@ -195,7 +195,7 @@ describe('Null Checks', () => {
     const expr = col('optional_field').isNull();
     expect(expr.toJSON()).toEqual({
       type: 'is_na',
-      value: { type: 'col', name: 'optional_field' }
+      value: { type: 'col', name: 'optional_field' },
     });
   });
 
@@ -203,7 +203,7 @@ describe('Null Checks', () => {
     const expr = col('required_field').isNotNull();
     expect(expr.toJSON()).toEqual({
       type: 'is_not_na',
-      value: { type: 'col', name: 'required_field' }
+      value: { type: 'col', name: 'required_field' },
     });
   });
 });
@@ -214,7 +214,7 @@ describe('Aliasing', () => {
     expect(expr.getAlias()).toBe('fname');
     expect(expr.toJSON()).toEqual({
       type: 'col',
-      name: 'first_name'
+      name: 'first_name',
     });
   });
 
@@ -232,9 +232,9 @@ describe('Complex Expression Chaining', () => {
       lhs: {
         type: 'plus',
         lhs: { type: 'col', name: 'a' },
-        rhs: { type: 'col', name: 'b' }
+        rhs: { type: 'col', name: 'b' },
       },
-      rhs: { type: 'const', value: 2 }
+      rhs: { type: 'const', value: 2 },
     });
   });
 
@@ -246,14 +246,14 @@ describe('Complex Expression Chaining', () => {
         {
           type: 'gt',
           lhs: { type: 'col', name: 'age' },
-          rhs: { type: 'const', value: 18 }
+          rhs: { type: 'const', value: 18 },
         },
         {
           type: 'eq',
           lhs: { type: 'col', name: 'status' },
-          rhs: { type: 'const', value: 'active' }
-        }
-      ]
+          rhs: { type: 'const', value: 'active' },
+        },
+      ],
     });
   });
 });
@@ -264,7 +264,7 @@ describe('Type Coercion', () => {
     expect(expr.toJSON()).toEqual({
       type: 'plus',
       lhs: { type: 'col', name: 'value' },
-      rhs: { type: 'const', value: 42 }
+      rhs: { type: 'const', value: 42 },
     });
   });
 
@@ -273,7 +273,7 @@ describe('Type Coercion', () => {
     expect(expr.toJSON()).toEqual({
       type: 'eq',
       lhs: { type: 'col', name: 'name' },
-      rhs: { type: 'const', value: 'John' }
+      rhs: { type: 'const', value: 'John' },
     });
   });
 });

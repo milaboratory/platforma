@@ -19,13 +19,21 @@ export function defaultHttpDispatcher(
     bodyTimeout: 30e3, // Reset connection after 30 seconds of inactivity, better retry
     keepAliveTimeout: 15e3,
     keepAliveMaxTimeout: 60e3,
+    // Limit concurrent connections to prevent TLS handshake flooding
+    maxCachedSessions: 5, // Limit TLS session cache
+    pipelining: 1, // Disable pipelining to reduce complexity
   };
 
   const proxy = typeof httpProxy === 'string' ? { url: httpProxy } : httpProxy;
 
   const dispatcher = proxy?.url
     ? new ProxyAgent({ uri: proxy.url, token: proxy.auth, ...httpOptions })
-    : new Agent(httpOptions)
+    : new Agent({
+      ...httpOptions,
+      // Limit connection pool to prevent TLS handshake flooding
+      connections: 10, // Max connections per origin
+      pipelining: 1, // Disable pipelining
+    })
       .compose(
         interceptors.dns({
           maxTTL: 60e3, // Cache DNS results for 1 minute (default: 10 seconds)
