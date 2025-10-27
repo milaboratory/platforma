@@ -33,7 +33,7 @@ export type Filter =
     OptionalFields<Extract<FilterUiBase, { type: NumericalWithOptionalX }>, 'x'> |
     OptionalFields<Extract<FilterUiBase, { type: StringWithOptionalValue }>, 'value'> |
     { type: 'inSet'; column: SUniversalPColumnId; value: string[] } |
-    { type: 'notInSet'; column: SUniversalPColumnId; value: string[] }) & { fixedAxes: Record<string, string> };
+    { type: 'notInSet'; column: SUniversalPColumnId; value: string[] });
 
 export type Group = {
   id: string;
@@ -50,12 +50,8 @@ export type PlAdvancedFilterUI = {
 export type UniqueValuesList = ListOptionBase<string | number>[];
 export type OptionInfo = { error: boolean; label: string; spec: PColumnSpec | AxisSpec };
 export type FixedAxisInfo = {
-  id: string; // ?
-  info: {
-    label: string;
-    spec: AxisSpec;
-    uniqueValues: UniqueValuesList | null;
-  };
+  idx: number;
+  label: string;
 };
 
 export type SourceOptionInfo = {
@@ -63,7 +59,6 @@ export type SourceOptionInfo = {
   info: {
     label: string;
     error: boolean;
-    uniqueValues: UniqueValuesList | null;
     spec: PColumnSpec | AxisSpec;
     axesToBeFixed?: FixedAxisInfo[];
     alphabet?: 'nucleotide' | 'aminoacid' | string;
