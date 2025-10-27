@@ -1,4 +1,3 @@
-import os
 from typing import Mapping
 
 import polars as pl
@@ -34,11 +33,10 @@ class ReadFrame(PStep, tag="read_frame"):
         return spec.id # sliced columns do not require renaming
 
     def execute(self, ctx: StepContext) -> None:
-        if not os.path.isdir(ctx.settings.frame_folder):
-            raise ValueError(f"Frame folder does not exist: {ctx.settings.frame_folder}")
+        if ctx.settings.frame_folder is None:
+            raise ValueError("Frame folder is not set")
         
-        lf: pl.LazyFrame = ppf.pframe_source(
-            self.name,
+        result: tuple[pl.LazyFrame, ppf.PFrameCache] = ppf.pframe_source(
             ctx.settings.frame_folder,
             self.request,
             spill_path=ctx.settings.spill_folder,
@@ -49,5 +47,7 @@ class ReadFrame(PStep, tag="read_frame"):
             parallel=self.parallel,
             low_memory=self.low_memory,
         )
+        lf, cache = result
         
         ctx.put_table(self.name, lf)
+        ctx.chain_task(lambda: cache.dispose())
