@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Optional
 import msgspec
 import polars as pl
@@ -7,9 +8,9 @@ type TableSpace = dict[str, pl.LazyFrame]
 
 @dataclasses.dataclass
 class GlobalSettings:
-    root_folder: str
-    frame_folder: Optional[str] = None
-    spill_folder: Optional[str] = None
+    root_folder: Path
+    frame_folder: Optional[Path] = None
+    spill_folder: Optional[Path] = None
 
 class StepContext:
     """
