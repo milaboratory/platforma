@@ -83,7 +83,7 @@ activateRenvInWD := func(wd, queue, computeResources, plan) {
 			],
 		"exec.R.activateRenvInWD: <computeResources> must be a reference to allocation, or a map with cpu and ram"
 	)
-	validation.assertType(plan, runcmd.RUN_CMD_PLAN_SCHEMA, "exec.R.activateRenvInWD: <plan> must be a run command plan")
+	validation.assertType(plan, runcmd.RUN_CMD_PLAN_STATE_OR_OBJECT_SCHEMA, "exec.R.activateRenvInWD: <plan> must be a run command plan or state")
 
 	activateRenv := runcmd.builder(wd, plan).
 		cmd("R").

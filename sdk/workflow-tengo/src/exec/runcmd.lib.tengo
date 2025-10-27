@@ -44,13 +44,27 @@ RUN_CMD_PLAN_OPTIONS_SCHEMA := {
 	"dockerEntrypoint,?": ["string"]
 }
 
-RUN_CMD_PLAN_SCHEMA := {
+RUN_CMD_PLAN_STATE_SCHEMA := {
 	"refs": RUN_CMD_PLAN_REFS_SCHEMA,
 	"options": RUN_CMD_PLAN_OPTIONS_SCHEMA
 }
 
+_isRunCommandPlanObject := func(obj) {
+	return ll.isStrict(obj) && maps.containsKey(obj, "_type") && obj["_type"] == "runcmd.plan"
+}
+
+_validateIsRunCommandPlanObject := func(obj, keyPath, stack) {
+	if !_isRunCommandPlanObject(obj) {
+		return validation.fail(keyPath, "item %q is not a run command plan object", obj)
+	}
+
+	return validation.success
+}
+
+RUN_CMD_PLAN_STATE_OR_OBJECT_SCHEMA := [ "or", RUN_CMD_PLAN_STATE_SCHEMA, _validateIsRunCommandPlanObject ]
+
 _initStateFromPlan := func(state, initState, context) {
-	validation.assertType(initState, RUN_CMD_PLAN_SCHEMA, "invalid initial state for " + context)
+	validation.assertType(initState, RUN_CMD_PLAN_STATE_SCHEMA, "invalid initial state for " + context)
 
 	initOptions := initState.options
 	state.options.cmd = maps.clone(initOptions.cmd)
@@ -119,6 +133,8 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 	self := undefined
 
 	self = ll.toStrict({
+		_type: "runcmd.plan",
+
 		/**
 		 * Sets the command, e.g. /usr/bin/env or sh.
 		 *
@@ -492,6 +508,9 @@ builder := func(workdir, ...initialState) {
 
 	if len(initialState) == 1 {
 		initState := initialState[0]
+		if (_isRunCommandPlanObject(initState)) {
+			initState = initState.state()
+		}
 		_initStateFromPlan(state, initState, "run command builder")
 	} else {
 		ll.assert(len(initialState) == 0, "builder accepts at most two arguments")
@@ -642,11 +661,11 @@ builder := func(workdir, ...initialState) {
 			/**
 			 * Check that either allocation or compute resources are set, but not both.
 			 */
-			ll.assert(is_undefined(allocation) || (is_undefined(cpu) && is_undefined(ram)),
-				"runcmd.builder.build: either allocation or CPU/RAM request must be set for the command")
+			hasAllocation := !is_undefined(allocation)
+			hasCpuRamRequest := !is_undefined(cpu) || !is_undefined(ram)
 
-			ll.assert(!( is_undefined(allocation) && is_undefined(cpu) ),
-				"runcmd.builder.build: allocation CPU/RAM request cannot be set both for the same command run")
+			ll.assert(!(hasAllocation && hasCpuRamRequest), // none specified is OK: default queue limits would be applied.
+				"runcmd.builder.build: allocation and CPU/RAM request are mutually exclusive for the same command run")
 
 			ll.assert(!is_undefined(queue), "runcmd.builder.build: queue is required for any command run")
 
@@ -732,10 +751,11 @@ builder := func(workdir, ...initialState) {
 
 export ll.toStrict({
 	// Schemas
-	ARG_SCHEMA: ARG_SCHEMA,
-	RUN_CMD_PLAN_REFS_SCHEMA: RUN_CMD_PLAN_REFS_SCHEMA,
-	RUN_CMD_PLAN_OPTIONS_SCHEMA: RUN_CMD_PLAN_OPTIONS_SCHEMA,
-	RUN_CMD_PLAN_SCHEMA: RUN_CMD_PLAN_SCHEMA,
+	ARG_SCHEMA:                             ARG_SCHEMA,
+	RUN_CMD_PLAN_REFS_SCHEMA:               RUN_CMD_PLAN_REFS_SCHEMA,
+	RUN_CMD_PLAN_OPTIONS_SCHEMA:            RUN_CMD_PLAN_OPTIONS_SCHEMA,
+	RUN_CMD_PLAN_STATE_SCHEMA:              RUN_CMD_PLAN_STATE_SCHEMA,
+	RUN_CMD_PLAN_STATE_OR_OBJECT_SCHEMA:    RUN_CMD_PLAN_STATE_OR_OBJECT_SCHEMA,
 
 	// Functions
 	builder: builder,

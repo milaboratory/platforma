@@ -87,7 +87,10 @@ _toolsetRenvCreate = func(operationMode, swPkgRef, rPkgRef, rRunEnvDescriptor, d
 	// putting renv dir into some location out of our control.
 	//
 
-	depsInstaller := runcmd.builder(activatedWD, plan)
+	depsInstaller := runcmd.builder(activatedWD, plan).
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM)
 
 	depsInstaller.
 		cmd("R").
