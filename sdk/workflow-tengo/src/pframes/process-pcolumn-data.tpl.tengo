@@ -125,8 +125,9 @@ self.body(func(inputs) {
 	isResourceMap := data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP)
 	isJsonPartitioned := data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED)
 	isBinaryPartitioned := data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED)
+	isParquetPartitioned := data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED)
 	isJson := data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON)
-	isPartitioned := isJsonPartitioned || isBinaryPartitioned
+	isPartitioned := isJsonPartitioned || isBinaryPartitioned || isParquetPartitioned
 
 	if isResourceMap || isPartitioned || isJson {
 		meta := data.getDataAsJson()
@@ -299,6 +300,9 @@ self.body(func(inputs) {
 						} else if isJsonPartitioned {
 							intermediateGroupType = pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED
 							intermediateGroupMetadata = { partitionKeyLength: groupElementKeyLength }
+						} else if isParquetPartitioned {
+							intermediateGroupType = pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED
+							intermediateGroupMetadata = { partitionKeyLength: groupElementKeyLength }
 						} else { // isResourceMap (this is the only remaining option)
 							intermediateGroupType = pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP
 							intermediateGroupMetadata = { keyLength: groupElementKeyLength }
@@ -358,6 +362,14 @@ self.body(func(inputs) {
 			} else if output.type == "BinaryPartitioned" {
 				outputMaps[output.name] = smart.structBuilder(
 					pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED,
+					json.encode({
+						superPartitionKeyLength: groupKeyLength,
+						partitionKeyLength: output.partitionKeyLength
+					})
+				)
+			} else if output.type == "ParquetPartitioned" {
+				outputMaps[output.name] = smart.structBuilder(
+					pConstants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED,
 					json.encode({
 						superPartitionKeyLength: groupKeyLength,
 						partitionKeyLength: output.partitionKeyLength
