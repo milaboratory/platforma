@@ -1,5 +1,16 @@
 # @milaboratories/uikit
 
+## 2.5.0
+
+### Minor Changes
+
+- 3ef2381: Generelazation filters and annotations
+
+### Patch Changes
+
+- Updated dependencies [3ef2381]
+  - @platforma-sdk/model@1.45.0
+
 ## 2.4.30
 
 ### Patch Changes

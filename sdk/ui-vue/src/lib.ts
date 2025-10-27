@@ -32,6 +32,8 @@ export * from './components/PlMultiSequenceAlignment';
 
 export * from './components/PlAnnotations';
 
+export * from './components/PlBtnExportArchive';
+
 export * from './defineApp';
 
 export * from './createModel';

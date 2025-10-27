@@ -1,0 +1,92 @@
+ll := import(":ll")
+wf := import(":workflow")
+util := import(":annotations.util")
+render := import(":render")
+assets := import(":assets")
+slices := import(":slices")
+validation := import(":validation")
+
+compute := assets.importTemplate(":annotations.compute")
+
+_STEP_SCHEMA := {
+	type: "string",
+	name: "string",
+	value: { "any": "any" }
+}
+
+_STEP_SCHEMAS := [_STEP_SCHEMA]
+
+/**
+ * Computes annotations and optional filters based on the provided steps and column bundle.
+ *
+ * @param inputs: A map containing the following keys:
+ *	 = trace?: Trace information for the annotation trace
+ *	 = title: The title for the annotation trace.
+ *   - steps: An array of steps, each containing a name and an expression.
+ *   - inputAnchor: The input anchor for the workflow.
+ *   - resultAxesSpec: The specification for the result axes.
+ *   - additionalColumns?: Additional column for the column bundle.
+ *   - shouldComputeFilters?: A boolean indicating whether to compute filters.
+ *
+ * @returns: A map containing:
+ *   - annotationsColumn: The computed annotations column with its spec and data.
+ *   - annotationsFiltersColumns: An array of computed filter columns (if requested).
+ */
+computeAnnotations := func(inputs) {
+	if len(inputs.steps) == 0 {
+		return {}
+	}
+
+	validation.assertType(inputs.steps, _STEP_SCHEMAS)
+
+	steps := inputs.steps
+	title := inputs.title
+	inputAnchor := inputs.inputAnchor
+	resultAxesSpec := inputs.resultAxesSpec
+	resultColumnSpec := util.prepareResultColumnSpec(inputs)
+	shouldComputeFilters := is_bool(inputs.shouldComputeFilters) ? inputs.shouldComputeFilters : false
+	
+	columnsFromExpressions := util.extractColumnsFromExpressions(slices.map(steps, func(step) { return step.value }))
+	additionalColumns := is_array(inputs.additionalColumns) ? inputs.additionalColumns : []
+	columns := columnsFromExpressions + additionalColumns
+	
+	bundleBuilder := wf.createPBundleBuilder()
+	bundleBuilder.addAnchor("main", inputAnchor)
+	for column in columns { bundleBuilder.addById(column) }
+	columnBundle := bundleBuilder.build()
+
+	result := render.create(compute, {
+		columnBundle: columnBundle,
+		params: {
+			steps: steps,
+			columns: columns,
+			resultColumnSpec: resultColumnSpec,
+			shouldComputeFilters: shouldComputeFilters
+		}
+	})
+
+	annotationsData := result.output("annotationsData")
+	annotationsColumn := { column: util.ANNOTATION_HEADER, data: annotationsData, spec: resultColumnSpec }
+
+	idx := 0
+	annotationsFiltersColumns := shouldComputeFilters ? slices.map(steps, func(v) {
+		idx += 1
+		column := util.encodeColumnName(v.name, idx)
+		filterData := result.resolveOutput(["filtersData", column])
+		filterSpec := util.createFilterColumnSpec(resultColumnSpec, column, v.name)
+		return {
+			column: v.name,
+			data: filterData,
+			spec: filterSpec
+		}
+	}) : []
+
+	return {
+		annotationsColumn: annotationsColumn,
+		annotationsFiltersColumns: annotationsFiltersColumns
+	}
+}
+
+export ll.toStrict({
+	computeAnnotations: computeAnnotations
+})

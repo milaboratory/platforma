@@ -1,0 +1,29 @@
+{
+  "name": "@milaboratories/milaboratories.transfer-files.ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "ts-builder serve --target browser",
+    "watch": "ts-builder build --target browser --watch",
+    "build": "ts-builder build --target browser",
+    "type-check": "ts-builder types --target browser",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@milaboratories/milaboratories.transfer-files.model": "workspace:*",
+    "vue": "catalog:",
+    "@vueuse/core": "catalog:",
+    "@platforma-sdk/ui-vue": "workspace:*",
+    "@platforma-sdk/model": "workspace:*"
+  },
+  "devDependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "typescript": "catalog:",
+    "@faker-js/faker": "catalog:",
+    "@milaboratories/helpers": "workspace:*",
+    "zod": "catalog:",
+    "@zip.js/zip.js": "catalog:"
+  }
+}

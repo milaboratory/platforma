@@ -1,5 +1,21 @@
 # @platforma-sdk/ui-vue
 
+## 1.45.0
+
+### Minor Changes
+
+- 3ef2381: Generelazation filters and annotations
+
+### Patch Changes
+
+- 468b585: Lint fixes
+- 38da155: PlBtnExportArchive added
+- Updated dependencies [468b585]
+- Updated dependencies [3ef2381]
+  - @milaboratories/ptabler-expression-js@1.1.0
+  - @milaboratories/uikit@2.5.0
+  - @platforma-sdk/model@1.45.0
+
 ## 1.44.15
 
 ### Patch Changes

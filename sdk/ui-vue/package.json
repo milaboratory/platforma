@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.44.15",
+  "version": "1.45.0",
   "type": "module",
   "main": "dist/index.js",
   "styles": "dist/index.js",
@@ -23,6 +23,7 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
+    "@milaboratories/ptabler-expression-js": "workspace:*",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "@types/d3-format": "catalog:",
@@ -38,7 +39,8 @@
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
     "d3-format": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@zip.js/zip.js": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/ts-configs": "workspace:*",

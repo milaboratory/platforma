@@ -140,16 +140,25 @@ map := func(slice, fn) {
  * @return final result: any - the final result
  */
 reduce := func(slice, fn, ...init) {
-	result := undefined
+	result := len(init) > 0 ? init[0] : undefined
 	for i, elem in slice {
-		if i == 0 {
-			result = len(init) > 0 ? init : elem
-		} else {
-			result = fn(result, elem)
-		}
+		result = fn(result, elem)
 	}
-
 	return result
+}
+
+/**
+ * Make a copy of the original slice and reverse the copy.
+ *
+ * @param slice: []any - a slice to reverse
+ * @return new slice: []any - a new slice with reversed elements
+ */
+reverse := func(slice) {
+	rev := []
+	for i := len(slice)-1; i >= 0; i-- {
+		rev = append(rev, slice[i])
+	}
+	return rev
 }
 
 /**
@@ -376,6 +385,7 @@ export ll.toStrict({
 	filter: filter,
 	map: map,
 	reduce: reduce,
+	reverse: reverse,
 	flatten: flatten,
 	every: every,
 	quickSortInPlace: quickSortInPlace,

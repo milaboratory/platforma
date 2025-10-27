@@ -1,3 +1,4 @@
+// @DEPRECATED - use sdk/model/src/filters + sdk/model/src/annotations
 import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
 import { describe, expect, it, test } from 'vitest';
 import type { AnnotationFilter, AnnotationScript, IsNA, NotFilter, NumericalComparisonFilter, PatternFilter, ValueRank } from './filter';

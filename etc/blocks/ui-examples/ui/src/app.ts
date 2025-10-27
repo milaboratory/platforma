@@ -18,6 +18,7 @@ import LogViewPage from './pages/LogViewPage.vue';
 import ModalsPage from './pages/ModalsPage.vue';
 import NotificationsPage from './pages/NotificationsPage.vue';
 import PlAgDataTableV2Page from './pages/PlAgDataTableV2Page.vue';
+import PlAnnotationPage from './pages/PlAnnotationPage.vue';
 import PlAutocompleteMultiPage from './pages/PlAutocompleteMultiPage/index.vue';
 import PlAutocompletePage from './pages/PlAutocompletePage.vue';
 import PlElementListPage from './pages/PlElementListPage.vue';
@@ -96,6 +97,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/typography': () => TypographyPage,
       '/ag-grid-vue': () => AgGridVuePage,
       '/ag-grid-vue-with-builder': () => AgGridVuePageWithBuilder,
+      '/pl-annotations': () => PlAnnotationPage,
       '/pl-ag-data-table-v2': () => PlAgDataTableV2Page,
       '/pl-splash-page': () => PlSplashPage,
       '/pl-file-input-page': () => PlFileInputPage,
