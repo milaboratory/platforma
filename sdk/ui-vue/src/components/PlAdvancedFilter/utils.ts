@@ -22,7 +22,6 @@ function toInnerFilter(filterWithoutFixedAxes: FilterUi): Filter | null {
       maxEdits: filter.maxEdits ?? 2,
       substitutionsOnly: filter.substitutionsOnly ?? false,
       column: filter.column,
-      fixedAxes: {},
     };
   }
   if (filter.type === 'or' && filter.filters.every((f) => f.type === 'patternEquals')) { // different possible structures?
@@ -32,7 +31,6 @@ function toInnerFilter(filterWithoutFixedAxes: FilterUi): Filter | null {
         type: 'inSet',
         value: filter.filters.map((f) => f.value),
         column: filter.filters[0].column,
-        fixedAxes: {},
       };
     }
   }
@@ -43,7 +41,6 @@ function toInnerFilter(filterWithoutFixedAxes: FilterUi): Filter | null {
         type: 'notInSet',
         value: f.value,
         column: f.column,
-        fixedAxes: {},
       };
     }
   }
