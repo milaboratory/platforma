@@ -98,7 +98,8 @@ parseData := func(inputParam, ...optsRaw) {
         state.keyLength = resourceData.keyLength
         state.relevantTopLayerKeyLength = state.keyLength
     } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED ||
-              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED {
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED ||
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED {
         state.partitionKeyLength = resourceData.partitionKeyLength
         state.relevantTopLayerKeyLength = state.partitionKeyLength
     } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
@@ -106,7 +107,8 @@ parseData := func(inputParam, ...optsRaw) {
         state.keyLength = resourceData.keyLength
         state.relevantTopLayerKeyLength = state.partitionKeyLength
     } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED ||
-              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED {
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED ||
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED {
         state.superPartitionKeyLength = resourceData.superPartitionKeyLength
         state.partitionKeyLength = resourceData.partitionKeyLength // This is PKL of *nested* structures
         state.relevantTopLayerKeyLength = state.superPartitionKeyLength
@@ -125,6 +127,7 @@ parseData := func(inputParam, ...optsRaw) {
         state.data = resourceData.data
         for key, _ in state.data { _decodeKeyString(key) }
     } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED ||
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED ||
               state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP {
         for key, fieldRef in actualResource.inputs() {
             _decodeKeyString(key) // Validate key structure early
@@ -160,6 +163,7 @@ parseData := func(inputParam, ...optsRaw) {
         state.data = tempData
     } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED ||
               state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED ||
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED ||
               state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
         nestedOpts := { parse: recursive } // if not recursive, the nested resource will not be parsed
         if !is_undefined(state.spec) {
@@ -312,6 +316,7 @@ _createPColumnDataInstance = func(state) {
             if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON {
                 builder = smart.structBuilder(state.resourceType, json.encode({ keyLength: state.keyLength, data: state.data }))
             } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED ||
+                    state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED ||
                     state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
                 builder = smart.structBuilder(state.resourceType, json.encode({ partitionKeyLength: state.partitionKeyLength }))
                 for key, resourceRef in state.data {
@@ -325,6 +330,7 @@ _createPColumnDataInstance = func(state) {
                 }
             } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED ||
                     state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED ||
+                    state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED ||
                     state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
                 builder = smart.structBuilder(state.resourceType, json.encode({
                     superPartitionKeyLength: state.superPartitionKeyLength,
@@ -426,6 +432,7 @@ _createPColumnDataInstance = func(state) {
 
             if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED ||
                state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED ||
+               state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED ||
                state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
 
                 newData := {}
@@ -469,6 +476,11 @@ _createPColumnDataInstance = func(state) {
                             newInstanceOpts.resourceType = pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED
                             newInstanceOpts.partitionKeyLength = partitionKeyLength
                             newInstanceOpts.relevantTopLayerKeyLength = partitionKeyLength
+                        } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED {
+                            partitionKeyLength := state.partitionKeyLength
+                            newInstanceOpts.resourceType = pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED
+                            newInstanceOpts.partitionKeyLength = partitionKeyLength
+                            newInstanceOpts.relevantTopLayerKeyLength = partitionKeyLength
                         } else { // RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED (PColumnData/Partitioned/ResourceMap)
                             keyLength := state.keyLength
                             newInstanceOpts.resourceType = pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP
@@ -498,7 +510,8 @@ _createPColumnDataInstance = func(state) {
                     })
                 }
             } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED ||
-                      state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED {
+                      state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED ||
+                      state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED {
                 newData := {}
                 for keyStr, item in state.data {
                     keyArray := _decodeKeyString(keyStr)
@@ -716,9 +729,10 @@ _createPColumnDataInstance = func(state) {
 
             isJsonSuper := state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED
             isBinarySuper := state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED
+            isParquetSuper := state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED
             isResourceMapSuper := state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED
 
-            if !(isJsonSuper || isBinarySuper || isResourceMapSuper) {
+            if !(isJsonSuper || isBinarySuper || isParquetSuper || isResourceMapSuper) {
                 return self // Not a type that can be flattened
             }
 
@@ -729,6 +743,9 @@ _createPColumnDataInstance = func(state) {
                 usePartitionKeyLengthForFinal = true
             } else if isBinarySuper {
                 finalResourceType = pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED
+                usePartitionKeyLengthForFinal = true
+            } else if isParquetSuper {
+                finalResourceType = pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED
                 usePartitionKeyLengthForFinal = true
             } else { // isResourceMapSuper
                 finalResourceType = pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP
