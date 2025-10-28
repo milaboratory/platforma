@@ -73,10 +73,12 @@ self.body(func(inputs) {
 	}
 
 	columnSelectors := []
+	sortSelectors := []
 	for axis in uniqueAxes {
 		label := axis.label
 		delete(axis, "label")
 		columnSelectors = append(columnSelectors, pt.sc.axis(axis).alias(label))
+		sortSelectors = append(sortSelectors, pt.sc.byName(label))
 	}
 	for column in rawColumns {
 		label := getLabel(column.spec)
@@ -107,6 +109,10 @@ self.body(func(inputs) {
 	wf.frame(frameInput).
 		select(numericSelector, stringSelector).
 		select(columnSelectors...).
+		sort(sortSelectors, {
+			descending: false,
+			nulls_last: false
+		}).
 		save(resultFile)
 
 	result := wf.run()
