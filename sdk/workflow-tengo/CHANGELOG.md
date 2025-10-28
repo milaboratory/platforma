@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.5.4
+
+### Patch Changes
+
+- e1f8924: Fix for ImmuneWatch block
+
 ## 5.5.3
 
 ### Patch Changes
