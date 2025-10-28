@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.45.5
+
+### Patch Changes
+
+- 35d37a9: Make sure exportCsv runs once on click
+
 ## 1.45.0
 
 ### Minor Changes
