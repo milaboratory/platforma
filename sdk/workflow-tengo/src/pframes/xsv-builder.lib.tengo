@@ -68,7 +68,7 @@ xsvFileBuilder := func(xsvType) {
         }
 
         resultArray := []
-        for baseKey, colParts in parsedColumns {
+        maps.forEach(parsedColumns, func(baseKey, colParts) {
             if is_undefined(colParts.spec) {
                 ll.panic("Missing .spec for base key '%s' in flat frame input.", baseKey)
             }
@@ -80,7 +80,7 @@ xsvFileBuilder := func(xsvType) {
                 data: colParts.data,
                 key: baseKey
             })
-        }
+        })
         return resultArray
     }
 
@@ -550,7 +550,7 @@ xsvFileBuilder := func(xsvType) {
                     if isFlatFrame {
                         colsToProcess = parseFlatFrameInput(item)
                     } else { // Assume map of column objects: { "id1": {spec, data}, ... }
-                        for k, v_col in item {
+                        maps.forEach(item, func(k, v_col) {
                              if !is_map(v_col) || is_undefined(v_col.spec) || is_undefined(v_col.data) {
                                 ll.panic("Invalid column value in frame for key '%s'. Expected {spec: ..., data: ...}.", k)
                             }
@@ -559,7 +559,7 @@ xsvFileBuilder := func(xsvType) {
                                 data: v_col.data,
                                 key: k // Use map key as original key
                             })
-                        }
+                        })
                     }
                     processMultiCol(colsToProcess, ops)
                 }
