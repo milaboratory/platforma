@@ -36,6 +36,7 @@ export async function exportCsv(gridApi: GridApi, completed: () => void) {
         return completed();
       }
 
+      let exportStarted = false;
       const gridDiv = createGridDiv();
       const gridOptions: GridOptions = {
         rowModelType: 'serverSide',
@@ -51,7 +52,12 @@ export async function exportCsv(gridApi: GridApi, completed: () => void) {
         cacheBlockSize: state[0].rowCount,
         onModelUpdated: (event) => {
           const state = event.api.getServerSideGroupLevelState();
-          if (state.length > 0 && state[0].rowCount === state[0].cacheBlockSize) {
+          if (
+            !exportStarted
+            && state.length > 0
+            && state[0].rowCount === state[0].cacheBlockSize
+          ) {
+            exportStarted = true;
             event.api.exportDataAsCsv();
             destroyGridDiv(gridDiv);
             return completed();
@@ -67,4 +73,4 @@ export async function exportCsv(gridApi: GridApi, completed: () => void) {
       throw Error(`exportCsv unsupported for rowModelType = ${rowModel}`);
     }
   }
-};
+}
