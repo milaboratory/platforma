@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.5.3
+
+### Patch Changes
+
+- 2d2f31c: Change the way how renvs get initialised before execution
+
 ## 5.5.2
 
 ### Patch Changes
