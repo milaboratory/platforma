@@ -274,7 +274,7 @@ self.body(func(inputs) {
 					inGroupKey := []
 					for i in aggregationIndices {
 						if len(key) <= i {
-							if isJsonPartitioned || isBinaryPartitioned {
+							if isPartitioned {
 								continue
 							} else {
 								ll.panic("Key length is less than aggregation index: %v, key: %v", i, key)
