@@ -537,76 +537,76 @@ workflow := func() {
 				inFiles = append(inFiles, { content: fileContent, name: finalFileName })
 			}
 
-		// Generate appropriate step based on format
-		step := undefined
-		if finalFormat == "pentry" {
-			columnsMap := frameInput._getColumnsMap()
-			src := frameInput._getJoinTree()
+			// Generate appropriate step based on format
+			step := undefined
+			if finalFormat == "pentry" {
+				columnsMap := frameInput._getColumnsMap()
+				src := frameInput._getJoinTree()
 
-			// Build translation and rename mappings
-			translation := {}
-			rename := {}
-			renamedColumnsMap := {}
+				// Build translation and rename mappings
+				translation := {}
+				rename := {}
+				renamedColumnsMap := {}
 
-			for frameUniqueColumnId, columnInfo in columnsMap {
-				workflowUniqueColumnId := self._newUniqueColumnId()
+				maps.forEach(columnsMap, func(frameUniqueColumnId, columnInfo) {
+					workflowUniqueColumnId := self._newUniqueColumnId()
 
-				translation[workflowUniqueColumnId] = frameUniqueColumnId
-				rename[frameUniqueColumnId] = workflowUniqueColumnId
-				renamedColumnsMap[workflowUniqueColumnId] = columnInfo
-			}
+					translation[workflowUniqueColumnId] = frameUniqueColumnId
+					rename[frameUniqueColumnId] = workflowUniqueColumnId
+					renamedColumnsMap[workflowUniqueColumnId] = columnInfo
+				})
 
-			// Create request and rename columns
-			request := {
-				src: src,
-				filters: []
-			}
-			renamedRequest := util.renameJoinColumns(request, rename)
-
-			// Register frame and create step
-			ll.assert(is_undefined(inFrames[finalDataFrameId]),
-				"frame with name '%s' already added", finalDataFrameId)
-			inFrames[finalDataFrameId] = {
-				columns: renamedColumnsMap
-			}
-
-			step = {
-				type: "read_frame",
-				name: finalDataFrameId,
-				request: renamedRequest,
-				translation: translation
-			}
-		} else if finalFormat == "parquet" {
-				step = {
-					type: "read_parquet",
-					file: finalFileName,
-					name: finalDataFrameId
+				// Create request and rename columns
+				request := {
+					src: src,
+					filters: []
 				}
-			} else if finalFormat == "ndjson" {
-				step = {
-					type: "read_ndjson",
-					file: finalFileName,
-					name: finalDataFrameId
-				}
-			} else { // csv or tsv
-				step = {
-					type: "read_csv",
-					file: finalFileName,
-					name: finalDataFrameId
+				renamedRequest := util.renameJoinColumns(request, rename)
+
+				// Register frame and create step
+				ll.assert(is_undefined(inFrames[finalDataFrameId]),
+					"frame with name '%s' already added", finalDataFrameId)
+				inFrames[finalDataFrameId] = {
+					columns: renamedColumnsMap
 				}
 
-			if finalFormat == "csv" {
-				step.delimiter = ","
-			} else if finalFormat == "tsv" {
-				step.delimiter = "\t"
+				step = {
+					type: "read_frame",
+					name: finalDataFrameId,
+					request: renamedRequest,
+					translation: translation
+				}
+			} else if finalFormat == "parquet" {
+					step = {
+						type: "read_parquet",
+						file: finalFileName,
+						name: finalDataFrameId
+					}
+				} else if finalFormat == "ndjson" {
+					step = {
+						type: "read_ndjson",
+						file: finalFileName,
+						name: finalDataFrameId
+					}
+				} else { // csv or tsv
+					step = {
+						type: "read_csv",
+						file: finalFileName,
+						name: finalDataFrameId
+					}
+
+				if finalFormat == "csv" {
+					step.delimiter = ","
+				} else if finalFormat == "tsv" {
+					step.delimiter = "\t"
+				}
+
+				if !is_undefined(commentPrefixOpt) {
+					step.commentPrefix = commentPrefixOpt
+				}
 			}
 
-			if !is_undefined(commentPrefixOpt) {
-				step.commentPrefix = commentPrefixOpt
-			}
-		}
-
-		// Determine final schema for PTabler: optionsSchema (from opts) overrides inputSchema (from structural input)
+			// Determine final schema for PTabler: optionsSchema (from opts) overrides inputSchema (from structural input)
 			finalSchemaToUse := undefined
 			if !is_undefined(optionsSchema) {
 				finalSchemaToUse = optionsSchema
@@ -815,8 +815,8 @@ workflow := func() {
 
 			canonicalMap := {}
 			distilledAxesSpecs := {}
-			for _, frame in inFrames {
-				for _, columnInfo in frame.columns {
+			maps.forEach(inFrames, func(_, frame) {
+				maps.forEach(frame.columns, func(_, columnInfo) {
 					for axis in columnInfo.spec.axesSpec {
 						distilledAxis := specDistiller.distill(axis)
 						if is_undefined(canonicalMap[distilledAxis.name]) {
@@ -831,8 +831,8 @@ workflow := func() {
 							distilledAxesSpecs[distilledAxis.name] = append(distilledAxesSpecs[distilledAxis.name], distilledAxis)
 						}
 					}
-				}
-			}
+				})
+			})
 
 			ctx := {
 				specDistiller: specDistiller,
