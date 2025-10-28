@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.5.5
+
+### Patch Changes
+
+- c1abfc6: Fix CID conflict in xsv.export
+
 ## 5.5.4
 
 ### Patch Changes
