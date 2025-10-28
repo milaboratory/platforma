@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.5.6
+
+### Patch Changes
+
+- e218c3d: Fix CID conflicts from xsv-builder
+
 ## 5.5.5
 
 ### Patch Changes
