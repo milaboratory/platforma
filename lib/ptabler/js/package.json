@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "build": "ts-builder build --target node",
-    "test": "vitest",
+    "test": "vitest run",
     "test:ui": "vitest --ui",
     "type-check": "ts-builder types --target node",
     "lint": "eslint .",
