@@ -1,7 +1,16 @@
 <script setup lang="ts">
-import type { FilterUi, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { FilterSpec, ListOptionBase, SUniversalPColumnId } from '@platforma-sdk/model';
 import { PlAdvancedFilter, PlBlockPage, PlCheckbox, PlDropdown } from '@platforma-sdk/ui-vue';
 import { computed, ref, watch } from 'vue';
+
+const uniqueValuesByColumnOrAxisId: Record<string, ListOptionBase<string>[]> = {
+  1: [{ value: '1', label: 'Value 1' }, { value: '2', label: 'Value 2' }],
+  2: [{ value: '3', label: 'Value 3' }, { value: '4', label: 'Value 4' }],
+  3: [{ value: '5', label: 'Value 5' }, { value: '6', label: 'Value 6' }],
+};
+const uniqueValuesByAxisIdx: Record<string, Record<number, ListOptionBase<string>[]>> = {
+  1: { 0: [{ value: 'axisValue1', label: 'Axis Value 1' }, { value: 'axisValue2', label: 'Axis Value 2' }] },
+};
 
 const options = [
   {
@@ -10,15 +19,15 @@ const options = [
       label: 'Column 1',
       error: false,
       axesToBeFixed: [{
-        id: 'axis1',
+        idx: 0,
+        label: 'Axis 1 label',
         info: {
           label: 'Axis 1 label',
           spec: { type: 'String' as const, name: 'nameAxis1' },
           uniqueValues: [{ value: 'axisValue1', label: 'Axis Value 1' }, { value: 'axisValue2', label: 'Axis Value 2' }],
         },
       }],
-      spec: { kind: 'PColumn' as const, valueType: 'Int' as const, name: 'c1', axesSpec: [] },
-      uniqueValues: [{ value: '1', label: 'Value 1' }, { value: '2', label: 'Value 2' }],
+      spec: { kind: 'PColumn' as const, valueType: 'Int' as const, name: 'c1', axesSpec: [{ type: 'String' as const, name: 'nameAxis1' }] },
     },
   },
   {
@@ -27,7 +36,6 @@ const options = [
       label: 'Column 2',
       error: false,
       spec: { kind: 'PColumn' as const, valueType: 'String' as const, name: 'c2', axesSpec: [] },
-      uniqueValues: [{ value: '3', label: 'Value 3' }, { value: '4', label: 'Value 4' }],
     },
   },
   {
@@ -36,18 +44,25 @@ const options = [
       label: 'Column 3',
       error: false,
       spec: { kind: 'PColumn' as const, valueType: 'Double' as const, name: 'c3', axesSpec: [] },
-      uniqueValues: [{ value: '5', label: 'Value 5' }, { value: '6', label: 'Value 6' }],
     },
   },
 ];
 const dndMode = ref(false);
 const draggedId = ref<string | undefined>();
 
-async function searchOptions() {
-  return [];
+async function searchOptions(id: string, str: string, axisIdx?: number) {
+  if (axisIdx !== undefined) {
+    return uniqueValuesByAxisIdx[id]?.[axisIdx] || [];
+  }
+  return uniqueValuesByColumnOrAxisId[id] || [];
 }
-async function searchModel(id: string, modelStr: string) {
-  return { value: modelStr, label: `Label ${modelStr}` };
+async function searchModel(id: string, modelStr: string, axisIdx?: number) {
+  if (axisIdx !== undefined) {
+    const axisValues = uniqueValuesByAxisIdx[id]?.[axisIdx];
+    return axisValues.find((v) => v.value === modelStr) || { value: modelStr, label: `Label of ${modelStr}` };
+  }
+  const columnValues = uniqueValuesByColumnOrAxisId[id];
+  return columnValues.find((v) => v.value === modelStr) || { value: modelStr, label: `Label of ${modelStr}` };
 }
 
 const errorState = {
@@ -96,7 +111,7 @@ const errorState = {
     }],
 };
 
-const normalState: FilterUi = {
+const normalState: FilterSpec = {
   type: 'and' as const,
   filters: [
     {
@@ -105,7 +120,7 @@ const normalState: FilterUi = {
         type: 'isNA' as const,
         column: '1' as SUniversalPColumnId,
       }, {
-        type: 'numberEquals' as const,
+        type: 'equal' as const,
         column: '2' as SUniversalPColumnId,
         x: 10,
       }],
@@ -126,7 +141,7 @@ const normalState: FilterUi = {
   ],
 };
 
-const filterStates: Record<string, FilterUi> = {
+const filterStates: Record<string, FilterSpec> = {
   normalState: normalState,
   errorState: errorState,
   emptyState: {
@@ -135,7 +150,7 @@ const filterStates: Record<string, FilterUi> = {
   },
 };
 
-const filtersModel = computed<FilterUi>({
+const filtersModel = computed<FilterSpec>({
   get: () => {
     return filterStates[selectedSavedFilters.value];
   },
