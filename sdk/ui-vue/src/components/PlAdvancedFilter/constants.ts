@@ -1,6 +1,5 @@
 import type { SUniversalPColumnId } from '@platforma-sdk/model';
 import type { Filter, FilterType, SupportedFilterTypes } from './types';
-import type { NormalizedSpecData } from './utils';
 
 export const SUPPORTED_FILTER_TYPES = new Set<SupportedFilterTypes>([
   'isNA',
@@ -13,30 +12,18 @@ export const SUPPORTED_FILTER_TYPES = new Set<SupportedFilterTypes>([
   'patternNotEquals',
   'patternContainSubsequence',
   'patternNotContainSubsequence',
-  'numberEquals',
-  'numberNotEquals',
+  'equal',
+  'notEqual',
   'patternFuzzyContainSubsequence',
   'patternMatchesRegularExpression',
+  'inSet',
+  'notInSet',
 ]);
-
-const LOCAL_FILTER_TYPES: FilterType[] = ['inSet', 'notInSet'];
-export const ALL_FILTER_TYPES = new Set<FilterType>([...SUPPORTED_FILTER_TYPES, ...LOCAL_FILTER_TYPES]);
-
-export const LOCAL_FILTERS_METADATA: Record<'inSet' | 'notInSet', { label: string; supportedFor: (spec: NormalizedSpecData) => boolean }> = {
-  inSet: {
-    label: 'In set',
-    supportedFor: (spec) => spec.valueType === 'String',
-  },
-  notInSet: {
-    label: 'Not in set',
-    supportedFor: (spec) => spec.valueType === 'String',
-  },
-};
 
 export const DEFAULT_FILTER_TYPE: FilterType = 'isNA';
 
 const emptyCommonPart = { column: '' as SUniversalPColumnId, fixedAxes: {} as Record<string, string> };
-export const DEFAULT_FILTERS: Record<FilterType, Filter> = {
+export const DEFAULT_FILTERS: Record<SupportedFilterTypes, Filter> = {
   isNA: { type: 'isNA', ...emptyCommonPart },
   isNotNA: { type: 'isNotNA', ...emptyCommonPart },
   lessThan: { type: 'lessThan', x: undefined, ...emptyCommonPart },
@@ -49,8 +36,8 @@ export const DEFAULT_FILTERS: Record<FilterType, Filter> = {
   patternNotContainSubsequence: { type: 'patternNotContainSubsequence', value: '', ...emptyCommonPart },
   patternFuzzyContainSubsequence: { type: 'patternFuzzyContainSubsequence', maxEdits: 2, substitutionsOnly: false, wildcard: undefined, value: '', ...emptyCommonPart },
   patternMatchesRegularExpression: { type: 'patternMatchesRegularExpression', value: '', ...emptyCommonPart },
-  numberEquals: { type: 'numberEquals', x: undefined, ...emptyCommonPart },
-  numberNotEquals: { type: 'numberNotEquals', x: undefined, ...emptyCommonPart },
+  equal: { type: 'equal', x: undefined, ...emptyCommonPart },
+  notEqual: { type: 'notEqual', x: undefined, ...emptyCommonPart },
   inSet: { type: 'inSet', value: [], ...emptyCommonPart },
   notInSet: { type: 'notInSet', value: [], ...emptyCommonPart },
 };

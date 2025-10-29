@@ -1,36 +1,39 @@
 <script lang="ts" setup>
 import type { Filter, FilterType, Operand, SourceOptionInfo } from './types';
-import { PlIcon16, PlDropdown, PlDropdownMulti, PlAutocomplete, PlAutocompleteMulti, PlTextField, PlNumberField, Slider, PlToggleSwitch } from '@milaboratories/uikit';
+import { PlIcon16, PlDropdown, PlAutocomplete, PlAutocompleteMulti, PlTextField, PlNumberField, Slider, PlToggleSwitch } from '@milaboratories/uikit';
 import { computed } from 'vue';
-import { ALL_FILTER_TYPES, DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
-import { type ListOptionBase } from '@platforma-sdk/model';
+import { SUPPORTED_FILTER_TYPES, DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
+import type { AnchoredPColumnId, AxisFilterByIdx, AxisFilterValue, SUniversalPColumnId } from '@platforma-sdk/model';
+import { isFilteredPColumn, parseColumnId, stringifyColumnId, type ListOptionBase } from '@platforma-sdk/model';
 import OperandButton from './OperandButton.vue';
-import { getFilterInfo, getNormalizedSpec, isNumericValueType, isStringValueType } from './utils';
+import { getFilterInfo, getNormalizedSpec, isNumericValueType } from './utils';
 
 const props = defineProps<{
   operand: Operand;
   columnOptions: SourceOptionInfo[];
   dndMode: boolean;
   last: boolean;
-  searchOptionsFn?: (id: string, str: string) => (Promise<ListOptionBase<string | number>[]>) | ((id: string, str: string) => ListOptionBase<string | number>[]);
-  searchModelFn?: (id: string, str: string) => (Promise<ListOptionBase<string | number>>) | ((id: string, str: string) => ListOptionBase<string | number>);
-  onDelete: (id: string) => void;
+  searchOptions: (columnId: SUniversalPColumnId, searchStr: string, axisIdx?: number) => (Promise<ListOptionBase<string | number>[]>) |
+    ((columnId: SUniversalPColumnId, searchStr: string, axisIdx?: number) => ListOptionBase<string | number>[]);
+  searchModel: (columnId: SUniversalPColumnId, searchStr: string, axisIdx?: number) => (Promise<ListOptionBase<string | number>>) |
+    ((columnId: SUniversalPColumnId, searchStr: string, axisIdx?: number) => ListOptionBase<string | number>);
+  onDelete: (columnId: SUniversalPColumnId) => void;
   onChangeOperand: (op: Operand) => void;
 }>();
 
 const filter = defineModel<Filter>({ required: true });
 
-async function searchModelMulti(id: string, v: string[]): Promise<ListOptionBase<string>[]> {
-  const searchFn = props.searchModelFn;
-  return Promise.all(v.map((v) => searchFn ? searchFn(id, v) as Promise<ListOptionBase<string>> : Promise.resolve({ label: '', value: '' })));
+async function searchModelMultiFn(id: SUniversalPColumnId, v: string[], axisIdx?: number): Promise<ListOptionBase<string>[]> {
+  const searchFn = props.searchModel;
+  return Promise.all(v.map((v) => searchFn(id, v, axisIdx) as Promise<ListOptionBase<string>>));
 }
-async function searchModel(id: string, v: string): Promise<ListOptionBase<string>> {
-  const searchFn = props.searchModelFn;
-  return searchFn ? searchFn(id, v) as Promise<ListOptionBase<string>> : Promise.resolve({ label: '', value: '' });
+async function searchModelSingleFn(id: SUniversalPColumnId, v: string, axisIdx?: number): Promise<ListOptionBase<string>> {
+  const searchFn = props.searchModel;
+  return searchFn(id, v, axisIdx) as Promise<ListOptionBase<string>>;
 }
-async function searchOptions(id: string, str: string): Promise<ListOptionBase<string>[]> {
-  const searchFn = props.searchOptionsFn;
-  return searchFn ? searchFn(id, str) as Promise<ListOptionBase<string>[]> : Promise.resolve([]);
+async function searchOptionsFn(id: SUniversalPColumnId, str: string, axisIdx?: number): Promise<ListOptionBase<string>[]> {
+  const searchFn = props.searchOptions;
+  return searchFn(id, str, axisIdx) as Promise<ListOptionBase<string>[]>;
 }
 
 function changeFilterType(newFilterType?: FilterType) {
@@ -58,27 +61,30 @@ function changeFilterType(newFilterType?: FilterType) {
   }
 }
 
-function changeSourceId(newSourceId?: string) {
+function changeSourceId(newSourceId?: SUniversalPColumnId) {
+  console.log('changeSourceId', newSourceId);
   if (!newSourceId) {
     return;
   }
-  const newSourceInfo = props.columnOptions.find((v) => v.id === newSourceId);
+  const newSourceInfo = props.columnOptions.find((v) => v.id === getSourceId(newSourceId));
   if (!newSourceInfo) {
+    console.log('newSourceInfo not found', newSourceId);
     return;
   }
   const filterInfo = getFilterInfo(filter.value.type);
   const newSourceSpec = getNormalizedSpec(newSourceInfo?.info?.spec);
   if (filterInfo.supportedFor(newSourceSpec)) { // don't do anything except update source id
-    return;
-  } else { // new source id doesn't fit current filter by type (string/number), reset to default filter
+    filter.value.column = newSourceId;
+  } else { // reset to default filter which fits to any column
+    console.log('reset to default filter', newSourceId);
     filter.value = {
       ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
-      column: filter.value.column,
+      column: newSourceId,
     };
   }
 }
 
-const inconsistentSourceSelected = computed(() => !props.columnOptions.find((op) => op.id === filter.value.column));
+const inconsistentSourceSelected = computed(() => !props.columnOptions.find((op) => op.id === getSourceId(filter.value.column)));
 const sourceOptions = computed(() => {
   const options = props.columnOptions.map((v) => ({ value: v.id, label: v.info.label ?? v }));
   if (inconsistentSourceSelected.value) {
@@ -87,12 +93,67 @@ const sourceOptions = computed(() => {
   return options;
 });
 
-const currentOption = computed(() => props.columnOptions.find((op) => op.id === filter.value.column));
+function getSourceId(column: SUniversalPColumnId): SUniversalPColumnId {
+  try {
+    const parsedColumnId = parseColumnId(column);
+    if (isFilteredPColumn(parsedColumnId)) {
+      return typeof parsedColumnId.source === 'string' ? parsedColumnId.source : stringifyColumnId(parsedColumnId.source);
+    }
+  } catch {
+    return column;
+  }
+  return column;
+}
+type ColumnAsSourceAndFixedAxes = { column: SUniversalPColumnId; axisFiltersByIndex: Record<number, AxisFilterValue | undefined> };
+function getColumnAsSourceAndFixedAxes(column: SUniversalPColumnId): ColumnAsSourceAndFixedAxes {
+  const sourceId = getSourceId(column);
+  const option = props.columnOptions.find((op) => op.id === sourceId);
+  const axesToBeFixed = (option?.info.axesToBeFixed ?? []).reduce((res, item) => {
+    res[item.idx] = undefined;
+    return res;
+  }, {} as Record<number, AxisFilterValue | undefined>);
+  try {
+    const parsedColumnId = parseColumnId(column);
+    if (isFilteredPColumn(parsedColumnId)) {
+      return {
+        column: sourceId,
+        axisFiltersByIndex: parsedColumnId.axisFilters.reduce((res, item) => {
+          res[item[0]] = item[1];
+          return res;
+        }, axesToBeFixed),
+      };
+    }
+  } catch {
+    return { column: column, axisFiltersByIndex: axesToBeFixed };
+  }
+  return { column: column, axisFiltersByIndex: axesToBeFixed };
+}
+
+function stringifyColumn(value: ColumnAsSourceAndFixedAxes): SUniversalPColumnId {
+  if (Object.keys(value.axisFiltersByIndex).length === 0) {
+    return value.column;
+  }
+  return stringifyColumnId({
+    source: value.column as unknown as AnchoredPColumnId,
+    axisFilters: Object.entries(value.axisFiltersByIndex).map(([idx, value]) => [Number(idx), value] as AxisFilterByIdx),
+  });
+}
+
+const columnAsSourceAndFixedAxes = computed({
+  get: () => {
+    return getColumnAsSourceAndFixedAxes(filter.value.column);
+  },
+  set: (value) => {
+    filter.value.column = stringifyColumn(value);
+  },
+});
+
+const currentOption = computed(() => props.columnOptions.find((op) => op.id === columnAsSourceAndFixedAxes.value.column));
 const currentSpec = computed(() => currentOption.value?.info.spec ? getNormalizedSpec(currentOption.value.info.spec) : null);
 const currentType = computed(() => currentSpec.value?.valueType);
 const currentError = computed(() => currentOption.value?.info.error || inconsistentSourceSelected.value);
 
-const filterTypesOptions = computed(() => [...ALL_FILTER_TYPES].filter((v) =>
+const filterTypesOptions = computed(() => [...SUPPORTED_FILTER_TYPES].filter((v) =>
   filter.value.type === v || (currentSpec.value ? getFilterInfo(v).supportedFor(currentSpec.value) : true),
 ).map((v) => ({ value: v, label: getFilterInfo(v).label })),
 );
@@ -122,30 +183,6 @@ const stringMatchesError = computed(() => {
   }
 });
 
-const preloadedOptions = computed(() => {
-  if (!isStringValueType(currentOption.value?.info.spec) || inconsistentSourceSelected.value) {
-    return null;
-  }
-  if (filter.value.type !== 'patternEquals' && filter.value.type !== 'patternNotEquals' && filter.value.type !== 'inSet' && filter.value.type !== 'notInSet') {
-    return null;
-  }
-  const uniqueValues = currentOption.value?.info.uniqueValues;
-  if (uniqueValues) {
-    return uniqueValues;
-  }
-  if (props.searchOptionsFn && props.searchModelFn) {
-    return null;
-  }
-  return undefined;
-});
-
-function isNumberType(v: Filter): v is Filter & { type: 'numberEquals' | 'numberNotEquals' | 'lessThan' | 'lessThanOrEqual' | 'greaterThan' | 'greaterThanOrEqual' } {
-  return v.type === 'numberEquals' || v.type === 'numberNotEquals'
-    || v.type === 'lessThan'
-    || v.type === 'lessThanOrEqual'
-    || v.type === 'greaterThan'
-    || v.type === 'greaterThanOrEqual';
-}
 </script>
 <template>
   <div :class="$style.filterWrapper">
@@ -166,7 +203,7 @@ function isNumberType(v: Filter): v is Filter & { type: 'numberEquals' | 'number
     </div>
     <div v-else :class="$style.top" >
       <PlDropdown
-        v-model="filter.column"
+        v-model="columnAsSourceAndFixedAxes.column"
         :errorStatus="currentError"
         :options="sourceOptions"
         :style="{width: '100%'}"
@@ -179,24 +216,19 @@ function isNumberType(v: Filter): v is Filter & { type: 'numberEquals' | 'number
     </div>
 
     <div v-if="currentOption?.info.axesToBeFixed?.length" :class="$style.fixedAxesBlock">
-      <template v-for="value in currentOption?.info.axesToBeFixed">
-        <PlDropdown
-          v-if="value.info.uniqueValues !== null"
-          :key="value.id"
-          v-model="filter.fixedAxes[value.id]"
-          :label="value.info.label"
-          :options="value.info.uniqueValues"
-          :clearable="true"
-        />
+      <template v-for="value in currentOption?.info.axesToBeFixed" :key="value.idx">
         <PlAutocomplete
-          v-else
-          :key="value.id + 'autocomplete'"
-          v-model="filter.fixedAxes[value.id]"
-          :label="value.info.label"
-          :options-search="(str) => searchOptions(filter.column, str)"
-          :model-search="(v) => searchModel(filter.column, v as string)"
+          v-model="columnAsSourceAndFixedAxes.axisFiltersByIndex[value.idx]"
+          :label="value.label"
+          :options-search="(str) => searchOptionsFn(columnAsSourceAndFixedAxes.column, str, value.idx)"
+          :model-search="(v) => searchModelSingleFn(columnAsSourceAndFixedAxes.column, v as string, value.idx)"
           :disabled="inconsistentSourceSelected"
           :clearable="true"
+          @update:model-value="(v) => {
+            columnAsSourceAndFixedAxes = {
+              ...columnAsSourceAndFixedAxes,
+              axisFiltersByIndex: {...columnAsSourceAndFixedAxes.axisFiltersByIndex, [value.idx]: v}}
+          }"
         />
       </template>
     </div>
@@ -236,43 +268,26 @@ function isNumberType(v: Filter): v is Filter & { type: 'numberEquals' | 'number
     <!-- bottom element - individual settings for every filter type -->
     <div :class="$style.bottom">
       <template v-if="filter.type === 'patternEquals' || filter.type === 'patternNotEquals'" >
-        <PlDropdown
-          v-if="preloadedOptions !== null"
-          v-model="filter.value"
-          :options="preloadedOptions"
-          :disabled="inconsistentSourceSelected"
-          :clearable="true"
-          position="bottom"
-        />
         <PlAutocomplete
-          v-else
           v-model="filter.value"
-          :options-search="(str) => searchOptions(filter.column, str)"
-          :model-search="(v) => searchModel(filter.column, v as string)"
+          :options-search="(str) => searchOptionsFn(columnAsSourceAndFixedAxes.column, str)"
+          :model-search="(v) => searchModelSingleFn(columnAsSourceAndFixedAxes.column, v as string)"
           :disabled="inconsistentSourceSelected"
           :clearable="true"
           position="bottom"
         />
       </template>
       <template v-if="filter.type === 'inSet' || filter.type === 'notInSet'" >
-        <PlDropdownMulti
-          v-if="preloadedOptions !== null"
-          v-model="filter.value"
-          :options="preloadedOptions"
-          :disabled="inconsistentSourceSelected"
-          position="bottom"
-        />
         <PlAutocompleteMulti
-          v-else
           v-model="filter.value"
-          :options-search="(str) => searchOptions(filter.column, str)"
-          :model-search="(v) => searchModelMulti(filter.column, v as string[])"
+          :options-search="(str) => searchOptionsFn(columnAsSourceAndFixedAxes.column, str)"
+          :model-search="(v) => searchModelMultiFn(columnAsSourceAndFixedAxes.column, v as string[])"
           :disabled="inconsistentSourceSelected"
           position="bottom"
         />
       </template>
       <PlNumberField
-        v-if="isNumberType(filter)"
+        v-if="'x' in filter"
         v-model="filter.x"
         position="bottom"
       />

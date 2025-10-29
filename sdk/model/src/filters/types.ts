@@ -23,11 +23,17 @@ export type FilterSpecLeaf =
   | { type: 'patternNotEquals'; column: SUniversalPColumnId; value: string }
   | { type: 'patternContainSubsequence'; column: SUniversalPColumnId; value: string }
   | { type: 'patternNotContainSubsequence'; column: SUniversalPColumnId; value: string }
+  | { type: 'patternMatchesRegularExpression'; column: SUniversalPColumnId; value: string }
+  | { type: 'patternFuzzyContainSubsequence'; column: SUniversalPColumnId; value: string; maxEdits?: number; substitutionsOnly?: boolean; wildcard?: string }
+
+  | { type: 'inSet'; column: SUniversalPColumnId; value: string[] }
+  | { type: 'notInSet'; column: SUniversalPColumnId; value: string[] }
 
   | { type: 'topN'; column: SUniversalPColumnId; n: number }
   | { type: 'bottomN'; column: SUniversalPColumnId; n: number }
 
   | { type: 'equal'; column: SUniversalPColumnId; x: number }
+  | { type: 'notEqual'; column: SUniversalPColumnId; x: number }
   | { type: 'lessThan'; column: SUniversalPColumnId; x: number }
   | { type: 'greaterThan'; column: SUniversalPColumnId; x: number }
   | { type: 'lessThanOrEqual'; column: SUniversalPColumnId; x: number }

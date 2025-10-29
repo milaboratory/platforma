@@ -5,7 +5,7 @@ import type { PlAdvancedFilterUI, SourceOptionInfo } from './types';
 import { computed, reactive, ref, watch } from 'vue';
 import OperandButton from './OperandButton.vue';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
-import type { FilterUi, ListOptionBase, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { FilterSpec, ListOptionBase, SUniversalPColumnId } from '@platforma-sdk/model';
 import { createNewGroup, toInnerModel, toOuterModel } from './utils';
 
 const props = withDefaults(defineProps<{
@@ -15,18 +15,18 @@ const props = withDefaults(defineProps<{
   dndMode?: boolean;
   /** If dnd mode on - used for column adding */
   draggedId?: string;
-  /** Loading function for unique values for Equal/InSet filters. Used if there are not ready list of unique values in uniqueValuesBySourceId */
-  searchOptionsFn?: (id: string, str: string) => (Promise<ListOptionBase<string | number>[]>) | ((id: string, str: string) => ListOptionBase<string | number>[]);
-  /** Loading function for label of selected value for Equal/InSet filters. Used if there are not ready list of unique values in uniqueValuesBySourceId */
-  searchModelFn?: (id: string, str: string) => (Promise<ListOptionBase<string | number>>) | ((id: string, str: string) => ListOptionBase<string | number>);
+  /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
+  searchOptions: (columnId: SUniversalPColumnId, searchStr: string, axisIdx?: number) => (Promise<ListOptionBase<string | number>[]>) |
+    ((columnId: SUniversalPColumnId, searchStr: string) => ListOptionBase<string | number>[]);
+  /** Loading function for label of selected value for Equal/InSet filters and fixed axes options. */
+  searchModel: (columnId: SUniversalPColumnId, searchStr: string, axisIdx?: number) => (Promise<ListOptionBase<string | number>>) |
+    ((columnId: SUniversalPColumnId, searchStr: string) => ListOptionBase<string | number>);
 }>(), {
   dndMode: false,
   draggedId: undefined,
-  searchOptionsFn: undefined,
-  searchModelFn: undefined,
 });
 
-const model = defineModel<FilterUi>({ required: true });
+const model = defineModel<FilterSpec>({ required: true });
 
 const innerModel = ref<PlAdvancedFilterUI>(toInnerModel(model.value));
 function updateOuterModelValue(v: PlAdvancedFilterUI) {
@@ -122,8 +122,8 @@ function dragOver(event: DragEvent) {
             v-model="item.filters[filterIdx]"
             :operand="item.operand"
             :column-options="items"
-            :search-model-fn="searchModelFn"
-            :search-options-fn="searchOptionsFn"
+            :search-model="searchModel"
+            :search-options="searchOptions"
             :dnd-mode="dndMode"
             :last="filterIdx === item.filters.length - 1"
             @change-operand="(v) => item.operand = v"

@@ -1,50 +1,24 @@
-import type { ValueType } from '@platforma-sdk/model';
-import { filterUiMetadata, type AxisSpec, type FilterUi, type PColumnSpec, type SUniversalPColumnId } from '@platforma-sdk/model';
-import type { Filter, FilterType, Group, PlAdvancedFilterUI, SupportedFilterTypes } from './types';
-import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, LOCAL_FILTERS_METADATA, SUPPORTED_FILTER_TYPES } from './constants';
+import type { FilterSpec, ValueType } from '@platforma-sdk/model';
+import { assertNever, type AxisSpec, type PColumnSpec, type SUniversalPColumnId } from '@platforma-sdk/model';
+import { isSupportedFilterType, type Filter, type FilterType, type Group, type PlAdvancedFilterUI, type SupportedFilterTypes } from './types';
+import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, SUPPORTED_FILTER_TYPES } from './constants';
+import { filterUiMetadata } from '@milaboratories/uikit';
 
-function toInnerFilter(filterWithoutFixedAxes: FilterUi): Filter | null {
-  const filter = { ...filterWithoutFixedAxes, fixedAxes: {} };
-  if (
-    filter.type === 'isNA' || filter.type === 'isNotNA'
-    || filter.type === 'greaterThan' || filter.type === 'greaterThanOrEqual'
-    || filter.type === 'lessThan' || filter.type === 'lessThanOrEqual'
-    || filter.type === 'patternEquals' || filter.type === 'patternNotEquals'
-    || filter.type === 'patternContainSubsequence' || filter.type === 'patternNotContainSubsequence'
-  ) {
-    return filter;
+function toInnerFilter(outerFilter: FilterSpec): Filter | null {
+  if (!('column' in outerFilter) || outerFilter.type === undefined || !isSupportedFilterType(outerFilter.type)) {
+    return null;
   }
-  if (filter.type === 'patternFuzzyContainSubsequence') {
+  if (outerFilter.type === 'patternFuzzyContainSubsequence') {
     return {
-      type: filter.type,
-      value: filter.value,
-      wildcard: filter.wildcard,
-      maxEdits: filter.maxEdits ?? 2,
-      substitutionsOnly: filter.substitutionsOnly ?? false,
-      column: filter.column,
+      ...outerFilter,
+      value: outerFilter.value,
+      wildcard: outerFilter.wildcard,
+      maxEdits: outerFilter.maxEdits ?? 2,
+      substitutionsOnly: outerFilter.substitutionsOnly ?? false,
     };
   }
-  if (filter.type === 'or' && filter.filters.every((f) => f.type === 'patternEquals')) { // different possible structures?
-    const columnIds = new Set(filter.filters.map((f) => f.column));
-    if (columnIds.size === 1) {
-      return {
-        type: 'inSet',
-        value: filter.filters.map((f) => f.value),
-        column: filter.filters[0].column,
-      };
-    }
-  }
-  if (filter.type === 'not') { // different possible structures?
-    const f = toInnerFilter(filter.filter);
-    if (f?.type === 'inSet') {
-      return {
-        type: 'notInSet',
-        value: f.value,
-        column: f.column,
-      };
-    }
-  }
-  return null;
+
+  return { ...outerFilter } as Filter;
 }
 
 let groupIdCounter = 0;
@@ -53,7 +27,7 @@ function getNewGroupId() {
   return String(groupIdCounter);
 }
 
-function toInnerFiltersGroup(f: FilterUi): Group | null {
+function toInnerFiltersGroup(f: FilterSpec): Group | null {
   if (f.type === 'not') {
     const group = toInnerFiltersGroup(f.filter);
     return group
@@ -85,7 +59,7 @@ function toInnerFiltersGroup(f: FilterUi): Group | null {
   return null;
 }
 
-export function toInnerModel(m: FilterUi): PlAdvancedFilterUI {
+export function toInnerModel(m: FilterSpec): PlAdvancedFilterUI {
   const res: PlAdvancedFilterUI = {
     operand: 'or',
     groups: [],
@@ -106,68 +80,46 @@ export function toInnerModel(m: FilterUi): PlAdvancedFilterUI {
   return res;
 }
 
-function toOuterFilter(filter: Filter): FilterUi | null {
-  const column = filter.column;
-  if (filter.type === 'isNA' || filter.type === 'isNotNA') {
+function toOuterFilter(filter: Filter): FilterSpec | null {
+  if (
+    filter.type === 'isNA' || filter.type === 'isNotNA'
+    || filter.type === 'inSet' || filter.type === 'notInSet'
+  ) {
     return filter;
   }
   if (
     filter.type === 'greaterThanOrEqual' || filter.type === 'lessThanOrEqual'
     || filter.type === 'greaterThan' || filter.type === 'lessThan'
-    || filter.type === 'numberEquals' || filter.type === 'numberNotEquals'
+    || filter.type === 'equal' || filter.type === 'notEqual'
   ) {
     return filter.x !== undefined ? { ...filter, x: filter.x } : null;
   }
   if (
     filter.type === 'patternEquals' || filter.type === 'patternNotEquals'
     || filter.type === 'patternContainSubsequence' || filter.type === 'patternNotContainSubsequence'
+    || filter.type === 'patternMatchesRegularExpression'
+    || filter.type === 'patternFuzzyContainSubsequence'
   ) {
     return filter.value !== undefined ? { ...filter, value: filter.value } : null;
   }
-  if (filter.type === 'inSet') {
-    return filter.value.length
-      ? {
-          type: 'or',
-          filters: filter.value.map((v) => ({
-            type: 'patternEquals',
-            value: v,
-            column,
-          })),
-        }
-      : null;
-  }
-  if (filter.type === 'notInSet') {
-    return filter.value.length
-      ? {
-          type: 'not',
-          filter: {
-            type: 'or',
-            filters: filter.value.map((v) => ({
-              type: 'patternEquals',
-              value: v,
-              column,
-            })),
-          },
-        }
-      : null;
-  }
+  assertNever(filter.type);
   return null;
 }
 
-function toOuterFilterGroup(m: Group): FilterUi {
-  const res: FilterUi = {
+function toOuterFilterGroup(m: Group): FilterSpec {
+  const res: FilterSpec = {
     type: m.operand,
-    filters: m.filters.map(toOuterFilter).filter((v): v is FilterUi => v !== null),
+    filters: m.filters.map(toOuterFilter).filter((v): v is FilterSpec => v !== null),
   };
   if (m.not) {
     return {
       type: 'not',
       filter: res,
-    };
+    } as FilterSpec;
   }
   return res;
 }
-export function toOuterModel(m: PlAdvancedFilterUI): FilterUi {
+export function toOuterModel(m: PlAdvancedFilterUI): FilterSpec {
   return {
     type: m.operand,
     filters: m.groups.map(toOuterFilterGroup),
@@ -213,8 +165,5 @@ export function isStringValueType(spec?: PColumnSpec | AxisSpec): boolean {
 }
 
 export function getFilterInfo(filterType: FilterType): { label: string; supportedFor: (spec: NormalizedSpecData) => boolean } {
-  if (filterType === 'inSet' || filterType === 'notInSet') {
-    return LOCAL_FILTERS_METADATA[filterType];
-  }
   return filterUiMetadata[filterType as keyof typeof filterUiMetadata];
 }
