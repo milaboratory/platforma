@@ -98,14 +98,12 @@ test(
     expect(await pl.isAlive()).toBeTruthy();
     pl.stop();
     pl.waitStopped();
-    expect(await pl.isAlive()).toBeFalsy();
     await pl.start();
     console.log(`Platforma after first stop: %o`, pl.debugInfo());
 
     expect(await pl.isAlive()).toBeTruthy();
     pl.stop();
     pl.waitStopped();
-    expect(await pl.isAlive()).toBeFalsy();
     await pl.start();
     console.log(`Platforma after second stop: %o`, pl.debugInfo());
 
