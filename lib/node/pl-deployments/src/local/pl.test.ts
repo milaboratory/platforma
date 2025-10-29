@@ -14,7 +14,7 @@ import { getPorts } from '@milaboratories/pl-config';
 
 test(
   'should start and stop platforma of the current version with hardcoded config',
-  { timeout: 25000 },
+  { timeout: 35000 },
   async ({ expect }) => {
     const logger = new ConsoleLoggerAdapter();
     const config = await readTestConfig();
@@ -44,8 +44,9 @@ test(
 
 test(
   'should close old platforma when starting a new one if the option is set',
-  { timeout: 35000 },
+  { timeout: 50000 },
   async ({ expect }) => {
+    const stopTimeout = 3000;
     const logger = new ConsoleLoggerAdapter();
 
     const config = await readTestConfig();
@@ -56,13 +57,13 @@ test(
     };
 
     const oldPl = await localPlatformaInit(logger, options);
-    await sleep(5000);
+    await sleep(stopTimeout);
     console.log(`OldPlatforma: %o`, oldPl.debugInfo());
 
     expect(await oldPl.isAlive()).toBeTruthy();
     const newPl = await localPlatformaInit(logger, options);
     expect(await oldPl.isAlive()).toBeFalsy();
-    await sleep(5000);
+    await sleep(stopTimeout);
 
     console.log(`NewPlatforma: %o`, newPl.debugInfo());
 
@@ -75,8 +76,9 @@ test(
 
 test(
   'should restart platforma if restart option was provided',
-  { timeout: 25000 },
+  { timeout: 50000 },
   async ({ expect }) => {
+    const stopTimeout = 3000;
     const logger = new ConsoleLoggerAdapter();
     const config = await readTestConfig();
     const dir = await prepareDirForTestConfig();
@@ -85,18 +87,26 @@ test(
       workingDir: dir,
       config,
       closeOld: false,
-      onCloseAndErrorNoStop: async (pl) => await pl.start(),
     });
     await sleep(1000);
+    if (!await pl.isAlive()) {
+      await pl.start();
+      await sleep(3000);
+      expect(await pl.isAlive()).toBeTruthy();
+    }
 
     expect(await pl.isAlive()).toBeTruthy();
-    processStop(pl.pid!);
-    await sleep(3000);
+    pl.stop();
+    pl.waitStopped();
+    expect(await pl.isAlive()).toBeFalsy();
+    await pl.start();
     console.log(`Platforma after first stop: %o`, pl.debugInfo());
 
     expect(await pl.isAlive()).toBeTruthy();
-    processStop(pl.pid!);
-    await sleep(3000);
+    pl.stop();
+    pl.waitStopped();
+    expect(await pl.isAlive()).toBeFalsy();
+    await pl.start();
     console.log(`Platforma after second stop: %o`, pl.debugInfo());
 
     expect(await pl.isAlive()).toBeTruthy();

@@ -91,7 +91,7 @@ export class LocalPl {
   }
 
   async waitStopped() {
-    await processWaitStopped(notEmpty(this.pid), 15000);
+    await processWaitStopped(notEmpty(this.pid), 35000);
   }
 
   stopped() {
