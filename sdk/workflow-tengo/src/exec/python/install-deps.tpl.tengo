@@ -33,6 +33,7 @@ _runInVenv := func(python, venv, wd, pythonBinDir, pythonVenvBinDir) {
 		substitutionRule(pythonRunenvVar, "python-run-environment").
 		addPathTyped(t, path.join("{python_venv}", "venv", pythonVenvBinDir)).
 		envTyped("VIRTUAL_ENV", t, path.join("{python_venv}", "venv")).
+		envTyped("PYTHONHOME", t, "{python_runenv}").
 		envTyped("PYTHONPATH", t, path.join("{python_runenv}", pythonBinDir, "python_stdlib"))
 }
 
