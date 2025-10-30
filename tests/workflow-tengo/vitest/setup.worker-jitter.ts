@@ -15,7 +15,6 @@ await applyWorkerJitter(envOptionsFromProcess(process.env));
 //   seed: 'build-42',        // any string/number for reproducible runs
 //   log: true,
 // });
-
 // Suppress PromiseRejectionHandledWarning for async rejection handling in reactive system
 // This is expected behavior when AbortSignals reject promises that get error handlers attached asynchronously
 const originalEmit = process.emit;
