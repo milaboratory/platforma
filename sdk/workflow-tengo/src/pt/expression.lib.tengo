@@ -1141,20 +1141,27 @@ _matcherToAxisSpec := func(ctx, processedMatcher) {
 				continue
 			}
 		}
-		if !is_undefined(distilledMatcher.domain) {
+		if !is_undefined(distilledMatcher.domain) && len(distilledMatcher.domain) > 0 {
 			if is_undefined(spec.domain) || len(spec.domain) < len(distilledMatcher.domain) {
 				continue
 			}
+			domainMatches := true
 			for domainKey, domainValue in distilledMatcher.domain {
 				if spec.domain[domainKey] != domainValue {
-					continue
+					domainMatches = false
+					break
 				}
+			}
+			if !domainMatches {
+				continue
 			}
 		}
 		axisSpec = spec
 		break
 	}
-	ll.assert(!is_undefined(axisSpec), "axis spec not found for matcher %v", processedMatcher)
+	ll.assert(!is_undefined(axisSpec),
+		"axis spec not found for matcher %v, available options: %v",
+		processedMatcher, ctx.distilledAxesSpecs)
 	return axisSpec
 }
 
