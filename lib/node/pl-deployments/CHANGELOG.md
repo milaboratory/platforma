@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.11.0
+
+### Minor Changes
+
+- 0fcfb6e: Update Built-In version to 1.43.2
+
 ## 2.10.3
 
 ### Patch Changes
