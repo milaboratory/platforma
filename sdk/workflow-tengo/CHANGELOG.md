@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.5.9
+
+### Patch Changes
+
+- 1347cf8: Set PYTHONHOME for python invocations
+
 ## 5.5.8
 
 ### Patch Changes
