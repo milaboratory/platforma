@@ -93,7 +93,7 @@ validateParamsForFrameFromColumnBundle := func(params) {
 	validation.assertType(params, _FRAME_FROM_COLUMN_BUNDLE_PARAMS_SCHEMA, "Invalid params structure")
 }
 
-makeFrameSpecs := func(params) {
+makeFrameColumnInfo := func(params, translation) {
 	axes := []
     for entry in params.axes {
         spec := {
@@ -128,25 +128,28 @@ makeFrameSpecs := func(params) {
         if !is_undefined(entry.spec.parentAxes) && len(entry.spec.parentAxes) > 0 {
             spec.parentAxes = slices.sortUnique(entry.spec.parentAxes)
         }
-        columns[entry.column] = spec
+        columns[translation[entry.column]] = {
+            id: entry.column,
+            spec: spec
+        }
     }
     return columns
 }
 
-makeWriteFrameStep := func(frameName, dfName, params) {
+makeWriteFrameStep := func(frameName, dfName, params, translation) {
 	step := {
         type: "write_frame",
         inputTable: dfName,
         frameName: frameName,
         axes: slices.map(params.axes, func(entry) {
             return {
-                column: entry.column,
+                column: translation[entry.column],
                 type: entry.spec.type
             }
         }),
         columns: slices.map(params.columns, func(entry) {
             return {
-                column: entry.column,
+                column: translation[entry.column],
                 type: entry.spec.valueType
             }
         }),
@@ -398,7 +401,7 @@ renameJoinColumns := func(request, rename) {
 export ll.toStrict({
     validateParamsForSaveFrameDirect: validateParamsForSaveFrameDirect,
 	validateParamsForFrameFromColumnBundle: validateParamsForFrameFromColumnBundle,
-    makeFrameSpecs: makeFrameSpecs,
+    makeFrameColumnInfo: makeFrameColumnInfo,
     makeWriteFrameStep: makeWriteFrameStep,
     makeFrameColumnRef: makeFrameColumnRef,
     renameJoinColumns: renameJoinColumns,

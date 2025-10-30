@@ -304,16 +304,33 @@ workflow := func() {
 
 	// { file?: ResourceRef, content?: string, name: string }[]
 	inFiles := []
-	// { [uniqueFrameName]: { columns: { [workflowUniqueColumnId]: { spec: json, data: resource } } } }
+	// {
+	//   [uniqueFrameName]: {
+	//     columns: {
+	//       [workflowUniqueColumnId]: {
+	//         spec: json,
+	//         data: resource
+	//       }
+	//     }
+	//   }
+	// }
 	inFrames := {}
 	// string[]
 	outFiles := []
 	// string[]
 	outContentFiles := []
-	// { [frameName]: { [pColumnId]: pColumnSpec } }
-	outFramesSpecs := {}
-	// { [frameName]: sequentialFrameName }
-	outFramesRename := {}
+	// {
+	//   [frameName]: {
+    //     colInfo: {
+	//       [sequentialColumnId]: {
+	//         id: pColumnId,
+	//         spec: pColumnSpec
+	//       }
+	//     },
+	//     rename: sequentialFrameName
+	//   }
+	// }
+	outFramesInfo := {}
 
 	anonymousFilesCounter := 0
 	anonymousDFCounter := 0
@@ -710,14 +727,16 @@ workflow := func() {
 		_saveFileContent: func(name) {
 			outContentFiles = append(outContentFiles, name)
 		},
-		_saveFrameSpecs: func(name, rename, specs) {
+		_saveFrameInfo: func(name, rename, colInfo) {
 			ll.assert(
-				outFramesSpecs[name] == undefined,
+				outFramesInfo[name] == undefined,
 				"frame with name '%s' already saved, please pick a different name",
 				name
 			)
-			outFramesSpecs[name] = specs
-			outFramesRename[name] = rename
+			outFramesInfo[name] = {
+				colInfo: colInfo,
+				rename: rename
+			}
 		},
 
 		/**
@@ -857,12 +876,9 @@ workflow := func() {
 			}
 
 			outFrames := {}
-			for frameName, specsById in outFramesSpecs {
-				columnIds := []
-				for columnId, _ in specsById {
-					columnIds = append(columnIds, columnId)
-				}
-				outFrames[outFramesRename[frameName]] = columnIds;
+			for _, frameInfo in outFramesInfo {
+				columnIds := maps.getKeys(frameInfo.colInfo)
+				outFrames[frameInfo.rename] = columnIds
 			}
 
 			inFramesDistilled := maps.mapValues(inFrames, func(frame) {
@@ -924,13 +940,13 @@ workflow := func() {
 				 * @return frame constructed with `pframes.pFrameBuilder()`
 				 */
 				getFrameDirect: func(frameName) {
-					specs := outFramesSpecs[frameName]
-					ll.assert(!is_undefined(specs), "saveFrameDirect was not called for frame '%s'", frameName)
+					frameInfo := outFramesInfo[frameName]
+					ll.assert(!is_undefined(frameInfo), "saveFrameDirect was not called for frame '%s'", frameName)
 
 					pf := pframesBuilder.pFrameBuilder()
-					for columnId, columnSpec in specs {
-						columnData := ptResult.resolveOutput(["outFrames", outFramesRename[frameName], columnId])
-						pf.add(columnId, columnSpec, columnData)
+					for columnId, columnInfo in frameInfo.colInfo {
+						columnData := ptResult.resolveOutput(["outFrames", frameInfo.rename, columnId])
+						pf.add(columnInfo.id, columnInfo.spec, columnData)
 					}
 					return pf.build()
 				}
@@ -1258,12 +1274,31 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			ll.assert(len(frameName) > 0, "frameName must be a non-empty string")
 			util.validateParamsForSaveFrameDirect(params)
 
-			specs := util.makeFrameSpecs(params)
-			sequentialFrameName := parentWorkflow._newUniquePFrameName()
-			parentWorkflow._saveFrameSpecs(frameName, sequentialFrameName, specs)
+			projection := []
+			translation := {}
+			columnCount := 0
+			renameColumn := func(column) {
+				columnCount += 1
+				name := "col" + string(columnCount)
+				translation[column] = name
+				projection = append(projection, exp.col(column).alias(name))
+			}
+			for ax in params.axes {
+				renameColumn(ax.column)
+			}
+			for col in params.columns {
+				renameColumn(col.column)
+			}
+			df := self.select(projection...)
 
-			step := util.makeWriteFrameStep(sequentialFrameName, dfName, params)
+			colInfo := util.makeFrameColumnInfo(params, translation)
+			sequentialFrameName := parentWorkflow._newUniquePFrameName()
+			parentWorkflow._saveFrameInfo(frameName, sequentialFrameName, colInfo)
+
+			step := util.makeWriteFrameStep(sequentialFrameName, df._getDfName(), params, translation)
 			parentWorkflow.addRawStep(step)
+
+			return self
 		},
 
 		/**
