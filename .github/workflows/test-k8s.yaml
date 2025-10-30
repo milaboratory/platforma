@@ -1,13 +1,13 @@
 name: Test K8S
 on:
-  # merge_group:
-  # pull_request:
-  #   types: [opened, reopened, synchronize]
-  #   branches:
-  #     - 'main'
+  merge_group:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - "main"
   push:
     branches:
-      - 'main'
+      - "main"
   workflow_dispatch: {}
 jobs:
   init:
@@ -23,16 +23,16 @@ jobs:
     uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm-k8s.yaml@v4
     with:
       app-name: Platforma SDK Google Batch Int Tests
-      app-name-slug: 'platforma-sdk-gcp'
-      gha-runner-label: 'dev-gke'
-      node-version: '22.x'
-      pl-version: 'main'
+      app-name-slug: "platforma-sdk-gcp"
+      gha-runner-label: "dev-gke"
+      node-version: "22.x"
+      pl-version: "main"
       pnpm-build-command: '--filter "*/workflow-tengo*"'
       pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --minWorkers=50 --maxWorkers=50 --testTimeout=900000'
-      helm-release-name: 'pl-dev-gcp'
-      helm-chart-values-file: 'helm/gcp/values.yaml'
+      helm-release-name: "pl-dev-gcp"
+      helm-chart-values-file: "helm/gcp/values.yaml"
       notify-slack: true
-      namespace: 'dev-gke'
+      namespace: "dev-gke"
       npmrc-config: |
         {
           "registries": {
