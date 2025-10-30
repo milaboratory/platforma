@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.5.8
+
+### Patch Changes
+
+- 9563417: Rename columns in saveFrameDirect to sequential names
+
 ## 5.5.7
 
 ### Patch Changes
