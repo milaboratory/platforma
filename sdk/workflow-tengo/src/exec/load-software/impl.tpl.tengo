@@ -110,6 +110,7 @@ _loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) 
 
 	plan.addPathExpression(path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv", _expr(_ARG_VAR_VENV_BIN_DIR)))
 	plan.envExpression("VIRTUAL_ENV", path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv"))
+	plan.envExpression("PYTHONHOME", _expr(_ARG_VAR_PYTHON_RUN_ENV))
 	plan.envExpression("PYTHONPATH", path.join(_expr(_ARG_VAR_PYTHON_RUN_ENV), descriptor.runEnv.binDir, "python_stdlib") + _expr(_ARG_PATH_DELIMETER) + _expr(_ARG_VAR_PKG))
 
 	if !is_undefined(descriptor.runEnv.envVars) {
