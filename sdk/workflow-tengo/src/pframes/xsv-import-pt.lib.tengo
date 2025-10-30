@@ -202,9 +202,9 @@ importFileParquet := func(xsvFile, xsvType, spec, ops) {
 	if ops.dataOnly {
 		pfd := smart.mapBuilder()
 		for col in spec.columns {
-			id := util.xsvColumnId(col)
-			field := pf.getFutureInputField(col.column + ".data")
-			pfd.createInputField(id).set(field)
+			colId := util.xsvColumnId(col)
+			colData := pf.getFutureInputField(col.column + ".data")
+			pfd.createInputField(colId).set(colData)
 		}
 		return pfd.lockAndBuild()
 	}
@@ -212,18 +212,17 @@ importFileParquet := func(xsvFile, xsvType, spec, ops) {
 	result := {}
 	axesSpec := slices.map(spec.axes, func(ax) { return ax.spec })
 	for col in spec.columns {
+		colId := util.xsvColumnId(col)
 		colSpec := getColumnSpec(axesSpec, col)
-		data := pf.getFutureInputField(col.column + ".data")
-
-		id := util.xsvColumnId(col)
+		colData := pf.getFutureInputField(col.column + ".data")
 		if ops.splitDataAndSpec {
-			result[id] = {
+			result[colId] = {
 				spec: colSpec,
-				data: data
+				data: colData
 			}
 		} else {
-			result[id + ".spec"] = colSpec
-			result[id + ".data"] = data
+			result[colId + ".spec"] = colSpec
+			result[colId + ".data"] = colData
 		}
 	}
 	return result
