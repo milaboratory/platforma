@@ -113,6 +113,84 @@ dependencies: []
 
       expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel/);
     });
+
+    it('should reject defaults channel (includes main)', async () => {
+      const specPath = path.join(tempDir, 'spec.yaml');
+      await fsp.writeFile(specPath, `
+channels:
+  - defaults
+  - conda-forge
+dependencies: []
+`);
+
+      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel 'defaults'/);
+    });
+
+    it('should reject URL format for main channel', async () => {
+      const specPath = path.join(tempDir, 'spec.yaml');
+      await fsp.writeFile(specPath, `
+channels:
+  - https://repo.anaconda.com/pkgs/main
+dependencies: []
+`);
+
+      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel URL/);
+    });
+
+    it('should reject URL format for r channel', async () => {
+      const specPath = path.join(tempDir, 'spec.yaml');
+      await fsp.writeFile(specPath, `
+channels:
+  - https://repo.anaconda.com/pkgs/r
+dependencies: []
+`);
+
+      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel URL/);
+    });
+
+    it('should reject URL format for msys2 channel', async () => {
+      const specPath = path.join(tempDir, 'spec.yaml');
+      await fsp.writeFile(specPath, `
+channels:
+  - https://repo.anaconda.com/pkgs/msys2
+dependencies: []
+`);
+
+      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel URL/);
+    });
+
+    it('should reject URL format with trailing slash', async () => {
+      const specPath = path.join(tempDir, 'spec.yaml');
+      await fsp.writeFile(specPath, `
+channels:
+  - https://repo.anaconda.com/pkgs/main/
+dependencies: []
+`);
+
+      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel URL/);
+    });
+
+    it('should reject URL format with http (non-https)', async () => {
+      const specPath = path.join(tempDir, 'spec.yaml');
+      await fsp.writeFile(specPath, `
+channels:
+  - http://repo.anaconda.com/pkgs/main
+dependencies: []
+`);
+
+      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel URL/);
+    });
+
+    it('should reject URL format with anaconda.org domain', async () => {
+      const specPath = path.join(tempDir, 'spec.yaml');
+      await fsp.writeFile(specPath, `
+channels:
+  - https://anaconda.org/main
+dependencies: []
+`);
+
+      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel URL/);
+    });
   });
 
   describe('allowed dependencies', () => {
@@ -192,6 +270,18 @@ dependencies:
 `);
 
       expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel prefix/);
+    });
+
+    it('should reject defaults::package prefix (includes main)', async () => {
+      const specPath = path.join(tempDir, 'spec.yaml');
+      await fsp.writeFile(specPath, `
+channels:
+  - conda-forge
+dependencies:
+  - defaults::python
+`);
+
+      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel prefix 'defaults::'/);
     });
   });
 

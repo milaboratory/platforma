@@ -9,6 +9,7 @@ import { PackageInfo } from './package-info';
 import * as artifacts from './schemas/artifacts';
 import type * as entrypoint from './schemas/entrypoints';
 import { micromamba } from './conda/builder';
+import { validateCondaSpec } from './conda/validate-spec';
 import {
   SwJsonRenderer,
   readBuiltArtifactInfo,
@@ -433,6 +434,15 @@ export class Core {
     if (!fs.existsSync(srcSpecPath)) {
       this.logger.error(`Conda environment specification file '${artifact.spec}' not found at '${srcSpecPath}'`);
       throw util.CLIError(`Cannot build conda environment '${artifact.id}': no specification file.`);
+    }
+
+    this.logger.debug(`Validating conda spec file for forbidden channels...`);
+    try {
+      validateCondaSpec(srcSpecPath, this.logger);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(errorMessage);
+      throw util.CLIError(`Cannot build conda environment '${artifact.id}': ${errorMessage}`);
     }
 
     const micromambaRoot = path.join(contentRoot, defaults.CONDA_DATA_LOCATION);

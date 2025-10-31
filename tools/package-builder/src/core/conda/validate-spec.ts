@@ -11,6 +11,15 @@ export interface CondaSpec {
 }
 
 const FORBIDDEN_CHANNELS = ['main', 'r', 'msys2'];
+const FORBIDDEN_CHANNEL_URL_PATTERNS = [
+  // Matches URLs like https://repo.anaconda.com/pkgs/main or http://any-domain.com/pkgs/r
+  /^https?:\/\/.*\/pkgs\/(main|r|msys2)\/?$/i,
+  // Matches URLs like https://anaconda.com/something/main or https://anaconda.org/path/r
+  /^https?:\/\/.*anaconda\.(com|org)\/.*\/(main|r|msys2)\/?$/i,
+  // Matches URLs like https://anaconda.org/main (directly after domain)
+  /^https?:\/\/.*anaconda\.(com|org)\/(main|r|msys2)\/?$/i,
+];
+const DEFAULT_CHANNEL_NAME = 'defaults'; // defaults channel includes 'main'
 
 /**
  * Validates a conda spec file to ensure it doesn't use forbidden channels
@@ -34,7 +43,6 @@ export function validateCondaSpec(specPath: string, logger: winston.Logger): voi
 
   const errors: string[] = [];
 
-  // Validate channels
   if (spec.channels) {
     const channelErrors = validateChannels(spec.channels);
     if (channelErrors.length > 0) {
@@ -42,7 +50,6 @@ export function validateCondaSpec(specPath: string, logger: winston.Logger): voi
     }
   }
 
-  // Validate dependencies
   if (spec.dependencies) {
     const depErrors = validateDependencies(spec.dependencies);
     if (depErrors.length > 0) {
@@ -61,16 +68,34 @@ export function validateCondaSpec(specPath: string, logger: winston.Logger): voi
 
 /**
  * Validates that no forbidden channels are in the channels list
- * @param channels Array of channel names
+ * @param channels Array of channel names (can be names or URLs)
  * @returns Array of error messages for forbidden channels
  */
 function validateChannels(channels: string[]): string[] {
   const errors: string[] = [];
 
   for (const channel of channels) {
-    const channelLower = channel.toLowerCase().trim();
+    const channelTrimmed = channel.trim();
+    const channelLower = channelTrimmed.toLowerCase();
+
+    // Check explicit channel names
     if (FORBIDDEN_CHANNELS.includes(channelLower)) {
-      errors.push(`  - Forbidden channel '${channel}' in channels list`);
+      errors.push(`  - Forbidden channel '${channelTrimmed}' in channels list`);
+      continue;
+    }
+
+    // Check 'defaults' channel (includes 'main')
+    if (channelLower === DEFAULT_CHANNEL_NAME) {
+      errors.push(`  - Forbidden channel '${channelTrimmed}' (includes 'main') in channels list`);
+      continue;
+    }
+
+    // Check URL formats for forbidden channels
+    for (const pattern of FORBIDDEN_CHANNEL_URL_PATTERNS) {
+      if (pattern.test(channelTrimmed)) {
+        errors.push(`  - Forbidden channel URL '${channelTrimmed}' in channels list`);
+        break;
+      }
     }
   }
 
@@ -98,6 +123,19 @@ function validateDependencies(dependencies: (string | Record<string, unknown>)[]
 
       if (FORBIDDEN_CHANNELS.includes(channelLower)) {
         errors.push(`  - Forbidden channel prefix '${channel}::' in dependency '${dep}'`);
+      }
+
+      // Check 'defaults' channel prefix (includes 'main')
+      if (channelLower === DEFAULT_CHANNEL_NAME) {
+        errors.push(`  - Forbidden channel prefix '${channel}::' (includes 'main') in dependency '${dep}'`);
+      }
+
+      // Check URL-based channel prefixes (rare but possible)
+      for (const pattern of FORBIDDEN_CHANNEL_URL_PATTERNS) {
+        if (pattern.test(channel)) {
+          errors.push(`  - Forbidden channel URL prefix in dependency '${dep}'`);
+          break;
+        }
       }
     }
   }
