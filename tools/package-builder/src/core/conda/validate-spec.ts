@@ -142,7 +142,3 @@ function validateDependencies(dependencies: (string | Record<string, unknown>)[]
 
   return errors;
 }
-
-
-
-
