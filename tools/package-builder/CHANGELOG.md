@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.10.7
+
+### Patch Changes
+
+- 0075ca1: forbid using official anaconda channel
+
 ## 3.10.6
 
 ### Patch Changes
