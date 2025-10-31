@@ -52,7 +52,6 @@ channels:
 dependencies: []
 `);
     });
-
   });
 
   describe('forbidden channels', () => {
@@ -72,12 +71,11 @@ channels:
   - ${variation}
 dependencies: []
 `,
-            new RegExp(`Forbidden channel '${variation}'`)
+            new RegExp(`Forbidden channel '${variation}'`),
           );
         });
       });
     });
-
   });
 
   describe('allowed dependencies', () => {
@@ -121,11 +119,10 @@ channels:
 dependencies:
   - ${prefix}::${pkg}
 `,
-          new RegExp(`Forbidden channel prefix '${prefix}::'`)
+          new RegExp(`Forbidden channel prefix '${prefix}::'`),
         );
       });
     });
-
   });
 
   describe('mixed scenarios', () => {
@@ -151,7 +148,7 @@ dependencies:
   - anarci
 `;
       const specPath = await createSpec(content);
-      
+
       expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel 'main'/);
       expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel prefix 'main::'/);
     });
@@ -168,7 +165,7 @@ dependencies:
   - r::stats
   - msys2::git
 `,
-        /.+/
+        /.+/,
       );
     });
   });
