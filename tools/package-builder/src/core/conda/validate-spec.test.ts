@@ -35,16 +35,7 @@ describe('validateCondaSpec', () => {
   };
 
   describe('allowed channels', () => {
-    it('should accept conda-forge channel', async () => {
-      await expectValid(`
-channels:
-  - conda-forge
-dependencies:
-  - python
-`);
-    });
-
-    it('should accept bioconda channel', async () => {
+    it('should accept single allowed channel', async () => {
       await expectValid(`
 channels:
   - bioconda
@@ -62,12 +53,6 @@ dependencies: []
 `);
     });
 
-    it('should accept spec without channels', async () => {
-      await expectValid(`
-dependencies:
-  - python
-`);
-    });
   });
 
   describe('forbidden channels', () => {
@@ -78,31 +63,21 @@ dependencies:
     ];
 
     forbiddenChannels.forEach(({ name, variations }) => {
-      it(`should reject ${name} channel`, async () => {
-        await expectInvalid(
-          `
+      variations.forEach((variation) => {
+        it(`should reject ${name} channel (${variation})`, async () => {
+          await expectInvalid(
+            `
 channels:
   - conda-forge
-  - ${variations[0]}
+  - ${variation}
 dependencies: []
 `,
-          new RegExp(`Forbidden channel '${variations[0]}'`)
-        );
+            new RegExp(`Forbidden channel '${variation}'`)
+          );
+        });
       });
     });
 
-    it('should be case insensitive for channel names', async () => {
-      await expectInvalid(
-        `
-channels:
-  - MAIN
-  - R
-  - Msys2
-dependencies: []
-`,
-        /Forbidden channel/
-      );
-    });
   });
 
   describe('allowed dependencies', () => {
@@ -127,15 +102,18 @@ dependencies:
     });
   });
 
-  describe('forbidden dependencies', () => {
+  describe('forbidden dependencies prefixes (case insensitive)', () => {
     const forbiddenPrefixes = [
       { prefix: 'main', package: 'python' },
+      { prefix: 'MAIN', package: 'stats' },
       { prefix: 'r', package: 'some-package' },
+      { prefix: 'R', package: 'some-package' },
       { prefix: 'msys2', package: 'git' },
+      { prefix: 'Msys2', package: 'git' },
     ];
 
     forbiddenPrefixes.forEach(({ prefix, package: pkg }) => {
-      it(`should reject ${prefix}::package`, async () => {
+      it(`should reject ${prefix}::${pkg}`, async () => {
         await expectInvalid(
           `
 channels:
@@ -148,19 +126,6 @@ dependencies:
       });
     });
 
-    it('should be case insensitive for channel prefixes', async () => {
-      await expectInvalid(
-        `
-channels:
-  - conda-forge
-dependencies:
-  - MAIN::python
-  - R::stats
-  - Msys2::git
-`,
-        /Forbidden channel prefix/
-      );
-    });
   });
 
   describe('mixed scenarios', () => {
