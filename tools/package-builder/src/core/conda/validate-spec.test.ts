@@ -149,8 +149,9 @@ dependencies:
 `;
       const specPath = await createSpec(content);
 
-      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel 'main'/);
-      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel prefix 'main::'/);
+      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(
+        /Forbidden channel 'main'[\s\S]*Forbidden channel prefix 'main::'/,
+      );
     });
 
     it('should reject multiple violations', async () => {
