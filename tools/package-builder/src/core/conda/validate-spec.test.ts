@@ -18,187 +18,154 @@ describe('validateCondaSpec', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
+  const createSpec = async (content: string): Promise<string> => {
+    const specPath = path.join(tempDir, 'spec.yaml');
+    await fsp.writeFile(specPath, content);
+    return specPath;
+  };
+
+  const expectValid = async (content: string) => {
+    const specPath = await createSpec(content);
+    expect(() => validateCondaSpec(specPath, mockLogger)).not.toThrow();
+  };
+
+  const expectInvalid = async (content: string, errorPattern: RegExp) => {
+    const specPath = await createSpec(content);
+    expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(errorPattern);
+  };
+
   describe('allowed channels', () => {
     it('should accept conda-forge channel', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectValid(`
 channels:
   - conda-forge
 dependencies:
   - python
 `);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).not.toThrow();
     });
 
     it('should accept bioconda channel', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectValid(`
 channels:
   - bioconda
 dependencies:
   - anarci
 `);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).not.toThrow();
     });
 
     it('should accept multiple allowed channels', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectValid(`
 channels:
   - bioconda
   - conda-forge
 dependencies: []
 `);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).not.toThrow();
     });
 
     it('should accept spec without channels', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectValid(`
 dependencies:
   - python
 `);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).not.toThrow();
     });
   });
 
   describe('forbidden channels', () => {
-    it('should reject main channel', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+    const forbiddenChannels = [
+      { name: 'main', variations: ['main', 'MAIN'] },
+      { name: 'r', variations: ['r', 'R'] },
+      { name: 'msys2', variations: ['msys2', 'Msys2'] },
+    ];
+
+    forbiddenChannels.forEach(({ name, variations }) => {
+      it(`should reject ${name} channel`, async () => {
+        await expectInvalid(
+          `
 channels:
   - conda-forge
-  - main
+  - ${variations[0]}
 dependencies: []
-`);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel 'main'/);
-    });
-
-    it('should reject r channel', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
-channels:
-  - r
-dependencies: []
-`);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel 'r'/);
-    });
-
-    it('should reject msys2 channel', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
-channels:
-  - msys2
-dependencies: []
-`);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel 'msys2'/);
+`,
+          new RegExp(`Forbidden channel '${variations[0]}'`)
+        );
+      });
     });
 
     it('should be case insensitive for channel names', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectInvalid(
+        `
 channels:
   - MAIN
   - R
   - Msys2
 dependencies: []
-`);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel/);
+`,
+        /Forbidden channel/
+      );
     });
   });
 
   describe('allowed dependencies', () => {
     it('should accept simple package names', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectValid(`
 channels:
   - conda-forge
 dependencies:
   - python
   - numpy
 `);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).not.toThrow();
     });
 
     it('should accept packages with allowed channel prefix', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectValid(`
 channels:
   - bioconda
 dependencies:
   - bioconda::anarci
   - conda-forge::python
 `);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).not.toThrow();
     });
   });
 
   describe('forbidden dependencies', () => {
-    it('should reject main::package', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+    const forbiddenPrefixes = [
+      { prefix: 'main', package: 'python' },
+      { prefix: 'r', package: 'some-package' },
+      { prefix: 'msys2', package: 'git' },
+    ];
+
+    forbiddenPrefixes.forEach(({ prefix, package: pkg }) => {
+      it(`should reject ${prefix}::package`, async () => {
+        await expectInvalid(
+          `
 channels:
   - conda-forge
 dependencies:
-  - main::python
-`);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel prefix 'main::'/);
-    });
-
-    it('should reject r::package', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
-channels:
-  - bioconda
-dependencies:
-  - r::some-package
-`);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel prefix 'r::'/);
-    });
-
-    it('should reject msys2::package', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
-channels:
-  - conda-forge
-dependencies:
-  - msys2::git
-`);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel prefix 'msys2::'/);
+  - ${prefix}::${pkg}
+`,
+          new RegExp(`Forbidden channel prefix '${prefix}::'`)
+        );
+      });
     });
 
     it('should be case insensitive for channel prefixes', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectInvalid(
+        `
 channels:
   - conda-forge
 dependencies:
   - MAIN::python
   - R::stats
   - Msys2::git
-`);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel prefix/);
+`,
+        /Forbidden channel prefix/
+      );
     });
   });
 
   describe('mixed scenarios', () => {
     it('should accept allowed channels with allowed dependencies', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectValid(`
 channels:
   - bioconda
   - conda-forge
@@ -207,28 +174,26 @@ dependencies:
   - bioconda::biotools
   - python
 `);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).not.toThrow();
     });
 
     it('should reject when both channels and dependencies have violations', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      const content = `
 channels:
   - main
   - conda-forge
 dependencies:
   - main::python
   - anarci
-`);
-
+`;
+      const specPath = await createSpec(content);
+      
       expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel 'main'/);
       expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(/Forbidden channel prefix 'main::'/);
     });
 
     it('should reject multiple violations', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectInvalid(
+        `
 channels:
   - main
   - r
@@ -237,45 +202,34 @@ dependencies:
   - main::python
   - r::stats
   - msys2::git
-`);
-
-      expect(() => {
-        validateCondaSpec(specPath, mockLogger);
-      }).toThrow();
+`,
+        /.+/
+      );
     });
   });
 
   describe('edge cases', () => {
     it('should handle empty channels list', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectValid(`
 channels: []
 dependencies:
   - python
 `);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).not.toThrow();
     });
 
     it('should handle empty dependencies list', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectValid(`
 channels:
   - conda-forge
 dependencies: []
 `);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).not.toThrow();
     });
 
     it('should handle specs without dependencies section', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectValid(`
 channels:
   - conda-forge
 `);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).not.toThrow();
     });
 
     it('should throw error for non-existent file', () => {
@@ -283,8 +237,7 @@ channels:
     });
 
     it('should handle dependencies with version constraints', async () => {
-      const specPath = path.join(tempDir, 'spec.yaml');
-      await fsp.writeFile(specPath, `
+      await expectValid(`
 channels:
   - conda-forge
 dependencies:
@@ -292,12 +245,6 @@ dependencies:
   - numpy>=1.20.0
   - matplotlib<3.5
 `);
-
-      expect(() => validateCondaSpec(specPath, mockLogger)).not.toThrow();
     });
   });
 });
-
-
-
-
