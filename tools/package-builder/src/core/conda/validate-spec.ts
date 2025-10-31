@@ -10,7 +10,12 @@ export interface CondaSpec {
   [key: string]: unknown;
 }
 
-const FORBIDDEN_CHANNELS = ['main', 'r', 'msys2'];
+/**
+ * Channels that are forbidden because they reference the official Anaconda channel.
+ * These channels (main, r, msys2, defaults, anaconda) should be avoided in favor of
+ * community-maintained channels like conda-forge to avoid licensing restrictions
+ */
+const FORBIDDEN_CHANNELS = ['main', 'r', 'msys2', 'defaults', 'anaconda'];
 
 /**
  * Validates a conda spec file to ensure it doesn't use forbidden channels
