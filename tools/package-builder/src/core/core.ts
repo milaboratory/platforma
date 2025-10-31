@@ -438,7 +438,7 @@ export class Core {
 
     this.logger.debug(`Validating conda spec file for forbidden channels...`);
     try {
-      validateCondaSpec(srcSpecPath, this.logger);
+      validateCondaSpec(this.logger, srcSpecPath);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(errorMessage);

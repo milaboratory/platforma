@@ -19,11 +19,11 @@ const FORBIDDEN_CHANNELS = ['main', 'r', 'msys2', 'defaults', 'anaconda'];
 
 /**
  * Validates a conda spec file to ensure it doesn't use forbidden channels
- * @param specPath Path to the conda spec file
  * @param logger Winston logger instance
+ * @param specPath Path to the conda spec file
  * @throws Error if forbidden channels are found
  */
-export function validateCondaSpec(specPath: string, logger: winston.Logger): void {
+export function validateCondaSpec(logger: winston.Logger, specPath: string): void {
   logger.debug(`Validating conda spec file: ${specPath}`);
 
   if (!fs.existsSync(specPath)) {

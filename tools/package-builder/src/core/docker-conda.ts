@@ -79,7 +79,7 @@ export function prepareDockerOptions(
   const srcSpecPath = path.join(currentPackageRoot, buildParams.spec);
   logger.debug(`Validating conda spec file for forbidden channels...`);
   try {
-    validateCondaSpec(srcSpecPath, logger);
+    validateCondaSpec(logger, srcSpecPath);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error(errorMessage);

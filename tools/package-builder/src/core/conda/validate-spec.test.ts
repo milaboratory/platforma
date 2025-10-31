@@ -26,12 +26,12 @@ describe('validateCondaSpec', () => {
 
   const expectValid = async (content: string) => {
     const specPath = await createSpec(content);
-    expect(() => validateCondaSpec(specPath, mockLogger)).not.toThrow();
+    expect(() => validateCondaSpec(mockLogger, specPath)).not.toThrow();
   };
 
   const expectInvalid = async (content: string, errorPattern: RegExp) => {
     const specPath = await createSpec(content);
-    expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(errorPattern);
+    expect(() => validateCondaSpec(mockLogger, specPath)).toThrow(errorPattern);
   };
 
   describe('allowed channels', () => {
@@ -149,7 +149,7 @@ dependencies:
 `;
       const specPath = await createSpec(content);
 
-      expect(() => validateCondaSpec(specPath, mockLogger)).toThrow(
+      expect(() => validateCondaSpec(mockLogger, specPath)).toThrow(
         /Forbidden channel 'main'[\s\S]*Forbidden channel prefix 'main::'/,
       );
     });
@@ -196,7 +196,7 @@ channels:
     });
 
     it('should throw error for non-existent file', () => {
-      expect(() => validateCondaSpec('/non-existent/path.yaml', mockLogger)).toThrow();
+      expect(() => validateCondaSpec(mockLogger, '/non-existent/path.yaml')).toThrow();
     });
 
     it('should handle dependencies with version constraints', async () => {
