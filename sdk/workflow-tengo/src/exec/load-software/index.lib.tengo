@@ -2,12 +2,13 @@
  * Library for loading software packages.
  */
 
+times := import("times")
+
 ll := import(":ll")
 render := import(":render")
 smart := import(":smart")
 assets := import(":assets")
-
-times := import("times")
+feats := import(":feats")
 
 loadSoftwareTpl := assets.importTemplate(":exec.load-software.impl")
 
@@ -18,6 +19,9 @@ loadSoftwareTpl := assets.importTemplate(":exec.load-software.impl")
  */
 loadSoftware := func(software) {
 	loadSoftwareResult := render.create(loadSoftwareTpl, {
+		environment: smart.createJsonResource({
+			isDockerAvailable: feats.isDockerAvailable
+		}),
 		software: smart.createJsonResource({
 			name: software.name,
 			version: software.version,

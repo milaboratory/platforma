@@ -12,7 +12,6 @@ conda := import(":exec.conda")
 R := import(":exec.R")
 desc := import(":exec.descriptor")
 validation := import(":validation")
-feats := import(":feats")
 
 //
 // Variables, substituted in command arguments and environment variable values.
@@ -284,8 +283,15 @@ _dockerCallOptions := func(softwareName, dockerDescriptor) {
  * The plan state is augmented with `runEnvType` in `options` property.
  *
  * @see exec.runcmd.createRunCommandPlan
+ *
+ * @param isDockerAvailable: boolean - whether docker is available in installation
+ * @param softwareName: string - name of the software entrypoint (i.e. 'abc-package:main')
+ * @param softwareVersion: string - version of the software package
+ * @param softwareDescriptor: softwareDescriptor - software entrypoint descriptor
+ *
+ * @return result: runcmd.RUN_CMD_PLAN_STATE_SCHEMA - plan state object that can be passed to runcmd functions
  */
-swToRuncmdPlan := func(softwareName, softwareVersion, softwareDescriptor) {
+swToRuncmdPlan := func(isDockerAvailable, softwareName, softwareVersion, softwareDescriptor) {
 	ll.assert(is_string(softwareName),
 		"exec.internal.swToRunCmdOptions: software name must be a string, got %v", softwareName)
 	ll.assert(is_string(softwareVersion),
@@ -295,7 +301,7 @@ swToRuncmdPlan := func(softwareName, softwareVersion, softwareDescriptor) {
 
 	result := undefined
 
-	if feats.isDockerAvailable && maps.containsKey(softwareDescriptor, "docker") {
+	if isDockerAvailable && maps.containsKey(softwareDescriptor, "docker") {
 		result = _dockerCallOptions(softwareName, softwareDescriptor.docker)
 	} else if maps.containsKey(softwareDescriptor, "local") {
 		result = _devLocalPackageCallOptions(softwareName, softwareDescriptor.local)
@@ -316,6 +322,9 @@ swToRuncmdPlan := func(softwareName, softwareVersion, softwareDescriptor) {
 self.defineOutputs("plan")
 
 self.validateInputs({
+	environment: {
+		isDockerAvailable: "bool"
+	},
 	software: pkg.softwareInfoScheme
 })
 
@@ -323,6 +332,11 @@ self.body(func(inputs) {
 	software := inputs.software
 
 	return {
-		plan: swToRuncmdPlan(software.name, software.version, software.descriptor)
+		plan: swToRuncmdPlan(
+			inputs.environment.isDockerAvailable,
+			software.name,
+			software.version,
+			software.descriptor
+		)
 	}
 })
