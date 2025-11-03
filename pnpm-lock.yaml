@@ -145,10 +145,10 @@ catalogs:
       specifier: ^2.8.2
       version: 2.8.8
     ag-grid-enterprise:
-      specifier: ^34.1.2
+      specifier: ~34.1.2
       version: 34.1.2
     ag-grid-vue3:
-      specifier: ^34.1.2
+      specifier: ~34.1.2
       version: 34.1.2
     canonicalize:
       specifier: ~2.1.0
