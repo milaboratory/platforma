@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.5.10
+
+### Patch Changes
+
+- Updated dependencies [aa8a03e]
+  - @platforma-open/milaboratories.software-ptabler@1.13.3
+
 ## 5.5.9
 
 ### Patch Changes
