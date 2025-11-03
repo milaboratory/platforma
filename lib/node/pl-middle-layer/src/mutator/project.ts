@@ -1143,6 +1143,18 @@ export class ProjectMutator {
     const structureP = tx.getKValueJson<ProjectStructure>(rid, ProjectStructureKey);
     const renderingStateP = tx.getKValueJson<ProjectRenderingState>(rid, BlockRenderingStateKey);
 
+    const jsonPromise = Promise.all([
+      schemaP,
+      lastModifiedP,
+      metaP,
+      structureP,
+      renderingStateP,
+    ]);
+
+    jsonPromise.catch(() => {
+      /* early catch */
+    });
+
     const fullResourceState = await fullResourceStateP;
 
     // loading field information
@@ -1194,13 +1206,10 @@ export class ProjectMutator {
       meta,
       structure,
       { stagingRefreshTimestamp, blocksInLimbo },
-    ] = await Promise.all([
-      schemaP,
-      lastModifiedP,
-      metaP,
-      structureP,
-      renderingStateP,
-    ]);
+    ] = await jsonPromise.catch((err) => {
+      console.error('Loading jsons error:', err);
+      throw err;
+    });
 
     // Checking schema version of the project
     if (schema !== SchemaVersionCurrent) {

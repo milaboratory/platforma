@@ -10,8 +10,9 @@ import { platforma as readLogsModel } from '@milaboratories/milaboratories.test-
 import { blockSpec as sumNumbersSpec } from '@milaboratories/milaboratories.test-sum-numbers';
 import { blockSpec as uploadFileSpec } from '@milaboratories/milaboratories.test-upload-file';
 import { platforma as uploadFileModel } from '@milaboratories/milaboratories.test-upload-file.model';
-import { PlClient } from '@milaboratories/pl-client';
+import { DisconnectedError, PlClient } from '@milaboratories/pl-client';
 import {
+  CentralBlockRegistry,
   FolderURL,
   ImportFileHandle,
   InferBlockState,
@@ -22,6 +23,7 @@ import {
   Project,
   RangeBytes,
   RemoteBlobHandleAndSize,
+  StableChannel,
   TestHelpers
 } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, blockTest } from '@platforma-sdk/test';
@@ -58,6 +60,32 @@ export async function withMl(
       await ml.close();
     }
   });
+}
+
+export async function withMlAndProxy(
+  cb: (ml: MiddleLayer, workFolder: string, proxy: TestHelpers.TestTcpProxy) => Promise<void>
+): Promise<void> {
+  const workFolder = path.resolve(`work/${randomUUID()}`);
+
+  await TestHelpers.withTempRoot(async (pl: PlClient, proxy) => {
+    const ml = await MiddleLayer.init(pl, workFolder, {
+      defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
+      devBlockUpdateRecheckInterval: 300,
+      localSecret: MiddleLayer.generateLocalSecret(),
+      localProjections: [], // TODO must be different with local pl
+      openFileDialogCallback: () => {
+        throw new Error('Not implemented.');
+      }
+    });
+    ml.addRuntimeCapability('requiresUIAPIVersion', 1);
+    ml.addRuntimeCapability('requiresUIAPIVersion', 2);
+    try {
+      await cb(ml, workFolder, proxy);
+    } finally {
+      console.log(JSON.stringify(pl.allTxStat));
+      await ml.close();
+    }
+  }, {viaTcpProxy: true});
 }
 
 export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 5000) {
@@ -674,6 +702,37 @@ test('block error test', async ({ expect }) => {
   });
 });
 
+test('disconnected test', async ({ expect }) => {
+  await withMlAndProxy(async (ml, wd, proxy) => {
+    await expect(async () => {
+      const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+      await ml.openProject(pRid1);
+      const prj = ml.getOpenedProject(pRid1);
+  
+      expect(await prj.overview.awaitStableValue()).toMatchObject({
+        meta: { label: 'Project 1' },
+        blocks: []
+      });
+  
+      const block3Id = await prj.addBlock('Block 3', sumNumbersSpec);
+  
+      await prj.setBlockArgs(block3Id, {
+        sources: [] // empty reference list should produce an error
+      });
+  
+      await proxy.disconnectAll();
+  
+      await prj.runBlock(block3Id);
+  
+      console.log('proxy', proxy);
+  
+      await awaitBlockDone(prj, block3Id);
+  
+      await prj.overview.awaitStableValue();
+    }).rejects.toThrow(DisconnectedError);
+  });
+});
+
 blockTest(
   'should create download-file block, render it and gets outputs from its config',
   async ({ rawPrj: project, ml, expect }) => {
@@ -734,6 +793,25 @@ blockTest(
     }
   }
 );
+
+// blockTest(
+//   'load packages',
+//   { timeout: 600000 },
+//   async ({ rawPrj: project, ml, tmpFolder, expect }) => {
+//     const registry = ml.blockRegistryProvider.getRegistry('http://localhost:10000');
+//     const packages = await registry.listBlockPacks();
+//     expect(packages).toBeDefined();
+//     expect(packages.length).toBeGreaterThan(0);
+//     console.log(`Loaded ${packages.length} packages`, packages.map(pkg => pkg.id.name));
+//     for (const pkg of packages) {
+//       expect(pkg.id.name).toBeDefined();
+//       // expect(pkg.latestByChannel[StableChannel].id.version).toBeDefined();
+//       console.log('Latest', pkg.latestByChannel[StableChannel]);
+//     }
+
+//     await sleep(2000);
+//   }
+// );
 
 blockTest(
   'transfer-files concurrent downloads',

@@ -39,6 +39,7 @@ import { initialTxStatWithoutTime } from './stat';
 import type { ErrorResourceData } from './error_resource';
 import { ErrorResourceType } from './error_resource';
 import { JsonGzObject, JsonObject } from '../helpers/pl';
+import { StatefulPromise } from './StatefulPromise';
 
 /** Reference to resource, used only within transaction */
 export interface ResourceRef {
@@ -203,9 +204,9 @@ export class PlTransaction {
     );
 
     // To avoid floating promise
-    this.globalTxId.catch((err) => {
+    void this.globalTxId.catch((_err) => {
       if (!this.globalTxIdWasAwaited) {
-        console.warn(err);
+        // console.warn('>>>>>>>> globalTxId error', err);
       }
     });
 
@@ -218,6 +219,7 @@ export class PlTransaction {
 
     // drain pending operations into temp array
     const pending = this.pendingVoidOps;
+
     this.pendingVoidOps = [];
     // awaiting these pending operations first, to catch any errors
     await Promise.all(pending);
@@ -227,12 +229,18 @@ export class PlTransaction {
     r: OneOfKind<ClientMessageRequest, Kind>,
     parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => T,
   ): Promise<T> {
+    return StatefulPromise.fromDeferredRejectCallback(async () => {
     // pushing operation packet to server
-    const rawResponsePromise = this.ll.send(r, false);
-
-    await this.drainAndAwaitPendingOps();
-    // awaiting our result, and parsing the response
-    return parser(await rawResponsePromise);
+      const rawResponsePromise = this.ll.send(r, false);
+      // TODO check
+      // await this.drainAndAwaitPendingOps().catch((err) => {
+      //   if (!this._completed) {
+      //     throw err;
+      //   }
+      // });
+      // awaiting our result, and parsing the response
+      return parser(await rawResponsePromise);
+    });
   }
 
   private async sendMultiAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
@@ -241,8 +249,13 @@ export class PlTransaction {
   ): Promise<T> {
     // pushing operation packet to server
     const rawResponsePromise = this.ll.send(r, true);
+    // TODO check
+    // await this.drainAndAwaitPendingOps().catch((err) => {
+    //   if (!this._completed) {
+    //     throw err;
+    //   }
+    // });
 
-    await this.drainAndAwaitPendingOps();
     // awaiting our result, and parsing the response
     return parser(await rawResponsePromise);
   }
@@ -257,7 +270,7 @@ export class PlTransaction {
   private sendVoidAsync<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>>(
     r: OneOfKind<ClientMessageRequest, Kind>,
   ): void {
-    this.pendingVoidOps.push(this.sendVoidSync(r));
+    this.pendingVoidOps.push(StatefulPromise.fromDeferredReject(this.sendVoidSync(r)));
   }
 
   private checkTxOpen() {
@@ -276,6 +289,8 @@ export class PlTransaction {
     // tx will accept no requests after this one
     this._completed = true;
 
+    await this.drainAndAwaitPendingOps();
+
     if (!this.writable) {
       // no need to explicitly commit or reject read-only tx
       const completeResult = this.ll.complete();
@@ -284,10 +299,10 @@ export class PlTransaction {
       await this.ll.await();
     } else {
       // @TODO, also floating promises
-      const commitResponse = this.sendSingleAndParse(
+      const commitResponse = StatefulPromise.fromDeferredReject(this.sendSingleAndParse(
         { oneofKind: 'txCommit', txCommit: {} },
         (r) => r.txCommit.success,
-      );
+      ));
 
       // send closing frame right after commit to save some time on round-trips
       const completeResult = this.ll.complete();
@@ -385,6 +400,10 @@ export class PlTransaction {
     const localId = this.nextLocalResourceId(root);
 
     const globalId = this.sendSingleAndParse(req(localId), (r) => parser(r) as ResourceId);
+
+    globalId.catch((_e) => {
+      // early catch (unavoidable by design)
+    });
 
     return { globalId, localId };
   }
@@ -800,26 +819,28 @@ export class PlTransaction {
   }
 
   public async getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
-    const result = await this.sendSingleAndParse(
-      {
-        oneofKind: 'resourceKeyValueGet',
-        resourceKeyValueGet: { resourceId: toResourceId(rId), key },
-      },
-      (r) => r.resourceKeyValueGet.value,
-    );
+    return StatefulPromise.fromDeferredRejectCallback(async () => {
+      const result = await this.sendSingleAndParse(
+        {
+          oneofKind: 'resourceKeyValueGet',
+          resourceKeyValueGet: { resourceId: toResourceId(rId), key },
+        },
+        (r) => r.resourceKeyValueGet.value,
+      );
 
-    this._stat.kvGetRequests++;
-    this._stat.kvGetBytes += result.length;
+      this._stat.kvGetRequests++;
+      this._stat.kvGetBytes += result.length;
 
-    return result;
+      return result;
+    });
   }
 
   public async getKValueString(rId: AnyResourceRef, key: string): Promise<string> {
-    return Buffer.from(await this.getKValue(rId, key)).toString();
+    return StatefulPromise.fromDeferredRejectCallback(async () => Buffer.from(await this.getKValue(rId, key)).toString());
   }
 
   public async getKValueJson<T>(rId: AnyResourceRef, key: string): Promise<T> {
-    return JSON.parse(await this.getKValueString(rId, key)) as T;
+    return StatefulPromise.fromDeferredRejectCallback(async () => JSON.parse(await this.getKValueString(rId, key)) as T);
   }
 
   public async getKValueIfExists(
@@ -885,8 +906,12 @@ export class PlTransaction {
   public async complete() {
     if (this._completed) return;
     this._completed = true;
-    const completeResult = this.ll.complete();
-    await this.drainAndAwaitPendingOps();
+    let completeResult: Promise<void> | undefined = undefined;
+    try {
+      completeResult = this.ll.complete();
+    } finally {
+      await this.drainAndAwaitPendingOps();
+    }
     await completeResult;
   }
 

@@ -176,7 +176,10 @@ export async function loadTreeState(
       break;
 
     // at this point we pause and wait for the nest requested resource state to arrive
-    let nextResource = await nextResourcePromise;
+    let nextResource = await nextResourcePromise.catch(async (err) => {
+      await Promise.all(pending.toArray());
+      throw err;
+    });
     if (nextResource === undefined)
       // ignoring resources that were not found (this may happen for seed resource ids)
       continue;

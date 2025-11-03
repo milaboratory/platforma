@@ -38,7 +38,7 @@ import type {
 } from '@milaboratories/pl-model-middle-layer';
 import { activeConfigs } from './active_cfg';
 import { NavigationStates } from './navigation_states';
-import { extractConfig } from '@platforma-sdk/model';
+import { extractConfig, serializeError } from '@platforma-sdk/model';
 import fs from 'node:fs/promises';
 import canonicalize from 'canonicalize';
 import type { ProjectOverviewLight } from './project_overview_light';
@@ -125,7 +125,7 @@ export class Project {
         await this.activeConfigs.getValue();
         await setTimeout(this.env.ops.projectRefreshInterval, this.abortController.signal);
 
-        // Block computables houskeeping
+        // Block computables housekeeping
         const overviewLight = await this.overviewLight.getValue();
         const existingBlocks = new Set(overviewLight.listOfBlocks);
         // Doing cleanup for deleted blocks
@@ -142,8 +142,12 @@ export class Project {
             'project refresh routine terminated, because project was externally deleted',
           );
           break;
-        } else if (!isTimeoutOrCancelError(e))
-          throw new Error('Unexpected exception', { cause: e });
+        } else if (!isTimeoutOrCancelError(e)) {
+          this.destroyed = true;
+          this.abortController.abort();
+          this.env.logger.error(serializeError(new Error('Unexpected exception', { cause: e })));
+          // throw new Error('Unexpected exception', { cause: e });
+        }
       }
     }
   }

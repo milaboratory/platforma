@@ -366,7 +366,7 @@ class LogGetter {
       return;
     } catch (e: any) {
       e as RpcError;
-      if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
+      if (e.name == 'RpcError' && (e.code == 'NOT_FOUND' || e.code === 'UNAVAILABLE')) {
         // No resource
         this.logs = '';
         this.error = e;
@@ -375,7 +375,7 @@ class LogGetter {
       }
 
       this.logger.error(
-        `Stream log lines for ${stringifyWithResourceId(this.rInfo.id)} failed, reason: ${e}`,
+        `Stream log lines for ${stringifyWithResourceId(this.rInfo.id)} failed, reason: ${e} code ${e.code}`,
       );
       throw e;
     }
