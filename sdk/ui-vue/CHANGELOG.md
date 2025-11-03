@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.45.13
+
+### Patch Changes
+
+- 44b90ca: AgGrid version fixed
+
 ## 1.45.5
 
 ### Patch Changes
