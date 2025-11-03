@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.13.3
+
+### Patch Changes
+
+- aa8a03e: Switch to custom built lts-cpu versions of polars extensions
+
 ## 1.13.2
 
 ### Patch Changes
