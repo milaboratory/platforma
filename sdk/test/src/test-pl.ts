@@ -51,6 +51,7 @@ export const plTest = test.extend<{
                 altRootId,
               )})`,
             );
+            console.log(`ERRORS: ${JSON.stringify(task.errors, null, 2)}`);
           } else {
             const rawClient = await TestHelpers.getTestClient();
             await rawClient.deleteAlternativeRoot(alternativeRoot);
