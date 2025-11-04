@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.5.12
+
+### Patch Changes
+
+- 7ffb0b8: Stop saving stdout and stderr by default
+
 ## 5.5.11
 
 ### Patch Changes
