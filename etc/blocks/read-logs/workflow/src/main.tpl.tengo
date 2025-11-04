@@ -21,7 +21,7 @@ wf.body(func(args) {
 		run = run.arg(a)
 	}
 
-	result := run.run()
+	result := run.saveStdout().run()
 
 	return {
 		outputs: {
