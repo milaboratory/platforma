@@ -3,6 +3,7 @@ syntax = "proto3";
 package MiLaboratories.PL.API;
 
 import "github.com/googleapis/googleapis/google/rpc/status.proto";
+import "github.com/googleapis/googleapis/google/api/annotations.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/api_types.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/base_types.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/resource_types.proto";
@@ -20,50 +21,166 @@ service Platform {
   //
   // Subscriptions
   //
-  rpc SubscriptionAttachFilter(SubscriptionAPI.AttachFilter.Request) returns (SubscriptionAPI.AttachFilter.Response) {}
-  rpc SubscriptionDetachFilter(SubscriptionAPI.DetachFilter.Request) returns (SubscriptionAPI.DetachFilter.Response) {}
-  rpc NotificationsGet(NotificationAPI.Get.Request) returns (NotificationAPI.Get.Response) {}
+  rpc SubscriptionAttachFilter(SubscriptionAPI.AttachFilter.Request) returns (SubscriptionAPI.AttachFilter.Response) {
+    option (google.api.http) = {
+      post: "/v1/subscription/attach-filter"
+      body: "*"
+    };
+  }
+  rpc SubscriptionDetachFilter(SubscriptionAPI.DetachFilter.Request) returns (SubscriptionAPI.DetachFilter.Response) {
+    option (google.api.http) = {
+      post: "/v1/subscription/detach-filter"
+      body: "*"
+    };
+  }
+  rpc NotificationsGet(NotificationAPI.Get.Request) returns (NotificationAPI.Get.Response) {
+    option (google.api.http) = {
+      post: "/v1/notifications/get"
+      body: "*"
+    };
+  }
 
   //
   // Controllers
   //
-  rpc ControllerRegister(ControllerAPI.Register.Request) returns (ControllerAPI.Register.Response) {}
-  rpc ControllerDeregister(ControllerAPI.Deregister.Request) returns (ControllerAPI.Deregister.Response) {}
-  rpc ControllerCreate(ControllerAPI.Create.Request) returns (ControllerAPI.Create.Response) {}
-  rpc ControllerExists(ControllerAPI.Exists.Request) returns (ControllerAPI.Exists.Response) {}
-  rpc ControllerGet(ControllerAPI.Get.Request) returns (ControllerAPI.Get.Response) {}
-  rpc ControllerUpdate(ControllerAPI.Update.Request) returns (ControllerAPI.Update.Response) {}
-  rpc ControllerAttachSubscription(ControllerAPI.AttachSubscription.Request) returns (ControllerAPI.AttachSubscription.Response) {}
-  rpc GetControllerNotifications(ControllerAPI.GetNotifications.Request) returns (ControllerAPI.GetNotifications.Response) {}
-  rpc WriteControllerAliasesAndUrls(ControllerAPI.WriteAliasesAndUrls.Request) returns (ControllerAPI.WriteAliasesAndUrls.Response) {}
-  rpc RemoveControllerAliasesAndUrls(ControllerAPI.RemoveAliasesAndUrls.Request) returns (ControllerAPI.RemoveAliasesAndUrls.Response) {}
-  rpc GetControllerUrl(ControllerAPI.GetUrl.Request) returns (ControllerAPI.GetUrl.Response) {}
-  rpc ControllerSetFeatures(ControllerAPI.SetFeatures.Request) returns (ControllerAPI.SetFeatures.Response) {}
-  rpc ControllerClearFeatures(ControllerAPI.ClearFeatures.Request) returns (ControllerAPI.ClearFeatures.Response) {}
+  rpc ControllerRegister(ControllerAPI.Register.Request) returns (ControllerAPI.Register.Response) {
+    option (google.api.http) = {
+      post: "/v1/controller/register"
+      body: "*"
+    };
+  }
+  rpc ControllerDeregister(ControllerAPI.Deregister.Request) returns (ControllerAPI.Deregister.Response) {
+    option (google.api.http) = {
+      post: "/v1/controller/deregister"
+      body: "*"
+    };
+  }
+  rpc ControllerCreate(ControllerAPI.Create.Request) returns (ControllerAPI.Create.Response) {
+    option (google.api.http) = {
+      post: "/v1/controller/create"
+      body: "*"
+    };
+  }
+  rpc ControllerExists(ControllerAPI.Exists.Request) returns (ControllerAPI.Exists.Response) {
+    option (google.api.http) = {
+      post: "/v1/controller/exists"
+      body: "*"
+    };
+  }
+  rpc ControllerGet(ControllerAPI.Get.Request) returns (ControllerAPI.Get.Response) {
+    option (google.api.http) = {
+      post: "/v1/controller/get"
+      body: "*"
+    };
+  }
+  rpc ControllerUpdate(ControllerAPI.Update.Request) returns (ControllerAPI.Update.Response) {
+    option (google.api.http) = {
+      post: "/v1/controller/update"
+      body: "*"
+    };
+  }
+  rpc ControllerAttachSubscription(ControllerAPI.AttachSubscription.Request) returns (ControllerAPI.AttachSubscription.Response) {
+    option (google.api.http) = {
+      post: "/v1/controller/attach-subscription"
+      body: "*"
+    };
+  }
+  rpc GetControllerNotifications(ControllerAPI.GetNotifications.Request) returns (ControllerAPI.GetNotifications.Response) {
+    option (google.api.http) = {
+      post: "/v1/controller/notifications"
+      body: "*"
+    };
+  }
+  rpc WriteControllerAliasesAndUrls(ControllerAPI.WriteAliasesAndUrls.Request) returns (ControllerAPI.WriteAliasesAndUrls.Response) {
+    option (google.api.http) = {
+      post: "/v1/controller/aliases-and-urls"
+      body: "*"
+    };
+  }
+  rpc RemoveControllerAliasesAndUrls(ControllerAPI.RemoveAliasesAndUrls.Request) returns (ControllerAPI.RemoveAliasesAndUrls.Response) {
+    option (google.api.http) = {
+      delete: "/v1/controller/aliases-and-urls"
+      body: "*"
+    };
+  }
+  rpc GetControllerUrl(ControllerAPI.GetUrl.Request) returns (ControllerAPI.GetUrl.Response) {
+    option (google.api.http) = {
+      post: "/v1/controller/url"
+      body: "*"
+    };
+  }
+  rpc ControllerSetFeatures(ControllerAPI.SetFeatures.Request) returns (ControllerAPI.SetFeatures.Response) {
+    option (google.api.http) = {
+      post: "/v1/controller/features"
+      body: "*"
+    };
+  }
+  rpc ControllerClearFeatures(ControllerAPI.ClearFeatures.Request) returns (ControllerAPI.ClearFeatures.Response) {
+    option (google.api.http) = {
+      delete: "/v1/controller/features"
+      body: "*"
+    };
+  }
 
   //
   // Locks
   //
-  rpc LeaseResource(LocksAPI.Lease.Create.Request) returns (LocksAPI.Lease.Create.Response) {}
-  rpc UpdateLease(LocksAPI.Lease.Update.Request) returns (LocksAPI.Lease.Update.Response) {}
-  rpc ReleaseLease(LocksAPI.Lease.Release.Request) returns (LocksAPI.Lease.Release.Response) {}
+  rpc LeaseResource(LocksAPI.Lease.Create.Request) returns (LocksAPI.Lease.Create.Response) {
+    option (google.api.http) = {
+      post: "/v1/locks/lease"
+      body: "*"
+    };
+  }
+  rpc UpdateLease(LocksAPI.Lease.Update.Request) returns (LocksAPI.Lease.Update.Response) {
+    option (google.api.http) = {
+      put: "/v1/locks/lease"
+      body: "*"
+    };
+  }
+  rpc ReleaseLease(LocksAPI.Lease.Release.Request) returns (LocksAPI.Lease.Release.Response) {
+    option (google.api.http) = {
+      delete: "/v1/locks/lease"
+      body: "*"
+    };
+  }
 
   //
   // Authentication
   //
-  rpc AuthMethods(AuthAPI.ListMethods.Request) returns (AuthAPI.ListMethods.Response) {}
-  rpc GetJWTToken(AuthAPI.GetJWTToken.Request) returns (AuthAPI.GetJWTToken.Response) {}
+  rpc AuthMethods(AuthAPI.ListMethods.Request) returns (AuthAPI.ListMethods.Response) {
+    option (google.api.http) = {
+      get: "/v1/auth/methods"
+    };
+  }
+  rpc GetJWTToken(AuthAPI.GetJWTToken.Request) returns (AuthAPI.GetJWTToken.Response) {
+    option (google.api.http) = {
+      post: "/v1/auth/jwt-token"
+      body: "*"
+    };
+  }
 
   //
   // Other stuff
   //
-  rpc ListResourceTypes(MiscAPI.ListResourceTypes.Request) returns (MiscAPI.ListResourceTypes.Response) {}
+  rpc ListResourceTypes(MiscAPI.ListResourceTypes.Request) returns (MiscAPI.ListResourceTypes.Response) {
+    option (google.api.http) = {
+      get: "/v1/resource-types"
+    };
+  }
 
   //
   // Various service requests
   //
-  rpc Ping(MaintenanceAPI.Ping.Request) returns (MaintenanceAPI.Ping.Response) {}
-  rpc License(MaintenanceAPI.License.Request) returns (MaintenanceAPI.License.Response) {}
+  rpc Ping(MaintenanceAPI.Ping.Request) returns (MaintenanceAPI.Ping.Response) {
+    option (google.api.http) = {
+      get: "/v1/ping"
+    };
+  }
+  rpc License(MaintenanceAPI.License.Request) returns (MaintenanceAPI.License.Response) {
+    option (google.api.http) = {
+      get: "/v1/license"
+    };
+  }
 }
 
 // Platform transactions on API level are implemented as bidirectional

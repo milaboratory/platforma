@@ -1,6 +1,6 @@
 import { LLPlClient } from './ll_client';
 import { getTestConfig, getTestLLClient, getTestClientConf } from '../test/test_config';
-import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+import { TxAPI_Open_Request_WritableTx } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { request } from 'undici';
 import * as tp from 'node:timers/promises';
 import { test, expect } from 'vitest';

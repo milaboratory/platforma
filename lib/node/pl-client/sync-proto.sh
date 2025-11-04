@@ -82,32 +82,14 @@ function rsync_proto_files() {
             -av \
             --delete \
             --include "*.proto" \
-            --include "*.json" \
             --include "*.yaml" \
+            --include "*.json" \
             --include "*.lock" \
             --include "*.toml" \
             --exclude "*" \
             "${_sync_src_dir}/${p}" "${_sync_dst_dir}/${p}" | redirect_log "      "
         echo "" | redirect_log
     done
-}
-
-function link_proto_files() {
-  local _sync_root="${1}"
-  local _sync_paths="${2}"
-  local _namespace="${3}"
-
-  local _dst_root="${_sync_root}/.proto/${_namespace}"
-
-  mkdir -p "${_dst_root}"
-  local _pkg
-  for _pkg in $(split_list "${_sync_paths}" ":"); do
-    if [ ! -d "${_sync_root}/${_pkg}" ]; then
-      continue
-    fi
-
-    ln -s "${_sync_root}/${_pkg}" "${_dst_root}/${_pkg%/}"
-  done
 }
 
 function cleanup() {
@@ -123,7 +105,6 @@ function cleanup() {
 #
 # Actual script run
 #
-mkdir -p "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}"
 rm -f "${SYNC_LOG}"
 
 version="${1:-}"
@@ -147,8 +128,6 @@ log "Updating protocol..."
   log "  updating proto dependencies..."
   cd "${SYNC_ROOT}/${SYNC_PLAPI_DST_DIR}"
   protodep up --use-https
-
-  link_proto_files "${SYNC_ROOT}/${SYNC_PLAPI_DST_DIR}" "${SYNC_PLAPI_PATHS}" "${PLAPI_PACKAGE_NAMESPACE}"
 )
 
 (
@@ -158,8 +137,6 @@ log "Updating protocol..."
   log "  updating proto dependencies..."
   cd "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}"
   protodep up --use-https
-
-  link_proto_files "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}" "${SYNC_SHARED_PATHS}" "${SHARED_PACKAGE_NAMESPACE}"
 )
 
 echo ""

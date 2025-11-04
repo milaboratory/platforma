@@ -156,6 +156,8 @@ catalog:
 
   'prettier': ^3.4.1
   '@protobuf-ts/plugin': &protobuf-ts 2.11.1
+  'openapi-typescript': '^7.10.0'
+  'openapi-fetch': '^0.15.0'
 
   '@changesets/cli': ^2.29.5
 
@@ -185,6 +187,7 @@ catalog:
   # Net
 
   'undici': ~7.16.0
+  'axios': ^1.13.2
   '@grpc/grpc-js': ~1.13.4
   '@protobuf-ts/grpc-transport': *protobuf-ts
   '@protobuf-ts/runtime': *protobuf-ts
