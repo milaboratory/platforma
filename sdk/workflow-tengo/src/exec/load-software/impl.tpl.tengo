@@ -292,6 +292,8 @@ _dockerCallOptions := func(softwareName, dockerDescriptor) {
  * @return result: runcmd.RUN_CMD_PLAN_STATE_SCHEMA - plan state object that can be passed to runcmd functions
  */
 swToRuncmdPlan := func(isDockerAvailable, softwareName, softwareVersion, softwareDescriptor) {
+	ll.assert(is_bool(isDockerAvailable),
+		"exec.internal.swToRunCmdOptions: isDockerAvailable must be a boolean, got %v", isDockerAvailable)
 	ll.assert(is_string(softwareName),
 		"exec.internal.swToRunCmdOptions: software name must be a string, got %v", softwareName)
 	ll.assert(is_string(softwareVersion),
