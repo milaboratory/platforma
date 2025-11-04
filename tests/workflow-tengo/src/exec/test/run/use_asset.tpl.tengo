@@ -17,7 +17,7 @@ self.body(func(inputs) {
 		run()
 
 	result := {
-		main: run.getStdoutFileContent()
+		main: run.getStdoutContent()
 	}
 
 	return result
