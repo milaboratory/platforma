@@ -123,7 +123,6 @@ function cleanup() {
 #
 # Actual script run
 #
-mkdir -p "${SYNC_ROOT}/${SYNC_PLAPI_DST_DIR}"
 mkdir -p "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}"
 rm -f "${SYNC_LOG}"
 
@@ -134,30 +133,32 @@ fi
 
 tmp_repo="${SYNC_ROOT}/tmp-repo"
 
-log "Syncing '${SYNC_ORIGIN_REF}' proto version..."
-log "  Cloning '${SYNC_ORIGIN}' into tmp directory ${tmp_repo}"
+log "Cloning '${SYNC_ORIGIN}@${SYNC_ORIGIN_REF}' into tmp directory '${tmp_repo}'"
 init_repo "${SYNC_ORIGIN}" "${SYNC_ORIGIN_REF}" "${tmp_repo}" |& redirect_log "    "
 # cd "${tmp_repo}/plapi" && "protodep up --use-https"
- trap "cleanup '${tmp_repo}'" EXIT
-
-log "  Syncing proto files from '${SYNC_PLAPI_SRC_DIR}'"
-rsync_proto_files "${SYNC_PLAPI_PATHS}" "${tmp_repo}/${SYNC_PLAPI_SRC_DIR}" "${SYNC_ROOT}/${SYNC_PLAPI_DST_DIR}"
-
-log "  Syncing shared proto files from '${SYNC_SHARED_SRC_DIR}'"
-rsync_proto_files "${SYNC_SHARED_PATHS}" "${tmp_repo}/${SYNC_SHARED_SRC_DIR}" "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}"
+trap "cleanup '${tmp_repo}'" EXIT
 
 # cleanup "${tmp_repo}"
-echo "Update";
-log "Updating dependencies..."
+log "Updating protocol..."
 (
+  log "  updating '${SYNC_PLAPI_SRC_DIR}' proto definitions..."
+  rsync_proto_files "${SYNC_PLAPI_PATHS}" "${tmp_repo}/${SYNC_PLAPI_SRC_DIR}" "${SYNC_ROOT}/${SYNC_PLAPI_DST_DIR}"
+
+  log "  updating proto dependencies..."
   cd "${SYNC_ROOT}/${SYNC_PLAPI_DST_DIR}"
   protodep up --use-https
+
   link_proto_files "${SYNC_ROOT}/${SYNC_PLAPI_DST_DIR}" "${SYNC_PLAPI_PATHS}" "${PLAPI_PACKAGE_NAMESPACE}"
 )
 
 (
+  log "  updating '${SYNC_SHARED_SRC_DIR}' proto definitions..."
+  rsync_proto_files "${SYNC_SHARED_PATHS}" "${tmp_repo}/${SYNC_SHARED_SRC_DIR}" "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}"
+
+  log "  updating proto dependencies..."
   cd "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}"
   protodep up --use-https
+
   link_proto_files "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}" "${SYNC_SHARED_PATHS}" "${SHARED_PACKAGE_NAMESPACE}"
 )
 
