@@ -36,7 +36,6 @@ self.body(func(inputs) {
     ptCmd := exec.builder().
         setQueue(queue).
         printErrStreamToStdout().
-        dontSaveStdoutOrStderr().
         software(ptSoftware).
         envExpr("POLARS_MAX_THREADS", "{max(2,system.cpu)}").
         arg("workflow_sc.json").
@@ -104,15 +103,17 @@ self.body(func(inputs) {
     }
 
     outFramesMap := {}
-    savedFrames := ptRun.getProcessorResult(workdirProcessorName)
-    for frameName, columnIds in outFrames {
-        columns := {}
-        for columnId in columnIds {
-            columnRef := util.makeFrameColumnRef(frameName, columnId)
-            columnData := savedFrames.getFutureInputField(columnRef)
-            columns[columnId] = columnData
+    if len(outFrames) > 0 {
+        savedFrames := ptRun.getProcessorResult(workdirProcessorName)
+        for frameName, columnIds in outFrames {
+            columns := {}
+            for columnId in columnIds {
+                columnRef := util.makeFrameColumnRef(frameName, columnId)
+                columnData := savedFrames.getFutureInputField(columnRef)
+                columns[columnId] = columnData
+            }
+            outFramesMap[frameName] = columns
         }
-        outFramesMap[frameName] = columns
     }
 
     return {
