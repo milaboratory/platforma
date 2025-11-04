@@ -13,6 +13,7 @@ self.body(func(inputs) {
 		arg("bash").
 		arg("-c").
 		arg("echo Hello from bash").
+		saveStdout().
 		run()
 
 	result := {
