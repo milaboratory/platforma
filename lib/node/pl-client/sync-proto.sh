@@ -123,7 +123,6 @@ function cleanup() {
 #
 # Actual script run
 #
-mkdir -p "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}"
 rm -f "${SYNC_LOG}"
 
 version="${1:-}"
