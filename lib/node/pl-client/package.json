@@ -51,6 +51,7 @@
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@protobuf-ts/plugin": "catalog:",
+    "@hey-api/openapi-ts": "catalog:",
     "@types/http-proxy": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",

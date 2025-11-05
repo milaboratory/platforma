@@ -156,6 +156,7 @@ catalog:
 
   'prettier': ^3.4.1
   '@protobuf-ts/plugin': &protobuf-ts 2.11.1
+  '@hey-api/openapi-ts': ^0.87.0
 
   '@changesets/cli': ^2.29.5
 
