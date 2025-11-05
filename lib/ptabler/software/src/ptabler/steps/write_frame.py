@@ -154,6 +154,23 @@ class WriteFrame(PStep, tag="write_frame"):
                     null_count = get_column_null_count(duckdb_conn, intermediate_parquet, axis.column)
                     if null_count > 0:
                         raise ValueError(f"Found {null_count} null values in axis '{axis.column}'.")
+            
+            axis_identifiers = [escape(axis.column) for axis in self.axes]
+            duplicate_check = duckdb_conn.execute(f"""
+                SELECT {', '.join(axis_identifiers)}, COUNT(*) as count
+                FROM read_parquet(?)
+                GROUP BY {', '.join(axis_identifiers)}
+                HAVING COUNT(*) > 1
+                LIMIT 1
+            """, [intermediate_parquet]).fetchall()
+            
+            if duplicate_check:
+                duplicate_row = duplicate_check[0]
+                duplicate_values = list(duplicate_row[:-1])
+                raise ValueError(
+                    f"Multiple rows with the same axis key: {duplicate_values} detected. "
+                    "Consider aggregation or adding another axis."
+                )
 
             data_info_by_column = {}
             for column in self.columns:
