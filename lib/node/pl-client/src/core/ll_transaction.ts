@@ -2,7 +2,7 @@ import type {
   TxAPI_ClientMessage,
   TxAPI_ServerMessage,
 } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
-import type { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
+import type { BiDiStream } from './abstract_stream';
 import Denque from 'denque';
 import type { Status } from '../proto-grpc/github.com/googleapis/googleapis/google/rpc/status';
 import {
@@ -17,7 +17,7 @@ export type ClientMessageRequest = TxAPI_ClientMessage['request'];
 
 export type ServerMessageResponse = TxAPI_ServerMessage['response'];
 
-type TxStream = DuplexStreamingCall<TxAPI_ClientMessage, TxAPI_ServerMessage>;
+type TxStream = BiDiStream<TxAPI_ClientMessage, TxAPI_ServerMessage>;
 
 export type OneOfKind<T extends { oneofKind: unknown }, Kind extends T['oneofKind']> = Extract<
   T,
