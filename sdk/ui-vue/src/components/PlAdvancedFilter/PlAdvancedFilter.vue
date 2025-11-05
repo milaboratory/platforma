@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import FilterComponent from './Filter.vue';
+import SingleFilter from './SingleFilter.vue';
 import { PlBtnSecondary, PlElementList, PlCheckbox, PlIcon16 } from '@milaboratories/uikit';
 import type { PlAdvancedFilterUI, SourceOptionInfo } from './types';
 import { computed, reactive, ref, watch } from 'vue';
@@ -12,17 +12,17 @@ const props = withDefaults(defineProps<{
   /** List of ids of sources (columns, axes) that can be selected in filters */
   items: SourceOptionInfo[];
   /** If true - new filter can be added by droppind element into filter group; else new column is added by button click */
-  dndMode?: boolean;
+  enableDnd?: boolean;
   /** If dnd mode on - used for column adding */
-  draggedId?: string;
+  draggedId?: SUniversalPColumnId;
   /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
-  searchOptions: (columnId: SUniversalPColumnId, searchStr: string, axisIdx?: number) => (Promise<ListOptionBase<string | number>[]>) |
-    ((columnId: SUniversalPColumnId, searchStr: string) => ListOptionBase<string | number>[]);
+  searchOptions: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
+    ((params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>[]);
   /** Loading function for label of selected value for Equal/InSet filters and fixed axes options. */
-  searchModel: (columnId: SUniversalPColumnId, searchStr: string, axisIdx?: number) => (Promise<ListOptionBase<string | number>>) |
-    ((columnId: SUniversalPColumnId, searchStr: string) => ListOptionBase<string | number>);
+  searchModel: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
+    ((params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>);
 }>(), {
-  dndMode: false,
+  enableDnd: false,
   draggedId: undefined,
 });
 
@@ -36,7 +36,7 @@ watch(() => innerModel.value, (v: PlAdvancedFilterUI) => {
   updateOuterModelValue(v);
 }, { deep: true });
 
-const defaultColumnId = computed(() => props.items[0]?.id);
+const firstColumnId = computed(() => props.items[0]?.id);
 const emptyGroup = [{
   id: 'empty',
   not: false,
@@ -116,7 +116,7 @@ function dragOver(event: DragEvent) {
           @dragover="dragOver"
         >
           <PlCheckbox v-model="item.not">NOT</PlCheckbox>
-          <FilterComponent
+          <SingleFilter
             v-for="(filter, filterIdx) in item.filters"
             :key="filterIdx"
             v-model="item.filters[filterIdx]"
@@ -124,27 +124,26 @@ function dragOver(event: DragEvent) {
             :column-options="items"
             :search-model="searchModel"
             :search-options="searchOptions"
-            :dnd-mode="dndMode"
-            :last="filterIdx === item.filters.length - 1"
-            @change-operand="(v) => item.operand = v"
-            @delete="() => removeFilterFromGroup(index, filterIdx)"
+            :enable-dnd="enableDnd"
+            :is-last="filterIdx === item.filters.length - 1"
+            :on-change-operand="(v) => item.operand = v"
+            :on-delete="() => removeFilterFromGroup(index, filterIdx)"
           />
-          <div v-if="dndMode" :class="$style.dropzone">
+          <div v-if="enableDnd" :class="$style.dropzone">
             <div>Drop dimensions here</div>
           </div>
-          <PlBtnSecondary v-else @click="addColumnToGroup(index, defaultColumnId)">
+          <PlBtnSecondary v-else @click="addColumnToGroup(index, firstColumnId)">
             <PlIcon16 name="add" style="margin-right: 8px"/>Add column
           </PlBtnSecondary>
         </div>
       </template>
       <template #item-after="{ index }">
-        <div :class="$style.buttonWrapper">
-          <OperandButton
-            :active="innerModel.operand"
-            :disabled="index === innerModel.groups.length - 1"
-            @select="(v) => innerModel.operand = v"
-          />
-        </div>
+        <OperandButton
+          :class="$style.buttonWrapper"
+          :active="innerModel.operand"
+          :disabled="index === innerModel.groups.length - 1"
+          :on-select="(v) => innerModel.operand = v"
+        />
       </template>
     </PlElementList>
 
@@ -169,22 +168,22 @@ function dragOver(event: DragEvent) {
       <template #item-title>Filter group</template>
       <template #item-content="{item}">
         <PlCheckbox v-model="item.not" disabled >NOT</PlCheckbox>
-        <div v-if="dndMode" :class="$style.dropzone">
+        <div v-if="enableDnd" :class="$style.dropzone">
           <div>Drop dimensions here</div>
         </div>
-        <PlBtnSecondary v-else @click="addGroup(defaultColumnId)">
+        <PlBtnSecondary v-else @click="addGroup(firstColumnId)">
           <PlIcon16 name="add" style="margin-right: 8px"/>Add column
         </PlBtnSecondary>
       </template>
     </PlElementList>
   </div>
 </template>
-<style lang="scss" module>
+<style module>
   .filterGroup {
     background: var(--bg-base-light);
-      &:hover {
-        background: rgba(99, 224, 36, 0.12);
-      }
+  }
+  .filterGroup:hover {
+    background: rgba(99, 224, 36, 0.12);
   }
   .filterGroupTitle {
     background: none;

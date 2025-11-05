@@ -15,54 +15,43 @@ const uniqueValuesByAxisIdx: Record<string, Record<number, ListOptionBase<string
 const options = [
   {
     id: '1' as SUniversalPColumnId,
-    info: {
-      label: 'Column 1',
-      error: false,
-      axesToBeFixed: [{
-        idx: 0,
-        label: 'Axis 1 label',
-        info: {
-          label: 'Axis 1 label',
-          spec: { type: 'String' as const, name: 'nameAxis1' },
-          uniqueValues: [{ value: 'axisValue1', label: 'Axis Value 1' }, { value: 'axisValue2', label: 'Axis Value 2' }],
-        },
-      }],
-      spec: { kind: 'PColumn' as const, valueType: 'Int' as const, name: 'c1', axesSpec: [{ type: 'String' as const, name: 'nameAxis1' }] },
-    },
+    label: 'Column 1',
+    error: false,
+    axesToBeFixed: [{
+      idx: 0,
+      label: 'Axis 1 label',
+    }],
+    spec: { kind: 'PColumn' as const, valueType: 'Int' as const, name: 'c1', axesSpec: [{ type: 'String' as const, name: 'nameAxis1' }] },
   },
   {
     id: '2' as SUniversalPColumnId,
-    info: {
-      label: 'Column 2',
-      error: false,
-      spec: { kind: 'PColumn' as const, valueType: 'String' as const, name: 'c2', axesSpec: [] },
-    },
+    label: 'Column 2',
+    error: false,
+    spec: { kind: 'PColumn' as const, valueType: 'String' as const, name: 'c2', axesSpec: [] },
   },
   {
     id: '3' as SUniversalPColumnId,
-    info: {
-      label: 'Column 3',
-      error: false,
-      spec: { kind: 'PColumn' as const, valueType: 'Double' as const, name: 'c3', axesSpec: [] },
-    },
+    label: 'Column 3',
+    error: false,
+    spec: { kind: 'PColumn' as const, valueType: 'Double' as const, name: 'c3', axesSpec: [] },
   },
 ];
-const dndMode = ref(false);
-const draggedId = ref<string | undefined>();
+const enableDnd = ref(false);
+const draggedId = ref<SUniversalPColumnId | undefined>();
 
-async function searchOptions(id: string, str: string, axisIdx?: number) {
+async function searchOptions({ columnId, searchStr, axisIdx }: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) {
   if (axisIdx !== undefined) {
-    return uniqueValuesByAxisIdx[id]?.[axisIdx] || [];
+    return (uniqueValuesByAxisIdx[columnId]?.[axisIdx] || []).filter((v) => v.label.includes(searchStr));
   }
-  return uniqueValuesByColumnOrAxisId[id] || [];
+  return (uniqueValuesByColumnOrAxisId[columnId] || []).filter((v) => v.label.includes(searchStr));
 }
-async function searchModel(id: string, modelStr: string, axisIdx?: number) {
+async function searchModel({ columnId, searchStr, axisIdx }: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) {
   if (axisIdx !== undefined) {
-    const axisValues = uniqueValuesByAxisIdx[id]?.[axisIdx];
-    return axisValues.find((v) => v.value === modelStr) || { value: modelStr, label: `Label of ${modelStr}` };
+    const axisValues = uniqueValuesByAxisIdx[columnId]?.[axisIdx];
+    return axisValues.find((v) => v.value === searchStr) || { value: searchStr, label: `Label of ${searchStr}` };
   }
-  const columnValues = uniqueValuesByColumnOrAxisId[id];
-  return columnValues.find((v) => v.value === modelStr) || { value: modelStr, label: `Label of ${modelStr}` };
+  const columnValues = uniqueValuesByColumnOrAxisId[columnId];
+  return columnValues.find((v) => v.value === searchStr) || { value: searchStr, label: `Label of ${searchStr}` };
 }
 
 const errorState = {
@@ -174,27 +163,27 @@ watch(() => filtersModel.value, (m) => {
 <template>
   <PlBlockPage>
     <div :class="$style.controls">
-      <PlCheckbox v-model="dndMode" >Drag-n-Drop mode</PlCheckbox>
+      <PlCheckbox v-model="enableDnd" >Drag-n-Drop mode</PlCheckbox>
       <PlDropdown v-model="selectedSavedFilters" :options="filterStatesOptions" label="Examples" :style="{width: '300px'}" />
     </div>
     <div :class="$style.block">
-      <div v-if="dndMode" :class="$style.leftColumn">
+      <div v-if="enableDnd" :class="$style.leftColumn">
         <div
           v-for="option in options"
           :key="option.id"
-          :draggable="dndMode ? 'true' : undefined"
+          :draggable="enableDnd ? 'true' : undefined"
           :class="$style.columnChip"
           @dragstart="() => draggedId = option.id"
           @dragend="() => draggedId = undefined"
         >
-          {{ option.info.label }}
+          {{ option.label }}
         </div>
       </div>
       <div :key="selectedSavedFilters" :class="$style.rightColumn" >
         <PlAdvancedFilter
           v-model="filtersModel"
           :items="options"
-          :dnd-mode="dndMode"
+          :enable-dnd="enableDnd"
           :dragged-id="draggedId"
           :search-options="searchOptions"
           :search-model="searchModel"

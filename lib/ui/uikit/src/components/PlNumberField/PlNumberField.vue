@@ -48,7 +48,7 @@ const props = withDefaults(defineProps<{
   /** Additional validity check for input value that must return an error text if failed */
   validate?: (v: number) => string | undefined;
   /** Makes some of corners not rounded */
-  position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
+  groupPosition?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
 }>(), {
   step: 1,
   label: undefined,
@@ -59,7 +59,7 @@ const props = withDefaults(defineProps<{
   updateOnEnter: false,
   errorMessage: undefined,
   validate: undefined,
-  position: undefined,
+  groupPosition: undefined,
 });
 
 const modelValue = defineModel<number | undefined>({ required: true });
@@ -242,7 +242,7 @@ const onMousedown = (ev: MouseEvent) => {
     @keydown="handleKeyPress($event)"
   >
     <div class="pl-number-field__main-wrapper d-flex">
-      <DoubleContour class="pl-number-field__contour" :position="position"/>
+      <DoubleContour class="pl-number-field__contour" :group-position="groupPosition"/>
       <div
         class="pl-number-field__wrapper flex-grow d-flex flex-align-center"
         :class="{withoutArrows: !useIncrementButtons}"

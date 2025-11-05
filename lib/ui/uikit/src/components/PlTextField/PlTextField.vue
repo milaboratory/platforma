@@ -86,7 +86,7 @@ const props = defineProps<{
   /**
    * Makes some of corners not rounded
    * */
-  position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
+  groupPosition?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
 }>();
 
 const rootRef = ref<HTMLInputElement | undefined>(undefined);
@@ -221,7 +221,7 @@ useLabelNotch(rootRef);
         <PlIcon24 v-if="type === 'password'" :name="passwordIcon" style="cursor: pointer" @click.stop="togglePasswordVisibility" />
         <slot name="append" />
       </div>
-      <DoubleContour class="pl-text-field__contour" :position="position" />
+      <DoubleContour class="pl-text-field__contour" :group-position="groupPosition" />
     </div>
     <div v-if="hasErrors" class="pl-text-field__error">
       {{ displayErrors.join(' ') }}

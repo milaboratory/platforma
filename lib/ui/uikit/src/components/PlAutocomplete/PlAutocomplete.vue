@@ -95,7 +95,7 @@ const props = withDefaults(
     /**
      * Makes some of corners not rounded
      * */
-    position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
+    groupPosition?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
   }>(),
   {
     modelSearch: undefined,
@@ -111,7 +111,7 @@ const props = withDefaults(
     arrowIconLarge: undefined,
     optionSize: 'small',
     formatValue: (v: M) => String(v),
-    position: undefined,
+    groupPosition: undefined,
   },
 );
 
@@ -402,7 +402,7 @@ watch(() => optionsRequest.loading || modelOptionRequest.loading, (loading) => {
           />
           <div v-if="!renderedOptionsRef.length" class="nothing-found">Nothing found</div>
         </DropdownOverlay>
-        <DoubleContour class="pl-autocomplete__contour" :position="position" />
+        <DoubleContour class="pl-autocomplete__contour" :group-position="groupPosition" />
       </div>
     </div>
     <div v-if="computedError" class="pl-autocomplete__error">{{ computedError }}</div>

@@ -62,11 +62,9 @@ export type FixedAxisInfo = {
 
 export type SourceOptionInfo = {
   id: SUniversalPColumnId;
-  info: {
-    label: string;
-    error: boolean;
-    spec: PColumnSpec | AxisSpec;
-    axesToBeFixed?: FixedAxisInfo[];
-    alphabet?: 'nucleotide' | 'aminoacid' | string;
-  };
+  label: string;
+  error: boolean;
+  spec: PColumnSpec | AxisSpec;
+  axesToBeFixed?: FixedAxisInfo[];
+  alphabet?: 'nucleotide' | 'aminoacid' | string;
 };

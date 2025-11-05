@@ -4,20 +4,18 @@ import type { Operand } from './types';
 defineProps<{
   active: Operand;
   disabled: boolean;
-}>();
-defineEmits<{
-  (e: 'select', op: Operand): void;
+  onSelect: (op: Operand) => void;
 }>();
 
 const OPTIONS: Operand[] = ['and', 'or'];
 </script>
 <template>
-  <div :class="$style.block">
+  <div v-bind="$attrs" :class="$style.block">
     <div
       v-for="op in OPTIONS"
       :key="op"
       :class="[$style.operand, {[$style.active]: op === active && !disabled}]"
-      @click="!disabled && $emit('select', op)"
+      @click="!disabled && onSelect(op)"
     >
       {{ op }}
     </div>
@@ -29,6 +27,8 @@ const OPTIONS: Operand[] = ['and', 'or'];
   display: flex;
   gap: 4px;
   justify-content: center;
+  height: 72px;
+  align-items: center;
 }
 .operand {
   border-radius: 16px;
