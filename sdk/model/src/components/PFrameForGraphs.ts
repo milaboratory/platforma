@@ -10,9 +10,7 @@ import type {
 import {
   canonicalizeJson,
   getAxisId,
-  isDataInfo,
   matchAxisId,
-  visitDataInfo,
   getColumnIdAndSpec,
   Annotation,
   readAnnotation,
@@ -24,7 +22,7 @@ import {
   getAxesTree,
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, RenderCtx } from '../render';
-import { PColumnCollection, TreeNodeAccessor } from '../render';
+import { allPColumnsReady, PColumnCollection } from '../render';
 import { isLabelColumn } from './PlDataTable';
 
 /** Create id for column copy with added keys in axes domains */
@@ -190,22 +188,6 @@ function getAdditionalColumnsForColumn(
   return [column, ...additionalColumns];
 }
 
-export function isColumnReady(c: PColumn<PColumnDataUniversal>) {
-  let ready = true;
-  if (c.data instanceof TreeNodeAccessor) {
-    ready = ready && c.data.getIsReadyOrError();
-  } else if (isDataInfo(c.data)) {
-    visitDataInfo(c.data, (v) => {
-      ready = ready && v.getIsReadyOrError();
-    });
-  }
-  return ready;
-}
-
-export function allColumnsReady(columns: PColumn<PColumnDataUniversal>[]): boolean {
-  return columns.every(isColumnReady);
-}
-
 /**
  The aim of createPFrameForGraphs: to create pframe with block’s columns and all compatible columns from result pool
  (including linker columns and all label columns).
@@ -229,7 +211,7 @@ export function createPFrameForGraphs<A, U>(
 
     const allColumns = columns.getColumns((spec) => !isHiddenFromGraphColumn(spec), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
     // if at least one column is not yet ready, we can't show the graph
-    if (!allColumnsReady(allColumns)) {
+    if (!allPColumnsReady(allColumns)) {
       return undefined;
     }
 
@@ -246,7 +228,7 @@ export function createPFrameForGraphs<A, U>(
     return ctx.createPFrame(extendedColumns);
   };
 
-  if (!allColumnsReady(blockColumns)) {
+  if (!allPColumnsReady(blockColumns)) {
     return undefined;
   }
 
@@ -284,7 +266,7 @@ export function createPFrameForGraphs<A, U>(
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
 
   // if at least one column is not yet ready, we can't show the graph
-  if (!allColumnsReady(compatibleWithoutLabels)) {
+  if (!allPColumnsReady(compatibleWithoutLabels)) {
     return undefined;
   }
 
@@ -309,7 +291,7 @@ export function createPFrameForGraphs<A, U>(
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => isLabelColumn(column.spec));
 
   // if at least one column is not yet ready, we can't show the graph
-  if (!allColumnsReady(compatibleLabels)) {
+  if (!allPColumnsReady(compatibleLabels)) {
     return undefined;
   }
 

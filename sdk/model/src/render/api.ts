@@ -53,7 +53,7 @@ import type { LabelDerivationOps } from './util/label';
 import { deriveLabels } from './util/label';
 import type { APColumnSelectorWithSplit } from './util/split_selectors';
 import { patchInSetFilters } from './util/pframe_upgraders';
-import { allColumnsReady } from '../components/PFrameForGraphs';
+import { allPColumnsReady } from './util/pcolumn_data';
 
 export type PColumnDataUniversal = TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues;
 
@@ -621,7 +621,7 @@ export class RenderCtx<Args, UiState> {
   // TODO remove all non-PColumn fields
   public createPFrame(def: PFrameDef<PColumnDataUniversal>): PFrameHandle | undefined {
     this.verifyInlineAndExplicitColumnsSupport(def);
-    if (!allColumnsReady(def)) return undefined;
+    if (!allPColumnsReady(def)) return undefined;
     return this.ctx.createPFrame(
       def.map((c) => transformPColumnData(c)),
     );
@@ -661,7 +661,7 @@ export class RenderCtx<Args, UiState> {
     }
     const columns = extractAllColumns(rawDef.src);
     this.verifyInlineAndExplicitColumnsSupport(columns);
-    if (!allColumnsReady(columns)) return undefined;
+    if (!allPColumnsReady(columns)) return undefined;
     return this.ctx.createPTable(
       mapPTableDef(rawDef, (po) => transformPColumnData(po)),
     );
