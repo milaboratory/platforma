@@ -2,7 +2,7 @@ import type { AuthInformation, PlClientConfig } from './config';
 import type {
   AuthAPI_ListMethods_Response,
   MaintenanceAPI_Ping_Response,
-} from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+} from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { LLPlClient } from './ll_client';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { UnauthenticatedError } from './errors';

@@ -1,11 +1,11 @@
 import type {
   Field,
-  Resource } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api_types';
+  Resource } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api_types';
 import {
   Field_ValueStatus,
   Resource_Kind,
-} from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api_types';
-import { FieldType as GrpcFieldType } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/base_types';
+} from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api_types';
+import { FieldType as GrpcFieldType } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/base_types';
 import type {
   FieldData,
   FieldStatus,
