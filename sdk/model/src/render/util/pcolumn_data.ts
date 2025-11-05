@@ -1,17 +1,21 @@
 import type {
   DataInfo,
   PartitionedDataInfoEntries,
+  PColumn,
+  PColumnValues,
 } from '@milaboratories/pl-model-common';
 import {
   dataInfoToEntries,
   isDataInfo,
   isDataInfoEntries,
+  visitDataInfo,
   type BinaryChunk,
   type DataInfoEntries,
   type PColumnDataEntry,
   type PColumnKey,
 } from '@milaboratories/pl-model-common';
 import { TreeNodeAccessor } from '../accessor';
+import type { PColumnDataUniversal } from '../api';
 
 const PCD_PREFIX = 'PColumnData/';
 
@@ -506,4 +510,24 @@ DataInfoEntries<TreeNodeAccessor> | undefined {
   if (acc instanceof TreeNodeAccessor) return parsePColumnData(acc);
 
   throw new Error(`Unexpected input type: ${typeof acc}`);
+}
+
+export function isPColumnReady(c: PColumn<PColumnDataUniversal>): boolean {
+  const isValues = (d: PColumnDataUniversal): d is PColumnValues => Array.isArray(d);
+  const isAccessor = (d: PColumnDataUniversal): d is TreeNodeAccessor => d instanceof TreeNodeAccessor;
+
+  let ready = true;
+  if (isAccessor(c.data)) {
+    ready &&= c.data.getIsReadyOrError();
+  } else if (isDataInfo(c.data)) {
+    visitDataInfo(c.data, (v) => ready &&= v.getIsReadyOrError());
+  } else if (!isValues(c.data)) {
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+    throw Error(`unsupported column data type: ${c.data satisfies never}`);
+  }
+  return ready;
+}
+
+export function allPColumnsReady(columns: PColumn<PColumnDataUniversal>[]): boolean {
+  return columns.every(isPColumnReady);
 }

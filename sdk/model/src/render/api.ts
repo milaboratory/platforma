@@ -53,6 +53,7 @@ import type { LabelDerivationOps } from './util/label';
 import { deriveLabels } from './util/label';
 import type { APColumnSelectorWithSplit } from './util/split_selectors';
 import { patchInSetFilters } from './util/pframe_upgraders';
+import { allPColumnsReady } from './util/pcolumn_data';
 
 export type PColumnDataUniversal = TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues;
 
@@ -618,21 +619,22 @@ export class RenderCtx<Args, UiState> {
   }
 
   // TODO remove all non-PColumn fields
-  public createPFrame(def: PFrameDef<PColumnDataUniversal>): PFrameHandle {
+  public createPFrame(def: PFrameDef<PColumnDataUniversal>): PFrameHandle | undefined {
     this.verifyInlineAndExplicitColumnsSupport(def);
+    if (!allPColumnsReady(def)) return undefined;
     return this.ctx.createPFrame(
       def.map((c) => transformPColumnData(c)),
     );
   }
 
   // TODO remove all non-PColumn fields
-  public createPTable(def: PTableDef<PColumn<PColumnDataUniversal>>): PTableHandle;
+  public createPTable(def: PTableDef<PColumn<PColumnDataUniversal>>): PTableHandle | undefined;
   public createPTable(def: {
     columns: PColumn<PColumnDataUniversal>[];
     filters?: PTableRecordFilter[];
     /** Table sorting */
     sorting?: PTableSorting[];
-  }): PTableHandle;
+  }): PTableHandle | undefined;
   public createPTable(
     def:
       | PTableDef<PColumn<PColumnDataUniversal>>
@@ -642,7 +644,7 @@ export class RenderCtx<Args, UiState> {
         /** Table sorting */
         sorting?: PTableSorting[];
       },
-  ): PTableHandle {
+  ): PTableHandle | undefined {
     let rawDef: PTableDef<PColumn<PColumnDataUniversal>>;
     if ('columns' in def) {
       rawDef = this.patchPTableDef({
@@ -657,7 +659,9 @@ export class RenderCtx<Args, UiState> {
     } else {
       rawDef = this.patchPTableDef(def);
     }
-    this.verifyInlineAndExplicitColumnsSupport(extractAllColumns(rawDef.src));
+    const columns = extractAllColumns(rawDef.src);
+    this.verifyInlineAndExplicitColumnsSupport(columns);
+    if (!allPColumnsReady(columns)) return undefined;
     return this.ctx.createPTable(
       mapPTableDef(rawDef, (po) => transformPColumnData(po)),
     );
