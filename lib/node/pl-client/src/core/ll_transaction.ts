@@ -1,10 +1,10 @@
 import type {
   TxAPI_ClientMessage,
   TxAPI_ServerMessage,
-} from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+} from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import type { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
 import Denque from 'denque';
-import type { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
+import type { Status } from '../proto-grpc/github.com/googleapis/googleapis/google/rpc/status';
 import {
   PlErrorCodeNotFound,
   RecoverablePlError,

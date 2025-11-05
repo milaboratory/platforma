@@ -18,7 +18,7 @@ cd "${script_dir}" || exit 1
 : "${PROTO_SHARED_SOURCES:="${script_dir}/proto/shared"}"
 : "${PROTO_SHARED_PACKAGE_NAMESPACE:="github.com/milaboratory/pl/controllers/shared/grpc"}"
 
-: "${PROTO_OUT_PATH:="${script_dir}/src/proto"}"
+: "${PROTO_OUT_PATH:="${script_dir}/src/proto-grpc"}"
 
 # List of paths to search for includes.
 # This is like PATH variable for binaries, but for .proto files.

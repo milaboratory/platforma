@@ -1,4 +1,4 @@
-import { PlatformClient } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api.client';
+import { PlatformClient } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api.client';
 import type { ClientOptions, Interceptor } from '@grpc/grpc-js';
 import {
   ChannelCredentials,
