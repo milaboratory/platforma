@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.13.4
+
+### Patch Changes
+
+- 8a4a6fc: Verify there are no duplicating axes keys
+
 ## 1.13.3
 
 ### Patch Changes
