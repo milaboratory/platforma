@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-set -e
+set -o nounset
+set -o errexit
+set -o pipefail
 
 # You can install needed dependencies via `./bootstrap.sh`
 
@@ -94,13 +96,12 @@ function generate() {
 # Actual script run
 #
 
-paths_to_generate=("${@}")
-
-if [ "${#paths_to_generate}" -eq 0 ]; then
+paths_to_generate=()
+if [ "$#" -gt 0 ]; then
+  paths_to_generate=("${@}")
+else
   paths_to_generate=(
       "plapiproto"
-      # "plstdtypes"
-      # "pltypes"
   )
 fi
 
