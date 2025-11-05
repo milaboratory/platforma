@@ -20,6 +20,6 @@ self.body(func(inputs) {
 	run()
 
 	return {
-		out: run.getStdoutFileContent()
+		out: run.getStdoutContent()
 	}
 })

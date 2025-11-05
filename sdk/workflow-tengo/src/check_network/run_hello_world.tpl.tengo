@@ -15,6 +15,6 @@ self.body(func(inputs) {
 
 	return {
 		// returns "Hello from go binary"
-		greeting: run.getStdoutFileContent()
+		greeting: run.getStdoutContent()
 	}
 })

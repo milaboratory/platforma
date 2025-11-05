@@ -13,12 +13,10 @@ self.body(func(inputs) {
 		arg("bash").
 		arg("-c").
 		arg("echo Hello from bash").
-		saveStdout().
+		saveStdoutStream().
 		run()
 
-	result := {
+	return {
 		main: run.getStdoutStream()
 	}
-
-	return result
 })
