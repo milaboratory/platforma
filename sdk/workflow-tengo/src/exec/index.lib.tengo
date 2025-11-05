@@ -85,13 +85,13 @@ builder := func() {
 
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
-
-	stdoutToValue := false
-	stderrToValue := false
 	stderrToStdout := false
-
-	saveStdout := false
-	saveStderr := false
+	stdoutFile := false
+	stderrFile := false
+	stdoutStream := false
+	stderrStream := false
+	stdoutContent := false
+	stderrContent := false
 
 	self = ll.toStrict({
 		/**
@@ -839,7 +839,7 @@ builder := func() {
 		 * Sets stdout to be captured as a value resource.
 		 */
 		saveStdoutContent: func() {
-			stdoutToValue = true
+			stdoutContent = true
 			return self
 		},
 
@@ -847,7 +847,7 @@ builder := func() {
 		 * Sets stderr to be captured as a value resource.
 		 */
 		saveStderrContent: func() {
-			stderrToValue = true
+			stderrContent = true
 			return self
 		},
 
@@ -860,18 +860,34 @@ builder := func() {
 		},
 
 		/**
-		 * Save stdout as file or stream.
+		 * Save stdout as file.
 		 */
-		saveStdout: func() {
-			saveStdout = true
+		saveStdoutFile: func() {
+			stdoutFile = true
 			return self
 		},
 
 		/**
-		 * Save stderr as file or stream.
+		 * Save stderr as file.
 		 */
-		saveStderr: func() {
-			saveStderr = true
+		saveStderrFile: func() {
+			stderrFile = true
+			return self
+		},
+
+		/**
+		 * Save stdout as stream.
+		 */
+		saveStdoutStream: func() {
+			stdoutStream = true
+			return self
+		},
+
+		/**
+		 * Save stderr as stream.
+		 */
+		saveStderrStream: func() {
+			stderrStream = true
 			return self
 		},
 
@@ -884,18 +900,24 @@ builder := func() {
 			if stderrToStdout {
 				stderr = stdout
 			}
-			if saveStdout {
-				sets.add(filesToStream, stdout)
+			if stdoutFile {
 				sets.add(filesToSave, stdout)
 			}
-			if saveStderr {
-				sets.add(filesToStream, stderr)
+			if stderrFile {
 				sets.add(filesToSave, stderr)
 			}
-			if stdoutToValue {
+			if stdoutStream {
+				sets.add(filesToSave, stdout)
+				sets.add(filesToStream, stdout)
+			}
+			if stderrStream {
+				sets.add(filesToSave, stderr)
+				sets.add(filesToStream, stderr)
+			}
+			if stdoutContent {
 				sets.add(filesContentToSave, stdout)
 			}
-			if stderrToValue {
+			if stderrContent {
 				sets.add(filesContentToSave, stderr)
 			}
 
@@ -917,7 +939,7 @@ builder := func() {
 				secrets: secrets,
 				queue: queue,
 				// both stdout and stderr will always be channeled to a file
-				// even if saveStdout or saveStderr are false
+				// even if stdoutFile or stderrFile are false
 				stdout: stdout,
 				stderr: stderr,
 				nErrorLines: nErrorLines
@@ -1003,7 +1025,7 @@ builder := func() {
 				 */
 				getFileContent: func(fileName) {
 					ll.assert(sets.hasElement(filesContentToSave, fileName),
-						"file content '%s' was not saved, add saveFileContent() call to the exec builder", fileName)
+						"file '%s' content was not saved, add saveFileContent() call to the exec builder", fileName)
 					return tpl.output("filesContent", cache).getFutureInputField(fileName)
 				},
 
@@ -1015,7 +1037,7 @@ builder := func() {
 				 */
 				getFileStream: func(fileName) {
 					ll.assert(sets.hasElement(filesToStream, fileName),
-						"file stream '%s' was not saved, add streamFile() call to the exec builder", fileName)
+						"file '%s' stream was not saved, add streamFile() call to the exec builder", fileName)
 					return tpl.output("fileStreams", cache).getFutureInputField(fileName, true)
 				},
 
@@ -1039,13 +1061,13 @@ builder := func() {
 				 */
 				getFileSetContent: func(fileSetName) {
 					ll.assert(!is_undefined(fileSetsContentToSave[fileSetName]),
-						"file set content '%s' was not saved, add saveFileSetContent() call to the exec builder", fileSetName)
+						"file set '%s' content was not saved, add saveFileSetContent() call to the exec builder", fileSetName)
 					return tpl.output("fileSetsContent", cache).getFutureInputField(fileSetName)
 				},
 
 				getProcessorResult: func(procName) {
 					ll.assert(!is_undefined(wdProcessors[procName]),
-						"processor result '%s' was not saved, add processWorkdir() call to the exec builder", procName)
+						"processor '%s' result was not saved, add processWorkdir() call to the exec builder", procName)
 					return tpl.output("wdProcessors", cache).getFutureInputField(procName)
 				},
 
@@ -1053,8 +1075,8 @@ builder := func() {
 				 * Retrieves the stdout stream.
 				 */
 				getStdoutStream: func() {
-					ll.assert(saveStdout,
-						"stdout stream was not saved, add saveStdout() call to the exec builder")
+					ll.assert(stdoutStream,
+						"stdout stream was not saved, add saveStdoutStream() call to the exec builder")
 					return self.getFileStream(stdout)
 				},
 
@@ -1062,8 +1084,8 @@ builder := func() {
 				 * Retrieves the stderr stream.
 				 */
 				getStderrStream: func() {
-					ll.assert(saveStderr,
-						"stderr stream was not saved, add saveStderr() call to the exec builder")
+					ll.assert(stderrStream,
+						"stderr stream was not saved, add saveStderrStream() call to the exec builder")
 					return self.getFileStream(stderr)
 				},
 
@@ -1071,8 +1093,8 @@ builder := func() {
 				 * Retrieves the stdout file.
 				 */
 				getStdoutFile: func() {
-					ll.assert(saveStdout,
-						"stdout file was not saved, add saveStdout() call to the exec builder")
+					ll.assert(stdoutFile,
+						"stdout file was not saved, add saveStdoutFile() call to the exec builder")
 					return self.getFile(stdout)
 				},
 
@@ -1080,26 +1102,26 @@ builder := func() {
 				 * Retrieves the stderr file.
 				 */
 				getStderrFile: func() {
-					ll.assert(saveStderr,
-						"stderr file was not saved, add saveStderr() call to the exec builder")
+					ll.assert(stderrFile,
+						"stderr file was not saved, add saveStderrFile() call to the exec builder")
 					return self.getFile(stderr)
 				},
 
 				/**
 				 * Retrieves the content of the stdout file.
 				 */
-				getStdoutFileContent: func() {
-					ll.assert(stdoutToValue,
-						"stdout file content was not saved, add saveStdoutContent() call to the exec builder")
+				getStdoutContent: func() {
+					ll.assert(stdoutContent,
+						"stdout content was not saved, add saveStdoutContent() call to the exec builder")
 					return self.getFileContent(stdout)
 				},
 
 				/**
 				 * Retrieves the content of the stderr file.
 				 */
-				getStderrFileContent: func() {
-					ll.assert(stderrToValue,
-						"stderr file content was not saved, add saveStderrContent() call to the exec builder")
+				getStderrContent: func() {
+					ll.assert(stderrContent,
+						"stderr content was not saved, add saveStderrContent() call to the exec builder")
 					return self.getFileContent(stderr)
 				}
 			}))

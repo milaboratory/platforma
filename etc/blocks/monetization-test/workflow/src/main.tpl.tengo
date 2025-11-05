@@ -38,7 +38,7 @@ runPerFile := func(inputs) {
 
 		run := builder.run()
 
-		tokens[handle.fileName] = run.getStdoutFileContent()
+		tokens[handle.fileName] = run.getStdoutContent()
 	}
 
 	return {
@@ -76,7 +76,7 @@ runSingle := func(inputs) {
 
 	return {
 		outputs: {
-			token: {"single_run": run.getStdoutFileContent()},
+			token: {"single_run": run.getStdoutContent()},
 			progresses: progresses
 		},
 		exports: {}

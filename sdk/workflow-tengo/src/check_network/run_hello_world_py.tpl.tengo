@@ -16,6 +16,6 @@ self.body(func(inputs) {
 
 	return {
 		// returns "Hello, ${name}!"
-		greeting: run.getStdoutFileContent()
+		greeting: run.getStdoutContent()
 	}
 })
