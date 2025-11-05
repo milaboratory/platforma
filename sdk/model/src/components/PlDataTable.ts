@@ -34,10 +34,11 @@ import type {
   ColumnProvider,
   PColumnDataUniversal,
   RenderCtx,
+  TreeNodeAccessor,
 } from '../render';
 import {
+  allPColumnsReady,
   PColumnCollection,
-  TreeNodeAccessor,
 } from '../render';
 import { isLinkerColumn } from './PFrameForGraphs';
 
@@ -576,44 +577,6 @@ export function getMatchingLabelColumns(
   return labelColumns;
 }
 
-/** Check if all columns are computed */
-export function allColumnsComputed(
-  columns: PColumn<PColumnValues | TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[],
-): boolean {
-  type Data = typeof columns[number]['data'];
-  const isValues = (d: Data): d is PColumnValues => Array.isArray(d);
-  const isAccessor = (d: Data): d is TreeNodeAccessor => d instanceof TreeNodeAccessor;
-  const isDataInfo = (d: Data): d is DataInfo<TreeNodeAccessor> =>
-    typeof d === 'object' && 'type' in d;
-
-  return columns
-    .map((c) => c.data)
-    .every((d): boolean => {
-      if (isValues(d)) {
-        return true;
-      } else if (isAccessor(d)) {
-        return d.getIsReadyOrError();
-      } else if (isDataInfo(d)) {
-        const type = d.type;
-        switch (type) {
-          case 'Json':
-            return true;
-          case 'JsonPartitioned':
-            return Object.values(d.parts).every((p) => p.getIsReadyOrError());
-          case 'BinaryPartitioned':
-            return Object.values(d.parts)
-              .every((p) => p.index.getIsReadyOrError() && p.values.getIsReadyOrError());
-          case 'ParquetPartitioned':
-            return Object.values(d.parts)
-              .every((p) => p.getIsReadyOrError());
-        }
-      } else {
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-        throw Error(`unsupported column data type: ${d satisfies never}`);
-      }
-    });
-}
-
 function createPTableDef(params: {
   columns: PColumn<PColumnDataUniversal>[];
   labelColumns: PColumn<PColumnDataUniversal>[];
@@ -745,6 +708,7 @@ export function createPlDataTableV2<A, U>(
     coreColumnPredicate: ops?.coreColumnPredicate,
   });
   const fullHandle = ctx.createPTable(fullDef);
+  if (!fullHandle) return undefined;
 
   const hiddenColumns = new Set<PObjectId>(((): PObjectId[] => {
     // Inner join works as a filter - all columns must be present
@@ -779,7 +743,7 @@ export function createPlDataTableV2<A, U>(
   const visibleLabelColumns = getMatchingLabelColumns(visibleColumns.map(getColumnIdAndSpec), allLabelColumns);
 
   // if at least one column is not yet computed, we can't show the table
-  if (!allColumnsComputed([...visibleColumns, ...visibleLabelColumns])) return undefined;
+  if (!allPColumnsReady([...visibleColumns, ...visibleLabelColumns])) return undefined;
 
   const visibleDef = createPTableDef({
     columns: visibleColumns,
@@ -791,6 +755,7 @@ export function createPlDataTableV2<A, U>(
     coreColumnPredicate,
   });
   const visibleHandle = ctx.createPTable(visibleDef);
+  if (!visibleHandle) return undefined;
 
   return {
     sourceId: tableStateNormalized.pTableParams.sourceId,
