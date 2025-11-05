@@ -1190,17 +1190,17 @@ function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEn
 function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
   function cmpJoinEntries(lhs: JoinEntry<PObjectId>, rhs: JoinEntry<PObjectId>): number {
     if (lhs.type !== rhs.type) {
-      return lhs.type.localeCompare(rhs.type);
+      return lhs.type < rhs.type ? -1 : 1;
     }
     const type = lhs.type;
     switch (type) {
       case 'column':
-        return lhs.column.localeCompare((rhs as typeof lhs).column);
+        return lhs.column < (rhs as typeof lhs).column ? -1 : 1;
       case 'slicedColumn':
       case 'artificialColumn':
-        return lhs.newId.localeCompare((rhs as typeof lhs).newId);
+        return lhs.newId < (rhs as typeof lhs).newId ? -1 : 1;
       case 'inlineColumn': {
-        return lhs.column.id.localeCompare((rhs as typeof lhs).column.id);
+        return lhs.column.id < (rhs as typeof lhs).column.id ? -1 : 1;
       }
       case 'inner':
       case 'full': {
@@ -1244,7 +1244,7 @@ function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
       case 'inlineColumn':
         return entry;
       case 'artificialColumn': {
-        const sortedAxesIndices = [...entry.axesIndices].sort((lhs, rhs) => lhs - rhs);
+        const sortedAxesIndices = entry.axesIndices.toSorted((lhs, rhs) => lhs - rhs);
         return {
           ...entry,
           axesIndices: sortedAxesIndices,
@@ -1273,18 +1273,17 @@ function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
     }
   }
   function sortFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
-    [...filters].sort((lhs, rhs) => {
+    return filters.toSorted((lhs, rhs) => {
       if (lhs.column.type === 'axis' && rhs.column.type === 'axis') {
         const lhsId = canonicalizeJson(getAxisId(lhs.column.id));
         const rhsId = canonicalizeJson(getAxisId(rhs.column.id));
-        return lhsId.localeCompare(rhsId);
+        return lhsId < rhsId ? -1 : 1;
       } else if (lhs.column.type === 'column' && rhs.column.type === 'column') {
-        return lhs.column.id.localeCompare(rhs.column.id);
+        return lhs.column.id < rhs.column.id ? -1 : 1;
       } else {
         return lhs.column.type === 'axis' ? -1 : 1;
       }
     });
-    return filters;
   }
   return {
     src: sortJoinEntry(def.src),
@@ -1367,11 +1366,11 @@ function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<PlTreeEnt
         default:
           throw new PFrameDriverError(`unsupported resource type: ${JSON.stringify(type satisfies never)}`);
       }
-      result.payload.sort((lhs, rhs) => lhs.key.localeCompare(rhs.key));
+      result.payload.sort((lhs, rhs) => lhs.key < rhs.key ? -1 : 1);
       return result;
     }),
   );
-  orderedData.sort((lhs, rhs) => lhs.id.localeCompare(rhs.id));
+  orderedData.sort((lhs, rhs) => lhs.id < rhs.id ? -1 : 1);
 
   const hash = createHash('sha256');
   hash.update(canonicalize(orderedData)!);
