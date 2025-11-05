@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.45.17
+
+### Patch Changes
+
+- 64cee78: Early check for columns readiness
+
 ## 1.45.0
 
 ### Minor Changes
