@@ -98,7 +98,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 
 	storageFormat := spec.storageFormat
 	if is_undefined(storageFormat) {
-		storageFormat = "Binary"
+		storageFormat = "Parquet"
 	}
 
 	xsvFileName := "file." + xsvType
