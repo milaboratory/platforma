@@ -715,5 +715,40 @@ class WriteFrameTests(unittest.TestCase):
             if os.path.exists(frame_dir):
                 shutil.rmtree(frame_dir)
 
+    def test_duplicate_axis_values_failure(self):
+        frame_dir = os.path.join(global_settings.root_folder, normalize_path("duplicate_axis"))
+        
+        write_frame_step = WriteFrame(
+            input_table="input_table",
+            frame_name="duplicate_axis",
+            axes=[
+                AxisMapping(column="key", type="String"),
+            ],
+            columns=[ColumnMapping(column="value", type="Long")],
+            partition_key_length=0
+        )
+        ptw = PWorkflow(workflow=[write_frame_step])
+
+        lf = pl.LazyFrame({
+            "key": ["A", "B", "A"],
+            "value": [1, 2, 3],
+        })
+        ts = {"input_table": lf}
+
+        if os.path.exists(frame_dir):
+            shutil.rmtree(frame_dir)
+
+        try:
+            with self.assertRaises(ValueError) as cm:
+                ptw.execute(global_settings=global_settings, initial_table_space=ts)
+            
+            exception_str = str(cm.exception)
+            self.assertIn("duplicate", exception_str.lower())
+            self.assertIn("A", exception_str)
+
+        finally:
+            if os.path.exists(frame_dir):
+                shutil.rmtree(frame_dir)
+
 if __name__ == '__main__':
     unittest.main()
