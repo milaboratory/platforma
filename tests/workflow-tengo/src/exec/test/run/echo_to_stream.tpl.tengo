@@ -14,7 +14,6 @@ self.body(func(inputs) {
 		arg("-c").
 		arg("echo Hello from bash").
 		saveStdoutStream().
-		saveStdoutFile().
 		run()
 
 	return {

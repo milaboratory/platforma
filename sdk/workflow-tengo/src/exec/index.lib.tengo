@@ -907,9 +907,11 @@ builder := func() {
 				sets.add(filesToSave, stderr)
 			}
 			if stdoutStream {
+				sets.add(filesToSave, stdout)
 				sets.add(filesToStream, stdout)
 			}
 			if stderrStream {
+				sets.add(filesToSave, stderr)
 				sets.add(filesToStream, stderr)
 			}
 			if stdoutContent {
