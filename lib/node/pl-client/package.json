@@ -22,6 +22,7 @@
     "watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
     "test": "vitest run --coverage",
+    "update-proto": "./sync-proto.sh && ./generate-grpc.sh && ./generate-rest.sh",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
