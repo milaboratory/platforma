@@ -82,8 +82,8 @@ function rsync_proto_files() {
             -av \
             --delete \
             --include "*.proto" \
-            --include "*.json" \
             --include "*.yaml" \
+            --include "*.json" \
             --include "*.lock" \
             --include "*.toml" \
             --exclude "*" \
@@ -147,8 +147,6 @@ log "Updating protocol..."
   log "  updating proto dependencies..."
   cd "${SYNC_ROOT}/${SYNC_PLAPI_DST_DIR}"
   protodep up --use-https
-
-  link_proto_files "${SYNC_ROOT}/${SYNC_PLAPI_DST_DIR}" "${SYNC_PLAPI_PATHS}" "${PLAPI_PACKAGE_NAMESPACE}"
 )
 
 (
@@ -158,8 +156,6 @@ log "Updating protocol..."
   log "  updating proto dependencies..."
   cd "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}"
   protodep up --use-https
-
-  link_proto_files "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}" "${SYNC_SHARED_PATHS}" "${SHARED_PACKAGE_NAMESPACE}"
 )
 
 echo ""
