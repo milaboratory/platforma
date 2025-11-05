@@ -82,8 +82,8 @@ function rsync_proto_files() {
             -av \
             --delete \
             --include "*.proto" \
-            --include "*.json" \
             --include "*.yaml" \
+            --include "*.json" \
             --include "*.lock" \
             --include "*.toml" \
             --exclude "*" \

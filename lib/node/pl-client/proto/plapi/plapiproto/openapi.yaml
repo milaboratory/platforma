@@ -1,0 +1,1101 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: Platform API
+    version: 0.0.1
+paths:
+    /v1/auth/jwt-token:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_GetJWTToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetJWTToken_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetJWTToken_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/auth/methods:
+        get:
+            tags:
+                - Platform
+            description: Authentication
+            operationId: Platform_AuthMethods
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListMethods_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/controller/aliases-and-urls:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_WriteControllerAliasesAndUrls
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/WriteAliasesAndUrls_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/WriteAliasesAndUrls_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - Platform
+            operationId: Platform_RemoveControllerAliasesAndUrls
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RemoveAliasesAndUrls_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RemoveAliasesAndUrls_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/controller/attach-subscription:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_ControllerAttachSubscription
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AttachSubscription_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AttachSubscription_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/controller/create:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_ControllerCreate
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Create_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Create_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/controller/deregister:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_ControllerDeregister
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Deregister_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Deregister_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/controller/exists:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_ControllerExists
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Exists_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Exists_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/controller/features:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_ControllerSetFeatures
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SetFeatures_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SetFeatures_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - Platform
+            operationId: Platform_ControllerClearFeatures
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ClearFeatures_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ClearFeatures_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/controller/get:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_ControllerGet
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Get_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Get_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/controller/notifications:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_GetControllerNotifications
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetNotifications_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetNotifications_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/controller/register:
+        post:
+            tags:
+                - Platform
+            description: Controllers
+            operationId: Platform_ControllerRegister
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Register_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Register_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/controller/update:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_ControllerUpdate
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Update_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Update_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/controller/url:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_GetControllerUrl
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetUrl_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetUrl_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/license:
+        get:
+            tags:
+                - Platform
+            operationId: Platform_License
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/License_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/locks/lease:
+        put:
+            tags:
+                - Platform
+            operationId: Platform_UpdateLease
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Update_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Update_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - Platform
+            description: Locks
+            operationId: Platform_LeaseResource
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Create_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Create_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - Platform
+            operationId: Platform_ReleaseLease
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Release_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Release_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/notifications/get:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_NotificationsGet
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Get_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Get_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/ping:
+        get:
+            tags:
+                - Platform
+            description: Various service requests
+            operationId: Platform_Ping
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Ping_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/resource-types:
+        get:
+            tags:
+                - Platform
+            description: Other stuff
+            operationId: Platform_ListResourceTypes
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListResourceTypes_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/subscription/attach-filter:
+        post:
+            tags:
+                - Platform
+            description: Subscriptions
+            operationId: Platform_SubscriptionAttachFilter
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AttachFilter_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AttachFilter_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/subscription/detach-filter:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_SubscriptionDetachFilter
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DetachFilter_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DetachFilter_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+components:
+    schemas:
+        AttachFilter_Request:
+            type: object
+            properties:
+                subscriptionId:
+                    type: string
+                filterName:
+                    type: string
+                filterId:
+                    type: string
+        AttachFilter_Response:
+            type: object
+            properties: {}
+        AttachSubscription_Request:
+            type: object
+            properties:
+                controllerId:
+                    type: string
+                subscriptionId:
+                    type: string
+        AttachSubscription_Response:
+            type: object
+            properties: {}
+        ClearFeatures_Request:
+            type: object
+            properties:
+                controllerType:
+                    type: string
+        ClearFeatures_Response:
+            type: object
+            properties: {}
+        Create_Request:
+            type: object
+            properties:
+                type:
+                    type: integer
+                    format: enum
+                id:
+                    allOf:
+                        - $ref: '#/components/schemas/FieldRef'
+                    description: field ID is always combination of parent resource ID and field name
+        Create_Response:
+            type: object
+            properties:
+                globalId:
+                    $ref: '#/components/schemas/FieldRef'
+        Deregister_Request:
+            type: object
+            properties:
+                controllerType:
+                    type: string
+        Deregister_Response:
+            type: object
+            properties: {}
+        DetachFilter_Request:
+            type: object
+            properties:
+                subscriptionId:
+                    type: string
+                filterName:
+                    type: string
+        DetachFilter_Response:
+            type: object
+            properties: {}
+        Exists_Request:
+            type: object
+            properties:
+                resourceId:
+                    type: string
+        Exists_Response:
+            type: object
+            properties:
+                exists:
+                    type: boolean
+        Field:
+            type: object
+            properties:
+                id:
+                    allOf:
+                        - $ref: '#/components/schemas/FieldRef'
+                    description: field ID is always combination of parent resource ID and field name
+                type:
+                    type: integer
+                    format: enum
+                features:
+                    $ref: '#/components/schemas/Resource_Features'
+                value:
+                    type: string
+                    description: |-
+                        _resolved_ value of field or _assigned_ if the field was assigned to a resource.
+                         If field refers to another field, it will get
+                         value only when this chain of references ends up with direct resource
+                         reference. At that moment all fields in the chain will get their values
+                         resolved and will start to refer to the same resource directly.
+                valueStatus:
+                    type: integer
+                    description: If the value was empty, assigned or finally resolved.
+                    format: enum
+                valueIsFinal:
+                    type: boolean
+                    description: If the value is in its final state (ready, duplicate or error)
+                error:
+                    type: string
+                    description: |-
+                        Resource error resource id if any.
+                         Is intended to report problems _from_ platform to client.
+        FieldRef:
+            type: object
+            properties:
+                resourceId:
+                    type: string
+                fieldName:
+                    type: string
+        FieldSchema:
+            type: object
+            properties:
+                type:
+                    type: integer
+                    format: enum
+                name:
+                    type: string
+        GetJWTToken_Request:
+            type: object
+            properties:
+                expiration:
+                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+                    type: string
+        GetJWTToken_Response:
+            type: object
+            properties:
+                token:
+                    type: string
+        GetNotifications_Request:
+            type: object
+            properties:
+                controllerType:
+                    type: string
+                maxNotifications:
+                    type: integer
+                    format: uint32
+        GetNotifications_Response:
+            type: object
+            properties:
+                notifications:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Notification'
+        GetUrl_Request:
+            type: object
+            properties:
+                controllerAlias:
+                    type: string
+                resourceId:
+                    type: string
+        GetUrl_Response:
+            type: object
+            properties:
+                controllerUrl:
+                    type: string
+        Get_Request:
+            type: object
+            properties:
+                resourceId:
+                    type: string
+                loadFields:
+                    type: boolean
+        Get_Response:
+            type: object
+            properties:
+                resource:
+                    $ref: '#/components/schemas/Resource'
+        GoogleProtobufAny:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        License_Response:
+            type: object
+            properties:
+                status:
+                    type: integer
+                    format: int32
+                isOk:
+                    type: boolean
+                responseBody:
+                    type: string
+                    description: Raw response body as it was received from the license server.
+                    format: bytes
+        ListMethods_MethodInfo:
+            type: object
+            properties:
+                type:
+                    type: string
+                name:
+                    type: string
+                info:
+                    type: object
+                    additionalProperties:
+                        type: string
+        ListMethods_Response:
+            type: object
+            properties:
+                methods:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ListMethods_MethodInfo'
+        ListResourceTypes_Response:
+            type: object
+            properties:
+                types:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ResourceType'
+        Notification:
+            type: object
+            properties:
+                subscriptionId:
+                    type: string
+                eventId:
+                    type: string
+                resourceId:
+                    type: string
+                resourceType:
+                    $ref: '#/components/schemas/ResourceType'
+                events:
+                    $ref: '#/components/schemas/Notification_Events'
+                fieldChanges:
+                    type: object
+                    additionalProperties:
+                        $ref: '#/components/schemas/Notification_FieldChange'
+                payload:
+                    $ref: '#/components/schemas/NotificationFilter_Payload'
+                filterName:
+                    type: string
+                txSpan:
+                    $ref: '#/components/schemas/SpanInfo'
+        NotificationFilter:
+            type: object
+            properties:
+                resourceType:
+                    $ref: '#/components/schemas/ResourceType'
+                resourceId:
+                    type: string
+                eventFilter:
+                    $ref: '#/components/schemas/NotificationFilter_EventFilter'
+                payload:
+                    $ref: '#/components/schemas/NotificationFilter_Payload'
+        NotificationFilter_EventFilter:
+            type: object
+            properties:
+                all:
+                    type: boolean
+                resourceCreated:
+                    type: boolean
+                resourceDeleted:
+                    type: boolean
+                resourceReady:
+                    type: boolean
+                resourceDuplicate:
+                    type: boolean
+                resourceError:
+                    type: boolean
+                inputsLocked:
+                    type: boolean
+                    description: Field events
+                outputsLocked:
+                    type: boolean
+                fieldCreated:
+                    type: boolean
+                fieldGotError:
+                    type: boolean
+                inputSet:
+                    type: boolean
+                allInputsSet:
+                    type: boolean
+                outputSet:
+                    type: boolean
+                allOutputsSet:
+                    type: boolean
+                genericOtwSet:
+                    type: boolean
+                dynamicChanged:
+                    type: boolean
+        NotificationFilter_Payload:
+            type: object
+            properties:
+                values:
+                    type: object
+                    additionalProperties:
+                        type: string
+                        format: bytes
+        Notification_Events:
+            type: object
+            properties:
+                resourceCreated:
+                    type: boolean
+                resourceDeleted:
+                    type: boolean
+                resourceReady:
+                    type: boolean
+                resourceDuplicate:
+                    type: boolean
+                resourceError:
+                    type: boolean
+                inputsLocked:
+                    type: boolean
+                outputsLocked:
+                    type: boolean
+                fieldCreated:
+                    type: boolean
+                fieldGotError:
+                    type: boolean
+                inputSet:
+                    type: boolean
+                allInputsSet:
+                    type: boolean
+                outputSet:
+                    type: boolean
+                allOutputsSet:
+                    type: boolean
+                genericOtwSet:
+                    type: boolean
+                dynamicChanged:
+                    type: boolean
+        Notification_FieldChange:
+            type: object
+            properties:
+                old:
+                    $ref: '#/components/schemas/Field'
+                new:
+                    $ref: '#/components/schemas/Field'
+        Ping_Response:
+            type: object
+            properties:
+                coreVersion:
+                    type: string
+                coreFullVersion:
+                    type: string
+                serverInfo:
+                    type: string
+                compression:
+                    type: integer
+                    format: enum
+                instanceId:
+                    type: string
+                    description: |-
+                        instanceID is a unique ID that changes when we reset DB state.
+                         If we reset a state and a database, but the address of the backend is still the same,
+                         without instanceID we are not sure if it's the same state or not,
+                         and UI can't detect it and clear its state (e.g. caches of drivers).
+                platform:
+                    type: string
+                os:
+                    type: string
+                arch:
+                    type: string
+        Register_Request:
+            type: object
+            properties:
+                controllerType:
+                    type: string
+                filters:
+                    type: object
+                    additionalProperties:
+                        $ref: '#/components/schemas/NotificationFilter'
+                resourceSchemas:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ResourceSchema'
+        Register_Response:
+            type: object
+            properties:
+                controllerId:
+                    type: string
+                subscriptionId:
+                    type: string
+        Release_Request:
+            type: object
+            properties:
+                resourceId:
+                    type: string
+                leaseId:
+                    type: string
+                    format: bytes
+        Release_Response:
+            type: object
+            properties: {}
+        RemoveAliasesAndUrls_Request:
+            type: object
+            properties:
+                controllerType:
+                    type: string
+        RemoveAliasesAndUrls_Response:
+            type: object
+            properties: {}
+        Resource:
+            type: object
+            properties:
+                id:
+                    type: string
+                canonicalId:
+                    type: string
+                    format: bytes
+                kind:
+                    type: integer
+                    format: enum
+                type:
+                    $ref: '#/components/schemas/ResourceType'
+                data:
+                    type: string
+                    format: bytes
+                features:
+                    $ref: '#/components/schemas/Resource_Features'
+                fields:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Field'
+                hasErrors:
+                    type: boolean
+                    description: Resource has at least one field with error
+                inputsLocked:
+                    type: boolean
+                outputsLocked:
+                    type: boolean
+                resourceReady:
+                    type: boolean
+                isFinal:
+                    type: boolean
+                originalResourceId:
+                    type: string
+                parentResourceId:
+                    type: string
+                createdTime:
+                    type: string
+                    format: date-time
+                deletedTime:
+                    type: string
+                    format: date-time
+        ResourceAPIFeature:
+            type: object
+            properties:
+                controllerType:
+                    type: string
+                featureName:
+                    type: string
+                resourceType:
+                    $ref: '#/components/schemas/ResourceType'
+                endpoint:
+                    type: string
+        ResourceSchema:
+            type: object
+            properties:
+                type:
+                    $ref: '#/components/schemas/ResourceType'
+                fields:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/FieldSchema'
+        ResourceType:
+            type: object
+            properties:
+                name:
+                    type: string
+                version:
+                    type: string
+        Resource_Features:
+            type: object
+            properties:
+                ephemeral:
+                    type: boolean
+        SetFeatures_Request:
+            type: object
+            properties:
+                features:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ResourceAPIFeature'
+        SetFeatures_Response:
+            type: object
+            properties: {}
+        SpanInfo:
+            type: object
+            properties:
+                path:
+                    type: string
+                carrier:
+                    type: object
+                    additionalProperties:
+                        type: string
+        Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GoogleProtobufAny'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+        Update_Request:
+            type: object
+            properties:
+                controllerType:
+                    type: string
+                filters:
+                    type: object
+                    additionalProperties:
+                        $ref: '#/components/schemas/NotificationFilter'
+                resourceSchemas:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ResourceSchema'
+        Update_Response:
+            type: object
+            properties: {}
+        WriteAliasesAndUrls_Request:
+            type: object
+            properties:
+                controllerType:
+                    type: string
+                aliasesToUrls:
+                    type: object
+                    additionalProperties:
+                        type: string
+        WriteAliasesAndUrls_Response:
+            type: object
+            properties: {}
+tags:
+    - name: Platform

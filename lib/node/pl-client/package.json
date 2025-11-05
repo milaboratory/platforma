@@ -43,6 +43,7 @@
     "long": "catalog:",
     "lru-cache": "catalog:",
     "undici": "catalog:",
+    "axios": "catalog:",
     "utility-types": "catalog:",
     "yaml": "catalog:"
   },
@@ -52,7 +53,8 @@
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@protobuf-ts/plugin": "catalog:",
-    "@hey-api/openapi-ts": "catalog:",
+    "openapi-typescript": "catalog:",
+    "openapi-fetch": "catalog:",
     "@types/http-proxy": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
