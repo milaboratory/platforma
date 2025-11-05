@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.0.158
+
+### Patch Changes
+
+- Updated dependencies [1777cfd]
+  - @milaboratories/milaboratories.monetization-test.workflow@1.1.43
+
 ## 1.0.157
 
 ### Patch Changes
