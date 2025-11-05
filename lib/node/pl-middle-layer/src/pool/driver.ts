@@ -50,6 +50,8 @@ import {
   isAbortError,
   isPFrameDriverError,
   uniqueBy,
+  getAxisId,
+  canonicalizeJson,
 } from '@platforma-sdk/model';
 import { LRUCache } from 'lru-cache';
 import {
@@ -923,8 +925,9 @@ export class PFrameDriver implements InternalPFrameDriver {
     const def = migratePTableFilters(rawDef, this.logger);
     const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
     const defIds = mapPTableDef(def, (c) => c.id);
+    const sortedDef = sortPTableDef(defIds);
 
-    const { key, unref } = this.pTableDefs.acquire({ def: defIds, pFrameHandle });
+    const { key, unref } = this.pTableDefs.acquire({ def: sortedDef, pFrameHandle });
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info', `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${key})`);
     }
@@ -996,7 +999,7 @@ export class PFrameDriver implements InternalPFrameDriver {
 
     const table = this.pTables.acquire({
       pFrameHandle: handle,
-      def: migratePTableFilters(request, this.logger),
+      def: sortPTableDef(migratePTableFilters(request, this.logger)),
     });
     const { pTablePromise, disposeSignal } = table.resource;
     const pTable = await pTablePromise;
@@ -1180,8 +1183,114 @@ function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEn
         secondary: entry.secondary.map((col) => joinEntryToInternal(col)),
       };
     default:
-      throw new PFrameDriverError(`unsupported PFrame join entry type: ${type}`);
+      throw new PFrameDriverError(`unsupported PFrame join entry type: ${type satisfies never}`);
   }
+}
+
+function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
+  function cmpJoinEntries(lhs: JoinEntry<PObjectId>, rhs: JoinEntry<PObjectId>): number {
+    if (lhs.type !== rhs.type) {
+      return lhs.type < rhs.type ? -1 : 1;
+    }
+    const type = lhs.type;
+    switch (type) {
+      case 'column':
+        return lhs.column < (rhs as typeof lhs).column ? -1 : 1;
+      case 'slicedColumn':
+      case 'artificialColumn':
+        return lhs.newId < (rhs as typeof lhs).newId ? -1 : 1;
+      case 'inlineColumn': {
+        return lhs.column.id < (rhs as typeof lhs).column.id ? -1 : 1;
+      }
+      case 'inner':
+      case 'full': {
+        const rhsInner = rhs as typeof lhs;
+        if (lhs.entries.length !== rhsInner.entries.length) {
+          return lhs.entries.length - rhsInner.entries.length;
+        }
+        for (let i = 0; i < lhs.entries.length; i++) {
+          const cmp = cmpJoinEntries(lhs.entries[i], rhsInner.entries[i]);
+          if (cmp !== 0) {
+            return cmp;
+          }
+        }
+        return 0;
+      }
+      case 'outer': {
+        const rhsOuter = rhs as typeof lhs;
+        const cmp = cmpJoinEntries(lhs.primary, rhsOuter.primary);
+        if (cmp !== 0) {
+          return cmp;
+        }
+        if (lhs.secondary.length !== rhsOuter.secondary.length) {
+          return lhs.secondary.length - rhsOuter.secondary.length;
+        }
+        for (let i = 0; i < lhs.secondary.length; i++) {
+          const cmp = cmpJoinEntries(lhs.secondary[i], rhsOuter.secondary[i]);
+          if (cmp !== 0) {
+            return cmp;
+          }
+        }
+        return 0;
+      }
+      default:
+        assertNever(type);
+    }
+  }
+  function sortJoinEntry(entry: JoinEntry<PObjectId>): JoinEntry<PObjectId> {
+    switch (entry.type) {
+      case 'column':
+      case 'slicedColumn':
+      case 'inlineColumn':
+        return entry;
+      case 'artificialColumn': {
+        const sortedAxesIndices = entry.axesIndices.toSorted((lhs, rhs) => lhs - rhs);
+        return {
+          ...entry,
+          axesIndices: sortedAxesIndices,
+        };
+      }
+      case 'inner':
+      case 'full': {
+        const sortedEntries = entry.entries.map(sortJoinEntry);
+        sortedEntries.sort(cmpJoinEntries);
+        return {
+          ...entry,
+          entries: sortedEntries,
+        };
+      }
+      case 'outer': {
+        const sortedSecondary = entry.secondary.map(sortJoinEntry);
+        sortedSecondary.sort(cmpJoinEntries);
+        return {
+          ...entry,
+          primary: sortJoinEntry(entry.primary),
+          secondary: sortedSecondary,
+        };
+      }
+      default:
+        assertNever(entry);
+    }
+  }
+  function sortFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
+    return filters.toSorted((lhs, rhs) => {
+      if (lhs.column.type === 'axis' && rhs.column.type === 'axis') {
+        const lhsId = canonicalizeJson(getAxisId(lhs.column.id));
+        const rhsId = canonicalizeJson(getAxisId(rhs.column.id));
+        return lhsId < rhsId ? -1 : 1;
+      } else if (lhs.column.type === 'column' && rhs.column.type === 'column') {
+        return lhs.column.id < rhs.column.id ? -1 : 1;
+      } else {
+        return lhs.column.type === 'axis' ? -1 : 1;
+      }
+    });
+  }
+  return {
+    src: sortJoinEntry(def.src),
+    partitionFilters: sortFilters(def.partitionFilters),
+    filters: sortFilters(def.filters),
+    sorting: def.sorting,
+  };
 }
 
 function stableKeyFromFullPTableDef(data: FullPTableDef): string {
@@ -1257,11 +1366,11 @@ function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<PlTreeEnt
         default:
           throw new PFrameDriverError(`unsupported resource type: ${JSON.stringify(type satisfies never)}`);
       }
-      result.payload.sort((lhs, rhs) => lhs.key.localeCompare(rhs.key));
+      result.payload.sort((lhs, rhs) => lhs.key < rhs.key ? -1 : 1);
       return result;
     }),
   );
-  orderedData.sort((lhs, rhs) => lhs.id.localeCompare(rhs.id));
+  orderedData.sort((lhs, rhs) => lhs.id < rhs.id ? -1 : 1);
 
   const hash = createHash('sha256');
   hash.update(canonicalize(orderedData)!);
