@@ -23,3 +23,15 @@ export interface BiDiStream<I extends object, O extends object> {
 type _CompatibilityTest<I extends object, O extends object> = DuplexStreamingCall<I, O> extends BiDiStream<I, O>
   ? true
   : never;
+
+//
+// REST Request example with type compatibility:
+// TODO: completely remove this from final code! This is only example!
+//
+import createClient from 'openapi-fetch';
+import type { paths } from '../proto-rest/plapi';
+import type { MaintenanceAPI_Ping_Response } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
+export async function ping(): Promise<MaintenanceAPI_Ping_Response> {
+  const client = createClient<paths>({ baseUrl: 'http://localhost:8080' });
+  return (await client.GET('/v1/ping')).data!;
+}

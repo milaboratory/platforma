@@ -44,9 +44,10 @@ function generate() {
     (
         # add debug output to the block
         set -x
-        ./node_modules/.bin/openapi-ts \
-          --no-log-file \
-          --input "${_src_path}" \
+
+        ./node_modules/.bin/openapi-typescript \
+          "${_src_path}" \
+          --properties-required-by-default \
           --output "${_dst_path}"
     ) |& prefix_lines "  "
 }
@@ -55,5 +56,5 @@ function generate() {
 # Actual script run
 #
 
-generate "${PROTO_PLAPI_SRC}/plapiproto/api.swagger.json" "${PROTO_OUT_PATH}/plapi"
+generate "${PROTO_PLAPI_SRC}/plapiproto/openapi.yaml" "${PROTO_OUT_PATH}/plapi.ts"
 echo ""
