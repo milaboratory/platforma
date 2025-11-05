@@ -66,6 +66,11 @@ function generate() {
     for _p in $(split_list "${PROTO_PATH}" ":"); do
       _include_paths+=(--proto_path="${_p}/")
     done
+    if [ -d "${_root}/.proto/github.com/googleapis/googleapis/" ]; then
+      # Special hack to make googleapis available.
+      # There's a mess in google's own proto directory structure, namespaces and packages.
+      _include_paths+=(--proto_path="github.com/googleapis/googleapis/")
+    fi
     _include_paths+=(
         --proto_path="./"
     )
