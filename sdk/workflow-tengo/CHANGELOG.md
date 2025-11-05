@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.5.13
+
+### Patch Changes
+
+- b3b843e: Default to Parquet instead of Binary
+- 1777cfd: Better naming for exec io functions
+
 ## 5.5.12
 
 ### Patch Changes

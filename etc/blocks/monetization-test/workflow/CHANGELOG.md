@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.monetization-test.workflow
 
+## 1.1.43
+
+### Patch Changes
+
+- 1777cfd: Better naming for exec io functions
+- Updated dependencies [b3b843e]
+- Updated dependencies [1777cfd]
+  - @platforma-sdk/workflow-tengo@5.5.13
+
 ## 1.1.42
 
 ### Patch Changes
