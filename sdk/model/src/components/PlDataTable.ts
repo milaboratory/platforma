@@ -745,6 +745,7 @@ export function createPlDataTableV2<A, U>(
     coreColumnPredicate: ops?.coreColumnPredicate,
   });
   const fullHandle = ctx.createPTable(fullDef);
+  if (!fullHandle) return undefined;
 
   const hiddenColumns = new Set<PObjectId>(((): PObjectId[] => {
     // Inner join works as a filter - all columns must be present
@@ -791,6 +792,7 @@ export function createPlDataTableV2<A, U>(
     coreColumnPredicate,
   });
   const visibleHandle = ctx.createPTable(visibleDef);
+  if (!visibleHandle) return undefined;
 
   return {
     sourceId: tableStateNormalized.pTableParams.sourceId,
