@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.51
+
+### Patch Changes
+
+- aa2eb02: Always sort table request to provide stable join result spec order
+
 ## 1.43.50
 
 ### Patch Changes
