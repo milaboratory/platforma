@@ -95,7 +95,7 @@ const props = withDefaults(
     /**
      * Makes some of corners not rounded
      * */
-    position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
+    groupPosition?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
   }>(),
   {
     label: '',
@@ -111,7 +111,7 @@ const props = withDefaults(
     arrowIconLarge: undefined,
     optionSize: 'small',
     options: undefined,
-    position: undefined,
+    groupPosition: undefined,
   },
 );
 
@@ -377,7 +377,7 @@ watchPostEffect(() => {
           :option-size="optionSize"
           :select-option="selectOptionWrapper"
         />
-        <DoubleContour class="pl-dropdown__contour" :position="position" />
+        <DoubleContour class="pl-dropdown__contour" :group-position="groupPosition" />
       </div>
     </div>
     <div v-if="computedError" class="pl-dropdown__error">{{ computedError }}</div>

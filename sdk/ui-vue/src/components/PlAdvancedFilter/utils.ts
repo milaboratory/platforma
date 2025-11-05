@@ -103,7 +103,6 @@ function toOuterFilter(filter: Filter): FilterSpec | null {
     return filter.value !== undefined ? { ...filter, value: filter.value } : null;
   }
   assertNever(filter.type);
-  return null;
 }
 
 function toOuterFilterGroup(m: Group): FilterSpec {
@@ -162,6 +161,13 @@ export function isStringValueType(spec?: PColumnSpec | AxisSpec): boolean {
   }
   const valueType = getNormalizedSpec(spec).valueType;
   return valueType === 'String';
+}
+
+export function isNumericFilter(filter: Filter): filter is Filter & { type: 'equal' | 'notEqual' | 'lessThan' | 'lessThanOrEqual' | 'greaterThan' | 'greaterThanOrEqual' } {
+  return filter.type === 'equal' || filter.type === 'notEqual' || filter.type === 'lessThan' || filter.type === 'lessThanOrEqual' || filter.type === 'greaterThan' || filter.type === 'greaterThanOrEqual';
+}
+export function isStringFilter(filter: Filter): filter is Filter & { type: 'patternEquals' | 'patternNotEquals' | 'patternContainSubsequence' | 'patternNotContainSubsequence' | 'patternMatchesRegularExpression' | 'patternFuzzyContainSubsequence' } {
+  return filter.type === 'patternEquals' || filter.type === 'patternNotEquals' || filter.type === 'patternContainSubsequence' || filter.type === 'patternNotContainSubsequence' || filter.type === 'patternMatchesRegularExpression' || filter.type === 'patternFuzzyContainSubsequence';
 }
 
 export function getFilterInfo(filterType: FilterType): { label: string; supportedFor: (spec: NormalizedSpecData) => boolean } {

@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 withDefaults(defineProps<{
-  position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
+  groupPosition?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
 }>(), {
-  position: undefined,
+  groupPosition: undefined,
 });
 </script>
 
@@ -14,7 +14,7 @@ export default {
 </script>
 
 <template>
-  <div class="double-contour" :class="{ [position]: true }">
+  <div class="double-contour" :class="{ [groupPosition]: true }">
     <div v-bind="$attrs">
       <slot />
     </div>
