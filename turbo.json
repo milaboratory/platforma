@@ -8,6 +8,7 @@
       "env": ["PL_PKG_DEV"]
     },
     "type-check": {
+      "outputs": [],
       "dependsOn": ["^build"]
     },
     "build": {
@@ -27,6 +28,7 @@
       "dependsOn": ["type-check", "^build"]
     },
     "test": {
+      "outputs": ["./coverage/**"],
       "dependsOn": ["build"],
       "passThroughEnv": [
         "PL_ADDRESS",
