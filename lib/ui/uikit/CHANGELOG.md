@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.5.2
+
+### Patch Changes
+
+- d1ee07b: Migration to vitest
+
 ## 2.5.1
 
 ### Patch Changes

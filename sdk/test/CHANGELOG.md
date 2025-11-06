@@ -1,5 +1,11 @@
 # @platforma-sdk/test
 
+## 1.45.21
+
+### Patch Changes
+
+- d1ee07b: Migration to vitest
+
 ## 1.45.20
 
 ### Patch Changes
