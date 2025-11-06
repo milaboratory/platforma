@@ -16,7 +16,7 @@
   "scripts": {
     "type-check": "pl-tengo check",
     "build": "rm -rf dist && pl-tengo build",
-    "test": "vitest",
+    "test": "vitest run",
     "lint": "eslint .",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",

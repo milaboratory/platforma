@@ -16,7 +16,7 @@ test('should return right configs', async ({ expect }) => {
     workingDir,
     useGlobalAccess: false,
     licenseMode: { type: 'plain', value: 'abc' },
-    useGlobalAccess: false,
+    useMinio: false,
     portsMode: {
       type: 'customWithMinio',
       ports: {

@@ -1,4 +1,4 @@
-import { expect, test } from '@jest/globals';
+import { expect, test } from 'vitest';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';

@@ -27,13 +27,13 @@ export const plTest = test.extend<{
         const workFolder = path.resolve(`work/${randomUUID()}`);
         await fsp.mkdir(workFolder, { recursive: true });
         await use(workFolder);
-        onTestFinished(async (task) => {
-          if (task.errors !== undefined) {
+        onTestFinished(async (context) => {
+          if (context.task.result?.state === 'pass') {
+            await fsp.rm(workFolder, { recursive: true });
+          } else {
             console.log(
               `TEST FAILED TMP FOLDER IS PRESERVED: ${workFolder}`,
             );
-          } else {
-            await fsp.rm(workFolder, { recursive: true });
           }
         });
       },
@@ -44,16 +44,16 @@ export const plTest = test.extend<{
         const client = await TestHelpers.getTestClient(alternativeRoot);
         altRootId = client.clientRoot;
         await use(client);
-        onTestFinished(async (task) => {
-          if (task.errors !== undefined) {
+        onTestFinished(async (context) => {
+          if (context.task.result?.state === 'pass') {
+            const rawClient = await TestHelpers.getTestClient();
+            await rawClient.deleteAlternativeRoot(alternativeRoot);
+          } else {
             console.log(
               `TEST FAILED SO ALTERNATIVE ROOT IS PRESERVED IN PL: ${alternativeRoot} (${resourceIdToString(
                 altRootId,
               )})`,
             );
-          } else {
-            const rawClient = await TestHelpers.getTestClient();
-            await rawClient.deleteAlternativeRoot(alternativeRoot);
           }
         });
       },

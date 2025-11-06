@@ -4,7 +4,10 @@ export default defineConfig({
   test: {
     pool: 'threads',
     watch: false,
-    testTimeout: 10000,
-    maxConcurrency: 1,
+    coverage: {
+      exclude: ['src/proto', '**/*.js'],
+      include: ['src'],
+    }
   }
 });
+

@@ -1258,6 +1258,8 @@ blockTest(
 
 blockTest(
   'should create read-logs block, render it and read logs from a file',
+  // The timeout is higher here because pl - core must download a software for this test.
+  { timeout: 20000 },
   async ({ rawPrj: project, ml, helpers, expect }) => {
     const blockId = await project.addBlock('ReadLogs', readLogsSpec);
 
@@ -1293,8 +1295,6 @@ blockTest(
       }
     }
   },
-  // The timeout is higher here because pl - core must download a software for this test.
-  { timeout: 20000 }
 );
 
 async function lsDriverGetFileHandleFromAssets(

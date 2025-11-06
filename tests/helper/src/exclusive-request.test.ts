@@ -1,4 +1,4 @@
-import { expect, test } from '@jest/globals';
+import { expect, test } from 'vitest';
 import { delay, timer, exclusiveRequest } from '@milaboratories/helpers';
 
 test('Exclusive request', async () => {

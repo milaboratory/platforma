@@ -3,7 +3,7 @@ import { PlClient } from './client';
 import { PlDriver, PlDriverDefinition } from './driver';
 import { Dispatcher, request } from 'undici';
 import { GrpcClientProviderFactory } from './grpc';
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 
 test('test client init', async () => {
   const client = await getTestClient(undefined);

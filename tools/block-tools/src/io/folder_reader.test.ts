@@ -1,4 +1,4 @@
-import { expect, test } from '@jest/globals';
+import { expect, test } from 'vitest';
 import { folderReaderByUrl } from './folder_reader';
 
 test('test fs reader', async () => {

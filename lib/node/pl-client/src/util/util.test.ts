@@ -1,5 +1,5 @@
 import { toBytes } from './util';
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 
 test('test toBytes 1', () => {
   const arr = new Uint8Array([1, 2, 3]);

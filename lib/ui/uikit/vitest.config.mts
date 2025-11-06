@@ -6,6 +6,7 @@ export default defineConfig((configEnv) => mergeConfig(
   viteConfig(configEnv),
   {
     test: {
+      pool: 'threads',
       setupFiles: ['./src/__tests__/setup.ts'],
       environment: 'jsdom',
       exclude: [...configDefaults.exclude, 'e2e/**'],
