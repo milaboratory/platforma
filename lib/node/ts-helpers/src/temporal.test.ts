@@ -1,4 +1,4 @@
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 import {
   Aborted,
   createInfiniteRetryState,
@@ -107,6 +107,6 @@ test('delay exponential with max delay reached max', () => {
   expect(states[states.length - 1].nextDelay).toEqual(15000);
 });
 
-test('test timeout', () => {
-  expect(() => withTimeout(sleep(1000), 1)).rejects.toThrow(Aborted);
+test('test timeout', async () => {
+  await expect(withTimeout(sleep(1000), 1)).rejects.toThrow(Aborted);
 });
