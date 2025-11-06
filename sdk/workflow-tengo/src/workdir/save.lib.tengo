@@ -135,7 +135,6 @@ builder := func(wdBefore) {
 			for fName, _ in cRules {
 				rules = append(rules, getContentSaveRule(fName))
 			}
-			ll.assert(len(rules) > 0, "list of save rules is empty, WorkdirSave action is useless")
 
 			super.getField(_RULES_FIELD).set(
 				smart.createValueResource(
