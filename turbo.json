@@ -5,7 +5,8 @@
     "lint": {
       "outputs": [],
       "inputs": ["$TURBO_DEFAULT$", "eslint.config.*", ".eslintrc.*"],
-      "env": ["PL_PKG_DEV"]
+      "env": ["PL_PKG_DEV"],
+      "dependsOn": ["^build"]
     },
     "type-check": {
       "outputs": [],
@@ -29,7 +30,7 @@
     },
     "test": {
       "outputs": ["./coverage/**"],
-      "dependsOn": ["build"],
+      "dependsOn": ["lint"],
       "passThroughEnv": [
         "PL_ADDRESS",
         "PL_TEST_PASSWORD",
