@@ -59,8 +59,7 @@ import {
   parseDataInfoResource,
   traverseParquetChunkResource,
 } from './data';
-import { createHash } from 'node:crypto';
-import { type MiLogger } from '@milaboratories/ts-helpers';
+import { hashJson, type MiLogger } from '@milaboratories/ts-helpers';
 import { mapValues } from 'es-toolkit';
 import {
   assertNever,
@@ -69,7 +68,6 @@ import {
   RefCountResourcePool,
   type PoolResource,
 } from '@milaboratories/ts-helpers';
-import canonicalize from 'canonicalize';
 import { PFrameFactory, HttpHelpers } from '@milaboratories/pframes-rs-node';
 import path from 'node:path';
 import { getDebugFlags } from '../debug';
@@ -950,7 +948,7 @@ export class PFrameDriver implements InternalPFrameDriver {
           ? [{
               axesSpec: [
                 ...new Map(request.compatibleWith.map(
-                  (item) => [canonicalize(item)!, item] as const,
+                  (item) => [canonicalizeJson(item), item] as const,
                 )).values(),
               ],
               qualifications: [],
@@ -1295,9 +1293,7 @@ function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
 
 function stableKeyFromFullPTableDef(data: FullPTableDef): string {
   try {
-    const hash = createHash('sha256');
-    hash.update(canonicalize(data)!);
-    return hash.digest().toString('hex');
+    return hashJson(data);
   } catch (err: unknown) {
     throw new PFrameDriverError(
       `PTable handle calculation failed, `
@@ -1371,8 +1367,5 @@ function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<PlTreeEnt
     }),
   );
   orderedData.sort((lhs, rhs) => lhs.id < rhs.id ? -1 : 1);
-
-  const hash = createHash('sha256');
-  hash.update(canonicalize(orderedData)!);
-  return hash.digest().toString('hex');
+  return hashJson(orderedData);
 }

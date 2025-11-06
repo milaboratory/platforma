@@ -39,6 +39,7 @@
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "vitest": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/pl-model-common": "workspace:*"
   }
 }

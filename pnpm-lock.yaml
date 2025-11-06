@@ -2192,6 +2192,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../../model/common
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../../../tools/ts-builder
