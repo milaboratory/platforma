@@ -3,7 +3,7 @@ import { StructTestResource, ValueTestResource } from '../helpers/pl';
 import { field, toGlobalFieldId, toGlobalResourceId } from './transaction';
 import { RecoverablePlError } from './errors';
 import * as tp from 'node:timers/promises';
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 
 test('get field', async () => {
   await withTempRoot(async (pl) => {

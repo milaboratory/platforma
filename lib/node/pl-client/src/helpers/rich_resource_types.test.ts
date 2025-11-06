@@ -1,4 +1,4 @@
-import { test } from '@jest/globals';
+import { test } from 'vitest';
 
 // type TestType1 = string;
 // type TestType2 = string | number | { a: number };

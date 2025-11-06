@@ -17,7 +17,7 @@
     "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts",
     "build": "vite build",
     "readme": "oclif readme",
-    "test": "jest",
+    "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "bin": {
@@ -57,14 +57,12 @@
     "@rollup/plugin-node-resolve": "catalog:",
     "vite-plugin-dts": "catalog:",
     "semver": "catalog:",
-    "@types/jest": "catalog:",
     "@types/mime-types": "catalog:",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
-    "jest": "catalog:",
-    "@jest/globals": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "vitest": "catalog:",
     "oclif": "catalog:",
-    "ts-jest": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   },
   "oclif": {

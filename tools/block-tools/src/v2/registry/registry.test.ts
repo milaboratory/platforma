@@ -1,4 +1,4 @@
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 import { RegistryStorage, storageByUrl } from '../../io';
 import { randomUUID } from 'crypto';
 import path from 'path';

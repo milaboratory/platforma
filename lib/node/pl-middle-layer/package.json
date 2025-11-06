@@ -14,7 +14,7 @@
     "build": "ts-builder build --target node --build-config ./build.node.config.mjs",
     "watch": "ts-builder build --target node --build-config ./build.node.config.mjs --watch",
     "lint": "eslint .",
-    "test": "vitest",
+    "test": "vitest run",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [

@@ -1,6 +1,6 @@
 import * as tp from 'node:timers/promises';
 import { isTimeoutOrCancelError } from './errors';
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 
 test('timeout of sleep error type detection', async () => {
   let noError = false;

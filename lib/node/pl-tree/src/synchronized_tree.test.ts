@@ -1,4 +1,4 @@
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 import { field, TestHelpers } from '@milaboratories/pl-client';
 import { TestStructuralResourceType1 } from './test_utils';
 import { Computable } from '@milaboratories/computable';

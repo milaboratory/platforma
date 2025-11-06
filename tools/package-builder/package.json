@@ -38,7 +38,6 @@
     "zod": "4.1.12"
   },
   "devDependencies": {
-    "@jest/globals": "catalog:",
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
@@ -46,9 +45,6 @@
     "@milaboratories/eslint-config": "workspace:*",
     "@platforma-open/milaboratories.runenv-python-3": "catalog:",
     "@types/archiver": "^6.0.3",
-    "@types/jest": "catalog:",
-    "jest": "catalog:",
-    "ts-jest": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"

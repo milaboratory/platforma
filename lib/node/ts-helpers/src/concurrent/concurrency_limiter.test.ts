@@ -1,4 +1,4 @@
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 import { ConcurrencyLimitingExecutor } from './concurrency_limiter';
 import * as tp from 'timers/promises';
 

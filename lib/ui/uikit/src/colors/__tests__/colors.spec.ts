@@ -1,5 +1,4 @@
-import { describe } from 'node:test';
-import { expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { Gradient } from '../gradient';
 import { viridis } from '../palette';
 import { Color } from '../color';

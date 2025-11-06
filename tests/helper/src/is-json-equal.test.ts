@@ -1,4 +1,4 @@
-import { expect, test } from '@jest/globals';
+import { expect, test } from 'vitest';
 import { isJsonEqual, isPlainObject, timer, randomString } from '@milaboratories/helpers';
 import canonicalize from 'canonicalize';
 

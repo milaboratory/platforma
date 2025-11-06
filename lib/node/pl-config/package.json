@@ -17,7 +17,7 @@
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "do-pack": "rm -rf src/.test && rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -38,11 +38,9 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "vitest": "catalog:",
-    "@types/jest": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "@types/node": "catalog:",
     "prettier": "catalog:",
-    "ts-jest": "catalog:",
-    "jest": "catalog:",
     "tsconfig-paths": "catalog:",
     "typescript": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"

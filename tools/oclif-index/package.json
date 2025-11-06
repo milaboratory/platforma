@@ -9,8 +9,7 @@
   "scripts": {
     "build": "ts-builder build --target node",
     "type-check": "ts-builder types --target node",
-    "watch": "ts-builder build --target node --watch",
-    "test": "true"
+    "watch": "ts-builder build --target node --watch"
   },
   "bin": {
     "oclif-index": "./bin/run.mjs"
@@ -37,11 +36,7 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "@types/jest": "catalog:",
     "@types/node": "catalog:",
-    "jest": "catalog:",
-    "@jest/globals": "catalog:",
-    "ts-jest": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }
 }

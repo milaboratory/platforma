@@ -275,11 +275,8 @@ catalog:
 
   # Test
 
-  'jest': ^29.7.0
-  '@jest/globals': ^29.7.0
-  'ts-jest': ^29.2.6
-  'vitest': ^2.1.9
-  '@vitest/coverage-v8': ^2.1.9
+  'vitest': &vitest-version ^4.0.7
+  '@vitest/coverage-v8': *vitest-version
   '@faker-js/faker': ^9.2.0
   'happy-dom': ^15.11.7
   'jsdom': ^25.0.1
@@ -292,7 +289,6 @@ catalog:
   '@types/json-stringify-safe': ^5.0.3
   '@types/decompress': ^4.2.7
   '@types/readline-sync': ^1.4.8
-  '@types/jest': ^29.5.14
   '@types/http-proxy': ^1.17.16
   '@types/node': ~24.5.2
   '@types/eslint__js': ^8.42.3

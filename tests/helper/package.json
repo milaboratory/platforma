@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "test": "jest"
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "@milaboratories/helpers": "workspace:*",
@@ -17,11 +17,9 @@
     "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
-    "jest": "catalog:",
-    "@jest/globals": "catalog:",
-    "ts-jest": "catalog:",
-    "@types/jest": "catalog:",
     "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "vitest": "catalog:",
     "canonicalize": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }

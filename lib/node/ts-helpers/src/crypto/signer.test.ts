@@ -1,4 +1,4 @@
-import { expect, test } from '@jest/globals';
+import { expect, test } from 'vitest';
 import { HmacSha256Signer } from './signer';
 
 test('signer test', () => {

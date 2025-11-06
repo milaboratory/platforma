@@ -1,4 +1,4 @@
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 import { AsyncQueue } from './async_queue';
 
 test('simple queue test 1', async () => {

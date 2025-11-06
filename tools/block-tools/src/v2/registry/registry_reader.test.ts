@@ -1,4 +1,4 @@
-import { expect, test } from '@jest/globals';
+import { expect, test } from 'vitest';
 import { RegistryV2Reader } from './registry_reader';
 import { folderReaderByUrl } from '../../io';
 import { request } from 'undici';
