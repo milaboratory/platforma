@@ -275,8 +275,8 @@ catalog:
 
   # Test
 
-  'vitest': ^2.1.9
-  '@vitest/coverage-v8': ^2.1.9
+  'vitest': &vitest-version ^2.1.9
+  '@vitest/coverage-v8': *vitest-version
   '@faker-js/faker': ^9.2.0
   'happy-dom': ^15.11.7
   'jsdom': ^25.0.1
