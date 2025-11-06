@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.5.15
+
+### Patch Changes
+
+- 5684c31: Exec save workdir - remove panicking early
+
 ## 5.5.14
 
 ### Patch Changes
