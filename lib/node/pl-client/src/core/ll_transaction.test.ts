@@ -1,7 +1,7 @@
 import { getTestLLClient } from '../test/test_config';
 import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { createLocalResourceId } from './types';
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 
 import { isTimeoutOrCancelError } from './errors';
 import { Aborted } from '@milaboratories/ts-helpers';
