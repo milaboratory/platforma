@@ -1,4 +1,4 @@
-import {expect, test} from '@jest/globals';
+import {expect, test} from 'vitest';
 import {utils} from '@milaboratories/helpers';
 import { functions } from '@milaboratories/helpers';
 
