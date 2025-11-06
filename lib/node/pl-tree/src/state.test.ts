@@ -1,4 +1,4 @@
-import { expect, test } from '@jest/globals';
+import { expect, test } from 'vitest';
 import { Computable } from '@milaboratories/computable';
 import { DefaultFinalResourceDataPredicate, NullResourceId, ResourceId } from '@milaboratories/pl-client';
 import { isPlTreeEntry, isPlTreeEntryAccessor, isPlTreeNodeAccessor } from './accessors';
