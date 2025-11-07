@@ -12,8 +12,8 @@ type NotAssignableToJson = bigint | symbol | Function;
 export type JsonCompatible<T> = unknown extends T ? unknown : {
   [P in keyof T]:
   T[P] extends JsonValue ? T[P] :
-    T[P] extends NotAssignableToJson ? never :
-      JsonCompatible<T[P]>;
+      [Exclude<T[P], undefined>] extends [NotAssignableToJson] ? never :
+        JsonCompatible<T[P]>;
 };
 
 export type StringifiedJson<T = unknown> = JsonCompatible<T> extends never ? never : string & {
@@ -34,4 +34,8 @@ export function canonicalizeJson<T>(value: JsonCompatible<T>): CanonicalizedJson
 
 export function parseJson<T>(value: StringifiedJson<T> | CanonicalizedJson<T>): T {
   return JSON.parse(value) as T;
+}
+
+export function bigintReplacer(_key: string, value: unknown): unknown {
+  return typeof value === 'bigint' ? value.toString() : value;
 }

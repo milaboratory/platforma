@@ -48,10 +48,10 @@ import {
   ensureError,
   PFrameDriverError,
   isAbortError,
-  isPFrameDriverError,
   uniqueBy,
   getAxisId,
   canonicalizeJson,
+  bigintReplacer,
 } from '@platforma-sdk/model';
 import { LRUCache } from 'lru-cache';
 import {
@@ -59,14 +59,15 @@ import {
   parseDataInfoResource,
   traverseParquetChunkResource,
 } from './data';
+import type { RefCountPool } from '@milaboratories/ts-helpers';
 import { hashJson, type MiLogger } from '@milaboratories/ts-helpers';
 import { mapValues } from 'es-toolkit';
 import {
   assertNever,
   emptyDir,
   ConcurrencyLimitingExecutor,
-  RefCountResourcePool,
-  type PoolResource,
+  RefCountPoolBase,
+  type PoolEntry,
 } from '@milaboratories/ts-helpers';
 import { PFrameFactory, HttpHelpers } from '@milaboratories/pframes-rs-node';
 import path from 'node:path';
@@ -75,34 +76,41 @@ import { Readable } from 'node:stream';
 
 type PColumnDataUniversal = PlTreeNodeAccessor | DataInfo<PlTreeNodeAccessor> | PColumnValues;
 
-function makeBlobId(res: PlTreeEntry): string {
+function makeBlobId(res: PlTreeEntry): PFrameInternal.PFrameBlobId {
   return String(res.rid);
 }
 
-type LocalBlobPoolEntry = PoolResource<ComputableStableDefined<LocalBlobHandleAndSize>>;
+type LocalBlob = ComputableStableDefined<LocalBlobHandleAndSize>;
 
-class LocalBlobPool
-  extends RefCountResourcePool<PlTreeEntry, ComputableStableDefined<LocalBlobHandleAndSize>>
-  implements PFrameInternal.PFrameDataSourceV2 {
+interface LocalBlobPool extends
+  RefCountPool<PlTreeEntry, LocalBlob, PFrameInternal.PFrameBlobId>,
+  PFrameInternal.PFrameDataSourceV2 {
+  preloadBlob(blobIds: PFrameInternal.PFrameBlobId[], signal?: AbortSignal): Promise<void>;
+  resolveBlobContent(blobId: PFrameInternal.PFrameBlobId, signal?: AbortSignal): Promise<Uint8Array>;
+}
+
+class LocalBlobPoolImpl
+  extends RefCountPoolBase<PlTreeEntry, LocalBlob, PFrameInternal.PFrameBlobId>
+  implements LocalBlobPool {
   constructor(private readonly blobDriver: DownloadDriver) {
     super();
   }
 
-  protected calculateParamsKey(params: PlTreeEntry): string {
+  protected calculateParamsKey(params: PlTreeEntry): PFrameInternal.PFrameBlobId {
     return makeBlobId(params);
   }
 
-  protected createNewResource(params: PlTreeEntry, _key: string): ComputableStableDefined<LocalBlobHandleAndSize> {
+  protected createNewResource(params: PlTreeEntry, _key: PFrameInternal.PFrameBlobId): LocalBlob {
     return this.blobDriver.getDownloadedBlob(params);
   }
 
-  public getByKey(blobId: string): ComputableStableDefined<LocalBlobHandleAndSize> {
+  public getByKey(blobId: PFrameInternal.PFrameBlobId): LocalBlob {
     const resource = super.tryGetByKey(blobId);
-    if (!resource) throw new PFrameDriverError(`Blob with id ${blobId} not found.`);
+    if (!resource) throw new PFrameDriverError(`Local blob with id ${blobId} not found.`);
     return resource;
   }
 
-  public async preloadBlob(blobIds: string[], signal?: AbortSignal): Promise<void> {
+  public async preloadBlob(blobIds: PFrameInternal.PFrameBlobId[], signal?: AbortSignal): Promise<void> {
     try {
       await Promise.all(blobIds.map((blobId) => this.getByKey(blobId).awaitStableFullValue(signal)));
     } catch (err: unknown) {
@@ -110,27 +118,46 @@ class LocalBlobPool
     }
   };
 
-  public async resolveBlobContent(blobId: string, signal?: AbortSignal): Promise<Uint8Array> {
+  public async resolveBlobContent(blobId: PFrameInternal.PFrameBlobId, signal?: AbortSignal): Promise<Uint8Array> {
     const computable = this.getByKey(blobId);
     const blob = await computable.awaitStableValue(signal);
     return await this.blobDriver.getContent(blob.handle, { signal });
   };
 }
 
-type RemoteBlobPoolEntry = PoolResource<Computable<RemoteBlobHandleAndSize>>;
+type RemoteBlob = Computable<RemoteBlobHandleAndSize>;
 
-class RemoteBlobPool
-  extends RefCountResourcePool<PlTreeEntry, Computable<RemoteBlobHandleAndSize>> {
+interface RemoteBlobPool extends
+  RefCountPool<PlTreeEntry, RemoteBlob, PFrameInternal.PFrameBlobId> {
+  withContent<T>(
+    handle: RemoteBlobHandle,
+    options: {
+      range: PFrameInternal.FileRange;
+      signal: AbortSignal;
+      handler: ContentHandler<T>;
+    },
+  ): Promise<T>;
+}
+
+class RemoteBlobPoolImpl
+  extends RefCountPoolBase<PlTreeEntry, RemoteBlob, PFrameInternal.PFrameBlobId>
+  implements RemoteBlobPool {
   constructor(private readonly blobDriver: DownloadDriver) {
     super();
   }
 
-  protected calculateParamsKey(params: PlTreeEntry): string {
-    return String(params.rid);
+  protected calculateParamsKey(params: PlTreeEntry): PFrameInternal.PFrameBlobId {
+    return makeBlobId(params);
   }
 
-  protected createNewResource(params: PlTreeEntry, _key: string): Computable<RemoteBlobHandleAndSize> {
+  protected createNewResource(params: PlTreeEntry, _key: PFrameInternal.PFrameBlobId): RemoteBlob {
     return this.blobDriver.getOnDemandBlob(params);
+  }
+
+  public getByKey(blobId: PFrameInternal.PFrameBlobId): RemoteBlob {
+    const resource = super.tryGetByKey(blobId);
+    if (!resource) throw new PFrameDriverError(`Remote blob with id ${blobId} not found.`);
+    return resource;
   }
 
   public async withContent<T>(
@@ -310,9 +337,7 @@ function hasArtificialColumns<T>(entry: JoinEntry<T>): boolean {
   }
 }
 
-const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
-
-class PFramePool extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
+class PFramePool extends RefCountPoolBase<InternalPFrameData, PFrameHolder, PFrameHandle> {
   constructor(
     private readonly parquetServer: PFrameInternal.HttpServerInfo,
     private readonly localBlobPool: LocalBlobPool,
@@ -323,20 +348,11 @@ class PFramePool extends RefCountResourcePool<InternalPFrameData, PFrameHolder> 
     super();
   }
 
-  protected calculateParamsKey(params: InternalPFrameData): string {
-    try {
-      return stableKeyFromPFrameData(params);
-    } catch (err: unknown) {
-      if (isPFrameDriverError(err)) throw err;
-      throw new PFrameDriverError(
-        `PFrame handle calculation failed, `
-        + `request: ${JSON.stringify(params, bigintReplacer)}, `
-        + `error: ${ensureError(err)}`,
-      );
-    }
+  protected calculateParamsKey(params: InternalPFrameData): PFrameHandle {
+    return stableKeyFromPFrameData(params);
   }
 
-  protected createNewResource(params: InternalPFrameData, key: string): PFrameHolder {
+  protected createNewResource(params: InternalPFrameData, key: PFrameHandle): PFrameHolder {
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info',
         `PFrame creation (pFrameHandle = ${key}): `
@@ -360,17 +376,17 @@ class PFramePool extends RefCountResourcePool<InternalPFrameData, PFrameHolder> 
   }
 }
 
-class PTableDefPool extends RefCountResourcePool<FullPTableDef, PTableDefHolder> {
+class PTableDefPool extends RefCountPoolBase<FullPTableDef, PTableDefHolder, PTableHandle> {
   constructor(private readonly logger: PFrameInternal.Logger) {
     super();
   }
 
-  protected calculateParamsKey(params: FullPTableDef): string {
+  protected calculateParamsKey(params: FullPTableDef): PTableHandle {
     return stableKeyFromFullPTableDef(params);
   }
 
-  protected createNewResource(params: FullPTableDef, key: string): PTableDefHolder {
-    return new PTableDefHolder(params, key as PTableHandle, this.logger);
+  protected createNewResource(params: FullPTableDef, key: PTableHandle): PTableDefHolder {
+    return new PTableDefHolder(params, key, this.logger);
   }
 
   public getByKey(key: PTableHandle): PTableDefHolder {
@@ -380,7 +396,7 @@ class PTableDefPool extends RefCountResourcePool<FullPTableDef, PTableDefHolder>
   }
 }
 
-class PTablePool extends RefCountResourcePool<FullPTableDef, PTableHolder> {
+class PTablePool extends RefCountPoolBase<FullPTableDef, PTableHolder, PTableHandle> {
   constructor(
     private readonly pFrames: PFramePool,
     private readonly pTableDefs: PTableDefPool,
@@ -389,11 +405,11 @@ class PTablePool extends RefCountResourcePool<FullPTableDef, PTableHolder> {
     super();
   }
 
-  protected calculateParamsKey(params: FullPTableDef): string {
+  protected calculateParamsKey(params: FullPTableDef): PTableHandle {
     return stableKeyFromFullPTableDef(params);
   }
 
-  protected createNewResource(params: FullPTableDef, key: string): PTableHolder {
+  protected createNewResource(params: FullPTableDef, key: PTableHandle): PTableHolder {
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info',
         `PTable creation (pTableHandle = ${key}): `
@@ -452,15 +468,15 @@ class PTablePool extends RefCountResourcePool<FullPTableDef, PTableHolder> {
 }
 
 class PTableCacheUi {
-  private readonly perFrame = new Map<PFrameHandle, LRUCache<PTableHandle, PoolResource<PTableHolder>>>();
-  private readonly global: LRUCache<PTableHandle, PoolResource<PTableHolder>>;
+  private readonly perFrame = new Map<PFrameHandle, LRUCache<PTableHandle, PoolEntry<PTableHolder>>>();
+  private readonly global: LRUCache<PTableHandle, PoolEntry<PTableHolder>>;
   private readonly disposeListeners = new Set<PTableHandle>();
 
   constructor(
     private readonly logger: PFrameInternal.Logger,
     private readonly ops: Pick<PFrameDriverOps, 'pFramesCacheMaxSize' | 'pFrameCacheMaxCount'>,
   ) {
-    this.global = new LRUCache<PTableHandle, PoolResource<PTableHolder>>({
+    this.global = new LRUCache<PTableHandle, PoolEntry<PTableHolder>>({
       maxSize: this.ops.pFramesCacheMaxSize,
       dispose: (resource, key, reason) => {
         if (reason === 'evict') {
@@ -479,7 +495,7 @@ class PTableCacheUi {
     });
   }
 
-  public cache(resource: PoolResource<PTableHolder>, size: number): void {
+  public cache(resource: PoolEntry<PTableHolder>, size: number): void {
     const key = resource.key as PTableHandle;
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info', `calculateTableData cache - added PTable ${key} with size ${size}`);
@@ -489,7 +505,7 @@ class PTableCacheUi {
 
     let perFrame = this.perFrame.get(resource.resource.pFrame);
     if (!perFrame) {
-      perFrame = new LRUCache<PTableHandle, PoolResource<PTableHolder>>({
+      perFrame = new LRUCache<PTableHandle, PoolEntry<PTableHolder>>({
         max: this.ops.pFrameCacheMaxCount,
         dispose: (_resource, key, reason) => {
           if (reason === 'evict') {
@@ -516,14 +532,14 @@ class PTableCacheUi {
 }
 
 class PTableCacheModel {
-  private readonly global: LRUCache<PTableHandle, PoolResource<PTableHolder>>;
+  private readonly global: LRUCache<PTableHandle, PoolEntry<PTableHolder>>;
   private readonly disposeListeners = new Set<PTableHandle>();
 
   constructor(
     private readonly logger: PFrameInternal.Logger,
     ops: Pick<PFrameDriverOps, 'pTablesCacheMaxSize'>,
   ) {
-    this.global = new LRUCache<PTableHandle, PoolResource<PTableHolder>>({
+    this.global = new LRUCache<PTableHandle, PoolEntry<PTableHolder>>({
       maxSize: ops.pTablesCacheMaxSize,
       dispose: (resource, key, reason) => {
         resource.unref();
@@ -534,13 +550,13 @@ class PTableCacheModel {
     });
   }
 
-  public cache(resource: PoolResource<PTableHolder>, size: number, defDisposeSignal: AbortSignal): void {
+  public cache(resource: PoolEntry<PTableHolder>, size: number, defDisposeSignal: AbortSignal): void {
     const key = resource.key as PTableHandle;
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info', `createPTable cache - added PTable ${key} with size ${size}`);
     }
 
-    const status: LRUCache.Status<PoolResource<PTableHolder>> = {};
+    const status: LRUCache.Status<PoolEntry<PTableHolder>> = {};
     this.global.set(key, resource, { size: Math.max(size, 1), status }); // 1 is minimum size to avoid cache evictions
 
     if (status.maxEntrySizeExceeded) {
@@ -566,8 +582,8 @@ class PTableCacheModel {
 class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable {
   public readonly pFramePromise: Promise<PFrameInternal.PFrameV12>;
   private readonly abortController = new AbortController();
-  private readonly localBlobs: LocalBlobPoolEntry[] = [];
-  private readonly remoteBlobs: RemoteBlobPoolEntry[] = [];
+  private readonly localBlobs: PoolEntry<LocalBlob>[] = [];
+  private readonly remoteBlobs: PoolEntry<RemoteBlob>[] = [];
 
   constructor(
     public readonly parquetServer: PFrameInternal.HttpServerInfo,
@@ -713,7 +729,7 @@ class PTableHolder implements AsyncDisposable {
     public readonly pFrame: PFrameHandle,
     pFrameDisposeSignal: AbortSignal,
     public readonly pTablePromise: Promise<PFrameInternal.PTableV7>,
-    private readonly predecessor?: PoolResource<PTableHolder>,
+    private readonly predecessor?: PoolEntry<PTableHolder>,
   ) {
     this.combinedDisposeSignal = AbortSignal.any([pFrameDisposeSignal, this.abortController.signal]);
   }
@@ -850,8 +866,8 @@ export class PFrameDriver implements InternalPFrameDriver {
     await emptyDir(resolvedSpillPath);
 
     const logger: PFrameInternal.Logger = (level, message) => miLogger[level](message);
-    const localBlobPool = new LocalBlobPool(blobDriver);
-    const remoteBlobPool = new RemoteBlobPool(blobDriver);
+    const localBlobPool = new LocalBlobPoolImpl(blobDriver);
+    const remoteBlobPool = new RemoteBlobPoolImpl(blobDriver);
 
     const store = new BlobStore({ remoteBlobPool, logger });
     const handler = HttpHelpers.createRequestHandler({ store: store });
@@ -1291,19 +1307,11 @@ function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
   };
 }
 
-function stableKeyFromFullPTableDef(data: FullPTableDef): string {
-  try {
-    return hashJson(data);
-  } catch (err: unknown) {
-    throw new PFrameDriverError(
-      `PTable handle calculation failed, `
-      + `request: ${JSON.stringify(data)}, `
-      + `error: ${ensureError(err)}`,
-    );
-  }
+function stableKeyFromFullPTableDef(data: FullPTableDef): PTableHandle {
+  return hashJson(data) as string as PTableHandle;
 }
 
-function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<PlTreeEntry>>[]): string {
+function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<PlTreeEntry>>[]): PFrameHandle {
   const orderedData = [...data].map((column) =>
     mapPObjectData(column, (r) => {
       let result: {
@@ -1367,5 +1375,5 @@ function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<PlTreeEnt
     }),
   );
   orderedData.sort((lhs, rhs) => lhs.id < rhs.id ? -1 : 1);
-  return hashJson(orderedData);
+  return hashJson(orderedData) as string as PFrameHandle;
 }
