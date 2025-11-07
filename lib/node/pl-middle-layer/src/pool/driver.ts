@@ -29,7 +29,6 @@ import type {
   PFrameDef,
   JoinEntry,
   PTableDef,
-  ValueType,
   PTableRecordSingleValueFilterV2,
   PTableRecordFilter,
   PColumnValues,
@@ -38,6 +37,7 @@ import type {
   RemoteBlobHandleAndSize,
   RemoteBlobHandle,
   ContentHandler,
+  JsonSerializable,
 } from '@platforma-sdk/model';
 import {
   mapPObjectData,
@@ -52,6 +52,7 @@ import {
   getAxisId,
   canonicalizeJson,
   bigintReplacer,
+  ValueType,
 } from '@platforma-sdk/model';
 import { LRUCache } from 'lru-cache';
 import {
@@ -79,7 +80,7 @@ function makeBlobId(res: PlTreeEntry): PFrameInternal.PFrameBlobId {
   return String(res.rid);
 }
 
-interface LocalBlobProvider<TreeEntry> {
+interface LocalBlobProvider<TreeEntry extends JsonSerializable> {
   acquire(params: TreeEntry): PoolEntry<PFrameInternal.PFrameBlobId>;
   makeDataSource(signal: AbortSignal): PFrameInternal.PFrameDataSourceV2;
 }
@@ -124,7 +125,7 @@ class LocalBlobProviderImpl
   }
 }
 
-interface RemoteBlobProvider<TreeEntry> extends AsyncDisposable {
+interface RemoteBlobProvider<TreeEntry extends JsonSerializable> extends AsyncDisposable {
   acquire(params: TreeEntry): PoolEntry<PFrameInternal.PFrameBlobId>;
   httpServerInfo(): PFrameInternal.HttpServerInfo;
 }
@@ -291,8 +292,6 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
   }
 }
 
-const valueTypes: ValueType[] = ['Int', 'Long', 'Float', 'Double', 'String', 'Bytes'] as const;
-
 function migrateFilters(
   filters: PTableRecordFilter[],
   logger: PFrameInternal.Logger,
@@ -356,9 +355,9 @@ function hasArtificialColumns<T>(entry: JoinEntry<T>): boolean {
   }
 }
 
-class PFramePool<TreeEntry>
+class PFramePool<TreeEntry extends JsonSerializable>
   extends RefCountPoolBase<
-    PFrameDef<PFrameInternal.DataInfo<TreeEntry>>,
+    PColumn<PFrameInternal.DataInfo<TreeEntry>>[],
     PFrameHandle,
     PFrameHolder<TreeEntry>> {
   constructor(
@@ -366,16 +365,18 @@ class PFramePool<TreeEntry>
     private readonly remoteBlobProvider: RemoteBlobProvider<TreeEntry>,
     private readonly logger: PFrameInternal.Logger,
     private readonly spillPath: string,
-    private readonly makeBlobId: (params: TreeEntry) => PFrameInternal.PFrameBlobId,
   ) {
     super();
   }
 
-  protected calculateParamsKey(params: PFrameDef<PFrameInternal.DataInfo<TreeEntry>>): PFrameHandle {
-    return stableKeyFromPFrameData(params, this.makeBlobId);
+  protected calculateParamsKey(params: PColumn<PFrameInternal.DataInfo<TreeEntry>>[]): PFrameHandle {
+    return stableKeyFromPFrameData(params);
   }
 
-  protected createNewResource(params: PFrameDef<PFrameInternal.DataInfo<TreeEntry>>, key: PFrameHandle): PFrameHolder<TreeEntry> {
+  protected createNewResource(
+    params: PColumn<PFrameInternal.DataInfo<TreeEntry>>[],
+    key: PFrameHandle,
+  ): PFrameHolder<TreeEntry> {
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info',
         `PFrame creation (pFrameHandle = ${key}): `
@@ -418,7 +419,7 @@ class PTableDefPool extends RefCountPoolBase<FullPTableDef, PTableHandle, PTable
   }
 }
 
-class PTablePool<TreeEntry>
+class PTablePool<TreeEntry extends JsonSerializable>
   extends RefCountPoolBase<FullPTableDef, PTableHandle, PTableHolder> {
   constructor(
     private readonly pFrames: PFramePool<TreeEntry>,
@@ -602,7 +603,7 @@ class PTableCacheModel {
   }
 }
 
-class PFrameHolder<TreeEntry> implements AsyncDisposable {
+class PFrameHolder<TreeEntry extends JsonSerializable> implements AsyncDisposable {
   public readonly pFramePromise: Promise<PFrameInternal.PFrameV12>;
   private readonly abortController = new AbortController();
   private readonly localBlobs: PoolEntry<PFrameInternal.PFrameBlobId>[] = [];
@@ -613,7 +614,7 @@ class PFrameHolder<TreeEntry> implements AsyncDisposable {
     private readonly remoteBlobProvider: RemoteBlobProvider<TreeEntry>,
     logger: PFrameInternal.Logger,
     private readonly spillPath: string,
-    columns: PFrameDef<PFrameInternal.DataInfo<TreeEntry>>,
+    columns: PColumn<PFrameInternal.DataInfo<TreeEntry>>[],
   ) {
     const makeLocalBlobId = (blob: TreeEntry): PFrameInternal.PFrameBlobId => {
       const localBlob = this.localBlobProvider.acquire(blob);
@@ -862,7 +863,8 @@ export interface InternalPFrameDriver<TreeNodeAccessor = PlTreeNodeAccessor>
   ): Promise<PTableVector[]>;
 }
 
-export class PFrameDriver<TreeNodeAccessor, TreeEntry> implements InternalPFrameDriver<TreeNodeAccessor> {
+export class PFrameDriver<TreeNodeAccessor, TreeEntry extends JsonSerializable>
+implements InternalPFrameDriver<TreeNodeAccessor> {
   private readonly pFrames: PFramePool<TreeEntry>;
   private readonly pTableDefs: PTableDefPool;
   private readonly pTables: PTablePool<TreeEntry>;
@@ -895,8 +897,9 @@ export class PFrameDriver<TreeNodeAccessor, TreeEntry> implements InternalPFrame
     );
 
     const unfold = (params: PFrameDef<PColumnDataUniversal<PlTreeNodeAccessor>>) => {
-      const columns: PFrameDef<PFrameInternal.DataInfo<PlTreeEntry>> = params
-        .filter((c) => valueTypes.find((t) => t === c.spec.valueType))
+      const ValueTypes = Object.values(ValueType);
+      const columns: PColumn<PFrameInternal.DataInfo<PlTreeEntry>>[] = params
+        .filter((c) => ValueTypes.includes(c.spec.valueType))
         .map((c) =>
           mapPObjectData(c, (d) =>
             isPlTreeNodeAccessor(d)
@@ -918,7 +921,6 @@ export class PFrameDriver<TreeNodeAccessor, TreeEntry> implements InternalPFrame
       resolvedSpillPath,
       ops,
       unfold,
-      makeBlobId,
     );
   }
 
@@ -930,14 +932,13 @@ export class PFrameDriver<TreeNodeAccessor, TreeEntry> implements InternalPFrame
     ops: PFrameDriverOps,
     private readonly unfold: (
       params: PFrameDef<PColumnDataUniversal<TreeNodeAccessor>>,
-    ) => PFrameDef<PFrameInternal.DataInfo<TreeEntry>>,
-    makeBlobId: (params: TreeEntry) => PFrameInternal.PFrameBlobId,
+    ) => PColumn<PFrameInternal.DataInfo<TreeEntry>>[],
   ) {
     const concurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pFrameConcurrency);
     this.frameConcurrencyLimiter = concurrencyLimiter;
     this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pTableConcurrency);
 
-    this.pFrames = new PFramePool(localBlobProvider, remoteBlobProvider, logger, spillPath, makeBlobId);
+    this.pFrames = new PFramePool(localBlobProvider, remoteBlobProvider, logger, spillPath);
     this.pTableDefs = new PTableDefPool(logger);
     this.pTables = new PTablePool(this.pFrames, this.pTableDefs, logger);
 
@@ -1347,9 +1348,8 @@ function stableKeyFromFullPTableDef(data: FullPTableDef): PTableHandle {
   return hashJson(data) as string as PTableHandle;
 }
 
-function stableKeyFromPFrameData<TreeEntry>(
+function stableKeyFromPFrameData<TreeEntry extends JsonSerializable>(
   data: PColumn<PFrameInternal.DataInfo<TreeEntry>>[],
-  makeBlobId: (params: TreeEntry) => PFrameInternal.PFrameBlobId,
 ): PFrameHandle {
   const orderedData = [...data].map((column) =>
     mapPObjectData(column, (r) => {
@@ -1379,7 +1379,7 @@ function stableKeyFromPFrameData<TreeEntry>(
             keyLength: r.partitionKeyLength,
             payload: Object.entries(r.parts).map(([part, info]) => ({
               key: part,
-              value: makeBlobId(info),
+              value: canonicalizeJson(info),
             })),
           };
           break;
@@ -1389,7 +1389,7 @@ function stableKeyFromPFrameData<TreeEntry>(
             keyLength: r.partitionKeyLength,
             payload: Object.entries(r.parts).map(([part, info]) => ({
               key: part,
-              value: [makeBlobId(info.index), makeBlobId(info.values)] as const,
+              value: [canonicalizeJson(info.index), canonicalizeJson(info.values)] as const,
             })),
           };
           break;
@@ -1400,7 +1400,7 @@ function stableKeyFromPFrameData<TreeEntry>(
             payload: Object.entries(r.parts).map(([part, info]) => ({
               key: part,
               value: info.dataDigest || [
-                makeBlobId(info.data),
+                canonicalizeJson(info.data),
                 JSON.stringify({ axes: info.axes, column: info.column }),
               ] as const,
             })),
