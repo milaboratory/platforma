@@ -8,12 +8,12 @@ import { isAsyncDisposable, isDisposable } from './obj';
  */
 export type UnrefFn = () => void;
 
-export interface PoolEntry<R> extends Disposable {
+export interface PoolEntry<R extends {} = {}, K extends string = string> extends Disposable {
   /** Resource itself created by `createNewResource` function */
   readonly resource: R;
 
   /** Resource key, calculated using provided `calculateParamsKey` function */
-  readonly key: string;
+  readonly key: K;
 
   /** Callback to be called when requested resource can be disposed. */
   readonly unref: UnrefFn;
@@ -26,7 +26,7 @@ type RefCountEnvelope<R> = {
 
 export interface RefCountPool<P, R extends {}, K extends string = string> {
   /** Acquire resource from the pool */
-  acquire(params: P): PoolEntry<R>;
+  acquire(params: P): PoolEntry<R, K>;
 
   /** Try to get a resource by key */
   tryGetByKey(key: K): R | undefined;
@@ -58,7 +58,7 @@ implements RefCountPool<P, R, K> {
   protected abstract calculateParamsKey(params: P): K;
   protected abstract createNewResource(params: P, key: K): R;
 
-  public acquire(params: P): PoolEntry<R> {
+  public acquire(params: P): PoolEntry<R, K> {
     const key = this.calculateParamsKey(params);
     let envelope = this.resources.get(key);
     if (envelope === undefined) {

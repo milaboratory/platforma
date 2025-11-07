@@ -59,7 +59,6 @@ import {
   parseDataInfoResource,
   traverseParquetChunkResource,
 } from './data';
-import type { RefCountPool } from '@milaboratories/ts-helpers';
 import { hashJson, type MiLogger } from '@milaboratories/ts-helpers';
 import { mapValues } from 'es-toolkit';
 import {
@@ -80,18 +79,15 @@ function makeBlobId(res: PlTreeEntry): PFrameInternal.PFrameBlobId {
   return String(res.rid);
 }
 
-type LocalBlob = ComputableStableDefined<LocalBlobHandleAndSize>;
-
-interface LocalBlobPool extends
-  RefCountPool<PlTreeEntry, LocalBlob, PFrameInternal.PFrameBlobId>,
-  PFrameInternal.PFrameDataSourceV2 {
-  preloadBlob(blobIds: PFrameInternal.PFrameBlobId[], signal?: AbortSignal): Promise<void>;
-  resolveBlobContent(blobId: PFrameInternal.PFrameBlobId, signal?: AbortSignal): Promise<Uint8Array>;
+interface LocalBlobProvider<P = PlTreeEntry> {
+  acquire(params: P): PoolEntry;
+  makeDataSource(signal: AbortSignal): PFrameInternal.PFrameDataSourceV2;
 }
 
-class LocalBlobPoolImpl
+type LocalBlob = ComputableStableDefined<LocalBlobHandleAndSize>;
+class LocalBlobProviderImpl
   extends RefCountPoolBase<PlTreeEntry, LocalBlob, PFrameInternal.PFrameBlobId>
-  implements LocalBlobPool {
+  implements LocalBlobProvider<PlTreeEntry> {
   constructor(private readonly blobDriver: DownloadDriver) {
     super();
   }
@@ -110,38 +106,32 @@ class LocalBlobPoolImpl
     return resource;
   }
 
-  public async preloadBlob(blobIds: PFrameInternal.PFrameBlobId[], signal?: AbortSignal): Promise<void> {
-    try {
-      await Promise.all(blobIds.map((blobId) => this.getByKey(blobId).awaitStableFullValue(signal)));
-    } catch (err: unknown) {
-      if (!isAbortError(err)) throw err;
-    }
-  };
+  public makeDataSource(signal: AbortSignal): PFrameInternal.PFrameDataSourceV2 {
+    return {
+      preloadBlob: async (blobIds: string[]) => {
+        try {
+          await Promise.all(blobIds.map((blobId) => this.getByKey(blobId).awaitStableFullValue(signal)));
+        } catch (err: unknown) {
+          if (!isAbortError(err)) throw err;
+        }
+      },
+      resolveBlobContent: async (blobId: string) => {
+        const computable = this.getByKey(blobId);
+        const blob = await computable.awaitStableValue(signal);
+        return await this.blobDriver.getContent(blob.handle, { signal });
+      },
+    };
+  }
+}
 
-  public async resolveBlobContent(blobId: PFrameInternal.PFrameBlobId, signal?: AbortSignal): Promise<Uint8Array> {
-    const computable = this.getByKey(blobId);
-    const blob = await computable.awaitStableValue(signal);
-    return await this.blobDriver.getContent(blob.handle, { signal });
-  };
+interface RemoteBlobProvider<P = PlTreeEntry> extends AsyncDisposable {
+  acquire(params: P): PoolEntry;
+  httpServerInfo(): PFrameInternal.HttpServerInfo;
 }
 
 type RemoteBlob = Computable<RemoteBlobHandleAndSize>;
-
-interface RemoteBlobPool extends
-  RefCountPool<PlTreeEntry, RemoteBlob, PFrameInternal.PFrameBlobId> {
-  withContent<T>(
-    handle: RemoteBlobHandle,
-    options: {
-      range: PFrameInternal.FileRange;
-      signal: AbortSignal;
-      handler: ContentHandler<T>;
-    },
-  ): Promise<T>;
-}
-
-class RemoteBlobPoolImpl
-  extends RefCountPoolBase<PlTreeEntry, RemoteBlob, PFrameInternal.PFrameBlobId>
-  implements RemoteBlobPool {
+class RemoteBlobPool
+  extends RefCountPoolBase<PlTreeEntry, RemoteBlob, PFrameInternal.PFrameBlobId> {
   constructor(private readonly blobDriver: DownloadDriver) {
     super();
   }
@@ -180,15 +170,15 @@ class RemoteBlobPoolImpl
 }
 
 interface BlobStoreOptions extends PFrameInternal.ObjectStoreOptions {
-  remoteBlobPool: RemoteBlobPool;
+  remoteBlobProvider: RemoteBlobPool;
 };
 
 class BlobStore extends PFrameInternal.BaseObjectStore {
-  private readonly remoteBlobPool: RemoteBlobPool;
+  private readonly remoteBlobProvider: RemoteBlobPool;
 
   constructor(options: BlobStoreOptions) {
     super(options);
-    this.remoteBlobPool = options.remoteBlobPool;
+    this.remoteBlobProvider = options.remoteBlobProvider;
   }
 
   public override async request(
@@ -212,7 +202,7 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
     };
 
     try {
-      const computable = this.remoteBlobPool.tryGetByKey(blobId);
+      const computable = this.remoteBlobProvider.tryGetByKey(blobId);
       if (!computable) return await respond({ type: 'NotFound' });
 
       let blob: RemoteBlobHandleAndSize;
@@ -246,7 +236,7 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
         `PFrames blob store requesting content for ${blobId}, `
         + `range [${translatedRange.start}..=${translatedRange.end}]`,
       );
-      return await this.remoteBlobPool.withContent(blob.handle, {
+      return await this.remoteBlobProvider.withContent(blob.handle, {
         range: translatedRange,
         signal: params.signal,
         handler: async (data) => {
@@ -267,6 +257,37 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
       }
       return await respond({ type: 'InternalError' });
     }
+  }
+}
+
+class RemoteBlobProviderImpl implements RemoteBlobProvider {
+  constructor(
+    private readonly pool: RemoteBlobPool,
+    private readonly server: PFrameInternal.HttpServer,
+  ) {}
+
+  public static async init(
+    blobDriver: DownloadDriver,
+    logger: PFrameInternal.Logger,
+    serverOptions: Omit<PFrameInternal.HttpServerOptions, 'handler'>,
+  ): Promise<RemoteBlobProviderImpl> {
+    const remoteBlobProvider = new RemoteBlobPool(blobDriver);
+    const store = new BlobStore({ remoteBlobProvider, logger });
+    const handler = HttpHelpers.createRequestHandler({ store });
+    const server = await HttpHelpers.createHttpServer({ ...serverOptions, handler });
+    return new RemoteBlobProviderImpl(remoteBlobProvider, server);
+  }
+
+  public acquire(params: PlTreeEntry): PoolEntry {
+    return this.pool.acquire(params);
+  }
+
+  public httpServerInfo(): PFrameInternal.HttpServerInfo {
+    return this.server.info;
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.server.stop();
   }
 }
 
@@ -339,9 +360,8 @@ function hasArtificialColumns<T>(entry: JoinEntry<T>): boolean {
 
 class PFramePool extends RefCountPoolBase<InternalPFrameData, PFrameHolder, PFrameHandle> {
   constructor(
-    private readonly parquetServer: PFrameInternal.HttpServerInfo,
-    private readonly localBlobPool: LocalBlobPool,
-    private readonly remoteBlobPool: RemoteBlobPool,
+    private readonly localBlobProvider: LocalBlobProvider,
+    private readonly remoteBlobProvider: RemoteBlobProvider,
     private readonly logger: PFrameInternal.Logger,
     private readonly spillPath: string,
   ) {
@@ -360,9 +380,8 @@ class PFramePool extends RefCountPoolBase<InternalPFrameData, PFrameHolder, PFra
       );
     }
     return new PFrameHolder(
-      this.parquetServer,
-      this.localBlobPool,
-      this.remoteBlobPool,
+      this.localBlobProvider,
+      this.remoteBlobProvider,
       this.logger,
       this.spillPath,
       params,
@@ -495,8 +514,8 @@ class PTableCacheUi {
     });
   }
 
-  public cache(resource: PoolEntry<PTableHolder>, size: number): void {
-    const key = resource.key as PTableHandle;
+  public cache(resource: PoolEntry<PTableHolder, PTableHandle>, size: number): void {
+    const key = resource.key;
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info', `calculateTableData cache - added PTable ${key} with size ${size}`);
     }
@@ -550,8 +569,8 @@ class PTableCacheModel {
     });
   }
 
-  public cache(resource: PoolEntry<PTableHolder>, size: number, defDisposeSignal: AbortSignal): void {
-    const key = resource.key as PTableHandle;
+  public cache(resource: PoolEntry<PTableHolder, PTableHandle>, size: number, defDisposeSignal: AbortSignal): void {
+    const key = resource.key;
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info', `createPTable cache - added PTable ${key} with size ${size}`);
     }
@@ -579,33 +598,34 @@ class PTableCacheModel {
   }
 }
 
-class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable {
+class PFrameHolder implements AsyncDisposable {
   public readonly pFramePromise: Promise<PFrameInternal.PFrameV12>;
   private readonly abortController = new AbortController();
-  private readonly localBlobs: PoolEntry<LocalBlob>[] = [];
-  private readonly remoteBlobs: PoolEntry<RemoteBlob>[] = [];
+  private readonly localBlobs: PoolEntry[] = [];
+  private readonly remoteBlobs: PoolEntry[] = [];
 
   constructor(
-    public readonly parquetServer: PFrameInternal.HttpServerInfo,
-    private readonly localBlobPool: LocalBlobPool,
-    private readonly remoteBlobPool: RemoteBlobPool,
+    private readonly localBlobProvider: LocalBlobProvider,
+    private readonly remoteBlobProvider: RemoteBlobProvider,
     logger: PFrameInternal.Logger,
     private readonly spillPath: string,
     columns: InternalPFrameData,
   ) {
-    const makeLocalBlobId = (blob: PlTreeEntry): string => {
-      const localBlob = this.localBlobPool.acquire(blob);
+    const makeLocalBlobId = (blob: PlTreeEntry): PFrameInternal.PFrameBlobId => {
+      const localBlob = this.localBlobProvider.acquire(blob);
       this.localBlobs.push(localBlob);
       return localBlob.key;
     };
 
-    const makeRemoteBlobId = (blob: PlTreeEntry): string => {
-      const remoteBlob = this.remoteBlobPool.acquire(blob);
+    const makeRemoteBlobId = (blob: PlTreeEntry): PFrameInternal.PFrameBlobId => {
+      const remoteBlob = this.remoteBlobProvider.acquire(blob);
       this.remoteBlobs.push(remoteBlob);
-      return remoteBlob.key + PFrameInternal.ParquetExtension;
+      return `${remoteBlob.key}${PFrameInternal.ParquetExtension}`;
     };
 
-    const mapColumnData = (data: PFrameInternal.DataInfo<PlTreeEntry>): PFrameInternal.DataInfo<string> => {
+    const mapColumnData = (
+      data: PFrameInternal.DataInfo<PlTreeEntry>,
+    ): PFrameInternal.DataInfo<PFrameInternal.PFrameBlobId> => {
       switch (data.type) {
         case 'Json':
           return { ...data };
@@ -642,7 +662,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable
 
     try {
       const pFrame = PFrameFactory.createPFrame({ spillPath: this.spillPath, logger });
-      pFrame.setDataSource(this);
+      pFrame.setDataSource(this.localBlobProvider.makeDataSource(this.disposeSignal));
 
       const promises: Promise<void>[] = [];
       for (const column of jsonifiedColumns) {
@@ -670,16 +690,12 @@ class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable
     }
   }
 
-  public readonly preloadBlob = async (blobIds: string[]): Promise<void> => {
-    return await this.localBlobPool.preloadBlob(blobIds, this.disposeSignal);
-  };
-
-  public readonly resolveBlobContent = async (blobId: string): Promise<Uint8Array> => {
-    return await this.localBlobPool.resolveBlobContent(blobId, this.disposeSignal);
-  };
-
   public get disposeSignal(): AbortSignal {
     return this.abortController.signal;
+  }
+
+  public get parquetServer(): PFrameInternal.HttpServerInfo {
+    return this.remoteBlobProvider.httpServerInfo();
   }
 
   private dispose(): void {
@@ -866,21 +882,20 @@ export class PFrameDriver implements InternalPFrameDriver {
     await emptyDir(resolvedSpillPath);
 
     const logger: PFrameInternal.Logger = (level, message) => miLogger[level](message);
-    const localBlobPool = new LocalBlobPoolImpl(blobDriver);
-    const remoteBlobPool = new RemoteBlobPoolImpl(blobDriver);
+    const localBlobProvider = new LocalBlobProviderImpl(blobDriver);
+    const remoteBlobProvider = await RemoteBlobProviderImpl.init(
+      blobDriver,
+      logger,
+      { port: ops.parquetServerPort },
+    );
 
-    const store = new BlobStore({ remoteBlobPool, logger });
-    const handler = HttpHelpers.createRequestHandler({ store: store });
-    const server = await HttpHelpers.createHttpServer({ handler, port: ops.parquetServerPort });
-
-    return new PFrameDriver(logger, server, localBlobPool, remoteBlobPool, resolvedSpillPath, ops);
+    return new PFrameDriver(logger, localBlobProvider, remoteBlobProvider, resolvedSpillPath, ops);
   }
 
   private constructor(
     private readonly logger: PFrameInternal.Logger,
-    private readonly server: PFrameInternal.HttpServer,
-    localBlobPool: LocalBlobPool,
-    remoteBlobPool: RemoteBlobPool,
+    localBlobProvider: LocalBlobProvider,
+    private readonly remoteBlobProvider: RemoteBlobProvider,
     spillPath: string,
     ops: PFrameDriverOps,
   ) {
@@ -888,7 +903,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     this.frameConcurrencyLimiter = concurrencyLimiter;
     this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pTableConcurrency);
 
-    this.pFrames = new PFramePool(server.info, localBlobPool, remoteBlobPool, logger, spillPath);
+    this.pFrames = new PFramePool(localBlobProvider, remoteBlobProvider, logger, spillPath);
     this.pTableDefs = new PTableDefPool(logger);
     this.pTables = new PTablePool(this.pFrames, this.pTableDefs, logger);
 
@@ -897,7 +912,7 @@ export class PFrameDriver implements InternalPFrameDriver {
   }
 
   async dispose(): Promise<void> {
-    return await this.server.stop();
+    return await this.remoteBlobProvider[Symbol.asyncDispose]();
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
@@ -929,7 +944,7 @@ export class PFrameDriver implements InternalPFrameDriver {
 
     const res = this.pFrames.acquire(distinctColumns);
     ctx.addOnDestroy(res.unref);
-    return res.key as PFrameHandle;
+    return res.key;
   }
 
   public createPTable(
@@ -946,7 +961,7 @@ export class PFrameDriver implements InternalPFrameDriver {
       this.logger('info', `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${key})`);
     }
     ctx.addOnDestroy(unref); // in addition to pframe unref added in createPFrame above
-    return key as PTableHandle;
+    return key;
   }
 
   //
