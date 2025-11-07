@@ -73,20 +73,20 @@ import path from 'node:path';
 import { getDebugFlags } from '../debug';
 import { Readable } from 'node:stream';
 
-type PColumnDataUniversal = PlTreeNodeAccessor | DataInfo<PlTreeNodeAccessor> | PColumnValues;
+type PColumnDataUniversal<TreeEntry> = TreeEntry | DataInfo<TreeEntry> | PColumnValues;
 
 function makeBlobId(res: PlTreeEntry): PFrameInternal.PFrameBlobId {
   return String(res.rid);
 }
 
-interface LocalBlobProvider<P = PlTreeEntry> {
-  acquire(params: P): PoolEntry;
+interface LocalBlobProvider<TreeEntry> {
+  acquire(params: TreeEntry): PoolEntry<PFrameInternal.PFrameBlobId>;
   makeDataSource(signal: AbortSignal): PFrameInternal.PFrameDataSourceV2;
 }
 
 type LocalBlob = ComputableStableDefined<LocalBlobHandleAndSize>;
 class LocalBlobProviderImpl
-  extends RefCountPoolBase<PlTreeEntry, LocalBlob, PFrameInternal.PFrameBlobId>
+  extends RefCountPoolBase<PlTreeEntry, PFrameInternal.PFrameBlobId, LocalBlob>
   implements LocalBlobProvider<PlTreeEntry> {
   constructor(private readonly blobDriver: DownloadDriver) {
     super();
@@ -124,14 +124,14 @@ class LocalBlobProviderImpl
   }
 }
 
-interface RemoteBlobProvider<P = PlTreeEntry> extends AsyncDisposable {
-  acquire(params: P): PoolEntry;
+interface RemoteBlobProvider<TreeEntry> extends AsyncDisposable {
+  acquire(params: TreeEntry): PoolEntry<PFrameInternal.PFrameBlobId>;
   httpServerInfo(): PFrameInternal.HttpServerInfo;
 }
 
 type RemoteBlob = Computable<RemoteBlobHandleAndSize>;
 class RemoteBlobPool
-  extends RefCountPoolBase<PlTreeEntry, RemoteBlob, PFrameInternal.PFrameBlobId> {
+  extends RefCountPoolBase<PlTreeEntry, PFrameInternal.PFrameBlobId, RemoteBlob> {
   constructor(private readonly blobDriver: DownloadDriver) {
     super();
   }
@@ -260,7 +260,7 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
   }
 }
 
-class RemoteBlobProviderImpl implements RemoteBlobProvider {
+class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
   constructor(
     private readonly pool: RemoteBlobPool,
     private readonly server: PFrameInternal.HttpServer,
@@ -290,8 +290,6 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider {
     await this.server.stop();
   }
 }
-
-type InternalPFrameData = PFrameDef<PFrameInternal.DataInfo<PlTreeEntry>>;
 
 const valueTypes: ValueType[] = ['Int', 'Long', 'Float', 'Double', 'String', 'Bytes'] as const;
 
@@ -358,21 +356,26 @@ function hasArtificialColumns<T>(entry: JoinEntry<T>): boolean {
   }
 }
 
-class PFramePool extends RefCountPoolBase<InternalPFrameData, PFrameHolder, PFrameHandle> {
+class PFramePool<TreeEntry>
+  extends RefCountPoolBase<
+    PFrameDef<PFrameInternal.DataInfo<TreeEntry>>,
+    PFrameHandle,
+    PFrameHolder<TreeEntry>> {
   constructor(
-    private readonly localBlobProvider: LocalBlobProvider,
-    private readonly remoteBlobProvider: RemoteBlobProvider,
+    private readonly localBlobProvider: LocalBlobProvider<TreeEntry>,
+    private readonly remoteBlobProvider: RemoteBlobProvider<TreeEntry>,
     private readonly logger: PFrameInternal.Logger,
     private readonly spillPath: string,
+    private readonly makeBlobId: (params: TreeEntry) => PFrameInternal.PFrameBlobId,
   ) {
     super();
   }
 
-  protected calculateParamsKey(params: InternalPFrameData): PFrameHandle {
-    return stableKeyFromPFrameData(params);
+  protected calculateParamsKey(params: PFrameDef<PFrameInternal.DataInfo<TreeEntry>>): PFrameHandle {
+    return stableKeyFromPFrameData(params, this.makeBlobId);
   }
 
-  protected createNewResource(params: InternalPFrameData, key: PFrameHandle): PFrameHolder {
+  protected createNewResource(params: PFrameDef<PFrameInternal.DataInfo<TreeEntry>>, key: PFrameHandle): PFrameHolder<TreeEntry> {
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info',
         `PFrame creation (pFrameHandle = ${key}): `
@@ -388,14 +391,14 @@ class PFramePool extends RefCountPoolBase<InternalPFrameData, PFrameHolder, PFra
     );
   }
 
-  public getByKey(key: PFrameHandle): PFrameHolder {
+  public getByKey(key: PFrameHandle): PFrameHolder<TreeEntry> {
     const resource = super.tryGetByKey(key);
     if (!resource) throw new PFrameDriverError(`PFrame not found, handle = ${key}`);
     return resource;
   }
 }
 
-class PTableDefPool extends RefCountPoolBase<FullPTableDef, PTableDefHolder, PTableHandle> {
+class PTableDefPool extends RefCountPoolBase<FullPTableDef, PTableHandle, PTableDefHolder> {
   constructor(private readonly logger: PFrameInternal.Logger) {
     super();
   }
@@ -415,9 +418,10 @@ class PTableDefPool extends RefCountPoolBase<FullPTableDef, PTableDefHolder, PTa
   }
 }
 
-class PTablePool extends RefCountPoolBase<FullPTableDef, PTableHolder, PTableHandle> {
+class PTablePool<TreeEntry>
+  extends RefCountPoolBase<FullPTableDef, PTableHandle, PTableHolder> {
   constructor(
-    private readonly pFrames: PFramePool,
+    private readonly pFrames: PFramePool<TreeEntry>,
     private readonly pTableDefs: PTableDefPool,
     private readonly logger: PFrameInternal.Logger,
   ) {
@@ -487,15 +491,15 @@ class PTablePool extends RefCountPoolBase<FullPTableDef, PTableHolder, PTableHan
 }
 
 class PTableCacheUi {
-  private readonly perFrame = new Map<PFrameHandle, LRUCache<PTableHandle, PoolEntry<PTableHolder>>>();
-  private readonly global: LRUCache<PTableHandle, PoolEntry<PTableHolder>>;
+  private readonly perFrame = new Map<PFrameHandle, LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>>();
+  private readonly global: LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>;
   private readonly disposeListeners = new Set<PTableHandle>();
 
   constructor(
     private readonly logger: PFrameInternal.Logger,
     private readonly ops: Pick<PFrameDriverOps, 'pFramesCacheMaxSize' | 'pFrameCacheMaxCount'>,
   ) {
-    this.global = new LRUCache<PTableHandle, PoolEntry<PTableHolder>>({
+    this.global = new LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>({
       maxSize: this.ops.pFramesCacheMaxSize,
       dispose: (resource, key, reason) => {
         if (reason === 'evict') {
@@ -514,7 +518,7 @@ class PTableCacheUi {
     });
   }
 
-  public cache(resource: PoolEntry<PTableHolder, PTableHandle>, size: number): void {
+  public cache(resource: PoolEntry<PTableHandle, PTableHolder>, size: number): void {
     const key = resource.key;
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info', `calculateTableData cache - added PTable ${key} with size ${size}`);
@@ -524,7 +528,7 @@ class PTableCacheUi {
 
     let perFrame = this.perFrame.get(resource.resource.pFrame);
     if (!perFrame) {
-      perFrame = new LRUCache<PTableHandle, PoolEntry<PTableHolder>>({
+      perFrame = new LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>({
         max: this.ops.pFrameCacheMaxCount,
         dispose: (_resource, key, reason) => {
           if (reason === 'evict') {
@@ -551,14 +555,14 @@ class PTableCacheUi {
 }
 
 class PTableCacheModel {
-  private readonly global: LRUCache<PTableHandle, PoolEntry<PTableHolder>>;
+  private readonly global: LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>;
   private readonly disposeListeners = new Set<PTableHandle>();
 
   constructor(
     private readonly logger: PFrameInternal.Logger,
     ops: Pick<PFrameDriverOps, 'pTablesCacheMaxSize'>,
   ) {
-    this.global = new LRUCache<PTableHandle, PoolEntry<PTableHolder>>({
+    this.global = new LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>({
       maxSize: ops.pTablesCacheMaxSize,
       dispose: (resource, key, reason) => {
         resource.unref();
@@ -569,13 +573,13 @@ class PTableCacheModel {
     });
   }
 
-  public cache(resource: PoolEntry<PTableHolder, PTableHandle>, size: number, defDisposeSignal: AbortSignal): void {
+  public cache(resource: PoolEntry<PTableHandle, PTableHolder>, size: number, defDisposeSignal: AbortSignal): void {
     const key = resource.key;
     if (getDebugFlags().logPFrameRequests) {
       this.logger('info', `createPTable cache - added PTable ${key} with size ${size}`);
     }
 
-    const status: LRUCache.Status<PoolEntry<PTableHolder>> = {};
+    const status: LRUCache.Status<PoolEntry<PTableHandle, PTableHolder>> = {};
     this.global.set(key, resource, { size: Math.max(size, 1), status }); // 1 is minimum size to avoid cache evictions
 
     if (status.maxEntrySizeExceeded) {
@@ -598,33 +602,33 @@ class PTableCacheModel {
   }
 }
 
-class PFrameHolder implements AsyncDisposable {
+class PFrameHolder<TreeEntry> implements AsyncDisposable {
   public readonly pFramePromise: Promise<PFrameInternal.PFrameV12>;
   private readonly abortController = new AbortController();
-  private readonly localBlobs: PoolEntry[] = [];
-  private readonly remoteBlobs: PoolEntry[] = [];
+  private readonly localBlobs: PoolEntry<PFrameInternal.PFrameBlobId>[] = [];
+  private readonly remoteBlobs: PoolEntry<PFrameInternal.PFrameBlobId>[] = [];
 
   constructor(
-    private readonly localBlobProvider: LocalBlobProvider,
-    private readonly remoteBlobProvider: RemoteBlobProvider,
+    private readonly localBlobProvider: LocalBlobProvider<TreeEntry>,
+    private readonly remoteBlobProvider: RemoteBlobProvider<TreeEntry>,
     logger: PFrameInternal.Logger,
     private readonly spillPath: string,
-    columns: InternalPFrameData,
+    columns: PFrameDef<PFrameInternal.DataInfo<TreeEntry>>,
   ) {
-    const makeLocalBlobId = (blob: PlTreeEntry): PFrameInternal.PFrameBlobId => {
+    const makeLocalBlobId = (blob: TreeEntry): PFrameInternal.PFrameBlobId => {
       const localBlob = this.localBlobProvider.acquire(blob);
       this.localBlobs.push(localBlob);
       return localBlob.key;
     };
 
-    const makeRemoteBlobId = (blob: PlTreeEntry): PFrameInternal.PFrameBlobId => {
+    const makeRemoteBlobId = (blob: TreeEntry): PFrameInternal.PFrameBlobId => {
       const remoteBlob = this.remoteBlobProvider.acquire(blob);
       this.remoteBlobs.push(remoteBlob);
       return `${remoteBlob.key}${PFrameInternal.ParquetExtension}`;
     };
 
     const mapColumnData = (
-      data: PFrameInternal.DataInfo<PlTreeEntry>,
+      data: PFrameInternal.DataInfo<TreeEntry>,
     ): PFrameInternal.DataInfo<PFrameInternal.PFrameBlobId> => {
       switch (data.type) {
         case 'Json':
@@ -745,7 +749,7 @@ class PTableHolder implements AsyncDisposable {
     public readonly pFrame: PFrameHandle,
     pFrameDisposeSignal: AbortSignal,
     public readonly pTablePromise: Promise<PFrameInternal.PTableV7>,
-    private readonly predecessor?: PoolEntry<PTableHolder>,
+    private readonly predecessor?: PoolEntry<PTableHandle, PTableHolder>,
   ) {
     this.combinedDisposeSignal = AbortSignal.any([pFrameDisposeSignal, this.abortController.signal]);
   }
@@ -795,7 +799,8 @@ export type PFrameDriverOps = {
  * Extends public and safe SDK's driver API with methods used internally in the middle
  * layer and in tests.
  */
-export interface InternalPFrameDriver extends SdkPFrameDriver, AsyncDisposable {
+export interface InternalPFrameDriver<TreeNodeAccessor = PlTreeNodeAccessor>
+  extends SdkPFrameDriver, AsyncDisposable {
   /** Dispose the driver and all its resources. */
   dispose(): Promise<void>;
 
@@ -810,13 +815,13 @@ export interface InternalPFrameDriver extends SdkPFrameDriver, AsyncDisposable {
 
   /** Create a new PFrame */
   createPFrame(
-    def: PFrameDef<PColumnDataUniversal>,
+    def: PFrameDef<PColumnDataUniversal<TreeNodeAccessor>>,
     ctx: ComputableCtx,
   ): PFrameHandle;
 
   /** Create a new PTable */
   createPTable(
-    def: PTableDef<PColumn<PColumnDataUniversal>>,
+    def: PTableDef<PColumn<PColumnDataUniversal<TreeNodeAccessor>>>,
     ctx: ComputableCtx,
   ): PTableHandle;
 
@@ -857,10 +862,10 @@ export interface InternalPFrameDriver extends SdkPFrameDriver, AsyncDisposable {
   ): Promise<PTableVector[]>;
 }
 
-export class PFrameDriver implements InternalPFrameDriver {
-  private readonly pFrames: PFramePool;
+export class PFrameDriver<TreeNodeAccessor, TreeEntry> implements InternalPFrameDriver<TreeNodeAccessor> {
+  private readonly pFrames: PFramePool<TreeEntry>;
   private readonly pTableDefs: PTableDefPool;
-  private readonly pTables: PTablePool;
+  private readonly pTables: PTablePool<TreeEntry>;
 
   private readonly pTableCacheUi: PTableCacheUi;
   private readonly pTableCacheModel: PTableCacheModel;
@@ -877,7 +882,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     miLogger: MiLogger,
     spillPath: string,
     ops: PFrameDriverOps,
-  ): Promise<PFrameDriver> {
+  ): Promise<PFrameDriver<PlTreeNodeAccessor, PlTreeEntry>> {
     const resolvedSpillPath = path.resolve(spillPath);
     await emptyDir(resolvedSpillPath);
 
@@ -889,21 +894,50 @@ export class PFrameDriver implements InternalPFrameDriver {
       { port: ops.parquetServerPort },
     );
 
-    return new PFrameDriver(logger, localBlobProvider, remoteBlobProvider, resolvedSpillPath, ops);
+    const unfold = (params: PFrameDef<PColumnDataUniversal<PlTreeNodeAccessor>>) => {
+      const columns: PFrameDef<PFrameInternal.DataInfo<PlTreeEntry>> = params
+        .filter((c) => valueTypes.find((t) => t === c.spec.valueType))
+        .map((c) =>
+          mapPObjectData(c, (d) =>
+            isPlTreeNodeAccessor(d)
+              ? parseDataInfoResource(d)
+              : isDataInfo(d)
+                ? d.type === 'ParquetPartitioned'
+                  ? mapDataInfo(d, (a) => traverseParquetChunkResource(a))
+                  : mapDataInfo(d, (a) => a.persist())
+                : makeDataInfoFromPColumnValues(c.spec, d),
+          ),
+        );
+      return columns;
+    };
+
+    return new PFrameDriver<PlTreeNodeAccessor, PlTreeEntry>(
+      logger,
+      localBlobProvider,
+      remoteBlobProvider,
+      resolvedSpillPath,
+      ops,
+      unfold,
+      makeBlobId,
+    );
   }
 
   private constructor(
     private readonly logger: PFrameInternal.Logger,
-    localBlobProvider: LocalBlobProvider,
-    private readonly remoteBlobProvider: RemoteBlobProvider,
+    localBlobProvider: LocalBlobProvider<TreeEntry>,
+    private readonly remoteBlobProvider: RemoteBlobProvider<TreeEntry>,
     spillPath: string,
     ops: PFrameDriverOps,
+    private readonly unfold: (
+      params: PFrameDef<PColumnDataUniversal<TreeNodeAccessor>>,
+    ) => PFrameDef<PFrameInternal.DataInfo<TreeEntry>>,
+    makeBlobId: (params: TreeEntry) => PFrameInternal.PFrameBlobId,
   ) {
     const concurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pFrameConcurrency);
     this.frameConcurrencyLimiter = concurrencyLimiter;
     this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pTableConcurrency);
 
-    this.pFrames = new PFramePool(localBlobProvider, remoteBlobProvider, logger, spillPath);
+    this.pFrames = new PFramePool(localBlobProvider, remoteBlobProvider, logger, spillPath, makeBlobId);
     this.pTableDefs = new PTableDefPool(logger);
     this.pTables = new PTablePool(this.pFrames, this.pTableDefs, logger);
 
@@ -924,31 +958,18 @@ export class PFrameDriver implements InternalPFrameDriver {
   //
 
   public createPFrame(
-    def: PFrameDef<PColumnDataUniversal>,
+    def: PFrameDef<PColumnDataUniversal<TreeNodeAccessor>>,
     ctx: ComputableCtx,
   ): PFrameHandle {
-    const columns: InternalPFrameData = def
-      .filter((c) => valueTypes.find((t) => t === c.spec.valueType))
-      .map((c) =>
-        mapPObjectData(c, (d) =>
-          isPlTreeNodeAccessor(d)
-            ? parseDataInfoResource(d)
-            : isDataInfo(d)
-              ? d.type === 'ParquetPartitioned'
-                ? mapDataInfo(d, (a) => traverseParquetChunkResource(a))
-                : mapDataInfo(d, (a) => a.persist())
-              : makeDataInfoFromPColumnValues(c.spec, d),
-        ),
-      );
+    const columns = this.unfold(def);
     const distinctColumns = uniqueBy(columns, (column) => column.id);
-
     const res = this.pFrames.acquire(distinctColumns);
     ctx.addOnDestroy(res.unref);
     return res.key;
   }
 
   public createPTable(
-    rawDef: PTableDef<PColumn<PColumnDataUniversal>>,
+    rawDef: PTableDef<PColumn<PColumnDataUniversal<TreeNodeAccessor>>>,
     ctx: ComputableCtx,
   ): PTableHandle {
     const def = migratePTableFilters(rawDef, this.logger);
@@ -1326,7 +1347,10 @@ function stableKeyFromFullPTableDef(data: FullPTableDef): PTableHandle {
   return hashJson(data) as string as PTableHandle;
 }
 
-function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<PlTreeEntry>>[]): PFrameHandle {
+function stableKeyFromPFrameData<TreeEntry>(
+  data: PColumn<PFrameInternal.DataInfo<TreeEntry>>[],
+  makeBlobId: (params: TreeEntry) => PFrameInternal.PFrameBlobId,
+): PFrameHandle {
   const orderedData = [...data].map((column) =>
     mapPObjectData(column, (r) => {
       let result: {
