@@ -30,7 +30,7 @@
     },
     "test": {
       "outputs": ["./coverage/**"],
-      "dependsOn": ["lint"],
+      "dependsOn": ["build", "lint"],
       "passThroughEnv": [
         "PL_ADDRESS",
         "PL_TEST_PASSWORD",
