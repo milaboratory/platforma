@@ -71,8 +71,9 @@ import {
 } from '@milaboratories/ts-helpers';
 import { PFrameFactory, HttpHelpers } from '@milaboratories/pframes-rs-node';
 import path from 'node:path';
-import { getDebugFlags } from '../debug';
 import { Readable } from 'node:stream';
+
+const LogPFrameRequests = Boolean(process.env.MI_LOG_PFRAMES);
 
 type PColumnDataUniversal<TreeEntry> = TreeEntry | DataInfo<TreeEntry> | PColumnValues;
 
@@ -377,7 +378,7 @@ class PFramePool<TreeEntry extends JsonSerializable>
     params: PColumn<PFrameInternal.DataInfo<TreeEntry>>[],
     key: PFrameHandle,
   ): PFrameHolder<TreeEntry> {
-    if (getDebugFlags().logPFrameRequests) {
+    if (LogPFrameRequests) {
       this.logger('info',
         `PFrame creation (pFrameHandle = ${key}): `
         + `${JSON.stringify(params, bigintReplacer)}`,
@@ -434,7 +435,7 @@ class PTablePool<TreeEntry extends JsonSerializable>
   }
 
   protected createNewResource(params: FullPTableDef, key: PTableHandle): PTableHolder {
-    if (getDebugFlags().logPFrameRequests) {
+    if (LogPFrameRequests) {
       this.logger('info',
         `PTable creation (pTableHandle = ${key}): `
         + `${JSON.stringify(params, bigintReplacer)}`,
@@ -512,7 +513,7 @@ class PTableCacheUi {
         }
 
         resource.unref();
-        if (getDebugFlags().logPFrameRequests) {
+        if (LogPFrameRequests) {
           logger('info', `calculateTableData cache - removed PTable ${key} (reason: ${reason})`);
         }
       },
@@ -521,7 +522,7 @@ class PTableCacheUi {
 
   public cache(resource: PoolEntry<PTableHandle, PTableHolder>, size: number): void {
     const key = resource.key;
-    if (getDebugFlags().logPFrameRequests) {
+    if (LogPFrameRequests) {
       this.logger('info', `calculateTableData cache - added PTable ${key} with size ${size}`);
     }
 
@@ -567,7 +568,7 @@ class PTableCacheModel {
       maxSize: ops.pTablesCacheMaxSize,
       dispose: (resource, key, reason) => {
         resource.unref();
-        if (getDebugFlags().logPFrameRequests) {
+        if (LogPFrameRequests) {
           logger('info', `createPTable cache - removed PTable ${key} (reason: ${reason})`);
         }
       },
@@ -576,7 +577,7 @@ class PTableCacheModel {
 
   public cache(resource: PoolEntry<PTableHandle, PTableHolder>, size: number, defDisposeSignal: AbortSignal): void {
     const key = resource.key;
-    if (getDebugFlags().logPFrameRequests) {
+    if (LogPFrameRequests) {
       this.logger('info', `createPTable cache - added PTable ${key} with size ${size}`);
     }
 
@@ -585,7 +586,7 @@ class PTableCacheModel {
 
     if (status.maxEntrySizeExceeded) {
       resource.unref();
-      if (getDebugFlags().logPFrameRequests) {
+      if (LogPFrameRequests) {
         this.logger('info', `createPTable cache - removed PTable ${key} (maxEntrySizeExceeded)`);
       }
     } else {
@@ -725,7 +726,7 @@ class PTableDefHolder implements Disposable {
     private readonly pTableHandle: PTableHandle,
     private readonly logger: PFrameInternal.Logger,
   ) {
-    if (getDebugFlags().logPFrameRequests) {
+    if (LogPFrameRequests) {
       this.logger('info', `PTable definition saved (pTableHandle = ${this.pTableHandle})`);
     }
   }
@@ -736,7 +737,7 @@ class PTableDefHolder implements Disposable {
 
   [Symbol.dispose](): void {
     this.abortController.abort();
-    if (getDebugFlags().logPFrameRequests) {
+    if (LogPFrameRequests) {
       this.logger('info', `PTable definition disposed (pTableHandle = ${this.pTableHandle})`);
     }
   }
@@ -979,7 +980,7 @@ implements InternalPFrameDriver<TreeNodeAccessor> {
     const sortedDef = sortPTableDef(defIds);
 
     const { key, unref } = this.pTableDefs.acquire({ def: sortedDef, pFrameHandle });
-    if (getDebugFlags().logPFrameRequests) {
+    if (LogPFrameRequests) {
       this.logger('info', `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${key})`);
     }
     ctx.addOnDestroy(unref); // in addition to pframe unref added in createPFrame above
@@ -1042,7 +1043,7 @@ implements InternalPFrameDriver<TreeNodeAccessor> {
     range: TableRange | undefined,
     signal?: AbortSignal,
   ): Promise<CalculateTableDataResponse> {
-    if (getDebugFlags().logPFrameRequests) {
+    if (LogPFrameRequests) {
       this.logger('info',
         `Call calculateTableData, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
@@ -1094,7 +1095,7 @@ implements InternalPFrameDriver<TreeNodeAccessor> {
     request: UniqueValuesRequest,
     signal?: AbortSignal,
   ): Promise<UniqueValuesResponse> {
-    if (getDebugFlags().logPFrameRequests) {
+    if (LogPFrameRequests) {
       this.logger('info',
         `Call getUniqueValues, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
