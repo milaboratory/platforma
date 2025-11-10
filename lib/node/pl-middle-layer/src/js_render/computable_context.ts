@@ -383,7 +383,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   // PFrames / PTables
   //
 
-  public createPFrame(def: PFrameDef<string | PColumnValues | DataInfo<string>>): PFrameHandle {
+  public createPFrame(def: PFrameDef<PColumn<string | PColumnValues | DataInfo<string>>>): PFrameHandle {
     if (this.computableCtx === undefined)
       throw new Error(
         'can\'t instantiate PFrames from this context (most porbably called from the future mapper)',
@@ -768,7 +768,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
 
       exportCtxFunction('createPFrame', (def) => {
         return parent.exportSingleValue(
-          this.createPFrame(parent.importObjectViaJson(def) as PFrameDef<string | PColumnValues>),
+          this.createPFrame(parent.importObjectViaJson(def) as PFrameDef<PColumn<string | PColumnValues>>),
           undefined,
         );
       });

@@ -619,7 +619,7 @@ export class RenderCtx<Args, UiState> {
   }
 
   // TODO remove all non-PColumn fields
-  public createPFrame(def: PFrameDef<PColumnDataUniversal>): PFrameHandle | undefined {
+  public createPFrame(def: PFrameDef<PColumn<PColumnDataUniversal>>): PFrameHandle | undefined {
     this.verifyInlineAndExplicitColumnsSupport(def);
     if (!allPColumnsReady(def)) return undefined;
     return this.ctx.createPFrame(

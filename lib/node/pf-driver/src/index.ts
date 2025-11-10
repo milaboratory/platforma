@@ -588,7 +588,7 @@ export interface AbstractInternalPFrameDriver<TreeNodeAccessor>
 
   /** Create a new PFrame */
   createPFrame(
-    def: PFrameDef<PColumnDataUniversal<TreeNodeAccessor>>,
+    def: PFrameDef<PColumn<PColumnDataUniversal<TreeNodeAccessor>>>,
   ): PoolEntry<PFrameHandle>;
 
   /** Create a new PTable */
@@ -656,7 +656,7 @@ implements AbstractInternalPFrameDriver<TreeNodeAccessor> {
     spillPath: string,
     ops: PFrameDriverOps,
     private readonly unfoldAccessors: (
-      params: PFrameDef<PColumnDataUniversal<TreeNodeAccessor>>,
+      params: PFrameDef<PColumn<PColumnDataUniversal<TreeNodeAccessor>>>,
     ) => PColumn<PFrameInternal.DataInfo<TreeEntry>>[],
   ) {
     const concurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pFrameConcurrency);
@@ -684,7 +684,7 @@ implements AbstractInternalPFrameDriver<TreeNodeAccessor> {
   //
 
   public createPFrame(
-    def: PFrameDef<PColumnDataUniversal<TreeNodeAccessor>>,
+    def: PFrameDef<PColumn<PColumnDataUniversal<TreeNodeAccessor>>>,
   ): PoolEntry<PFrameHandle> {
     const columns = this.unfoldAccessors(uniqueBy(def, (column) => column.id));
     return this.pFrames.acquire(columns);

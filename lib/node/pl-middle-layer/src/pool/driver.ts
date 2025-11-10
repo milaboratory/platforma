@@ -271,7 +271,7 @@ export async function createPFrameDriver(
     { port: ops.parquetServerPort },
   );
 
-  const unfoldAccessors = (params: PFrameDef<PColumnDataUniversal<PlTreeNodeAccessor>>) => {
+  const unfoldAccessors = (params: PFrameDef<PColumn<PColumnDataUniversal<PlTreeNodeAccessor>>>) => {
     const ValueTypes = Object.values(ValueType);
     const columns: PColumn<PFrameInternal.DataInfo<PlTreeEntry>>[] = params
       .filter((c) => ValueTypes.includes(c.spec.valueType))
