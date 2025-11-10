@@ -4,7 +4,6 @@ import type { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import { isPlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type {
   Computable,
-  ComputableCtx,
   ComputableStableDefined,
 } from '@milaboratories/computable';
 import type {
@@ -801,7 +800,7 @@ export type PFrameDriverOps = {
  * Extends public and safe SDK's driver API with methods used internally in the middle
  * layer and in tests.
  */
-export interface InternalPFrameDriver<TreeNodeAccessor = PlTreeNodeAccessor>
+export interface AbstractInternalPFrameDriver<TreeNodeAccessor>
   extends SdkPFrameDriver, AsyncDisposable {
   /** Dispose the driver and all its resources. */
   dispose(): Promise<void>;
@@ -818,14 +817,12 @@ export interface InternalPFrameDriver<TreeNodeAccessor = PlTreeNodeAccessor>
   /** Create a new PFrame */
   createPFrame(
     def: PFrameDef<PColumnDataUniversal<TreeNodeAccessor>>,
-    ctx: ComputableCtx,
-  ): PFrameHandle;
+  ): PoolEntry<PFrameHandle>;
 
   /** Create a new PTable */
   createPTable(
     def: PTableDef<PColumn<PColumnDataUniversal<TreeNodeAccessor>>>,
-    ctx: ComputableCtx,
-  ): PTableHandle;
+  ): PoolEntry<PTableHandle>;
 
   /** Calculates data for the table and returns complete data representation of it */
   calculateTableData(
@@ -864,8 +861,10 @@ export interface InternalPFrameDriver<TreeNodeAccessor = PlTreeNodeAccessor>
   ): Promise<PTableVector[]>;
 }
 
+export interface InternalPFrameDriver extends AbstractInternalPFrameDriver<PlTreeNodeAccessor> {};
+
 export class PFrameDriver<TreeNodeAccessor, TreeEntry extends JsonSerializable>
-implements InternalPFrameDriver<TreeNodeAccessor> {
+implements AbstractInternalPFrameDriver<TreeNodeAccessor> {
   private readonly pFrames: PFramePool<TreeEntry>;
   private readonly pTableDefs: PTableDefPool;
   private readonly pTables: PTablePool<TreeEntry>;
@@ -897,7 +896,7 @@ implements InternalPFrameDriver<TreeNodeAccessor> {
       { port: ops.parquetServerPort },
     );
 
-    const unfold = (params: PFrameDef<PColumnDataUniversal<PlTreeNodeAccessor>>) => {
+    const unfoldAccessors = (params: PFrameDef<PColumnDataUniversal<PlTreeNodeAccessor>>) => {
       const ValueTypes = Object.values(ValueType);
       const columns: PColumn<PFrameInternal.DataInfo<PlTreeEntry>>[] = params
         .filter((c) => ValueTypes.includes(c.spec.valueType))
@@ -915,13 +914,13 @@ implements InternalPFrameDriver<TreeNodeAccessor> {
       return columns;
     };
 
-    return new PFrameDriver<PlTreeNodeAccessor, PlTreeEntry>(
+    return new PFrameDriver(
       logger,
       localBlobProvider,
       remoteBlobProvider,
       resolvedSpillPath,
       ops,
-      unfold,
+      unfoldAccessors,
     );
   }
 
@@ -931,7 +930,7 @@ implements InternalPFrameDriver<TreeNodeAccessor> {
     private readonly remoteBlobProvider: RemoteBlobProvider<TreeEntry>,
     spillPath: string,
     ops: PFrameDriverOps,
-    private readonly unfold: (
+    private readonly unfoldAccessors: (
       params: PFrameDef<PColumnDataUniversal<TreeNodeAccessor>>,
     ) => PColumn<PFrameInternal.DataInfo<TreeEntry>>[],
   ) {
@@ -961,30 +960,34 @@ implements InternalPFrameDriver<TreeNodeAccessor> {
 
   public createPFrame(
     def: PFrameDef<PColumnDataUniversal<TreeNodeAccessor>>,
-    ctx: ComputableCtx,
-  ): PFrameHandle {
-    const columns = this.unfold(def);
-    const distinctColumns = uniqueBy(columns, (column) => column.id);
-    const res = this.pFrames.acquire(distinctColumns);
-    ctx.addOnDestroy(res.unref);
-    return res.key;
+  ): PoolEntry<PFrameHandle> {
+    const columns = this.unfoldAccessors(uniqueBy(def, (column) => column.id));
+    return this.pFrames.acquire(columns);
   }
 
   public createPTable(
     rawDef: PTableDef<PColumn<PColumnDataUniversal<TreeNodeAccessor>>>,
-    ctx: ComputableCtx,
-  ): PTableHandle {
+  ): PoolEntry<PTableHandle> {
     const def = migratePTableFilters(rawDef, this.logger);
-    const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
+    const pFrameEntry = this.createPFrame(extractAllColumns(def.src));
     const defIds = mapPTableDef(def, (c) => c.id);
     const sortedDef = sortPTableDef(defIds);
 
-    const { key, unref } = this.pTableDefs.acquire({ def: sortedDef, pFrameHandle });
+    const pTableEntry = this.pTableDefs.acquire({ def: sortedDef, pFrameHandle: pFrameEntry.key });
     if (LogPFrameRequests) {
-      this.logger('info', `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${key})`);
+      this.logger('info', `Create PTable call (pFrameHandle = ${pFrameEntry.key}; pTableHandle = ${pTableEntry.key})`);
     }
-    ctx.addOnDestroy(unref); // in addition to pframe unref added in createPFrame above
-    return key;
+
+    const unref = () => {
+      pTableEntry.unref();
+      pFrameEntry.unref();
+    };
+    return {
+      key: pTableEntry.key,
+      resource: pTableEntry.resource,
+      unref,
+      [Symbol.dispose]: unref,
+    };
   }
 
   //

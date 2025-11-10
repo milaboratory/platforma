@@ -388,10 +388,11 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       throw new Error(
         'can\'t instantiate PFrames from this context (most porbably called from the future mapper)',
       );
-    return this.env.driverKit.pFrameDriver.createPFrame(
+    const { key, unref } = this.env.driverKit.pFrameDriver.createPFrame(
       def.map((c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
-      this.computableCtx,
     );
+    this.computableCtx.addOnDestroy(unref);
+    return key;
   }
 
   public createPTable(def: PTableDef<PColumn<string | PColumnValues | DataInfo<string>>>): PTableHandle {
@@ -399,12 +400,13 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       throw new Error(
         'can\'t instantiate PTable from this context (most porbably called from the future mapper)',
       );
-    return this.env.driverKit.pFrameDriver.createPTable(
+    const { key, unref } = this.env.driverKit.pFrameDriver.createPTable(
       mapPTableDef(def, (c) =>
         mapPObjectData(c, (d) => this.transformInputPData(d)),
       ),
-      this.computableCtx,
     );
+    this.computableCtx.addOnDestroy(unref);
+    return key;
   }
 
   /**
