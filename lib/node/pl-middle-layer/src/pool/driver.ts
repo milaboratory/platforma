@@ -8,20 +8,19 @@ import type {
 } from '@milaboratories/computable';
 import type {
   LocalBlobHandleAndSize,
-  PColumn,
-  PFrameDef,
   RemoteBlobHandleAndSize,
   RemoteBlobHandle,
   ContentHandler,
+  DataInfo,
+  PColumnValues,
+  PColumnSpec,
 } from '@platforma-sdk/model';
 import {
-  mapPObjectData,
   mapDataInfo,
   isDataInfo,
   ensureError,
   PFrameDriverError,
   isAbortError,
-  ValueType,
 } from '@platforma-sdk/model';
 import {
   parseDataInfoResource,
@@ -40,11 +39,12 @@ import {
   PFrameDriver as AbstractPFrameDriver,
   type AbstractInternalPFrameDriver,
   type PFrameDriverOps,
-  type PColumnDataUniversal,
   type LocalBlobProvider,
   type RemoteBlobProvider,
 } from '@milaboratories/pf-driver';
 import { HttpHelpers } from '@milaboratories/pframes-rs-node';
+
+type PColumnDataUniversal<TreeEntry> = TreeEntry | DataInfo<TreeEntry> | PColumnValues;
 
 function makeBlobId(res: PlTreeEntry): PFrameInternal.PFrameBlobId {
   return String(res.rid);
@@ -252,7 +252,8 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
   }
 }
 
-export interface InternalPFrameDriver extends AbstractInternalPFrameDriver<PlTreeNodeAccessor> {};
+export interface InternalPFrameDriver
+  extends AbstractInternalPFrameDriver<PColumnDataUniversal<PlTreeNodeAccessor>> {};
 
 export async function createPFrameDriver(
   blobDriver: DownloadDriver,
@@ -271,22 +272,14 @@ export async function createPFrameDriver(
     { port: ops.parquetServerPort },
   );
 
-  const unfoldAccessors = (params: PFrameDef<PColumn<PColumnDataUniversal<PlTreeNodeAccessor>>>) => {
-    const ValueTypes = Object.values(ValueType);
-    const columns: PColumn<PFrameInternal.DataInfo<PlTreeEntry>>[] = params
-      .filter((c) => ValueTypes.includes(c.spec.valueType))
-      .map((c) =>
-        mapPObjectData(c, (d) =>
-          isPlTreeNodeAccessor(d)
-            ? parseDataInfoResource(d)
-            : isDataInfo(d)
-              ? d.type === 'ParquetPartitioned'
-                ? mapDataInfo(d, (a) => traverseParquetChunkResource(a))
-                : mapDataInfo(d, (a) => a.persist())
-              : makeDataInfoFromPColumnValues(c.spec, d),
-        ),
-      );
-    return columns;
+  const resolveDataInfo = (spec: PColumnSpec, data: PColumnDataUniversal<PlTreeNodeAccessor>) => {
+    return isPlTreeNodeAccessor(data)
+      ? parseDataInfoResource(data)
+      : isDataInfo(data)
+        ? data.type === 'ParquetPartitioned'
+          ? mapDataInfo(data, (a) => traverseParquetChunkResource(a))
+          : mapDataInfo(data, (a) => a.persist())
+        : makeDataInfoFromPColumnValues(spec, data);
   };
 
   return new AbstractPFrameDriver(
@@ -295,6 +288,6 @@ export async function createPFrameDriver(
     remoteBlobProvider,
     resolvedSpillPath,
     ops,
-    unfoldAccessors,
+    resolveDataInfo,
   );
 }

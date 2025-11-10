@@ -23,7 +23,6 @@ import type {
   PTableRecordSingleValueFilterV2,
   PTableRecordFilter,
   PColumnValues,
-  DataInfo,
   PColumnValue,
   JsonSerializable,
   JsonDataInfo,
@@ -38,6 +37,7 @@ import {
   getAxisId,
   canonicalizeJson,
   bigintReplacer,
+  ValueType,
 } from '@platforma-sdk/model';
 import { LRUCache } from 'lru-cache';
 import { hashJson } from '@milaboratories/ts-helpers';
@@ -51,8 +51,7 @@ import {
 import { PFrameFactory } from '@milaboratories/pframes-rs-node';
 
 const LogPFrameRequests = Boolean(process.env.MI_LOG_PFRAMES);
-
-export type PColumnDataUniversal<TreeEntry> = TreeEntry | DataInfo<TreeEntry> | PColumnValues;
+const ValueTypes = Object.values(ValueType);
 
 export interface LocalBlobProvider<TreeEntry extends JsonSerializable> {
   acquire(params: TreeEntry): PoolEntry<PFrameInternal.PFrameBlobId>;
@@ -572,7 +571,7 @@ export type PFrameDriverOps = {
  * Extends public and safe SDK's driver API with methods used internally in the middle
  * layer and in tests.
  */
-export interface AbstractInternalPFrameDriver<TreeNodeAccessor>
+export interface AbstractInternalPFrameDriver<PColumnData>
   extends SdkPFrameDriver, AsyncDisposable {
   /** Dispose the driver and all its resources. */
   dispose(): Promise<void>;
@@ -588,12 +587,12 @@ export interface AbstractInternalPFrameDriver<TreeNodeAccessor>
 
   /** Create a new PFrame */
   createPFrame(
-    def: PFrameDef<PColumn<PColumnDataUniversal<TreeNodeAccessor>>>,
+    def: PFrameDef<PColumn<PColumnData>>,
   ): PoolEntry<PFrameHandle>;
 
   /** Create a new PTable */
   createPTable(
-    def: PTableDef<PColumn<PColumnDataUniversal<TreeNodeAccessor>>>,
+    def: PTableDef<PColumn<PColumnData>>,
   ): PoolEntry<PTableHandle>;
 
   /** Calculates data for the table and returns complete data representation of it */
@@ -633,8 +632,13 @@ export interface AbstractInternalPFrameDriver<TreeNodeAccessor>
   ): Promise<PTableVector[]>;
 }
 
-export class PFrameDriver<TreeNodeAccessor, TreeEntry extends JsonSerializable>
-implements AbstractInternalPFrameDriver<TreeNodeAccessor> {
+export type DataInfoResolver<PColumnData, TreeEntry extends JsonSerializable> = (
+  spec: PColumnSpec,
+  data: PColumnData,
+) => PFrameInternal.DataInfo<TreeEntry>;
+
+export class PFrameDriver<PColumnData, TreeEntry extends JsonSerializable>
+implements AbstractInternalPFrameDriver<PColumnData> {
   private readonly pFrames: PFramePool<TreeEntry>;
   private readonly pTableDefs: PTableDefPool;
   private readonly pTables: PTablePool<TreeEntry>;
@@ -655,9 +659,7 @@ implements AbstractInternalPFrameDriver<TreeNodeAccessor> {
     private readonly remoteBlobProvider: RemoteBlobProvider<TreeEntry>,
     spillPath: string,
     ops: PFrameDriverOps,
-    private readonly unfoldAccessors: (
-      params: PFrameDef<PColumn<PColumnDataUniversal<TreeNodeAccessor>>>,
-    ) => PColumn<PFrameInternal.DataInfo<TreeEntry>>[],
+    private readonly resolveDataInfo: DataInfoResolver<PColumnData, TreeEntry>,
   ) {
     const concurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pFrameConcurrency);
     this.frameConcurrencyLimiter = concurrencyLimiter;
@@ -684,14 +686,16 @@ implements AbstractInternalPFrameDriver<TreeNodeAccessor> {
   //
 
   public createPFrame(
-    def: PFrameDef<PColumn<PColumnDataUniversal<TreeNodeAccessor>>>,
+    def: PFrameDef<PColumn<PColumnData>>,
   ): PoolEntry<PFrameHandle> {
-    const columns = this.unfoldAccessors(uniqueBy(def, (column) => column.id));
+    const supportedColumns = def.filter((column) => ValueTypes.includes(column.spec.valueType));
+    const uniqueColumns = uniqueBy(supportedColumns, (column) => column.id);
+    const columns = uniqueColumns.map((c) => mapPObjectData(c, (d) => this.resolveDataInfo(c.spec, d)));
     return this.pFrames.acquire(columns);
   }
 
   public createPTable(
-    rawDef: PTableDef<PColumn<PColumnDataUniversal<TreeNodeAccessor>>>,
+    rawDef: PTableDef<PColumn<PColumnData>>,
   ): PoolEntry<PTableHandle> {
     const pFrameEntry = this.createPFrame(extractAllColumns(rawDef.src));
     const sortedDef = sortPTableDef(migratePTableFilters(mapPTableDef(rawDef, (c) => c.id), this.logger));
