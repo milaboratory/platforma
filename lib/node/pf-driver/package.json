@@ -1,0 +1,53 @@
+{
+  "name": "@milaboratories/pf-driver",
+  "version": "0.1.0",
+  "description": "PFrameDriver implementation abstracted from Middle Layer",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
+    "lint": "eslint .",
+    "test": "vitest run --coverage",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+  },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
+  "keywords": [],
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "eslint": "catalog:",
+    "@milaboratories/eslint-config": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "vitest": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "@types/node": "catalog:",
+    "tsconfig-paths": "catalog:",
+    "typescript": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
+  },
+  "dependencies": {
+    "@milaboratories/pframes-rs-node": "catalog:",
+    "@milaboratories/ts-helpers": "workspace:*",
+    "@milaboratories/pl-model-middle-layer": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
+    "lru-cache": "catalog:",
+    "es-toolkit": "catalog:"
+  }
+}

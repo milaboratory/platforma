@@ -1641,6 +1641,58 @@ importers:
         specifier: 'catalog:'
         version: 5.6.3
 
+  lib/node/pf-driver:
+    dependencies:
+      '@milaboratories/pframes-rs-node':
+        specifier: 'catalog:'
+        version: 1.0.103(encoding@0.1.13)
+      '@milaboratories/pl-model-middle-layer':
+        specifier: workspace:*
+        version: link:../../model/middle-layer
+      '@milaboratories/ts-helpers':
+        specifier: workspace:*
+        version: link:../ts-helpers
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../sdk/model
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.39.10
+      lru-cache:
+        specifier: 'catalog:'
+        version: 11.2.2
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
+      '@milaboratories/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tools/eslint-config
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../tools/ts-configs
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.5.2
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.0.7(vitest@4.0.7(@types/node@24.5.2)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1
+      tsconfig-paths:
+        specifier: 'catalog:'
+        version: 4.2.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.7(@types/node@24.5.2)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+
   lib/node/pl-client:
     dependencies:
       '@grpc/grpc-js':
@@ -2012,6 +2064,9 @@ importers:
       '@milaboratories/computable':
         specifier: workspace:*
         version: link:../computable
+      '@milaboratories/pf-driver':
+        specifier: workspace:*
+        version: link:../pf-driver
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
         version: 1.0.103(encoding@0.1.13)
@@ -2066,9 +2121,6 @@ importers:
       denque:
         specifier: 'catalog:'
         version: 2.1.0
-      es-toolkit:
-        specifier: 'catalog:'
-        version: 1.39.10
       lru-cache:
         specifier: 'catalog:'
         version: 11.2.2

@@ -18,7 +18,7 @@ import type * as Sdk from '@milaboratories/pl-model-common';
 import type { Signer } from '@milaboratories/ts-helpers';
 import { HmacSha256Signer, isAsyncDisposable } from '@milaboratories/ts-helpers';
 import type { InternalPFrameDriver } from '../pool';
-import { PFrameDriver } from '../pool';
+import { createPFrameDriver } from '../pool';
 import type {
   DriverKitOps,
   DriverKitOpsConstructor,
@@ -120,7 +120,7 @@ export async function initDriverKit(
     ops.virtualLocalStoragesOverride,
   );
 
-  const pFrameDriver = await PFrameDriver.init(
+  const pFrameDriver = await createPFrameDriver(
     blobDriver,
     ops.logger,
     ops.pframesSpillPath,
