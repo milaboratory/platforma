@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.5.16
+
+### Patch Changes
+
+- 8b1c1cf: Switched tests to forks mode
+
 ## 5.5.15
 
 ### Patch Changes
