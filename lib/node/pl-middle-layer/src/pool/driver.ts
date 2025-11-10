@@ -11,9 +11,8 @@ import type {
   RemoteBlobHandleAndSize,
   RemoteBlobHandle,
   ContentHandler,
-  DataInfo,
-  PColumnValues,
   PColumnSpec,
+  PColumnDataUniversal,
 } from '@platforma-sdk/model';
 import {
   mapDataInfo,
@@ -43,8 +42,6 @@ import {
   type RemoteBlobProvider,
 } from '@milaboratories/pf-driver';
 import { HttpHelpers } from '@milaboratories/pframes-rs-node';
-
-type PColumnDataUniversal<TreeEntry> = TreeEntry | DataInfo<TreeEntry> | PColumnValues;
 
 function makeBlobId(res: PlTreeEntry): PFrameInternal.PFrameBlobId {
   return String(res.rid);

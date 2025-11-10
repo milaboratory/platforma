@@ -55,7 +55,7 @@ import type { APColumnSelectorWithSplit } from './util/split_selectors';
 import { patchInSetFilters } from './util/pframe_upgraders';
 import { allPColumnsReady } from './util/pcolumn_data';
 
-export type PColumnDataUniversal = TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues;
+export type PColumnDataUniversal<TreeEntry = TreeNodeAccessor> = TreeEntry | DataInfo<TreeEntry> | PColumnValues;
 
 /**
  * Helper function to match domain objects
