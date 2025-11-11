@@ -16,7 +16,7 @@ import type { PFramePool } from './pframe_pool';
 import { stableKeyFromFullPTableDef, type FullPTableDef } from './ptable_shared';
 import type { PTableDefPool } from './ptable_def_pool';
 
-export class PTableHolder implements AsyncDisposable {
+export class PTableHolder implements Disposable {
   private readonly abortController = new AbortController();
   private readonly combinedDisposeSignal: AbortSignal;
 
@@ -33,12 +33,12 @@ export class PTableHolder implements AsyncDisposable {
     return this.combinedDisposeSignal;
   }
 
-  async [Symbol.asyncDispose](): Promise<void> {
+  [Symbol.dispose](): void {
     this.abortController.abort();
-    await this.pTablePromise
+    this.predecessor?.unref();
+    void this.pTablePromise
       .then((pTable) => pTable.dispose())
       .catch(() => { /* mute error */ });
-    this.predecessor?.unref();
   }
 }
 

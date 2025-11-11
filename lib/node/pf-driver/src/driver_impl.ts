@@ -2,7 +2,6 @@ import {
   mapPObjectData,
   mapPTableDef,
   extractAllColumns,
-  PFrameDriverError,
   uniqueBy,
   getAxisId,
   canonicalizeJson,
@@ -122,9 +121,11 @@ implements AbstractInternalPFrameDriver<PColumnData> {
     def: PFrameDef<PColumn<PColumnData>>,
   ): PoolEntry<PFrameHandle> {
     const ValueTypes = new Set(Object.values(ValueType));
+
     const supportedColumns = def.filter((column) => ValueTypes.has(column.spec.valueType));
     const uniqueColumns = uniqueBy(supportedColumns, (column) => column.id);
     const columns = uniqueColumns.map((c) => mapPObjectData(c, (d) => this.resolveDataInfo(c.spec, d)));
+
     return this.pFrames.acquire(columns);
   }
 
@@ -223,19 +224,14 @@ implements AbstractInternalPFrameDriver<PColumnData> {
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
     return await this.frameConcurrencyLimiter.run(async () => {
       try {
+        // TODO: throw error when more then 150k rows is requested
+        // after pf-plots migration to stream API
+
         const spec = pTable.getSpec();
         const data = await pTable.getData([...spec.keys()], {
           range,
           signal: combinedSignal,
         });
-
-        const resultSize = await pTable.getFootprint({
-          withPredecessors: false,
-          signal: combinedSignal,
-        });
-        if (resultSize >= 2 * 1024 * 1024 * 1024) {
-          throw new PFrameDriverError(`Join results exceed 2GB, please add filters to shrink the result size`);
-        }
 
         const overallSize = await pTable.getFootprint({
           withPredecessors: true,

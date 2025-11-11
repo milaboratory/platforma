@@ -35,12 +35,13 @@
     "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
+    "tsconfig-paths": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
+    "typescript": "catalog:",
+    "tslib": "catalog:",
     "vitest": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "@types/node": "catalog:",
-    "tsconfig-paths": "catalog:",
-    "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@types/node": "catalog:"
   },
   "dependencies": {
     "@milaboratories/pframes-rs-node": "catalog:",

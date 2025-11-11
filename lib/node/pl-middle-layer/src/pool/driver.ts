@@ -72,14 +72,14 @@ class LocalBlobProviderImpl
 
   public makeDataSource(signal: AbortSignal): PFrameInternal.PFrameDataSourceV2 {
     return {
-      preloadBlob: async (blobIds: string[]) => {
+      preloadBlob: async (blobIds: PFrameInternal.PFrameBlobId[]) => {
         try {
           await Promise.all(blobIds.map((blobId) => this.getByKey(blobId).awaitStableFullValue(signal)));
         } catch (err: unknown) {
           if (!isAbortError(err)) throw err;
         }
       },
-      resolveBlobContent: async (blobId: string) => {
+      resolveBlobContent: async (blobId: PFrameInternal.PFrameBlobId) => {
         const computable = this.getByKey(blobId);
         const blob = await computable.awaitStableValue(signal);
         return await this.blobDriver.getContent(blob.handle, { signal });

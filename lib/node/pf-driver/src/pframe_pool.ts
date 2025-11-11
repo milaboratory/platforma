@@ -29,9 +29,10 @@ export interface RemoteBlobProvider<TreeEntry extends JsonSerializable> {
   httpServerInfo(): PFrameInternal.HttpServerInfo;
 }
 
-export class PFrameHolder<TreeEntry extends JsonSerializable> implements AsyncDisposable {
+export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposable {
   public readonly pFramePromise: Promise<PFrameInternal.PFrameV12>;
   private readonly abortController = new AbortController();
+
   private readonly localBlobs: PoolEntry<PFrameInternal.PFrameBlobId>[] = [];
   private readonly remoteBlobs: PoolEntry<PFrameInternal.PFrameBlobId>[] = [];
 
@@ -135,9 +136,9 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements AsyncDi
     this.remoteBlobs.forEach((entry) => entry.unref());
   }
 
-  async [Symbol.asyncDispose](): Promise<void> {
+  [Symbol.dispose](): void {
     this.dispose();
-    await this.pFramePromise
+    void this.pFramePromise
       .then((pFrame) => pFrame.dispose())
       .catch(() => { /* mute error */ });
   }

@@ -2,12 +2,10 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    pool: 'threads',
-    watch: false,
+    passWithNoTests: true,
     coverage: {
-      exclude: ['**/*.js'],
+      provider: 'v8',
       include: ['src'],
     }
   }
 });
-
