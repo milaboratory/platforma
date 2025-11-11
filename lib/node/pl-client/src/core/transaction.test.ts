@@ -4,6 +4,7 @@ import { field, toGlobalFieldId, toGlobalResourceId } from './transaction';
 import { RecoverablePlError } from './errors';
 import * as tp from 'node:timers/promises';
 import { test, expect } from 'vitest';
+import { StatefulPromise } from './StatefulPromise';
 
 test('get field', async () => {
   await withTempRoot(async (pl) => {
@@ -75,12 +76,16 @@ test('handle absent resource error', async () => {
       { sync: true }
     );
 
+    StatefulPromise.debug = true;
+
     let rState = await pl.withReadTx('testRetrieveResource', async (tx) => {
       await expect(async () => {
         await tx.getResourceData(rr0, true);
       }).rejects.toThrow(RecoverablePlError);
       return await tx.getResourceData(tx.clientRoot, true);
     });
+
+    StatefulPromise.debug = false;
 
     expect(rState.fields).toHaveLength(0);
 

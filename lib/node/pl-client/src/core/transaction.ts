@@ -39,6 +39,7 @@ import { initialTxStatWithoutTime } from './stat';
 import type { ErrorResourceData } from './error_resource';
 import { ErrorResourceType } from './error_resource';
 import { JsonGzObject, JsonObject } from '../helpers/pl';
+import { PromiseTracker } from './PromiseTracker';
 
 /** Reference to resource, used only within transaction */
 export interface ResourceRef {
@@ -141,6 +142,22 @@ async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefin
 }
 
 /**
+ * Decorator that wraps the method's returned promise with this.track()
+ * This ensures that the promise will be awaited before the transaction is completed.
+ */
+function tracked<T extends (this: PlTransaction, ...a: any[]) => Promise<any>>(
+  value: T,
+  _context: ClassMethodDecoratorContext,
+) {
+  return function (
+    this: PlTransaction,
+    ...args: Parameters<T>
+  ): ReturnType<T> {
+    return this.track(value.apply(this, args)) as ReturnType<T>;
+  } as unknown as T;
+}
+
+/**
  * Each platform transaction has 3 stages:
  *   - initialization (txOpen message -> txInfo response)
  *   - communication (create resources, fields, references and so on)
@@ -162,12 +179,9 @@ export class PlTransaction {
    * Contract: there must be no async operations between setting this field to true and sending complete signal to stream. */
   private _completed = false;
 
-  /** Void operation futures are placed into this pool, and corresponding method return immediately.
-   * This is done to save number of round-trips. Next operation producing result will also await those
-   * pending ops, to throw any pending errors. */
-  private pendingVoidOps: Promise<void>[] = [];
-
   private globalTxIdWasAwaited: boolean = false;
+
+  public readonly pending = new PromiseTracker();
 
   private readonly _startTime = Date.now();
   private readonly _stat = initialTxStatWithoutTime();
@@ -202,6 +216,8 @@ export class PlTransaction {
       (r) => notEmpty(r.txOpen.tx?.id),
     );
 
+    void this.track(this.globalTxId);
+
     // To avoid floating promise
     this.globalTxId.catch((err) => {
       if (!this.globalTxIdWasAwaited) {
@@ -213,38 +229,48 @@ export class PlTransaction {
     this._stat.txCount++;
   }
 
-  private async drainAndAwaitPendingOps(): Promise<void> {
-    if (this.pendingVoidOps.length === 0) return;
-
-    // drain pending operations into temp array
-    const pending = this.pendingVoidOps;
-    this.pendingVoidOps = [];
-    // awaiting these pending operations first, to catch any errors
-    await Promise.all(pending);
+  /**
+   * Collect all pending promises for the transaction finalization.
+   */
+  public track<T>(promiseOrCallback: Promise<T> | (() => Promise<T>)): Promise<T> {
+    return this.pending.track(promiseOrCallback);
   }
 
-  private async sendSingleAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
+  private async drainAndAwaitPendingOps(): Promise<void> {
+    // awaiting these pending operations first, to catch any errors
+    await this.pending.awaitAll();
+  }
+
+  private sendSingleAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
     r: OneOfKind<ClientMessageRequest, Kind>,
     parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => T,
   ): Promise<T> {
-    // pushing operation packet to server
-    const rawResponsePromise = this.ll.send(r, false);
+    return this.pending.track(async () => {
+      const rawResponsePromise = this.ll.send(r, false);
 
-    await this.drainAndAwaitPendingOps();
-    // awaiting our result, and parsing the response
-    return parser(await rawResponsePromise);
+      void this.pending.track(rawResponsePromise);
+
+      await this.drainAndAwaitPendingOps();
+
+      // awaiting our result, and parsing the response
+      return parser(await rawResponsePromise);
+    });
   }
 
-  private async sendMultiAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
+  private sendMultiAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
     r: OneOfKind<ClientMessageRequest, Kind>,
     parser: (resp: OneOfKind<ServerMessageResponse, Kind>[]) => T,
   ): Promise<T> {
-    // pushing operation packet to server
-    const rawResponsePromise = this.ll.send(r, true);
+    return this.pending.track(async () => {
+      const rawResponsePromise = this.ll.send(r, true);
 
-    await this.drainAndAwaitPendingOps();
-    // awaiting our result, and parsing the response
-    return parser(await rawResponsePromise);
+      void this.pending.track(rawResponsePromise);
+
+      await this.drainAndAwaitPendingOps();
+
+      // awaiting our result, and parsing the response
+      return parser(await rawResponsePromise);
+    });
   }
 
   private async sendVoidSync<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>>(
@@ -257,7 +283,7 @@ export class PlTransaction {
   private sendVoidAsync<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>>(
     r: OneOfKind<ClientMessageRequest, Kind>,
   ): void {
-    this.pendingVoidOps.push(this.sendVoidSync(r));
+    void this.track(this.sendVoidSync(r));
   }
 
   private checkTxOpen() {
@@ -278,19 +304,23 @@ export class PlTransaction {
 
     if (!this.writable) {
       // no need to explicitly commit or reject read-only tx
-      const completeResult = this.ll.complete();
-      await this.drainAndAwaitPendingOps();
-      await completeResult;
-      await this.ll.await();
+      try {
+        const completeResult = this.ll.complete();
+        await this.drainAndAwaitPendingOps();
+        await completeResult;
+        await this.ll.await();
+      } catch (e) {
+        console.log('read-only commit error', (e as any).stack);
+        throw e;
+      }
     } else {
-      // @TODO, also floating promises
-      const commitResponse = this.sendSingleAndParse(
+      const commitResponse = this.track(this.sendSingleAndParse(
         { oneofKind: 'txCommit', txCommit: {} },
         (r) => r.txCommit.success,
-      );
+      ));
 
       // send closing frame right after commit to save some time on round-trips
-      const completeResult = this.ll.complete();
+      const completeResult = this.track(this.ll.complete());
 
       // now when we pushed all packets into the stream, we should wait for any
       // pending void operations from before, to catch any errors
@@ -312,8 +342,9 @@ export class PlTransaction {
     this._completed = true;
 
     const discardResponse = this.sendVoidSync({ oneofKind: 'txDiscard', txDiscard: {} });
+    void this.track(discardResponse);
     // send closing frame right after commit to save some time on round-trips
-    const completeResult = this.ll.complete();
+    const completeResult = this.track(this.ll.complete());
 
     // now when we pushed all packets into the stream, we should wait for any
     // pending void operations from before, to catch any errors
@@ -356,16 +387,18 @@ export class PlTransaction {
       (r) => r.resourceCreateSingleton.resourceId as ResourceId,
     );
 
+    void this.track(globalId);
+
     return { globalId, localId };
   }
 
-  public async getSingleton(name: string, loadFields: true): Promise<ResourceData>;
-  public async getSingleton(name: string, loadFields: false): Promise<BasicResourceData>;
-  public async getSingleton(
+  public getSingleton(name: string, loadFields: true): Promise<ResourceData>;
+  public getSingleton(name: string, loadFields: false): Promise<BasicResourceData>;
+  public getSingleton(
     name: string,
     loadFields: boolean = true,
   ): Promise<BasicResourceData | ResourceData> {
-    return await this.sendSingleAndParse(
+    return this.sendSingleAndParse(
       {
         oneofKind: 'resourceGetSingleton',
         resourceGetSingleton: {
@@ -385,6 +418,8 @@ export class PlTransaction {
     const localId = this.nextLocalResourceId(root);
 
     const globalId = this.sendSingleAndParse(req(localId), (r) => parser(r) as ResourceId);
+
+    void this.track(globalId);
 
     return { globalId, localId };
   }
@@ -479,15 +514,15 @@ export class PlTransaction {
     this.sendVoidAsync({ oneofKind: 'resourceNameDelete', resourceNameDelete: { name } });
   }
 
-  public async getResourceByName(name: string): Promise<ResourceId> {
-    return await this.sendSingleAndParse(
+  public getResourceByName(name: string): Promise<ResourceId> {
+    return this.sendSingleAndParse(
       { oneofKind: 'resourceNameGet', resourceNameGet: { name } },
       (r) => ensureResourceIdNotNull(r.resourceNameGet.resourceId as OptionalResourceId),
     );
   }
 
-  public async checkResourceNameExists(name: string): Promise<boolean> {
-    return await this.sendSingleAndParse(
+  public checkResourceNameExists(name: string): Promise<boolean> {
+    return this.sendSingleAndParse(
       { oneofKind: 'resourceNameExists', resourceNameExists: { name } },
       (r) => r.resourceNameExists.exists,
     );
@@ -497,8 +532,8 @@ export class PlTransaction {
     this.sendVoidAsync({ oneofKind: 'resourceRemove', resourceRemove: { id: rId } });
   }
 
-  public async resourceExists(rId: ResourceId): Promise<boolean> {
-    return await this.sendSingleAndParse(
+  public resourceExists(rId: ResourceId): Promise<boolean> {
+    return this.sendSingleAndParse(
       { oneofKind: 'resourceExists', resourceExists: { resourceId: rId } },
       (r) => r.resourceExists.exists,
     );
@@ -531,6 +566,7 @@ export class PlTransaction {
     loadFields: boolean,
     ignoreCache: boolean
   ): Promise<BasicResourceData | ResourceData>;
+  @tracked
   public async getResourceData(
     rId: AnyResourceRef,
     loadFields: boolean = true,
@@ -573,7 +609,7 @@ export class PlTransaction {
       if (fromCache) {
         if (loadFields && !fromCache.data) {
           fromCache.data = result;
-          // updating timestamp becuse we updated the record
+          // updating timestamp because we updated the record
           fromCache.cacheTxOpenTimestamp = this.txOpenTimestamp;
         }
       } else {
@@ -609,17 +645,18 @@ export class PlTransaction {
     rId: AnyResourceRef,
     loadFields: boolean
   ): Promise<BasicResourceData | ResourceData | undefined>;
+  @tracked
   public async getResourceDataIfExists(
     rId: AnyResourceRef,
     loadFields: boolean = true,
   ): Promise<BasicResourceData | ResourceData | undefined> {
-    // calling this mehtod will ignore cache, because user intention is to detect resource absence
+    // calling this method will ignore cache, because user intention is to detect resource absence
     // which cache will prevent
     const result = await notFoundToUndefined(
       async () => await this.getResourceData(rId, loadFields, true),
     );
 
-    // cleaning cache record if resorce was removed from the db
+    // cleaning cache record if resource was removed from the db
     if (result === undefined && !isResourceRef(rId) && !isLocalResourceId(rId))
       this.sharedResourceDataCache.delete(rId);
 
@@ -678,8 +715,8 @@ export class PlTransaction {
     if (value !== undefined) this.setField(fId, value);
   }
 
-  public async fieldExists(fId: AnyFieldRef): Promise<boolean> {
-    return await this.sendSingleAndParse(
+  public fieldExists(fId: AnyFieldRef): Promise<boolean> {
+    return this.sendSingleAndParse(
       {
         oneofKind: 'fieldExists',
         fieldExists: { field: toFieldId(fId) },
@@ -719,14 +756,15 @@ export class PlTransaction {
     });
   }
 
-  public async getField(fId: AnyFieldRef): Promise<FieldData> {
+  public getField(fId: AnyFieldRef): Promise<FieldData> {
     this._stat.fieldsGet++;
-    return await this.sendSingleAndParse(
+    return this.sendSingleAndParse(
       { oneofKind: 'fieldGet', fieldGet: { field: toFieldId(fId) } },
       (r) => protoToField(notEmpty(r.fieldGet.field)),
     );
   }
 
+  @tracked
   public async getFieldIfExists(fId: AnyFieldRef): Promise<FieldData | undefined> {
     return notFoundToUndefined(async () => await this.getField(fId));
   }
@@ -743,6 +781,7 @@ export class PlTransaction {
   // KV
   //
 
+  @tracked
   public async listKeyValues(rId: AnyResourceRef): Promise<KeyValue[]> {
     const result = await this.sendMultiAndParse(
       {
@@ -759,6 +798,7 @@ export class PlTransaction {
     return result;
   }
 
+  @tracked
   public async listKeyValuesString(rId: AnyResourceRef): Promise<KeyValueString[]> {
     return (await this.listKeyValues(rId)).map(({ key, value }) => ({
       key,
@@ -766,10 +806,12 @@ export class PlTransaction {
     }));
   }
 
+  @tracked
   public async listKeyValuesIfResourceExists(rId: AnyResourceRef): Promise<KeyValue[] | undefined> {
     return notFoundToUndefined(async () => await this.listKeyValues(rId));
   }
 
+  @tracked
   public async listKeyValuesStringIfResourceExists(
     rId: AnyResourceRef,
   ): Promise<KeyValueString[] | undefined> {
@@ -799,6 +841,7 @@ export class PlTransaction {
     });
   }
 
+  @tracked
   public async getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
     const result = await this.sendSingleAndParse(
       {
@@ -814,14 +857,17 @@ export class PlTransaction {
     return result;
   }
 
+  @tracked
   public async getKValueString(rId: AnyResourceRef, key: string): Promise<string> {
     return Buffer.from(await this.getKValue(rId, key)).toString();
   }
 
+  @tracked
   public async getKValueJson<T>(rId: AnyResourceRef, key: string): Promise<T> {
     return JSON.parse(await this.getKValueString(rId, key)) as T;
   }
 
+  @tracked
   public async getKValueIfExists(
     rId: AnyResourceRef,
     key: string,
@@ -841,6 +887,7 @@ export class PlTransaction {
     return result;
   }
 
+  @tracked
   public async getKValueStringIfExists(
     rId: AnyResourceRef,
     key: string,
@@ -849,6 +896,7 @@ export class PlTransaction {
     return data === undefined ? undefined : Buffer.from(data).toString();
   }
 
+  @tracked
   public async getKValueJsonIfExists<T>(rId: AnyResourceRef, key: string): Promise<T | undefined> {
     const str = await this.getKValueString(rId, key);
     if (str === undefined) return undefined;
@@ -885,7 +933,7 @@ export class PlTransaction {
   public async complete() {
     if (this._completed) return;
     this._completed = true;
-    const completeResult = this.ll.complete();
+    const completeResult = this.track(this.ll.complete());
     await this.drainAndAwaitPendingOps();
     await completeResult;
   }
