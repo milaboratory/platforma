@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.45.23
+
+### Patch Changes
+
+- 6f67293: Correct annotations types
+- Updated dependencies [6f67293]
+  - @platforma-sdk/model@1.45.23
+  - @milaboratories/uikit@2.5.3
+
 ## 1.45.21
 
 ### Patch Changes
