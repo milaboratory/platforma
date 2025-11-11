@@ -231,8 +231,10 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
   ): Promise<RemoteBlobProviderImpl> {
     const remoteBlobProvider = new RemoteBlobPool(blobDriver);
     const store = new BlobStore({ remoteBlobProvider, logger });
+
     const handler = HttpHelpers.createRequestHandler({ store });
     const server = await HttpHelpers.createHttpServer({ ...serverOptions, handler });
+
     return new RemoteBlobProviderImpl(remoteBlobProvider, server);
   }
 
