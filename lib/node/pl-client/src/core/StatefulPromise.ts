@@ -34,7 +34,7 @@ export class StatefulPromise<T> implements Promise<T> {
     return new StatefulPromise(promise, { deferReject: true, onUnwrap });
   }
 
-  static fromDeferredRejectCallback<T>(asyncFn: () => Promise<T>, onUnwrap?: () => void): StatefulPromise<T> {
+  static fromDeferredRejectCallback<T>(asyncFn: () => Promise<T>, onUnwrap?: (promise: StatefulPromise<T>) => void): StatefulPromise<T> {
     return new StatefulPromise(asyncFn(), { deferReject: true, onUnwrap });
   }
 

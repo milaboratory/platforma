@@ -28,7 +28,7 @@ test('connectivity: disconnect', async () => {
         tx.lock(r1);
         tx.setField(theField1, tx.getFutureFieldValue(r0, 'theField', 'Input'));
   
-        await tx.commit().catch((err) => console.log('error committing tx', err));
+        await tx.commit();
   
         return [await r0.globalId, await toGlobalFieldId(theField1)];
       });

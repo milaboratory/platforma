@@ -304,15 +304,10 @@ export class PlTransaction {
 
     if (!this.writable) {
       // no need to explicitly commit or reject read-only tx
-      try {
-        const completeResult = this.ll.complete();
-        await this.drainAndAwaitPendingOps();
-        await completeResult;
-        await this.ll.await();
-      } catch (e) {
-        console.log('read-only commit error', (e as any).stack);
-        throw e;
-      }
+      const completeResult = this.track(this.ll.complete());
+      await this.drainAndAwaitPendingOps();
+      await completeResult;
+      await this.ll.await();
     } else {
       const commitResponse = this.track(this.sendSingleAndParse(
         { oneofKind: 'txCommit', txCommit: {} },
