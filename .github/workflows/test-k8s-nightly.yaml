@@ -1,0 +1,56 @@
+name: Test K8S Nightly (without cache)
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch: {}
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: milaboratory/github-ci/actions/context/init@v4
+        with:
+          version-canonize: false
+          branch-versioning: main
+  run:
+    needs:
+      - init
+    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm-k8s.yaml@v4
+    with:
+      app-name: Platforma SDK Google Batch Int Tests
+      app-name-slug: 'platforma-sdk-gcp'
+      gha-runner-label: 'dev-gke'
+      node-version: '22.x'
+      pl-version: 'main'
+      pnpm-build-command: '--filter "*/workflow-tengo*"'
+      pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --maxWorkers=50 --testTimeout=1800000 --force'
+      helm-release-name: 'pl-dev-gcp'
+      helm-chart-values-file: 'helm/gcp/values.yaml'
+      notify-slack: true
+      namespace: 'dev-gke'
+      npmrc-config: |
+        {
+          "registries": {
+            "https://registry.npmjs.org/": {
+              "scopes": ["milaboratories", "platforma-sdk"],
+              "tokenVar": "NPMJS_TOKEN"
+            },
+            "https://npm.pkg.github.com/": {
+              "scopes": ["milaboratory"],
+              "tokenVar": "NODE_AUTH_TOKEN"
+            }
+          }
+        }
+      env: |
+        { "BODY_LIMIT": "1048576000",
+          "TEST_TIMEOUT": "30m" }
+    secrets:
+      env: |
+        { "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
+          "PL_CI_TEST_PASSWORD": ${{ toJSON(secrets.PL_CI_TEST_PASSWORD) }},
+          "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
+          "GCLOUD_CI_GKE_BUCKET_NAME": ${{ toJSON(secrets.GCLOUD_CI_GKE_BUCKET_NAME) }},
+          "QUAY_USERNAME": ${{ toJSON(secrets.QUAY_USERNAME) }},
+          "QUAY_ROBOT_TOKEN": ${{ toJSON(secrets.QUAY_ROBOT_TOKEN) }} }
+
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL: ${{ secrets.SLACK_PL_SDK_CHANNEL }}
