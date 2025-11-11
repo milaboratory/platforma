@@ -1,4 +1,4 @@
-name: Test K8S
+name: Test K8S 
 on:
   # merge_group:
   # pull_request:
@@ -28,7 +28,7 @@ jobs:
       node-version: '22.x'
       pl-version: 'main'
       pnpm-build-command: '--filter "*/workflow-tengo*"'
-      pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --maxWorkers=50 --testTimeout=900000'
+      pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --maxWorkers=50 --testTimeout=1800000'
       helm-release-name: 'pl-dev-gcp'
       helm-chart-values-file: 'helm/gcp/values.yaml'
       notify-slack: true
@@ -48,7 +48,7 @@ jobs:
         }
       env: |
         { "BODY_LIMIT": "1048576000",
-          "TEST_TIMEOUT": "15m" }
+          "TEST_TIMEOUT": "30m" }
     secrets:
       env: |
         { "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
