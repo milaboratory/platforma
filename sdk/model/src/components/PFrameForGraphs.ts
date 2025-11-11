@@ -8,18 +8,18 @@ import type {
   PObjectId,
 } from '@milaboratories/pl-model-common';
 import {
-  canonicalizeJson,
-  getAxisId,
-  matchAxisId,
-  getColumnIdAndSpec,
   Annotation,
-  readAnnotation,
-  getNormalizedAxesList,
-  stringifyJson,
-  readAnnotationJson,
-  LinkerMap,
+  canonicalizeJson,
   getArrayFromAxisTree,
   getAxesTree,
+  getAxisId,
+  getColumnIdAndSpec,
+  getNormalizedAxesList,
+  LinkerMap,
+  matchAxisId,
+  readAnnotation,
+  readAnnotationJson,
+  stringifyJson,
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, RenderCtx } from '../render';
 import { allPColumnsReady, PColumnCollection } from '../render';
@@ -60,7 +60,7 @@ export function isLinkerColumn(column: PColumnSpec): boolean {
   return !!readAnnotationJson(column, Annotation.IsLinkerColumn);
 }
 
-function isHiddenFromGraphColumn(column: PColumnSpec): boolean {
+export function isHiddenFromGraphColumn(column: PColumnSpec): boolean {
   return !!readAnnotationJson(column, Annotation.HideDataFromGraphs);
 }
 
@@ -259,10 +259,11 @@ export function createPFrameForGraphs<A, U>(
     allAxes.set(...item);
   }
 
+  const blockAxesArr = Array.from(blockAxes.values());
   // all compatible with block columns but without label columns
   let compatibleWithoutLabels = (columns.getColumns((spec) => !isHiddenFromGraphColumn(spec) && spec.axesSpec.some((axisSpec) => {
     const axisId = getAxisId(axisSpec);
-    return Array.from(blockAxes.values()).some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
+    return blockAxesArr.some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
 
   // if at least one column is not yet ready, we can't show the graph
@@ -278,16 +279,17 @@ export function createPFrameForGraphs<A, U>(
     }
   }
 
+  const allAxesArr = Array.from(allAxes.values());
   // extend allowed columns - add columns thad doesn't have axes from block, but have all axes in 'allAxes' list (that means all axes from linkers or from 'hanging' of other selected columns)
   compatibleWithoutLabels = (columns.getColumns((spec) => !isHiddenFromGraphColumn(spec) && spec.axesSpec.every((axisSpec) => {
     const axisId = getAxisId(axisSpec);
-    return Array.from(allAxes.values()).some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
+    return allAxesArr.some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
 
   // label columns must be compatible with full set of axes - block axes and axes from compatible columns from result pool
   const compatibleLabels = (columns.getColumns((spec) => !isHiddenFromGraphColumn(spec) && spec.axesSpec.some((axisSpec) => {
     const axisId = getAxisId(axisSpec);
-    return Array.from(allAxes.values()).some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
+    return allAxesArr.some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => isLabelColumn(column.spec));
 
   // if at least one column is not yet ready, we can't show the graph
