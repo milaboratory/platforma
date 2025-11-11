@@ -1,47 +1,48 @@
-import type { DownloadDriver } from '@milaboratories/pl-drivers';
-import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
-import type { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import { isPlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import type {
-  Computable,
-  ComputableStableDefined,
-} from '@milaboratories/computable';
-import type {
-  LocalBlobHandleAndSize,
-  RemoteBlobHandleAndSize,
-  RemoteBlobHandle,
-  ContentHandler,
-  PColumnSpec,
-  PColumnDataUniversal,
-} from '@platforma-sdk/model';
 import {
   mapDataInfo,
   isDataInfo,
   ensureError,
   PFrameDriverError,
   isAbortError,
+  type LocalBlobHandleAndSize,
+  type RemoteBlobHandleAndSize,
+  type RemoteBlobHandle,
+  type ContentHandler,
+  type PColumnSpec,
+  type PColumnDataUniversal,
 } from '@platforma-sdk/model';
-import {
-  parseDataInfoResource,
-  traverseParquetChunkResource,
-} from './data';
-import { type MiLogger } from '@milaboratories/ts-helpers';
+import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 import {
   emptyDir,
   RefCountPoolBase,
   type PoolEntry,
+  type MiLogger,
 } from '@milaboratories/ts-helpers';
-import path from 'node:path';
-import { Readable } from 'node:stream';
+import type { DownloadDriver } from '@milaboratories/pl-drivers';
+import {
+  isPlTreeNodeAccessor,
+  type PlTreeEntry,
+  type PlTreeNodeAccessor,
+} from '@milaboratories/pl-tree';
+import type {
+  Computable,
+  ComputableStableDefined,
+} from '@milaboratories/computable';
 import {
   makeDataInfoFromPColumnValues,
-  PFrameDriver as AbstractPFrameDriver,
+  AbstractPFrameDriver,
   type AbstractInternalPFrameDriver,
-  type PFrameDriverOps,
+  type AbstractPFrameDriverOps,
   type LocalBlobProvider,
   type RemoteBlobProvider,
 } from '@milaboratories/pf-driver';
 import { HttpHelpers } from '@milaboratories/pframes-rs-node';
+import path from 'node:path';
+import { Readable } from 'node:stream';
+import {
+  parseDataInfoResource,
+  traverseParquetChunkResource,
+} from './data';
 
 function makeBlobId(res: PlTreeEntry): PFrameInternal.PFrameBlobId {
   return String(res.rid);
@@ -253,6 +254,11 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
 
 export interface InternalPFrameDriver
   extends AbstractInternalPFrameDriver<PColumnDataUniversal<PlTreeNodeAccessor>> {};
+
+export type PFrameDriverOps = AbstractPFrameDriverOps & {
+  /** Port to run parquet HTTP server on. */
+  parquetServerPort: number;
+};
 
 export async function createPFrameDriver(
   blobDriver: DownloadDriver,

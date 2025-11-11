@@ -2,9 +2,17 @@ import type { PTableHandle } from '@platforma-sdk/model';
 import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 import type { PoolEntry } from '@milaboratories/ts-helpers';
 import { LRUCache } from 'lru-cache';
-import type { PFrameDriverOps } from './driver_decl';
 import { logPFrames } from './logging';
 import type { PTableHolder } from './ptable_pool';
+
+export type PTableCacheModelOps = {
+  /**
+   * Maximum size of `createPTable` results cached on disk.
+   * The limit is soft, as the same table could be materialized with other requests and will not be deleted in such case.
+   * Also each table has predeccessors, overlapping predecessors will be counted twice, so the effective limit is smaller.
+   */
+  pTablesCacheMaxSize: number;
+};
 
 export class PTableCacheModel {
   private readonly global: LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>;
@@ -12,7 +20,7 @@ export class PTableCacheModel {
 
   constructor(
     private readonly logger: PFrameInternal.Logger,
-    ops: Pick<PFrameDriverOps, 'pTablesCacheMaxSize'>,
+    ops: PTableCacheModelOps,
   ) {
     this.global = new LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>({
       maxSize: ops.pTablesCacheMaxSize,

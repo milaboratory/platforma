@@ -1,28 +1,3 @@
-import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
-import type {
-  CalculateTableDataRequest,
-  CalculateTableDataResponse,
-  FindColumnsRequest,
-  FindColumnsResponse,
-  PColumnIdAndSpec,
-  PColumnSpec,
-  PFrameHandle,
-  PObjectId,
-  PTableColumnSpec,
-  PTableHandle,
-  PTableShape,
-  PTableVector,
-  TableRange,
-  UniqueValuesRequest,
-  UniqueValuesResponse,
-  PColumn,
-  PFrameDef,
-  JoinEntry,
-  PTableDef,
-  PTableRecordSingleValueFilterV2,
-  PTableRecordFilter,
-  JsonSerializable,
-} from '@platforma-sdk/model';
 import {
   mapPObjectData,
   mapPTableDef,
@@ -33,8 +8,30 @@ import {
   canonicalizeJson,
   bigintReplacer,
   ValueType,
+  type CalculateTableDataRequest,
+  type CalculateTableDataResponse,
+  type FindColumnsRequest,
+  type FindColumnsResponse,
+  type PColumnIdAndSpec,
+  type PColumnSpec,
+  type PFrameHandle,
+  type PObjectId,
+  type PTableColumnSpec,
+  type PTableHandle,
+  type PTableShape,
+  type PTableVector,
+  type TableRange,
+  type UniqueValuesRequest,
+  type UniqueValuesResponse,
+  type PColumn,
+  type PFrameDef,
+  type JoinEntry,
+  type PTableDef,
+  type PTableRecordSingleValueFilterV2,
+  type PTableRecordFilter,
+  type JsonSerializable,
 } from '@platforma-sdk/model';
-import { logPFrames } from './logging';
+import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 import {
   assertNever,
   ConcurrencyLimitingExecutor,
@@ -44,17 +41,25 @@ import { PFrameFactory } from '@milaboratories/pframes-rs-node';
 import type {
   LocalBlobProvider,
   RemoteBlobProvider,
-  PFrameDriverOps,
+  AbstractPFrameDriverOps,
   AbstractInternalPFrameDriver,
   DataInfoResolver,
 } from './driver_decl';
+import { logPFrames } from './logging';
 import { PFramePool } from './pframe_pool';
 import { PTableDefPool } from './ptable_def_pool';
 import { PTablePool } from './ptable_pool';
 import { PTableCacheUi } from './ptable_cache_ui';
 import { PTableCacheModel } from './ptable_cache_model';
 
-export class PFrameDriver<PColumnData, TreeEntry extends JsonSerializable>
+export type PFramesConcurrencyOps = {
+  /** Concurrency limits for `getUniqueValues` and `calculateTableData` requests */
+  pFrameConcurrency: number;
+  /** Concurrency limits for `getShape` and `getData` requests */
+  pTableConcurrency: number;
+};
+
+export class AbstractPFrameDriver<PColumnData, TreeEntry extends JsonSerializable>
 implements AbstractInternalPFrameDriver<PColumnData> {
   private readonly pFrames: PFramePool<TreeEntry>;
   private readonly pTableDefs: PTableDefPool;
@@ -75,11 +80,10 @@ implements AbstractInternalPFrameDriver<PColumnData> {
     localBlobProvider: LocalBlobProvider<TreeEntry>,
     private readonly remoteBlobProvider: RemoteBlobProvider<TreeEntry>,
     spillPath: string,
-    ops: PFrameDriverOps,
+    ops: AbstractPFrameDriverOps,
     private readonly resolveDataInfo: DataInfoResolver<PColumnData, TreeEntry>,
   ) {
-    const concurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pFrameConcurrency);
-    this.frameConcurrencyLimiter = concurrencyLimiter;
+    this.frameConcurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pFrameConcurrency);
     this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pTableConcurrency);
 
     this.pFrames = new PFramePool(localBlobProvider, remoteBlobProvider, logger, spillPath);

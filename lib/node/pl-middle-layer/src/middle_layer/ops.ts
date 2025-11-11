@@ -12,7 +12,7 @@ import type { MiLogger } from '@milaboratories/ts-helpers';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import type { LocalStorageProjection } from '@milaboratories/pl-drivers';
 import path from 'node:path';
-import type { PFrameDriverOps } from '@milaboratories/pf-driver';
+import type { PFrameDriverOps } from '../pool';
 
 /** Paths part of {@link DriverKitOps}. */
 export type DriverKitOpsPaths = {

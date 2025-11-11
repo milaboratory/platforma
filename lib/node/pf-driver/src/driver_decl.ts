@@ -18,6 +18,9 @@ import type {
 } from '@platforma-sdk/model';
 import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 import type { PoolEntry } from '@milaboratories/ts-helpers';
+import type { PTableCacheUiOps } from './ptable_cache_ui';
+import type { PTableCacheModelOps } from './ptable_cache_model';
+import type { PFramesConcurrencyOps } from './driver_impl';
 
 export interface LocalBlobProvider<TreeEntry extends JsonSerializable> {
   acquire(params: TreeEntry): PoolEntry<PFrameInternal.PFrameBlobId>;
@@ -29,28 +32,7 @@ export interface RemoteBlobProvider<TreeEntry extends JsonSerializable> extends 
   httpServerInfo(): PFrameInternal.HttpServerInfo;
 }
 
-export type PFrameDriverOps = {
-  /** Port to run parquet HTTP server on. */
-  parquetServerPort: number;
-  /** Concurrency limits for `getUniqueValues` and `calculateTableData` requests */
-  pFrameConcurrency: number;
-  /** Concurrency limits for `getShape` and `getData` requests */
-  pTableConcurrency: number;
-  /** Maximum number of `calculateTableData` results cached for each PFrame */
-  pFrameCacheMaxCount: number;
-  /**
-   * Maximum size of `calculateTableData` results cached for PFrames overall.
-   * The limit is soft, as the same table could be materialized with other requests and will not be deleted in such case.
-   * Also each table has predeccessors, overlapping predecessors will be counted twice, so the effective limit is smaller.
-   */
-  pFramesCacheMaxSize: number;
-  /**
-   * Maximum size of `createPTable` results cached on disk.
-   * The limit is soft, as the same table could be materialized with other requests and will not be deleted in such case.
-   * Also each table has predeccessors, overlapping predecessors will be counted twice, so the effective limit is smaller.
-   */
-  pTablesCacheMaxSize: number;
-};
+export type AbstractPFrameDriverOps = PTableCacheUiOps & PTableCacheModelOps & PFramesConcurrencyOps;
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle

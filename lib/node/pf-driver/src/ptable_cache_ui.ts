@@ -2,9 +2,19 @@ import type { PFrameHandle, PTableHandle } from '@platforma-sdk/model';
 import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 import type { PoolEntry } from '@milaboratories/ts-helpers';
 import { LRUCache } from 'lru-cache';
-import type { PFrameDriverOps } from './driver_decl';
 import { logPFrames } from './logging';
 import type { PTableHolder } from './ptable_pool';
+
+export type PTableCacheUiOps = {
+  /** Maximum number of `calculateTableData` results cached for each PFrame */
+  pFrameCacheMaxCount: number;
+  /**
+   * Maximum size of `calculateTableData` results cached for PFrames overall.
+   * The limit is soft, as the same table could be materialized with other requests and will not be deleted in such case.
+   * Also each table has predeccessors, overlapping predecessors will be counted twice, so the effective limit is smaller.
+   */
+  pFramesCacheMaxSize: number;
+};
 
 export class PTableCacheUi {
   private readonly perFrame = new Map<PFrameHandle, LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>>();
@@ -13,7 +23,7 @@ export class PTableCacheUi {
 
   constructor(
     private readonly logger: PFrameInternal.Logger,
-    private readonly ops: Pick<PFrameDriverOps, 'pFramesCacheMaxSize' | 'pFrameCacheMaxCount'>,
+    private readonly ops: PTableCacheUiOps,
   ) {
     this.global = new LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>({
       maxSize: this.ops.pFramesCacheMaxSize,
