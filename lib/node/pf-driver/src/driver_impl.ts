@@ -37,6 +37,7 @@ import {
   type PoolEntry,
 } from '@milaboratories/ts-helpers';
 import { PFrameFactory } from '@milaboratories/pframes-rs-node';
+import { tmpdir } from 'node:os';
 import type {
   AbstractInternalPFrameDriver,
 } from './driver_decl';
@@ -87,6 +88,13 @@ export type DataInfoResolver<PColumnData, TreeEntry extends JsonSerializable> = 
 
 export class AbstractPFrameDriver<PColumnData, TreeEntry extends JsonSerializable>
 implements AbstractInternalPFrameDriver<PColumnData> {
+  private readonly logger: PFrameInternal.Logger;
+
+  private readonly localBlobProvider: LocalBlobProvider<TreeEntry>;
+  private readonly remoteBlobProvider: RemoteBlobProvider<TreeEntry>;
+
+  private readonly resolveDataInfo: DataInfoResolver<PColumnData, TreeEntry>;
+
   private readonly pFrames: PFramePool<TreeEntry>;
   private readonly pTableDefs: PTableDefPool;
   private readonly pTables: PTablePool<TreeEntry>;
@@ -101,23 +109,37 @@ implements AbstractInternalPFrameDriver<PColumnData> {
     return await PFrameFactory.pprofDump();
   }
 
-  public constructor(
-    private readonly logger: PFrameInternal.Logger,
-    localBlobProvider: LocalBlobProvider<TreeEntry>,
-    private readonly remoteBlobProvider: RemoteBlobProvider<TreeEntry>,
-    spillPath: string,
-    ops: AbstractPFrameDriverOps,
-    private readonly resolveDataInfo: DataInfoResolver<PColumnData, TreeEntry>,
-  ) {
-    this.frameConcurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pFrameConcurrency);
-    this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pTableConcurrency);
+  public constructor({
+    logger = () => {},
+    localBlobProvider,
+    remoteBlobProvider,
+    spillPath = tmpdir(),
+    options = AbstractPFrameDriverOpsDefaults,
+    resolveDataInfo,
+  }: {
+    logger?: PFrameInternal.Logger;
+    localBlobProvider: LocalBlobProvider<TreeEntry>;
+    remoteBlobProvider: RemoteBlobProvider<TreeEntry>;
+    spillPath?: string;
+    options?: AbstractPFrameDriverOps;
+    resolveDataInfo: DataInfoResolver<PColumnData, TreeEntry>;
+  }) {
+    this.logger = logger;
 
-    this.pFrames = new PFramePool(localBlobProvider, remoteBlobProvider, logger, spillPath);
-    this.pTableDefs = new PTableDefPool(logger);
-    this.pTables = new PTablePool(this.pFrames, this.pTableDefs, logger);
+    this.localBlobProvider = localBlobProvider;
+    this.remoteBlobProvider = remoteBlobProvider;
 
-    this.pTableCacheUi = new PTableCacheUi(logger, ops);
-    this.pTableCacheModel = new PTableCacheModel(logger, ops);
+    this.resolveDataInfo = resolveDataInfo;
+
+    this.frameConcurrencyLimiter = new ConcurrencyLimitingExecutor(options.pFrameConcurrency);
+    this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(options.pTableConcurrency);
+
+    this.pFrames = new PFramePool(this.localBlobProvider, this.remoteBlobProvider, this.logger, spillPath);
+    this.pTableDefs = new PTableDefPool(this.logger);
+    this.pTables = new PTablePool(this.pFrames, this.pTableDefs, this.logger);
+
+    this.pTableCacheUi = new PTableCacheUi(this.logger, options);
+    this.pTableCacheModel = new PTableCacheModel(this.logger, options);
   }
 
   async dispose(): Promise<void> {

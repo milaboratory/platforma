@@ -120,12 +120,12 @@ export async function initDriverKit(
     ops.virtualLocalStoragesOverride,
   );
 
-  const pFrameDriver = await createPFrameDriver(
+  const pFrameDriver = await createPFrameDriver({
     blobDriver,
-    ops.logger,
-    ops.pframesSpillPath,
-    ops.pFrameDriverOps,
-  );
+    logger: ops.logger,
+    spillPath: ops.pframesSpillPath,
+    options: ops.pFrameDriverOps,
+  });
 
   const frontendDownloadDriver = new DownloadUrlDriver(
     ops.logger,

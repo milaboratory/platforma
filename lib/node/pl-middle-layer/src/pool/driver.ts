@@ -266,21 +266,21 @@ export const PFrameDriverOpsDefaults: PFrameDriverOps = {
   parquetServerPort: 0, // 0 means that some unused port will be assigned by the OS
 };
 
-export async function createPFrameDriver(
-  blobDriver: DownloadDriver,
-  miLogger: MiLogger,
-  spillPath: string,
-  ops: PFrameDriverOps,
-): Promise<InternalPFrameDriver> {
-  const resolvedSpillPath = path.resolve(spillPath);
+export async function createPFrameDriver(params: {
+  blobDriver: DownloadDriver;
+  logger: MiLogger;
+  spillPath: string;
+  options: PFrameDriverOps;
+}): Promise<InternalPFrameDriver> {
+  const resolvedSpillPath = path.resolve(params.spillPath);
   await emptyDir(resolvedSpillPath);
 
-  const logger: PFrameInternal.Logger = (level, message) => miLogger[level](message);
-  const localBlobProvider = new LocalBlobProviderImpl(blobDriver);
+  const logger: PFrameInternal.Logger = (level, message) => params.logger[level](message);
+  const localBlobProvider = new LocalBlobProviderImpl(params.blobDriver);
   const remoteBlobProvider = await RemoteBlobProviderImpl.init(
-    blobDriver,
+    params.blobDriver,
     logger,
-    { port: ops.parquetServerPort },
+    { port: params.options.parquetServerPort },
   );
 
   const resolveDataInfo = (spec: PColumnSpec, data: PColumnDataUniversal<PlTreeNodeAccessor>) => {
@@ -293,12 +293,12 @@ export async function createPFrameDriver(
         : makeJsonDataInfo(spec, data);
   };
 
-  return new AbstractPFrameDriver(
+  return new AbstractPFrameDriver({
     logger,
     localBlobProvider,
     remoteBlobProvider,
-    resolvedSpillPath,
-    ops,
+    spillPath: resolvedSpillPath,
+    options: params.options,
     resolveDataInfo,
-  );
+  });
 }

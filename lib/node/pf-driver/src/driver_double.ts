@@ -14,7 +14,6 @@ import { tmpdir } from 'node:os';
 import type { AbstractInternalPFrameDriver } from './driver_decl';
 import {
   AbstractPFrameDriver,
-  AbstractPFrameDriverOpsDefaults,
   type LocalBlobProvider,
   type RemoteBlobProvider,
 } from './driver_impl';
@@ -104,10 +103,13 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<FileName> {
   }
 }
 
-export async function createPFrameDriverDouble(
-  dataFolder: FolderPath,
-  logger: PFrameInternal.Logger = () => {},
-): Promise<AbstractInternalPFrameDriver<PFrameInternal.DataInfo<FileName> | PColumnValues>> {
+export async function createPFrameDriverDouble({
+  dataFolder = tmpdir() as FolderPath,
+  logger = () => {},
+}: {
+  dataFolder?: FolderPath;
+  logger?: PFrameInternal.Logger;
+}): Promise<AbstractInternalPFrameDriver<PFrameInternal.DataInfo<FileName> | PColumnValues>> {
   const localBlobProvider = new LocalBlobProviderImpl(dataFolder);
   const remoteBlobProvider = await RemoteBlobProviderImpl.init(dataFolder, logger, {});
 
@@ -116,12 +118,10 @@ export async function createPFrameDriverDouble(
     data: PFrameInternal.DataInfo<FileName> | PColumnValues,
   ) => isDataInfo(data) ? data : makeJsonDataInfo(spec, data);
 
-  return new AbstractPFrameDriver(
+  return new AbstractPFrameDriver({
     logger,
     localBlobProvider,
     remoteBlobProvider,
-    tmpdir(),
-    AbstractPFrameDriverOpsDefaults,
     resolveDataInfo,
-  );
+  });
 }
