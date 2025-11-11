@@ -53,7 +53,10 @@ type LocalBlob = ComputableStableDefined<LocalBlobHandleAndSize>;
 class LocalBlobProviderImpl
   extends RefCountPoolBase<PlTreeEntry, PFrameInternal.PFrameBlobId, LocalBlob>
   implements LocalBlobProvider<PlTreeEntry> {
-  constructor(private readonly blobDriver: DownloadDriver) {
+  constructor(
+    private readonly blobDriver: DownloadDriver,
+    private readonly logger: PFrameInternal.Logger,
+  ) {
     super();
   }
 
@@ -92,7 +95,10 @@ class LocalBlobProviderImpl
 type RemoteBlob = Computable<RemoteBlobHandleAndSize>;
 class RemoteBlobPool
   extends RefCountPoolBase<PlTreeEntry, PFrameInternal.PFrameBlobId, RemoteBlob> {
-  constructor(private readonly blobDriver: DownloadDriver) {
+  constructor(
+    private readonly blobDriver: DownloadDriver,
+    private readonly logger: PFrameInternal.Logger,
+  ) {
     super();
   }
 
@@ -231,11 +237,12 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
     logger: PFrameInternal.Logger,
     serverOptions: Omit<PFrameInternal.HttpServerOptions, 'handler'>,
   ): Promise<RemoteBlobProviderImpl> {
-    const remoteBlobProvider = new RemoteBlobPool(blobDriver);
+    const remoteBlobProvider = new RemoteBlobPool(blobDriver, logger);
     const store = new BlobStore({ remoteBlobProvider, logger });
 
     const handler = HttpHelpers.createRequestHandler({ store });
     const server = await HttpHelpers.createHttpServer({ ...serverOptions, handler });
+    logger('info', `PFrames HTTP server started on ${server.info.url}`);
 
     return new RemoteBlobProviderImpl(remoteBlobProvider, server);
   }
@@ -276,7 +283,7 @@ export async function createPFrameDriver(params: {
   await emptyDir(resolvedSpillPath);
 
   const logger: PFrameInternal.Logger = (level, message) => params.logger[level](message);
-  const localBlobProvider = new LocalBlobProviderImpl(params.blobDriver);
+  const localBlobProvider = new LocalBlobProviderImpl(params.blobDriver, logger);
   const remoteBlobProvider = await RemoteBlobProviderImpl.init(
     params.blobDriver,
     logger,
