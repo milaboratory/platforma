@@ -21,7 +21,7 @@ import { logPFrames } from './logging';
 
 export interface LocalBlobProvider<TreeEntry extends JsonSerializable> {
   acquire(params: TreeEntry): PoolEntry<PFrameInternal.PFrameBlobId>;
-  makeDataSource(signal: AbortSignal): PFrameInternal.PFrameDataSourceV2;
+  makeDataSource(signal: AbortSignal): Omit<PFrameInternal.PFrameDataSourceV2, 'parquetServer'>;
 }
 
 export interface RemoteBlobProvider<TreeEntry extends JsonSerializable> {
@@ -94,7 +94,10 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
 
     try {
       const pFrame = PFrameFactory.createPFrame({ spillPath: this.spillPath, logger });
-      pFrame.setDataSource(this.localBlobProvider.makeDataSource(this.disposeSignal));
+      pFrame.setDataSource({
+        ...this.localBlobProvider.makeDataSource(this.disposeSignal),
+        parquetServer: this.remoteBlobProvider.httpServerInfo(),
+      });
 
       const promises: Promise<void>[] = [];
       for (const column of jsonifiedColumns) {
@@ -124,10 +127,6 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
 
   public get disposeSignal(): AbortSignal {
     return this.abortController.signal;
-  }
-
-  public get parquetServer(): PFrameInternal.HttpServerInfo {
-    return this.remoteBlobProvider.httpServerInfo();
   }
 
   private dispose(): void {

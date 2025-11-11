@@ -59,7 +59,7 @@ class LocalBlobProviderImpl
     return resource;
   }
 
-  public makeDataSource(signal: AbortSignal): PFrameInternal.PFrameDataSourceV2 {
+  public makeDataSource(signal: AbortSignal): Omit<PFrameInternal.PFrameDataSourceV2, 'parquetServer'> {
     return {
       preloadBlob: async (_blobIds: PFrameInternal.PFrameBlobId[]) => {},
       resolveBlobContent: async (blobId: PFrameInternal.PFrameBlobId) => {
