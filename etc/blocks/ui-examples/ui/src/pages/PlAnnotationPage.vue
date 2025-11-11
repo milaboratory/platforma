@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { randomInt } from '@milaboratories/helpers';
 import type { PObjectId, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
 import { PlAnnotationsModal } from '@platforma-sdk/ui-vue';
 import { ref, watch } from 'vue';
@@ -17,9 +18,11 @@ const mockAnnotations = ref({
       id: 1,
       label: 'Text Pattern Filter',
       filter: {
+        id: randomInt(),
         type: 'and' as const,
         filters: [
           {
+            id: randomInt(),
             type: 'patternEquals' as const,
             column: 'sample_name' as SUniversalPColumnId,
             value: 'Sample_001',
@@ -31,9 +34,11 @@ const mockAnnotations = ref({
       id: 2,
       label: 'Numeric Comparison',
       filter: {
+        id: randomInt(),
         type: 'or' as const,
         filters: [
           {
+            id: randomInt(),
             type: 'greaterThan' as const,
             column: 'count' as SUniversalPColumnId,
             x: 100,

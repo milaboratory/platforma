@@ -23,6 +23,7 @@ function handleAddStep() {
     id,
     label: `Filter #${annotation.value.steps.length + 1}`,
     filter: {
+      id: randomInt(),
       type: 'and',
       filters: [],
     },
@@ -52,7 +53,7 @@ function handleAddStep() {
 
         <PlElementList
           v-model:items="annotation.steps"
-          :get-item-key="(item) => item.id!"
+          :get-item-key="(item) => item.id"
           :is-active="(item) => item.id === selectedStepId"
           :item-class="$style.stepItem"
           :class="$style.steps"
