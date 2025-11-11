@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.12.0
+
+### Minor Changes
+
+- a0930da: Update Built-In backend version to 1.44.0
+
 ## 2.11.0
 
 ### Minor Changes
