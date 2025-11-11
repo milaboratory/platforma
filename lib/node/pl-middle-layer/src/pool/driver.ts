@@ -31,6 +31,7 @@ import type {
 import {
   makeJsonDataInfo,
   AbstractPFrameDriver,
+  AbstractPFrameDriverOpsDefaults,
   type AbstractInternalPFrameDriver,
   type AbstractPFrameDriverOps,
   type LocalBlobProvider,
@@ -258,6 +259,11 @@ export interface InternalPFrameDriver
 export type PFrameDriverOps = AbstractPFrameDriverOps & {
   /** Port to run parquet HTTP server on. */
   parquetServerPort: number;
+};
+
+export const PFrameDriverOpsDefaults: PFrameDriverOps = {
+  ...AbstractPFrameDriverOpsDefaults,
+  parquetServerPort: 0, // 0 means that some unused port will be assigned by the OS
 };
 
 export async function createPFrameDriver(

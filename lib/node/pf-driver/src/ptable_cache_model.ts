@@ -14,6 +14,10 @@ export type PTableCacheModelOps = {
   pTablesCacheMaxSize: number;
 };
 
+export const PTableCacheModelOpsDefaults: PTableCacheModelOps = {
+  pTablesCacheMaxSize: 32 * 1024 * 1024 * 1024, // 32 GB (must be at lease 8GB)
+};
+
 export class PTableCacheModel {
   private readonly global: LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>;
   private readonly disposeListeners = new Set<PTableHandle>();

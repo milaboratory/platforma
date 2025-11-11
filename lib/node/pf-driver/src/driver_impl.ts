@@ -48,8 +48,16 @@ import {
 } from './pframe_pool';
 import { PTableDefPool } from './ptable_def_pool';
 import { PTablePool } from './ptable_pool';
-import { PTableCacheUi, type PTableCacheUiOps } from './ptable_cache_ui';
-import { PTableCacheModel, type PTableCacheModelOps } from './ptable_cache_model';
+import {
+  PTableCacheUi,
+  PTableCacheUiOpsDefaults,
+  type PTableCacheUiOps,
+} from './ptable_cache_ui';
+import {
+  PTableCacheModel,
+  PTableCacheModelOpsDefaults,
+  type PTableCacheModelOps,
+} from './ptable_cache_model';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface LocalBlobProvider<TreeEntry extends JsonSerializable>
@@ -63,6 +71,13 @@ export type AbstractPFrameDriverOps = PTableCacheUiOps & PTableCacheModelOps & {
   pFrameConcurrency: number;
   /** Concurrency limits for `getShape` and `getData` requests */
   pTableConcurrency: number;
+};
+
+export const AbstractPFrameDriverOpsDefaults: AbstractPFrameDriverOps = {
+  ...PTableCacheUiOpsDefaults,
+  ...PTableCacheModelOpsDefaults,
+  pFrameConcurrency: 1, // 1 join is executed in parallel and utilize all RAM and CPU cores
+  pTableConcurrency: 1, // 1 joined table is read from disk at a time, which matches 1 table the user can view in the UI
 };
 
 export type DataInfoResolver<PColumnData, TreeEntry extends JsonSerializable> = (
