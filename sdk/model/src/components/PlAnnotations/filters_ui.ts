@@ -1,11 +1,11 @@
 // @DEPRECATED - use sdk/model/src/filters + sdk/model/src/annotations
 import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
 import type { FilterSpecUi } from '../../annotations';
-import type { FilterSpec } from '../../filters';
+import type { FilterSpec, FilterSpecLeaf } from '../../filters';
 import type { AnnotationFilter, AnnotationMode, AnnotationScript, IsNA, NotFilter, NumericalComparisonFilter, PatternFilter, PatternPredicate, ValueRank } from './filter';
 
 export type FilterUi = FilterSpec<Extract<
-  FilterSpec,
+  FilterSpecLeaf,
   // supported filters
   { type:
     | 'lessThan'
@@ -89,9 +89,7 @@ export type FormField =
 
 export type AnyForm = Record<string, FormField>;
 
-export type AnnotationStepUi = FilterSpecUi<FilterUi> & {
-  id?: number;
-};
+export type AnnotationStepUi = FilterSpecUi<Extract<FilterUi, { type: 'and' | 'or' }>> & { id: number };
 
 export type AnnotationScriptUi = {
   isCreated?: boolean;
