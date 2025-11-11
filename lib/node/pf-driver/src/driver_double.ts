@@ -1,8 +1,5 @@
-import type {
-  JsonSerializable,
-  StringifiedJson } from '@platforma-sdk/model';
 import {
-  parseJson,
+  isDataInfo,
   PFrameDriverError,
   type Branded,
   type PColumnSpec,
@@ -110,30 +107,14 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<FileName> {
 export async function createPFrameDriverDouble(
   dataFolder: FolderPath,
   logger: PFrameInternal.Logger = () => {},
-): Promise<AbstractInternalPFrameDriver<FolderPath | PColumnValues>> {
+): Promise<AbstractInternalPFrameDriver<PFrameInternal.DataInfo<FileName> | PColumnValues>> {
   const localBlobProvider = new LocalBlobProviderImpl(dataFolder);
   const remoteBlobProvider = await RemoteBlobProviderImpl.init(dataFolder, logger, {});
 
-  const resolveDataInfo = (spec: PColumnSpec, data: FolderPath | PColumnValues) => {
-    if (typeof data === 'string') {
-      // const files = fs.readdirSync(dataFolder);
-      // for (const file of files) {
-      //   if (file.endsWith('.spec')) {
-      //     const columnId = file.replace('.spec', '') as PObjectId;
-      //     const columnSpec = readJsonFile(dataFolder, file);
-      //     pframe.addColumnSpec(columnId, columnSpec);
-
-      //     const dataInfoFile = file.replace('.spec', '.datainfo');
-      //     if (files.includes(dataInfoFile)) {
-      //       const dataInfo = readJsonTestFile(testCase, dataInfoFile);
-      //     }
-      //   }
-      // }
-      throw new PFrameDriverError(`TODO`); // TODO
-    } else {
-      return makeJsonDataInfo(spec, data);
-    }
-  };
+  const resolveDataInfo = (
+    spec: PColumnSpec,
+    data: PFrameInternal.DataInfo<FileName> | PColumnValues,
+  ) => isDataInfo(data) ? data : makeJsonDataInfo(spec, data);
 
   return new AbstractPFrameDriver(
     logger,
@@ -143,14 +124,4 @@ export async function createPFrameDriverDouble(
     AbstractPFrameDriverOpsDefaults,
     resolveDataInfo,
   );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function readJsonFile<T extends JsonSerializable>(dataFolder: FolderPath, fileName: string): T {
-  const filePath = path.join(dataFolder, fileName);
-  if (!fs.statSync(filePath, { throwIfNoEntry: false })?.isFile()) {
-    throw new PFrameDriverError(`File ${filePath} does not exist`);
-  }
-  const content = fs.readFileSync(filePath).toString() as StringifiedJson<T>;
-  return parseJson(content);
 }
