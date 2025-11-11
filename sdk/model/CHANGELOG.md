@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.45.23
+
+### Patch Changes
+
+- 6f67293: Correct annotations types
+
 ## 1.45.17
 
 ### Patch Changes
