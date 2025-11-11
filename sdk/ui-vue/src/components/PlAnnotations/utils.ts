@@ -1,7 +1,7 @@
 import type { FilterSpecTypeFieldRecord } from '@milaboratories/uikit';
-import type { FilterSpec } from './types';
+import type { FilterSpecLeaf } from '@platforma-sdk/model';
 
-export function createDefaultFilterMetadata<T extends Extract<FilterSpec, { column: unknown }>>(): FilterSpecTypeFieldRecord<T> {
+export function createDefaultFilterMetadata<T extends FilterSpecLeaf>(): FilterSpecTypeFieldRecord<T> {
   return {
     column: {
       label: 'Column',

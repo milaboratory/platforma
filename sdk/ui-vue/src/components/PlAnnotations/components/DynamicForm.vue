@@ -1,12 +1,12 @@
-<script setup lang="ts" generic="T extends FilterSpec = FilterSpec">
+<script setup lang="ts" generic="T extends FilterSpecLeaf = FilterSpecLeaf">
 import { computed, watch } from 'vue';
 
 import { isNil } from '@milaboratories/helpers';
 import type { FilterSpecTypeFieldRecord } from '@milaboratories/uikit';
 import { getFilterUiMetadata, getFilterUiTypeOptions, PlCheckbox, PlDropdown, PlNumberField, PlTextField } from '@milaboratories/uikit';
-import type { SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { FilterSpecLeaf, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
 
-import type { FilterSpec, FilterSpecType } from '../types';
+import type { FilterSpecType } from '../types';
 
 type ObjectEntries<T, K extends keyof T = keyof T> = [K, T[K]][];
 
