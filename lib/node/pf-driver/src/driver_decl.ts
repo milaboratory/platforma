@@ -1,9 +1,7 @@
 import type {
   CalculateTableDataRequest,
   CalculateTableDataResponse,
-  JsonSerializable,
   PColumn,
-  PColumnSpec,
   PFrameDef,
   PFrameDriver,
   PFrameHandle,
@@ -16,23 +14,7 @@ import type {
   UniqueValuesRequest,
   UniqueValuesResponse,
 } from '@platforma-sdk/model';
-import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 import type { PoolEntry } from '@milaboratories/ts-helpers';
-import type { PTableCacheUiOps } from './ptable_cache_ui';
-import type { PTableCacheModelOps } from './ptable_cache_model';
-import type { PFramesConcurrencyOps } from './driver_impl';
-
-export interface LocalBlobProvider<TreeEntry extends JsonSerializable> {
-  acquire(params: TreeEntry): PoolEntry<PFrameInternal.PFrameBlobId>;
-  makeDataSource(signal: AbortSignal): PFrameInternal.PFrameDataSourceV2;
-}
-
-export interface RemoteBlobProvider<TreeEntry extends JsonSerializable> extends AsyncDisposable {
-  acquire(params: TreeEntry): PoolEntry<PFrameInternal.PFrameBlobId>;
-  httpServerInfo(): PFrameInternal.HttpServerInfo;
-}
-
-export type AbstractPFrameDriverOps = PTableCacheUiOps & PTableCacheModelOps & PFramesConcurrencyOps;
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle
@@ -98,8 +80,3 @@ export interface AbstractInternalPFrameDriver<PColumnData>
     signal?: AbortSignal,
   ): Promise<PTableVector[]>;
 }
-
-export type DataInfoResolver<PColumnData, TreeEntry extends JsonSerializable> = (
-  spec: PColumnSpec,
-  data: PColumnData,
-) => PFrameInternal.DataInfo<TreeEntry>;

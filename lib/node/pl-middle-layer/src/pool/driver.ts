@@ -29,7 +29,7 @@ import type {
   ComputableStableDefined,
 } from '@milaboratories/computable';
 import {
-  makeDataInfoFromPColumnValues,
+  makeJsonDataInfo,
   AbstractPFrameDriver,
   type AbstractInternalPFrameDriver,
   type AbstractPFrameDriverOps,
@@ -284,7 +284,7 @@ export async function createPFrameDriver(
         ? data.type === 'ParquetPartitioned'
           ? mapDataInfo(data, (a) => traverseParquetChunkResource(a))
           : mapDataInfo(data, (a) => a.persist())
-        : makeDataInfoFromPColumnValues(spec, data);
+        : makeJsonDataInfo(spec, data);
   };
 
   return new AbstractPFrameDriver(

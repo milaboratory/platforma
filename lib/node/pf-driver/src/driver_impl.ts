@@ -39,25 +39,37 @@ import {
 } from '@milaboratories/ts-helpers';
 import { PFrameFactory } from '@milaboratories/pframes-rs-node';
 import type {
-  LocalBlobProvider,
-  RemoteBlobProvider,
-  AbstractPFrameDriverOps,
   AbstractInternalPFrameDriver,
-  DataInfoResolver,
 } from './driver_decl';
 import { logPFrames } from './logging';
-import { PFramePool } from './pframe_pool';
+import {
+  PFramePool,
+  type LocalBlobProvider as PoolLocalBlobProvider,
+  type RemoteBlobProvider as PoolRemoteBlobProvider,
+} from './pframe_pool';
 import { PTableDefPool } from './ptable_def_pool';
 import { PTablePool } from './ptable_pool';
-import { PTableCacheUi } from './ptable_cache_ui';
-import { PTableCacheModel } from './ptable_cache_model';
+import { PTableCacheUi, type PTableCacheUiOps } from './ptable_cache_ui';
+import { PTableCacheModel, type PTableCacheModelOps } from './ptable_cache_model';
 
-export type PFramesConcurrencyOps = {
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface LocalBlobProvider<TreeEntry extends JsonSerializable>
+  extends PoolLocalBlobProvider<TreeEntry> { }
+
+export interface RemoteBlobProvider<TreeEntry extends JsonSerializable>
+  extends PoolRemoteBlobProvider<TreeEntry>, AsyncDisposable {}
+
+export type AbstractPFrameDriverOps = PTableCacheUiOps & PTableCacheModelOps & {
   /** Concurrency limits for `getUniqueValues` and `calculateTableData` requests */
   pFrameConcurrency: number;
   /** Concurrency limits for `getShape` and `getData` requests */
   pTableConcurrency: number;
 };
+
+export type DataInfoResolver<PColumnData, TreeEntry extends JsonSerializable> = (
+  spec: PColumnSpec,
+  data: PColumnData,
+) => PFrameInternal.DataInfo<TreeEntry>;
 
 export class AbstractPFrameDriver<PColumnData, TreeEntry extends JsonSerializable>
 implements AbstractInternalPFrameDriver<PColumnData> {

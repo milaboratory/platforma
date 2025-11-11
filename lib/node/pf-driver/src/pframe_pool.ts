@@ -18,7 +18,16 @@ import {
 import { PFrameFactory } from '@milaboratories/pframes-rs-node';
 import { mapValues } from 'es-toolkit';
 import { logPFrames } from './logging';
-import type { LocalBlobProvider, RemoteBlobProvider } from './driver_decl';
+
+export interface LocalBlobProvider<TreeEntry extends JsonSerializable> {
+  acquire(params: TreeEntry): PoolEntry<PFrameInternal.PFrameBlobId>;
+  makeDataSource(signal: AbortSignal): PFrameInternal.PFrameDataSourceV2;
+}
+
+export interface RemoteBlobProvider<TreeEntry extends JsonSerializable> {
+  acquire(params: TreeEntry): PoolEntry<PFrameInternal.PFrameBlobId>;
+  httpServerInfo(): PFrameInternal.HttpServerInfo;
+}
 
 export class PFrameHolder<TreeEntry extends JsonSerializable> implements AsyncDisposable {
   public readonly pFramePromise: Promise<PFrameInternal.PFrameV12>;

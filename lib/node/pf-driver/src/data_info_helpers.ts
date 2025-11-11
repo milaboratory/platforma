@@ -6,7 +6,7 @@ import {
   type PColumnValue,
 } from '@platforma-sdk/model';
 
-export function makeDataInfoFromPColumnValues(
+export function makeJsonDataInfo(
   spec: PColumnSpec,
   data: PColumnValues,
 ): JsonDataInfo {
