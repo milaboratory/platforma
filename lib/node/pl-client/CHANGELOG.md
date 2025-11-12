@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.16.2
+
+### Patch Changes
+
+- 99be920: [ml] Get rid of all unhandled errors/rejections in transactions
+
 ## 2.16.1
 
 ### Patch Changes
