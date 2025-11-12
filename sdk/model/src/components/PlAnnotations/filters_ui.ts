@@ -23,7 +23,7 @@ export type FilterUi = FilterSpec<Extract<
     | 'isNA'
     | 'isNotNA';
   }
->, { id?: number; name?: string; isExpanded?: boolean }>;
+>, { id: number; name?: string; isExpanded?: boolean }>;
 
 export type FilterUiType = Exclude<FilterUi, { type: undefined }>['type'];
 
