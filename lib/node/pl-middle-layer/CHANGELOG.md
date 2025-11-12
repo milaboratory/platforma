@@ -1,5 +1,29 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.60
+
+### Patch Changes
+
+- 55b218b: PFrameDriver decomposed
+- 5814e48: Small changes in sdk
+- Updated dependencies [55b218b]
+- Updated dependencies [5814e48]
+  - @milaboratories/pf-driver@1.0.0
+  - @milaboratories/pl-model-middle-layer@1.8.36
+  - @milaboratories/ts-helpers@1.5.2
+  - @milaboratories/pl-model-common@1.21.5
+  - @platforma-sdk/model@1.45.26
+  - @milaboratories/pl-deployments@2.12.1
+  - @platforma-sdk/workflow-tengo@5.5.17
+  - @platforma-sdk/block-tools@2.6.17
+  - @milaboratories/computable@2.7.2
+  - @milaboratories/pl-client@2.16.3
+  - @milaboratories/pl-config@1.7.7
+  - @milaboratories/pl-drivers@1.11.14
+  - @milaboratories/pl-errors@1.1.35
+  - @milaboratories/pl-tree@1.8.10
+  - @milaboratories/pl-model-backend@1.1.20
+
 ## 1.43.59
 
 ### Patch Changes

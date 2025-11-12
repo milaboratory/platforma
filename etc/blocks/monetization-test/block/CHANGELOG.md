@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.0.164
+
+### Patch Changes
+
+- 5814e48: Small changes in sdk
+- Updated dependencies [5814e48]
+  - @milaboratories/milaboratories.monetization-test.workflow@1.1.47
+  - @milaboratories/milaboratories.monetization-test.model@1.0.28
+  - @milaboratories/milaboratories.monetization-test.ui@1.1.119
+
 ## 1.0.163
 
 ### Patch Changes
