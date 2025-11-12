@@ -75,8 +75,12 @@ export interface UseAsyncPollingReturn {
  * @example
  * ```typescript
  * const { isActive, pause, resume, lastError } = useAsyncPolling(
- *   async ({ signal }) => {
+ *   async ({ signal, pause }) => {
  *     const response = await fetch('/api/status', { signal });
+ *     if (response.status === 404) {
+ *       pause(); // Stop polling if resource not found
+ *       return;
+ *     }
  *     // Process response
  *   },
  *   {
@@ -106,12 +110,17 @@ export interface UseAsyncPollingReturn {
  * - If `pauseOnError: true`, polling stops automatically on error (including immediate callback)
  * - Otherwise, polling continues despite errors
  *
- * @param cb - Async callback function that receives `{ signal: AbortSignal }` and returns a Promise
+ * **Pausing from Callback:**
+ * - The `pause` function is provided in the callback options for easy access
+ * - Call `pause()` from within the callback to stop polling based on conditions
+ * - No need to capture the returned `pause` function separately
+ *
+ * @param cb - Async callback function that receives `{ signal: AbortSignal, pause: () => void }` and returns a Promise
  * @param options - Configuration options for polling behavior
  * @returns Object with `isActive`, `lastError`, `pause`, and `resume` controls
  */
 export function useAsyncPolling(
-  cb: (options: { signal: AbortSignal }) => Promise<void>,
+  cb: (options: { signal: AbortSignal; pause: () => void }) => Promise<void>,
   options: UseAsyncPollingOptions,
 ): UseAsyncPollingReturn {
   const { minInterval, minDelay, immediate = true, immediateCallback = false, pauseOnError = false } = options;
@@ -145,7 +154,7 @@ export function useAsyncPolling(
     const currentController = abortController;
 
     try {
-      await cb({ signal: currentController.signal });
+      await cb({ signal: currentController.signal, pause });
       lastError.value = null;
     } catch (err) {
       lastError.value = err instanceof Error ? err : new Error(String(err));

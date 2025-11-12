@@ -89,6 +89,81 @@ describe('useAsyncPolling', () => {
       expect(callback).toHaveBeenCalledTimes(2);
     });
 
+    it('should provide pause function in callback options', async () => {
+      const callback = vi.fn(async ({ pause }: { pause: () => void }) => {
+        expect(typeof pause).toBe('function');
+      });
+
+      useAsyncPolling(callback, { minInterval: 100 });
+
+      await vi.advanceTimersByTimeAsync(100);
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it('should allow pausing from within callback', async () => {
+      let shouldPauseInCallback = false;
+      const callback = vi.fn(async ({ pause }: { pause: () => void }) => {
+        if (shouldPauseInCallback) {
+          pause();
+        }
+      });
+
+      const { isActive } = useAsyncPolling(callback, { minInterval: 100 });
+
+      // First call - don't pause
+      await vi.advanceTimersByTimeAsync(100);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(isActive.value).toBe(true);
+
+      // Second call - don't pause
+      await vi.advanceTimersByTimeAsync(100);
+      expect(callback).toHaveBeenCalledTimes(2);
+      expect(isActive.value).toBe(true);
+
+      // Third call - pause from within callback
+      shouldPauseInCallback = true;
+      await vi.advanceTimersByTimeAsync(100);
+      expect(callback).toHaveBeenCalledTimes(3);
+      expect(isActive.value).toBe(false);
+
+      // Should not call again
+      await vi.advanceTimersByTimeAsync(200);
+      expect(callback).toHaveBeenCalledTimes(3);
+    });
+
+    it('should allow conditional pausing based on callback result', async () => {
+      let counter = 0;
+      const callback = vi.fn(async ({ pause }: { pause: () => void }) => {
+        counter++;
+        if (counter >= 3) {
+          pause();
+        }
+      });
+
+      const { isActive } = useAsyncPolling(callback, { minInterval: 100 });
+
+      expect(isActive.value).toBe(true);
+
+      // Call 1
+      await vi.advanceTimersByTimeAsync(100);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(isActive.value).toBe(true);
+
+      // Call 2
+      await vi.advanceTimersByTimeAsync(100);
+      expect(callback).toHaveBeenCalledTimes(2);
+      expect(isActive.value).toBe(true);
+
+      // Call 3 - should pause
+      await vi.advanceTimersByTimeAsync(100);
+      expect(callback).toHaveBeenCalledTimes(3);
+      expect(isActive.value).toBe(false);
+
+      // Should not call again
+      await vi.advanceTimersByTimeAsync(200);
+      expect(callback).toHaveBeenCalledTimes(3);
+    });
+
     it('should abort callback when paused during execution', async () => {
       let capturedSignal: AbortSignal | undefined;
 
