@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.5.17
+
+### Patch Changes
+
+- 5814e48: Small changes in sdk
+
 ## 5.5.16
 
 ### Patch Changes

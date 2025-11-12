@@ -1,5 +1,15 @@
 # @platforma-sdk/model
 
+## 1.45.26
+
+### Patch Changes
+
+- 55b218b: PFrameDriver decomposed
+- 5814e48: Small changes in sdk
+- Updated dependencies [55b218b]
+  - @milaboratories/pl-model-common@1.21.5
+  - @milaboratories/ptabler-expression-js@1.1.1
+
 ## 1.45.23
 
 ### Patch Changes

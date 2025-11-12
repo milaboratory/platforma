@@ -1,5 +1,15 @@
 # @milaboratories/pl-local
 
+## 2.12.1
+
+### Patch Changes
+
+- 5814e48: Small changes in sdk
+- Updated dependencies [55b218b]
+  - @milaboratories/ts-helpers@1.5.2
+  - @milaboratories/pl-model-common@1.21.5
+  - @milaboratories/pl-config@1.7.7
+
 ## 2.12.0
 
 ### Minor Changes

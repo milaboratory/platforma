@@ -1,5 +1,16 @@
 # @platforma-sdk/ui-vue
 
+## 1.45.26
+
+### Patch Changes
+
+- 5814e48: Small changes in sdk
+- Updated dependencies [55b218b]
+- Updated dependencies [5814e48]
+  - @platforma-sdk/model@1.45.26
+  - @milaboratories/uikit@2.5.4
+  - @milaboratories/ptabler-expression-js@1.1.1
+
 ## 1.45.23
 
 ### Patch Changes

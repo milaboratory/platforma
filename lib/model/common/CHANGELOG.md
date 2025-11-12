@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.21.5
+
+### Patch Changes
+
+- 55b218b: PFrameDriver decomposed
+
 ## 1.21.4
 
 ### Patch Changes
