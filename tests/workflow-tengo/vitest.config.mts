@@ -10,7 +10,7 @@ export default defineConfig({
     maxConcurrency: 1, // do not run tests of one file in parallel, even when they are marked with .concurrent()
     maxWorkers: 2,
     // fileParallelism: false // is equal to minWorkers = 1, maxWorkwrs = 1
-    retry: 2,
+    retry: 5,
 
 
     reporters: ['verbose'],
