@@ -1,23 +1,26 @@
 import canonicalize from 'canonicalize';
 
-type JsonPrimitive = string | number | boolean | null | undefined;
+type JsonPrimitive = string | number | boolean | null;
 
-type JsonValue = JsonPrimitive | { toJSON(): JsonValue } | JsonValue[] | {
-  [key: string]: JsonValue;
-};
+type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
-export type JsonSerializable = Exclude<JsonValue, undefined>;
+export type JsonSerializable =
+  | JsonPrimitive
+  | JsonSerializable[]
+  | { [key: string]: JsonSerializable }
+  | { toJSON(): JsonValue };
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 type NotAssignableToJson = bigint | symbol | Function;
 
 export type JsonCompatible<T> = unknown extends T ? unknown
-  : T extends JsonValue ? T
-    : {
-        [P in keyof T]: T[P] extends JsonValue ? T[P]
-          : [Exclude<T[P], undefined>] extends [NotAssignableToJson] ? never
-              : JsonCompatible<T[P]>;
-      };
+  : [T] extends [JsonValue] ? T
+      : [T] extends [NotAssignableToJson] ? never
+          : {
+              [P in keyof T]: [Exclude<T[P], undefined>] extends [JsonValue] ? T[P]
+                : [Exclude<T[P], undefined>] extends [NotAssignableToJson] ? never
+                    : JsonCompatible<T[P]>;
+            };
 
 export type StringifiedJson<T = unknown> = JsonCompatible<T> extends never ? never : string & {
   __json_stringified: T;

@@ -5,7 +5,7 @@ import {
   type PColumnSpec,
   type PColumnValues,
 } from '@platforma-sdk/model';
-import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
+import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 import { RefCountPoolBase, type PoolEntry } from '@milaboratories/ts-helpers';
 import { HttpHelpers } from '@milaboratories/pframes-rs-node';
 import fs from 'node:fs';
@@ -82,7 +82,13 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<FileName> {
     serverOptions: Omit<PFrameInternal.HttpServerOptions, 'handler'>,
   ): Promise<RemoteBlobProviderImpl> {
     const remoteBlobProvider = new LocalBlobProviderImpl(dataFolder);
-    const store = await HttpHelpers.createFsStore({ rootDir: dataFolder, logger });
+    const underlyingStore = await HttpHelpers.createFsStore({ rootDir: dataFolder, logger });
+    const store: PFrameInternal.ObjectStore = {
+      request: (filename, params) => {
+        const blobId = filename.slice(0, -PFrameInternal.ParquetExtension.length);
+        return underlyingStore.request(blobId as PFrameInternal.ParquetFileName, params);
+      },
+    };
 
     const handler = HttpHelpers.createRequestHandler({ store });
     const server = await HttpHelpers.createHttpServer({ ...serverOptions, handler });
