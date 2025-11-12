@@ -76,10 +76,6 @@ async function handleDeleteSchema() {
 </template>
 
 <style lang="scss" module>
-.modal {
-  display: flex;
-}
-
 .sidebarGroup {
   width: 100%;
   height: 100%;
