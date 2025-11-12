@@ -237,14 +237,14 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
     logger: PFrameInternal.Logger,
     serverOptions: Omit<PFrameInternal.HttpServerOptions, 'handler'>,
   ): Promise<RemoteBlobProviderImpl> {
-    const remoteBlobProvider = new RemoteBlobPool(blobDriver, logger);
-    const store = new BlobStore({ remoteBlobProvider, logger });
+    const pool = new RemoteBlobPool(blobDriver, logger);
+    const store = new BlobStore({ remoteBlobProvider: pool, logger });
 
     const handler = HttpHelpers.createRequestHandler({ store });
     const server = await HttpHelpers.createHttpServer({ ...serverOptions, handler });
     logger('info', `PFrames HTTP server started on ${server.info.url}`);
 
-    return new RemoteBlobProviderImpl(remoteBlobProvider, server);
+    return new RemoteBlobProviderImpl(pool, server);
   }
 
   public acquire(params: PlTreeEntry): PoolEntry {

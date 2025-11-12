@@ -81,7 +81,8 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<FileName> {
     logger: PFrameInternal.Logger,
     serverOptions: Omit<PFrameInternal.HttpServerOptions, 'handler'>,
   ): Promise<RemoteBlobProviderImpl> {
-    const remoteBlobProvider = new LocalBlobProviderImpl(dataFolder);
+    const pool = new LocalBlobProviderImpl(dataFolder);
+
     const underlyingStore = await HttpHelpers.createFsStore({ rootDir: dataFolder, logger });
     const store: PFrameInternal.ObjectStore = {
       request: (filename, params) => {
@@ -93,7 +94,7 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<FileName> {
     const handler = HttpHelpers.createRequestHandler({ store });
     const server = await HttpHelpers.createHttpServer({ ...serverOptions, handler });
 
-    return new RemoteBlobProviderImpl(remoteBlobProvider, server);
+    return new RemoteBlobProviderImpl(pool, server);
   }
 
   public acquire(params: FileName): PoolEntry {
