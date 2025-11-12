@@ -48,7 +48,7 @@ jobs:
         }
       env: |
         { "BODY_LIMIT": "1048576000",
-          "TEST_TIMEOUT": "30m" }
+          "LONG_TEST_TIMEOUT": "30m" }
     secrets:
       env: |
         { "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
