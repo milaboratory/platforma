@@ -12,6 +12,7 @@
     "build:dry-run": "turbo run build --dry-run=json",
     "watch-build": "turbo watch build",
     "test": "PL_PKG_DEV=local turbo run test --concurrency 1 --output-logs=errors-only",
+    "test:verbose": "PL_PKG_DEV=local turbo run test --concurrency 1",
     "test:pl-ci": "turbo run test --concurrency 1 --output-logs=errors-only --force",
     "test:dry-run": "PL_PKG_DEV=local turbo run test --dry-run=json",
     "test:no-cache": "PL_PKG_DEV=local turbo run test --concurrency 1 --force",

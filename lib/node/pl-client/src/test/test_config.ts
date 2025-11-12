@@ -9,6 +9,12 @@ import type { OptionalResourceId } from '../core/types';
 import { NullResourceId, resourceIdToString } from '../core/types';
 import { inferAuthRefreshTime } from '../core/auth';
 import * as path from 'node:path';
+import type { TestTcpProxy } from './tcp-proxy';
+import { startTcpProxy } from './tcp-proxy';
+
+export {
+  TestTcpProxy,
+};
 
 export interface TestConfig {
   address: string;
@@ -144,25 +150,94 @@ export async function getTestLLClient(confOverrides: Partial<PlClientConfig> = {
   return new LLPlClient({ ...conf, ...confOverrides }, { auth });
 }
 
-export async function getTestClient(alternativeRoot?: string) {
+export async function getTestClient(
+  alternativeRoot?: string,
+  confOverrides: Partial<PlClientConfig> = {},
+) {
   const { conf, auth } = await getTestClientConf();
   if (alternativeRoot !== undefined && conf.alternativeRoot !== undefined)
     throw new Error('test pl address configured with alternative root');
-  return await PlClient.init({ ...conf, alternativeRoot }, auth);
+  return await PlClient.init({ ...conf, ...confOverrides, alternativeRoot }, auth);
 }
 
-export async function withTempRoot<T>(body: (pl: PlClient) => Promise<T>): Promise<T> {
+export type WithTempRootOptions = {
+  /** If true and PL_ADDRESS is http://localhost or http://127.0.0.1:<port>,
+   * a TCP proxy will be started and PL client will connect through it. */
+  viaTcpProxy: true;
+  /** Artificial latency for proxy (ms). Default 0 */
+  proxyLatencyMs?: number;
+} | {
+  viaTcpProxy?: undefined;
+};
+
+export async function withTempRoot<T>(
+  body: (pl: PlClient) => Promise<T>
+): Promise<T | void>;
+
+export async function withTempRoot<T>(
+  body: (pl: PlClient, proxy: Awaited<ReturnType<typeof startTcpProxy>>) => Promise<T>,
+  options: {
+    viaTcpProxy: true;
+    proxyLatencyMs?: number;
+  },
+): Promise<T>;
+
+export async function withTempRoot<T>(
+  body: (pl: PlClient, proxy: any) => Promise<T>,
+  options: WithTempRootOptions = {},
+): Promise<T | undefined> {
   const alternativeRoot = `test_${Date.now()}_${randomUUID()}`;
   let altRootId: OptionalResourceId = NullResourceId;
+  // Proxy management
+  let proxy: Awaited<ReturnType<typeof startTcpProxy>> | undefined;
+  let confOverrides: Partial<PlClientConfig> = {};
   try {
-    const client = await getTestClient(alternativeRoot);
+    // Optionally start TCP proxy and rewrite PL_ADDRESS to point to proxy
+    if (options.viaTcpProxy === true && process.env.PL_ADDRESS) {
+      try {
+        const url = new URL(process.env.PL_ADDRESS);
+        const isHttp = url.protocol === 'http:';
+        const isLocal = url.hostname === '127.0.0.1' || url.hostname === 'localhost';
+        const port = parseInt(url.port);
+        if (isHttp && isLocal && Number.isFinite(port)) {
+          proxy = await startTcpProxy({ targetPort: port, latency: options.proxyLatencyMs ?? 0 });
+          // Override client connection host:port to proxy
+          confOverrides = { hostAndPort: `127.0.0.1:${proxy.port}` } as Partial<PlClientConfig>;
+        } else {
+          console.warn('*** skipping proxy-based test, PL_ADDRESS is not localhost', process.env.PL_ADDRESS);
+          return;
+        }
+      } catch (_e) {
+        // ignore proxy setup errors; tests will run against original address
+      }
+    }
+
+    const client = await getTestClient(alternativeRoot, confOverrides);
     altRootId = client.clientRoot;
-    const value = await body(client);
+    console.log('altRootId', altRootId, altRootId.toString(16));
+    const value = await body(client, proxy);
     const rawClient = await getTestClient();
-    await rawClient.deleteAlternativeRoot(alternativeRoot);
+    try {
+      await rawClient.deleteAlternativeRoot(alternativeRoot);
+    } catch (cleanupErr: any) {
+      // Cleanup may fail if test intentionally deleted resources
+      console.warn(`Failed to clean up alternative root ${alternativeRoot}:`, cleanupErr.message);
+    }
     return value;
   } catch (err: any) {
+    console.log('ERROR stack trace:', err.stack);
     console.log(`ALTERNATIVE ROOT: ${alternativeRoot} (${resourceIdToString(altRootId)})`);
-    throw new Error(err.message, { cause: err });
+    throw err;
+    // throw new Error('withTempRoot error: ' + err.message, { cause: err });
+  } finally {
+    // Stop proxy if started
+    if (proxy) {
+      try {
+        await proxy.disconnectAll();
+      } catch (_e) { /* ignore */ }
+      try {
+        await new Promise<void>((resolve) => proxy!.server.close(() => resolve()));
+      } catch (_e) { /* ignore */ }
+    }
   }
 }
