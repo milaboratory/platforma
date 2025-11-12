@@ -91,7 +91,7 @@ export async function startTcpProxy(options: TcpProxyOptions) {
     });
 
   server.listen({ port: port ?? 0 }, () => {
-    console.log('opened server on', server.address());
+    console.log('Test TCP proxy server started on', server.address());
   });
 
   // Wait for proxy to be ready
