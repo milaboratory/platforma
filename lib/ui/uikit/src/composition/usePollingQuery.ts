@@ -163,12 +163,7 @@ export function usePollingQuery<Args, Result>(
   const waiters: Waiter[] = [];
 
   const markStale = () => {
-    const currentValue = data.value;
-    if ('value' in currentValue) {
-      data.value = { status: 'stale', value: currentValue.value };
-    } else {
-      data.value = { status: 'stale' };
-    }
+    data.value = { ...data.value, status: 'stale' };
   };
 
   const scheduleWaiters = () => {
@@ -178,7 +173,6 @@ export function usePollingQuery<Args, Result>(
   };
 
   const waitForSlot = async () => {
-    if (internal.maxInFlightRequests <= 0) return;
     if (inFlight < internal.maxInFlightRequests) return;
     await new Promise<void>((resolve) => {
       waiters.push({ resolve });

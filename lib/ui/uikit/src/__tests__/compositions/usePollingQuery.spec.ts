@@ -93,7 +93,7 @@ describe('usePollingQuery', () => {
     expect(fn).toHaveBeenCalledTimes(1);
     expect(calls[0].startTime).toBe(0);
 
-    vi.advanceTimersByTime(400);
+    await advanceTime(400);
     calls[0].resolve('first');
     await flushMicrotasks();
 
@@ -101,7 +101,7 @@ describe('usePollingQuery', () => {
     expect(data.value.value).toBe('first');
     expect(lastError.value).toBeNull();
 
-    vi.advanceTimersByTime(599);
+    await advanceTime(599);
     expect(fn).toHaveBeenCalledTimes(1);
 
     await advanceTime(1);
@@ -639,7 +639,7 @@ describe('usePollingQuery', () => {
 
     await advanceTime(0);
     const firstStart = calls[0].startTime;
-    vi.advanceTimersByTime(350);
+    await advanceTime(350);
     calls[0].resolve('done');
     await flushMicrotasks();
 
