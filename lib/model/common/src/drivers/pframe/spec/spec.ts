@@ -270,7 +270,7 @@ export function readAnnotationJson<T extends keyof AnnotationJson>(
  * Each record inside a PColumn is addressed by a unique tuple of values set for
  * all the axes specified in the column spec.
  */
-export interface AxisSpec {
+export type AxisSpec = {
   /** Type of the axis value. Should not use non-key types like float or double. */
   readonly type: ValueType;
 
@@ -304,7 +304,7 @@ export interface AxisSpec {
    * in the list that defines the structure of the data model.
    */
   readonly parentAxes?: number[];
-}
+};
 
 /** Parents are specs, not indexes; normalized axis can be used considering its parents independently from column */
 export interface AxisSpecNormalized extends Omit<AxisSpec, 'parentAxes'> {
@@ -512,7 +512,7 @@ export const PColumnName = {
  *
  * Each element in tuple correspond to the axis having the same index in axesSpec.
  */
-export interface PUniversalColumnSpec extends PObjectSpec {
+export type PUniversalColumnSpec = PObjectSpec & {
   /** Defines specific type of BObject, the most generic type of unit of
    * information in Platforma Project. */
   readonly kind: 'PColumn';
@@ -536,7 +536,7 @@ export interface PUniversalColumnSpec extends PObjectSpec {
 
   /** Axes specifications */
   readonly axesSpec: AxesSpec;
-}
+};
 
 /**
  * Specification of a data column.
@@ -546,10 +546,10 @@ export interface PUniversalColumnSpec extends PObjectSpec {
  * values like files or other abstract data types. Data columns are optimized for storing and processing
  * basic tabular data.
  */
-export interface PDataColumnSpec extends PUniversalColumnSpec {
+export type PDataColumnSpec = PUniversalColumnSpec & {
   /** Type of column values */
   readonly valueType: ValueType;
-}
+};
 
 // @todo: change this to PUniversalColumnSpec
 export type PColumnSpec = PDataColumnSpec;

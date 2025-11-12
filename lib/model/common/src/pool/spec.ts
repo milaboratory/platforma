@@ -4,7 +4,7 @@ import { assertNever } from '../util';
 import type { ResultPoolEntry } from './entry';
 
 /** Any object exported into the result pool by the block always have spec attached to it */
-export interface PObjectSpec {
+export type PObjectSpec = {
   /** PObject kind discriminator */
   readonly kind: string;
 
@@ -16,7 +16,7 @@ export interface PObjectSpec {
 
   /** Additional information attached to the object */
   readonly annotations?: Record<string, string>;
-}
+};
 
 /** Stable PObject id */
 export type PObjectId = Branded<string, 'PColumnId'>;

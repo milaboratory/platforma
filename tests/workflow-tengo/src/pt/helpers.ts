@@ -59,7 +59,9 @@ export async function getTableData<O extends string>(
       if (!isPColumn(obj)) throw new Error(`not a PColumn (kind = ${obj.spec.kind})`);
       return obj;
     });
-    return driverKit.pFrameDriver.createPFrame(pColumns, ctx);
+    const { key, unref } = driverKit.pFrameDriver.createPFrame(pColumns);
+    ctx.addOnDestroy(unref);
+    return key;
   };
   const handle = await getOutput(result, outputName, callback, timeout);
 

@@ -50,7 +50,7 @@
     "@milaboratories/pl-config": "workspace:*",
     "@milaboratories/pl-errors": "workspace:*",
     "@milaboratories/pl-deployments": "workspace:*",
-    "es-toolkit": "catalog:"
+    "@milaboratories/pf-driver": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
@@ -61,6 +61,7 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@types/node": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@milaboratories/ts-configs": "workspace:*",
+    "tslib": "catalog:"
   }
 }
