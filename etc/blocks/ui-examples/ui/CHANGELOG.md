@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.6.2
+
+### Patch Changes
+
+- 6f67293: Correct annotations types
+- Updated dependencies [6f67293]
+  - @platforma-sdk/model@1.45.23
+  - @milaboratories/milaboratories.ui-examples.model@1.3.2
+
 ## 1.6.1
 
 ### Patch Changes

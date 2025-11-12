@@ -7,6 +7,9 @@ export type Props = {
 </script>
 <script setup lang="ts">
 import { isNil, randomInt } from '@milaboratories/helpers';
+import type {
+  FilterSpecTypeFieldRecord,
+} from '@milaboratories/uikit';
 import {
   getFilterUiMetadata,
   PlBtnSecondary,
@@ -14,7 +17,7 @@ import {
   PlElementList,
   PlSidebarItem,
 } from '@milaboratories/uikit';
-import type { PObjectId, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { FilterSpecLeaf, PObjectId, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
 import { computed } from 'vue';
 import type { Filter, FilterSpec } from '../types';
 import { createDefaultFilterMetadata } from '../utils';
@@ -51,7 +54,8 @@ async function addFilterFromSelected() {
     name: `Selected list (${shortReminder})`,
     isExpanded: false,
     type: 'or',
-    filters: values.map((value) => ({
+    filters: values.map((value, i) => ({
+      id: i,
       type: 'patternEquals',
       column: columnId as SUniversalPColumnId,
       value,
@@ -67,8 +71,10 @@ const getColumnLabel = (filter: FilterSpec) => {
     ?? filter.type;
 };
 
-const getFormMetadata = (filter: FilterSpec) => {
-  return !isNil(filter.type) ? getFilterUiMetadata(filter.type).form : createDefaultFilterMetadata();
+const getFormMetadata = (filter: FilterSpec): FilterSpecTypeFieldRecord<FilterSpecLeaf> => {
+  return !isNil(filter.type)
+    ? getFilterUiMetadata(filter.type).form as FilterSpecTypeFieldRecord<FilterSpecLeaf>
+    : createDefaultFilterMetadata();
 };
 
 const getFilterValues = (filter: FilterSpec) => {
@@ -104,7 +110,7 @@ const getFilterValues = (filter: FilterSpec) => {
 
         <PlElementList
           v-model:items="step.filter.filters"
-          :get-item-key="(item) => item.id!"
+          :get-item-key="(item) => item.id"
           :is-expanded="(item) => Boolean(item.isExpanded)"
           :on-expand="(item) => item.isExpanded = !Boolean(item.isExpanded)"
         >
@@ -114,9 +120,9 @@ const getFilterValues = (filter: FilterSpec) => {
           <template #item-content="{ item, index }">
             <template v-if="item.type !== 'or' && item.type !== 'and'">
               <DynamicForm
-                v-model="step.filter.filters[index]"
-                :form-metadata="getFormMetadata(item)"
+                v-model="(step.filter.filters[index] as FilterSpecLeaf)"
                 :columns="props.columns"
+                :form-metadata="getFormMetadata(item)"
               />
             </template>
             <template v-else>

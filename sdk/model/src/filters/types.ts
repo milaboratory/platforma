@@ -8,11 +8,11 @@ export type SimplifiedUniversalPColumnEntry = {
   obj: SimplifiedPColumnSpec;
 };
 
-export type FilterSpecNode<Leaf, Common = {}> =
-  | Common & Leaf
-  | Common & { type: 'not'; filter: Common & Leaf }
-  | Common & { type: 'or'; filters: FilterSpecNode<Leaf, Common>[] }
-  | Common & { type: 'and'; filters: FilterSpecNode<Leaf, Common>[] };
+export type FilterSpecNode<Leaf, CommonNode = {}, CommonLeaf = {}> =
+  | CommonLeaf & Leaf
+  | CommonNode & { type: 'not'; filter: CommonLeaf & Leaf }
+  | CommonNode & { type: 'or'; filters: FilterSpecNode<Leaf, CommonNode, CommonLeaf>[] }
+  | CommonNode & { type: 'and'; filters: FilterSpecNode<Leaf, CommonNode, CommonLeaf>[] };
 
 export type FilterSpecLeaf =
   | { type: undefined }
@@ -39,8 +39,8 @@ export type FilterSpecLeaf =
   | { type: 'lessThanColumnOrEqual'; column: SUniversalPColumnId; rhs: SUniversalPColumnId; minDiff?: number }
   | { type: 'greaterThanColumnOrEqual'; column: SUniversalPColumnId; rhs: SUniversalPColumnId; minDiff?: number };
 
-export type FilterSpec<Leaf extends FilterSpecLeaf = FilterSpecLeaf, Common = {}> =
-  FilterSpecNode<Leaf, Common>;
+export type FilterSpec<Leaf extends FilterSpecLeaf = FilterSpecLeaf, CommonNode = {}, CommonLeaf = CommonNode> =
+  FilterSpecNode<Leaf, CommonNode, CommonLeaf>;
 
 export type FilterSpecType = Exclude<FilterSpec, { type: undefined }>['type'];
 
