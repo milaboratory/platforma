@@ -10,7 +10,7 @@
     },
     "type-check": {
       "outputs": [],
-      "dependsOn": ["^build"]
+      "dependsOn": ["lint", "^build"]
     },
     "build": {
       "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"],
