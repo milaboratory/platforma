@@ -50,15 +50,15 @@ import {
 import { PTableDefPool } from './ptable_def_pool';
 import { PTablePool } from './ptable_pool';
 import {
-  PTableCacheUi,
-  PTableCacheUiOpsDefaults,
-  type PTableCacheUiOps,
-} from './ptable_cache_ui';
+  PTableCachePerFrame,
+  PTableCachePerFrameOpsDefaults,
+  type PTableCachePerFrameOps,
+} from './ptable_cache_per_frame';
 import {
-  PTableCacheModel,
-  PTableCacheModelOpsDefaults,
-  type PTableCacheModelOps,
-} from './ptable_cache_model';
+  PTableCachePlain,
+  PTableCachePlainOpsDefaults,
+  type PTableCachePlainOps,
+} from './ptable_cache_plain';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface LocalBlobProvider<TreeEntry extends JsonSerializable>
@@ -67,7 +67,7 @@ export interface LocalBlobProvider<TreeEntry extends JsonSerializable>
 export interface RemoteBlobProvider<TreeEntry extends JsonSerializable>
   extends PoolRemoteBlobProvider<TreeEntry>, AsyncDisposable {}
 
-export type AbstractPFrameDriverOps = PTableCacheUiOps & PTableCacheModelOps & {
+export type AbstractPFrameDriverOps = PTableCachePerFrameOps & PTableCachePlainOps & {
   /** Concurrency limits for `getUniqueValues` and `calculateTableData` requests */
   pFrameConcurrency: number;
   /** Concurrency limits for `getShape` and `getData` requests */
@@ -75,8 +75,8 @@ export type AbstractPFrameDriverOps = PTableCacheUiOps & PTableCacheModelOps & {
 };
 
 export const AbstractPFrameDriverOpsDefaults: AbstractPFrameDriverOps = {
-  ...PTableCacheUiOpsDefaults,
-  ...PTableCacheModelOpsDefaults,
+  ...PTableCachePerFrameOpsDefaults,
+  ...PTableCachePlainOpsDefaults,
   pFrameConcurrency: 1, // 1 join is executed in parallel and utilize all RAM and CPU cores
   pTableConcurrency: 1, // 1 joined table is read from disk at a time, which matches 1 table the user can view in the UI
 };
@@ -99,8 +99,8 @@ implements AbstractInternalPFrameDriver<PColumnData> {
   private readonly pTableDefs: PTableDefPool;
   private readonly pTables: PTablePool<TreeEntry>;
 
-  private readonly pTableCacheUi: PTableCacheUi;
-  private readonly pTableCacheModel: PTableCacheModel;
+  private readonly pTableCachePerFrame: PTableCachePerFrame;
+  private readonly pTableCachePlain: PTableCachePlain;
 
   private readonly frameConcurrencyLimiter: ConcurrencyLimitingExecutor;
   private readonly tableConcurrencyLimiter: ConcurrencyLimitingExecutor;
@@ -138,8 +138,8 @@ implements AbstractInternalPFrameDriver<PColumnData> {
     this.pTableDefs = new PTableDefPool(this.logger);
     this.pTables = new PTablePool(this.pFrames, this.pTableDefs, this.logger);
 
-    this.pTableCacheUi = new PTableCacheUi(this.logger, options);
-    this.pTableCacheModel = new PTableCacheModel(this.logger, options);
+    this.pTableCachePerFrame = new PTableCachePerFrame(this.logger, options);
+    this.pTableCachePlain = new PTableCachePlain(this.logger, options);
   }
 
   async dispose(): Promise<void> {
@@ -274,7 +274,7 @@ implements AbstractInternalPFrameDriver<PColumnData> {
           withPredecessors: true,
           signal: combinedSignal,
         });
-        this.pTableCacheUi.cache(table, overallSize);
+        this.pTableCachePerFrame.cache(table, overallSize);
 
         return spec.map((spec, i) => ({
           spec: spec,
@@ -347,7 +347,7 @@ implements AbstractInternalPFrameDriver<PColumnData> {
       return { shape, overallSize };
     });
 
-    this.pTableCacheModel.cache(table, overallSize, defDisposeSignal);
+    this.pTableCachePlain.cache(table, overallSize, defDisposeSignal);
     return shape;
   }
 
@@ -378,7 +378,7 @@ implements AbstractInternalPFrameDriver<PColumnData> {
       return { data, overallSize };
     });
 
-    this.pTableCacheModel.cache(table, overallSize, defDisposeSignal);
+    this.pTableCachePlain.cache(table, overallSize, defDisposeSignal);
     return data;
   }
 }

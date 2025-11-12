@@ -5,7 +5,7 @@ import { LRUCache } from 'lru-cache';
 import { logPFrames } from './logging';
 import type { PTableHolder } from './ptable_pool';
 
-export type PTableCacheModelOps = {
+export type PTableCachePlainOps = {
   /**
    * Maximum size of `createPTable` results cached on disk.
    * The limit is soft, as the same table could be materialized with other requests and will not be deleted in such case.
@@ -14,17 +14,17 @@ export type PTableCacheModelOps = {
   pTablesCacheMaxSize: number;
 };
 
-export const PTableCacheModelOpsDefaults: PTableCacheModelOps = {
+export const PTableCachePlainOpsDefaults: PTableCachePlainOps = {
   pTablesCacheMaxSize: 32 * 1024 * 1024 * 1024, // 32 GB (must be at least 8GB)
 };
 
-export class PTableCacheModel {
+export class PTableCachePlain {
   private readonly global: LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>;
   private readonly disposeListeners = new Set<PTableHandle>();
 
   constructor(
     private readonly logger: PFrameInternal.Logger,
-    ops: PTableCacheModelOps,
+    ops: PTableCachePlainOps,
   ) {
     this.global = new LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>({
       maxSize: ops.pTablesCacheMaxSize,

@@ -5,7 +5,7 @@ import { LRUCache } from 'lru-cache';
 import { logPFrames } from './logging';
 import type { PTableHolder } from './ptable_pool';
 
-export type PTableCacheUiOps = {
+export type PTableCachePerFrameOps = {
   /** Maximum number of `calculateTableData` results cached for each PFrame */
   pFrameCacheMaxCount: number;
   /**
@@ -16,19 +16,19 @@ export type PTableCacheUiOps = {
   pFramesCacheMaxSize: number;
 };
 
-export const PTableCacheUiOpsDefaults: PTableCacheUiOps = {
+export const PTableCachePerFrameOpsDefaults: PTableCachePerFrameOps = {
   pFrameCacheMaxCount: 18, // SHM trees create 3 PTables per graphic, we want to cache 6 graphics per PFrame
   pFramesCacheMaxSize: 8 * 1024 * 1024 * 1024, // 8 GB, same as blob driver cache (must be at least 2GB)
 };
 
-export class PTableCacheUi {
+export class PTableCachePerFrame {
   private readonly perFrame = new Map<PFrameHandle, LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>>();
   private readonly global: LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>;
   private readonly disposeListeners = new Set<PTableHandle>();
 
   constructor(
     private readonly logger: PFrameInternal.Logger,
-    private readonly ops: PTableCacheUiOps,
+    private readonly ops: PTableCachePerFrameOps,
   ) {
     this.global = new LRUCache<PTableHandle, PoolEntry<PTableHandle, PTableHolder>>({
       maxSize: this.ops.pFramesCacheMaxSize,
