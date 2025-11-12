@@ -95,6 +95,7 @@ export * from './colors';
 /**
  * Usables
  */
+export { useAsyncPolling } from './composition/useAsyncPolling';
 export { useClickOutside } from './composition/useClickOutside';
 export { useComponentProp } from './composition/useComponentProp';
 export { useConfirm } from './composition/useConfirm';
