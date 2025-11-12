@@ -109,6 +109,9 @@ export class Project {
       .withPreCalculatedValueTree();
     this.rid = rid;
     this.refreshLoopResult = this.refreshLoop();
+    this.refreshLoopResult.catch((err) => {
+      env.logger.error(err); // TODO (safe voiding for now)
+    });
     this.activeConfigs = activeConfigs(projectTree.entry(), env);
   }
 

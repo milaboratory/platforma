@@ -11,6 +11,7 @@ import {
   rethrowMeaningfulError,
   UnrecoverablePlError,
 } from './errors';
+import { StatefulPromise } from './StatefulPromise';
 
 export type ClientMessageRequest = TxAPI_ClientMessage['request'];
 
@@ -302,11 +303,11 @@ export class LLPlTransaction {
     if (this.closed) return Promise.reject(new Error('Transaction already closed'));
 
     // Note: Promise synchronously executes a callback passed to a constructor
-    const result = new Promise<OneOfKind<ServerMessageResponse, Kind>>((resolve, reject) => {
+    const result = StatefulPromise.fromDeferredReject(new Promise<OneOfKind<ServerMessageResponse, Kind>>((resolve, reject) => {
       this.responseHandlerQueue.push(
         createResponseHandler(r.oneofKind, expectMultiResponse, resolve, reject),
       );
-    });
+    }));
 
     // Awaiting message dispatch to catch any associated errors.
     // There is no hurry, we are not going to receive a response until message is sent.
