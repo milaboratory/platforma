@@ -37,7 +37,6 @@ const options = [
   },
 ];
 const enableDnd = ref(false);
-const draggedId = ref<SUniversalPColumnId | undefined>();
 
 async function searchOptions({ columnId, searchStr, axisIdx }: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) {
   if (axisIdx !== undefined) {
@@ -173,8 +172,7 @@ watch(() => filtersModel.value, (m) => {
           :key="option.id"
           :draggable="enableDnd ? 'true' : undefined"
           :class="$style.columnChip"
-          @dragstart="() => draggedId = option.id"
-          @dragend="() => draggedId = undefined"
+          @dragstart="(e) => e?.dataTransfer?.setData('text/plain', option.id)"
         >
           {{ option.label }}
         </div>
@@ -184,9 +182,8 @@ watch(() => filtersModel.value, (m) => {
           v-model="filtersModel"
           :items="options"
           :enable-dnd="enableDnd"
-          :dragged-id="draggedId"
-          :search-options="searchOptions"
-          :search-model="searchModel"
+          :get-suggest-options="searchOptions"
+          :get-suggest-model="searchModel"
         />
       </div>
     </div>

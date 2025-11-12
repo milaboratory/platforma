@@ -1,10 +1,11 @@
-import type { FilterSpec, ValueType } from '@platforma-sdk/model';
-import { assertNever, type AxisSpec, type PColumnSpec, type SUniversalPColumnId } from '@platforma-sdk/model';
-import { isSupportedFilterType, type Filter, type FilterType, type Group, type PlAdvancedFilterUI, type SupportedFilterTypes } from './types';
+import type { ValueType } from '@platforma-sdk/model';
+import { assertNever, getTypeFromPColumnOrAxisSpec, type AxisSpec, type PColumnSpec, type SUniversalPColumnId } from '@platforma-sdk/model';
+import { type CommonFilterSpec, isSupportedFilterType, type Filter, type FilterType, type Group, type PlAdvancedFilterUI, type SupportedFilterTypes } from './types';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, SUPPORTED_FILTER_TYPES } from './constants';
 import { filterUiMetadata } from '@milaboratories/uikit';
+import { ref, watch, type ModelRef } from 'vue';
 
-function toInnerFilter(outerFilter: FilterSpec): Filter | null {
+function toInnerFilter(outerFilter: CommonFilterSpec): Filter | null {
   if (!('column' in outerFilter) || outerFilter.type === undefined || !isSupportedFilterType(outerFilter.type)) {
     return null;
   }
@@ -27,7 +28,7 @@ function getNewGroupId() {
   return String(groupIdCounter);
 }
 
-function toInnerFiltersGroup(f: FilterSpec): Group | null {
+function toInnerFiltersGroup(f: CommonFilterSpec): Group | null {
   if (f.type === 'not') {
     const group = toInnerFiltersGroup(f.filter);
     return group
@@ -36,6 +37,7 @@ function toInnerFiltersGroup(f: FilterSpec): Group | null {
           operand: group.operand,
           filters: group.filters,
           id: getNewGroupId(),
+          expanded: group.expanded,
         }
       : null;
   }
@@ -45,6 +47,7 @@ function toInnerFiltersGroup(f: FilterSpec): Group | null {
       not: false,
       filters: f.filters.map((f) => toInnerFilter(f)).filter((v) => v !== null) as Filter[],
       id: getNewGroupId(),
+      expanded: f.expanded ?? true,
     };
   }
   if (SUPPORTED_FILTER_TYPES.has(f.type as SupportedFilterTypes)) {
@@ -54,12 +57,13 @@ function toInnerFiltersGroup(f: FilterSpec): Group | null {
       not: false,
       filters: filter ? [filter] : [],
       id: getNewGroupId(),
+      expanded: f.expanded ?? true,
     };
   }
   return null;
 }
 
-export function toInnerModel(m: FilterSpec): PlAdvancedFilterUI {
+export function toInnerModel(m: CommonFilterSpec): PlAdvancedFilterUI {
   const res: PlAdvancedFilterUI = {
     operand: 'or',
     groups: [],
@@ -80,7 +84,7 @@ export function toInnerModel(m: FilterSpec): PlAdvancedFilterUI {
   return res;
 }
 
-function toOuterFilter(filter: Filter): FilterSpec | null {
+function toOuterFilter(filter: Filter): CommonFilterSpec | null {
   if (
     filter.type === 'isNA' || filter.type === 'isNotNA'
     || filter.type === 'inSet' || filter.type === 'notInSet'
@@ -105,20 +109,21 @@ function toOuterFilter(filter: Filter): FilterSpec | null {
   assertNever(filter.type);
 }
 
-function toOuterFilterGroup(m: Group): FilterSpec {
-  const res: FilterSpec = {
+function toOuterFilterGroup(m: Group): CommonFilterSpec {
+  const res: CommonFilterSpec = {
     type: m.operand,
-    filters: m.filters.map(toOuterFilter).filter((v): v is FilterSpec => v !== null),
+    expanded: m.expanded,
+    filters: m.filters.map(toOuterFilter).filter((v): v is CommonFilterSpec => v !== null),
   };
   if (m.not) {
     return {
       type: 'not',
       filter: res,
-    } as FilterSpec;
+    } as CommonFilterSpec;
   }
   return res;
 }
-export function toOuterModel(m: PlAdvancedFilterUI): FilterSpec {
+export function toOuterModel(m: PlAdvancedFilterUI): CommonFilterSpec {
   return {
     type: m.operand,
     filters: m.groups.map(toOuterFilterGroup),
@@ -130,6 +135,7 @@ export function createNewGroup(selectedSourceId: string) {
     id: getNewGroupId(),
     not: false,
     operand: 'and' as const,
+    expanded: true,
     filters: [{
       ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
       column: selectedSourceId as SUniversalPColumnId,
@@ -143,8 +149,7 @@ export type NormalizedSpecData = {
   domain: PColumnSpec['domain'];
 };
 export function getNormalizedSpec(spec: PColumnSpec | AxisSpec): NormalizedSpecData {
-  const valueType = 'kind' in spec ? spec.valueType : spec.type;
-  return { valueType, annotations: spec.annotations, domain: spec.domain };
+  return { valueType: getTypeFromPColumnOrAxisSpec(spec), annotations: spec.annotations, domain: spec.domain };
 }
 
 export function isNumericValueType(spec?: PColumnSpec | AxisSpec): boolean {
@@ -172,4 +177,26 @@ export function isStringFilter(filter: Filter): filter is Filter & { type: 'patt
 
 export function getFilterInfo(filterType: FilterType): { label: string; supportedFor: (spec: NormalizedSpecData) => boolean } {
   return filterUiMetadata[filterType as keyof typeof filterUiMetadata];
+}
+
+export function useInnerModel<T, V>(
+  toInnerModel: (v: T) => V,
+  toOuterModel: (v: V) => T,
+  model: ModelRef<T>,
+) {
+  const innerModel = ref<V>(toInnerModel(model.value));
+  function updateOuterModelValue(v: V) {
+    model.value = toOuterModel(v);
+  }
+  function updateInnerModelValue(v: T) {
+    innerModel.value = toInnerModel(v);
+  }
+  watch(() => model.value, (v: T) => {
+    updateInnerModelValue(v);
+  }, { deep: true });
+  watch(() => innerModel.value, (v: V) => {
+    updateOuterModelValue(v);
+  }, { deep: true });
+
+  return innerModel;
 }

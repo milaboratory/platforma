@@ -1,5 +1,7 @@
-import type { AxisSpec, FilterSpecLeaf, FilterSpecType, ListOptionBase, PColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { AxisSpec, FilterSpec, FilterSpecLeaf, FilterSpecType, ListOptionBase, PColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
 import { SUPPORTED_FILTER_TYPES } from './constants';
+
+export type CommonFilterSpec = FilterSpec<FilterSpecLeaf, { expanded?: boolean }>;
 
 // Not supported: topN, bottomN, lessThanColumn, lessThanColumnOrEqual
 // or, and, not - in groups
@@ -46,6 +48,7 @@ export type Group = {
   not: boolean;
   filters: Filter[];
   operand: Operand;
+  expanded: boolean;
 };
 
 export type PlAdvancedFilterUI = {

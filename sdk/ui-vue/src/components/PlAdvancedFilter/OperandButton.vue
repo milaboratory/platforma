@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { Operand } from './types';
 
-defineProps<{
+const props = defineProps<{
   active: Operand;
   disabled: boolean;
   onSelect: (op: Operand) => void;
@@ -14,8 +14,8 @@ const OPTIONS: Operand[] = ['and', 'or'];
     <div
       v-for="op in OPTIONS"
       :key="op"
-      :class="[$style.operand, {[$style.active]: op === active && !disabled}]"
-      @click="!disabled && onSelect(op)"
+      :class="[$style.operand, {[$style.active]: op === props.active && !props.disabled}]"
+      @click="!props.disabled && props.onSelect(op)"
     >
       {{ op }}
     </div>

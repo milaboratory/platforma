@@ -13,9 +13,9 @@ const props = defineProps<{
   columnOptions: SourceOptionInfo[];
   enableDnd: boolean;
   isLast: boolean;
-  searchOptions: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
+  getSuggestOptions: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
     ((params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>[]);
-  searchModel: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
+  getSuggestModel: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
     ((params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>);
   onDelete: (columnId: SUniversalPColumnId) => void;
   onChangeOperand: (op: Operand) => void;
@@ -23,14 +23,14 @@ const props = defineProps<{
 
 const filter = defineModel<Filter>({ required: true });
 
-async function searchModelMultiFn(id: SUniversalPColumnId, v: string[], axisIdx?: number): Promise<ListOptionBase<string>[]> {
-  return Promise.all(v.map((v) => props.searchModel({ columnId: id, searchStr: v, axisIdx }) as Promise<ListOptionBase<string>>));
+async function getSuggestModelMultiFn(id: SUniversalPColumnId, v: string[], axisIdx?: number): Promise<ListOptionBase<string>[]> {
+  return Promise.all(v.map((v) => props.getSuggestModel({ columnId: id, searchStr: v, axisIdx }) as Promise<ListOptionBase<string>>));
 }
-async function searchModelSingleFn(id: SUniversalPColumnId, v: string, axisIdx?: number): Promise<ListOptionBase<string>> {
-  return props.searchModel({ columnId: id, searchStr: v, axisIdx }) as Promise<ListOptionBase<string>>;
+async function getSuggestModelSingleFn(id: SUniversalPColumnId, v: string, axisIdx?: number): Promise<ListOptionBase<string>> {
+  return props.getSuggestModel({ columnId: id, searchStr: v, axisIdx }) as Promise<ListOptionBase<string>>;
 }
-async function searchOptionsFn(id: SUniversalPColumnId, str: string, axisIdx?: number): Promise<ListOptionBase<string>[]> {
-  return props.searchOptions({ columnId: id, searchStr: str, axisIdx }) as Promise<ListOptionBase<string>[]>;
+async function getSuggestOptionsFn(id: SUniversalPColumnId, str: string, axisIdx?: number): Promise<ListOptionBase<string>[]> {
+  return props.getSuggestOptions({ columnId: id, searchStr: str, axisIdx }) as Promise<ListOptionBase<string>[]>;
 }
 
 function changeFilterType() {
@@ -73,7 +73,10 @@ function changeSourceId(newSourceId?: SUniversalPColumnId) {
   }
 }
 
-const inconsistentSourceSelected = computed(() => !props.columnOptions.find((op) => op.id === getSourceId(filter.value.column)));
+const inconsistentSourceSelected = computed(() => {
+  const selectedOption = props.columnOptions.find((op) => op.id === getSourceId(filter.value.column));
+  return selectedOption === undefined;
+});
 const sourceOptions = computed(() => {
   const options = props.columnOptions.map((v) => ({ value: v.id, label: v.label ?? v }));
   if (inconsistentSourceSelected.value) {
@@ -93,7 +96,9 @@ function getSourceId(column: SUniversalPColumnId): SUniversalPColumnId {
   }
   return column;
 }
-type ColumnAsSourceAndFixedAxes = { column: SUniversalPColumnId; axisFiltersByIndex: Record<number, AxisFilterValue | undefined> };
+
+// similar to FilteredPColumnId but source is stringified and axis filters can be undefined
+type ColumnAsSourceAndFixedAxes = { source: SUniversalPColumnId; axisFiltersByIndex: Record<number, AxisFilterValue | undefined> };
 function getColumnAsSourceAndFixedAxes(column: SUniversalPColumnId): ColumnAsSourceAndFixedAxes {
   const sourceId = getSourceId(column);
   const option = props.columnOptions.find((op) => op.id === sourceId);
@@ -105,7 +110,7 @@ function getColumnAsSourceAndFixedAxes(column: SUniversalPColumnId): ColumnAsSou
     const parsedColumnId = parseColumnId(column);
     if (isFilteredPColumn(parsedColumnId)) {
       return {
-        column: sourceId,
+        source: sourceId,
         axisFiltersByIndex: parsedColumnId.axisFilters.reduce((res, item) => {
           res[item[0]] = item[1];
           return res;
@@ -113,17 +118,17 @@ function getColumnAsSourceAndFixedAxes(column: SUniversalPColumnId): ColumnAsSou
       };
     }
   } catch {
-    return { column: column, axisFiltersByIndex: axesToBeFixed };
+    return { source: column, axisFiltersByIndex: axesToBeFixed };
   }
-  return { column: column, axisFiltersByIndex: axesToBeFixed };
+  return { source: column, axisFiltersByIndex: axesToBeFixed };
 }
 
 function stringifyColumn(value: ColumnAsSourceAndFixedAxes): SUniversalPColumnId {
   if (Object.keys(value.axisFiltersByIndex).length === 0) {
-    return value.column;
+    return value.source;
   }
   return stringifyColumnId({
-    source: value.column as unknown as AnchoredPColumnId,
+    source: parseColumnId(value.source) as AnchoredPColumnId,
     axisFilters: Object.entries(value.axisFiltersByIndex).map(([idx, value]) => [Number(idx), value] as AxisFilterByIdx),
   });
 }
@@ -137,7 +142,7 @@ const columnAsSourceAndFixedAxes = computed({
   },
 });
 
-const currentOption = computed(() => props.columnOptions.find((op) => op.id === columnAsSourceAndFixedAxes.value.column));
+const currentOption = computed(() => props.columnOptions.find((op) => op.id === columnAsSourceAndFixedAxes.value.source));
 const currentSpec = computed(() => currentOption.value?.spec ? getNormalizedSpec(currentOption.value.spec) : null);
 const currentType = computed(() => currentSpec.value?.valueType);
 const currentError = computed(() => currentOption.value?.error || inconsistentSourceSelected.value);
@@ -192,7 +197,7 @@ const stringMatchesError = computed(() => {
     </div>
     <div v-else :class="$style.top" >
       <PlDropdown
-        v-model="columnAsSourceAndFixedAxes.column"
+        v-model="columnAsSourceAndFixedAxes.source"
         :errorStatus="currentError"
         :options="sourceOptions"
         :style="{width: '100%'}"
@@ -209,8 +214,8 @@ const stringMatchesError = computed(() => {
         <PlAutocomplete
           v-model="columnAsSourceAndFixedAxes.axisFiltersByIndex[value.idx]"
           :label="value.label"
-          :options-search="(str) => searchOptionsFn(columnAsSourceAndFixedAxes.column, str, value.idx)"
-          :model-search="(v) => searchModelSingleFn(columnAsSourceAndFixedAxes.column, v as string, value.idx)"
+          :options-search="(str) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, str, value.idx)"
+          :model-search="(v) => getSuggestModelSingleFn(columnAsSourceAndFixedAxes.source, v as string, value.idx)"
           :disabled="inconsistentSourceSelected"
           :clearable="true"
           @update:model-value="(v) => {
@@ -259,8 +264,8 @@ const stringMatchesError = computed(() => {
       <template v-if="filter.type === 'patternEquals' || filter.type === 'patternNotEquals'" >
         <PlAutocomplete
           v-model="filter.value"
-          :options-search="(str) => searchOptionsFn(columnAsSourceAndFixedAxes.column, str)"
-          :model-search="(v) => searchModelSingleFn(columnAsSourceAndFixedAxes.column, v as string)"
+          :options-search="(str) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, str)"
+          :model-search="(v) => getSuggestModelSingleFn(columnAsSourceAndFixedAxes.source, v as string)"
           :disabled="inconsistentSourceSelected"
           :clearable="true"
           group-position="bottom"
@@ -269,8 +274,8 @@ const stringMatchesError = computed(() => {
       <template v-if="filter.type === 'inSet' || filter.type === 'notInSet'" >
         <PlAutocompleteMulti
           v-model="filter.value"
-          :options-search="(str) => searchOptionsFn(columnAsSourceAndFixedAxes.column, str)"
-          :model-search="(v) => searchModelMultiFn(columnAsSourceAndFixedAxes.column, v as string[])"
+          :options-search="(str) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, str)"
+          :model-search="(v) => getSuggestModelMultiFn(columnAsSourceAndFixedAxes.source, v as string[])"
           :disabled="inconsistentSourceSelected"
           group-position="bottom"
         />
