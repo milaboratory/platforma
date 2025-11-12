@@ -560,7 +560,7 @@ export class Core {
       }
     }
 
-    return Promise.all(uploads);
+    return await Promise.all(uploads);
   }
 
   private async publishPackage(

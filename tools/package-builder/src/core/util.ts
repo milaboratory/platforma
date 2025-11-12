@@ -369,6 +369,6 @@ export const formatZodIssues = (issues: z.core.$ZodIssue[], i: string = '', p: P
   return _errors.join('\n');
 };
 
-export function CLIError(msg: string): OclifErrors.CLIError {
+export function CLIError(msg: string | Error): OclifErrors.CLIError {
   return new OclifErrors.CLIError(msg);
 }

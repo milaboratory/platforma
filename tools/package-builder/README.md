@@ -11,7 +11,7 @@ pl-pkg build [ --dev=local ] ...
 pl-pkg prepublish # ensures that all artifacts are uploaded, re-generates fresh sw.json files for packing into npm package
 
 pl-pkg publish # publish everything that can be published
-pl-pkg publish packages # publish software package to registry
+pl-pkg publish packages # publish software package archive to registry
 ```
 
 ## Basic workflow in package.json
