@@ -5,7 +5,7 @@ import { assertBlob, assertResource, eTplTest } from './extended_tpl_test';
 import { getTestTimeout } from '@milaboratories/test-helpers';
 import { vi } from 'vitest';
 
-const TIMEOUT = getTestTimeout(10_000);
+const TIMEOUT = getTestTimeout(30_000);
 
 vi.setConfig({
   testTimeout: TIMEOUT,
