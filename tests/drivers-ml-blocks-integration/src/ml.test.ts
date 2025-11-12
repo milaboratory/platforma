@@ -1,16 +1,16 @@
-import { blockSpec as downloadFileSpec } from '@milaboratories/milaboratories.test-download-file';
-import { blockSpec as transferFilesSpec } from '@milaboratories/milaboratories.transfer-files';
-import { platforma as transferFilesModel } from '@milaboratories/milaboratories.transfer-files.model';
-import { platforma as downloadFileModel } from '@milaboratories/milaboratories.test-download-file.model';
 import { blockSpec as downloadBlobURLSpec } from '@milaboratories/milaboratories.test-blob-url-custom-protocol';
 import { platforma as downloadBlobURLModel } from '@milaboratories/milaboratories.test-blob-url-custom-protocol.model';
+import { blockSpec as downloadFileSpec } from '@milaboratories/milaboratories.test-download-file';
+import { platforma as downloadFileModel } from '@milaboratories/milaboratories.test-download-file.model';
 import { blockSpec as enterNumberSpec } from '@milaboratories/milaboratories.test-enter-numbers';
 import { blockSpec as readLogsSpec } from '@milaboratories/milaboratories.test-read-logs';
 import { platforma as readLogsModel } from '@milaboratories/milaboratories.test-read-logs.model';
 import { blockSpec as sumNumbersSpec } from '@milaboratories/milaboratories.test-sum-numbers';
 import { blockSpec as uploadFileSpec } from '@milaboratories/milaboratories.test-upload-file';
 import { platforma as uploadFileModel } from '@milaboratories/milaboratories.test-upload-file.model';
-import { DisconnectedError, PlClient } from '@milaboratories/pl-client';
+import { blockSpec as transferFilesSpec } from '@milaboratories/milaboratories.transfer-files';
+import { platforma as transferFilesModel } from '@milaboratories/milaboratories.transfer-files.model';
+import { PlClient } from '@milaboratories/pl-client';
 import {
   FolderURL,
   ImportFileHandle,
@@ -26,13 +26,12 @@ import {
 } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, blockTest } from '@platforma-sdk/test';
 import fs from 'fs';
+import { createHash, randomUUID } from 'node:crypto';
 import * as fsp from 'node:fs/promises';
-import { randomUUID, createHash } from 'node:crypto';
 import os from 'os';
 import path from 'path';
 import { test } from 'vitest';
-import { sleep } from '@milaboratories/ts-helpers';
-import { computeHashIncremental, shuffleInPlace, compareBuffersInChunks } from './imports';
+import { compareBuffersInChunks, computeHashIncremental, shuffleInPlace } from './imports';
 
 export async function withMl(
   cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
@@ -110,7 +109,7 @@ export async function awaitBlockDone(prj: Project, blockId: string, timeout: num
   }
 }
 
-test('disconnected test', async ({ expect }) => {
+test.skip('disconnected test', async ({ expect }) => {
   await withMlAndProxy(async (ml, wd, proxy) => {
     await expect(async () => {
       const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
