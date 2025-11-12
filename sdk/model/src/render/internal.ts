@@ -143,7 +143,7 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   // PFrame / PTable
   //
 
-  createPFrame(def: PFrameDef<AHandle | PColumnValues | DataInfo<AHandle>>): PFrameHandle;
+  createPFrame(def: PFrameDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>): PFrameHandle;
 
   createPTable(def: PTableDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>): PTableHandle;
 

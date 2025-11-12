@@ -8,78 +8,86 @@ import { isAsyncDisposable, isDisposable } from './obj';
  */
 export type UnrefFn = () => void;
 
-export interface PoolResource<R> extends Disposable {
-  /** Resource itself */
-  readonly resource: R;
+export interface PoolEntry<K extends string = string, R extends {} = {}> extends Disposable {
+  /** Resource key, calculated using provided `calculateParamsKey` function */
+  readonly key: K;
 
-  /** Resource key, calculated using provided  */
-  readonly key: string;
+  /** Resource itself created by `createNewResource` function */
+  readonly resource: R;
 
   /** Callback to be called when requested resource can be disposed. */
   readonly unref: UnrefFn;
 }
 
-export abstract class RefCountResourcePool<P, R> {
-  private readonly resources = new Map<string, RefCountEnvelop<R>>();
+type RefCountEnvelope<R> = {
+  refCount: number;
+  readonly resource: R;
+};
+
+export interface RefCountPool<P, K extends string, R extends {}> {
+  /** Acquire resource from the pool */
+  acquire(params: P): PoolEntry<K, R>;
+
+  /** Try to get a resource by key */
+  tryGetByKey(key: K): R | undefined;
+
+  /** Get a resource by key */
+  getByKey(key: K): R;
+}
+
+export abstract class RefCountPoolBase<P, K extends string, R extends {}>
+implements RefCountPool<P, K, R> {
+  private readonly resources = new Map<K, RefCountEnvelope<R>>();
   private readonly disposeQueue = Promise.resolve();
 
-  protected abstract calculateParamsKey(params: P): string;
-  protected abstract createNewResource(params: P, key: string): R;
-
-  private check(key: string) {
-    const envelop = this.resources.get(key);
-    if (envelop === undefined) throw new Error('Unexpected state.');
-    if (envelop.refCount === 0) {
+  private check(key: K) {
+    const envelope = this.resources.get(key);
+    if (envelope === undefined) throw new Error('Unexpected state.');
+    if (envelope.refCount === 0) {
       this.resources.delete(key);
-      const resource = envelop.resource;
+      const resource = envelope.resource;
 
       if (isDisposable(resource)) {
-        const _ = this.disposeQueue.then(() => resource[Symbol.dispose]());
+        void this.disposeQueue.then(() => resource[Symbol.dispose]());
       } else if (isAsyncDisposable(resource)) {
-        const _ = this.disposeQueue.then(() => resource[Symbol.asyncDispose]());
+        void this.disposeQueue.then(() => resource[Symbol.asyncDispose]());
       }
     }
   }
 
-  public acquire(params: P): PoolResource<R> {
+  protected abstract calculateParamsKey(params: P): K;
+  protected abstract createNewResource(params: P, key: K): R;
+
+  public acquire(params: P): PoolEntry<K, R> {
     const key = this.calculateParamsKey(params);
-    let envelop = this.resources.get(key);
-    if (envelop === undefined) {
-      envelop = { refCount: 0, resource: this.createNewResource(params, key) };
-      this.resources.set(key, envelop);
+    let envelope = this.resources.get(key);
+    if (envelope === undefined) {
+      envelope = { refCount: 0, resource: this.createNewResource(params, key) };
+      this.resources.set(key, envelope);
     }
 
     // adding ref count
-    envelop.refCount++;
+    envelope.refCount++;
 
-    let unrefereced = false;
+    let unreferenced = false;
     const unref = () => {
-      if (unrefereced) return; // unref is idempotent, calling it many times have no effect
+      if (unreferenced) return; // unref is idempotent, calling it many times have no effect
+      unreferenced = true;
       // subtracting ref count
-      envelop.refCount--;
-      unrefereced = true;
+      envelope.refCount--;
       this.check(key);
     };
     return {
-      resource: envelop.resource,
+      resource: envelope.resource,
       key,
       unref,
       [Symbol.dispose]: unref,
     };
   }
 
-  public getByKey(key: string): R {
-    const envelop = this.resources.get(key);
-    if (envelop === undefined) throw new Error(`resource not found, key = ${key}`);
-    return envelop.resource;
-  }
-
-  public tryGetByKey(key: string): R | undefined {
+  public tryGetByKey(key: K): R | undefined {
     return this.resources.get(key)?.resource;
   }
-}
 
-type RefCountEnvelop<R> = {
-  refCount: number;
-  readonly resource: R;
-};
+  public abstract getByKey(key: K): R;
+}

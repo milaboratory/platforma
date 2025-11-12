@@ -1,13 +1,10 @@
 import {
   PFrameDriverError,
   type BinaryChunk,
-  type JsonDataInfo,
   type ParquetChunk,
   type ParquetChunkMapping,
   type ParquetChunkMetadata,
-  type PColumnSpec,
   type PColumnValue,
-  type PColumnValues,
   type PlRef,
   type PObjectId,
   type PObjectSpec,
@@ -270,25 +267,6 @@ export function traverseParquetChunkResource(resource: PlTreeNodeAccessor): Parq
     data: blob,
     ...partInfo,
     ...mapping,
-  };
-}
-
-export function makeDataInfoFromPColumnValues(
-  spec: PColumnSpec,
-  data: PColumnValues,
-): JsonDataInfo {
-  const keyLength = spec.axesSpec.length;
-  const jsonData: Record<string, PColumnValue> = {};
-  for (const { key, val } of data) {
-    if (key.length !== keyLength)
-      throw new PFrameDriverError(`inline column key length ${key.length} differs from axes count ${keyLength}`);
-    jsonData[JSON.stringify(key)] = val;
-  }
-
-  return {
-    type: 'Json',
-    keyLength,
-    data: jsonData,
   };
 }
 

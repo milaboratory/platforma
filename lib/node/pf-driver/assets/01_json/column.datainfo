@@ -1,0 +1,5 @@
+{
+  "type": "JsonPartitioned",
+  "partitionKeyLength": 0,
+  "parts": { "[]": "column_1.jdata" }
+}

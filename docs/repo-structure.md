@@ -91,3 +91,4 @@
   - `@milaboratories/pl-errors` = `lib/node/pl-errors`
   - `@milaboratories/pl-drivers` = `lib/node/pl-drivers`
   - `@milaboratories/pl-client` = `lib/node/pl-client`
+  - `@milaboratories/pf-driver` = `lib/node/pf-driver`

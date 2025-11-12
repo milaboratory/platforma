@@ -1,0 +1,50 @@
+{
+  "spec": [
+    {
+      "type": "axis",
+      "id": {
+        "name": "A",
+        "type": "Int"
+      },
+      "spec": {
+        "name": "A",
+        "type": "Int"
+      }
+    },
+    {
+      "type": "axis",
+      "id": {
+        "name": "B",
+        "type": "Int"
+      },
+      "spec": {
+        "name": "B",
+        "type": "Int"
+      }
+    },
+    {
+      "type": "column",
+      "id": "column",
+      "spec": {
+        "kind": "PColumn",
+        "axesSpec": [
+          {
+            "name": "A",
+            "type": "Int"
+          },
+          {
+            "name": "B",
+            "type": "Int"
+          }
+        ],
+        "name": "column",
+        "valueType": "Int"
+      }
+    }
+  ],
+  "data": [
+    [ 42, 42, 42, 42, 85, 86, 86 ],
+    [ 0, 1, 7, 8, 1, 1, 2 ],
+    [ 1, 3, 5, 5, 3, 7, 0 ]
+  ]
+}

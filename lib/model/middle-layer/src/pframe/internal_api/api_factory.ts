@@ -1,5 +1,4 @@
 import {
-  Base64Encoded,
   BinaryPartitionedDataInfo,
   JsonDataInfo,
   JsonPartitionedDataInfo,

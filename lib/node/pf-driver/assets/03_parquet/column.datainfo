@@ -1,0 +1,23 @@
+{
+  "type": "ParquetPartitioned",
+  "partitionKeyLength": 0,
+  "parts": {
+    "[]": {
+      "data": "column_1.parquet",
+      "axes": [
+        {
+          "id": "a1",
+          "type": "Int"
+        },
+        {
+          "id": "a2",
+          "type": "Int"
+        }
+      ],
+      "column": {
+        "id": "c1",
+        "type": "Int"
+      }
+    }
+  }
+}

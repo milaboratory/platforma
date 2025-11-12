@@ -1,7 +1,7 @@
 import type { PObjectId } from '../../pool';
 import type { TableRange } from './data_types';
 import type { FindColumnsRequest, FindColumnsResponse } from './find_columns';
-import type { PColumn, PColumnIdAndSpec, PColumnSpec } from './spec/spec';
+import type { PColumnIdAndSpec, PColumnSpec } from './spec/spec';
 import type {
   CalculateTableDataRequest,
   CalculateTableDataResponse,
@@ -33,4 +33,4 @@ export interface PFrame {
 }
 
 /** Information required to instantiate a PFrame. */
-export type PFrameDef<Data> = PColumn<Data>[];
+export type PFrameDef<Col> = Col[];

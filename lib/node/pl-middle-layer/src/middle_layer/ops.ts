@@ -12,7 +12,7 @@ import type { MiLogger } from '@milaboratories/ts-helpers';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import type { LocalStorageProjection } from '@milaboratories/pl-drivers';
 import path from 'node:path';
-import type { PFrameDriverOps } from '../pool/driver';
+import { PFrameDriverOpsDefaults, type PFrameDriverOps } from '../pool';
 
 /** Paths part of {@link DriverKitOps}. */
 export type DriverKitOpsPaths = {
@@ -168,14 +168,7 @@ export const DefaultDriverKitOpsSettings: Pick<
     pollingInterval: 1000,
     stopPollingDelay: 1000,
   },
-  pFrameDriverOps: {
-    parquetServerPort: 0, // 0 means that some unused port will be assigned by the OS
-    pFrameConcurrency: 1, // 1 join is executed in parallel and utilize all RAM and CPU cores
-    pTableConcurrency: 1, // 1 joined table is read from disk at a time, which matches 1 table the user can view in the UI
-    pFrameCacheMaxCount: 18, // SHM trees create 3 PTables per graphic, we want to cache 6 graphics per PFrame
-    pFramesCacheMaxSize: 8 * 1024 * 1024 * 1024, // 8 GB, same as blob driver cache (must be at lease 2GB)
-    pTablesCacheMaxSize: 32 * 1024 * 1024 * 1024, // 32 GB (must be at lease 8GB)
-  },
+  pFrameDriverOps: PFrameDriverOpsDefaults,
 };
 
 export function DefaultDriverKitOpsPaths(

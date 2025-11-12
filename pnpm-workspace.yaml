@@ -21,6 +21,7 @@ packages:
   - lib/node/resolve-helper
   - lib/node/node-streams
   - lib/node/computable
+  - lib/node/pf-driver
   - lib/node/pl-client
   - lib/node/pl-tree
   - lib/node/pl-drivers

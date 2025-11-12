@@ -55,7 +55,7 @@ import type { APColumnSelectorWithSplit } from './util/split_selectors';
 import { patchInSetFilters } from './util/pframe_upgraders';
 import { allPColumnsReady } from './util/pcolumn_data';
 
-export type PColumnDataUniversal = TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues;
+export type PColumnDataUniversal<TreeEntry = TreeNodeAccessor> = TreeEntry | DataInfo<TreeEntry> | PColumnValues;
 
 /**
  * Helper function to match domain objects
@@ -619,7 +619,7 @@ export class RenderCtx<Args, UiState> {
   }
 
   // TODO remove all non-PColumn fields
-  public createPFrame(def: PFrameDef<PColumnDataUniversal>): PFrameHandle | undefined {
+  public createPFrame(def: PFrameDef<PColumn<PColumnDataUniversal>>): PFrameHandle | undefined {
     this.verifyInlineAndExplicitColumnsSupport(def);
     if (!allPColumnsReady(def)) return undefined;
     return this.ctx.createPFrame(
