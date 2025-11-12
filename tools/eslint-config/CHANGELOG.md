@@ -1,5 +1,11 @@
 # @milaboratories/eslint-config
 
+## 1.0.5
+
+### Patch Changes
+
+- 24ccbe6: Make package public
+
 ## 1.0.4
 
 ### Patch Changes
