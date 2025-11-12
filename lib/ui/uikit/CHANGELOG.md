@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.5.4
+
+### Patch Changes
+
+- 5814e48: Small changes in sdk
+- Updated dependencies [55b218b]
+- Updated dependencies [5814e48]
+  - @platforma-sdk/model@1.45.26
+
 ## 2.5.3
 
 ### Patch Changes

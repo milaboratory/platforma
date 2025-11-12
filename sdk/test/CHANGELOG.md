@@ -1,5 +1,19 @@
 # @platforma-sdk/test
 
+## 1.45.26
+
+### Patch Changes
+
+- 5814e48: Small changes in sdk
+- Updated dependencies [55b218b]
+- Updated dependencies [5814e48]
+  - @milaboratories/pl-middle-layer@1.43.60
+  - @milaboratories/ts-helpers@1.5.2
+  - @platforma-sdk/model@1.45.26
+  - @milaboratories/computable@2.7.2
+  - @milaboratories/pl-client@2.16.3
+  - @milaboratories/pl-tree@1.8.10
+
 ## 1.45.25
 
 ### Patch Changes

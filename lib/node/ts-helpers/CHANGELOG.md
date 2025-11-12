@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.5.2
+
+### Patch Changes
+
+- 55b218b: PFrameDriver decomposed
+
 ## 1.5.1
 
 ### Patch Changes

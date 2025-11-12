@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.6.3
+
+### Patch Changes
+
+- 5814e48: Small changes in sdk
+- Updated dependencies [55b218b]
+- Updated dependencies [5814e48]
+  - @platforma-sdk/model@1.45.26
+  - @milaboratories/milaboratories.ui-examples.model@1.3.3
+
 ## 1.6.2
 
 ### Patch Changes

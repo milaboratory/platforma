@@ -1,0 +1,10 @@
+{
+  "type": "BinaryPartitioned",
+  "partitionKeyLength": 0,
+  "parts": {
+    "[]": {
+      "index": "column_1.binidx",
+      "values": "column_1.binval"
+    }
+  }
+}

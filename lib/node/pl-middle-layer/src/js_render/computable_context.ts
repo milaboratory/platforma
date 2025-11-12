@@ -383,15 +383,16 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   // PFrames / PTables
   //
 
-  public createPFrame(def: PFrameDef<string | PColumnValues | DataInfo<string>>): PFrameHandle {
+  public createPFrame(def: PFrameDef<PColumn<string | PColumnValues | DataInfo<string>>>): PFrameHandle {
     if (this.computableCtx === undefined)
       throw new Error(
         'can\'t instantiate PFrames from this context (most porbably called from the future mapper)',
       );
-    return this.env.driverKit.pFrameDriver.createPFrame(
+    const { key, unref } = this.env.driverKit.pFrameDriver.createPFrame(
       def.map((c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
-      this.computableCtx,
     );
+    this.computableCtx.addOnDestroy(unref);
+    return key;
   }
 
   public createPTable(def: PTableDef<PColumn<string | PColumnValues | DataInfo<string>>>): PTableHandle {
@@ -399,12 +400,13 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       throw new Error(
         'can\'t instantiate PTable from this context (most porbably called from the future mapper)',
       );
-    return this.env.driverKit.pFrameDriver.createPTable(
+    const { key, unref } = this.env.driverKit.pFrameDriver.createPTable(
       mapPTableDef(def, (c) =>
         mapPObjectData(c, (d) => this.transformInputPData(d)),
       ),
-      this.computableCtx,
     );
+    this.computableCtx.addOnDestroy(unref);
+    return key;
   }
 
   /**
@@ -766,7 +768,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
 
       exportCtxFunction('createPFrame', (def) => {
         return parent.exportSingleValue(
-          this.createPFrame(parent.importObjectViaJson(def) as PFrameDef<string | PColumnValues>),
+          this.createPFrame(parent.importObjectViaJson(def) as PFrameDef<PColumn<string | PColumnValues>>),
           undefined,
         );
       });
