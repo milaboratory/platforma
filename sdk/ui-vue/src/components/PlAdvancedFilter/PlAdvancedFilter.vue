@@ -1,53 +1,37 @@
 <script lang="ts" setup>
 import SingleFilter from './SingleFilter.vue';
 import { PlBtnSecondary, PlElementList, PlCheckbox, PlIcon16 } from '@milaboratories/uikit';
-import type { PlAdvancedFilterUI, SourceOptionInfo } from './types';
-import { computed, reactive, ref, watch } from 'vue';
+import type { CommonFilterSpec, Group, PlAdvancedFilterUI, SourceOptionInfo } from './types';
+import { computed } from 'vue';
 import OperandButton from './OperandButton.vue';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
-import type { FilterSpec, ListOptionBase, SUniversalPColumnId } from '@platforma-sdk/model';
-import { createNewGroup, toInnerModel, toOuterModel } from './utils';
+import type { ListOptionBase, SUniversalPColumnId } from '@platforma-sdk/model';
+import { createNewGroup, toInnerModel, toOuterModel, useInnerModel } from './utils';
 
 const props = withDefaults(defineProps<{
   /** List of ids of sources (columns, axes) that can be selected in filters */
   items: SourceOptionInfo[];
   /** If true - new filter can be added by droppind element into filter group; else new column is added by button click */
   enableDnd?: boolean;
-  /** If dnd mode on - used for column adding */
-  draggedId?: SUniversalPColumnId;
   /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
-  searchOptions: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
+  getSuggestOptions: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
     ((params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>[]);
   /** Loading function for label of selected value for Equal/InSet filters and fixed axes options. */
-  searchModel: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
+  getSuggestModel: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
     ((params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>);
-}>(), {
-  enableDnd: false,
-  draggedId: undefined,
-});
+}>(), { enableDnd: false });
 
-const model = defineModel<FilterSpec>({ required: true });
-
-const innerModel = ref<PlAdvancedFilterUI>(toInnerModel(model.value));
-function updateOuterModelValue(v: PlAdvancedFilterUI) {
-  model.value = toOuterModel(v);
-}
-watch(() => innerModel.value, (v: PlAdvancedFilterUI) => {
-  updateOuterModelValue(v);
-}, { deep: true });
+const model = defineModel<CommonFilterSpec>({ required: true });
+const innerModel = useInnerModel<CommonFilterSpec, PlAdvancedFilterUI>(toInnerModel, toOuterModel, model);
 
 const firstColumnId = computed(() => props.items[0]?.id);
-const emptyGroup = [{
+const emptyGroup: Group[] = [{
   id: 'empty',
   not: false,
   operand: 'and',
   filters: [],
+  expanded: true,
 }];
-
-const expanded = reactive<Record<string, boolean>>(innerModel.value.groups.reduce((res, group) => {
-  res[group.id] = true;
-  return res;
-}, {} as Record<string, boolean>));
 
 function addColumnToGroup(groupIdx: number, selectedSourceId: string) {
   innerModel.value.groups[groupIdx].filters.push({
@@ -69,18 +53,21 @@ function removeGroup(groupIdx: number) {
 }
 function addGroup(selectedSourceId: string) {
   const newGroup = createNewGroup(selectedSourceId);
-  expanded[newGroup.id] = true;
   innerModel.value.groups.push(newGroup);
 }
 
-function handleDropToExistingGroup(groupIdx: number) {
-  if (props.draggedId) {
-    addColumnToGroup(groupIdx, props.draggedId);
+function handleDropToExistingGroup(groupIdx: number, event: DragEvent) {
+  const dataTransfer = event.dataTransfer;
+  if (dataTransfer?.getData('text/plain')) {
+    const draggedId = dataTransfer.getData('text/plain') as SUniversalPColumnId;
+    addColumnToGroup(groupIdx, draggedId);
   }
 }
-function handleDropToNewGroup() {
-  if (props.draggedId) {
-    addGroup(props.draggedId);
+function handleDropToNewGroup(event: DragEvent) {
+  const dataTransfer = event.dataTransfer;
+  if (dataTransfer?.getData('text/plain')) {
+    const draggedId = dataTransfer.getData('text/plain') as SUniversalPColumnId;
+    addGroup(draggedId);
   }
 }
 function dragOver(event: DragEvent) {
@@ -97,14 +84,14 @@ function dragOver(event: DragEvent) {
       :item-class-content="$style.filterGroupContent"
       :item-class-title="$style.filterGroupTitle"
 
-      :is-expanded="(group) => expanded[group.id] ?? false"
+      :is-expanded="(group) => group.expanded"
 
       :disableDragging="false"
       :disableRemoving="false"
       :disableToggling="true"
       :disablePinning="true"
 
-      @expand="(group) => {expanded[group.id] = !expanded[group.id]}"
+      :on-expand="(group) => { group.expanded = !group.expanded}"
     >
       <template #item-title>
         Filter group
@@ -112,7 +99,7 @@ function dragOver(event: DragEvent) {
       <template #item-content="{ item, index }">
         <div
           :class="$style.groupContent" dropzone="true"
-          @drop="() => handleDropToExistingGroup(index)"
+          @drop="(event) => handleDropToExistingGroup(index, event)"
           @dragover="dragOver"
         >
           <PlCheckbox v-model="item.not">NOT</PlCheckbox>
@@ -122,8 +109,8 @@ function dragOver(event: DragEvent) {
             v-model="item.filters[filterIdx]"
             :operand="item.operand"
             :column-options="items"
-            :search-model="searchModel"
-            :search-options="searchOptions"
+            :get-suggest-model="getSuggestModel"
+            :get-suggest-options="getSuggestOptions"
             :enable-dnd="enableDnd"
             :is-last="filterIdx === item.filters.length - 1"
             :on-change-operand="(v) => item.operand = v"
