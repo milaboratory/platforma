@@ -1,4 +1,5 @@
-import { onScopeDispose, readonly, Ref, ref, shallowRef, watch } from 'vue';
+import type { Ref } from 'vue';
+import { onScopeDispose, readonly, ref, shallowRef, watch } from 'vue';
 
 type PollingStatus = 'idle' | 'synced' | 'stale';
 
@@ -298,13 +299,8 @@ export function usePollingQuery<Args, Result>(
         abortReasons.delete(version);
       }
 
-      const shouldSchedule =
-        isActive.value &&
-        !disposed &&
-        !pausedByCallback &&
-        reason !== 'pause' &&
-        reason !== 'dispose' &&
-        reason !== 'args';
+      const shouldSchedule
+        = isActive.value && !disposed && reason !== 'args';
 
       if (shouldSchedule) {
         queueExecution();
