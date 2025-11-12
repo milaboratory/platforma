@@ -15,7 +15,7 @@ export type PTableCacheModelOps = {
 };
 
 export const PTableCacheModelOpsDefaults: PTableCacheModelOps = {
-  pTablesCacheMaxSize: 32 * 1024 * 1024 * 1024, // 32 GB (must be at lease 8GB)
+  pTablesCacheMaxSize: 32 * 1024 * 1024 * 1024, // 32 GB (must be at least 8GB)
 };
 
 export class PTableCacheModel {
