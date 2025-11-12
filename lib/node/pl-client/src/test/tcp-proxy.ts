@@ -29,7 +29,7 @@ export async function startTcpProxy(options: TcpProxyOptions) {
 
   const connections = new Set<{ socket: net.Socket; client: net.Socket }>();
 
-  async function disconnectAll() {
+  async function disconnectAll(delayMs: number | undefined = undefined) {
     const kill = () => {
       for (const { socket, client } of connections) {
         if (!socket.destroyed) socket.destroy();
@@ -37,7 +37,7 @@ export async function startTcpProxy(options: TcpProxyOptions) {
       }
       connections.clear();
     };
-    await timers.setTimeout(1);
+    if (delayMs !== undefined) await timers.setTimeout(delayMs);
     kill();
   };
 

@@ -110,7 +110,7 @@ export async function awaitBlockDone(prj: Project, blockId: string, timeout: num
   }
 }
 
-test('disconnected test', async ({ expect }) => {
+test('disconnect:runBlock throws DisconnectedError when connection drops mid-operation', async ({ expect }) => {
   await withMlAndProxy(async (ml, wd, proxy) => {
     await expect(async () => {
       const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
@@ -128,14 +128,13 @@ test('disconnected test', async ({ expect }) => {
         sources: [] // empty reference list should produce an error
       });
   
+      // Start transaction without awaiting, disconnect while in-flight, then await result.
+      const result = prj.runBlock(block3Id);
+
       await proxy.disconnectAll();
-  
-      await prj.runBlock(block3Id);
-  
-      await awaitBlockDone(prj, block3Id);
-  
-      await prj.overview.awaitStableValue();
-    }).rejects.toThrow(Error);
+
+      await result;
+    }).rejects.toThrow(DisconnectedError);
   });
 });
 
