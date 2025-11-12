@@ -10,7 +10,7 @@ import { blockSpec as uploadFileSpec } from '@milaboratories/milaboratories.test
 import { platforma as uploadFileModel } from '@milaboratories/milaboratories.test-upload-file.model';
 import { blockSpec as transferFilesSpec } from '@milaboratories/milaboratories.transfer-files';
 import { platforma as transferFilesModel } from '@milaboratories/milaboratories.transfer-files.model';
-import { PlClient } from '@milaboratories/pl-client';
+import { PlClient, DisconnectedError } from '@milaboratories/pl-client';
 import {
   FolderURL,
   ImportFileHandle,
