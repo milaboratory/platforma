@@ -1,6 +1,5 @@
 {
   "name": "@milaboratories/eslint-config",
-  "private": true,
   "type": "module",
   "version": "1.0.4",
   "description": "A shareable ESLint config",
