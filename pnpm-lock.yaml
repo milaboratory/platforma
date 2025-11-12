@@ -2167,6 +2167,9 @@ importers:
       semver:
         specifier: 'catalog:'
         version: 7.7.2
+      tslib:
+        specifier: 'catalog:'
+        version: 2.7.0
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -2247,6 +2250,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../../model/common
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../../../tools/ts-builder
