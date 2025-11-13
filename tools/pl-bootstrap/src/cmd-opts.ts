@@ -36,12 +36,12 @@ export const ArchFlag = {
 
 export const LicenseFlags = {
   'license': Flags.string({
-    description: 'pass a license code. The license can be got from "https://licensing.milaboratories.com".',
+    description: 'pass a license code. The license can be got from "https://platforma.bio/getlicense".',
   }),
   'license-file': Flags.file({
     exists: true,
     description:
-      'specify a path to the file with a license. The license can be got from \'https://licensing.milaboratories.com\'.',
+      'specify a path to the file with a license. The license can be got from \'https://platforma.bio/getlicense\'.',
   }),
 };
 
