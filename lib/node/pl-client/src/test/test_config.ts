@@ -214,7 +214,6 @@ export async function withTempRoot<T>(
 
     const client = await getTestClient(alternativeRoot, confOverrides);
     altRootId = client.clientRoot;
-    console.log('altRootId', altRootId, altRootId.toString(16));
     const value = await body(client, proxy);
     const rawClient = await getTestClient();
     try {
@@ -225,7 +224,6 @@ export async function withTempRoot<T>(
     }
     return value;
   } catch (err: any) {
-    console.log('ERROR stack trace:', err.stack);
     console.log(`ALTERNATIVE ROOT: ${alternativeRoot} (${resourceIdToString(altRootId)})`);
     throw err;
     // throw new Error('withTempRoot error: ' + err.message, { cause: err });

@@ -93,7 +93,10 @@ export class Project {
   private readonly refreshLoopResult: Promise<void>;
 
   private readonly abortController = new AbortController();
-  private destroyed = false;
+
+  private get destroyed() {
+    return this.abortController.signal.aborted;
+  }
 
   constructor(
     private readonly env: MiddleLayerEnvironment,
@@ -110,7 +113,7 @@ export class Project {
     this.rid = rid;
     this.refreshLoopResult = this.refreshLoop();
     this.refreshLoopResult.catch((err) => {
-      env.logger.error(err); // TODO (safe voiding for now)
+      env.logger.warn(new Error('Error during refresh loop', { cause: err })); // TODO (safe voiding for now)
     });
     this.activeConfigs = activeConfigs(projectTree.entry(), env);
   }
@@ -140,13 +143,25 @@ export class Project {
           }
         }
       } catch (e: unknown) {
+        // If we're destroyed, exit gracefully regardless of error type
+        if (this.destroyed) {
+          // Log just in case, to help with debugging if something unexpected happens during shutdown
+          this.env.logger.warn(new Error('Error during refresh loop shutdown', { cause: e }));
+          break;
+        }
+
         if (isNotFoundError(e)) {
           console.warn(
             'project refresh routine terminated, because project was externally deleted',
           );
           break;
-        } else if (!isTimeoutOrCancelError(e))
+        } else if (isTimeoutOrCancelError(e)) {
+          // Timeout during normal operation, continue the loop
+        } else {
+          // TODO: This stops the refresh loop permanently, leaving the project broken.
+          // Need to decide how to handle this case.
           throw new Error('Unexpected exception', { cause: e });
+        }
       }
     }
   }
@@ -471,12 +486,22 @@ export class Project {
   /** Called by middle layer on close */
   public async destroy(): Promise<void> {
     // terminating the project service loop
-    this.destroyed = true;
     this.abortController.abort();
-    await this.refreshLoopResult;
+    try {
+      await this.refreshLoopResult;
+    } catch (e: unknown) {
+      // Error was already logged in the constructor's catch handler, but log again for context
+      this.env.logger.warn(new Error('Refresh loop had terminated with error before destroy', { cause: e }));
+    }
 
     // terminating the synchronized project tree
-    await this.projectTree.terminate();
+    try {
+      await this.projectTree.terminate();
+    } catch (e: unknown) {
+      // TODO: SynchronizedTreeState.terminate() can throw if mainLoop had an error before termination
+      // Log error but continue cleanup - we must clean up remaining resources
+      this.env.logger.warn(new Error('Project tree termination failed', { cause: e }));
+    }
 
     // the following will deregister all external resource holders, like
     // downloaded files, running uploads and alike

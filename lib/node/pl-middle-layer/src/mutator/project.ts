@@ -536,7 +536,7 @@ export class ProjectMutator {
           gzipped = isGzipped;
         }
         if (Buffer.compare(info.fields[fieldName]!.value!, data) === 0) continue;
-        console.log('setting', fieldName, gzipped, data.length);
+        // console.log('setting', fieldName, gzipped, data.length);
         const statePartRef = this.tx.createValue(gzipped ? Pl.JsonGzObject : Pl.JsonObject, data);
         this.setBlockField(req.blockId, fieldName, statePartRef, 'Ready', data);
 

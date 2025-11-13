@@ -10,7 +10,7 @@ import { blockSpec as uploadFileSpec } from '@milaboratories/milaboratories.test
 import { platforma as uploadFileModel } from '@milaboratories/milaboratories.test-upload-file.model';
 import { blockSpec as transferFilesSpec } from '@milaboratories/milaboratories.transfer-files';
 import { platforma as transferFilesModel } from '@milaboratories/milaboratories.transfer-files.model';
-import { PlClient } from '@milaboratories/pl-client';
+import { PlClient, DisconnectedError } from '@milaboratories/pl-client';
 import {
   FolderURL,
   ImportFileHandle,
@@ -109,33 +109,34 @@ export async function awaitBlockDone(prj: Project, blockId: string, timeout: num
   }
 }
 
-test.skip('disconnected test', async ({ expect }) => {
-  await withMlAndProxy(async (ml, wd, proxy) => {
-    await expect(async () => {
-      const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
-      await ml.openProject(pRid1);
-      const prj = ml.getOpenedProject(pRid1);
-  
-      expect(await prj.overview.awaitStableValue()).toMatchObject({
-        meta: { label: 'Project 1' },
-        blocks: []
-      });
-  
-      const block3Id = await prj.addBlock('Block 3', sumNumbersSpec);
-  
-      await prj.setBlockArgs(block3Id, {
-        sources: [] // empty reference list should produce an error
-      });
-  
-      await proxy.disconnectAll();
-  
-      await prj.runBlock(block3Id);
-  
-      await awaitBlockDone(prj, block3Id);
-  
-      await prj.overview.awaitStableValue();
-    }).rejects.toThrow(Error);
-  });
+test('disconnect:runBlock throws DisconnectedError when connection drops mid-operation', async ({ expect }) => {
+  await expect(() =>  withMlAndProxy(async (ml, _wd, proxy) => {
+    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    await ml.openProject(pRid1);
+    const prj = ml.getOpenedProject(pRid1);
+
+    expect(await prj.overview.awaitStableValue()).toMatchObject({
+      meta: { label: 'Project 1' },
+      blocks: []
+    });
+
+    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
+    const block2Id = await prj.addBlock('Block 2', sumNumbersSpec);
+
+    await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
+
+    await prj.setBlockArgs(block2Id, {
+      sources: [outputRef(block1Id, 'numbers')]
+    });
+
+    // Start transaction without awaiting, disconnect while in-flight, then await result.
+    const result = prj.runBlock(block2Id);
+
+    await proxy.disconnectAll();
+
+    await result;
+    await awaitBlockDone(prj, block2Id);
+  })).rejects.toThrow(DisconnectedError);
 });
 
 test('project list manipulations test', async ({ expect }) => {
