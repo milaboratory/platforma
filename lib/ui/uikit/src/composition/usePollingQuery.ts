@@ -1,14 +1,12 @@
 import type { Ref } from 'vue';
 import { onScopeDispose, readonly, ref, shallowRef, watch } from 'vue';
 
-type PollingStatus = 'idle' | 'synced' | 'stale';
-
 type AbortReason = 'args' | 'pause' | 'dispose';
 
-interface PollingData<Result> {
-  status: PollingStatus;
-  value?: Result;
-}
+type PollingData<Result> =
+  | { status: 'idle' }
+  | { status: 'synced'; value: Result }
+  | { status: 'stale'; value: Result };
 
 interface InternalOptions {
   minInterval: number;
@@ -82,7 +80,7 @@ function toError(error: unknown): Error {
  * ### Argument tracking
  *
  * - Initial state is `{ status: 'idle' }`.
- * - Any argument change marks the status `'stale'` immediately.
+ * - Argument changes mark the status `'stale'` when a prior result exists; otherwise it stays `'idle'`.
  * - A successful poll for the latest arguments marks the status `'synced'` and updates `value`.
  *
  * ### Request versioning and concurrency
@@ -163,7 +161,10 @@ export function usePollingQuery<Args, Result>(
   const waiters: Waiter[] = [];
 
   const markStale = () => {
-    data.value = { ...data.value, status: 'stale' };
+    if (data.value.status === 'synced' || data.value.status === 'stale') {
+      const { value } = data.value;
+      data.value = { status: 'stale', value };
+    }
   };
 
   const scheduleWaiters = () => {

@@ -98,7 +98,9 @@ describe('usePollingQuery', () => {
     await flushMicrotasks();
 
     expect(data.value.status).toBe('synced');
-    expect(data.value.value).toBe('first');
+    if (data.value.status === 'synced') {
+      expect(data.value.value).toBe('first');
+    }
     expect(lastError.value).toBeNull();
 
     await advanceTime(599);
@@ -175,6 +177,29 @@ describe('usePollingQuery', () => {
     expect(data.value).toEqual({ status: 'synced', value: 'second' });
 
     scope.stop();
+  });
+
+  it('remains idle on argument changes before first successful poll', async () => {
+    const args = ref({ id: 'initial' });
+    const { fn, calls } = createControlledQuery<typeof args.value, string>();
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval: 100,
+        immediateCallback: true,
+        immediate: true,
+      }),
+    );
+    const { data } = result;
+
+    await advanceTime(0);
+    expect(data.value).toEqual({ status: 'idle' });
+
+    args.value = { id: 'next' };
+    expect(data.value).toEqual({ status: 'idle' });
+
+    scope.stop();
+    expect(calls[0]?.signal.aborted).toBe(true);
   });
 
   it('remains idle until resumed when created inactive', async () => {
@@ -403,7 +428,11 @@ describe('usePollingQuery', () => {
     await advanceTime(100);
     expect(fn).toHaveBeenCalledTimes(2);
     expect(lastError.value).toBeNull();
-    expect(data.value.value).toBe('ok');
+    if (data.value.status === 'synced') {
+      expect(data.value.value).toBe('ok');
+    } else {
+      throw new Error('Expected polling data to be synced after successful retry');
+    }
 
     scope.stop();
   });
