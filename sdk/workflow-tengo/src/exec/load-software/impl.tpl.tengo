@@ -143,8 +143,7 @@ _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 	plan := R.runRPlan(
 		softName,
 		rRuntime.R(),
-		descriptor.runEnv,
-		rRuntime.venv()
+		descriptor.runEnv
 	)
 
 	return ll.toStrict({

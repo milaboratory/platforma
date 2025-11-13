@@ -1,18 +1,11 @@
 times := import("times")
 
 ll := import(":ll")
-oop := import(":oop")
 validation := import(":validation")
-assets := import(":assets")
 smart := import(":smart")
-render := import(":render")
 pkg := import(":exec.package")
 internal := import(":exec.R.internal")
 desc := import(":exec.descriptor")
-
-_OUTPUT_RUN_ENV       := "runEnv"
-
-createRenvTpl := assets.importTemplate(":exec.R.create-renv")
 
 rVenvBuilder := func() {
 	self := undefined
@@ -141,29 +134,8 @@ rVenvBuilder := func() {
 			archiveRef := pkg.get(rRunEnvDescriptor.registry, rRunEnvDescriptor.package).archive()
 			rPkgRef := pkg.install(archiveRef).package()
 
-			rVenvInputs := {
-				operationMode: opMode,
-				toolset: toolset,
-				dependencies: dependencies,
-				software: softwareRef,
-				rRunEnvDescriptor: rRunEnvDescriptor,
-				R: rPkgRef
-			}
-
-			validation.assertType(rVenvInputs, internal.rVenvInputSchema, "incomplete R runenv configuration")
-			tpl := render.create(createRenvTpl, rVenvInputs)
-
 			self := undefined
-			self = ll.toStrict(oop.inherit(tpl, {
-				/**
-				 * R virtual environment with all dependencies installed.
-				 *
-				 * @return renv: smart.field - a reference to the R portable run environment.
-				 */
-				venv: func() {
-					return tpl.output(_OUTPUT_RUN_ENV, cache)
-				},
-
+			self = ll.toStrict({
 				/**
 				 * R runtime used for R virtual environment creation.
 				 *
@@ -173,7 +145,7 @@ rVenvBuilder := func() {
 					// R run environment package is bound to venv and is kept from garbage collection by reference from venv to package.
 					return rPkgRef
 				}
-			}))
+			})
 
 			return self
 		}
@@ -186,5 +158,6 @@ rVenvBuilder := func() {
 export ll.toStrict({
 	rVenvBuilder                        : rVenvBuilder,
 	runRPlan                            : internal.runRPlan,
-	activateRenvInWD                    : internal.activateRenvInWD
+	activateRenvInWD                    : internal.activateRenvInWD,
+	installDepsIntoRenv                 : internal.installDepsIntoRenv
 })
