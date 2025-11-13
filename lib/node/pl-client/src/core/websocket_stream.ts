@@ -10,6 +10,8 @@ import {
 import type { BiDiStream } from './abstract_stream';
 import Denque from 'denque';
 
+// === Types ===
+
 type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'closing' | 'closed';
 
 interface QueuedMessage {
@@ -35,28 +37,37 @@ const DEFAULT_RECONNECT_CONFIG: ReconnectConfig = {
   maxDelay: 30000,
 };
 
+// === WebSocket BiDi Stream ===
+
 /**
  * WebSocket-based bidirectional stream implementation for LLTransaction.
  * Implements BiDiStream interface which is compatible with DuplexStreamingCall.
  */
 export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAPI_ServerMessage> {
+  // Connection
   private ws: WebSocket | null = null;
   private connectionState: ConnectionState = 'disconnected';
   private readonly url: string;
-  private readonly abortSignal: AbortSignal;
   private readonly jwtToken?: string;
+  private readonly abortSignal: AbortSignal;
   
+  // Send management
   private readonly sendQueue = new Denque<QueuedMessage>();
   private sendCompleted = false;
   
+  // Response management
   private readonly responseQueue = new Denque<TxAPI_ServerMessage>();
   private responseResolvers: ResponseResolver[] = [];
   
+  // Reconnection
   private reconnectAttempts = 0;
   private readonly reconnectConfig: ReconnectConfig;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   
+  // Error tracking
   private connectionError: Error | null = null;
+  
+  // === Public API ===
   
   public readonly requests = {
     send: async (message: TxAPI_ClientMessage): Promise<void> => {
@@ -68,7 +79,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
       if (this.sendCompleted) return;
       
       this.sendCompleted = true;
-      await this.waitForSendQueueDrain();
+      await this.drainSendQueue();
       this.closeConnection();
     },
   };
@@ -84,8 +95,9 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     reconnectConfig: Partial<ReconnectConfig> = {}
   ) {
     this.url = url;
-    this.abortSignal = abortSignal;
     this.jwtToken = jwtToken;
+    this.abortSignal = abortSignal;
+
     this.reconnectConfig = { ...DEFAULT_RECONNECT_CONFIG, ...reconnectConfig };
     
     if (abortSignal.aborted) {
@@ -93,11 +105,11 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
       return;
     }
     
-    this.setupAbortHandler();
+    this.attachAbortSignalHandler();
     this.connect();
   }
   
-  // === Connection Management ===
+  // === Connection Lifecycle ===
   
   private async connect(): Promise<void> {
     if (this.isConnectingOrConnected() || this.abortSignal.aborted) return;
@@ -107,55 +119,66 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     
     try {
       this.ws = this.createWebSocket();
-      this.setupWebSocketHandlers();
+      this.attachWebSocketHandlers();
     } catch (error) {
-      this.handleError(error as Error);
+      this.handleConnectionError(error as Error);
     }
   }
   
   private createWebSocket(): WebSocket {
-    if (!this.jwtToken) {
-      return new WebSocket(this.url);
-    }
-    
-    const options = {
-      headers: {
-        'authorization': `Bearer ${this.jwtToken}`,
-      },
-    };
+    const options = this.jwtToken 
+      ? { headers: { authorization: `Bearer ${this.jwtToken}` } }
+      : undefined;
     
     return new (WebSocket as any)(this.url, options);
   }
   
-  private setupWebSocketHandlers(): void {
+  private attachWebSocketHandlers(): void {
     if (!this.ws) return;
     
-    this.ws.addEventListener('open', () => this.handleOpen());
-    this.ws.addEventListener('message', (event) => this.handleMessage(event.data));
-    this.ws.addEventListener('error', (error) => this.handleError(this.toError(error)));
-    this.ws.addEventListener('close', () => this.handleClose());
+    this.ws.addEventListener('open', () => this.onOpen());
+    this.ws.addEventListener('message', (event) => this.onMessage(event.data));
+    this.ws.addEventListener('error', (error) => this.onError(error));
+    this.ws.addEventListener('close', () => this.onClose());
+  }
+
+  private attachAbortSignalHandler(): void {
+    this.abortSignal.addEventListener('abort', () => this.close());
   }
   
-  private handleOpen(): void {
+  private onOpen(): void {
     this.connectionState = 'connected';
-    this.resetReconnection();
+    this.reconnectAttempts = 0;
     this.processSendQueue();
   }
   
-  private handleClose(): void {
+  private onClose(): void {
     this.ws = null;
     
     if (this.isClosed() || this.abortSignal.aborted) return;
     
     if (this.sendCompleted) {
-      this.finalizeClosure();
+      this.finalizeStream();
     } else {
-      this.scheduleReconnect();
+      this.attemptReconnect();
+    }
+  }
+  
+  private onError(error: unknown): void {
+    this.handleConnectionError(this.toError(error));
+  }
+  
+  private onMessage(data: unknown): void {
+    try {
+      const message = this.parseMessage(data);
+      this.deliverResponse(message);
+    } catch (error) {
+      this.handleParseError(this.toError(error));
     }
   }
   
   private closeConnection(): void {
-    if (this.ws && this.connectionState === 'connected') {
+    if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.close();
     }
   }
@@ -164,9 +187,9 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     if (this.isClosed()) return;
     
     this.connectionState = 'closed';
-    this.clearReconnectTimer();
+    this.cancelReconnectTimer();
     this.closeWebSocket();
-    this.rejectAllPending();
+    this.rejectAllPendingOperations();
   }
   
   private closeWebSocket(): void {
@@ -175,26 +198,30 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     try {
       this.ws.close();
     } catch {
-      // Ignore errors during close
+      // Suppress close errors
     }
+    
     this.ws = null;
   }
   
-  private finalizeClosure(): void {
+  private finalizeStream(): void {
     this.connectionState = 'closed';
-    
+    this.resolveAllPendingResponses();
+  }
+  
+  private resolveAllPendingResponses(): void {
     while (this.responseResolvers.length > 0) {
       const resolver = this.responseResolvers.shift()!;
       resolver.resolve({ value: undefined as any, done: true });
     }
   }
   
-  // === Reconnection Logic ===
+  // === Reconnection Strategy ===
   
-  private scheduleReconnect(): void {
-    if (this.reconnectTimer || this.hasExceededMaxAttempts()) {
-      if (this.hasExceededMaxAttempts()) {
-        this.handleMaxReconnectAttemptsReached();
+  private attemptReconnect(): void {
+    if (this.reconnectTimer || this.hasExceededReconnectLimit()) {
+      if (this.hasExceededReconnectLimit()) {
+        this.failWithMaxReconnectAttempts();
       }
       return;
     }
@@ -202,62 +229,51 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     this.connectionState = 'disconnected';
     this.reconnectAttempts++;
     
-    const delay = this.calculateReconnectDelay();
+    const delay = this.computeReconnectDelay();
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.connect();
     }, delay);
   }
   
-  private calculateReconnectDelay(): number {
+  private computeReconnectDelay(): number {
     const exponentialDelay = 
       this.reconnectConfig.initialDelay * Math.pow(2, this.reconnectAttempts - 1);
     return Math.min(exponentialDelay, this.reconnectConfig.maxDelay);
   }
   
-  private resetReconnection(): void {
-    this.reconnectAttempts = 0;
-  }
-  
-  private clearReconnectTimer(): void {
+  private cancelReconnectTimer(): void {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
   }
   
-  private hasExceededMaxAttempts(): boolean {
+  private hasExceededReconnectLimit(): boolean {
     return this.reconnectAttempts >= this.reconnectConfig.maxAttempts;
   }
   
-  private handleMaxReconnectAttemptsReached(): void {
+  private failWithMaxReconnectAttempts(): void {
     this.connectionState = 'closed';
-    const error = new Error('Max reconnection attempts reached');
+    const error = new Error(
+      `Max reconnection attempts (${this.reconnectConfig.maxAttempts}) reached`
+    );
     this.connectionError = error;
-    this.rejectAllPending(error);
+    this.rejectAllPendingOperations(error);
   }
   
-  // === Message Handling ===
+  // === Message Parsing ===
   
-  private handleMessage(data: unknown): void {
-    try {
-      const message = this.deserializeMessage(data);
-      this.enqueueResponse(message);
-    } catch (error) {
-      this.handleDeserializationError(this.toError(error));
-    }
-  }
-  
-  private deserializeMessage(data: unknown): TxAPI_ServerMessage {
+  private parseMessage(data: unknown): TxAPI_ServerMessage {
     if (this.isBinaryData(data)) {
-      return this.deserializeBinary(data);
+      return this.parseBinary(data);
     }
     
     if (typeof data === 'string') {
-      return this.deserializeJson(data);
+      return this.parseJson(data);
     }
     
-    throw new Error(`Unsupported message type: ${typeof data}`);
+    throw new Error(`Unsupported message format: ${typeof data}`);
   }
   
   private isBinaryData(data: unknown): data is ArrayBuffer | Buffer | Uint8Array {
@@ -266,44 +282,31 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
            data instanceof Uint8Array;
   }
   
-  private deserializeBinary(data: ArrayBuffer | Buffer | Uint8Array): TxAPI_ServerMessage {
-    const buffer = data instanceof ArrayBuffer 
-      ? new Uint8Array(data) 
-      : data instanceof Buffer 
-        ? new Uint8Array(data)
-        : data;
-    
-    return ServerMessageType.fromBinary(buffer);
+  private parseBinary(data: ArrayBuffer | Buffer | Uint8Array): TxAPI_ServerMessage {
+    const uint8Array = this.toUint8Array(data);
+    return ServerMessageType.fromBinary(uint8Array);
   }
   
-  private deserializeJson(data: string): TxAPI_ServerMessage {
+  private toUint8Array(data: ArrayBuffer | Buffer | Uint8Array): Uint8Array {
+    if (data instanceof Uint8Array) return data;
+    if (data instanceof Buffer) return new Uint8Array(data);
+    return new Uint8Array(data);
+  }
+  
+  private parseJson(data: string): TxAPI_ServerMessage {
     const json = JSON.parse(data);
     return ServerMessageType.fromJson(json);
-  }
-  
-  private enqueueResponse(message: TxAPI_ServerMessage): void {
-    if (this.responseResolvers.length > 0) {
-      const resolver = this.responseResolvers.shift()!;
-      resolver.resolve({ value: message, done: false });
-    } else {
-      this.responseQueue.push(message);
-    }
-  }
-  
-  private handleDeserializationError(error: Error): void {
-    this.rejectAllResponseResolvers(error);
-    this.connectionError = error;
   }
   
   // === Send Queue Management ===
   
   private validateSendState(): void {
     if (this.sendCompleted) {
-      throw new Error('Stream send side already completed');
+      throw new Error('Cannot send: stream already completed');
     }
     
     if (this.abortSignal.aborted) {
-      throw new Error('Stream aborted');
+      throw new Error('Cannot send: stream aborted');
     }
   }
   
@@ -315,19 +318,19 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
   }
   
   private async processSendQueue(): Promise<void> {
-    if (!this.canProcessSendQueue()) return;
+    if (!this.canSendMessages()) return;
     
     while (this.sendQueue.length > 0) {
       const queued = this.sendQueue.shift()!;
-      await this.sendMessage(queued);
+      await this.sendQueuedMessage(queued);
     }
   }
   
-  private canProcessSendQueue(): boolean {
+  private canSendMessages(): boolean {
     return this.connectionState === 'connected' && this.ws !== null;
   }
   
-  private async sendMessage(queued: QueuedMessage): Promise<void> {
+  private async sendQueuedMessage(queued: QueuedMessage): Promise<void> {
     try {
       const binary = ClientMessageType.toBinary(queued.message);
       this.ws!.send(binary);
@@ -337,26 +340,47 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     }
   }
   
-  private async waitForSendQueueDrain(): Promise<void> {
+  private async drainSendQueue(): Promise<void> {
+    const POLL_INTERVAL_MS = 10;
+    
     while (this.sendQueue.length > 0) {
-      await new Promise<void>((resolve) => {
-        const checkQueue = () => {
-          if (this.sendQueue.length === 0) {
-            resolve();
-          } else {
-            setTimeout(checkQueue, 10);
-          }
-        };
-        checkQueue();
-      });
+      await this.waitForCondition(
+        () => this.sendQueue.length === 0,
+        POLL_INTERVAL_MS
+      );
     }
   }
   
-  // === Response Iterator ===
+  private waitForCondition(
+    condition: () => boolean, 
+    intervalMs: number
+  ): Promise<void> {
+    return new Promise<void>((resolve) => {
+      const check = () => {
+        if (condition()) {
+          resolve();
+        } else {
+          setTimeout(check, intervalMs);
+        }
+      };
+      check();
+    });
+  }
+  
+  // === Response Delivery ===
+  
+  private deliverResponse(message: TxAPI_ServerMessage): void {
+    if (this.responseResolvers.length > 0) {
+      const resolver = this.responseResolvers.shift()!;
+      resolver.resolve({ value: message, done: false });
+    } else {
+      this.responseQueue.push(message);
+    }
+  }
   
   private async *createResponseIterator(): AsyncIterator<TxAPI_ServerMessage> {
     while (true) {
-      const result = await this.getNextResponse();
+      const result = await this.nextResponse();
       
       if (result.done) break;
       
@@ -364,14 +388,16 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     }
   }
   
-  private getNextResponse(): Promise<IteratorResult<TxAPI_ServerMessage>> {
+  private nextResponse(): Promise<IteratorResult<TxAPI_ServerMessage>> {
     return new Promise<IteratorResult<TxAPI_ServerMessage>>((resolve, reject) => {
+      // Fast path: message already available
       if (this.responseQueue.length > 0) {
         const message = this.responseQueue.shift()!;
         resolve({ value: message, done: false });
         return;
       }
       
+      // Stream ended
       if (this.isStreamEnded()) {
         if (this.connectionError) {
           reject(this.connectionError);
@@ -381,28 +407,34 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
         return;
       }
       
+      // Wait for next message
       this.responseResolvers.push({ resolve, reject });
     });
   }
   
   // === Error Handling ===
   
-  private handleError(error: Error): void {
+  private handleConnectionError(error: Error): void {
     this.connectionError = error;
-    this.rejectAllPending(error);
+    this.rejectAllPendingOperations(error);
     
     if (!this.abortSignal.aborted && !this.isClosed()) {
-      this.scheduleReconnect();
+      this.attemptReconnect();
     }
   }
   
-  private rejectAllPending(error?: Error): void {
-    const err = error || this.createClosureError();
-    this.rejectAllSendQueue(err);
+  private handleParseError(error: Error): void {
+    this.connectionError = error;
+    this.rejectAllResponseResolvers(error);
+  }
+  
+  private rejectAllPendingOperations(error?: Error): void {
+    const err = error ?? this.createStreamClosedError();
+    this.rejectAllSendOperations(err);
     this.rejectAllResponseResolvers(err);
   }
   
-  private rejectAllSendQueue(error: Error): void {
+  private rejectAllSendOperations(error: Error): void {
     while (this.sendQueue.length > 0) {
       const queued = this.sendQueue.shift()!;
       queued.reject(error);
@@ -416,17 +448,13 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     }
   }
   
-  private createClosureError(): Error {
+  private createStreamClosedError(): Error {
     return this.abortSignal.aborted 
       ? new Error('Stream aborted')
       : new Error('Stream closed');
   }
   
-  // === Utility Methods ===
-  
-  private setupAbortHandler(): void {
-    this.abortSignal.addEventListener('abort', () => this.close());
-  }
+  // === State Checks ===
   
   private isConnectingOrConnected(): boolean {
     return this.connectionState === 'connecting' || 
