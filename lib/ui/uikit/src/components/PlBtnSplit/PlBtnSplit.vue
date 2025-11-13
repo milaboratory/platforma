@@ -1,12 +1,12 @@
 <script setup lang="ts" generic="M = unknown">
+import { deepEqual } from '@milaboratories/helpers';
 import { computed, reactive, ref, unref, watch } from 'vue';
-import './pl-btn-split.scss';
-import DropdownListItem from '../DropdownListItem.vue';
-import type { ListOption } from '../../types';
 import { useElementPosition } from '../../composition/usePosition';
 import { normalizeListOptions } from '../../helpers/utils';
-import { deepEqual } from '@milaboratories/helpers';
-import { PlMaskIcon16 } from '../PlMaskIcon16';
+import type { ListOption } from '../../types';
+import DropdownListItem from '../DropdownListItem.vue';
+import { PlIcon16 } from '../PlIcon16';
+import './pl-btn-split.scss';
 
 const props = defineProps<{
   /**
@@ -62,7 +62,7 @@ watch(
   { immediate: true },
 );
 
-const iconState = computed(() => (data.open ? 'mask-24 mask-chevron-up' : 'mask-24 mask-chevron-down'));
+const iconName = computed(() => (data.open ? 'chevron-up' : 'chevron-down'));
 
 const selectedIndex = computed(() => {
   return (props.options ?? []).findIndex((o) => deepEqual(o.value, model.value));
@@ -179,8 +179,8 @@ const onFocusOut = (event: FocusEvent) => {
       {{ actionName }}
     </div>
     <div ref="menuActivator" class="pl-btn-split__icon-container d-flex align-center justify-center" tabindex="0" @click="data.open = !data.open">
-      <PlMaskIcon16 v-if="isLoadingOptions" name="loading" />
-      <div v-else :class="iconState" class="pl-btn-split__icon" />
+      <PlIcon16 v-if="isLoadingOptions" name="loading" />
+      <PlIcon16 v-else :name="iconName" class="pl-btn-split__icon" />
     </div>
 
     <Teleport v-if="data.open" to="body">
