@@ -9,9 +9,8 @@ import {
   type PColumn,
   type PFrameHandle,
 } from '@platforma-sdk/model';
-import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
+import { hashJson, PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 import {
-  hashJson,
   RefCountPoolBase,
   type PoolEntry,
 } from '@milaboratories/ts-helpers';
@@ -52,7 +51,7 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
     const makeRemoteBlobId = (blob: TreeEntry): PFrameInternal.PFrameBlobId => {
       const remoteBlob = this.remoteBlobProvider.acquire(blob);
       this.remoteBlobs.push(remoteBlob);
-      return `${remoteBlob.key}${PFrameInternal.ParquetExtension}`;
+      return `${remoteBlob.key}${PFrameInternal.ParquetExtension}` as PFrameInternal.PFrameBlobId;
     };
 
     const mapColumnData = (

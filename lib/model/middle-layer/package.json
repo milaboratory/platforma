@@ -32,6 +32,7 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@milaboratories/ts-configs": "workspace:*",
+    "@types/node": "catalog:"
   }
 }
