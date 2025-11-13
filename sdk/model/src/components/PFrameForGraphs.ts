@@ -15,6 +15,8 @@ import {
   getAxisId,
   getColumnIdAndSpec,
   getNormalizedAxesList,
+  isLabelColumn,
+  isLinkerColumn,
   LinkerMap,
   matchAxisId,
   readAnnotation,
@@ -23,7 +25,6 @@ import {
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, RenderCtx } from '../render';
 import { allPColumnsReady, PColumnCollection } from '../render';
-import { isLabelColumn } from './PlDataTable';
 
 /** Create id for column copy with added keys in axes domains */
 const colId = (id: PObjectId, domains: (Record<string, string> | undefined)[]) => {
@@ -53,11 +54,6 @@ function getKeysCombinations(idsLists: AxisId[][]) {
     result = nextResult;
   });
   return result;
-}
-
-/** Check if column is a linker column */
-export function isLinkerColumn(column: PColumnSpec): boolean {
-  return !!readAnnotationJson(column, Annotation.IsLinkerColumn);
 }
 
 export function isHiddenFromGraphColumn(column: PColumnSpec): boolean {

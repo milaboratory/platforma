@@ -6,7 +6,6 @@ import type {
   ListOptionBase,
   PColumn,
   PColumnIdAndSpec,
-  PColumnSpec,
   PColumnValues,
   PObjectId,
   PTableColumnId,
@@ -24,6 +23,8 @@ import {
   canonicalizeJson,
   getAxisId,
   getColumnIdAndSpec,
+  isLabelColumn,
+  isLinkerColumn,
   matchAxisId,
   PColumnName,
   readAnnotation,
@@ -40,7 +41,6 @@ import {
   allPColumnsReady,
   PColumnCollection,
 } from '../render';
-import { isLinkerColumn } from './PFrameForGraphs';
 
 export type PlTableColumnId = {
   /** Original column spec */
@@ -482,11 +482,6 @@ export type CreatePlDataTableOps = {
    */
   doNotSkipTechnicalColumns?: boolean;
 };
-
-/** Check if column is a label column */
-export function isLabelColumn(column: PColumnSpec) {
-  return column.axesSpec.length === 1 && column.name === PColumnName.Label;
-}
 
 /** Get all label columns from the result pool */
 export function getAllLabelColumns(
