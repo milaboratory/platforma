@@ -31,7 +31,7 @@ export function makeFolderPath(dataFolder: string): FolderPath {
 }
 
 function makeBlobId(res: FileName): PFrameInternal.PFrameBlobId {
-  return res as string;
+  return res as string as PFrameInternal.PFrameBlobId;
 }
 
 class LocalBlobProviderImpl
@@ -97,7 +97,7 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<FileName> {
     return new RemoteBlobProviderImpl(pool, server);
   }
 
-  public acquire(params: FileName): PoolEntry {
+  public acquire(params: FileName): PoolEntry<PFrameInternal.PFrameBlobId> {
     return this.pool.acquire(params);
   }
 
@@ -110,13 +110,16 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<FileName> {
   }
 }
 
+export type InternalPFrameDriverDouble =
+  AbstractInternalPFrameDriver<PFrameInternal.DataInfo<FileName> | PColumnValues>;
+
 export async function createPFrameDriverDouble({
   dataFolder = tmpdir() as FolderPath,
   logger = () => {},
 }: {
   dataFolder?: FolderPath;
   logger?: PFrameInternal.Logger;
-}): Promise<AbstractInternalPFrameDriver<PFrameInternal.DataInfo<FileName> | PColumnValues>> {
+}): Promise<InternalPFrameDriverDouble> {
   const localBlobProvider = new LocalBlobProviderImpl(dataFolder);
   const remoteBlobProvider = await RemoteBlobProviderImpl.init(dataFolder, logger, {});
 

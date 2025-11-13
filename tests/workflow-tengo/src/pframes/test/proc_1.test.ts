@@ -2,10 +2,10 @@ import type { PColumnSpec, PUniversalColumnSpec } from '@milaboratories/pl-middl
 import { Annotation, field, Pl, resourceType } from '@milaboratories/pl-middle-layer';
 import { awaitStableState } from '@platforma-sdk/test';
 import { assertBlob, assertJson, assertResource, eTplTest } from './extended_tpl_test';
-import { getTestTimeout } from '@milaboratories/test-helpers';
+import { getLongTestTimeout } from '@milaboratories/test-helpers';
 import { vi } from 'vitest';
 
-const TIMEOUT = getTestTimeout(15_000);
+const TIMEOUT = getLongTestTimeout(15_000);
 
 vi.setConfig({
   testTimeout: TIMEOUT,

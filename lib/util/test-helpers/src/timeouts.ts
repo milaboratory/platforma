@@ -1,7 +1,7 @@
 import { parseDurationMs } from '@milaboratories/helpers';
 
-export function getTestTimeout(fallback = 60_000): number {
-  return parseDurationMs(process.env.TEST_TIMEOUT, fallback);
+export function getLongTestTimeout(fallback = 60_000): number {
+  return parseDurationMs(process.env.LONG_TEST_TIMEOUT, fallback);
 }
 
-export const TEST_TIMEOUT = getTestTimeout();
+export const LONG_TEST_TIMEOUT = getLongTestTimeout();

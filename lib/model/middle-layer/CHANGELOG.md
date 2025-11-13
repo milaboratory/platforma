@@ -1,5 +1,17 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.39
+
+### Patch Changes
+
+- 8996bed: Publish again, previous publish failed
+
+## 1.8.38
+
+### Patch Changes
+
+- 6af87a6: Node json helpers moved, new type exports from PFrameDriverDouble
+
 ## 1.8.37
 
 ### Patch Changes

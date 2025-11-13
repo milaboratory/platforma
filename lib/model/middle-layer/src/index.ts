@@ -9,3 +9,4 @@ export * from './update_info';
 export * from './block_meta';
 export * from './block_registry';
 export * from './pframe';
+export * from './json';
