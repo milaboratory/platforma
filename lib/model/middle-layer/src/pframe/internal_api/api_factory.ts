@@ -1,5 +1,6 @@
 import {
   BinaryPartitionedDataInfo,
+  Branded,
   JsonDataInfo,
   JsonPartitionedDataInfo,
   ParquetChunk,
@@ -12,9 +13,14 @@ import {
   HttpServerInfo,
 } from './http_helpers';
 
-/** Abstract identifier of a data blob that can be requested from the storage backend */
-export type PFrameBlobId = string;
+/** PColumn spec file extension */
+export const SpecExtension = '.spec' as const;
 
+/** PColumn data info file extension */
+export const DataInfoExtension = '.datainfo' as const;
+
+/** Abstract identifier of a data blob that can be requested from the storage backend */
+export type PFrameBlobId = Branded<string, 'PFrameInternal.PFrameBlobId'>;
 
 /** Path of the file containing requested data (blob). This path is returned by
  * {@link BlobPathResolver} as soon as blob materialized in the file system. */

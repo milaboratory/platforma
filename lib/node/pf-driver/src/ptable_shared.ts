@@ -1,5 +1,5 @@
 import type { PObjectId, PFrameHandle, PTableDef, PTableHandle } from '@platforma-sdk/model';
-import { hashJson } from '@milaboratories/ts-helpers';
+import { hashJson } from '@milaboratories/pl-model-middle-layer';
 
 export type FullPTableDef = {
   pFrameHandle: PFrameHandle;

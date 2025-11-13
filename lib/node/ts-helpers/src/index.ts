@@ -15,7 +15,6 @@ export * from './obj';
 export * from './buffer';
 export * from './exec';
 export * from './ref_count_pool';
-export * from './json';
 
 export function assertNever(x: never): never {
   // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
