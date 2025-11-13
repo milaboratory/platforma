@@ -103,6 +103,7 @@ export { useEventListener } from './composition/useEventListener';
 export { useFormState } from './composition/useFormState';
 export { useHover } from './composition/useHover';
 export { useInterval } from './composition/useInterval';
+export { usePollingQuery } from './composition/usePollingQuery';
 export { useLocalStorage } from './composition/useLocalStorage';
 export { useMouse } from './composition/useMouse';
 export { useMouseCapture } from './composition/useMouseCapture';
