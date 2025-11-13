@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.5.4
+
+### Patch Changes
+
+- 8996bed: Publish again, previous publish failed
+
 ## 1.5.3
 
 ### Patch Changes

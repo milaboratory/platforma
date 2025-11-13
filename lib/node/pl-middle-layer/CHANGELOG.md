@@ -1,5 +1,25 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.63
+
+### Patch Changes
+
+- 8996bed: Publish again, previous publish failed
+- Updated dependencies [8996bed]
+  - @milaboratories/pl-model-middle-layer@1.8.39
+  - @milaboratories/pf-driver@1.0.3
+  - @milaboratories/ts-helpers@1.5.4
+  - @platforma-sdk/block-tools@2.6.20
+  - @milaboratories/computable@2.7.4
+  - @milaboratories/pl-client@2.16.6
+  - @milaboratories/pl-config@1.7.9
+  - @milaboratories/pl-deployments@2.12.3
+  - @milaboratories/pl-drivers@1.11.17
+  - @milaboratories/pl-errors@1.1.38
+  - @milaboratories/pl-tree@1.8.13
+  - @milaboratories/pl-model-backend@1.1.23
+  - @platforma-sdk/workflow-tengo@5.5.17
+
 ## 1.43.62
 
 ### Patch Changes

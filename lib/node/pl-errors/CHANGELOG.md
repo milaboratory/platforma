@@ -1,5 +1,13 @@
 # @milaboratories/pl-errors
 
+## 1.1.38
+
+### Patch Changes
+
+- Updated dependencies [8996bed]
+  - @milaboratories/ts-helpers@1.5.4
+  - @milaboratories/pl-client@2.16.6
+
 ## 1.1.37
 
 ### Patch Changes
