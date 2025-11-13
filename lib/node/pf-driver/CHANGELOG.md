@@ -1,5 +1,14 @@
 # @milaboratories/pf-driver
 
+## 1.0.2
+
+### Patch Changes
+
+- 6af87a6: Node json helpers moved, new type exports from PFrameDriverDouble
+- Updated dependencies [6af87a6]
+  - @milaboratories/pl-model-middle-layer@1.8.38
+  - @milaboratories/ts-helpers@1.5.3
+
 ## 1.0.1
 
 ### Patch Changes
