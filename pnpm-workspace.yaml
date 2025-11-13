@@ -273,7 +273,7 @@ catalog:
   '@platforma-open/milaboratories.software-conda-empty': ^0.0.3
   '@biowasm/aioli': ~3.2.1
 
-  '@platforma-open/milaboratories.runenv-python-3': 1.6.2
+  '@platforma-open/milaboratories.runenv-python-3': 1.7.3
 
   # Test
 
