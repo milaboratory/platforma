@@ -161,7 +161,7 @@ self.body(func(inputs) {
 	// like .Rprofile for R with activated renv.
 	if (runEnvType == "R") {
 		wdBefore = R.activateRenvInWD(wdBefore, runOptions.queue, computeAllocationRef, inputs.mainPlan)
-		wdBefore = R.installDepsIntoRenv(wdBefore, mainPlanPreBuilder)
+		wdBefore = R.installDepsIntoRenv(wdBefore, runOptions.queue, computeAllocationRef, inputs.mainPlan)
 	}
 
 	mainRunBuilder := runcmd.builder(wdBefore, mainPlanPreBuilder.state()).
