@@ -1,13 +1,7 @@
-name: Test K8S 
+name: Test K8S Nightly (without cache)
 on:
-  # merge_group:
-  # pull_request:
-  #   types: [opened, reopened, synchronize]
-  #   branches:
-  #     - 'main'
-  push:
-    branches:
-      - 'main'
+  schedule:
+    - cron: '0 3 * * *'
   workflow_dispatch: {}
 jobs:
   init:
@@ -28,7 +22,7 @@ jobs:
       node-version: '22.x'
       pl-version: 'main'
       pnpm-build-command: '--filter "*/workflow-tengo*"'
-      pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --maxWorkers=5 --testTimeout=1800000'
+      pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --maxWorkers=5 --testTimeout=1800000 --no-cache'
       helm-release-name: 'pl-dev-gcp'
       helm-chart-values-file: 'helm/gcp/values.yaml'
       notify-slack: true
