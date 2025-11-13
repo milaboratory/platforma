@@ -100,7 +100,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
   // === Connection Management ===
   
   private async connect(): Promise<void> {
-    if (this.isConnecting() || this.abortSignal.aborted) return;
+    if (this.isConnectingOrConnected() || this.abortSignal.aborted) return;
     
     this.connectionState = 'connecting';
     this.connectionError = null;
@@ -428,9 +428,9 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     this.abortSignal.addEventListener('abort', () => this.close());
   }
   
-  private isConnecting(): boolean {
-    return this.connectionState === 'connected' || 
-           this.connectionState === 'connecting';
+  private isConnectingOrConnected(): boolean {
+    return this.connectionState === 'connecting' || 
+           this.connectionState === 'connected';
   }
   
   private isClosed(): boolean {
