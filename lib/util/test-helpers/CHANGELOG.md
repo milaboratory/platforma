@@ -1,5 +1,11 @@
 # @milaboratories/test-helpers
 
+## 1.1.1
+
+### Patch Changes
+
+- c8cc355: Refactor test utility to retrieve timeout
+
 ## 1.1.0
 
 ### Minor Changes
