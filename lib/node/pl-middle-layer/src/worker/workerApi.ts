@@ -9,7 +9,8 @@ export const workerApi = {
     const t1 = performance.now();
     const result = parseTemplate(payload);
     const t2 = performance.now();
-    console.info(`>>>> parseTemplate in worker took ${t2 - t1}ms`);
+    const dt = t2 - t1;
+    if (dt > 100) console.warn(`parseTemplate in worker took ${dt}ms`);
     return result;
   },
 } satisfies Record<string, (...args: any[]) => Promise<unknown>>;

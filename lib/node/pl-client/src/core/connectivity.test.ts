@@ -5,7 +5,7 @@ import { test, expect } from 'vitest';
 import { sleep } from '@milaboratories/ts-helpers';
 import { DisconnectedError } from './errors';
 
-test('connectivity: disconnect', async () => {
+test('connectivity: disconnect during tx', async () => {
   await withTempRoot(async (pl, proxy) => {
     await expect(async () => {
       await pl.withWriteTx('resource1', async (tx) => {
@@ -21,7 +21,7 @@ test('connectivity: disconnect', async () => {
   
         await proxy?.disconnectAll();
 
-        await sleep(100);
+        await sleep(1);
   
         const theField1 = { resourceId: r1, fieldName: 'theField' };
         tx.createField(theField1, 'Input');
