@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.45.30
+
+### Patch Changes
+
+- 17e5fe7: Get rid of circular reference
+- Updated dependencies [17e5fe7]
+  - @milaboratories/pl-model-common@1.21.6
+  - @milaboratories/ptabler-expression-js@1.1.2
+
 ## 1.45.26
 
 ### Patch Changes
