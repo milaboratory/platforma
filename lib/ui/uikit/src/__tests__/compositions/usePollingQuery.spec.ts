@@ -769,4 +769,510 @@ describe('usePollingQuery', () => {
     scope.stop();
     expect(controller.aborted).toBe(true);
   });
+
+  // EDGE CASE TESTS - These should fail with current implementation
+
+  it('handles reactive minInterval change to zero during active polling', async () => {
+    const args = ref({ id: 'test' });
+    const { fn, calls } = createControlledQuery<typeof args.value, string>();
+    const minInterval = ref(100);
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval,
+        autoStart: true,
+        triggerOnResume: true,
+      }),
+    );
+    const { isActive, resume } = result;
+
+    await advanceTime(0);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(isActive.value).toBe(true);
+
+    // Complete first request
+    calls[0].resolve('first');
+    await flushMicrotasks();
+
+    // Change minInterval to 0 while polling is active
+    minInterval.value = 0;
+
+    // The polling should stop since minInterval is now 0
+    await advanceTime(200);
+    expect(fn).toHaveBeenCalledTimes(1); // Should not poll anymore
+    expect(isActive.value).toBe(false); // Should become inactive
+
+    // Resume should have no effect when minInterval is 0
+    resume();
+    await advanceTime(100);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(isActive.value).toBe(false);
+
+    scope.stop();
+  });
+
+  it('handles concurrent pause() calls from within callback', async () => {
+    const args = ref({ id: 'concurrent' });
+    let pauseFn: (() => void) | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fn = vi.fn(async (_: any, { pause }: { pause: () => void }) => {
+      pauseFn = pause;
+      // Simulate async operation where pause might be called multiple times
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      pause(); // First pause
+      pause(); // Second pause - should be idempotent
+      return 'result';
+    });
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval: 100,
+        autoStart: true,
+        triggerOnResume: true,
+      }),
+    );
+    const { isActive, pause: externalPause } = result;
+
+    await advanceTime(0);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(isActive.value).toBe(true);
+
+    // Call pause from outside while callback is executing
+    externalPause();
+    expect(isActive.value).toBe(false);
+
+    // The callback's pause should not reactivate or cause issues
+    pauseFn?.();
+
+    await advanceTime(100);
+    expect(isActive.value).toBe(false);
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    scope.stop();
+  });
+
+  it('properly handles argument changes during debounce when paused and resumed', async () => {
+    const args = ref({ value: 1 });
+    const { fn, calls } = createControlledQuery<typeof args.value, string>();
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval: 100,
+        autoStart: true,
+        triggerOnResume: true,
+        debounce: 200,
+      }),
+    );
+    const { pause, resume, data } = result;
+
+    await advanceTime(0);
+    expect(fn).toHaveBeenCalledTimes(1);
+    calls[0].resolve('initial');
+    await flushMicrotasks();
+    expect(data.value).toEqual({ status: 'synced', value: 'initial' });
+
+    // Change args to start debounce
+    args.value = { value: 2 };
+    expect(data.value).toEqual({ status: 'stale', value: 'initial' });
+
+    // Pause during debounce
+    await advanceTime(100);
+    pause();
+
+    // Change args while paused
+    args.value = { value: 3 };
+
+    // Resume - should trigger immediately with latest args, not continue old debounce
+    resume();
+    await advanceTime(0);
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(calls[1].args).toEqual({ value: 3 });
+
+    scope.stop();
+  });
+
+  it('correctly tracks versions when error occurs during argument change', async () => {
+    const args = ref({ id: 'a' });
+    const { fn, calls } = createControlledQuery<typeof args.value, string>();
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval: 50,
+        autoStart: true,
+        triggerOnResume: true,
+        maxInFlightRequests: 2,
+      }),
+    );
+    const { data, lastError } = result;
+
+    await advanceTime(0);
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    // Change args while first request is in flight
+    args.value = { id: 'b' };
+    await advanceTime(50);
+    expect(fn).toHaveBeenCalledTimes(2);
+
+    // First request fails after args changed
+    calls[0].reject(new Error('error-a'));
+    await flushMicrotasks();
+
+    // Error from old version should not set lastError
+    expect(lastError.value).toBeNull();
+    expect(data.value).toEqual({ status: 'idle' });
+
+    // Second request succeeds
+    calls[1].resolve('result-b');
+    await flushMicrotasks();
+    expect(data.value).toEqual({ status: 'synced', value: 'result-b' });
+    expect(lastError.value).toBeNull();
+
+    scope.stop();
+  });
+
+  it('handles rapid minDelay changes during execution', async () => {
+    const args = ref({ id: 'test' });
+    const { fn, calls } = createControlledQuery<typeof args.value, string>();
+    const minDelay = ref<number | undefined>(100);
+
+    const { scope } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval: 50,
+        minDelay,
+        autoStart: true,
+        triggerOnResume: true,
+      }),
+    );
+
+    await advanceTime(0);
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    // Start time of first request
+    const firstStart = calls[0].startTime;
+
+    // Change minDelay to undefined while request is in flight
+    minDelay.value = undefined;
+
+    // Complete first request after 30ms
+    await advanceTime(30);
+    calls[0].resolve('first');
+    await flushMicrotasks();
+
+    // With minDelay now undefined, next poll should start at minInterval (50ms from start)
+    await advanceTime(19);
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    await advanceTime(1);
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(calls[1].startTime).toBe(firstStart + 50);
+
+    scope.stop();
+  });
+
+  it('prevents duplicate scheduling when args change completes a request', async () => {
+    const args = ref({ id: 'a' });
+    const { fn, calls } = createControlledQuery<typeof args.value, string>();
+
+    const { scope } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval: 100,
+        autoStart: true,
+        triggerOnResume: true,
+      }),
+    );
+
+    await advanceTime(0);
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    // Change args while request is in flight
+    args.value = { id: 'b' };
+
+    // This aborts the first request and schedules a new one
+    // But when the first request completes (even if aborted), it should not schedule again
+
+    calls[0].reject(new Error('aborted'));
+    await flushMicrotasks();
+
+    // Should schedule only once for the new args
+    await advanceTime(100);
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(calls[1].args).toEqual({ id: 'b' });
+
+    // Complete second request and wait for next poll
+    calls[1].resolve('result-b');
+    await flushMicrotasks();
+
+    await advanceTime(100);
+    // Should have exactly one more call, not duplicated
+    expect(fn).toHaveBeenCalledTimes(3);
+    expect(calls[2].args).toEqual({ id: 'b' });
+
+    scope.stop();
+  });
+
+  it('handles resume() called before any arguments are provided', async () => {
+    // eslint-disable-next-line prefer-const
+    let argsValue: { id: string } | undefined;
+    const argsComputed = () => argsValue;
+    const fn = vi.fn(async () => 'result');
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(argsComputed, fn, {
+        minInterval: 100,
+        autoStart: false,
+      }),
+    );
+    const { resume, data, isActive } = result;
+
+    // Try to resume without args - should not activate
+    resume();
+    expect(isActive.value).toBe(false);
+    await advanceTime(200);
+    expect(fn).not.toHaveBeenCalled();
+    expect(data.value).toEqual({ status: 'idle' });
+
+    // Now provide args
+    argsValue = { id: 'first' };
+
+    // Resume should now work
+    resume();
+    expect(isActive.value).toBe(true);
+    await advanceTime(100);
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    scope.stop();
+  });
+
+  it('cleans up waiters array on dispose to prevent memory leak', async () => {
+    const args = ref({ id: 'test' });
+    const { fn, calls } = createControlledQuery<typeof args.value, string>();
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval: 50,
+        autoStart: true,
+        triggerOnResume: true,
+        maxInFlightRequests: 1,
+      }),
+    );
+    const { inFlightCount } = result;
+
+    // Start first request
+    await advanceTime(0);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(inFlightCount.value).toBe(1);
+
+    // Try to change args multiple times while first request is in flight
+    // This should queue up waiters
+    args.value = { id: 'b' };
+    await advanceTime(50);
+    args.value = { id: 'c' };
+    await advanceTime(50);
+    args.value = { id: 'd' };
+
+    // Dispose scope while waiters are queued
+    scope.stop();
+
+    // Complete the in-flight request after dispose
+    calls[0].resolve('result');
+    await flushMicrotasks();
+
+    // Should not throw or cause issues
+    expect(inFlightCount.value).toBe(0);
+  });
+
+  it('handles argument changes after pause but before resumeimmediately after arguments provided', async () => {
+    const args = ref({ value: 1 });
+    const { fn, calls } = createControlledQuery<typeof args.value, string>();
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval: 100,
+        autoStart: false,
+        triggerOnResume: false,
+      }),
+    );
+    const { resume, data, isActive } = result;
+
+    // Provide args but don't resume yet
+    expect(data.value).toEqual({ status: 'idle' });
+    expect(isActive.value).toBe(false);
+
+    // Change args before first resume
+    args.value = { value: 2 };
+    args.value = { value: 3 };
+
+    // Now resume - should use latest args
+    resume();
+    expect(isActive.value).toBe(true);
+
+    await advanceTime(100);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(calls[0].args).toEqual({ value: 3 });
+
+    scope.stop();
+  });
+
+  it('correctly handles error from outdated version when maxInFlightRequests > 1', async () => {
+    const args = ref({ id: 'a' });
+    const { fn, calls } = createControlledQuery<typeof args.value, string>();
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval: 50,
+        autoStart: true,
+        triggerOnResume: true,
+        maxInFlightRequests: 3,
+      }),
+    );
+    const { data: _data, lastError } = result;
+
+    await advanceTime(0);
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    // Start second poll
+    await advanceTime(50);
+    expect(fn).toHaveBeenCalledTimes(2);
+
+    // Change args - this aborts both and starts a new one
+    args.value = { id: 'b' };
+    await advanceTime(50);
+    expect(fn).toHaveBeenCalledTimes(3);
+
+    // First request (outdated) fails
+    calls[0].reject(new Error('error-old-1'));
+    await flushMicrotasks();
+
+    // Should not set lastError from old version
+    expect(lastError.value).toBeNull();
+
+    // Second request (also outdated) fails
+    calls[1].reject(new Error('error-old-2'));
+    await flushMicrotasks();
+
+    // Still should not set lastError
+    expect(lastError.value).toBeNull();
+
+    // Current request fails
+    calls[2].reject(new Error('error-current'));
+    await flushMicrotasks();
+
+    // Now lastError should be set
+    expect(lastError.value?.message).toBe('error-current');
+
+    scope.stop();
+  });
+
+  it('respects minInterval when triggerOnResume is false and resuming after pause', async () => {
+    const args = ref({ id: 'test' });
+    const { fn, calls } = createControlledQuery<typeof args.value, string>();
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval: 300,
+        autoStart: true,
+        triggerOnResume: false, // Important: false here
+      }),
+    );
+    const { pause, resume } = result;
+
+    // Start with autoStart, should wait for minInterval
+    await advanceTime(299);
+    expect(fn).not.toHaveBeenCalled();
+    await advanceTime(1);
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    // Pause immediately
+    pause();
+    calls[0].reject(new Error('aborted'));
+    await flushMicrotasks();
+
+    // Resume - should wait for minInterval again, not trigger immediately
+    resume();
+    await advanceTime(299);
+    expect(fn).toHaveBeenCalledTimes(1); // Still just 1 call
+
+    await advanceTime(1);
+    expect(fn).toHaveBeenCalledTimes(2); // Now 2 calls
+
+    scope.stop();
+  });
+
+  it('handles simultaneous pause from callback and external pause', async () => {
+    const args = ref({ id: 'test' });
+    let callbackPause: (() => void) | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fn = vi.fn(async (_: any, { pause }: { pause: () => void }) => {
+      callbackPause = pause;
+      // Wait for external code to run
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return 'result';
+    });
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval: 100,
+        autoStart: true,
+        triggerOnResume: true,
+      }),
+    );
+    const { pause: externalPause, resume, isActive } = result;
+
+    await advanceTime(0);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(isActive.value).toBe(true);
+
+    // Both pause at nearly the same time
+    await advanceTime(5);
+    callbackPause?.(); // Pause from callback
+    externalPause(); // Pause from external
+
+    expect(isActive.value).toBe(false);
+
+    await advanceTime(100);
+    expect(fn).toHaveBeenCalledTimes(1); // No additional calls
+
+    // Resume should work normally
+    resume();
+    await advanceTime(0);
+    expect(isActive.value).toBe(true);
+    expect(fn).toHaveBeenCalledTimes(2);
+
+    scope.stop();
+  });
+
+  it('handles reactive minInterval becoming positive after being zero', async () => {
+    const args = ref({ id: 'test' });
+    const fn = vi.fn(async () => 'result');
+    const minInterval = ref(0);
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval,
+        autoStart: true,
+        triggerOnResume: true,
+      }),
+    );
+    const { isActive, resume } = result;
+
+    // Should not start because minInterval is 0
+    expect(isActive.value).toBe(false);
+    await advanceTime(100);
+    expect(fn).not.toHaveBeenCalled();
+
+    // Change minInterval to positive value
+    minInterval.value = 100;
+
+    // Resume should now work
+    resume();
+    expect(isActive.value).toBe(true);
+    await advanceTime(0);
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    // Should continue polling
+    await advanceTime(100);
+    expect(fn).toHaveBeenCalledTimes(2);
+
+    scope.stop();
+  });
 });
