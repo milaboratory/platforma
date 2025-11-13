@@ -77,7 +77,7 @@ describe('usePollingQuery', () => {
     const { fn, calls } = createControlledQuery<typeof args.value, string>();
 
     const { scope, result } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 1000,
         minDelay: 200,
         immediate: true,
@@ -121,7 +121,7 @@ describe('usePollingQuery', () => {
     });
 
     const { scope } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 300,
         immediate: true,
         immediateCallback: true,
@@ -148,7 +148,7 @@ describe('usePollingQuery', () => {
     const { fn, calls } = createControlledQuery<typeof args.value, string>();
 
     const { scope, result } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 100,
         immediateCallback: true,
         immediate: true,
@@ -182,7 +182,7 @@ describe('usePollingQuery', () => {
     const fn = vi.fn(async () => 'first');
 
     const { scope, result } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 250,
         immediate: false,
       }),
@@ -210,7 +210,7 @@ describe('usePollingQuery', () => {
     const { fn, calls } = createControlledQuery<typeof args.value, string>();
 
     const { scope } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 100,
         immediate: true,
         immediateCallback: true,
@@ -246,7 +246,7 @@ describe('usePollingQuery', () => {
     const { fn, calls } = createControlledQuery<typeof args.value, string>();
 
     const { scope } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 100,
         immediate: true,
         immediateCallback: true,
@@ -287,7 +287,7 @@ describe('usePollingQuery', () => {
     const { fn, calls } = createControlledQuery<typeof args.value, number>();
 
     const { scope, result } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 100,
         immediate: true,
         immediateCallback: true,
@@ -322,7 +322,7 @@ describe('usePollingQuery', () => {
     const { fn, calls } = createControlledQuery<typeof args.value, string>();
 
     const { scope, result } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 100,
         immediate: true,
         immediateCallback: true,
@@ -354,7 +354,7 @@ describe('usePollingQuery', () => {
     const { fn, calls } = createControlledQuery<string, string>();
 
     const { scope, result } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 100,
         immediate: true,
         immediateCallback: true,
@@ -388,7 +388,7 @@ describe('usePollingQuery', () => {
     });
 
     const { scope, result } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 100,
         immediate: true,
         immediateCallback: true,
@@ -413,7 +413,7 @@ describe('usePollingQuery', () => {
     const { fn, calls } = createControlledQuery<string, string>();
 
     const { scope, result } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 100,
         immediate: true,
         immediateCallback: true,
@@ -440,7 +440,7 @@ describe('usePollingQuery', () => {
     });
 
     const { scope, result } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 100,
         immediate: true,
         immediateCallback: true,
@@ -460,7 +460,7 @@ describe('usePollingQuery', () => {
     const { fn, calls } = createControlledQuery<typeof args.value, string>();
 
     const { scope, result } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 10,
         immediate: true,
         immediateCallback: true,
@@ -491,7 +491,7 @@ describe('usePollingQuery', () => {
     const { fn, calls } = createControlledQuery<typeof args.value, string>();
 
     const { scope } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 20,
         immediate: true,
         immediateCallback: true,
@@ -524,7 +524,7 @@ describe('usePollingQuery', () => {
     const { fn, calls } = createControlledQuery<typeof args.value, string>();
 
     const { scope } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 50,
         immediate: true,
         immediateCallback: true,
@@ -558,7 +558,7 @@ describe('usePollingQuery', () => {
     });
 
     const { scope, result } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 100,
         immediate: true,
         immediateCallback: true,
@@ -582,7 +582,7 @@ describe('usePollingQuery', () => {
     const fn = vi.fn(async () => 'value');
 
     const { scope, result } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 200,
         immediate: false,
         immediateCallback: false,
@@ -605,7 +605,7 @@ describe('usePollingQuery', () => {
     const fn = vi.fn(async () => 'value');
 
     const { scope, result } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 0,
         immediate: true,
         immediateCallback: true,
@@ -629,7 +629,7 @@ describe('usePollingQuery', () => {
     const { fn, calls } = createControlledQuery<typeof args.value, string>();
 
     const { scope } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 200,
         minDelay: 150,
         immediate: true,
@@ -658,7 +658,7 @@ describe('usePollingQuery', () => {
     const { fn, calls } = createControlledQuery<typeof args.value, string>();
 
     const { scope } = runInScope(() =>
-      usePollingQuery(fn, args, {
+      usePollingQuery(args, fn, {
         minInterval: 100,
         immediate: true,
         immediateCallback: true,

@@ -44,7 +44,7 @@ function toError(error: unknown): Error {
  *
  * ```ts
  * const args = ref({ id: 'item-1' });
- * const { data, pause, resume, lastError } = usePollingQuery(fetchItem, args, {
+ * const { data, pause, resume, lastError } = usePollingQuery(args, fetchItem, {
  *   minInterval: 5_000,
  *   minDelay: 250,
  * });
@@ -119,8 +119,8 @@ function toError(error: unknown): Error {
  * @typeParam Result - Result type produced by the polling callback.
  */
 export function usePollingQuery<Args, Result>(
-  queryFn: (args: Args, options: { signal: AbortSignal; pause: () => void }) => Promise<Result>,
   args: Ref<Args>,
+  queryFn: (args: Args, options: { signal: AbortSignal; pause: () => void }) => Promise<Result>,
   options: {
     minInterval: number;
     minDelay?: number;
