@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.37
+
+### Patch Changes
+
+- c3ce3ce: Project cleanup: replaced destroyed flag with getter, made destroy() method never throw, and added graceful error handling during shutdown
+
 ## 1.8.36
 
 ### Patch Changes
