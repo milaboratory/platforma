@@ -1,5 +1,25 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.62
+
+### Patch Changes
+
+- 6af87a6: Node json helpers moved, new type exports from PFrameDriverDouble
+- Updated dependencies [6af87a6]
+  - @milaboratories/pl-model-middle-layer@1.8.38
+  - @milaboratories/ts-helpers@1.5.3
+  - @milaboratories/pf-driver@1.0.2
+  - @platforma-sdk/block-tools@2.6.19
+  - @milaboratories/computable@2.7.3
+  - @milaboratories/pl-client@2.16.5
+  - @milaboratories/pl-config@1.7.8
+  - @milaboratories/pl-deployments@2.12.2
+  - @milaboratories/pl-drivers@1.11.16
+  - @milaboratories/pl-errors@1.1.37
+  - @milaboratories/pl-tree@1.8.12
+  - @milaboratories/pl-model-backend@1.1.22
+  - @platforma-sdk/workflow-tengo@5.5.17
+
 ## 1.43.61
 
 ### Patch Changes
