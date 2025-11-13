@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.16.4
+
+### Patch Changes
+
+- c3ce3ce: Fix a race condition in a flaky test when disconnected from the network
+
 ## 2.16.3
 
 ### Patch Changes
