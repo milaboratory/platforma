@@ -6,6 +6,7 @@ import { normalizeListOptions } from '../../helpers/utils';
 import type { ListOption } from '../../types';
 import DropdownListItem from '../DropdownListItem.vue';
 import { PlIcon16 } from '../PlIcon16';
+
 import './pl-btn-split.scss';
 
 const props = defineProps<{
