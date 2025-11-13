@@ -46,7 +46,7 @@ import {
 } from './data';
 
 function makeBlobId(res: PlTreeEntry): PFrameInternal.PFrameBlobId {
-  return String(res.rid);
+  return String(res.rid) as PFrameInternal.PFrameBlobId;
 }
 
 type LocalBlob = ComputableStableDefined<LocalBlobHandleAndSize>;
@@ -156,7 +156,7 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
       callback: (response: PFrameInternal.ObjectStoreResponse) => Promise<void>;
     },
   ): Promise<void> {
-    const blobId = filename.slice(0, -PFrameInternal.ParquetExtension.length);
+    const blobId = filename.slice(0, -PFrameInternal.ParquetExtension.length) as PFrameInternal.PFrameBlobId;
     const respond = async (response: PFrameInternal.ObjectStoreResponse): Promise<void> => {
       try {
         await params.callback(response);
@@ -247,7 +247,7 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
     return new RemoteBlobProviderImpl(pool, server);
   }
 
-  public acquire(params: PlTreeEntry): PoolEntry {
+  public acquire(params: PlTreeEntry): PoolEntry<PFrameInternal.PFrameBlobId> {
     return this.pool.acquire(params);
   }
 
