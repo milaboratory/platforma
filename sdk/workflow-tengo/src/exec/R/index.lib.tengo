@@ -132,7 +132,7 @@ rVenvBuilder := func() {
 
 		build: func() {
 			archiveRef := pkg.get(rRunEnvDescriptor.registry, rRunEnvDescriptor.package).archive()
-			rPkgRef := pkg.install(archiveRef).package()
+			rPkgRef := pkg.install(archiveRef).package().setCacheDays(1)
 
 			self := undefined
 			self = ll.toStrict({
