@@ -1,5 +1,17 @@
 # @milaboratories/uikit
 
+## 2.5.6
+
+### Patch Changes
+
+- 8996bed: Publish again, previous publish failed
+
+## 2.5.5
+
+### Patch Changes
+
+- 38b2b47: update btnsplit icon usage
+
 ## 2.5.4
 
 ### Patch Changes
