@@ -548,6 +548,67 @@ describe('usePollingQuery', () => {
     scope.stop();
   });
 
+  it('exposes reactive inFlightCount', async () => {
+    const args = ref({ id: 'seed' });
+    const { fn, calls } = createControlledQuery<typeof args.value, string>();
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval: 20,
+        immediate: true,
+        immediateCallback: true,
+        maxInFlightRequests: 2,
+      }),
+    );
+    const { inFlightCount } = result;
+
+    expect(inFlightCount.value).toBe(0);
+
+    await advanceTime(0);
+    expect(inFlightCount.value).toBe(1);
+
+    args.value = { id: 'next' };
+    await advanceTime(20);
+    expect(inFlightCount.value).toBe(2);
+
+    calls[0].resolve('first');
+    await flushMicrotasks();
+    expect(inFlightCount.value).toBe(1);
+
+    calls[1].resolve('second');
+    await flushMicrotasks();
+    expect(inFlightCount.value).toBe(0);
+
+    scope.stop();
+  });
+
+  it('keeps inFlightCount > 0 for aborted but unresolved calls', async () => {
+    const args = ref({ id: 1 });
+    const { fn, calls } = createControlledQuery<typeof args.value, string>();
+
+    const { scope, result } = runInScope(() =>
+      usePollingQuery(args, fn, {
+        minInterval: 100,
+        immediate: true,
+        immediateCallback: true,
+      }),
+    );
+    const { pause, inFlightCount } = result;
+
+    await advanceTime(0);
+    expect(inFlightCount.value).toBe(1);
+
+    pause();
+    expect(calls[0].signal.aborted).toBe(true);
+    expect(inFlightCount.value).toBe(1);
+
+    calls[0].reject(new Error('aborted'));
+    await flushMicrotasks();
+    expect(inFlightCount.value).toBe(0);
+
+    scope.stop();
+  });
+
   it('respects maxInFlightRequests when limit reached', async () => {
     const args = ref({ id: 'a' });
     const { fn, calls } = createControlledQuery<typeof args.value, string>();

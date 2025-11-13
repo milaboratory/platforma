@@ -111,6 +111,7 @@ function toError(error: unknown): Error {
  * - `data` — readonly ref of `{ status, value }`.
  * - `lastError` — readonly ref of the latest error (or `null`).
  * - `isActive` — readonly ref indicating active polling.
+ * - `inFlightCount` — readonly ref with the number of active requests.
  * - `pause()` and `resume()` controls.
  *
  * @typeParam Args - Arguments shape passed to the polling callback.
@@ -147,7 +148,7 @@ export function usePollingQuery<Args, Result>(
 
   let latestVersion = 0;
   let argsVersion = 0;
-  let inFlight = 0;
+  const inFlightCount = ref(0);
   let disposed = false;
 
   let scheduledTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -174,7 +175,7 @@ export function usePollingQuery<Args, Result>(
   };
 
   const waitForSlot = async () => {
-    if (inFlight < internal.maxInFlightRequests) return;
+    if (inFlightCount.value < internal.maxInFlightRequests) return;
     await new Promise<void>((resolve) => {
       waiters.push({ resolve });
     });
@@ -248,7 +249,7 @@ export function usePollingQuery<Args, Result>(
     const version = ++latestVersion;
 
     controllers.set(version, controller);
-    inFlight += 1;
+    inFlightCount.value += 1;
 
     const startTime = Date.now();
     nextMinIntervalStart = Math.max(nextMinIntervalStart, startTime + internal.minInterval);
@@ -286,7 +287,7 @@ export function usePollingQuery<Args, Result>(
       nextMinDelayStart = Math.max(nextMinDelayStart, finishTime + internal.minDelay);
 
       controllers.delete(version);
-      inFlight = Math.max(0, inFlight - 1);
+      inFlightCount.value = Math.max(0, inFlightCount.value - 1);
       scheduleWaiters();
 
       const reason = abortReasons.get(version);
@@ -378,6 +379,7 @@ export function usePollingQuery<Args, Result>(
     data: readonly(data),
     lastError: readonly(lastError),
     isActive: readonly(isActive),
+    inFlightCount: readonly(inFlightCount),
     pause,
     resume,
   };
