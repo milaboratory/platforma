@@ -1,5 +1,14 @@
 # @milaboratories/pf-driver
 
+## 1.0.3
+
+### Patch Changes
+
+- 8996bed: Publish again, previous publish failed
+- Updated dependencies [8996bed]
+  - @milaboratories/pl-model-middle-layer@1.8.39
+  - @milaboratories/ts-helpers@1.5.4
+
 ## 1.0.2
 
 ### Patch Changes

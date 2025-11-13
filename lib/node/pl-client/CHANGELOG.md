@@ -1,5 +1,12 @@
 # @milaboratories/pl-client
 
+## 2.16.6
+
+### Patch Changes
+
+- Updated dependencies [8996bed]
+  - @milaboratories/ts-helpers@1.5.4
+
 ## 2.16.5
 
 ### Patch Changes
