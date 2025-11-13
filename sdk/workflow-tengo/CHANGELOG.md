@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.6.0
+
+### Minor Changes
+
+- 5e36e07: Use python that supports older glibc-based linux
+
 ## 5.5.17
 
 ### Patch Changes
