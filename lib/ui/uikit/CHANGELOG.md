@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.6.0
+
+### Minor Changes
+
+- 1e9b8da: Implement the `usePollingQuery` composable with abort-aware polling, state tracking, and comprehensive test coverage mirroring upstream interval behaviour.
+
 ## 2.5.7
 
 ### Patch Changes
