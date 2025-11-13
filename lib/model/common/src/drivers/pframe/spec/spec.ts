@@ -262,6 +262,10 @@ export function readAnnotationJson<T extends keyof AnnotationJson>(
   return readMetadataJson<Annotation, T>(spec?.annotations, AnnotationJson, key);
 }
 
+export function isLinkerColumn(column: PColumnSpec): boolean {
+  return !!readAnnotationJson(column, Annotation.IsLinkerColumn);
+}
+
 /**
  * Specification of an individual axis.
  *
@@ -500,6 +504,10 @@ export const PColumnName = {
     RowSelection: 'pl7.app/table/row-selection',
   },
 } as const;
+
+export function isLabelColumn(column: PColumnSpec) {
+  return column.axesSpec.length === 1 && column.name === PColumnName.Label;
+}
 
 /**
  * Full column specification including all axes specs and specs of the column
