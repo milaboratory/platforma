@@ -182,7 +182,7 @@ tplTest.concurrent.for([
       saveFrameParams: { axes, columns },
     }, { blockId: 'block1' });
 
-    const context1 = await awaitStableState(workflow1.context());
+    const context1 = await awaitStableState(workflow1.context(), Timeout);
     const workflow2 = await helper.renderWorkflow('pt.read_frame', false, {
       axesNames: axes.map((axis) => axis.spec.name),
       columnNames: columns.map((column) => column.spec.name),
