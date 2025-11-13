@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.21.6
+
+### Patch Changes
+
+- 17e5fe7: Get rid of circular reference
+
 ## 1.21.5
 
 ### Patch Changes
