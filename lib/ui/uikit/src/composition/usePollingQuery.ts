@@ -1,5 +1,5 @@
-import type { Ref } from 'vue';
-import { onScopeDispose, readonly, ref, shallowRef, watch } from 'vue';
+import type { MaybeRef, WatchSource } from 'vue';
+import { onScopeDispose, readonly, ref, shallowRef, toValue, watch } from 'vue';
 
 type AbortReason = 'args' | 'pause' | 'dispose';
 
@@ -9,10 +9,10 @@ type PollingData<Result> =
   | { status: 'stale'; value: Result };
 
 interface InternalOptions {
-  minInterval: number;
-  minDelay: number;
-  immediate: boolean;
-  immediateCallback: boolean;
+  minInterval: MaybeRef<number>;
+  minDelay: MaybeRef<number | undefined>;
+  autoStart: boolean;
+  triggerOnResume: boolean;
   pauseOnError: boolean;
   maxInFlightRequests: number;
   debounce: number;
@@ -98,10 +98,10 @@ function toError(error: unknown): Error {
  *
  * ### Options
  *
- * - `minInterval` — required; must be positive. Zero or negative disables polling (`resume()` no-op).
- * - `minDelay` — optional delay after completion before the next poll may start.
- * - `immediate` — start in active mode (default `true`).
- * - `immediateCallback` — run the callback immediately on `resume()` (default `false`).
+ * - `minInterval` — required; must be positive. Zero or negative disables polling (`resume()` no-op). Accepts refs.
+ * - `minDelay` — optional delay after completion before the next poll may start. Accepts refs.
+ * - `autoStart` — start in active mode (default `true`).
+ * - `triggerOnResume` — run the callback immediately on `resume()` (default `false`).
  * - `pauseOnError` — automatically pauses when the callback throws (default `false`).
  * - `maxInFlightRequests` — maximum concurrent polls (default `1`).
  * - `debounce` — debounce window for argument changes in milliseconds (default `0`).
@@ -118,13 +118,13 @@ function toError(error: unknown): Error {
  * @typeParam Result - Result type produced by the polling callback.
  */
 export function usePollingQuery<Args, Result>(
-  args: Ref<Args>,
+  args: WatchSource<Args>,
   queryFn: (args: Args, options: { signal: AbortSignal; pause: () => void }) => Promise<Result>,
   options: {
-    minInterval: number;
-    minDelay?: number;
-    immediate?: boolean;
-    immediateCallback?: boolean;
+    minInterval: MaybeRef<number>;
+    minDelay?: MaybeRef<number | undefined>;
+    autoStart?: boolean;
+    triggerOnResume?: boolean;
     pauseOnError?: boolean;
     maxInFlightRequests?: number;
     debounce?: number;
@@ -132,15 +132,20 @@ export function usePollingQuery<Args, Result>(
 ) {
   const internal: InternalOptions = {
     minInterval: options.minInterval,
-    minDelay: Math.max(0, options.minDelay ?? 0),
-    immediate: options.immediate ?? true,
-    immediateCallback: options.immediateCallback ?? false,
+    minDelay: options.minDelay ?? 0,
+    autoStart: options.autoStart ?? true,
+    triggerOnResume: options.triggerOnResume ?? false,
     pauseOnError: options.pauseOnError ?? false,
     maxInFlightRequests: Math.max(1, options.maxInFlightRequests ?? 1),
     debounce: Math.max(0, options.debounce ?? 0),
   };
 
-  const canRun = internal.minInterval > 0;
+  const resolveMinInterval = () => Math.max(0, toValue(internal.minInterval));
+  const resolveMinDelay = () => {
+    const raw = internal.minDelay === undefined ? undefined : toValue(internal.minDelay);
+    return Math.max(0, raw ?? 0);
+  };
+  const canRun = () => resolveMinInterval() > 0;
 
   const data = shallowRef<PollingData<Result>>({ status: 'idle' });
   const lastError = ref<Error | null>(null);
@@ -160,6 +165,14 @@ export function usePollingQuery<Args, Result>(
   const controllers = new Map<number, AbortController>();
   const abortReasons = new Map<number, AbortReason>();
   const waiters: Waiter[] = [];
+
+  let currentArgs: Args;
+  let hasCurrentArgs = false;
+
+  const setCurrentArgs = (value: Args) => {
+    currentArgs = value;
+    hasCurrentArgs = true;
+  };
 
   const markStale = () => {
     if (data.value.status === 'synced' || data.value.status === 'stale') {
@@ -212,7 +225,7 @@ export function usePollingQuery<Args, Result>(
   };
 
   const queueExecution = (requestedDelay = 0, source: ScheduleSource = ScheduleSource.Normal) => {
-    if (!isActive.value || !canRun || disposed) return;
+    if (!isActive.value || !canRun() || disposed) return;
     const delay = computeDelay(requestedDelay);
 
     if (scheduledTimeout !== null) {
@@ -226,7 +239,7 @@ export function usePollingQuery<Args, Result>(
   };
 
   const runExecution = async (source: ScheduleSource) => {
-    if (!isActive.value || disposed || !canRun) return;
+    if (!isActive.value || disposed || !canRun()) return;
 
     const now = Date.now();
     const earliest = Math.max(nextMinIntervalStart, nextMinDelayStart);
@@ -235,12 +248,14 @@ export function usePollingQuery<Args, Result>(
       return;
     }
 
-    const argsSnapshot = args.value;
+    if (!hasCurrentArgs) return;
+
+    const argsSnapshot = currentArgs;
     const assignedArgsVersion = argsVersion;
 
     await waitForSlot();
 
-    if (!isActive.value || disposed || !canRun) {
+    if (!isActive.value || disposed || !canRun()) {
       scheduleWaiters();
       return;
     }
@@ -251,8 +266,9 @@ export function usePollingQuery<Args, Result>(
     controllers.set(version, controller);
     inFlightCount.value += 1;
 
+    const minInterval = resolveMinInterval();
     const startTime = Date.now();
-    nextMinIntervalStart = Math.max(nextMinIntervalStart, startTime + internal.minInterval);
+    nextMinIntervalStart = Math.max(nextMinIntervalStart, startTime + minInterval);
 
     let pausedByCallback = false;
 
@@ -283,8 +299,9 @@ export function usePollingQuery<Args, Result>(
         }
       }
     } finally {
+      const minDelay = resolveMinDelay();
       const finishTime = Date.now();
-      nextMinDelayStart = Math.max(nextMinDelayStart, finishTime + internal.minDelay);
+      nextMinDelayStart = Math.max(nextMinDelayStart, finishTime + minDelay);
 
       controllers.delete(version);
       inFlightCount.value = Math.max(0, inFlightCount.value - 1);
@@ -305,7 +322,7 @@ export function usePollingQuery<Args, Result>(
   };
 
   const triggerExecution = (source: ScheduleSource = ScheduleSource.External) => {
-    if (!isActive.value || disposed || !canRun) return;
+    if (!isActive.value || disposed || !canRun()) return;
     queueExecution(0, source);
   };
 
@@ -314,7 +331,7 @@ export function usePollingQuery<Args, Result>(
     markStale();
     abortAll('args');
 
-    if (!isActive.value || !canRun) {
+    if (!isActive.value || !canRun()) {
       return;
     }
 
@@ -344,8 +361,9 @@ export function usePollingQuery<Args, Result>(
   };
 
   const resume = () => {
-    if (!canRun) return;
+    if (!canRun()) return;
     if (isActive.value) return;
+    if (!hasCurrentArgs) return;
     isActive.value = true;
     lastError.value = null;
 
@@ -353,10 +371,10 @@ export function usePollingQuery<Args, Result>(
     nextMinIntervalStart = now;
     nextMinDelayStart = now;
 
-    if (internal.immediateCallback) {
+    if (internal.triggerOnResume) {
       triggerExecution(ScheduleSource.External);
     } else {
-      queueExecution(internal.minInterval, ScheduleSource.External);
+      queueExecution(resolveMinInterval(), ScheduleSource.External);
     }
   };
 
@@ -369,9 +387,20 @@ export function usePollingQuery<Args, Result>(
     waiters.splice(0, waiters.length).forEach(({ resolve }) => resolve());
   });
 
-  watch(args, handleArgsChange, { flush: 'sync' });
+  watch(
+    args,
+    (value) => {
+      const initial = !hasCurrentArgs;
+      setCurrentArgs(value);
+      if (initial) {
+        return;
+      }
+      handleArgsChange();
+    },
+    { flush: 'sync', immediate: true },
+  );
 
-  if (internal.immediate && canRun) {
+  if (internal.autoStart && canRun()) {
     resume();
   }
 

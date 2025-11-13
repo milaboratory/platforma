@@ -72,7 +72,7 @@ describe('usePollingQuery', () => {
     vi.restoreAllMocks();
   });
 
-  it('runs immediately when immediateCallback is true and respects timing constraints', async () => {
+  it('runs immediately when triggerOnResume is true and respects timing constraints', async () => {
     const args = ref({ id: 'alpha' });
     const { fn, calls } = createControlledQuery<typeof args.value, string>();
 
@@ -80,8 +80,8 @@ describe('usePollingQuery', () => {
       usePollingQuery(args, fn, {
         minInterval: 1000,
         minDelay: 200,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
       }),
     );
     const { data, lastError, isActive } = result;
@@ -122,11 +122,13 @@ describe('usePollingQuery', () => {
       return 'value';
     });
 
+    const minInterval = ref(300);
+
     const { scope } = runInScope(() =>
       usePollingQuery(args, fn, {
-        minInterval: 300,
-        immediate: true,
-        immediateCallback: true,
+        minInterval,
+        autoStart: true,
+        triggerOnResume: true,
       }),
     );
 
@@ -152,8 +154,8 @@ describe('usePollingQuery', () => {
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 100,
-        immediateCallback: true,
-        immediate: true,
+        triggerOnResume: true,
+        autoStart: true,
       }),
     );
     const { data } = result;
@@ -186,8 +188,8 @@ describe('usePollingQuery', () => {
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 100,
-        immediateCallback: true,
-        immediate: true,
+        triggerOnResume: true,
+        autoStart: true,
       }),
     );
     const { data } = result;
@@ -209,7 +211,7 @@ describe('usePollingQuery', () => {
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 250,
-        immediate: false,
+        autoStart: false,
       }),
     );
     const { resume, data } = result;
@@ -237,8 +239,8 @@ describe('usePollingQuery', () => {
     const { scope } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 100,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
         debounce: 200,
       }),
     );
@@ -273,8 +275,8 @@ describe('usePollingQuery', () => {
     const { scope } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 100,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
         debounce: 150,
       }),
     );
@@ -314,8 +316,8 @@ describe('usePollingQuery', () => {
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 100,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
       }),
     );
     const { pause, resume, isActive } = result;
@@ -349,8 +351,8 @@ describe('usePollingQuery', () => {
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 100,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
       }),
     );
     const { pause, resume } = result;
@@ -381,8 +383,8 @@ describe('usePollingQuery', () => {
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 100,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
         pauseOnError: true,
       }),
     );
@@ -415,8 +417,8 @@ describe('usePollingQuery', () => {
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 100,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
       }),
     );
     const { lastError, data } = result;
@@ -444,8 +446,8 @@ describe('usePollingQuery', () => {
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 100,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
         pauseOnError: true,
       }),
     );
@@ -471,8 +473,8 @@ describe('usePollingQuery', () => {
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 100,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
       }),
     );
     const { lastError } = result;
@@ -491,8 +493,8 @@ describe('usePollingQuery', () => {
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 10,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
         maxInFlightRequests: 2,
       }),
     );
@@ -522,8 +524,8 @@ describe('usePollingQuery', () => {
     const { scope } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 20,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
         maxInFlightRequests: 2,
       }),
     );
@@ -555,8 +557,8 @@ describe('usePollingQuery', () => {
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 20,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
         maxInFlightRequests: 2,
       }),
     );
@@ -589,8 +591,8 @@ describe('usePollingQuery', () => {
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 100,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
       }),
     );
     const { pause, inFlightCount } = result;
@@ -616,8 +618,8 @@ describe('usePollingQuery', () => {
     const { scope } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 50,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
         maxInFlightRequests: 1,
       }),
     );
@@ -650,8 +652,8 @@ describe('usePollingQuery', () => {
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 100,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
       }),
     );
     const { isActive } = result;
@@ -667,15 +669,15 @@ describe('usePollingQuery', () => {
     scope.stop();
   });
 
-  it('resumes after pause when immediateCallback is disabled', async () => {
+  it('resumes after pause when triggerOnResume is disabled', async () => {
     const args = ref(1);
     const fn = vi.fn(async () => 'value');
 
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 200,
-        immediate: false,
-        immediateCallback: false,
+        autoStart: false,
+        triggerOnResume: false,
       }),
     );
     const { resume } = result;
@@ -694,11 +696,13 @@ describe('usePollingQuery', () => {
     const args = ref({ id: 'nope' });
     const fn = vi.fn(async () => 'value');
 
+    const minInterval = ref(0);
+
     const { scope, result } = runInScope(() =>
       usePollingQuery(args, fn, {
-        minInterval: 0,
-        immediate: true,
-        immediateCallback: true,
+        minInterval,
+        autoStart: true,
+        triggerOnResume: true,
       }),
     );
     const { isActive, resume } = result;
@@ -718,12 +722,14 @@ describe('usePollingQuery', () => {
     const args = ref({ id: 'delayed' });
     const { fn, calls } = createControlledQuery<typeof args.value, string>();
 
+    const minDelay = ref(150);
+
     const { scope } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 200,
-        minDelay: 150,
-        immediate: true,
-        immediateCallback: true,
+        minDelay,
+        autoStart: true,
+        triggerOnResume: true,
       }),
     );
 
@@ -750,8 +756,8 @@ describe('usePollingQuery', () => {
     const { scope } = runInScope(() =>
       usePollingQuery(args, fn, {
         minInterval: 100,
-        immediate: true,
-        immediateCallback: true,
+        autoStart: true,
+        triggerOnResume: true,
       }),
     );
 
