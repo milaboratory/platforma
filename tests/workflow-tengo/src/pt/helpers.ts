@@ -11,10 +11,10 @@ import {
 } from '@platforma-sdk/test';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type { ComputableCtx, UnwrapComputables } from '@milaboratories/computable';
-import { getTestTimeout } from '@milaboratories/test-helpers';
+import { getLongTestTimeout } from '@milaboratories/test-helpers';
 import { assert } from 'vitest';
 
-export const Timeout = getTestTimeout(60_000);
+export const Timeout = getLongTestTimeout(60_000);
 
 async function getOutput<T, O extends string>(
   result: TestWorkflowResults | TestRenderResults<O>,

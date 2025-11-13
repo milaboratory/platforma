@@ -3,13 +3,13 @@ import type { TestRenderResults } from '@platforma-sdk/test';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { Templates } from '../../../dist';
 import { deepClone } from '@milaboratories/helpers';
-import { getTestTimeout } from '@milaboratories/test-helpers';
+import { getLongTestTimeout } from '@milaboratories/test-helpers';
 import { assert, vi } from 'vitest';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type { ComputableCtx } from '@milaboratories/computable';
 import dedent from 'dedent';
 
-const TIMEOUT = getTestTimeout(60_000);
+const TIMEOUT = getLongTestTimeout(60_000);
 
 vi.setConfig({
   testTimeout: TIMEOUT,
