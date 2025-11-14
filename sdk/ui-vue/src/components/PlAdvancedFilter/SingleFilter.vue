@@ -7,7 +7,6 @@ import type { AnchoredPColumnId, AxisFilterByIdx, AxisFilterValue, SUniversalPCo
 import { isFilteredPColumn, parseColumnId, stringifyColumnId, type ListOptionBase } from '@platforma-sdk/model';
 import OperandButton from './OperandButton.vue';
 import { getFilterInfo, getNormalizedSpec, isNumericFilter, isStringFilter } from './utils';
-import { col } from '@milaboratories/ptabler-expression-js';
 
 const props = defineProps<{
   operand: Operand;
@@ -74,7 +73,6 @@ function changeSourceId(newSourceId?: SUniversalPColumnId) {
   }
 }
 
-console.log(props.columnOptions);
 const inconsistentSourceSelected = computed(() => {
   const selectedOption = props.columnOptions.find((op) => op.id === getSourceId(filter.value.column));
   return selectedOption === undefined;
@@ -91,7 +89,6 @@ function getSourceId(column: SUniversalPColumnId): SUniversalPColumnId {
   try {
     const parsedColumnId = parseColumnId(column);
     if (isFilteredPColumn(parsedColumnId)) {
-      console.log('stringified', stringifyColumnId(parsedColumnId.source), column);
       return stringifyColumnId(parsedColumnId.source);
     } else {
       return column;
