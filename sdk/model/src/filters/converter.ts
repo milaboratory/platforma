@@ -107,6 +107,16 @@ export function convertFilterUiToExpressionImpl(value: FilterSpec): ExpressionIm
     return rank(col(value.column), false).over([]).le(lit(value.n));
   }
 
+  if (
+    value.type === 'patternMatchesRegularExpression'
+    || value.type === 'patternFuzzyContainSubsequence'
+    || value.type === 'inSet'
+    || value.type === 'notInSet'
+    || value.type === 'notEqual'
+  ) {
+    throw new Error('Not implemented filter type: ' + value.type);
+  }
+
   if (value.type === undefined) {
     throw new Error('Filter type is undefined, this should not happen');
   }

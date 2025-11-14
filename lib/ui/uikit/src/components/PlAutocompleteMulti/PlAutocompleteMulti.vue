@@ -119,6 +119,10 @@ const props = withDefaults(
      * The text to display when no options are found.
      */
     emptyOptionsText?: string;
+    /**
+     * Makes some of corners not rounded
+     * */
+    groupPosition?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
   }>(),
   {
     modelValue: () => [],
@@ -131,6 +135,7 @@ const props = withDefaults(
     debounce: 300,
     emptyOptionsText: 'Nothing found',
     sourceId: undefined,
+    groupPosition: undefined,
   },
 );
 
@@ -406,7 +411,7 @@ const computedError = computed(() => {
           />
           <div v-if="!filteredOptionsRef.length && !isOptionsLoading" class="nothing-found">{{ emptyOptionsText }}</div>
         </DropdownOverlay>
-        <DoubleContour class="pl-autocomplete-multi__contour" />
+        <DoubleContour class="pl-autocomplete-multi__contour" :group-position="groupPosition" />
       </div>
     </div>
     <div v-if="computedError" class="pl-autocomplete-multi__error">{{ computedError }}</div>
