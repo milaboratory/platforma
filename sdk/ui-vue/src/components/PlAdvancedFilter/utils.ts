@@ -1,9 +1,10 @@
-import type { ValueType } from '@platforma-sdk/model';
-import { assertNever, getTypeFromPColumnOrAxisSpec, parseColumnId, type AxisSpec, type PColumnSpec, type SUniversalPColumnId } from '@platforma-sdk/model';
-import { type CommonFilterSpec, isSupportedFilterType, type Filter, type FilterType, type Group, type PlAdvancedFilterUI, type SupportedFilterTypes } from './types';
+import type { AnchoredPColumnId, AxisId, CanonicalizedJson, FilteredPColumnId, ValueType } from '@platforma-sdk/model';
+import { assertNever, getTypeFromPColumnOrAxisSpec, isAnchoredPColumnId, isFilteredPColumn, parseJson, type AxisSpec, type PColumnSpec, type SUniversalPColumnId } from '@platforma-sdk/model';
+import { type CommonFilterSpec, isSupportedFilterType, type Filter, type FilterType, type Group, type PlAdvancedFilterUI, type SupportedFilterTypes, type ColumnId } from './types';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, SUPPORTED_FILTER_TYPES } from './constants';
 import { filterUiMetadata } from '@milaboratories/uikit';
 import { ref, watch, type ModelRef } from 'vue';
+import { isAxisId } from '@platforma-sdk/model';
 
 function toInnerFilter(outerFilter: CommonFilterSpec): Filter | null {
   if (!('column' in outerFilter) || outerFilter.type === undefined || !isSupportedFilterType(outerFilter.type)) {
@@ -201,7 +202,14 @@ export function useInnerModel<T, V>(
   return innerModel;
 }
 
-export function isValidSourceId(id: unknown): id is SUniversalPColumnId { // it can be PColumnId or FilteredPColumnId
-  const parsedId = parseColumnId(id as SUniversalPColumnId);
-  return typeof id === 'string' && Boolean(parsedId) && ('name' in parsedId || 'source' in parsedId);
+export function isValidColumnId(id: unknown): id is ColumnId {
+  if (typeof id !== 'string') {
+    return false;
+  }
+  try {
+    const parsedId = parseJson<FilteredPColumnId | AnchoredPColumnId | AxisId>(id as CanonicalizedJson<FilteredPColumnId | AnchoredPColumnId | AxisId>);
+    return isFilteredPColumn(parsedId) || isAnchoredPColumnId(parsedId) || isAxisId(parsedId);
+  } catch {
+    return false;
+  }
 }
