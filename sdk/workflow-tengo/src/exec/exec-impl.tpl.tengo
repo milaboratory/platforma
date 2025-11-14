@@ -21,17 +21,6 @@ R := import(":exec.R")
 
 delayedCompAlloc := import(":exec.delayed-compute-allocation")
 
-_activateRenvForWD := func(wd, queue, allocation, plan) {
-	activateRenv := runcmd.builder(wd, plan).
-		cmd("R").
-		inQueue(queue).
-		allocation(allocation).
-		resetArgs().
-		arg("-e").arg("renv::activate()")
-
-	return activateRenv.build().workdir
-}
-
 self.defineOutputs(
 	"files",
 	"filesContent",
@@ -172,6 +161,7 @@ self.body(func(inputs) {
 	// like .Rprofile for R with activated renv.
 	if (runEnvType == "R") {
 		wdBefore = R.activateRenvInWD(wdBefore, runOptions.queue, computeAllocationRef, inputs.mainPlan)
+		wdBefore = R.installDepsIntoRenv(wdBefore, runOptions.queue, computeAllocationRef, inputs.mainPlan)
 	}
 
 	mainRunBuilder := runcmd.builder(wdBefore, mainPlanPreBuilder.state()).
