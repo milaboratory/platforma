@@ -16,7 +16,7 @@ import DoubleContour from '../../utils/DoubleContour.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
 import { useValidation } from '../../utils/useValidation';
 import { PlIcon16 } from '../PlIcon16';
-import { PlMaskIcon24 } from '../PlMaskIcon24';
+import { PlIcon24 } from '../PlIcon24';
 import { PlSvg } from '../PlSvg';
 import { PlTooltip } from '../PlTooltip';
 import './pl-text-field.scss';
@@ -214,7 +214,7 @@ useLabelNotch(rootRef);
       />
       <div class="pl-text-field__append" @click="setFocusOnInput">
         <PlIcon16 v-if="canShowClearable" class="pl-text-field__clearable" name="delete-clear" @click.stop="clear" />
-        <PlMaskIcon24 v-if="type === 'password'" :name="passwordIcon" style="cursor: pointer" @click.stop="togglePasswordVisibility" />
+        <PlIcon24 v-if="type === 'password'" :name="passwordIcon" style="cursor: pointer" @click.stop="togglePasswordVisibility" />
         <slot name="append" />
       </div>
       <DoubleContour class="pl-text-field__contour" />

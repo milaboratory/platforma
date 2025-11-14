@@ -18,19 +18,22 @@ const uri = computedAsync(async () => {
   if (typeof props.name === 'string') return import(`../../assets/icons/icon-assets-min/${props.name}.svg?raw`).then((m) => m.default);
   return undefined;
 });
+
 const svgMeta = computed(() => (uri.value == null ? undefined : registerSvg(uri.value, props.name)));
-const styleSize = computed(() =>
-  svgMeta.value == null
-    ? undefined
-    : `--svg-width: ${getSize(props.width, svgMeta.value.defaultWidth)}; --svg-height: ${getSize(props.height, svgMeta.value.defaultHeight)};`,
-);
+
+const toPx = (value: undefined | number | string) => {
+  if (typeof value === 'number') return `${value}px`;
+  if (typeof value === 'string') return value;
+  return;
+};
+
+const styleSize = computed(() => ({
+  '--svg-width': toPx(props.width ?? svgMeta.value?.defaultWidth),
+  '--svg-height': toPx(props.height ?? svgMeta.value?.defaultHeight),
+}));
+
 const styleColor = computed(() => getStyleColor('fill', props.color));
 const styleStroke = computed(() => getStyleColor('stroke', props.stroke));
-
-function getSize(propSize: undefined | number | string, svgSize: number): string {
-  if (propSize != null) return typeof propSize === 'string' ? propSize : `${propSize}px`;
-  return `${svgSize}px`;
-}
 
 function getStyleColor(prop: 'fill' | 'stroke', color: undefined | string | string[]): undefined | string {
   if (Array.isArray(color)) {
