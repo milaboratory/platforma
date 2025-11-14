@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.6.1
+
+### Patch Changes
+
+- 2893e7c: [sdk;desktop] Fix PlTextField height bug
+
 ## 2.6.0
 
 ### Minor Changes
