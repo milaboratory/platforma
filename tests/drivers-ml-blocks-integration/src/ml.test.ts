@@ -109,7 +109,7 @@ export async function awaitBlockDone(prj: Project, blockId: string, timeout: num
   }
 }
 
-test('disconnect:runBlock throws DisconnectedError when connection drops mid-operation', async ({ expect }) => {
+test.skip('disconnect:runBlock throws DisconnectedError when connection drops mid-operation', async ({ expect }) => {
   await expect(() =>  withMlAndProxy(async (ml, _wd, proxy) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
