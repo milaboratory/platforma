@@ -6,7 +6,7 @@ import { computed } from 'vue';
 import OperandButton from './OperandButton.vue';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
 import type { ListOptionBase, SUniversalPColumnId } from '@platforma-sdk/model';
-import { createNewGroup, toInnerModel, toOuterModel, useInnerModel } from './utils';
+import { createNewGroup, isValidSourceId, toInnerModel, toOuterModel, useInnerModel } from './utils';
 
 const props = withDefaults(defineProps<{
   /** List of ids of sources (columns, axes) that can be selected in filters */
@@ -59,15 +59,19 @@ function addGroup(selectedSourceId: string) {
 function handleDropToExistingGroup(groupIdx: number, event: DragEvent) {
   const dataTransfer = event.dataTransfer;
   if (dataTransfer?.getData('text/plain')) {
-    const draggedId = dataTransfer.getData('text/plain') as SUniversalPColumnId;
-    addColumnToGroup(groupIdx, draggedId);
+    const draggedId = dataTransfer.getData('text/plain');
+    if (isValidSourceId(draggedId)) {
+      addColumnToGroup(groupIdx, draggedId);
+    }
   }
 }
 function handleDropToNewGroup(event: DragEvent) {
   const dataTransfer = event.dataTransfer;
   if (dataTransfer?.getData('text/plain')) {
     const draggedId = dataTransfer.getData('text/plain') as SUniversalPColumnId;
-    addGroup(draggedId);
+    if (isValidSourceId(draggedId)) {
+      addGroup(draggedId);
+    }
   }
 }
 function dragOver(event: DragEvent) {

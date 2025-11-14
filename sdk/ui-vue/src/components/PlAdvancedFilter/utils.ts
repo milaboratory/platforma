@@ -1,5 +1,5 @@
 import type { ValueType } from '@platforma-sdk/model';
-import { assertNever, getTypeFromPColumnOrAxisSpec, type AxisSpec, type PColumnSpec, type SUniversalPColumnId } from '@platforma-sdk/model';
+import { assertNever, getTypeFromPColumnOrAxisSpec, parseColumnId, type AxisSpec, type PColumnSpec, type SUniversalPColumnId } from '@platforma-sdk/model';
 import { type CommonFilterSpec, isSupportedFilterType, type Filter, type FilterType, type Group, type PlAdvancedFilterUI, type SupportedFilterTypes } from './types';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, SUPPORTED_FILTER_TYPES } from './constants';
 import { filterUiMetadata } from '@milaboratories/uikit';
@@ -199,4 +199,9 @@ export function useInnerModel<T, V>(
   }, { deep: true });
 
   return innerModel;
+}
+
+export function isValidSourceId(id: unknown): id is SUniversalPColumnId { // it can be PColumnId or FilteredPColumnId
+  const parsedId = parseColumnId(id as SUniversalPColumnId);
+  return typeof id === 'string' && Boolean(parsedId) && ('name' in parsedId || 'source' in parsedId);
 }
