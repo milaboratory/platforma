@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 5.2.24
+
+### Patch Changes
+
+- e8121f0: Updated licensing URL
+
 ## 5.2.23
 
 ### Patch Changes
