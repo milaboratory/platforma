@@ -28,7 +28,6 @@
     "@types/semver": "catalog:",
     "@types/d3-format": "catalog:",
     "@milaboratories/biowasm-tools": "workspace:*",
-    "@milaboratories/miplots4": "catalog:",
     "@milaboratories/uikit": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
     "ag-grid-enterprise": "catalog:",
