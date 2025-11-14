@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import SingleFilter from './SingleFilter.vue';
 import { PlBtnSecondary, PlElementList, PlCheckbox, PlIcon16 } from '@milaboratories/uikit';
-import type { CommonFilterSpec, Group, PlAdvancedFilterUI, SourceOptionInfo } from './types';
+import type { ColumnId, CommonFilterSpec, Group, PlAdvancedFilterUI, SourceOptionInfo } from './types';
 import { computed } from 'vue';
 import OperandButton from './OperandButton.vue';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
-import type { ListOptionBase, SUniversalPColumnId } from '@platforma-sdk/model';
-import { createNewGroup, isValidSourceId, toInnerModel, toOuterModel, useInnerModel } from './utils';
+import type { ListOptionBase } from '@platforma-sdk/model';
+import { createNewGroup, isValidColumnId, toInnerModel, toOuterModel, useInnerModel } from './utils';
 
 const props = withDefaults(defineProps<{
   /** List of ids of sources (columns, axes) that can be selected in filters */
@@ -14,11 +14,11 @@ const props = withDefaults(defineProps<{
   /** If true - new filter can be added by droppind element into filter group; else new column is added by button click */
   enableDnd?: boolean;
   /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
-  getSuggestOptions: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
-    ((params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>[]);
+  getSuggestOptions: (params: { columnId: ColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
+    ((params: { columnId: ColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>[]);
   /** Loading function for label of selected value for Equal/InSet filters and fixed axes options. */
-  getSuggestModel: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
-    ((params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>);
+  getSuggestModel: (params: { columnId: ColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
+    ((params: { columnId: ColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>);
 }>(), { enableDnd: false });
 
 const model = defineModel<CommonFilterSpec>({ required: true });
@@ -33,10 +33,10 @@ const emptyGroup: Group[] = [{
   expanded: true,
 }];
 
-function addColumnToGroup(groupIdx: number, selectedSourceId: string) {
+function addColumnToGroup(groupIdx: number, selectedSourceId: ColumnId) {
   innerModel.value.groups[groupIdx].filters.push({
     ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
-    column: selectedSourceId as SUniversalPColumnId,
+    column: selectedSourceId,
   });
 }
 
@@ -51,7 +51,7 @@ function removeFilterFromGroup(groupIdx: number, filterIdx: number) {
 function removeGroup(groupIdx: number) {
   innerModel.value.groups = innerModel.value.groups.filter((v, idx) => idx !== groupIdx);
 }
-function addGroup(selectedSourceId: string) {
+function addGroup(selectedSourceId: ColumnId) {
   const newGroup = createNewGroup(selectedSourceId);
   innerModel.value.groups.push(newGroup);
 }
@@ -60,7 +60,7 @@ function handleDropToExistingGroup(groupIdx: number, event: DragEvent) {
   const dataTransfer = event.dataTransfer;
   if (dataTransfer?.getData('text/plain')) {
     const draggedId = dataTransfer.getData('text/plain');
-    if (isValidSourceId(draggedId)) {
+    if (isValidColumnId(draggedId)) {
       addColumnToGroup(groupIdx, draggedId);
     }
   }
@@ -68,8 +68,8 @@ function handleDropToExistingGroup(groupIdx: number, event: DragEvent) {
 function handleDropToNewGroup(event: DragEvent) {
   const dataTransfer = event.dataTransfer;
   if (dataTransfer?.getData('text/plain')) {
-    const draggedId = dataTransfer.getData('text/plain') as SUniversalPColumnId;
-    if (isValidSourceId(draggedId)) {
+    const draggedId = dataTransfer.getData('text/plain');
+    if (isValidColumnId(draggedId)) {
       addGroup(draggedId);
     }
   }

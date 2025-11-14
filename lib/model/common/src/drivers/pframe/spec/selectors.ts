@@ -145,6 +145,16 @@ export interface AnchoredPColumnId extends AnchoredPColumnSelector {
 }
 
 /**
+ * Checks if a given value is an anchored column identifier
+ * @param id - The value to check
+ * @returns True if the value is an anchored column identifier, false otherwise
+ */
+export function isAnchoredPColumnId(id: unknown): id is AnchoredPColumnId {
+  // basic check, can be extended if needed
+  return typeof id === 'object' && id !== null && 'name' in id && 'axes' in id;
+}
+
+/**
  * Determines if an axis ID matches an axis selector.
  *
  * @param selector - The selector with criteria to match against

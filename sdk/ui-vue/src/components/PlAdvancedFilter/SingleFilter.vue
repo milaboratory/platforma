@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { Filter, Operand, SourceOptionInfo } from './types';
+import type { ColumnId, Filter, Operand, SourceOptionInfo } from './types';
 import { PlIcon16, PlDropdown, PlAutocomplete, PlAutocompleteMulti, PlTextField, PlNumberField, Slider, PlToggleSwitch } from '@milaboratories/uikit';
 import { computed } from 'vue';
 import { SUPPORTED_FILTER_TYPES, DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
@@ -13,23 +13,23 @@ const props = defineProps<{
   columnOptions: SourceOptionInfo[];
   enableDnd: boolean;
   isLast: boolean;
-  getSuggestOptions: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
+  getSuggestOptions: (params: { columnId: ColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
     ((params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>[]);
-  getSuggestModel: (params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
-    ((params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>);
-  onDelete: (columnId: SUniversalPColumnId) => void;
+  getSuggestModel: (params: { columnId: ColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
+    ((params: { columnId: ColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>);
+  onDelete: (columnId: ColumnId) => void;
   onChangeOperand: (op: Operand) => void;
 }>();
 
 const filter = defineModel<Filter>({ required: true });
 
-async function getSuggestModelMultiFn(id: SUniversalPColumnId, v: string[], axisIdx?: number): Promise<ListOptionBase<string>[]> {
+async function getSuggestModelMultiFn(id: ColumnId, v: string[], axisIdx?: number): Promise<ListOptionBase<string>[]> {
   return Promise.all(v.map((v) => props.getSuggestModel({ columnId: id, searchStr: v, axisIdx }) as Promise<ListOptionBase<string>>));
 }
-async function getSuggestModelSingleFn(id: SUniversalPColumnId, v: string, axisIdx?: number): Promise<ListOptionBase<string>> {
+async function getSuggestModelSingleFn(id: ColumnId, v: string, axisIdx?: number): Promise<ListOptionBase<string>> {
   return props.getSuggestModel({ columnId: id, searchStr: v, axisIdx }) as Promise<ListOptionBase<string>>;
 }
-async function getSuggestOptionsFn(id: SUniversalPColumnId, str: string, axisIdx?: number): Promise<ListOptionBase<string>[]> {
+async function getSuggestOptionsFn(id: ColumnId, str: string, axisIdx?: number): Promise<ListOptionBase<string>[]> {
   return props.getSuggestOptions({ columnId: id, searchStr: str, axisIdx }) as Promise<ListOptionBase<string>[]>;
 }
 
@@ -53,7 +53,7 @@ function changeFilterType() {
   }
 }
 
-function changeSourceId(newSourceId?: SUniversalPColumnId) {
+function changeSourceId(newSourceId?: ColumnId) {
   if (!newSourceId) {
     return;
   }
@@ -85,9 +85,9 @@ const sourceOptions = computed(() => {
   return options;
 });
 
-function getSourceId(column: SUniversalPColumnId): SUniversalPColumnId {
+function getSourceId(column: ColumnId): ColumnId {
   try {
-    const parsedColumnId = parseColumnId(column);
+    const parsedColumnId = parseColumnId(column as SUniversalPColumnId);
     if (isFilteredPColumn(parsedColumnId)) {
       return stringifyColumnId(parsedColumnId.source);
     } else {
@@ -99,8 +99,8 @@ function getSourceId(column: SUniversalPColumnId): SUniversalPColumnId {
 }
 
 // similar to FilteredPColumnId but source is stringified and axis filters can be undefined
-type ColumnAsSourceAndFixedAxes = { source: SUniversalPColumnId; axisFiltersByIndex: Record<number, AxisFilterValue | undefined> };
-function getColumnAsSourceAndFixedAxes(column: SUniversalPColumnId): ColumnAsSourceAndFixedAxes {
+type ColumnAsSourceAndFixedAxes = { source: ColumnId; axisFiltersByIndex: Record<number, AxisFilterValue | undefined> };
+function getColumnAsSourceAndFixedAxes(column: ColumnId): ColumnAsSourceAndFixedAxes {
   const sourceId = getSourceId(column);
   const option = props.columnOptions.find((op) => op.id === sourceId);
   const axesToBeFixed = (option?.axesToBeFixed ?? []).reduce((res, item) => {
@@ -108,7 +108,7 @@ function getColumnAsSourceAndFixedAxes(column: SUniversalPColumnId): ColumnAsSou
     return res;
   }, {} as Record<number, AxisFilterValue | undefined>);
   try {
-    const parsedColumnId = parseColumnId(column);
+    const parsedColumnId = parseColumnId(column as SUniversalPColumnId);
     if (isFilteredPColumn(parsedColumnId)) {
       return {
         source: sourceId,
@@ -124,12 +124,12 @@ function getColumnAsSourceAndFixedAxes(column: SUniversalPColumnId): ColumnAsSou
   return { source: column, axisFiltersByIndex: axesToBeFixed };
 }
 
-function stringifyColumn(value: ColumnAsSourceAndFixedAxes): SUniversalPColumnId {
+function stringifyColumn(value: ColumnAsSourceAndFixedAxes): ColumnId {
   if (Object.keys(value.axisFiltersByIndex).length === 0) {
     return value.source;
   }
   return stringifyColumnId({
-    source: parseColumnId(value.source) as AnchoredPColumnId,
+    source: parseColumnId(value.source as SUniversalPColumnId) as AnchoredPColumnId,
     axisFilters: Object.entries(value.axisFiltersByIndex).map(([idx, value]) => [Number(idx), value] as AxisFilterByIdx),
   });
 }

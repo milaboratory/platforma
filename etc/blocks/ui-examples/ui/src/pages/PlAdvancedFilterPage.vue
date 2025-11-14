@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { stringifyColumnId, type FilterSpec, type ListOptionBase, type SUniversalPColumnId } from '@platforma-sdk/model';
+import { AxisId, CanonicalizedJson, stringifyColumnId, type FilterSpec, type ListOptionBase, type SUniversalPColumnId } from '@platforma-sdk/model';
 import { PlAdvancedFilter, PlBlockPage, PlCheckbox, PlDropdown } from '@platforma-sdk/ui-vue';
 import { computed, ref, watch } from 'vue';
 
@@ -44,13 +44,13 @@ const options = [
 ];
 const enableDnd = ref(false);
 
-async function searchOptions({ columnId, searchStr, axisIdx }: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) {
+async function getSuggestOptions({ columnId, searchStr, axisIdx }: { columnId: SUniversalPColumnId | CanonicalizedJson<AxisId>; searchStr: string; axisIdx?: number }) {
   if (axisIdx !== undefined) {
     return (uniqueValuesByAxisIdx[columnId]?.[axisIdx] || []).filter((v) => v.label.includes(searchStr));
   }
   return (uniqueValuesByColumnOrAxisId[columnId] || []).filter((v) => v.label.includes(searchStr));
 }
-async function searchModel({ columnId, searchStr, axisIdx }: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) {
+async function getSuggestModel({ columnId, searchStr, axisIdx }: { columnId: SUniversalPColumnId | CanonicalizedJson<AxisId>; searchStr: string; axisIdx?: number }) {
   if (axisIdx !== undefined) {
     const axisValues = uniqueValuesByAxisIdx[columnId]?.[axisIdx];
     return axisValues.find((v) => v.value === searchStr) || { value: searchStr, label: `Label of ${searchStr}` };
@@ -188,8 +188,8 @@ watch(() => filtersModel.value, (m) => {
           v-model="filtersModel"
           :items="options"
           :enable-dnd="enableDnd"
-          :get-suggest-options="searchOptions"
-          :get-suggest-model="searchModel"
+          :get-suggest-options="getSuggestOptions"
+          :get-suggest-model="getSuggestModel"
         />
       </div>
     </div>

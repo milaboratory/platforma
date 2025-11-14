@@ -1,7 +1,10 @@
 import type { AxisSpec, FilterSpec, FilterSpecLeaf, FilterSpecType, ListOptionBase, PColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
 import { SUPPORTED_FILTER_TYPES } from './constants';
+import type { CanonicalizedJson } from '@platforma-sdk/model';
+import type { AxisId } from '@platforma-sdk/model';
 
-export type CommonFilterSpec = FilterSpec<FilterSpecLeaf, { expanded?: boolean }>;
+export type ColumnId = SUniversalPColumnId | CanonicalizedJson<AxisId>;
+export type CommonFilterSpec = FilterSpec<FilterSpecLeaf<ColumnId>, { expanded?: boolean }>;
 
 // Not supported: topN, bottomN, lessThanColumn, lessThanColumnOrEqual
 // or, and, not - in groups
@@ -27,9 +30,9 @@ export function isSupportedFilterType(type: FilterSpecType | undefined): type is
 
 export type Operand = 'or' | 'and';
 
-type FilterUiBase = FilterSpecLeaf & {
+type FilterUiBase = FilterSpecLeaf<ColumnId> & {
   type: SupportedFilterTypes;
-  column: SUniversalPColumnId;
+  column: ColumnId;
 };
 
 type RequireFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
@@ -43,6 +46,7 @@ export type Filter = Exclude<FilterUiBase, { type: EditedTypes }> |
   OptionalFields<Extract<FilterUiBase, { type: NumericalWithOptionalX }>, 'x'> |
   OptionalFields<Extract<FilterUiBase, { type: StringWithOptionalValue }>, 'value'>
 ;
+
 export type Group = {
   id: string;
   not: boolean;
@@ -64,7 +68,7 @@ export type FixedAxisInfo = {
 };
 
 export type SourceOptionInfo = {
-  id: SUniversalPColumnId;
+  id: ColumnId;
   label: string;
   error: boolean;
   spec: PColumnSpec | AxisSpec;
