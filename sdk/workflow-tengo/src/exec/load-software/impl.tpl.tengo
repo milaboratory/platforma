@@ -144,7 +144,7 @@ _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 		softName,
 		rRuntime.R(),
 		descriptor.runEnv,
-		rRuntime.venv()
+		undefined // no separate renv location, keep it in current working directory
 	)
 
 	return ll.toStrict({
