@@ -1,20 +1,26 @@
 <script setup lang="ts">
-import type { FilterSpec, ListOptionBase, SUniversalPColumnId } from '@platforma-sdk/model';
+import { stringifyColumnId, type FilterSpec, type ListOptionBase, type SUniversalPColumnId } from '@platforma-sdk/model';
 import { PlAdvancedFilter, PlBlockPage, PlCheckbox, PlDropdown } from '@platforma-sdk/ui-vue';
 import { computed, ref, watch } from 'vue';
 
+const column1Id = stringifyColumnId({ name: '1', axes: [] }) as SUniversalPColumnId;
+const column2Id = stringifyColumnId({ name: '2', axes: [] }) as SUniversalPColumnId;
+const column3Id = stringifyColumnId({ name: '3', axes: [] }) as SUniversalPColumnId;
+
+const inconsistentColumnId = '{"name":"someColumn","axes":[]}' as SUniversalPColumnId;
+
 const uniqueValuesByColumnOrAxisId: Record<string, ListOptionBase<string>[]> = {
-  1: [{ value: '1', label: 'Value 1' }, { value: '2', label: 'Value 2' }],
-  2: [{ value: '3', label: 'Value 3' }, { value: '4', label: 'Value 4' }],
-  3: [{ value: '5', label: 'Value 5' }, { value: '6', label: 'Value 6' }],
+  [column1Id]: [{ value: '1', label: 'Value 1' }, { value: '2', label: 'Value 2' }],
+  [column2Id]: [{ value: '3', label: 'Value 3' }, { value: '4', label: 'Value 4' }],
+  [column3Id]: [{ value: '5', label: 'Value 5' }, { value: '6', label: 'Value 6' }],
 };
 const uniqueValuesByAxisIdx: Record<string, Record<number, ListOptionBase<string>[]>> = {
-  1: { 0: [{ value: 'axisValue1', label: 'Axis Value 1' }, { value: 'axisValue2', label: 'Axis Value 2' }] },
+  [column1Id]: { 0: [{ value: 'axisValue1', label: 'Axis Value 1' }, { value: 'axisValue2', label: 'Axis Value 2' }] },
 };
 
 const options = [
   {
-    id: '1' as SUniversalPColumnId,
+    id: column1Id,
     label: 'Column 1',
     error: false,
     axesToBeFixed: [{
@@ -24,13 +30,13 @@ const options = [
     spec: { kind: 'PColumn' as const, valueType: 'Int' as const, name: 'c1', axesSpec: [{ type: 'String' as const, name: 'nameAxis1' }] },
   },
   {
-    id: '2' as SUniversalPColumnId,
+    id: column2Id,
     label: 'Column 2',
     error: false,
     spec: { kind: 'PColumn' as const, valueType: 'String' as const, name: 'c2', axesSpec: [] },
   },
   {
-    id: '3' as SUniversalPColumnId,
+    id: column3Id,
     label: 'Column 3',
     error: false,
     spec: { kind: 'PColumn' as const, valueType: 'Double' as const, name: 'c3', axesSpec: [] },
@@ -61,7 +67,7 @@ const errorState = {
       filters: [
         {
           type: 'patternEquals' as const,
-          column: 'someColumn' as SUniversalPColumnId, // error - column id is not from available columns
+          column: inconsistentColumnId, // error - column id is not from available columns
           value: 'A',
         },
         {
@@ -69,7 +75,7 @@ const errorState = {
           filters: [
             {
               type: 'patternEquals' as const,
-              column: 'someColumn' as SUniversalPColumnId, // error - column id is not from available columns
+              column: inconsistentColumnId, // error - column id is not from available columns
               value: 'A',
             },
           ],
@@ -80,11 +86,11 @@ const errorState = {
       filters: [
         {
           type: 'isNA' as const,
-          column: 'someColumn' as SUniversalPColumnId, // error - column id is not from available columns
+          column: inconsistentColumnId, // error - column id is not from available columns
         },
         {
           type: 'isNotNA' as const,
-          column: 'someColumn' as SUniversalPColumnId, // error - column id is not from available columns
+          column: inconsistentColumnId, // error - column id is not from available columns
         },
       ],
     }, {
@@ -92,7 +98,7 @@ const errorState = {
       filters: [
         {
           type: 'patternContainSubsequence' as const,
-          column: 'someColumn' as SUniversalPColumnId, // error - column id is not from available columns
+          column: inconsistentColumnId, // error - column id is not from available columns
           value: 'someString',
         },
       ],
@@ -106,10 +112,10 @@ const normalState: FilterSpec = {
       type: 'or' as const,
       filters: [{
         type: 'isNA' as const,
-        column: '1' as SUniversalPColumnId,
+        column: column1Id,
       }, {
         type: 'equal' as const,
-        column: '2' as SUniversalPColumnId,
+        column: column2Id,
         x: 10,
       }],
     },
@@ -118,10 +124,10 @@ const normalState: FilterSpec = {
       filters: [
         {
           type: 'isNotNA' as const,
-          column: '3' as SUniversalPColumnId,
+          column: column3Id,
         }, {
           type: 'patternFuzzyContainSubsequence' as const,
-          column: '3' as SUniversalPColumnId,
+          column: column3Id,
           value: 'abc',
         },
       ],

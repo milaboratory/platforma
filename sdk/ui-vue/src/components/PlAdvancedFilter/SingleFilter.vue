@@ -7,6 +7,7 @@ import type { AnchoredPColumnId, AxisFilterByIdx, AxisFilterValue, SUniversalPCo
 import { isFilteredPColumn, parseColumnId, stringifyColumnId, type ListOptionBase } from '@platforma-sdk/model';
 import OperandButton from './OperandButton.vue';
 import { getFilterInfo, getNormalizedSpec, isNumericFilter, isStringFilter } from './utils';
+import { col } from '@milaboratories/ptabler-expression-js';
 
 const props = defineProps<{
   operand: Operand;
@@ -73,6 +74,7 @@ function changeSourceId(newSourceId?: SUniversalPColumnId) {
   }
 }
 
+console.log(props.columnOptions);
 const inconsistentSourceSelected = computed(() => {
   const selectedOption = props.columnOptions.find((op) => op.id === getSourceId(filter.value.column));
   return selectedOption === undefined;
@@ -89,12 +91,14 @@ function getSourceId(column: SUniversalPColumnId): SUniversalPColumnId {
   try {
     const parsedColumnId = parseColumnId(column);
     if (isFilteredPColumn(parsedColumnId)) {
-      return typeof parsedColumnId.source === 'string' ? parsedColumnId.source : stringifyColumnId(parsedColumnId.source);
+      console.log('stringified', stringifyColumnId(parsedColumnId.source), column);
+      return stringifyColumnId(parsedColumnId.source);
+    } else {
+      return column;
     }
   } catch {
     return column;
   }
-  return column;
 }
 
 // similar to FilteredPColumnId but source is stringified and axis filters can be undefined
@@ -141,6 +145,11 @@ const columnAsSourceAndFixedAxes = computed({
     filter.value.column = stringifyColumn(value);
   },
 });
+function updateAxisFilterValue(idx: number, value: AxisFilterValue | undefined) {
+  columnAsSourceAndFixedAxes.value = {
+    ...columnAsSourceAndFixedAxes.value,
+    axisFiltersByIndex: { ...columnAsSourceAndFixedAxes.value.axisFiltersByIndex, [idx]: value } };
+}
 
 const currentOption = computed(() => props.columnOptions.find((op) => op.id === columnAsSourceAndFixedAxes.value.source));
 const currentSpec = computed(() => currentOption.value?.spec ? getNormalizedSpec(currentOption.value.spec) : null);
@@ -218,11 +227,7 @@ const stringMatchesError = computed(() => {
           :model-search="(v) => getSuggestModelSingleFn(columnAsSourceAndFixedAxes.source, v as string, value.idx)"
           :disabled="inconsistentSourceSelected"
           :clearable="true"
-          @update:model-value="(v) => {
-            columnAsSourceAndFixedAxes = {
-              ...columnAsSourceAndFixedAxes,
-              axisFiltersByIndex: {...columnAsSourceAndFixedAxes.axisFiltersByIndex, [value.idx]: v}}
-          }"
+          @update:model-value="(v) => updateAxisFilterValue(value.idx, v)"
         />
       </template>
     </div>
