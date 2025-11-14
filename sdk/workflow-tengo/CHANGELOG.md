@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.6.1
+
+### Patch Changes
+
+- f9218b2: Fix for R run environments modification conflict (parallel renv bootstrapping)
+
 ## 5.6.0
 
 ### Minor Changes
