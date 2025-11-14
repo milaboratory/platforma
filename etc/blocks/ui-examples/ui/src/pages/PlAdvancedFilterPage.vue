@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { AxisId, CanonicalizedJson, stringifyColumnId, type FilterSpec, type ListOptionBase, type SUniversalPColumnId } from '@platforma-sdk/model';
+import type { AxisId, CanonicalizedJson } from '@platforma-sdk/model';
+import { stringifyColumnId, type FilterSpec, type ListOptionBase, type SUniversalPColumnId } from '@platforma-sdk/model';
 import { PlAdvancedFilter, PlBlockPage, PlCheckbox, PlDropdown } from '@platforma-sdk/ui-vue';
 import { computed, ref, watch } from 'vue';
 
