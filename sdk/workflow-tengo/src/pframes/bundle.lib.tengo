@@ -6,6 +6,7 @@ canonical := import(":canonical")
 pSpec := import(":pframes.spec")
 maps := import(":maps")
 ll := import(":ll")
+oop := import(":oop")
 assets := import(":assets")
 render := import(":render")
 
@@ -408,7 +409,7 @@ pColumnBundleUnmarshaller := func() {
 			}
 
 			bundle := undefined
-			bundle = ll.toStrict({
+			bundle = {
 
 				/**
 				 * Gets a specific column or a list of columns (from addMulti) by its ID
@@ -521,7 +522,7 @@ pColumnBundleUnmarshaller := func() {
 				 * Gets all unique axes from columns in the bundle.
 				 * Returns an array of unique AxisSpec objects, where uniqueness is determined by
 				 * name, type, and domain keys.
-				 * 
+				 *
 				 * @param columnIds - Optional array of column IDs to process. If not provided, all columns will be processed.
 				 *                    Each ID can be a string (SUniversalPColumnId) or object (UniversalPColumnId).
 				 * @returns Array of unique AxisSpec objects from the specified (or all) columns in the bundle
@@ -536,7 +537,7 @@ pColumnBundleUnmarshaller := func() {
 						if !is_undefined(spec) && !is_undefined(spec.axesSpec) {
 							for axis in spec.axesSpec {
 								axisKey := pSpec.getAxisId(axis)
-								
+
 								// Only add if we haven't seen this axis before
 								if is_undefined(uniqueAxesMap[axisKey]) {
 									uniqueAxesMap[axisKey] = true
@@ -569,7 +570,7 @@ pColumnBundleUnmarshaller := func() {
 							if is_undefined(result) {
 								ll.panic("Column not found: %v. Pool: %v", columnKey, maps.getKeys(pool))
 							}
-							
+
 							processResult(result)
 						}
 					} else {
@@ -581,9 +582,9 @@ pColumnBundleUnmarshaller := func() {
 
 					return allAxes
 				}
-			})
+			}
 
-			return bundle
+			return oop.inherit(resource, bundle)
 		}
 	}
 }
