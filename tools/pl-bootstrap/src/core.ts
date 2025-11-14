@@ -919,7 +919,7 @@ Alternatively, you can set it via the environment variables 'MI_LICENSE' or 'PL_
 The license file can also be set with the variables 'MI_LICENSE_FILE' or 'PL_LICENSE_FILE',
 or stored in '$HOME/.pl.license'.
 
-You can obtain the license from "https://licensing.milaboratories.com".`);
+You can obtain the license from "https://platforma.bio/getlicense".`);
 
     throw new Error(`The license was not provided.`);
   }
