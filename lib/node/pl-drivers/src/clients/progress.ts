@@ -1,7 +1,7 @@
 import { ProgressClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/progressapi/protocol.client';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import { Duration } from '../proto/google/protobuf/duration';
-import type { GrpcClientProvider, GrpcClientProviderFactory, PlClient } from '@milaboratories/pl-client';
+import type { WireClientProvider, WireClientProviderFactory, PlClient } from '@milaboratories/pl-client';
 import { addRTypeToMetadata } from '@milaboratories/pl-client';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { notEmpty } from '@milaboratories/ts-helpers';
@@ -20,22 +20,22 @@ export type ProgressStatus = {
 // When blobs are transfered, one can got a status of transfering
 // using this API.
 export class ClientProgress {
-  public readonly grpcClient: GrpcClientProvider<ProgressClient>;
+  public readonly wire: WireClientProvider<ProgressClient>;
 
   constructor(
-    grpcClientProviderFactory: GrpcClientProviderFactory,
+    wireClientProviderFactory: WireClientProviderFactory,
     _: Dispatcher,
     public readonly client: PlClient,
     public readonly logger: MiLogger,
   ) {
-    this.grpcClient = grpcClientProviderFactory.createGrpcClientProvider((transport) => new ProgressClient(transport));
+    this.wire = wireClientProviderFactory.createWireClientProvider((transport) => new ProgressClient(transport));
   }
 
   close() {}
 
   /** getStatus gets a progress status by given rId and rType. */
   async getStatus({ id, type }: ResourceInfo, options?: RpcOptions): Promise<ProgressStatus> {
-    const status = await this.grpcClient.get().getStatus(
+    const status = await this.wire.get().getStatus(
       { resourceId: id },
       addRTypeToMetadata(type, options),
     );
@@ -67,7 +67,7 @@ export class ClientProgress {
     });
 
     try {
-      const { responses } = this.grpcClient.get().realtimeStatus(
+      const { responses } = this.wire.get().realtimeStatus(
         {
           resourceId: id,
           updateInterval: updateInterval,

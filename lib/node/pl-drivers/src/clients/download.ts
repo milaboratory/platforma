@@ -1,5 +1,5 @@
 /* eslint-disable n/no-unsupported-features/node-builtins */
-import type { GrpcClientProvider, GrpcClientProviderFactory } from '@milaboratories/pl-client';
+import type { WireClientProvider, WireClientProviderFactory } from '@milaboratories/pl-client';
 import { addRTypeToMetadata, stringifyWithResourceId } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import { PerfTimer } from '@milaboratories/helpers';
@@ -21,7 +21,7 @@ import { type GetContentOptions } from '@milaboratories/pl-model-common';
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
 export class ClientDownload {
-  public readonly grpcClient: GrpcClientProvider<DownloadClient>;
+  public readonly wire: WireClientProvider<DownloadClient>;
   private readonly remoteFileDownloader: RemoteFileDownloader;
 
   /** Helps to find a storage root directory by a storage id from URL scheme. */
@@ -31,13 +31,13 @@ export class ClientDownload {
   private readonly localFileReadLimiter = new ConcurrencyLimitingExecutor(32);
 
   constructor(
-    grpcClientProviderFactory: GrpcClientProviderFactory,
+    wireClientProviderFactory: WireClientProviderFactory,
     public readonly httpClient: Dispatcher,
     public readonly logger: MiLogger,
     /** Pl storages available locally */
     localProjections: LocalStorageProjection[],
   ) {
-    this.grpcClient = grpcClientProviderFactory.createGrpcClientProvider((transport) => new DownloadClient(transport));
+    this.wire = wireClientProviderFactory.createWireClientProvider((transport) => new DownloadClient(transport));
     this.remoteFileDownloader = new RemoteFileDownloader(httpClient);
     this.localStorageIdsToRoot = newLocalStorageIdsToRoot(localProjections);
   }
@@ -120,7 +120,7 @@ export class ClientDownload {
     const withAbort = options ?? {};
     withAbort.abort = signal;
 
-    return await this.grpcClient.get().getDownloadURL(
+    return await this.wire.get().getDownloadURL(
       { resourceId: id, isInternalUse: false },
       addRTypeToMetadata(type, withAbort),
     ).response;

@@ -3,20 +3,20 @@ import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import type { Dispatcher } from 'undici';
-import type { GrpcClientProvider, GrpcClientProviderFactory } from '@milaboratories/pl-client';
+import type { WireClientProvider, WireClientProviderFactory } from '@milaboratories/pl-client';
 import { addRTypeToMetadata } from '@milaboratories/pl-client';
 import type { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 
 export class ClientLogs {
-  public readonly grpcClient: GrpcClientProvider<StreamingClient>;
+  public readonly wire: WireClientProvider<StreamingClient>;
 
   constructor(
-    grpcClientProviderFactory: GrpcClientProviderFactory,
+    wireClientProviderFactory: WireClientProviderFactory,
     public readonly httpClient: Dispatcher,
     public readonly logger: MiLogger,
   ) {
-    this.grpcClient = grpcClientProviderFactory.createGrpcClientProvider((transport) => new StreamingClient(transport));
+    this.wire = wireClientProviderFactory.createWireClientProvider((transport) => new StreamingClient(transport));
   }
 
   close() {}
@@ -32,7 +32,7 @@ export class ClientLogs {
     options?: RpcOptions,
   ): Promise<StreamingAPI_Response> {
     return (
-      await this.grpcClient.get().lastLines(
+      await this.wire.get().lastLines(
         {
           resourceId: rId,
           lineCount: lineCount,
@@ -55,7 +55,7 @@ export class ClientLogs {
     options?: RpcOptions,
   ): Promise<StreamingAPI_Response> {
     return (
-      await this.grpcClient.get().readText(
+      await this.wire.get().readText(
         {
           resourceId: notEmpty(rId),
           readLimit: BigInt(lineCount),

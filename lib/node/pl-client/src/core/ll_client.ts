@@ -21,7 +21,7 @@ import { parsePlJwt } from '../util/pl';
 import type { Dispatcher } from 'undici';
 import { inferAuthRefreshTime } from './auth';
 import { defaultHttpDispatcher } from '@milaboratories/pl-http';
-import type { GrpcClientProvider, GrpcClientProviderFactory } from './grpc';
+import type { WireClientProvider, WireClientProviderFactory } from './wire';
 import { parseHttpAuth } from '@milaboratories/pl-model-common';
 
 export interface PlCallOps {
@@ -29,7 +29,7 @@ export interface PlCallOps {
   abortSignal?: AbortSignal;
 }
 
-class GrpcClientProviderImpl<Client> implements GrpcClientProvider<Client> {
+class GrpcClientProviderImpl<Client> implements WireClientProvider<Client> {
   private client: Client | undefined = undefined;
 
   constructor(private readonly grpcTransport: () => GrpcTransport, private readonly clientConstructor: (transport: GrpcTransport) => Client) {}
@@ -46,7 +46,7 @@ class GrpcClientProviderImpl<Client> implements GrpcClientProvider<Client> {
 }
 
 /** Abstract out low level networking and authorization details */
-export class LLPlClient implements GrpcClientProviderFactory {
+export class LLPlClient implements WireClientProviderFactory {
   public readonly conf: PlClientConfig;
 
   /** Initial authorization information */
@@ -67,7 +67,7 @@ export class LLPlClient implements GrpcClientProviderFactory {
   private _grpcTransport!: GrpcTransport;
   private readonly providers: WeakRef<GrpcClientProviderImpl<any>>[] = [];
 
-  public readonly grpcPl: GrpcClientProvider<PlatformClient>;
+  public readonly clientProvider: WireClientProvider<PlatformClient>;
 
   public readonly httpDispatcher: Dispatcher;
 
@@ -101,7 +101,6 @@ export class LLPlClient implements GrpcClientProviderFactory {
 
     this.grpcInterceptors.push(this.createErrorInterceptor());
 
-    // initialize _grpcTransport and _grpcPl
     this.initGrpc(shouldUseGzip ?? false);
 
     this.httpDispatcher = defaultHttpDispatcher(this.conf.httpProxy);
@@ -111,11 +110,11 @@ export class LLPlClient implements GrpcClientProviderFactory {
       statusListener(this._status);
     }
 
-    this.grpcPl = this.createGrpcClientProvider((transport) => new PlatformClient(transport));
+    this.clientProvider = this.createWireClientProvider((transport) => new PlatformClient(transport));
   }
 
   /**
-   * Initializes (or reinitializes) _grpcTransport and _grpcPl
+   * Initializes (or reinitializes) _grpcTransport
    * @param gzip - whether to enable gzip compression
    */
   private initGrpc(gzip: boolean) {
@@ -187,7 +186,7 @@ export class LLPlClient implements GrpcClientProviderFactory {
    *
    * @param clientConstructor - a factory function that creates a grpc client
    */
-  public createGrpcClientProvider<Client>(clientConstructor: (transport: GrpcTransport) => Client): GrpcClientProvider<Client> {
+  public createWireClientProvider<Client>(clientConstructor: (transport: GrpcTransport) => Client): WireClientProvider<Client> {
     // We need to cleanup providers periodically to avoid memory leaks.
     // This is a simple heuristic to avoid memory leaks.
     // We could use a more sophisticated algorithm, but this is good enough for now.
@@ -208,7 +207,7 @@ export class LLPlClient implements GrpcClientProviderFactory {
     return provider;
   }
 
-  public get grpcTransport(): GrpcTransport {
+  public get transport(): GrpcTransport {
     return this._grpcTransport;
   }
 
@@ -256,7 +255,7 @@ export class LLPlClient implements GrpcClientProviderFactory {
     this.authRefreshInProgress = true;
     void (async () => {
       try {
-        const response = await this.grpcPl.get().getJWTToken({
+        const response = await this.clientProvider.get().getJWTToken({
           expiration: {
             seconds: BigInt(this.conf.authTTLSeconds),
             nanos: 0,
@@ -318,7 +317,7 @@ export class LLPlClient implements GrpcClientProviderFactory {
     return new LLPlTransaction((abortSignal) => {
       let totalAbortSignal = abortSignal;
       if (ops.abortSignal) totalAbortSignal = AbortSignal.any([totalAbortSignal, ops.abortSignal]);
-      return this.grpcPl.get().tx({
+      return this.clientProvider.get().tx({
         abort: totalAbortSignal,
         timeout: ops.timeout
           ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout),
@@ -328,7 +327,7 @@ export class LLPlClient implements GrpcClientProviderFactory {
 
   /** Closes underlying transport */
   public async close() {
-    this.grpcTransport.close();
+    this.transport.close();
     await this.httpDispatcher.destroy();
   }
 }
