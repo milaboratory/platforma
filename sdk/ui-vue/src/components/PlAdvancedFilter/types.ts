@@ -3,8 +3,8 @@ import { SUPPORTED_FILTER_TYPES } from './constants';
 import type { CanonicalizedJson } from '@platforma-sdk/model';
 import type { AxisId } from '@platforma-sdk/model';
 
-export type ColumnId = SUniversalPColumnId | CanonicalizedJson<AxisId>;
-export type CommonFilterSpec = FilterSpec<FilterSpecLeaf<ColumnId>, { expanded?: boolean }>;
+export type PlAdvancedFilterColumnId = SUniversalPColumnId | CanonicalizedJson<AxisId>;
+export type CommonFilterSpec = FilterSpec<FilterSpecLeaf<PlAdvancedFilterColumnId>, { expanded?: boolean }>;
 
 // Not supported: topN, bottomN, lessThanColumn, lessThanColumnOrEqual
 // or, and, not - in groups
@@ -30,9 +30,9 @@ export function isSupportedFilterType(type: FilterSpecType | undefined): type is
 
 export type Operand = 'or' | 'and';
 
-type FilterUiBase = FilterSpecLeaf<ColumnId> & {
+type FilterUiBase = FilterSpecLeaf<PlAdvancedFilterColumnId> & {
   type: SupportedFilterTypes;
-  column: ColumnId;
+  column: PlAdvancedFilterColumnId;
 };
 
 type RequireFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
@@ -68,7 +68,7 @@ export type FixedAxisInfo = {
 };
 
 export type SourceOptionInfo = {
-  id: ColumnId;
+  id: PlAdvancedFilterColumnId;
   label: string;
   error: boolean;
   spec: PColumnSpec | AxisSpec;

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import SingleFilter from './SingleFilter.vue';
 import { PlBtnSecondary, PlElementList, PlCheckbox, PlIcon16 } from '@milaboratories/uikit';
-import type { ColumnId, CommonFilterSpec, Group, PlAdvancedFilterUI, SourceOptionInfo } from './types';
+import type { PlAdvancedFilterColumnId, CommonFilterSpec, Group, PlAdvancedFilterUI, SourceOptionInfo } from './types';
 import { computed } from 'vue';
 import OperandButton from './OperandButton.vue';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
@@ -14,11 +14,11 @@ const props = withDefaults(defineProps<{
   /** If true - new filter can be added by droppind element into filter group; else new column is added by button click */
   enableDnd?: boolean;
   /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
-  getSuggestOptions: (params: { columnId: ColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
-    ((params: { columnId: ColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>[]);
+  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
+    ((params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>[]);
   /** Loading function for label of selected value for Equal/InSet filters and fixed axes options. */
-  getSuggestModel: (params: { columnId: ColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
-    ((params: { columnId: ColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>);
+  getSuggestModel: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
+    ((params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>);
 }>(), { enableDnd: false });
 
 const model = defineModel<CommonFilterSpec>({ required: true });
@@ -33,7 +33,7 @@ const emptyGroup: Group[] = [{
   expanded: true,
 }];
 
-function addColumnToGroup(groupIdx: number, selectedSourceId: ColumnId) {
+function addColumnToGroup(groupIdx: number, selectedSourceId: PlAdvancedFilterColumnId) {
   innerModel.value.groups[groupIdx].filters.push({
     ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
     column: selectedSourceId,
@@ -51,7 +51,7 @@ function removeFilterFromGroup(groupIdx: number, filterIdx: number) {
 function removeGroup(groupIdx: number) {
   innerModel.value.groups = innerModel.value.groups.filter((v, idx) => idx !== groupIdx);
 }
-function addGroup(selectedSourceId: ColumnId) {
+function addGroup(selectedSourceId: PlAdvancedFilterColumnId) {
   const newGroup = createNewGroup(selectedSourceId);
   innerModel.value.groups.push(newGroup);
 }

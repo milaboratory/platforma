@@ -1,4 +1,4 @@
-import type { ColumnId, Filter, FilterType, SupportedFilterTypes } from './types';
+import type { PlAdvancedFilterColumnId, Filter, FilterType, SupportedFilterTypes } from './types';
 
 export const SUPPORTED_FILTER_TYPES = new Set<SupportedFilterTypes>([
   'isNA',
@@ -21,7 +21,7 @@ export const SUPPORTED_FILTER_TYPES = new Set<SupportedFilterTypes>([
 
 export const DEFAULT_FILTER_TYPE: FilterType = 'isNA';
 
-const emptyCommonPart = { column: '' as ColumnId };
+const emptyCommonPart = { column: '' as PlAdvancedFilterColumnId };
 export const DEFAULT_FILTERS: Record<SupportedFilterTypes, Filter> = {
   isNA: { type: 'isNA', ...emptyCommonPart },
   isNotNA: { type: 'isNotNA', ...emptyCommonPart },

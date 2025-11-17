@@ -1,6 +1,6 @@
 import type { AnchoredPColumnId, AxisId, CanonicalizedJson, FilteredPColumnId, ValueType } from '@platforma-sdk/model';
 import { assertNever, getTypeFromPColumnOrAxisSpec, isAnchoredPColumnId, isFilteredPColumn, parseJson, type AxisSpec, type PColumnSpec, type SUniversalPColumnId } from '@platforma-sdk/model';
-import { type CommonFilterSpec, isSupportedFilterType, type Filter, type FilterType, type Group, type PlAdvancedFilterUI, type SupportedFilterTypes, type ColumnId } from './types';
+import { type CommonFilterSpec, isSupportedFilterType, type Filter, type FilterType, type Group, type PlAdvancedFilterUI, type SupportedFilterTypes, type PlAdvancedFilterColumnId } from './types';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, SUPPORTED_FILTER_TYPES } from './constants';
 import { filterUiMetadata } from '@milaboratories/uikit';
 import { ref, watch, type ModelRef } from 'vue';
@@ -202,7 +202,7 @@ export function useInnerModel<T, V>(
   return innerModel;
 }
 
-export function isValidColumnId(id: unknown): id is ColumnId {
+export function isValidColumnId(id: unknown): id is PlAdvancedFilterColumnId {
   if (typeof id !== 'string') {
     return false;
   }
