@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.21.7
+
+### Patch Changes
+
+- d088e83: add pl-advanced-filter
+
 ## 1.21.6
 
 ### Patch Changes

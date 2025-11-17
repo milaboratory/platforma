@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.45.35
+
+### Patch Changes
+
+- d088e83: add pl-advanced-filter
+- Updated dependencies [d088e83]
+  - @milaboratories/pl-model-common@1.21.7
+  - @milaboratories/ptabler-expression-js@1.1.3
+
 ## 1.45.30
 
 ### Patch Changes
