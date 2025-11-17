@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.45.36
+
+### Patch Changes
+
+- d5e72cf: remove PlMultiSequenceAlignment
+
 ## 1.45.35
 
 ### Patch Changes
