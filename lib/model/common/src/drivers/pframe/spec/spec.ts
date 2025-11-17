@@ -675,3 +675,11 @@ function matchDomain(query?: Record<string, string>, target?: Record<string, str
 export function matchAxisId(query: AxisId, target: AxisId): boolean {
   return query.name === target.name && matchDomain(query.domain, target.domain);
 }
+
+export function getTypeFromPColumnOrAxisSpec(spec: PColumnSpec | AxisSpec): ValueType {
+  return 'valueType' in spec ? spec.valueType : spec.type;
+}
+
+export function isAxisId(id: unknown): id is AxisId {
+  return typeof id === 'object' && id !== null && 'name' in id && 'type' in id;
+}

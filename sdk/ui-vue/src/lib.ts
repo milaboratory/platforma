@@ -34,6 +34,8 @@ export * from './components/PlAnnotations';
 
 export * from './components/PlBtnExportArchive';
 
+export * from './components/PlAdvancedFilter';
+
 export * from './defineApp';
 
 export * from './createModel';

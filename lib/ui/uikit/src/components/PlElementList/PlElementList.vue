@@ -14,6 +14,10 @@ const props = withDefaults(
     getItemKey?: (item: T, index: number) => K;
 
     itemClass?: string | string[] | ((item: T, index: number) => string | string[]);
+    itemClassTitle?: string | string[] | ((item: T, index: number) => string | string[]);
+    itemClassBefore?: string | string[] | ((item: T, index: number) => string | string[]);
+    itemClassAfter?: string | string[] | ((item: T, index: number) => string | string[]);
+    itemClassContent?: string | string[] | ((item: T, index: number) => string | string[]);
     isActive?: (item: T, index: number) => boolean;
 
     disableDragging?: boolean;
@@ -43,6 +47,10 @@ const props = withDefaults(
     getItemKey: (item: T) => JSON.stringify(item) as K,
 
     itemClass: undefined,
+    itemClassTitle: undefined,
+    itemClassContent: undefined,
+    itemClassBefore: undefined,
+    itemClassAfter: undefined,
     isActive: undefined,
 
     disableDragging: undefined,
@@ -78,6 +86,8 @@ const emits = defineEmits<{
 const slots = defineSlots<{
   ['item-title']: (props: { item: T; index: number }) => unknown;
   ['item-content']?: (props: { item: T; index: number }) => unknown;
+  ['item-before']?: (props: { item: T; index: number }) => unknown;
+  ['item-after']?: (props: { item: T; index: number }) => unknown;
 }>();
 
 const dndSortingEnabled = computed((): boolean => {
@@ -237,12 +247,19 @@ function handleRemove(item: T, index: number) {
   itemsRef.value.splice(index, 1);
 }
 
-const getItemClass = (item: T, index: number): null | string | string[] => {
-  if (typeof props.itemClass === 'function') {
-    return props.itemClass(item, index);
-  }
-  return props.itemClass ?? null;
-};
+function getClassFunction(propsItemClass: string | string[] | ((item: T, index: number) => string | string[]) | undefined): (item: T, index: number) => null | string | string[] {
+  return (item: T, index: number): null | string | string[] => {
+    if (typeof propsItemClass === 'function') {
+      return propsItemClass(item, index);
+    }
+    return propsItemClass ?? null;
+  };
+}
+const getItemClass = getClassFunction(props.itemClass);
+const getItemClassTitle = getClassFunction(props.itemClassTitle);
+const getItemClassContent = getClassFunction(props.itemClassContent);
+const getItemClassBefore = getClassFunction(props.itemClassBefore);
+const getItemClassAfter = getClassFunction(props.itemClassAfter);
 
 </script>
 
@@ -252,6 +269,10 @@ const getItemClass = (item: T, index: number): null | string | string[] => {
       <PlElementListItem
         v-for="(pinnedItem, pinnedIndex) in pinnedItemsRef" :key="pinnedKeysRef[pinnedIndex]"
         :class="[$style.item, getItemClass(pinnedItem, pinnedIndex)]"
+        :titleClass="getItemClassTitle(pinnedItem, pinnedIndex)"
+        :contentClass="getItemClassContent(pinnedItem, pinnedIndex)"
+        :beforeClass="getItemClassBefore(pinnedItem, pinnedIndex)"
+        :afterClass="getItemClassAfter(pinnedItem, pinnedIndex)"
 
         :index="pinnedIndex"
         :item="pinnedItem"
@@ -272,11 +293,17 @@ const getItemClass = (item: T, index: number): null | string | string[] => {
         @pin="handlePin"
         @expand="handleExpand"
       >
+        <template v-if="slots['item-before']" #before="{ item, index }">
+          <slot :index="index" :item="item" name="item-before" />
+        </template>
         <template #title="{ item, index }">
           <slot :index="index" :item="item" name="item-title" />
         </template>
         <template v-if="slots['item-content']" #content="{ item, index }">
           <slot :index="index" :item="item" name="item-content" />
+        </template>
+        <template v-if="slots['item-after']" #after="{ item, index }">
+          <slot :index="index" :item="item" name="item-after" />
         </template>
       </PlElementListItem>
     </div>
@@ -284,6 +311,10 @@ const getItemClass = (item: T, index: number): null | string | string[] => {
       <PlElementListItem
         v-for="(unpinnedItem, unpinnedIndex) in unpinnedItemsRef" :key="unpinnedKeysRef[unpinnedIndex]"
         :class="[$style.item, getItemClass(unpinnedItem, unpinnedIndex)]"
+        :titleClass="getItemClassTitle(unpinnedItem, unpinnedIndex)"
+        :contentClass="getItemClassContent(unpinnedItem, unpinnedIndex)"
+        :beforeClass="getItemClassBefore(unpinnedItem, unpinnedIndex)"
+        :afterClass="getItemClassAfter(unpinnedItem, unpinnedIndex)"
 
         :index="unpinnedIndex + (pinnedItemsRef?.length ?? 0)"
         :item="unpinnedItem"
@@ -309,6 +340,9 @@ const getItemClass = (item: T, index: number): null | string | string[] => {
         </template>
         <template v-if="slots['item-content']" #content="{ item, index }">
           <slot :index="index" :item="item" name="item-content" />
+        </template>
+        <template v-if="slots['item-after']" #after="{ item, index }">
+          <slot :index="index" :item="item" name="item-after" />
         </template>
       </PlElementListItem>
     </div>
