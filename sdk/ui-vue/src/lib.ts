@@ -28,8 +28,6 @@ export * from './components/PlAgGridColumnManager';
 
 export * from './components/PlTableFilters';
 
-export * from './components/PlMultiSequenceAlignment';
-
 export * from './components/PlAnnotations';
 
 export * from './components/PlBtnExportArchive';
