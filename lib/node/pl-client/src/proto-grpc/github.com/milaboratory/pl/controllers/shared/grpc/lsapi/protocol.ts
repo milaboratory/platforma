@@ -402,5 +402,5 @@ export const LsAPI_List_Response = new LsAPI_List_Response$Type();
  * @generated ServiceType for protobuf service MiLaboratories.Controller.Shared.LS
  */
 export const LS = new ServiceType("MiLaboratories.Controller.Shared.LS", [
-    { name: "List", options: {}, I: LsAPI_List_Request, O: LsAPI_List_Response }
+    { name: "List", options: { "google.api.http": { post: "/v1/list", body: "*" } }, I: LsAPI_List_Request, O: LsAPI_List_Response }
 ]);

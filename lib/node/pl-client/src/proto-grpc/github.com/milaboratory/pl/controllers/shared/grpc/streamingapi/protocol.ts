@@ -711,9 +711,9 @@ export const StreamingAPI_Response = new StreamingAPI_Response$Type();
  * @generated ServiceType for protobuf service MiLaboratories.Controller.Shared.Streaming
  */
 export const Streaming = new ServiceType("MiLaboratories.Controller.Shared.Streaming", [
-    { name: "StreamBinary", serverStreaming: true, options: {}, I: StreamingAPI_StreamBinary, O: StreamingAPI_Response },
-    { name: "ReadBinary", options: {}, I: StreamingAPI_ReadBinary, O: StreamingAPI_Response },
-    { name: "StreamText", serverStreaming: true, options: {}, I: StreamingAPI_StreamText, O: StreamingAPI_Response },
-    { name: "ReadText", options: {}, I: StreamingAPI_ReadText, O: StreamingAPI_Response },
-    { name: "LastLines", options: {}, I: StreamingAPI_LastLines, O: StreamingAPI_Response }
+    { name: "StreamBinary", serverStreaming: true, options: { "google.api.http": { post: "/v1/stream/binary", body: "*" } }, I: StreamingAPI_StreamBinary, O: StreamingAPI_Response },
+    { name: "ReadBinary", options: { "google.api.http": { post: "/v1/read/binary", body: "*" } }, I: StreamingAPI_ReadBinary, O: StreamingAPI_Response },
+    { name: "StreamText", serverStreaming: true, options: { "google.api.http": { post: "/v1/stream/text", body: "*" } }, I: StreamingAPI_StreamText, O: StreamingAPI_Response },
+    { name: "ReadText", options: { "google.api.http": { post: "/v1/read/text", body: "*" } }, I: StreamingAPI_ReadText, O: StreamingAPI_Response },
+    { name: "LastLines", options: { "google.api.http": { post: "/v1/last-lines", body: "*" } }, I: StreamingAPI_LastLines, O: StreamingAPI_Response }
 ]);

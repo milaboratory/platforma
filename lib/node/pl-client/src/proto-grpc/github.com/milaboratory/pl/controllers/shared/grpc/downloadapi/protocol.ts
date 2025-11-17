@@ -309,5 +309,5 @@ export const DownloadAPI_GetDownloadURL_Response = new DownloadAPI_GetDownloadUR
  * @generated ServiceType for protobuf service MiLaboratories.Controller.Shared.Download
  */
 export const Download = new ServiceType("MiLaboratories.Controller.Shared.Download", [
-    { name: "GetDownloadURL", options: { "google.api.http": { get: "/resources/{resource_id}/get-download-url" } }, I: DownloadAPI_GetDownloadURL_Request, O: DownloadAPI_GetDownloadURL_Response }
+    { name: "GetDownloadURL", options: { "google.api.http": { post: "/v1/get-download-url", body: "*" } }, I: DownloadAPI_GetDownloadURL_Request, O: DownloadAPI_GetDownloadURL_Response }
 ]);

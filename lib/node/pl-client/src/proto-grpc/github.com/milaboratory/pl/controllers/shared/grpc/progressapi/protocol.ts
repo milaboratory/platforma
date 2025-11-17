@@ -484,6 +484,6 @@ export const ProgressAPI_RealtimeStatus_Response = new ProgressAPI_RealtimeStatu
  * @generated ServiceType for protobuf service MiLaboratories.Controller.Shared.Progress
  */
 export const Progress = new ServiceType("MiLaboratories.Controller.Shared.Progress", [
-    { name: "GetStatus", options: { "google.api.http": { get: "/resources/{resource_id}/get-progress" } }, I: ProgressAPI_GetStatus_Request, O: ProgressAPI_GetStatus_Response },
-    { name: "RealtimeStatus", serverStreaming: true, options: {}, I: ProgressAPI_RealtimeStatus_Request, O: ProgressAPI_RealtimeStatus_Response }
+    { name: "GetStatus", options: { "google.api.http": { post: "/v1/get-progress", body: "*" } }, I: ProgressAPI_GetStatus_Request, O: ProgressAPI_GetStatus_Response },
+    { name: "RealtimeStatus", serverStreaming: true, options: { "google.api.http": { post: "/v1/realtime-progress", body: "*" } }, I: ProgressAPI_RealtimeStatus_Request, O: ProgressAPI_RealtimeStatus_Response }
 ]);
