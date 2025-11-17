@@ -14,6 +14,7 @@ cd "${script_dir}" || exit 1
 #
 
 : "${PROTO_PLAPI_SRC:="${script_dir}/proto/plapi"}"
+: "${PROTO_SHARED_SRC:="${script_dir}/proto/shared"}"
 : "${PROTO_OUT_PATH:="${script_dir}/src/proto-rest"}"
 
 #
@@ -58,3 +59,9 @@ function generate() {
 
 generate "${PROTO_PLAPI_SRC}/plapiproto/openapi.yaml" "${PROTO_OUT_PATH}/plapi.ts"
 echo ""
+
+while read -r openapiFile; do
+    protoName="$(basename "$(dirname "${openapiFile}")")"
+    generate "${openapiFile}" "${PROTO_OUT_PATH}/${protoName}.ts"
+    echo ""
+done < <(find "${PROTO_SHARED_SRC}" -name "openapi.yaml" -type f)
