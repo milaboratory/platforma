@@ -1,0 +1,22 @@
+//
+// This is dirty implementation of custom protocol for fast WebSocket support testing in
+// environments with ZScaler or other similar MITM corporate proxies.
+//
+
+syntax = "proto3";
+
+package MiLaboratories.PL.WSTest;
+option go_package = "github.com/milaboratory/pl/plapi/plapiproto;plapiproto";
+
+message PingWS {
+  message Request {
+    int32 request_id    = 1 [json_name = "requestId"];
+    int32 replies_count = 2 [json_name = "repliesCount"]; // amount of Response messages to send (0 - send nothing)
+    bool  close         = 3 [json_name = "close"]; // make server to close connection after sending responses
+  }
+
+  message Response {
+    int32 request_id    = 1 [json_name = "requestId"];
+    int32 reply_id      = 2 [json_name = "replyId"];
+  }
+}

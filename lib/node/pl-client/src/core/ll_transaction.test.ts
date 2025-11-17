@@ -1,5 +1,5 @@
 import { getTestLLClient } from '../test/test_config';
-import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+import { TxAPI_Open_Request_WritableTx } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { createLocalResourceId } from './types';
 import { test, expect } from 'vitest';
 

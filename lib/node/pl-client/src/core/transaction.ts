@@ -25,7 +25,7 @@ import type {
   OneOfKind,
   ServerMessageResponse,
 } from './ll_transaction';
-import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+import { TxAPI_Open_Request_WritableTx } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import type { NonUndefined } from 'utility-types';
 import { toBytes } from '../util/util';
 import { fieldTypeToProto, protoToField, protoToResource } from './type_conversion';

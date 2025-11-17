@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-set -e
+set -o nounset
+set -o errexit
+set -o pipefail
 
 # You can install needed dependencies via `./bootstrap.sh`
 
@@ -12,13 +14,13 @@ cd "${script_dir}" || exit 1
 #
 
 : "${TS_PROTO_PLUGIN:="${script_dir}/node_modules/.bin/protoc-gen-ts"}"
-: "${PROTO_SOURCES:="${script_dir}/proto/plapi"}"
-: "${PROTO_PACKAGE_NAMESPACE:="github.com/milaboratory/pl/plapi"}"
+: "${PROTO_PLAPI_SRC:="${script_dir}/proto/plapi"}"
+: "${PROTO_PLAPI_NAMESPACE:="github.com/milaboratory/pl/plapi"}"
 
-: "${PROTO_SHARED_SOURCES:="${script_dir}/proto/shared"}"
-: "${PROTO_SHARED_PACKAGE_NAMESPACE:="github.com/milaboratory/pl/controllers/shared/grpc"}"
+: "${PROTO_SHARED_SRC:="${script_dir}/proto/shared"}"
+: "${PROTO_SHARED_NAMESPACE:="github.com/milaboratory/pl/controllers/shared/grpc"}"
 
-: "${PROTO_OUT_PATH:="${script_dir}/src/proto"}"
+: "${PROTO_OUT_PATH:="${script_dir}/src/proto-grpc"}"
 
 # List of paths to search for includes.
 # This is like PATH variable for binaries, but for .proto files.
@@ -94,45 +96,39 @@ function generate() {
 # Actual script run
 #
 
-paths_to_generate=("${@}")
+plapi_to_generate=(
+    "plapiproto"
+)
 
-if [ "${#paths_to_generate}" -eq 0 ]; then
-  paths_to_generate=(
-      "plapiproto"
-      # "plstdtypes"
-      # "pltypes"
-  )
-fi
-
-mkdir -p "${PROTO_SOURCES}/.proto/${PROTO_PACKAGE_NAMESPACE}"
-for pkg in "${paths_to_generate[@]}"; do
-    pkg_path="${PROTO_SOURCES}/.proto/${PROTO_PACKAGE_NAMESPACE}/${pkg}"
+mkdir -p "${PROTO_PLAPI_SRC}/.proto/${PROTO_PLAPI_NAMESPACE}"
+for pkg in "${plapi_to_generate[@]}"; do
+    pkg_path="${PROTO_PLAPI_SRC}/.proto/${PROTO_PLAPI_NAMESPACE}/${pkg}"
     if [ -n "${pkg_path}" ] && ! [ -e "${pkg_path}" ] ; then
-        ln -s "${PROTO_SOURCES}/${pkg}" "${pkg_path}"
+        ln -s "${PROTO_PLAPI_SRC}/${pkg}" "${pkg_path}"
     fi
 done
 
-for path in "${paths_to_generate[@]}"; do
-    generate "${PROTO_PACKAGE_NAMESPACE}" "${path}" "${PROTO_SOURCES}"
+for path in "${plapi_to_generate[@]}"; do
+    generate "${PROTO_PLAPI_NAMESPACE}" "${path}" "${PROTO_PLAPI_SRC}"
     echo ""
 done
 
-shared_paths_to_generate=(
+shared_to_generate=(
     "progressapi"
     "streamingapi"
     "downloadapi"
     "lsapi"
 )
 
-mkdir -p "${PROTO_SHARED_SOURCES}/.proto/${PROTO_SHARED_PACKAGE_NAMESPACE}"
-for pkg in "${shared_paths_to_generate[@]}"; do
-    pkg_path="${PROTO_SHARED_SOURCES}/.proto/${PROTO_SHARED_PACKAGE_NAMESPACE}/${pkg}"
+mkdir -p "${PROTO_SHARED_SRC}/.proto/${PROTO_SHARED_NAMESPACE}"
+for pkg in "${shared_to_generate[@]}"; do
+    pkg_path="${PROTO_SHARED_SRC}/.proto/${PROTO_SHARED_NAMESPACE}/${pkg}"
     if [ -n "${pkg_path}" ] && ! [ -e "${pkg_path}" ] ; then
-        ln -s "${PROTO_SHARED_SOURCES}/${pkg}" "${pkg_path}"
+        ln -s "${PROTO_SHARED_SRC}/${pkg}" "${pkg_path}"
     fi
 done
 
-for path in "${shared_paths_to_generate[@]}"; do
-    generate "${PROTO_SHARED_PACKAGE_NAMESPACE}" "${path}" "${PROTO_SHARED_SOURCES}"
+for path in "${shared_to_generate[@]}"; do
+    generate "${PROTO_SHARED_NAMESPACE}" "${path}" "${PROTO_SHARED_SRC}"
     echo ""
 done
