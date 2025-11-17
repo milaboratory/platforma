@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.6.5
+
+### Patch Changes
+
+- d088e83: add pl-advanced-filter
+- Updated dependencies [d088e83]
+  - @milaboratories/milaboratories.ui-examples.model@1.3.5
+  - @platforma-sdk/model@1.45.35
+
 ## 1.6.4
 
 ### Patch Changes

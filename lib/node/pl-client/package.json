@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-client",
-  "version": "2.16.7",
+  "version": "2.16.8",
   "engines": {
     "node": ">=22.19.0"
   },

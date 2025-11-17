@@ -1,5 +1,15 @@
 # @platforma-sdk/ui-vue
 
+## 1.45.35
+
+### Patch Changes
+
+- d088e83: add pl-advanced-filter
+- Updated dependencies [d088e83]
+  - @milaboratories/uikit@2.6.2
+  - @platforma-sdk/model@1.45.35
+  - @milaboratories/ptabler-expression-js@1.1.3
+
 ## 1.45.34
 
 ### Patch Changes

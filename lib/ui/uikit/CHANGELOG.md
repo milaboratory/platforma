@@ -1,5 +1,13 @@
 # @milaboratories/uikit
 
+## 2.6.2
+
+### Patch Changes
+
+- d088e83: add pl-advanced-filter
+- Updated dependencies [d088e83]
+  - @platforma-sdk/model@1.45.35
+
 ## 2.6.1
 
 ### Patch Changes
