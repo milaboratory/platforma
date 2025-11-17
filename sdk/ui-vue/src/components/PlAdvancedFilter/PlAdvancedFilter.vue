@@ -1,0 +1,209 @@
+<script lang="ts" setup>
+import SingleFilter from './SingleFilter.vue';
+import { PlBtnSecondary, PlElementList, PlCheckbox, PlIcon16 } from '@milaboratories/uikit';
+import type { PlAdvancedFilterColumnId, CommonFilterSpec, Group, PlAdvancedFilterUI, SourceOptionInfo } from './types';
+import { computed } from 'vue';
+import OperandButton from './OperandButton.vue';
+import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
+import type { ListOptionBase } from '@platforma-sdk/model';
+import { createNewGroup, isValidColumnId, toInnerModel, toOuterModel, useInnerModel } from './utils';
+
+const props = withDefaults(defineProps<{
+  /** List of ids of sources (columns, axes) that can be selected in filters */
+  items: SourceOptionInfo[];
+  /** If true - new filter can be added by droppind element into filter group; else new column is added by button click */
+  enableDnd?: boolean;
+  /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
+  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
+    ((params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>[]);
+  /** Loading function for label of selected value for Equal/InSet filters and fixed axes options. */
+  getSuggestModel: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
+    ((params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>);
+}>(), { enableDnd: false });
+
+const model = defineModel<CommonFilterSpec>({ required: true });
+const innerModel = useInnerModel<CommonFilterSpec, PlAdvancedFilterUI>(toInnerModel, toOuterModel, model);
+
+const firstColumnId = computed(() => props.items[0]?.id);
+const emptyGroup: Group[] = [{
+  id: 'empty',
+  not: false,
+  operand: 'and',
+  filters: [],
+  expanded: true,
+}];
+
+function addColumnToGroup(groupIdx: number, selectedSourceId: PlAdvancedFilterColumnId) {
+  innerModel.value.groups[groupIdx].filters.push({
+    ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
+    column: selectedSourceId,
+  });
+}
+
+function removeFilterFromGroup(groupIdx: number, filterIdx: number) {
+  if (innerModel.value.groups[groupIdx].filters.length === 1 && filterIdx === 0) {
+    removeGroup(groupIdx);
+  } else {
+    innerModel.value.groups[groupIdx].filters = innerModel.value.groups[groupIdx].filters.filter((_v, idx) => idx !== filterIdx);
+  }
+}
+
+function removeGroup(groupIdx: number) {
+  innerModel.value.groups = innerModel.value.groups.filter((v, idx) => idx !== groupIdx);
+}
+function addGroup(selectedSourceId: PlAdvancedFilterColumnId) {
+  const newGroup = createNewGroup(selectedSourceId);
+  innerModel.value.groups.push(newGroup);
+}
+
+function handleDropToExistingGroup(groupIdx: number, event: DragEvent) {
+  const dataTransfer = event.dataTransfer;
+  if (dataTransfer?.getData('text/plain')) {
+    const draggedId = dataTransfer.getData('text/plain');
+    if (isValidColumnId(draggedId)) {
+      addColumnToGroup(groupIdx, draggedId);
+    }
+  }
+}
+function handleDropToNewGroup(event: DragEvent) {
+  const dataTransfer = event.dataTransfer;
+  if (dataTransfer?.getData('text/plain')) {
+    const draggedId = dataTransfer.getData('text/plain');
+    if (isValidColumnId(draggedId)) {
+      addGroup(draggedId);
+    }
+  }
+}
+function dragOver(event: DragEvent) {
+  event.preventDefault();
+}
+</script>
+<template>
+  <div>
+    <PlElementList
+      v-model:items="innerModel.groups"
+      :get-item-key="(group) => group.id"
+
+      :item-class="$style.filterGroup"
+      :item-class-content="$style.filterGroupContent"
+      :item-class-title="$style.filterGroupTitle"
+
+      :is-expanded="(group) => group.expanded"
+
+      :disableDragging="false"
+      :disableRemoving="false"
+      :disableToggling="true"
+      :disablePinning="true"
+
+      :on-expand="(group) => { group.expanded = !group.expanded}"
+    >
+      <template #item-title>
+        Filter group
+      </template>
+      <template #item-content="{ item, index }">
+        <div
+          :class="$style.groupContent" dropzone="true"
+          @drop="(event) => handleDropToExistingGroup(index, event)"
+          @dragover="dragOver"
+        >
+          <PlCheckbox v-model="item.not">NOT</PlCheckbox>
+          <SingleFilter
+            v-for="(filter, filterIdx) in item.filters"
+            :key="filterIdx"
+            v-model="item.filters[filterIdx]"
+            :operand="item.operand"
+            :column-options="items"
+            :get-suggest-model="getSuggestModel"
+            :get-suggest-options="getSuggestOptions"
+            :enable-dnd="enableDnd"
+            :is-last="filterIdx === item.filters.length - 1"
+            :on-change-operand="(v) => item.operand = v"
+            :on-delete="() => removeFilterFromGroup(index, filterIdx)"
+          />
+          <div v-if="enableDnd" :class="$style.dropzone">
+            <div>Drop dimensions here</div>
+          </div>
+          <PlBtnSecondary v-else @click="addColumnToGroup(index, firstColumnId)">
+            <PlIcon16 name="add" style="margin-right: 8px"/>Add column
+          </PlBtnSecondary>
+        </div>
+      </template>
+      <template #item-after="{ index }">
+        <OperandButton
+          :class="$style.buttonWrapper"
+          :active="innerModel.operand"
+          :disabled="index === innerModel.groups.length - 1"
+          :on-select="(v) => innerModel.operand = v"
+        />
+      </template>
+    </PlElementList>
+
+    <!-- Last group - always exists, always empty, just for adding new groups -->
+    <PlElementList
+      v-model:items="emptyGroup"
+      :get-item-key="(group) => group.id"
+      :item-class="$style.filterGroup"
+      :item-class-content="$style.filterGroupContent"
+      :item-class-title="$style.filterGroupTitle"
+
+      :is-expanded="() => true"
+
+      :disableDragging="true"
+      :disableRemoving="true"
+      :disableToggling="true"
+      :disablePinning="true"
+      dropzone="true"
+      @drop="handleDropToNewGroup"
+      @dragover="dragOver"
+    >
+      <template #item-title>Filter group</template>
+      <template #item-content="{item}">
+        <PlCheckbox v-model="item.not" disabled >NOT</PlCheckbox>
+        <div v-if="enableDnd" :class="$style.dropzone">
+          <div>Drop dimensions here</div>
+        </div>
+        <PlBtnSecondary v-else @click="addGroup(firstColumnId)">
+          <PlIcon16 name="add" style="margin-right: 8px"/>Add column
+        </PlBtnSecondary>
+      </template>
+    </PlElementList>
+  </div>
+</template>
+<style module>
+  .filterGroup {
+    background: var(--bg-base-light);
+  }
+  .filterGroup:hover {
+    background: rgba(99, 224, 36, 0.12);
+  }
+  .filterGroupTitle {
+    background: none;
+  }
+  .groupContent {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .dropzone {
+    border-radius: 6px;
+    border: 1.5px dashed var(--color-div-grey);
+    color: var(--txt-03);
+    font-family: Manrope;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    height: 40px;
+    cursor: default;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .buttonWrapper {
+    height: 72px;
+    display: flex;
+    align-items: center;
+  }
+  :global(.sortable-chosen) .buttonWrapper {
+    visibility: hidden;
+  }
+</style>

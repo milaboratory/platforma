@@ -23,6 +23,27 @@ export const filterUiMetadata = {
     },
     supportedFor: isNumericValueType,
   },
+  notEqual: {
+    label: 'Col ≠ X (Not Equal)',
+    form: {
+      column: {
+        label: 'Column',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: 'Predicate',
+        fieldType: 'FilterType',
+        defaultValue: () => 'notEqual',
+      },
+      x: {
+        label: 'X',
+        fieldType: 'number',
+        defaultValue: () => 0,
+      },
+    },
+    supportedFor: isNumericValueType,
+  },
   lessThan: {
     label: 'Col < X (Less Than)',
     form: {
@@ -449,6 +470,90 @@ export const filterUiMetadata = {
       },
     },
     supportedFor: () => false,
+  },
+  patternMatchesRegularExpression: {
+    label: 'Col ~ X (Matches Regular Expression)',
+    form: {
+      column: {
+        label: 'Column',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: 'Predicate',
+        fieldType: 'FilterType',
+        defaultValue: () => 'patternMatchesRegularExpression',
+      },
+      value: {
+        label: 'Seq',
+        fieldType: 'string',
+        defaultValue: () => '',
+      },
+    },
+    supportedFor: isStringValueType,
+  },
+  patternFuzzyContainSubsequence: {
+    label: 'Col ~ Seq (Fuzzy Contain Subsequence)',
+    form: {
+      column: {
+        label: 'Column',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: 'Predicate',
+        fieldType: 'FilterType',
+        defaultValue: () => 'patternFuzzyContainSubsequence',
+      },
+      value: {
+        label: 'Set',
+        fieldType: 'string',
+        defaultValue: () => '',
+      },
+    },
+    supportedFor: isStringValueType,
+  },
+  inSet: {
+    label: 'Col ∈ Set (In Set)',
+    form: {
+      column: {
+        label: 'Column',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: 'Predicate',
+        fieldType: 'FilterType',
+        defaultValue: () => 'inSet',
+      },
+      value: {
+        fieldType: 'unknown[]',
+        label: 'Set',
+        defaultValue: () => [],
+      },
+    },
+    supportedFor: isStringValueType,
+  },
+  notInSet: {
+    label: 'Col ∉ Set (Not In Set)',
+    form: {
+      column: {
+        label: 'Column',
+        fieldType: 'SUniversalPColumnId',
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: 'Predicate',
+        fieldType: 'FilterType',
+        defaultValue: () => 'notInSet',
+      },
+      value: {
+        label: 'Seq',
+        fieldType: 'unknown[]',
+        defaultValue: () => [],
+      },
+    },
+    supportedFor: isStringValueType,
   },
 } satisfies FilterSpecMetadataRecord<FilterSpecType>;
 
