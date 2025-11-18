@@ -13,16 +13,16 @@ import type { paths as ProgressApiPaths } from './progressapi';
 import type { paths as StreamingApiPaths } from './streamingapi';
 
 export { DownloadApiPaths };
-export type DownloadClientType = Client<DownloadApiPaths>;
+export type DownloadRestClientType = Client<DownloadApiPaths>;
 
 export { UploadApiPaths };
-export type UploadClientType = Client<UploadApiPaths>;
+export type UploadRestClientType = Client<UploadApiPaths>;
 
 export { LsApiPaths };
-export type LsClientType = Client<LsApiPaths>;
+export type LsRestClientType = Client<LsApiPaths>;
 
 export { ProgressApiPaths };
-export type ProgressClientType = Client<ProgressApiPaths>;
+export type ProgressRestClientType = Client<ProgressApiPaths>;
 
 export { StreamingApiPaths };
-export type StreamingClientType = Client<StreamingApiPaths>;
+export type StreamingRestClientType = Client<StreamingApiPaths>;

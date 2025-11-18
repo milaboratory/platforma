@@ -20,7 +20,7 @@ import type { FinalResourceDataPredicate } from './final';
 import { DefaultFinalResourceDataPredicate } from './final';
 import type { AllTxStat, TxStat } from './stat';
 import { addStat, initialTxStat } from './stat';
-import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import type { WireConnection } from './wire';
 import { advisoryLock } from './advisory_locks';
 
 export type TxOps = PlCallOps & {
@@ -145,11 +145,11 @@ export class PlClient {
   }
 
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {
-    return (await this._ll.grpcPl.get().ping({})).response;
+    return await this._ll.ping();
   }
 
   public async license(): Promise<MaintenanceAPI_License_Response> {
-    return (await this._ll.grpcPl.get().license({})).response;
+    return await this._ll.license();
   }
 
   public get conf(): PlClientConfig {
@@ -160,8 +160,8 @@ export class PlClient {
     return this._ll.httpDispatcher;
   }
 
-  public get grpcTransport(): GrpcTransport {
-    return this._ll.grpcTransport;
+  public get connectionOpts(): WireConnection {
+    return this._ll.wireConnection;
   }
 
   private get initialized() {
@@ -306,7 +306,7 @@ export class PlClient {
         if (ok) {
           // syncing on transaction if requested
           if (ops?.sync === undefined ? this.forceSync : ops?.sync)
-            await this._ll.grpcPl.get().txSync({ txId });
+            await this._ll.txSync(txId);
 
           // introducing artificial delay, if requested
           if (writable && this.txDelay > 0)

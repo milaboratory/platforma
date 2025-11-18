@@ -16,11 +16,11 @@ export class UnauthenticatedPlClient {
   }
 
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {
-    return (await this.ll.grpcPl.get().ping({})).response;
+    return await this.ll.ping();
   }
 
   public async authMethods(): Promise<AuthAPI_ListMethods_Response> {
-    return (await this.ll.grpcPl.get().authMethods({})).response;
+    return await this.ll.authMethods();
   }
 
   public async requireAuth(): Promise<boolean> {
@@ -29,15 +29,11 @@ export class UnauthenticatedPlClient {
 
   public async login(user: string, password: string): Promise<AuthInformation> {
     try {
-      const response = await this.ll.grpcPl.get().getJWTToken(
-        { expiration: { seconds: BigInt(this.ll.conf.authTTLSeconds), nanos: 0 } },
-        {
-          meta: {
-            authorization: 'Basic ' + Buffer.from(user + ':' + password).toString('base64'),
-          },
-        },
-      ).response;
-      const jwtToken = notEmpty(response.token);
+      const token = await this.ll.getJwtToken(
+        BigInt(this.ll.conf.authTTLSeconds),
+        { authorization: 'Basic ' + Buffer.from(user + ':' + password).toString('base64') },
+      );
+      const jwtToken = notEmpty(token);
       if (jwtToken === '') throw new Error('empty token');
       return { jwtToken };
     } catch (e: any) {

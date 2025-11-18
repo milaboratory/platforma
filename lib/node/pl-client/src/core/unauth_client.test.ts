@@ -9,6 +9,12 @@ test('ping test', async () => {
   expect(response).toHaveProperty('coreVersion');
 });
 
+test('get auth methods', async () => {
+  const client = new UnauthenticatedPlClient(getTestConfig().address);
+  const response = await client.authMethods();
+  expect(response).toHaveProperty('methods');
+});
+
 test('wrong login', async () => {
   const testConfig = getTestConfig();
   if (testConfig.test_user === undefined || testConfig.test_password === undefined) {
