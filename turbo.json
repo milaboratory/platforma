@@ -30,27 +30,8 @@
     },
     "test": {
       "outputs": ["./coverage/**"],
+      "env": ["TEST_CACHE_CRUTCH"],
       "dependsOn": ["build", "lint"],
-      "passThroughEnv": [
-        "PL_ADDRESS",
-        "PL_TEST_PASSWORD",
-        "PL_TEST_USER",
-        "PL_TEST_PROXY",
-        "PL_TEST_STORAGE_ID",
-        "DEBUG",
-        "MI_LICENSE",
-
-        "PL_DOCKER_REGISTRY_PUSH_TO",
-        "PL_DOCKER_BUILD",
-        "PL_DOCKER_NO_BUILD",
-        "PL_DOCKER_AUTOPUSH",
-        "PL_DOCKER_NO_AUTOPUSH"
-      ]
-    },
-    "test:nocache": {
-      "outputs": ["./coverage/**"],
-      "dependsOn": ["build", "lint"],
-      "cache": false,
       "passThroughEnv": [
         "PL_ADDRESS",
         "PL_TEST_PASSWORD",
