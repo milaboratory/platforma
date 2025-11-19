@@ -30,10 +30,7 @@ export function isSupportedFilterType(type: FilterSpecType | undefined): type is
 
 export type Operand = 'or' | 'and';
 
-type FilterUiBase = FilterSpecLeaf<PlAdvancedFilterColumnId> & {
-  type: SupportedFilterTypes;
-  column: PlAdvancedFilterColumnId;
-};
+type FilterUiBase = Extract<FilterSpecLeaf<PlAdvancedFilterColumnId>, { type: SupportedFilterTypes }>;
 
 type RequireFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 type OptionalFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
@@ -60,8 +57,6 @@ export type PlAdvancedFilterUI = {
   operand: Operand;
 };
 
-export type UniqueValuesList = ListOptionBase<string | number>[];
-export type OptionInfo = { error: boolean; label: string; spec: PColumnSpec | AxisSpec };
 export type FixedAxisInfo = {
   idx: number;
   label: string;
@@ -70,8 +65,8 @@ export type FixedAxisInfo = {
 export type SourceOptionInfo = {
   id: PlAdvancedFilterColumnId;
   label: string;
-  error: boolean;
   spec: PColumnSpec | AxisSpec;
-  axesToBeFixed?: FixedAxisInfo[];
+  error?: boolean;
   alphabet?: 'nucleotide' | 'aminoacid' | string;
+  axesToBeFixed?: FixedAxisInfo[];
 };

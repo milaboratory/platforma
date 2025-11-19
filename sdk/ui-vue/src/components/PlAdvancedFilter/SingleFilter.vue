@@ -13,10 +13,11 @@ const props = defineProps<{
   columnOptions: SourceOptionInfo[];
   enableDnd: boolean;
   isLast: boolean;
-  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
-    ((params: { columnId: SUniversalPColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>[]);
-  getSuggestModel: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
-    ((params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>);
+  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
+    ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
+  // @todo: can be optional
+  getSuggestModel: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
+    ListOptionBase<string | number> | Promise<ListOptionBase<string | number>>;
   onDelete: (columnId: PlAdvancedFilterColumnId) => void;
   onChangeOperand: (op: Operand) => void;
 }>();
@@ -151,7 +152,7 @@ function updateAxisFilterValue(idx: number, value: AxisFilterValue | undefined) 
 const currentOption = computed(() => props.columnOptions.find((op) => op.id === columnAsSourceAndFixedAxes.value.source));
 const currentSpec = computed(() => currentOption.value?.spec ? getNormalizedSpec(currentOption.value.spec) : null);
 const currentType = computed(() => currentSpec.value?.valueType);
-const currentError = computed(() => currentOption.value?.error || inconsistentSourceSelected.value);
+const currentError = computed(() => Boolean(currentOption.value?.error) || inconsistentSourceSelected.value);
 
 const filterTypesOptions = computed(() => [...SUPPORTED_FILTER_TYPES].filter((v) =>
   filter.value.type === v || (currentSpec.value ? getFilterInfo(v).supportedFor(currentSpec.value) : true),
@@ -221,7 +222,7 @@ const stringMatchesError = computed(() => {
           v-model="columnAsSourceAndFixedAxes.axisFiltersByIndex[value.idx]"
           :label="value.label"
           :options-search="(str) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, str, value.idx)"
-          :model-search="(v) => getSuggestModelSingleFn(columnAsSourceAndFixedAxes.source, v as string, value.idx)"
+          :model-search="(v) => getSuggestModelSingleFn(columnAsSourceAndFixedAxes.source, String(v), value.idx)"
           :disabled="inconsistentSourceSelected"
           :clearable="true"
           @update:model-value="(v) => updateAxisFilterValue(value.idx, v)"

@@ -103,13 +103,13 @@ const getValuesForSelectedColumns = async () => {
 
 <template>
   <div :class="$style.page">
-    <PlAnnotationsModal
-      v-model:opened="showModal"
-      v-model:annotation="mockAnnotations"
-      :columns="mockColumns"
-      :hasSelectedColumns="true"
-      :getValuesForSelectedColumns="getValuesForSelectedColumns"
-    />
+<!--    <PlAnnotationsModal-->
+<!--      v-model:opened="showModal"-->
+<!--      v-model:annotation="mockAnnotations"-->
+<!--      :columns="mockColumns"-->
+<!--      :hasSelectedColumns="true"-->
+<!--      :getValuesForSelectedColumns="getValuesForSelectedColumns"-->
+<!--    />-->
 
     <pre :class="$style.jsonBlock">{{ JSON.stringify(mockAnnotations, null, 2) }}</pre>
   </div>

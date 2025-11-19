@@ -8,21 +8,21 @@ import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
 import type { ListOptionBase } from '@platforma-sdk/model';
 import { createNewGroup, isValidColumnId, toInnerModel, toOuterModel, useInnerModel } from './utils';
 
+const model = defineModel<CommonFilterSpec>({ required: true });
+const innerModel = useInnerModel<CommonFilterSpec, PlAdvancedFilterUI>(toInnerModel, toOuterModel, model);
+
 const props = withDefaults(defineProps<{
   /** List of ids of sources (columns, axes) that can be selected in filters */
   items: SourceOptionInfo[];
   /** If true - new filter can be added by droppind element into filter group; else new column is added by button click */
   enableDnd?: boolean;
   /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
-  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>[]>) |
-    ((params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>[]);
+  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
+    ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
   /** Loading function for label of selected value for Equal/InSet filters and fixed axes options. */
-  getSuggestModel: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => (Promise<ListOptionBase<string | number>>) |
-    ((params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) => ListOptionBase<string | number>);
+  getSuggestModel: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
+    ListOptionBase<string | number> | Promise<ListOptionBase<string | number>>;
 }>(), { enableDnd: false });
-
-const model = defineModel<CommonFilterSpec>({ required: true });
-const innerModel = useInnerModel<CommonFilterSpec, PlAdvancedFilterUI>(toInnerModel, toOuterModel, model);
 
 const firstColumnId = computed(() => props.items[0]?.id);
 const emptyGroup: Group[] = [{
@@ -115,7 +115,7 @@ function dragOver(event: DragEvent) {
             :column-options="items"
             :get-suggest-model="getSuggestModel"
             :get-suggest-options="getSuggestOptions"
-            :enable-dnd="enableDnd"
+            :enable-dnd="Boolean(enableDnd)"
             :is-last="filterIdx === item.filters.length - 1"
             :on-change-operand="(v) => item.operand = v"
             :on-delete="() => removeFilterFromGroup(index, filterIdx)"
