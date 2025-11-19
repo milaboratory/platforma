@@ -1969,6 +1969,9 @@ importers:
       '@milaboratories/eslint-config':
         specifier: workspace:*
         version: link:../../../tools/eslint-config
+      '@milaboratories/test-helpers':
+        specifier: workspace:*
+        version: link:../../util/test-helpers
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../../../tools/ts-builder
