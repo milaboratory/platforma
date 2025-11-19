@@ -1,22 +1,22 @@
-import { StreamingClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol.client';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import type { Dispatcher } from 'undici';
-import type { WireClientProvider, WireClientProviderFactory } from '@milaboratories/pl-client';
+import type { GrpcClientProvider, GrpcClientProviderFactory } from '@milaboratories/pl-client';
 import { addRTypeToMetadata } from '@milaboratories/pl-client';
-import type { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
+import type { StreamingAPI_Response } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
+import { StreamingClient } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol.client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 
 export class ClientLogs {
-  public readonly wire: WireClientProvider<StreamingClient>;
+  public readonly grpcClient: GrpcClientProvider<StreamingClient>;
 
   constructor(
-    wireClientProviderFactory: WireClientProviderFactory,
+    grpcClientProviderFactory: GrpcClientProviderFactory,
     public readonly httpClient: Dispatcher,
     public readonly logger: MiLogger,
   ) {
-    this.wire = wireClientProviderFactory.createWireClientProvider((transport) => new StreamingClient(transport));
+    this.grpcClient = grpcClientProviderFactory.createGrpcClientProvider((transport) => new StreamingClient(transport));
   }
 
   close() {}
@@ -32,7 +32,7 @@ export class ClientLogs {
     options?: RpcOptions,
   ): Promise<StreamingAPI_Response> {
     return (
-      await this.wire.get().lastLines(
+      await this.grpcClient.get().lastLines(
         {
           resourceId: rId,
           lineCount: lineCount,
@@ -55,7 +55,7 @@ export class ClientLogs {
     options?: RpcOptions,
   ): Promise<StreamingAPI_Response> {
     return (
-      await this.wire.get().readText(
+      await this.grpcClient.get().readText(
         {
           resourceId: notEmpty(rId),
           readLimit: BigInt(lineCount),

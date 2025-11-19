@@ -20,6 +20,7 @@
     "build": "ts-builder build --target node",
     "test": "vitest run --coverage",
     "lint": "eslint .",
+    "update-proto": "./sync-proto.sh && ./generate-grpc.sh && ./generate-rest.sh",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -41,6 +42,7 @@
     "decompress": "catalog:",
     "denque": "catalog:",
     "tar-fs": "catalog:",
+    "openapi-fetch": "catalog:",
     "undici": "catalog:",
     "upath": "catalog:",
     "zod": "catalog:"
@@ -52,6 +54,7 @@
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/test-helpers": "workspace:*",
+    "openapi-typescript": "catalog:",
     "@types/node": "catalog:",
     "@types/tar-fs": "catalog:",
     "@vitest/coverage-v8": "catalog:",

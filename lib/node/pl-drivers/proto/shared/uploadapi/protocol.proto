@@ -4,6 +4,8 @@ package MiLaboratories.Controller.Shared;
 
 option go_package = "github.com/milaboratory/pl/controllers/shared/grpc/uploadapi;uploadapi";
 
+import "github.com/googleapis/googleapis/google/api/annotations.proto";
+
 //
 // Upload provides access to data upload feature, allowing clients to uplad data to Platforma.
 //
@@ -11,28 +13,48 @@ service Upload {
   //
   // Init upload, making controller to do all required preparation steps.
   //
-  rpc Init(uploadapi.Init.Request) returns (uploadapi.Init.Response) {}
+  rpc Init(UploadAPI.Init.Request) returns (UploadAPI.Init.Response) {
+    option (google.api.http) = {
+      post: "/v1/upload/init"
+      body: "*"
+    };
+  }
 
   //
   // GetPartURL provides URL for uploading chunk of the data.
   // Clients are expected to put their data directly to the given location.
   //
-  rpc GetPartURL(uploadapi.GetPartURL.Request) returns (uploadapi.GetPartURL.Response) {}
+  rpc GetPartURL(UploadAPI.GetPartURL.Request) returns (UploadAPI.GetPartURL.Response) {
+    option (google.api.http) = {
+      post: "/v1/upload/get-part-url"
+      body: "*"
+    };
+  }
 
   //
   // UpdateProgress of the upload, so other clients can see how it is going.
   //
-  rpc UpdateProgress(uploadapi.UpdateProgress.Request) returns (uploadapi.UpdateProgress.Response) {}
+  rpc UpdateProgress(UploadAPI.UpdateProgress.Request) returns (UploadAPI.UpdateProgress.Response) {
+    option (google.api.http) = {
+      post: "/v1/upload/update-progress"
+      body: "*"
+    };
+  }
 
   //
   // Finalize informs Controller that the upload process is done.
   // Returns an error, if the total size of all uploaded chunks is not equal to
   // size of the upload given in Init.
   //
-  rpc Finalize(uploadapi.Finalize.Request) returns (uploadapi.Finalize.Response) {}
+  rpc Finalize(UploadAPI.Finalize.Request) returns (UploadAPI.Finalize.Response) {
+    option (google.api.http) = {
+      post: "/v1/upload/finalize"
+      body: "*"
+    };
+  }
 }
 
-message uploadapi {
+message UploadAPI {
   enum ChecksumAlgorithm {
     CHECKSUM_ALGORITHM_UNSPECIFIED = 0;
     CHECKSUM_ALGORITHM_CRC32C = 1;
