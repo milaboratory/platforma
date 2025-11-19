@@ -2,6 +2,7 @@ import type { PlClient, PlTransaction, ResourceId } from '@milaboratories/pl-cli
 import { TestHelpers } from '@milaboratories/pl-client';
 import type { Signer } from '@milaboratories/ts-helpers';
 import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
+import { getLongTestTimeout } from '@milaboratories/test-helpers';
 import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -12,6 +13,8 @@ import { Computable } from '@milaboratories/computable';
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import type { ImportResourceSnapshot } from './types';
 import * as env from '../test_env';
+
+const TIMEOUT = getLongTestTimeout(30_000);
 
 test('upload a blob', async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
@@ -39,7 +42,7 @@ test('upload a blob', async () => {
   });
 });
 
-test('upload a big blob', async () => {
+test('upload a big blob', { timeout: TIMEOUT }, async () => {
   const lotsOfNumbers: number[] = [];
   for (let i = 0; i < 5000000; i++) {
     lotsOfNumbers.push(i);
@@ -72,30 +75,8 @@ test('upload a big blob', async () => {
 });
 
 // unskip if you need to test uploads of big files
-test.skip('upload a very big blob', async () => {
+test.skip('upload a very big blob', { timeout: TIMEOUT }, async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
-    //       const size = 4 * (1 << 30); // 4 GB
-    //       const anAnswer = Buffer.from(new TextEncoder().encode(`
-    // "Good morning," said Deep Thought at last.
-    // "do you have... er, that is..."
-    // "An answer for you?" interrupted Deep Thought majestically. "Yes. I have."
-    // ...
-    // "Forty-two," said Deep Thought, with infinite majesty and calm.
-    // ...
-    // "We're going to get lynched aren't we?" he whispered.
-    // `));
-    //       const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
-    //       const fPath = path.join(tmpDir, 'verybig.txt');
-    //       const fileToWrite = await fsp.open(fPath, 'w')
-
-    //       for (let i = 0; i <= (size / anAnswer.length); i++) {
-    //         await fileToWrite.write(anAnswer)
-    //         if (i % 100 == 0)
-    //           console.log(`wrote ${i/(size / anAnswer.length)}`);
-    //       }
-    //       await fileToWrite.close();
-
-    // const stats = await getFileStats(signer, fPath)
     const stats = await getFileStats(signer, '/home/snyssfx/Downloads/a_very_big_file.txt');
     const uploadId = await createBlobUpload(client, stats);
     const handleRes = await getSnapshot(client, uploadId);
@@ -117,7 +98,7 @@ test.skip('upload a very big blob', async () => {
       await c.awaitChange();
     }
   });
-}, 1000000000);
+});
 
 test('upload a blob with wrong modification time', async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
