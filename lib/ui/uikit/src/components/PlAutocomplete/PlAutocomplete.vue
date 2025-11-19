@@ -28,6 +28,7 @@ import { getErrorMessage } from '../../helpers/error.ts';
 import type { ListOptionBase } from '@platforma-sdk/model';
 import { PlSvg } from '../PlSvg';
 import SvgRequired from '../../assets/images/required.svg?raw';
+import { isNil } from '@milaboratories/helpers';
 
 /**
  * The current selected value.
@@ -43,7 +44,7 @@ const props = withDefaults(
     /**
      * Lambda for requesting of corresponding option for current model value. If empty, optionsSearch is used for this.
      */
-    modelSearch?: (v: M) => Promise<ListOption<M>>;
+    modelSearch?: (v: NonNullable<M>) => Promise<ListOption<NonNullable<M>>>;
     /**
      * The label text for the dropdown field (optional)
      */

@@ -75,7 +75,7 @@ export function toInnerModel(m: CommonFilterSpec): PlAdvancedFilterUI {
   if (m.type === 'and' || m.type === 'or') {
     // group
     res.operand = m.type;
-    res.groups = m.filters.map(toInnerFiltersGroup).filter((v) => v !== null) as Group[];
+    res.groups = m.filters.map(toInnerFiltersGroup).filter((v) => v !== null);
   } else if (SUPPORTED_FILTER_TYPES.has(m.type as SupportedFilterTypes)) {
     // single filter
     const group = toInnerFiltersGroup(m);
