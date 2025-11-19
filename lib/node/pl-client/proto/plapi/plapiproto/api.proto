@@ -16,7 +16,12 @@ service Platform {
   // Transactions
   //
   rpc Tx(stream TxAPI.ClientMessage) returns (stream TxAPI.ServerMessage) {}
-  rpc TxSync(TxAPI.Sync.Request) returns (TxAPI.Sync.Response) {}
+  rpc TxSync(TxAPI.Sync.Request) returns (TxAPI.Sync.Response) {
+    option (google.api.http) = {
+      post: "/v1/tx-sync"
+      body: "*"
+    };
+  }
 
   //
   // Subscriptions

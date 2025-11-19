@@ -14,11 +14,9 @@ cd "${script_dir}" || exit 1
 #
 
 : "${TS_PROTO_PLUGIN:="${script_dir}/node_modules/.bin/protoc-gen-ts"}"
+
 : "${PROTO_PLAPI_SRC:="${script_dir}/proto/plapi"}"
 : "${PROTO_PLAPI_NAMESPACE:="github.com/milaboratory/pl/plapi"}"
-
-: "${PROTO_SHARED_SRC:="${script_dir}/proto/shared"}"
-: "${PROTO_SHARED_NAMESPACE:="github.com/milaboratory/pl/controllers/shared/grpc"}"
 
 : "${PROTO_OUT_PATH:="${script_dir}/src/proto-grpc"}"
 
@@ -110,25 +108,5 @@ done
 
 for path in "${plapi_to_generate[@]}"; do
     generate "${PROTO_PLAPI_NAMESPACE}" "${path}" "${PROTO_PLAPI_SRC}"
-    echo ""
-done
-
-shared_to_generate=(
-    "progressapi"
-    "streamingapi"
-    "downloadapi"
-    "lsapi"
-)
-
-mkdir -p "${PROTO_SHARED_SRC}/.proto/${PROTO_SHARED_NAMESPACE}"
-for pkg in "${shared_to_generate[@]}"; do
-    pkg_path="${PROTO_SHARED_SRC}/.proto/${PROTO_SHARED_NAMESPACE}/${pkg}"
-    if [ -n "${pkg_path}" ] && ! [ -e "${pkg_path}" ] ; then
-        ln -s "${PROTO_SHARED_SRC}/${pkg}" "${pkg_path}"
-    fi
-done
-
-for path in "${shared_to_generate[@]}"; do
-    generate "${PROTO_SHARED_NAMESPACE}" "${path}" "${PROTO_SHARED_SRC}"
     echo ""
 done

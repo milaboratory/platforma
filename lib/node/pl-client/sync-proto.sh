@@ -23,11 +23,6 @@ cd "${script_dir}" || exit 1
 : "${SYNC_PLAPI_PATHS:="plapiproto/:protodep.toml:protodep.lock"}"
 : "${PLAPI_PACKAGE_NAMESPACE:="github.com/milaboratory/pl/plapi"}"
 
-: "${SYNC_SHARED_DST_DIR:="shared"}"
-: "${SYNC_SHARED_SRC_DIR:="controllers/shared/grpc"}"
-: "${SYNC_SHARED_PATHS:="progressapi/:streamingapi/:downloadapi/:lsapi/:protodep.toml:protodep.lock"}"
-: "${SHARED_PACKAGE_NAMESPACE:="github.com/milaboratory/pl/controllers/shared/grpc"}"
-
 : "${SYNC_LOG:="${SYNC_ROOT}/sync-proto.log"}"
 
 #
@@ -127,15 +122,6 @@ log "Updating protocol..."
 
   log "  updating proto dependencies..."
   cd "${SYNC_ROOT}/${SYNC_PLAPI_DST_DIR}"
-  protodep up --use-https
-)
-
-(
-  log "  updating '${SYNC_SHARED_SRC_DIR}' proto definitions..."
-  rsync_proto_files "${SYNC_SHARED_PATHS}" "${tmp_repo}/${SYNC_SHARED_SRC_DIR}" "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}"
-
-  log "  updating proto dependencies..."
-  cd "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}"
   protodep up --use-https
 )
 

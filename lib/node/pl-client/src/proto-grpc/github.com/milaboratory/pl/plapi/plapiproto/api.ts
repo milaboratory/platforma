@@ -15771,7 +15771,7 @@ export const MaintenanceAPI_License_Response = new MaintenanceAPI_License_Respon
  */
 export const Platform = new ServiceType("MiLaboratories.PL.API.Platform", [
     { name: "Tx", serverStreaming: true, clientStreaming: true, options: {}, I: TxAPI_ClientMessage, O: TxAPI_ServerMessage },
-    { name: "TxSync", options: {}, I: TxAPI_Sync_Request, O: TxAPI_Sync_Response },
+    { name: "TxSync", options: { "google.api.http": { post: "/v1/tx-sync", body: "*" } }, I: TxAPI_Sync_Request, O: TxAPI_Sync_Response },
     { name: "SubscriptionAttachFilter", options: { "google.api.http": { post: "/v1/subscription/attach-filter", body: "*" } }, I: SubscriptionAPI_AttachFilter_Request, O: SubscriptionAPI_AttachFilter_Response },
     { name: "SubscriptionDetachFilter", options: { "google.api.http": { post: "/v1/subscription/detach-filter", body: "*" } }, I: SubscriptionAPI_DetachFilter_Request, O: SubscriptionAPI_DetachFilter_Response },
     { name: "NotificationsGet", options: { "google.api.http": { post: "/v1/notifications/get", body: "*" } }, I: NotificationAPI_Get_Request, O: NotificationAPI_Get_Response },

@@ -2,7 +2,7 @@ import type { PlClient } from './client';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import type { Dispatcher } from 'undici';
 import type { ResourceType } from './types';
-import type { WireClientProviderFactory } from './wire';
+import type { GrpcClientProviderFactory } from './grpc';
 
 /** Drivers must implement this interface */
 export interface PlDriver {
@@ -15,7 +15,7 @@ export interface PlDriverDefinition<Drv extends PlDriver> {
   readonly name: string;
 
   /** Initialization routine, will be executed only once for each driver in a specific client */
-  init(pl: PlClient, wireClientFactory: WireClientProviderFactory, httpDispatcher: Dispatcher): Drv;
+  init(pl: PlClient, grpcClientProviderFactory: GrpcClientProviderFactory, httpDispatcher: Dispatcher): Drv;
 }
 
 // addRTypeToMetadata adds a metadata with resource type

@@ -9,8 +9,10 @@ export * from './core/default_client';
 export * from './core/unauth_client';
 export * from './core/auth';
 export * from './core/final';
-export * from './core/wire';
+export * from './core/grpc';
 export * from './helpers/tx_helpers';
 export * from './helpers/poll';
 
 export * as TestHelpers from './test/test_config';
+
+export * as PlApi from './proto-rest';
