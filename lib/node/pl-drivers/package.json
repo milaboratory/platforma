@@ -51,6 +51,7 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/test-helpers": "workspace:*",
     "@types/node": "catalog:",
     "@types/tar-fs": "catalog:",
     "@vitest/coverage-v8": "catalog:",
