@@ -214,131 +214,61 @@ export class SshPl {
     await onProgress?.('Connection information saved.');
   }
 
+  private async killProcessHoldingLock(
+    lockInfo: LockProcessInfo,
+    lockFilePath: string,
+    onProgress?: (...args: any[]) => Promise<any>,
+  ): Promise<void> {
+    const { pid } = lockInfo;
+
+    this.logger.info(`Process ${pid} belongs to current user ${this.username}. Killing it...`);
+    await onProgress?.(`Killing process ${pid} holding DB lock...`);
+
+    try {
+      // Try graceful termination first
+      await this.sshClient.exec(`kill ${pid} 2>/dev/null || true`);
+      await sleep(1000);
+
+      // Check if process still exists
+      try {
+        await this.sshClient.exec(`kill -0 ${pid} 2>/dev/null`);
+        // Process still exists, force kill
+        this.logger.warn(`Process ${pid} still alive after SIGTERM, forcing kill...`);
+        await this.sshClient.exec(`kill -9 ${pid} 2>/dev/null || true`);
+        await sleep(500);
+      } catch {
+        // Process is dead, nothing to do
+      }
+
+      // Verify lock file is gone or can be removed
+      const lockStillExists = await this.sshClient.checkFileExists(lockFilePath);
+      if (lockStillExists) {
+        try {
+          await this.sshClient.exec(`rm -f ${lockFilePath}`);
+          this.logger.info(`Removed stale lock file ${lockFilePath}`);
+        } catch (e: unknown) {
+          this.logger.warn(`Failed to remove stale lock file: ${e}`);
+        }
+      }
+
+      await onProgress?.('Process holding DB lock has been terminated.');
+    } catch (e: unknown) {
+      const msg = `Failed to kill process ${pid}: ${e}`;
+      this.logger.error(msg);
+      throw new Error(msg);
+    }
+  }
+
   private async doStepCheckDbLock(
     state: PlatformaInitState,
     onProgress?: (...args: any[]) => Promise<any>,
   ) {
-    type LockProcessInfo = { pid: number; user: string };
-  
-    const findLockHolderWithLsof = async (lockFilePath: string): Promise<LockProcessInfo | null> => {
-      try {
-        const { stdout } = await this.sshClient.exec(`lsof ${lockFilePath} 2>/dev/null || true`);
-        const output = stdout.trim();
-        if (!output) {
-          return null;
-        }
-  
-        // Example:
-        // COMMAND     PID    USER   FD   TYPE DEVICE SIZE/OFF     NODE NAME
-        // platforma 11628 rfiskov   10u   REG   1,16        0 66670038 ./LOCK
-        const lines = output.split('\n');
-        if (lines.length <= 1) {
-          return null;
-        }
-  
-        const parts = lines[1].trim().split(/\s+/);
-        if (parts.length < 3) {
-          return null;
-        }
-  
-        const pid = Number.parseInt(parts[1], 10);
-        const user = parts[2];
-  
-        return Number.isNaN(pid) || !user ? null : { pid, user };
-      } catch (e: unknown) {
-        this.logger.warn(`Failed to use lsof to check lock: ${e}`);
-        return null;
-      }
-    };
-  
-    const findLockHolderWithFuser = async (lockFilePath: string): Promise<LockProcessInfo | null> => {
-      try {
-        const { stdout } = await this.sshClient.exec(`fuser ${lockFilePath} 2>/dev/null || true`);
-        const output = stdout.trim();
-        if (!output) {
-          return null;
-        }
-  
-        // Example: ./LOCK: 11628
-        const match = output.match(/: (\d+)/);
-        if (!match) {
-          return null;
-        }
-  
-        const pid = Number.parseInt(match[1], 10);
-        if (Number.isNaN(pid)) {
-          return null;
-        }
-  
-        try {
-          const psResult = await this.sshClient.exec(`ps -o user= -p ${pid} 2>/dev/null || true`);
-          const user = psResult.stdout.trim();
-          return user ? { pid, user } : null;
-        } catch (e: unknown) {
-          this.logger.warn(`Failed to get user for PID ${pid}: ${e}`);
-          return null;
-        }
-      } catch (e: unknown) {
-        this.logger.warn(`Failed to use fuser to check lock: ${e}`);
-        return null;
-      }
-    };
-  
-    const findLockHolder = async (lockFilePath: string): Promise<LockProcessInfo | null> => {
-      const viaLsof = await findLockHolderWithLsof(lockFilePath);
-      if (viaLsof) {
-        return viaLsof;
-      }
-      return findLockHolderWithFuser(lockFilePath);
-    };
-  
     const removeLockFile = async (lockFilePath: string) => {
       try {
         await this.sshClient.exec(`rm -f ${lockFilePath}`);
         this.logger.info(`Removed stale lock file ${lockFilePath}`);
       } catch (e: unknown) {
         const msg = `Failed to remove stale lock file ${lockFilePath}: ${e}`;
-        this.logger.error(msg);
-        throw new Error(msg);
-      }
-    };
-  
-    const killProcessHoldingLock = async (lockInfo: LockProcessInfo, lockFilePath: string) => {
-      const { pid } = lockInfo;
-  
-      this.logger.info(`Process ${pid} belongs to current user ${this.username}. Killing it...`);
-      await onProgress?.(`Killing process ${pid} holding DB lock...`);
-  
-      try {
-        // Try graceful termination first
-        await this.sshClient.exec(`kill ${pid} 2>/dev/null || true`);
-        await sleep(1000);
-  
-        // Check if process still exists
-        try {
-          await this.sshClient.exec(`kill -0 ${pid} 2>/dev/null`);
-          // Process still exists, force kill
-          this.logger.warn(`Process ${pid} still alive after SIGTERM, forcing kill...`);
-          await this.sshClient.exec(`kill -9 ${pid} 2>/dev/null || true`);
-          await sleep(500);
-        } catch {
-          // Process is dead, nothing to do
-        }
-  
-        // Verify lock file is gone or can be removed
-        const lockStillExists = await this.sshClient.checkFileExists(lockFilePath);
-        if (lockStillExists) {
-          try {
-            await this.sshClient.exec(`rm -f ${lockFilePath}`);
-            this.logger.info(`Removed stale lock file ${lockFilePath}`);
-          } catch (e: unknown) {
-            this.logger.warn(`Failed to remove stale lock file: ${e}`);
-          }
-        }
-  
-        await onProgress?.('Process holding DB lock has been terminated.');
-      } catch (e: unknown) {
-        const msg = `Failed to kill process ${pid}: ${e}`;
         this.logger.error(msg);
         throw new Error(msg);
       }
@@ -356,7 +286,7 @@ export class SshPl {
     }
   
     this.logger.info(`DB lock file found at ${lockFilePath}. Checking which process holds it...`);
-    const lockProcessInfo = await findLockHolder(lockFilePath);
+    const lockProcessInfo = await this.findLockHolder(lockFilePath);
   
     if (!lockProcessInfo) {
       // Lock file exists but no process is holding it (stale lock)
@@ -380,7 +310,7 @@ export class SshPl {
       throw new Error(msg);
     }
   
-    await killProcessHoldingLock(lockProcessInfo, lockFilePath);
+    await this.killProcessHoldingLock(lockProcessInfo, lockFilePath, onProgress);
   }  
 
   private async doStepConfigureSupervisord(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
@@ -594,6 +524,78 @@ export class SshPl {
     }
   }
 
+  private async findLockHolderWithLsof(lockFilePath: string): Promise<LockProcessInfo | null> {
+    try {
+      const { stdout } = await this.sshClient.exec(`lsof ${lockFilePath} 2>/dev/null || true`);
+      const output = stdout.trim();
+      if (!output) {
+        return null;
+      }
+
+      // Example:
+      // COMMAND     PID    USER   FD   TYPE DEVICE SIZE/OFF     NODE NAME
+      // platforma 11628 rfiskov   10u   REG   1,16        0 66670038 ./LOCK
+      const lines = output.split('\n');
+      if (lines.length <= 1) {
+        return null;
+      }
+
+      const parts = lines[1].trim().split(/\s+/);
+      if (parts.length < 3) {
+        return null;
+      }
+
+      const pid = Number.parseInt(parts[1], 10);
+      const user = parts[2];
+
+      return Number.isNaN(pid) || !user ? null : { pid, user };
+    } catch (e: unknown) {
+      this.logger.warn(`Failed to use lsof to check lock: ${e}`);
+      return null;
+    }
+  }
+
+  private async findLockHolderWithFuser(lockFilePath: string): Promise<LockProcessInfo | null> {
+    try {
+      const { stdout } = await this.sshClient.exec(`fuser ${lockFilePath} 2>/dev/null || true`);
+      const output = stdout.trim();
+      if (!output) {
+        return null;
+      }
+
+      // Example: ./LOCK: 11628
+      const match = output.match(/: (\d+)/);
+      if (!match) {
+        return null;
+      }
+
+      const pid = Number.parseInt(match[1], 10);
+      if (Number.isNaN(pid)) {
+        return null;
+      }
+
+      try {
+        const psResult = await this.sshClient.exec(`ps -o user= -p ${pid} 2>/dev/null || true`);
+        const user = psResult.stdout.trim();
+        return user ? { pid, user } : null;
+      } catch (e: unknown) {
+        this.logger.warn(`Failed to get user for PID ${pid}: ${e}`);
+        return null;
+      }
+    } catch (e: unknown) {
+      this.logger.warn(`Failed to use fuser to check lock: ${e}`);
+      return null;
+    }
+  }
+
+  private async findLockHolder(lockFilePath: string): Promise<LockProcessInfo | null> {
+    const viaLsof = await this.findLockHolderWithLsof(lockFilePath);
+    if (viaLsof) {
+      return viaLsof;
+    }
+    return this.findLockHolderWithFuser(lockFilePath);
+  }
+
   /** We have to extract pl in the remote server,
   * because Windows doesn't support symlinks
   * that are found in Linux pl binaries tgz archive.
@@ -785,6 +787,8 @@ export type SshPlConfig = {
   onProgress?: (...args: any) => Promise<any>;
   plConfigPostprocessing?: (config: PlConfig) => PlConfig;
 };
+
+export type LockProcessInfo = { pid: number; user: string };
 
 const defaultSshPlConfig: Pick<
   SshPlConfig,
