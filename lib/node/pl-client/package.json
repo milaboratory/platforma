@@ -45,7 +45,6 @@
     "tslib": "catalog:",
     "openapi-fetch": "catalog:",
     "undici": "catalog:",
-    "axios": "catalog:",
     "utility-types": "catalog:",
     "yaml": "catalog:"
   },
