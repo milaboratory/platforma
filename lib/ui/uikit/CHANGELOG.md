@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.6.3
+
+### Patch Changes
+
+- 3d915f9: Fix vue warning in PlDropdown (update vue 3.5.13 -> v3.5.24)
+
 ## 2.6.2
 
 ### Patch Changes
