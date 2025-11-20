@@ -263,7 +263,7 @@ export class SshPl {
     }
 
     this.logger.info(`Process ${lockProcessInfo.pid} belongs to current user ${this.username}. Killing it...`);
-    await this.killProcess(lockProcessInfo.pid);
+    await this.killRemoteProcess(lockProcessInfo.pid);
     this.logger.info('Process holding DB lock has been terminated.');
 
     // Verify lock file is gone or can be removed
@@ -556,7 +556,7 @@ export class SshPl {
     return this.findLockHolderWithFuser(lockFilePath);
   }
 
-  private async killProcess(pid: number): Promise<void> {
+  private async killRemoteProcess(pid: number): Promise<void> {
     this.logger.info(`Killing process ${pid}...`);
 
     try {
