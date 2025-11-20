@@ -214,51 +214,6 @@ export class SshPl {
     await onProgress?.('Connection information saved.');
   }
 
-  private async killProcessHoldingLock(
-    lockInfo: LockProcessInfo,
-    lockFilePath: string,
-    onProgress?: (...args: any[]) => Promise<any>,
-  ): Promise<void> {
-    const { pid } = lockInfo;
-
-    this.logger.info(`Process ${pid} belongs to current user ${this.username}. Killing it...`);
-    await onProgress?.(`Killing process ${pid} holding DB lock...`);
-
-    try {
-      // Try graceful termination first
-      await this.sshClient.exec(`kill ${pid} 2>/dev/null || true`);
-      await sleep(1000);
-
-      // Check if process still exists
-      try {
-        await this.sshClient.exec(`kill -0 ${pid} 2>/dev/null`);
-        // Process still exists, force kill
-        this.logger.warn(`Process ${pid} still alive after SIGTERM, forcing kill...`);
-        await this.sshClient.exec(`kill -9 ${pid} 2>/dev/null || true`);
-        await sleep(500);
-      } catch {
-        // Process is dead, nothing to do
-      }
-
-      // Verify lock file is gone or can be removed
-      const lockStillExists = await this.sshClient.checkFileExists(lockFilePath);
-      if (lockStillExists) {
-        try {
-          await this.sshClient.exec(`rm -f ${lockFilePath}`);
-          this.logger.info(`Removed stale lock file ${lockFilePath}`);
-        } catch (e: unknown) {
-          this.logger.warn(`Failed to remove stale lock file: ${e}`);
-        }
-      }
-
-      await onProgress?.('Process holding DB lock has been terminated.');
-    } catch (e: unknown) {
-      const msg = `Failed to kill process ${pid}: ${e}`;
-      this.logger.error(msg);
-      throw new Error(msg);
-    }
-  }
-
   private async doStepCheckDbLock(
     state: PlatformaInitState,
     onProgress?: (...args: any[]) => Promise<any>,
@@ -289,18 +244,15 @@ export class SshPl {
     const lockProcessInfo = await this.findLockHolder(lockFilePath);
   
     if (!lockProcessInfo) {
-      // Lock file exists but no process is holding it (stale lock)
       this.logger.warn('Lock file exists but no process is holding it. Removing stale lock file...');
-      await onProgress?.('Removing stale DB lock file...');
       await removeLockFile(lockFilePath);
-      await onProgress?.('Stale DB lock file removed.');
       return;
     }
   
     this.logger.info(
       `Found process ${lockProcessInfo.pid} (user: ${lockProcessInfo.user}) holding DB lock`,
     );
-  
+
     if (lockProcessInfo.user !== this.username) {
       const msg =
         `DB lock is held by process ${lockProcessInfo.pid} ` +
@@ -309,8 +261,16 @@ export class SshPl {
       this.logger.error(msg);
       throw new Error(msg);
     }
-  
-    await this.killProcessHoldingLock(lockProcessInfo, lockFilePath, onProgress);
+
+    this.logger.info(`Process ${lockProcessInfo.pid} belongs to current user ${this.username}. Killing it...`);
+    await this.killProcess(lockProcessInfo.pid);
+    this.logger.info('Process holding DB lock has been terminated.');
+
+    // Verify lock file is gone or can be removed
+    const lockStillExists = await this.sshClient.checkFileExists(lockFilePath);
+    if (lockStillExists) {
+      await removeLockFile(lockFilePath);
+    }
   }  
 
   private async doStepConfigureSupervisord(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
@@ -594,6 +554,31 @@ export class SshPl {
       return viaLsof;
     }
     return this.findLockHolderWithFuser(lockFilePath);
+  }
+
+  private async killProcess(pid: number): Promise<void> {
+    this.logger.info(`Killing process ${pid}...`);
+
+    try {
+      // Try graceful termination first
+      await this.sshClient.exec(`kill ${pid} 2>/dev/null || true`);
+      await sleep(1000);
+
+      // Check if process still exists
+      try {
+        await this.sshClient.exec(`kill -0 ${pid} 2>/dev/null`);
+        // Process still exists, force kill
+        this.logger.warn(`Process ${pid} still alive after SIGTERM, forcing kill...`);
+        await this.sshClient.exec(`kill -9 ${pid} 2>/dev/null || true`);
+        await sleep(500);
+      } catch {
+        // Process is dead, nothing to do
+      }
+    } catch (e: unknown) {
+      const msg = `Failed to kill process ${pid}: ${e}`;
+      this.logger.error(msg);
+      throw new Error(msg);
+    }
   }
 
   /** We have to extract pl in the remote server,
