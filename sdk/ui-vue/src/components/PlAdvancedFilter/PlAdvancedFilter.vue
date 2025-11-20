@@ -1,14 +1,14 @@
 <script lang="ts" setup>
 import { PlBtnSecondary, PlCheckbox, PlElementList, PlIcon16 } from '@milaboratories/uikit';
 import type { ListOptionBase } from '@platforma-sdk/model';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import FilterEditor from './FilterEditor.vue';
 import OperandButton from './OperandButton.vue';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
 import type { CommonFilter, EditableFilter, NodeFilter, PlAdvancedFilterColumnId, RootFilter, SourceOptionInfo } from './types';
 import { createNewGroup, isValidColumnId } from './utils';
 
-const model = defineModel<RootFilter>({ required: true });
+const model = defineModel<RootFilter>('filters', { required: true });
 
 const props = withDefaults(defineProps<{
   /** List of ids of sources (columns, axes) that can be selected in filters */
@@ -28,12 +28,12 @@ const emptyGroup: NodeFilter[] = [{
   id: -1,
   type: 'and',
   filters: [],
-  expanded: true,
+  isExpanded: true,
 }];
 
 function getRootGroups() {
-  if (model.value.type !== 'or') {
-    throw new Error('Invalid model structure, expected root to be "or" group');
+  if (model.value.type !== 'or' && model.value.type !== 'and') {
+    throw new Error('Invalid model structure, expected root to be "or" or "and" group');
   }
   return model.value.filters;
 }
@@ -68,13 +68,8 @@ function addColumnToGroup(groupIdx: number, selectedSourceId: PlAdvancedFilterCo
     ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
     column: selectedSourceId,
     id: Date.now(),
-    expanded: true,
+    isExpanded: true,
   } as CommonFilter);
-
-  // model.value.groups[groupIdx].filters.push({
-  //   ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
-  //   column: selectedSourceId,
-  // });
 }
 
 function removeFilterFromGroup(groupIdx: number, filterIdx: number) {
@@ -102,7 +97,7 @@ function inverseRootNode(groupIdx: number) {
 
     groups[groupIdx] = {
       id: Date.now(),
-      expanded: true,
+      isExpanded: true,
       type: 'not',
       filter: groups[groupIdx],
     };
@@ -152,6 +147,14 @@ function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
 
   return item as EditableFilter;
 }
+
+function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: EditableFilter) {
+  filters[idx] = updatedFilter as CommonFilter;
+}
+
+watch(model.value.filters, () => {
+  console.log('updated', model.value.filters);
+});
 </script>
 <template>
   <div>
@@ -163,14 +166,13 @@ function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
       :item-class-content="$style.filterGroupContent"
       :item-class-title="$style.filterGroupTitle"
 
-      :is-expanded="(filter) => filter.expanded === true"
+      :is-expanded="(filter) => filter.isExpanded === true"
+      :on-expand="(group) => { group.isExpanded = !group.isExpanded}"
 
       :disableDragging="false"
       :disableRemoving="false"
       :disableToggling="true"
       :disablePinning="true"
-
-      :on-expand="(group) => { group.expanded = !group.expanded}"
     >
       <template #item-title>
         Filter group
@@ -194,6 +196,7 @@ function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
               :is-last="filterIdx === getNotContent(item).filters.length - 1"
               :on-change-operand="(v) => getNotContent(item).type = v"
               :on-delete="() => removeFilterFromGroup(index, filterIdx)"
+              @update:filter="(value) => updateFilter(getNotContent(item).filters, filterIdx, value)"
             />
           </template>
           <div v-if="enableDnd" :class="$style.dropzone">

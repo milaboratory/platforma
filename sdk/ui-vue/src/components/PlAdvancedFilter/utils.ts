@@ -12,11 +12,11 @@ function getNewGroupId() {
 export function createNewGroup(selectedSourceId: string): NodeFilter {
   return {
     id: getNewGroupId(),
-    expanded: true,
+    isExpanded: true,
     type: 'and',
     filters: [{
       id: getNewGroupId(),
-      expanded: true,
+      isExpanded: true,
       ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
       column: selectedSourceId as SUniversalPColumnId,
     } as CommonFilter],

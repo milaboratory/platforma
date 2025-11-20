@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { randomInt } from '@milaboratories/helpers';
-import type { PObjectId, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { PColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
 import { ref, watch } from 'vue';
 
 const showModal = ref(true);
@@ -48,14 +48,19 @@ const mockAnnotations = ref({
   ],
 });
 
-const mockColumns = ref<SimplifiedUniversalPColumnEntry[]>([
+// PlAdvancedFilterItem[]
+const mockColumns = ref<unknown>([
   {
     id: 'sample_name' as SUniversalPColumnId,
     label: 'Sample Name',
-    obj: {
+    spec: {
+      kind: 'PColumn',
+      name: 'sample_name',
       valueType: 'String' as const,
-      annotations: {},
-    },
+      axesSpec: [
+        // {},
+      ],
+    } satisfies PColumnSpec,
   },
   {
     id: 'count' as SUniversalPColumnId,
@@ -91,24 +96,24 @@ const mockColumns = ref<SimplifiedUniversalPColumnEntry[]>([
   },
 ]);
 
-const getValuesForSelectedColumns = async () => {
-  // Mock implementation - in real app this would fetch actual column values
-  return {
-    columnId: 'sample_name' as PObjectId,
-    values: ['Sample_001', 'Sample_002', 'Sample_003', 'Control_001', 'Control_002'],
-  };
-};
+// const getValuesForSelectedColumns = async () => {
+//   // Mock implementation - in real app this would fetch actual column values
+//   return {
+//     columnId: 'sample_name' as PObjectId,
+//     values: ['Sample_001', 'Sample_002', 'Sample_003', 'Control_001', 'Control_002'],
+//   };
+// };
 </script>
 
 <template>
   <div :class="$style.page">
-    <!--    <PlAnnotationsModal-->
-    <!--      v-model:opened="showModal"-->
-    <!--      v-model:annotation="mockAnnotations"-->
-    <!--      :columns="mockColumns"-->
-    <!--      :hasSelectedColumns="true"-->
-    <!--      :getValuesForSelectedColumns="getValuesForSelectedColumns"-->
-    <!--    />-->
+    <!-- <PlAnnotationsModal
+      v-model:opened="showModal"
+      v-model:annotation="mockAnnotations"
+      :columns="mockColumns"
+      :hasSelectedColumns="true"
+      :getValuesForSelectedColumns="getValuesForSelectedColumns"
+    /> -->
 
     <pre :class="$style.jsonBlock">{{ JSON.stringify(mockAnnotations, null, 2) }}</pre>
   </div>
