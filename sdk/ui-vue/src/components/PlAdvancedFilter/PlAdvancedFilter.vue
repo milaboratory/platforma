@@ -1,15 +1,14 @@
 <script lang="ts" setup>
-import SingleFilter from './SingleFilter.vue';
-import { PlBtnSecondary, PlElementList, PlCheckbox, PlIcon16 } from '@milaboratories/uikit';
-import type { PlAdvancedFilterColumnId, CommonFilterSpec, Group, PlAdvancedFilterUI, SourceOptionInfo } from './types';
+import { PlBtnSecondary, PlCheckbox, PlElementList, PlIcon16 } from '@milaboratories/uikit';
+import type { ListOptionBase } from '@platforma-sdk/model';
 import { computed } from 'vue';
 import OperandButton from './OperandButton.vue';
+import SingleFilter from './SingleFilter.vue';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
-import type { ListOptionBase } from '@platforma-sdk/model';
-import { createNewGroup, isValidColumnId, toInnerModel, toOuterModel, useInnerModel } from './utils';
+import type { CommonFilter, Filter, Group, NodeFilter, PlAdvancedFilterColumnId, RootFilter, SourceOptionInfo } from './types';
+import { createNewGroup, isValidColumnId } from './utils';
 
-const model = defineModel<CommonFilterSpec>({ required: true });
-const innerModel = useInnerModel<CommonFilterSpec, PlAdvancedFilterUI>(toInnerModel, toOuterModel, model);
+const model = defineModel<RootFilter>({ required: true });
 
 const props = withDefaults(defineProps<{
   /** List of ids of sources (columns, axes) that can be selected in filters */
@@ -33,27 +32,102 @@ const emptyGroup: Group[] = [{
   expanded: true,
 }];
 
+function getRootGroups() {
+  if (model.value.type !== 'or') {
+    throw new Error('Invalid model structure, expected root to be "or" group');
+  }
+  return model.value.filters;
+}
+
+function getRootGroup(idx: number): NodeFilter {
+  const groups = getRootGroups();
+  const group = groups[idx];
+  if (group.type !== 'and' && group.type !== 'or' && group.type !== 'not') {
+    throw new Error('Invalid group structure, expected "and", "or" or "not" group');
+  }
+  return group;
+}
+
+function getRootGroupContent(idx: number): Exclude<NodeFilter, { type: 'not' }> {
+  const group = getRootGroup(idx);
+
+  if (group.type !== 'not') {
+    return group;
+  }
+
+  if (group.filter.type !== 'and' && group.filter.type !== 'or') {
+    throw new Error('Invalid group structure, expected "and" or "or" group inside "not"');
+  }
+
+  return group.filter;
+}
+
 function addColumnToGroup(groupIdx: number, selectedSourceId: PlAdvancedFilterColumnId) {
-  innerModel.value.groups[groupIdx].filters.push({
+  const group = getRootGroupContent(groupIdx);
+
+  group.filters.push({
     ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
     column: selectedSourceId,
-  });
+    id: Date.now(),
+    expanded: true,
+  } as CommonFilter);
+
+  // model.value.groups[groupIdx].filters.push({
+  //   ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
+  //   column: selectedSourceId,
+  // });
 }
 
 function removeFilterFromGroup(groupIdx: number, filterIdx: number) {
-  if (innerModel.value.groups[groupIdx].filters.length === 1 && filterIdx === 0) {
+  const group = getRootGroupContent(groupIdx);
+
+  if (group.filters.length === 1 && filterIdx === 0) {
     removeGroup(groupIdx);
   } else {
-    innerModel.value.groups[groupIdx].filters = innerModel.value.groups[groupIdx].filters.filter((_v, idx) => idx !== filterIdx);
+    group.filters = group.filters.filter((_v, idx) => idx !== filterIdx);
+  }
+  // if (innerModel.value.groups[groupIdx].filters.length === 1 && filterIdx === 0) {
+  //   removeGroup(groupIdx);
+  // } else {
+  //   innerModel.value.groups[groupIdx].filters = innerModel.value.groups[groupIdx].filters.filter((_v, idx) => idx !== filterIdx);
+  // }
+}
+function inverseRootNode(groupIdx: number) {
+  const groups = getRootGroups();
+  const group = groups[groupIdx];
+  if (group.type === 'not') {
+    if (group.filter.type !== 'and' && group.filter.type !== 'or') {
+      throw new Error('Invalid group structure, expected "and" or "or" group inside "not"');
+    }
+    groups[groupIdx] = group.filter;
+  } else {
+    const type = groups[groupIdx].type;
+    if (type !== 'and' && type !== 'or' && type !== 'not') {
+      throw new Error('Invalid group structure, expected "and", "or" or "not" group');
+    }
+
+    groups[groupIdx] = {
+      id: Date.now(),
+      expanded: true,
+      type: 'not',
+      filter: groups[groupIdx],
+    };
   }
 }
 
+function getNotContent<T extends CommonFilter>(item: T): Exclude<T, { type: 'not' }> {
+  return item.type === 'not' ? item.filter as Exclude<T, { type: 'not' }> : item as Exclude<T, { type: 'not' }>;
+}
+
 function removeGroup(groupIdx: number) {
-  innerModel.value.groups = innerModel.value.groups.filter((v, idx) => idx !== groupIdx);
+  const groups = getRootGroups();
+  groups.splice(groupIdx, 1);
+  // innerModel.value.groups = innerModel.value.groups.filter((v, idx) => idx !== groupIdx);
 }
 function addGroup(selectedSourceId: PlAdvancedFilterColumnId) {
   const newGroup = createNewGroup(selectedSourceId);
-  innerModel.value.groups.push(newGroup);
+  const groups = getRootGroups();
+  groups.push(newGroup);
 }
 
 function handleDropToExistingGroup(groupIdx: number, event: DragEvent) {
@@ -77,18 +151,26 @@ function handleDropToNewGroup(event: DragEvent) {
 function dragOver(event: DragEvent) {
   event.preventDefault();
 }
+
+function validateFilter<T extends CommonFilter>(item: T): Filter {
+  if (item.type === 'and' || item.type === 'or' || item.type === 'not') {
+    throw new Error('Invalid filter structure, expected leaf filter');
+  }
+
+  return item as Filter;
+}
 </script>
 <template>
   <div>
     <PlElementList
-      v-model:items="innerModel.groups"
-      :get-item-key="(group) => group.id"
+      v-model:items="model.filters"
+      :get-item-key="(filter) => filter.id"
 
       :item-class="$style.filterGroup"
       :item-class-content="$style.filterGroupContent"
       :item-class-title="$style.filterGroupTitle"
 
-      :is-expanded="(group) => group.expanded"
+      :is-expanded="(filter) => filter.expanded === true"
 
       :disableDragging="false"
       :disableRemoving="false"
@@ -102,24 +184,27 @@ function dragOver(event: DragEvent) {
       </template>
       <template #item-content="{ item, index }">
         <div
-          :class="$style.groupContent" dropzone="true"
+          :class="$style.groupContent"
+          dropzone="true"
           @drop="(event) => handleDropToExistingGroup(index, event)"
           @dragover="dragOver"
         >
-          <PlCheckbox v-model="item.not">NOT</PlCheckbox>
-          <SingleFilter
-            v-for="(filter, filterIdx) in item.filters"
-            :key="filterIdx"
-            v-model="item.filters[filterIdx]"
-            :operand="item.operand"
-            :column-options="items"
-            :get-suggest-model="getSuggestModel"
-            :get-suggest-options="getSuggestOptions"
-            :enable-dnd="Boolean(enableDnd)"
-            :is-last="filterIdx === item.filters.length - 1"
-            :on-change-operand="(v) => item.operand = v"
-            :on-delete="() => removeFilterFromGroup(index, filterIdx)"
-          />
+          <PlCheckbox :model-value="item.type === 'not'" @update:model-value="inverseRootNode(index)">NOT</PlCheckbox>
+          <template v-for="(_, filterIdx) in getNotContent(item).filters" :key="filterIdx">
+            <!-- eslint-disable vue/valid-v-model -->
+            <SingleFilter
+              :filter="validateFilter(getNotContent(item).filters[filterIdx])"
+              :operand="getNotContent(item).type"
+              :column-options="items"
+              :get-suggest-model="getSuggestModel"
+              :get-suggest-options="getSuggestOptions"
+              :enable-dnd="Boolean(enableDnd)"
+              :is-last="filterIdx === getNotContent(item).filters.length - 1"
+              :on-change-operand="(v) => getNotContent(item).type = v"
+              :on-delete="() => removeFilterFromGroup(index, filterIdx)"
+            />
+            <!-- eslint-enable vue/valid-v-model -->
+          </template>
           <div v-if="enableDnd" :class="$style.dropzone">
             <div>Drop dimensions here</div>
           </div>
@@ -131,9 +216,9 @@ function dragOver(event: DragEvent) {
       <template #item-after="{ index }">
         <OperandButton
           :class="$style.buttonWrapper"
-          :active="innerModel.operand"
-          :disabled="index === innerModel.groups.length - 1"
-          :on-select="(v) => innerModel.operand = v"
+          :active="model.type"
+          :disabled="index === getRootGroups().length - 1"
+          :on-select="(v) => model.type = v"
         />
       </template>
     </PlElementList>
