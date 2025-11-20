@@ -228,36 +228,36 @@ export class SshPl {
         throw new Error(msg);
       }
     };
-  
+
     state.step = 'checkDbLock';
     await onProgress?.('Checking for DB lock...');
-  
+
     const lockFilePath = plpath.platformaDbLock(state.remoteHome!);
     const lockFileExists = await this.sshClient.checkFileExists(lockFilePath);
-  
+
     if (!lockFileExists) {
       await onProgress?.('No DB lock found. Proceeding...');
       return;
     }
-  
+
     this.logger.info(`DB lock file found at ${lockFilePath}. Checking which process holds it...`);
     const lockProcessInfo = await this.findLockHolder(lockFilePath);
-  
+
     if (!lockProcessInfo) {
       this.logger.warn('Lock file exists but no process is holding it. Removing stale lock file...');
       await removeLockFile(lockFilePath);
       return;
     }
-  
+
     this.logger.info(
       `Found process ${lockProcessInfo.pid} (user: ${lockProcessInfo.user}) holding DB lock`,
     );
 
     if (lockProcessInfo.user !== this.username) {
-      const msg =
-        `DB lock is held by process ${lockProcessInfo.pid} ` +
-        `owned by user '${lockProcessInfo.user}', but current user is '${this.username}'. ` +
-        'Cannot kill process owned by different user.';
+      const msg
+        = `DB lock is held by process ${lockProcessInfo.pid} `
+        + `owned by user '${lockProcessInfo.user}', but current user is '${this.username}'. `
+        + 'Cannot kill process owned by different user.';
       this.logger.error(msg);
       throw new Error(msg);
     }
@@ -271,7 +271,7 @@ export class SshPl {
     if (lockStillExists) {
       await removeLockFile(lockFilePath);
     }
-  }  
+  }
 
   private async doStepConfigureSupervisord(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
     await onProgress?.('Writing supervisord configuration...');
@@ -355,7 +355,7 @@ export class SshPl {
 
   private async doStepFetchPorts(state: PlatformaInitState) {
     state.step = 'fetchPorts';
-    state.ports = await this.  fetchPorts(state.remoteHome!, state.arch!);
+    state.ports = await this.fetchPorts(state.remoteHome!, state.arch!);
 
     if (!state.ports.debug.remote
       || !state.ports.grpc.remote
