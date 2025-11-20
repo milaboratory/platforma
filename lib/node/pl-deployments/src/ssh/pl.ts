@@ -148,6 +148,7 @@ export class SshPl {
         return state.existedSettings!;
       }
       await this.doStepStopExistedPlatforma(state, onProgress);
+      await this.doStepCheckDbLock(state, onProgress);
 
       await onProgress?.('Installation platforma...');
 
@@ -211,6 +212,136 @@ export class SshPl {
       stringifyConnectionInfo(state.connectionInfo),
     );
     await onProgress?.('Connection information saved.');
+  }
+
+  private async doStepCheckDbLock(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
+    state.step = 'checkDbLock';
+    await onProgress?.('Checking for DB lock...');
+
+    const lockFilePath = plpath.platformaDbLock(state.remoteHome!);
+    const lockFileExists = await this.sshClient.checkFileExists(lockFilePath);
+
+    if (!lockFileExists) {
+      await onProgress?.('No DB lock found. Proceeding...');
+      return;
+    }
+
+    this.logger.info(`DB lock file found at ${lockFilePath}. Checking which process holds it...`);
+
+    // Try to find process holding the lock using lsof
+    let flockProcessInfo: { pid: number; user: string } | null = null;
+    try {
+      const lsofResult = await this.sshClient.exec(`lsof ${lockFilePath} 2>/dev/null || true`);
+      if (lsofResult.stdout.trim()) {
+        // Parse lsof output: (example)
+        // COMMAND     PID    USER   FD   TYPE DEVICE SIZE/OFF     NODE NAME
+        // platforma 11628 rfiskov   10u   REG   1,16        0 66670038 ./LOCK
+        const lines = lsofResult.stdout.trim().split('\n');
+        if (lines.length > 1) {
+          // Skip header line, take first data line
+          const parts = lines[1].trim().split(/\s+/);
+          if (parts.length >= 3) {
+            const pid = parseInt(parts[1], 10);
+            const user = parts[2];
+            if (!isNaN(pid) && user) {
+              lockProcessInfo = { pid, user };
+            }
+          }
+        }
+      }
+    } catch (e: unknown) {
+      this.logger.warn(`Failed to use lsof to check lock: ${e}`);
+    }
+
+    // Fallback to fuser if lsof didn't work or didn't find anything
+    if (!lockProcessInfo) {
+      try {
+        const fuserResult = await this.sshClient.exec(`fuser ${lockFilePath} 2>/dev/null || true`);
+        if (fuserResult.stdout.trim()) {
+          // fuser output: (example) ./LOCK: 11628
+          const match = fuserResult.stdout.match(/: (\d+)/);
+          if (match) {
+            const pid = parseInt(match[1], 10);
+            if (!isNaN(pid)) {
+              // Get user for this PID
+              try {
+                const psResult = await this.sshClient.exec(`ps -o user= -p ${pid} 2>/dev/null || true`);
+                const user = psResult.stdout.trim();
+                if (user) {
+                  lockProcessInfo = { pid, user };
+                }
+              } catch (e: unknown) {
+                this.logger.warn(`Failed to get user for PID ${pid}: ${e}`);
+              }
+            }
+          }
+        }
+      } catch (e: unknown) {
+        this.logger.warn(`Failed to use fuser to check lock: ${e}`);
+      }
+    }
+
+    if (lockProcessInfo) {
+      this.logger.info(`Found process ${lockProcessInfo.pid} (user: ${lockProcessInfo.user}) holding DB lock`);
+
+      if (lockProcessInfo.user === this.username) {
+        this.logger.info(`Process ${lockProcessInfo.pid} belongs to current user ${this.username}. Killing it...`);
+        await onProgress?.(`Killing process ${lockProcessInfo.pid} holding DB lock...`);
+
+        try {
+          // Try graceful kill first
+          await this.sshClient.exec(`kill ${lockProcessInfo.pid} 2>/dev/null || true`);
+          await sleep(1000);
+
+          // Check if process still exists
+          try {
+            await this.sshClient.exec(`kill -0 ${lockProcessInfo.pid} 2>/dev/null`);
+            // Process still exists, force kill
+            this.logger.warn(`Process ${lockProcessInfo.pid} still alive after SIGTERM, forcing kill...`);
+            await this.sshClient.exec(`kill -9 ${lockProcessInfo.pid} 2>/dev/null || true`);
+            await sleep(500);
+          } catch (_) {
+            // Process is dead, good
+          }
+
+          // Verify lock file is gone or can be removed
+          const lockStillExists = await this.sshClient.checkFileExists(lockFilePath);
+          if (lockStillExists) {
+            // Try to remove stale lock file
+            try {
+              await this.sshClient.exec(`rm -f ${lockFilePath}`);
+              this.logger.info(`Removed stale lock file ${lockFilePath}`);
+            } catch (e: unknown) {
+              this.logger.warn(`Failed to remove stale lock file: ${e}`);
+            }
+          }
+
+          await onProgress?.('Process holding DB lock has been terminated.');
+        } catch (e: unknown) {
+          const msg = `Failed to kill process ${lockProcessInfo.pid}: ${e}`;
+          this.logger.error(msg);
+          throw new Error(msg);
+        }
+      } else {
+        const msg = `DB lock is held by process ${lockProcessInfo.pid} owned by user '${lockProcessInfo.user}', but current user is '${this.username}'. Cannot kill process owned by different user.`;
+        this.logger.error(msg);
+        throw new Error(msg);
+      }
+    } else {
+      // Lock file exists but no process is holding it (stale lock)
+      this.logger.warn(`Lock file exists but no process is holding it. Removing stale lock file...`);
+      await onProgress?.('Removing stale DB lock file...');
+
+      try {
+        await this.sshClient.exec(`rm -f ${lockFilePath}`);
+        this.logger.info(`Removed stale lock file ${lockFilePath}`);
+        await onProgress?.('Stale DB lock file removed.');
+      } catch (e: unknown) {
+        const msg = `Failed to remove stale lock file ${lockFilePath}: ${e}`;
+        this.logger.error(msg);
+        throw new Error(msg);
+      }
+    }
   }
 
   private async doStepConfigureSupervisord(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
@@ -295,7 +426,7 @@ export class SshPl {
 
   private async doStepFetchPorts(state: PlatformaInitState) {
     state.step = 'fetchPorts';
-    state.ports = await this.fetchPorts(state.remoteHome!, state.arch!);
+    state.ports = await this.  fetchPorts(state.remoteHome!, state.arch!);
 
     if (!state.ports.debug.remote
       || !state.ports.grpc.remote
@@ -653,6 +784,7 @@ type PlatformaInitStep =
   | 'detectHome'
   | 'checkAlive'
   | 'stopExistedPlatforma'
+  | 'checkDbLock'
   | 'downloadBinaries'
   | 'fetchPorts'
   | 'generateNewConfig'
