@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { AxisId, CanonicalizedJson } from '@platforma-sdk/model';
-import { stringifyColumnId, type FilterSpec, type ListOptionBase, type SUniversalPColumnId } from '@platforma-sdk/model';
+import { stringifyColumnId, type ListOptionBase, type SUniversalPColumnId } from '@platforma-sdk/model';
+import type { PlAdvancedFilterFilter } from '@platforma-sdk/ui-vue';
 import { PlAdvancedFilter, PlBlockPage, PlCheckbox, PlDropdown } from '@platforma-sdk/ui-vue';
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 const column1Id = stringifyColumnId({ name: '1', axes: [] }) as SUniversalPColumnId;
 const column2Id = stringifyColumnId({ name: '2', axes: [] }) as SUniversalPColumnId;
@@ -60,21 +61,27 @@ async function getSuggestModel({ columnId, searchStr, axisIdx }: { columnId: SUn
   return columnValues.find((v) => v.value === searchStr) || { value: searchStr, label: `Label of ${searchStr}` };
 }
 
-const errorState = {
+const errorState: PlAdvancedFilterFilter = {
+  id: Math.random(),
   type: 'and' as const,
   filters: [
     {
+      id: Math.random(),
       type: 'and' as const,
       filters: [
         {
+          id: Math.random(),
+
           type: 'patternEquals' as const,
           column: inconsistentColumnId, // error - column id is not from available columns
           value: 'A',
         },
         {
+          id: Math.random(),
           type: 'or' as const,
           filters: [
             {
+              id: Math.random(),
               type: 'patternEquals' as const,
               column: inconsistentColumnId, // error - column id is not from available columns
               value: 'A',
@@ -83,21 +90,26 @@ const errorState = {
         },
       ],
     }, {
+      id: Math.random(),
       type: 'and' as const,
       filters: [
         {
+          id: Math.random(),
           type: 'isNA' as const,
           column: inconsistentColumnId, // error - column id is not from available columns
         },
         {
+          id: Math.random(),
           type: 'isNotNA' as const,
           column: inconsistentColumnId, // error - column id is not from available columns
         },
       ],
     }, {
+      id: Math.random(),
       type: 'and' as const,
       filters: [
         {
+          id: Math.random(),
           type: 'patternContainSubsequence' as const,
           column: inconsistentColumnId, // error - column id is not from available columns
           value: 'someString',
@@ -106,15 +118,19 @@ const errorState = {
     }],
 };
 
-const normalState: FilterSpec = {
+const normalState: PlAdvancedFilterFilter = {
+  id: Math.random(),
   type: 'and' as const,
   filters: [
     {
+      id: Math.random(),
       type: 'or' as const,
       filters: [{
+        id: Math.random(),
         type: 'isNA' as const,
         column: column1Id,
       }, {
+        id: Math.random(),
         type: 'equal' as const,
         column: column2Id,
         x: 10,
@@ -122,11 +138,14 @@ const normalState: FilterSpec = {
     },
     {
       type: 'and' as const,
+      id: Math.random(),
       filters: [
         {
+          id: Math.random(),
           type: 'isNotNA' as const,
           column: column3Id,
         }, {
+          id: Math.random(),
           type: 'patternFuzzyContainSubsequence' as const,
           column: column3Id,
           value: 'abc',
@@ -136,32 +155,24 @@ const normalState: FilterSpec = {
   ],
 };
 
-const filterStates: Record<string, FilterSpec> = {
+const filterStates = ref<Record<string, PlAdvancedFilterFilter>>({
   normalState: normalState,
   errorState: errorState,
   emptyState: {
+    id: Math.random(),
     type: 'and',
     filters: [],
   },
-};
-
-const filtersModel = computed<FilterSpec>({
-  get: () => {
-    return filterStates[selectedSavedFilters.value];
-  },
-  set: (v) => {
-    console.log('updated filters state: ', v);
-  },
 });
 
-const selectedSavedFilters = ref<keyof typeof filterStates>('normalState');
+const selectedSavedFilters = ref<keyof typeof filterStates.value>('normalState');
 const filterStatesOptions = [
   { value: 'normalState', label: 'Normal state' },
   { value: 'errorState', label: 'State with errors' },
   { value: 'emptyState', label: 'Empty state' },
 ];
 
-watch(() => filtersModel.value, (m) => {
+watch(() => filterStates.value[selectedSavedFilters.value], (m) => {
   console.log('Model changed: ', m);
 });
 </script>
@@ -186,7 +197,7 @@ watch(() => filtersModel.value, (m) => {
       </div>
       <div :key="selectedSavedFilters" :class="$style.rightColumn" >
         <PlAdvancedFilter
-          v-model="filtersModel"
+          v-model:filters="filterStates[selectedSavedFilters] as PlAdvancedFilterFilter"
           :items="options"
           :enable-dnd="enableDnd"
           :get-suggest-options="getSuggestOptions"

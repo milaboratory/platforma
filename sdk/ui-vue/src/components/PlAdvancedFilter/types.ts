@@ -5,7 +5,7 @@ export type Operand = 'or' | 'and';
 export type PlAdvancedFilterColumnId = SUniversalPColumnId | CanonicalizedJson<AxisId>;
 
 export type FilterLeafContent = Extract<FilterSpecLeaf<PlAdvancedFilterColumnId>, { type: SupportedFilterTypes }>;
-export type CommonFilter = FilterSpec<FilterLeafContent, { id: number; expanded?: boolean }>;
+export type CommonFilter = FilterSpec<FilterLeafContent, { id: number; isExpanded?: boolean }>;
 export type FilterLeaf = Exclude<CommonFilter, { type: Operand | 'not' }>;
 export type NodeFilter = Extract<CommonFilter, { type: Operand | 'not' }>;
 export type RootFilter = Omit<Extract<NodeFilter, { type: Operand }>, 'filters'> & { filters: NodeFilter[] };
