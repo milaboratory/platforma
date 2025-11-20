@@ -184,7 +184,7 @@ watch(model.value.filters, () => {
           @drop="(event) => handleDropToExistingGroup(index, event)"
           @dragover="dragOver"
         >
-          <PlCheckbox :model-value="item.type === 'not'" @update:model-value="inverseRootNode(index)">NOT</PlCheckbox>
+          <PlCheckbox :model-value="item.type === 'not'" :class="$style.notCheckbox" @update:model-value="inverseRootNode(index)">NOT</PlCheckbox>
           <template v-for="(_, filterIdx) in getNotContent(item).filters" :key="filterIdx">
             <FilterEditor
               :filter="validateFilter(getNotContent(item).filters[filterIdx])"
@@ -257,10 +257,16 @@ watch(model.value.filters, () => {
   .filterGroupTitle {
     background: none;
   }
+  .filterGroupContent {
+    padding: 4px 24px 24px 24px;
+  }
   .groupContent {
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+  .notCheckbox {
+    margin: 4px 0;
   }
   .dropzone {
     border-radius: 6px;
@@ -277,7 +283,8 @@ watch(model.value.filters, () => {
     align-items: center;
   }
   .buttonWrapper {
-    height: 72px;
+    margin-top: 8px;
+    height: 56px;
     display: flex;
     align-items: center;
   }

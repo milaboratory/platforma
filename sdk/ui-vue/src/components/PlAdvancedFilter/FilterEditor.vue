@@ -312,7 +312,6 @@ const stringMatchesError = computed(() => {
     </div>
   </div>
   <OperandButton
-    :class="$style.buttonWrapper"
     :active="operand"
     :disabled="isLast"
     :on-select="onChangeOperand"
@@ -324,7 +323,6 @@ const stringMatchesError = computed(() => {
   position: relative;
   display: flex;
   flex-direction: column;
-  margin-bottom: 8px;
   width: 100%;
   cursor: default;
 }
@@ -420,7 +418,4 @@ const stringMatchesError = computed(() => {
   background: #fff;
 }
 
-.buttonWrapper {
-  margin-bottom: 8px;
-}
 </style>
