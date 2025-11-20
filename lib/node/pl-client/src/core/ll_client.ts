@@ -13,7 +13,7 @@ import type {
   PlConnectionStatus,
   PlConnectionStatusListener,
 } from './config';
-import { plAddressToConfig } from './config';
+import { plAddressToConfig, type wireProtocol, SUPPORTED_WIRE_PROTOCOLS } from './config';
 import type { GrpcOptions } from '@protobuf-ts/grpc-transport';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { LLPlTransaction } from './ll_transaction';
@@ -21,7 +21,7 @@ import { parsePlJwt } from '../util/pl';
 import type { Dispatcher } from 'undici';
 import { inferAuthRefreshTime } from './auth';
 import { defaultHttpDispatcher } from '@milaboratories/pl-http';
-import type { WireClientProvider, WireClientProviderFactory, WireConnection, wireType } from './wire';
+import type { WireClientProvider, WireClientProviderFactory, WireConnection } from './wire';
 import { parseHttpAuth } from '@milaboratories/pl-model-common';
 import type * as grpcTypes from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { type PlApiPaths, type PlRestClientType, createClient } from '../proto-rest';
@@ -66,7 +66,7 @@ export class LLPlClient implements WireClientProviderFactory {
   private _status: PlConnectionStatus = 'OK';
   private readonly statusListener?: PlConnectionStatusListener;
 
-  private _wireType: wireType | undefined = undefined;
+  private _wireProto: wireProtocol | undefined = undefined;
   private _wireConn!: WireConnection;
 
   private readonly _grpcInterceptors: Interceptor[];
@@ -126,12 +126,12 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   private initWireConnection() {
-    if (this._wireType === undefined) {
+    if (this._wireProto === undefined) {
       // TODO: implement automatic server mode detection
-      this._wireType = process.env.PL_SERVER_MODE as wireType ?? 'grpc';
+      this._wireProto = this.conf.wireProtocol ?? 'grpc';
     }
 
-    switch (this._wireType) {
+    switch (this._wireProto) {
       case 'rest':
         this.initRestConnection();
         return;
@@ -140,8 +140,8 @@ export class LLPlClient implements WireClientProviderFactory {
         return;
       default:
         ((v: never) => {
-          throw new Error(`Unsupported wire type: ${v as string}`);
-        })(this._wireType);
+          throw new Error(`Unsupported wire protocol '${v as string}'. Use one of: ${SUPPORTED_WIRE_PROTOCOLS.join(', ')}`);
+        })(this._wireProto);
     }
   }
 

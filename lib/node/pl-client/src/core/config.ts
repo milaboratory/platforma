@@ -1,10 +1,16 @@
 import type { ProxySettings } from '@milaboratories/pl-http';
 import type { ExponentialBackoffRetryOptions } from '@milaboratories/ts-helpers';
 
+export const SUPPORTED_WIRE_PROTOCOLS = ['grpc', 'rest'] as const;
+export type wireProtocol = (typeof SUPPORTED_WIRE_PROTOCOLS)[number];
+
 /** Base configuration structure for PL client */
 export interface PlClientConfig {
   /** Port and host of remote pl server */
   hostAndPort: string;
+
+  /** Type of wire connection (protocol server uses for communication) */
+  wireProtocol?: wireProtocol;
 
   /** If set, client will expose a nested object under a field with name `alternative_root_${alternativeRoot}` as a
    * client root. */
@@ -185,6 +191,9 @@ export function plAddressToConfig(
     hostAndPort: `${url.hostname}:${port}`,
     alternativeRoot: url.searchParams.get('alternative-root') ?? undefined,
     ssl: url.protocol === 'https:' || url.protocol === 'tls:',
+
+    wireProtocol: url.searchParams.get('wire-protocol') as wireProtocol ?? undefined,
+
     defaultRequestTimeout:
       parseInt(url.searchParams.get('request-timeout')) ?? DEFAULT_REQUEST_TIMEOUT,
     defaultROTransactionTimeout:

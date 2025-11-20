@@ -1,6 +1,6 @@
 import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { Dispatcher } from 'undici';
-import type { PlClientConfig } from './config';
+import type { PlClientConfig, wireProtocol } from './config';
 
 /**
  * Options for the HTTP client to properly reach the PL server API when
@@ -18,7 +18,8 @@ export type GrpcConnection = {
 };
 
 export type WireConnection = HttpConnection | GrpcConnection;
-export type wireType = Extract<WireConnection, { type: string }>['type'];
+// type compatibility check: types used in WireConnection should match known wire protocols.
+const _ct: Extract<WireConnection, { type: string }>['type'] = 'rest' as wireProtocol;
 
 /**
  * A provider for a wire (gRPC, HTTP, etc.) client.
