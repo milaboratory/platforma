@@ -1,4 +1,4 @@
-import type { PlAdvancedFilterColumnId, Filter, FilterType, SupportedFilterTypes } from './types';
+import type { Filter, FilterType, PlAdvancedFilterColumnId, SupportedFilterTypes } from './types';
 
 export const SUPPORTED_FILTER_TYPES = new Set<SupportedFilterTypes>([
   'isNA',

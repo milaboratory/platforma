@@ -1,18 +1,20 @@
 <script lang="ts" setup>
-import type { PlAdvancedFilterColumnId, Filter, Operand, SourceOptionInfo } from './types';
-import { PlIcon16, PlDropdown, PlAutocomplete, PlAutocompleteMulti, PlTextField, PlNumberField, Slider, PlToggleSwitch } from '@milaboratories/uikit';
-import { computed } from 'vue';
-import { SUPPORTED_FILTER_TYPES, DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
+import { PlAutocomplete, PlAutocompleteMulti, PlDropdown, PlIcon16, PlNumberField, PlTextField, PlToggleSwitch, Slider } from '@milaboratories/uikit';
 import type { AnchoredPColumnId, AxisFilterByIdx, AxisFilterValue, SUniversalPColumnId } from '@platforma-sdk/model';
 import { isFilteredPColumn, parseColumnId, stringifyColumnId, type ListOptionBase } from '@platforma-sdk/model';
+import { computed } from 'vue';
+import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, SUPPORTED_FILTER_TYPES } from './constants';
 import OperandButton from './OperandButton.vue';
+import type { Filter, Operand, PlAdvancedFilterColumnId, SourceOptionInfo } from './types';
 import { getFilterInfo, getNormalizedSpec, isNumericFilter, isStringFilter } from './utils';
 
+const filter = defineModel<Filter>('filter', { required: true });
+
 const props = defineProps<{
-  operand: Operand;
-  columnOptions: SourceOptionInfo[];
-  enableDnd: boolean;
   isLast: boolean;
+  operand: Operand;
+  enableDnd: boolean;
+  columnOptions: SourceOptionInfo[];
   getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
     ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
   // @todo: can be optional
@@ -21,8 +23,6 @@ const props = defineProps<{
   onDelete: (columnId: PlAdvancedFilterColumnId) => void;
   onChangeOperand: (op: Operand) => void;
 }>();
-
-const filter = defineModel<Filter>({ required: true });
 
 async function getSuggestModelMultiFn(id: PlAdvancedFilterColumnId, v: string[], axisIdx?: number): Promise<ListOptionBase<string>[]> {
   return Promise.all(v.map((v) => props.getSuggestModel({ columnId: id, searchStr: v, axisIdx }) as Promise<ListOptionBase<string>>));
