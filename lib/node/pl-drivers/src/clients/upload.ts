@@ -1,4 +1,4 @@
-import type { GrpcClientProvider, GrpcClientProviderFactory, PlClient, ResourceId, ResourceType } from '@milaboratories/pl-client';
+import type { WireClientProvider, WireClientProviderFactory, WireConnection, PlClient, ResourceId, ResourceType } from '@milaboratories/pl-client';
 import { addRTypeToMetadata } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import type { MiLogger } from '@milaboratories/ts-helpers';
@@ -6,8 +6,8 @@ import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import * as fs from 'node:fs/promises';
 import type { Dispatcher } from 'undici';
 import { request } from 'undici';
-import { uploadapi_ChecksumAlgorithm, type uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
-import { UploadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client';
+import { UploadAPI_ChecksumAlgorithm, type UploadAPI_GetPartURL_Response } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
+import { UploadClient } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client';
 import { crc32c } from './crc32c';
 
 import type { IncomingHttpHeaders } from 'undici/types/header';
@@ -37,15 +37,24 @@ export class BadRequestError extends Error {
  * The user should pass here a concrete BlobUpload/<storageId> resource,
  * it can be got from handle field of BlobUpload. */
 export class ClientUpload {
-  private readonly grpcClient: GrpcClientProvider<UploadClient>;
+  private readonly wire: WireClientProvider<UploadClient>;
 
   constructor(
-    grpcClientProviderFactory: GrpcClientProviderFactory,
+    wireClientProviderFactory: WireClientProviderFactory,
     public readonly httpClient: Dispatcher,
     _: PlClient,
     public readonly logger: MiLogger,
   ) {
-    this.grpcClient = grpcClientProviderFactory.createGrpcClientProvider((transport) => new UploadClient(transport));
+    this.wire = wireClientProviderFactory.createWireClientProvider(
+      (wire: WireConnection) => {
+        if (wire.type === 'grpc') {
+          return new UploadClient(wire.Transport);
+        } else {
+          // TODO: implement REST upload client init.
+          throw new Error('Unsupported transport type');
+        }
+      },
+    );
   }
 
   close() {}
@@ -56,7 +65,7 @@ export class ClientUpload {
   ): Promise<{
       overall: bigint;
       toUpload: bigint[];
-      checksumAlgorithm: uploadapi_ChecksumAlgorithm;
+      checksumAlgorithm: UploadAPI_ChecksumAlgorithm;
       checksumHeader: string;
     }> {
     const init = await this.grpcInit(id, type, options);
@@ -73,7 +82,7 @@ export class ClientUpload {
     path: string,
     expectedMTimeUnix: bigint,
     partNumber: bigint,
-    checksumAlgorithm: uploadapi_ChecksumAlgorithm,
+    checksumAlgorithm: UploadAPI_ChecksumAlgorithm,
     checksumHeader: string,
     options?: RpcOptions,
   ) {
@@ -88,7 +97,7 @@ export class ClientUpload {
     await checkExpectedMTime(path, expectedMTimeUnix);
 
     const crc32cChecksum = calculateCrc32cChecksum(chunk);
-    if (checksumAlgorithm === uploadapi_ChecksumAlgorithm.CRC32C) {
+    if (checksumAlgorithm === UploadAPI_ChecksumAlgorithm.CRC32C) {
       info.headers.push({ name: checksumHeader, value: crc32cChecksum });
     }
 
@@ -157,7 +166,7 @@ export class ClientUpload {
   }
 
   private async grpcInit(id: ResourceId, type: ResourceType, options?: RpcOptions) {
-    return await this.grpcClient.get().init({ resourceId: id }, addRTypeToMetadata(type, options))
+    return await this.wire.get().init({ resourceId: id }, addRTypeToMetadata(type, options))
       .response;
   }
 
@@ -168,7 +177,7 @@ export class ClientUpload {
     options?: RpcOptions,
   ) {
     // partChecksum isn't used for now but protoc requires it to be set
-    return await this.grpcClient.get().getPartURL(
+    return await this.wire.get().getPartURL(
       { resourceId: id, partNumber, uploadedPartSize, isInternalUse: false, partChecksum: '' },
       addRTypeToMetadata(type, options),
     ).response;
@@ -179,7 +188,7 @@ export class ClientUpload {
     bytesProcessed: bigint,
     options?: RpcOptions,
   ) {
-    await this.grpcClient.get().updateProgress(
+    await this.wire.get().updateProgress(
       {
         resourceId: id,
         bytesProcessed,
@@ -189,7 +198,7 @@ export class ClientUpload {
   }
 
   private async grpcFinalize({ id, type }: ResourceInfo, options?: RpcOptions) {
-    return await this.grpcClient.get().finalize({ resourceId: id }, addRTypeToMetadata(type, options))
+    return await this.wire.get().finalize({ resourceId: id }, addRTypeToMetadata(type, options))
       .response;
   }
 }
@@ -243,7 +252,7 @@ function checkStatusCodeOk(
   statusCode: number,
   body: string,
   headers: IncomingHttpHeaders,
-  info: uploadapi_GetPartURL_Response,
+  info: UploadAPI_GetPartURL_Response,
 ) {
   if (statusCode == 400) {
     throw new BadRequestError(`response is not ok, status code: ${statusCode},`

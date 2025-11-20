@@ -10,8 +10,8 @@ import { ClientRoot } from '../helpers/pl';
 import type { RetryOptions } from '@milaboratories/ts-helpers';
 import { assertNever, createRetryState, nextRetryStateOrError } from '@milaboratories/ts-helpers';
 import type { PlDriver, PlDriverDefinition } from './driver';
-import type { MaintenanceAPI_Ping_Response, MaintenanceAPI_License_Response } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
-import { MaintenanceAPI_Ping_Response_Compression } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+import type { MaintenanceAPI_Ping_Response, MaintenanceAPI_License_Response } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
+import { MaintenanceAPI_Ping_Response_Compression } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import * as tp from 'node:timers/promises';
 import type { Dispatcher } from 'undici';
 import { LRUCache } from 'lru-cache';
@@ -20,7 +20,7 @@ import type { FinalResourceDataPredicate } from './final';
 import { DefaultFinalResourceDataPredicate } from './final';
 import type { AllTxStat, TxStat } from './stat';
 import { addStat, initialTxStat } from './stat';
-import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import type { WireConnection } from './wire';
 import { advisoryLock } from './advisory_locks';
 
 export type TxOps = PlCallOps & {
@@ -145,11 +145,11 @@ export class PlClient {
   }
 
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {
-    return (await this._ll.grpcPl.get().ping({})).response;
+    return await this._ll.ping();
   }
 
   public async license(): Promise<MaintenanceAPI_License_Response> {
-    return (await this._ll.grpcPl.get().license({})).response;
+    return await this._ll.license();
   }
 
   public get conf(): PlClientConfig {
@@ -160,8 +160,8 @@ export class PlClient {
     return this._ll.httpDispatcher;
   }
 
-  public get grpcTransport(): GrpcTransport {
-    return this._ll.grpcTransport;
+  public get connectionOpts(): WireConnection {
+    return this._ll.wireConnection;
   }
 
   private get initialized() {
@@ -306,7 +306,7 @@ export class PlClient {
         if (ok) {
           // syncing on transaction if requested
           if (ops?.sync === undefined ? this.forceSync : ops?.sync)
-            await this._ll.grpcPl.get().txSync({ txId });
+            await this._ll.txSync(txId);
 
           // introducing artificial delay, if requested
           if (writable && this.txDelay > 0)

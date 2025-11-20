@@ -1,4 +1,4 @@
-import { PlatformClient } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api.client';
+import { PlatformClient as GrpcPlApiClient } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api.client';
 import type { ClientOptions, Interceptor } from '@grpc/grpc-js';
 import {
   ChannelCredentials,
@@ -13,7 +13,7 @@ import type {
   PlConnectionStatus,
   PlConnectionStatusListener,
 } from './config';
-import { plAddressToConfig } from './config';
+import { plAddressToConfig, type wireProtocol, SUPPORTED_WIRE_PROTOCOLS } from './config';
 import type { GrpcOptions } from '@protobuf-ts/grpc-transport';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { LLPlTransaction } from './ll_transaction';
@@ -21,18 +21,21 @@ import { parsePlJwt } from '../util/pl';
 import type { Dispatcher } from 'undici';
 import { inferAuthRefreshTime } from './auth';
 import { defaultHttpDispatcher } from '@milaboratories/pl-http';
-import type { GrpcClientProvider, GrpcClientProviderFactory } from './grpc';
+import type { WireClientProvider, WireClientProviderFactory, WireConnection } from './wire';
 import { parseHttpAuth } from '@milaboratories/pl-model-common';
+import type * as grpcTypes from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
+import { type PlApiPaths, type PlRestClientType, createClient } from '../proto-rest';
+import { notEmpty } from '@milaboratories/ts-helpers';
 
 export interface PlCallOps {
   timeout?: number;
   abortSignal?: AbortSignal;
 }
 
-class GrpcClientProviderImpl<Client> implements GrpcClientProvider<Client> {
+class WireClientProviderImpl<Client> implements WireClientProvider<Client> {
   private client: Client | undefined = undefined;
 
-  constructor(private readonly grpcTransport: () => GrpcTransport, private readonly clientConstructor: (transport: GrpcTransport) => Client) {}
+  constructor(private readonly wireOpts: () => WireConnection, private readonly clientConstructor: (wireOpts: WireConnection) => Client) {}
 
   public reset(): void {
     this.client = undefined;
@@ -40,13 +43,13 @@ class GrpcClientProviderImpl<Client> implements GrpcClientProvider<Client> {
 
   public get(): Client {
     if (this.client === undefined)
-      this.client = this.clientConstructor(this.grpcTransport());
+      this.client = this.clientConstructor(this.wireOpts());
     return this.client;
   }
 }
 
 /** Abstract out low level networking and authorization details */
-export class LLPlClient implements GrpcClientProviderFactory {
+export class LLPlClient implements WireClientProviderFactory {
   public readonly conf: PlClientConfig;
 
   /** Initial authorization information */
@@ -63,11 +66,13 @@ export class LLPlClient implements GrpcClientProviderFactory {
   private _status: PlConnectionStatus = 'OK';
   private readonly statusListener?: PlConnectionStatusListener;
 
-  private readonly grpcInterceptors: Interceptor[];
-  private _grpcTransport!: GrpcTransport;
-  private readonly providers: WeakRef<GrpcClientProviderImpl<any>>[] = [];
+  private _wireProto: wireProtocol | undefined = undefined;
+  private _wireConn!: WireConnection;
 
-  public readonly grpcPl: GrpcClientProvider<PlatformClient>;
+  private readonly _grpcInterceptors: Interceptor[];
+  private readonly providers: WeakRef<WireClientProviderImpl<any>>[] = [];
+
+  public readonly clientProvider: WireClientProvider<PlRestClientType | GrpcPlApiClient>;
 
   public readonly httpDispatcher: Dispatcher;
 
@@ -83,45 +88,75 @@ export class LLPlClient implements GrpcClientProviderFactory {
       ? plAddressToConfig(configOrAddress)
       : configOrAddress;
 
-    this.grpcInterceptors = [];
-
-    const { auth, statusListener, shouldUseGzip } = ops;
+    const { auth, statusListener } = ops;
 
     if (auth !== undefined) {
       this.refreshTimestamp = inferAuthRefreshTime(
         auth.authInformation,
         this.conf.authMaxRefreshSeconds,
       );
-      this.grpcInterceptors.push(this.createAuthInterceptor());
       this.authInformation = auth.authInformation;
       this.onAuthUpdate = auth.onUpdate;
       this.onAuthRefreshProblem = auth.onUpdateError;
       this.onAuthError = auth.onAuthError;
     }
 
-    this.grpcInterceptors.push(this.createErrorInterceptor());
-
-    // initialize _grpcTransport and _grpcPl
-    this.initGrpc(shouldUseGzip ?? false);
+    this._grpcInterceptors = [];
+    if (auth !== undefined) {
+      this._grpcInterceptors.push(this.createAuthInterceptor());
+    }
+    this._grpcInterceptors.push(this.createErrorInterceptor());
 
     this.httpDispatcher = defaultHttpDispatcher(this.conf.httpProxy);
+
+    this.initWireConnection();
 
     if (statusListener !== undefined) {
       this.statusListener = statusListener;
       statusListener(this._status);
     }
 
-    this.grpcPl = this.createGrpcClientProvider((transport) => new PlatformClient(transport));
+    this.clientProvider = this.createWireClientProvider((wireConn) => {
+      if (wireConn.type === 'grpc') {
+        return new GrpcPlApiClient(wireConn.Transport);
+      } else {
+        return createClient<PlApiPaths>(wireConn.Config);
+      }
+    });
+  }
+
+  private initWireConnection() {
+    if (this._wireProto === undefined) {
+      // TODO: implement automatic server mode detection
+      this._wireProto = this.conf.wireProtocol ?? 'grpc';
+    }
+
+    switch (this._wireProto) {
+      case 'rest':
+        this.initRestConnection();
+        return;
+      case 'grpc':
+        this.initGrpcConnection(this.ops.shouldUseGzip ?? false);
+        return;
+      default:
+        ((v: never) => {
+          throw new Error(`Unsupported wire protocol '${v as string}'. Use one of: ${SUPPORTED_WIRE_PROTOCOLS.join(', ')}`);
+        })(this._wireProto);
+    }
+  }
+
+  private initRestConnection(): void {
+    this._replaceWireConnection({ type: 'rest', Config: this.conf, Dispatcher: this.httpDispatcher });
   }
 
   /**
-   * Initializes (or reinitializes) _grpcTransport and _grpcPl
+   * Initializes (or reinitializes) _grpcTransport
    * @param gzip - whether to enable gzip compression
    */
-  private initGrpc(gzip: boolean) {
+  private initGrpcConnection(gzip: boolean) {
     const clientOptions: ClientOptions = {
       'grpc.keepalive_time_ms': 30_000, // 30 seconds
-      'interceptors': this.grpcInterceptors,
+      'interceptors': this._grpcInterceptors,
     };
 
     if (gzip) clientOptions['grpc.default_compression_algorithm'] = compressionAlgorithms.gzip;
@@ -161,9 +196,12 @@ export class LLPlClient implements GrpcClientProviderFactory {
       delete process.env.grpc_proxy;
     }
 
-    const oldTransport = this._grpcTransport;
+    this._replaceWireConnection({ type: 'grpc', Transport: new GrpcTransport(grpcOptions) });
+  }
 
-    this._grpcTransport = new GrpcTransport(grpcOptions);
+  private _replaceWireConnection(newConn: WireConnection): void {
+    const oldConn = this._wireConn;
+    this._wireConn = newConn;
 
     // Reset all providers to let them reinitialize their clients
     for (let i = 0; i < this.providers.length; i++) {
@@ -177,7 +215,7 @@ export class LLPlClient implements GrpcClientProviderFactory {
       }
     }
 
-    if (oldTransport !== undefined) oldTransport.close();
+    if (oldConn !== undefined && oldConn.type === 'grpc') oldConn.Transport.close();
   }
 
   private providerCleanupCounter = 0;
@@ -187,7 +225,7 @@ export class LLPlClient implements GrpcClientProviderFactory {
    *
    * @param clientConstructor - a factory function that creates a grpc client
    */
-  public createGrpcClientProvider<Client>(clientConstructor: (transport: GrpcTransport) => Client): GrpcClientProvider<Client> {
+  public createWireClientProvider<Client>(clientConstructor: (transport: WireConnection) => Client): WireClientProvider<Client> {
     // We need to cleanup providers periodically to avoid memory leaks.
     // This is a simple heuristic to avoid memory leaks.
     // We could use a more sophisticated algorithm, but this is good enough for now.
@@ -203,13 +241,13 @@ export class LLPlClient implements GrpcClientProviderFactory {
       this.providerCleanupCounter = 0;
     }
 
-    const provider = new GrpcClientProviderImpl<Client>(() => this._grpcTransport, clientConstructor);
+    const provider = new WireClientProviderImpl<Client>(() => this._wireConn, clientConstructor);
     this.providers.push(new WeakRef(provider));
     return provider;
   }
 
-  public get grpcTransport(): GrpcTransport {
-    return this._grpcTransport;
+  public get wireConnection(): WireConnection {
+    return this._wireConn;
   }
 
   /** Returns true if client is authenticated. Even with anonymous auth information
@@ -256,13 +294,8 @@ export class LLPlClient implements GrpcClientProviderFactory {
     this.authRefreshInProgress = true;
     void (async () => {
       try {
-        const response = await this.grpcPl.get().getJWTToken({
-          expiration: {
-            seconds: BigInt(this.conf.authTTLSeconds),
-            nanos: 0,
-          },
-        }).response;
-        this.authInformation = { jwtToken: response.token };
+        const token = await this.getJwtToken(BigInt(this.conf.authTTLSeconds));
+        this.authInformation = { jwtToken: token };
         this.refreshTimestamp = inferAuthRefreshTime(
           this.authInformation,
           this.conf.authMaxRefreshSeconds,
@@ -314,11 +347,77 @@ export class LLPlClient implements GrpcClientProviderFactory {
     };
   }
 
+  public async getJwtToken(ttlSeconds: bigint, options?: { authorization?: string }): Promise<string> {
+    const cl = this.clientProvider.get();
+
+    if (cl instanceof GrpcPlApiClient) {
+      const meta: Record<string, string> = {};
+      if (options?.authorization) meta.authorization = options.authorization;
+      return (await cl.getJWTToken({ expiration: { seconds: ttlSeconds, nanos: 0 } }, { meta }).response).token;
+    } else {
+      const headers: Record<string, string> = {};
+      if (options?.authorization) headers.authorization = options.authorization;
+      const resp = cl.POST('/v1/auth/jwt-token', {
+        body: { expiration: `${ttlSeconds}s` },
+        headers,
+      });
+      return notEmpty((await resp).data).token;
+    }
+  }
+
+  public async ping(): Promise<grpcTypes.MaintenanceAPI_Ping_Response> {
+    const cl = this.clientProvider.get();
+    if (cl instanceof GrpcPlApiClient) {
+      return (await cl.ping({})).response;
+    } else {
+      return notEmpty((await cl.GET('/v1/ping')).data);
+    }
+  }
+
+  public async license(): Promise<grpcTypes.MaintenanceAPI_License_Response> {
+    const cl = this.clientProvider.get();
+    if (cl instanceof GrpcPlApiClient) {
+      return (await cl.license({})).response;
+    } else {
+      const resp = notEmpty((await cl.GET('/v1/license')).data);
+      return {
+        status: resp.status,
+        isOk: resp.isOk,
+        responseBody: Uint8Array.from(Buffer.from(resp.responseBody)),
+      };
+    }
+  }
+
+  public async authMethods(): Promise<grpcTypes.AuthAPI_ListMethods_Response> {
+    const cl = this.clientProvider.get();
+    if (cl instanceof GrpcPlApiClient) {
+      return (await cl.authMethods({})).response;
+    } else {
+      return notEmpty((await cl.GET('/v1/auth/methods')).data);
+    }
+  }
+
+  public async txSync(txId: bigint): Promise<void> {
+    const cl = this.clientProvider.get();
+    if (cl instanceof GrpcPlApiClient) {
+      await cl.txSync({ txId: BigInt(txId) });
+    } else {
+      (await cl.POST('/v1/tx-sync', { body: { txId: txId.toString() } }));
+    }
+  }
+
   createTx(rw: boolean, ops: PlCallOps = {}): LLPlTransaction {
     return new LLPlTransaction((abortSignal) => {
       let totalAbortSignal = abortSignal;
       if (ops.abortSignal) totalAbortSignal = AbortSignal.any([totalAbortSignal, ops.abortSignal]);
-      return this.grpcPl.get().tx({
+
+      const cl = this.clientProvider.get();
+      if (!(cl instanceof GrpcPlApiClient)) {
+        // TODO: add WebSockets
+        throw new Error('tx is not supported for REST client');
+      }
+
+      return cl.tx({
         abort: totalAbortSignal,
         timeout: ops.timeout
           ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout),
@@ -328,7 +427,11 @@ export class LLPlClient implements GrpcClientProviderFactory {
 
   /** Closes underlying transport */
   public async close() {
-    this.grpcTransport.close();
+    if (this.wireConnection.type === 'grpc') {
+      this.wireConnection.Transport.close();
+    } else {
+      // TODO: close all WS connections
+    }
     await this.httpDispatcher.destroy();
   }
 }

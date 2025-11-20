@@ -22,6 +22,7 @@
     "watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
     "test": "vitest run --coverage",
+    "update-proto": "./sync-proto.sh && ./generate-grpc.sh && ./generate-rest.sh",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -42,6 +43,7 @@
     "long": "catalog:",
     "lru-cache": "catalog:",
     "tslib": "catalog:",
+    "openapi-fetch": "catalog:",
     "undici": "catalog:",
     "utility-types": "catalog:",
     "yaml": "catalog:"
@@ -51,6 +53,7 @@
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@protobuf-ts/plugin": "catalog:",
+    "openapi-typescript": "catalog:",
     "@types/http-proxy": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",

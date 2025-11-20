@@ -5,7 +5,7 @@ package MiLaboratories.Controller.Shared;
 option go_package = "github.com/milaboratory/pl/controllers/shared/grpc/progressapi;progressapi";
 
 import "google/protobuf/duration.proto";
-import "google/api/annotations.proto";
+import "github.com/googleapis/googleapis/google/api/annotations.proto";
 
 //
 // Progress provides access to progress of any long-running process associated with resource.
@@ -13,11 +13,17 @@ import "google/api/annotations.proto";
 service Progress {
   rpc GetStatus(ProgressAPI.GetStatus.Request) returns (ProgressAPI.GetStatus.Response) {
     option (google.api.http) = {
-      get: "/resources/{resource_id}/get-progress"
+      post: "/v1/get-progress"
+      body: "*"
     };
   }
 
-  rpc RealtimeStatus(ProgressAPI.RealtimeStatus.Request) returns (stream ProgressAPI.RealtimeStatus.Response) {}
+  rpc RealtimeStatus(ProgressAPI.RealtimeStatus.Request) returns (stream ProgressAPI.RealtimeStatus.Response) {
+    option (google.api.http) = {
+      post: "/v1/realtime-progress"
+      body: "*"
+    };
+  }
 }
 
 message ProgressAPI {

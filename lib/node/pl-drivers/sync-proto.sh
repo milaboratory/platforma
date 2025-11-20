@@ -16,16 +16,14 @@ cd "${script_dir}" || exit 1
 
 : "${SYNC_ORIGIN:="git@github.com:milaboratory/pl.git"}"
 : "${SYNC_ORIGIN_REF:="main"}"
+: "${SYNC_ROOT:="${script_dir}/proto"}"
 
-: "${SYNC_TARGET_ROOT:="${script_dir}/proto/plapi"}"
-: "${SYNC_ORIGIN_ROOT:="plapi"}"
-: "${SYNC_PATHS:="plapiproto/:plapi/:protodep.toml:protodep.lock"}"
+: "${SYNC_SHARED_DST_DIR:="shared"}"
+: "${SYNC_SHARED_SRC_DIR:="controllers/shared/grpc"}"
+: "${SYNC_SHARED_PATHS:="progressapi/:streamingapi/:downloadapi/:lsapi/:uploadapi/:protodep.toml:protodep.lock"}"
+: "${SHARED_PACKAGE_NAMESPACE:="github.com/milaboratory/pl/controllers/shared/grpc"}"
 
-: "${SYNC_TARGET_SHARED_ROOT:="${script_dir}/proto/shared"}"
-: "${SYNC_ORIGIN_SHARED_ROOT:="controllers/shared/grpc"}"
-: "${SYNC_SHARED_PATHS:="progressapi/:uploadapi/:streamingapi/:downloadapi/:lsapi/:protodep.toml:protodep.lock"}"
-
-: "${SYNC_LOG:="${script_dir}/proto/sync-proto.log"}"
+: "${SYNC_LOG:="${SYNC_ROOT}/sync-proto.log"}"
 
 #
 # Function definitions
@@ -69,21 +67,22 @@ function init_repo() {
 
 function rsync_proto_files() {
     local _sync_paths="${1}"
-    local _sync_root="${2}"
-    local _sync_target_root="${3}"
-    local _tmp_repo="${4}"
+    local _sync_src_dir="${2}"
+    local _sync_dst_dir="${3}"
 
     for p in $(split_list "${_sync_paths}" ":"); do
         log "    - '${p}'"
-        [[ -f "${_tmp_repo}/${_sync_root}/${p}" ]] || mkdir -p "${_sync_target_root}/${p}"
+        [[ -f "${_sync_src_dir}/${p}" ]] || mkdir -p "${_sync_dst_dir}/${p}"
         rsync \
             -av \
             --delete \
             --include "*.proto" \
+            --include "*.yaml" \
+            --include "*.json" \
             --include "*.lock" \
             --include "*.toml" \
             --exclude "*" \
-            "${_tmp_repo}/${_sync_root}/${p}" "${_sync_target_root}/${p}" | redirect_log "      "
+            "${_sync_src_dir}/${p}" "${_sync_dst_dir}/${p}" | redirect_log "      "
         echo "" | redirect_log
     done
 }
@@ -101,7 +100,6 @@ function cleanup() {
 #
 # Actual script run
 #
-mkdir -p "${SYNC_TARGET_ROOT}"
 rm -f "${SYNC_LOG}"
 
 version="${1:-}"
@@ -109,29 +107,22 @@ if [ -n "${version}" ]; then
   SYNC_ORIGIN_REF="${version}"
 fi
 
-tmp_repo="${SYNC_TARGET_ROOT}/tmp-repo"
+tmp_repo="${SYNC_ROOT}/tmp-repo"
 
-log "Syncing '${SYNC_ORIGIN_REF}' proto version..."
-log "  Cloning '${SYNC_ORIGIN}' into tmp directory ${tmp_repo}"
+log "Cloning '${SYNC_ORIGIN}@${SYNC_ORIGIN_REF}' into tmp directory '${tmp_repo}'"
 init_repo "${SYNC_ORIGIN}" "${SYNC_ORIGIN_REF}" "${tmp_repo}" |& redirect_log "    "
 # cd "${tmp_repo}/plapi" && "protodep up --use-https"
- trap "cleanup '${tmp_repo}'" EXIT
-
-log "  Syncing proto files from '${SYNC_ORIGIN_ROOT}'"
-rsync_proto_files "${SYNC_PATHS}" "${SYNC_ORIGIN_ROOT}" "${SYNC_TARGET_ROOT}" "${tmp_repo}"
-
-log "  Syncing shared proto files from '${SYNC_ORIGIN_SHARED_ROOT}'"
-rsync_proto_files "${SYNC_SHARED_PATHS}" "${SYNC_ORIGIN_SHARED_ROOT}" "${SYNC_TARGET_SHARED_ROOT}" "${tmp_repo}"
+trap "cleanup '${tmp_repo}'" EXIT
 
 # cleanup "${tmp_repo}"
-echo "Update";
-log "Updating dependencies..."
+log "Updating protocol..."
 (
-    cd ./proto/plapi/ && protodep up --cleanup
-)
+  log "  updating '${SYNC_SHARED_SRC_DIR}' proto definitions..."
+  rsync_proto_files "${SYNC_SHARED_PATHS}" "${tmp_repo}/${SYNC_SHARED_SRC_DIR}" "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}"
 
-(
-    cd ./proto/shared/ && protodep up --cleanup
+  log "  updating proto dependencies..."
+  cd "${SYNC_ROOT}/${SYNC_SHARED_DST_DIR}"
+  protodep up --use-https
 )
 
 echo ""

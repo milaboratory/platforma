@@ -1,93 +1,64 @@
-Syncing 'main' proto version...
-  Cloning 'git@github.com:milaboratory/pl.git' into tmp directory /home/snyssfx/prog/mi/platforma/lib/node/pl-drivers/proto/plapi/tmp-repo
-    Cloning into '/home/snyssfx/prog/mi/platforma/lib/node/pl-drivers/proto/plapi/tmp-repo'...
-  Syncing proto files from 'plapi'
-    - 'plapiproto/'
-      sending incremental file list
-      ./
-      api.proto
-      api_types.proto
-      base_types.proto
-      import.proto
-      resource_types.proto
-      
-      sent 41,920 bytes  received 114 bytes  84,068.00 bytes/sec
-      total size is 41,506  speedup is 0.99
-
-    - 'plapi/'
-      sending incremental file list
-      ./
-      
-      sent 66 bytes  received 19 bytes  170.00 bytes/sec
-      total size is 0  speedup is 0.00
-
-    - 'protodep.toml'
-      sending incremental file list
-      protodep.toml
-      
-      sent 256 bytes  received 35 bytes  582.00 bytes/sec
-      total size is 138  speedup is 0.47
-
-    - 'protodep.lock'
-      sending incremental file list
-      protodep.lock
-      
-      sent 354 bytes  received 35 bytes  778.00 bytes/sec
-      total size is 236  speedup is 0.61
-
-  Syncing shared proto files from 'controllers/shared/grpc'
+Cloning 'git@github.com:milaboratory/pl.git@main' into tmp directory '/Users/denkoren/work/milaboratory/platforma/platforma/lib/node/pl-drivers/proto/tmp-repo'
+    Cloning into '/Users/denkoren/work/milaboratory/platforma/platforma/lib/node/pl-drivers/proto/tmp-repo'...
+Updating protocol...
+  updating 'controllers/shared/grpc' proto definitions...
     - 'progressapi/'
-      sending incremental file list
+      building file list ... done
       ./
+      openapi.yaml
       protocol.proto
       
-      sent 1,358 bytes  received 38 bytes  2,792.00 bytes/sec
-      total size is 1,220  speedup is 0.87
-
-    - 'uploadapi/'
-      sending incremental file list
-      ./
-      protocol.proto
-      
-      sent 5,200 bytes  received 38 bytes  10,476.00 bytes/sec
-      total size is 5,062  speedup is 0.97
+      sent 6619 bytes  received 70 bytes  13378.00 bytes/sec
+      total size is 6404  speedup is 0.96
 
     - 'streamingapi/'
-      sending incremental file list
+      building file list ... done
       ./
+      openapi.yaml
       protocol.proto
       
-      sent 9,035 bytes  received 38 bytes  18,146.00 bytes/sec
-      total size is 8,897  speedup is 0.98
+      sent 27262 bytes  received 70 bytes  54664.00 bytes/sec
+      total size is 27047  speedup is 0.99
 
     - 'downloadapi/'
-      sending incremental file list
+      building file list ... done
       ./
+      openapi.yaml
       protocol.proto
       
-      sent 1,256 bytes  received 38 bytes  2,588.00 bytes/sec
-      total size is 1,118  speedup is 0.86
+      sent 5361 bytes  received 70 bytes  10862.00 bytes/sec
+      total size is 5146  speedup is 0.95
 
     - 'lsapi/'
-      sending incremental file list
+      building file list ... done
       ./
+      openapi.yaml
       protocol.proto
       
-      sent 4,998 bytes  received 38 bytes  10,072.00 bytes/sec
-      total size is 4,860  speedup is 0.97
+      sent 11846 bytes  received 70 bytes  23832.00 bytes/sec
+      total size is 11631  speedup is 0.98
+
+    - 'uploadapi/'
+      building file list ... done
+      ./
+      openapi.yaml
+      protocol.proto
+      
+      sent 18916 bytes  received 70 bytes  37972.00 bytes/sec
+      total size is 18701  speedup is 0.98
 
     - 'protodep.toml'
-      sending incremental file list
+      building file list ... done
       protodep.toml
       
-      sent 226 bytes  received 35 bytes  522.00 bytes/sec
-      total size is 108  speedup is 0.41
+      sent 241 bytes  received 42 bytes  566.00 bytes/sec
+      total size is 108  speedup is 0.38
 
     - 'protodep.lock'
-      sending incremental file list
+      building file list ... done
       protodep.lock
       
-      sent 324 bytes  received 35 bytes  718.00 bytes/sec
-      total size is 206  speedup is 0.57
+      sent 369 bytes  received 42 bytes  822.00 bytes/sec
+      total size is 236  speedup is 0.57
 
-Updating dependencies...
+  updating proto dependencies...

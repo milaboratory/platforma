@@ -21,7 +21,7 @@ import { randomUUID } from 'node:crypto';
 import type { PlTreeEntry, ResourceInfo } from '@milaboratories/pl-tree';
 import { treeEntryToResourceInfo } from '@milaboratories/pl-tree';
 import { scheduler } from 'node:timers/promises';
-import type { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
+import type { StreamingAPI_Response } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
 import type * as sdk from '@milaboratories/pl-model-common';
 import type { PollingOps } from './helpers/polling_ops';
 import type { RpcError } from '@protobuf-ts/runtime-rpc';

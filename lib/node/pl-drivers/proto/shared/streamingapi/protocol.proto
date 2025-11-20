@@ -4,6 +4,8 @@ package MiLaboratories.Controller.Shared;
 
 option go_package = "github.com/milaboratory/pl/controllers/shared/grpc/streamingapi;streamingapi";
 
+import "github.com/googleapis/googleapis/google/api/annotations.proto";
+
 //
 // Streaming provides access to online data stream from item in storage. Whenever item is appended with data,
 // the caller receives this fresh data in stream from server.
@@ -12,23 +14,43 @@ service Streaming {
   // StreamBinary provides stream of binary file. Each response message keeps
   // one single chunk of binary data from data source. See StreamingAPI.Binary message
   // for more info on available options.
-  rpc StreamBinary(StreamingAPI.StreamBinary) returns (stream StreamingAPI.Response) {}
+  rpc StreamBinary(StreamingAPI.StreamBinary) returns (stream StreamingAPI.Response) {
+    option (google.api.http) = {
+      post: "/v1/stream/binary"
+      body: "*"
+    };
+  }
 
   // ReadBinary allows to read remote item in chunks using stream-like API.
   // The difference to StreamBinary is that the client receives single response for each 
   // call and has to send new calls to the server to get fresh data from remote item.
   // Each response (each chunk from server) keeps not more than 3.9MiB of data.
-  rpc ReadBinary(StreamingAPI.ReadBinary) returns (StreamingAPI.Response) {}
+  rpc ReadBinary(StreamingAPI.ReadBinary) returns (StreamingAPI.Response) {
+    option (google.api.http) = {
+      post: "/v1/read/binary"
+      body: "*"
+    };
+  }
 
   // StreamText provides stream of textual file, splitting the data by newline symbol.
   // Each response message keeps one single line of text from data source.
-  rpc StreamText(StreamingAPI.StreamText) returns (stream StreamingAPI.Response) {}
+  rpc StreamText(StreamingAPI.StreamText) returns (stream StreamingAPI.Response) {
+    option (google.api.http) = {
+      post: "/v1/stream/text"
+      body: "*"
+    };
+  }
 
   // ReadBinary allows to read remote item in chunks using stream-like API.
   // The difference to StreamBinary is that the client receives single response for each 
   // call and has to send new calls to the server to get fresh data from remote item.
   // Each response (each chunk from server) keeps not more than 3.9MiB of data.
-  rpc ReadText(StreamingAPI.ReadText) returns (StreamingAPI.Response) {}
+  rpc ReadText(StreamingAPI.ReadText) returns (StreamingAPI.Response) {
+    option (google.api.http) = {
+      post: "/v1/read/text"
+      body: "*"
+    };
+  }
 
   // LastLines provides single message with the last lines from data source.
   // When search pattern is specified, the last lines matching the given pattern are returned.
@@ -38,7 +60,12 @@ service Streaming {
   // line found, so client can continue reading the file backwards in subsequent calls.
   // This means, that use of this <new_offset> in ReadText() will return you the same line
   // returned last in LastLines() data.
-  rpc LastLines(StreamingAPI.LastLines) returns (StreamingAPI.Response) {}
+  rpc LastLines(StreamingAPI.LastLines) returns (StreamingAPI.Response) {
+    option (google.api.http) = {
+      post: "/v1/last-lines"
+      body: "*"
+    };
+  }
 }
 
 message StreamingAPI {

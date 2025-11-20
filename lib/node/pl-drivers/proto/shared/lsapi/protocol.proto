@@ -5,6 +5,7 @@ package MiLaboratories.Controller.Shared;
 option go_package = "github.com/milaboratory/pl/controllers/shared/grpc/lsapi;lsapi";
 
 import "google/protobuf/timestamp.proto";
+import "github.com/googleapis/googleapis/google/api/annotations.proto";
 
 //
 // LS provides access to lists of blobs (files, S3 objects and so on) is some storage.
@@ -13,7 +14,12 @@ import "google/protobuf/timestamp.proto";
 // on, say, existing sequence files from the corporate storage.
 //
 service LS {
-  rpc List(LsAPI.List.Request) returns (LsAPI.List.Response) {}
+  rpc List(LsAPI.List.Request) returns (LsAPI.List.Response) {
+    option (google.api.http) = {
+      post: "/v1/list"
+      body: "*"
+    };
+  }
 }
 
 message LsAPI {

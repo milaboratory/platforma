@@ -1,0 +1,132 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: LS API
+    description: |-
+        LS provides access to lists of blobs (files, S3 objects and so on) is some storage.
+         This API allows clients to know, whan items are available in storages, that
+         the contorllers can access, providing clients with the ability to start indexation
+         on, say, existing sequence files from the corporate storage.
+    version: 0.0.1
+paths:
+    /v1/list:
+        post:
+            tags:
+                - LS
+            operationId: LS_List
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/List_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/List_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+components:
+    schemas:
+        GoogleProtobufAny:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        List_Request:
+            type: object
+            properties:
+                resourceId:
+                    type: string
+                    description: resource_id of 'LS/<Storage>' resource
+                location:
+                    type: string
+                    description: |-
+                        location to list, absolute to storage root. Only items, that have <full_name> starting
+                         from <location> are included into list response.
+        List_Response:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/LsAPI_ListItem'
+                    description: |-
+                        List of the full (absolute to storage root) names of items from storage.
+                         E.g., for 'fs' storage each name will consist of names of all directories, where the
+                         item is located, and the item name itself.
+                         The delimiter, used in names, is storage-specific and is NOT guaranteed to be '/'.
+                delimiter:
+                    type: string
+                    description: |-
+                        delimiter is path separator, used in this storage. Client can use it to parse item names into parts,
+                         to extract directory names.
+        LsAPI_ListItem:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: name of the item in storage, without any prefixes
+                size:
+                    type: string
+                    description: |-
+                        size of item in bytes
+                         is always zero for directories (is_dir = true)
+                isDir:
+                    type: boolean
+                    description: is_dir is true for item, that can have subitems.
+                fullName:
+                    type: string
+                    description: |-
+                        full_name is the name of item absolute to storage root.
+                         it is <directory> + <name>
+                         The <delimiter>, used in names, is storage-specific and is NOT guaranteed to be '/'.
+                directory:
+                    type: string
+                    description: |-
+                        directory, the item is located in. The value here is always a prefix of name:
+                         name.HasPrefix(directory) is always true.
+                lastModified:
+                    type: string
+                    description: last_modified keeps the item last modification timestamp
+                    format: date-time
+                version:
+                    type: string
+                    description: |-
+                        version of item in storage.
+                         When storage supports versioning or provides checksums for the data stored,
+                         the <version> field keeps that data.
+                         If not - it keeps the any simple combination of item attributes, that helps to
+                         detect if the contents of item has changed, e.g. <size>+<mtime>.
+                         Anyway, client should not try to interpret this field, but should provide it to the Platform
+                         in operations with given item (like BlobImportInternal) to help Platform with deduplication.
+        Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GoogleProtobufAny'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+tags:
+    - name: LS
