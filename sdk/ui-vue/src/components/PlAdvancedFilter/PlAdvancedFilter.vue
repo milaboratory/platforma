@@ -2,10 +2,10 @@
 import { PlBtnSecondary, PlCheckbox, PlElementList, PlIcon16 } from '@milaboratories/uikit';
 import type { ListOptionBase } from '@platforma-sdk/model';
 import { computed } from 'vue';
+import FilterEditor from './FilterEditor.vue';
 import OperandButton from './OperandButton.vue';
-import SingleFilter from './SingleFilter.vue';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
-import type { CommonFilter, Filter, Group, NodeFilter, PlAdvancedFilterColumnId, RootFilter, SourceOptionInfo } from './types';
+import type { CommonFilter, EditableFilter, NodeFilter, PlAdvancedFilterColumnId, RootFilter, SourceOptionInfo } from './types';
 import { createNewGroup, isValidColumnId } from './utils';
 
 const model = defineModel<RootFilter>({ required: true });
@@ -24,10 +24,9 @@ const props = withDefaults(defineProps<{
 }>(), { enableDnd: false });
 
 const firstColumnId = computed(() => props.items[0]?.id);
-const emptyGroup: Group[] = [{
-  id: 'empty',
-  not: false,
-  operand: 'and',
+const emptyGroup: NodeFilter[] = [{
+  id: -1,
+  type: 'and',
   filters: [],
   expanded: true,
 }];
@@ -86,11 +85,6 @@ function removeFilterFromGroup(groupIdx: number, filterIdx: number) {
   } else {
     group.filters = group.filters.filter((_v, idx) => idx !== filterIdx);
   }
-  // if (innerModel.value.groups[groupIdx].filters.length === 1 && filterIdx === 0) {
-  //   removeGroup(groupIdx);
-  // } else {
-  //   innerModel.value.groups[groupIdx].filters = innerModel.value.groups[groupIdx].filters.filter((_v, idx) => idx !== filterIdx);
-  // }
 }
 function inverseRootNode(groupIdx: number) {
   const groups = getRootGroups();
@@ -122,7 +116,6 @@ function getNotContent<T extends CommonFilter>(item: T): Exclude<T, { type: 'not
 function removeGroup(groupIdx: number) {
   const groups = getRootGroups();
   groups.splice(groupIdx, 1);
-  // innerModel.value.groups = innerModel.value.groups.filter((v, idx) => idx !== groupIdx);
 }
 function addGroup(selectedSourceId: PlAdvancedFilterColumnId) {
   const newGroup = createNewGroup(selectedSourceId);
@@ -152,12 +145,12 @@ function dragOver(event: DragEvent) {
   event.preventDefault();
 }
 
-function validateFilter<T extends CommonFilter>(item: T): Filter {
+function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
   if (item.type === 'and' || item.type === 'or' || item.type === 'not') {
     throw new Error('Invalid filter structure, expected leaf filter');
   }
 
-  return item as Filter;
+  return item as EditableFilter;
 }
 </script>
 <template>
@@ -191,8 +184,7 @@ function validateFilter<T extends CommonFilter>(item: T): Filter {
         >
           <PlCheckbox :model-value="item.type === 'not'" @update:model-value="inverseRootNode(index)">NOT</PlCheckbox>
           <template v-for="(_, filterIdx) in getNotContent(item).filters" :key="filterIdx">
-            <!-- eslint-disable vue/valid-v-model -->
-            <SingleFilter
+            <FilterEditor
               :filter="validateFilter(getNotContent(item).filters[filterIdx])"
               :operand="getNotContent(item).type"
               :column-options="items"
@@ -203,7 +195,6 @@ function validateFilter<T extends CommonFilter>(item: T): Filter {
               :on-change-operand="(v) => getNotContent(item).type = v"
               :on-delete="() => removeFilterFromGroup(index, filterIdx)"
             />
-            <!-- eslint-enable vue/valid-v-model -->
           </template>
           <div v-if="enableDnd" :class="$style.dropzone">
             <div>Drop dimensions here</div>
@@ -242,8 +233,7 @@ function validateFilter<T extends CommonFilter>(item: T): Filter {
       @dragover="dragOver"
     >
       <template #item-title>Filter group</template>
-      <template #item-content="{item}">
-        <PlCheckbox v-model="item.not" disabled >NOT</PlCheckbox>
+      <template #item-content>
         <div v-if="enableDnd" :class="$style.dropzone">
           <div>Drop dimensions here</div>
         </div>

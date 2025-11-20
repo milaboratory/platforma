@@ -5,10 +5,10 @@ import { isFilteredPColumn, parseColumnId, stringifyColumnId, type ListOptionBas
 import { computed } from 'vue';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, SUPPORTED_FILTER_TYPES } from './constants';
 import OperandButton from './OperandButton.vue';
-import type { Filter, Operand, PlAdvancedFilterColumnId, SourceOptionInfo } from './types';
+import type { EditableFilter, Operand, PlAdvancedFilterColumnId, SourceOptionInfo } from './types';
 import { getFilterInfo, getNormalizedSpec, isNumericFilter, isStringFilter } from './utils';
 
-const filter = defineModel<Filter>('filter', { required: true });
+const filter = defineModel<EditableFilter>('filter', { required: true });
 
 const props = defineProps<{
   isLast: boolean;
@@ -45,7 +45,7 @@ function changeFilterType() {
       ...DEFAULT_FILTERS[filter.value.type],
       value: filter.value.value,
       column: filter.value.column,
-    } as Filter;
+    } as EditableFilter;
   } else {
     filter.value = {
       ...DEFAULT_FILTERS[filter.value.type],
