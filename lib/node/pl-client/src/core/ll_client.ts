@@ -28,6 +28,12 @@ import type * as grpcTypes from '../proto-grpc/github.com/milaboratory/pl/plapi/
 import { type PlApiPaths, type PlRestClientType, createClient, parseResponseError } from '../proto-rest';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { Code } from '../proto-grpc/google/rpc/code';
+import { WebSocketBiDiStream } from './websocket_stream';
+import type { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
+import type {
+  TxAPI_ClientMessage,
+  TxAPI_ServerMessage,
+} from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 
 export interface PlCallOps {
   timeout?: number;
@@ -474,21 +480,35 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   createTx(rw: boolean, ops: PlCallOps = {}): LLPlTransaction {
+    // Hardcoded WebSocket option for demonstration
+    // Set PL_USE_WEBSOCKET=1 environment variable to enable WebSocket transport
+    const useWebSocket = process.env.PL_USE_WEBSOCKET === '1';
+
     return new LLPlTransaction((abortSignal) => {
       let totalAbortSignal = abortSignal;
       if (ops.abortSignal) totalAbortSignal = AbortSignal.any([totalAbortSignal, ops.abortSignal]);
 
-      const cl = this.clientProvider.get();
-      if (!(cl instanceof GrpcPlApiClient)) {
-        // TODO: add WebSockets
-        throw new Error('tx is not supported for REST client');
-      }
+      if (useWebSocket) {
+        // Use WebSocket transport
+        const wsUrl = this.conf.ssl
+          ? `wss://${this.conf.hostAndPort}/ws`
+          : `ws://${this.conf.hostAndPort}/ws`;
+        const jwtToken = this.authInformation?.jwtToken;
+        this.refreshAuthInformationIfNeeded();
+        return new WebSocketBiDiStream(wsUrl, totalAbortSignal, jwtToken) as unknown as DuplexStreamingCall<TxAPI_ClientMessage, TxAPI_ServerMessage>;
+      } else {
+        // Use gRPC transport (default)
+        const cl = this.clientProvider.get();
+        if (!(cl instanceof GrpcPlApiClient)) {
+          throw new Error('tx is not supported for REST client');
+        }
 
-      return cl.tx({
-        abort: totalAbortSignal,
-        timeout: ops.timeout
-          ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout),
-      });
+        return cl.tx({
+          abort: totalAbortSignal,
+          timeout: ops.timeout
+            ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout),
+        });
+      }
     });
   }
 
