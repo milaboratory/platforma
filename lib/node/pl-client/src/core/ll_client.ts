@@ -334,7 +334,7 @@ export class LLPlClient implements WireClientProviderFactory {
       onResponse: async ({ request: _request, response, options: _options }) => {
         const { body: body, ...resOptions } = response;
 
-        if (response.status in [502, 503, 504]) {
+        if ([502, 503, 504].includes(response.status)) {
           // Service unavailable, bad gateway, gateway timeout
           this.updateStatus('Disconnected');
           return new Response(body, { ...resOptions, status: response.status });
