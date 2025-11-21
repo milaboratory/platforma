@@ -1,7 +1,7 @@
 polars-lts-cpu==1.33.1
 polars-hash-lts-cpu==0.5.5
 polars-ds-lts-cpu==0.10.2
-polars-pf==1.0.102
+polars-pf==1.0.106
 pyarrow==21.0.0
 duckdb==1.4.1
 msgspec==0.19.0
