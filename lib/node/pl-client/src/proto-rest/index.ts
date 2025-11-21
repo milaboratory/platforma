@@ -75,11 +75,11 @@ function errorHandlerMiddleware(): Middleware {
         return new Response(body, { ...resOptions, status: response.status });
       }
 
-      if (typeof respErr === 'string') {
-        throw new Error(respErr);
+      if (typeof respErr.error === 'string') {
+        throw new Error(respErr.error);
       }
 
-      rethrowMeaningfulError(respErr);
+      rethrowMeaningfulError(respErr.error);
     },
   };
 }
