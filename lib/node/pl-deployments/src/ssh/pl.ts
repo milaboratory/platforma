@@ -148,6 +148,7 @@ export class SshPl {
         return state.existedSettings!;
       }
       await this.doStepStopExistedPlatforma(state, onProgress);
+      await this.doStepCheckDbLock(state, onProgress);
 
       await onProgress?.('Installation platforma...');
 
@@ -211,6 +212,65 @@ export class SshPl {
       stringifyConnectionInfo(state.connectionInfo),
     );
     await onProgress?.('Connection information saved.');
+  }
+
+  private async doStepCheckDbLock(
+    state: PlatformaInitState,
+    onProgress?: (...args: any[]) => Promise<any>,
+  ) {
+    const removeLockFile = async (lockFilePath: string) => {
+      try {
+        await this.sshClient.exec(`rm -f ${lockFilePath}`);
+        this.logger.info(`Removed stale lock file ${lockFilePath}`);
+      } catch (e: unknown) {
+        const msg = `Failed to remove stale lock file ${lockFilePath}: ${e}`;
+        this.logger.error(msg);
+        throw new Error(msg);
+      }
+    };
+
+    state.step = 'checkDbLock';
+    await onProgress?.('Checking for DB lock...');
+
+    const lockFilePath = plpath.platformaDbLock(state.remoteHome!);
+    const lockFileExists = await this.sshClient.checkFileExists(lockFilePath);
+
+    if (!lockFileExists) {
+      await onProgress?.('No DB lock found. Proceeding...');
+      return;
+    }
+
+    this.logger.info(`DB lock file found at ${lockFilePath}. Checking which process holds it...`);
+    const lockProcessInfo = await this.findLockHolder(lockFilePath);
+
+    if (!lockProcessInfo) {
+      this.logger.warn('Lock file exists but no process is holding it. Removing stale lock file...');
+      await removeLockFile(lockFilePath);
+      return;
+    }
+
+    this.logger.info(
+      `Found process ${lockProcessInfo.pid} (user: ${lockProcessInfo.user}) holding DB lock`,
+    );
+
+    if (lockProcessInfo.user !== this.username) {
+      const msg
+        = `DB lock is held by process ${lockProcessInfo.pid} `
+        + `owned by user '${lockProcessInfo.user}', but current user is '${this.username}'. `
+        + 'Cannot kill process owned by different user.';
+      this.logger.error(msg);
+      throw new Error(msg);
+    }
+
+    this.logger.info(`Process ${lockProcessInfo.pid} belongs to current user ${this.username}. Killing it...`);
+    await this.killRemoteProcess(lockProcessInfo.pid);
+    this.logger.info('Process holding DB lock has been terminated.');
+
+    // Verify lock file is gone or can be removed
+    const lockStillExists = await this.sshClient.checkFileExists(lockFilePath);
+    if (lockStillExists) {
+      await removeLockFile(lockFilePath);
+    }
   }
 
   private async doStepConfigureSupervisord(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
@@ -424,6 +484,103 @@ export class SshPl {
     }
   }
 
+  private async findLockHolderWithLsof(lockFilePath: string): Promise<LockProcessInfo | null> {
+    try {
+      const { stdout } = await this.sshClient.exec(`lsof ${lockFilePath} 2>/dev/null || true`);
+      const output = stdout.trim();
+      if (!output) {
+        return null;
+      }
+
+      // Example:
+      // COMMAND     PID    USER   FD   TYPE DEVICE SIZE/OFF     NODE NAME
+      // platforma 11628 rfiskov   10u   REG   1,16        0 66670038 ./LOCK
+      const lines = output.split('\n');
+      if (lines.length <= 1) {
+        return null;
+      }
+
+      const parts = lines[1].trim().split(/\s+/);
+      if (parts.length < 3) {
+        return null;
+      }
+
+      const pid = Number.parseInt(parts[1], 10);
+      const user = parts[2];
+
+      return Number.isNaN(pid) || !user ? null : { pid, user };
+    } catch (e: unknown) {
+      this.logger.warn(`Failed to use lsof to check lock: ${e}`);
+      return null;
+    }
+  }
+
+  private async findLockHolderWithFuser(lockFilePath: string): Promise<LockProcessInfo | null> {
+    try {
+      const { stdout } = await this.sshClient.exec(`fuser ${lockFilePath} 2>/dev/null || true`);
+      const output = stdout.trim();
+      if (!output) {
+        return null;
+      }
+
+      // Example: ./LOCK: 11628
+      const match = output.match(/: (\d+)/);
+      if (!match) {
+        return null;
+      }
+
+      const pid = Number.parseInt(match[1], 10);
+      if (Number.isNaN(pid)) {
+        return null;
+      }
+
+      try {
+        const psResult = await this.sshClient.exec(`ps -o user= -p ${pid} 2>/dev/null || true`);
+        const user = psResult.stdout.trim();
+        return user ? { pid, user } : null;
+      } catch (e: unknown) {
+        this.logger.warn(`Failed to get user for PID ${pid}: ${e}`);
+        return null;
+      }
+    } catch (e: unknown) {
+      this.logger.warn(`Failed to use fuser to check lock: ${e}`);
+      return null;
+    }
+  }
+
+  private async findLockHolder(lockFilePath: string): Promise<LockProcessInfo | null> {
+    const viaLsof = await this.findLockHolderWithLsof(lockFilePath);
+    if (viaLsof) {
+      return viaLsof;
+    }
+    return this.findLockHolderWithFuser(lockFilePath);
+  }
+
+  private async killRemoteProcess(pid: number): Promise<void> {
+    this.logger.info(`Killing process ${pid}...`);
+
+    try {
+      // Try graceful termination first
+      await this.sshClient.exec(`kill ${pid} 2>/dev/null || true`);
+      await sleep(1000);
+
+      // Check if process still exists
+      try {
+        await this.sshClient.exec(`kill -0 ${pid} 2>/dev/null`);
+        // Process still exists, force kill
+        this.logger.warn(`Process ${pid} still alive after SIGTERM, forcing kill...`);
+        await this.sshClient.exec(`kill -9 ${pid} 2>/dev/null || true`);
+        await sleep(500);
+      } catch {
+        // Process is dead, nothing to do
+      }
+    } catch (e: unknown) {
+      const msg = `Failed to kill process ${pid}: ${e}`;
+      this.logger.error(msg);
+      throw new Error(msg);
+    }
+  }
+
   /** We have to extract pl in the remote server,
   * because Windows doesn't support symlinks
   * that are found in Linux pl binaries tgz archive.
@@ -616,6 +773,8 @@ export type SshPlConfig = {
   plConfigPostprocessing?: (config: PlConfig) => PlConfig;
 };
 
+export type LockProcessInfo = { pid: number; user: string };
+
 const defaultSshPlConfig: Pick<
   SshPlConfig,
   | 'useGlobalAccess'
@@ -653,6 +812,7 @@ type PlatformaInitStep =
   | 'detectHome'
   | 'checkAlive'
   | 'stopExistedPlatforma'
+  | 'checkDbLock'
   | 'downloadBinaries'
   | 'fetchPorts'
   | 'generateNewConfig'

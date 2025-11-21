@@ -63,3 +63,7 @@ export function connectionInfo(remoteHome: string) {
 export function platformaCliLogs(remoteHome: string) {
   return upath.join(workDir(remoteHome), 'platforma_cli_logs.log');
 }
+
+export function platformaDbLock(remoteHome: string) {
+  return upath.join(workDir(remoteHome), 'db', 'LOCK');
+}

@@ -1,4 +1,4 @@
-import { describe, it, beforeAll, expect, afterAll } from 'vitest';
+import { describe, it, beforeAll, expect, afterAll, vi } from 'vitest';
 import { initContainer, getConnectionForSsh, cleanUp as cleanUpT, testAssetsPath } from './common-utils';
 import { SshPl } from '../pl';
 import upath from 'upath';
@@ -189,6 +189,15 @@ describe('SshPl', async () => {
     let isAlive = await sshPl?.isAlive();
     expect(isAlive.platforma).toBe(true);
 
+    // Capture console output to verify lock file handling logs
+    const remoteHome = await sshPl.getUserHomeDirectory();
+    const expectedLockPath = plpath.platformaDbLock(remoteHome);
+    
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
     await sshPl.platformaInit({
       localWorkdir: downloadDestination,
       license: { type: 'env' },
@@ -196,6 +205,26 @@ describe('SshPl', async () => {
     });
     isAlive = await sshPl?.isAlive();
     expect(isAlive.platforma).toBe(true);
+
+    // Collect logs from all console methods before restoring
+    const allConsoleCalls = [
+      ...consoleLogSpy.mock.calls,
+      ...consoleErrorSpy.mock.calls,
+      ...consoleInfoSpy.mock.calls,
+      ...consoleWarnSpy.mock.calls,
+    ];
+    const allLogs = allConsoleCalls.map(call => call.join(' ')).join('\n');
+
+    // Restore console methods
+    consoleLogSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    consoleInfoSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
+
+    // Verify lock file handling messages
+    expect(allLogs).toContain(`DB lock file found at ${expectedLockPath}. Checking which process holds it...`);
+    expect(allLogs).toContain('Lock file exists but no process is holding it. Removing stale lock file...');
+    expect(allLogs).toContain(`Removed stale lock file ${expectedLockPath}`);
   });
 
   it('Download pl. We have archive and extracted data', async () => {
