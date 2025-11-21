@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.12.6
+
+### Patch Changes
+
+- 8a650cb: Introduced a new step doStepCheckDbLock in the SSH deployment process to detect and manage database lock file
+
 ## 2.12.5
 
 ### Patch Changes
