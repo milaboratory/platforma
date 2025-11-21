@@ -12,7 +12,8 @@ export type ProxySettings = {
 /**
  * Creates default HTTP dispatcher that uses given proxy settings.
  * @param httpProxy - Proxy settings to use for HTTP requests.
- * @param firstInterceptors - list of interceptors to be applied before retry interceptor.
+ * @param customInterceptors - list of interceptors to be applied instead of default.
+ *                             NOTE: DNS cache always gets applied when proxy is not used.
  * @returns Dispatcher for HTTP requests.
  * @see {@link https://undici.nodejs.org/#/docs/api/Dispatcher?id=dispatchercomposeinterceptors-interceptor}
  */

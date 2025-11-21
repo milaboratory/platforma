@@ -27,6 +27,7 @@ import { parseHttpAuth } from '@milaboratories/pl-model-common';
 import type * as grpcTypes from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { type PlApiPaths, type PlRestClientType, createClient, parseResponseError } from '../proto-rest';
 import { notEmpty } from '@milaboratories/ts-helpers';
+import { Code } from '../proto-grpc/google/rpc/code';
 
 export interface PlCallOps {
   timeout?: number;
@@ -351,7 +352,7 @@ export class LLPlClient implements WireClientProviderFactory {
           return new Response(respErr.error, { ...resOptions, status: response.status });
         }
 
-        if (respErr.error.code === 12) {
+        if (respErr.error.code === Code.UNAUTHENTICATED) {
           this.updateStatus('Unauthenticated');
         }
 
@@ -385,9 +386,8 @@ export class LLPlClient implements WireClientProviderFactory {
   private createRestAuthInterceptor(): Dispatcher.DispatcherComposeInterceptor {
     return (dispatch) => {
       return (options, handler) => {
-        console.log('REST auth interceptor takes place');
-
         if (this.authInformation?.jwtToken !== undefined) {
+          // TODO: check this magic really works and gets called
           options.headers = { ...options.headers, authorization: 'Bearer ' + this.authInformation.jwtToken };
           this.refreshAuthInformationIfNeeded();
         }

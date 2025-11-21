@@ -105,6 +105,7 @@ export class ClientLogs {
         search: searchStr ?? '',
         searchRe: '',
       },
+      headers: { ...createRTypeRoutingHeader(rType) },
     })).data!;
 
     return {

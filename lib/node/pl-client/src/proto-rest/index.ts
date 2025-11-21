@@ -8,6 +8,7 @@ import type { paths as PlApiPaths } from './plapi';
 import { default as createOpenApiClient, type Middleware, type Client } from 'openapi-fetch';
 import { Dispatcher, fetch as undiciFetch } from 'undici';
 import { rethrowMeaningfulError } from '../core/errors';
+import { Code } from '../proto-grpc/google/rpc/code';
 
 export { PlApiPaths };
 export type PlRestClientType = Client<PlApiPaths>;
@@ -23,14 +24,11 @@ export function createClient<Paths extends {}>(opts: RestClientConfig): Client<P
   const scheme = opts.ssl ? 'https://' : 'http://';
   const client = createOpenApiClient<Paths>({
     baseUrl: `${scheme}${opts.hostAndPort}`,
-    fetch: async (input: Request): Promise<Response> => {
-      console.log('Requesting: ', input);
-      const response = await undiciFetch(input.url, { 
+    fetch: (input: Request): Promise<Response> => {
+      return undiciFetch(input.url, {
         ...input,
         dispatcher: opts.dispatcher,
       });
-
-      return response;
     },
   });
   client.use(errorHandlerMiddleware(), ...opts.middlewares);
@@ -38,7 +36,7 @@ export function createClient<Paths extends {}>(opts: RestClientConfig): Client<P
 }
 
 export type ErrorResponse = {
-  code: number,
+  code: Code,
   message: string,
   details: any[],
 }
