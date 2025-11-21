@@ -64,7 +64,8 @@ export class ClientLs {
         isDir: item.isDir,
         fullName: item.fullName,
         directory: item.directory,
-        lastModified: { seconds: BigInt(0), nanos: 0 },
+        // TODO: check we get value in a correct way here
+        lastModified: { seconds: BigInt(item.lastModified), nanos: 0 },
         version: item.version,
       }));
 

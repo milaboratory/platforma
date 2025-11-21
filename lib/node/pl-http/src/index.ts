@@ -41,8 +41,7 @@ export function defaultHttpDispatcher(
         }),
       );
 
-  const defaultInterceptors: Dispatcher.DispatcherComposeInterceptor[] = [interceptors.retry()];
-  const appliedInterceptors = customInterceptors ?? defaultInterceptors;
+  const appliedInterceptors = customInterceptors ?? [interceptors.retry()];
 
   // Interceptors are called in reverse order for response and in reversed order for request.
   // See https://undici.nodejs.org/#/docs/api/Dispatcher?id=dispatchercomposeinterceptors-interceptor
