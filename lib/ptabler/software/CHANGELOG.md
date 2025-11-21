@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.13.5
+
+### Patch Changes
+
+- dca2e4f: PFrames version bump
+
 ## 1.13.4
 
 ### Patch Changes
