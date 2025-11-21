@@ -31,16 +31,15 @@ export function defaultHttpDispatcher(
 
   const proxy = typeof httpProxy === 'string' ? { url: httpProxy } : httpProxy;
 
-  let dispatcher: Dispatcher;
-  if (proxy?.url) {
-    dispatcher = new ProxyAgent({ uri: proxy.url, token: proxy.auth, ...httpOptions });
-  } else {
-    dispatcher = new Agent(httpOptions)
-      .compose(interceptors.dns({
-        maxTTL: 60e3, // Cache DNS results for 1 minute (default: 10 seconds)
-        affinity: 4,
-      }));
-  }
+  const dispatcher = proxy?.url
+    ? new ProxyAgent({ uri: proxy.url, token: proxy.auth, ...httpOptions })
+    : new Agent(httpOptions)
+      .compose(
+        interceptors.dns({
+          maxTTL: 60e3, // Cache DNS results for 1 minute (default: 10 seconds)
+          affinity: 4,
+        }),
+      );
 
   const defaultInterceptors: Dispatcher.DispatcherComposeInterceptor[] = [interceptors.retry()];
   const appliedInterceptors = customInterceptors ?? defaultInterceptors;
