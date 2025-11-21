@@ -36,6 +36,6 @@ export function addRTypeToMetadata(rType: ResourceType, options?: RpcOptions) {
  */
 export function createRTypeRoutingHeader(rType: ResourceType): Record<string, string> {
   return {
-    'Resource-Type': `${rType.name}:${rType.version}`,
+    resourcetype: `${rType.name}:${rType.version}`,
   };
 }
