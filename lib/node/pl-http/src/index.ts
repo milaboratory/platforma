@@ -9,8 +9,16 @@ export type ProxySettings = {
   auth?: string;
 };
 
+/**
+ * Creates default HTTP dispatcher that uses given proxy settings.
+ * @param httpProxy - Proxy settings to use for HTTP requests.
+ * @param firstInterceptors - list of interceptors to be applied before retry interceptor.
+ * @returns Dispatcher for HTTP requests.
+ * @see {@link https://undici.nodejs.org/#/docs/api/Dispatcher?id=dispatchercomposeinterceptors-interceptor}
+ */
 export function defaultHttpDispatcher(
   httpProxy?: string | ProxySettings,
+  customInterceptors?: Dispatcher.DispatcherComposeInterceptor[],
 ): Dispatcher {
   const httpOptions: Client.Options = {
     // allowH2: true, // Turning this on makes downloads almost 10x as slow
@@ -23,15 +31,21 @@ export function defaultHttpDispatcher(
 
   const proxy = typeof httpProxy === 'string' ? { url: httpProxy } : httpProxy;
 
-  const dispatcher = proxy?.url
-    ? new ProxyAgent({ uri: proxy.url, token: proxy.auth, ...httpOptions })
-    : new Agent(httpOptions)
-      .compose(
-        interceptors.dns({
-          maxTTL: 60e3, // Cache DNS results for 1 minute (default: 10 seconds)
-          affinity: 4,
-        }),
-      );
+  let dispatcher: Dispatcher;
+  if (proxy?.url) {
+    dispatcher = new ProxyAgent({ uri: proxy.url, token: proxy.auth, ...httpOptions });
+  } else {
+    dispatcher = new Agent(httpOptions)
+      .compose(interceptors.dns({
+        maxTTL: 60e3, // Cache DNS results for 1 minute (default: 10 seconds)
+        affinity: 4,
+      }));
+  }
 
-  return dispatcher.compose(interceptors.retry());
+  const defaultInterceptors: Dispatcher.DispatcherComposeInterceptor[] = [interceptors.retry()];
+  const appliedInterceptors = customInterceptors ?? defaultInterceptors;
+
+  // Interceptors are called in reverse order for response and in reversed order for request.
+  // See https://undici.nodejs.org/#/docs/api/Dispatcher?id=dispatchercomposeinterceptors-interceptor
+  return dispatcher.compose(...appliedInterceptors);
 }

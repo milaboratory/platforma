@@ -13,6 +13,7 @@ export function isConnectionProblem(err: unknown, nested: boolean = false): bool
 export function isUnauthenticated(err: unknown, nested: boolean = false): boolean {
   if (err instanceof UnauthenticatedError) return true;
   if ((err as any).name == 'RpcError' && (err as any).code == 'UNAUTHENTICATED') return true;
+  if ((err as any).code == 12) return true;
   if ((err as any).cause !== undefined && !nested)
     // nested limits the depth of search
     return isUnauthenticated((err as any).cause, true);

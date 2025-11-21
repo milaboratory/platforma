@@ -5,20 +5,72 @@
 //
 
 import type { paths as PlApiPaths } from './plapi';
-import { default as createOpenApiClient, type Client } from 'openapi-fetch';
+import { default as createOpenApiClient, type Middleware, type Client } from 'openapi-fetch';
+import { Dispatcher, fetch as undiciFetch } from 'undici';
+import { rethrowMeaningfulError } from '../core/errors';
+
+export { PlApiPaths };
+export type PlRestClientType = Client<PlApiPaths>;
 
 export type RestClientConfig = {
   hostAndPort: string;
   ssl: boolean;
+  dispatcher: Dispatcher;
+  middlewares: Middleware[];
 }
 
 export function createClient<Paths extends {}>(opts: RestClientConfig): Client<Paths> {
   const scheme = opts.ssl ? 'https://' : 'http://';
-  // TODO: use undici dispatcher here or take proxy settings.
-  return createOpenApiClient<Paths>({
+  const client = createOpenApiClient<Paths>({
     baseUrl: `${scheme}${opts.hostAndPort}`,
+    fetch: async (input: Request): Promise<Response> => {
+      console.log('Requesting: ', input);
+      const response = await undiciFetch(input.url, { 
+        ...input,
+        dispatcher: opts.dispatcher,
+      });
+
+      return response;
+    },
   });
+  client.use(errorHandlerMiddleware(), ...opts.middlewares);
+  return client;
 }
 
-export { PlApiPaths };
-export type PlRestClientType = Client<PlApiPaths>;
+export type ErrorResponse = {
+  code: number,
+  message: string,
+  details: any[],
+}
+export async function parseErrorResponse(response: Response): Promise<ErrorResponse | string | undefined>{
+  const status = response.status;
+  console.log('REST response status:', status);
+  if (response.status < 400) {
+    return undefined
+  }
+
+  let error: any = await response.clone().text();
+  try {
+    error = JSON.parse(error) as ErrorResponse;
+  } catch {
+  }
+  return error;
+}
+
+function errorHandlerMiddleware(): Middleware {
+  return {
+    onResponse: async ({ request: _request, response, options: _options }) => {
+      const error = await parseErrorResponse(response);
+      if (!error) {
+        const { body, ...resOptions } = response;
+        return new Response(body, { ...resOptions, status: response.status });
+      }
+
+      if (typeof error === 'string') {
+        throw new Error(error);
+      }
+
+      rethrowMeaningfulError(error);
+    },
+  };
+}

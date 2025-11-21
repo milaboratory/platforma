@@ -18,13 +18,14 @@ import type { GrpcOptions } from '@protobuf-ts/grpc-transport';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { LLPlTransaction } from './ll_transaction';
 import { parsePlJwt } from '../util/pl';
-import type { Dispatcher } from 'undici';
+import { type Dispatcher, interceptors } from 'undici';
+import type { Middleware } from 'openapi-fetch';
 import { inferAuthRefreshTime } from './auth';
 import { defaultHttpDispatcher } from '@milaboratories/pl-http';
 import type { WireClientProvider, WireClientProviderFactory, WireConnection } from './wire';
 import { parseHttpAuth } from '@milaboratories/pl-model-common';
 import type * as grpcTypes from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
-import { type PlApiPaths, type PlRestClientType, createClient } from '../proto-rest';
+import { type PlApiPaths, type PlRestClientType, createClient, parseErrorResponse } from '../proto-rest';
 import { notEmpty } from '@milaboratories/ts-helpers';
 
 export interface PlCallOps {
@@ -69,6 +70,8 @@ export class LLPlClient implements WireClientProviderFactory {
   private _wireProto: wireProtocol | undefined = undefined;
   private _wireConn!: WireConnection;
 
+  private readonly _restInterceptors: Dispatcher.DispatcherComposeInterceptor[];
+  private readonly _restMiddlewares: Middleware[];
   private readonly _grpcInterceptors: Interceptor[];
   private readonly providers: WeakRef<WireClientProviderImpl<any>>[] = [];
 
@@ -101,11 +104,17 @@ export class LLPlClient implements WireClientProviderFactory {
       this.onAuthError = auth.onAuthError;
     }
 
+    this._restInterceptors = [];
+    this._restMiddlewares = [];
     this._grpcInterceptors = [];
+
     if (auth !== undefined) {
-      this._grpcInterceptors.push(this.createAuthInterceptor());
+      this._restInterceptors.push(this.createRestAuthInterceptor());
+      this._grpcInterceptors.push(this.createGrpcAuthInterceptor());
     }
-    this._grpcInterceptors.push(this.createErrorInterceptor());
+    this._restInterceptors.push(interceptors.retry({ statusCodes: [] })); // Handle errors with openapi-fetch middleware.
+    this._restMiddlewares.push(this.createRestErrorMiddleware());
+    this._grpcInterceptors.push(this.createGrpcErrorInterceptor());
 
     this.httpDispatcher = defaultHttpDispatcher(this.conf.httpProxy);
 
@@ -120,7 +129,12 @@ export class LLPlClient implements WireClientProviderFactory {
       if (wireConn.type === 'grpc') {
         return new GrpcPlApiClient(wireConn.Transport);
       } else {
-        return createClient<PlApiPaths>(wireConn.Config);
+        return createClient<PlApiPaths>({
+          hostAndPort: wireConn.Config.hostAndPort,
+          ssl: wireConn.Config.ssl,
+          dispatcher: wireConn.Dispatcher,
+          middlewares: wireConn.Middlewares,
+        });
       }
     });
   }
@@ -146,7 +160,8 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   private initRestConnection(): void {
-    this._replaceWireConnection({ type: 'rest', Config: this.conf, Dispatcher: this.httpDispatcher });
+    const dispatcher = defaultHttpDispatcher(this.conf.httpProxy, this._restInterceptors);
+    this._replaceWireConnection({ type: 'rest', Config: this.conf, Dispatcher: dispatcher, Middlewares: this._restMiddlewares });
   }
 
   /**
@@ -309,8 +324,39 @@ export class LLPlClient implements WireClientProviderFactory {
     })();
   }
 
-  /** Detects certain errors and update client status accordingly */
-  private createErrorInterceptor(): Interceptor {
+  /**
+   * Creates middleware that parses error responses and handles them centrally.
+   * This middleware runs before openapi-fetch parses the response, so we need to
+   * manually parse the response body for error responses.
+   */
+  private createRestErrorMiddleware(): Middleware {
+    return {
+      onResponse: async ({ request: _request, response, options: _options }) => {
+        const { body: _, ...resOptions } = response;
+
+        if (response.status in [502, 503, 504]) {
+          // Service unavailable, bad gateway, gateway timeout
+          this.updateStatus('Disconnected');
+        }
+
+        const error = await parseErrorResponse(response);
+        if (!error || typeof error === 'string') {
+          // No error (nice!) or non-standard error: let later middleware to deal wit it.
+          return new Response(error, { ...resOptions, status: response.status });
+        }
+
+        if (error.code === 12) {
+          this.updateStatus('Unauthenticated');
+        }
+
+        // Let later middleware to deal with standard gRPC error.
+        return new Response(JSON.stringify(error), { ...resOptions, status: response.status });
+      },
+    };
+  }
+
+  /** Detects certain errors and update client status accordingly when using GRPC wire connection */
+  private createGrpcErrorInterceptor(): Interceptor {
     return (options, nextCall) => {
       return new InterceptingCall(nextCall(options), {
         start: (metadata, listener, next) => {
@@ -330,8 +376,23 @@ export class LLPlClient implements WireClientProviderFactory {
     };
   }
 
+  private createRestAuthInterceptor(): Dispatcher.DispatcherComposeInterceptor {
+    return (dispatch) => {
+      return (options, handler) => {
+        console.log('REST auth interceptor takes place');
+
+        if (this.authInformation?.jwtToken !== undefined) {
+          options.headers = { ...options.headers, authorization: 'Bearer ' + this.authInformation.jwtToken };
+          this.refreshAuthInformationIfNeeded();
+        }
+
+        return dispatch(options, handler);
+      };
+    };
+  }
+
   /** Injects authentication information if needed */
-  private createAuthInterceptor(): Interceptor {
+  private createGrpcAuthInterceptor(): Interceptor {
     return (options, nextCall) => {
       return new InterceptingCall(nextCall(options), {
         start: (metadata, listener, next) => {
