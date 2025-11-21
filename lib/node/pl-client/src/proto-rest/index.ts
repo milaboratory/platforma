@@ -42,35 +42,44 @@ export type ErrorResponse = {
   message: string,
   details: any[],
 }
-export async function parseErrorResponse(response: Response): Promise<ErrorResponse | string | undefined>{
-  const status = response.status;
-  console.log('REST response status:', status);
+export async function parseResponseError(response: Response): Promise<{
+  error?: ErrorResponse | string,
+  origBody?: string,
+}>{
   if (response.status < 400) {
-    return undefined
+    return {};
   }
 
   let error: any = await response.clone().text();
+  const origBody = error;
   try {
     error = JSON.parse(error) as ErrorResponse;
   } catch {
   }
-  return error;
+  return {
+    error: error,
+    origBody
+  };
 }
 
+/**
+ * Parses all API responses and thrown error in case of error response.
+ * Allows all callers to not bother about .error response field checking.
+ */
 function errorHandlerMiddleware(): Middleware {
   return {
     onResponse: async ({ request: _request, response, options: _options }) => {
-      const error = await parseErrorResponse(response);
-      if (!error) {
+      const respErr = await parseResponseError(response);
+      if (!respErr.error) {
         const { body, ...resOptions } = response;
         return new Response(body, { ...resOptions, status: response.status });
       }
 
-      if (typeof error === 'string') {
-        throw new Error(error);
+      if (typeof respErr === 'string') {
+        throw new Error(respErr);
       }
 
-      rethrowMeaningfulError(error);
+      rethrowMeaningfulError(respErr);
     },
   };
 }

@@ -88,8 +88,8 @@ export interface components {
         };
         Finalize_Response: Record<string, never>;
         GetPartURL_HTTPHeader: {
-            Name: string;
-            Value: string;
+            name: string;
+            value: string;
         };
         GetPartURL_Request: {
             /** @description Id of upload resource */

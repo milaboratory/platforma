@@ -1,11 +1,12 @@
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { Duration } from '../proto-grpc/google/protobuf/duration';
-import type { WireClientProvider, WireClientProviderFactory, WireConnection, PlClient } from '@milaboratories/pl-client';
-import { addRTypeToMetadata } from '@milaboratories/pl-client';
+import type { WireClientProvider, WireClientProviderFactory, PlClient } from '@milaboratories/pl-client';
+import { addRTypeToMetadata, createRTypeRoutingHeader, RestAPI } from '@milaboratories/pl-client';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import type { Dispatcher } from 'undici';
 import { ProgressClient } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/progressapi/protocol.client';
+import type { ProgressAPI_Report } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/progressapi/protocol';
+import type { ProgressApiPaths, ProgressRestClientType } from '../proto-rest';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 
 export type ProgressStatus = {
@@ -20,7 +21,7 @@ export type ProgressStatus = {
 // When blobs are transfered, one can got a status of transfering
 // using this API.
 export class ClientProgress {
-  public readonly wire: WireClientProvider<ProgressClient>;
+  public readonly wire: WireClientProvider<ProgressRestClientType | ProgressClient>;
 
   constructor(
     wireClientProviderFactory: WireClientProviderFactory,
@@ -29,13 +30,17 @@ export class ClientProgress {
     public readonly logger: MiLogger,
   ) {
     this.wire = wireClientProviderFactory.createWireClientProvider(
-      (wire: WireConnection) => {
+      (wire) => {
         if (wire.type === 'grpc') {
           return new ProgressClient(wire.Transport);
-        } else {
-          // TODO: implement REST progress client.
-          throw new Error('Unsupported transport type');
         }
+
+        return RestAPI.createClient<ProgressApiPaths>({
+          hostAndPort: wire.Config.hostAndPort,
+          ssl: wire.Config.ssl,
+          dispatcher: wire.Dispatcher,
+          middlewares: wire.Middlewares,
+        });
       },
     );
   }
@@ -44,12 +49,27 @@ export class ClientProgress {
 
   /** getStatus gets a progress status by given rId and rType. */
   async getStatus({ id, type }: ResourceInfo, options?: RpcOptions): Promise<ProgressStatus> {
-    const status = await this.wire.get().getStatus(
-      { resourceId: id },
-      addRTypeToMetadata(type, options),
-    );
+    const client = this.wire.get();
 
-    const report = notEmpty(status.response.report);
+    let report: ProgressAPI_Report;
+    if (client instanceof ProgressClient) {
+      report = notEmpty((await client.getStatus(
+        { resourceId: id },
+        addRTypeToMetadata(type, options),
+      ).response).report);
+    } else {
+      const resp = (await client.POST('/v1/get-progress', {
+        body: { resourceId: id.toString() },
+        headers: { ...createRTypeRoutingHeader(type) },
+      })).data!.report;
+      report = {
+        done: resp.done,
+        progress: resp.progress,
+        bytesProcessed: BigInt(resp.bytesProcessed),
+        bytesTotal: BigInt(resp.bytesTotal),
+        name: resp.name,
+      };
+    }
 
     return {
       done: report.done,
@@ -57,37 +77,5 @@ export class ClientProgress {
       bytesProcessed: String(report.bytesProcessed),
       bytesTotal: String(report.bytesTotal),
     };
-  }
-
-  // realtimeStatus returns a async generator that takes statuses from
-  // GRPC stream every updateIntervalMs milliseconds.
-  async *realtimeStatus(
-    { id, type }: ResourceInfo,
-    updateIntervalMs: number = 100,
-    options?: RpcOptions,
-  ) {
-    options = addRTypeToMetadata(type, options);
-
-    const secs = Math.floor(updateIntervalMs / 1000);
-    const nanos = (updateIntervalMs - secs * 1000) * 1000000;
-    const updateInterval = Duration.create({
-      seconds: BigInt(secs),
-      nanos: nanos,
-    });
-
-    try {
-      const { responses } = this.wire.get().realtimeStatus(
-        {
-          resourceId: id,
-          updateInterval: updateInterval,
-        },
-        options,
-      );
-
-      yield * responses;
-    } catch (e) {
-      this.logger.warn('Failed to get realtime status' + String(e));
-      throw e;
-    }
   }
 }

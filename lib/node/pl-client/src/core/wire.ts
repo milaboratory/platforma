@@ -36,5 +36,5 @@ export interface WireClientProvider<Client> {
  * A factory for wire client providers.
  */
 export interface WireClientProviderFactory {
-  createWireClientProvider<RestClient, GrpcClient>(clientConstructor: (transport: WireConnection) => RestClient | GrpcClient): WireClientProvider<RestClient | GrpcClient>;
+  createWireClientProvider<Client>(clientConstructor: (transport: WireConnection) => Client): WireClientProvider<Client>;
 }

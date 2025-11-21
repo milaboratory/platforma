@@ -25,7 +25,7 @@ import { defaultHttpDispatcher } from '@milaboratories/pl-http';
 import type { WireClientProvider, WireClientProviderFactory, WireConnection } from './wire';
 import { parseHttpAuth } from '@milaboratories/pl-model-common';
 import type * as grpcTypes from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
-import { type PlApiPaths, type PlRestClientType, createClient, parseErrorResponse } from '../proto-rest';
+import { type PlApiPaths, type PlRestClientType, createClient, parseResponseError } from '../proto-rest';
 import { notEmpty } from '@milaboratories/ts-helpers';
 
 export interface PlCallOps {
@@ -332,25 +332,31 @@ export class LLPlClient implements WireClientProviderFactory {
   private createRestErrorMiddleware(): Middleware {
     return {
       onResponse: async ({ request: _request, response, options: _options }) => {
-        const { body: _, ...resOptions } = response;
+        const { body: body, ...resOptions } = response;
 
         if (response.status in [502, 503, 504]) {
           // Service unavailable, bad gateway, gateway timeout
           this.updateStatus('Disconnected');
+          return new Response(body, { ...resOptions, status: response.status });
         }
 
-        const error = await parseErrorResponse(response);
-        if (!error || typeof error === 'string') {
-          // No error (nice!) or non-standard error: let later middleware to deal wit it.
-          return new Response(error, { ...resOptions, status: response.status });
+        const respErr = await parseResponseError(response);
+        if (!respErr.error) {
+          // No error: nice!
+          return new Response(respErr.origBody ?? body, { ...resOptions, status: response.status });
         }
 
-        if (error.code === 12) {
+        if (typeof respErr.error === 'string') {
+          // Non-standard error or normal response: let later middleware to deal wit it.
+          return new Response(respErr.error, { ...resOptions, status: response.status });
+        }
+
+        if (respErr.error.code === 12) {
           this.updateStatus('Unauthenticated');
         }
 
         // Let later middleware to deal with standard gRPC error.
-        return new Response(JSON.stringify(error), { ...resOptions, status: response.status });
+        return new Response(respErr.origBody, { ...resOptions, status: response.status });
       },
     };
   }
