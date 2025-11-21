@@ -1,6 +1,13 @@
 <script lang="ts">
 export type Props = {
   columns: PlAdvancedFilterItem[];
+
+  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
+    ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
+  // @todo: can be optional
+  getSuggestModel?: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
+    ListOptionBase<string | number> | Promise<ListOptionBase<string | number>>;
+
   hasSelectedColumns?: boolean;
   getValuesForSelectedColumns?: () => Promise<undefined | { columnId: PObjectId; values: string[] }>;
 };
@@ -12,10 +19,11 @@ import {
   PlEditableTitle,
   PlSidebarItem,
 } from '@milaboratories/uikit';
-import type { PObjectId, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { ListOptionBase, PObjectId, SUniversalPColumnId } from '@platforma-sdk/model';
 import { computed } from 'vue';
-import type { PlAdvancedFilterFilter } from '../../PlAdvancedFilter';
+import type { PlAdvancedFilterFilter, PlAdvancedFilterSupportedFilters } from '../../PlAdvancedFilter';
 import { PlAdvancedFilter, type PlAdvancedFilterItem } from '../../PlAdvancedFilter';
+import type { PlAdvancedFilterColumnId } from '../../PlAdvancedFilter/types';
 import type { Filter } from '../types';
 
 // Models
@@ -57,6 +65,23 @@ async function addFilterFromSelected() {
     })),
   });
 }
+
+const supportedFilters = [
+  'isNA',
+  'isNotNA',
+  'greaterThan',
+  'greaterThanOrEqual',
+  'lessThan',
+  'lessThanOrEqual',
+  'patternEquals',
+  'patternNotEquals',
+  'patternContainSubsequence',
+  'patternNotContainSubsequence',
+  'equal',
+  'notEqual',
+  'topN',
+  'bottomN',
+] as typeof PlAdvancedFilterSupportedFilters[number][];
 </script>
 
 <template>
@@ -85,39 +110,11 @@ async function addFilterFromSelected() {
         <PlAdvancedFilter
           v-model:filters="step.filter as PlAdvancedFilterFilter"
           :items="props.columns"
-          :get-suggest-model="() => ({
-            label: 'string',
-            value: 'T',
-          })"
-          :get-suggest-options="() => ([{
-            label: 'string',
-            value: 'T',
-          }])"
+          :supported-filters="supportedFilters"
+          :get-suggest-model="props.getSuggestModel"
+          :get-suggest-options="props.getSuggestOptions"
           :enable-dnd="false"
         />
-
-        <!--        <PlElementList-->
-        <!--          v-model:items="step.filter.filters"-->
-        <!--          :get-item-key="(item) => item.id"-->
-        <!--          :is-expanded="(item) => Boolean(item.isExpanded)"-->
-        <!--          :on-expand="(item) => item.isExpanded = !Boolean(item.isExpanded)"-->
-        <!--        >-->
-        <!--          <template #item-title="{ item }">-->
-        <!--            {{ getColumnLabel(item) }}-->
-        <!--          </template>-->
-        <!--          <template #item-content="{ item, index }">-->
-        <!--            <template v-if="item.type !== 'or' && item.type !== 'and'">-->
-        <!--              <DynamicForm-->
-        <!--                v-model="(step.filter.filters[index] as FilterSpecLeaf)"-->
-        <!--                :columns="props.columns"-->
-        <!--                :form-metadata="getFormMetadata(item)"-->
-        <!--              />-->
-        <!--            </template>-->
-        <!--            <template v-else>-->
-        <!--              <div>{{ getFilterValues(item) }}</div>-->
-        <!--            </template>-->
-        <!--          </template>-->
-        <!--        </PlElementList>-->
       </div>
     </template>
   </PlSidebarItem>

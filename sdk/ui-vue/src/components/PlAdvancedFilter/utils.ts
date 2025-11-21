@@ -5,23 +5,21 @@ import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
 import type { NodeFilter } from './types';
 import { type CommonFilter, type EditableFilter, type PlAdvancedFilterColumnId, type SupportedFilterTypes } from './types';
 
-function getNewGroupId() {
+export function getNewId() {
   return Date.now();
 }
 
 export function createNewGroup(selectedSourceId: string): NodeFilter {
   return {
-    id: getNewGroupId(),
+    id: getNewId(),
     isExpanded: true,
     type: 'and',
     filters: [{
-      id: getNewGroupId(),
+      id: getNewId(),
       isExpanded: true,
       ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
       column: selectedSourceId as SUniversalPColumnId,
     } as CommonFilter],
-    // not: false,
-    // operand: 'and' as const,
   };
 }
 
@@ -50,11 +48,42 @@ export function isStringValueType(spec?: PColumnSpec | AxisSpec): boolean {
   return valueType === 'String';
 }
 
-export function isNumericFilter(filter: EditableFilter): filter is EditableFilter & { type: 'equal' | 'notEqual' | 'lessThan' | 'lessThanOrEqual' | 'greaterThan' | 'greaterThanOrEqual' } {
-  return filter.type === 'equal' || filter.type === 'notEqual' || filter.type === 'lessThan' || filter.type === 'lessThanOrEqual' || filter.type === 'greaterThan' || filter.type === 'greaterThanOrEqual';
+export function isNumericFilter(filter: EditableFilter): filter is Extract<EditableFilter, {
+  type: 'equal'
+    | 'notEqual'
+    | 'lessThan'
+    | 'lessThanOrEqual'
+    | 'greaterThan'
+    | 'greaterThanOrEqual';
+}> {
+  return filter.type === 'equal'
+    || filter.type === 'notEqual'
+    || filter.type === 'lessThan'
+    || filter.type === 'lessThanOrEqual'
+    || filter.type === 'greaterThan'
+    || filter.type === 'greaterThanOrEqual';
 }
-export function isStringFilter(filter: EditableFilter): filter is EditableFilter & { type: 'patternEquals' | 'patternNotEquals' | 'patternContainSubsequence' | 'patternNotContainSubsequence' | 'patternMatchesRegularExpression' | 'patternFuzzyContainSubsequence' } {
-  return filter.type === 'patternEquals' || filter.type === 'patternNotEquals' || filter.type === 'patternContainSubsequence' || filter.type === 'patternNotContainSubsequence' || filter.type === 'patternMatchesRegularExpression' || filter.type === 'patternFuzzyContainSubsequence';
+
+export function isPositionFilter(filter: EditableFilter): filter is Extract<EditableFilter, { type: 'topN' | 'bottomN' }> {
+  return filter.type === 'topN'
+    || filter.type === 'bottomN'
+  ;
+}
+
+export function isStringFilter(filter: EditableFilter): filter is Extract<EditableFilter, {
+  type: 'patternEquals'
+    | 'patternNotEquals'
+    | 'patternContainSubsequence'
+    | 'patternNotContainSubsequence'
+    | 'patternMatchesRegularExpression'
+    | 'patternFuzzyContainSubsequence';
+}> {
+  return filter.type === 'patternEquals'
+    || filter.type === 'patternNotEquals'
+    || filter.type === 'patternContainSubsequence'
+    || filter.type === 'patternNotContainSubsequence'
+    || filter.type === 'patternMatchesRegularExpression'
+    || filter.type === 'patternFuzzyContainSubsequence';
 }
 
 export function getFilterInfo(filterType: SupportedFilterTypes): { label: string; supportedFor: (spec: NormalizedSpecData) => boolean } {

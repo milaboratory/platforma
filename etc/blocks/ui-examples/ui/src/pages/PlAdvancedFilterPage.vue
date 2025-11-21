@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AxisId, CanonicalizedJson } from '@platforma-sdk/model';
 import { stringifyColumnId, type ListOptionBase, type SUniversalPColumnId } from '@platforma-sdk/model';
-import type { PlAdvancedFilterFilter } from '@platforma-sdk/ui-vue';
+import type { PlAdvancedFilterFilter, PlAdvancedFilterItem } from '@platforma-sdk/ui-vue';
 import { PlAdvancedFilter, PlBlockPage, PlCheckbox, PlDropdown } from '@platforma-sdk/ui-vue';
 import { ref, watch } from 'vue';
 
@@ -20,7 +20,7 @@ const uniqueValuesByAxisIdx: Record<string, Record<number, ListOptionBase<string
   [column1Id]: { 0: [{ value: 'axisValue1', label: 'Axis Value 1' }, { value: 'axisValue2', label: 'Axis Value 2' }] },
 };
 
-const options = [
+const options: PlAdvancedFilterItem[] = [
   {
     id: column1Id,
     label: 'Column 1',
@@ -71,22 +71,15 @@ const errorState: PlAdvancedFilterFilter = {
       filters: [
         {
           id: Math.random(),
-
           type: 'patternEquals' as const,
           column: inconsistentColumnId, // error - column id is not from available columns
           value: 'A',
         },
         {
           id: Math.random(),
-          type: 'or' as const,
-          filters: [
-            {
-              id: Math.random(),
-              type: 'patternEquals' as const,
-              column: inconsistentColumnId, // error - column id is not from available columns
-              value: 'A',
-            },
-          ],
+          type: 'patternEquals' as const,
+          column: inconsistentColumnId, // error - column id is not from available columns
+          value: 'A',
         },
       ],
     }, {
@@ -147,7 +140,7 @@ const normalState: PlAdvancedFilterFilter = {
         }, {
           id: Math.random(),
           type: 'patternFuzzyContainSubsequence' as const,
-          column: column3Id,
+          column: column2Id,
           value: 'abc',
         },
       ],
