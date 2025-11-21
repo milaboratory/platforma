@@ -65,5 +65,5 @@ export function platformaCliLogs(remoteHome: string) {
 }
 
 export function platformaDbLock(remoteHome: string) {
-  return upath.join(workDir(remoteHome), 'rocksdb', 'LOCK');
+  return upath.join(workDir(remoteHome), 'db', 'LOCK');
 }
