@@ -9,8 +9,17 @@ export type ProxySettings = {
   auth?: string;
 };
 
+/**
+ * Creates default HTTP dispatcher that uses given proxy settings.
+ * @param httpProxy - Proxy settings to use for HTTP requests.
+ * @param customInterceptors - list of interceptors to be applied instead of default.
+ *                             NOTE: DNS cache always gets applied when proxy is not used.
+ * @returns Dispatcher for HTTP requests.
+ * @see {@link https://undici.nodejs.org/#/docs/api/Dispatcher?id=dispatchercomposeinterceptors-interceptor}
+ */
 export function defaultHttpDispatcher(
   httpProxy?: string | ProxySettings,
+  customInterceptors?: Dispatcher.DispatcherComposeInterceptor[],
 ): Dispatcher {
   const httpOptions: Client.Options = {
     // allowH2: true, // Turning this on makes downloads almost 10x as slow
@@ -33,5 +42,9 @@ export function defaultHttpDispatcher(
         }),
       );
 
-  return dispatcher.compose(interceptors.retry());
+  const appliedInterceptors = customInterceptors ?? [interceptors.retry()];
+
+  // Interceptors are called in reverse order for response and in reversed order for request.
+  // See https://undici.nodejs.org/#/docs/api/Dispatcher?id=dispatchercomposeinterceptors-interceptor
+  return dispatcher.compose(...appliedInterceptors);
 }

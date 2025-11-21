@@ -36,9 +36,9 @@ components:
         GetDownloadURL_HTTPHeader:
             type: object
             properties:
-                Name:
+                name:
                     type: string
-                Value:
+                value:
                     type: string
         GetDownloadURL_Request:
             type: object

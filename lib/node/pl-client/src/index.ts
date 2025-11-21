@@ -15,4 +15,4 @@ export * from './helpers/poll';
 
 export * as TestHelpers from './test/test_config';
 
-export * as PlApi from './proto-rest';
+export * as RestAPI from './proto-rest';

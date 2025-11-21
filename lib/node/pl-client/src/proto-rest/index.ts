@@ -5,20 +5,79 @@
 //
 
 import type { paths as PlApiPaths } from './plapi';
-import { default as createOpenApiClient, type Client } from 'openapi-fetch';
+import { default as createOpenApiClient, type Middleware, type Client } from 'openapi-fetch';
+import { Dispatcher, fetch as undiciFetch } from 'undici';
+import { rethrowMeaningfulError } from '../core/errors';
+import { Code } from '../proto-grpc/google/rpc/code';
+
+export { PlApiPaths };
+export type PlRestClientType = Client<PlApiPaths>;
 
 export type RestClientConfig = {
   hostAndPort: string;
   ssl: boolean;
+  dispatcher: Dispatcher;
+  middlewares: Middleware[];
 }
 
 export function createClient<Paths extends {}>(opts: RestClientConfig): Client<Paths> {
   const scheme = opts.ssl ? 'https://' : 'http://';
-  // TODO: use undici dispatcher here or take proxy settings.
-  return createOpenApiClient<Paths>({
+  const client = createOpenApiClient<Paths>({
     baseUrl: `${scheme}${opts.hostAndPort}`,
+    fetch: (input: Request): Promise<Response> => {
+      return undiciFetch(input.url, {
+        ...input,
+        dispatcher: opts.dispatcher,
+      });
+    },
   });
+  client.use(errorHandlerMiddleware(), ...opts.middlewares);
+  return client;
 }
 
-export { PlApiPaths };
-export type PlRestClientType = Client<PlApiPaths>;
+export type ErrorResponse = {
+  code: Code,
+  message: string,
+  details: any[],
+}
+export async function parseResponseError(response: Response): Promise<{
+  error?: ErrorResponse | string,
+  origBody?: string,
+}>{
+  if (response.status < 400) {
+    return {};
+  }
+
+  let error: any = await response.clone().text();
+  const origBody = error;
+  try {
+    error = JSON.parse(error) as ErrorResponse;
+  } catch {
+  }
+  return {
+    error: error,
+    origBody
+  };
+}
+
+/**
+ * Parses all API responses and thrown error in case of error response.
+ * Allows all callers to not bother about .error response field checking.
+ */
+function errorHandlerMiddleware(): Middleware {
+  return {
+    onResponse: async ({ request: _request, response, options: _options }) => {
+      const respErr = await parseResponseError(response);
+      if (!respErr.error) {
+        const { body, ...resOptions } = response;
+        return new Response(body, { ...resOptions, status: response.status });
+      }
+
+      if (typeof respErr.error === 'string') {
+        throw new Error(respErr.error);
+      }
+
+      rethrowMeaningfulError(respErr.error);
+    },
+  };
+}

@@ -25,8 +25,8 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         GetDownloadURL_HTTPHeader: {
-            Name: string;
-            Value: string;
+            name: string;
+            value: string;
         };
         GetDownloadURL_Request: {
             resourceId: string;

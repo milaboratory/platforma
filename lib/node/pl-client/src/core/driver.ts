@@ -28,3 +28,14 @@ export function addRTypeToMetadata(rType: ResourceType, options?: RpcOptions) {
 
   return options;
 }
+
+/**
+ * addRTypeToHeaders adds a header that helps to route request to the right resource and controller.
+ * Without this header, API router on server side cannot route request to proper controller in internal
+ * RPC proxy.
+ */
+export function createRTypeRoutingHeader(rType: ResourceType): Record<string, string> {
+  return {
+    resourcetype: `${rType.name}:${rType.version}`,
+  };
+}

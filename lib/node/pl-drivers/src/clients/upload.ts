@@ -1,5 +1,5 @@
-import type { WireClientProvider, WireClientProviderFactory, WireConnection, PlClient, ResourceId, ResourceType } from '@milaboratories/pl-client';
-import { addRTypeToMetadata } from '@milaboratories/pl-client';
+import type { WireClientProvider, WireClientProviderFactory, PlClient } from '@milaboratories/pl-client';
+import { addRTypeToMetadata, createRTypeRoutingHeader, RestAPI } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
@@ -8,6 +8,7 @@ import type { Dispatcher } from 'undici';
 import { request } from 'undici';
 import { UploadAPI_ChecksumAlgorithm, type UploadAPI_GetPartURL_Response } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
 import { UploadClient } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client';
+import type { UploadApiPaths, UploadRestClientType } from '../proto-rest';
 import { crc32c } from './crc32c';
 
 import type { IncomingHttpHeaders } from 'undici/types/header';
@@ -37,7 +38,7 @@ export class BadRequestError extends Error {
  * The user should pass here a concrete BlobUpload/<storageId> resource,
  * it can be got from handle field of BlobUpload. */
 export class ClientUpload {
-  private readonly wire: WireClientProvider<UploadClient>;
+  private readonly wire: WireClientProvider<UploadRestClientType | UploadClient>;
 
   constructor(
     wireClientProviderFactory: WireClientProviderFactory,
@@ -46,13 +47,17 @@ export class ClientUpload {
     public readonly logger: MiLogger,
   ) {
     this.wire = wireClientProviderFactory.createWireClientProvider(
-      (wire: WireConnection) => {
+      (wire) => {
         if (wire.type === 'grpc') {
           return new UploadClient(wire.Transport);
-        } else {
-          // TODO: implement REST upload client init.
-          throw new Error('Unsupported transport type');
         }
+
+        return RestAPI.createClient<UploadApiPaths>({
+          hostAndPort: wire.Config.hostAndPort,
+          ssl: wire.Config.ssl,
+          dispatcher: wire.Dispatcher,
+          middlewares: wire.Middlewares,
+        });
       },
     );
   }
@@ -68,10 +73,30 @@ export class ClientUpload {
       checksumAlgorithm: UploadAPI_ChecksumAlgorithm;
       checksumHeader: string;
     }> {
-    const init = await this.grpcInit(id, type, options);
+    const client = this.wire.get();
+
+    if (client instanceof UploadClient) {
+      const init = (await client.init({ resourceId: id }, addRTypeToMetadata(type, options)))
+        .response;
+
+      return {
+        overall: init.partsCount,
+        toUpload: this.partsToUpload(init.partsCount, init.uploadedParts),
+        checksumAlgorithm: init.checksumAlgorithm,
+        checksumHeader: init.checksumHeader,
+      };
+    }
+
+    const init = (await client.POST('/v1/upload/init', {
+      body: {
+        resourceId: id.toString(),
+      },
+      headers: { ...createRTypeRoutingHeader(type) },
+    })).data!;
+
     return {
-      overall: init.partsCount,
-      toUpload: this.partsToUpload(init.partsCount, init.uploadedParts),
+      overall: BigInt(init.partsCount),
+      toUpload: this.partsToUpload(BigInt(init.partsCount), init.uploadedParts.map(BigInt)),
       checksumAlgorithm: init.checksumAlgorithm,
       checksumHeader: init.checksumHeader,
     };
@@ -86,12 +111,40 @@ export class ClientUpload {
     checksumHeader: string,
     options?: RpcOptions,
   ) {
-    const info = await this.grpcGetPartUrl(
-      { id, type },
-      partNumber,
-      0n, // we update progress as a separate call later.
-      options,
-    );
+    const client = this.wire.get();
+
+    let info: UploadAPI_GetPartURL_Response;
+    if (client instanceof UploadClient) {
+      // partChecksum isn't used for now but protoc requires it to be set
+      info = (await client.getPartURL(
+        {
+          resourceId: id,
+          partNumber,
+          uploadedPartSize: 0n,
+          isInternalUse: false,
+          partChecksum: '',
+        },
+        addRTypeToMetadata(type, options),
+      )).response;
+    } else {
+      const resp = (await client.POST('/v1/upload/get-part-url', {
+        body: {
+          resourceId: id.toString(),
+          partNumber: partNumber.toString(),
+          uploadedPartSize: '0',
+          isInternalUse: false,
+          partChecksum: '',
+        },
+        headers: { ...createRTypeRoutingHeader(type) },
+      })).data!;
+      info = {
+        uploadUrl: resp.uploadUrl,
+        method: resp.method,
+        headers: resp.headers,
+        chunkStart: BigInt(resp.chunkStart),
+        chunkEnd: BigInt(resp.chunkEnd),
+      };
+    }
 
     const chunk = await readFileChunk(path, info.chunkStart, info.chunkEnd);
     await checkExpectedMTime(path, expectedMTimeUnix);
@@ -145,11 +198,22 @@ export class ClientUpload {
       throw new Error(`partUpload: error ${JSON.stringify(e)} happened while trying to do part upload to the url ${info.uploadUrl}, headers: ${JSON.stringify(info.headers)}`);
     }
 
-    await this.grpcUpdateProgress({ id, type }, BigInt(info.chunkEnd - info.chunkStart), options);
+    await this.updateProgress({ id, type }, BigInt(info.chunkEnd - info.chunkStart), options);
   }
 
   public async finalize(info: ResourceInfo, options?: RpcOptions) {
-    return await this.grpcFinalize(info, options);
+    const client = this.wire.get();
+
+    if (client instanceof UploadClient) {
+      await client.finalize({ resourceId: info.id }, addRTypeToMetadata(info.type, options));
+    } else {
+      await client.POST('/v1/upload/finalize', {
+        body: {
+          resourceId: info.id.toString(),
+        },
+        headers: { ...createRTypeRoutingHeader(info.type) },
+      });
+    }
   }
 
   /** Calculates parts that need to be uploaded from the parts that were
@@ -165,41 +229,32 @@ export class ClientUpload {
     return toUpload;
   }
 
-  private async grpcInit(id: ResourceId, type: ResourceType, options?: RpcOptions) {
-    return await this.wire.get().init({ resourceId: id }, addRTypeToMetadata(type, options))
-      .response;
-  }
-
-  private async grpcGetPartUrl(
-    { id, type }: ResourceInfo,
-    partNumber: bigint,
-    uploadedPartSize: bigint,
-    options?: RpcOptions,
-  ) {
-    // partChecksum isn't used for now but protoc requires it to be set
-    return await this.wire.get().getPartURL(
-      { resourceId: id, partNumber, uploadedPartSize, isInternalUse: false, partChecksum: '' },
-      addRTypeToMetadata(type, options),
-    ).response;
-  }
-
-  private async grpcUpdateProgress(
+  private async updateProgress(
     { id, type }: ResourceInfo,
     bytesProcessed: bigint,
     options?: RpcOptions,
-  ) {
-    await this.wire.get().updateProgress(
-      {
-        resourceId: id,
-        bytesProcessed,
-      },
-      addRTypeToMetadata(type, options),
-    ).response;
-  }
+  ): Promise<void> {
+    const client = this.wire.get();
 
-  private async grpcFinalize({ id, type }: ResourceInfo, options?: RpcOptions) {
-    return await this.wire.get().finalize({ resourceId: id }, addRTypeToMetadata(type, options))
-      .response;
+    if (client instanceof UploadClient) {
+      await client.updateProgress(
+        {
+          resourceId: id,
+          bytesProcessed,
+        },
+        addRTypeToMetadata(type, options),
+      ).response;
+      return;
+    }
+
+    await client.POST('/v1/upload/update-progress', {
+      body: {
+        resourceId: id.toString(),
+        bytesProcessed: bytesProcessed.toString(),
+      },
+      headers: { ...createRTypeRoutingHeader(type) },
+    });
+    return;
   }
 }
 
