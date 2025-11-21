@@ -3,10 +3,11 @@ import { PlAutocomplete, PlAutocompleteMulti, PlDropdown, PlIcon16, PlNumberFiel
 import type { AnchoredPColumnId, AxisFilterByIdx, AxisFilterValue, SUniversalPColumnId } from '@platforma-sdk/model';
 import { isFilteredPColumn, parseColumnId, stringifyColumnId, type ListOptionBase } from '@platforma-sdk/model';
 import { computed } from 'vue';
-import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, SUPPORTED_FILTER_TYPES } from './constants';
+import type { SUPPORTED_FILTER_TYPES } from './constants';
+import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
 import OperandButton from './OperandButton.vue';
 import type { EditableFilter, Operand, PlAdvancedFilterColumnId, SourceOptionInfo } from './types';
-import { getFilterInfo, getNormalizedSpec, isNumericFilter, isStringFilter } from './utils';
+import { getFilterInfo, getNormalizedSpec, isNumericFilter, isPositionFilter } from './utils';
 
 const filter = defineModel<EditableFilter>('filter', { required: true });
 
@@ -15,43 +16,37 @@ const props = defineProps<{
   operand: Operand;
   enableDnd: boolean;
   columnOptions: SourceOptionInfo[];
+  supportedFilters: typeof SUPPORTED_FILTER_TYPES;
   getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
     ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
-  // @todo: can be optional
-  getSuggestModel: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
+  getSuggestModel?: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
     ListOptionBase<string | number> | Promise<ListOptionBase<string | number>>;
   onDelete: (columnId: PlAdvancedFilterColumnId) => void;
   onChangeOperand: (op: Operand) => void;
 }>();
 
+const getSuggestModel = (...args: Parameters<typeof props.getSuggestOptions>) => typeof props.getSuggestModel === 'function'
+  ? props.getSuggestModel(...args)
+  : Promise.resolve(props.getSuggestOptions(...args)).then((options) => options[0]);
+
 async function getSuggestModelMultiFn(id: PlAdvancedFilterColumnId, v: string[], axisIdx?: number): Promise<ListOptionBase<string>[]> {
-  return Promise.all(v.map((v) => props.getSuggestModel({ columnId: id, searchStr: v, axisIdx }) as Promise<ListOptionBase<string>>));
+  return Promise.all(v.map((v) => getSuggestModel({ columnId: id, searchStr: v, axisIdx }) as Promise<ListOptionBase<string>>));
 }
 async function getSuggestModelSingleFn(id: PlAdvancedFilterColumnId, v: string, axisIdx?: number): Promise<ListOptionBase<string>> {
-  return props.getSuggestModel({ columnId: id, searchStr: v, axisIdx }) as Promise<ListOptionBase<string>>;
+  return getSuggestModel({ columnId: id, searchStr: v, axisIdx }) as Promise<ListOptionBase<string>>;
 }
 async function getSuggestOptionsFn(id: PlAdvancedFilterColumnId, str: string, axisIdx?: number): Promise<ListOptionBase<string>[]> {
   return props.getSuggestOptions({ columnId: id, searchStr: str, axisIdx }) as Promise<ListOptionBase<string>[]>;
 }
 
+type Entries<T> = { [K in keyof T]: [K, T[K]] }[keyof T][];
 function changeFilterType() {
-  const nextFilterInfo = getFilterInfo(filter.value.type);
-  if (currentSpec.value && nextFilterInfo.supportedFor(currentSpec.value) && isNumericFilter(filter.value)) {
-    // no extra changes, previous filter is compatible with new filter type
-    return;
-  } else if (currentSpec.value && nextFilterInfo.supportedFor(currentSpec.value) && isStringFilter(filter.value)) {
-    // erase extra settings for string filter types, save only value and column (for example regex)
-    filter.value = {
-      ...DEFAULT_FILTERS[filter.value.type],
-      value: filter.value.value,
-      column: filter.value.column,
-    } as EditableFilter;
-  } else {
-    filter.value = {
-      ...DEFAULT_FILTERS[filter.value.type],
-      column: filter.value.column,
-    };
-  }
+  const defaultFilter = DEFAULT_FILTERS[filter.value.type];
+
+  filter.value = (Object.entries(defaultFilter) as Entries<EditableFilter>).reduce((res, [key, val]) => {
+    res[key] = filter.value[key] ?? val;
+    return res;
+  }, {} as Record<keyof EditableFilter, EditableFilter[keyof EditableFilter]>) as EditableFilter;
 }
 
 function changeSourceId(newSourceId?: PlAdvancedFilterColumnId) {
@@ -154,22 +149,26 @@ const currentSpec = computed(() => currentOption.value?.spec ? getNormalizedSpec
 const currentType = computed(() => currentSpec.value?.valueType);
 const currentError = computed(() => Boolean(currentOption.value?.error) || inconsistentSourceSelected.value);
 
-const filterTypesOptions = computed(() => [...SUPPORTED_FILTER_TYPES].filter((v) =>
-  filter.value.type === v || (currentSpec.value ? getFilterInfo(v).supportedFor(currentSpec.value) : true),
-).map((v) => ({ value: v, label: getFilterInfo(v).label })),
+const filterTypesOptions = computed(() => props.supportedFilters
+  .filter((v) => filter.value.type === v
+    || (currentSpec.value
+      ? getFilterInfo(v).supportedFor(currentSpec.value)
+      : true),
+  )
+  .map((v) => ({ value: v, label: getFilterInfo(v).label })),
 );
 
 const wildcardOptions = computed(() => {
-  if (filter.value.type === 'patternFuzzyContainSubsequence') {
-    if (currentOption.value?.alphabet === 'nucleotide') {
-      return [{ label: 'N', value: 'N' }];
-    }
-    if (currentOption.value?.alphabet === 'aminoacid') {
-      return [{ label: 'X', value: 'X' }];
-    }
-    return [...new Set(filter.value.value.split(''))].sort().map((v) => ({ value: v, label: v }));
+  if (filter.value.type !== 'patternFuzzyContainSubsequence') {
+    return [];
   }
-  return [];
+  if (currentOption.value?.alphabet === 'nucleotide') {
+    return [{ label: 'N', value: 'N' }];
+  }
+  if (currentOption.value?.alphabet === 'aminoacid') {
+    return [{ label: 'X', value: 'X' }];
+  }
+  return [...new Set(filter.value.value.split(''))].sort().map((v) => ({ value: v, label: v }));
 });
 
 const stringMatchesError = computed(() => {
@@ -286,6 +285,11 @@ const stringMatchesError = computed(() => {
       <PlNumberField
         v-if="isNumericFilter(filter)"
         v-model="filter.x"
+        group-position="bottom"
+      />
+      <PlNumberField
+        v-if="isPositionFilter(filter)"
+        v-model="filter.n"
         group-position="bottom"
       />
       <PlTextField

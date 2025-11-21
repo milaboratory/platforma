@@ -32,6 +32,8 @@ async function handleDeleteSchema() {
       v-model:annotation="annotation"
       :class="$style.sidebarItem"
       :columns="props.columns"
+      :get-suggest-model="props.getSuggestModel"
+      :get-suggest-options="props.getSuggestOptions"
       :has-selected-columns="props.hasSelectedColumns"
       :getValuesForSelectedColumns="props.getValuesForSelectedColumns"
       @delete-schema="handleDeleteSchema"

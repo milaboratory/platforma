@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { PlBtnSecondary, PlCheckbox, PlElementList, PlIcon16 } from '@milaboratories/uikit';
 import type { ListOptionBase } from '@platforma-sdk/model';
-import { computed, watch } from 'vue';
+import { computed, toRaw, watch } from 'vue';
 import FilterEditor from './FilterEditor.vue';
 import OperandButton from './OperandButton.vue';
-import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
+import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, SUPPORTED_FILTER_TYPES } from './constants';
 import type { CommonFilter, EditableFilter, NodeFilter, PlAdvancedFilterColumnId, RootFilter, SourceOptionInfo } from './types';
-import { createNewGroup, isValidColumnId } from './utils';
+import { createNewGroup, getNewId, isValidColumnId } from './utils';
 
 const model = defineModel<RootFilter>('filters', { required: true });
 
@@ -15,13 +15,22 @@ const props = withDefaults(defineProps<{
   items: SourceOptionInfo[];
   /** If true - new filter can be added by droppind element into filter group; else new column is added by button click */
   enableDnd?: boolean;
+  /** List of supported filter types */
+  supportedFilters?: typeof SUPPORTED_FILTER_TYPES;
+  /** If true - "Add group" button is shown below the filter groups */
+  withAddGroupButton?: boolean;
   /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
   getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
-    ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
+  ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
   /** Loading function for label of selected value for Equal/InSet filters and fixed axes options. */
-  getSuggestModel: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
+  getSuggestModel?: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
     ListOptionBase<string | number> | Promise<ListOptionBase<string | number>>;
-}>(), { enableDnd: false });
+}>(), {
+  enableDnd: false,
+  supportedFilters: () => SUPPORTED_FILTER_TYPES,
+  getSuggestModel: undefined,
+  withAddGroupButton: false,
+});
 
 const firstColumnId = computed(() => props.items[0]?.id);
 const emptyGroup: NodeFilter[] = [{
@@ -67,7 +76,7 @@ function addColumnToGroup(groupIdx: number, selectedSourceId: PlAdvancedFilterCo
   group.filters.push({
     ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
     column: selectedSourceId,
-    id: Date.now(),
+    id: getNewId(),
     isExpanded: true,
   } as CommonFilter);
 }
@@ -78,7 +87,7 @@ function removeFilterFromGroup(groupIdx: number, filterIdx: number) {
   if (group.filters.length === 1 && filterIdx === 0) {
     removeGroup(groupIdx);
   } else {
-    group.filters = group.filters.filter((_v, idx) => idx !== filterIdx);
+    group.filters.splice(filterIdx, 1);
   }
 }
 function inverseRootNode(groupIdx: number) {
@@ -96,7 +105,7 @@ function inverseRootNode(groupIdx: number) {
     }
 
     groups[groupIdx] = {
-      id: Date.now(),
+      id: getNewId(),
       isExpanded: true,
       type: 'not',
       filter: groups[groupIdx],
@@ -149,7 +158,7 @@ function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
 }
 
 function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: EditableFilter) {
-  filters[idx] = updatedFilter as CommonFilter;
+  filters[idx] = toRaw(updatedFilter as CommonFilter);
 }
 
 watch(model.value.filters, () => {
@@ -190,20 +199,22 @@ watch(model.value.filters, () => {
               :filter="validateFilter(getNotContent(item).filters[filterIdx])"
               :operand="getNotContent(item).type"
               :column-options="items"
-              :get-suggest-model="getSuggestModel"
-              :get-suggest-options="getSuggestOptions"
-              :enable-dnd="Boolean(enableDnd)"
+              :supported-filters="props.supportedFilters"
+              :get-suggest-model="props.getSuggestModel"
+              :get-suggest-options="props.getSuggestOptions"
+              :enable-dnd="Boolean(props.enableDnd)"
               :is-last="filterIdx === getNotContent(item).filters.length - 1"
               :on-change-operand="(v) => getNotContent(item).type = v"
               :on-delete="() => removeFilterFromGroup(index, filterIdx)"
               @update:filter="(value) => updateFilter(getNotContent(item).filters, filterIdx, value)"
             />
           </template>
-          <div v-if="enableDnd" :class="$style.dropzone">
+          <div v-if="props.enableDnd" :class="$style.dropzone">
             <div>Drop dimensions here</div>
           </div>
           <PlBtnSecondary v-else @click="addColumnToGroup(index, firstColumnId)">
-            <PlIcon16 name="add" style="margin-right: 8px"/>Add column
+            <PlIcon16 name="add" style="margin-right: 8px"/>
+            Add column
           </PlBtnSecondary>
         </div>
       </template>
@@ -219,7 +230,8 @@ watch(model.value.filters, () => {
 
     <!-- Last group - always exists, always empty, just for adding new groups -->
     <PlElementList
-      v-model:items="emptyGroup"
+      v-if="props.withAddGroupButton"
+      :items="emptyGroup"
       :get-item-key="(group) => group.id"
       :item-class="$style.filterGroup"
       :item-class-content="$style.filterGroupContent"
