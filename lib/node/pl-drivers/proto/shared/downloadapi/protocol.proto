@@ -30,8 +30,8 @@ message DownloadAPI {
     }
 
     message HTTPHeader {
-      string Name = 1;
-      string Value = 2;
+      string name = 1;
+      string value = 2;
     }
 
     message Response {

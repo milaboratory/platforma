@@ -1,26 +1,33 @@
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import type { WireClientProvider, WireClientProviderFactory, WireConnection } from '@milaboratories/pl-client';
-import { addRTypeToMetadata } from '@milaboratories/pl-client';
-import type { LsAPI_List_Response } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/lsapi/protocol';
+import type { WireClientProvider, WireClientProviderFactory } from '@milaboratories/pl-client';
+import { RestAPI } from '@milaboratories/pl-client';
+import { addRTypeToMetadata, createRTypeRoutingHeader } from '@milaboratories/pl-client';
+import type { LsAPI_List_Response, LsAPI_ListItem } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/lsapi/protocol';
 import { LSClient } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/lsapi/protocol.client';
+import type { LsApiPaths, LsRestClientType } from '../proto-rest';
+
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 
 export class ClientLs {
-  private readonly wire: WireClientProvider<LSClient>;
+  private readonly wire: WireClientProvider<LsRestClientType | LSClient>;
 
   constructor(
     wireClientProviderFactory: WireClientProviderFactory,
     private readonly logger: MiLogger,
   ) {
     this.wire = wireClientProviderFactory.createWireClientProvider(
-      (wire: WireConnection) => {
+      (wire) => {
         if (wire.type === 'grpc') {
           return new LSClient(wire.Transport);
-        } else {
-          // TODO: implement REST ls client.
-          throw new Error('Unsupported transport type');
         }
+
+        return RestAPI.createClient<LsApiPaths>({
+          hostAndPort: wire.Config.hostAndPort,
+          ssl: wire.Config.ssl,
+          dispatcher: wire.Dispatcher,
+          middlewares: wire.Middlewares,
+        });
       },
     );
   }
@@ -32,12 +39,40 @@ export class ClientLs {
     path: string,
     options?: RpcOptions,
   ): Promise<LsAPI_List_Response> {
-    return await this.wire.get().list(
-      {
-        resourceId: rInfo.id,
-        location: path,
-      },
-      addRTypeToMetadata(rInfo.type, options),
-    ).response;
+    const client = this.wire.get();
+
+    if (client instanceof LSClient) {
+      return await client.list(
+        {
+          resourceId: rInfo.id,
+          location: path,
+        },
+        addRTypeToMetadata(rInfo.type, options),
+      ).response;
+    } else {
+      const resp = (await client.POST('/v1/list', {
+        body: {
+          resourceId: rInfo.id.toString(),
+          location: path,
+        },
+        headers: { ...createRTypeRoutingHeader(rInfo.type) },
+      })).data!;
+
+      const items: LsAPI_ListItem[] = resp.items.map((item) => ({
+        name: item.name,
+        size: BigInt(item.size),
+        isDir: item.isDir,
+        fullName: item.fullName,
+        directory: item.directory,
+        // TODO: check we get value in a correct way here
+        lastModified: { seconds: BigInt(item.lastModified), nanos: 0 },
+        version: item.version,
+      }));
+
+      return {
+        items,
+        delimiter: resp.delimiter,
+      };
+    }
   }
 }

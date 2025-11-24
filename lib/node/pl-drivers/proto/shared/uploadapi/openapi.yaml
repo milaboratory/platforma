@@ -125,9 +125,9 @@ components:
         GetPartURL_HTTPHeader:
             type: object
             properties:
-                Name:
+                name:
                     type: string
-                Value:
+                value:
                     type: string
         GetPartURL_Request:
             type: object
