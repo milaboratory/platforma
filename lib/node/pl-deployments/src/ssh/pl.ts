@@ -7,6 +7,8 @@ import { downloadBinaryNoExtract } from '../common/pl_binary_download';
 import upath from 'upath';
 import * as plpath from './pl_paths';
 import { getDefaultPlVersion } from '../common/pl_version';
+import type { ProxySettings } from '@milaboratories/pl-http';
+import { defaultHttpDispatcher } from '@milaboratories/pl-http';
 
 import net from 'node:net';
 import type { PlConfig, PlLicenseMode, SshPlConfigGenerationResult } from '@milaboratories/pl-config';
@@ -377,6 +379,7 @@ export class SshPl {
 
     const downloadRes = await this.downloadBinariesAndUploadToTheServer(
       ops.localWorkdir, ops.plBinary!, state.remoteHome!, state.arch!, state.shouldUseMinio ?? false,
+      ops.proxy,
     );
     await onProgress?.('All required binaries have been downloaded and uploaded.');
 
@@ -447,18 +450,21 @@ export class SshPl {
     remoteHome: string,
     arch: Arch,
     shouldUseMinio: boolean,
+    proxy?: ProxySettings,
   ) {
     const state: DownloadAndUntarState[] = [];
     try {
       const pl = await this.downloadAndUntar(
         localWorkdir, remoteHome, arch,
         'pl', `pl-${plBinary.version}`,
+        proxy,
       );
       state.push(pl);
 
       const supervisor = await this.downloadAndUntar(
         localWorkdir, remoteHome, arch,
         'supervisord', plpath.supervisordDirName,
+        proxy,
       );
       state.push(supervisor);
 
@@ -467,6 +473,7 @@ export class SshPl {
         const minio = await this.downloadAndUntar(
           localWorkdir, remoteHome, arch,
           'minio', plpath.minioDirName,
+          proxy,
         );
         state.push(minio);
         await this.sshClient.chmod(minioPath, 0o750);
@@ -593,11 +600,14 @@ export class SshPl {
     arch: Arch,
     softwareName: string,
     tgzName: string,
+    proxy?: ProxySettings,
   ): Promise<DownloadAndUntarState> {
     const state: DownloadAndUntarState = {};
     state.binBasePath = plpath.binariesDir(remoteHome);
     await this.sshClient.ensureRemoteDirCreated(state.binBasePath);
     state.binBasePathCreated = true;
+
+    const dispatcher = defaultHttpDispatcher(proxy);
 
     let downloadBinaryResult: DownloadBinaryResult | null = null;
     const attempts = 5;
@@ -610,6 +620,7 @@ export class SshPl {
           tgzName,
           arch: arch.arch,
           platform: arch.platform,
+          dispatcher,
         });
         break;
       } catch (e: unknown) {
@@ -768,6 +779,7 @@ export type SshPlConfig = {
   license: PlLicenseMode;
   useGlobalAccess?: boolean;
   plBinary?: PlBinarySourceDownload;
+  proxy?: ProxySettings;
 
   onProgress?: (...args: any) => Promise<any>;
   plConfigPostprocessing?: (config: PlConfig) => PlConfig;
