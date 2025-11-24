@@ -7,26 +7,9 @@ import type { ReadableStream } from 'node:stream/web';
 import { TransformStream } from 'node:stream/web';
 import { text } from 'node:stream/consumers';
 import type { GetContentOptions } from '@milaboratories/pl-model-common';
+import { OffByOneError, DownloadNetworkError400, DownloadNetworkError } from './download_errors';
 
 export type ContentHandler<T> = (content: ReadableStream, size: number) => Promise<T>;
-
-/** Throws when a status code of the downloading URL was in range [400, 500). */
-export class NetworkError400 extends Error {
-  name = 'NetworkError400';
-}
-
-/**
- * There are backend versions that return 1 less byte than requested in range.
- * For such cases, this error will be thrown, so client can retry the request.
- * Dowloader will retry the request with one more byte in range.
- */
-export class OffByOneError extends Error {
-  name = 'OffByOneError';
-}
-
-export function isOffByOneError(error: unknown): error is OffByOneError {
-  return error instanceof Error && error.name === 'OffByOneError';
-}
 
 export class RemoteFileDownloader {
   private readonly offByOneServers: string[] = [];
@@ -120,13 +103,8 @@ export class RemoteFileDownloader {
 async function checkStatusCodeOk(statusCode: number, webBody: ReadableStream, url: string) {
   if (statusCode != 200 && statusCode != 206 /* partial content from range request */) {
     const beginning = (await text(webBody)).substring(0, 1000);
-
-    if (400 <= statusCode && statusCode < 500) {
-      throw new NetworkError400(
-        `Http error: statusCode: ${statusCode} `
-        + `url: ${url.toString()}, beginning of body: ${beginning}`);
-    }
-
-    throw new Error(`Http error: statusCode: ${statusCode} url: ${url.toString()}`);
+    if (400 <= statusCode && statusCode < 500)
+      throw new DownloadNetworkError400(statusCode, url, beginning);
+    throw new DownloadNetworkError(statusCode, url, beginning);
   }
 }

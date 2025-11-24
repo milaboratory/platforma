@@ -4,7 +4,7 @@ import * as tar from 'tar-fs';
 import path from 'path';
 import fs from 'fs';
 import * as fsp from 'fs/promises';
-import { NetworkError400 } from '../../helpers/download';
+import { isDownloadNetworkError400 } from '../../helpers/download_errors';
 import type { Watcher } from '@milaboratories/computable';
 import { ChangeSource } from '@milaboratories/computable';
 import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
@@ -224,7 +224,7 @@ class URLAborted extends Error {
 export function nonRecoverableError(e: any) {
   return (
     e instanceof URLAborted
-    || e instanceof NetworkError400
+    || isDownloadNetworkError400(e)
     || e instanceof UnknownStorageError
     || e instanceof WrongLocalFileUrl
     // file that we downloads from was moved or deleted.

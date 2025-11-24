@@ -44,6 +44,7 @@ import {
   parseDataInfoResource,
   traverseParquetChunkResource,
 } from './data';
+import { isDownloadNetworkError400 } from '@milaboratories/pl-drivers';
 
 function makeBlobId(res: PlTreeEntry): PFrameInternal.PFrameBlobId {
   return String(res.rid) as PFrameInternal.PFrameBlobId;
@@ -217,9 +218,13 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
       });
     } catch (error: unknown) {
       if (!isAbortError(error)) {
-        this.logger('warn',
-          `PFrames blob store unhandled error: ${ensureError(error)}`,
-        );
+        if (isDownloadNetworkError400(error) && error.statusCode === 404) {
+          this.logger('info', `PFrames blob store known race error: ${ensureError(error)}`);
+        } else {
+          this.logger('warn',
+            `PFrames blob store unhandled error: ${ensureError(error)}`,
+          );
+        }
       }
       return await respond({ type: 'InternalError' });
     }
