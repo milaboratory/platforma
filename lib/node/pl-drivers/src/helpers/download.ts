@@ -7,7 +7,7 @@ import type { ReadableStream } from 'node:stream/web';
 import { TransformStream } from 'node:stream/web';
 import { text } from 'node:stream/consumers';
 import type { GetContentOptions } from '@milaboratories/pl-model-common';
-import { OffByOneError, NetworkError400, NetworkError } from './errors';
+import { OffByOneError, DownloadNetworkError400, DownloadNetworkError } from './errors';
 
 export type ContentHandler<T> = (content: ReadableStream, size: number) => Promise<T>;
 
@@ -104,7 +104,7 @@ async function checkStatusCodeOk(statusCode: number, webBody: ReadableStream, ur
   if (statusCode != 200 && statusCode != 206 /* partial content from range request */) {
     const beginning = (await text(webBody)).substring(0, 1000);
     if (400 <= statusCode && statusCode < 500)
-      throw new NetworkError400(statusCode, url, beginning);
-    throw new NetworkError(statusCode, url, beginning);
+      throw new DownloadNetworkError400(statusCode, url, beginning);
+    throw new DownloadNetworkError(statusCode, url, beginning);
   }
 }

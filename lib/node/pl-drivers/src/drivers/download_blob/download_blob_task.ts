@@ -18,7 +18,7 @@ import * as path from 'node:path';
 import { Writable } from 'node:stream';
 import type { ClientDownload } from '../../clients/download';
 import { UnknownStorageError, WrongLocalFileUrl } from '../../clients/download';
-import { isNetworkError400 } from '../../helpers/errors';
+import { isDownloadNetworkError400 } from '../../helpers/errors';
 import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
 
 /** Downloads a blob and holds callers and watchers for the blob. */
@@ -155,7 +155,7 @@ export class DownloadBlobTask {
 export function nonRecoverableError(e: any) {
   return (
     e instanceof DownloadAborted
-    || isNetworkError400(e)
+    || isDownloadNetworkError400(e)
     || e instanceof UnknownStorageError
     || e instanceof WrongLocalFileUrl
     // file that we downloads from was moved or deleted.

@@ -1,29 +1,29 @@
-export class NetworkError extends Error {
-  name = 'NetworkError';
+export class DownloadNetworkError extends Error {
+  name = 'DownloadNetworkError';
 
   statusCode: number;
   url: string;
   beginning: string;
 
   constructor(statusCode: number, url: string, beginning: string) {
-    super(`Http error: statusCode: ${statusCode} url: ${url.toString()}, beginning of body: ${beginning}`);
+    super(`Http download error: statusCode: ${statusCode} url: ${url.toString()}, beginning of body: ${beginning}`);
     this.statusCode = statusCode;
     this.url = url;
     this.beginning = beginning;
   }
 }
 
-export function isNetworkError(error: unknown): error is NetworkError {
-  return error instanceof Error && error.name.startsWith('NetworkError');
+export function isDownloadNetworkError(error: unknown): error is DownloadNetworkError {
+  return error instanceof Error && error.name.startsWith('DownloadNetworkError');
 }
 
 /** Throws when a status code of the downloading URL was in range [400, 500). */
-export class NetworkError400 extends NetworkError {
-  name = 'NetworkError400';
+export class DownloadNetworkError400 extends DownloadNetworkError {
+  name = 'DownloadNetworkError400';
 }
 
-export function isNetworkError400(error: unknown): error is NetworkError400 {
-  return error instanceof Error && error.name === 'NetworkError400';
+export function isDownloadNetworkError400(error: unknown): error is DownloadNetworkError400 {
+  return error instanceof Error && error.name === 'DownloadNetworkError400';
 }
 
 /**
