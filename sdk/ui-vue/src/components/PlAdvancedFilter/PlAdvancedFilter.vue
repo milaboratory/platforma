@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { PlBtnSecondary, PlCheckbox, PlElementList, PlIcon16 } from '@milaboratories/uikit';
 import type { ListOptionBase } from '@platforma-sdk/model';
-import { computed, toRaw, watch } from 'vue';
+import { computed, toRaw } from 'vue';
 import FilterEditor from './FilterEditor.vue';
 import OperandButton from './OperandButton.vue';
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, SUPPORTED_FILTER_TYPES } from './constants';
@@ -13,12 +13,12 @@ const model = defineModel<RootFilter>('filters', { required: true });
 const props = withDefaults(defineProps<{
   /** List of ids of sources (columns, axes) that can be selected in filters */
   items: SourceOptionInfo[];
-  /** If true - new filter can be added by droppind element into filter group; else new column is added by button click */
-  enableDnd?: boolean;
   /** List of supported filter types */
   supportedFilters?: typeof SUPPORTED_FILTER_TYPES;
+  /** If true - new filter can be added by droppind element into filter group; else new column is added by button click */
+  enableDnd?: boolean;
   /** If true - "Add group" button is shown below the filter groups */
-  withAddGroupButton?: boolean;
+  enableAddGroupButton?: boolean;
   /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
   getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
   ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
@@ -26,10 +26,11 @@ const props = withDefaults(defineProps<{
   getSuggestModel?: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
     ListOptionBase<string | number> | Promise<ListOptionBase<string | number>>;
 }>(), {
-  enableDnd: false,
   supportedFilters: () => SUPPORTED_FILTER_TYPES,
   getSuggestModel: undefined,
-  withAddGroupButton: false,
+
+  enableDnd: false,
+  enableAddGroupButton: false,
 });
 
 const firstColumnId = computed(() => props.items[0]?.id);
@@ -160,10 +161,6 @@ function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
 function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: EditableFilter) {
   filters[idx] = toRaw(updatedFilter as CommonFilter);
 }
-
-watch(model.value.filters, () => {
-  console.log('updated', model.value.filters);
-});
 </script>
 <template>
   <div>
@@ -230,7 +227,7 @@ watch(model.value.filters, () => {
 
     <!-- Last group - always exists, always empty, just for adding new groups -->
     <PlElementList
-      v-if="props.withAddGroupButton"
+      v-if="props.enableAddGroupButton"
       :items="emptyGroup"
       :get-item-key="(group) => group.id"
       :item-class="$style.filterGroup"

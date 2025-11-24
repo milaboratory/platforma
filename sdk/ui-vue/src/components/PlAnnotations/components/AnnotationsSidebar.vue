@@ -8,6 +8,7 @@ import {
   PlSidebarItem,
 } from '@milaboratories/uikit';
 import type { Annotation } from '../types';
+import $commonStyle from './style.module.css';
 
 // Models
 const annotation = defineModel<Annotation>('annotation', { required: true });
@@ -21,7 +22,7 @@ function handleAddStep() {
   const id = randomInt();
   annotation.value.steps.push({
     id,
-    label: `Filter #${annotation.value.steps.length + 1}`,
+    label: '',
     filter: {
       id: randomInt(),
       type: 'and',
@@ -37,6 +38,7 @@ function handleAddStep() {
     <template #header-content>
       <PlEditableTitle
         v-model="annotation.title"
+        :class="{ [$commonStyle.flashing]: annotation.title.length === 0 }"
         :max-length="40"
         max-width="600px"
         placeholder="Annotation Name"
@@ -44,7 +46,7 @@ function handleAddStep() {
       />
     </template>
     <template v-if="annotation" #body-content>
-      <div :class="$style.root">
+      <div :class="[$style.root, { [$commonStyle.disabled]: annotation.title.length === 0 }]">
         <PlBtnSecondary icon="add" @click="handleAddStep">
           Add annotation
         </PlBtnSecondary>

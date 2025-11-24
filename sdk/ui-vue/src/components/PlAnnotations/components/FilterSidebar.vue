@@ -26,6 +26,8 @@ import { PlAdvancedFilter, type PlAdvancedFilterItem } from '../../PlAdvancedFil
 import type { PlAdvancedFilterColumnId } from '../../PlAdvancedFilter/types';
 import type { Filter } from '../types';
 
+import $commonStyle from './style.module.css';
+
 // Models
 const step = defineModel<Filter>('step', { required: true });
 // Props
@@ -39,7 +41,8 @@ const addFilterPlaceholder = () => {
   step.value.filter.filters.push({
     id: randomInt(),
     isExpanded: true,
-    type: undefined,
+    type: 'or',
+    filters: [],
   });
 };
 
@@ -90,14 +93,15 @@ const supportedFilters = [
       <PlEditableTitle
         :key="step.id"
         v-model="step.label"
+        :class="{ [$commonStyle.flashing]: step.label.length === 0 }"
         :max-length="40"
         max-width="600px"
-        placeholder="Annotation Name"
+        placeholder="Filter Name"
         :autofocus="step.label.length === 0"
       />
     </template>
     <template #body-content>
-      <div :class="$style.root">
+      <div :class="[$style.root, { [$commonStyle.disabled]: step.label.length === 0 }]">
         <div :class="$style.actions">
           <PlBtnSecondary style="width: 100%;" icon="add" @click="addFilterPlaceholder">
             Filter
@@ -108,21 +112,20 @@ const supportedFilters = [
         </div>
 
         <PlAdvancedFilter
-          v-model:filters="step.filter as PlAdvancedFilterFilter"
+          v-model:filters="(step.filter as PlAdvancedFilterFilter)"
           :items="props.columns"
           :supported-filters="supportedFilters"
           :get-suggest-model="props.getSuggestModel"
           :get-suggest-options="props.getSuggestOptions"
           :enable-dnd="false"
+          :enable-add-group-button="false"
         />
       </div>
     </template>
   </PlSidebarItem>
 </template>
 
-<style lang="scss" module>
-@use '@milaboratories/uikit/styles/variables' as *;
-
+<style module>
 .root {
   display: flex;
   flex-direction: column;
