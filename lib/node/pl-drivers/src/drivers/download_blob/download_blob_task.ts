@@ -18,7 +18,7 @@ import * as path from 'node:path';
 import { Writable } from 'node:stream';
 import type { ClientDownload } from '../../clients/download';
 import { UnknownStorageError, WrongLocalFileUrl } from '../../clients/download';
-import { isDownloadNetworkError400 } from '../../helpers/errors';
+import { isDownloadNetworkError400 } from '../../helpers/download_errors';
 import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
 
 /** Downloads a blob and holds callers and watchers for the blob. */

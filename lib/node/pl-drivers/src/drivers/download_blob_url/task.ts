@@ -4,7 +4,7 @@ import * as tar from 'tar-fs';
 import path from 'path';
 import fs from 'fs';
 import * as fsp from 'fs/promises';
-import { isDownloadNetworkError400 } from '../../helpers/errors';
+import { isDownloadNetworkError400 } from '../../helpers/download_errors';
 import type { Watcher } from '@milaboratories/computable';
 import { ChangeSource } from '@milaboratories/computable';
 import type { MiLogger, Signer } from '@milaboratories/ts-helpers';

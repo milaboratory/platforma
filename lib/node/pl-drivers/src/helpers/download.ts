@@ -7,7 +7,7 @@ import type { ReadableStream } from 'node:stream/web';
 import { TransformStream } from 'node:stream/web';
 import { text } from 'node:stream/consumers';
 import type { GetContentOptions } from '@milaboratories/pl-model-common';
-import { OffByOneError, DownloadNetworkError400, DownloadNetworkError } from './errors';
+import { OffByOneError, DownloadNetworkError400, DownloadNetworkError } from './download_errors';
 
 export type ContentHandler<T> = (content: ReadableStream, size: number) => Promise<T>;
 

@@ -17,7 +17,7 @@ import { Transform, Writable } from 'node:stream';
 import * as zlib from 'node:zlib';
 import * as tar from 'tar-fs';
 import type { RemoteFileDownloader } from '../../helpers/download';
-import { isDownloadNetworkError400 } from '../../helpers/errors';
+import { isDownloadNetworkError400 } from '../../helpers/download_errors';
 import type { UrlResult } from './driver';
 import { newBlockUIURL } from '../urls/url';
 

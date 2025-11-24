@@ -17,7 +17,7 @@ export * from './drivers/ls';
 export * from './drivers/virtual_storages';
 export * from './drivers/helpers/helpers';
 export * from './drivers/helpers/polling_ops';
-export * from './helpers/errors';
+export * from './helpers/download_errors';
 
 export * from './drivers/types';
 export { validateAbsolute } from './helpers/validate';
