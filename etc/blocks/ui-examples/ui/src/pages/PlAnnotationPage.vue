@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { randomInt } from '@milaboratories/helpers';
-import type { PColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { SUniversalPColumnId } from '@platforma-sdk/model';
 import { ref, watch } from 'vue';
 
 const showModal = ref(true);
@@ -48,53 +48,52 @@ const mockAnnotations = ref({
   ],
 });
 
-// PlAdvancedFilterItem[]
-const mockColumns = ref<unknown>([
-  {
-    id: 'sample_name' as SUniversalPColumnId,
-    label: 'Sample Name',
-    spec: {
-      kind: 'PColumn',
-      name: 'sample_name',
-      valueType: 'String' as const,
-      axesSpec: [
-        // {},
-      ],
-    } satisfies PColumnSpec,
-  },
-  {
-    id: 'count' as SUniversalPColumnId,
-    label: 'Count',
-    obj: {
-      valueType: 'Int' as const,
-      annotations: {},
-    },
-  },
-  {
-    id: 'description' as SUniversalPColumnId,
-    label: 'Description',
-    obj: {
-      valueType: 'String' as const,
-      annotations: {},
-    },
-  },
-  {
-    id: 'score' as SUniversalPColumnId,
-    label: 'Score',
-    obj: {
-      valueType: 'Double' as const,
-      annotations: {},
-    },
-  },
-  {
-    id: 'frequency' as SUniversalPColumnId,
-    label: 'Frequency',
-    obj: {
-      valueType: 'Float' as const,
-      annotations: {},
-    },
-  },
-]);
+// const mockColumns = ref<PlAdvancedFilterItem[]>([
+//   {
+//     id: 'sample_name' as SUniversalPColumnId,
+//     label: 'Sample Name',
+//     spec: {
+//       kind: 'PColumn',
+//       name: 'sample_name',
+//       valueType: 'String' as const,
+//       axesSpec: [
+//         // {},
+//       ],
+//     } satisfies PColumnSpec,
+//   },
+//   {
+//     id: 'count' as SUniversalPColumnId,
+//     label: 'Count',
+//     obj: {
+//       valueType: 'Int' as const,
+//       annotations: {},
+//     },
+//   },
+//   {
+//     id: 'description' as SUniversalPColumnId,
+//     label: 'Description',
+//     obj: {
+//       valueType: 'String' as const,
+//       annotations: {},
+//     },
+//   },
+//   {
+//     id: 'score' as SUniversalPColumnId,
+//     label: 'Score',
+//     obj: {
+//       valueType: 'Double' as const,
+//       annotations: {},
+//     },
+//   },
+//   {
+//     id: 'frequency' as SUniversalPColumnId,
+//     label: 'Frequency',
+//     obj: {
+//       valueType: 'Float' as const,
+//       annotations: {},
+//     },
+//   },
+// ]);
 
 // const getValuesForSelectedColumns = async () => {
 //   // Mock implementation - in real app this would fetch actual column values
