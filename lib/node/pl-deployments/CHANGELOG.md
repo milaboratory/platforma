@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.12.7
+
+### Patch Changes
+
+- b81af28: Integrated proxy configuration capabilities into the Platforma SSH setup process
+
 ## 2.12.6
 
 ### Patch Changes
