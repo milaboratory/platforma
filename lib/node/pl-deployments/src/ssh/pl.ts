@@ -490,6 +490,8 @@ export class SshPl {
       const msg = `SshPl.downloadBinariesAndUploadToServer: ${e}, state: ${JSON.stringify(state)}`;
       this.logger.error(msg);
       throw e;
+    } finally {
+      await dispatcher.close();
     }
   }
 
