@@ -17,7 +17,7 @@ import { Transform, Writable } from 'node:stream';
 import * as zlib from 'node:zlib';
 import * as tar from 'tar-fs';
 import type { RemoteFileDownloader } from '../../helpers/download';
-import { NetworkError400 } from '../../helpers/download';
+import { isDownloadNetworkError400 } from '../../helpers/download_errors';
 import type { UrlResult } from './driver';
 import { newBlockUIURL } from '../urls/url';
 
@@ -59,7 +59,7 @@ export class DownloadByUrlTask {
       this.setDone(size);
       this.change.markChanged(`download of ${this.url} finished`);
     } catch (e: unknown) {
-      if (e instanceof URLAborted || e instanceof NetworkError400) {
+      if (e instanceof URLAborted || isDownloadNetworkError400(e)) {
         this.setError(e);
         this.change.markChanged(`download of ${this.url} failed`);
         // Just in case we were half-way extracting an archive.
