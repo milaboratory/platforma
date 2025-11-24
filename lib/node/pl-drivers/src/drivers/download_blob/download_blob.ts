@@ -63,7 +63,7 @@ import { blobKey, pathToKey } from './blob_key';
 import { DownloadBlobTask, nonRecoverableError } from './download_blob_task';
 import { FilesCache } from '../helpers/files_cache';
 import { SparseCache, SparseCacheFsFile, SparseCacheFsRanges } from './sparse_cache/cache';
-import { isOffByOneError } from '../../helpers/download';
+import { isOffByOneError } from '../../helpers/errors';
 
 export type DownloadDriverOps = {
   /**
