@@ -1,6 +1,6 @@
 /* eslint-disable n/no-unsupported-features/node-builtins */
-import type { WireClientProvider, WireClientProviderFactory, WireConnection } from '@milaboratories/pl-client';
-import { addRTypeToMetadata, stringifyWithResourceId } from '@milaboratories/pl-client';
+import type { WireClientProvider, WireClientProviderFactory } from '@milaboratories/pl-client';
+import { addRTypeToMetadata, stringifyWithResourceId, RestAPI, createRTypeRoutingHeader } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import { PerfTimer } from '@milaboratories/helpers';
 import type { MiLogger } from '@milaboratories/ts-helpers';
@@ -16,12 +16,13 @@ import { type ContentHandler, RemoteFileDownloader } from '../helpers/download';
 import { validateAbsolute } from '../helpers/validate';
 import type { DownloadAPI_GetDownloadURL_Response } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
 import { DownloadClient } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client';
+import type { DownloadApiPaths, DownloadRestClientType } from '../proto-rest';
 import { type GetContentOptions } from '@milaboratories/pl-model-common';
 
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
 export class ClientDownload {
-  public readonly wire: WireClientProvider<DownloadClient>;
+  public readonly wire: WireClientProvider<DownloadRestClientType | DownloadClient>;
   private readonly remoteFileDownloader: RemoteFileDownloader;
 
   /** Helps to find a storage root directory by a storage id from URL scheme. */
@@ -37,12 +38,16 @@ export class ClientDownload {
     /** Pl storages available locally */
     localProjections: LocalStorageProjection[],
   ) {
-    this.wire = wireClientProviderFactory.createWireClientProvider((wire: WireConnection) => {
-      if (wire.type === 'grpc') {
-        return new DownloadClient(wire.Transport);
+    this.wire = wireClientProviderFactory.createWireClientProvider((wireConn) => {
+      if (wireConn.type === 'grpc') {
+        return new DownloadClient(wireConn.Transport);
       } else {
-        // TODO: implement REST download client.
-        throw new Error('Unsupported transport type');
+        return RestAPI.createClient<DownloadApiPaths>({
+          hostAndPort: wireConn.Config.hostAndPort,
+          ssl: wireConn.Config.ssl,
+          dispatcher: wireConn.Dispatcher,
+          middlewares: wireConn.Middlewares,
+        });
       }
     });
     this.remoteFileDownloader = new RemoteFileDownloader(httpClient);
@@ -127,10 +132,21 @@ export class ClientDownload {
     const withAbort = options ?? {};
     withAbort.abort = signal;
 
-    return await this.wire.get().getDownloadURL(
-      { resourceId: id, isInternalUse: false },
-      addRTypeToMetadata(type, withAbort),
-    ).response;
+    const client = this.wire.get();
+    if (client instanceof DownloadClient) {
+      return await client.getDownloadURL(
+        { resourceId: id, isInternalUse: false },
+        addRTypeToMetadata(type, withAbort),
+      ).response;
+    } else {
+      return (await client.POST('/v1/get-download-url', {
+        body: {
+          resourceId: id.toString(),
+          isInternalUse: false,
+        },
+        headers: { ...createRTypeRoutingHeader(type) },
+      })).data!;
+    }
   }
 }
 

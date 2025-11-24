@@ -110,3 +110,7 @@ for path in "${plapi_to_generate[@]}"; do
     generate "${PROTO_PLAPI_NAMESPACE}" "${path}" "${PROTO_PLAPI_SRC}"
     echo ""
 done
+
+# Generate TypeScript for googleapis/google/rpc/code.proto
+generate "github.com/googleapis/googleapis" "google/rpc" "${PROTO_PLAPI_SRC}"
+echo ""

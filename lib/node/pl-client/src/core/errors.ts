@@ -1,9 +1,11 @@
 import type { Status } from '../proto-grpc/github.com/googleapis/googleapis/google/rpc/status';
 import { Aborted } from '@milaboratories/ts-helpers';
+import { Code } from '../proto-grpc/google/rpc/code';
 
 export function isConnectionProblem(err: unknown, nested: boolean = false): boolean {
   if (err instanceof DisconnectedError) return true;
   if ((err as any).name == 'RpcError' && (err as any).code == 'UNAVAILABLE') return true;
+  if ((err as any).code == Code.UNAVAILABLE) return true;
   if ((err as any).cause !== undefined && !nested)
     // nested limits the depth of search
     return isConnectionProblem((err as any).cause, true);
@@ -13,6 +15,7 @@ export function isConnectionProblem(err: unknown, nested: boolean = false): bool
 export function isUnauthenticated(err: unknown, nested: boolean = false): boolean {
   if (err instanceof UnauthenticatedError) return true;
   if ((err as any).name == 'RpcError' && (err as any).code == 'UNAUTHENTICATED') return true;
+  if ((err as any).code == Code.UNAUTHENTICATED) return true;
   if ((err as any).cause !== undefined && !nested)
     // nested limits the depth of search
     return isUnauthenticated((err as any).cause, true);
@@ -22,10 +25,13 @@ export function isUnauthenticated(err: unknown, nested: boolean = false): boolea
 export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): boolean {
   if (err instanceof Aborted || (err as any).name == 'AbortError') return true;
   if ((err as any).code == 'ABORT_ERR') return true;
+  if ((err as any).code == Code.ABORTED) return true;
   if (
     (err as any).name == 'RpcError'
     && ((err as any).code == 'CANCELLED' || (err as any).code == 'DEADLINE_EXCEEDED')
   )
+    return true;
+  if ((err as any).code == Code.CANCELLED || (err as any).code == Code.DEADLINE_EXCEEDED)
     return true;
   if ((err as any).cause !== undefined && !nested)
     // nested limits the depth of search
