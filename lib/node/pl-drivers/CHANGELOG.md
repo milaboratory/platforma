@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.11.20
+
+### Patch Changes
+
+- 816fe2b: Mute sentry error
+
 ## 1.11.19
 
 ### Patch Changes

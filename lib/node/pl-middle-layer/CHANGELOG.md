@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.71
+
+### Patch Changes
+
+- 816fe2b: Mute sentry error
+- Updated dependencies [816fe2b]
+  - @milaboratories/pl-drivers@1.11.20
+
 ## 1.43.70
 
 ### Patch Changes
