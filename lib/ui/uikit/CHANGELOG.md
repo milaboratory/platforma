@@ -1,5 +1,13 @@
 # @milaboratories/uikit
 
+## 2.6.5
+
+### Patch Changes
+
+- bf6fe49: Update advanced filters and types
+- Updated dependencies [bf6fe49]
+  - @platforma-sdk/model@1.45.45
+
 ## 2.6.4
 
 ### Patch Changes

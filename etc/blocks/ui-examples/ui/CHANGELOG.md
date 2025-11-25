@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.6.7
+
+### Patch Changes
+
+- bf6fe49: Update advanced filters and types
+- Updated dependencies [bf6fe49]
+  - @platforma-sdk/model@1.45.45
+  - @milaboratories/milaboratories.ui-examples.model@1.3.7
+
 ## 1.6.6
 
 ### Patch Changes

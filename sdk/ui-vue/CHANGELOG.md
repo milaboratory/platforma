@@ -1,5 +1,15 @@
 # @platforma-sdk/ui-vue
 
+## 1.45.45
+
+### Patch Changes
+
+- bf6fe49: Update advanced filters and types
+- Updated dependencies [bf6fe49]
+  - @milaboratories/uikit@2.6.5
+  - @platforma-sdk/model@1.45.45
+  - @milaboratories/ptabler-expression-js@1.1.5
+
 ## 1.45.42
 
 ### Patch Changes
