@@ -1,5 +1,14 @@
 # @milaboratories/pf-driver
 
+## 1.0.6
+
+### Patch Changes
+
+- 2c07d5a: Return null instead of error when column not found
+- Updated dependencies [2c07d5a]
+  - @milaboratories/pl-model-middle-layer@1.8.42
+  - @platforma-sdk/model@1.45.42
+
 ## 1.0.5
 
 ### Patch Changes
