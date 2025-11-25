@@ -37,7 +37,7 @@ export default {
 };
 </script>
 
-<script lang="ts" setup generic="M = unknown">
+<script lang="ts" setup generic="M extends string | number = string">
 import './pl-autocomplete-multi.scss';
 
 import type { ListOptionBase } from '@platforma-sdk/model';

@@ -13,7 +13,7 @@ describe('PlAutocomplete', () => {
     const wrapper = mount(PlAutocomplete, {
       props: {
         'modelValue': 1,
-        'onUpdate:modelValue': (e: unknown) => wrapper.setProps({ modelValue: e }),
+        'onUpdate:modelValue': (e) => wrapper.setProps({ modelValue: e }),
         'optionsSearch': (_str: string) => {
           return Promise.resolve(options);
         },

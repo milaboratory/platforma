@@ -18,15 +18,15 @@ export class PFrameImpl implements PFrame {
   constructor(private readonly handle: PFrameHandle) {}
 
   public async findColumns(request: FindColumnsRequest): Promise<FindColumnsResponse> {
-    return await platforma.pFrameDriver.findColumns(this.handle, request);
+    return await this.getPlatforma().pFrameDriver.findColumns(this.handle, request);
   }
 
   public async getColumnSpec(columnId: PObjectId): Promise<PColumnSpec | null> {
-    return await platforma.pFrameDriver.getColumnSpec(this.handle, columnId);
+    return await this.getPlatforma().pFrameDriver.getColumnSpec(this.handle, columnId);
   }
 
   public async listColumns(): Promise<PColumnIdAndSpec[]> {
-    return await platforma.pFrameDriver.listColumns(this.handle);
+    return await this.getPlatforma().pFrameDriver.listColumns(this.handle);
   }
 
   public async calculateTableData(
@@ -39,10 +39,17 @@ export class PFrameImpl implements PFrame {
         filters: patchInSetFilters(request.filters),
       };
     }
-    return await platforma.pFrameDriver.calculateTableData(this.handle, request, range);
+    return await this.getPlatforma().pFrameDriver.calculateTableData(this.handle, request, range);
   }
 
   public async getUniqueValues(request: UniqueValuesRequest): Promise<UniqueValuesResponse> {
-    return await platforma.pFrameDriver.getUniqueValues(this.handle, request);
+    return await this.getPlatforma().pFrameDriver.getUniqueValues(this.handle, request);
+  }
+
+  private getPlatforma() {
+    if (platforma === undefined) {
+      throw new Error('Platforma instance is not available in the current context.');
+    }
+    return platforma;
   }
 }

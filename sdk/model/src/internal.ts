@@ -1,5 +1,5 @@
 import type { ValueOrErrors } from '@milaboratories/pl-model-common';
-import {} from './global';
+import { } from './global';
 import type { Platforma, PlatformaApiVersion } from './platforma';
 import type { FutureHandle, GlobalCfgRenderCtx } from './render/internal';
 
@@ -19,7 +19,7 @@ export function getPlatformaInstance<
 >(config?: { sdkVersion: string; apiVersion: PlatformaApiVersion }): Platforma<Args, Outputs, UiState, Href> {
   if (config && typeof globalThis.getPlatforma === 'function')
     return globalThis.getPlatforma(config);
-  else if (typeof globalThis.platforma !== 'undefined') return globalThis.platforma;
+  else if (typeof globalThis.platforma !== 'undefined') return globalThis.platforma as Platforma<Args, Outputs, UiState, Href>;
   else throw new Error('Can\'t get platforma instance.');
 }
 

@@ -27,7 +27,7 @@ const OPTIONS: Operand[] = ['and', 'or'];
   display: flex;
   gap: 4px;
   justify-content: center;
-  height: 72px;
+  height: 30px;
   align-items: center;
 }
 .operand {

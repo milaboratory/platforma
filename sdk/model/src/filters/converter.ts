@@ -51,6 +51,10 @@ export function convertFilterUiToExpressionImpl(value: FilterSpec): ExpressionIm
     return col(value.column).eq(lit(value.x));
   }
 
+  if (value.type === 'notEqual') {
+    return col(value.column).neq(lit(value.x));
+  }
+
   if (value.type === 'lessThan') {
     return col(value.column).lt(lit(value.x));
   }
@@ -112,7 +116,6 @@ export function convertFilterUiToExpressionImpl(value: FilterSpec): ExpressionIm
     || value.type === 'patternFuzzyContainSubsequence'
     || value.type === 'inSet'
     || value.type === 'notInSet'
-    || value.type === 'notEqual'
   ) {
     throw new Error('Not implemented filter type: ' + value.type);
   }

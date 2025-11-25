@@ -7,6 +7,7 @@ import type {
   NativePObjectId,
   PartitionedDataInfoEntries,
   PColumn,
+  PColumnLazy,
   PColumnSelector,
   PColumnSpec,
   PColumnValues,
@@ -64,15 +65,22 @@ class ArrayColumnProvider implements ColumnProvider {
   }
 }
 
-export type PColumnEntryWithLabel = {
-  id: PObjectId;
-  spec: PColumnSpec;
-  /** Lazy calculates the data, returns undefined if data is not ready. */
-  data(): PColumnDataUniversal | undefined;
+/** Lazy calculates the data, returns undefined if data is not ready. */
+export type PColumnLazyWithLabel<T> = PColumnLazy<T> & {
   label: string;
 };
 
 /** Universal column is a column that uses a universal column id, and always have label. */
+export type PColumnLazyUniversal<T> = PColumnLazyWithLabel<T> & {
+  id: SUniversalPColumnId;
+};
+
+/** @deprecated Use PColumnLazyWithLabel instead. */
+export type PColumnEntryWithLabel = PColumnLazy<undefined | PColumnDataUniversal> & {
+  label: string;
+};
+
+/** @deprecated Use PColumnLazyUniversal instead. */
 export type PColumnEntryUniversal = PColumnEntryWithLabel & {
   id: SUniversalPColumnId;
 };

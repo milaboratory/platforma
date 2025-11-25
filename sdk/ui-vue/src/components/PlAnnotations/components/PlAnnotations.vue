@@ -51,7 +51,7 @@ async function handleDeleteSchema() {
 </script>
 
 <template>
-  <PlSidebarGroup :class="$style.sidebarGroup">
+  <PlSidebarGroup>
     <template #item-0>
       <AnnotationsSidebar
         v-model:annotation="annotation"
@@ -67,6 +67,8 @@ async function handleDeleteSchema() {
         v-model:step="selectedStep"
         :class="$style.sidebarItem"
         :columns="props.columns"
+        :get-suggest-model="props.getSuggestModel"
+        :get-suggest-options="props.getSuggestOptions"
         :selectedStepId="selectedStepId"
         :hasSelectedColumns="props.hasSelectedColumns"
         :getValuesForSelectedColumns="props.getValuesForSelectedColumns"
@@ -75,12 +77,7 @@ async function handleDeleteSchema() {
   </PlSidebarGroup>
 </template>
 
-<style lang="scss" module>
-.sidebarGroup {
-  width: 100%;
-  height: 100%;
-}
-
+<style module>
 .sidebarItem {
   width: 100%;
   height: 100%;
