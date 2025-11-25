@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.73
+
+### Patch Changes
+
+- Updated dependencies [91b17b2]
+  - @milaboratories/pl-drivers@1.11.22
+
 ## 1.43.72
 
 ### Patch Changes
