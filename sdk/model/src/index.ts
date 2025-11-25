@@ -14,6 +14,7 @@ export * from './block_api_v1';
 export * from './block_api_v2';
 export * from './filters';
 export * from './annotations';
+export * from './pframe_utils';
 
 // reexporting everything from SDK model
 export * from '@milaboratories/pl-model-common';
