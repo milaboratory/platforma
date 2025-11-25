@@ -43,7 +43,7 @@ export interface OuterJoinV4 {
   secondary: JoinEntryV4[];
 }
 
-export type JoinEntryV4 = 
+export type JoinEntryV4 =
   | ColumnJoinEntry
   | SlicedColumnJoinEntry
   | ArtificialColumnJoinEntry

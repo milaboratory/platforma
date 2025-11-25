@@ -12,7 +12,7 @@ export type PFrameOptions = {
   spillPath: string;
   /** Logger instance, no logging is performed when not provided */
   logger?: Logger;
-}
+};
 
 /** List of PFrame management functions exposed by PFrame module */
 export interface PFrameFactoryV3 {
@@ -43,7 +43,7 @@ export type PFrameOptionsV2 = {
   spillPath: string;
   /** Logger instance, no logging is performed when not provided */
   logger?: Logger;
-}
+};
 
 /** List of PFrame management functions exposed by PFrame module */
 export interface PFrameFactoryV4 {

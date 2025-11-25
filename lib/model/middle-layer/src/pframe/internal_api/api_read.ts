@@ -5,7 +5,7 @@ import type {
   PColumnSpec,
   PObjectId,
   UniqueValuesRequest,
-  UniqueValuesResponse
+  UniqueValuesResponse,
 } from '@milaboratories/pl-model-common';
 import type { CreateTableRequestV4 } from './create_table';
 import type { PTableV7, PTableV8 } from './table';
@@ -44,7 +44,7 @@ export interface PFrameReadAPIV10 {
   getUniqueValues(
     request: UniqueValuesRequest,
     ops?: {
-      signal?: AbortSignal,
+      signal?: AbortSignal;
     }
   ): Promise<UniqueValuesResponse>;
 }
@@ -82,7 +82,7 @@ export interface PFrameReadAPIV11 {
   getUniqueValues(
     request: UniqueValuesRequest,
     ops?: {
-      signal?: AbortSignal,
+      signal?: AbortSignal;
     }
   ): Promise<UniqueValuesResponse>;
 }

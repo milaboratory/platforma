@@ -34,4 +34,4 @@ export type ConstantAxisFilter = {
   type: 'constant';
   axisIndex: number;
   constant: string | number;
-}
+};

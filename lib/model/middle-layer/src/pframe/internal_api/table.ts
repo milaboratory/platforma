@@ -5,7 +5,7 @@ import type {
   PTableShape,
   PTableSorting,
   PTableVector,
-  TableRange
+  TableRange,
 } from '@milaboratories/pl-model-common';
 import type { PTableId } from './common';
 
@@ -37,7 +37,7 @@ export interface PTableV7 extends Disposable {
    * Warning: This call materializes the join.
    */
   getFootprint(ops?: {
-    signal?: AbortSignal,
+    signal?: AbortSignal;
   }): Promise<number>;
 
   /**
@@ -45,7 +45,7 @@ export interface PTableV7 extends Disposable {
    * Warning: This call materializes the join.
    */
   getShape(ops?: {
-    signal?: AbortSignal,
+    signal?: AbortSignal;
   }): Promise<PTableShape>;
 
   /**
@@ -60,8 +60,8 @@ export interface PTableV7 extends Disposable {
   getData(
     columnIndices: number[],
     ops?: {
-      range?: TableRange,
-      signal?: AbortSignal,
+      range?: TableRange;
+      signal?: AbortSignal;
     },
   ): Promise<PTableVector[]>;
 
@@ -103,7 +103,7 @@ export interface PTableV8 extends Disposable {
    * Warning: This call materializes the join.
    */
   getFootprint(ops?: {
-    signal?: AbortSignal,
+    signal?: AbortSignal;
   }): Promise<number>;
 
   /**
@@ -111,7 +111,7 @@ export interface PTableV8 extends Disposable {
    * Warning: This call materializes the join.
    */
   getShape(ops?: {
-    signal?: AbortSignal,
+    signal?: AbortSignal;
   }): Promise<PTableShape>;
 
   /**
@@ -126,8 +126,8 @@ export interface PTableV8 extends Disposable {
   getData(
     columnIndices: number[],
     ops?: {
-      range?: TableRange,
-      signal?: AbortSignal,
+      range?: TableRange;
+      signal?: AbortSignal;
     },
   ): Promise<PTableVector[]>;
 
