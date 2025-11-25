@@ -1,5 +1,13 @@
 # @milaboratories/pf-driver
 
+## 1.0.7
+
+### Patch Changes
+
+- 4bfd1a7: PFrames version bump
+- Updated dependencies [4bfd1a7]
+  - @milaboratories/pl-model-middle-layer@1.8.43
+
 ## 1.0.6
 
 ### Patch Changes
