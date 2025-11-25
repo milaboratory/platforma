@@ -7,8 +7,6 @@ import type {
   PFrameHandle,
   PTableVector,
   UniqueValuesRequest,
-} from '@milaboratories/pl-model-common';
-import type {
   AxisId,
   CanonicalizedJson,
   FindColumnsRequest,
@@ -18,7 +16,7 @@ import type {
   PObjectId,
   PTableRecordSingleValueFilterV2,
   ValueType,
-} from '@platforma-sdk/model';
+} from '@milaboratories/pl-model-common';
 import { pTableValue, Annotation, canonicalizeAxisId, getAxisId, readAnnotation } from '@milaboratories/pl-model-common';
 
 // Types
