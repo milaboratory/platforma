@@ -4,9 +4,10 @@ import {
   BlockPackIdNoVersion,
   BlockPackMetaEmbeddedBytes,
   FeatureFlags,
-  SemVer
+  SemVer,
 } from '../block_meta';
-import { BlockPackFromRegistryV2, BlockPackSpec } from './block_pack_spec';
+import type { BlockPackFromRegistryV2 } from './block_pack_spec';
+import { BlockPackSpec } from './block_pack_spec';
 import { RegistryEntry } from './registry_spec';
 
 /**
@@ -17,7 +18,7 @@ export const BlockPackOverviewLegacy = z.object({
   id: BlockPackId,
   meta: BlockPackMetaEmbeddedBytes,
   spec: BlockPackSpec,
-  otherVersions: z.array(SemVer)
+  otherVersions: z.array(SemVer),
 }).passthrough();
 export type BlockPackOverviewLegacy = z.infer<typeof BlockPackOverviewLegacy>;
 
@@ -26,7 +27,7 @@ export const StableChannel = 'stable';
 
 export const VersionWithChannels = z.object({
   version: SemVer,
-  channels: z.array(z.string())
+  channels: z.array(z.string()),
 }).passthrough();
 
 /**
@@ -47,8 +48,8 @@ export const BlockPackOverviewRaw = z.object({
   id: BlockPackIdNoVersion,
   latestByChannel: z.record(z.string(), SingleBlockPackOverview),
   allVersions: z.array(VersionWithChannels),
-  registryId: z.string()
-})
+  registryId: z.string(),
+});
 export const BlockPackOverview = BlockPackOverviewRaw.passthrough();
 export type BlockPackOverview = z.infer<typeof BlockPackOverview>;
 
@@ -56,13 +57,13 @@ export const BlockPackOverviewNoRegistryId = BlockPackOverviewRaw.omit({ registr
 export type BlockPackOverviewNoRegistryId = z.infer<typeof BlockPackOverviewNoRegistryId>;
 
 export const RegistryStatus = RegistryEntry.extend({
-  status: z.union([z.literal('online'), z.literal('offline')])
+  status: z.union([z.literal('online'), z.literal('offline')]),
 });
 export type RegistryStatus = z.infer<typeof RegistryStatus>;
 
 export const BlockPackListing = z.object({
   registries: z.array(RegistryStatus),
-  blockPacks: z.array(BlockPackOverview)
+  blockPacks: z.array(BlockPackOverview),
 });
 export type BlockPackListing = z.infer<typeof BlockPackListing>;
 
@@ -77,6 +78,6 @@ export function blockPackOverviewToLegacy(bpo: BlockPackOverview): BlockPackOver
     otherVersions: bpo.allVersions
       .filter((v) => v.channels.indexOf(mainChannel) >= 0)
       .map((v) => v.version),
-    registryId: bpo.registryId
+    registryId: bpo.registryId,
   };
 }

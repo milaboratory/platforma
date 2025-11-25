@@ -14,54 +14,54 @@ export type FileRange = {
   start: number;
   /** End byte position (inclusive) */
   end: number;
-}
+};
 
 /** HTTP range as of RFC 9110 <https://datatracker.ietf.org/doc/html/rfc9110#name-range> */
 export type HttpRange =
   | {
-      /**
+    /**
        * Get file content in the specified byte range
-       * 
+       *
        * @example
        * ```
        * GET /file.parquet HTTP/1.1
        * Range: bytes=0-1023
        * ```
        */
-      type: 'bounded';
-      /** Start byte position (inclusive) */
-      start: number;
-      /** End byte position (inclusive) */
-      end: number;
-    }
+    type: 'bounded';
+    /** Start byte position (inclusive) */
+    start: number;
+    /** End byte position (inclusive) */
+    end: number;
+  }
   | {
-      /**
+    /**
        * Get byte range starting from the specified offset
-       * 
+       *
        * @example
        * ```
        * GET /file.parquet HTTP/1.1
        * Range: bytes=1024-
        * ```
        */
-      type: 'offset';
-      /** Start byte position (inclusive) */
-      offset: number;
-    }
+    type: 'offset';
+    /** Start byte position (inclusive) */
+    offset: number;
+  }
   | {
-      /**
+    /**
        * Get byte range starting from the specified suffix
-       * 
+       *
        * @example
        * ```
        * GET /file.parquet HTTP/1.1
        * Range: bytes=-1024
        * ```
        */
-      type: 'suffix';
-      /** End byte position (inclusive) */
-      suffix: number;
-    };
+    type: 'suffix';
+    /** End byte position (inclusive) */
+    suffix: number;
+  };
 
 /** HTTP method passed to object store */
 export type HttpMethod = 'GET' | 'HEAD';
@@ -69,32 +69,32 @@ export type HttpMethod = 'GET' | 'HEAD';
 /** HTTP response from object store */
 export type ObjectStoreResponse =
   | {
-      /**
+    /**
        * Will be translated to 500 Internal Server Error by the handler
        * or 408 Request Timeout if the request was aborted
        */
-      type: 'InternalError';
-    }
+    type: 'InternalError';
+  }
   | {
-      /** Will be translated to 404 Not Found by the handler */
-      type: 'NotFound';
-    }
+    /** Will be translated to 404 Not Found by the handler */
+    type: 'NotFound';
+  }
   | {
-      /** Will be translated to 416 Range Not Satisfiable by the handler */
-      type: 'RangeNotSatisfiable';
-      /** Total file size in bytes */
-      size: number;
-    }
+    /** Will be translated to 416 Range Not Satisfiable by the handler */
+    type: 'RangeNotSatisfiable';
+    /** Total file size in bytes */
+    size: number;
+  }
   | {
-      /** Will be translated to 200 OK or 206 Partial Content by the handler */
-      type: 'Ok';
-      /** Total file size in bytes */
-      size: number;
-      /** File range translated from HTTP range */
-      range: FileRange;
-      /** Stream of file content, undefined for HEAD requests */
-      data?: Readable;
-    }
+    /** Will be translated to 200 OK or 206 Partial Content by the handler */
+    type: 'Ok';
+    /** Total file size in bytes */
+    size: number;
+    /** File range translated from HTTP range */
+    range: FileRange;
+    /** Stream of file content, undefined for HEAD requests */
+    data?: Readable;
+  };
 
 /** Common options for object store creation */
 export interface ObjectStoreOptions {
@@ -173,7 +173,7 @@ export type RequestHandlerOptions = {
   /** Object store to serve files from, @see HttpHelpers.createFsStore */
   store: ObjectStore;
   /** Here will go caching options... */
-}
+};
 
 /** Server configuration options */
 export type HttpServerOptions = {
@@ -189,7 +189,7 @@ export type HttpServerOptions = {
 
 /**
  * Long unique opaque string for use in Bearer authorization header
- * 
+ *
  * @example
  * ```ts
  * request.setHeader('Authorization', `Bearer ${authToken}`);
@@ -199,7 +199,7 @@ export type HttpAuthorizationToken = Branded<string, 'PFrameInternal.HttpAuthori
 
 /**
  * TLS certificate in PEM format
- * 
+ *
  * @example
  * ```txt
  * -----BEGIN CERTIFICATE-----

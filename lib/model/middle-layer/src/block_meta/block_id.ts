@@ -6,7 +6,7 @@ export const BlockPackId = z
   .object({
     organization: z.string(),
     name: z.string(),
-    version: SemVer
+    version: SemVer,
   })
   .strict();
 export type BlockPackId = z.infer<typeof BlockPackId>;
@@ -26,7 +26,7 @@ export function blockPackIdNoVersionToString(
   bp: BlockPackIdNoVersion | undefined
 ): string | undefined;
 export function blockPackIdNoVersionToString(
-  bp: BlockPackIdNoVersion | undefined
+  bp: BlockPackIdNoVersion | undefined,
 ): string | undefined {
   if (bp === undefined) return undefined;
   return `${bp.organization}:${bp.name}`;
@@ -34,7 +34,7 @@ export function blockPackIdNoVersionToString(
 
 export function blockPackIdEquals(
   bp1: BlockPackId | undefined,
-  bp2: BlockPackId | undefined
+  bp2: BlockPackId | undefined,
 ): boolean {
   if (bp1 === undefined && bp2 === undefined) return true;
   if (bp1 === undefined || bp2 === undefined) return false;
@@ -45,7 +45,7 @@ export function blockPackIdEquals(
 
 export function blockPackIdNoVersionEquals(
   bp1: BlockPackIdNoVersion | undefined,
-  bp2: BlockPackIdNoVersion | undefined
+  bp2: BlockPackIdNoVersion | undefined,
 ): boolean {
   if (bp1 === undefined && bp2 === undefined) return true;
   if (bp1 === undefined || bp2 === undefined) return false;

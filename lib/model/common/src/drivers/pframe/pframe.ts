@@ -17,7 +17,7 @@ export interface PFrame {
   findColumns(request: FindColumnsRequest): Promise<FindColumnsResponse>;
 
   /** Retrieve single column spec */
-  getColumnSpec(columnId: PObjectId): Promise<PColumnSpec>;
+  getColumnSpec(columnId: PObjectId): Promise<PColumnSpec | null>;
 
   /** Retrieve information about all columns currently added to the PFrame */
   listColumns(): Promise<PColumnIdAndSpec[]>;

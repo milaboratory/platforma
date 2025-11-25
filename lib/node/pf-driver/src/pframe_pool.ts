@@ -36,6 +36,7 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
   private readonly remoteBlobs: PoolEntry<PFrameInternal.PFrameBlobId>[] = [];
 
   constructor(
+    frameId: PFrameInternal.PFrameId,
     private readonly localBlobProvider: LocalBlobProvider<TreeEntry>,
     private readonly remoteBlobProvider: RemoteBlobProvider<TreeEntry>,
     logger: PFrameInternal.Logger,
@@ -92,7 +93,7 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
     }));
 
     try {
-      const pFrame = PFrameFactory.createPFrame({ spillPath: this.spillPath, logger });
+      const pFrame = PFrameFactory.createPFrame({ /* frameId, */ spillPath: this.spillPath, logger });
       pFrame.setDataSource({
         ...this.localBlobProvider.makeDataSource(this.disposeSignal),
         parquetServer: this.remoteBlobProvider.httpServerInfo(),
@@ -171,6 +172,7 @@ export class PFramePool<TreeEntry extends JsonSerializable>
       );
     }
     return new PFrameHolder(
+      key,
       this.localBlobProvider,
       this.remoteBlobProvider,
       this.logger,

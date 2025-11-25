@@ -21,7 +21,7 @@ export class PFrameImpl implements PFrame {
     return await platforma.pFrameDriver.findColumns(this.handle, request);
   }
 
-  public async getColumnSpec(columnId: PObjectId): Promise<PColumnSpec> {
+  public async getColumnSpec(columnId: PObjectId): Promise<PColumnSpec | null> {
     return await platforma.pFrameDriver.getColumnSpec(this.handle, columnId);
   }
 

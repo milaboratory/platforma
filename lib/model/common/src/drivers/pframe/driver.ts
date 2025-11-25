@@ -38,7 +38,7 @@ export interface PFrameDriver {
   getColumnSpec(
     handle: PFrameHandle,
     columnId: PObjectId
-  ): Promise<PColumnSpec>;
+  ): Promise<PColumnSpec | null>;
 
   /** Retrieve information about all columns currently added to the PFrame */
   listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]>;

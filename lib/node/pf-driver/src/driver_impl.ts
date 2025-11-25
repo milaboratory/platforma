@@ -227,10 +227,11 @@ implements AbstractInternalPFrameDriver<PColumnData> {
     };
   }
 
-  public async getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec> {
+  public async getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec | null> {
     const { pFramePromise } = this.pFrames.getByKey(handle);
     const pFrame = await pFramePromise;
-    return await pFrame.getColumnSpec(columnId);
+    // TODO: remove catch after update
+    return await pFrame.getColumnSpec(columnId).catch(() => null);
   }
 
   public async listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
@@ -271,7 +272,6 @@ implements AbstractInternalPFrameDriver<PColumnData> {
         });
 
         const overallSize = await pTable.getFootprint({
-          withPredecessors: true,
           signal: combinedSignal,
         });
         this.pTableCachePerFrame.cache(table, overallSize);
@@ -340,7 +340,6 @@ implements AbstractInternalPFrameDriver<PColumnData> {
       });
 
       const overallSize = await pTable.getFootprint({
-        withPredecessors: true,
         signal: combinedSignal,
       });
 
@@ -371,7 +370,6 @@ implements AbstractInternalPFrameDriver<PColumnData> {
       });
 
       const overallSize = await pTable.getFootprint({
-        withPredecessors: true,
         signal: combinedSignal,
       });
 

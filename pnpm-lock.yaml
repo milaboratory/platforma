@@ -1551,9 +1551,15 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../sdk/eslint-config
       '@types/node':
         specifier: 'catalog:'
         version: 24.5.2
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3

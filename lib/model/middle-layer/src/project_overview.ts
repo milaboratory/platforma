@@ -1,8 +1,8 @@
-import { ProjectMeta } from './project';
-import { BlockPackSpec } from './block_registry/block_pack_spec';
-import { BlockCodeFeatureFlags, BlockRenderingMode, BlockSection, NavigationState, AuthorMarker } from '@milaboratories/pl-model-common';
-import { UpdateSuggestions } from './update_info';
-import { BlockSettings } from './block_settings';
+import type { ProjectMeta } from './project';
+import type { BlockPackSpec } from './block_registry/block_pack_spec';
+import type { BlockCodeFeatureFlags, BlockRenderingMode, BlockSection, NavigationState, AuthorMarker } from '@milaboratories/pl-model-common';
+import type { UpdateSuggestions } from './update_info';
+import type { BlockSettings } from './block_settings';
 
 /** Generalized block status, to be used in block item "styling". */
 export type BlockCalculationStatus = 'NotCalculated' | 'Running' | 'Done' | 'Limbo';

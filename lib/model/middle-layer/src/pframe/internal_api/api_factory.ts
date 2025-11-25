@@ -1,4 +1,4 @@
-import {
+import type {
   BinaryPartitionedDataInfo,
   Branded,
   JsonDataInfo,
@@ -8,10 +8,7 @@ import {
   PColumnSpec,
   PObjectId,
 } from '@milaboratories/pl-model-common';
-import {
-  HttpHelpers,
-  HttpServerInfo,
-} from './http_helpers';
+import type { HttpServerInfo } from './http_helpers';
 
 /** PColumn spec file extension */
 export const SpecExtension = '.spec' as const;
@@ -74,7 +71,7 @@ export interface PFrameFactoryAPIV4 extends Disposable {
     columnId: PObjectId,
     dataInfo: DataInfo<PFrameBlobId>,
     options?: {
-      signal?: AbortSignal,
+      signal?: AbortSignal;
     }
   ): Promise<void>;
 
