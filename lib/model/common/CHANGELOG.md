@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.21.9
+
+### Patch Changes
+
+- bf6fe49: Update advanced filters and types
+
 ## 1.21.8
 
 ### Patch Changes
