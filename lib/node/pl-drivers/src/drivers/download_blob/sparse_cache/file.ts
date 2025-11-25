@@ -27,7 +27,8 @@ export async function createSparseFile(
  */
 async function ensureSparseOnWindows(path: string, platform: NodeJS.Platform) {
   if (platform === 'win32') {
-    await spawnAsync('fsutil', ['sparse', 'setflag', `"${path}"`], { stdio: 'pipe' });
+    // https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/fsutil-sparse
+    await spawnAsync('fsutil', ['sparse', 'setflag', path], { stdio: 'pipe' });
   }
 }
 
