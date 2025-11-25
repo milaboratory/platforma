@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { PlBtnSecondary, PlCheckbox, PlElementList, PlIcon16 } from '@milaboratories/uikit';
+import { PlBtnSecondary, PlCheckbox, PlElementList } from '@milaboratories/uikit';
 import type { ListOptionBase } from '@platforma-sdk/model';
 import { computed, toRaw } from 'vue';
 import FilterEditor from './FilterEditor.vue';
@@ -209,14 +209,14 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
           <div v-if="props.enableDnd" :class="$style.dropzone">
             <div>Drop dimensions here</div>
           </div>
-          <PlBtnSecondary v-else @click="addColumnToGroup(index, firstColumnId)">
-            <PlIcon16 name="add" style="margin-right: 8px"/>
-            Add column
+          <PlBtnSecondary v-else icon="add" @click="addColumnToGroup(index, firstColumnId)">
+            Add filter
           </PlBtnSecondary>
         </div>
       </template>
       <template #item-after="{ index }">
         <OperandButton
+          v-if="props.enableAddGroupButton || index < getRootGroups().length - 1"
           :class="$style.buttonWrapper"
           :active="model.type"
           :disabled="index === getRootGroups().length - 1"
@@ -225,7 +225,7 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
       </template>
     </PlElementList>
 
-    <!-- Last group - always exists, always empty, just for adding new groups -->
+    <!-- Last group - always empty, just for adding new groups -->
     <PlElementList
       v-if="props.enableAddGroupButton"
       :items="emptyGroup"
@@ -249,9 +249,11 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
         <div v-if="enableDnd" :class="$style.dropzone">
           <div>Drop dimensions here</div>
         </div>
-        <PlBtnSecondary v-else @click="addGroup(firstColumnId)">
-          <PlIcon16 name="add" style="margin-right: 8px"/>Add column
-        </PlBtnSecondary>
+        <slot v-else name="add-group-buttons">
+          <PlBtnSecondary icon="add" @click="addGroup(firstColumnId)">
+            Add filter
+          </PlBtnSecondary>
+        </slot>
       </template>
     </PlElementList>
   </div>

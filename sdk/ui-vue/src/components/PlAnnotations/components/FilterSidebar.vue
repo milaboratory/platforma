@@ -42,7 +42,13 @@ const addFilterPlaceholder = () => {
     id: randomInt(),
     isExpanded: true,
     type: 'or',
-    filters: [],
+    filters: [
+      {
+        id: randomInt(),
+        type: 'isNA',
+        column: props.columns[0].id as SUniversalPColumnId,
+      },
+    ],
   });
 };
 
@@ -101,26 +107,27 @@ const supportedFilters = [
       />
     </template>
     <template #body-content>
-      <div :class="[$style.root, { [$commonStyle.disabled]: step.label.length === 0 }]">
-        <div :class="$style.actions">
-          <PlBtnSecondary style="width: 100%;" icon="add" @click="addFilterPlaceholder">
-            Filter
-          </PlBtnSecondary>
-          <PlBtnSecondary v-if="withSelection" style="width: 100%;" icon="add" :disabled="!props.hasSelectedColumns" @click="addFilterFromSelected">
-            From selection
-          </PlBtnSecondary>
-        </div>
-
-        <PlAdvancedFilter
-          v-model:filters="(step.filter as PlAdvancedFilterFilter)"
-          :items="props.columns"
-          :supported-filters="supportedFilters"
-          :get-suggest-model="props.getSuggestModel"
-          :get-suggest-options="props.getSuggestOptions"
-          :enable-dnd="false"
-          :enable-add-group-button="false"
-        />
-      </div>
+      <PlAdvancedFilter
+        v-model:filters="(step.filter as PlAdvancedFilterFilter)"
+        :class="[$style.root, { [$commonStyle.disabled]: step.label.length === 0 }]"
+        :items="props.columns"
+        :supported-filters="supportedFilters"
+        :get-suggest-model="props.getSuggestModel"
+        :get-suggest-options="props.getSuggestOptions"
+        :enable-dnd="false"
+        :enable-add-group-button="true"
+      >
+        <template #add-group-buttons>
+          <div :class="$style.actions">
+            <PlBtnSecondary icon="add" @click="addFilterPlaceholder">
+              Add Filter
+            </PlBtnSecondary>
+            <PlBtnSecondary v-if="withSelection" icon="add" :disabled="!props.hasSelectedColumns" @click="addFilterFromSelected">
+              From selection
+            </PlBtnSecondary>
+          </div>
+        </template>
+      </PlAdvancedFilter>
     </template>
   </PlSidebarItem>
 </template>

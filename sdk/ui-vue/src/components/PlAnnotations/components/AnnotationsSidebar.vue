@@ -41,16 +41,12 @@ function handleAddStep() {
         :class="{ [$commonStyle.flashing]: annotation.title.length === 0 }"
         :max-length="40"
         max-width="600px"
-        placeholder="Annotation Name"
+        placeholder="Annotation Title"
         :autofocus="annotation.title.length === 0"
       />
     </template>
     <template v-if="annotation" #body-content>
       <div :class="[$style.root, { [$commonStyle.disabled]: annotation.title.length === 0 }]">
-        <PlBtnSecondary icon="add" @click="handleAddStep">
-          Add annotation
-        </PlBtnSecondary>
-
         <span :class="$style.tip">Lower annotations override the ones above. Rearrange them by dragging.</span>
 
         <PlElementList
@@ -65,6 +61,9 @@ function handleAddStep() {
             {{ item.label }}
           </template>
         </PlElementList>
+        <PlBtnSecondary icon="add" @click="handleAddStep">
+          Add label
+        </PlBtnSecondary>
       </div>
     </template>
     <template #footer-content>
@@ -90,7 +89,6 @@ function handleAddStep() {
 }
 
 .tip {
-  margin-top: 12px;
   color: var(--txt-03);
 }
 
