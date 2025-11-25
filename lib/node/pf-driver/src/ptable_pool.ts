@@ -80,7 +80,7 @@ export class PTablePool<TreeEntry extends JsonSerializable>
         },
       });
       const { resource: { pTablePromise } } = predecessor;
-      const sortedTable = pTablePromise.then((pTable) => pTable.sort(params.def.sorting));
+      const sortedTable = pTablePromise.then((pTable) => pTable.sort(/* key, */ params.def.sorting));
       return new PTableHolder(handle, combinedSignal, sortedTable, predecessor);
     }
 
@@ -94,12 +94,12 @@ export class PTablePool<TreeEntry extends JsonSerializable>
         },
       });
       const { resource: { pTablePromise } } = predecessor;
-      const filteredTable = pTablePromise.then((pTable) => pTable.filter(params.def.filters));
+      const filteredTable = pTablePromise.then((pTable) => pTable.filter(/* key, */ params.def.filters));
       return new PTableHolder(handle, combinedSignal, filteredTable, predecessor);
     }
 
     // 1. Join
-    const table = pFramePromise.then((pFrame) => pFrame.createTable({
+    const table = pFramePromise.then((pFrame) => pFrame.createTable(/* key, */ {
       src: joinEntryToInternal(params.def.src),
       // `params.def.filters` would be non-empty only when join has artificial columns
       filters: [...params.def.partitionFilters, ...params.def.filters],

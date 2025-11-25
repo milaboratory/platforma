@@ -1,4 +1,4 @@
-import {
+import type {
   BinaryPartitionedDataInfo,
   Branded,
   JsonDataInfo,
@@ -8,7 +8,7 @@ import {
   PColumnSpec,
   PObjectId,
 } from '@milaboratories/pl-model-common';
-import {
+import type {
   HttpHelpers,
   HttpServerInfo,
 } from './http_helpers';

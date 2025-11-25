@@ -1,5 +1,5 @@
-import { ConstantAxisFilter } from './common';
-import { JsonDataInfo, PColumnSpec, PObjectId, PTableRecordFilter } from '@milaboratories/pl-model-common';
+import type { ConstantAxisFilter } from './common';
+import type { JsonDataInfo, PColumnSpec, PObjectId, PTableRecordFilter } from '@milaboratories/pl-model-common';
 
 export interface ColumnJoinEntry {
   type: 'column';
