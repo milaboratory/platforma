@@ -2616,6 +2616,9 @@ importers:
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.39.10
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
