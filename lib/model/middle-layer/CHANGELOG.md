@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.42
+
+### Patch Changes
+
+- 2c07d5a: Return null instead of error when column not found
+- Updated dependencies [2c07d5a]
+  - @milaboratories/pl-model-common@1.21.8
+
 ## 1.8.41
 
 ### Patch Changes

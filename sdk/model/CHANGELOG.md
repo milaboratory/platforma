@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.45.42
+
+### Patch Changes
+
+- 2c07d5a: Return null instead of error when column not found
+- Updated dependencies [2c07d5a]
+  - @milaboratories/pl-model-common@1.21.8
+  - @milaboratories/ptabler-expression-js@1.1.4
+
 ## 1.45.35
 
 ### Patch Changes

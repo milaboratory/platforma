@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.21.8
+
+### Patch Changes
+
+- 2c07d5a: Return null instead of error when column not found
+
 ## 1.21.7
 
 ### Patch Changes
