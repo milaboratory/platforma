@@ -201,8 +201,11 @@ service Platform {
 //   - client reads server responses for each messages sent. Client can batch
 //     writes and reads: e.g. send 3 messages, read 2 responses, send one
 //     more, read 2;
-//   - to finish communication client sends 'commit' message and reads last
+//   - to finish communication client sends 'commit' or 'discard' message and reads last
 //     response;
+//   - to make server interrupt communication, client sends 'close' message and reads to the last
+//     server response. This allows graceful stream close, waiting for all queued server responses
+//     to be sent before closing the stream.
 //
 // Detailed description of the process.
 //
@@ -279,6 +282,9 @@ service Platform {
 //    - server stops reading client stream and does the commit/discard action.
 //    - once transaction is closed, server sends the result to client and
 //      closes server stream.
+//    - client stream reading may be interrupted by special 'tx_close' message, which is equal to
+//      'tx_discard', but does not produce additional reply message and does not require valid
+//      'request_id' value.
 //
 // At this point the transaction over gRPC is considered as finalized, all
 // local IDs generated within the transaction are no longer valid.
@@ -307,6 +313,7 @@ message TxAPI {
       Open.Request tx_open = 11; // open transaction
       Commit.Request tx_commit = 12; // commit the transaction and close the stream
       Discard.Request tx_discard = 13; // discard the transaction and close the stream
+      Close.Request tx_close = 14; // close transaction stream without reply
 
       ResourceAPI.CreateRoot.Request resource_create_root = 58; // create new root resource
       ResourceAPI.Remove.Request resource_remove = 57; // remove root resource from platform
@@ -403,6 +410,7 @@ message TxAPI {
       Open.Response tx_open = 11;
       Commit.Response tx_commit = 12;
       Discard.Response tx_discard = 13;
+      Close.Response tx_close = 14;
 
       ResourceAPI.CreateRoot.Response resource_create_root = 58;
       ResourceAPI.Remove.Response resource_remove = 57;
@@ -499,6 +507,12 @@ message TxAPI {
     message Request {}
 
     message Response {}
+  }
+
+  message Close {
+    message Request {}
+
+    message Response {} // is never sent. Simplifies dark magic of typing on TypeScript side.
   }
 
   message Sync {
