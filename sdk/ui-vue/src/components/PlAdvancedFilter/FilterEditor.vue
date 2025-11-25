@@ -267,7 +267,7 @@ const stringMatchesError = computed(() => {
         <PlAutocomplete
           v-model="filter.value"
           :options-search="(str) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, str)"
-          :model-search="(v) => getSuggestModelSingleFn(columnAsSourceAndFixedAxes.source, v as string)"
+          :model-search="(v) => getSuggestModelSingleFn(columnAsSourceAndFixedAxes.source, String(v))"
           :disabled="inconsistentSourceSelected"
           :clearable="true"
           group-position="bottom"
@@ -277,7 +277,7 @@ const stringMatchesError = computed(() => {
         <PlAutocompleteMulti
           v-model="filter.value"
           :options-search="(str) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, str)"
-          :model-search="(v) => getSuggestModelMultiFn(columnAsSourceAndFixedAxes.source, v as string[])"
+          :model-search="(v) => getSuggestModelMultiFn(columnAsSourceAndFixedAxes.source, v.map((v) => String(v)))"
           :disabled="inconsistentSourceSelected"
           group-position="bottom"
         />

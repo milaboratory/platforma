@@ -24,7 +24,7 @@ import {
   stringifyJson,
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, PColumnEntryUniversal, PColumnEntryWithLabel, RenderCtx } from '../render';
-import { allPColumnsReady, PColumnCollection } from '../render';
+import { PColumnCollection } from '../render';
 
 /** Create id for column copy with added keys in axes domains */
 const colId = (id: PObjectId, domains: (Record<string, string> | undefined)[]) => {
@@ -205,12 +205,7 @@ export function createPFrameForGraphs<A, U>(
   if (!blockColumns) {
     const columns = new PColumnCollection();
     columns.addColumnProvider(ctx.resultPool);
-
-    const allColumns = columns.getColumns(suitableSpec, { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
-    // if at least one column is not yet ready, we can't show the graph
-    if (!allPColumnsReady(allColumns)) {
-      return undefined;
-    }
+    const allColumns = columns.getUniversalEntries(suitableSpec, { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
 
     const allAxes: AxesVault = new Map(allColumns
       .flatMap((column) => getNormalizedAxesList(column.spec.axesSpec))
@@ -224,10 +219,6 @@ export function createPFrameForGraphs<A, U>(
 
     return ctx.createPFrame(extendedColumns);
   };
-
-  if (!allPColumnsReady(blockColumns)) {
-    return undefined;
-  }
 
   // if current block has its own columns then take from result pool only compatible with them
   const columns = new PColumnCollection();
@@ -263,11 +254,6 @@ export function createPFrameForGraphs<A, U>(
     return blockAxesArr.some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
 
-  // if at least one column is not yet ready, we can't show the graph
-  // if (!allPColumnsReady(compatibleWithoutLabels)) {
-  //   return undefined;
-  // }
-
   // extend axes set for label columns request
   for (const c of compatibleWithoutLabels) {
     for (const spec of getNormalizedAxesList(c.spec.axesSpec)) {
@@ -288,11 +274,6 @@ export function createPFrameForGraphs<A, U>(
     const axisId = getAxisId(axisSpec);
     return allAxesArr.some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => isLabelColumn(column.spec));
-
-  // if at least one column is not yet ready, we can't show the graph
-  // if (!allPColumnsReady(compatibleLabels)) {
-  //   return undefined;
-  // }
 
   const compatible = [...compatibleWithoutLabels, ...compatibleLabels];
 

@@ -7,7 +7,7 @@ export default {
 };
 </script>
 
-<script lang="ts" setup generic="M = unknown">
+<script lang="ts" setup generic="M extends null | undefined | string | number = null | undefined | string">
 import './pl-autocomplete.scss';
 import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from 'vue';
 import { tap } from '../../helpers/functions';
@@ -28,7 +28,6 @@ import { getErrorMessage } from '../../helpers/error.ts';
 import type { ListOptionBase } from '@platforma-sdk/model';
 import { PlSvg } from '../PlSvg';
 import SvgRequired from '../../assets/images/required.svg?raw';
-import { isNil } from '@milaboratories/helpers';
 
 /**
  * The current selected value.
@@ -308,7 +307,7 @@ const optionsRequest = useWatchFetch(() => searchDebounced.value, async (v) => {
 });
 
 const modelOptionRequest = useWatchFetch(() => model.value, async (v) => {
-  if (v && !deepEqual(modelOptionRef.value?.value, v)) { // load label for selected value if it was updated from outside the component
+  if (v != null && !deepEqual(modelOptionRef.value?.value, v)) { // load label for selected value if it was updated from outside the component
     if (props.modelSearch) {
       return props.modelSearch(v);
     }
