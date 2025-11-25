@@ -1,12 +1,12 @@
-import {
+import type {
   ContentAbsoluteUrl,
   ContentAnyLocal,
   ContentExplicitOrRelative,
-  ContentRelative
+  ContentRelative,
 } from './content_types';
 
 export function mapRemoteToAbsolute(
-  rootUrl: string
+  rootUrl: string,
 ): <T extends ContentAnyLocal>(value: T) => Exclude<T, ContentRelative> | ContentAbsoluteUrl {
   const rootWithSlash = rootUrl.endsWith('/') ? rootUrl : `${rootUrl}/`;
   return <T extends ContentAnyLocal>(value: T) =>
@@ -23,7 +23,7 @@ export function mapRemoteToAbsolute(
  * @param prefix prefix to add to the relaive path, slesh at the end will be added automatically if missed
  */
 export function addPrefixToRelative(
-  prefix: string
+  prefix: string,
 ): <T extends ContentExplicitOrRelative>(value: T) => T {
   const prefixWithSlash = prefix.endsWith('/') ? prefix : `${prefix}/`;
   return <T extends ContentExplicitOrRelative>(value: T) =>
