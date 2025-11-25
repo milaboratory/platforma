@@ -29,7 +29,7 @@ export interface PFrameReadAPIV10 {
   deleteColumn(request: DeleteColumnFromColumnsRequest): Promise<DeleteColumnFromColumnsResponse>;
 
   /** Retrieve single column spec */
-  getColumnSpec(columnId: PObjectId): Promise<PColumnSpec>;
+  getColumnSpec(columnId: PObjectId): Promise<PColumnSpec | null>;
 
   /** Retrieve information about all columns currently added to the PFrame */
   listColumns(): Promise<PColumnInfo[]>;

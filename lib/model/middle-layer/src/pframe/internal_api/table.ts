@@ -34,7 +34,6 @@ export interface PTableV7 extends Disposable {
    * Warning: This call materializes the join.
    */
   getFootprint(ops?: {
-    withPredecessors?: boolean,
     signal?: AbortSignal,
   }): Promise<number>;
 
