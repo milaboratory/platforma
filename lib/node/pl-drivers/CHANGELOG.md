@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.11.22
+
+### Patch Changes
+
+- 91b17b2: Fix sparse cache
+
 ## 1.11.21
 
 ### Patch Changes
