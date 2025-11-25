@@ -29,7 +29,7 @@ export interface RemoteBlobProvider<TreeEntry extends JsonSerializable> {
 }
 
 export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposable {
-  public readonly pFramePromise: Promise<PFrameInternal.PFrameV12>;
+  public readonly pFramePromise: Promise<PFrameInternal.PFrameV13>;
   private readonly abortController = new AbortController();
 
   private readonly localBlobs: PoolEntry<PFrameInternal.PFrameBlobId>[] = [];
@@ -93,7 +93,7 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
     }));
 
     try {
-      const pFrame = PFrameFactory.createPFrame({ /* frameId, */ spillPath: this.spillPath, logger });
+      const pFrame = PFrameFactory.createPFrame({ frameId, spillPath: this.spillPath, logger });
       pFrame.setDataSource({
         ...this.localBlobProvider.makeDataSource(this.disposeSignal),
         parquetServer: this.remoteBlobProvider.httpServerInfo(),

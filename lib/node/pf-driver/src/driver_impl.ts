@@ -230,8 +230,7 @@ implements AbstractInternalPFrameDriver<PColumnData> {
   public async getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec | null> {
     const { pFramePromise } = this.pFrames.getByKey(handle);
     const pFrame = await pFramePromise;
-    // TODO: remove catch after update
-    return await pFrame.getColumnSpec(columnId).catch(() => null);
+    return await pFrame.getColumnSpec(columnId);
   }
 
   public async listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
