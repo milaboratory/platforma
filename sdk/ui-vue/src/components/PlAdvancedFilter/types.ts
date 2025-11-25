@@ -1,67 +1,36 @@
-import type { AxisSpec, FilterSpec, FilterSpecLeaf, FilterSpecType, ListOptionBase, PColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
-import { SUPPORTED_FILTER_TYPES } from './constants';
-import type { CanonicalizedJson } from '@platforma-sdk/model';
-import type { AxisId } from '@platforma-sdk/model';
-
-export type PlAdvancedFilterColumnId = SUniversalPColumnId | CanonicalizedJson<AxisId>;
-export type CommonFilterSpec = FilterSpec<FilterSpecLeaf<PlAdvancedFilterColumnId>, { expanded?: boolean }>;
-
-// Not supported: topN, bottomN, lessThanColumn, lessThanColumnOrEqual
-// or, and, not - in groups
-export type SupportedFilterTypes = FilterSpecType &
-  'isNA' | 'isNotNA' |
-  'patternEquals' | 'patternNotEquals' |
-  'patternContainSubsequence' | 'patternNotContainSubsequence' |
-  'patternMatchesRegularExpression' |
-  'patternFuzzyContainSubsequence' |
-  'inSet' | 'notInSet' |
-  'equal' | 'notEqual' |
-  'lessThan' | 'lessThanOrEqual' |
-  'greaterThan' | 'greaterThanOrEqual';
-
-export type FilterType = SupportedFilterTypes;
-
-export function isSupportedFilterType(type: FilterSpecType | undefined): type is SupportedFilterTypes {
-  if (!type) {
-    return false;
-  }
-  return SUPPORTED_FILTER_TYPES.has(type as SupportedFilterTypes);
-}
+import type { AxisId, AxisSpec, CanonicalizedJson, FilterSpec, FilterSpecLeaf, PColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { SUPPORTED_FILTER_TYPES } from './constants';
 
 export type Operand = 'or' | 'and';
 
-type FilterUiBase = FilterSpecLeaf<PlAdvancedFilterColumnId> & {
-  type: SupportedFilterTypes;
-  column: PlAdvancedFilterColumnId;
-};
+export type PlAdvancedFilterColumnId = SUniversalPColumnId | CanonicalizedJson<AxisId>;
+
+export type FilterLeafContent = Extract<FilterSpecLeaf<PlAdvancedFilterColumnId>, { type: SupportedFilterTypes }>;
+export type CommonFilter = FilterSpec<FilterLeafContent, { id: number; isExpanded?: boolean }>;
+export type FilterLeaf = Exclude<CommonFilter, { type: Operand | 'not' }>;
+export type NodeFilter = Extract<CommonFilter, { type: Operand | 'not' }>;
+export type RootFilter = Omit<Extract<NodeFilter, { type: Operand }>, 'filters'> & { filters: NodeFilter[] };
+
+// Not supported: less(/greater)ThanColumn, less(/greater)ThanColumnOrEqual
+// or, and, not - in groups
+export type SupportedFilterTypes = typeof SUPPORTED_FILTER_TYPES[number];
 
 type RequireFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 type OptionalFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
+type NumericalWithOptionalN = 'topN' | 'bottomN';
 type NumericalWithOptionalX = 'lessThan' | 'lessThanOrEqual' | 'greaterThan' | 'greaterThanOrEqual' | 'equal' | 'notEqual';
 type StringWithOptionalValue = 'patternEquals' | 'patternNotEquals';
-type EditedTypes = SupportedFilterTypes & ('patternFuzzyContainSubsequence' | NumericalWithOptionalX | StringWithOptionalValue); // types from ui with some changed by optionality fields
-export type Filter = Exclude<FilterUiBase, { type: EditedTypes }> |
-  RequireFields<Extract<FilterUiBase, { type: 'patternFuzzyContainSubsequence' }>, 'maxEdits' | 'substitutionsOnly'> |
-  OptionalFields<Extract<FilterUiBase, { type: NumericalWithOptionalX }>, 'x'> |
-  OptionalFields<Extract<FilterUiBase, { type: StringWithOptionalValue }>, 'value'>
+// types from ui with some changed by optionality fields
+type EditedTypes = 'patternFuzzyContainSubsequence' | NumericalWithOptionalX | StringWithOptionalValue | NumericalWithOptionalN;
+export type EditableFilter =
+  | Exclude<FilterLeafContent, { type: EditedTypes }>
+  | RequireFields<Extract<FilterLeafContent, { type: 'patternFuzzyContainSubsequence' }>, 'maxEdits' | 'substitutionsOnly'>
+  | OptionalFields<Extract<FilterLeafContent, { type: NumericalWithOptionalN }>, 'n'>
+  | OptionalFields<Extract<FilterLeafContent, { type: NumericalWithOptionalX }>, 'x'>
+  | OptionalFields<Extract<FilterLeafContent, { type: StringWithOptionalValue }>, 'value'>
 ;
 
-export type Group = {
-  id: string;
-  not: boolean;
-  filters: Filter[];
-  operand: Operand;
-  expanded: boolean;
-};
-
-export type PlAdvancedFilterUI = {
-  groups: Group[];
-  operand: Operand;
-};
-
-export type UniqueValuesList = ListOptionBase<string | number>[];
-export type OptionInfo = { error: boolean; label: string; spec: PColumnSpec | AxisSpec };
 export type FixedAxisInfo = {
   idx: number;
   label: string;
@@ -70,8 +39,8 @@ export type FixedAxisInfo = {
 export type SourceOptionInfo = {
   id: PlAdvancedFilterColumnId;
   label: string;
-  error: boolean;
   spec: PColumnSpec | AxisSpec;
-  axesToBeFixed?: FixedAxisInfo[];
+  error?: boolean;
   alphabet?: 'nucleotide' | 'aminoacid' | string;
+  axesToBeFixed?: FixedAxisInfo[];
 };

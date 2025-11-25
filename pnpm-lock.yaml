@@ -2616,6 +2616,9 @@ importers:
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.39.10
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
@@ -2732,6 +2735,9 @@ importers:
       d3-format:
         specifier: 'catalog:'
         version: 3.1.0
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.39.10
       lru-cache:
         specifier: 'catalog:'
         version: 11.2.2

@@ -34,6 +34,7 @@ const hasAfterSlot = computed(() => slots['after'] !== undefined);
 const hasBeforeSlot = computed(() => slots['before'] !== undefined);
 
 const emit = defineEmits<{
+  (e: 'click', item: MouseEvent): void;
   (e: 'expand', item: T, index: number): void;
   (e: 'toggle', item: T, index: number): void;
   (e: 'pin', item: T, index: number): void;
@@ -42,7 +43,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div>
+  <div @click="(event) => emit('click', event)">
     <div v-if="hasBeforeSlot" :class="beforeClass">
       <slot name="before" :item="props.item" :index="props.index" />
     </div>

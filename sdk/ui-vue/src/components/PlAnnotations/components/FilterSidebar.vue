@@ -1,27 +1,32 @@
 <script lang="ts">
 export type Props = {
-  columns: SimplifiedUniversalPColumnEntry[];
+  columns: PlAdvancedFilterItem[];
+
+  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
+    ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
+  // @todo: can be optional
+  getSuggestModel?: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
+    ListOptionBase<string | number> | Promise<ListOptionBase<string | number>>;
+
   hasSelectedColumns?: boolean;
   getValuesForSelectedColumns?: () => Promise<undefined | { columnId: PObjectId; values: string[] }>;
 };
 </script>
 <script setup lang="ts">
-import { isNil, randomInt } from '@milaboratories/helpers';
-import type {
-  FilterSpecTypeFieldRecord,
-} from '@milaboratories/uikit';
+import { randomInt } from '@milaboratories/helpers';
 import {
-  getFilterUiMetadata,
   PlBtnSecondary,
   PlEditableTitle,
-  PlElementList,
   PlSidebarItem,
 } from '@milaboratories/uikit';
-import type { FilterSpecLeaf, PObjectId, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { ListOptionBase, PObjectId, SUniversalPColumnId } from '@platforma-sdk/model';
 import { computed } from 'vue';
-import type { Filter, FilterSpec } from '../types';
-import { createDefaultFilterMetadata } from '../utils';
-import DynamicForm from './DynamicForm.vue';
+import type { PlAdvancedFilterFilter, PlAdvancedFilterSupportedFilters } from '../../PlAdvancedFilter';
+import { PlAdvancedFilter, type PlAdvancedFilterItem } from '../../PlAdvancedFilter';
+import type { PlAdvancedFilterColumnId } from '../../PlAdvancedFilter/types';
+import type { Filter } from '../types';
+
+import $commonStyle from './style.module.css';
 
 // Models
 const step = defineModel<Filter>('step', { required: true });
@@ -36,7 +41,14 @@ const addFilterPlaceholder = () => {
   step.value.filter.filters.push({
     id: randomInt(),
     isExpanded: true,
-    type: undefined,
+    type: 'or',
+    filters: [
+      {
+        id: randomInt(),
+        type: 'isNA',
+        column: props.columns[0].id as SUniversalPColumnId,
+      },
+    ],
   });
 };
 
@@ -63,26 +75,22 @@ async function addFilterFromSelected() {
   });
 }
 
-// Getters
-const getColumnLabel = (filter: FilterSpec) => {
-  if (!isNil(filter.name)) return filter.name;
-  return props.columns
-    .find((c) => 'column' in filter ? c.id === filter.column : false)?.label
-    ?? filter.type;
-};
-
-const getFormMetadata = (filter: FilterSpec): FilterSpecTypeFieldRecord<FilterSpecLeaf> => {
-  return !isNil(filter.type)
-    ? getFilterUiMetadata(filter.type).form as FilterSpecTypeFieldRecord<FilterSpecLeaf>
-    : createDefaultFilterMetadata();
-};
-
-const getFilterValues = (filter: FilterSpec) => {
-  if (filter.type === 'or' || filter.type === 'and') {
-    return filter.filters.map((f) => 'value' in f && !isNil(f.value) ? f.value : null).filter((v) => !isNil(v)).join (', ');
-  }
-  return null;
-};
+const supportedFilters = [
+  'isNA',
+  'isNotNA',
+  'greaterThan',
+  'greaterThanOrEqual',
+  'lessThan',
+  'lessThanOrEqual',
+  'patternEquals',
+  'patternNotEquals',
+  'patternContainSubsequence',
+  'patternNotContainSubsequence',
+  'equal',
+  'notEqual',
+  'topN',
+  'bottomN',
+] as typeof PlAdvancedFilterSupportedFilters[number][];
 </script>
 
 <template>
@@ -91,53 +99,40 @@ const getFilterValues = (filter: FilterSpec) => {
       <PlEditableTitle
         :key="step.id"
         v-model="step.label"
+        :class="{ [$commonStyle.flashing]: step.label.length === 0 }"
         :max-length="40"
         max-width="600px"
-        placeholder="Annotation Name"
+        placeholder="Filter Name"
         :autofocus="step.label.length === 0"
       />
     </template>
     <template #body-content>
-      <div :class="$style.root">
-        <div :class="$style.actions">
-          <PlBtnSecondary style="width: 100%;" icon="add" @click="addFilterPlaceholder">
-            Filter
-          </PlBtnSecondary>
-          <PlBtnSecondary v-if="withSelection" style="width: 100%;" icon="add" :disabled="!props.hasSelectedColumns" @click="addFilterFromSelected">
-            From selection
-          </PlBtnSecondary>
-        </div>
-
-        <PlElementList
-          v-model:items="step.filter.filters"
-          :get-item-key="(item) => item.id"
-          :is-expanded="(item) => Boolean(item.isExpanded)"
-          :on-expand="(item) => item.isExpanded = !Boolean(item.isExpanded)"
-        >
-          <template #item-title="{ item }">
-            {{ getColumnLabel(item) }}
-          </template>
-          <template #item-content="{ item, index }">
-            <template v-if="item.type !== 'or' && item.type !== 'and'">
-              <DynamicForm
-                v-model="(step.filter.filters[index] as FilterSpecLeaf)"
-                :columns="props.columns"
-                :form-metadata="getFormMetadata(item)"
-              />
-            </template>
-            <template v-else>
-              <div>{{ getFilterValues(item) }}</div>
-            </template>
-          </template>
-        </PlElementList>
-      </div>
+      <PlAdvancedFilter
+        v-model:filters="(step.filter as PlAdvancedFilterFilter)"
+        :class="[$style.root, { [$commonStyle.disabled]: step.label.length === 0 }]"
+        :items="props.columns"
+        :supported-filters="supportedFilters"
+        :get-suggest-model="props.getSuggestModel"
+        :get-suggest-options="props.getSuggestOptions"
+        :enable-dnd="false"
+        :enable-add-group-button="true"
+      >
+        <template #add-group-buttons>
+          <div :class="$style.actions">
+            <PlBtnSecondary icon="add" @click="addFilterPlaceholder">
+              Add Filter
+            </PlBtnSecondary>
+            <PlBtnSecondary v-if="withSelection" icon="add" :disabled="!props.hasSelectedColumns" @click="addFilterFromSelected">
+              From selection
+            </PlBtnSecondary>
+          </div>
+        </template>
+      </PlAdvancedFilter>
     </template>
   </PlSidebarItem>
 </template>
 
-<style lang="scss" module>
-@use '@milaboratories/uikit/styles/variables' as *;
-
+<style module>
 .root {
   display: flex;
   flex-direction: column;

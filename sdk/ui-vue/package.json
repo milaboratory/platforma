@@ -39,7 +39,8 @@
     "@vueuse/integrations": "catalog:",
     "d3-format": "catalog:",
     "zod": "catalog:",
-    "@zip.js/zip.js": "catalog:"
+    "@zip.js/zip.js": "catalog:",
+    "es-toolkit": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/ts-configs": "workspace:*",

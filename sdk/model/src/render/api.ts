@@ -5,6 +5,7 @@ import type {
   DataInfo,
   Option,
   PColumn,
+  PColumnLazy,
   PColumnSelector,
   PColumnSpec,
   PColumnValues,
@@ -79,8 +80,9 @@ export type UniversalColumnOption = { label: string; value: SUniversalPColumnId 
  * @param data Data from a PColumn to transform
  * @returns Transformed data compatible with platform API
  */
-function transformPColumnData(data: PColumn<PColumnDataUniversal>):
-PColumn<PColumnValues | AccessorHandle | DataInfo<AccessorHandle>> {
+function transformPColumnData(
+  data: PColumn<PColumnDataUniversal> | PColumnLazy<PColumnDataUniversal>,
+): PColumn<PColumnValues | AccessorHandle | DataInfo<AccessorHandle>> {
   return mapPObjectData(data, (d) => {
     if (d instanceof TreeNodeAccessor) {
       return d.handle;
@@ -591,7 +593,7 @@ export class RenderCtx<Args, UiState> {
     return this.resultPool.findLabels(axis);
   }
 
-  private verifyInlineAndExplicitColumnsSupport(columns: PColumn<PColumnDataUniversal>[]) {
+  private verifyInlineAndExplicitColumnsSupport(columns: (PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>)[]) {
     const hasInlineColumns = columns.some((c) => !(c.data instanceof TreeNodeAccessor) || isDataInfo(c.data)); // Updated check for DataInfo
     const inlineColumnsSupport = this.ctx.featureFlags?.inlineColumnsSupport === true;
     if (hasInlineColumns && !inlineColumnsSupport) throw Error(`Inline or explicit columns not supported`); // Combined check
@@ -619,7 +621,7 @@ export class RenderCtx<Args, UiState> {
   }
 
   // TODO remove all non-PColumn fields
-  public createPFrame(def: PFrameDef<PColumn<PColumnDataUniversal>>): PFrameHandle | undefined {
+  public createPFrame(def: PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>>): PFrameHandle | undefined {
     this.verifyInlineAndExplicitColumnsSupport(def);
     if (!allPColumnsReady(def)) return undefined;
     return this.ctx.createPFrame(

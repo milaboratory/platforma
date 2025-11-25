@@ -1,0 +1,16 @@
+.flashing {
+  animation: flash 1s ease-in-out infinite alternate;
+}
+@keyframes flash {
+  0% {
+    box-shadow: 0 0 6px 4px var(--border-color-focus);
+  }
+  100% {
+    box-shadow: 0 0 2px 2px var(--border-color-focus);
+  }
+}
+
+.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}

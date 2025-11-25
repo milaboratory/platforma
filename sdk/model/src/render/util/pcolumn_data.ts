@@ -2,6 +2,7 @@ import type {
   DataInfo,
   PartitionedDataInfoEntries,
   PColumn,
+  PColumnLazy,
   PColumnValues,
 } from '@milaboratories/pl-model-common';
 import {
@@ -501,8 +502,9 @@ export function parsePColumnData(
  * @param acc - The input data, which can be TreeNodeAccessor, DataInfoEntries, DataInfo, or undefined.
  * @returns The data in DataInfoEntries format, or undefined if the input was undefined or data is not ready.
  */
-export function convertOrParsePColumnData(acc: TreeNodeAccessor | DataInfoEntries<TreeNodeAccessor> | DataInfo<TreeNodeAccessor> | undefined):
-DataInfoEntries<TreeNodeAccessor> | undefined {
+export function convertOrParsePColumnData(
+  acc: TreeNodeAccessor | DataInfoEntries<TreeNodeAccessor> | DataInfo<TreeNodeAccessor> | undefined,
+): DataInfoEntries<TreeNodeAccessor> | undefined {
   if (acc === undefined) return undefined;
 
   if (isDataInfoEntries(acc)) return acc;
@@ -512,22 +514,25 @@ DataInfoEntries<TreeNodeAccessor> | undefined {
   throw new Error(`Unexpected input type: ${typeof acc}`);
 }
 
-export function isPColumnReady(c: PColumn<PColumnDataUniversal>): boolean {
+export function isPColumnReady(c: (PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>)): c is PColumn<PColumnDataUniversal> | PColumnLazy<PColumnDataUniversal> {
   const isValues = (d: PColumnDataUniversal): d is PColumnValues => Array.isArray(d);
   const isAccessor = (d: PColumnDataUniversal): d is TreeNodeAccessor => d instanceof TreeNodeAccessor;
 
   let ready = true;
-  if (isAccessor(c.data)) {
-    ready &&= c.data.getIsReadyOrError();
-  } else if (isDataInfo(c.data)) {
-    visitDataInfo(c.data, (v) => ready &&= v.getIsReadyOrError());
-  } else if (!isValues(c.data)) {
+  const data = typeof c.data === 'function' ? c.data() : c.data;
+  if (data == null) {
+    return false;
+  } else if (isAccessor(data)) {
+    ready &&= data.getIsReadyOrError();
+  } else if (isDataInfo(data)) {
+    visitDataInfo(data, (v) => ready &&= v.getIsReadyOrError());
+  } else if (!isValues(data)) {
     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-    throw Error(`unsupported column data type: ${c.data satisfies never}`);
+    throw Error(`unsupported column data type: ${data satisfies never}`);
   }
   return ready;
 }
 
-export function allPColumnsReady(columns: PColumn<PColumnDataUniversal>[]): boolean {
+export function allPColumnsReady(columns: (PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>)[]): columns is (PColumn<PColumnDataUniversal> | PColumnLazy<PColumnDataUniversal>)[] {
   return columns.every(isPColumnReady);
 }

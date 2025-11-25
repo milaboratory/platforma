@@ -1,9 +1,9 @@
-import type { PlatformaApiVersion } from './platforma';
+import type { Platforma, PlatformaApiVersion } from './platforma';
 
 declare global {
   /** Global factory method returning platforma instance */
   var getPlatforma: PlatformaSDKVersion; // TODO: invalid type
-  var platforma: Platforma;
+  var platforma: undefined | Platforma;
   var platformaApiVersion: PlatformaApiVersion;
 
   function getEnvironmentValue(name: string): string | undefined;

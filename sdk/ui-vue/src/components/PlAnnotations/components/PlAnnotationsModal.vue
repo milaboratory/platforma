@@ -30,8 +30,10 @@ async function handleDeleteSchema() {
   <PlPureSlideModal v-model="opened" :class="$style.modal" width="768px">
     <PlAnnotations
       v-model:annotation="annotation"
-      :class="$style.sidebarItem"
+      :class="$style.content"
       :columns="props.columns"
+      :get-suggest-model="props.getSuggestModel"
+      :get-suggest-options="props.getSuggestOptions"
       :has-selected-columns="props.hasSelectedColumns"
       :getValuesForSelectedColumns="props.getValuesForSelectedColumns"
       @delete-schema="handleDeleteSchema"
@@ -39,17 +41,12 @@ async function handleDeleteSchema() {
   </PlPureSlideModal>
 </template>
 
-<style lang="scss" module>
+<style module>
 .modal {
   display: flex;
 }
 
-.sidebarGroup {
-  width: 100%;
-  height: 100%;
-}
-
-.sidebarItem {
+.content {
   width: 100%;
   height: 100%;
 }

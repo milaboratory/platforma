@@ -601,6 +601,8 @@ export interface PColumn<Data> extends PObject<Data> {
   readonly spec: PColumnSpec;
 }
 
+export type PColumnLazy<T> = PColumn<() => T>;
+
 /** Columns in a PFrame also have internal identifier, this object represents
  * combination of specs and such id */
 export interface PColumnIdAndSpec {

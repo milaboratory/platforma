@@ -10,7 +10,7 @@ export type SimplifiedUniversalPColumnEntry = {
 
 export type FilterSpecNode<Leaf, CommonNode = {}, CommonLeaf = {}> =
   | CommonLeaf & Leaf
-  | CommonNode & { type: 'not'; filter: CommonLeaf & Leaf }
+  | CommonNode & { type: 'not'; filter: FilterSpecNode<Leaf, CommonNode, CommonLeaf> }
   | CommonNode & { type: 'or'; filters: FilterSpecNode<Leaf, CommonNode, CommonLeaf>[] }
   | CommonNode & { type: 'and'; filters: FilterSpecNode<Leaf, CommonNode, CommonLeaf>[] };
 

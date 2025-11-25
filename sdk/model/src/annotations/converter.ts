@@ -1,25 +1,45 @@
 import { when } from '@milaboratories/ptabler-expression-js';
+import type { FilterSpec } from '../filters';
 import { convertFilterUiToExpressionImpl } from '../filters/converter';
 import type { ExpressionSpec, FilterSpecUi } from './types';
 
+function filterPredicate(item: FilterSpec): boolean {
+  // No need to convert empty steps
+  if (item.type == null) {
+    return false;
+  }
+
+  if (item.type === 'or') {
+    return item.filters.length > 0;
+  }
+
+  if (item.type === 'and') {
+    return item.filters.length > 0;
+  }
+
+  return true;
+}
+
+function filterEmptyPeaces(item: FilterSpec): FilterSpec {
+  if (item.type === 'or' || item.type === 'and') {
+    const filtered = item.filters
+      .map(filterEmptyPeaces)
+      .filter(filterPredicate);
+    return {
+      ...item,
+      filters: filtered,
+    };
+  }
+
+  return item;
+}
+
 export function convertFilterSpecsToExpressionSpecs(annotationsUI: FilterSpecUi[]): ExpressionSpec[] {
-  return annotationsUI
-    .filter((annotation) => {
-      // No need to convert empty steps
-      if (annotation.filter.type == null) {
-        return false;
-      }
-
-      if (annotation.filter.type === 'or') {
-        return annotation.filter.filters.length > 0;
-      }
-
-      if (annotation.filter.type === 'and') {
-        return annotation.filter.filters.length > 0;
-      }
-
-      return false;
-    })
+  const validAnnotationsUI = annotationsUI.map((step) => ({
+    label: step.label,
+    filter: filterEmptyPeaces(step.filter),
+  }));
+  return validAnnotationsUI
     .map((step): ExpressionSpec => ({
       type: 'alias',
       name: step.label.trim(),

@@ -1,5 +1,5 @@
 import type { Branded } from '../branding';
-import type { JoinEntry, PColumn, PColumnSpec } from '../drivers';
+import type { JoinEntry, PColumn, PColumnLazy, PColumnSpec } from '../drivers';
 import { assertNever } from '../util';
 import type { ResultPoolEntry } from './entry';
 
@@ -62,6 +62,7 @@ export function ensurePColumn<T>(obj: PObject<T>): PColumn<T> {
   return obj;
 }
 
+export function mapPObjectData<D1, D2>(pObj: PColumn<D1> | PColumnLazy<D1>, cb: (d: D1) => D2): PColumn<D2>;
 export function mapPObjectData<D1, D2>(pObj: PColumn<D1>, cb: (d: D1) => D2): PColumn<D2>;
 export function mapPObjectData<D1, D2>(
   pObj: PColumn<D1> | undefined,
@@ -80,7 +81,7 @@ export function mapPObjectData<D1, D2>(
     ? undefined
     : {
         ...pObj,
-        data: cb(pObj.data),
+        data: cb(typeof pObj.data === 'function' ? pObj.data() : pObj.data),
       };
 }
 
