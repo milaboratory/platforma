@@ -2,11 +2,11 @@ import { WebSocket } from 'undici';
 import type {
   TxAPI_ClientMessage,
   TxAPI_ServerMessage,
-} from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+} from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import {
   TxAPI_ClientMessage as ClientMessageType,
   TxAPI_ServerMessage as ServerMessageType,
-} from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+} from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import type { BiDiStream } from './abstract_stream';
 import Denque from 'denque';
 
@@ -119,6 +119,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
 
     try {
       this.ws = this.createWebSocket();
+      this.ws.binaryType = 'arraybuffer';
       this.attachWebSocketHandlers();
     } catch (error) {
       this.handleConnectionError(error as Error);
@@ -276,10 +277,9 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     throw new Error(`Unsupported message format: ${typeof data}`);
   }
 
-  private isBinaryData(data: unknown): data is ArrayBuffer | Buffer | Uint8Array {
+  private isBinaryData(data: unknown): data is ArrayBuffer | Blob {
     return data instanceof ArrayBuffer
-      || data instanceof Buffer
-      || data instanceof Uint8Array;
+        || data instanceof Blob;
   }
 
   private parseBinary(data: ArrayBuffer | Buffer | Uint8Array): TxAPI_ServerMessage {
