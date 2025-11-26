@@ -172,6 +172,7 @@ export class LLPlClient implements WireClientProviderFactory {
   private initGrpcConnection(gzip: boolean) {
     const clientOptions: ClientOptions = {
       'grpc.keepalive_time_ms': 30_000, // 30 seconds
+      'grpc.service_config_disable_resolution': 1, // Disable DNS TXT lookups for service config
       'interceptors': this._grpcInterceptors,
     };
 
