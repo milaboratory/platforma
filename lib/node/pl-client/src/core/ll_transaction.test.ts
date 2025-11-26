@@ -6,6 +6,25 @@ import { test, expect } from 'vitest';
 import { isTimeoutOrCancelError } from './errors';
 import { Aborted } from '@milaboratories/ts-helpers';
 
+test('check successful transaction', async () => {
+  const client = await getTestLLClient();
+  const tx = client.createTx(true);
+
+  const openResp = await tx.send({
+    oneofKind: 'txOpen',
+    txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
+  }, false);
+  const commitResp = await tx.send({
+    oneofKind: 'txCommit',
+    txCommit: {}
+  }, false);
+
+  expect(openResp.txOpen.tx?.isValid).toBeTruthy();
+  expect(commitResp.txCommit.success).toBeTruthy();
+  await tx.complete();
+  await tx.await();
+});
+
 test('transaction timeout test', async () => {
   const client = await getTestLLClient();
   const tx = client.createTx(true, { timeout: 500 });
