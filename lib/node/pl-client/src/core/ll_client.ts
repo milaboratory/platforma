@@ -482,7 +482,8 @@ export class LLPlClient implements WireClientProviderFactory {
   createTx(rw: boolean, ops: PlCallOps = {}): LLPlTransaction {
     // Hardcoded WebSocket option for demonstration
     // Set PL_USE_WEBSOCKET=1 environment variable to enable WebSocket transport
-    const useWebSocket = process.env.PL_USE_WEBSOCKET === '1';
+    // Use WebSocket for transactions when REST is the wire protocol, or when explicitly enabled
+    const useWebSocket = process.env.PL_USE_WEBSOCKET === '1' || this._wireProto === 'rest';
 
     return new LLPlTransaction((abortSignal) => {
       let totalAbortSignal = abortSignal;
@@ -491,8 +492,8 @@ export class LLPlClient implements WireClientProviderFactory {
       if (useWebSocket) {
         // Use WebSocket transport
         const wsUrl = this.conf.ssl
-          ? `wss://${this.conf.hostAndPort}/ws`
-          : `ws://${this.conf.hostAndPort}/ws`;
+          ? `wss://${this.conf.hostAndPort}/v1/ws/tx`
+          : `ws://${this.conf.hostAndPort}/v1/ws/tx`;
         const jwtToken = this.authInformation?.jwtToken;
         this.refreshAuthInformationIfNeeded();
         return new WebSocketBiDiStream(wsUrl, totalAbortSignal, jwtToken) as unknown as DuplexStreamingCall<TxAPI_ClientMessage, TxAPI_ServerMessage>;
