@@ -183,7 +183,6 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
 
     try {
       this.ws = this.createWebSocket();
-      this.ws.binaryType = 'arraybuffer';
       this.attachWebSocketHandlers();
     } catch (error) {
       this.handleConnectionError(error as Error);
@@ -195,7 +194,11 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
       ? { headers: { authorization: `Bearer ${this.jwtToken}` } }
       : undefined;
 
-    return new (WebSocket as any)(this.url, options);
+    const ws = new (WebSocket as any)(this.url, options);
+    if (ws) {
+      ws.binaryType = 'arraybuffer';
+    }
+    return ws;
   }
 
   private attachWebSocketHandlers(): void {
