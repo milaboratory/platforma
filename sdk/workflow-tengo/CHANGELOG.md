@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.6.3
+
+### Patch Changes
+
+- 220e464: Use fresh version of small-binaries with fixes cmd in docker
+
 ## 5.6.2
 
 ### Patch Changes
