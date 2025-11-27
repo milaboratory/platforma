@@ -25,6 +25,8 @@ interface ResponseResolver {
   reject: (error: Error) => void;
 }
 
+// === Reconnect Strategy ===
+
 interface ReconnectConfig {
   maxAttempts: number;
   initialDelay: number;
@@ -36,6 +38,70 @@ const DEFAULT_RECONNECT_CONFIG: ReconnectConfig = {
   initialDelay: 100,
   maxDelay: 30000,
 };
+
+interface ReconnectCallbacks {
+  onReconnect: () => void;
+  onMaxAttemptsReached: (error: Error) => void;
+}
+
+/**
+ * Encapsulates reconnection logic with exponential backoff.
+ */
+class ReconnectStrategy {
+  private attempts = 0;
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private readonly config: ReconnectConfig;
+  private readonly callbacks: ReconnectCallbacks;
+
+  constructor(config: ReconnectConfig, callbacks: ReconnectCallbacks) {
+    this.config = config;
+    this.callbacks = callbacks;
+  }
+
+  schedule(): void {
+    if (this.timer || this.hasExceededLimit()) {
+      if (this.hasExceededLimit()) {
+        this.notifyMaxAttemptsReached();
+      }
+      return;
+    }
+
+    this.attempts++;
+    const delay = this.computeDelay();
+
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      this.callbacks.onReconnect();
+    }, delay);
+  }
+
+  cancel(): void {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+  }
+
+  reset(): void {
+    this.attempts = 0;
+  }
+
+  private computeDelay(): number {
+    const exponentialDelay = this.config.initialDelay * Math.pow(2, this.attempts - 1);
+    return Math.min(exponentialDelay, this.config.maxDelay);
+  }
+
+  private hasExceededLimit(): boolean {
+    return this.attempts >= this.config.maxAttempts;
+  }
+
+  private notifyMaxAttemptsReached(): void {
+    const error = new Error(
+      `Max reconnection attempts (${this.config.maxAttempts}) reached`,
+    );
+    this.callbacks.onMaxAttemptsReached(error);
+  }
+}
 
 // === WebSocket BiDi Stream ===
 
@@ -60,9 +126,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
   private responseResolvers: ResponseResolver[] = [];
 
   // Reconnection
-  private reconnectAttempts = 0;
-  private readonly reconnectConfig: ReconnectConfig;
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly reconnectStrategy: ReconnectStrategy;
 
   // Error tracking
   private connectionError: Error | null = null;
@@ -98,7 +162,11 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     this.jwtToken = jwtToken;
     this.abortSignal = abortSignal;
 
-    this.reconnectConfig = { ...DEFAULT_RECONNECT_CONFIG, ...reconnectConfig };
+    const config = { ...DEFAULT_RECONNECT_CONFIG, ...reconnectConfig };
+    this.reconnectStrategy = new ReconnectStrategy(config, {
+      onReconnect: () => this.connect(),
+      onMaxAttemptsReached: (error) => this.handleMaxReconnectAttempts(error),
+    });
 
     if (abortSignal.aborted) {
       this.connectionState = 'closed';
@@ -149,7 +217,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
 
   private onOpen(): void {
     this.connectionState = 'connected';
-    this.reconnectAttempts = 0;
+    this.reconnectStrategy.reset();
     this.processSendQueue();
   }
 
@@ -161,7 +229,8 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     if (this.sendCompleted) {
       this.finalizeStream();
     } else {
-      this.attemptReconnect();
+      this.connectionState = 'disconnected';
+      this.reconnectStrategy.schedule();
     }
   }
 
@@ -188,7 +257,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     if (this.isClosed()) return;
 
     this.connectionState = 'closed';
-    this.cancelReconnectTimer();
+    this.reconnectStrategy.cancel();
     this.closeWebSocket();
     this.rejectAllPendingOperations();
   }
@@ -217,48 +286,10 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     }
   }
 
-  // === Reconnection Strategy ===
+  // === Reconnection Callback ===
 
-  private attemptReconnect(): void {
-    if (this.reconnectTimer || this.hasExceededReconnectLimit()) {
-      if (this.hasExceededReconnectLimit()) {
-        this.failWithMaxReconnectAttempts();
-      }
-      return;
-    }
-
-    this.connectionState = 'disconnected';
-    this.reconnectAttempts++;
-
-    const delay = this.computeReconnectDelay();
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = null;
-      this.connect();
-    }, delay);
-  }
-
-  private computeReconnectDelay(): number {
-    const exponentialDelay
-      = this.reconnectConfig.initialDelay * Math.pow(2, this.reconnectAttempts - 1);
-    return Math.min(exponentialDelay, this.reconnectConfig.maxDelay);
-  }
-
-  private cancelReconnectTimer(): void {
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-  }
-
-  private hasExceededReconnectLimit(): boolean {
-    return this.reconnectAttempts >= this.reconnectConfig.maxAttempts;
-  }
-
-  private failWithMaxReconnectAttempts(): void {
+  private handleMaxReconnectAttempts(error: Error): void {
     this.connectionState = 'closed';
-    const error = new Error(
-      `Max reconnection attempts (${this.reconnectConfig.maxAttempts}) reached`,
-    );
     this.connectionError = error;
     this.rejectAllPendingOperations(error);
   }
@@ -451,7 +482,8 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     this.rejectAllPendingOperations(error);
 
     if (!this.abortSignal.aborted && !this.isClosed()) {
-      this.attemptReconnect();
+      this.connectionState = 'disconnected';
+      this.reconnectStrategy.schedule();
     }
   }
 
