@@ -448,9 +448,9 @@ authOptions:
       key: "htpasswd"
   # -- LDAP authentication
   ldap:
-    enabled: false
-    server: ""
-    dn: ""
+    enabled: true
+    server: "ldap://pl-dev-glauth.dev-gke.svc.cluster.local:3893"
+    dn: "cn=%u,ou=users,ou=users,dc=pldev,dc=io"
     startTls: false
     # -- LDAP search password configuration.
     # Used for LDAP bind operations when searching for users.
