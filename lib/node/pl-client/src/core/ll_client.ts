@@ -29,11 +29,6 @@ import { type PlApiPaths, type PlRestClientType, createClient, parseResponseErro
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { Code } from '../proto-grpc/google/rpc/code';
 import { WebSocketBiDiStream } from './websocket_stream';
-import type { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
-import type {
-  TxAPI_ClientMessage,
-  TxAPI_ServerMessage,
-} from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 
 export interface PlCallOps {
   timeout?: number;
@@ -480,36 +475,27 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   createTx(rw: boolean, ops: PlCallOps = {}): LLPlTransaction {
-    // Hardcoded WebSocket option for demonstration
-    // Set PL_USE_WEBSOCKET=1 environment variable to enable WebSocket transport
-    // Use WebSocket for transactions when REST is the wire protocol, or when explicitly enabled
-    const useWebSocket = process.env.PL_USE_WEBSOCKET === '1' || this._wireProto === 'rest';
-
     return new LLPlTransaction((abortSignal) => {
       let totalAbortSignal = abortSignal;
       if (ops.abortSignal) totalAbortSignal = AbortSignal.any([totalAbortSignal, ops.abortSignal]);
 
-      if (useWebSocket) {
-        // Use WebSocket transport
-        const wsUrl = this.conf.ssl
-          ? `wss://${this.conf.hostAndPort}/v1/ws/tx`
-          : `ws://${this.conf.hostAndPort}/v1/ws/tx`;
-        const jwtToken = this.authInformation?.jwtToken;
-        this.refreshAuthInformationIfNeeded();
-        return new WebSocketBiDiStream(wsUrl, totalAbortSignal, jwtToken) as unknown as DuplexStreamingCall<TxAPI_ClientMessage, TxAPI_ServerMessage>;
-      } else {
-        // Use gRPC transport (default)
-        const cl = this.clientProvider.get();
-        if (!(cl instanceof GrpcPlApiClient)) {
-          throw new Error('tx is not supported for REST client');
-        }
-
+      const cl = this.clientProvider.get();
+      if (cl instanceof GrpcPlApiClient) {
         return cl.tx({
           abort: totalAbortSignal,
           timeout: ops.timeout
             ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout),
         });
+      } 
+      
+      if (this._wireProto === 'rest') {
+        const wsUrl = this.conf.ssl ? `wss://${this.conf.hostAndPort}/v1/ws/tx`
+                                    : `ws://${this.conf.hostAndPort}/v1/ws/tx`;
+        const jwtToken = this.authInformation?.jwtToken;
+        this.refreshAuthInformationIfNeeded();
+        return new WebSocketBiDiStream(wsUrl, totalAbortSignal, jwtToken);
       }
+      throw new Error('tx is not supported for this wire protocol');
     });
   }
 
