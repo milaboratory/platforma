@@ -298,14 +298,28 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
     condition: () => boolean,
     intervalMs: number,
   ): Promise<void> {
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
+      if (this.abortSignal.aborted) {
+        return reject(this.abortSignal.reason ?? new Error('Stream aborted'));
+      }
+
+      let timeoutId: ReturnType<typeof setTimeout>;
+      const onAbort = () => {
+        clearTimeout(timeoutId);
+        reject(this.abortSignal.reason ?? new Error('Stream aborted'));
+      };
+
+      this.abortSignal.addEventListener('abort', onAbort, { once: true });
+
       const check = () => {
-        if (condition()) {
+        if (condition() || this.isStreamEnded()) {
+          this.abortSignal.removeEventListener('abort', onAbort);
           resolve();
         } else {
-          setTimeout(check, intervalMs);
+          timeoutId = setTimeout(check, intervalMs);
         }
       };
+
       check();
     });
   }
