@@ -21,6 +21,59 @@ interface ResponseResolver {
   reject: (error: Error) => void;
 }
 
+// === Exponential Backoff ===
+
+interface BackoffConfig {
+  initialDelay: number;
+  maxDelay: number;
+  factor: number;
+  jitter: number;
+}
+
+class ExponentialBackoff {
+  private readonly initialDelay: number;
+  private readonly maxDelay: number;
+  
+  private currentDelay: number;
+
+  private readonly factor: number;
+  private readonly jitter: number;
+
+  constructor(config: BackoffConfig) {
+    this.initialDelay = config.initialDelay;
+    this.maxDelay = config.maxDelay;
+    this.factor = config.factor;
+    this.jitter = config.jitter;
+    this.currentDelay = config.initialDelay;
+  }
+
+  delay(): number {
+    if (this.currentDelay >= this.maxDelay) {
+      return this.applyJitter(this.maxDelay);
+    }
+
+    this.currentDelay = this.currentDelay * this.factor;
+
+    if (this.currentDelay > this.maxDelay) {
+      this.currentDelay = this.maxDelay;
+    }
+
+    return this.applyJitter(this.currentDelay);
+  }
+
+  reset(): void {
+    this.currentDelay = this.initialDelay;
+  }
+
+  private applyJitter(delay: number): number {
+    if (delay === 0 || this.jitter === 0) {
+      return delay;
+    }
+    const delayFactor = 1 - (this.jitter / 2) + Math.random() * this.jitter;
+    return delay * delayFactor;
+  }
+}
+
 // === Reconnect Strategy ===
 
 interface ReconnectConfig {
@@ -48,10 +101,17 @@ class ReconnectStrategy {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private readonly config: ReconnectConfig;
   private readonly callbacks: ReconnectCallbacks;
+  private readonly backoff: ExponentialBackoff;
 
   constructor(config: ReconnectConfig, callbacks: ReconnectCallbacks) {
     this.config = config;
     this.callbacks = callbacks;
+    this.backoff = new ExponentialBackoff({
+      initialDelay: config.initialDelay,
+      maxDelay: config.maxDelay,
+      factor: 2,
+      jitter: 0.1,
+    });
   }
 
   schedule(): void {
@@ -63,7 +123,7 @@ class ReconnectStrategy {
     }
 
     this.attempts++;
-    const delay = this.computeDelay();
+    const delay = this.backoff.delay();
 
     this.timer = setTimeout(() => {
       this.timer = null;
@@ -80,11 +140,7 @@ class ReconnectStrategy {
 
   reset(): void {
     this.attempts = 0;
-  }
-
-  private computeDelay(): number {
-    const exponentialDelay = this.config.initialDelay * Math.pow(2, this.attempts - 1);
-    return Math.min(exponentialDelay, this.config.maxDelay);
+    this.backoff.reset();
   }
 
   private hasExceededLimit(): boolean {
