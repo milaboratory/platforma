@@ -387,8 +387,13 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
   }
 
   private handleParseError(error: Error): void {
+    if (this.isClosed()) return;
+
+    this.connectionState = 'closed';
     this.connectionError = error;
-    this.rejectAllResponseResolvers(error);
+    this.reconnection.cancel();
+    this.closeWebSocket();
+    this.rejectAllPendingOperations(error);
   }
 
   private rejectAllPendingOperations(error?: Error): void {
