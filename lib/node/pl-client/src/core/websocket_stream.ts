@@ -1,8 +1,4 @@
 import { WebSocket } from 'undici';
-import type {
-  TxAPI_ClientMessage,
-  TxAPI_ServerMessage,
-} from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import {
   TxAPI_ClientMessage as ClientMessageType,
   TxAPI_ServerMessage as ServerMessageType,
@@ -15,13 +11,13 @@ import Denque from 'denque';
 type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'closing' | 'closed';
 
 interface QueuedMessage {
-  message: TxAPI_ClientMessage;
+  message: ClientMessageType;
   resolve: () => void;
   reject: (error: Error) => void;
 }
 
 interface ResponseResolver {
-  resolve: (value: IteratorResult<TxAPI_ServerMessage>) => void;
+  resolve: (value: IteratorResult<ServerMessageType>) => void;
   reject: (error: Error) => void;
 }
 
@@ -109,7 +105,7 @@ class ReconnectStrategy {
  * WebSocket-based bidirectional stream implementation for LLTransaction.
  * Implements BiDiStream interface which is compatible with DuplexStreamingCall.
  */
-export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAPI_ServerMessage> {
+export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, ServerMessageType> {
   // Connection
   private ws: WebSocket | null = null;
   private connectionState: ConnectionState = 'disconnected';
@@ -122,7 +118,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
   private sendCompleted = false;
 
   // Response management
-  private readonly responseQueue = new Denque<TxAPI_ServerMessage>();
+  private readonly responseQueue = new Denque<ServerMessageType>();
   private responseResolvers: ResponseResolver[] = [];
 
   // Reconnection
@@ -134,7 +130,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
   // === Public API ===
 
   public readonly requests = {
-    send: async (message: TxAPI_ClientMessage): Promise<void> => {
+    send: async (message: ClientMessageType): Promise<void> => {
       this.validateSendState();
       return this.enqueueSend(message);
     },
@@ -148,7 +144,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     },
   };
 
-  public readonly responses: AsyncIterable<TxAPI_ServerMessage> = {
+  public readonly responses: AsyncIterable<ServerMessageType> = {
     [Symbol.asyncIterator]: () => this.createResponseIterator(),
   };
 
@@ -296,7 +292,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
 
   // === Message Parsing ===
 
-  private parseMessage(data: unknown): TxAPI_ServerMessage {
+  private parseMessage(data: unknown): ServerMessageType {
     if (this.isBinaryData(data)) {
       return this.parseBinary(data);
     }
@@ -313,7 +309,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
         || data instanceof Blob;
   }
 
-  private parseBinary(data: ArrayBuffer | Buffer | Uint8Array): TxAPI_ServerMessage {
+  private parseBinary(data: ArrayBuffer | Buffer | Uint8Array): ServerMessageType {
     const uint8Array = this.toUint8Array(data);
     return ServerMessageType.fromBinary(uint8Array);
   }
@@ -324,7 +320,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     return new Uint8Array(data);
   }
 
-  private parseJson(data: string): TxAPI_ServerMessage {
+  private parseJson(data: string): ServerMessageType {
     const json = JSON.parse(data);
     return ServerMessageType.fromJson(json);
   }
@@ -341,7 +337,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     }
   }
 
-  private enqueueSend(message: TxAPI_ClientMessage): Promise<void> {
+  private enqueueSend(message: ClientMessageType): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       this.sendQueue.push({ message, resolve, reject });
       this.processSendQueue();
@@ -432,7 +428,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
 
   // === Response Delivery ===
 
-  private deliverResponse(message: TxAPI_ServerMessage): void {
+  private deliverResponse(message: ServerMessageType): void {
     if (this.responseResolvers.length > 0) {
       const resolver = this.responseResolvers.shift()!;
       resolver.resolve({ value: message, done: false });
@@ -441,7 +437,7 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     }
   }
 
-  private async *createResponseIterator(): AsyncIterator<TxAPI_ServerMessage> {
+  private async *createResponseIterator(): AsyncIterator<ServerMessageType> {
     while (true) {
       const result = await this.nextResponse();
 
@@ -451,8 +447,8 @@ export class WebSocketBiDiStream implements BiDiStream<TxAPI_ClientMessage, TxAP
     }
   }
 
-  private nextResponse(): Promise<IteratorResult<TxAPI_ServerMessage>> {
-    return new Promise<IteratorResult<TxAPI_ServerMessage>>((resolve, reject) => {
+  private nextResponse(): Promise<IteratorResult<ServerMessageType>> {
+    return new Promise<IteratorResult<ServerMessageType>>((resolve, reject) => {
       // Fast path: message already available
       if (this.responseQueue.length > 0) {
         const message = this.responseQueue.shift()!;
