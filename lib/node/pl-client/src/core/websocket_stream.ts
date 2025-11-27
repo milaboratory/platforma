@@ -7,8 +7,6 @@ import type { BiDiStream } from './abstract_stream';
 import Denque from 'denque';
 import { RetryConfig, RetryStrategy } from '../helpers/retry_strategy';
 
-// === Types ===
-
 type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'closing' | 'closed';
 
 interface QueuedMessage {
@@ -21,8 +19,6 @@ interface ResponseResolver {
   resolve: (value: IteratorResult<ServerMessageType>) => void;
   reject: (error: Error) => void;
 }
-
-// === WebSocket BiDi Stream ===
 
 /**
  * WebSocket-based bidirectional stream implementation for LLTransaction.
@@ -205,47 +201,12 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
     }
   }
 
-  // === Reconnection Callback ===
-
-  private handleMaxReconnectAttempts(error: Error): void {
-    this.connectionState = 'closed';
-    this.connectionError = error;
-    this.rejectAllPendingOperations(error);
-  }
-
-  // === Message Parsing ===
-
   private parseMessage(data: unknown): ServerMessageType {
-    if (this.isBinaryData(data)) {
-      return this.parseBinary(data);
-    }
-
-    if (typeof data === 'string') {
-      return this.parseJson(data);
+    if (data instanceof ArrayBuffer) {
+      return ServerMessageType.fromBinary(new Uint8Array(data));
     }
 
     throw new Error(`Unsupported message format: ${typeof data}`);
-  }
-
-  private isBinaryData(data: unknown): data is ArrayBuffer | Blob {
-    return data instanceof ArrayBuffer
-        || data instanceof Blob;
-  }
-
-  private parseBinary(data: ArrayBuffer | Buffer | Uint8Array): ServerMessageType {
-    const uint8Array = this.toUint8Array(data);
-    return ServerMessageType.fromBinary(uint8Array);
-  }
-
-  private toUint8Array(data: ArrayBuffer | Buffer | Uint8Array): Uint8Array {
-    if (data instanceof Uint8Array) return data;
-    if (data instanceof Buffer) return new Uint8Array(data);
-    return new Uint8Array(data);
-  }
-
-  private parseJson(data: string): ServerMessageType {
-    const json = JSON.parse(data);
-    return ServerMessageType.fromJson(json);
   }
 
   // === Send Queue Management ===
@@ -395,6 +356,11 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
   }
 
   // === Error Handling ===
+  private handleMaxReconnectAttempts(error: Error): void {
+    this.connectionState = 'closed';
+    this.connectionError = error;
+    this.rejectAllPendingOperations(error);
+  }
 
   private handleConnectionError(error: Error): void {
     this.connectionError = error;
