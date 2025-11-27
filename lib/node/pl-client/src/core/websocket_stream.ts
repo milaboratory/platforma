@@ -229,12 +229,12 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
     });
   }
 
-  private async processSendQueue(): Promise<void> {
+  private processSendQueue(): void {
     if (!this.canSendMessages()) return;
 
     while (this.sendQueue.length > 0) {
       const queued = this.sendQueue.shift()!;
-      await this.sendQueuedMessage(queued);
+      this.sendQueuedMessage(queued);
     }
   }
 
@@ -242,7 +242,7 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
     return this.connectionState === 'connected' && this.ws !== null;
   }
 
-  private async sendQueuedMessage(queued: QueuedMessage): Promise<void> {
+  private sendQueuedMessage(queued: QueuedMessage): void {
     try {
       const ws = this.ws;
       if (!ws) {
