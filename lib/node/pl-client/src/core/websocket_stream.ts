@@ -77,7 +77,7 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
     this.abortSignal = abortSignal;
 
     this.reconnection = new RetryStrategy(retryConfig, {
-      onRetry: () => this.connect(),
+      onRetry: () => { void this.connect(); },
       onMaxAttemptsReached: (error) => this.handleMaxReconnectAttempts(error),
     });
 
@@ -87,12 +87,12 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
     }
 
     this.attachAbortSignalHandler();
-    this.connect();
+    void this.connect();
   }
 
   // === Connection Lifecycle ===
 
-  private async connect(): Promise<void> {
+  private connect(): void {
     if (this.isConnectingOrConnected() || this.abortSignal.aborted) return;
 
     this.connectionState = 'connecting';
@@ -134,7 +134,7 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
   private onOpen(): void {
     this.connectionState = 'connected';
     this.reconnection.reset();
-    this.processSendQueue();
+    void this.processSendQueue();
   }
 
   private onClose(): void {
@@ -225,7 +225,7 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
   private enqueueSend(message: ClientMessageType): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       this.sendQueue.push({ message, resolve, reject });
-      this.processSendQueue();
+      void this.processSendQueue();
     });
   }
 
@@ -301,13 +301,13 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
   ): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       if (this.abortSignal.aborted) {
-        return reject(this.abortSignal.reason ?? new Error('Stream aborted'));
+        return reject(this.toError(this.abortSignal.reason) ?? new Error('Stream aborted'));
       }
 
       let timeoutId: ReturnType<typeof setTimeout>;
       const onAbort = () => {
         clearTimeout(timeoutId);
-        reject(this.abortSignal.reason ?? new Error('Stream aborted'));
+        reject(this.toError(this.abortSignal.reason) ?? new Error('Stream aborted'));
       };
 
       this.abortSignal.addEventListener('abort', onAbort, { once: true });
