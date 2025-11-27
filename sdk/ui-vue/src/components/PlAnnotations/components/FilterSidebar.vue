@@ -2,11 +2,8 @@
 export type Props = {
   columns: PlAdvancedFilterItem[];
 
-  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
+  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; axisIdx?: number; searchStr: string; searchType: 'value' | 'label' }) =>
     ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
-  // @todo: can be optional
-  getSuggestModel?: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
-    ListOptionBase<string | number> | Promise<ListOptionBase<string | number>>;
 
   hasSelectedColumns?: boolean;
   getValuesForSelectedColumns?: () => Promise<undefined | { columnId: PObjectId; values: string[] }>;
@@ -112,7 +109,6 @@ const supportedFilters = [
         :class="[$style.root, { [$commonStyle.disabled]: step.label.length === 0 }]"
         :items="props.columns"
         :supported-filters="supportedFilters"
-        :get-suggest-model="props.getSuggestModel"
         :get-suggest-options="props.getSuggestOptions"
         :enable-dnd="false"
         :enable-add-group-button="true"
