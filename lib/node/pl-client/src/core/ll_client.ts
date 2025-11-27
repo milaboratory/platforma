@@ -486,11 +486,12 @@ export class LLPlClient implements WireClientProviderFactory {
           timeout: ops.timeout
             ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout),
         });
-      } 
-      
+      }
+
       if (this._wireProto === 'rest') {
-        const wsUrl = this.conf.ssl ? `wss://${this.conf.hostAndPort}/v1/ws/tx`
-                                    : `ws://${this.conf.hostAndPort}/v1/ws/tx`;
+        const wsUrl = this.conf.ssl
+          ? `wss://${this.conf.hostAndPort}/v1/ws/tx`
+          : `ws://${this.conf.hostAndPort}/v1/ws/tx`;
         const jwtToken = this.authInformation?.jwtToken;
         this.refreshAuthInformationIfNeeded();
         return new WebSocketBiDiStream(wsUrl, totalAbortSignal, jwtToken);

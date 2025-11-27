@@ -5,7 +5,8 @@ import {
 } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import type { BiDiStream } from './abstract_stream';
 import Denque from 'denque';
-import { RetryConfig, RetryStrategy } from '../helpers/retry_strategy';
+import type { RetryConfig } from '../helpers/retry_strategy';
+import { RetryStrategy } from '../helpers/retry_strategy';
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'closing' | 'closed';
 

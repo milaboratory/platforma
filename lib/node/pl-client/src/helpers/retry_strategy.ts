@@ -71,54 +71,53 @@ export class RetryStrategy {
   }
 }
 
- interface ExponentialBackoffConfig {
-    initialDelay: number;
-    maxDelay: number;
-    factor: number;
-    jitter: number;
+interface ExponentialBackoffConfig {
+  initialDelay: number;
+  maxDelay: number;
+  factor: number;
+  jitter: number;
+}
+
+class ExponentialBackoff {
+  private readonly initialDelay: number;
+  private readonly maxDelay: number;
+
+  private currentDelay: number;
+
+  private readonly factor: number;
+  private readonly jitter: number;
+
+  constructor(config: ExponentialBackoffConfig) {
+    this.initialDelay = config.initialDelay;
+    this.maxDelay = config.maxDelay;
+    this.factor = config.factor;
+    this.jitter = config.jitter;
+    this.currentDelay = config.initialDelay;
   }
-  
-   class ExponentialBackoff {
-    private readonly initialDelay: number;
-    private readonly maxDelay: number;
-  
-    private currentDelay: number;
-  
-    private readonly factor: number;
-    private readonly jitter: number;
-  
-    constructor(config: ExponentialBackoffConfig) {
-      this.initialDelay = config.initialDelay;
-      this.maxDelay = config.maxDelay;
-      this.factor = config.factor;
-      this.jitter = config.jitter;
-      this.currentDelay = config.initialDelay;
+
+  delay(): number {
+    if (this.currentDelay >= this.maxDelay) {
+      return this.applyJitter(this.maxDelay);
     }
-  
-    delay(): number {
-      if (this.currentDelay >= this.maxDelay) {
-        return this.applyJitter(this.maxDelay);
-      }
-  
-      this.currentDelay = this.currentDelay * this.factor;
-  
-      if (this.currentDelay > this.maxDelay) {
-        this.currentDelay = this.maxDelay;
-      }
-  
-      return this.applyJitter(this.currentDelay);
+
+    this.currentDelay = this.currentDelay * this.factor;
+
+    if (this.currentDelay > this.maxDelay) {
+      this.currentDelay = this.maxDelay;
     }
-  
-    reset(): void {
-      this.currentDelay = this.initialDelay;
-    }
-  
-    private applyJitter(delay: number): number {
-      if (delay === 0 || this.jitter === 0) {
-        return delay;
-      }
-      const delayFactor = 1 - (this.jitter / 2) + Math.random() * this.jitter;
-      return delay * delayFactor;
-    }
+
+    return this.applyJitter(this.currentDelay);
   }
-  
+
+  reset(): void {
+    this.currentDelay = this.initialDelay;
+  }
+
+  private applyJitter(delay: number): number {
+    if (delay === 0 || this.jitter === 0) {
+      return delay;
+    }
+    const delayFactor = 1 - (this.jitter / 2) + Math.random() * this.jitter;
+    return delay * delayFactor;
+  }
+}
