@@ -448,38 +448,86 @@ authOptions:
       key: "htpasswd"
   # -- LDAP authentication
   ldap:
-    enabled: true
-    server: "ldap://pl-dev-glauth.dev-gke.svc.cluster.local:3893"
-    dn: "cn=%u,ou=users,ou=users,dc=pldev,dc=io"
+    enabled: false
+    server: ""
+    dn: ""
     startTls: false
+    # -- LDAP search password configuration.
+    # Used for LDAP bind operations when searching for users.
+    # The password can be provided via a Kubernetes Secret as an environment variable (PL_AUTH_LDAP_SEARCH_PASSWORD).
+    # Alternatively, you can pass it directly via the --auth-ldap-search-password CLI argument in extraArgs.
+    searchPassword:
+      # -- Provide search password from a Secret as an environment variable.
+      # When enabled, the password will be available as PL_AUTH_LDAP_SEARCH_PASSWORD env var.
+      # Note: If you prefer to pass the password directly via CLI, use extraArgs instead:
+      # extraArgs:
+      #   - "--auth-ldap-search-password=your-password"
+      envRef:
+        enabled: false
+        name: "" # Name of the Secret containing the LDAP search password
+        key: "password" # Key within the Secret that holds the password value
     # -- LDAP TLS configuration.
     # Enables client-side TLS for the LDAP connection.
     # You can mix and match how certificates are provided. For example, you can
     # provide the client cert/key via a secret and the CA certificate via `casPath`.
     tls:
       enabled: false
-      # -- Provide certificate, key, and optional CA via direct paths on the container's filesystem.
-      # This is used if `tls.secretRef.enabled` is false.
-      certPath: ""
-      keyPath: ""
-      casPath: "" # Optional. Path to a CA certificate file.
-      # -- Provide certificate, key, and optional CA via a Kubernetes secret.
-      # The secret will be mounted to `/etc/platforma/secrets/ldap`.
+      # -- Configuration for the Certificate Authority (CA).
+      # Used to verify the LDAP server's certificate. This is useful for servers
+      # with self-signed certificates or private CAs.
+      ca:
+        # -- Provide CA cert from a Secret.
+        secretRef:
+          enabled: false
+          name: ""
+          key: "ca.crt"
+        # -- Provide CA cert from a ConfigMap.
+        configMapRef:
+          enabled: false
+          name: ""
+          key: "ca.crt"
+        # -- Provide CA cert via a direct path in the container.
+        # This is only used if `secretRef` and `configMapRef` are disabled.
+        path: ""
+
+      # -- Configuration for the client certificate and key (for mTLS).
+      # Provide a client certificate and private key if the LDAP server requires it.
+      client:
+        # -- Provide client cert and key from a Secret (recommended for private keys).
+        secretRef:
+          enabled: false
+          name: ""
+          certKey: "tls.crt"
+          keyKey: "tls.key"
+        # -- Provide client cert and key from a ConfigMap.
+        configMapRef:
+          enabled: false
+          name: ""
+          certKey: "tls.crt"
+          keyKey: "tls.key"
+        # -- Provide client cert and key via direct paths in the container.
+        # This is only used if `secretRef` and `configMapRef` for the client are disabled.
+        certPath: ""
+        keyPath: ""
+    # -- Configuration for system root CA certificates for LDAP.
+    # This is evaluated by the application independently of the client TLS configuration above.
+    # You can provide the root CA certificates via Secret, ConfigMap, or direct path.
+    rootCas:
+      # -- Provide root CA certificates from a Secret.
       secretRef:
         enabled: false
-        # -- Name of the Secret containing the TLS files.
         name: ""
-        # -- Key in the secret for the client certificate.
-        certKey: "tls.crt"
-        # -- Key in the secret for the client private key.
-        keyKey: "tls.key"
-        # -- Key in the secret for the CA certificate (optional).
-        # If specified, this takes precedence over `tls.casPath`.
-        caKey: "ca.crt"
-    # -- Path to the file with system root CA certificates for LDAP (e.g., /etc/ssl/certs/ca-certificates.crt).
-    # This is evaluated by the application independently of the client TLS configuration above.
-    rootCas: ""
-
+        key: "ca.crt"
+      # -- Provide root CA certificates from a ConfigMap.
+      configMapRef:
+        enabled: false
+        name: ""
+        key: "ca.crt"
+      # -- Provide root CA certificates via a direct path in the container.
+      # This is only used if `secretRef` and `configMapRef` are disabled.
+      # Example: /etc/ssl/certs/ca-certificates.crt
+      path: ""
+      
 # -- A list of extra command-line arguments to pass to the Platforma container.
 # This provides a flexible way to set CLI options that are not explicitly
 # defined elsewhere in this values file.
