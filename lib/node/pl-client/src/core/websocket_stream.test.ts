@@ -13,7 +13,6 @@ const MockWebSocket = vi.hoisted(() => {
     static CLOSED = 3;
 
     readyState = 0;
-    bufferedAmount = 0;
     binaryType = 'blob';
 
     private listeners: Map<string, Set<Function>> = new Map();
@@ -436,23 +435,4 @@ describe('WebSocketBiDiStream', () => {
     });
   });
 
-  describe('backpressure handling', () => {
-    test('should wait when buffer is full', async () => {
-      const { stream, ws } = createStream();
-
-      await openConnection(ws);
-
-      ws.bufferedAmount = 10 * 1024 * 1024;
-      const sendPromise = stream.requests.send(createClientMessage());
-
-      await vi.advanceTimersByTimeAsync(5);
-      expect(ws.send).not.toHaveBeenCalled();
-
-      ws.bufferedAmount = 0;
-      await vi.advanceTimersByTimeAsync(20);
-
-      await sendPromise;
-      expect(ws.send).toHaveBeenCalled();
-    });
-  });
 });

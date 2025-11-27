@@ -254,28 +254,6 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
         throw new Error(`WebSocket is not open (readyState: ${ws.readyState})`);
       }
 
-      // Handle backpressure: wait if buffer is too full
-      // Maximum buffer size is typically 16MB, but we'll be conservative
-      const MAX_BUFFERED_AMOUNT = 8 * 1024 * 1024; // 8MB
-      while (ws.bufferedAmount > MAX_BUFFERED_AMOUNT) {
-        await new Promise<void>((resolve) => {
-          const checkBuffer = () => {
-            if (ws.bufferedAmount <= MAX_BUFFERED_AMOUNT || ws.readyState !== WebSocket.OPEN) {
-              resolve();
-            } else {
-              // Check again after a short delay
-              setTimeout(checkBuffer, 10);
-            }
-          };
-          checkBuffer();
-        });
-
-        // If WebSocket closed while waiting, throw error
-        if (ws.readyState !== WebSocket.OPEN) {
-          throw new Error(`WebSocket closed while waiting for buffer to drain (readyState: ${ws.readyState})`);
-        }
-      }
-
       const binary = ClientMessageType.toBinary(queued.message);
       ws.send(binary);
       queued.resolve();
