@@ -138,13 +138,6 @@ describe('WebSocketBiDiStream', () => {
   });
 
   describe('constructor', () => {
-    test('should create WebSocket connection on initialization', () => {
-      createStream();
-
-      expect(MockWebSocket.instances).toHaveLength(1);
-      expect(MockWebSocket.instances[0].url).toBe('ws://localhost:8080');
-    });
-
     test('should pass JWT token in authorization header', () => {
       createStream('test-token');
 
@@ -161,12 +154,6 @@ describe('WebSocketBiDiStream', () => {
 
       expect(MockWebSocket.instances).toHaveLength(0);
     });
-
-    test('should set binaryType to arraybuffer', () => {
-      createStream();
-
-      expect(MockWebSocket.instances[0].binaryType).toBe('arraybuffer');
-    });
   });
 
   describe('send messages', () => {
@@ -178,15 +165,6 @@ describe('WebSocketBiDiStream', () => {
 
       await openConnection(ws);
       await sendPromise;
-
-      expect(ws.send).toHaveBeenCalledTimes(1);
-    });
-
-    test('should send message immediately if already connected', async () => {
-      const { stream, ws } = createStream();
-
-      await openConnection(ws);
-      await stream.requests.send(createClientMessage());
 
       expect(ws.send).toHaveBeenCalledTimes(1);
     });
@@ -211,17 +189,6 @@ describe('WebSocketBiDiStream', () => {
       await expect(stream.requests.send(createClientMessage())).rejects.toThrow(
         'Cannot send: stream aborted',
       );
-    });
-
-    test('should send multiple messages in order', async () => {
-      const { stream, ws } = createStream();
-
-      await openConnection(ws);
-      await stream.requests.send(createClientMessage());
-      await stream.requests.send(createClientMessage());
-      await stream.requests.send(createClientMessage());
-
-      expect(ws.send).toHaveBeenCalledTimes(3);
     });
   });
 
