@@ -396,11 +396,15 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
   }
 
   private createStreamClosedError(): Error {
-    return this.abortSignal.aborted
-      ? new Error('Stream aborted')
-      : new Error('Stream closed');
+    if (this.abortSignal.aborted) {
+      const reason = this.abortSignal.reason;
+      if (reason instanceof Error) {
+        return reason;
+      }
+      return new Error('Stream aborted', { cause: reason });
+    }
+    return new Error('Stream closed');
   }
-
   // === State Checks ===
 
   private isConnectingOrConnected(): boolean {

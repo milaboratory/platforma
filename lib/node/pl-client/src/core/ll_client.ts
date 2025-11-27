@@ -489,6 +489,11 @@ export class LLPlClient implements WireClientProviderFactory {
       }
 
       if (this._wireProto === 'rest') {
+        // For REST/WebSocket protocol, timeout needs to be converted to AbortSignal
+        const timeout = ops.timeout ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout);
+        if (timeout !== undefined) {
+          totalAbortSignal = AbortSignal.any([totalAbortSignal, AbortSignal.timeout(timeout)]);
+        }
         const wsUrl = this.conf.ssl
           ? `wss://${this.conf.hostAndPort}/v1/ws/tx`
           : `ws://${this.conf.hostAndPort}/v1/ws/tx`;
