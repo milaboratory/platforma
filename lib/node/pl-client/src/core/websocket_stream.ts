@@ -5,6 +5,7 @@ import {
 } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import type { BiDiStream } from './abstract_stream';
 import Denque from 'denque';
+import { RetryConfig, RetryStrategy } from '../helpers/retry_strategy';
 
 // === Types ===
 
@@ -21,140 +22,6 @@ interface ResponseResolver {
   reject: (error: Error) => void;
 }
 
-// === Exponential Backoff ===
-
-interface BackoffConfig {
-  initialDelay: number;
-  maxDelay: number;
-  factor: number;
-  jitter: number;
-}
-
-class ExponentialBackoff {
-  private readonly initialDelay: number;
-  private readonly maxDelay: number;
-  
-  private currentDelay: number;
-
-  private readonly factor: number;
-  private readonly jitter: number;
-
-  constructor(config: BackoffConfig) {
-    this.initialDelay = config.initialDelay;
-    this.maxDelay = config.maxDelay;
-    this.factor = config.factor;
-    this.jitter = config.jitter;
-    this.currentDelay = config.initialDelay;
-  }
-
-  delay(): number {
-    if (this.currentDelay >= this.maxDelay) {
-      return this.applyJitter(this.maxDelay);
-    }
-
-    this.currentDelay = this.currentDelay * this.factor;
-
-    if (this.currentDelay > this.maxDelay) {
-      this.currentDelay = this.maxDelay;
-    }
-
-    return this.applyJitter(this.currentDelay);
-  }
-
-  reset(): void {
-    this.currentDelay = this.initialDelay;
-  }
-
-  private applyJitter(delay: number): number {
-    if (delay === 0 || this.jitter === 0) {
-      return delay;
-    }
-    const delayFactor = 1 - (this.jitter / 2) + Math.random() * this.jitter;
-    return delay * delayFactor;
-  }
-}
-
-// === Reconnect Strategy ===
-
-interface ReconnectConfig {
-  maxAttempts: number;
-  initialDelay: number;
-  maxDelay: number;
-}
-
-const DEFAULT_RECONNECT_CONFIG: ReconnectConfig = {
-  maxAttempts: 10,
-  initialDelay: 100,
-  maxDelay: 30000,
-};
-
-interface ReconnectCallbacks {
-  onReconnect: () => void;
-  onMaxAttemptsReached: (error: Error) => void;
-}
-
-/**
- * Encapsulates reconnection logic with exponential backoff.
- */
-class ReconnectStrategy {
-  private attempts = 0;
-  private timer: ReturnType<typeof setTimeout> | null = null;
-  private readonly config: ReconnectConfig;
-  private readonly callbacks: ReconnectCallbacks;
-  private readonly backoff: ExponentialBackoff;
-
-  constructor(config: ReconnectConfig, callbacks: ReconnectCallbacks) {
-    this.config = config;
-    this.callbacks = callbacks;
-    this.backoff = new ExponentialBackoff({
-      initialDelay: config.initialDelay,
-      maxDelay: config.maxDelay,
-      factor: 2,
-      jitter: 0.1,
-    });
-  }
-
-  schedule(): void {
-    if (this.timer || this.hasExceededLimit()) {
-      if (this.hasExceededLimit()) {
-        this.notifyMaxAttemptsReached();
-      }
-      return;
-    }
-
-    this.attempts++;
-    const delay = this.backoff.delay();
-
-    this.timer = setTimeout(() => {
-      this.timer = null;
-      this.callbacks.onReconnect();
-    }, delay);
-  }
-
-  cancel(): void {
-    if (this.timer) {
-      clearTimeout(this.timer);
-      this.timer = null;
-    }
-  }
-
-  reset(): void {
-    this.attempts = 0;
-    this.backoff.reset();
-  }
-
-  private hasExceededLimit(): boolean {
-    return this.attempts >= this.config.maxAttempts;
-  }
-
-  private notifyMaxAttemptsReached(): void {
-    const error = new Error(
-      `Max reconnection attempts (${this.config.maxAttempts}) reached`,
-    );
-    this.callbacks.onMaxAttemptsReached(error);
-  }
-}
-
 // === WebSocket BiDi Stream ===
 
 /**
@@ -168,6 +35,7 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
   private readonly url: string;
   private readonly jwtToken?: string;
   private readonly abortSignal: AbortSignal;
+  private readonly reconnection: RetryStrategy;
 
   // Send management
   private readonly sendQueue = new Denque<QueuedMessage>();
@@ -176,9 +44,6 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
   // Response management
   private readonly responseQueue = new Denque<ServerMessageType>();
   private responseResolvers: ResponseResolver[] = [];
-
-  // Reconnection
-  private readonly reconnectStrategy: ReconnectStrategy;
 
   // Error tracking
   private connectionError: Error | null = null;
@@ -208,15 +73,14 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
     url: string,
     abortSignal: AbortSignal,
     jwtToken?: string,
-    reconnectConfig: Partial<ReconnectConfig> = {},
+    retryConfig: Partial<RetryConfig> = {},
   ) {
     this.url = url;
     this.jwtToken = jwtToken;
     this.abortSignal = abortSignal;
 
-    const config = { ...DEFAULT_RECONNECT_CONFIG, ...reconnectConfig };
-    this.reconnectStrategy = new ReconnectStrategy(config, {
-      onReconnect: () => this.connect(),
+    this.reconnection = new RetryStrategy(retryConfig, {
+      onRetry: () => this.connect(),
       onMaxAttemptsReached: (error) => this.handleMaxReconnectAttempts(error),
     });
 
@@ -272,7 +136,7 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
 
   private onOpen(): void {
     this.connectionState = 'connected';
-    this.reconnectStrategy.reset();
+    this.reconnection.reset();
     this.processSendQueue();
   }
 
@@ -285,7 +149,7 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
       this.finalizeStream();
     } else {
       this.connectionState = 'disconnected';
-      this.reconnectStrategy.schedule();
+      this.reconnection.schedule();
     }
   }
 
@@ -312,7 +176,7 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
     if (this.isClosed()) return;
 
     this.connectionState = 'closed';
-    this.reconnectStrategy.cancel();
+    this.reconnection.cancel();
     this.closeWebSocket();
     this.rejectAllPendingOperations();
   }
@@ -538,7 +402,7 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
 
     if (!this.abortSignal.aborted && !this.isClosed()) {
       this.connectionState = 'disconnected';
-      this.reconnectStrategy.schedule();
+      this.reconnection.schedule();
     }
   }
 
