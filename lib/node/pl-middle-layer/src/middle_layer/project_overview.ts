@@ -3,7 +3,8 @@ import type { ComputableStableDefined } from '@milaboratories/computable';
 import { Computable } from '@milaboratories/computable';
 import type {
   ProjectRenderingState,
-  ProjectStructure } from '../model/project_model';
+  ProjectStructure,
+} from '../model/project_model';
 import {
   BlockRenderingStateKey,
   ProjectCreatedTimestamp,
@@ -44,10 +45,12 @@ type _CalculationStatus = 'Running' | 'Done';
 type ProdState = {
   finished: boolean;
 
+  uiCtxError?: string;
+  runError?: string;
+  prerunError?: string;
+
   outputError: boolean;
-
   outputsError?: string;
-
   exportsError?: string;
 
   stale: boolean;
@@ -100,32 +103,44 @@ export function projectOverview(
         });
         if (rInputs !== undefined) {
           const prodArgs = rInputs.getDataAsJson() as Record<string, unknown>;
-          const result = prj.getField({
+          const runResult = prj.getField({
             field: projectFieldName(id, 'prodOutput'),
             assertFieldType: 'Dynamic',
             errorIfFieldNotFound: true,
           });
-          const ctx = prj.getField({
+          const stagingResult = prj.getField({
+            field: projectFieldName(id, 'stagingOutput'),
+            assertFieldType: 'Dynamic',
+            stableIfNotFound: true,
+          });
+          const prodUiCtx = prj.getField({
             field: projectFieldName(id, 'prodUiCtx'),
             assertFieldType: 'Dynamic',
             errorIfFieldNotFound: true,
           });
+
           prod = {
             arguments: prodArgs,
             stale: !argsEquals(currentArguments, prodArgs),
+
+            uiCtxError: prodUiCtx.error?.getDataAsString() ?? prodUiCtx.value?.getError()?.getDataAsString(),
+            runError: runResult?.error?.getDataAsString() ?? runResult?.value?.getError()?.getDataAsString(),
+            prerunError: stagingResult?.error?.getDataAsString() ?? stagingResult?.value?.getError()?.getDataAsString(),
+
             outputError:
-              result.error !== undefined
-              || ctx.error !== undefined
-              || result.value?.getError() !== undefined
-              || ctx.value?.getError() !== undefined,
+              runResult.error !== undefined
+              || prodUiCtx.error !== undefined
+              || runResult.value?.getError() !== undefined
+              || prodUiCtx.value?.getError() !== undefined,
             outputsError:
-              result.error?.getDataAsString() ?? result.value?.getError()?.getDataAsString(),
-            exportsError: ctx.error?.getDataAsString() ?? ctx.value?.getError()?.getDataAsString(),
+              runResult.error?.getDataAsString() ?? runResult.value?.getError()?.getDataAsString(),
+            exportsError: prodUiCtx.error?.getDataAsString() ?? prodUiCtx.value?.getError()?.getDataAsString(),
+
             finished:
-              ((result.value !== undefined && result.value.getIsReadyOrError())
-                || (result.error !== undefined && result.error.getIsReadyOrError()))
-              && ((ctx.value !== undefined && ctx.value.getIsReadyOrError())
-                || (ctx.error !== undefined && ctx.error.getIsReadyOrError())),
+              ((runResult.value !== undefined && runResult.value.getIsReadyOrError())
+                || (runResult.error !== undefined && runResult.error.getIsReadyOrError()))
+              && ((prodUiCtx.value !== undefined && prodUiCtx.value.getIsReadyOrError())
+                || (prodUiCtx.error !== undefined && prodUiCtx.error.getIsReadyOrError())),
           };
         }
 
@@ -247,9 +262,15 @@ export function projectOverview(
           upstreams: [...currentGraph.traverseIdsExcludingRoots('upstream', id)],
           downstreams: [...currentGraph.traverseIdsExcludingRoots('downstream', id)],
           calculationStatus,
+
+          uiCtxError: info.prod?.uiCtxError,
+          runError: info.prod?.runError,
+          prerunError: info.prod?.prerunError,
+
           outputErrors: info.prod?.outputError === true,
           outputsError: info.prod?.outputsError,
           exportsError: info.prod?.exportsError,
+
           settings,
           sections,
           inputsValid,
