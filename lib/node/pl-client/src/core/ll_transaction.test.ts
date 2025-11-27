@@ -21,7 +21,6 @@ test('check successful transaction', async () => {
 
   expect(openResp.txOpen.tx?.isValid).toBeTruthy();
   expect(commitResp.txCommit.success).toBeTruthy();
-  await tx.complete();
   await tx.await();
 });
 
