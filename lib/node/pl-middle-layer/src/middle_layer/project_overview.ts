@@ -38,6 +38,7 @@ type BlockInfo = {
   argsRid: ResourceId;
   currentArguments: unknown;
   prod?: ProdState;
+  staging?: StagingState;
 };
 
 type _CalculationStatus = 'Running' | 'Done';
@@ -45,15 +46,19 @@ type _CalculationStatus = 'Running' | 'Done';
 type ProdState = {
   finished: boolean;
 
-  uiCtxError?: string;
-  runError?: string;
-  prerunError?: string;
-
   outputError: boolean;
   outputsError?: string;
   exportsError?: string;
 
   stale: boolean;
+
+  /** Arguments current production was rendered with. */
+  arguments: Record<string, unknown>;
+};
+
+type StagingState = {
+  outputError: boolean;
+  outputsError?: string;
 
   /** Arguments current production was rendered with. */
   arguments: Record<string, unknown>;
@@ -87,6 +92,9 @@ export function projectOverview(
 
       const infos = new Map<string, BlockInfo>();
       for (const { id } of allBlocks(structure)) {
+        let prod: ProdState | undefined = undefined;
+        let staging: StagingState | undefined = undefined;
+
         const cInputs = prj.traverse({
           field: projectFieldName(id, 'currentArgs'),
           assertFieldType: 'Dynamic',
@@ -94,7 +102,20 @@ export function projectOverview(
         });
         const currentArguments = cInputs.getDataAsJson() as Record<string, unknown>;
 
-        let prod: ProdState | undefined = undefined;
+        if (cInputs !== undefined) {
+          const stagingResult = prj.getField({
+            field: projectFieldName(id, 'stagingOutput'),
+            assertFieldType: 'Dynamic',
+            stableIfNotFound: true,
+          });
+
+          staging = {
+            arguments: currentArguments,
+            outputError: stagingResult?.error !== undefined
+              || stagingResult?.value?.getError() !== undefined,
+            outputsError: stagingResult?.error?.getDataAsString() ?? stagingResult?.value?.getError()?.getDataAsString(),
+          };
+        }
 
         const rInputs = prj.traverse({
           field: projectFieldName(id, 'prodArgs'),
@@ -103,15 +124,10 @@ export function projectOverview(
         });
         if (rInputs !== undefined) {
           const prodArgs = rInputs.getDataAsJson() as Record<string, unknown>;
-          const runResult = prj.getField({
+          const prodResult = prj.getField({
             field: projectFieldName(id, 'prodOutput'),
             assertFieldType: 'Dynamic',
             errorIfFieldNotFound: true,
-          });
-          const stagingResult = prj.getField({
-            field: projectFieldName(id, 'stagingOutput'),
-            assertFieldType: 'Dynamic',
-            stableIfNotFound: true,
           });
           const prodUiCtx = prj.getField({
             field: projectFieldName(id, 'prodUiCtx'),
@@ -123,28 +139,24 @@ export function projectOverview(
             arguments: prodArgs,
             stale: !argsEquals(currentArguments, prodArgs),
 
-            uiCtxError: prodUiCtx.error?.getDataAsString() ?? prodUiCtx.value?.getError()?.getDataAsString(),
-            runError: runResult?.error?.getDataAsString() ?? runResult?.value?.getError()?.getDataAsString(),
-            prerunError: stagingResult?.error?.getDataAsString() ?? stagingResult?.value?.getError()?.getDataAsString(),
-
             outputError:
-              runResult.error !== undefined
+              prodResult.error !== undefined
               || prodUiCtx.error !== undefined
-              || runResult.value?.getError() !== undefined
+              || prodResult.value?.getError() !== undefined
               || prodUiCtx.value?.getError() !== undefined,
             outputsError:
-              runResult.error?.getDataAsString() ?? runResult.value?.getError()?.getDataAsString(),
+              prodResult.error?.getDataAsString() ?? prodResult.value?.getError()?.getDataAsString(),
             exportsError: prodUiCtx.error?.getDataAsString() ?? prodUiCtx.value?.getError()?.getDataAsString(),
 
             finished:
-              ((runResult.value !== undefined && runResult.value.getIsReadyOrError())
-                || (runResult.error !== undefined && runResult.error.getIsReadyOrError()))
+              ((prodResult.value !== undefined && prodResult.value.getIsReadyOrError())
+                || (prodResult.error !== undefined && prodResult.error.getIsReadyOrError()))
               && ((prodUiCtx.value !== undefined && prodUiCtx.value.getIsReadyOrError())
                 || (prodUiCtx.error !== undefined && prodUiCtx.error.getIsReadyOrError())),
           };
         }
 
-        infos.set(id, { currentArguments, prod, argsRid: cInputs.resourceInfo.id });
+        infos.set(id, { currentArguments, staging, prod, argsRid: cInputs.resourceInfo.id });
       }
 
       const currentGraph = productionGraph(structure, (id) => {
@@ -263,12 +275,8 @@ export function projectOverview(
           downstreams: [...currentGraph.traverseIdsExcludingRoots('downstream', id)],
           calculationStatus,
 
-          uiCtxError: info.prod?.uiCtxError,
-          runError: info.prod?.runError,
-          prerunError: info.prod?.prerunError,
-
-          outputErrors: info.prod?.outputError === true,
-          outputsError: info.prod?.outputsError,
+          outputErrors: info.prod?.outputError === true || info.staging?.outputError === true,
+          outputsError: info.prod?.outputsError ?? info.staging?.outputsError,
           exportsError: info.prod?.exportsError,
 
           settings,
