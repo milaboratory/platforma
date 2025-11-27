@@ -12,7 +12,7 @@ const MockWebSocket = vi.hoisted(() => {
     static CLOSING = 2;
     static CLOSED = 3;
 
-    readyState = 0; // CONNECTING
+    readyState = 0;
     bufferedAmount = 0;
     binaryType = 'blob';
 
@@ -78,19 +78,53 @@ vi.mock('undici', () => ({
 }));
 
 import { WebSocketBiDiStream } from './websocket_stream';
+import type { RetryConfig } from '../helpers/retry_strategy';
 
-function createAbortController(): AbortController {
-  return new AbortController();
+type MockWS = InstanceType<typeof MockWebSocket>;
+
+interface StreamContext {
+  stream: WebSocketBiDiStream;
+  ws: MockWS;
+  controller: AbortController;
 }
 
-function createServerMessage(): { message: ServerMessageType; binary: Uint8Array } {
+function createStream(token?: string, retryConfig?: Partial<RetryConfig>): StreamContext {
+  const controller = new AbortController();
+  const stream = new WebSocketBiDiStream(
+    'ws://localhost:8080',
+    controller.signal,
+    token,
+    retryConfig,
+  );
+  const ws = MockWebSocket.instances[MockWebSocket.instances.length - 1];
+  return { stream, ws, controller };
+}
+
+async function openConnection(ws: MockWS): Promise<void> {
+  ws.simulateOpen();
+  await vi.runAllTimersAsync();
+}
+
+function createServerMessageBuffer(): ArrayBuffer {
   const message = ServerMessageType.create({});
   const binary = ServerMessageType.toBinary(message);
-  return { message, binary };
+  return binary.buffer.slice(binary.byteOffset, binary.byteOffset + binary.byteLength) as ArrayBuffer;
 }
 
 function createClientMessage(): ClientMessageType {
   return ClientMessageType.create({});
+}
+
+async function collectMessages(
+  stream: WebSocketBiDiStream,
+  count: number,
+): Promise<ServerMessageType[]> {
+  const messages: ServerMessageType[] = [];
+  for await (const msg of stream.responses) {
+    messages.push(msg);
+    if (messages.length >= count) break;
+  }
+  return messages;
 }
 
 describe('WebSocketBiDiStream', () => {
@@ -105,16 +139,14 @@ describe('WebSocketBiDiStream', () => {
 
   describe('constructor', () => {
     test('should create WebSocket connection on initialization', () => {
-      const controller = createAbortController();
-      new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
+      createStream();
 
       expect(MockWebSocket.instances).toHaveLength(1);
       expect(MockWebSocket.instances[0].url).toBe('ws://localhost:8080');
     });
 
     test('should pass JWT token in authorization header', () => {
-      const controller = createAbortController();
-      new WebSocketBiDiStream('ws://localhost:8080', controller.signal, 'test-token');
+      createStream('test-token');
 
       expect(MockWebSocket.instances[0].options?.headers?.authorization).toBe(
         'Bearer test-token',
@@ -122,7 +154,7 @@ describe('WebSocketBiDiStream', () => {
     });
 
     test('should not create WebSocket if already aborted', () => {
-      const controller = createAbortController();
+      const controller = new AbortController();
       controller.abort();
 
       new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
@@ -131,8 +163,7 @@ describe('WebSocketBiDiStream', () => {
     });
 
     test('should set binaryType to arraybuffer', () => {
-      const controller = createAbortController();
-      new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
+      createStream();
 
       expect(MockWebSocket.instances[0].binaryType).toBe('arraybuffer');
     });
@@ -140,46 +171,30 @@ describe('WebSocketBiDiStream', () => {
 
   describe('send messages', () => {
     test('should queue message and send when connected', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      const message = createClientMessage();
-      const sendPromise = stream.requests.send(message);
-
-      // Message is queued, not sent yet
+      const sendPromise = stream.requests.send(createClientMessage());
       expect(ws.send).not.toHaveBeenCalled();
 
-      // Simulate connection
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
-
+      await openConnection(ws);
       await sendPromise;
+
       expect(ws.send).toHaveBeenCalledTimes(1);
     });
 
     test('should send message immediately if already connected', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
-
-      const message = createClientMessage();
-      await stream.requests.send(message);
+      await openConnection(ws);
+      await stream.requests.send(createClientMessage());
 
       expect(ws.send).toHaveBeenCalledTimes(1);
     });
 
     test('should throw error when sending after complete', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
-
+      await openConnection(ws);
       await stream.requests.complete();
 
       await expect(stream.requests.send(createClientMessage())).rejects.toThrow(
@@ -188,13 +203,9 @@ describe('WebSocketBiDiStream', () => {
     });
 
     test('should throw error when sending after abort', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws, controller } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
-
+      await openConnection(ws);
       controller.abort();
 
       await expect(stream.requests.send(createClientMessage())).rejects.toThrow(
@@ -203,13 +214,9 @@ describe('WebSocketBiDiStream', () => {
     });
 
     test('should send multiple messages in order', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
-
+      await openConnection(ws);
       await stream.requests.send(createClientMessage());
       await stream.requests.send(createClientMessage());
       await stream.requests.send(createClientMessage());
@@ -220,70 +227,37 @@ describe('WebSocketBiDiStream', () => {
 
   describe('receive messages', () => {
     test('should receive messages via async iterator', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
+      await openConnection(ws);
 
-      const { binary } = createServerMessage();
-      const arrayBuffer = binary.buffer.slice(
-        binary.byteOffset,
-        binary.byteOffset + binary.byteLength,
-      );
+      const buffer = createServerMessageBuffer();
+      const responsePromise = collectMessages(stream, 2);
 
-      const responsePromise = (async () => {
-        const messages: ServerMessageType[] = [];
-        for await (const msg of stream.responses) {
-          messages.push(msg);
-          if (messages.length === 2) break;
-        }
-        return messages;
-      })();
-
-      ws.simulateMessage(arrayBuffer);
-      ws.simulateMessage(arrayBuffer);
+      ws.simulateMessage(buffer);
+      ws.simulateMessage(buffer);
 
       const messages = await responsePromise;
       expect(messages).toHaveLength(2);
     });
 
     test('should buffer messages when no consumer', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
+      await openConnection(ws);
 
-      const { binary } = createServerMessage();
-      const arrayBuffer = binary.buffer.slice(
-        binary.byteOffset,
-        binary.byteOffset + binary.byteLength,
-      );
+      const buffer = createServerMessageBuffer();
+      ws.simulateMessage(buffer);
+      ws.simulateMessage(buffer);
 
-      // Send messages before consuming
-      ws.simulateMessage(arrayBuffer);
-      ws.simulateMessage(arrayBuffer);
-
-      // Now consume
-      const messages: ServerMessageType[] = [];
-      for await (const msg of stream.responses) {
-        messages.push(msg);
-        if (messages.length === 2) break;
-      }
-
+      const messages = await collectMessages(stream, 2);
       expect(messages).toHaveLength(2);
     });
 
     test('should end iterator when stream completes', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
+      await openConnection(ws);
 
       const iteratorPromise = (async () => {
         const messages: ServerMessageType[] = [];
@@ -302,26 +276,18 @@ describe('WebSocketBiDiStream', () => {
 
   describe('complete', () => {
     test('should close WebSocket after complete', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
-
+      await openConnection(ws);
       await stream.requests.complete();
 
       expect(ws.close).toHaveBeenCalled();
     });
 
     test('should be idempotent', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
-
+      await openConnection(ws);
       await stream.requests.complete();
       await stream.requests.complete();
       await stream.requests.complete();
@@ -330,20 +296,13 @@ describe('WebSocketBiDiStream', () => {
     });
 
     test('should drain send queue before closing', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      // Queue messages before connection
       const sendPromise1 = stream.requests.send(createClientMessage());
       const sendPromise2 = stream.requests.send(createClientMessage());
-
-      // Start complete (should wait for queue to drain)
       const completePromise = stream.requests.complete();
 
-      // Connect and process queue
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
+      await openConnection(ws);
 
       await sendPromise1;
       await sendPromise2;
@@ -355,25 +314,18 @@ describe('WebSocketBiDiStream', () => {
 
   describe('abort signal', () => {
     test('should close stream when aborted', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { ws, controller } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
-
+      await openConnection(ws);
       controller.abort();
 
       expect(ws.close).toHaveBeenCalled();
     });
 
     test('should reject pending sends when aborted', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
+      const { stream, controller } = createStream();
 
       const sendPromise = stream.requests.send(createClientMessage());
-
-      // Add catch to prevent unhandled rejection warning
       sendPromise.catch(() => {});
 
       controller.abort();
@@ -383,12 +335,9 @@ describe('WebSocketBiDiStream', () => {
     });
 
     test('should end response iterator when aborted', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws, controller } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
+      await openConnection(ws);
 
       const iteratorPromise = (async () => {
         const messages: ServerMessageType[] = [];
@@ -411,100 +360,67 @@ describe('WebSocketBiDiStream', () => {
   });
 
   describe('reconnection', () => {
+    const retryConfig: Partial<RetryConfig> = {
+      initialDelay: 50,
+      maxDelay: 100,
+      maxAttempts: 5,
+    };
+
     test('should attempt reconnection on connection error', async () => {
-      const controller = createAbortController();
-      new WebSocketBiDiStream('ws://localhost:8080', controller.signal, undefined, {
-        initialDelay: 50,
-        maxDelay: 100,
-        maxAttempts: 5,
-      });
-      const ws = MockWebSocket.instances[0];
+      const { ws } = createStream(undefined, retryConfig);
 
       ws.simulateError(new Error('Connection failed'));
-
-      // Wait for retry delay (initialDelay * factor with jitter)
       await vi.advanceTimersByTimeAsync(150);
 
       expect(MockWebSocket.instances.length).toBeGreaterThan(1);
     });
 
     test('should attempt reconnection on unexpected close', async () => {
-      const controller = createAbortController();
-      new WebSocketBiDiStream('ws://localhost:8080', controller.signal, undefined, {
-        initialDelay: 50,
-        maxDelay: 100,
-        maxAttempts: 5,
-      });
-      const ws = MockWebSocket.instances[0];
+      const { ws } = createStream(undefined, retryConfig);
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
+      await openConnection(ws);
 
-      // Simulate unexpected close
       ws.readyState = MockWebSocket.CLOSED;
       ws.emit('close');
-
       await vi.advanceTimersByTimeAsync(150);
 
       expect(MockWebSocket.instances.length).toBeGreaterThan(1);
     });
 
     test('should reset retry count on successful connection', async () => {
-      const controller = createAbortController();
-      new WebSocketBiDiStream('ws://localhost:8080', controller.signal, undefined, {
-        initialDelay: 50,
-        maxDelay: 100,
-        maxAttempts: 5,
-      });
+      createStream(undefined, retryConfig);
       let ws = MockWebSocket.instances[0];
 
-      // Fail first connection
       ws.simulateError(new Error('Connection failed'));
       await vi.advanceTimersByTimeAsync(150);
 
-      // Second attempt succeeds
       ws = MockWebSocket.instances[1];
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
+      await openConnection(ws);
 
-      // Now fail again - should start from initial delay
       ws.readyState = MockWebSocket.CLOSED;
       ws.emit('close');
-
       await vi.advanceTimersByTimeAsync(150);
 
       expect(MockWebSocket.instances.length).toBeGreaterThan(2);
     });
 
     test('should stop reconnecting after max attempts', async () => {
-      const controller = createAbortController();
-      new WebSocketBiDiStream('ws://localhost:8080', controller.signal, undefined, {
-        maxAttempts: 3,
-        initialDelay: 10,
-        maxDelay: 100,
-      });
+      createStream(undefined, { maxAttempts: 3, initialDelay: 10, maxDelay: 100 });
 
-      // Fail all attempts
       for (let i = 0; i < 5; i++) {
         const ws = MockWebSocket.instances[MockWebSocket.instances.length - 1];
         ws.simulateError(new Error('Connection failed'));
         await vi.advanceTimersByTimeAsync(200);
       }
 
-      // Should stop at max attempts (initial + 3 retries = 4)
       expect(MockWebSocket.instances.length).toBeLessThanOrEqual(4);
     });
 
     test('should not reconnect after complete', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
-
+      await openConnection(ws);
       await stream.requests.complete();
-
       await vi.advanceTimersByTimeAsync(1000);
 
       expect(MockWebSocket.instances).toHaveLength(1);
@@ -513,36 +429,27 @@ describe('WebSocketBiDiStream', () => {
 
   describe('error handling', () => {
     test('should reject response iterator on parse error', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
+      await openConnection(ws);
 
-      // Get iterator manually
       const iterator = stream.responses[Symbol.asyncIterator]();
-
-      // Start waiting for next value
       const nextPromise = iterator.next();
 
-      // Allow promise to register
       await Promise.resolve();
 
-      // Send invalid protobuf data (truncated varint)
-      const invalidData = new Uint8Array([0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01]);
+      const invalidData = new Uint8Array([
+        0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01,
+      ]);
       ws.simulateMessage(invalidData.buffer);
 
       await expect(nextPromise).rejects.toThrow();
     });
 
     test('should throw on unsupported message format', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
+      await openConnection(ws);
 
       const iteratorPromise = (async () => {
         try {
@@ -555,7 +462,6 @@ describe('WebSocketBiDiStream', () => {
         }
       })();
 
-      // Send string instead of ArrayBuffer
       ws.emit('message', { data: 'not a buffer' });
 
       const result = await iteratorPromise;
@@ -565,23 +471,16 @@ describe('WebSocketBiDiStream', () => {
 
   describe('backpressure handling', () => {
     test('should wait when buffer is full', async () => {
-      const controller = createAbortController();
-      const stream = new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
-      const ws = MockWebSocket.instances[0];
+      const { stream, ws } = createStream();
 
-      ws.simulateOpen();
-      await vi.runAllTimersAsync();
+      await openConnection(ws);
 
-      // Simulate high buffer
-      ws.bufferedAmount = 10 * 1024 * 1024; // 10MB
-
+      ws.bufferedAmount = 10 * 1024 * 1024;
       const sendPromise = stream.requests.send(createClientMessage());
 
-      // Send should not complete immediately
       await vi.advanceTimersByTimeAsync(5);
       expect(ws.send).not.toHaveBeenCalled();
 
-      // Reduce buffer
       ws.bufferedAmount = 0;
       await vi.advanceTimersByTimeAsync(20);
 
@@ -590,4 +489,3 @@ describe('WebSocketBiDiStream', () => {
     });
   });
 });
-
