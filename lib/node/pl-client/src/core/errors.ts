@@ -24,6 +24,7 @@ export function isUnauthenticated(err: unknown, nested: boolean = false): boolea
 
 export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): boolean {
   if (err instanceof Aborted || (err as any).name == 'AbortError') return true;
+  if ((err as any).name == 'TimeoutError') return true;
   if ((err as any).code == 'ABORT_ERR') return true;
   if ((err as any).code == Code.ABORTED) return true;
   if (

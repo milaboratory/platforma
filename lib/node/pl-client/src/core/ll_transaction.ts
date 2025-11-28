@@ -236,6 +236,13 @@ export class LLPlTransaction {
           (currentHandler as AnySingleResponseHandler).resolve(message.response);
           currentHandler = undefined;
         }
+
+        // After receiving a terminal response (txCommit or txDiscard), we proactively close the client stream.
+        // This ensures consistent behavior between the gRPC and WebSocket transports,
+        // since the server closes the connection automatically upon transaction completion in both cases.
+        if (this.isTerminalResponse(message) && this.responseHandlerQueue.length === 0) {
+          await this.stream.requests.complete();
+        }
       }
     } catch (e: any) {
       return this.assignErrorFactoryIfNotSet(() => {
@@ -331,5 +338,10 @@ export class LLPlTransaction {
     if (this._completed) return;
     this._completed = true;
     await this.stream.requests.complete();
+  }
+
+  private isTerminalResponse(message: TxAPI_ServerMessage): boolean {
+    const kind = message.response.oneofKind;
+    return kind === 'txCommit' || kind === 'txDiscard';
   }
 }
