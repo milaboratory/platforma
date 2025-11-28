@@ -1,5 +1,17 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.7.0
+
+### Minor Changes
+
+- a81ce44: simplify pl autocomplete interface
+
+### Patch Changes
+
+- Updated dependencies [a81ce44]
+  - @platforma-sdk/model@1.46.0
+  - @milaboratories/milaboratories.ui-examples.model@1.3.8
+
 ## 1.6.7
 
 ### Patch Changes

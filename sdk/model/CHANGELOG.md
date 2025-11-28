@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.46.0
+
+### Minor Changes
+
+- a81ce44: simplify pl autocomplete interface
+
 ## 1.45.45
 
 ### Patch Changes

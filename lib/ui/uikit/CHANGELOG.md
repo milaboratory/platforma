@@ -1,5 +1,16 @@
 # @milaboratories/uikit
 
+## 2.7.0
+
+### Minor Changes
+
+- a81ce44: simplify pl autocomplete interface
+
+### Patch Changes
+
+- Updated dependencies [a81ce44]
+  - @platforma-sdk/model@1.46.0
+
 ## 2.6.5
 
 ### Patch Changes
