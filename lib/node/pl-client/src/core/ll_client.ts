@@ -497,8 +497,10 @@ export class LLPlClient implements WireClientProviderFactory {
         const wsUrl = this.conf.ssl
           ? `wss://${this.conf.hostAndPort}/v1/ws/tx`
           : `ws://${this.conf.hostAndPort}/v1/ws/tx`;
-        const jwtToken = this.authInformation?.jwtToken;
+          
         this.refreshAuthInformationIfNeeded();
+        const jwtToken = this.authInformation?.jwtToken;
+       
         return new WebSocketBiDiStream(wsUrl, totalAbortSignal, jwtToken);
       }
       throw new Error('tx is not supported for this wire protocol');
