@@ -78,7 +78,7 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
 
     this.reconnection = new RetryStrategy(retryConfig, {
       onRetry: () => { void this.connect(); },
-      onMaxAttemptsReached: (error) => this.handleMaxReconnectAttempts(error),
+      onMaxAttemptsReached: (error) => this.handleError(error),
     });
 
     if (abortSignal.aborted) {
@@ -102,7 +102,9 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
       this.ws = this.createWebSocket();
       this.attachWebSocketHandlers();
     } catch (error) {
-      this.handleConnectionError(error as Error);
+      this.connectionError = this.toError(error);
+      this.connectionState = 'disconnected';
+      this.reconnection.schedule();
     }
   }
 
@@ -151,7 +153,7 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
   }
 
   private onError(error: unknown): void {
-    this.handleConnectionError(this.toError(error));
+    this.handleError(this.toError(error));
   }
 
   private onMessage(data: unknown): void {
@@ -159,7 +161,7 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
       const message = this.parseMessage(data);
       this.deliverResponse(message);
     } catch (error) {
-      this.handleParseError(this.toError(error));
+      this.handleError(this.toError(error));
     }
   }
 
@@ -349,23 +351,7 @@ export class WebSocketBiDiStream implements BiDiStream<ClientMessageType, Server
   }
 
   // === Error Handling ===
-  private handleMaxReconnectAttempts(error: Error): void {
-    this.connectionState = 'closed';
-    this.connectionError = error;
-    this.rejectAllPendingOperations(error);
-  }
-
-  private handleConnectionError(error: Error): void {
-    this.connectionError = error;
-    this.rejectAllPendingOperations(error);
-
-    if (!this.abortSignal.aborted && !this.isClosed()) {
-      this.connectionState = 'disconnected';
-      this.reconnection.schedule();
-    }
-  }
-
-  private handleParseError(error: Error): void {
+  private handleError(error: Error): void {
     if (this.isClosed()) return;
 
     this.connectionState = 'closed';
