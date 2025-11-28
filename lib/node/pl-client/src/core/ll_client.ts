@@ -479,18 +479,18 @@ export class LLPlClient implements WireClientProviderFactory {
       let totalAbortSignal = abortSignal;
       if (ops.abortSignal) totalAbortSignal = AbortSignal.any([totalAbortSignal, ops.abortSignal]);
 
+      const timeout = ops.timeout ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout);
+
       const cl = this.clientProvider.get();
       if (cl instanceof GrpcPlApiClient) {
         return cl.tx({
           abort: totalAbortSignal,
-          timeout: ops.timeout
-            ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout),
+          timeout,
         });
       }
 
       if (this._wireProto === 'rest') {
         // For REST/WebSocket protocol, timeout needs to be converted to AbortSignal
-        const timeout = ops.timeout ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout);
         if (timeout !== undefined) {
           totalAbortSignal = AbortSignal.any([totalAbortSignal, AbortSignal.timeout(timeout)]);
         }
