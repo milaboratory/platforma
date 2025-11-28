@@ -498,6 +498,7 @@ export class LLPlClient implements WireClientProviderFactory {
           ? `wss://${this.conf.hostAndPort}/v1/ws/tx`
           : `ws://${this.conf.hostAndPort}/v1/ws/tx`;
 
+        // The gRPC transport has the auth interceptor that already handles it, so we need to refresh the auth information here.  
         this.refreshAuthInformationIfNeeded();
         const jwtToken = this.authInformation?.jwtToken;
 
