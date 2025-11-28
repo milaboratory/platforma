@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.46.0
+
+### Minor Changes
+
+- a81ce44: simplify pl autocomplete interface
+
+### Patch Changes
+
+- Updated dependencies [a81ce44]
+  - @milaboratories/uikit@2.7.0
+  - @platforma-sdk/model@1.46.0
+
 ## 1.45.45
 
 ### Patch Changes
