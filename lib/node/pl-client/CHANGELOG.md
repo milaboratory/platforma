@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.16.12
+
+### Patch Changes
+
+- ebc6664: WebSocket Bidirectional Stream Implementation
+
 ## 2.16.11
 
 ### Patch Changes
