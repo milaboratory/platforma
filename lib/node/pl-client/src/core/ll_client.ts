@@ -28,6 +28,7 @@ import type * as grpcTypes from '../proto-grpc/github.com/milaboratory/pl/plapi/
 import { type PlApiPaths, type PlRestClientType, createClient, parseResponseError } from '../proto-rest';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { Code } from '../proto-grpc/google/rpc/code';
+import { WebSocketBiDiStream } from './websocket_stream';
 
 export interface PlCallOps {
   timeout?: number;
@@ -479,17 +480,32 @@ export class LLPlClient implements WireClientProviderFactory {
       let totalAbortSignal = abortSignal;
       if (ops.abortSignal) totalAbortSignal = AbortSignal.any([totalAbortSignal, ops.abortSignal]);
 
+      const timeout = ops.timeout ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout);
+
       const cl = this.clientProvider.get();
-      if (!(cl instanceof GrpcPlApiClient)) {
-        // TODO: add WebSockets
-        throw new Error('tx is not supported for REST client');
+      if (cl instanceof GrpcPlApiClient) {
+        return cl.tx({
+          abort: totalAbortSignal,
+          timeout,
+        });
       }
 
-      return cl.tx({
-        abort: totalAbortSignal,
-        timeout: ops.timeout
-          ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout),
-      });
+      if (this._wireProto === 'rest') {
+        // For REST/WebSocket protocol, timeout needs to be converted to AbortSignal
+        if (timeout !== undefined) {
+          totalAbortSignal = AbortSignal.any([totalAbortSignal, AbortSignal.timeout(timeout)]);
+        }
+        const wsUrl = this.conf.ssl
+          ? `wss://${this.conf.hostAndPort}/v1/ws/tx`
+          : `ws://${this.conf.hostAndPort}/v1/ws/tx`;
+
+        // The gRPC transport has the auth interceptor that already handles it, so we need to refresh the auth information here.
+        this.refreshAuthInformationIfNeeded();
+        const jwtToken = this.authInformation?.jwtToken;
+
+        return new WebSocketBiDiStream(wsUrl, totalAbortSignal, jwtToken);
+      }
+      throw new Error('tx is not supported for this wire protocol');
     });
   }
 
