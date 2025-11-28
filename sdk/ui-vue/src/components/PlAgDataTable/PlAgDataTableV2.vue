@@ -264,11 +264,13 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
     gridOptions.value.initialState = gridState.value = makePartialState(
       event.state,
     );
-    event.api.autoSizeColumns(
-      event.api.getAllDisplayedColumns().filter(
-        (column) => column.getColId() !== PlAgDataTableRowNumberColId,
-      ),
-    );
+    if (!isJsonEqual(event.sources, ['columnSizing'])) {
+      event.api.autoSizeColumns(
+        event.api.getAllDisplayedColumns().filter(
+          (column) => column.getColId() !== PlAgDataTableRowNumberColId,
+        ),
+      );
+    }
   },
   onGridPreDestroyed: (event) => {
     gridOptions.value.initialState = gridState.value = makePartialState(
