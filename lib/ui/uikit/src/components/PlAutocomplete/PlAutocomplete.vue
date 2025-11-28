@@ -39,11 +39,7 @@ const props = withDefaults(
     /**
      * Lambda for requesting of available options for the dropdown by search string.
      */
-    optionsSearch: (s: string) => Promise<ListOption<M>[]>;
-    /**
-     * Lambda for requesting of corresponding option for current model value. If empty, optionsSearch is used for this.
-     */
-    modelSearch?: (v: NonNullable<M>) => Promise<ListOption<NonNullable<M>>>;
+    optionsSearch: (string: string, type: 'value' | 'label') => Promise<ListOption<M>[]>;
     /**
      * The label text for the dropdown field (optional)
      */
@@ -301,17 +297,14 @@ const searchDebounced = refDebounced(search, 300, { maxWait: 1000 });
 
 const optionsRequest = useWatchFetch(() => searchDebounced.value, async (v) => {
   if (v !== null) { // search is null when dropdown is closed;
-    return props.optionsSearch(v);
+    return props.optionsSearch(v, 'label');
   }
   return undefined;
 });
 
 const modelOptionRequest = useWatchFetch(() => model.value, async (v) => {
   if (v != null && !deepEqual(modelOptionRef.value?.value, v)) { // load label for selected value if it was updated from outside the component
-    if (props.modelSearch) {
-      return props.modelSearch(v);
-    }
-    return (await props.optionsSearch(String(v)))?.[0];
+    return (await props.optionsSearch(String(v), 'value'))?.[0];
   }
   return modelOptionRef.value;
 });

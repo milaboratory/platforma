@@ -20,11 +20,8 @@ const props = withDefaults(defineProps<{
   /** If true - "Add group" button is shown below the filter groups */
   enableAddGroupButton?: boolean;
   /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
-  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
-  ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
-  /** Loading function for label of selected value for Equal/InSet filters and fixed axes options. */
-  getSuggestModel?: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
-    ListOptionBase<string | number> | Promise<ListOptionBase<string | number>>;
+  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; axisIdx?: number; searchStr: string; searchType: 'value' | 'label' }) =>
+    ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
 }>(), {
   supportedFilters: () => SUPPORTED_FILTER_TYPES,
   getSuggestModel: undefined,
@@ -197,7 +194,6 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
               :operand="getNotContent(item).type"
               :column-options="items"
               :supported-filters="props.supportedFilters"
-              :get-suggest-model="props.getSuggestModel"
               :get-suggest-options="props.getSuggestOptions"
               :enable-dnd="Boolean(props.enableDnd)"
               :is-last="filterIdx === getNotContent(item).filters.length - 1"

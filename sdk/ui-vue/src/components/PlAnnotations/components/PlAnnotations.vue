@@ -67,7 +67,6 @@ async function handleDeleteSchema() {
         v-model:step="selectedStep"
         :class="$style.sidebarItem"
         :columns="props.columns"
-        :get-suggest-model="props.getSuggestModel"
         :get-suggest-options="props.getSuggestOptions"
         :selectedStepId="selectedStepId"
         :hasSelectedColumns="props.hasSelectedColumns"
