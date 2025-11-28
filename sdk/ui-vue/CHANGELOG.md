@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.46.1
+
+### Patch Changes
+
+- 55055eb: Fix PlAgDataTableV2 ignoring manual column resize
+
 ## 1.46.0
 
 ### Minor Changes
