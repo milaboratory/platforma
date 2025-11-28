@@ -17,7 +17,7 @@ import type {
   PTableRecordSingleValueFilterV2,
   ValueType,
 } from '@milaboratories/pl-model-common';
-import { pTableValue, Annotation, canonicalizeAxisId, getAxisId, readAnnotation } from '@milaboratories/pl-model-common';
+import { pTableValue, Annotation, canonicalizeAxisId, getAxisId, readAnnotation, PColumnName } from '@milaboratories/pl-model-common';
 
 // Types
 type PValue = string | number | null;
@@ -300,7 +300,7 @@ export async function getColumnOrAxisValueLabelsId(
   const labelColumns = await getColumnsFull(handle, {
     selectedSources: [],
     strictlyCompatible: false,
-    names: [Annotation.Label],
+    names: [PColumnName.Label],
   });
 
   const labelColumn = labelColumns.find(({ spec }) => {

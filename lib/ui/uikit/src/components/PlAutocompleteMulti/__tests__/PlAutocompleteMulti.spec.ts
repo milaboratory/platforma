@@ -11,12 +11,6 @@ describe('PlAutocompleteMulti', () => {
         'modelValue': [1],
         'onUpdate:modelValue': (e) => wrapper.setProps({ modelValue: e }),
         'debounce': 0,
-        'modelSearch': async (values) => {
-          return [
-            { label: 'Option 1', value: 1 },
-            { label: 'Option 2', value: 2 },
-          ].filter((v) => values.includes(v.value));
-        },
         'optionsSearch': async () => {
           return [
             { label: 'Option 1', value: 1 },

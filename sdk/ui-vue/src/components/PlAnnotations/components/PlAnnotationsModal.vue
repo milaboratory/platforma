@@ -32,7 +32,6 @@ async function handleDeleteSchema() {
       v-model:annotation="annotation"
       :class="$style.content"
       :columns="props.columns"
-      :get-suggest-model="props.getSuggestModel"
       :get-suggest-options="props.getSuggestOptions"
       :has-selected-columns="props.hasSelectedColumns"
       :getValuesForSelectedColumns="props.getValuesForSelectedColumns"

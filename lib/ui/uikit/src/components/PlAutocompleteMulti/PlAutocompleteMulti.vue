@@ -65,6 +65,11 @@ const emitModel = (v: M[]) => emit('update:modelValue', v);
 
 const slots = useSlots();
 
+interface OptionsSearch {
+  (s: string, type: 'label'): Promise<Readonly<ListOptionBase<M>[]>>;
+  (s: M[], type: 'value'): Promise<Readonly<ListOptionBase<M>[]>>;
+}
+
 const props = withDefaults(
   defineProps<{
     /**
@@ -74,11 +79,7 @@ const props = withDefaults(
     /**
      * Lambda for requesting of available options for the dropdown by search string.
      */
-    optionsSearch: (s: string) => Promise<Readonly<ListOptionBase<M>[]>>;
-    /**
-     * Lambda for requesting options that correspond to the current model values.
-     */
-    modelSearch: (values: M[]) => Promise<Readonly<ListOptionBase<M>[]>>;
+    optionsSearch: OptionsSearch;
     /**
      * Unique identifier for the source of the options, changing it will invalidate the options cache.
      */
@@ -170,14 +171,14 @@ const placeholderRef = computed(() => {
 const debounce = toRef(props, 'debounce');
 
 const searchOptionsRef = useWatchFetch(() => [data.search, data.open, props.sourceId] as const, async ([search, _open]) => {
-  return props.optionsSearch(search);
+  return props.optionsSearch(search, 'label');
 }, {
   filterWatchResult: ([_search, open]) => open,
   debounce,
 });
 
 const modelOptionsRef = useWatchFetch(() => [props.modelValue, props.sourceId] as const, async ([v]) => {
-  return props.modelSearch(v);
+  return props.optionsSearch(v, 'value');
 }, {
   debounce,
 });

@@ -24,19 +24,25 @@ const data = reactive({
   sourceId: '1',
 });
 
-async function fetchModelOptions(values: string[]): Promise<ListOptionBase<string>[]> {
-  return db.filter((el) => values.includes(el.value));
-}
-
-async function fetchOptions(str: string): Promise<ListOptionBase<string>[]> {
-  str = str.toLowerCase();
+async function fetchOptions(str: string | string[], type: 'value' | 'label'): Promise<ListOptionBase<string>[]> {
   await delay(1000);
-  if (str.includes('error')) {
-    throw new Error('test error');
+
+  if (type === 'value' && Array.isArray(str)) {
+    const values = str;
+    return db.filter((el) => values.includes(el.value));
   }
-  return Promise.resolve(
-    db.filter((el) => el.value.toLowerCase().includes(str) || el.label.toLowerCase().includes(str)).slice(0, 100),
-  );
+
+  if (type === 'label' && typeof str === 'string') {
+    const lowerStr = str.toLowerCase();
+    if (lowerStr.includes('error')) {
+      throw new Error('test error');
+    }
+    return Promise.resolve(
+      db.filter((el) => el.value.toLowerCase().includes(lowerStr) || el.label.toLowerCase().includes(lowerStr)).slice(0, 100),
+    );
+  }
+
+  throw new Error('Invalid arguments combination');
 }
 </script>
 
@@ -47,7 +53,6 @@ async function fetchOptions(str: string): Promise<ListOptionBase<string>[]> {
       label="Autocomplete"
       :required="true"
       :optionsSearch="fetchOptions"
-      :modelSearch="fetchModelOptions"
       :source-id="data.sourceId"
     />
     <PlBtnPrimary style="width: 120px" @click="data.sourceId = String(Math.random())">Change source id</PlBtnPrimary>

@@ -17,26 +17,25 @@ const props = defineProps<{
   enableDnd: boolean;
   columnOptions: SourceOptionInfo[];
   supportedFilters: typeof SUPPORTED_FILTER_TYPES;
-  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
+  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; axisIdx?: number; searchType: 'value' | 'label'; searchStr: string }) =>
     ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
-  getSuggestModel?: (params: { columnId: PlAdvancedFilterColumnId; searchStr: string; axisIdx?: number }) =>
-    ListOptionBase<string | number> | Promise<ListOptionBase<string | number>>;
   onDelete: (columnId: PlAdvancedFilterColumnId) => void;
   onChangeOperand: (op: Operand) => void;
 }>();
 
-const getSuggestModel = (...args: Parameters<typeof props.getSuggestOptions>) => typeof props.getSuggestModel === 'function'
-  ? props.getSuggestModel(...args)
-  : Promise.resolve(props.getSuggestOptions(...args)).then((options) => options[0]);
+async function getSuggestOptionsFn(id: PlAdvancedFilterColumnId, type: 'value' | 'label', str: string, axisIdx?: number): Promise<ListOptionBase<string>[]> {
+  return props.getSuggestOptions({ columnId: id, axisIdx, searchType: type, searchStr: str }) as Promise<ListOptionBase<string>[]>;
+}
 
-async function getSuggestModelMultiFn(id: PlAdvancedFilterColumnId, v: string[], axisIdx?: number): Promise<ListOptionBase<string>[]> {
-  return Promise.all(v.map((v) => getSuggestModel({ columnId: id, searchStr: v, axisIdx }) as Promise<ListOptionBase<string>>));
-}
-async function getSuggestModelSingleFn(id: PlAdvancedFilterColumnId, v: string, axisIdx?: number): Promise<ListOptionBase<string>> {
-  return getSuggestModel({ columnId: id, searchStr: v, axisIdx }) as Promise<ListOptionBase<string>>;
-}
-async function getSuggestOptionsFn(id: PlAdvancedFilterColumnId, str: string, axisIdx?: number): Promise<ListOptionBase<string>[]> {
-  return props.getSuggestOptions({ columnId: id, searchStr: str, axisIdx }) as Promise<ListOptionBase<string>[]>;
+async function getMultiSuggestOptionsFn(id: PlAdvancedFilterColumnId, type: 'value' | 'label', str: string | string[], axisIdx?: number): Promise<ListOptionBase<string>[]> {
+  if (type === 'label' && typeof str === 'string') {
+    return getSuggestOptionsFn(id, type, str, axisIdx);
+  }
+  if (type === 'value' && Array.isArray(str)) {
+    const results = await Promise.all(str.map((s) => getSuggestOptionsFn(id, type, s, axisIdx)));
+    return results.map((x) => x[0]);
+  }
+  throw new Error('Invalid arguments combination');
 }
 
 type Entries<T> = { [K in keyof T]: [K, T[K]] }[keyof T][];
@@ -220,8 +219,7 @@ const stringMatchesError = computed(() => {
         <PlAutocomplete
           v-model="columnAsSourceAndFixedAxes.axisFiltersByIndex[value.idx]"
           :label="value.label"
-          :options-search="(str) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, str, value.idx)"
-          :model-search="(v) => getSuggestModelSingleFn(columnAsSourceAndFixedAxes.source, String(v), value.idx)"
+          :options-search="(str, type) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, type, str, value.idx)"
           :disabled="inconsistentSourceSelected"
           :clearable="true"
           @update:model-value="(v) => updateAxisFilterValue(value.idx, v)"
@@ -266,8 +264,7 @@ const stringMatchesError = computed(() => {
       <template v-if="filter.type === 'patternEquals' || filter.type === 'patternNotEquals'" >
         <PlAutocomplete
           v-model="filter.value"
-          :options-search="(str) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, str)"
-          :model-search="(v) => getSuggestModelSingleFn(columnAsSourceAndFixedAxes.source, String(v))"
+          :options-search="(str, type) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, type, str)"
           :disabled="inconsistentSourceSelected"
           :clearable="true"
           group-position="bottom"
@@ -276,8 +273,7 @@ const stringMatchesError = computed(() => {
       <template v-if="filter.type === 'inSet' || filter.type === 'notInSet'" >
         <PlAutocompleteMulti
           v-model="filter.value"
-          :options-search="(str) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, str)"
-          :model-search="(v) => getSuggestModelMultiFn(columnAsSourceAndFixedAxes.source, v.map((v) => String(v)))"
+          :options-search="(str, type) => getMultiSuggestOptionsFn(columnAsSourceAndFixedAxes.source, type, str)"
           :disabled="inconsistentSourceSelected"
           group-position="bottom"
         />
