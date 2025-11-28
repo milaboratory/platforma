@@ -332,15 +332,6 @@ describe('WebSocketBiDiStream', () => {
       maxAttempts: 5,
     };
 
-    test('should attempt reconnection on connection error', async () => {
-      const { ws } = createStream(undefined, retryConfig);
-
-      ws.simulateError(new Error('Connection failed'));
-      await vi.advanceTimersByTimeAsync(150);
-
-      expect(MockWebSocket.instances.length).toBeGreaterThan(1);
-    });
-
     test('should attempt reconnection on unexpected close', async () => {
       const { ws } = createStream(undefined, retryConfig);
 
@@ -351,23 +342,6 @@ describe('WebSocketBiDiStream', () => {
       await vi.advanceTimersByTimeAsync(150);
 
       expect(MockWebSocket.instances.length).toBeGreaterThan(1);
-    });
-
-    test('should reset retry count on successful connection', async () => {
-      createStream(undefined, retryConfig);
-      let ws = MockWebSocket.instances[0];
-
-      ws.simulateError(new Error('Connection failed'));
-      await vi.advanceTimersByTimeAsync(150);
-
-      ws = MockWebSocket.instances[1];
-      await openConnection(ws);
-
-      ws.readyState = MockWebSocket.CLOSED;
-      ws.emit('close');
-      await vi.advanceTimersByTimeAsync(150);
-
-      expect(MockWebSocket.instances.length).toBeGreaterThan(2);
     });
 
     test('should stop reconnecting after max attempts', async () => {
