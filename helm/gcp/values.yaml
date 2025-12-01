@@ -108,6 +108,7 @@ probes:
 env:
   # -- Simple key-value environment variables
   variables:
+    PL_ENVIRONMENT: "CI"
     # PLATFORMA_APP_ENV: "production"
     # FEATURE_TOGGLE_X: "true"
 

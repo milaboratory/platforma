@@ -177,6 +177,7 @@ app:
   # -- Env variables
   # -- Additional environment variables (ex.: secret tokens, flags)
   env:
+    PL_ENVIRONMENT: "CI"
     AWS_REGION: eu-central-1
     PL_DUMP_CONFIG_BEFORE_RUN: yes
   envValueFrom:
