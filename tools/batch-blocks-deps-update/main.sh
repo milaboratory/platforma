@@ -35,11 +35,14 @@ Usage:
 Commands:
   help [command]                Show general help or help for a command
   start                         Clone/update repos (see: main.sh help clone)
-  finish                        Restore stashed changes from clone updates
-  changes-prepare                Prepare changes (see: main.sh help manage)
-  changes-apply                  Apply changes and open PRs (see: main.sh help manage)
-  replace                       Search & replace (see: main.sh help replace)
   update-deps                   Update package versions across repos interactively
+  finish                        Restore stashed changes from clone updates (see: main.sh help restore)
+
+Service commands:
+  changes-prepare                Prepare changes (see: main.sh help manage)
+  replace                       Search & replace (see: main.sh help replace)
+  create-changeset              Create changesets for npm packages (see: main.sh help create-changeset)
+                                When on main, reads branch from update-deps.txt if --branch not provided
   install [--dest DIR]          Install commands to a bin directory (symlinks by default)
 
 Notes:
@@ -163,6 +166,9 @@ case "$CMD" in
         update-deps)
           "$SCRIPT_DIR/update-deps.sh" --help || true
           ;;
+        create-changeset)
+          "$SCRIPT_DIR/create-changeset.sh" --help || true
+          ;;
         all)
           usage
           ;;
@@ -178,20 +184,38 @@ case "$CMD" in
     ;;
 
   start)
+    UPDATE_DEPS_FILE="$(pwd)/update-deps.txt"
+    
+    # If file exists, read branch from it
+    
+    # Prompt for branch name with default only if not set
+    if [[ -z "$BRANCH" ]]; then
+      DEFAULT_BRANCH="$(date +%Y-%m-%d)-deps-update-$(date +%H)"
+      if [[ -f "$UPDATE_DEPS_FILE" ]]; then
+        if grep -q "^branch=" "$UPDATE_DEPS_FILE"; then
+          BRANCH_FROM_FILE="$(grep "^branch=" "$UPDATE_DEPS_FILE" | cut -d'=' -f2-)"
+          if [[ -z "$BRANCH" ]]; then
+            DEFAULT_BRANCH="$BRANCH_FROM_FILE"
+            msg_info "Using existing branch '$BRANCH' from update-deps.txt"
+          fi
+        fi
+      fi
+      printf "Enter branch name [default: %s]: " "$DEFAULT_BRANCH"
+      read -r BRANCH_INPUT
+      if [[ -z "$BRANCH_INPUT" ]]; then
+        BRANCH="$DEFAULT_BRANCH"
+      else
+        BRANCH="$BRANCH_INPUT"
+      fi
+    fi
+    
+    echo "branch=$BRANCH" > "$UPDATE_DEPS_FILE"
+    msg_success "Using branch '$BRANCH' (saved to update-deps.txt)"
+
     msg_info "Cloning/updating repositories from org '$ORG'..."
     "$SCRIPT_DIR/clone-milab-open.sh" "$ORG"
+    
     msg_success "Done."
-    ;;
-
-  finish)
-    # If PREFIX is provided, pass it to the restore script to scope repos
-    if [[ -n "$PREFIX" ]]; then
-      msg_info "Restoring stashes for repos with prefix '$PREFIX'..."
-      "$SCRIPT_DIR/restore-stash.sh" "$PREFIX"
-    else
-      msg_info "Restoring stashes for all repos in current directory..."
-      "$SCRIPT_DIR/restore-stash.sh"
-    fi
     ;;
 
   changes-prepare)
@@ -204,13 +228,34 @@ case "$CMD" in
     msg_success "Preparation completed."
     ;;
 
-  changes-apply)
-    [[ -n "$BRANCH" ]] || { msg_error "--branch is required"; exit 1; }
+  finish)
+    UPDATE_DEPS_FILE="$(pwd)/update-deps.txt"
+    if [[ -f "$UPDATE_DEPS_FILE" ]]; then
+      # Read branch from file (format: branch=BRANCH_NAME)
+      if grep -q "^branch=" "$UPDATE_DEPS_FILE"; then
+        BRANCH_FROM_FILE="$(grep "^branch=" "$UPDATE_DEPS_FILE" | cut -d'=' -f2-)"
+        if [[ -z "$BRANCH" ]]; then
+          BRANCH="$BRANCH_FROM_FILE"
+        fi
+      fi
+    fi
+    
+    [[ -n "$BRANCH" ]] || { msg_error "--branch is required or update-deps.txt must contain branch=..."; exit 1; }
     [[ -n "$COMMIT_MSG" ]] || { msg_error "--commit is required"; exit 1; }
     [[ -n "$PREFIX" ]] || { msg_error "--prefix is required"; exit 1; }
+    
+    printf "The current session: %s.\n" "$BRANCH"
+    printf "Proceed [y/n]: "
+    read -r CONFIRM
+    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+      msg_warn "Cancelled."
+      exit 0
+    fi
+    
     msg_info "Applying changes and creating PRs for repos with prefix '$PREFIX'..."
     mapfile -t _ARGS < <(manage_args_with_flag "$SCRIPT_DIR/manage-repo.sh" apply-changes "$BRANCH" "$COMMIT_MSG" "$PREFIX")
     "${_ARGS[@]}"
+    rm -f "$UPDATE_DEPS_FILE" || true
     msg_success "Apply completed."
     ;;
 
@@ -225,6 +270,36 @@ case "$CMD" in
 
   update-deps)
     BRANCH="$BRANCH" COMMIT_MSG="$COMMIT_MSG" AUTO_MERGE="$AUTO_MERGE" PACKAGES_ARG="$PACKAGES_ARG" "$SCRIPT_DIR/update-deps.sh"
+    ;;
+
+  create-changeset)
+    # If no branch provided, try to read from update-deps.txt when on main
+    if [[ -z "$BRANCH" ]]; then
+      CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+      if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "master" ]]; then
+        UPDATE_DEPS_FILE="$(pwd)/update-deps.txt"
+        if [[ -f "$UPDATE_DEPS_FILE" ]]; then
+          if grep -q "^branch=" "$UPDATE_DEPS_FILE"; then
+            BRANCH=$(grep "^branch=" "$UPDATE_DEPS_FILE" | cut -d'=' -f2-)
+            msg_info "Using branch from update-deps.txt: $BRANCH"
+          else
+            msg_error "--branch is required (or create update-deps.txt with branch=<name> when on main)"
+            exit 1
+          fi
+        else
+          msg_error "--branch is required (or create update-deps.txt with branch=<name> when on main)"
+          exit 1
+        fi
+      fi
+    fi
+    
+    # Pass branch to create-changeset.sh; if empty, it will default to current branch
+    if [[ -n "$BRANCH" ]]; then
+      "$SCRIPT_DIR/create-changeset.sh" --branch "$BRANCH"
+    else
+      "$SCRIPT_DIR/create-changeset.sh"
+    fi
+    msg_success "Changeset creation completed."
     ;;
 
   install)
@@ -243,6 +318,7 @@ case "$CMD" in
     [[ -f "$SCRIPT_DIR/replace_deps.sh" ]] && chmod +x "$SCRIPT_DIR/replace_deps.sh" || true
     [[ -f "$SCRIPT_DIR/restore-stash.sh" ]] && chmod +x "$SCRIPT_DIR/restore-stash.sh" || true
     [[ -f "$SCRIPT_DIR/update-deps.sh" ]] && chmod +x "$SCRIPT_DIR/update-deps.sh" || true
+    [[ -f "$SCRIPT_DIR/create-changeset.sh" ]] && chmod +x "$SCRIPT_DIR/create-changeset.sh" || true
 
     # Map of source -> target name
     declare -a _srcs=(
@@ -252,6 +328,7 @@ case "$CMD" in
       "$SCRIPT_DIR/replace_deps.sh|mil-replace"
       "$SCRIPT_DIR/restore-stash.sh|mil-restore"
       "$SCRIPT_DIR/update-deps.sh|mil-update-deps"
+      "$SCRIPT_DIR/create-changeset.sh|mil-create-changeset"
     )
 
     for entry in "${_srcs[@]}"; do

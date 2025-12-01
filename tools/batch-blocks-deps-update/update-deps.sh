@@ -67,6 +67,18 @@ COMMIT_MSG="${COMMIT_MSG:-}"
 AUTO_MERGE="${AUTO_MERGE:-false}"
 PACKAGES_ARG="${PACKAGES_ARG:-}"
 
+# Read branch from update-deps.txt if not provided and file exists
+if [[ -z "$BRANCH" ]]; then
+  UPDATE_DEPS_FILE="$(pwd)/update-deps.txt"
+  if [[ -f "$UPDATE_DEPS_FILE" ]]; then
+    # Extract branch name from branch=branch_name format
+    if grep -q "^branch=" "$UPDATE_DEPS_FILE"; then
+      BRANCH=$(grep "^branch=" "$UPDATE_DEPS_FILE" | cut -d'=' -f2-)
+      msg_info "Using branch from update-deps.txt: $BRANCH"
+    fi
+  fi
+fi
+
 # Parse flags
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -190,6 +202,31 @@ update_deps() {
     done
   fi
 
+  # File to track all created PRs (named after the branch)
+  PRS_FILE="${SCRIPT_DIR}/${BRANCH}.txt"
+  
+  # Function to add PR to file without duplicates
+  add_pr_to_file() {
+    local pr_entry="$1"
+    local pr_url
+    pr_url=$(echo "$pr_entry" | sed -n 's/.*\(https:\/\/[^ ]*\).*/\1/p')
+    
+    # Create file if it doesn't exist
+    [[ -f "$PRS_FILE" ]] || touch "$PRS_FILE"
+    
+    # Check if PR URL already exists in file
+    if [[ -n "$pr_url" ]] && grep -qF "$pr_url" "$PRS_FILE"; then
+      msg_info "PR already tracked in file: $pr_url"
+      return 0
+    fi
+    
+    # Add new PR entry with timestamp
+    local timestamp
+    timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+    printf "[%s] %s\n" "$timestamp" "$pr_entry" >> "$PRS_FILE"
+    msg_info "Added PR to tracking file: $pr_entry"
+  }
+
   declare -a CREATED_PRS=()
   for DIR in $(find . -maxdepth 1 -type d -not -name '.'); do
     echo ""
@@ -219,61 +256,31 @@ update_deps() {
     fi
 
     # If dependency config changed, update lockfiles
-    if git diff --name-only | grep -Eq '(package.json$|pnpm-workspace\.ya?ml$)'; then
-      pnpm install || msg_warn "pnpm install failed in $DIR"
+    if git diff main --name-only | grep -Eq '(package.json$|pnpm-workspace\.ya?ml$)'; then
+      pnpm install --no-frozen-lockfile || msg_warn "pnpm install failed in $DIR"
     fi
 
     # Commit and create PR if there are changes
-    if git diff --quiet && git diff --cached --quiet; then
+    if git diff main --quiet && git diff --cached --quiet; then
       msg_info "No changes to commit in $DIR. Skipping."
       popd >/dev/null
       continue
     fi
 
-    # Auto-generate a changeset for all packages if .changeset exists
-    if [ -d ".changeset" ]; then
-      msg_info "Generating changeset for all packages..."
-      ROOT_NAME=$(node -p "try{require('./package.json').name ?? ''}catch(e){''}" 2>/dev/null || true)
-      PKG_NAMES=$(pnpm -r --silent exec node -p "try{require('./package.json').name ?? ''}catch(e){''}" 2>/dev/null || true)
-      ALL_NAMES=$(printf "%s\n%s\n" "$ROOT_NAME" "$PKG_NAMES" | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//' -e '/^$/d' -e '/^undefined$/d' -e '/^null$/d' | sort -u)
-      if [ -n "$ALL_NAMES" ]; then
-        CHANGESET_FILE=".changeset/auto-$(date +%Y%m%d%H%M%S).md"
-        {
-          echo '---'
-          while IFS= read -r name; do
-            if [ -n "$name" ] && [ "$name" != "undefined" ] && [ "$name" != "null" ]; then
-              printf '"%s": patch\n' "$name"
-            fi
-          done <<< "$ALL_NAMES"
-          echo '---'
-          echo ''
-          echo 'technical release'
-        } > "$CHANGESET_FILE"
-        # Verify last entry format is "...": patch and fix if necessary
-        LAST_ENTRY=$(awk 'flag{ if($0~/---/){exit}; if($0!=""){print} } $0~/---/{flag=1}' "$CHANGESET_FILE" | tail -n 1)
-        if [[ -z "$LAST_ENTRY" || ! "$LAST_ENTRY" =~ ^\".+\":\ patch$ ]]; then
-          msg_warn "Invalid last changeset entry: '$LAST_ENTRY'. Attempting to correct..."
-          GOOD_ENTRIES=$(awk 'flag{ if($0~/---/){exit}; if($0 ~ /^[\t ]*\".*\": patch[\t ]*$/){print} } $0~/---/{flag=1}' "$CHANGESET_FILE")
-          if [[ -z "$GOOD_ENTRIES" ]]; then
-            msg_warn "No valid changeset entries found; removing $CHANGESET_FILE"
-            rm -f "$CHANGESET_FILE"
-          else
-            {
-              echo '---'
-              printf "%s\n" "$GOOD_ENTRIES"
-              echo '---'
-              echo ''
-              echo 'technical release'
-            } > "$CHANGESET_FILE"
-            msg_success "Changeset corrected in $CHANGESET_FILE"
-          fi
-        else
-          msg_success "Changeset written to $CHANGESET_FILE"
-        fi
-      else
-        msg_warn "No packages found for changeset."
-      fi
+    # Before PR creation: ensure pnpm install is always run and .changeset exists
+    msg_info "Running pnpm install to ensure dependencies are up to date..."
+    pnpm install || msg_warn "pnpm install failed in $DIR"
+    
+    # Check that .changeset directory exists before creating PR
+    if [ ! -d ".changeset" ]; then
+      msg_error "ERROR: .changeset directory not found in $DIR. Skipping PR creation."
+      msg_error "Please ensure the repository has a .changeset directory before creating PRs."
+      popd >/dev/null
+      continue
     fi
+
+    # Create changeset using the dedicated script
+    "$SCRIPT_DIR/create-changeset.sh" --branch "$BRANCH" || msg_warn "Changeset creation failed in $DIR"
 
     git add .
     git commit -m "$COMMIT_MSG" || true
@@ -284,18 +291,62 @@ update_deps() {
     # If still no commit (nothing changed), skip
     if git log -1 --pretty=%B | grep -qF "$COMMIT_MSG"; then
       git push -u origin "$BRANCH" || msg_warn "Push failed for $DIR"
-      set +e
-      PR_URL=$(gh pr create --title "$COMMIT_MSG" --body "$COMMIT_MSG" --head "$BRANCH" --base main)
-      PR_EXIT=$?
-      set -e
-      if [[ "$PR_EXIT" -eq 0 && -n "$PR_URL" ]]; then
-        msg_success "PR created: $PR_URL"
-        CREATED_PRS+=("$(basename "$DIR"): $PR_URL")
-        if [[ "$AUTO_MERGE" == "true" ]]; then
-          gh pr merge --merge --auto || msg_warn "Auto-merge failed or not applicable."
+      
+      # Check if branch is different from main
+      CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+      if [[ "$CURRENT_BRANCH" != "main" && "$CURRENT_BRANCH" == "$BRANCH" ]]; then
+        # Check if PR already exists first
+        set +e
+        EXISTING_PR=$(gh pr view --head "$BRANCH" --base main --json url,body --jq '.url' 2>/dev/null)
+        EXISTING_PR_BODY=$(gh pr view --head "$BRANCH" --base main --json body --jq '.body' 2>/dev/null)
+        EXISTING_PR_EXIT=$?
+        set -e
+        
+        if [[ "$EXISTING_PR_EXIT" -eq 0 && -n "$EXISTING_PR" ]]; then
+          # PR already exists
+          msg_info "PR already exists: $EXISTING_PR"
+          local pr_entry="$(basename "$DIR"): $EXISTING_PR"
+          CREATED_PRS+=("$pr_entry")
+          add_pr_to_file "$pr_entry"
+          if [[ -n "$EXISTING_PR_BODY" ]]; then
+            msg_info "PR template/body:"
+            echo "$EXISTING_PR_BODY"
+          fi
+          if [[ "$AUTO_MERGE" == "true" ]]; then
+            gh pr merge --merge --auto || msg_warn "Auto-merge failed or not applicable."
+          fi
+        else
+          # No existing PR, create one
+          set +e
+          PR_URL=$(gh pr create --title "$BRANCH" --body "$COMMIT_MSG" --head "$BRANCH" --base main 2>&1)
+          PR_EXIT=$?
+          set -e
+          if [[ "$PR_EXIT" -eq 0 && -n "$PR_URL" ]]; then
+            msg_success "PR created: $PR_URL"
+            local pr_entry="$(basename "$DIR"): $PR_URL"
+            CREATED_PRS+=("$pr_entry")
+            add_pr_to_file "$pr_entry"
+            if [[ "$AUTO_MERGE" == "true" ]]; then
+              gh pr merge --merge --auto || msg_warn "Auto-merge failed or not applicable."
+            fi
+          else
+            # Check if failure was due to existing PR by parsing error message
+            if [[ "$PR_URL" =~ https://github\.com/[^[:space:]]+ ]]; then
+              EXTRACTED_URL="${BASH_REMATCH[0]}"
+              msg_info "PR already exists (detected from error): $EXTRACTED_URL"
+              local pr_entry="$(basename "$DIR"): $EXTRACTED_URL"
+              CREATED_PRS+=("$pr_entry")
+              add_pr_to_file "$pr_entry"
+              if [[ "$AUTO_MERGE" == "true" ]]; then
+                gh pr merge --merge --auto || msg_warn "Auto-merge failed or not applicable."
+              fi
+            else
+              msg_warn "PR creation failed for $DIR: $PR_URL"
+            fi
+          fi
         fi
       else
-        msg_warn "PR creation failed or PR may already exist for $DIR"
+        msg_info "Skipping PR creation - branch is main or doesn't match expected branch"
       fi
     else
       msg_info "Nothing to commit in $DIR after replacements."
@@ -306,6 +357,7 @@ update_deps() {
 
   # Summary
   if [[ "${#CREATED_PRS[@]}" -gt 0 ]]; then
+    echo "${CREATED_PRS[@]}" | tee "$PRS_FILE" > /dev/null
     msg_success "\nCreated Pull Requests:"
     for pr in "${CREATED_PRS[@]}"; do
       printf "• %s\n" "$pr"

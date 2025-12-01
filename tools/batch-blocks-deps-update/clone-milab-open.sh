@@ -61,7 +61,7 @@ gh repo list "$ORG_NAME" --limit 1000 --json name,nameWithOwner -q '.[] | {name,
         if [ -d "$target_dir/.git" ]; then
             msg_info "Repository exists. Updating $target_dir..."
             (
-                cd "$target_dir" || exit 0
+                cd "$target_dir" || exit 1
                 if [[ -n "$(git status --porcelain)" ]]; then
                     msg_info "Stashing local changes in $target_dir..."
                     git stash push -u -m "auto-stash before update" || true
@@ -73,14 +73,27 @@ gh repo list "$ORG_NAME" --limit 1000 --json name,nameWithOwner -q '.[] | {name,
                     # Record repos where 'main' is not present
                     echo "$target_dir" >> "$OTHER_BRANCH_FILE"
                 fi
-                git pull
+                git pull --rebase
             )
         else
             msg_info "Cloning $repo_full into $target_dir..."
             gh repo clone "$repo_full" "$target_dir"
         fi
 
-        (cd "$target_dir" && pnpm i) || msg_error "Could not install dependencies"
+        if [ -d "$target_dir" ]; then
+            if [ -f "$target_dir/package.json" ]; then
+                if ! pushd "$target_dir" >/dev/null; then
+                    msg_error "Failed to cd into $target_dir"
+                    continue
+                fi
+                pnpm i || msg_error "Could not install dependencies in $target_dir"
+                popd >/dev/null || true
+            else
+                msg_info "No package.json found in $target_dir, skipping pnpm install"
+            fi
+        else
+            msg_error "Repository directory '$target_dir' does not exist, skipping pnpm install"
+        fi
     done
 
 msg_success "✅ Operation completed."
