@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.6.4
+
+### Patch Changes
+
+- 16e43c6: Small tidy-up for few tengo errors
+
 ## 5.6.3
 
 ### Patch Changes
