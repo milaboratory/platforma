@@ -990,10 +990,10 @@ field = func(f) {
 				if !is_undefined(err.message) {
 					err = err.message
 				}
-				ll.panic("failed to get the value of field %v, error is not empty: %v", self.name(), err)
+				ll.panic("smart.field.getValue: field %v has error: %v", self.name(), err)
 			}
 
-			ll.assert(self.isSet(), "field value is not set; field = %v", self.name())
+			ll.assert(self.isSet(), "smart.field.getValue: field %v is not set", self.name())
 
 			return resource(self.info().Value)
 		},
