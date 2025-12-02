@@ -142,10 +142,9 @@ export class LLPlClient implements WireClientProviderFactory {
     });
   }
 
-  private initWireConnection() {
+  private async initWireConnection() {
     if (this._wireProto === undefined) {
-      // TODO: implement automatic server mode detection
-      this._wireProto = this.conf.wireProtocol ?? 'grpc';
+      this._wireProto = await this.autoDetectProtocol();
     }
 
     switch (this._wireProto) {
@@ -442,6 +441,56 @@ export class LLPlClient implements WireClientProviderFactory {
     } else {
       return notEmpty((await cl.GET('/v1/ping')).data);
     }
+  }
+
+  /**
+   * Probes the server to check if REST API is supported.
+   * Makes a simple HTTP GET request to /v1/ping endpoint.
+   * @returns true if REST is supported (2xx response), false otherwise
+   */
+  public async probeRestSupport(): Promise<boolean> {
+    const protocol = this.conf.ssl ? 'https' : 'http';
+
+    try {
+      const response = await this.httpDispatcher.request({
+        method: 'GET',
+        origin: `${protocol}://${this.conf.hostAndPort}`,
+        path: '/v1/ping',
+        headersTimeout: this.conf.defaultRequestTimeout,
+        bodyTimeout: this.conf.defaultRequestTimeout,
+      });
+
+      // Consume the body to free up the connection
+      await response.body.dump();
+
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Switches the wire protocol and reinitializes the connection.
+   * @param protocol - the wire protocol to switch to ('grpc' or 'rest')
+   */
+  public switchToProtocol(protocol: wireProtocol): void {
+    this._wireProto = protocol;
+    this.initWireConnection();
+  }
+
+  /**
+   * Detects the best available wire protocol.
+   * If wireProtocol is explicitly configured, returns that.
+   * Otherwise probes REST support and returns 'rest' if available, 'grpc' as fallback.
+   * @returns the detected wire protocol
+   */
+  public async autoDetectProtocol(): Promise<wireProtocol> {
+    if (this.conf.wireProtocol) {
+      return this.conf.wireProtocol;
+    }
+
+    const supportsRest = await this.probeRestSupport();
+    return supportsRest ? 'rest' : 'grpc';
   }
 
   public async license(): Promise<grpcTypes.MaintenanceAPI_License_Response> {
