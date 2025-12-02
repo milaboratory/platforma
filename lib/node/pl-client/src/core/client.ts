@@ -191,6 +191,13 @@ export class PlClient {
     const mainRootName
       = user === null ? AnonymousClientRoot : createHash('sha256').update(user).digest('hex');
 
+    if (!this._ll.conf.wireProtocol) {
+      const detectedProtocol = await this._ll.autoDetectProtocol();
+      if (detectedProtocol !== this._ll.wireProtocol) {
+        this._ll.switchToProtocol(detectedProtocol);
+      }
+    }
+
     this._serverInfo = await this.ping();
     if (this._serverInfo.compression === MaintenanceAPI_Ping_Response_Compression.GZIP) {
       await this._ll.close();

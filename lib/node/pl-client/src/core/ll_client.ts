@@ -142,9 +142,9 @@ export class LLPlClient implements WireClientProviderFactory {
     });
   }
 
-  private async initWireConnection() {
+  private initWireConnection() {
     if (this._wireProto === undefined) {
-      this._wireProto = await this.autoDetectProtocol();
+      this._wireProto = this.conf.wireProtocol ?? 'grpc';
     }
 
     switch (this._wireProto) {
@@ -266,6 +266,10 @@ export class LLPlClient implements WireClientProviderFactory {
 
   public get wireConnection(): WireConnection {
     return this._wireConn;
+  }
+
+  public get wireProtocol(): wireProtocol | undefined {
+    return this._wireProto;
   }
 
   /** Returns true if client is authenticated. Even with anonymous auth information
