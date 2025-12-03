@@ -201,8 +201,11 @@ service Platform {
 //   - client reads server responses for each messages sent. Client can batch
 //     writes and reads: e.g. send 3 messages, read 2 responses, send one
 //     more, read 2;
-//   - to finish communication client sends 'commit' message and reads last
+//   - to finish communication client sends 'commit' or 'discard' message and reads last
 //     response;
+//   - to make server interrupt communication, client sends 'stream_close' message and reads to the last
+//     server response. This allows graceful stream close, waiting for all queued server responses
+//     to be sent before closing the stream.
 //
 // Detailed description of the process.
 //
@@ -279,6 +282,10 @@ service Platform {
 //    - server stops reading client stream and does the commit/discard action.
 //    - once transaction is closed, server sends the result to client and
 //      closes server stream.
+//    - client stream reading may be interrupted by special 'stream_close' message, which
+//      causes transaction automatic discard and does not produce additional reply message.
+//      This 'stream_close' message also does not require any 'request_id' value and does not
+//      produce any response from server side.
 //
 // At this point the transaction over gRPC is considered as finalized, all
 // local IDs generated within the transaction are no longer valid.
@@ -307,6 +314,17 @@ message TxAPI {
       Open.Request tx_open = 11; // open transaction
       Commit.Request tx_commit = 12; // commit the transaction and close the stream
       Discard.Request tx_discard = 13; // discard the transaction and close the stream
+
+      // Interrupt the transaction network stream on server side.
+      //
+      // This allows to gracefully close network connection and discard the associated transaction,
+      // ensuring all pending server responses are sent to the client before closing.
+      // We use this in RO transactions to imitate the feature of 'half-open' connection
+      // available in pure gRPC, when we work with WebSockets.
+      // Pure gRPC uses 'end of client messages stream' as a criteria for graceful discard.
+      // Pure WebSocket does not allow this, breaking entire connection at once. stream_close helps to get
+      // behaviour as we have for gRPC.
+      CloseStream.Request stream_close = 14; // ask server to send all pending messages and close the stream
 
       ResourceAPI.CreateRoot.Request resource_create_root = 58; // create new root resource
       ResourceAPI.Remove.Request resource_remove = 57; // remove root resource from platform
@@ -403,6 +421,7 @@ message TxAPI {
       Open.Response tx_open = 11;
       Commit.Response tx_commit = 12;
       Discard.Response tx_discard = 13;
+      CloseStream.Response stream_close = 14;
 
       ResourceAPI.CreateRoot.Response resource_create_root = 58;
       ResourceAPI.Remove.Response resource_remove = 57;
@@ -499,6 +518,12 @@ message TxAPI {
     message Request {}
 
     message Response {}
+  }
+
+  message CloseStream {
+    message Request {}
+
+    message Response {} // is never sent. Simplifies dark magic of typing on TypeScript side.
   }
 
   message Sync {

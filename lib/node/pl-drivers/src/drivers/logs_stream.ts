@@ -375,7 +375,7 @@ class LogGetter {
       }
 
       this.logger.error(
-        `Stream log lines for ${stringifyWithResourceId(this.rInfo.id)} failed, reason: ${e}`,
+        `Stream log lines for ${stringifyWithResourceId(this.rInfo.id)} failed, reason: ${JSON.stringify(e)}`,
       );
       throw e;
     }

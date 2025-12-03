@@ -82,7 +82,7 @@ import type { RetryConfig } from '../helpers/retry_strategy';
 type MockWS = InstanceType<typeof MockWebSocket>;
 
 interface StreamContext {
-  stream: WebSocketBiDiStream;
+  stream: WebSocketBiDiStream<ClientMessageType, ServerMessageType>;
   ws: MockWS;
   controller: AbortController;
 }
@@ -91,9 +91,13 @@ function createStream(token?: string, retryConfig?: Partial<RetryConfig>): Strea
   const controller = new AbortController();
   const stream = new WebSocketBiDiStream(
     'ws://localhost:8080',
-    controller.signal,
-    token,
-    retryConfig,
+    (message: ClientMessageType) => ClientMessageType.toBinary(message),
+    (data) => ServerMessageType.fromBinary(data),
+    {
+      abortSignal: controller.signal,
+      jwtToken: token,
+      retryConfig: retryConfig,
+    },
   );
   const ws = MockWebSocket.instances[MockWebSocket.instances.length - 1];
   return { stream, ws, controller };
@@ -115,7 +119,7 @@ function createClientMessage(): ClientMessageType {
 }
 
 async function collectMessages(
-  stream: WebSocketBiDiStream,
+  stream: WebSocketBiDiStream<ClientMessageType, ServerMessageType>,
   count: number,
 ): Promise<ServerMessageType[]> {
   const messages: ServerMessageType[] = [];
@@ -149,7 +153,14 @@ describe('WebSocketBiDiStream', () => {
       const controller = new AbortController();
       controller.abort();
 
-      new WebSocketBiDiStream('ws://localhost:8080', controller.signal);
+      new WebSocketBiDiStream(
+        'ws://localhost:8080', 
+        (message: ClientMessageType) => ClientMessageType.toBinary(message),
+        (data) => ServerMessageType.fromBinary(data),
+        {
+          abortSignal: controller.signal,
+        },
+      );
 
       expect(MockWebSocket.instances).toHaveLength(0);
     });
@@ -332,7 +343,7 @@ describe('WebSocketBiDiStream', () => {
       maxAttempts: 5,
     };
 
-    test('should attempt reconnection on unexpected close', async () => {
+    test('should not attempt reconnection on unexpected close', async () => {
       const { ws } = createStream(undefined, retryConfig);
 
       await openConnection(ws);
@@ -341,7 +352,7 @@ describe('WebSocketBiDiStream', () => {
       ws.emit('close');
       await vi.advanceTimersByTimeAsync(150);
 
-      expect(MockWebSocket.instances.length).toBeGreaterThan(1);
+      expect(MockWebSocket.instances.length).toBe(1);
     });
 
     test('should stop reconnecting after max attempts', async () => {

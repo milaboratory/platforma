@@ -25,9 +25,24 @@ export function createClient<Paths extends {}>(opts: RestClientConfig): Client<P
   const client = createOpenApiClient<Paths>({
     baseUrl: `${scheme}${opts.hostAndPort}`,
     fetch: (input: Request): Promise<Response> => {
-      return undiciFetch(input.url, {
-        ...input,
+      // If body has already been consumed, clone the request
+      const request = input.bodyUsed ? input.clone() : input;
+
+      return undiciFetch(request.url, {
+        body: request.body,
+        cache: request.cache,
+        credentials: request.credentials,
         dispatcher: opts.dispatcher,
+        duplex: request.duplex,
+        headers: request.headers,
+        integrity: request.integrity,
+        keepalive: request.keepalive,
+        method: request.method,
+        mode: request.mode,
+        redirect: request.redirect,
+        referrer: request.referrer,
+        referrerPolicy: request.referrerPolicy,
+        signal: request.signal,
       });
     },
   });
