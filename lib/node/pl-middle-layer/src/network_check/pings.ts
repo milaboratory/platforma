@@ -18,7 +18,7 @@ export type HttpNetworkReport = NetworkReport<{
 
 export async function backendPings(ops: CheckNetworkOpts, plConfig: PlClientConfig): Promise<NetworkReport<string>[]> {
   return await recordPings(ops.pingCheckDurationMs, ops.maxPingsPerSecond, async () => {
-    const uaClient = new UnauthenticatedPlClient(plConfig);
+    const uaClient = await UnauthenticatedPlClient.build(plConfig);
     const response = await uaClient.ping();
     return JSON.stringify(response).slice(0, ops.bodyLimit) + '...';
   });

@@ -54,8 +54,6 @@ class WireClientProviderImpl<Client> implements WireClientProvider<Client> {
 
 /** Abstract out low level networking and authorization details */
 export class LLPlClient implements WireClientProviderFactory {
-  public readonly conf: PlClientConfig;
-
   /** Initial authorization information */
   private authInformation?: AuthInformation;
   /** Will be executed by the client when it is required */
@@ -82,19 +80,38 @@ export class LLPlClient implements WireClientProviderFactory {
 
   public readonly httpDispatcher: Dispatcher;
 
-  constructor(
+  public static async build(
     configOrAddress: PlClientConfig | string,
+    ops: {
+      auth?: AuthOps;
+      statusListener?: PlConnectionStatusListener;
+      shouldUseGzip?: boolean;
+    } = {},
+  ) {
+    const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress): configOrAddress;
+
+    const pl = new LLPlClient(conf, ops);
+    if (conf.wireProtocol) {
+      return pl
+    }
+
+    const { protocol: detectedProtocol, shouldSwitch } = await pl.detectOptimalWireProtocol();
+    if (shouldSwitch) {
+      await pl.close();
+      conf.wireProtocol = detectedProtocol;
+      return new LLPlClient(conf, ops);
+    }
+    return pl;
+  }
+
+  private constructor(
+    public readonly conf: PlClientConfig,
     private readonly ops: {
       auth?: AuthOps;
       statusListener?: PlConnectionStatusListener;
       shouldUseGzip?: boolean;
-      wireProtocol?: wireProtocol;
     } = {},
   ) {
-    this.conf = typeof configOrAddress === 'string'
-      ? plAddressToConfig(configOrAddress)
-      : configOrAddress;
-
     const { auth, statusListener } = ops;
 
     if (auth !== undefined) {
@@ -122,7 +139,7 @@ export class LLPlClient implements WireClientProviderFactory {
 
     this.httpDispatcher = defaultHttpDispatcher(this.conf.httpProxy);
 
-    this._wireProto = this.conf.wireProtocol ?? this.ops.wireProtocol ?? 'grpc';
+    this._wireProto = this.conf.wireProtocol ?? 'grpc';
     this.initWireConnection(this._wireProto);
 
     if (statusListener !== undefined) {
@@ -470,14 +487,14 @@ export class LLPlClient implements WireClientProviderFactory {
       return false;
     }
   }
-  
+
   /**
    * Detects the best available wire protocol.
    * If wireProtocol is explicitly configured, returns that.
    * Otherwise probes REST support and returns 'rest' if available, 'grpc' as fallback.
    * @returns the detected wire protocol and whether it differs from current
    */
-  public async detectOptimalWireProtocol(): Promise<{ protocol: wireProtocol; shouldSwitch: boolean }> {
+  private async detectOptimalWireProtocol(): Promise<{ protocol: wireProtocol; shouldSwitch: boolean }> {
     if (this.conf.wireProtocol) {
       return {
         protocol: this.conf.wireProtocol,
