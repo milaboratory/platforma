@@ -88,6 +88,7 @@ export class LLPlClient implements WireClientProviderFactory {
       auth?: AuthOps;
       statusListener?: PlConnectionStatusListener;
       shouldUseGzip?: boolean;
+      wireProtocol?: wireProtocol;
     } = {},
   ) {
     this.conf = typeof configOrAddress === 'string'
@@ -121,7 +122,8 @@ export class LLPlClient implements WireClientProviderFactory {
 
     this.httpDispatcher = defaultHttpDispatcher(this.conf.httpProxy);
 
-    this.initWireConnection();
+    this._wireProto = this.conf.wireProtocol ?? this.ops.wireProtocol ?? 'grpc';
+    this.initWireConnection(this._wireProto);
 
     if (statusListener !== undefined) {
       this.statusListener = statusListener;
@@ -142,12 +144,8 @@ export class LLPlClient implements WireClientProviderFactory {
     });
   }
 
-  private initWireConnection() {
-    if (this._wireProto === undefined) {
-      this._wireProto = this.conf.wireProtocol ?? 'grpc';
-    }
-
-    switch (this._wireProto) {
+  private initWireConnection(protocol: wireProtocol) {
+    switch (protocol) {
       case 'rest':
         this.initRestConnection();
         return;
@@ -157,7 +155,7 @@ export class LLPlClient implements WireClientProviderFactory {
       default:
         ((v: never) => {
           throw new Error(`Unsupported wire protocol '${v as string}'. Use one of: ${SUPPORTED_WIRE_PROTOCOLS.join(', ')}`);
-        })(this._wireProto);
+        })(protocol);
     }
   }
 
@@ -472,29 +470,27 @@ export class LLPlClient implements WireClientProviderFactory {
       return false;
     }
   }
-
-  /**
-   * Switches the wire protocol and reinitializes the connection.
-   * @param protocol - the wire protocol to switch to ('grpc' or 'rest')
-   */
-  public switchToProtocol(protocol: wireProtocol): void {
-    this._wireProto = protocol;
-    this.initWireConnection();
-  }
-
+  
   /**
    * Detects the best available wire protocol.
    * If wireProtocol is explicitly configured, returns that.
    * Otherwise probes REST support and returns 'rest' if available, 'grpc' as fallback.
-   * @returns the detected wire protocol
+   * @returns the detected wire protocol and whether it differs from current
    */
-  public async autoDetectProtocol(): Promise<wireProtocol> {
+  public async detectOptimalWireProtocol(): Promise<{ protocol: wireProtocol; shouldSwitch: boolean }> {
     if (this.conf.wireProtocol) {
-      return this.conf.wireProtocol;
+      return {
+        protocol: this.conf.wireProtocol,
+        shouldSwitch: this._wireProto !== this.conf.wireProtocol
+      };
     }
 
     const supportsRest = await this.probeRestSupport();
-    return supportsRest ? 'rest' : 'grpc';
+    const protocol = supportsRest ? 'rest' : 'grpc';
+    return {
+      protocol,
+      shouldSwitch: this._wireProto !== protocol
+    };
   }
 
   public async license(): Promise<grpcTypes.MaintenanceAPI_License_Response> {
