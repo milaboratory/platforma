@@ -14,7 +14,17 @@ pFrameBuilder := func() {
 	self := undefined
 	self = ll.toStrict(oop.inherit(r, {
 
-		add: func(column, spec, data) {
+		add: func(column, spec, ...data) {
+			if (len(data) == 0) {
+				data = undefined
+			} else if (len(data) == 1) {
+				data = data[0]
+				if (is_undefined(data)) {
+					ll.panic("Data is undefined for column '%s'", column)
+				}
+			} else {
+				ll.panic("Too many data arguments for column '%s'", column)
+			}
 			if (!is_undefined(spec)) {
 				if !smart.isReference(spec) {
 					validation.assertType(spec, pSpec.P_OBJECT_SPEC_SCHEMA)
