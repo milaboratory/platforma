@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: Platform API
-    version: 0.0.1
+    version: 1.0.0
 paths:
     /v1/auth/jwt-token:
         post:

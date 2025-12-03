@@ -29,6 +29,7 @@ import { type PlApiPaths, type PlRestClientType, createClient, parseResponseErro
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { Code } from '../proto-grpc/google/rpc/code';
 import { WebSocketBiDiStream } from './websocket_stream';
+import { TxAPI_ClientMessage, TxAPI_ServerMessage } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 
 export interface PlCallOps {
   timeout?: number;
@@ -495,17 +496,31 @@ export class LLPlClient implements WireClientProviderFactory {
         if (timeout !== undefined) {
           totalAbortSignal = AbortSignal.any([totalAbortSignal, AbortSignal.timeout(timeout)]);
         }
+
+        // The gRPC transport has the auth interceptor that already handles it, but here we need to refresh the auth information to be safe.
+        this.refreshAuthInformationIfNeeded();
+
         const wsUrl = this.conf.ssl
           ? `wss://${this.conf.hostAndPort}/v1/ws/tx`
           : `ws://${this.conf.hostAndPort}/v1/ws/tx`;
 
-        // The gRPC transport has the auth interceptor that already handles it, so we need to refresh the auth information here.
-        this.refreshAuthInformationIfNeeded();
-        const jwtToken = this.authInformation?.jwtToken;
+        return new WebSocketBiDiStream(wsUrl,
+          (msg) => TxAPI_ClientMessage.toBinary(msg),
+          (data) => TxAPI_ServerMessage.fromBinary(new Uint8Array(data)),
+          {
+            abortSignal: totalAbortSignal,
+            jwtToken: this.authInformation?.jwtToken,
 
-        return new WebSocketBiDiStream(wsUrl, totalAbortSignal, jwtToken);
+            onComplete: async (stream) => stream.requests.send({
+              // Ask server to gracefully close the stream on its side, if not done yet.
+              requestId: 0,
+              request: { oneofKind: 'streamClose', streamClose: {} },
+            }),
+          },
+        );
       }
-      throw new Error('tx is not supported for this wire protocol');
+
+      throw new Error(`transactions are not supported for wire protocol ${this._wireProto}`);
     });
   }
 

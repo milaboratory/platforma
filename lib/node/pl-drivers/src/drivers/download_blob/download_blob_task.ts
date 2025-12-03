@@ -64,7 +64,7 @@ export class DownloadBlobTask {
       this.logger.error(
         `blob ${stringifyWithResourceId(this.rInfo)} download failed, `
         + `state: ${JSON.stringify(this.state)}, `
-        + `error: ${e}`,
+        + `error: ${JSON.stringify(e)}`,
       );
       if (nonRecoverableError(e)) {
         this.setError(e);

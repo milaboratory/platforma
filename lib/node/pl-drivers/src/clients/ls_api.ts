@@ -64,8 +64,7 @@ export class ClientLs {
         isDir: item.isDir,
         fullName: item.fullName,
         directory: item.directory,
-        // TODO: check we get value in a correct way here
-        lastModified: { seconds: BigInt(item.lastModified), nanos: 0 },
+        lastModified: parseTimestamp(item.lastModified),
         version: item.version,
       }));
 
@@ -75,4 +74,22 @@ export class ClientLs {
       };
     }
   }
+}
+
+function parseTimestamp(timestamp: string): { seconds: bigint; nanos: number } {
+  // Parse ISO 8601 format: 2025-08-08T11:12:44.145635532Z
+  const date = new Date(timestamp);
+  const seconds = BigInt(Math.floor(date.getTime() / 1000));
+
+  // Extract fractional seconds from the original string
+  const fractionalMatch = timestamp.match(/\.(\d+)Z?$/);
+  let nanos = 0;
+  if (fractionalMatch) {
+    const fractionalPart = fractionalMatch[1];
+    // Pad or truncate to 9 digits (nanoseconds)
+    const padded = fractionalPart.padEnd(9, '0').slice(0, 9);
+    nanos = parseInt(padded, 10);
+  }
+
+  return { seconds, nanos };
 }
