@@ -11,8 +11,13 @@ import { UnauthenticatedError } from './errors';
 export class UnauthenticatedPlClient {
   public readonly ll: LLPlClient;
 
-  constructor(configOrAddress: PlClientConfig | string) {
-    this.ll = new LLPlClient(configOrAddress);
+  private constructor(ll: LLPlClient) {
+    this.ll = ll;
+  }
+
+  public static async build(configOrAddress: PlClientConfig | string): Promise<UnauthenticatedPlClient> {
+    const ll = await LLPlClient.build(configOrAddress);
+    return new UnauthenticatedPlClient(ll);
   }
 
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {

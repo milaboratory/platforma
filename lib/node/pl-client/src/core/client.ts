@@ -22,6 +22,7 @@ import type { AllTxStat, TxStat } from './stat';
 import { addStat, initialTxStat } from './stat';
 import type { WireConnection } from './wire';
 import { advisoryLock } from './advisory_locks';
+import { plAddressToConfig } from './config';
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -54,8 +55,8 @@ export class PlClient {
   /** Last resort measure to solve complicated race conditions in pl. */
   private readonly defaultRetryOptions: RetryOptions;
 
-  private readonly buildLLPlClient: (shouldUseGzip: boolean, wireProtocol?: wireProtocol) => LLPlClient;
-  private _ll: LLPlClient;
+  private readonly buildLLPlClient: (shouldUseGzip: boolean, wireProtocol?: wireProtocol) => Promise<LLPlClient>;
+  private _ll?: LLPlClient;
   /** Stores client root (this abstraction is intended for future implementation of the security model) */
   private _clientRoot: OptionalResourceId = NullResourceId;
 
@@ -83,12 +84,13 @@ export class PlClient {
       finalPredicate?: FinalResourceDataPredicate;
     } = {},
   ) {
-    // Will reinitialize client after getting available feature from server.
-    this.buildLLPlClient = (shouldUseGzip: boolean, wireProtocol?: wireProtocol) => {
-      return new LLPlClient(configOrAddress, { auth, ...ops, shouldUseGzip, wireProtocol });
-    };
-    this._ll = this.buildLLPlClient(false);
-    const conf = this._ll.conf;
+    const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress): configOrAddress;
+
+    this.buildLLPlClient = async (shouldUseGzip: boolean, wireProtocol?: wireProtocol): Promise<LLPlClient> => {
+      conf.wireProtocol = wireProtocol;
+      return await LLPlClient.build(conf, { auth, ...ops, shouldUseGzip });
+    }
+    
     this.txDelay = conf.txDelay;
     this.forceSync = conf.forceSync;
     this.finalPredicate = ops.finalPredicate ?? DefaultFinalResourceDataPredicate;
@@ -145,23 +147,23 @@ export class PlClient {
   }
 
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {
-    return await this._ll.ping();
+    return await this._ll!.ping();
   }
 
   public async license(): Promise<MaintenanceAPI_License_Response> {
-    return await this._ll.license();
+    return await this._ll!.license();
   }
 
   public get conf(): PlClientConfig {
-    return this._ll.conf;
+    return this._ll!.conf;
   }
 
   public get httpDispatcher(): Dispatcher {
-    return this._ll.httpDispatcher;
+    return this._ll!.httpDispatcher;
   }
 
   public get connectionOpts(): WireConnection {
-    return this._ll.wireConnection;
+    return this._ll!.wireConnection;
   }
 
   private get initialized() {
@@ -183,27 +185,23 @@ export class PlClient {
   }
 
   /** Currently implements custom logic to emulate future behaviour with single root. */
-  public async init() {
+  private async init() {
     if (this.initialized) throw new Error('Already initialized');
 
-    // calculating reproducible root name from the username
-    const user = this._ll.authUser;
-    const mainRootName
-      = user === null ? AnonymousClientRoot : createHash('sha256').update(user).digest('hex');
+    // Will reinitialize client after getting available feature from server.
+    this._ll = await this.buildLLPlClient(false);
+    const wireProtocol = this._ll.wireProtocol;
 
-    if (!this._ll.conf.wireProtocol) {
-      const { protocol: detectedProtocol, shouldSwitch } = await this._ll.detectOptimalWireProtocol();
-      if (shouldSwitch) {
-        await this._ll.close();
-        this._ll = this.buildLLPlClient(false, detectedProtocol);
-      }
-    }
+     // calculating reproducible root name from the username
+    const user = this._ll!.authUser;
+    const mainRootName
+       = user === null ? AnonymousClientRoot : createHash('sha256').update(user).digest('hex');
+ 
 
     this._serverInfo = await this.ping();
     if (this._serverInfo.compression === MaintenanceAPI_Ping_Response_Compression.GZIP) {
-      const wireProtocol = this._ll.wireProtocol;
       await this._ll.close();
-      this._ll = this.buildLLPlClient(true, wireProtocol);
+      this._ll = await this.buildLLPlClient(true, wireProtocol);
     }
 
     this._clientRoot = await this._withTx('initialization', true, NullResourceId, async (tx) => {
@@ -239,7 +237,7 @@ export class PlClient {
   /** Returns true if field existed */
   public async deleteAlternativeRoot(alternativeRootName: string): Promise<boolean> {
     this.checkInitialized();
-    if (this._ll.conf.alternativeRoot !== undefined)
+    if (this._ll!.conf.alternativeRoot !== undefined)
       throw new Error('Initialized with alternative root.');
     return await this.withWriteTx('delete-alternative-root', async (tx) => {
       const fId = {
@@ -268,7 +266,7 @@ export class PlClient {
 
       try {
         // opening low-level tx
-        const llTx = this._ll.createTx(writable, ops);
+        const llTx = this._ll!.createTx(writable, ops);
         // wrapping it into high-level tx (this also asynchronously sends initialization message)
         const tx = new PlTransaction(
           llTx,
@@ -315,7 +313,7 @@ export class PlClient {
         if (ok) {
           // syncing on transaction if requested
           if (ops?.sync === undefined ? this.forceSync : ops?.sync)
-            await this._ll.txSync(txId);
+            await this._ll!.txSync(txId);
 
           // introducing artificial delay, if requested
           if (writable && this.txDelay > 0)
@@ -364,14 +362,14 @@ export class PlClient {
   public getDriver<Drv extends PlDriver>(definition: PlDriverDefinition<Drv>): Drv {
     const attached = this.drivers.get(definition.name);
     if (attached !== undefined) return attached as Drv;
-    const driver = definition.init(this, this._ll, this.httpDispatcher);
+    const driver = definition.init(this, this._ll!, this.httpDispatcher);
     this.drivers.set(definition.name, driver);
     return driver;
   }
 
   /** Closes underlying transport */
   public async close() {
-    await this._ll.close();
+    await this._ll!.close();
   }
 
   public static async init(
