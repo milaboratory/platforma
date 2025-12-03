@@ -514,7 +514,7 @@ export class LLPlClient implements WireClientProviderFactory {
             onComplete: async (stream) => stream.requests.send({
               // Ask server to gracefully close the stream on its side, if not done yet.
               requestId: 0,
-              request: { oneofKind: 'txClose', txClose: {} },
+              request: { oneofKind: 'streamClose', streamClose: {} },
             }),
           },
         );

@@ -41,7 +41,7 @@ import { Status } from "../../../../googleapis/googleapis/google/rpc/status";
  *     more, read 2;
  *   - to finish communication client sends 'commit' or 'discard' message and reads last
  *     response;
- *   - to make server interrupt communication, client sends 'close' message and reads to the last
+ *   - to make server interrupt communication, client sends 'stream_close' message and reads to the last
  *     server response. This allows graceful stream close, waiting for all queued server responses
  *     to be sent before closing the stream.
  *
@@ -120,9 +120,10 @@ import { Status } from "../../../../googleapis/googleapis/google/rpc/status";
  *    - server stops reading client stream and does the commit/discard action.
  *    - once transaction is closed, server sends the result to client and
  *      closes server stream.
- *    - client stream reading may be interrupted by special 'tx_close' message, which is equal to
- *      'tx_discard', but does not produce additional reply message and does not require valid
- *      'request_id' value.
+ *    - client stream reading may be interrupted by special 'stream_close' message, which
+ *      causes transaction automatic discard and does not produce additional reply message.
+ *      This 'stream_close' message also does not require any 'request_id' value and does not
+ *      produce any response from server side.
  *
  * At this point the transaction over gRPC is considered as finalized, all
  * local IDs generated within the transaction are no longer valid.
@@ -178,11 +179,21 @@ export interface TxAPI_ClientMessage {
          */
         txDiscard: TxAPI_Discard_Request; // discard the transaction and close the stream
     } | {
-        oneofKind: "txClose";
+        oneofKind: "streamClose";
         /**
-         * @generated from protobuf field: MiLaboratories.PL.API.TxAPI.Close.Request tx_close = 14
+         * Interrupt the transaction network stream on server side.
+         *
+         * This allows to gracefully close network connection and discard the associated transaction,
+         * ensuring all pending server responses are sent to the client before closing.
+         * We use this in RO transactions to imitate the feature of 'half-open' connection
+         * available in pure gRPC, when we work with WebSockets.
+         * Pure gRPC uses 'end of client messages stream' as a criteria for graceful discard.
+         * Pure WebSocket does not allow this, breaking entire connection at once. stream_close helps to get
+         * behaviour as we have for gRPC.
+         *
+         * @generated from protobuf field: MiLaboratories.PL.API.TxAPI.CloseStream.Request stream_close = 14
          */
-        txClose: TxAPI_Close_Request; // close transaction stream without reply
+        streamClose: TxAPI_CloseStream_Request; // ask server to send all pending messages and close the stream
     } | {
         oneofKind: "resourceCreateRoot";
         /**
@@ -548,11 +559,11 @@ export interface TxAPI_ServerMessage {
          */
         txDiscard: TxAPI_Discard_Response;
     } | {
-        oneofKind: "txClose";
+        oneofKind: "streamClose";
         /**
-         * @generated from protobuf field: MiLaboratories.PL.API.TxAPI.Close.Response tx_close = 14
+         * @generated from protobuf field: MiLaboratories.PL.API.TxAPI.CloseStream.Response stream_close = 14
          */
-        txClose: TxAPI_Close_Response;
+        streamClose: TxAPI_CloseStream_Response;
     } | {
         oneofKind: "resourceCreateRoot";
         /**
@@ -998,19 +1009,19 @@ export interface TxAPI_Discard_Request {
 export interface TxAPI_Discard_Response {
 }
 /**
- * @generated from protobuf message MiLaboratories.PL.API.TxAPI.Close
+ * @generated from protobuf message MiLaboratories.PL.API.TxAPI.CloseStream
  */
-export interface TxAPI_Close {
+export interface TxAPI_CloseStream {
 }
 /**
- * @generated from protobuf message MiLaboratories.PL.API.TxAPI.Close.Request
+ * @generated from protobuf message MiLaboratories.PL.API.TxAPI.CloseStream.Request
  */
-export interface TxAPI_Close_Request {
+export interface TxAPI_CloseStream_Request {
 }
 /**
- * @generated from protobuf message MiLaboratories.PL.API.TxAPI.Close.Response
+ * @generated from protobuf message MiLaboratories.PL.API.TxAPI.CloseStream.Response
  */
-export interface TxAPI_Close_Response {
+export interface TxAPI_CloseStream_Response {
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.TxAPI.Sync
@@ -3185,7 +3196,7 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
             { no: 11, name: "tx_open", kind: "message", oneof: "request", T: () => TxAPI_Open_Request },
             { no: 12, name: "tx_commit", kind: "message", oneof: "request", T: () => TxAPI_Commit_Request },
             { no: 13, name: "tx_discard", kind: "message", oneof: "request", T: () => TxAPI_Discard_Request },
-            { no: 14, name: "tx_close", kind: "message", oneof: "request", T: () => TxAPI_Close_Request },
+            { no: 14, name: "stream_close", kind: "message", oneof: "request", T: () => TxAPI_CloseStream_Request },
             { no: 58, name: "resource_create_root", kind: "message", oneof: "request", T: () => ResourceAPI_CreateRoot_Request },
             { no: 57, name: "resource_remove", kind: "message", oneof: "request", T: () => ResourceAPI_Remove_Request },
             { no: 51, name: "resource_create_struct", kind: "message", oneof: "request", T: () => ResourceAPI_CreateStruct_Request },
@@ -3276,10 +3287,10 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
                         txDiscard: TxAPI_Discard_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).txDiscard)
                     };
                     break;
-                case /* MiLaboratories.PL.API.TxAPI.Close.Request tx_close */ 14:
+                case /* MiLaboratories.PL.API.TxAPI.CloseStream.Request stream_close */ 14:
                     message.request = {
-                        oneofKind: "txClose",
-                        txClose: TxAPI_Close_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).txClose)
+                        oneofKind: "streamClose",
+                        streamClose: TxAPI_CloseStream_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).streamClose)
                     };
                     break;
                 case /* MiLaboratories.PL.API.ResourceAPI.CreateRoot.Request resource_create_root */ 58:
@@ -3630,9 +3641,9 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
         /* MiLaboratories.PL.API.TxAPI.Discard.Request tx_discard = 13; */
         if (message.request.oneofKind === "txDiscard")
             TxAPI_Discard_Request.internalBinaryWrite(message.request.txDiscard, writer.tag(13, WireType.LengthDelimited).fork(), options).join();
-        /* MiLaboratories.PL.API.TxAPI.Close.Request tx_close = 14; */
-        if (message.request.oneofKind === "txClose")
-            TxAPI_Close_Request.internalBinaryWrite(message.request.txClose, writer.tag(14, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.TxAPI.CloseStream.Request stream_close = 14; */
+        if (message.request.oneofKind === "streamClose")
+            TxAPI_CloseStream_Request.internalBinaryWrite(message.request.streamClose, writer.tag(14, WireType.LengthDelimited).fork(), options).join();
         /* MiLaboratories.PL.API.ResourceAPI.CreateStruct.Request resource_create_struct = 51; */
         if (message.request.oneofKind === "resourceCreateStruct")
             ResourceAPI_CreateStruct_Request.internalBinaryWrite(message.request.resourceCreateStruct, writer.tag(51, WireType.LengthDelimited).fork(), options).join();
@@ -3814,7 +3825,7 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
             { no: 11, name: "tx_open", kind: "message", oneof: "response", T: () => TxAPI_Open_Response },
             { no: 12, name: "tx_commit", kind: "message", oneof: "response", T: () => TxAPI_Commit_Response },
             { no: 13, name: "tx_discard", kind: "message", oneof: "response", T: () => TxAPI_Discard_Response },
-            { no: 14, name: "tx_close", kind: "message", oneof: "response", T: () => TxAPI_Close_Response },
+            { no: 14, name: "stream_close", kind: "message", oneof: "response", T: () => TxAPI_CloseStream_Response },
             { no: 58, name: "resource_create_root", kind: "message", oneof: "response", T: () => ResourceAPI_CreateRoot_Response },
             { no: 57, name: "resource_remove", kind: "message", oneof: "response", T: () => ResourceAPI_Remove_Response },
             { no: 51, name: "resource_create_struct", kind: "message", oneof: "response", T: () => ResourceAPI_CreateStruct_Response },
@@ -3909,10 +3920,10 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
                         txDiscard: TxAPI_Discard_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).txDiscard)
                     };
                     break;
-                case /* MiLaboratories.PL.API.TxAPI.Close.Response tx_close */ 14:
+                case /* MiLaboratories.PL.API.TxAPI.CloseStream.Response stream_close */ 14:
                     message.response = {
-                        oneofKind: "txClose",
-                        txClose: TxAPI_Close_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).txClose)
+                        oneofKind: "streamClose",
+                        streamClose: TxAPI_CloseStream_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).streamClose)
                     };
                     break;
                 case /* MiLaboratories.PL.API.ResourceAPI.CreateRoot.Response resource_create_root */ 58:
@@ -4272,9 +4283,9 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
         /* MiLaboratories.PL.API.TxAPI.Discard.Response tx_discard = 13; */
         if (message.response.oneofKind === "txDiscard")
             TxAPI_Discard_Response.internalBinaryWrite(message.response.txDiscard, writer.tag(13, WireType.LengthDelimited).fork(), options).join();
-        /* MiLaboratories.PL.API.TxAPI.Close.Response tx_close = 14; */
-        if (message.response.oneofKind === "txClose")
-            TxAPI_Close_Response.internalBinaryWrite(message.response.txClose, writer.tag(14, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.TxAPI.CloseStream.Response stream_close = 14; */
+        if (message.response.oneofKind === "streamClose")
+            TxAPI_CloseStream_Response.internalBinaryWrite(message.response.streamClose, writer.tag(14, WireType.LengthDelimited).fork(), options).join();
         /* MiLaboratories.PL.API.ResourceAPI.CreateStruct.Response resource_create_struct = 51; */
         if (message.response.oneofKind === "resourceCreateStruct")
             ResourceAPI_CreateStruct_Response.internalBinaryWrite(message.response.resourceCreateStruct, writer.tag(51, WireType.LengthDelimited).fork(), options).join();
@@ -4895,17 +4906,17 @@ class TxAPI_Discard_Response$Type extends MessageType<TxAPI_Discard_Response> {
  */
 export const TxAPI_Discard_Response = new TxAPI_Discard_Response$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class TxAPI_Close$Type extends MessageType<TxAPI_Close> {
+class TxAPI_CloseStream$Type extends MessageType<TxAPI_CloseStream> {
     constructor() {
-        super("MiLaboratories.PL.API.TxAPI.Close", []);
+        super("MiLaboratories.PL.API.TxAPI.CloseStream", []);
     }
-    create(value?: PartialMessage<TxAPI_Close>): TxAPI_Close {
+    create(value?: PartialMessage<TxAPI_CloseStream>): TxAPI_CloseStream {
         const message = globalThis.Object.create((this.messagePrototype!));
         if (value !== undefined)
-            reflectionMergePartial<TxAPI_Close>(this, message, value);
+            reflectionMergePartial<TxAPI_CloseStream>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TxAPI_Close): TxAPI_Close {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TxAPI_CloseStream): TxAPI_CloseStream {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -4921,7 +4932,7 @@ class TxAPI_Close$Type extends MessageType<TxAPI_Close> {
         }
         return message;
     }
-    internalBinaryWrite(message: TxAPI_Close, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: TxAPI_CloseStream, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -4929,21 +4940,21 @@ class TxAPI_Close$Type extends MessageType<TxAPI_Close> {
     }
 }
 /**
- * @generated MessageType for protobuf message MiLaboratories.PL.API.TxAPI.Close
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.TxAPI.CloseStream
  */
-export const TxAPI_Close = new TxAPI_Close$Type();
+export const TxAPI_CloseStream = new TxAPI_CloseStream$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class TxAPI_Close_Request$Type extends MessageType<TxAPI_Close_Request> {
+class TxAPI_CloseStream_Request$Type extends MessageType<TxAPI_CloseStream_Request> {
     constructor() {
-        super("MiLaboratories.PL.API.TxAPI.Close.Request", []);
+        super("MiLaboratories.PL.API.TxAPI.CloseStream.Request", []);
     }
-    create(value?: PartialMessage<TxAPI_Close_Request>): TxAPI_Close_Request {
+    create(value?: PartialMessage<TxAPI_CloseStream_Request>): TxAPI_CloseStream_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         if (value !== undefined)
-            reflectionMergePartial<TxAPI_Close_Request>(this, message, value);
+            reflectionMergePartial<TxAPI_CloseStream_Request>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TxAPI_Close_Request): TxAPI_Close_Request {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TxAPI_CloseStream_Request): TxAPI_CloseStream_Request {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -4959,7 +4970,7 @@ class TxAPI_Close_Request$Type extends MessageType<TxAPI_Close_Request> {
         }
         return message;
     }
-    internalBinaryWrite(message: TxAPI_Close_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: TxAPI_CloseStream_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -4967,21 +4978,21 @@ class TxAPI_Close_Request$Type extends MessageType<TxAPI_Close_Request> {
     }
 }
 /**
- * @generated MessageType for protobuf message MiLaboratories.PL.API.TxAPI.Close.Request
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.TxAPI.CloseStream.Request
  */
-export const TxAPI_Close_Request = new TxAPI_Close_Request$Type();
+export const TxAPI_CloseStream_Request = new TxAPI_CloseStream_Request$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class TxAPI_Close_Response$Type extends MessageType<TxAPI_Close_Response> {
+class TxAPI_CloseStream_Response$Type extends MessageType<TxAPI_CloseStream_Response> {
     constructor() {
-        super("MiLaboratories.PL.API.TxAPI.Close.Response", []);
+        super("MiLaboratories.PL.API.TxAPI.CloseStream.Response", []);
     }
-    create(value?: PartialMessage<TxAPI_Close_Response>): TxAPI_Close_Response {
+    create(value?: PartialMessage<TxAPI_CloseStream_Response>): TxAPI_CloseStream_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
         if (value !== undefined)
-            reflectionMergePartial<TxAPI_Close_Response>(this, message, value);
+            reflectionMergePartial<TxAPI_CloseStream_Response>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TxAPI_Close_Response): TxAPI_Close_Response {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TxAPI_CloseStream_Response): TxAPI_CloseStream_Response {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -4997,7 +5008,7 @@ class TxAPI_Close_Response$Type extends MessageType<TxAPI_Close_Response> {
         }
         return message;
     }
-    internalBinaryWrite(message: TxAPI_Close_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: TxAPI_CloseStream_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -5005,9 +5016,9 @@ class TxAPI_Close_Response$Type extends MessageType<TxAPI_Close_Response> {
     }
 }
 /**
- * @generated MessageType for protobuf message MiLaboratories.PL.API.TxAPI.Close.Response
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.TxAPI.CloseStream.Response
  */
-export const TxAPI_Close_Response = new TxAPI_Close_Response$Type();
+export const TxAPI_CloseStream_Response = new TxAPI_CloseStream_Response$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class TxAPI_Sync$Type extends MessageType<TxAPI_Sync> {
     constructor() {
