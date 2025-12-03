@@ -24,7 +24,7 @@ import {
   stringifyJson,
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, PColumnEntryUniversal, PColumnEntryWithLabel, RenderCtx } from '../render';
-import { isPColumnReady, PColumnCollection } from '../render';
+import { PColumnCollection } from '../render';
 
 /** Create id for column copy with added keys in axes domains */
 const colId = (id: PObjectId, domains: (Record<string, string> | undefined)[]) => {
@@ -217,7 +217,7 @@ export function createPFrameForGraphs<A, U>(
     // additional columns are duplicates with extra fields in domains for compatibility if there are ones with partial match
     const extendedColumns = enrichCompatible(allAxes, allColumns);
 
-    return ctx.createPFrame(extendedColumns.filter(isPColumnReady));
+    return ctx.createPFrame(extendedColumns);
   };
 
   // if current block has its own columns then take from result pool only compatible with them
@@ -280,5 +280,5 @@ export function createPFrameForGraphs<A, U>(
   // additional columns are duplicates with extra fields in domains for compatibility if there are ones with partial match
   const extendedColumns = enrichCompatible(blockAxes, compatible);
 
-  return ctx.createPFrame(extendedColumns.filter(isPColumnReady));
+  return ctx.createPFrame(extendedColumns);
 }
