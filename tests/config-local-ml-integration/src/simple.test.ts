@@ -36,7 +36,7 @@ test(
     });
 
     // start pl-client
-    const uaClient = new UnauthenticatedPlClient(genResult.plAddress);
+    const uaClient = await UnauthenticatedPlClient.build(genResult.plAddress);
     console.log('Waiting for local platforma to be ready...');
     while (true) {
       try {

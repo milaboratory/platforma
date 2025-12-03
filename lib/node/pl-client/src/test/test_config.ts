@@ -111,7 +111,7 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
 
   const plConf = plAddressToConfig(tConf.address);
 
-  const uClient = new UnauthenticatedPlClient(plConf);
+  const uClient = await UnauthenticatedPlClient.build(plConf);
 
   const requireAuth = await uClient.requireAuth();
 
@@ -147,7 +147,7 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
 
 export async function getTestLLClient(confOverrides: Partial<PlClientConfig> = {}) {
   const { conf, auth } = await getTestClientConf();
-  return new LLPlClient({ ...conf, ...confOverrides }, { auth });
+  return await LLPlClient.build({ ...conf, ...confOverrides }, { auth });
 }
 
 export async function getTestClient(
