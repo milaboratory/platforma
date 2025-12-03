@@ -91,14 +91,14 @@ exportPFrame := func(pfResource, skipHideDataFromUI) {
 
 	for colName, col in columns {
 		if is_undefined(col.data) {
-			result.add(colName, col.specRaw, undefined)
+			result.add(colName, col.specRaw)
 			continue
 		}
 
 		shouldHideDataFromUI := skipHideDataFromUI && !is_undefined(col.spec) && col.spec.annotations["pl7.app/hideDataFromUi"] == "true"
 		if shouldHideDataFromUI {
 			// template is called by ML automatic exporter and the column is marked as 'not for UI'. We shouldn't export it.
-			result.add(colName, col.specRaw, undefined)
+			result.add(colName, col.specRaw)
 			continue
 		}
 
