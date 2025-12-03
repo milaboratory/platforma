@@ -88,11 +88,11 @@ export class LLPlClient implements WireClientProviderFactory {
       shouldUseGzip?: boolean;
     } = {},
   ) {
-    const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress): configOrAddress;
+    const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
 
     const pl = new LLPlClient(conf, ops);
     if (conf.wireProtocol) {
-      return pl
+      return pl;
     }
 
     const { protocol: detectedProtocol, shouldSwitch } = await pl.detectOptimalWireProtocol();
@@ -498,7 +498,7 @@ export class LLPlClient implements WireClientProviderFactory {
     if (this.conf.wireProtocol) {
       return {
         protocol: this.conf.wireProtocol,
-        shouldSwitch: this._wireProto !== this.conf.wireProtocol
+        shouldSwitch: this._wireProto !== this.conf.wireProtocol,
       };
     }
 
@@ -506,7 +506,7 @@ export class LLPlClient implements WireClientProviderFactory {
     const protocol = supportsRest ? 'rest' : 'grpc';
     return {
       protocol,
-      shouldSwitch: this._wireProto !== protocol
+      shouldSwitch: this._wireProto !== protocol,
     };
   }
 

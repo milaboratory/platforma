@@ -84,13 +84,13 @@ export class PlClient {
       finalPredicate?: FinalResourceDataPredicate;
     } = {},
   ) {
-    const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress): configOrAddress;
+    const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
 
     this.buildLLPlClient = async (shouldUseGzip: boolean, wireProtocol?: wireProtocol): Promise<LLPlClient> => {
       conf.wireProtocol = wireProtocol;
       return await LLPlClient.build(conf, { auth, ...ops, shouldUseGzip });
-    }
-    
+    };
+
     this.txDelay = conf.txDelay;
     this.forceSync = conf.forceSync;
     this.finalPredicate = ops.finalPredicate ?? DefaultFinalResourceDataPredicate;
@@ -192,11 +192,10 @@ export class PlClient {
     this._ll = await this.buildLLPlClient(false);
     const wireProtocol = this._ll.wireProtocol;
 
-     // calculating reproducible root name from the username
-    const user = this._ll!.authUser;
+    // calculating reproducible root name from the username
+    const user = this._ll.authUser;
     const mainRootName
        = user === null ? AnonymousClientRoot : createHash('sha256').update(user).digest('hex');
- 
 
     this._serverInfo = await this.ping();
     if (this._serverInfo.compression === MaintenanceAPI_Ping_Response_Compression.GZIP) {
