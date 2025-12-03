@@ -1,4 +1,4 @@
-import type { AuthOps, PlClientConfig, PlConnectionStatusListener } from './config';
+import type { AuthOps, PlClientConfig, PlConnectionStatusListener, wireProtocol } from './config';
 import type { PlCallOps } from './ll_client';
 import { LLPlClient } from './ll_client';
 import type { AnyResourceRef } from './transaction';
@@ -54,7 +54,7 @@ export class PlClient {
   /** Last resort measure to solve complicated race conditions in pl. */
   private readonly defaultRetryOptions: RetryOptions;
 
-  private readonly buildLLPlClient: (shouldUseGzip: boolean) => LLPlClient;
+  private readonly buildLLPlClient: (shouldUseGzip: boolean, wireProtocol?: wireProtocol) => LLPlClient;
   private _ll: LLPlClient;
   /** Stores client root (this abstraction is intended for future implementation of the security model) */
   private _clientRoot: OptionalResourceId = NullResourceId;
@@ -84,8 +84,8 @@ export class PlClient {
     } = {},
   ) {
     // Will reinitialize client after getting available feature from server.
-    this.buildLLPlClient = (shouldUseGzip: boolean) => {
-      return new LLPlClient(configOrAddress, { auth, ...ops, shouldUseGzip });
+    this.buildLLPlClient = (shouldUseGzip: boolean, wireProtocol?: wireProtocol) => {
+      return new LLPlClient(configOrAddress, { auth, ...ops, shouldUseGzip, wireProtocol });
     };
     this._ll = this.buildLLPlClient(false);
     const conf = this._ll.conf;
@@ -192,16 +192,18 @@ export class PlClient {
       = user === null ? AnonymousClientRoot : createHash('sha256').update(user).digest('hex');
 
     if (!this._ll.conf.wireProtocol) {
-      const detectedProtocol = await this._ll.autoDetectProtocol();
-      if (detectedProtocol !== this._ll.wireProtocol) {
-        this._ll.switchToProtocol(detectedProtocol);
+      const { protocol: detectedProtocol, shouldSwitch } = await this._ll.detectOptimalWireProtocol();
+      if (shouldSwitch) {
+        await this._ll.close();
+        this._ll = this.buildLLPlClient(false, detectedProtocol);
       }
     }
 
     this._serverInfo = await this.ping();
     if (this._serverInfo.compression === MaintenanceAPI_Ping_Response_Compression.GZIP) {
+      const wireProtocol = this._ll.wireProtocol;
       await this._ll.close();
-      this._ll = this.buildLLPlClient(true);
+      this._ll = this.buildLLPlClient(true, wireProtocol);
     }
 
     this._clientRoot = await this._withTx('initialization', true, NullResourceId, async (tx) => {
