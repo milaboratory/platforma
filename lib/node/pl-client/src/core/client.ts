@@ -87,7 +87,7 @@ export class PlClient {
     const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
 
     this.buildLLPlClient = async (shouldUseGzip: boolean, wireProtocol?: wireProtocol): Promise<LLPlClient> => {
-      conf.wireProtocol = wireProtocol;
+      if (wireProtocol) conf.wireProtocol = wireProtocol;
       return await LLPlClient.build(conf, { auth, ...ops, shouldUseGzip });
     };
 
