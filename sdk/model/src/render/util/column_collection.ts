@@ -188,6 +188,8 @@ type UniversalPColumnOptsNoDeriver = {
    * Default value in getUniversalEntries is false, in getColumns it is true.
    */
   overrideLabelAnnotation?: boolean;
+  /** If true, resulting columns will be enriched by other columns considering linker columns. Default is true. */
+  enrichByLinkers?: boolean;
 };
 
 type UniversalPColumnOpts = UniversalPColumnOptsNoDeriver & {
@@ -240,7 +242,7 @@ export class PColumnCollection {
   public getUniversalEntries(
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
     opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): (PColumnEntryWithLabel | PColumnEntryUniversal)[] | undefined {
-    const { anchorCtx, labelOps: rawLabelOps, dontWaitAllData = false, overrideLabelAnnotation = false, exclude } = opts ?? {};
+    const { anchorCtx, labelOps: rawLabelOps, dontWaitAllData = false, overrideLabelAnnotation = false, exclude, enrichByLinkers = true } = opts ?? {};
 
     const labelOps: LabelDerivationOps = {
       ...(overrideLabelAnnotation && rawLabelOps?.includeNativeLabel !== false ? { includeNativeLabel: true } : {}),
@@ -443,8 +445,7 @@ export class PColumnCollection {
     const ids = new Set(result.map((entry) => entry.id));
 
     const linkers = result.filter((entry) => isLinkerColumn(entry.spec));
-
-    if (anchorCtx && linkers.length) {
+    if (enrichByLinkers && anchorCtx && linkers.length) {
       const anchorAxes = Object.values(anchorCtx.anchors).flatMap((anchor) => anchor.axesSpec.map(getAxisId));
       const linkerMap = LinkerMap.fromColumns(linkers.map(getColumnIdAndSpec));
 
