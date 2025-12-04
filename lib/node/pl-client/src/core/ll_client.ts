@@ -54,8 +54,6 @@ class WireClientProviderImpl<Client> implements WireClientProvider<Client> {
 
 /** Abstract out low level networking and authorization details */
 export class LLPlClient implements WireClientProviderFactory {
-  public readonly conf: PlClientConfig;
-
   /** Initial authorization information */
   private authInformation?: AuthInformation;
   /** Will be executed by the client when it is required */
@@ -82,18 +80,38 @@ export class LLPlClient implements WireClientProviderFactory {
 
   public readonly httpDispatcher: Dispatcher;
 
-  constructor(
+  public static async build(
     configOrAddress: PlClientConfig | string,
+    ops: {
+      auth?: AuthOps;
+      statusListener?: PlConnectionStatusListener;
+      shouldUseGzip?: boolean;
+    } = {},
+  ) {
+    const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
+
+    const pl = new LLPlClient(conf, ops);
+    if (conf.wireProtocol) {
+      return pl;
+    }
+
+    const { protocol: detectedProtocol, shouldSwitch } = await pl.detectOptimalWireProtocol();
+    if (shouldSwitch) {
+      await pl.close();
+      conf.wireProtocol = detectedProtocol;
+      return new LLPlClient(conf, ops);
+    }
+    return pl;
+  }
+
+  private constructor(
+    public readonly conf: PlClientConfig,
     private readonly ops: {
       auth?: AuthOps;
       statusListener?: PlConnectionStatusListener;
       shouldUseGzip?: boolean;
     } = {},
   ) {
-    this.conf = typeof configOrAddress === 'string'
-      ? plAddressToConfig(configOrAddress)
-      : configOrAddress;
-
     const { auth, statusListener } = ops;
 
     if (auth !== undefined) {
@@ -121,7 +139,8 @@ export class LLPlClient implements WireClientProviderFactory {
 
     this.httpDispatcher = defaultHttpDispatcher(this.conf.httpProxy);
 
-    this.initWireConnection();
+    this._wireProto = this.conf.wireProtocol ?? 'grpc';
+    this.initWireConnection(this._wireProto);
 
     if (statusListener !== undefined) {
       this.statusListener = statusListener;
@@ -142,13 +161,8 @@ export class LLPlClient implements WireClientProviderFactory {
     });
   }
 
-  private initWireConnection() {
-    if (this._wireProto === undefined) {
-      // TODO: implement automatic server mode detection
-      this._wireProto = this.conf.wireProtocol ?? 'grpc';
-    }
-
-    switch (this._wireProto) {
+  private initWireConnection(protocol: wireProtocol) {
+    switch (protocol) {
       case 'rest':
         this.initRestConnection();
         return;
@@ -158,7 +172,7 @@ export class LLPlClient implements WireClientProviderFactory {
       default:
         ((v: never) => {
           throw new Error(`Unsupported wire protocol '${v as string}'. Use one of: ${SUPPORTED_WIRE_PROTOCOLS.join(', ')}`);
-        })(this._wireProto);
+        })(protocol);
     }
   }
 
@@ -267,6 +281,10 @@ export class LLPlClient implements WireClientProviderFactory {
 
   public get wireConnection(): WireConnection {
     return this._wireConn;
+  }
+
+  public get wireProtocol(): wireProtocol | undefined {
+    return this._wireProto;
   }
 
   /** Returns true if client is authenticated. Even with anonymous auth information
@@ -442,6 +460,54 @@ export class LLPlClient implements WireClientProviderFactory {
     } else {
       return notEmpty((await cl.GET('/v1/ping')).data);
     }
+  }
+
+  /**
+   * Probes the server to check if REST API is supported.
+   * Makes a simple HTTP GET request to /v1/ping endpoint.
+   * @returns true if REST is supported (2xx response), false otherwise
+   */
+  public async probeRestSupport(): Promise<boolean> {
+    const protocol = this.conf.ssl ? 'https' : 'http';
+
+    try {
+      const response = await this.httpDispatcher.request({
+        method: 'GET',
+        origin: `${protocol}://${this.conf.hostAndPort}`,
+        path: '/v1/ping',
+        headersTimeout: this.conf.defaultRequestTimeout,
+        bodyTimeout: this.conf.defaultRequestTimeout,
+      });
+
+      // Consume the body to free up the connection
+      await response.body.dump();
+
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Detects the best available wire protocol.
+   * If wireProtocol is explicitly configured, returns that.
+   * Otherwise probes REST support and returns 'rest' if available, 'grpc' as fallback.
+   * @returns the detected wire protocol and whether it differs from current
+   */
+  private async detectOptimalWireProtocol(): Promise<{ protocol: wireProtocol; shouldSwitch: boolean }> {
+    if (this.conf.wireProtocol) {
+      return {
+        protocol: this.conf.wireProtocol,
+        shouldSwitch: this._wireProto !== this.conf.wireProtocol,
+      };
+    }
+
+    const supportsRest = await this.probeRestSupport();
+    const protocol = supportsRest ? 'rest' : 'grpc';
+    return {
+      protocol,
+      shouldSwitch: this._wireProto !== protocol,
+    };
   }
 
   public async license(): Promise<grpcTypes.MaintenanceAPI_License_Response> {
