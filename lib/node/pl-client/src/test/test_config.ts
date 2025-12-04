@@ -110,6 +110,8 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
   }
 
   const plConf = plAddressToConfig(tConf.address);
+  // Use shorter timeout for tests to fail fast
+  plConf.defaultRequestTimeout = 500;
 
   const uClient = await UnauthenticatedPlClient.build(plConf);
 
