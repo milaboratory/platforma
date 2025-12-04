@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.82
+
+### Patch Changes
+
+- 842c9d0: Add isProjectOpened helper to MiddleLayer for checking open project status
+
 ## 1.43.81
 
 ### Patch Changes
