@@ -1,5 +1,5 @@
 import { LLPlClient } from './ll_client';
-import { getTestConfig, getTestLLClient, getTestClientConf } from '../test/test_config';
+import { getTestConfig, plAddressToTestConfig, getTestLLClient, getTestClientConf } from '../test/test_config';
 import { TxAPI_Open_Request_WritableTx } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { request } from 'undici';
 import * as tp from 'node:timers/promises';
@@ -29,7 +29,7 @@ test('unauthenticated status change', async () => {
     return;
   }
 
-  const client = new LLPlClient(cfg.address);
+  const client = await LLPlClient.build(plAddressToTestConfig(cfg.address));
   expect(client.status).toBe('OK');
 
   const tx = client.createTx(true);
@@ -57,7 +57,7 @@ test('automatic token update', async () => {
   const { conf, auth } = await getTestClientConf();
   conf.authMaxRefreshSeconds = 1;
   let numberOfAuthUpdates = 0;
-  const client = new LLPlClient(conf, {
+  const client = await LLPlClient.build(conf, {
     auth: {
       authInformation: auth.authInformation,
       onUpdate: (auth) => {
