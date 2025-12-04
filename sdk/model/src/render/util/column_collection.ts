@@ -4,6 +4,7 @@ import type {
   AxisFilterByIdx,
   AxisFilterValue,
   AxisId,
+  CanonicalizedJson,
   NativePObjectId,
   PartitionedDataInfoEntries,
   PColumn,
@@ -18,11 +19,19 @@ import type {
 import {
   Annotation,
   canonicalizeAxisId,
+  canonicalizeJson,
   deriveNativeId,
   entriesToDataInfo,
+  getArrayFromAxisTree,
+  getAxesTree,
   getAxisId,
+  getColumnIdAndSpec,
+  getNormalizedAxesList,
+  isLinkerColumn,
   isPartitionedDataInfoEntries,
   isPColumnSpec,
+  LinkerMap,
+  matchAxisId,
   resolveAnchors,
   selectorsToPredicate,
 } from '@milaboratories/pl-model-common';
@@ -429,6 +438,40 @@ export class PColumnCollection {
           : entry.originalColumn.data,
         label: label,
       });
+    }
+
+    const ids = new Set(result.map((entry) => entry.id));
+
+    const linkers = result.filter((entry) => isLinkerColumn(entry.spec));
+
+    if (anchorCtx && linkers.length) {
+      const anchorAxes = Object.values(anchorCtx.anchors).flatMap((anchor) => anchor.axesSpec.map(getAxisId));
+      const linkerMap = LinkerMap.fromColumns(linkers.map(getColumnIdAndSpec));
+
+      const startKeys: CanonicalizedJson<AxisId[]>[] = [];
+      const blockAxesGrouped: AxisId[][] = getNormalizedAxesList(anchorAxes).map((axis) => getArrayFromAxisTree(getAxesTree(axis)).map(getAxisId));
+      for (const axesGroupBlock of blockAxesGrouped) {
+        const matched = linkerMap.keyAxesIds.find(
+          (keyIds: AxisId[]) => keyIds.every(
+            (keySourceAxis) => axesGroupBlock.find((axisSpecFromBlock) => matchAxisId(keySourceAxis, axisSpecFromBlock)),
+          ),
+        );
+        if (matched) {
+          startKeys.push(canonicalizeJson(matched)); // linker column can contain fewer domains than in block's columns, it's fixed on next step in enrichCompatible
+        }
+      }
+
+      const availableKeys = linkerMap.searchAvailableAxesKeys(startKeys);
+      const availableAxes = linkerMap.getAxesListFromKeysList([...availableKeys]);
+
+      const availableWithLinkersAxes = this.getUniversalEntries(
+        (spec) => !isLinkerColumn(spec) && spec.axesSpec.some((columnAxisSpec) => availableAxes.some(
+          (axis) => matchAxisId(axis, getAxisId(columnAxisSpec) || matchAxisId(getAxisId(columnAxisSpec), axis)))),
+        { anchorCtx, labelOps, dontWaitAllData, overrideLabelAnnotation, exclude },
+      );
+      if (availableWithLinkersAxes) {
+        result.push(...availableWithLinkersAxes.filter((entry) => !ids.has(entry.id)));
+      }
     }
 
     return result;
