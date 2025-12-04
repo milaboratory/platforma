@@ -191,6 +191,11 @@ export class MiddleLayer {
     return prj;
   }
 
+  /** Returns true if project with given resource id is currently opened. */
+  public isProjectOpened(rid: ResourceId): boolean {
+    return this.openedProjectsByRid.has(rid);
+  }
+
   /**
    * Deallocates all runtime resources consumed by this object and awaits
    * actual termination of event loops and other processes associated with
