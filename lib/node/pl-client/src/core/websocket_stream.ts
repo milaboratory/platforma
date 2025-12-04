@@ -138,7 +138,7 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
   }
 
   private createWebSocket(): WebSocket {
-    const options: WebSocketInit = {};
+    const options: WebSocketInit = { ...this.options };
 
     if (this.options.jwtToken) options.headers = { authorization: `Bearer ${this.options.jwtToken}` };
     if (this.options.dispatcher) options.dispatcher = this.options.dispatcher;

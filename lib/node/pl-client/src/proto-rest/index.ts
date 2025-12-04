@@ -9,6 +9,7 @@ import { default as createOpenApiClient, type Middleware, type Client } from 'op
 import { Dispatcher, fetch as undiciFetch } from 'undici';
 import { rethrowMeaningfulError } from '../core/errors';
 import { Code } from '../proto-grpc/google/rpc/code';
+import { inspect } from 'node:util';
 
 export { PlApiPaths };
 export type PlRestClientType = Client<PlApiPaths>;
@@ -25,10 +26,21 @@ export function createClient<Paths extends {}>(opts: RestClientConfig): Client<P
   const client = createOpenApiClient<Paths>({
     baseUrl: `${scheme}${opts.hostAndPort}`,
     fetch: (input: Request): Promise<Response> => {
-      return undiciFetch(input.url, {
-        ...input,
+      const init: RequestInit = {
+        headers: input.headers,
         dispatcher: opts.dispatcher,
-      });
+        signal: input.signal,
+        body: input.body,
+        method: input.method,
+        mode: input.mode,
+        credentials: input.credentials,
+        cache: input.cache,
+        redirect: input.redirect,
+        referrer: input.referrer,
+        referrerPolicy: input.referrerPolicy,
+        duplex: input.duplex,
+      }
+      return undiciFetch(input.url, init);
     },
   });
   client.use(errorHandlerMiddleware(), ...opts.middlewares);
