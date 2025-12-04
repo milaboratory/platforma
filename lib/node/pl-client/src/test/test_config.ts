@@ -54,6 +54,16 @@ export function getTestConfig(): TestConfig {
   return conf as TestConfig;
 }
 
+/** Default request timeout for tests (ms) */
+export const TEST_REQUEST_TIMEOUT = 500;
+
+/** Returns PlClientConfig with reduced timeout for tests */
+export function plAddressToTestConfig(address: string): PlClientConfig {
+  const plConf = plAddressToConfig(address);
+  plConf.defaultRequestTimeout = TEST_REQUEST_TIMEOUT;
+  return plConf;
+}
+
 interface AuthCache {
   /** To check if config changed */
   conf: TestConfig;
@@ -109,10 +119,7 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
     }
   }
 
-  const plConf = plAddressToConfig(tConf.address);
-  // Use shorter timeout for tests to fail fast
-  plConf.defaultRequestTimeout = 500;
-
+  const plConf = plAddressToTestConfig(tConf.address);
   const uClient = await UnauthenticatedPlClient.build(plConf);
 
   const requireAuth = await uClient.requireAuth();
