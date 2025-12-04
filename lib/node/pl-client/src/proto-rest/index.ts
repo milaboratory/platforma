@@ -9,7 +9,6 @@ import { default as createOpenApiClient, type Middleware, type Client } from 'op
 import { Dispatcher, fetch as undiciFetch } from 'undici';
 import { rethrowMeaningfulError } from '../core/errors';
 import { Code } from '../proto-grpc/google/rpc/code';
-import { inspect } from 'node:util';
 
 export { PlApiPaths };
 export type PlRestClientType = Client<PlApiPaths>;

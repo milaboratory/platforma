@@ -69,7 +69,9 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
       try {
         await this.onComplete(this); // custom onComplete may send additional messages
       } catch (_: unknown) {
-        // Ignore errors, we are closing the stream anyway.
+        // When 'complete' gets called concurrently with connection break or over a broken
+        // transaction stream (server decided it should drop transaction), server would close
+        // connection anyway on its end. We can safely ignore error here and just continue working.
       }
       this.sendCompleted = true;
     },
@@ -138,7 +140,7 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
   }
 
   private createWebSocket(): WebSocket {
-    const options: WebSocketInit = { ...this.options };
+    const options: WebSocketInit = {};
 
     if (this.options.jwtToken) options.headers = { authorization: `Bearer ${this.options.jwtToken}` };
     if (this.options.dispatcher) options.dispatcher = this.options.dispatcher;

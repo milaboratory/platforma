@@ -756,7 +756,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
 
 	} else {
-		ll.panic("unsupported p-column data type", data.info().Type)
+		ll.panic("unsupported p-column data type: %v", data.info().Type)
 	}
 }
 
