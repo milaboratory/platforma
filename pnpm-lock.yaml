@@ -3122,6 +3122,9 @@ importers:
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.0.37
+      '@platforma-sdk/blocks-deps-updater':
+        specifier: workspace:*
+        version: link:../blocks-deps-updater
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0

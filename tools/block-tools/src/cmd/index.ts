@@ -9,6 +9,7 @@ import Cmd6 from './publish';
 import Cmd7 from './refresh-registry';
 import Cmd8 from './restore-overview-from-snapshot';
 import Cmd9 from './upload-package-v1';
+import Cmd10 from './update-deps';
 
 // prettier-ignore
 export const COMMANDS = {
@@ -21,4 +22,5 @@ export const COMMANDS = {
   'refresh-registry': Cmd7,
   'restore-overview-from-snapshot': Cmd8,
   'upload-package-v1': Cmd9,
+  'update-deps': Cmd10,
 };
