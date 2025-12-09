@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.6.26
+
+### Patch Changes
+
+- 2263e2b: add update deps cmd to block-tools
+
 ## 2.6.25
 
 ### Patch Changes
