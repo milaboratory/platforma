@@ -1,4 +1,4 @@
-import { WebSocket, type WebSocketInit, type Dispatcher } from 'undici';
+import { WebSocket, type WebSocketInit, type Dispatcher, ErrorEvent } from 'undici';
 import type { BiDiStream } from './abstract_stream';
 import Denque from 'denque';
 import type { RetryConfig } from '../helpers/retry_strategy';
@@ -379,7 +379,9 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
   }
 
   private toError(error: unknown): Error {
-    return error instanceof Error ? error : new Error(String(error));
+    if (error instanceof Error) return error;
+    if (error instanceof ErrorEvent) return error.error;
+    return new Error(String(error));
   }
 
   /**
