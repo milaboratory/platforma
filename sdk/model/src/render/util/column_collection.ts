@@ -183,7 +183,7 @@ type UniversalPColumnOptsNoDeriver = {
    * Default value in getUniversalEntries is false, in getColumns it is true.
    */
   overrideLabelAnnotation?: boolean;
-  /** If true, resulting columns will be enriched by other columns considering linker columns. Default is true. */
+  /** If true, resulting columns will be enriched by other columns considering linker columns. Default is false. */
   enrichByLinkers?: boolean;
 };
 
