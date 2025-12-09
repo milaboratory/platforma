@@ -1,0 +1,32 @@
+# This docker-compose is designed to allow easy proxy support testing in pl-client.
+version: '3.8'
+
+services:
+  platforma:
+    image: quay.io/milaboratories/platforma:latest
+    # image: europe-west3-docker.pkg.dev/mik8s-euwe3-prod-gke-project/pl/pl:1.44.1-135-main
+    # command: 
+    #   - --no-auth
+    container_name: platforma
+    # No ports exposed to host - only reachable via proxy
+    networks:
+      - proxy-network
+    volumes:
+      - ~/.pl.license:/etc/pl.license:ro
+   
+  proxy:
+    image: ubuntu/squid:latest
+    container_name: http-proxy
+    ports:
+      - "8080:3128"  # Host port 8080 -> container port 3128 (Squid default)
+    networks:
+      - proxy-network
+    volumes:
+      - ./squid.conf:/etc/squid/squid.conf:ro
+    depends_on:
+      - platforma
+
+networks:
+  proxy-network:
+    driver: bridge
+
