@@ -139,6 +139,14 @@ const isLoadingOptions = computed(() => {
   return props.options === undefined;
 });
 
+/**
+ * Loading spinner should not be shown when the dropdown is explicitly disabled,
+ * even if options are undefined. The disabled state takes precedence.
+ */
+const showLoadingSpinner = computed(() => {
+  return !props.disabled && isLoadingOptions.value;
+});
+
 const isDisabled = computed(() => {
   if (isLoadingOptions.value) {
     return true;
@@ -349,7 +357,7 @@ watchPostEffect(() => {
           </div>
 
           <div class="pl-dropdown__controls">
-            <PlIcon24 v-if="isLoadingOptions" name="loading" />
+            <PlIcon24 v-if="showLoadingSpinner" name="loading" />
             <PlIcon16 v-if="clearable && hasValue" class="clear" name="delete-clear" @click.stop="clear" />
             <slot name="append" />
             <div class="pl-dropdown__arrow-wrapper" @click.stop="toggleOpen">
@@ -381,7 +389,7 @@ watchPostEffect(() => {
       </div>
     </div>
     <div v-if="computedError" class="pl-dropdown__error">{{ computedError }}</div>
-    <div v-else-if="isLoadingOptions && loadingOptionsHelper" class="pl-dropdown__helper">{{ loadingOptionsHelper }}</div>
+    <div v-else-if="showLoadingSpinner && loadingOptionsHelper" class="pl-dropdown__helper">{{ loadingOptionsHelper }}</div>
     <div v-else-if="helper" class="pl-dropdown__helper">{{ helper }}</div>
   </div>
 </template>
