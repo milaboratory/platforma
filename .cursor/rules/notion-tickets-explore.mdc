@@ -1,0 +1,93 @@
+---
+description: Reference for reading Notion ticket data
+alwaysApply: false
+---
+# Notion Tickets - Read-Only Reference
+
+Authoritative facts about the MiLaboratories Notion ticket databases, teams, and metadata. Use this when you need to interpret existing tickets without modifying them.
+
+## Ticket Templates
+
+- **Bug Report / User Problem Report** template: `https://www.notion.so/2a83a83ff4af80b2927eee21e49ce62c`
+- **Task** template: `https://www.notion.so/2a83a83ff4af806e827bee35de34f6f1`
+- **Tech Improvement** template: `https://www.notion.so/2a83a83ff4af808eada5c964ac707598`
+- **User Request** template: `https://www.notion.so/2a83a83ff4af8079b7e5e35affe18b6a`
+- Naming patterns: `[component] Brief description`, `[user-problem] Brief description`, `[user-request] Feature title`
+
+## Team Taxonomy
+
+- **Backend** — infrastructure, servers, batch jobs, CLI, platform
+- **Desktop** — desktop client, UI/UX, SDK, Graph Maker, frontend widgets
+- **BioInfo** — bioinformatics blocks, pipelines, scientific tooling
+
+Team relation targets:
+
+- Backend board URL: `https://www.notion.so/1e03a83ff4af805f9d11f0c41d97ed96`
+- Desktop board URL: `https://www.notion.so/1e03a83ff4af80e5af66d17e330e37bf`
+- BioInfo board URL: `https://www.notion.so/1643a83ff4af800fa5d4c889fca34205`
+- Teams database: `https://www.notion.so/17a3a83ff4af80b19b7ed2ebc53bfcb4`
+
+## Core Databases
+
+- **Tasks**: `https://www.notion.so/1233a83ff4af81629261d08fec0ea0ff`
+  - Data source URL: `collection://1233a83f-f4af-814a-82dc-000b6e6d48db`
+- **Sprints**: `https://www.notion.so/1233a83ff4af8083aecee2c240023e40`
+- **Projects**: `https://www.notion.so/1233a83ff4af81b9982efce06d35ea0e`
+
+## Finding Tickets by ID
+
+Ticket IDs (e.g., `MILAB-5070`) are stored in the `userDefined:ID` property, NOT in page content. Notion semantic search doesn't search property values directly.
+
+**To find a ticket by ID, search for just the numeric part within the Tasks data source:**
+
+```
+notion-search:
+  query: "5070"
+  data_source_url: "collection://1233a83f-f4af-814a-82dc-000b6e6d48db"
+```
+
+This works because Sprint names include the ticket ID (e.g., "Desktop 2025-12-08 ID: 5070"), which appears in search results.
+
+**Do NOT** search for "MILAB-5070" — the prefix breaks the search. Use only the number.
+
+## Property Schema
+
+| Property  | Type                 | Notes                                                                 |
+|-----------|----------------------|-----------------------------------------------------------------------|
+| Title     | Text                 | `[component] Brief description` (or `[user-problem]`, `[user-request]`) |
+| Team      | Relation (single)    | URL to team entry                                                     |
+| Priority  | Select               | Critical / High / Medium / Low                                        |
+| Category  | Select               | Bug / Task / Tech / Support (template-controlled)                     |
+| Status    | Status               | Not started → Done workflow                                           |
+| Sprint    | Relation (single)    | Link to sprint entry (critical tickets only)                          |
+| User      | Relation (multi)     | Required for user problems/requests                                   |
+| Project   | Relation (multi)     | Optional linkage to project docs                                      |
+| Assignee  | People (multi)       | Notion user IDs                                                       |
+| Blocked By / Is Blocking | Relation (multi) | Dependency tracking                                        |
+| Estimates | Select               | Fibonacci-style values (0.1–8)                                        |
+
+### Property Encoding Conventions
+
+- Single-value properties stored as plain strings.
+- Single relations store the canonical Notion page URL as the value.
+- Multi-value relations and arrays are JSON-encoded strings, e.g. `"[\"https://www.notion.so/user\"]"`.
+
+## Linking Practices
+
+- Specs reference GitHub markdown using `https://github.com/milaboratory/text/blob/main/...`.
+- Ticket descriptions often start with a table row: `| Links: | [Project Description](...) | [Ticket Description](...) |`.
+- Specification files in the repo include a reciprocal line: `**Notion Ticket:** [ticket-name](notion-ticket-url)`.
+
+## Figma Design References
+
+- Tickets may embed Figma designs (shown as `external_object_instance` in Notion markdown).
+- If Figma Desktop is open with the relevant file, use Figma MCP tools:
+  - `get_metadata` — structure and node hierarchy
+  - `get_screenshot` — visual preview of components
+  - `get_variable_defs` — design tokens (colors, typography)
+
+## Sprint Metadata
+
+- Sprint naming format: `[Team] YYYY-MM-DD` (start date).
+- Sprint states: Current, Next, Future, Last, Past.
+- For critical tickets, the Sprint relation targets the entry marked **Current** in the Sprints database.
