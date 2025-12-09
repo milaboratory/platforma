@@ -3,15 +3,24 @@ import { createLogger } from './util';
 import {
   testLocalLib1Name,
   testLocalLib1Src,
+  testLocalLib1SrcNormalized,
   testLocalLib2Name,
   testLocalLib2Src,
-  testLocalLib1SrcNormalized,
+  testLocalLib2SrcNormalized,
   testLocalTpl3Src,
-  testLocalTpl3Name
+  testLocalTpl3Name,
 } from './test.artifacts';
 import { parseSingleSourceLine } from './source';
+import { FullArtifactName } from './package';
 import { expect, describe, test } from 'vitest';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
+
+const stubTplName: FullArtifactName = {
+  type: 'template',
+  pkg: 'stub-pkg',
+  id: 'stub-name',
+  version: '1.2.3',
+};
 
 test('test lib 1 parsing', () => {
   const logger = createLogger('error');
@@ -34,6 +43,7 @@ test('test lib 2 parsing', () => {
   const logger = createLogger('error');
 
   const libSrc = parseSource(logger, 'dist', testLocalLib2Src, testLocalLib2Name, true);
+  expect(libSrc.src).toEqual(testLocalLib2SrcNormalized);
   expect(libSrc.dependencies).toEqual([
     { type: 'library', pkg: 'package1', id: 'someid' },
     { type: 'library', pkg: '@platforma-sdk/workflow-tengo', id: 'assets' },
@@ -51,6 +61,54 @@ test('test tpl 3 parsing', () => {
   expect(tplSrc.compilerOptions[0].name).toEqual('hash_override');
 });
 
+describe('import statements', () => {
+  test('dot multiline works', () => {
+    const logger = createLogger('error');
+
+    const multilineImport = `
+      importer := import("@platforma-sdk/workflow-tengo:assets")
+      importer.
+        importSoftware("my:software") // works well
+    `
+
+    const parsed = parseSource(logger, 'dist', multilineImport, stubTplName, true);
+
+    let softwareFound = false
+    for (const dep of parsed.dependencies) {
+      softwareFound = softwareFound || `${dep.type}:${dep.pkg}:${dep.id}` == 'software:my:software';
+    }
+
+    expect(softwareFound).toBe(true);
+  })
+
+  test('bracket multiline is forbidden', () => {
+    // This is
+    const logger = createLogger('info');
+
+    const multilineImport = `
+      importer := import("@platforma-sdk/workflow-tengo:assets")
+      importer.
+        importSoftware(
+          "my:software"
+        ) // does not work for now
+    `
+
+    expect(() => parseSource(logger, 'dist', multilineImport, stubTplName, true)).toThrow('in the same line with brackets');
+  })
+
+  test('variable import is not allowed', () => {
+    const logger = createLogger('info');
+
+    const importByVariable = `
+      importer := import("@platforma-sdk/workflow-tengo:assets")
+      softwareID := "my:software"
+      importer.importSoftware(softwareID) // breaks because of variable reference. We require literals.
+    `
+
+    expect(() => parseSource(logger, 'dist', importByVariable, stubTplName, true)).toThrow('variables are not allowed');
+  })
+})
+
 describe('parseSingleSourceLine', () => {
   test.each([
     {
@@ -60,7 +118,9 @@ describe('parseSingleSourceLine', () => {
         isInCommentBlock: false,
         canDetectOptions: true,
         lineNo: 1,
-        tplDepREs: new Map()
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
       },
       localPackageName: 'test-package',
       expected: {
@@ -71,7 +131,9 @@ describe('parseSingleSourceLine', () => {
           isInCommentBlock: false,
           canDetectOptions: true,
           lineNo: 1,
-          tplDepREs: new Map()
+          artifactImportREs: new Map(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
         }
       }
     },
@@ -82,7 +144,9 @@ describe('parseSingleSourceLine', () => {
         isInCommentBlock: false,
         canDetectOptions: true,
         lineNo: 1,
-        tplDepREs: new Map()
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
       },
       localPackageName: 'test-package',
       expected: {
@@ -93,7 +157,9 @@ describe('parseSingleSourceLine', () => {
           isInCommentBlock: false,
           canDetectOptions: true,
           lineNo: 1,
-          tplDepREs: new Map()
+          artifactImportREs: new Map(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
         }
       }
     },
@@ -104,7 +170,9 @@ describe('parseSingleSourceLine', () => {
         isInCommentBlock: false,
         canDetectOptions: true,
         lineNo: 1,
-        tplDepREs: new Map()
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
       },
       localPackageName: 'test-package',
       expected: {
@@ -115,7 +183,9 @@ describe('parseSingleSourceLine', () => {
           isInCommentBlock: true,
           canDetectOptions: true,
           lineNo: 1,
-          tplDepREs: new Map()
+          artifactImportREs: new Map(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
         }
       }
     },
@@ -126,7 +196,9 @@ describe('parseSingleSourceLine', () => {
         isInCommentBlock: true,
         canDetectOptions: true,
         lineNo: 1,
-        tplDepREs: new Map()
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
       },
       localPackageName: 'test-package',
       expected: {
@@ -137,7 +209,9 @@ describe('parseSingleSourceLine', () => {
           isInCommentBlock: true,
           canDetectOptions: true,
           lineNo: 1,
-          tplDepREs: new Map()
+          artifactImportREs: new Map(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
         }
       }
     },
@@ -148,7 +222,9 @@ describe('parseSingleSourceLine', () => {
         isInCommentBlock: true,
         canDetectOptions: true,
         lineNo: 1,
-        tplDepREs: new Map()
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
       },
       localPackageName: 'test-package',
       expected: {
@@ -159,7 +235,35 @@ describe('parseSingleSourceLine', () => {
           isInCommentBlock: false,
           canDetectOptions: true,
           lineNo: 1,
-          tplDepREs: new Map()
+          artifactImportREs: new Map(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
+        }
+      }
+    },
+    {
+      name: 'comment-like lines are safe',
+      line: 'cmd.saveFile("results/*")',
+      context: {
+        isInCommentBlock: false,
+        canDetectOptions: false,
+        lineNo: 100,
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
+      },
+      localPackageName: 'test-package',
+      expected: {
+        line: 'cmd.saveFile("results/*")',
+        artifact: undefined,
+        option: undefined,
+        context: {
+          isInCommentBlock: false,
+          canDetectOptions: false,
+          lineNo: 100,
+          artifactImportREs: new Map(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
         }
       }
     },
@@ -170,7 +274,9 @@ describe('parseSingleSourceLine', () => {
         isInCommentBlock: false,
         canDetectOptions: true,
         lineNo: 1,
-        tplDepREs: new Map()
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
       },
       localPackageName: 'test-package',
       expected: {
@@ -181,7 +287,9 @@ describe('parseSingleSourceLine', () => {
           isInCommentBlock: false,
           canDetectOptions: true,
           lineNo: 1,
-          tplDepREs: new Map()
+          artifactImportREs: new Map(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
         }
       }
     },
@@ -192,7 +300,9 @@ describe('parseSingleSourceLine', () => {
         isInCommentBlock: false,
         canDetectOptions: true,
         lineNo: 1,
-        tplDepREs: new Map()
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
       },
       localPackageName: 'test-package',
       expected: {
@@ -203,7 +313,9 @@ describe('parseSingleSourceLine', () => {
           isInCommentBlock: false,
           canDetectOptions: false,
           lineNo: 1,
-          tplDepREs: new Map()
+          artifactImportREs: new Map(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
         }
       }
     },
@@ -214,7 +326,9 @@ describe('parseSingleSourceLine', () => {
         isInCommentBlock: false,
         canDetectOptions: true,
         lineNo: 1,
-        tplDepREs: new Map()
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
       },
       localPackageName: 'test-package',
       expected: {
@@ -225,7 +339,9 @@ describe('parseSingleSourceLine', () => {
           isInCommentBlock: false,
           canDetectOptions: true,
           lineNo: 1,
-          tplDepREs: new Map()
+          artifactImportREs: new Map(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
         },
         warning: true
       }
@@ -237,7 +353,9 @@ describe('parseSingleSourceLine', () => {
         isInCommentBlock: false,
         canDetectOptions: true,
         lineNo: 1,
-        tplDepREs: new Map()
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
       },
       localPackageName: 'test-package',
       expected: {
@@ -248,7 +366,9 @@ describe('parseSingleSourceLine', () => {
           isInCommentBlock: false,
           canDetectOptions: false,
           lineNo: 1,
-          tplDepREs: new Map()
+          artifactImportREs: new Map(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
         }
       }
     },
@@ -259,7 +379,9 @@ describe('parseSingleSourceLine', () => {
         isInCommentBlock: false,
         canDetectOptions: true,
         lineNo: 1,
-        tplDepREs: new Map()
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
       },
       localPackageName: 'test-package',
       expected: {
@@ -270,7 +392,9 @@ describe('parseSingleSourceLine', () => {
           isInCommentBlock: false,
           canDetectOptions: false,
           lineNo: 1,
-          tplDepREs: new Map()
+          artifactImportREs: new Map(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
         }
       }
     },
@@ -281,7 +405,9 @@ describe('parseSingleSourceLine', () => {
         isInCommentBlock: false,
         canDetectOptions: true,
         lineNo: 1,
-        tplDepREs: new Map()
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
       },
       localPackageName: 'test-package',
       globalizeImports: true,
@@ -293,7 +419,9 @@ describe('parseSingleSourceLine', () => {
           isInCommentBlock: false,
           canDetectOptions: false,
           lineNo: 1,
-          tplDepREs: new Map()
+          artifactImportREs: new Map(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
         }
       }
     },
@@ -304,7 +432,9 @@ describe('parseSingleSourceLine', () => {
         isInCommentBlock: false,
         canDetectOptions: true,
         lineNo: 1,
-        tplDepREs: new Map()
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
       },
       localPackageName: 'test-package',
       expected: {
@@ -315,12 +445,14 @@ describe('parseSingleSourceLine', () => {
           isInCommentBlock: false,
           canDetectOptions: false,
           lineNo: 1,
-          tplDepREs: (() => {
+          artifactImportREs: (() => {
             const r = new Map();
             r.set('template', newGetTemplateIdRE('plapi'));
             r.set('software', newGetSoftwareInfoRE('plapi'));
             return r;
           })(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
         }
       }
     },
@@ -331,7 +463,9 @@ describe('parseSingleSourceLine', () => {
         isInCommentBlock: false,
         canDetectOptions: true,
         lineNo: 1,
-        tplDepREs: new Map()
+        artifactImportREs: new Map(),
+        importLikeREs: new Map(),
+        multilineStatement: '',
       },
       localPackageName: 'test-package',
       expected: {
@@ -346,12 +480,14 @@ describe('parseSingleSourceLine', () => {
           isInCommentBlock: false,
           canDetectOptions: false,
           lineNo: 1,
-          tplDepREs: (() => {
+          artifactImportREs: (() => {
             const r = new Map();
             r.set('template', newGetTemplateIdRE('ll'));
             r.set('software', newGetSoftwareInfoRE('ll'));
             return r;
-          })()
+          })(),
+          importLikeREs: new Map(),
+          multilineStatement: '',
         }
       }
     }
