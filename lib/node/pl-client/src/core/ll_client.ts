@@ -163,7 +163,7 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   private initRestConnection(): void {
-    const dispatcher = defaultHttpDispatcher(this.conf.httpProxy, this._restInterceptors);
+    const dispatcher = defaultHttpDispatcher(this.conf.grpcProxy, this._restInterceptors);
     this._replaceWireConnection({ type: 'rest', Config: this.conf, Dispatcher: dispatcher, Middlewares: this._restMiddlewares });
   }
 
@@ -491,7 +491,8 @@ export class LLPlClient implements WireClientProviderFactory {
         });
       }
 
-      if (this._wireProto === 'rest') {
+      const wireConn = this.wireConnection;
+      if (wireConn.type === 'rest') {
         // For REST/WebSocket protocol, timeout needs to be converted to AbortSignal
         if (timeout !== undefined) {
           totalAbortSignal = AbortSignal.any([totalAbortSignal, AbortSignal.timeout(timeout)]);
@@ -510,6 +511,7 @@ export class LLPlClient implements WireClientProviderFactory {
           {
             abortSignal: totalAbortSignal,
             jwtToken: this.authInformation?.jwtToken,
+            dispatcher: wireConn.Dispatcher,
 
             onComplete: async (stream) => stream.requests.send({
               // Ask server to gracefully close the stream on its side, if not done yet.
