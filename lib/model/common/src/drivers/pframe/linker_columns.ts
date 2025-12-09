@@ -242,7 +242,7 @@ export class LinkerMap implements LinkersData {
     sourceAxes: AxisSpec[],
     matchAxisIdFn?: (axisIdOfLinker: AxisId, axisIdOfSource: AxisId) => boolean,
   ): AxisSpecNormalized[] {
-    return this.getReachableByLinkersAxesFromAxes(getNormalizedAxesList(sourceAxes), matchAxisIdFn);
+    return this.getReachableByLinkersAxesFromAxesNormalized(getNormalizedAxesList(sourceAxes), matchAxisIdFn);
   }
 
   static getLinkerKeyFromAxisSpec(axis: AxisSpecNormalized): LinkerKey {
