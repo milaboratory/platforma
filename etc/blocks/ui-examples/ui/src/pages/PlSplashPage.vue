@@ -1,8 +1,18 @@
 <script setup lang="ts">
 import { faker } from '@faker-js/faker';
-import { PlBlockPage, PlBtnPrimary, PlCheckbox, PlContainer, PlRow, PlSplash, PlTextField } from '@platforma-sdk/ui-vue';
+import {
+  PlBlockPage,
+  PlBtnGroup,
+  PlBtnPrimary,
+  PlCheckbox,
+  PlContainer,
+  PlNumberField,
+  PlRow,
+  PlSplash,
+  PlTextField,
+} from '@platforma-sdk/ui-vue';
 import type { Ref } from 'vue';
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 const lorem1 = faker.lorem.paragraph(5);
 const lorem2 = faker.lorem.paragraph(5);
@@ -15,10 +25,21 @@ const form = reactive({
 });
 
 const isBodyLoading = ref(false);
+const isDefaultLoadingText = ref(true);
+
+const loadingPlaceholderOptions = [
+  { label: 'Table', value: 'table' },
+  { label: 'Graph', value: 'graph' },
+] as const;
+const bodyLoadingPlaceholderVariant = ref<
+  typeof loadingPlaceholderOptions[number]['value']
+>('table');
 
 const isFormLoading = ref(false);
 
 const isParagraphLoading = ref(false);
+
+const loadingDuration = ref(3);
 
 const useFakeLoading = (isLoading: Ref<boolean>) => {
   return () => {
@@ -29,20 +50,45 @@ const useFakeLoading = (isLoading: Ref<boolean>) => {
     isLoading.value = true;
     setTimeout(() => {
       isLoading.value = false;
-    }, 3000);
+    }, loadingDuration.value * 1000);
   };
 };
 
 const onReloadBody = useFakeLoading(isBodyLoading);
 const onReloadForm = useFakeLoading(isFormLoading);
 const onReloadParagraph = useFakeLoading(isParagraphLoading);
+
+const bodyLoading = computed(() => {
+  if (!isBodyLoading.value) {
+    return;
+  }
+  if (isDefaultLoadingText.value) {
+    return bodyLoadingPlaceholderVariant.value;
+  }
+  return {
+    variant: bodyLoadingPlaceholderVariant.value,
+    title: 'Loading Title',
+    subtitle: Array.from(
+      { length: 3 },
+      (_, i) => `Loading Subtitle ${i}`,
+    ),
+  };
+});
 </script>
 
 <template>
-  <PlBlockPage :body-loading="isBodyLoading" body-loading-text="Page Loading">
+  <PlBlockPage :body-loading>
     <template #title>PlSplash Component</template>
     <template #append>
+      <PlBtnGroup
+        v-model="bodyLoadingPlaceholderVariant"
+        :options="loadingPlaceholderOptions"
+      />
+      <PlNumberField v-model="loadingDuration" label="Loading Duration" />
       <PlBtnPrimary @click="onReloadBody">Reload page body</PlBtnPrimary>
+      <PlCheckbox v-model="isDefaultLoadingText">
+        Default loading text
+      </PlCheckbox>
     </template>
     <PlRow>
       <PlContainer width="50%">
