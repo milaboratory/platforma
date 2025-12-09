@@ -445,7 +445,7 @@ export class PColumnCollection {
         return result;
       };
 
-      const anchorAxes = Object.values(anchorCtx.anchors).flatMap((anchor) => anchor.axesSpec.map(getAxisId));
+      const anchorAxes = Object.values(anchorCtx.anchors).flatMap((anchor) => anchor.axesSpec);
       const linkerMap = LinkerMap.fromColumns(linkers.map(getColumnIdAndSpec));
 
       // loose way of matching
