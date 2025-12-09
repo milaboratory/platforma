@@ -4,7 +4,6 @@ import type {
   AxisFilterByIdx,
   AxisFilterValue,
   AxisId,
-  CanonicalizedJson,
   NativePObjectId,
   PartitionedDataInfoEntries,
   PColumn,
@@ -19,14 +18,10 @@ import type {
 import {
   Annotation,
   canonicalizeAxisId,
-  canonicalizeJson,
   deriveNativeId,
   entriesToDataInfo,
-  getArrayFromAxisTree,
-  getAxesTree,
   getAxisId,
   getColumnIdAndSpec,
-  getNormalizedAxesList,
   isLinkerColumn,
   isPartitionedDataInfoEntries,
   isPColumnSpec,
@@ -242,7 +237,7 @@ export class PColumnCollection {
   public getUniversalEntries(
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
     opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): (PColumnEntryWithLabel | PColumnEntryUniversal)[] | undefined {
-    const { anchorCtx, labelOps: rawLabelOps, dontWaitAllData = false, overrideLabelAnnotation = false, exclude, enrichByLinkers = true } = opts ?? {};
+    const { anchorCtx, labelOps: rawLabelOps, dontWaitAllData = false, overrideLabelAnnotation = false, exclude, enrichByLinkers = false } = opts ?? {};
 
     const labelOps: LabelDerivationOps = {
       ...(overrideLabelAnnotation && rawLabelOps?.includeNativeLabel !== false ? { includeNativeLabel: true } : {}),
@@ -444,34 +439,32 @@ export class PColumnCollection {
 
     const ids = new Set(result.map((entry) => entry.id));
 
-    const linkers = result.filter((entry) => isLinkerColumn(entry.spec));
-    if (enrichByLinkers && anchorCtx && linkers.length) {
+    if (enrichByLinkers && anchorCtx) {
+      const linkers = result.filter((entry) => isLinkerColumn(entry.spec));
+      if (linkers.length === 0) {
+        return result;
+      };
+
       const anchorAxes = Object.values(anchorCtx.anchors).flatMap((anchor) => anchor.axesSpec.map(getAxisId));
       const linkerMap = LinkerMap.fromColumns(linkers.map(getColumnIdAndSpec));
 
-      const startKeys: CanonicalizedJson<AxisId[]>[] = [];
-      const blockAxesGrouped: AxisId[][] = getNormalizedAxesList(anchorAxes).map((axis) => getArrayFromAxisTree(getAxesTree(axis)).map(getAxisId));
-      for (const axesGroupBlock of blockAxesGrouped) {
-        const matched = linkerMap.keyAxesIds.find(
-          (keyIds: AxisId[]) => keyIds.every(
-            (keySourceAxis) => axesGroupBlock.find((axisSpecFromBlock) => matchAxisId(keySourceAxis, axisSpecFromBlock)),
-          ),
-        );
-        if (matched) {
-          startKeys.push(canonicalizeJson(matched)); // linker column can contain fewer domains than in block's columns, it's fixed on next step in enrichCompatible
-        }
+      // loose way of matching
+      function matchAxisIdFn(linkerKeyId: AxisId, sourceAxisId: AxisId): boolean {
+        return matchAxisId(linkerKeyId, sourceAxisId) || matchAxisId(sourceAxisId, linkerKeyId);
       }
+      // search all axes that can be reached by linkers from anchor axes; anchor axes are not in this list;
+      const availableByLinkersAxes = linkerMap.getReachableByLinkersAxesFromAxes(anchorAxes, matchAxisIdFn);
 
-      const availableKeys = linkerMap.searchAvailableAxesKeys(startKeys);
-      const availableAxes = linkerMap.getAxesListFromKeysList([...availableKeys]);
-
-      const availableWithLinkersAxes = this.getUniversalEntries(
-        (spec) => !isLinkerColumn(spec) && spec.axesSpec.some((columnAxisSpec) => availableAxes.some(
-          (axis) => matchAxisId(axis, getAxisId(columnAxisSpec) || matchAxisId(getAxisId(columnAxisSpec), axis)))),
+      // search all columns that includes at least one of additional axes;
+      const availableByLinkersColumns = this.getUniversalEntries(
+        (spec) => !isLinkerColumn(spec) && spec.axesSpec.some((columnAxisSpec) => {
+          const columnAxisId = getAxisId(columnAxisSpec);
+          return availableByLinkersAxes.some((axis) => matchAxisIdFn(getAxisId(axis), columnAxisId));
+        }),
         { anchorCtx, labelOps, dontWaitAllData, overrideLabelAnnotation, exclude },
       );
-      if (availableWithLinkersAxes) {
-        result.push(...availableWithLinkersAxes.filter((entry) => !ids.has(entry.id)));
+      if (availableByLinkersColumns) {
+        result.push(...availableByLinkersColumns.filter((entry) => !ids.has(entry.id)));
       }
     }
 
