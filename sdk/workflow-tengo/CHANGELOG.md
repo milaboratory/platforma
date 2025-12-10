@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.6.6
+
+### Patch Changes
+
+- ef2ff97: avoid save empty workdirs
+
 ## 5.6.5
 
 ### Patch Changes
