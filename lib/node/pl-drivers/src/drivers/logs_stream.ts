@@ -11,6 +11,7 @@ import type {
   ResourceId,
   ResourceType } from '@milaboratories/pl-client';
 import {
+  isNotFoundError,
   resourceIdToString,
   stringifyWithResourceId,
 } from '@milaboratories/pl-client';
@@ -240,7 +241,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
         newOffset: Number(resp.newOffset),
       };
     } catch (e: any) {
-      if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
+      if (isNotFoundError(e)) {
         return { shouldUpdateHandle: true };
       }
 
@@ -365,8 +366,7 @@ class LogGetter {
 
       return;
     } catch (e: any) {
-      e as RpcError;
-      if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
+      if (isNotFoundError(e)) {
         // No resource
         this.logs = '';
         this.error = e;

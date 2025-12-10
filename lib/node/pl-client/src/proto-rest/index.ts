@@ -7,7 +7,7 @@
 import type { paths as PlApiPaths } from './plapi';
 import { default as createOpenApiClient, type Middleware, type Client } from 'openapi-fetch';
 import { Dispatcher, fetch as undiciFetch } from 'undici';
-import { rethrowMeaningfulError } from '../core/errors';
+import { RESTError, rethrowMeaningfulError } from '../core/errors';
 import { Code } from '../proto-grpc/google/rpc/code';
 
 export { PlApiPaths };
@@ -92,7 +92,7 @@ function errorHandlerMiddleware(): Middleware {
         throw new Error(respErr.error);
       }
 
-      rethrowMeaningfulError(respErr.error);
+      rethrowMeaningfulError(new RESTError(respErr.error));
     },
   };
 }

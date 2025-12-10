@@ -8,7 +8,7 @@ import {
   Computable,
 } from '@milaboratories/computable';
 import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
-import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
+import { isNotFoundError, resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
 import type {
   AnyLogHandle,
   BlobDriver,
@@ -702,7 +702,7 @@ class LastLinesGetter {
       if (this.log != newLogs) this.change.markChanged(`logs for ${this.path} updated`);
       this.log = newLogs;
     } catch (e: any) {
-      if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
+      if (isNotFoundError(e)) {
         // No resource
         this.log = '';
         this.error = e;

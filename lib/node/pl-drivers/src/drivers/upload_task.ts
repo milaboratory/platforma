@@ -1,6 +1,6 @@
 import type { Watcher } from '@milaboratories/computable';
 import { ChangeSource } from '@milaboratories/computable';
-import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
+import { isTimeoutError, resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
 import type * as sdk from '@milaboratories/pl-model-common';
 import type { AsyncPoolController, MiLogger, Signer } from '@milaboratories/ts-helpers';
 import { asyncPool, CallersCounter } from '@milaboratories/ts-helpers';
@@ -125,7 +125,7 @@ export class UploadTask {
     } catch (e: any) {
       this.setRetriableError(e);
 
-      if ((e.name == 'RpcError' && e.code == 'DEADLINE_EXCEEDED') || e?.message?.includes('DEADLINE_EXCEEDED')) {
+      if (isTimeoutError(e)) {
         this.logger.warn(`deadline exceeded while getting a status of BlobImport: ${e.message}`);
         return;
       }

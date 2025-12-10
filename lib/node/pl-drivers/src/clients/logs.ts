@@ -66,7 +66,7 @@ export class ClientLogs {
     })).data!;
 
     return {
-      data: new Uint8Array(Buffer.from(resp.data)),
+      data: Buffer.from(resp.data, 'base64'),
       size: BigInt(resp.size),
       newOffset: BigInt(resp.newOffset),
     };
@@ -109,7 +109,7 @@ export class ClientLogs {
     })).data!;
 
     return {
-      data: new Uint8Array(Buffer.from(resp.data)),
+      data: Buffer.from(resp.data, 'base64'),
       size: BigInt(resp.size),
       newOffset: BigInt(resp.newOffset),
     };
