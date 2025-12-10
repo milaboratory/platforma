@@ -10,8 +10,6 @@ import type {
 import {
   Annotation,
   canonicalizeJson,
-  getArrayFromAxisTree,
-  getAxesTree,
   getAxisId,
   getColumnIdAndSpec,
   getNormalizedAxesList,
@@ -71,22 +69,10 @@ export function getAvailableWithLinkersAxes(
   blockAxes: AxesVault,
 ): AxesVault {
   const linkerMap = LinkerMap.fromColumns(linkerColumns.map(getColumnIdAndSpec));
-  const startKeys: CanonicalizedJson<AxisId[]>[] = [];
-  const blockAxesGrouped: AxisId[][] = [...blockAxes.values()].map((axis) => getArrayFromAxisTree(getAxesTree(axis)).map(getAxisId));
-
-  for (const axesGroupBlock of blockAxesGrouped) {
-    const matched = linkerMap.keyAxesIds.find(
-      (keyIds: AxisId[]) => keyIds.every(
-        (keySourceAxis) => axesGroupBlock.find((axisSpecFromBlock) => matchAxisId(axisSpecFromBlock, keySourceAxis)),
-      ),
-    );
-    if (matched) {
-      startKeys.push(canonicalizeJson(matched)); // linker column can contain fewer domains than in block's columns, it's fixed on next step in enrichCompatible
-    }
-  }
-
-  const availableKeys = linkerMap.searchAvailableAxesKeys(startKeys);
-  const availableAxes = linkerMap.getAxesListFromKeysList([...availableKeys]);
+  const availableAxes = linkerMap.getReachableByLinkersAxesFromAxesNormalized(
+    [...blockAxes.values()],
+    (linkerKeyId, sourceAxisId) => matchAxisId(sourceAxisId, linkerKeyId),
+  );
 
   return new Map(availableAxes.map((axisSpec) => {
     const id = getAxisId(axisSpec);
