@@ -1,4 +1,10 @@
-import { newGetSoftwareInfoRE, newGetTemplateIdRE, parseSource } from './source';
+import { 
+  newGetSoftwareInfoRE,
+  newGetTemplateIdRE,
+  parseSource,
+  sourceParserContext,
+  lineProcessingResult,
+} from './source';
 import { createLogger } from './util';
 import {
   testLocalLib1Name,
@@ -9,6 +15,8 @@ import {
   testLocalLib2SrcNormalized,
   testLocalTpl3Src,
   testLocalTpl3Name,
+  testTrickyCasesSrc,
+  testTrickyCasesNormalized,
 } from './test.artifacts';
 import { parseSingleSourceLine } from './source';
 import { FullArtifactName } from './package';
@@ -107,10 +115,25 @@ describe('import statements', () => {
 
     expect(() => parseSource(logger, 'dist', importByVariable, stubTplName, true)).toThrow('variables are not allowed');
   })
+
+  test('test tricky cases parsing', () => {
+    const logger = createLogger('error');
+
+    const trickyCasesSrc = parseSource(logger, 'dist', testTrickyCasesSrc, stubTplName, true);
+    expect(trickyCasesSrc.src).toEqual(testTrickyCasesNormalized);
+  })
 })
 
 describe('parseSingleSourceLine', () => {
-  test.each([
+  const testCases: {
+    name: string;
+    line: string;
+    context: sourceParserContext;
+    localPackageName: string;
+    globalizeImports?: boolean;
+    expected: lineProcessingResult;
+  }[] = [
+
     {
       name: 'empty line',
       line: '   ',
@@ -125,7 +148,7 @@ describe('parseSingleSourceLine', () => {
       localPackageName: 'test-package',
       expected: {
         line: '   ',
-        artifact: undefined,
+        artifacts: [],
         option: undefined,
         context: {
           isInCommentBlock: false,
@@ -151,7 +174,7 @@ describe('parseSingleSourceLine', () => {
       localPackageName: 'test-package',
       expected: {
         line: '',
-        artifact: undefined,
+        artifacts: [],
         option: undefined,
         context: {
           isInCommentBlock: false,
@@ -177,7 +200,7 @@ describe('parseSingleSourceLine', () => {
       localPackageName: 'test-package',
       expected: {
         line: '',
-        artifact: undefined,
+        artifacts: [],
         option: undefined,
         context: {
           isInCommentBlock: true,
@@ -203,7 +226,7 @@ describe('parseSingleSourceLine', () => {
       localPackageName: 'test-package',
       expected: {
         line: '',
-        artifact: undefined,
+        artifacts: [],
         option: undefined,
         context: {
           isInCommentBlock: true,
@@ -229,7 +252,7 @@ describe('parseSingleSourceLine', () => {
       localPackageName: 'test-package',
       expected: {
         line: '',
-        artifact: undefined,
+        artifacts: [],
         option: undefined,
         context: {
           isInCommentBlock: false,
@@ -255,7 +278,7 @@ describe('parseSingleSourceLine', () => {
       localPackageName: 'test-package',
       expected: {
         line: 'cmd.saveFile("results/*")',
-        artifact: undefined,
+        artifacts: [],
         option: undefined,
         context: {
           isInCommentBlock: false,
@@ -281,7 +304,7 @@ describe('parseSingleSourceLine', () => {
       localPackageName: 'test-package',
       expected: {
         line: '//tengo:nocheck',
-        artifact: undefined,
+        artifacts: [],
         option: { name: 'nocheck', args: [] },
         context: {
           isInCommentBlock: false,
@@ -307,7 +330,7 @@ describe('parseSingleSourceLine', () => {
       localPackageName: 'test-package',
       expected: {
         line: 'const x = 5',
-        artifact: undefined,
+        artifacts: [],
         option: undefined,
         context: {
           isInCommentBlock: false,
@@ -333,7 +356,7 @@ describe('parseSingleSourceLine', () => {
       localPackageName: 'test-package',
       expected: {
         line: '// tengo:nocheck',
-        artifact: undefined,
+        artifacts: [],
         option: undefined,
         context: {
           isInCommentBlock: false,
@@ -343,8 +366,7 @@ describe('parseSingleSourceLine', () => {
           importLikeREs: new Map(),
           multilineStatement: '',
         },
-        warning: true
-      }
+      },
     },
     {
       name: 'regular import',
@@ -360,7 +382,7 @@ describe('parseSingleSourceLine', () => {
       localPackageName: 'test-package',
       expected: {
         line: 'fmt := import("fmt")',
-        artifact: undefined,
+        artifacts: [],
         option: undefined,
         context: {
           isInCommentBlock: false,
@@ -386,7 +408,7 @@ describe('parseSingleSourceLine', () => {
       localPackageName: 'test-package',
       expected: {
         line: 'myLib := import("test-package:myLib")',
-        artifact: { pkg: 'test-package', id: 'myLib', type: 'library' },
+        artifacts: [{ pkg: 'test-package', id: 'myLib', type: 'library' }],
         option: undefined,
         context: {
           isInCommentBlock: false,
@@ -413,7 +435,7 @@ describe('parseSingleSourceLine', () => {
       globalizeImports: true,
       expected: {
         line: 'myLib := import("test-package:myLib")',
-        artifact: { pkg: 'test-package', id: 'myLib', type: 'library' },
+        artifacts: [{ pkg: 'test-package', id: 'myLib', type: 'library' }],
         option: undefined,
         context: {
           isInCommentBlock: false,
@@ -439,7 +461,7 @@ describe('parseSingleSourceLine', () => {
       localPackageName: 'test-package',
       expected: {
         line: 'plapi := import("plapi")',
-        artifact: undefined,
+        artifacts: [],
         option: undefined,
         context: {
           isInCommentBlock: false,
@@ -470,11 +492,11 @@ describe('parseSingleSourceLine', () => {
       localPackageName: 'test-package',
       expected: {
         line: 'll := import("@milaboratory/tengo-sdk:ll")',
-        artifact: {
+        artifacts: [{
           id: 'll',
           pkg: '@milaboratory/tengo-sdk',
           type: 'library',
-        },
+        }],
         option: undefined,
         context: {
           isInCommentBlock: false,
@@ -489,9 +511,10 @@ describe('parseSingleSourceLine', () => {
           importLikeREs: new Map(),
           multilineStatement: '',
         }
-      }
+      },
     }
-  ])('$name', ({ line, context, localPackageName, globalizeImports, expected }) => {
+  ]
+  test.each(testCases)('$name', ({ line, context, localPackageName, globalizeImports, expected }) => {
     const result = parseSingleSourceLine(
       new ConsoleLoggerAdapter(),
       line,
@@ -501,7 +524,7 @@ describe('parseSingleSourceLine', () => {
     );
 
     expect(result.line).toBe(expected.line);
-    expect(result.artifact).toEqual(expected.artifact);
+    expect(result.artifacts).toEqual(expected.artifacts);
     expect(result.option).toEqual(expected.option);
     expect(result.context).toMatchObject(context);
   });

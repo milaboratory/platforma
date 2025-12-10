@@ -291,3 +291,27 @@ export const testPackage2BrokenHash: TestArtifactSource[] = [
     src: testLocalTpl3SrcWrongOverride,
   },
 ];
+
+export const testTrickyCasesSrc = `
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+run := exec.builder().
+  processWorkdir("p", assets.importTemplate(":test.wd_processor_1"), {}).
+  processWorkdir("q", assets.
+    importTemplate(":test.wd_processor_2"),
+    {}).
+  run()
+`;
+
+export const testTrickyCasesNormalized = `
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+run := exec.builder().
+  processWorkdir("p", assets.importTemplate("stub-pkg:test.wd_processor_1"), {}).
+  processWorkdir("q", assets.
+    importTemplate("stub-pkg:test.wd_processor_2"),
+    {}).
+  run()
+`;
