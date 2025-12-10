@@ -6,6 +6,7 @@ export const createViteDevConfig = (({ mode, command }: ConfigEnv): UserConfig =
   const isDev = mode === 'development';
   const isProd = mode === 'production';
   const isServe = command === 'serve';
+  const useSources = process.env.USE_SOURCES === '1' || isServe;
 
   return {
     base: './',
@@ -19,7 +20,7 @@ export const createViteDevConfig = (({ mode, command }: ConfigEnv): UserConfig =
       },
     },
     resolve: {
-      conditions: isServe ? ['sources'] : undefined,
+      conditions: useSources ? ['sources'] : undefined,
     },
     define: {
       'import.meta.vitest': 'undefined',

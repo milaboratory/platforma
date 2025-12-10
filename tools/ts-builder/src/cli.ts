@@ -17,7 +17,8 @@ program
 program
   .requiredOption('--target <target>', 'Project target type (node|browser|browser-lib|block-model)')
   .option('--build-config <path>', 'Path to build config file')
-  .option('--serve-config <path>', 'Path to serve config file');
+  .option('--serve-config <path>', 'Path to serve config file')
+  .option('--use-sources', 'Use "sources" export condition for resolving packages');
 
 program.addCommand(buildCommand);
 program.addCommand(serveCommand);

@@ -1,5 +1,6 @@
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
+import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
 import { OutputOptions, PreRenderedChunk, RollupOptions } from 'rollup';
 import { cleandir } from 'rollup-plugin-cleandir';
@@ -13,12 +14,15 @@ export function createRollupNodeConfig(props?: {
   const input = props?.entry ?? ['./src/index.ts'];
   const output = props?.output ?? 'dist';
   const formats = props?.formats ?? ['es', 'cjs'];
+  const useSources = process.env.USE_SOURCES === '1';
+  
   return [
     {
       input,
       plugins: [
         cleandir(output),
         typescript({ declaration: true, declarationMap: true, declarationDir: output }),
+        resolve(useSources ? { exportConditions: ['sources'] } : {}),
         commonjs(),
         json(),
         nodeExternals(),

@@ -35,6 +35,12 @@
 export default {
   name: 'PlAutocompleteMulti',
 };
+
+export interface OptionsSearch<T> {
+  (s: string, type: 'label'): Promise<Readonly<ListOptionBase<T>[]>>;
+  (s: T[], type: 'value'): Promise<Readonly<ListOptionBase<T>[]>>;
+}
+
 </script>
 
 <script lang="ts" setup generic="M extends string | number = string">
@@ -65,11 +71,6 @@ const emitModel = (v: M[]) => emit('update:modelValue', v);
 
 const slots = useSlots();
 
-interface OptionsSearch {
-  (s: string, type: 'label'): Promise<Readonly<ListOptionBase<M>[]>>;
-  (s: M[], type: 'value'): Promise<Readonly<ListOptionBase<M>[]>>;
-}
-
 const props = withDefaults(
   defineProps<{
     /**
@@ -79,7 +80,7 @@ const props = withDefaults(
     /**
      * Lambda for requesting of available options for the dropdown by search string.
      */
-    optionsSearch: OptionsSearch;
+    optionsSearch: OptionsSearch<M>;
     /**
      * Unique identifier for the source of the options, changing it will invalidate the options cache.
      */
