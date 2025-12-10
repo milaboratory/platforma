@@ -42,7 +42,8 @@ jobs:
         }
       env: |
         { "BODY_LIMIT": "1048576000",
-          "LONG_TEST_TIMEOUT": "30m" }
+          "LONG_TEST_TIMEOUT": "30m",
+          "TEST_CACHE_CRUTCH": "${{ github.sha }}-${{ github.run_id }}" }
     secrets:
       env: |
         { "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
