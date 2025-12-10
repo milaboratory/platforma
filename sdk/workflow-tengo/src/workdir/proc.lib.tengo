@@ -76,7 +76,6 @@ proc := func() {
 				for _, fName in files {
 					wdBuilder.saveFileContent(fName)
 				}
-				ll.print(">>proc readFiles", inputs)
 				wd := wdBuilder.build()
 
 				// run prepare to get file contents in the inputs
