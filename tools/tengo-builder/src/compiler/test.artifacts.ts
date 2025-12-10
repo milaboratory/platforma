@@ -43,8 +43,10 @@ plapiCustomName := import("plapi" )
 
 notplapiCustomName.getTemplateId( "some other:parameter")
 
-plapiCustomName.getTemplateIdAnother("sss:kkk" )
-plapiCustomName.getSoftwareInfo(":software-1")
+/* inline comment */ plapiCustomName.getTemplateIdAnother("sss:kkk" )
+plapiCustomName.getSoftwareInfo(":software-1") /* inline comment */
+
+someCall("comment-like string literal/*")
 
 export {
     "some": "value",
@@ -58,8 +60,10 @@ plapiCustomName := import("plapi" )
 
 notplapiCustomName.getTemplateId( "some other:parameter")
 
-plapiCustomName.getTemplateIdAnother("sss:kkk" )
-plapiCustomName.getSoftwareInfo("current-package:software-1")
+/* inline comment */ plapiCustomName.getTemplateIdAnother("sss:kkk" )
+plapiCustomName.getSoftwareInfo("current-package:software-1") /* inline comment */
+
+someCall("comment-like string literal/*")
 
 export {
     "some": "value",
@@ -81,6 +85,24 @@ ll := import("@platforma-sdk/workflow-tengo:assets")
 /* multiline comments should be ignored
   a := import(":non-existent-library")
  */
+
+tplID := ll.importTemplate("package2:template-1")
+softwareID := ll.importSoftware("package2:software-1")
+assetID := ll.importAsset("package2:asset-1")
+
+export {
+    "some": "value",
+    "template1": ll.importTemplate("current-package:local-template-2"),
+    "template2": tplID,
+}
+`;
+export const testLocalLib2SrcNormalized = `
+otherLib := import("package1:someid")
+ll := import("@platforma-sdk/workflow-tengo:assets")
+
+
+
+
 
 tplID := ll.importTemplate("package2:template-1")
 softwareID := ll.importSoftware("package2:software-1")
@@ -269,3 +291,27 @@ export const testPackage2BrokenHash: TestArtifactSource[] = [
     src: testLocalTpl3SrcWrongOverride,
   },
 ];
+
+export const testTrickyCasesSrc = `
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+run := exec.builder().
+  processWorkdir("p", assets.importTemplate(":test.wd_processor_1"), {}).
+  processWorkdir("q", assets.
+    importTemplate(":test.wd_processor_2"),
+    {}).
+  run()
+`;
+
+export const testTrickyCasesNormalized = `
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+run := exec.builder().
+  processWorkdir("p", assets.importTemplate("stub-pkg:test.wd_processor_1"), {}).
+  processWorkdir("q", assets.
+    importTemplate("stub-pkg:test.wd_processor_2"),
+    {}).
+  run()
+`;
