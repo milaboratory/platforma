@@ -1,4 +1,5 @@
-import { BlockModel, InferHrefType, InferOutputsType } from '@platforma-sdk/model';
+import type { InferHrefType, InferOutputsType } from '@platforma-sdk/model';
+import { BlockModel } from '@platforma-sdk/model';
 
 export type BlockArgs = {
   titleArg: string;
@@ -10,11 +11,11 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('allSpecs', (ctx) => ctx.resultPool.getSpecs())
 
-  .sections((ctx) => {
+  .sections((_ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
   })
 
-  .title((ctx) => 'Pool explorer')
+  .title((_ctx) => 'Pool explorer')
 
   .done();
 

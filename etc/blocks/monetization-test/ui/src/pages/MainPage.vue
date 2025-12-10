@@ -85,7 +85,7 @@ const isTokenDialogOpen = ref(false);
 const tokensResult = ref<string>('');
 
 watch(() => app.model.outputs.tokens, async (tokens) => {
-  tokensResult.value = (await Promise.all(tokens?.map(async (t) => {
+  tokensResult.value = (await Promise.all(tokens?.map(async (t: { name: string; value?: string }) => {
     if (!t.value) {
       return 'token is empty';
     }

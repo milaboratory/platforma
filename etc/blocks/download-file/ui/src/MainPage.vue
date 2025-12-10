@@ -17,7 +17,7 @@ const progress = computed(() => {
     return undefined;
 
   return handle.value;
-})
+});
 
 const onDemandContent = computedAsync(async () => {
   const handle = app.snapshot.outputs.onDemandBlobContent;
@@ -34,7 +34,7 @@ const onDemandContent = computedAsync(async () => {
   }
 
   return new TextDecoder().decode(content);
-})
+});
 
 const onDemandContent1 = computedAsync(async () => {
   const handle = app.snapshot.outputs.onDemandBlobContent1;
@@ -54,7 +54,7 @@ const onDemandContent1 = computedAsync(async () => {
   }
 
   return new TextDecoder().decode(content);
-})
+});
 
 const onDemandRangeContent = computedAsync(async () => {
   const handle = app.snapshot.outputs.onDemandBlobContent;
@@ -69,14 +69,14 @@ const onDemandRangeContent = computedAsync(async () => {
   }
 
   const content = await getRawPlatformaInstance().blobDriver.getContent(
-    handle.value.handle, { from: 1, to: 2 }
+    handle.value.handle, { from: 1, to: 2 },
   );
   if (!content) {
     return undefined;
   }
 
   return new TextDecoder().decode(content);
-})
+});
 
 const onDemandRangeContent1 = computedAsync(async () => {
   const handle = app.snapshot.outputs.onDemandBlobContent1;
@@ -91,14 +91,14 @@ const onDemandRangeContent1 = computedAsync(async () => {
   }
 
   const content = await getRawPlatformaInstance().blobDriver.getContent(
-    handle.value.handle, { from: 1, to: 2 }
+    handle.value.handle, { from: 1, to: 2 },
   );
   if (!content) {
     return undefined;
   }
 
   return new TextDecoder().decode(content);
-})
+});
 
 </script>
 
@@ -177,7 +177,7 @@ const onDemandRangeContent1 = computedAsync(async () => {
       outputs:
       {{ app.model.outputs }}
     </PlAlert>
-    <PlAlert type="error" v-if="app.hasErrors">
+    <PlAlert v-if="app.hasErrors" type="error">
       {{ app.model.outputErrors }}
     </PlAlert>
   </PlBlockPage>
