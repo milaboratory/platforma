@@ -91,6 +91,8 @@ self.body(func(inputs) {
 
 				valuesFile := self.saveFile(path.join("out", data))
 				rBuilder.createInputField(part).set(valuesFile)
+			} else {
+				ll.panic("unknown type in .datainfo: ", dInfo.type)
 			}
 		}
 

@@ -134,11 +134,17 @@ proc := func() {
 
 				inputs.files = self.filesInWd()
 				result := cb(inputs)
-				wd := self.wdFinalBuilder().build()
-
-				return {
-					result: result,
-					workdir: wd.getWorkdirAfter()
+				if (is_undefined(self._wdFinalBuilder)) {
+					return {
+						result: result,
+						workdir: self.wdAfterReadFiles()
+					}
+				} else {
+					wd := self._wdFinalBuilder.build()
+					return {
+						result: result,
+						workdir: wd.getWorkdirAfter()
+					}
 				}
 			})
 		}
