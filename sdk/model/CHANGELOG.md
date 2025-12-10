@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.47.5
+
+### Patch Changes
+
+- 5deb79a: add linkers to column_collection
+- Updated dependencies [5deb79a]
+  - @milaboratories/pl-model-common@1.21.10
+  - @milaboratories/ptabler-expression-js@1.1.6
+
 ## 1.46.0
 
 ### Minor Changes

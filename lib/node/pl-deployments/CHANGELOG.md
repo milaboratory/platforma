@@ -1,5 +1,12 @@
 # @milaboratories/pl-local
 
+## 2.13.1
+
+### Patch Changes
+
+- Updated dependencies [5deb79a]
+  - @milaboratories/pl-model-common@1.21.10
+
 ## 2.13.0
 
 ### Minor Changes
