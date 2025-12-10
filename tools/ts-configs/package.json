@@ -5,8 +5,8 @@
     "./package.json": "./package.json",
     "./browser": "./src/tsconfig.browser.json",
     "./block/model": "./src/tsconfig.block-model.json",
-    "./block/ui": "./src/tsconfig.browser.json",
-    "./block/test": "./src/tsconfig.node.json",
+    "./block/ui": "./src/tsconfig.block-ui.json",
+    "./block/test": "./src/tsconfig.block-model.json",
     "./*": "./src/*"
   },
   "scripts": {
