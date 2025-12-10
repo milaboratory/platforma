@@ -61,6 +61,8 @@ _getPColumnRType := func(storageType) {
 }
 
 self.body(func(inputs) {
+	ll.print(">>pframes", inputs)
+
 	spec := inputs.args
 
 	// columns
@@ -78,6 +80,7 @@ self.body(func(inputs) {
 		rData := { partitionKeyLength: dInfo.partitionKeyLength }
 		rBuilder := smart.structBuilder(_getPColumnRType(dInfo.type), json.encode(rData))
 
+		ll.print(">>pframe column dInfo", dInfo)
 		for part, data in dInfo.parts {
 			if dInfo.type == "BinaryPartitioned" {
 
@@ -91,6 +94,8 @@ self.body(func(inputs) {
 
 				valuesFile := self.saveFile(path.join("out", data))
 				rBuilder.createInputField(part).set(valuesFile)
+			} else {
+				ll.panic("unknown type in .datainfo: ", dInfo.type)
 			}
 		}
 
