@@ -21,8 +21,12 @@ import {
   deriveNativeId,
   entriesToDataInfo,
   getAxisId,
+  getColumnIdAndSpec,
+  isLinkerColumn,
   isPartitionedDataInfoEntries,
   isPColumnSpec,
+  LinkerMap,
+  matchAxisId,
   resolveAnchors,
   selectorsToPredicate,
 } from '@milaboratories/pl-model-common';
@@ -179,6 +183,8 @@ type UniversalPColumnOptsNoDeriver = {
    * Default value in getUniversalEntries is false, in getColumns it is true.
    */
   overrideLabelAnnotation?: boolean;
+  /** If true, resulting columns will be enriched by other columns considering linker columns. Default is false. */
+  enrichByLinkers?: boolean;
 };
 
 type UniversalPColumnOpts = UniversalPColumnOptsNoDeriver & {
@@ -231,7 +237,7 @@ export class PColumnCollection {
   public getUniversalEntries(
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
     opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): (PColumnEntryWithLabel | PColumnEntryUniversal)[] | undefined {
-    const { anchorCtx, labelOps: rawLabelOps, dontWaitAllData = false, overrideLabelAnnotation = false, exclude } = opts ?? {};
+    const { anchorCtx, labelOps: rawLabelOps, dontWaitAllData = false, overrideLabelAnnotation = false, exclude, enrichByLinkers = false } = opts ?? {};
 
     const labelOps: LabelDerivationOps = {
       ...(overrideLabelAnnotation && rawLabelOps?.includeNativeLabel !== false ? { includeNativeLabel: true } : {}),
@@ -429,6 +435,37 @@ export class PColumnCollection {
           : entry.originalColumn.data,
         label: label,
       });
+    }
+
+    const ids = new Set(result.map((entry) => entry.id));
+
+    if (enrichByLinkers && anchorCtx) {
+      const linkers = result.filter((entry) => isLinkerColumn(entry.spec));
+      if (linkers.length === 0) {
+        return result;
+      };
+
+      const anchorAxes = Object.values(anchorCtx.anchors).flatMap((anchor) => anchor.axesSpec);
+      const linkerMap = LinkerMap.fromColumns(linkers.map(getColumnIdAndSpec));
+
+      // loose way of matching
+      function matchAxisIdFn(linkerKeyId: AxisId, sourceAxisId: AxisId): boolean {
+        return matchAxisId(linkerKeyId, sourceAxisId) || matchAxisId(sourceAxisId, linkerKeyId);
+      }
+      // search all axes that can be reached by linkers from anchor axes; anchor axes are not in this list;
+      const availableByLinkersAxes = linkerMap.getReachableByLinkersAxesFromAxes(anchorAxes, matchAxisIdFn);
+
+      // search all columns that includes at least one of additional axes;
+      const availableByLinkersColumns = this.getUniversalEntries(
+        (spec) => !isLinkerColumn(spec) && spec.axesSpec.some((columnAxisSpec) => {
+          const columnAxisId = getAxisId(columnAxisSpec);
+          return availableByLinkersAxes.some((axis) => matchAxisIdFn(getAxisId(axis), columnAxisId));
+        }),
+        { anchorCtx, labelOps, dontWaitAllData, overrideLabelAnnotation, exclude },
+      );
+      if (availableByLinkersColumns) {
+        result.push(...availableByLinkersColumns.filter((entry) => !ids.has(entry.id)));
+      }
     }
 
     return result;

@@ -212,10 +212,37 @@ export class LinkerMap implements LinkersData {
   }
 
   /** Get all axes that can be connected to sourceAxes by linkers */
-  getReachableByLinkersAxesFromAxes(sourceAxes: AxisSpecNormalized[]): AxisSpec[] {
-    const startKeys = sourceAxes.map(LinkerMap.getLinkerKeyFromAxisSpec);
+  getReachableByLinkersAxesFromAxesNormalized(
+    sourceAxes: AxisSpecNormalized[],
+    matchAxisIdFn?: (axisIdOfLinker: AxisId, axisIdOfSource: AxisId) => boolean,
+  ): AxisSpecNormalized[] {
+    let startKeys: CanonicalizedJson<AxisId[]>[] = [];
+
+    if (matchAxisIdFn) {
+      const sourceAxisIdsGrouped: AxisId[][] = sourceAxes.map((axis) => getArrayFromAxisTree(getAxesTree(axis)).map(getAxisId));
+      for (const sourceAxisIdsGroup of sourceAxisIdsGrouped) {
+        const matched = this.keyAxesIds.find(
+          (keyIds: AxisId[]) => keyIds.every(
+            (linkerKeyAxisId) => sourceAxisIdsGroup.find((sourceAxisId) => matchAxisIdFn(linkerKeyAxisId, sourceAxisId)),
+          ),
+        );
+        if (matched) {
+          startKeys.push(canonicalizeJson(matched));
+        }
+      }
+    } else {
+      startKeys = sourceAxes.map(LinkerMap.getLinkerKeyFromAxisSpec);
+    }
+
     const availableKeys = this.searchAvailableAxesKeys(startKeys);
     return this.getAxesListFromKeysList([...availableKeys]);
+  }
+
+  getReachableByLinkersAxesFromAxes(
+    sourceAxes: AxisSpec[],
+    matchAxisIdFn?: (axisIdOfLinker: AxisId, axisIdOfSource: AxisId) => boolean,
+  ): AxisSpecNormalized[] {
+    return this.getReachableByLinkersAxesFromAxesNormalized(getNormalizedAxesList(sourceAxes), matchAxisIdFn);
   }
 
   static getLinkerKeyFromAxisSpec(axis: AxisSpecNormalized): LinkerKey {

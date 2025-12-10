@@ -237,12 +237,12 @@ describe('Linker columns', () => {
         const linkersMap = LinkerMap.fromColumns([linker1, linker2]);
 
         expect(
-            new Set(linkersMap.getReachableByLinkersAxesFromAxes(group2Normalized).map(a => a.name))
+            new Set(linkersMap.getReachableByLinkersAxesFromAxesNormalized(group2Normalized).map(a => a.name))
         ).toEqual(
             new Set(([...group1, ...group3]).map(a => a.name))
         );
-        expect(linkersMap.getReachableByLinkersAxesFromAxes([axisDn])).toEqual([]);
-        expect(linkersMap.getReachableByLinkersAxesFromAxes([axisBn])).toEqual([]);
+        expect(linkersMap.getReachableByLinkersAxesFromAxesNormalized([axisDn])).toEqual([]);
+        expect(linkersMap.getReachableByLinkersAxesFromAxesNormalized([axisBn])).toEqual([]);
     });
 
     test('Order of parents should not matter', () => {
@@ -257,8 +257,8 @@ describe('Linker columns', () => {
             makeLinkerColumn({ name: 'linker1', from: [axisA, axisB, axisC1], to: [axisD] })
         ]);
 
-        expect(linkerMap.getReachableByLinkersAxesFromAxes([c2])).not.toHaveLength(0);
-        expect(linkerMap.getReachableByLinkersAxesFromAxes([c1])).not.toHaveLength(0);
+        expect(linkerMap.getReachableByLinkersAxesFromAxesNormalized([c2])).not.toHaveLength(0);
+        expect(linkerMap.getReachableByLinkersAxesFromAxesNormalized([c1])).not.toHaveLength(0);
     })
 
     test('Non-linkable axes', () => {
