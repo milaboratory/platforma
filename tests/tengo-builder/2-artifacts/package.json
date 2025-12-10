@@ -4,19 +4,23 @@
     "version": "1.0.0",
     "description": "Simple static artifacts for tests (assets and software)",
     "scripts": {
-        "build": "rm -rf dist && pl-pkg build descriptors || true"
+        "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
+        "check": "pnpm run cleanup && pl-pkg build"
     },
     "block-software": {
-        "artifacts": {
-            
-        },
         "entrypoints": {
             "software": {
                 "binary": {
                     "artifact": {
                         "registry": "publish-never-happen",
                         "type": "binary",
-                        "root": "software-root"
+                        "roots": {
+                            "linux-x64": "software-root",
+                            "linux-aarch64": "software-root",
+                            "macosx-x64": "software-root",
+                            "macosx-aarch64": "software-root",
+                            "windows-x64": "software-root"
+                        }
                     },
                     "cmd": [
                         "fake-binary"
@@ -29,7 +33,6 @@
                         "name": "publish-never-happen",
                         "downloadURL": "http://example.com/unknown-asset"
                     },
-                    "type": "asset",
                     "root": "asset-root"
                 }
             }
@@ -37,6 +40,6 @@
     },
     "license": "UNLICENSED",
     "devDependencies": {
-        "@platforma-sdk/package-builder": "file:../../../tools/package-builder"
+        "@platforma-sdk/package-builder": "workspace:*"
     }
 }

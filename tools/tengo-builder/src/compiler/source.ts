@@ -47,6 +47,7 @@ const emptyLineRE = /^\s*$/;
 const compilerOptionRE = /^\/\/tengo:[\w]/;
 const wrongCompilerOptionRE = /^\s*\/\/\s*tengo:\s*./;
 const singlelineCommentRE = /^\s*(\/\/)/;
+const singlelineTerminatedCommentRE = /^\s*\/\*.*\*\/\s*$/; // matches '^/* ... */$' comment lines as a special case of singleline comments.
 const multilineCommentStartRE = /^\s*\/\*/;
 const multilineCommentEndRE = /\*\//;
 const multilineStatementRE = /[.,]\s*$/; // it is hard to consistently treat (\n"a"\n) multiline statements, we forbid them for now.
@@ -252,7 +253,7 @@ export function parseSingleSourceLine(
     return { line, context, artifacts: [], option: undefined };
   }
 
-  if (singlelineCommentRE.test(line)) {
+  if (singlelineCommentRE.test(line) || singlelineTerminatedCommentRE.test(line)) {
     return { line: '', context, artifacts: [], option: undefined };
   }
 

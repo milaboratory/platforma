@@ -126,6 +126,11 @@ packages:
   - tests/package-builder/30.software-pkg
   - tests/package-builder/90.catalogue
 
+  - tests/tengo-builder
+  - tests/tengo-builder/1-library
+  - tests/tengo-builder/2-artifacts
+  - tests/tengo-builder/3-software-dep
+
   # Etc
 
   - etc/uikit-playground
