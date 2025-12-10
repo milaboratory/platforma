@@ -54,6 +54,12 @@ test('unauthenticated status change', async () => {
 });
 
 test('automatic token update', async () => {
+  const cfg = getTestConfig();
+  if (cfg.test_password === undefined) {
+    console.log("skipping test because target server doesn't support authentication");
+    return;
+  }
+
   const { conf, auth } = await getTestClientConf();
   conf.authMaxRefreshSeconds = 1;
   let numberOfAuthUpdates = 0;
