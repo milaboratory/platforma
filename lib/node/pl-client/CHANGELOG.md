@@ -1,5 +1,12 @@
 # @milaboratories/pl-client
 
+## 2.16.13
+
+### Patch Changes
+
+- Updated dependencies [5deb79a]
+  - @milaboratories/pl-model-common@1.21.10
+
 ## 2.16.12
 
 ### Patch Changes

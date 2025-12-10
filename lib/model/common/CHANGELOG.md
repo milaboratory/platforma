@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.21.10
+
+### Patch Changes
+
+- 5deb79a: add linkers to column_collection
+
 ## 1.21.9
 
 ### Patch Changes

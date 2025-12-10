@@ -1,5 +1,23 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.86
+
+### Patch Changes
+
+- Updated dependencies [5deb79a]
+  - @milaboratories/pl-model-common@1.21.10
+  - @platforma-sdk/model@1.47.5
+  - @milaboratories/pl-model-middle-layer@1.8.45
+  - @milaboratories/pl-client@2.16.13
+  - @milaboratories/pl-deployments@2.13.1
+  - @milaboratories/pl-drivers@1.11.26
+  - @platforma-sdk/block-tools@2.6.27
+  - @milaboratories/pf-driver@1.0.10
+  - @milaboratories/pl-model-backend@1.1.30
+  - @milaboratories/pl-errors@1.1.45
+  - @milaboratories/pl-tree@1.8.20
+  - @platforma-sdk/workflow-tengo@5.6.6
+
 ## 1.43.85
 
 ### Patch Changes
