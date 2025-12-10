@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.0.9
+
+### Patch Changes
+
+- 92439e1: ts-builder ignore customcudition for build/serve without flag
+
 ## 1.0.8
 
 ### Patch Changes

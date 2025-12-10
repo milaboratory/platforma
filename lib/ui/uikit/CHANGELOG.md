@@ -1,5 +1,13 @@
 # @milaboratories/uikit
 
+## 2.7.2
+
+### Patch Changes
+
+- 92439e1: ts-builder ignore customcudition for build/serve without flag
+  - @milaboratories/helpers@1.12.0
+  - @platforma-sdk/model@1.46.0
+
 ## 2.7.1
 
 ### Patch Changes
