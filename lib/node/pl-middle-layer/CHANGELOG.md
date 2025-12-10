@@ -1,5 +1,27 @@
 # @milaboratories/pl-middle-layer
 
+## 1.43.84
+
+### Patch Changes
+
+- Updated dependencies [60fb16c]
+  - @milaboratories/pl-deployments@2.13.0
+  - @milaboratories/pl-model-backend@1.1.29
+  - @milaboratories/pl-model-common@1.21.9
+  - @milaboratories/pl-model-middle-layer@1.8.44
+  - @milaboratories/computable@2.7.4
+  - @milaboratories/pf-driver@1.0.9
+  - @milaboratories/pl-client@2.16.12
+  - @milaboratories/pl-config@1.7.9
+  - @milaboratories/pl-drivers@1.11.25
+  - @milaboratories/pl-errors@1.1.44
+  - @milaboratories/pl-http@1.2.0
+  - @milaboratories/pl-tree@1.8.19
+  - @milaboratories/resolve-helper@1.1.1
+  - @milaboratories/ts-helpers@1.5.4
+  - @platforma-sdk/model@1.46.0
+  - @platforma-sdk/block-tools@2.6.26
+
 ## 1.43.83
 
 ### Patch Changes

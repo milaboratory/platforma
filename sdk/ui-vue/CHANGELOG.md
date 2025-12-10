@@ -1,5 +1,15 @@
 # @platforma-sdk/ui-vue
 
+## 1.47.2
+
+### Patch Changes
+
+- Updated dependencies [92439e1]
+  - @milaboratories/uikit@2.7.2
+  - @milaboratories/biowasm-tools@2.0.0
+  - @platforma-sdk/model@1.46.0
+  - @milaboratories/ptabler-expression-js@1.1.5
+
 ## 1.47.0
 
 ### Minor Changes

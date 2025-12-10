@@ -1,5 +1,18 @@
 # @milaboratories/pl-local
 
+## 2.13.0
+
+### Minor Changes
+
+- 60fb16c: Up built-in backend version to 1.45.0
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.21.9
+- @milaboratories/pl-config@1.7.9
+- @milaboratories/pl-http@1.2.0
+- @milaboratories/ts-helpers@1.5.4
+
 ## 2.12.9
 
 ### Patch Changes
