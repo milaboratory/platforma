@@ -68,7 +68,7 @@ export class LLPlClient implements WireClientProviderFactory {
   private _status: PlConnectionStatus = 'OK';
   private readonly statusListener?: PlConnectionStatusListener;
 
-  private _wireProto: wireProtocol | undefined = undefined;
+  private _wireProto: wireProtocol = 'grpc';
   private _wireConn!: WireConnection;
 
   private readonly _restInterceptors: Dispatcher.DispatcherComposeInterceptor[];
@@ -463,38 +463,16 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   /**
-   * Probes the server to check if REST API is supported.
-   * Makes a simple HTTP GET request to /v1/ping endpoint.
-   * @returns true if REST is supported (2xx response), false otherwise
-   */
-  public async probeRestSupport(): Promise<boolean> {
-    const protocol = this.conf.ssl ? 'https' : 'http';
-
-    try {
-      const response = await this.httpDispatcher.request({
-        method: 'GET',
-        origin: `${protocol}://${this.conf.hostAndPort}`,
-        path: '/v1/ping',
-        headersTimeout: this.conf.defaultRequestTimeout,
-        bodyTimeout: this.conf.defaultRequestTimeout,
-      });
-
-      // Consume the body to free up the connection
-      await response.body.dump();
-
-      return response.statusCode >= 200 && response.statusCode < 300;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
    * Detects the best available wire protocol.
    * If wireProtocol is explicitly configured, returns that.
    * Otherwise probes REST support and returns 'rest' if available, 'grpc' as fallback.
    * @returns the detected wire protocol and whether it differs from current
    */
   private async detectOptimalWireProtocol(): Promise<{ protocol: wireProtocol; shouldSwitch: boolean }> {
+    const getAlternativeWireProtocol = (protocol: wireProtocol): wireProtocol => {
+      return protocol === 'grpc' ? 'rest' : 'grpc';
+    };
+
     if (this.conf.wireProtocol) {
       return {
         protocol: this.conf.wireProtocol,
@@ -502,12 +480,19 @@ export class LLPlClient implements WireClientProviderFactory {
       };
     }
 
-    const supportsRest = await this.probeRestSupport();
-    const protocol = supportsRest ? 'rest' : 'grpc';
-    return {
-      protocol,
-      shouldSwitch: this._wireProto !== protocol,
-    };
+    
+    try {
+      await this.ping();
+      return {
+        protocol: this._wireProto,
+        shouldSwitch: false,
+      };
+    } catch (err: unknown) {
+      return {
+        protocol: getAlternativeWireProtocol(this._wireProto),
+        shouldSwitch: true,
+      };
+    }
   }
 
   public async license(): Promise<grpcTypes.MaintenanceAPI_License_Response> {
