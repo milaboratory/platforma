@@ -1,7 +1,4 @@
 {
-  "extends": "@milaboratories/ts-configs/tsconfig.browser.json",
-  "compilerOptions": {
-    "outDir": "./dist"
-  },
+  "extends": "@milaboratories/ts-configs/block/ui",
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }

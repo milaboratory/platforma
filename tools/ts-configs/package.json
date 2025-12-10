@@ -4,8 +4,13 @@
   "exports": {
     "./package.json": "./package.json",
     "./browser": "./src/tsconfig.browser.json",
+    "./block/model": "./src/tsconfig.block-model.json",
+    "./block/ui": "./src/tsconfig.browser.json",
+    "./block/test": "./src/tsconfig.node.json",
     "./*": "./src/*"
   },
-  "scripts": {},
+  "scripts": {
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+  },
   "dependencies": {}
 }

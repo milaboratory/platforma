@@ -17,9 +17,11 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@platforma-sdk/eslint-config": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/build-configs": "workspace:*",
+    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

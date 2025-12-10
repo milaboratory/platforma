@@ -21,8 +21,8 @@
     "@platforma-sdk/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
     "eslint": "catalog:",
-    "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "typescript": "catalog:"
   }
 }

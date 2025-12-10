@@ -9,7 +9,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "ts-builder build --target block-model && block-tools build-model",
-    "type-check": "ts-builder types --target block-model"
+    "type-check": "ts-builder types --target block-model",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@platforma-sdk/model": "workspace:*",
@@ -17,9 +18,11 @@
   },
   "devDependencies": {
     "@platforma-sdk/block-tools": "workspace:*",
+    "@platforma-sdk/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@milaboratories/ts-configs": "workspace:*",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }
