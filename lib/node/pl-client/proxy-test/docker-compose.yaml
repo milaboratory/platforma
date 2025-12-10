@@ -17,7 +17,7 @@ services:
     volumes:
       - ~/.pl.license:/etc/pl.license:ro
       # - /Users/denkoren/work/milaboratory/platforma/platforma/assets/:/library:ro
-   
+
   proxy:
     image: ubuntu/squid:latest
     container_name: http-proxy
