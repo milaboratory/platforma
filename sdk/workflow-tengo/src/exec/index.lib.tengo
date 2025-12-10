@@ -115,7 +115,7 @@ builder := func() {
 		software: func(sw) {
 			assertEntrypointNotSet()
 			ll.assert(assets.isSoftwareInfo(sw),
-				"exec.builder.software: <software> parameter is not a software info. Provide the value obtained from assets.importSoftware() here"
+				"exec.builder.software: <software> parameter is not a software info. Provide the value obtained from assets."+"importSoftware() here" // calm-down tengo-builder
 			)
 
 			soft = sw
@@ -570,7 +570,7 @@ builder := func() {
 			}
 
 			ll.assert(assets.isAssetInfo(asset),
-				"exec.builder.addAsset: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
+				"exec.builder.addAsset: <asset> parameter is not an asset info. Provide the value obtained from assets."+"importAsset() here") // calm-down tengo-builder
 			validation.assertType(destinationDir, "string", "exec.builder.addAsset: <destinationDir> is not a string. It must be a path inside working directory")
 			validation.assertType(pathsInArchive, ["string"], "exec.builder.addAsset: <pathsInArchive> must contain list of strings with paths inside archive")
 
@@ -598,7 +598,7 @@ builder := func() {
 		 */
 		cacheAssetMillis: func (asset, millis) {
 			ll.assert(assets.isAssetInfo(asset),
-				"exec.builder.cacheAssetMillis: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
+				"exec.builder.cacheAssetMillis: <asset> parameter is not an asset info. Provide the value obtained from assets."+"importAsset() here") // calm-down tengo-builder
 			ll.assert(is_int(millis),
 				"exec.builder.cacheAssetMillis: asset cache time must be a number of milliseconds.")
 
@@ -614,7 +614,7 @@ builder := func() {
 		 */
 		cacheAssetSeconds: func (asset, seconds) {
 			ll.assert(assets.isAssetInfo(asset),
-				"exec.builder.cacheAssetSeconds: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
+				"exec.builder.cacheAssetSeconds: <asset> parameter is not an asset info. Provide the value obtained from assets."+"importAsset() here") // calm-down tengo-builder
 			ll.assert(is_int(seconds),
 				"exec.builder.cacheAssetSeconds: asset cache time must be a number of seconds.")
 
@@ -630,7 +630,7 @@ builder := func() {
 		 */
 		cacheAssetMinutes: func (asset, minutes) {
 			ll.assert(assets.isAssetInfo(asset),
-				"exec.builder.cacheAssetMinutes: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
+				"exec.builder.cacheAssetMinutes: <asset> parameter is not an asset info. Provide the value obtained from assets."+"importAsset() here")
 			ll.assert(is_int(minutes),
 				"exec.builder.cacheAssetMinutes: asset cache time must be a number of minutes.")
 
@@ -646,7 +646,7 @@ builder := func() {
 		 */
 		cacheAssetHours: func (asset, hours) {
 			ll.assert(assets.isAssetInfo(asset),
-				"exec.builder.cacheAssetHours: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
+				"exec.builder.cacheAssetHours: <asset> parameter is not an asset info. Provide the value obtained from assets."+"importAsset() here") // calm-down tengo-builder
 			ll.assert(is_int(hours),
 				"exec.builder.cacheAssetHours: asset cache time must be a number of hours.")
 
@@ -662,9 +662,9 @@ builder := func() {
 		 */
 		cacheAssetDays: func (asset, days) {
 			ll.assert(assets.isAssetInfo(asset),
-				"exec.builder.cacheAssetHours: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
+				"exec.builder.cacheAssetDays: <asset> parameter is not an asset info. Provide the value obtained from assets."+"importAsset() here") // calm-down tengo-builder
 			ll.assert(is_int(days),
-				"exec.builder.cacheAssetHours: asset cache time must be a number of days.")
+				"exec.builder.cacheAssetDays: asset cache time must be a number of days.")
 
 			assetIdKey := ll.idToString(asset._id)
 			assetCache[assetIdKey] = days * 24 * times.hour

@@ -3041,6 +3041,36 @@ importers:
         specifier: workspace:*
         version: link:../../../tools/package-builder
 
+  tests/tengo-builder:
+    devDependencies:
+      '@platforma-sdk/tengo-builder':
+        specifier: workspace:*
+        version: link:../../tools/tengo-builder
+
+  tests/tengo-builder/1-library:
+    devDependencies:
+      '@platforma-sdk/tengo-builder':
+        specifier: workspace:*
+        version: link:../../../tools/tengo-builder
+
+  tests/tengo-builder/2-artifacts:
+    devDependencies:
+      '@platforma-sdk/package-builder':
+        specifier: workspace:*
+        version: link:../../../tools/package-builder
+
+  tests/tengo-builder/3-software-dep:
+    devDependencies:
+      '@mi-tests/tengo-integration-2':
+        specifier: workspace:*
+        version: link:../2-artifacts
+      '@platforma-sdk/tengo-builder':
+        specifier: workspace:*
+        version: link:../../../tools/tengo-builder
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../sdk/workflow-tengo
+
   tests/workflow-tengo:
     dependencies:
       '@platforma-open/milaboratories.software-conda-empty':
