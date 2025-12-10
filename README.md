@@ -18,12 +18,23 @@ pl-dev svc create local s3 dev \
   --auth-enabled;
 pl-dev svc up dev
 ```
+Binary way
+```bash
+./platforma --license *** --data-library-fs=library=/path/to/platforma/assets
+```
 
 And after that you should start test with envs:
 ```bash 
  PL_ADDRESS="http://127.0.0.1:6345" \ 
  PL_TEST_USER="test-user" \
  PL_TEST_PASSWORD="test-password" \
+ pnpm test
+```
+With token
+```bash 
+ PL_ADDRESS="http://127.0.0.1:6345" \ 
+ PL_TEST_USER="default" \
+ PL_TEST_PASSWORD="*token*" \
  pnpm test
 ```
 

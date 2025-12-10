@@ -16,10 +16,11 @@ export const serveCommand = new Command('serve')
     const globalOpts = getGlobalOptions(command);
     const target = globalOpts.target as TargetType;
     const customServeConfig = globalOpts.serveConfig;
+    const useSources = globalOpts.useSources;
 
     validateTargetForBrowser(target);
 
-    console.log(`Starting dev server for ${target} project...`);
+    console.log(`Starting dev server for ${target} project${useSources ? ' with sources condition' : ''}...`);
 
     try {
       const viteCommand = resolveVite();
@@ -31,7 +32,8 @@ export const serveCommand = new Command('serve')
       viteArgs.push('--port', options.port);
       viteArgs.push('--host', options.host);
 
-      await executeCommand(viteCommand, viteArgs);
+      const env = useSources ? { USE_SOURCES: '1' } : undefined;
+      await executeCommand(viteCommand, viteArgs, env);
       
     } catch (error) {
       console.error('Failed to start dev server:', error);

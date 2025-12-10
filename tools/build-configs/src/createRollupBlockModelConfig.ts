@@ -10,6 +10,7 @@ export function createRollupBlockModelConfig(props?: {
   formats?: ('es' | 'cjs')[]
 }): RollupOptions[] {
   const base = createRollupNodeConfig(props);
+  const useSources = process.env.USE_SOURCES === '1';
   
   return [
     ...base,
@@ -17,7 +18,7 @@ export function createRollupBlockModelConfig(props?: {
       input: props?.entry ?? ['./src/index.ts'],
       plugins: [
         typescript(),
-        resolve(),
+        resolve(useSources ? { exportConditions: ['sources'] } : {}),
         commonjs(),
       ],
       output: [

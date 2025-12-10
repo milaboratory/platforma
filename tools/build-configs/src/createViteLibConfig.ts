@@ -7,10 +7,15 @@ import { createViteDevConfig } from './createViteDevConfig';
 
 export const createViteLibConfig = ((configEnv: ConfigEnv): UserConfig => {
   const isProd = configEnv.mode === 'production';
+  const useSources = process.env.USE_SOURCES === '1';
 
   return mergeConfig(createViteDevConfig(configEnv), {
     plugins: [
-      dts(),
+      dts({
+        // Override customConditions from tsconfig to not use 'sources' during build
+        // unless USE_SOURCES is explicitly set
+        compilerOptions: useSources ? undefined : { customConditions: [] },
+      }),
       externalizeDeps(),
       cssInjectedByJsPlugin({ relativeCSSInjection: true }),
     ],

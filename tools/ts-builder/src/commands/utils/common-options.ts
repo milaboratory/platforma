@@ -5,6 +5,7 @@ export interface GlobalOptions {
   target: TargetType;
   buildConfig?: string;
   serveConfig?: string;
+  useSources?: boolean;
 }
 
 export interface CommandOptions {
