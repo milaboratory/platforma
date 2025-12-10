@@ -6,6 +6,18 @@ export function isConnectionProblem(err: unknown, nested: boolean = false): bool
   if (err instanceof DisconnectedError) return true;
   if ((err as any).name == 'RpcError' && (err as any).code == 'UNAVAILABLE') return true;
   if ((err as any).code == Code.UNAVAILABLE) return true;
+  // TypeError from WebSocket disconnection (often has empty message)
+  // Check both the error itself and its cause chain
+  if (err instanceof TypeError) {
+    // Empty message often indicates WebSocket connection issue
+    if (!(err as any).message || (err as any).message === '') return true;
+    // Also check if it's a WebSocket-related TypeError
+    const stack = (err as any).stack || '';
+    if (stack.includes('WebSocket') || stack.includes('websocket')) return true;
+  }
+  if ((err as any).name === 'TypeError') {
+    if (!(err as any).message || (err as any).message === '') return true;
+  }
   if ((err as any).cause !== undefined && !nested)
     // nested limits the depth of search
     return isConnectionProblem((err as any).cause, true);
@@ -26,6 +38,8 @@ export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): b
   if (err instanceof Aborted || (err as any).name == 'AbortError') return true;
   if ((err as any).name == 'TimeoutError') return true;
   if ((err as any).code == 'ABORT_ERR') return true;
+  // Check for DOMException with ABORT_ERR code (thrown by AbortSignal.timeout)
+  if (err instanceof DOMException && err.code === DOMException.ABORT_ERR) return true;
   if ((err as any).code == Code.ABORTED) return true;
   if (
     (err as any).name == 'RpcError'
@@ -88,9 +102,29 @@ export class DisconnectedError extends Error {
 }
 
 export function rethrowMeaningfulError(error: any, wrapIfUnknown: boolean = false): never {
-  if (isUnauthenticated(error)) throw new UnauthenticatedError(error.message);
-  if (isConnectionProblem(error)) throw new DisconnectedError(error.message);
+  if (isUnauthenticated(error)) {
+    const message = error.message || String(error) || 'Unauthenticated';
+    throw new UnauthenticatedError(message);
+  }
+  if (isConnectionProblem(error)) {
+    // For connection problems, provide a more descriptive message
+    let message = error.message;
+    // If message is empty, just the error name, or matches common unhelpful patterns,
+    // provide a more descriptive message
+    if (!message || message === '' || message === error.name || message === 'TypeError') {
+      // Check if it's a WebSocket-related error
+      if (error instanceof TypeError || error.name === 'TypeError') {
+        message = 'WebSocket connection closed';
+      } else {
+        message = 'Connection problem';
+      }
+    }
+    throw new DisconnectedError(message);
+  }
   if (isTimeoutOrCancelError(error)) throw new Aborted(error);
-  if (wrapIfUnknown) throw new Error(error.message, { cause: error });
+  if (wrapIfUnknown) {
+    const message = error.message || String(error) || 'Unknown error';
+    throw new Error(message, { cause: error });
+  }
   else throw error;
 }

@@ -326,8 +326,14 @@ export class LLPlTransaction {
     try {
       return await result;
     } catch (e: any) {
-      if (e instanceof RethrowError) e.rethrowLambda();
-      throw new Error('Error while waiting for response', { cause: e });
+      if (e instanceof RethrowError) {
+        // RethrowError contains a lambda that throws the actual error
+        // We need to call it to get the real error (e.g., RecoverablePlError)
+        e.rethrowLambda();
+      }
+      // If it's not a RethrowError, rethrow the original error as-is
+      // Don't wrap it, as that would lose error type information
+      throw e;
     }
   }
 

@@ -183,6 +183,18 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
   private onClose(): void {
     this.progressConnectionState(ConnectionState.CLOSED);
 
+    // If abort signal was triggered, use that as the error source
+    if (this.options.abortSignal?.aborted && !this.lastError) {
+      const reason = this.options.abortSignal.reason;
+      if (reason instanceof Error) {
+        this.lastError = reason;
+      } else if (reason !== undefined) {
+        this.lastError = new Error(String(reason), { cause: reason });
+      } else {
+        this.lastError = this.createStreamClosedError();
+      }
+    }
+
     if (!this.lastError) {
       this.rejectAllSendOperations(this.createStreamClosedError());
       this.resolveAllPendingResponses(); // unblock active async iterator
@@ -223,6 +235,19 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
 
   private sendQueuedMessage(queued: QueuedMessage<ClientMsg>): void {
     try {
+      // Check if stream was closed or aborted before sending
+      if (this.connectionState === ConnectionState.CLOSED) {
+        if (this.lastError) {
+          queued.reject(this.lastError);
+        } else if (this.options.abortSignal?.aborted) {
+          const reason = this.options.abortSignal.reason;
+          queued.reject(reason instanceof Error ? reason : new Error('Stream aborted', { cause: reason }));
+        } else {
+          queued.reject(this.createStreamClosedError());
+        }
+        return;
+      }
+
       const ws = this.ws;
       if (!ws) {
         throw new Error('WebSocket is not connected');
@@ -316,6 +341,14 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
       if (this.isStreamEnded()) {
         if (this.lastError) {
           reject(this.lastError);
+        } else if (this.options.abortSignal?.aborted) {
+          // If aborted but no lastError set, create error from abort reason
+          const reason = this.options.abortSignal.reason;
+          if (reason instanceof Error) {
+            reject(reason);
+          } else {
+            reject(new Error('Stream aborted', { cause: reason }));
+          }
         } else {
           resolve({ value: undefined as any, done: true });
         }
@@ -379,9 +412,24 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
   }
 
   private toError(error: unknown): Error {
-    if (error instanceof Error) return error;
-    if (error instanceof ErrorEvent) return error.error;
-    return new Error(String(error));
+    if (error instanceof Error) {
+      // Handle empty error messages from undici WebSocket
+      if (!error.message && error.name) {
+        return new Error(`${error.name}`, { cause: error });
+      }
+      return error;
+    }
+    if (error instanceof ErrorEvent) {
+      const err = error.error;
+      if (err instanceof Error) {
+        if (!err.message && err.name) {
+          return new Error(`${err.name}`, { cause: err });
+        }
+        return err;
+      }
+      return new Error('WebSocket error', { cause: error });
+    }
+    return new Error(String(error) || 'Unknown error');
   }
 
   /**
