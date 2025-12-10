@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.47.4
+
+### Patch Changes
+
+- d57fb3e: add type
+
 ## 1.47.2
 
 ### Patch Changes
