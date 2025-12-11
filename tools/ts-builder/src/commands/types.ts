@@ -17,13 +17,11 @@ export const typesCommand = new Command('types')
     }
 
     const commandPath = resolveTypeChecker(target);
-    const args = ['--noEmit', '--project', tsconfigPath];
-    
-    if (useSources) {
-      args.push('--customConditions', 'sources');
-    } else {
-      args.push('--customConditions', ',');
-    }
-    
+    const args = [
+        '--noEmit',
+        '--project', tsconfigPath,
+        '--customConditions', useSources ? 'sources' :  ','
+      ];
+
     await executeCommand(commandPath, args);
   });
