@@ -1,5 +1,12 @@
 # @platforma-sdk/bootstrap
 
+## 5.2.32
+
+### Patch Changes
+
+- Updated dependencies [54da520]
+  - @milaboratories/pl-deployments@2.14.0
+
 ## 5.2.31
 
 ### Patch Changes
