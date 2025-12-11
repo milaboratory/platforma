@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.14.0
+
+### Minor Changes
+
+- 54da520: Update Built-In backend to 1.45.1
+
 ## 2.13.1
 
 ### Patch Changes
