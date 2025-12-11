@@ -125,6 +125,5 @@ export function rethrowMeaningfulError(error: any, wrapIfUnknown: boolean = fals
   if (wrapIfUnknown) {
     const message = error.message || String(error) || 'Unknown error';
     throw new Error(message, { cause: error });
-  }
-  else throw error;
+  } else throw error;
 }
