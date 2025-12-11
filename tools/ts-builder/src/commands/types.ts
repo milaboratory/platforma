@@ -22,7 +22,7 @@ export const typesCommand = new Command('types')
     if (useSources) {
       args.push('--customConditions', 'sources');
     } else {
-      args.push('--customConditions', 'default');
+      args.push('--customConditions', ',');
     }
     
     await executeCommand(commandPath, args);
