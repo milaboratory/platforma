@@ -8,10 +8,5 @@
   },
   "scripts": {
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
-  },
-  "peerDependencies": {
-    "vite": "catalog:",
-    "vitest": "catalog:",
-    "@types/node": "catalog:"
   }
 }
