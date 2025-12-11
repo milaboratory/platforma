@@ -480,14 +480,13 @@ export class LLPlClient implements WireClientProviderFactory {
       };
     }
 
-    
     try {
       await this.ping();
       return {
         protocol: this._wireProto,
         shouldSwitch: false,
       };
-    } catch (err: unknown) {
+    } catch {
       return {
         protocol: getAlternativeWireProtocol(this._wireProto),
         shouldSwitch: true,
