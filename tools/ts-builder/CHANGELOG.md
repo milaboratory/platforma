@@ -1,5 +1,17 @@
 # @milaboratories/ts-builder
 
+## 1.1.0
+
+### Minor Changes
+
+- 4a90a47: correct usage use-sources for typecheck command
+
+### Patch Changes
+
+- Updated dependencies [4a90a47]
+  - @milaboratories/build-configs@1.1.0
+  - @milaboratories/ts-configs@1.1.0
+
 ## 1.0.6
 
 ### Patch Changes
