@@ -91,10 +91,13 @@ export class DisconnectedError extends Error {
 
 export function rethrowMeaningfulError(error: any, wrapIfUnknown: boolean = false): never {
   if (isUnauthenticated(error)) {
-    const message = error.message || String(error) || 'Unauthenticated';
-    throw new UnauthenticatedError(message);
+    if (error instanceof UnauthenticatedError) throw error;
+    throw new UnauthenticatedError(error.message);
   }
-  if (isConnectionProblem(error)) throw new DisconnectedError(error.message);
+  if (isConnectionProblem(error)) {
+    if (error instanceof DisconnectedError) throw error;
+    throw new DisconnectedError(error.message);
+  }
   if (isTimeoutOrCancelError(error)) throw new Aborted(error);
   if (wrapIfUnknown) {
     const message = error.message || String(error) || 'Unknown error';
