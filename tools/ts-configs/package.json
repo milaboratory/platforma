@@ -1,5 +1,5 @@
 {
-  "version": "1.0.6",
+  "version": "1.1.0",
   "name": "@milaboratories/ts-configs",
   "exports": {
     "./package.json": "./package.json",

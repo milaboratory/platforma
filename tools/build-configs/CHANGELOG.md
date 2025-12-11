@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.1.0
+
+### Minor Changes
+
+- 4a90a47: correct usage use-sources for typecheck command
+
 ## 1.0.9
 
 ### Patch Changes
