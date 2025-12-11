@@ -8,6 +8,7 @@ export const typesCommand = new Command('types')
   .action(async (options, command) => {
     const globalOpts = getGlobalOptions(command);
     const target = globalOpts.target as TargetType;
+    const useSources = globalOpts.useSources;
     const tsconfigPath = options.project;
 
     if (!existsSync(tsconfigPath)) {
@@ -16,7 +17,11 @@ export const typesCommand = new Command('types')
     }
 
     const commandPath = resolveTypeChecker(target);
-    const args = ['--noEmit', '--project', tsconfigPath];
-    
+    const args = [
+        '--noEmit',
+        '--project', tsconfigPath,
+        '--customConditions', useSources ? 'sources' :  ','
+      ];
+
     await executeCommand(commandPath, args);
   });

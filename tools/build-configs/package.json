@@ -28,16 +28,17 @@
     "./tsconfig_lib_bundled.json"
   ],
   "scripts": {
+    "build": "vite build",
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
     "@rollup/plugin-commonjs": "catalog:",
     "@rollup/plugin-json": "catalog:",
     "@rollup/plugin-node-resolve": "catalog:",
     "@rollup/plugin-typescript": "catalog:",
-    "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "vue": "catalog:",
     "rollup": "catalog:",
     "rollup-plugin-cleandir": "catalog:",
     "rollup-plugin-node-externals": "catalog:",

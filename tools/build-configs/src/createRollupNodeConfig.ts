@@ -21,7 +21,7 @@ export function createRollupNodeConfig(props?: {
       input,
       plugins: [
         cleandir(output),
-        typescript({ declaration: true, declarationMap: true, declarationDir: output }),
+        typescript({ declaration: true, declarationMap: true, declarationDir: output, moduleResolution: useSources ? "bundler" : "node" }),
         resolve(useSources ? { exportConditions: ['sources'] } : {}),
         commonjs(),
         json(),

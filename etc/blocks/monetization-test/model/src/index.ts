@@ -1,4 +1,4 @@
-import { BlockModel, ImportFileHandle, ImportProgress, InferOutputsType } from '@platforma-sdk/model';
+import { BlockModel, ImportFileHandle, InferOutputsType } from '@platforma-sdk/model';
 
 export type Handle = {
   handle: ImportFileHandle | undefined;
