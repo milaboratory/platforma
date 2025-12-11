@@ -1,4 +1,4 @@
-import { BlockModel, InferHrefType, InferOutputsType } from '@platforma-sdk/model';
+import { BlockModel, type InferHrefType, type InferOutputsType } from '@platforma-sdk/model';
 
 export type BlockArgs = {
   titleArg: string;
@@ -8,7 +8,7 @@ export const platforma = BlockModel.create('Heavy')
 
   .withArgs<BlockArgs>({ titleArg: 'The title' })
 
-  .sections((ctx) => {
+  .sections((_ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
   })
 

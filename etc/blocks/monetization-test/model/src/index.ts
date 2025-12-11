@@ -1,11 +1,12 @@
-import { BlockModel, ImportFileHandle, InferOutputsType } from '@platforma-sdk/model';
+import type { ImportFileHandle, InferOutputsType } from '@platforma-sdk/model';
+import { BlockModel } from '@platforma-sdk/model';
 
 export type Handle = {
   handle: ImportFileHandle | undefined;
   fileName: string;
   argName: string;
   options: string[];
-}
+};
 
 export type BlockArgs = {
   productKey: string;
@@ -18,7 +19,7 @@ export type BlockArgs = {
 export const model = BlockModel.create()
   .withArgs<BlockArgs>({
     // a fake product key so our mnz client response with a fake response without changing prod db.
-    productKey: "PRODUCT:XTOKAYPLQDZWSPPUTFNHPAJQQZKKSPTCDOORHFJIOYICTRDA",
+    productKey: 'PRODUCT:XTOKAYPLQDZWSPPUTFNHPAJQQZKKSPTCDOORHFJIOYICTRDA',
     inputHandles: [],
     shouldAddRunPerFile: false,
     __mnzDate: new Date().toISOString(), // It's OK
@@ -30,24 +31,24 @@ export const model = BlockModel.create()
   })
 
   .output('__mnzInfo', (ctx) => ctx.prerun?.resolve('info')?.getDataAsJson<unknown>())
-  
-  .output('tokens', (ctx) =>  ctx.outputs?.resolve('token')?.listInputFields().map((field) => {
+
+  .output('tokens', (ctx) => ctx.outputs?.resolve('token')?.listInputFields().map((field) => {
     return {
       name: field,
-      value: ctx.outputs?.resolve('token', field)?.getDataAsString()
-    }
+      value: ctx.outputs?.resolve('token', field)?.getDataAsString(),
+    };
   }))
 
   .output('progresses', (ctx) => {
     const m = ctx.prerun?.resolve('progresses');
-    const progresses = m?.mapFields((name, val) => [name, val?.getImportProgress()])
-    return Object.fromEntries(progresses ?? []);
+    const progresses = m?.mapFields((name, val) => [name, val?.getImportProgress()]);
+    return Object.fromEntries(progresses ?? []) as Record<string, unknown>;
   })
 
   .output('mainProgresses', (ctx) => {
     const m = ctx.outputs?.resolve('progresses');
-    const progresses = m?.mapFields((name, val) => [name, val?.getImportProgress()])
-    return Object.fromEntries(progresses ?? []);
+    const progresses = m?.mapFields((name, val) => [name, val?.getImportProgress()]);
+    return Object.fromEntries(progresses ?? []) as Record<string, unknown>;
   })
 
   .sections((_) => [{ type: 'link', href: '/', label: 'Main' }])
