@@ -10,7 +10,8 @@
     },
     "scripts": {
         "build": "rollup -c",
-        "watch": "rollup -c --watch"
+        "watch": "rollup -c --watch",
+        "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
     },
     "dependencies": {
         "@milaboratories/build-configs": "workspace:*",

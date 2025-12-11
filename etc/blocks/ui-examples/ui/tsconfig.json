@@ -1,9 +1,4 @@
 {
-  "extends": "@milaboratories/ts-configs/tsconfig.browser.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules"]
+  "extends": "@milaboratories/ts-configs/block/ui",
+  "include": ["src/**/*"]
 }

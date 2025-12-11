@@ -1,8 +1,9 @@
 import { platforma } from '@milaboratories/milaboratories.test-enter-numbers.model';
 import MainPage from './MainPage.vue';
 import { defineApp } from '@platforma-sdk/ui-vue';
-import { Component, computed, reactive } from 'vue';
-import { Equal, Expect } from '@milaboratories/helpers';
+import type { Component } from 'vue';
+import { computed, reactive } from 'vue';
+import type { Equal, Expect } from '@milaboratories/helpers';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -21,8 +22,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     incrementCounter,
     argsAsJson,
     routes: {
-      '/': () => MainPage
-    }
+      '/': () => MainPage,
+    },
   };
 }, {
   debug: true,
@@ -34,7 +35,7 @@ type __cases = [
   Expect<Equal<App['incrementCounter'], () => void>>,
   Expect<Equal<App['data'], { counter: number }>>,
   Expect<Equal<App['argsAsJson'], string>>,
-  Expect<Equal<App['getRoute'], (href: "/") => Component | undefined>>,
+  Expect<Equal<App['getRoute'], (href: '/') => Component | undefined>>,
 ];
 
 export const useApp = sdkPlugin.useApp;

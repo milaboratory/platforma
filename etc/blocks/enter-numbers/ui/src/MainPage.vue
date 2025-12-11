@@ -15,10 +15,10 @@ const numbers = computed({
 
     app.model.args.numbers = v.split(',').map(Number);
 
-    if (numbers.some(n => isNaN(n))) {
+    if (numbers.some((n) => isNaN(n))) {
       app.setError('Invalid value: contains NaNs +++');
     }
-  }
+  },
 });
 
 const fetchTestResult = async (n: number) => {
@@ -35,22 +35,22 @@ const resultRef = useWatchFetch(() => app.model.outputs.numbers, (numbers) => {
 
 <template>
   <PlBlockPage style="max-width: 100%">
-    <PlTextField label="Enter numbers (as comma-separated string)" v-model:model-value="numbers" />
+    <PlTextField v-model:model-value="numbers" label="Enter numbers (as comma-separated string)" />
     <PlAlert v-if="app.error" type="error">
       {{ app.error }}
     </PlAlert>
     <fieldset>
       <legend>Args (app.snapshot.args)</legend>
-      {{ app.snapshot.args  }}
-    </fieldset>  
+      {{ app.snapshot.args }}
+    </fieldset>
     <fieldset>
       <legend>Args (app.model.args)</legend>
       {{ app.model.args }}
     </fieldset>
     <fieldset>
       <legend>Args (app.snapshot.args deprecated)</legend>
-----
-    </fieldset>    
+      ----
+    </fieldset>
     <h3>app.model</h3>
     <code>{{ app.model }}</code>
     <h4>Result ref</h4>
@@ -62,7 +62,7 @@ const resultRef = useWatchFetch(() => app.model.outputs.numbers, (numbers) => {
       outputs:
       {{ app.model.outputs }}
     </PlAlert>
-    <PlAlert type="error" v-if="app.hasErrors">
+    <PlAlert v-if="app.hasErrors" type="error">
       {{ app.model.outputErrors }}
     </PlAlert>
     <PlBtnPrimary v-if="app.error" @click="app.revert">Revert changes</PlBtnPrimary>

@@ -26,12 +26,12 @@
         "PL_DOCKER_NO_AUTOPUSH"
       ],
       "env": ["PL_PKG_DEV"],
-      "dependsOn": ["type-check", "^build"]
+      "dependsOn": ["type-check", "lint", "^build"]
     },
     "test": {
       "outputs": ["./coverage/**"],
       "env": ["TEST_CACHE_CRUTCH"],
-      "dependsOn": ["build", "lint"],
+      "dependsOn": ["build"],
       "passThroughEnv": [
         "PL_ADDRESS",
         "PL_TEST_PASSWORD",
@@ -50,8 +50,7 @@
     },
     "do-pack": {
       "dependsOn": ["build"],
-      "outputs": ["package.tgz"],
-      "env": ["PL_PKG_DEV"]
+      "outputs": ["package.tgz"]
     },
     "publish-to-local-registry": {
       "dependsOn": ["build"],

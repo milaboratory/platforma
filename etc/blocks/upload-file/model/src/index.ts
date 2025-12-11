@@ -1,15 +1,12 @@
-import {
-  BlockModel,
-  getImportProgress,
-  getResourceField,
-  getResourceValueAsJson,
+import type {
   ImportFileHandle,
   InferHrefType,
-  InferOutputsType,
-  isPColumnSpec,
+  InferOutputsType } from '@platforma-sdk/model';
+import {
+  BlockModel,
+  getResourceField,
+  getResourceValueAsJson,
   MainOutputs,
-  mapValueInVOE,
-  Ref
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
@@ -17,11 +14,11 @@ export const ImportFileHandleSchema = z
   .string()
   .optional()
   .refine<ImportFileHandle | undefined>(
-    ((a) => true) as (arg: string | undefined) => arg is ImportFileHandle | undefined
+    ((_a) => true) as (arg: string | undefined) => arg is ImportFileHandle | undefined,
   );
 
 export const BlockArgs = z.object({
-  inputHandle: ImportFileHandleSchema
+  inputHandle: ImportFileHandleSchema,
 });
 
 export type BlockArgs = z.infer<typeof BlockArgs>;
@@ -29,14 +26,14 @@ export type BlockArgs = z.infer<typeof BlockArgs>;
 export const platforma = BlockModel.create('Heavy')
 
   .withArgs({
-    inputHandle: undefined
+    inputHandle: undefined,
   })
 
   .output('blob', getResourceValueAsJson()(getResourceField(MainOutputs, 'blob')))
 
   .output('handle', (ctx) => ctx.outputs?.resolve('handle')?.getImportProgress())
 
-  .sections((ctx) => {
+  .sections((_ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
   })
 

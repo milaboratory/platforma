@@ -7,7 +7,8 @@
     "dev": "ts-builder serve --target browser",
     "watch": "ts-builder build --target browser --watch",
     "build": "ts-builder build --target browser",
-    "type-check": "ts-builder types --target browser"
+    "type-check": "ts-builder types --target browser",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-block-model.model": "workspace:*",
@@ -15,9 +16,11 @@
     "vue": "catalog:"
   },
   "devDependencies": {
-    "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "eslint": "catalog:",
     "typescript": "catalog:",
     "zod": "catalog:"
   }

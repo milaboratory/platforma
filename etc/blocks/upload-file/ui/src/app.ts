@@ -1,13 +1,14 @@
 import { platforma } from '@milaboratories/milaboratories.test-upload-file.model';
 import MainPage from './MainPage.vue';
 import { defineApp } from '@platforma-sdk/ui-vue';
-import { Component, computed, reactive } from 'vue';
-import { Equal, Expect } from '@milaboratories/helpers';
+import type { Component } from 'vue';
+import { computed, reactive } from 'vue';
+import type { Equal, Expect } from '@milaboratories/helpers';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
   const data = reactive({
-    counter: 0
+    counter: 0,
   });
 
   function incrementCounter() {
@@ -21,8 +22,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     incrementCounter,
     argsAsJson,
     routes: {
-      '/': () => MainPage
-    }
+      '/': () => MainPage,
+    },
   };
 });
 
@@ -32,7 +33,7 @@ type __cases = [
   Expect<Equal<App['incrementCounter'], () => void>>,
   Expect<Equal<App['data'], { counter: number }>>,
   Expect<Equal<App['argsAsJson'], string>>,
-  Expect<Equal<App['getRoute'], (href: '/') => Component | undefined>>
+  Expect<Equal<App['getRoute'], (href: '/') => Component | undefined>>,
 ];
 
 export const useApp = sdkPlugin.useApp;

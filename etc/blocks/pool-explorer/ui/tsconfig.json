@@ -1,7 +1,10 @@
 {
-  "extends": "@milaboratories/ts-configs/tsconfig.browser.json",
+  "extends": "@milaboratories/ts-configs/block/ui",
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
   "compilerOptions": {
-    "outDir": "./dist"
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+    "types": [
+      "vite/client",
+      "vitest/importMeta"
+    ]
+  }
 }
