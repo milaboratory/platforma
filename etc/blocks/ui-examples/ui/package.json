@@ -15,16 +15,18 @@
     "@platforma-sdk/model": "workspace:*"
   },
   "devDependencies": {
-    "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
-    "@platforma-sdk/ui-vue": "workspace:*",
-    "@milaboratories/uikit": "workspace:*",
-    "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "@faker-js/faker": "catalog:",
     "@milaboratories/helpers": "workspace:*",
-    "zod": "catalog:",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/uikit": "workspace:*",
+    "@platforma-sdk/ui-vue": "workspace:*",
+    "@faker-js/faker": "catalog:",
     "ag-grid-enterprise": "catalog:",
-    "ag-grid-vue3": "catalog:"
+    "ag-grid-vue3": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "zod": "catalog:"
   }
 }
