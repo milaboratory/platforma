@@ -6,6 +6,7 @@
     "./browser": "./src/tsconfig.browser.json",
     "./*": "./src/*"
   },
-  "scripts": {},
-  "dependencies": {}
+  "scripts": {
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+  }
 }

@@ -48,7 +48,7 @@ const updateHandle = (v: ImportFileHandle | undefined, i: number) => {
 const handlesAndProgress = computed(() => {
   return app.model.args.inputHandles.map((h) => ({
     handle: h,
-    progress: app.model.outputs.fileImports[h],
+    progress: app.model.outputs.fileImports?.[h],
   }));
 });
 </script>

@@ -4,6 +4,7 @@ import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 import dts from 'vite-plugin-dts';
 import { externalizeDeps } from 'vite-plugin-externalize-deps';
 import { createViteDevConfig } from './createViteDevConfig';
+import { ModuleResolutionKind } from 'typescript';
 
 export const createViteLibConfig = ((configEnv: ConfigEnv): UserConfig => {
   const isProd = configEnv.mode === 'production';
@@ -12,9 +13,14 @@ export const createViteLibConfig = ((configEnv: ConfigEnv): UserConfig => {
   return mergeConfig(createViteDevConfig(configEnv), {
     plugins: [
       dts({
-        // Override customConditions from tsconfig to not use 'sources' during build
-        // unless USE_SOURCES is explicitly set
-        compilerOptions: useSources ? undefined : { customConditions: [] },
+        compilerOptions: Object.assign(
+          {
+            declaration: true,
+            declarationMap: true,
+            moduleResolution: useSources ? ModuleResolutionKind.Bundler : ModuleResolutionKind.NodeJs,
+          },
+          useSources ? undefined : { customConditions: [] }
+        ),
       }),
       externalizeDeps(),
       cssInjectedByJsPlugin({ relativeCSSInjection: true }),
