@@ -72,8 +72,8 @@ if [[ "$FORCE" == "true" ]]; then
   echo "⚠️  Running in non-interactive mode due to --force"
 fi
 
-# Loop through matching files
-for file in $(rg -l -e "$REGEX_PATTERN" . 2>/dev/null); do
+# Loop through matching files, excluding npm/pnpm lock files
+for file in $(rg -l -e "$REGEX_PATTERN" --glob '!**/pnpm-lock.yaml' --glob '!**/package-lock.json' --glob '!**/npm-shrinkwrap.json' --glob '!**/yarn.lock' . 2>/dev/null); do
   echo -e "\n📄 Match found in: $file"
   rg --color always -C 3 -e "$REGEX_PATTERN" "$file"
 
