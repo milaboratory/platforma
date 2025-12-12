@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.pool-explorer.model
 
+## 1.0.115
+
+### Patch Changes
+
+- 557172d: Add eslint configuration files and lint scripts to published block model and UI packages
+
 ## 1.0.114
 
 ### Patch Changes

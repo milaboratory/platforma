@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.3.10
+
+### Patch Changes
+
+- 557172d: Add eslint configuration files and lint scripts to published block model and UI packages
+
 ## 1.3.9
 
 ### Patch Changes
