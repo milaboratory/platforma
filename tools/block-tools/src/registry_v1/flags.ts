@@ -7,7 +7,7 @@ export interface TargetFile {
 }
 
 function parseTargetFile(arg: string): TargetFile {
-  const match = arg.match(/(?<destName>[^\/\\]+)=(?<src>.*)/);
+  const match = arg.match(/(?<destName>[^/\\]+)=(?<src>.*)/);
   if (match) {
     const { src, destName } = match.groups!;
     return { src, destName };
@@ -19,5 +19,6 @@ function parseTargetFile(arg: string): TargetFile {
 export const targetFile = Flags.custom<TargetFile>({
   summary: 'target files to upload',
   helpValue: 'file_path | package_name=file_path',
-  parse: async (arg) => parseTargetFile(arg)
+  // eslint-disable-next-line @typescript-eslint/require-await -- oclif requires async but parsing is sync
+  parse: async (arg) => parseTargetFile(arg),
 });

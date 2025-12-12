@@ -5,7 +5,6 @@ import {
   getValidatedConfigPath,
   resolveVite,
   validateTargetForBrowser,
-  type TargetType
 } from './utils/index';
 
 export const serveCommand = new Command('serve')
@@ -14,7 +13,7 @@ export const serveCommand = new Command('serve')
   .option('--host <host>', 'Host address', 'localhost')
   .action(async (options, command) => {
     const globalOpts = getGlobalOptions(command);
-    const target = globalOpts.target as TargetType;
+    const target = globalOpts.target;
     const customServeConfig = globalOpts.serveConfig;
     const useSources = globalOpts.useSources;
 
@@ -26,15 +25,14 @@ export const serveCommand = new Command('serve')
       const viteCommand = resolveVite();
       const viteArgs = ['dev'];
       const configPath = getValidatedConfigPath(customServeConfig, `vite.${target}.config.js`);
-      
+
       viteArgs.push('--config', configPath);
-      
+
       viteArgs.push('--port', options.port);
       viteArgs.push('--host', options.host);
 
       const env = useSources ? { USE_SOURCES: '1' } : undefined;
       await executeCommand(viteCommand, viteArgs, env);
-      
     } catch (error) {
       console.error('Failed to start dev server:', error);
       process.exit(1);

@@ -1,3 +1,7 @@
+import type {
+  ImportFileHandle,
+  InferHrefType,
+  InferOutputsType } from '@platforma-sdk/model';
 import {
   BlockModel,
   getBlobContent,
@@ -8,10 +12,7 @@ import {
   getOnDemandBlobContent,
   getResourceField,
   getResourceValueAsJson,
-  ImportFileHandle,
-  InferHrefType,
-  InferOutputsType,
-  MainOutputs
+  MainOutputs,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
@@ -19,11 +20,11 @@ export const ImportFileHandleSchema = z
   .string()
   .optional()
   .refine<ImportFileHandle | undefined>(
-    ((a) => true) as (arg: string | undefined) => arg is ImportFileHandle | undefined
+    ((_a) => true) as (arg: string | undefined) => arg is ImportFileHandle | undefined,
   );
 
 export const BlockArgs = z.object({
-  inputHandle: ImportFileHandleSchema
+  inputHandle: ImportFileHandleSchema,
 });
 
 export type BlockArgs = z.infer<typeof BlockArgs>;
@@ -31,7 +32,7 @@ export type BlockArgs = z.infer<typeof BlockArgs>;
 export const platforma = BlockModel.create('Heavy')
 
   .withArgs({
-    inputHandle: undefined
+    inputHandle: undefined,
   })
 
   .output('blob', getResourceValueAsJson()(getResourceField(MainOutputs, 'blob')))
@@ -46,7 +47,7 @@ export const platforma = BlockModel.create('Heavy')
     ctx.outputs
       ?.resolve('downloadable')
       ?.getFileContentAsString()
-      .mapDefined((v) => v + v)
+      .mapDefined((v) => v + v),
   )
 
   .output('contentAsStringRange', getBlobContentAsString(getResourceField(MainOutputs, 'downloadable'), { from: 1, to: 2 }))
@@ -61,22 +62,22 @@ export const platforma = BlockModel.create('Heavy')
 
   .output(
     'downloadedBlobContent',
-    getDownloadedBlobContent(getResourceField(MainOutputs, 'downloadable'))
+    getDownloadedBlobContent(getResourceField(MainOutputs, 'downloadable')),
   )
 
   .output(
     'onDemandBlobContent',
-    getOnDemandBlobContent(getResourceField(MainOutputs, 'downloadable'))
+    getOnDemandBlobContent(getResourceField(MainOutputs, 'downloadable')),
   )
 
   .output(
     'onDemandBlobContent1',
-    (ctx) => ctx.outputs?.resolve('downloadable')?.getRemoteFileHandle()
+    (ctx) => ctx.outputs?.resolve('downloadable')?.getRemoteFileHandle(),
   )
 
   .output('getFileHandle', (ctx) => ctx.outputs?.resolve('downloadable')?.getFileHandle())
 
-  .sections((ctx) => {
+  .sections((_ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
   })
 

@@ -7,7 +7,8 @@
     "dev": "ts-builder serve --target browser",
     "watch": "ts-builder build --target browser --watch",
     "build": "ts-builder build --target browser",
-    "type-check": "ts-builder types --target browser"
+    "type-check": "ts-builder types --target browser",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-download-file.model": "workspace:*",
@@ -17,11 +18,13 @@
     "@platforma-sdk/model": "workspace:*"
   },
   "devDependencies": {
-    "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "@faker-js/faker": "catalog:",
+    "@platforma-sdk/eslint-config": "workspace:*",
     "@milaboratories/helpers": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@faker-js/faker": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
     "zod": "catalog:"
   }
 }

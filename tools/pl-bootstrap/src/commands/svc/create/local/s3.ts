@@ -55,7 +55,7 @@ export default class Local extends Command {
     const instanceName = parsed.instanceName;
     const flags = parsed.knownFlags;
     const backendCommands = parsed.unknownFlags;
-    if (flags['log-level']){
+    if (flags['log-level']) {
       backendCommands.push(`--log-level=${flags['log-level']}`);
     }
 

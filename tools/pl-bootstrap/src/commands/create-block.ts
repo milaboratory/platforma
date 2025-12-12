@@ -4,12 +4,12 @@ import * as util from '../util';
 import * as block from '../block';
 
 export default class CreateBlock extends Command {
-  static override description = "Helps to create a new block by downloading a block's template.";
+  static override description = 'Helps to create a new block by downloading a block\'s template.';
 
   static override examples = ['<%= name %>'];
 
   static override flags = {
-    ...cmdOpts.GlobalFlags
+    ...cmdOpts.GlobalFlags,
   };
 
   public async run(): Promise<void> {

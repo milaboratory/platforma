@@ -1,11 +1,5 @@
 import { Command, Flags } from '@oclif/core';
-import { BlockRegistryV2, loadPackDescriptionRaw } from '../v2';
-import path from 'path';
-import {
-  overrideDescriptionVersion,
-  overrideManifestVersion,
-  StableChannel
-} from '@milaboratories/pl-model-middle-layer';
+import { BlockRegistryV2 } from '../v2';
 import { storageByUrl } from '../io';
 import { OclifLoggerAdapter } from '@milaboratories/ts-helpers-oclif';
 
@@ -18,7 +12,7 @@ export default class RefreshRegistry extends Command {
       summary: 'full address of the registry',
       helpValue: '<address>',
       env: 'PL_REGISTRY',
-      required: true
+      required: true,
     }),
 
     mode: Flags.string({
@@ -27,8 +21,8 @@ export default class RefreshRegistry extends Command {
       helpValue: '<mode>',
       options: ['force', 'normal', 'dry-run'],
       env: 'PL_REGISTRY_REFRESH_DRY_RUN',
-      default: 'normal'
-    })
+      default: 'normal',
+    }),
   };
 
   public async run(): Promise<void> {

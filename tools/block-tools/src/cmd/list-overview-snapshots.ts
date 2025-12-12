@@ -12,22 +12,22 @@ export default class ListOverviewSnapshots extends Command {
       summary: 'full address of the registry',
       helpValue: '<address>',
       env: 'PL_REGISTRY',
-      required: true
+      required: true,
     }),
 
     json: Flags.boolean({
       summary: 'output in JSON format',
-      default: false
-    })
+      default: false,
+    }),
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(ListOverviewSnapshots);
     const storage = storageByUrl(flags.registry);
     const registry = new BlockRegistryV2(storage, new OclifLoggerAdapter(this));
-    
+
     const snapshots = await registry.listGlobalOverviewSnapshots();
-    
+
     if (flags.json) {
       this.log(JSON.stringify(snapshots, null, 2));
     } else {

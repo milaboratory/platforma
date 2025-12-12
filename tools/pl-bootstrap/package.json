@@ -6,7 +6,8 @@
     "type-check": "ts-builder types --target node",
     "build": "oclif-index && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "lint": "eslint ."
   },
   "bin": {
     "pl-dev": "./bin/run.js"
@@ -23,16 +24,17 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/eslint-config": "workspace:*",
+    "@milaboratories/oclif-index": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@types/decompress": "catalog:",
     "@types/node": "catalog:",
     "@types/readline-sync": "catalog:",
+    "eslint": "catalog:",
     "prettier": "catalog:",
     "ts-node": "catalog:",
-    "typescript": "catalog:",
-    "@milaboratories/ts-builder": "workspace:*"
+    "typescript": "catalog:"
   },
   "dependencies": {
     "@milaboratories/pl-deployments": "workspace:*",

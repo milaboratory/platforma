@@ -1,4 +1,4 @@
-import { Options } from 'tsup';
+import type { Options } from 'tsup';
 
 export const BaseTsupOptions: Options = {
   splitting: false,
@@ -7,5 +7,5 @@ export const BaseTsupOptions: Options = {
   format: ['cjs', 'esm'],
   minify: false,
   sourcemap: true,
-  dts: true
+  dts: true,
 };

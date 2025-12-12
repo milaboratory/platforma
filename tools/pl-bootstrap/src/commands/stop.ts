@@ -10,7 +10,7 @@ export default class Stop extends Command {
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
   static override flags = {
-    ...cmdOpts.GlobalFlags
+    ...cmdOpts.GlobalFlags,
   };
 
   public async run(): Promise<void> {

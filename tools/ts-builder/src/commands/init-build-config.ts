@@ -1,10 +1,10 @@
 import { Command } from 'commander';
 import {
-    createConfigFile,
-    getGlobalOptions,
-    getTarget,
-    type CommandOptions,
-    type TargetType
+  createConfigFile,
+  getGlobalOptions,
+  getTarget,
+  type CommandOptions,
+  type TargetType,
 } from './utils/index';
 
 export const initBuildConfigCommand = new Command('init-build-config')
@@ -13,7 +13,7 @@ export const initBuildConfigCommand = new Command('init-build-config')
   .action(async (options: CommandOptions, command) => {
     const globalOpts = getGlobalOptions(command);
     const target = getTarget(options, globalOpts) as TargetType;
-    
+
     console.log(`Initializing build config for ${target} target...`);
 
     try {

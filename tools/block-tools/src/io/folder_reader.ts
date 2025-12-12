@@ -1,5 +1,6 @@
-import { Dispatcher, request } from 'undici';
-import { RelativeContentReader } from '../v2';
+import type { Dispatcher } from 'undici';
+import { request } from 'undici';
+import type { RelativeContentReader } from '../v2';
 import path from 'node:path';
 import pathPosix from 'node:path/posix';
 import fsp from 'node:fs/promises';
@@ -15,13 +16,13 @@ export interface FolderReader {
 class HttpFolderReader implements FolderReader {
   constructor(
     public readonly rootUrl: URL,
-    private readonly httpDispatcher: Dispatcher
+    private readonly httpDispatcher: Dispatcher,
   ) {}
 
   public async readFile(file: string): Promise<Buffer> {
     const targetUrl = new URL(file, this.rootUrl);
     const response = await request(targetUrl, {
-      dispatcher: this.httpDispatcher
+      dispatcher: this.httpDispatcher,
     });
     return Buffer.from(await response.body.arrayBuffer());
   }
@@ -32,8 +33,9 @@ class HttpFolderReader implements FolderReader {
   }
 
   public getContentReader(relativePath?: string): RelativeContentReader {
-    let reader: HttpFolderReader = this;
-    if (relativePath !== undefined) reader = reader.relativeReader(relativePath);
+    const reader: HttpFolderReader = relativePath !== undefined
+      ? this.relativeReader(relativePath)
+      : this;
     return (path) => reader.readFile(path);
   }
 }
@@ -41,7 +43,7 @@ class HttpFolderReader implements FolderReader {
 class FSFolderReader implements FolderReader {
   constructor(
     public readonly rootUrl: URL,
-    private readonly root: string
+    private readonly root: string,
   ) {}
 
   public async readFile(file: string): Promise<Buffer> {
@@ -53,13 +55,14 @@ class FSFolderReader implements FolderReader {
     if (!relativePath.endsWith('/')) relativePath = relativePath + '/';
     return new FSFolderReader(
       new URL(relativePath, this.rootUrl),
-      path.join(this.root, ...relativePath.split(pathPosix.sep))
+      path.join(this.root, ...relativePath.split(pathPosix.sep)),
     );
   }
 
   public getContentReader(relativePath?: string): RelativeContentReader {
-    let reader: FSFolderReader = this;
-    if (relativePath !== undefined) reader = reader.relativeReader(relativePath);
+    const reader: FSFolderReader = relativePath !== undefined
+      ? this.relativeReader(relativePath)
+      : this;
     return (path) => reader.readFile(path);
   }
 }
@@ -76,9 +79,10 @@ export function folderReaderByUrl(address: string, httpDispatcher?: Dispatcher):
   if (!address.endsWith('/')) address = address + '/';
   const url = new URL(address, `file:${localToPosix(path.resolve('.'))}/`);
   switch (url.protocol) {
-    case 'file:':
+    case 'file:': {
       const rootPath = posixToLocalPath(url.pathname);
       return new FSFolderReader(url, rootPath);
+    }
     case 'https:':
     case 'http:':
       return new HttpFolderReader(url, httpDispatcher ?? defaultHttpDispatcher());

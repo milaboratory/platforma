@@ -98,8 +98,8 @@ export class BlockPackRegistry {
           const latestOverview: SingleBlockPackOverview = {
             id,
             meta: {
-              title: latestMeta['title'] ?? 'No title',
-              description: latestMeta['description'] ?? 'No Description',
+              title: (latestMeta['title'] as string | undefined) ?? 'No title',
+              description: (latestMeta['description'] as string | undefined) ?? 'No Description',
               organization: {
                 name: organization,
                 url: 'https://unknown.com',

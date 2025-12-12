@@ -1,9 +1,10 @@
-import {
-  BlockModel,
+import type {
   ImportFileHandle,
   InferHrefType,
   InferOutputsType,
-  RemoteBlobHandleAndSize,
+  RemoteBlobHandleAndSize } from '@platforma-sdk/model';
+import {
+  BlockModel,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
@@ -11,11 +12,11 @@ export const ImportFileHandleSchema = z
   .string()
   .optional()
   .refine<ImportFileHandle | undefined>(
-    ((a) => true) as (arg: string | undefined) => arg is ImportFileHandle | undefined
+    ((_a) => true) as (arg: string | undefined) => arg is ImportFileHandle | undefined,
   );
 
 export const BlockArgs = z.object({
-  inputHandles: z.array(ImportFileHandleSchema)
+  inputHandles: z.array(ImportFileHandleSchema),
 });
 
 export type BlockArgs = z.infer<typeof BlockArgs>;
@@ -23,12 +24,12 @@ export type BlockArgs = z.infer<typeof BlockArgs>;
 export const platforma = BlockModel.create('Heavy')
 
   .withArgs({
-    inputHandles: [] as ImportFileHandle[]
+    inputHandles: [] as ImportFileHandle[],
   })
 
-  // fileImports: smart.createMapResource(maps.mapValues(fileImports, func(im) {
-  //   return im.handle
-  // }))
+// fileImports: smart.createMapResource(maps.mapValues(fileImports, func(im) {
+//   return im.handle
+// }))
 
   .output(
     'fileImports',
@@ -37,10 +38,10 @@ export const platforma = BlockModel.create('Heavy')
         ctx.outputs
           ?.resolve({ field: 'fileImports', assertFieldType: 'Input' })
           ?.mapFields((handle, acc) => [handle as ImportFileHandle, acc.getImportProgress()], {
-            skipUnresolved: true
-          }) ?? []
+            skipUnresolved: true,
+          }) ?? [],
       ),
-    { isActive: true }
+    { isActive: true },
   )
 
   .output(
@@ -50,13 +51,13 @@ export const platforma = BlockModel.create('Heavy')
         ctx.outputs
           ?.resolve({ field: 'fileExports', assertFieldType: 'Input' })
           ?.mapFields((handle, acc) => [handle as ImportFileHandle, acc.getRemoteFileHandle()], {
-            skipUnresolved: true
-          }) ?? []
+            skipUnresolved: true,
+          }) ?? [],
       ) as unknown as Record<ImportFileHandle, RemoteBlobHandleAndSize | undefined>,
-    { isActive: true }
+    { isActive: true },
   )
 
-  .sections((ctx) => {
+  .sections((_ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
   })
 

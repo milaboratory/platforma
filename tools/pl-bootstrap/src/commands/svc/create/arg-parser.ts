@@ -25,7 +25,7 @@ export class ArgParser {
   constructor(flags: Record<string, any>) {
     this.knownFlags = new Set(Object.keys(flags));
     this.flagDefinitions = new Map();
-    
+
     // Analyze flag definitions
     for (const [name, flag] of Object.entries(flags)) {
       if (flag.type) {
@@ -34,7 +34,7 @@ export class ArgParser {
           type: flag.type,
           required: flag.required || false,
           default: flag.default,
-          multiple: flag.multiple || false
+          multiple: flag.multiple || false,
         });
       }
     }
@@ -48,7 +48,7 @@ export class ArgParser {
       instanceName: '',
       knownFlags: {},
       unknownFlags: [],
-      positionalArgs: []
+      positionalArgs: [],
     };
 
     let i = 0;
@@ -61,7 +61,7 @@ export class ArgParser {
           // Flag with value: --flag=value
           const [flagName, value] = arg.split('=', 2);
           const cleanFlagName = flagName.substring(2);
-          
+
           if (this.knownFlags.has(cleanFlagName)) {
             result.knownFlags[cleanFlagName] = this.parseFlagValue(cleanFlagName, value);
           } else {
@@ -70,10 +70,10 @@ export class ArgParser {
         } else {
           // Flag without value: --flag or --flag value
           const flagName = arg.substring(2);
-          
+
           if (this.knownFlags.has(flagName)) {
             const flagDef = this.flagDefinitions.get(flagName);
-            
+
             if (flagDef?.type === 'boolean') {
               // Boolean flag
               result.knownFlags[flagName] = true;
@@ -110,13 +110,13 @@ export class ArgParser {
           result.positionalArgs.push(arg);
         }
       }
-      
+
       i++;
     }
 
     // Set default values
     this.setDefaultValues(result.knownFlags);
-    
+
     return result;
   }
 
@@ -125,7 +125,7 @@ export class ArgParser {
    */
   private parseFlagValue(flagName: string, value: string): any {
     const flagDef = this.flagDefinitions.get(flagName);
-    
+
     if (!flagDef) {
       return value;
     }
@@ -137,12 +137,12 @@ export class ArgParser {
           throw new Error(`Invalid number value for flag --${flagName}: ${value}`);
         }
         return num;
-      
+
       case 'boolean':
         if (value === 'true' || value === '1') return true;
         if (value === 'false' || value === '0') return false;
         return Boolean(value);
-      
+
       case 'array':
         if (flagDef.multiple) {
           // For multiple flags create array
@@ -150,7 +150,7 @@ export class ArgParser {
           return [value];
         }
         return value;
-      
+
       default:
         return value;
     }
@@ -185,13 +185,13 @@ export class ArgParser {
    */
   validateRequired(flags: Record<string, any>): string[] {
     const errors: string[] = [];
-    
+
     for (const [name, flagDef] of this.flagDefinitions) {
       if (flagDef.required && flags[name] === undefined) {
         errors.push(`Required flag --${name} is missing`);
       }
     }
-    
+
     return errors;
   }
 }
