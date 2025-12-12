@@ -1,10 +1,9 @@
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
-import resolve from '@rollup/plugin-node-resolve';
-import typescript from '@rollup/plugin-typescript';
 import { OutputOptions, PreRenderedChunk, RollupOptions } from 'rollup';
 import { cleandir } from 'rollup-plugin-cleandir';
 import nodeExternals from 'rollup-plugin-node-externals';
+import { createRollupResolvePlugin, createRollupTypescriptPlugin } from './rollupUtils';
 
 export function createRollupNodeConfig(props?: {
   entry?: string[];
@@ -21,8 +20,8 @@ export function createRollupNodeConfig(props?: {
       input,
       plugins: [
         cleandir(output),
-        typescript({ declaration: true, declarationMap: true, declarationDir: output, moduleResolution: useSources ? "bundler" : "node" }),
-        resolve(useSources ? { exportConditions: ['sources'] } : {}),
+        createRollupTypescriptPlugin({ output, useSources }),
+        createRollupResolvePlugin({ useSources }),
         commonjs(),
         json(),
         nodeExternals(),

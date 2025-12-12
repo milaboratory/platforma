@@ -1,8 +1,7 @@
 import commonjs from '@rollup/plugin-commonjs';
-import resolve from '@rollup/plugin-node-resolve';
-import typescript from '@rollup/plugin-typescript';
 import { RollupOptions } from 'rollup';
 import { createRollupNodeConfig } from './createRollupNodeConfig';
+import { createRollupTypescriptPlugin, createRollupResolvePlugin } from './rollupUtils';
 
 export function createRollupBlockModelConfig(props?: {
   entry?: string[];
@@ -10,20 +9,22 @@ export function createRollupBlockModelConfig(props?: {
   formats?: ('es' | 'cjs')[]
 }): RollupOptions[] {
   const base = createRollupNodeConfig(props);
+  const input = props?.entry ?? ['./src/index.ts'];
+  const output = props?.output ?? 'dist';
   const useSources = process.env.USE_SOURCES === '1';
   
   return [
     ...base,
     {
-      input: props?.entry ?? ['./src/index.ts'],
+      input,
       plugins: [
-        typescript(),
-        resolve(useSources ? { exportConditions: ['sources'] } : {}),
+        createRollupTypescriptPlugin({ output, useSources }),
+        createRollupResolvePlugin({ useSources }),
         commonjs(),
       ],
       output: [
         {
-          dir: props?.output ?? 'dist',
+          dir: output,
           name: 'block-model',
           format: 'umd',
           entryFileNames: 'bundle.js',
