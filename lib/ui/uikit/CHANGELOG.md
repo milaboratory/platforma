@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.8.0
+
+### Minor Changes
+
+- 8398f3a: Add PlPlaceholder and PlLoaderLogo components
+
 ## 2.7.3
 
 ### Patch Changes
