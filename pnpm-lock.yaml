@@ -3297,6 +3297,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../build-configs
+      '@milaboratories/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@milaboratories/oclif-index':
         specifier: workspace:*
         version: link:../oclif-index
@@ -3318,6 +3321,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 4.0.7(vitest@4.0.7(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       oclif:
         specifier: 'catalog:'
         version: 4.16.2(@types/node@24.5.2)
@@ -3400,6 +3406,13 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.24(typescript@5.6.3)
+    devDependencies:
+      '@milaboratories/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
 
   tools/eslint-config:
     dependencies:
@@ -3577,6 +3590,9 @@ importers:
       '@types/readline-sync':
         specifier: 'catalog:'
         version: 1.4.8
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       prettier:
         specifier: 'catalog:'
         version: 3.4.1
@@ -3681,6 +3697,13 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 2.2.10(typescript@5.6.3)
+    devDependencies:
+      '@milaboratories/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
 
   tools/ts-configs: {}
 
