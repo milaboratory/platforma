@@ -5,8 +5,8 @@ import path from 'node:path';
 async function getFileContent(path: string) {
   try {
     return await fs.promises.readFile(path, 'utf8');
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
       return undefined;
     }
     throw error;
@@ -43,11 +43,14 @@ export default class BuildModel extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(BuildModel);
     const modulePath = path.resolve(flags.modulePath); // i.e. folder with package.json file
+    // eslint-disable-next-line prefer-const, @typescript-eslint/no-unsafe-assignment
     let { model, platforma } = require(modulePath);
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     if (!model) model = platforma;
     if (!model) throw new Error('"model" export not found');
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const { config } = model;
 
     if (!config)
@@ -65,6 +68,7 @@ export default class BuildModel extends Command {
 
     const code = await getFileContent(flags.sourceBundle);
     if (code !== undefined) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       config.code = {
         type: 'plain',
         content: code,

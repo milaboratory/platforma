@@ -33,6 +33,7 @@ type ContentCtxUrl = {
 /** Describes a place relative to which any content references should be interpreted */
 export type ContentCtx = ContentCtxFs | ContentCtxUrl;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- utility function for future use
 function mustResolve(root: string, request: string): string {
   const res = tryResolve(root, request);
   if (res === undefined) throw new Error(`Can't resolve ${request} against ${root}`);
@@ -155,6 +156,7 @@ export function cpAbsoluteToRelative(
       const fileName = path.basename(value.file);
       const dst = path.resolve(dstFolder, fileName);
       fileAccumulator?.push(fileName);
+      // eslint-disable-next-line n/no-unsupported-features/node-builtins
       await fsp.cp(value.file, dst);
       return { type: 'relative', path: fileName };
     } else return value as Exclude<T, ContentAbsoluteFile>;

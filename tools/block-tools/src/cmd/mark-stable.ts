@@ -3,7 +3,6 @@ import { BlockRegistryV2, loadPackDescriptionRaw } from '../v2';
 import path from 'node:path';
 import {
   overrideDescriptionVersion,
-  overrideManifestVersion,
   StableChannel,
 } from '@milaboratories/pl-model-middle-layer';
 import { storageByUrl } from '../io';

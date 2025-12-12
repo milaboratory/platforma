@@ -1,11 +1,5 @@
 import { Command, Flags } from '@oclif/core';
-import { BlockRegistryV2, loadPackDescriptionRaw } from '../v2';
-import path from 'node:path';
-import {
-  overrideDescriptionVersion,
-  overrideManifestVersion,
-  StableChannel,
-} from '@milaboratories/pl-model-middle-layer';
+import { BlockRegistryV2 } from '../v2';
 import { storageByUrl } from '../io';
 import { OclifLoggerAdapter } from '@milaboratories/ts-helpers-oclif';
 

@@ -7,7 +7,7 @@ export function packageUpdateSeedPath(bp: BlockPackId, seed: string): string {
 }
 
 export const PackageUpdatePattern
-  = /(?<packageKeyWithoutVersion>(?<organization>[^\/]+)\/(?<name>[^\/]+))\/(?<version>[^\/]+)\/(?<seed>[^\/]+)$/;
+  = /(?<packageKeyWithoutVersion>(?<organization>[^/]+)\/(?<name>[^/]+))\/(?<version>[^/]+)\/(?<seed>[^/]+)$/;
 
 export const GlobalUpdateSeedInFile = '_updates_v2/_global_update_in';
 export const GlobalUpdateSeedOutFile = '_updates_v2/_global_update_out';

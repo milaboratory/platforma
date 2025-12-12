@@ -53,6 +53,7 @@ async function loadConfigShard(): Promise<PlRegPackageConfigDataShard> {
 const conf: PlRegPackageConfigDataShard | undefined = undefined;
 let confPromise: Promise<PlRegPackageConfigDataShard> | undefined = undefined;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getConfigShard() {
   if (conf !== undefined) return conf;
   if (confPromise !== undefined) return await confPromise;

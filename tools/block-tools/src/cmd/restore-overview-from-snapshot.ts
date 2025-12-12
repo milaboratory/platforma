@@ -72,7 +72,7 @@ export default class RestoreOverviewFromSnapshot extends Command {
       await registry.restoreGlobalOverviewFromSnapshot(flags.snapshot);
       this.log(`✅ Successfully restored global overview from snapshot '${flags.snapshot}'`);
     } catch (error) {
-      this.error(`Failed to restore from snapshot: ${error}`);
+      this.error(`Failed to restore from snapshot: ${String(error)}`);
     }
   }
 }

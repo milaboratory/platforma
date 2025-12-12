@@ -10,7 +10,6 @@ import type {
 import {
   blockPackIdNoVersionEquals,
   BlockPackManifest,
-  BlockPackOverview,
   AnyChannel,
 } from '@milaboratories/pl-model-middle-layer';
 import type { FolderReader } from '../../io';
@@ -153,7 +152,7 @@ export class RegistryV2Reader {
             );
             return {
               id: p.id,
-              latestByChannel: Object.fromEntries(byChannelEntries),
+              latestByChannel: Object.fromEntries(byChannelEntries) as BlockPackOverviewNoRegistryId['latestByChannel'],
               allVersions: p.allVersionsWithChannels,
             } satisfies BlockPackOverviewNoRegistryId;
           }),
@@ -233,7 +232,7 @@ export class RegistryV2Reader {
 
   private readonly componentsCache = new LRUCache<string, BlockComponentsAbsoluteUrl, BlockPackId>({
     max: 500,
-    fetchMethod: async (key, staleValue, { context: id }) =>
+    fetchMethod: async (_key, _staleValue, { context: id }) =>
       await retry(async () => {
         const packageFolderReader = this.v2RootFolderReader.relativeReader(
           packageContentPrefixInsideV2(id),

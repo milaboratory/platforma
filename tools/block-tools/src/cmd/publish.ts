@@ -71,10 +71,10 @@ export default class Publish extends Command {
     const { flags } = await this.parse(Publish);
 
     const manifestPath = path.resolve(flags.manifest);
-    const rawManifest = JSON.parse(await fs.promises.readFile(manifestPath, { encoding: 'utf-8' }));
+    const rawManifest = JSON.parse(await fs.promises.readFile(manifestPath, { encoding: 'utf-8' })) as Record<string, unknown>;
     let manifest = BlockPackManifest.parse(rawManifest);
     // To keep extra fields from the manifest and keep coerced fields
-    manifest = simpleDeepMerge(rawManifest, manifest);
+    manifest = simpleDeepMerge(rawManifest, manifest as BlockPackManifest & Record<string, unknown>);
     const manifestRoot = path.dirname(manifestPath);
 
     this.log(`Manifest root = ${manifestRoot}`);

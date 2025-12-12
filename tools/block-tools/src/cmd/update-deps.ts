@@ -8,6 +8,7 @@ export default class UpdateDeps extends Command {
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
+  // eslint-disable-next-line @typescript-eslint/require-await -- oclif requires async but implementation is sync
   public async run(): Promise<void> {
     const require = createRequire(import.meta.url);
     const updaterPath = require.resolve('@platforma-sdk/blocks-deps-updater/scripts/updater.js');

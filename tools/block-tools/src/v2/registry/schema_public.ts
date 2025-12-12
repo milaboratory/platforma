@@ -9,7 +9,6 @@ import {
   ContentRelativeBinary,
   ContentRelativeText,
   CreateBlockPackDescriptionSchema,
-  SemVer,
   Sha256Schema,
   VersionWithChannels,
 } from '@milaboratories/pl-model-middle-layer';
@@ -72,7 +71,7 @@ export function packageChannelPrefix(bp: BlockPackId): string {
 }
 
 export const PackageManifestPattern
-  = /(?<packageKeyWithoutVersion>(?<organization>[^\/]+)\/(?<name>[^\/]+))\/(?<version>[^\/]+)\/manifest\.json$/;
+  = /(?<packageKeyWithoutVersion>(?<organization>[^/]+)\/(?<name>[^/]+))\/(?<version>[^/]+)\/manifest\.json$/;
 
 export const GlobalOverviewPath = `${MainPrefix}${GlobalOverviewFileName}`;
 export const GlobalOverviewGzPath = `${MainPrefix}${GlobalOverviewGzFileName}`;
@@ -109,6 +108,7 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
             allVersionsWithChannels: o.allVersions!.map((v) => ({ version: v, channels: [] })),
           };
       })
+      /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
       // make sure "any" channel set from main body
       .transform((o: any) =>
         o.latestByChannel[AnyChannel]
@@ -121,6 +121,7 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
               },
             },
       )
+      /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
       .pipe(universalSchema.required({ allVersionsWithChannels: true }))
   );
 }

@@ -11,7 +11,6 @@ import {
 import { BlockComponentsConsolidate, BlockComponentsDescription } from './block_components';
 import { BlockPackMetaConsolidate, BlockPackMetaDescription } from './block_meta';
 import type { z } from 'zod';
-import path from 'node:path';
 import fsp from 'node:fs/promises';
 import type { BlockConfigContainer } from '@milaboratories/pl-model-common';
 import { extractConfigGeneric } from '@milaboratories/pl-model-common';
@@ -20,7 +19,7 @@ export function ResolvedBlockPackDescriptionFromPackageJson(root: string) {
   return CreateBlockPackDescriptionSchema(
     BlockComponentsDescription(root),
     BlockPackMetaDescription(root),
-  ).transform(async (description, ctx) => {
+  ).transform(async (description, _ctx) => {
     const cfg = extractConfigGeneric(JSON.parse(await fsp.readFile(description.components.model.file, 'utf-8')) as BlockConfigContainer);
     const featureFlags = cfg.featureFlags;
     return {

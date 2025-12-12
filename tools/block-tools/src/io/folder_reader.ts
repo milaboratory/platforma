@@ -33,8 +33,9 @@ class HttpFolderReader implements FolderReader {
   }
 
   public getContentReader(relativePath?: string): RelativeContentReader {
-    let reader: HttpFolderReader = this;
-    if (relativePath !== undefined) reader = reader.relativeReader(relativePath);
+    const reader: HttpFolderReader = relativePath !== undefined
+      ? this.relativeReader(relativePath)
+      : this;
     return (path) => reader.readFile(path);
   }
 }
@@ -59,8 +60,9 @@ class FSFolderReader implements FolderReader {
   }
 
   public getContentReader(relativePath?: string): RelativeContentReader {
-    let reader: FSFolderReader = this;
-    if (relativePath !== undefined) reader = reader.relativeReader(relativePath);
+    const reader: FSFolderReader = relativePath !== undefined
+      ? this.relativeReader(relativePath)
+      : this;
     return (path) => reader.readFile(path);
   }
 }
@@ -77,9 +79,10 @@ export function folderReaderByUrl(address: string, httpDispatcher?: Dispatcher):
   if (!address.endsWith('/')) address = address + '/';
   const url = new URL(address, `file:${localToPosix(path.resolve('.'))}/`);
   switch (url.protocol) {
-    case 'file:':
+    case 'file:': {
       const rootPath = posixToLocalPath(url.pathname);
       return new FSFolderReader(url, rootPath);
+    }
     case 'https:':
     case 'http:':
       return new HttpFolderReader(url, httpDispatcher ?? defaultHttpDispatcher());

@@ -35,7 +35,7 @@ export async function tryLoadPackDescription(
   const fullPackageJsonPath = path.resolve(moduleRoot, 'package.json');
   try {
     const packageJson = await tryLoadFile(fullPackageJsonPath, (buf) =>
-      JSON.parse(buf.toString('utf-8')),
+      JSON.parse(buf.toString('utf-8')) as Record<string, unknown>,
     );
     if (packageJson === undefined) return undefined;
     const descriptionNotParsed = packageJson[BlockDescriptionPackageJsonField];
@@ -44,7 +44,7 @@ export async function tryLoadPackDescription(
       ...BlockPackDescriptionFromPackageJsonRaw.parse(descriptionNotParsed),
       id: {
         ...parsePackageName(
-          notEmpty(packageJson['name'], `"name" not found in ${fullPackageJsonPath}`),
+          notEmpty(packageJson['name'] as string | undefined, `"name" not found in ${fullPackageJsonPath}`),
         ),
         version: SemVer.parse(packageJson['version']),
       },
@@ -54,7 +54,7 @@ export async function tryLoadPackDescription(
     if (descriptionParsingResult.success) return descriptionParsingResult.data;
     logger?.warn(descriptionParsingResult.error);
     return undefined;
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger?.warn(e);
     return undefined;
   }
@@ -62,7 +62,7 @@ export async function tryLoadPackDescription(
 
 export async function loadPackDescriptionRaw(moduleRoot: string): Promise<BlockPackDescriptionRaw> {
   const fullPackageJsonPath = path.resolve(moduleRoot, 'package.json');
-  const packageJson = JSON.parse(await fsp.readFile(fullPackageJsonPath, { encoding: 'utf-8' }));
+  const packageJson = JSON.parse(await fsp.readFile(fullPackageJsonPath, { encoding: 'utf-8' })) as Record<string, unknown>;
   const descriptionNotParsed = packageJson[BlockDescriptionPackageJsonField];
   if (descriptionNotParsed === undefined)
     throw new Error(
@@ -72,7 +72,7 @@ export async function loadPackDescriptionRaw(moduleRoot: string): Promise<BlockP
     ...BlockPackDescriptionFromPackageJsonRaw.parse(descriptionNotParsed),
     id: {
       ...parsePackageName(
-        notEmpty(packageJson['name'], `"name" not found in ${fullPackageJsonPath}`),
+        notEmpty(packageJson['name'] as string | undefined, `"name" not found in ${fullPackageJsonPath}`),
       ),
       version: SemVer.parse(packageJson['version']),
     },

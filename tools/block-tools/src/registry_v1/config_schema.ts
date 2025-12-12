@@ -6,7 +6,7 @@ export const PlPackageConfigData = z.object({
   organization: z.string(),
   package: z.string(),
   version: SemVer.optional(),
-  files: z.record(z.string().regex(/^[^\/]+$/), z.string()).default({}),
+  files: z.record(z.string().regex(/^[^/]+$/), z.string()).default({}),
   meta: z.object({}).passthrough(),
 });
 

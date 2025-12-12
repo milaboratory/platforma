@@ -14,6 +14,7 @@ import {
 } from './v1_repo_schema';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function fullNameToPath(name: FullBlockPackageName): string {
   return `${name.organization}/${name.package}/${name.version}`;
 }
@@ -25,7 +26,7 @@ function packageUpdatePath(bp: FullBlockPackageName, seed: string): string {
 }
 
 const PackageUpdatePattern
-  = /(?<packageKeyWithoutVersion>(?<organization>[^\/]+)\/(?<pkg>[^\/]+))\/(?<version>[^\/]+)\/(?<seed>[^\/]+)$/;
+  = /(?<packageKeyWithoutVersion>(?<organization>[^/]+)\/(?<pkg>[^/]+))\/(?<version>[^/]+)\/(?<seed>[^/]+)$/;
 
 const GlobalUpdateSeedInFile = '_updates_v1/_global_update_in';
 const GlobalUpdateSeedOutFile = '_updates_v1/_global_update_out';
@@ -85,7 +86,7 @@ export class BlockRegistry {
     return new BlockRegistryPackConstructor(this.storage, pack);
   }
 
-  private async updateRegistry() {
+  private async updateRegistry(): Promise<void> {
     this.logger?.info('Initiating registry refresh...');
 
     // reading update requests
@@ -97,26 +98,23 @@ export class BlockRegistry {
       const match = seedPath.match(PackageUpdatePattern);
       if (!match) continue;
       seedPaths.push(seedPath);
-      const { packageKeyWithoutVersion, organization, pkg, version, seed } = match.groups!;
+      const { packageKeyWithoutVersion, organization, pkg, version, seed: _seed } = match.groups!;
 
       const update = packagesToUpdate.get(packageKeyWithoutVersion);
-      let added = false;
       if (!update) {
         packagesToUpdate.set(packageKeyWithoutVersion, {
           package: { organization, package: pkg },
           versions: new Set([version]),
         });
-        added = true;
       } else if (!update.versions.has(version)) {
         update.versions.add(version);
-        added = true;
       }
       this.logger?.info(`  - ${organization}:${pkg}:${version}`);
     }
 
     // loading global overview
     const overviewContent = await this.storage.getFile(GlobalOverviewPath);
-    let overview
+    let overview: GlobalOverview
       = overviewContent === undefined
         ? []
         : (JSON.parse(overviewContent.toString()) as GlobalOverview);
@@ -151,7 +149,7 @@ export class BlockRegistry {
           ),
         );
         if (!metaContent) continue;
-        packageOverview.push({ version, meta: JSON.parse(metaContent.toString()) });
+        packageOverview.push({ version, meta: JSON.parse(metaContent.toString()) as Record<string, unknown> });
       }
 
       // sorting entries according to version

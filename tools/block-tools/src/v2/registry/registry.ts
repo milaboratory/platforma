@@ -1,6 +1,6 @@
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
-import { compare as compareSemver, satisfies } from 'semver';
+import { compare as compareSemver } from 'semver';
 import { gzip, gunzip } from 'node:zlib';
 import { promisify } from 'node:util';
 import type { RegistryStorage } from '../../io/storage';
@@ -19,9 +19,7 @@ import {
   packageUpdateSeedPath,
   VersionUpdatesPrefix,
   GlobalOverviewSnapshotPattern,
-  OverviewSnapshotsPrefix,
   GlobalSnapshotsPrefix,
-  PackageSnapshotsPrefix,
   globalOverviewSnapshotPath,
   packageOverviewSnapshotPath,
 } from './schema_internal';
@@ -90,7 +88,7 @@ export class BlockRegistryV2 {
       await this.storage.putFile(snapshotPath, Buffer.from(gzippedData));
       this.logger.info(`Global overview snapshot created at ${snapshotPath}`);
     } catch (error) {
-      this.logger.warn(`Failed to create global overview snapshot: ${error}`);
+      this.logger.warn(`Failed to create global overview snapshot: ${String(error)}`);
     }
   }
 
@@ -104,7 +102,7 @@ export class BlockRegistryV2 {
       await this.storage.putFile(snapshotPath, Buffer.from(gzippedData));
       this.logger.info(`Package overview snapshot created at ${snapshotPath} for ${pkg.organization}:${pkg.name}`);
     } catch (error) {
-      this.logger.warn(`Failed to create package overview snapshot for ${pkg.organization}:${pkg.name}: ${error}`);
+      this.logger.warn(`Failed to create package overview snapshot for ${pkg.organization}:${pkg.name}: ${String(error)}`);
     }
   }
 
@@ -140,7 +138,7 @@ export class BlockRegistryV2 {
       const match = seedPath.match(PackageUpdatePattern);
       if (!match) continue;
       seedPaths.push(seedPath);
-      const { organization, name, version, seed } = match.groups!;
+      const { organization, name, version, seed: _seed } = match.groups!;
       const added = addVersionToBeUpdated({ organization, name, version });
       this.logger.info(`  - ${organization}:${name}:${version} added:${added}`);
     }
@@ -433,7 +431,7 @@ export class BlockRegistryV2 {
     try {
       GlobalOverviewReg.parse(JSON.parse(overviewData));
     } catch (error) {
-      throw new Error(`Invalid snapshot data in ${backupId}: ${error}`);
+      throw new Error(`Invalid snapshot data in ${backupId}: ${String(error)}`);
     }
 
     // Write both regular and gzipped versions

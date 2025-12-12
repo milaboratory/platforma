@@ -70,11 +70,11 @@ export default class UploadPackageV1 extends Command {
       if (flags.meta.endsWith('.json'))
         configFromFlags.meta = JSON.parse(
           await fs.promises.readFile(flags.meta, { encoding: 'utf-8' }),
-        );
+        ) as Record<string, unknown>;
       else if (flags.meta.endsWith('.yaml'))
         configFromFlags.meta = YAML.parse(
           await fs.promises.readFile(flags.meta, { encoding: 'utf-8' }),
-        );
+        ) as Record<string, unknown>;
     }
 
     for (const targetFile of flags.file) {
