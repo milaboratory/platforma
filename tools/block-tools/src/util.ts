@@ -1,9 +1,9 @@
-import { BigIntStats } from 'node:fs';
+import type { BigIntStats } from 'node:fs';
 import fsp from 'node:fs/promises';
 
 export async function tryLoadFile<T>(
   file: string,
-  map: (buf: Buffer) => T
+  map: (buf: Buffer) => T,
 ): Promise<T | undefined> {
   try {
     return map(await fsp.readFile(file));

@@ -1,5 +1,5 @@
-import { Command } from 'commander';
-import { TargetType } from './config-manager';
+import type { Command } from 'commander';
+import type { TargetType } from './config-manager';
 
 export interface GlobalOptions {
   target: TargetType;
@@ -22,12 +22,12 @@ export function getGlobalOptions(command: Command): GlobalOptions {
 
 export function getTarget(options: CommandOptions, globalOpts: GlobalOptions): string {
   const target = options.target || globalOpts.target;
-  
+
   if (!target) {
     console.error('Target type is required. Use --target flag.');
     process.exit(1);
   }
-  
+
   return target;
 }
 

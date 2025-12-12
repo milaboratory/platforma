@@ -18,46 +18,46 @@ export default class UploadPackageV1 extends Command {
       char: 'r',
       summary: 'full address of the registry or alias from .pl.reg',
       helpValue: '<address|alias>',
-      env: 'PL_REGISTRY'
+      env: 'PL_REGISTRY',
     }),
 
     organization: Flags.string({
       char: 'o',
       summary: 'target organisation',
-      env: 'PL_PACKAGE_ORGANIZATION'
+      env: 'PL_PACKAGE_ORGANIZATION',
     }),
 
     package: Flags.string({
       char: 'p',
       summary: 'target package',
-      env: 'PL_PACKAGE_NAME'
+      env: 'PL_PACKAGE_NAME',
     }),
 
     version: Flags.string({
       char: 'v',
       summary: 'target version',
-      env: 'PL_PACKAGE_VERSION'
+      env: 'PL_PACKAGE_VERSION',
     }),
 
     meta: Flags.file({
       char: 'm',
       summary: 'json file containing meta information to associate with tha package',
-      exists: true
+      exists: true,
     }),
 
     file: targetFile({
       char: 'f',
       summary: 'package files',
       multiple: true,
-      default: []
+      default: [],
     }),
 
     refresh: Flags.boolean({
       summary: 'refresh repository after adding the package',
       default: true,
       allowNo: true,
-      env: 'PL_REGISTRY_REFRESH'
-    })
+      env: 'PL_REGISTRY_REFRESH',
+    }),
   };
 
   public async run(): Promise<void> {
@@ -69,11 +69,11 @@ export default class UploadPackageV1 extends Command {
     if (flags.meta) {
       if (flags.meta.endsWith('.json'))
         configFromFlags.meta = JSON.parse(
-          await fs.promises.readFile(flags.meta, { encoding: 'utf-8' })
+          await fs.promises.readFile(flags.meta, { encoding: 'utf-8' }),
         );
       else if (flags.meta.endsWith('.yaml'))
         configFromFlags.meta = YAML.parse(
-          await fs.promises.readFile(flags.meta, { encoding: 'utf-8' })
+          await fs.promises.readFile(flags.meta, { encoding: 'utf-8' }),
         );
     }
 

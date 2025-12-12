@@ -1,17 +1,18 @@
-import { RegistryStorage } from '../io/storage';
+import type { RegistryStorage } from '../io/storage';
 import { randomUUID } from 'node:crypto';
 import semver from 'semver';
-import {
+import type {
   BlockPackageNameWithoutVersion,
   FullBlockPackageName,
   GlobalOverview,
+  PackageOverview } from './v1_repo_schema';
+import {
   GlobalOverviewPath,
   MetaFile,
-  PackageOverview,
   packageOverviewPath,
-  payloadFilePath
+  payloadFilePath,
 } from './v1_repo_schema';
-import { MiLogger } from '@milaboratories/ts-helpers';
+import type { MiLogger } from '@milaboratories/ts-helpers';
 
 function fullNameToPath(name: FullBlockPackageName): string {
   return `${name.organization}/${name.package}/${name.version}`;
@@ -23,8 +24,8 @@ function packageUpdatePath(bp: FullBlockPackageName, seed: string): string {
   return `${VersionUpdatesPrefix}${bp.organization}/${bp.package}/${bp.version}/${seed}`;
 }
 
-const PackageUpdatePattern =
-  /(?<packageKeyWithoutVersion>(?<organization>[^\/]+)\/(?<pkg>[^\/]+))\/(?<version>[^\/]+)\/(?<seed>[^\/]+)$/;
+const PackageUpdatePattern
+  = /(?<packageKeyWithoutVersion>(?<organization>[^\/]+)\/(?<pkg>[^\/]+))\/(?<version>[^\/]+)\/(?<seed>[^\/]+)$/;
 
 const GlobalUpdateSeedInFile = '_updates_v1/_global_update_in';
 const GlobalUpdateSeedOutFile = '_updates_v1/_global_update_out';
@@ -77,7 +78,7 @@ const GlobalUpdateSeedOutFile = '_updates_v1/_global_update_out';
 export class BlockRegistry {
   constructor(
     private readonly storage: RegistryStorage,
-    private readonly logger?: MiLogger
+    private readonly logger?: MiLogger,
   ) {}
 
   constructNewPackage(pack: FullBlockPackageName): BlockRegistryPackConstructor {
@@ -98,12 +99,12 @@ export class BlockRegistry {
       seedPaths.push(seedPath);
       const { packageKeyWithoutVersion, organization, pkg, version, seed } = match.groups!;
 
-      let update = packagesToUpdate.get(packageKeyWithoutVersion);
+      const update = packagesToUpdate.get(packageKeyWithoutVersion);
       let added = false;
       if (!update) {
         packagesToUpdate.set(packageKeyWithoutVersion, {
           package: { organization, package: pkg },
-          versions: new Set([version])
+          versions: new Set([version]),
         });
         added = true;
       } else if (!update.versions.has(version)) {
@@ -115,8 +116,8 @@ export class BlockRegistry {
 
     // loading global overview
     const overviewContent = await this.storage.getFile(GlobalOverviewPath);
-    let overview =
-      overviewContent === undefined
+    let overview
+      = overviewContent === undefined
         ? []
         : (JSON.parse(overviewContent.toString()) as GlobalOverview);
     this.logger?.info(`Global overview loaded, ${overview.length} records`);
@@ -126,12 +127,12 @@ export class BlockRegistry {
       // reading existing overview
       const overviewFile = packageOverviewPath(packageInfo.package);
       const pOverviewContent = await this.storage.getFile(overviewFile);
-      let packageOverview =
-        pOverviewContent === undefined
+      let packageOverview
+        = pOverviewContent === undefined
           ? []
           : (JSON.parse(pOverviewContent.toString()) as PackageOverview);
       this.logger?.info(
-        `Updating ${packageInfo.package.organization}:${packageInfo.package.package} overview, ${packageOverview.length} records`
+        `Updating ${packageInfo.package.organization}:${packageInfo.package.package} overview, ${packageOverview.length} records`,
       );
 
       // removing versions that we will update
@@ -144,10 +145,10 @@ export class BlockRegistry {
           payloadFilePath(
             {
               ...packageInfo.package,
-              version
+              version,
             },
-            MetaFile
-          )
+            MetaFile,
+          ),
         );
         if (!metaContent) continue;
         packageOverview.push({ version, meta: JSON.parse(metaContent.toString()) });
@@ -163,15 +164,15 @@ export class BlockRegistry {
       // patching corresponding entry in overview
       overview = overview.filter(
         (e) =>
-          e.organization !== packageInfo.package.organization ||
-          e.package !== packageInfo.package.package
+          e.organization !== packageInfo.package.organization
+          || e.package !== packageInfo.package.package,
       );
       overview.push({
         organization: packageInfo.package.organization,
         package: packageInfo.package.package,
         allVersions: packageOverview.map((e) => e.version).reverse(),
         latestVersion: packageOverview[0].version,
-        latestMeta: packageOverview[0].meta
+        latestMeta: packageOverview[0].meta,
       });
     }
 
@@ -192,10 +193,10 @@ export class BlockRegistry {
     const currentUpdatedSeed = await this.storage.getFile(GlobalUpdateSeedOutFile);
     if (!force && updateRequestSeed === undefined && currentUpdatedSeed === undefined) return;
     if (
-      !force &&
-      updateRequestSeed !== undefined &&
-      currentUpdatedSeed !== undefined &&
-      updateRequestSeed.equals(currentUpdatedSeed)
+      !force
+      && updateRequestSeed !== undefined
+      && currentUpdatedSeed !== undefined
+      && updateRequestSeed.equals(currentUpdatedSeed)
     )
       return;
 
@@ -208,7 +209,7 @@ export class BlockRegistry {
   }
 
   async getPackageOverview(
-    name: BlockPackageNameWithoutVersion
+    name: BlockPackageNameWithoutVersion,
   ): Promise<undefined | PackageOverview> {
     const content = await this.storage.getFile(packageOverviewPath(name));
     if (content === undefined) return undefined;
@@ -228,7 +229,7 @@ export class BlockRegistryPackConstructor {
 
   constructor(
     private readonly storage: RegistryStorage,
-    public readonly name: FullBlockPackageName
+    public readonly name: FullBlockPackageName,
   ) {}
 
   async addFile(file: string, content: Buffer): Promise<void> {
@@ -249,5 +250,5 @@ export class BlockRegistryPackConstructor {
 
 interface PackageUpdateInfo {
   package: BlockPackageNameWithoutVersion;
-  versions: Set<String>;
+  versions: Set<string>;
 }

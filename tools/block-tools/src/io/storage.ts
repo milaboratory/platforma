@@ -17,7 +17,7 @@ export class S3Storage implements RegistryStorage {
   constructor(
     public readonly client: S3,
     public readonly bucket: string,
-    public readonly root: string
+    public readonly root: string,
   ) {}
 
   async getFile(file: string): Promise<Buffer | undefined> {
@@ -26,9 +26,9 @@ export class S3Storage implements RegistryStorage {
         await (
           await this.client.getObject({
             Bucket: this.bucket,
-            Key: pathPosix.join(this.root, file)
+            Key: pathPosix.join(this.root, file),
           })
-        ).Body!.transformToByteArray()
+        ).Body!.transformToByteArray(),
       );
     } catch (e: any) {
       if (e.name === 'NoSuchKey') return undefined;
@@ -42,8 +42,8 @@ export class S3Storage implements RegistryStorage {
       { client: this.client },
       {
         Bucket: this.bucket,
-        Prefix: listRoot
-      }
+        Prefix: listRoot,
+      },
     );
     const result: string[] = [];
     for await (const page of paginator)
@@ -55,7 +55,7 @@ export class S3Storage implements RegistryStorage {
     await this.client.putObject({
       Bucket: this.bucket,
       Key: pathPosix.join(this.root, file),
-      Body: buffer
+      Body: buffer,
     });
   }
 
@@ -65,9 +65,9 @@ export class S3Storage implements RegistryStorage {
       Bucket: this.bucket,
       Delete: {
         Objects: files.map((file) => ({
-          Key: pathPosix.join(this.root, file)
-        }))
-      }
+          Key: pathPosix.join(this.root, file),
+        })),
+      },
     });
     if (results.Errors !== undefined && results.Errors.length > 0)
       throw new Error(`Errors encountered while deleting files: ${results.Errors.join('\n')}`);
@@ -102,7 +102,7 @@ export class FSStorage implements RegistryStorage {
       return (await fs.promises.readdir(listRoot, { recursive: true, withFileTypes: true }))
         .filter((e: any) => e.isFile())
         .map((e: any) =>
-          path.relative(listRoot, path.resolve(e.parentPath, e.name)).split(path.sep).join(pathPosix.sep)
+          path.relative(listRoot, path.resolve(e.parentPath, e.name)).split(path.sep).join(pathPosix.sep),
         );
     } catch (err: any) {
       if (err.code == 'ENOENT') return [];

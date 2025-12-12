@@ -1,6 +1,7 @@
 import nodeResolve from '@rollup/plugin-node-resolve';
 import nodeExternals from 'rollup-plugin-node-externals';
-import { defineConfig, UserConfig } from 'vite';
+import type { UserConfig } from 'vite';
+import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
 /**
@@ -12,18 +13,18 @@ export function PlViteStdNode(overrideConfig?: UserConfig) {
       lib: {
         entry: 'src/index.ts',
         fileName: 'index',
-        formats: ['es', 'cjs']
+        formats: ['es', 'cjs'],
       },
       sourcemap: true,
-      rollupOptions: {}
+      rollupOptions: {},
     },
     plugins: [
       nodeExternals(),
       nodeResolve(),
       dts({
-        staticImport: true
-      })
+        staticImport: true,
+      }),
     ],
-    ...(overrideConfig ?? {})
+    ...(overrideConfig ?? {}),
   });
 }

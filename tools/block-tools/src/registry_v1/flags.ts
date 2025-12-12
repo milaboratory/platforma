@@ -19,5 +19,5 @@ function parseTargetFile(arg: string): TargetFile {
 export const targetFile = Flags.custom<TargetFile>({
   summary: 'target files to upload',
   helpValue: 'file_path | package_name=file_path',
-  parse: async (arg) => parseTargetFile(arg)
+  parse: async (arg) => parseTargetFile(arg),
 });

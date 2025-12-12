@@ -9,7 +9,7 @@ import path from 'node:path';
 
 function simpleDeepMerge<T extends Record<string, unknown>>(
   target: Record<string, unknown>,
-  source: T
+  source: T,
 ): T {
   const result = { ...target };
 
@@ -29,42 +29,42 @@ function simpleDeepMerge<T extends Record<string, unknown>>(
 }
 
 export default class Publish extends Command {
-  static description =
-    'Publishes the block package and refreshes the registry (for v2 block-pack schema)';
+  static description
+    = 'Publishes the block package and refreshes the registry (for v2 block-pack schema)';
 
   static flags = {
-    registry: Flags.string({
+    'registry': Flags.string({
       char: 'r',
       summary: 'full address of the registry',
       helpValue: '<address>',
       env: 'PL_REGISTRY',
-      required: true
+      required: true,
     }),
 
-    manifest: Flags.file({
+    'manifest': Flags.file({
       char: 'm',
       summary: 'manifest file path',
       exists: true,
-      default: `./block-pack/${ManifestFileName}`
+      default: `./block-pack/${ManifestFileName}`,
     }),
 
     'version-override': Flags.file({
       char: 'v',
-      summary: 'override package version'
+      summary: 'override package version',
     }),
 
-    refresh: Flags.boolean({
+    'refresh': Flags.boolean({
       summary: 'refresh repository after adding the package',
       default: true,
       allowNo: true,
-      env: 'PL_REGISTRY_REFRESH'
+      env: 'PL_REGISTRY_REFRESH',
     }),
 
-    unstable: Flags.boolean({
+    'unstable': Flags.boolean({
       summary: 'do not add the published package to stable channel',
       default: false,
-      env: 'PL_PUBLISH_UNSTABLE'
-    })
+      env: 'PL_PUBLISH_UNSTABLE',
+    }),
   };
 
   public async run(): Promise<void> {
@@ -86,7 +86,7 @@ export default class Publish extends Command {
     const registry = new BlockRegistryV2(storage, new OclifLoggerAdapter(this));
 
     await registry.publishPackage(manifest, async (file) =>
-      Buffer.from(await fs.promises.readFile(path.resolve(manifestRoot, file)))
+      Buffer.from(await fs.promises.readFile(path.resolve(manifestRoot, file))),
     );
 
     if (!flags.unstable) {

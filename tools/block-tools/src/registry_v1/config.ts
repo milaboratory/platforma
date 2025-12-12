@@ -4,35 +4,35 @@ import {
   PlPackageJsonConfigFile,
   PlPackageYamlConfigFile,
   PlRegFullPackageConfigData,
-  PlRegPackageConfigDataShard
+  PlRegPackageConfigDataShard,
 } from './config_schema';
 import * as os from 'node:os';
 import { BlockRegistry } from './registry';
 import { storageByUrl } from '../io/storage';
-import { FullBlockPackageName } from './v1_repo_schema';
-import { MiLogger } from '@milaboratories/ts-helpers';
+import type { FullBlockPackageName } from './v1_repo_schema';
+import type { MiLogger } from '@milaboratories/ts-helpers';
 
 function mergeConfigs(
   c1: PlRegPackageConfigDataShard,
-  c2: PlRegPackageConfigDataShard | undefined
+  c2: PlRegPackageConfigDataShard | undefined,
 ): PlRegPackageConfigDataShard {
   if (c2 === undefined) return c1;
   return {
     ...c1,
     ...c2,
     registries: { ...c1.registries, ...c2.registries },
-    files: { ...c1.files, ...c2.files }
+    files: { ...c1.files, ...c2.files },
   };
 }
 
 async function tryLoadJsonConfigFromFile(
-  file: string
+  file: string,
 ): Promise<PlRegPackageConfigDataShard | undefined> {
   return tryLoadFile(file, (buf) => PlRegPackageConfigDataShard.parse(JSON.parse(buf.toString())));
 }
 
 async function tryLoadYamlConfigFromFile(
-  file: string
+  file: string,
 ): Promise<PlRegPackageConfigDataShard | undefined> {
   return tryLoadFile(file, (buf) => PlRegPackageConfigDataShard.parse(YAML.parse(buf.toString())));
 }
@@ -50,7 +50,7 @@ async function loadConfigShard(): Promise<PlRegPackageConfigDataShard> {
   return conf;
 }
 
-let conf: PlRegPackageConfigDataShard | undefined = undefined;
+const conf: PlRegPackageConfigDataShard | undefined = undefined;
 let confPromise: Promise<PlRegPackageConfigDataShard> | undefined = undefined;
 
 async function getConfigShard() {
@@ -77,7 +77,7 @@ export class PlRegPackageConfig {
     return {
       organization: this.conf.organization,
       package: this.conf.package,
-      version: this.conf.version
+      version: this.conf.version,
     };
   }
 }
@@ -85,6 +85,6 @@ export class PlRegPackageConfig {
 export async function getConfig(finalShard: PlRegPackageConfigDataShard) {
   const confShard = await loadConfigShard();
   return new PlRegPackageConfig(
-    PlRegFullPackageConfigData.parse(mergeConfigs(confShard, finalShard))
+    PlRegFullPackageConfigData.parse(mergeConfigs(confShard, finalShard)),
   );
 }

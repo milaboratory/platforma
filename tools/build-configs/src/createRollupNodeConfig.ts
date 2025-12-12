@@ -2,26 +2,26 @@ import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
-import { OutputOptions, PreRenderedChunk, RollupOptions } from 'rollup';
+import type { OutputOptions, PreRenderedChunk, RollupOptions } from 'rollup';
 import { cleandir } from 'rollup-plugin-cleandir';
 import nodeExternals from 'rollup-plugin-node-externals';
 
 export function createRollupNodeConfig(props?: {
   entry?: string[];
   output?: string;
-  formats?: ('es' | 'cjs')[]
+  formats?: ('es' | 'cjs')[];
 }): RollupOptions[] {
   const input = props?.entry ?? ['./src/index.ts'];
   const output = props?.output ?? 'dist';
   const formats = props?.formats ?? ['es', 'cjs'];
   const useSources = process.env.USE_SOURCES === '1';
-  
+
   return [
     {
       input,
       plugins: [
         cleandir(output),
-        typescript({ declaration: true, declarationMap: true, declarationDir: output, moduleResolution: useSources ? "bundler" : "node" }),
+        typescript({ declaration: true, declarationMap: true, declarationDir: output, moduleResolution: useSources ? 'bundler' : 'node' }),
         resolve(useSources ? { exportConditions: ['sources'] } : {}),
         commonjs(),
         json(),
@@ -34,7 +34,7 @@ export function createRollupNodeConfig(props?: {
           preserveModules: true,
           preserveModulesRoot: 'src',
           entryFileNames: createEntryFileNames('.js'),
-          sourcemap: true
+          sourcemap: true,
         },
         formats.includes('cjs') && {
           dir: output,
@@ -42,7 +42,7 @@ export function createRollupNodeConfig(props?: {
           preserveModules: true,
           preserveModulesRoot: 'src',
           entryFileNames: createEntryFileNames('.cjs'),
-          sourcemap: true
+          sourcemap: true,
         },
       ].filter((v) => v !== null && typeof v === 'object') as OutputOptions[],
     },

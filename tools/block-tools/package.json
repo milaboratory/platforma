@@ -18,7 +18,8 @@
     "build": "vite build",
     "readme": "oclif readme",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "lint": "eslint ."
   },
   "bin": {
     "block-tools": "./bin/run.js"
@@ -51,20 +52,22 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
-    "typescript": "catalog:",
-    "vite": "catalog:",
-    "rollup-plugin-node-externals": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@rollup/plugin-node-resolve": "catalog:",
-    "vite-plugin-dts": "catalog:",
-    "semver": "catalog:",
     "@types/mime-types": "catalog:",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "vitest": "catalog:",
+    "eslint": "catalog:",
     "oclif": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "rollup-plugin-node-externals": "catalog:",
+    "semver": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:"
   },
   "oclif": {
     "bin": "block-tools",

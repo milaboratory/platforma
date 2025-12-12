@@ -30,7 +30,8 @@
   "scripts": {
     "build": "vite build",
     "type-check": "tsc --noEmit --composite false",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@rollup/plugin-commonjs": "catalog:",
@@ -49,5 +50,9 @@
     "vite-plugin-css-injected-by-js": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vite-plugin-externalize-deps": "^0.9.0"
+  },
+  "devDependencies": {
+    "@milaboratories/eslint-config": "workspace:*",
+    "eslint": "catalog:"
   }
 }

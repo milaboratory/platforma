@@ -48,7 +48,7 @@ export default class Docker extends Command {
     const instanceName = parsed.instanceName;
     const flags = parsed.knownFlags;
     const backendCommands = parsed.unknownFlags;
-    if (flags['log-level']){
+    if (flags['log-level']) {
       backendCommands.push(`--log-level=${flags['log-level']}`);
     }
 
@@ -111,7 +111,7 @@ export default class Docker extends Command {
     });
 
     logger.info(`Instance '${instanceName}' was created. To start it run 'up' command`);
-    
+
     // Log unknown flags that will be passed to backend
     if (backendCommands.length > 0) {
       logger.info(`Unknown flags will be passed to backend: ${backendCommands.join(' ')}`);

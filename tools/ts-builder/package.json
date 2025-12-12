@@ -11,7 +11,9 @@
     "scripts": {
         "build": "rollup -c",
         "watch": "rollup -c --watch",
-        "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+        "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+        "lint": "eslint .",
+        "type-check": "tsc --noEmit"
     },
     "dependencies": {
         "@milaboratories/build-configs": "workspace:*",
@@ -22,6 +24,10 @@
         "typescript": "catalog:",
         "vue-tsc": "catalog:",
         "vite": "catalog:"
+    },
+    "devDependencies": {
+        "@milaboratories/eslint-config": "workspace:*",
+        "eslint": "catalog:"
     },
     "files": [
         "dist",

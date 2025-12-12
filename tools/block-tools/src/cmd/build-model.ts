@@ -1,6 +1,6 @@
 import { Command, Flags } from '@oclif/core';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 async function getFileContent(path: string) {
   try {
@@ -14,30 +14,30 @@ async function getFileContent(path: string) {
 }
 
 export default class BuildModel extends Command {
-  static override description =
-    'Extracts and outputs block model JSON from pre-built block model module';
+  static override description
+    = 'Extracts and outputs block model JSON from pre-built block model module';
 
   static flags = {
     modulePath: Flags.string({
       char: 'i',
       summary: 'input module path',
       helpValue: '<path>',
-      default: '.'
+      default: '.',
     }),
 
     sourceBundle: Flags.string({
       char: 'b',
       summary: 'bundled model code to embed into the model for callback-based rendering to work',
       helpValue: '<path>',
-      default: './dist/bundle.js'
+      default: './dist/bundle.js',
     }),
 
     destination: Flags.string({
       char: 'o',
       summary: 'output model file',
       helpValue: '<path>',
-      default: './dist/model.json'
-    })
+      default: './dist/model.json',
+    }),
   };
 
   public async run(): Promise<void> {
@@ -52,14 +52,14 @@ export default class BuildModel extends Command {
 
     if (!config)
       throw new Error(
-        'Malformed "model" object, check it is created with "BlockModel" ' +
-          'and ".done()" is executed as the call in the chain.'
+        'Malformed "model" object, check it is created with "BlockModel" '
+        + 'and ".done()" is executed as the call in the chain.',
       );
 
     if (
-      !('canRun' in config || 'inputsValid' in config) ||
-      !('outputs' in config) ||
-      !('sections' in config)
+      !('canRun' in config || 'inputsValid' in config)
+      || !('outputs' in config)
+      || !('sections' in config)
     )
       throw new Error('"config" has unexpected structure');
 
@@ -67,7 +67,7 @@ export default class BuildModel extends Command {
     if (code !== undefined) {
       config.code = {
         type: 'plain',
-        content: code
+        content: code,
       };
     }
 

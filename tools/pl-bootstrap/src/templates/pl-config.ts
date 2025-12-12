@@ -209,7 +209,7 @@ export function render(options: types.plSettings): string {
     miLicenseSecret = fs.readFileSync(options.license.file).toString().trimEnd();
   }
 
-  let cpuLimit = ''
+  let cpuLimit = '';
   if (options.numCpu) {
     cpuLimit = `
     resources:
