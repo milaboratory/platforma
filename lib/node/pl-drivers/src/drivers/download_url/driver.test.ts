@@ -9,7 +9,7 @@ import * as path from 'node:path';
 import { DownloadUrlDriver } from './driver';
 import { test, expect } from 'vitest';
 
-test.skip('should download a tar archive and extracts its content and then deleted', async () => {
+test('should download a tar archive and extracts its content and then deleted', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test1-'));

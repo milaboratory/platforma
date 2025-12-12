@@ -11,12 +11,13 @@ import { createHash, randomUUID } from 'node:crypto';
 import * as path from 'node:path';
 import type { Dispatcher } from 'undici';
 import { RemoteFileDownloader } from '../../helpers/download';
+import { isDownloadNetworkError400 } from '../../helpers/download_errors';
 import { FilesCache } from '../helpers/files_cache';
 import { stringifyWithResourceId } from '@milaboratories/pl-client';
 import type { BlockUIURL, FrontendDriver } from '@milaboratories/pl-model-common';
 import { isBlockUIURL } from '@milaboratories/pl-model-common';
 import { getPathForBlockUIURL } from '../urls/url';
-import { DownloadByUrlTask, rmRFDir } from './task';
+import { DownloadByUrlTask, rmRFDir, URLAborted } from './task';
 
 export interface DownloadUrlSyncReader {
   /** Returns a Computable that (when the time will come)
@@ -117,7 +118,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
     const newTask = this.setNewTask(w, url, callerId);
     this.downloadQueue.push({
       fn: async () => this.downloadUrl(newTask, callerId),
-      recoverableErrorPredicate: (e) => true,
+      recoverableErrorPredicate: (e) => !(e instanceof URLAborted) && !isDownloadNetworkError400(e),
     });
 
     return newTask.getUrl();
