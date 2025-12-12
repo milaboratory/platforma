@@ -71,8 +71,6 @@ const BlankComponent: Component = {
   },
 };
 
-const isOverlayTransparent = ref(false);
-
 const rowNumbers = ref(true);
 
 const loading = ref(false);
@@ -223,7 +221,6 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
       : undefined,
     loading: loading.value,
     loadingText: loadingText.value,
-    loadingOverlayType: isOverlayTransparent.value ? 'transparent' : undefined,
     notReady: notReady.value,
     notReadyText: 'I am not ready(',
     noRowsText: 'No rows text (custom, default is "Empty")',
@@ -249,7 +246,6 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
 
     <PlRow wrap>
       <PlCheckbox v-model="rowNumbers">Show row numbers</PlCheckbox>
-      <PlCheckbox v-model="isOverlayTransparent">Use transparent overlay</PlCheckbox>
       <PlCheckbox v-model="loading">Loading</PlCheckbox>
       <PlCheckbox v-model="notReady">Not Ready</PlCheckbox>
       <PlCheckbox v-model="hasRows">Has rows</PlCheckbox>

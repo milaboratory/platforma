@@ -215,15 +215,14 @@ export type PlAgOverlayLoadingParams = {
   /**
    * Prop to override default "Loading" text
    */
-  loadingText?: string;
+  loadingText?: string | {
+    title: string;
+    subtitle: string | string[];
+  };
   /**
    * Prop to override default "No datasource" text (So why props name is notReady? Good question)
    */
   notReadyText?: string;
-  /**
-   * Use "transparent" to make table headers visible below the loading layer
-   */
-  overlayType?: 'transparent';
 };
 
 export type PlAgOverlayNoRowsParams = {
