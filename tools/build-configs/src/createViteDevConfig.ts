@@ -19,7 +19,7 @@ export const createViteDevConfig = ({ mode, command }: ConfigEnv): UserConfig =>
       },
     },
     resolve: {
-      conditions: useSources ? ['sources'] : undefined,
+      conditions: useSources ? ['sources'] : [],
     },
     define: {
       'import.meta.vitest': 'undefined',

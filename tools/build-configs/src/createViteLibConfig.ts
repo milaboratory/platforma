@@ -12,14 +12,12 @@ export const createViteLibConfig = (configEnv: ConfigEnv): UserConfig => {
   return mergeConfig(createViteDevConfig(configEnv), {
     plugins: [
       dts({
-        compilerOptions: Object.assign(
-          {
-            declaration: true,
-            declarationMap: true,
-            moduleResolution: useSources ? ModuleResolutionKind.Bundler : ModuleResolutionKind.NodeJs,
-          },
-          useSources ? undefined : { customConditions: [] },
-        ),
+        compilerOptions: {
+          declaration: true,
+          declarationMap: true,
+          moduleResolution: useSources ? ModuleResolutionKind.Bundler : ModuleResolutionKind.NodeJs,
+          customConditions: useSources ? ['sources'] : [],
+        },
       }),
       externalizeDeps(),
       cssInjectedByJsPlugin({ relativeCSSInjection: true }),

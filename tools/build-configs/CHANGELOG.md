@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.1.1
+
+### Patch Changes
+
+- 9e496f1: use custom typescript declaration for model separate bundle
+
 ## 1.1.0
 
 ### Minor Changes
