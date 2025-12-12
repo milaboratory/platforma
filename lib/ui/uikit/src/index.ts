@@ -25,6 +25,7 @@ import { allCssVariables } from './demo-site-data/all-css-variables.ts';
 export * from './layout/PlBlockPage';
 export * from './layout/PlContainer';
 export * from './layout/PlGrid';
+export * from './layout/PlPlaceholder';
 export * from './layout/PlRow';
 export * from './layout/PlSpacer';
 
@@ -89,6 +90,8 @@ export * from './components/PlChartHistogram';
 export * from './components/PlChartStackedBar';
 
 export * from './components/PlRadio';
+
+export { default as PlLoaderLogo } from './components/PlLoaderLogo.vue';
 
 export * from './colors';
 

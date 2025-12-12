@@ -35,15 +35,11 @@ interface GridOptionsExtended<TData = any> extends Omit<GridOptions<TData>, 'col
    */
   notReadyText?: string;
   /**
-   * Use "transparent" to make table headers visible below the loading layer (experimental)
-   */
-  loadingOverlayType?: 'transparent' | undefined;
-  /**
    * Override standard 'Empty' text for the "no rows" overlay
    */
   noRowsText?: string;
   /**
-   * @deprecated Use loading, notReady, loadingText, loadingOverlayType instead
+   * @deprecated Use loading, notReady, loadingText instead
    */
   loadingOverlayComponentParams?: never;
 }
@@ -98,16 +94,6 @@ class Builder<TData> {
    */
   public setNotReady(notReady?: boolean) {
     this.#options.notReady = notReady;
-    return this;
-  }
-
-  /**
-   * Set loading overlay type
-   * @param type
-   * @returns this
-   */
-  public setLoadingOverlayType(type?: 'transparent') {
-    this.#options.loadingOverlayType = type;
     return this;
   }
 
@@ -318,7 +304,7 @@ export function useAgGridOptions<TData>(
     }
 
     if ('loadingOverlayComponentParams' in options) {
-      console.warn('useAgGridOptions: remove loadingOverlayComponentParams from options, use loading, notReady, loadingText, loadingOverlayType instead');
+      console.warn('useAgGridOptions: remove loadingOverlayComponentParams from options, use loading, notReady, loadingText instead');
     }
 
     options.loading = options.notReady || options.loading;
@@ -344,7 +330,7 @@ export function useAgGridOptions<TData>(
       loadingOverlayComponentParams: {
         notReady: options.notReady,
         notReadyText: options.notReadyText,
-        overlayType: options.loadingOverlayType,
+        loadingText: options.loadingText,
       } satisfies PlAgOverlayLoadingParams,
     };
   });
@@ -363,7 +349,6 @@ export function useAgGridOptions<TData>(
       notReady,
       // we probably don't need to update the parameters below
       notReadyText: extOptions.value.notReadyText,
-      overlayType: extOptions.value.loadingOverlayType,
       loadingText: extOptions.value.loadingText,
     } satisfies PlAgOverlayLoadingParams;
 
