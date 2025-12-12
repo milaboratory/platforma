@@ -1,5 +1,18 @@
 # @platforma-sdk/ui-vue
 
+## 1.48.0
+
+### Minor Changes
+
+- 8398f3a: Remove overlayType prop from PlAgOverlayLoadingParams
+- 8398f3a: Replaced PlSplash with PlPlaceholder in PlAgOverlayLoading
+
+### Patch Changes
+
+- 8398f3a: Fixed useAgGridOptions resetting loadingText to undefined
+- Updated dependencies [8398f3a]
+  - @milaboratories/uikit@2.8.0
+
 ## 1.47.5
 
 ### Patch Changes

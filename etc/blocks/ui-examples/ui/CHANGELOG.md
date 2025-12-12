@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.7.2
+
+### Patch Changes
+
+- 8398f3a: Updated PlSplashPage example
+- 8398f3a: Remove overlayType prop from PlAgOverlayLoadingParams
+
 ## 1.7.1
 
 ### Patch Changes
