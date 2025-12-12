@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.monetization-test.model
 
+## 1.0.35
+
+### Patch Changes
+
+- 557172d: Add eslint configuration files and lint scripts to published block model and UI packages
+
 ## 1.0.34
 
 ### Patch Changes
