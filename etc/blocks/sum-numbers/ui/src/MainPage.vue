@@ -11,15 +11,15 @@ const sources = computed({
   },
   set(newValue) {
     app.model.args.sources = newValue;
-  }
+  },
 });
 </script>
 
 <template>
   <PlBlockPage style="max-width: 100%">
     <PlDropdownMulti
-      :options="app.model.outputs.opts ?? []"
       v-model="sources"
+      :options="app.model.outputs.opts ?? []"
       label="Select numbers"
     />
 
@@ -49,7 +49,7 @@ const sources = computed({
       outputs:
       {{ app.model.outputs }}
     </PlAlert>
-    <PlAlert type="error" v-if="app.hasErrors">
+    <PlAlert v-if="app.hasErrors" type="error">
       {{ app.model.outputErrors }}
     </PlAlert>
   </PlBlockPage>

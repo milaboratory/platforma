@@ -90,7 +90,7 @@ function askForOptions(): CreateBlockOptions {
 
   const result = CreateBlockOptions.safeParse({ npmOrgName, orgName, blockName, softwarePlatforms });
   if (!result.success && result.error.issues.length) {
-    throw new Error(result.error.issues.map(i => i.message).join('; '));
+    throw new Error(result.error.issues.map((i) => i.message).join('; '));
   }
 
   return result.data!;

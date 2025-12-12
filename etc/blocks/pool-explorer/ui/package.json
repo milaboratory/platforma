@@ -6,7 +6,8 @@
     "dev": "ts-builder serve --target browser",
     "watch": "ts-builder build --target browser --watch",
     "build": "ts-builder build --target browser",
-    "type-check": "ts-builder types --target browser"
+    "type-check": "ts-builder types --target browser",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@milaboratories/milaboratories.pool-explorer.model": "workspace:*",
@@ -16,9 +17,11 @@
     "@milaboratories/helpers": "workspace:*"
   },
   "devDependencies": {
+    "@platforma-sdk/eslint-config": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/build-configs": "workspace:*",
+    "eslint": "catalog:",
     "typescript": "catalog:",
     "zod": "catalog:"
   }

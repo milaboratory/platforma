@@ -6,8 +6,7 @@ import { externalizeDeps } from 'vite-plugin-externalize-deps';
 import { createViteDevConfig } from './createViteDevConfig';
 import { ModuleResolutionKind } from 'typescript';
 
-export const createViteLibConfig = ((configEnv: ConfigEnv): UserConfig => {
-  const isProd = configEnv.mode === 'production';
+export const createViteLibConfig = (configEnv: ConfigEnv): UserConfig => {
   const useSources = process.env.USE_SOURCES === '1';
 
   return mergeConfig(createViteDevConfig(configEnv), {
@@ -17,8 +16,8 @@ export const createViteLibConfig = ((configEnv: ConfigEnv): UserConfig => {
           declaration: true,
           declarationMap: true,
           moduleResolution: useSources ? ModuleResolutionKind.Bundler : ModuleResolutionKind.NodeJs,
-          customConditions: useSources ? ['sources'] : []
-        }
+          customConditions: useSources ? ['sources'] : [],
+        },
       }),
       externalizeDeps(),
       cssInjectedByJsPlugin({ relativeCSSInjection: true }),
@@ -38,9 +37,9 @@ export const createViteLibConfig = ((configEnv: ConfigEnv): UserConfig => {
           inlineDynamicImports: false,
           entryFileNames: '[name].js',
           chunkFileNames: '[name]-[hash].js',
-          assetFileNames: '[name][extname]'
-        }
+          assetFileNames: '[name][extname]',
+        },
       },
     },
   });
-})
+};

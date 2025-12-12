@@ -26,7 +26,7 @@ export const MetaFile = 'meta.json';
 
 export interface PackageOverviewEntry {
   version: string;
-  meta: object;
+  meta: Record<string, unknown>;
 }
 
 export type PackageOverview = PackageOverviewEntry[];
@@ -36,7 +36,7 @@ export interface GlobalOverviewEntry {
   package: string;
   allVersions: string[];
   latestVersion: string;
-  latestMeta: any;
+  latestMeta: Record<string, unknown>;
 }
 
 export type GlobalOverview = GlobalOverviewEntry[];

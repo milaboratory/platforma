@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TargetType } from './config-manager';
+import type { TargetType } from './config-manager';
 
 const rootDir = resolve(dirname(fileURLToPath(new URL('.', import.meta.url))), '../..');
 

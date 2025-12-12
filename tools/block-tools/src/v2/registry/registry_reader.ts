@@ -1,17 +1,18 @@
-import {
+import type {
   BlockPackId,
   BlockPackIdNoVersion,
-  blockPackIdNoVersionEquals,
-  BlockPackManifest,
   BlockPackMetaEmbeddedBytes,
   BlockPackMetaManifest,
-  BlockPackOverview,
   UpdateSuggestions,
   SingleBlockPackOverview,
-  AnyChannel,
-  BlockPackOverviewNoRegistryId
+  BlockPackOverviewNoRegistryId,
 } from '@milaboratories/pl-model-middle-layer';
-import { FolderReader } from '../../io';
+import {
+  blockPackIdNoVersionEquals,
+  BlockPackManifest,
+  AnyChannel,
+} from '@milaboratories/pl-model-middle-layer';
+import type { FolderReader } from '../../io';
 import canonicalize from 'canonicalize';
 import {
   GlobalOverviewFileName,
@@ -19,7 +20,7 @@ import {
   MainPrefix,
   ManifestFileName,
   ManifestSuffix,
-  packageContentPrefixInsideV2
+  packageContentPrefixInsideV2,
 } from './schema_public';
 import { BlockComponentsAbsoluteUrl, BlockPackMetaEmbedBytes } from '../model';
 import { LRUCache } from 'lru-cache';
@@ -36,7 +37,7 @@ export type RegistryV2ReaderOps = {
 
 const DefaultRegistryV2ReaderOps: RegistryV2ReaderOps = {
   cacheBlockListFor: 45e3, // 45 seconds
-  keepStaleBlockListFor: 300e3 // 5 minutes
+  keepStaleBlockListFor: 300e3, // 5 minutes
 };
 
 /** @param availableVersions must be reverse sorted (from highest version to lowest) */
@@ -49,7 +50,7 @@ export function inferUpdateSuggestions(currentVersion: string, availableVersions
   const suggestions: UpdateSuggestions<string> = [];
 
   const patch = availableVersions.find(
-    (v) => semver.gt(v, currentVersion) && semver.lt(v, nextMinor)
+    (v) => semver.gt(v, currentVersion) && semver.lt(v, nextMinor),
   );
   const minor = availableVersions.find((v) => semver.gte(v, nextMinor) && semver.lt(v, nextMajor));
   const major = availableVersions.find((v) => semver.gte(v, nextMajor));
@@ -67,7 +68,7 @@ export class RegistryV2Reader {
 
   constructor(
     private readonly registryReader: FolderReader,
-    ops?: Partial<RegistryV2ReaderOps>
+    ops?: Partial<RegistryV2ReaderOps>,
   ) {
     this.v2RootFolderReader = registryReader.relativeReader(MainPrefix);
     this.ops = { ...DefaultRegistryV2ReaderOps, ...(ops ?? {}) };
@@ -86,25 +87,25 @@ export class RegistryV2Reader {
     max: 500,
     fetchMethod: async (_key, _staleValue, options) =>
       await retry(async () => {
-        const contentReader =
-          options.context.relativeTo !== undefined
+        const contentReader
+          = options.context.relativeTo !== undefined
             ? this.v2RootFolderReader
-                .relativeReader(packageContentPrefixInsideV2(options.context.relativeTo))
-                .getContentReader()
+              .relativeReader(packageContentPrefixInsideV2(options.context.relativeTo))
+              .getContentReader()
             : this.v2RootFolderReader.getContentReader();
         return await BlockPackMetaEmbedBytes(contentReader).parseAsync(options.context.meta);
-      }, Retry2TimesWithDelay)
+      }, Retry2TimesWithDelay),
   });
 
   private async embedMetaContent(
     id: BlockPackId,
     sha256: string,
     absolutePath: boolean,
-    meta: BlockPackMetaManifest
+    meta: BlockPackMetaManifest,
   ): Promise<BlockPackMetaEmbeddedBytes> {
     return await this.embeddedGlobalMetaCache.forceFetch(
       canonicalize({ id, sha256, absolutePath })!,
-      { context: { meta, relativeTo: absolutePath ? undefined : id } }
+      { context: { meta, relativeTo: absolutePath ? undefined : id } },
     );
   }
 
@@ -113,8 +114,8 @@ export class RegistryV2Reader {
 
   public async listBlockPacks(): Promise<BlockPackOverviewNoRegistryId[]> {
     if (
-      this.listCache !== undefined &&
-      Date.now() - this.listCacheTimestamp <= this.ops.cacheBlockListFor
+      this.listCache !== undefined
+      && Date.now() - this.listCacheTimestamp <= this.ops.cacheBlockListFor
     )
       return this.listCache;
     try {
@@ -122,8 +123,8 @@ export class RegistryV2Reader {
         // const rootContentReader = this.v2RootFolderReader.getContentReader();
         const globalOverview = GlobalOverviewReg.parse(
           JSON.parse(
-            Buffer.from(await this.v2RootFolderReader.readFile(GlobalOverviewFileName)).toString()
-          )
+            Buffer.from(await this.v2RootFolderReader.readFile(GlobalOverviewFileName)).toString(),
+          ),
         );
 
         const result = await Promise.all(
@@ -137,24 +138,24 @@ export class RegistryV2Reader {
                     data.description.id,
                     data.manifestSha256,
                     true,
-                    data.description.meta
+                    data.description.meta,
                   ),
                   featureFlags: data.description.featureFlags,
                   spec: {
                     type: 'from-registry-v2',
                     id: data.description.id,
                     registryUrl: this.registryReader.rootUrl.toString(),
-                    channel
-                  }
-                }
-              ])
+                    channel,
+                  },
+                },
+              ]),
             );
             return {
               id: p.id,
-              latestByChannel: Object.fromEntries(byChannelEntries),
-              allVersions: p.allVersionsWithChannels
+              latestByChannel: Object.fromEntries(byChannelEntries) as BlockPackOverviewNoRegistryId['latestByChannel'],
+              allVersions: p.allVersionsWithChannels,
             } satisfies BlockPackOverviewNoRegistryId;
-          })
+          }),
         );
 
         this.listCache = result;
@@ -164,8 +165,8 @@ export class RegistryV2Reader {
       }, Retry2TimesWithDelay);
     } catch (e: unknown) {
       if (
-        this.listCache !== undefined &&
-        Date.now() - this.listCacheTimestamp <= this.ops.keepStaleBlockListFor
+        this.listCache !== undefined
+        && Date.now() - this.listCacheTimestamp <= this.ops.keepStaleBlockListFor
       )
         return this.listCache;
       throw e;
@@ -174,10 +175,10 @@ export class RegistryV2Reader {
 
   public async getLatestOverview(
     id: BlockPackIdNoVersion,
-    channel: string
+    channel: string,
   ): Promise<SingleBlockPackOverview | undefined> {
     const overview = (await this.listBlockPacks()).find((e) =>
-      blockPackIdNoVersionEquals(id, e.id)
+      blockPackIdNoVersionEquals(id, e.id),
     );
     if (overview === undefined) return undefined;
     return overview.latestByChannel[channel];
@@ -185,10 +186,10 @@ export class RegistryV2Reader {
 
   public async getUpdateSuggestions(
     id: BlockPackId,
-    channel: string
+    channel: string,
   ): Promise<UpdateSuggestions<string> | undefined> {
     const overview = (await this.listBlockPacks()).find((e) =>
-      blockPackIdNoVersionEquals(id, e.id)
+      blockPackIdNoVersionEquals(id, e.id),
     );
     if (overview === undefined) return undefined;
 
@@ -204,11 +205,11 @@ export class RegistryV2Reader {
 
   public async getSpecificOverview(
     id: BlockPackId,
-    channel: string
+    channel: string,
   ): Promise<SingleBlockPackOverview> {
     return await retry(async () => {
       const manifestContent = await this.v2RootFolderReader.readFile(
-        packageContentPrefixInsideV2(id) + ManifestSuffix
+        packageContentPrefixInsideV2(id) + ManifestSuffix,
       );
       const overview = BlockPackManifest.parse(JSON.parse(Buffer.from(manifestContent).toString()));
       return {
@@ -217,32 +218,32 @@ export class RegistryV2Reader {
           id,
           await calculateSha256(manifestContent),
           false,
-          overview.description.meta
+          overview.description.meta,
         ),
         spec: {
           type: 'from-registry-v2',
           id,
           registryUrl: this.registryReader.rootUrl.toString(),
-          channel
-        }
+          channel,
+        },
       };
     }, Retry2TimesWithDelay);
   }
 
   private readonly componentsCache = new LRUCache<string, BlockComponentsAbsoluteUrl, BlockPackId>({
     max: 500,
-    fetchMethod: async (key, staleValue, { context: id }) =>
+    fetchMethod: async (_key, _staleValue, { context: id }) =>
       await retry(async () => {
         const packageFolderReader = this.v2RootFolderReader.relativeReader(
-          packageContentPrefixInsideV2(id)
+          packageContentPrefixInsideV2(id),
         );
         const manifest = BlockPackManifest.parse(
-          JSON.parse(Buffer.from(await packageFolderReader.readFile(ManifestFileName)).toString())
+          JSON.parse(Buffer.from(await packageFolderReader.readFile(ManifestFileName)).toString()),
         );
         return BlockComponentsAbsoluteUrl(packageFolderReader.rootUrl.toString()).parse(
-          manifest.description.components
+          manifest.description.components,
         );
-      }, Retry2TimesWithDelay)
+      }, Retry2TimesWithDelay),
   });
 
   public async getComponents(id: BlockPackId): Promise<BlockComponentsAbsoluteUrl> {

@@ -17,7 +17,7 @@ export class S3Storage implements RegistryStorage {
   constructor(
     public readonly client: S3,
     public readonly bucket: string,
-    public readonly root: string
+    public readonly root: string,
   ) {}
 
   async getFile(file: string): Promise<Buffer | undefined> {
@@ -26,12 +26,12 @@ export class S3Storage implements RegistryStorage {
         await (
           await this.client.getObject({
             Bucket: this.bucket,
-            Key: pathPosix.join(this.root, file)
+            Key: pathPosix.join(this.root, file),
           })
-        ).Body!.transformToByteArray()
+        ).Body!.transformToByteArray(),
       );
-    } catch (e: any) {
-      if (e.name === 'NoSuchKey') return undefined;
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === 'NoSuchKey') return undefined;
       else throw e;
     }
   }
@@ -42,8 +42,8 @@ export class S3Storage implements RegistryStorage {
       { client: this.client },
       {
         Bucket: this.bucket,
-        Prefix: listRoot
-      }
+        Prefix: listRoot,
+      },
     );
     const result: string[] = [];
     for await (const page of paginator)
@@ -55,7 +55,7 @@ export class S3Storage implements RegistryStorage {
     await this.client.putObject({
       Bucket: this.bucket,
       Key: pathPosix.join(this.root, file),
-      Body: buffer
+      Body: buffer,
     });
   }
 
@@ -65,12 +65,12 @@ export class S3Storage implements RegistryStorage {
       Bucket: this.bucket,
       Delete: {
         Objects: files.map((file) => ({
-          Key: pathPosix.join(this.root, file)
-        }))
-      }
+          Key: pathPosix.join(this.root, file),
+        })),
+      },
     });
     if (results.Errors !== undefined && results.Errors.length > 0)
-      throw new Error(`Errors encountered while deleting files: ${results.Errors.join('\n')}`);
+      throw new Error(`Errors encountered while deleting files: ${results.Errors.map((e) => e.Message ?? e.Code ?? 'Unknown error').join('\n')}`);
   }
 }
 
@@ -90,9 +90,9 @@ export class FSStorage implements RegistryStorage {
   async getFile(address: string): Promise<Buffer | undefined> {
     try {
       return await fs.promises.readFile(this.toAbsolutePath(address));
-    } catch (err: any) {
-      if (err.code == 'ENOENT') return undefined;
-      else throw new Error('', { cause: err });
+    } catch (err: unknown) {
+      if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return undefined;
+      else throw err;
     }
   }
 
@@ -100,13 +100,13 @@ export class FSStorage implements RegistryStorage {
     try {
       const listRoot = this.toAbsolutePath(prefix);
       return (await fs.promises.readdir(listRoot, { recursive: true, withFileTypes: true }))
-        .filter((e: any) => e.isFile())
-        .map((e: any) =>
-          path.relative(listRoot, path.resolve(e.parentPath, e.name)).split(path.sep).join(pathPosix.sep)
+        .filter((e) => e.isFile())
+        .map((e) =>
+          path.relative(listRoot, path.resolve(e.parentPath, e.name)).split(path.sep).join(pathPosix.sep),
         );
-    } catch (err: any) {
-      if (err.code == 'ENOENT') return [];
-      else throw new Error('', { cause: err });
+    } catch (err: unknown) {
+      if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return [];
+      else throw err;
     }
   }
 
@@ -125,15 +125,17 @@ export class FSStorage implements RegistryStorage {
 export function storageByUrl(address: string): RegistryStorage {
   const url = new URL(address, `file:${path.resolve('.').split(path.sep).join(pathPosix.sep)}/`);
   switch (url.protocol) {
-    case 'file:':
+    case 'file:': {
       const root = path.resolve(url.pathname);
       return new FSStorage(root);
-    case 's3:':
+    }
+    case 's3:': {
       const options: NonNullable<ConstructorParameters<typeof S3>[0]> = {};
       const region = url.searchParams.get('region');
       if (region) options.region = region;
       const bucket = url.hostname;
       return new S3Storage(new S3(options), bucket, url.pathname.replace(/^\//, ''));
+    }
     default:
       throw new Error(`Unknown protocol: ${url.protocol}`);
   }
