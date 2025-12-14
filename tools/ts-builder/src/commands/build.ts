@@ -72,7 +72,10 @@ async function buildWithRollup(target: TargetType, options?: {
   const rollupCommand = resolveRollup();
   const rollupArgs = ['-c'];
   const configInfo = getConfigInfo(target);
-  const configPath = getValidatedConfigPath(options?.customConfig, configInfo!.filename);
+  if (!configInfo) {
+    throw new Error(`No build configuration found for target: ${target}`);
+  }
+  const configPath = getValidatedConfigPath(options?.customConfig, configInfo.filename);
 
   rollupArgs.push(configPath);
 
