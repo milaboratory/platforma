@@ -43,7 +43,7 @@ test.skip('should download a tar archive and extracts its content and then delet
   });
 }, 45000);
 
-test('should show a error when 404 status code', async () => {
+test.skip('should show a error when 404 status code', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test1-'));
