@@ -44,31 +44,28 @@ test.skip('should download a tar archive and extracts its content and then delet
 }, 45000);
 
 test('should show a error when 404 status code', async () => {
-  try {
-    await TestHelpers.withTempRoot(async (client) => {
-      const logger = new ConsoleLoggerAdapter();
-      const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test1-'));
-      const driver = new DownloadUrlDriver(logger, client.httpDispatcher, dir, genSigner());
+  await TestHelpers.withTempRoot(async (client) => {
+    const logger = new ConsoleLoggerAdapter();
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test1-'));
+    const driver = new DownloadUrlDriver(logger, client.httpDispatcher, dir, genSigner());
 
-      const url = new URL(
-        'https://block.registry.platforma.bio/releases/v1/milaboratory/NOT_FOUND',
-      );
+    const url = new URL(
+      'https://block.registry.platforma.bio/releases/v1/milaboratory/NOT_FOUND',
+    );
 
-      const c = driver.getUrl(url);
+    const c = driver.getUrl(url);
 
-      const url1 = await c.getValue();
-      expect(url1).toBeUndefined();
+    const url1 = await c.getValue();
+    expect(url1).toBeUndefined();
 
-      await c.awaitChange();
+    await c.awaitChange();
 
-      const url2 = await c.getValue();
-      expect(url2).not.toBeUndefined();
-      expect(url2?.error).not.toBeUndefined();
-    });
-  } catch (e) {
-    console.log('HERE: ', e);
-  }
-});
+    const url2 = await c.getValue();
+    expect(url2).not.toBeUndefined();
+    expect(url2?.error).not.toBeUndefined();
+    expect(url2?.url).toBeUndefined();
+  });
+}, 45000);
 
 test('should abort a downloading process when we reset a state of a computable', async () => {
   await TestHelpers.withTempRoot(async (client) => {
