@@ -1,9 +1,11 @@
 import polars as pl
 import msgspec
-from typing import List
+from typing import List, Literal, Optional, Union
 
 from .base import PStep, StepContext
 from ..expression import AnyExpression
+
+UniqueKeepStrategy = Literal["any", "none", "first", "last"]
 
 
 class AddColumns(PStep, tag="add_columns"):
@@ -55,14 +57,35 @@ class Unique(PStep, tag="unique"):
     PStep to remove duplicate rows from an input table and outputs
     the result to a new table in the tablespace.
     Corresponds to the UniqueStep defined in the TypeScript type definitions.
+
+    Parameters:
+        input_table: The name of the input table.
+        output_table: The name for the resulting unique table.
+        subset: Column name(s) to consider when identifying duplicates.
+                If None, all columns are used.
+        keep: Which of the duplicate rows to keep:
+              - 'any': No guarantee of which row is kept (allows optimizations).
+              - 'none': Don't keep duplicate rows.
+              - 'first': Keep first unique row.
+              - 'last': Keep last unique row.
+              Defaults to 'any'.
+        maintain_order: Keep the same order as the original data.
+                        This may be more expensive. Defaults to False.
     """
 
     input_table: str = msgspec.field(name="inputTable")
     output_table: str = msgspec.field(name="outputTable")
+    subset: Optional[Union[str, List[str]]] = None
+    keep: UniqueKeepStrategy = "any"
+    maintain_order: bool = msgspec.field(name="maintainOrder", default=False)
 
     def execute(self, ctx: StepContext):
         lf_input = ctx.get_table(self.input_table)
-        lf_output = lf_input.unique()
+        lf_output = lf_input.unique(
+            subset=self.subset,
+            keep=self.keep,
+            maintain_order=self.maintain_order,
+        )
         ctx.put_table(self.output_table, lf_output)
 
 

@@ -13,6 +13,7 @@ import type {
   FilterStep,
   LimitStep,
   SelectStep,
+  UniqueKeepStrategy,
   UniqueStep,
   WithColumnsStep,
   WithoutColumnsStep,
@@ -54,8 +55,8 @@ export type {
   AddColumnsStep, AggregateStep,
   AnyJoinStep, BaseFileReadStep,
   BaseFileWriteStep, ConcatenateStep, FilterStep, ReadCsvStep,
-  ReadNdjsonStep, SelectStep, SortStep, WithColumnsStep,
-  WithoutColumnsStep, WriteCsvStep,
+  ReadNdjsonStep, SelectStep, SortStep, UniqueKeepStrategy, UniqueStep,
+  WithColumnsStep, WithoutColumnsStep, WriteCsvStep,
   WriteNdjsonStep,
 };
 

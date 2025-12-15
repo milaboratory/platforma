@@ -85,6 +85,11 @@ export interface SelectStep {
   columns: Expression[];
 }
 
+/**
+ * Determines which of the duplicate rows are kept.
+ */
+export type UniqueKeepStrategy = 'any' | 'none' | 'first' | 'last';
+
 export interface UniqueStep {
   /**
    * The type identifier for this step.
@@ -101,6 +106,29 @@ export interface UniqueStep {
    * The name for the resulting unique table that will be added to the tablespace.
    */
   outputTable: string;
+
+  /**
+   * Column name(s) to consider when identifying duplicate rows.
+   * If not provided, all columns are used.
+   */
+  subset?: string | string[];
+
+  /**
+   * Which of the duplicate rows to keep:
+   * - 'any': Does not give any guarantee of which row is kept (allows optimizations).
+   * - 'none': Don't keep duplicate rows.
+   * - 'first': Keep first unique row.
+   * - 'last': Keep last unique row.
+   * Defaults to 'any'.
+   */
+  keep?: UniqueKeepStrategy;
+
+  /**
+   * Keep the same order as the original data.
+   * This may be more expensive to compute.
+   * Defaults to false.
+   */
+  maintainOrder?: boolean;
 }
 
 /**

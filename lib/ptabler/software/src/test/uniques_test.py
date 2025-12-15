@@ -133,6 +133,120 @@ class UniqueTests(unittest.TestCase):
         self.assertEqual(result.schema["str_col"], pl.Utf8)
         self.assertEqual(result.schema["bool_col"], pl.Boolean)
 
+    def test_subset_single_column(self):
+        initial_df = pl.DataFrame({"id": [1, 1, 2], "name": ["a", "b", "c"]}).lazy()
+        initial_table_space: TableSpace = {"input": initial_df}
+        step = Unique(input_table="input", output_table="output", subset="id")
+        workflow = PWorkflow(workflow=[step])
+        ctx = workflow.execute(
+            global_settings=global_settings,
+            lazy=True,
+            initial_table_space=initial_table_space,
+        )
+        result = ctx.get_table("output").collect()
+        self.assertEqual(len(result), 2)
+        self.assertEqual(set(result["id"].to_list()), {1, 2})
+
+    def test_subset_multiple_columns(self):
+        initial_df = pl.DataFrame(
+            {"id": [1, 1, 1], "cat": ["a", "a", "b"], "value": [10, 20, 30]}
+        ).lazy()
+        initial_table_space: TableSpace = {"input": initial_df}
+        step = Unique(input_table="input", output_table="output", subset=["id", "cat"])
+        workflow = PWorkflow(workflow=[step])
+        ctx = workflow.execute(
+            global_settings=global_settings,
+            lazy=True,
+            initial_table_space=initial_table_space,
+        )
+        result = ctx.get_table("output").collect()
+        self.assertEqual(len(result), 2)
+
+    def test_keep_first(self):
+        initial_df = pl.DataFrame({"id": [1, 1, 1], "value": [10, 20, 30]}).lazy()
+        initial_table_space: TableSpace = {"input": initial_df}
+        step = Unique(
+            input_table="input",
+            output_table="output",
+            subset="id",
+            keep="first",
+            maintain_order=True,
+        )
+        workflow = PWorkflow(workflow=[step])
+        ctx = workflow.execute(
+            global_settings=global_settings,
+            lazy=True,
+            initial_table_space=initial_table_space,
+        )
+        result = ctx.get_table("output").collect()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result["value"][0], 10)
+
+    def test_keep_last(self):
+        initial_df = pl.DataFrame({"id": [1, 1, 1], "value": [10, 20, 30]}).lazy()
+        initial_table_space: TableSpace = {"input": initial_df}
+        step = Unique(
+            input_table="input",
+            output_table="output",
+            subset="id",
+            keep="last",
+            maintain_order=True,
+        )
+        workflow = PWorkflow(workflow=[step])
+        ctx = workflow.execute(
+            global_settings=global_settings,
+            lazy=True,
+            initial_table_space=initial_table_space,
+        )
+        result = ctx.get_table("output").collect()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result["value"][0], 30)
+
+    def test_keep_none(self):
+        initial_df = pl.DataFrame(
+            {"id": [1, 1, 2, 3, 3], "value": [10, 20, 30, 40, 50]}
+        ).lazy()
+        initial_table_space: TableSpace = {"input": initial_df}
+        step = Unique(
+            input_table="input",
+            output_table="output",
+            subset="id",
+            keep="none",
+        )
+        workflow = PWorkflow(workflow=[step])
+        ctx = workflow.execute(
+            global_settings=global_settings,
+            lazy=True,
+            initial_table_space=initial_table_space,
+        )
+        result = ctx.get_table("output").collect()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result["id"][0], 2)
+        self.assertEqual(result["value"][0], 30)
+
+    def test_maintain_order(self):
+        initial_df = pl.DataFrame(
+            {"id": [3, 1, 2, 1, 3], "value": ["c", "a", "b", "a2", "c2"]}
+        ).lazy()
+        initial_table_space: TableSpace = {"input": initial_df}
+        step = Unique(
+            input_table="input",
+            output_table="output",
+            subset="id",
+            keep="first",
+            maintain_order=True,
+        )
+        workflow = PWorkflow(workflow=[step])
+        ctx = workflow.execute(
+            global_settings=global_settings,
+            lazy=True,
+            initial_table_space=initial_table_space,
+        )
+        result = ctx.get_table("output").collect()
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result["id"].to_list(), [3, 1, 2])
+        self.assertEqual(result["value"].to_list(), ["c", "a", "b"])
+
 
 if __name__ == "__main__":
     unittest.main()
