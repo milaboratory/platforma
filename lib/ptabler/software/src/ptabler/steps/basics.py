@@ -1,9 +1,12 @@
 import polars as pl
 import msgspec
-from typing import List
+from typing import List, Literal, Optional, Union
 
 from .base import PStep, StepContext
 from ..expression import AnyExpression
+from ..expression.base import Expression
+
+UniqueKeepStrategy = Literal["any", "none", "first", "last"]
 
 
 class AddColumns(PStep, tag="add_columns"):
@@ -15,6 +18,7 @@ class AddColumns(PStep, tag="add_columns"):
     table in the tablespace with these new columns.
     Corresponds to the AddColumnsStep defined in the TypeScript type definitions.
     """
+
     table: str
     columns: List[AnyExpression]
 
@@ -30,11 +34,12 @@ class AddColumns(PStep, tag="add_columns"):
 
 class Select(PStep, tag="select"):
     """
-    PStep to select a specific set of columns from an input table, 
+    PStep to select a specific set of columns from an input table,
     potentially applying transformations or creating new columns, and outputs
     the result to a new table in the tablespace.
     Corresponds to the SelectStep defined in the TypeScript type definitions.
     """
+
     input_table: str = msgspec.field(name="inputTable")
     output_table: str = msgspec.field(name="outputTable")
     columns: List[AnyExpression]
@@ -48,6 +53,50 @@ class Select(PStep, tag="select"):
         ctx.put_table(self.output_table, lf_output)
 
 
+class Unique(PStep, tag="unique"):
+    """
+    PStep to remove duplicate rows from an input table and outputs
+    the result to a new table in the tablespace.
+    Corresponds to the UniqueStep defined in the TypeScript type definitions.
+
+    Parameters:
+        input_table: The name of the input table.
+        output_table: The name for the resulting unique table.
+        subset: Column name(s) or selector expression to consider when identifying duplicates.
+                Can be a string, list of strings, or a selector expression.
+                If None, all columns are used.
+        keep: Which of the duplicate rows to keep:
+              - 'any': No guarantee of which row is kept (allows optimizations).
+              - 'none': Don't keep duplicate rows.
+              - 'first': Keep first unique row.
+              - 'last': Keep last unique row.
+              Defaults to 'any'.
+        maintain_order: Keep the same order as the original data.
+                        This may be more expensive. Defaults to False.
+    """
+
+    input_table: str = msgspec.field(name="inputTable")
+    output_table: str = msgspec.field(name="outputTable")
+    subset: Optional[Union[str, List[str], AnyExpression]] = None
+    keep: UniqueKeepStrategy = "any"
+    maintain_order: bool = msgspec.field(name="maintainOrder", default=False)
+
+    def execute(self, ctx: StepContext):
+        lf_input = ctx.get_table(self.input_table)
+
+        # Handle subset: can be string, list of strings, or selector expression
+        subset_arg = self.subset
+        if isinstance(self.subset, Expression):
+            subset_arg = self.subset.to_polars()
+
+        lf_output = lf_input.unique(
+            subset=subset_arg,
+            keep=self.keep,
+            maintain_order=self.maintain_order,
+        )
+        ctx.put_table(self.output_table, lf_output)
+
+
 class WithColumns(PStep, tag="with_columns"):
     """
     PStep to add new columns to an input table (or replace existing ones
@@ -55,6 +104,7 @@ class WithColumns(PStep, tag="with_columns"):
     All original columns from the input table are retained.
     Corresponds to the WithColumnsStep defined in the TypeScript type definitions.
     """
+
     input_table: str = msgspec.field(name="inputTable")
     output_table: str = msgspec.field(name="outputTable")
     columns: List[AnyExpression]
@@ -74,9 +124,10 @@ class WithoutColumns(PStep, tag="without_columns"):
     the result to a new table in the tablespace.
     Corresponds to the WithoutColumnsStep defined in the TypeScript type definitions.
     """
+
     input_table: str = msgspec.field(name="inputTable")
     output_table: str = msgspec.field(name="outputTable")
-    columns: List[str] # List of column names to exclude
+    columns: List[str]  # List of column names to exclude
 
     def execute(self, ctx: StepContext):
         lf_input = ctx.get_table(self.input_table)
