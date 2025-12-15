@@ -32,8 +32,8 @@ export function getTarget(options: CommandOptions, globalOpts: GlobalOptions): s
 }
 
 export function validateTargetForBrowser(target: TargetType): void {
-  if (target !== 'browser' && target !== 'browser-lib') {
-    console.error(`This command only works with browser/browser-lib projects. Current target: ${target}`);
+  if (target !== 'browser' && target !== 'browser-lib' && target !== 'block-ui') {
+    console.error(`This command only works with browser/browser-lib/block-ui projects. Current target: ${target}`);
     process.exit(1);
   }
 }

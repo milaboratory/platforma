@@ -1,8 +1,10 @@
 import { Command } from 'commander';
 import {
   executeCommand,
+  getConfigInfo,
   getGlobalOptions,
   getValidatedConfigPath,
+  isBuildableTarget,
   resolveRollup,
   resolveVite,
   type TargetType,
@@ -18,10 +20,15 @@ export const buildCommand = new Command('build')
     const useSources = globalOpts.useSources;
     const isWatch = options.watch;
 
+    if (!isBuildableTarget(target)) {
+      console.error(`Target "${target}" does not support building. Use "types" command for type-checking only.`);
+      process.exit(1);
+    }
+
     console.log(`Building ${target} project${isWatch ? ' in watch mode' : ''}${useSources ? ' with sources condition' : ''}...`);
 
     try {
-      if (target === 'browser' || target === 'browser-lib') {
+      if (target === 'browser' || target === 'browser-lib' || target === 'block-ui') {
         await buildWithVite(target, { customConfig: customBuildConfig, isWatch, useSources });
       } else {
         await buildWithRollup(target, { customConfig: customBuildConfig, isWatch, useSources });
@@ -41,7 +48,11 @@ async function buildWithVite(target: TargetType, options?: {
 }): Promise<void> {
   const viteCommand = resolveVite();
   const viteArgs = ['build'];
-  const configPath = getValidatedConfigPath(options?.customConfig, `vite.${target}.config.js`);
+  const configInfo = getConfigInfo(target);
+  if (!configInfo) {
+    throw new Error(`No build configuration found for target: ${target}`);
+  }
+  const configPath = getValidatedConfigPath(options?.customConfig, configInfo.filename);
 
   viteArgs.push('--config', configPath);
 
@@ -63,7 +74,11 @@ async function buildWithRollup(target: TargetType, options?: {
 }): Promise<void> {
   const rollupCommand = resolveRollup();
   const rollupArgs = ['-c'];
-  const configPath = getValidatedConfigPath(options?.customConfig, `rollup.${target}.config.js`);
+  const configInfo = getConfigInfo(target);
+  if (!configInfo) {
+    throw new Error(`No build configuration found for target: ${target}`);
+  }
+  const configPath = getValidatedConfigPath(options?.customConfig, configInfo.filename);
 
   rollupArgs.push(configPath);
 
