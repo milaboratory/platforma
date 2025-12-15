@@ -1,14 +1,15 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { getConfigPath } from './path-utils.js';
 
-export type TargetType = 'node' | 'browser' | 'browser-lib' | 'block-model';
+export type TargetType = 'node' | 'browser' | 'browser-lib' | 'block-model' | 'block-ui' | 'block-test';
 
 export interface ConfigInfo {
   filename: string;
   outputPath: string;
 }
 
-const TARGET_CONFIG_MAP: Record<TargetType, ConfigInfo> = {
+// block-test has no build config - it's type-check only
+const TARGET_CONFIG_MAP: Record<Exclude<TargetType, 'block-test'>, ConfigInfo> = {
   'node': {
     filename: 'rollup.node.config.js',
     outputPath: './build.node.config.js',
@@ -25,21 +26,34 @@ const TARGET_CONFIG_MAP: Record<TargetType, ConfigInfo> = {
     filename: 'rollup.block-model.config.js',
     outputPath: './build.block-model.config.js',
   },
+  'block-ui': {
+    filename: 'vite.block-ui.config.js',
+    outputPath: './build.block-ui.config.js',
+  },
 };
 
 const TSCONFIG_MAP: Record<TargetType, string> = {
   'node': 'tsconfig.node.json',
   'browser': 'tsconfig.browser.json',
   'browser-lib': 'tsconfig.browser.json',
-  'block-model': 'tsconfig.node.json',
+  'block-model': 'tsconfig.block-model.json',
+  'block-ui': 'tsconfig.block-ui.json',
+  'block-test': 'tsconfig.block-test.json',
 };
 
-export function getConfigInfo(target: TargetType): ConfigInfo {
+export function getConfigInfo(target: TargetType): ConfigInfo | undefined {
+  if (target === 'block-test') {
+    return undefined; // block-test has no build config
+  }
   const config = TARGET_CONFIG_MAP[target];
   if (!config) {
     throw new Error(`Unknown target type: ${target}`);
   }
   return config;
+}
+
+export function isBuildableTarget(target: TargetType): boolean {
+  return target !== 'block-test';
 }
 
 export function getValidatedConfigPath(customConfig: string | undefined, defaultConfigFilename: string): string {
@@ -57,6 +71,11 @@ export function getValidatedConfigPath(customConfig: string | undefined, default
 
 export function createConfigFile(target: TargetType, outputPath?: string): void {
   const configInfo = getConfigInfo(target);
+  if (!configInfo) {
+    console.log(`Target "${target}" does not require a build config (type-check only).`);
+    return;
+  }
+
   const targetFile = outputPath || configInfo.outputPath;
 
   if (existsSync(targetFile)) {

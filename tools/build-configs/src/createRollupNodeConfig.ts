@@ -26,6 +26,14 @@ export function createRollupNodeConfig(props?: {
         json(),
         nodeExternals(),
       ],
+      onwarn(warning, warn) {
+        // Suppress TS5098: customConditions requires moduleResolution bundler/node16/nodenext
+        // This is expected when building with moduleResolution: 'node' while tsconfig has customConditions
+        if (warning.code === 'PLUGIN_WARNING' && warning.message?.includes('TS5098')) {
+          return;
+        }
+        warn(warning);
+      },
       output: [
         formats.includes('es') && {
           dir: output,

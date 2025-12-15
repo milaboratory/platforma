@@ -107,3 +107,45 @@ export const ui = tseslint.config(
     }
   },
 );
+
+export const test = tseslint.config(
+  {
+    ignores: [
+      ...commonIgnores,
+      '**/bin',
+      'eslint.config.mjs',
+      'eslint.config.js',
+      'vitest.config.mts',
+      'vitest.config.mts.*',
+    ],
+  },
+  {
+    files: ['**/*.ts'],
+    extends: [
+      ...base,
+      tseslint.configs.recommendedTypeChecked,
+    ],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        // Vitest globals
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        test: 'readonly',
+        beforeAll: 'readonly',
+        beforeEach: 'readonly',
+        afterAll: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
+      },
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-namespace': 'off',
+    },
+  },
+);

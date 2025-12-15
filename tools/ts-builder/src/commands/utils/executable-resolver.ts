@@ -28,8 +28,9 @@ export function resolveExecutable(executableName: string, packageName: string): 
  * Resolves the appropriate type checker executable based on target
  */
 export function resolveTypeChecker(target: TargetType): string {
-  const commandName = (target === 'browser' || target === 'browser-lib') ? 'vue-tsc' : 'tsc';
-  const packageName = (target === 'browser' || target === 'browser-lib') ? 'vue-tsc' : 'typescript';
+  const useVueTsc = target === 'browser' || target === 'browser-lib' || target === 'block-ui';
+  const commandName = useVueTsc ? 'vue-tsc' : 'tsc';
+  const packageName = useVueTsc ? 'vue-tsc' : 'typescript';
   return resolveExecutable(commandName, packageName);
 }
 

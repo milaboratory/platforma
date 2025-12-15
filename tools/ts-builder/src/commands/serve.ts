@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import {
   executeCommand,
+  getConfigInfo,
   getGlobalOptions,
   getValidatedConfigPath,
   resolveVite,
@@ -24,7 +25,8 @@ export const serveCommand = new Command('serve')
     try {
       const viteCommand = resolveVite();
       const viteArgs = ['dev'];
-      const configPath = getValidatedConfigPath(customServeConfig, `vite.${target}.config.js`);
+      const configInfo = getConfigInfo(target);
+      const configPath = getValidatedConfigPath(customServeConfig, configInfo!.filename);
 
       viteArgs.push('--config', configPath);
 

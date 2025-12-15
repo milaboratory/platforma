@@ -22,6 +22,13 @@ export function createRollupBlockModelConfig(props?: {
         createRollupResolvePlugin({ useSources }),
         commonjs(),
       ],
+      onwarn(warning, warn) {
+        // Suppress TS5098: customConditions requires moduleResolution bundler/node16/nodenext
+        if (warning.code === 'PLUGIN_WARNING' && warning.message?.includes('TS5098')) {
+          return;
+        }
+        warn(warning);
+      },
       output: [
         {
           dir: output,
