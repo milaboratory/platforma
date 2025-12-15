@@ -1170,8 +1170,8 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 * Removes duplicate rows from the DataFrame.
 		 *
 		 * @param ...options {map} (optional) - A single map argument for additional options:
-		 *   - `subset` {string|array} (optional): Column name(s) to consider when identifying duplicates.
-		 *                                          If not provided, all columns are used.
+		 *   - `subset` {string|array|selector} (optional): Column name(s) or selector expression
+		 *              to consider when identifying duplicates. If not provided, all columns are used.
 		 *   - `keep` {string} (optional): Which duplicate row to keep:
 		 *       - 'any': No guarantee of which row is kept (allows optimizations). Default.
 		 *       - 'none': Don't keep duplicate rows.
@@ -1185,6 +1185,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *   uniqueById := df.unique({subset: "id"})
 		 *   uniqueByMultiple := df.unique({subset: ["id", "category"]})
 		 *   uniqueFirst := df.unique({subset: "id", keep: "first", maintainOrder: true})
+		 *   uniqueBySelector := df.unique({subset: pt.sc.startsWith("col_")})
 		 */
 		unique: func(...options) {
 			opts := {}
@@ -1207,7 +1208,11 @@ _newDataFrame = func(parentWorkflow, dfName) {
 					outputTable: outputDfName
 				}
 				if !is_undefined(opts.subset) {
-					step.subset = opts.subset
+					if exp._isSelector(opts.subset) {
+						step.subset = opts.subset._getExpression(ctx)
+					} else {
+						step.subset = opts.subset
+					}
 				}
 				if !is_undefined(opts.keep) {
 					step.keep = opts.keep

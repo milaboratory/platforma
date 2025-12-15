@@ -4,6 +4,7 @@ from typing import List, Literal, Optional, Union
 
 from .base import PStep, StepContext
 from ..expression import AnyExpression
+from ..expression.base import Expression
 
 UniqueKeepStrategy = Literal["any", "none", "first", "last"]
 
@@ -61,7 +62,8 @@ class Unique(PStep, tag="unique"):
     Parameters:
         input_table: The name of the input table.
         output_table: The name for the resulting unique table.
-        subset: Column name(s) to consider when identifying duplicates.
+        subset: Column name(s) or selector expression to consider when identifying duplicates.
+                Can be a string, list of strings, or a selector expression.
                 If None, all columns are used.
         keep: Which of the duplicate rows to keep:
               - 'any': No guarantee of which row is kept (allows optimizations).
@@ -75,14 +77,20 @@ class Unique(PStep, tag="unique"):
 
     input_table: str = msgspec.field(name="inputTable")
     output_table: str = msgspec.field(name="outputTable")
-    subset: Optional[Union[str, List[str]]] = None
+    subset: Optional[Union[str, List[str], AnyExpression]] = None
     keep: UniqueKeepStrategy = "any"
     maintain_order: bool = msgspec.field(name="maintainOrder", default=False)
 
     def execute(self, ctx: StepContext):
         lf_input = ctx.get_table(self.input_table)
+
+        # Handle subset: can be string, list of strings, or selector expression
+        subset_arg = self.subset
+        if isinstance(self.subset, Expression):
+            subset_arg = self.subset.to_polars()
+
         lf_output = lf_input.unique(
-            subset=self.subset,
+            subset=subset_arg,
             keep=self.keep,
             maintain_order=self.maintain_order,
         )

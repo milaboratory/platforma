@@ -3,6 +3,7 @@ import polars as pl
 
 from ptabler.workflow import PWorkflow
 from ptabler.steps import GlobalSettings, Unique, TableSpace
+from ptabler.expression import StartsWithSelectorExpression, ByNameSelectorExpression
 
 global_settings = GlobalSettings(root_folder=".")
 
@@ -246,6 +247,48 @@ class UniqueTests(unittest.TestCase):
         self.assertEqual(len(result), 3)
         self.assertEqual(result["id"].to_list(), [3, 1, 2])
         self.assertEqual(result["value"].to_list(), ["c", "a", "b"])
+
+    def test_subset_with_selector_starts_with(self):
+        initial_df = pl.DataFrame(
+            {"id_a": [1, 1, 2], "id_b": [1, 2, 1], "value": ["x", "y", "z"]}
+        ).lazy()
+        initial_table_space: TableSpace = {"input": initial_df}
+        step = Unique(
+            input_table="input",
+            output_table="output",
+            subset=StartsWithSelectorExpression(prefix="id_"),
+        )
+        workflow = PWorkflow(workflow=[step])
+        ctx = workflow.execute(
+            global_settings=global_settings,
+            lazy=True,
+            initial_table_space=initial_table_space,
+        )
+        result = ctx.get_table("output").collect()
+        self.assertEqual(len(result), 3)
+
+    def test_subset_with_selector_by_name(self):
+        initial_df = pl.DataFrame(
+            {"a": [1, 1, 2], "b": [1, 1, 1], "c": ["x", "y", "z"]}
+        ).lazy()
+        initial_table_space: TableSpace = {"input": initial_df}
+        step = Unique(
+            input_table="input",
+            output_table="output",
+            subset=ByNameSelectorExpression(names=["a"]),
+            keep="first",
+            maintain_order=True,
+        )
+        workflow = PWorkflow(workflow=[step])
+        ctx = workflow.execute(
+            global_settings=global_settings,
+            lazy=True,
+            initial_table_space=initial_table_space,
+        )
+        result = ctx.get_table("output").collect()
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result["a"].to_list(), [1, 2])
+        self.assertEqual(result["c"].to_list(), ["x", "z"])
 
 
 if __name__ == "__main__":

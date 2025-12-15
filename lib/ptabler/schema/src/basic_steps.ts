@@ -1,4 +1,4 @@
-import type { Expression } from './expressions';
+import type { Expression, SelectorExpression } from './expressions';
 
 /**
  * Defines a step that adds one or more new columns to an existing table in the tablespace.
@@ -108,10 +108,11 @@ export interface UniqueStep {
   outputTable: string;
 
   /**
-   * Column name(s) to consider when identifying duplicate rows.
+   * Column name(s) or selector expression to consider when identifying duplicate rows.
+   * Can be a single column name, an array of column names, or a selector expression.
    * If not provided, all columns are used.
    */
-  subset?: string | string[];
+  subset?: string | string[] | SelectorExpression;
 
   /**
    * Which of the duplicate rows to keep:
