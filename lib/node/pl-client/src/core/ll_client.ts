@@ -26,7 +26,8 @@ import type { WireClientProvider, WireClientProviderFactory, WireConnection } fr
 import { parseHttpAuth } from '@milaboratories/pl-model-common';
 import type * as grpcTypes from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { type PlApiPaths, type PlRestClientType, createClient, parseResponseError } from '../proto-rest';
-import { notEmpty } from '@milaboratories/ts-helpers';
+import { notEmpty, sleep } from '@milaboratories/ts-helpers';
+import { isConnectionProblem } from './errors';
 import { Code } from '../proto-grpc/google/rpc/code';
 import { WebSocketBiDiStream } from './websocket_stream';
 import { TxAPI_ClientMessage, TxAPI_ServerMessage } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
@@ -88,6 +89,7 @@ export class LLPlClient implements WireClientProviderFactory {
       shouldUseGzip?: boolean;
     } = {},
   ) {
+    console.log('Building LLPlClient...');
     const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
 
     const pl = new LLPlClient(conf, ops);
@@ -97,6 +99,7 @@ export class LLPlClient implements WireClientProviderFactory {
 
     const { protocol: detectedProtocol, shouldSwitch } = await pl.detectOptimalWireProtocol();
     if (shouldSwitch) {
+      console.log(`Switching to ${detectedProtocol} wire protocol`);
       await pl.close();
       conf.wireProtocol = detectedProtocol;
       return new LLPlClient(conf, ops);
@@ -480,18 +483,26 @@ export class LLPlClient implements WireClientProviderFactory {
       };
     }
 
-    try {
-      await this.ping();
-      return {
-        protocol: this._wireProto,
-        shouldSwitch: false,
-      };
-    } catch {
-      return {
-        protocol: getAlternativeWireProtocol(this._wireProto),
-        shouldSwitch: true,
-      };
+    for (let attempt = 0; attempt < 100; attempt++) {
+      try {
+        await this.ping();
+        return {
+          protocol: this._wireProto,
+          shouldSwitch: false,
+        };
+      } catch (err) {
+        if (!isConnectionProblem(err)) {
+          break;
+        }
+        console.log(`Ping failed, retrying...`, err);
+        await sleep(100);
+      }
     }
+
+    return {
+      protocol: getAlternativeWireProtocol(this._wireProto),
+      shouldSwitch: true,
+    };
   }
 
   public async license(): Promise<grpcTypes.MaintenanceAPI_License_Response> {
