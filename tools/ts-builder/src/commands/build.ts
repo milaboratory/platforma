@@ -49,7 +49,10 @@ async function buildWithVite(target: TargetType, options?: {
   const viteCommand = resolveVite();
   const viteArgs = ['build'];
   const configInfo = getConfigInfo(target);
-  const configPath = getValidatedConfigPath(options?.customConfig, configInfo!.filename);
+  if (!configInfo) {
+    throw new Error(`No build configuration found for target: ${target}`);
+  }
+  const configPath = getValidatedConfigPath(options?.customConfig, configInfo.filename);
 
   viteArgs.push('--config', configPath);
 

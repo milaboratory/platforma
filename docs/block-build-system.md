@@ -25,7 +25,7 @@ Clean, memorable paths that match block structure:
 // model/tsconfig.json
 { "extends": "@milaboratories/ts-configs/block/model" }
 
-// ui/tsconfig.json  
+// ui/tsconfig.json
 { "extends": "@milaboratories/ts-configs/block/ui" }
 
 // test/tsconfig.json
