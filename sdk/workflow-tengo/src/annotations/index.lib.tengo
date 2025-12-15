@@ -23,7 +23,8 @@ _STEP_SCHEMAS := [_STEP_SCHEMA]
  *	 = trace?: Trace information for the annotation trace
  *	 = title: The title for the annotation trace.
  *   - steps: An array of steps, each containing a name and an expression.
- *   - inputAnchor: The input anchor for the workflow.
+ *   - anchorRef: The anchor reference for the workflow.
+ *   - defaultValue?: A value to use as the default value for the annotation.
  *   - resultAxesSpec: The specification for the result axes.
  *   - additionalColumns?: Additional column for the column bundle.
  *   - shouldComputeFilters?: A boolean indicating whether to compute filters.
@@ -41,7 +42,8 @@ computeAnnotations := func(inputs) {
 
 	steps := inputs.steps
 	title := inputs.title
-	inputAnchor := inputs.inputAnchor
+	anchorRef := inputs.anchorRef
+	defaultValue := inputs.defaultValue
 	resultAxesSpec := inputs.resultAxesSpec
 	resultColumnSpec := util.prepareResultColumnSpec(inputs)
 	shouldComputeFilters := is_bool(inputs.shouldComputeFilters) ? inputs.shouldComputeFilters : false
@@ -51,7 +53,7 @@ computeAnnotations := func(inputs) {
 	columns := columnsFromExpressions + additionalColumns
 	
 	bundleBuilder := wf.createPBundleBuilder()
-	bundleBuilder.addAnchor("main", inputAnchor)
+	bundleBuilder.addAnchor("main", anchorRef)
 	for column in columns { bundleBuilder.addById(column) }
 	columnBundle := bundleBuilder.build()
 
@@ -60,6 +62,8 @@ computeAnnotations := func(inputs) {
 		params: {
 			steps: steps,
 			columns: columns,
+			anchorRef: anchorRef,
+			defaultValue: defaultValue,
 			resultColumnSpec: resultColumnSpec,
 			shouldComputeFilters: shouldComputeFilters
 		}

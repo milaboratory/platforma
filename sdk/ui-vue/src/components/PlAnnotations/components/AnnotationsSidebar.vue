@@ -6,6 +6,7 @@ import {
   PlEditableTitle,
   PlElementList,
   PlSidebarItem,
+  PlCheckbox,
 } from '@milaboratories/uikit';
 import type { Annotation } from '../types';
 import $commonStyle from './style.module.css';
@@ -61,6 +62,19 @@ function handleAddStep() {
             {{ item.label }}
           </template>
         </PlElementList>
+        <PlCheckbox
+          :model-value="annotation.enableLeftOver ?? false"
+          label="Mark left over"
+          @update:model-value="annotation.enableLeftOver = $event"
+        >
+          <PlEditableTitle
+            v-model="annotation.leftOverLabel"
+            placeholder="Left over label"
+            :class="{ [$style.leftOverLabelDisabled]: !annotation.enableLeftOver }"
+            :max-length="40"
+            @click.stop
+          />
+        </PlCheckbox>
         <PlBtnSecondary icon="add" @click="handleAddStep">
           Add label
         </PlBtnSecondary>
@@ -100,5 +114,11 @@ function handleAddStep() {
 
 .stepItem {
   cursor: pointer;
+}
+
+.leftOverLabelDisabled {
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.5;
 }
 </style>

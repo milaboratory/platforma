@@ -187,7 +187,14 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
           @drop="(event) => handleDropToExistingGroup(index, event)"
           @dragover="dragOver"
         >
-          <PlCheckbox :model-value="item.type === 'not'" :class="$style.notCheckbox" @update:model-value="inverseRootNode(index)">NOT</PlCheckbox>
+          <PlCheckbox
+            v-if="item.type === 'not'"
+            :model-value="item.type === 'not'"
+            :class="$style.notCheckbox"
+            @update:model-value="inverseRootNode(index)"
+          >
+            Filter Out
+          </PlCheckbox>
           <template v-for="(_, filterIdx) in getNotContent(item).filters" :key="filterIdx">
             <FilterEditor
               :filter="validateFilter(getNotContent(item).filters[filterIdx])"

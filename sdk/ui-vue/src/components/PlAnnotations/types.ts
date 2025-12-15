@@ -5,4 +5,4 @@ export type FilterSpec = _FilterSpec<FilterSpecLeaf, { id: number; name?: string
 
 export type Filter = FilterSpecUi<Extract<FilterSpec, { type: 'and' | 'or' }>> & { id: number };
 
-export type Annotation = AnnotationSpecUi<Filter>;
+export type Annotation = AnnotationSpecUi<Filter> & { enableLeftOver?: boolean; leftOverLabel?: string };
