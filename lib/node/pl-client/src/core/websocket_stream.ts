@@ -236,19 +236,6 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
 
   private sendQueuedMessage(queued: QueuedMessage<ClientMsg>): void {
     try {
-      // // Check if stream was closed or aborted before sending
-      // if (this.connectionState === ConnectionState.CLOSED) {
-      //   if (this.lastError) {
-      //     queued.reject(this.lastError);
-      //   } else if (this.options.abortSignal?.aborted) {
-      //     const reason = this.options.abortSignal.reason;
-      //     queued.reject(reason instanceof Error ? reason : new Error('Stream aborted', { cause: reason }));
-      //   } else {
-      //     queued.reject(this.createStreamClosedError());
-      //   }
-      //   return;
-      // }
-
       const ws = this.ws;
       if (!ws) {
         throw new Error('WebSocket is not connected');
@@ -342,17 +329,7 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
       if (this.isStreamEnded()) {
         if (this.lastError) {
           reject(this.lastError);
-        } 
-        // else if (this.options.abortSignal?.aborted) {
-        //   // If aborted but no lastError set, create error from abort reason
-        //   const reason = this.options.abortSignal.reason;
-        //   if (reason instanceof Error) {
-        //     reject(reason);
-        //   } else {
-        //     reject(new Error('Stream aborted', { cause: reason }));
-        //   }
-        // } 
-        else {
+        } else {
           resolve({ value: undefined as any, done: true });
         }
         return;
@@ -426,24 +403,6 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
       return err instanceof Error ? err : new Error('WebSocket error', { cause: error });
     }
     return new Error(String(error));
-    // if (error instanceof Error) {
-    //   // Handle empty error messages from undici WebSocket
-    //   if (!error.message && error.name) {
-    //     return new Error(`${error.name}`, { cause: error });
-    //   }
-    //   return error;
-    // }
-    // if (error instanceof ErrorEvent) {
-    //   const err = error.error;
-    //   if (err instanceof Error) {
-    //     if (!err.message && err.name) {
-    //       return new Error(`${err.name}`, { cause: err });
-    //     }
-    //     return err;
-    //   }
-    //   return new Error('WebSocket error', { cause: error });
-    // }
-    // return new Error(String(error) || 'Unknown error');
   }
 
   /**
