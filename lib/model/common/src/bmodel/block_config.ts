@@ -32,7 +32,7 @@ export type BlockConfigV3Generic<
    * arguments.
    *
    * Optional to support earlier SDK version configs.
-   * */
+   */
   readonly inputsValid: BroadActiveHandleDescriptor;
 
   /** Configuration to derive list of section for the left overview panel */
@@ -41,10 +41,16 @@ export type BlockConfigV3Generic<
   /** Lambda to derive block title */
   readonly title?: NarrowActiveHandleDescriptor;
 
+  /** Lambda to derive block subtitle, shown below the title */
+  readonly subtitle?: NarrowActiveHandleDescriptor;
+
+  /** Lambda returning array of tags for search functionality */
+  readonly tags?: BroadActiveHandleDescriptor;
+
   /**
    * Lambda returning list of upstream blocks this block enriches with its exports,
    * influences dependency graph construction
-   * */
+   */
   readonly enrichmentTargets?: NarrowActiveHandleDescriptor;
 
   /** Configuration for the output cells */
