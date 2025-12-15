@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler.types
 
+## 1.13.0
+
+### Minor Changes
+
+- 2e7bc1c: add unique operation for ptabler df
+
 ## 1.12.6
 
 ### Patch Changes
