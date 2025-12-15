@@ -1169,18 +1169,53 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		/**
 		 * Removes duplicate rows from the DataFrame.
 		 *
+		 * @param ...options {map} (optional) - A single map argument for additional options:
+		 *   - `subset` {string|array} (optional): Column name(s) to consider when identifying duplicates.
+		 *                                          If not provided, all columns are used.
+		 *   - `keep` {string} (optional): Which duplicate row to keep:
+		 *       - 'any': No guarantee of which row is kept (allows optimizations). Default.
+		 *       - 'none': Don't keep duplicate rows.
+		 *       - 'first': Keep first unique row.
+		 *       - 'last': Keep last unique row.
+		 *   - `maintainOrder` {bool} (optional): Keep the same order as the original data.
+		 *                                         This may be more expensive. Defaults to false.
 		 * @returns {object} - A new DataFrame object with duplicate rows removed.
 		 * @example
 		 *   uniqueDf := df.unique()
+		 *   uniqueById := df.unique({subset: "id"})
+		 *   uniqueByMultiple := df.unique({subset: ["id", "category"]})
+		 *   uniqueFirst := df.unique({subset: "id", keep: "first", maintainOrder: true})
 		 */
-		unique: func() {
+		unique: func(...options) {
+			opts := {}
+			if len(options) > 0 {
+				opts = options[0]
+			}
+
+			if !is_undefined(opts.keep) {
+				validKeep := opts.keep == "any" || opts.keep == "none" || opts.keep == "first" || opts.keep == "last"
+				if !validKeep {
+					ll.panic("keep must be 'any', 'none', 'first', or 'last'. Got: %v", opts.keep)
+				}
+			}
+
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
 			parentWorkflow._addStep(func(ctx) {
-				return {
+				step := {
 					type: "unique",
 					inputTable: dfName,
 					outputTable: outputDfName
 				}
+				if !is_undefined(opts.subset) {
+					step.subset = opts.subset
+				}
+				if !is_undefined(opts.keep) {
+					step.keep = opts.keep
+				}
+				if !is_undefined(opts.maintainOrder) {
+					step.maintainOrder = opts.maintainOrder
+				}
+				return step
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},
