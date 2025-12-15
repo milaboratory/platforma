@@ -1,4 +1,5 @@
 ---
+'@milaboratories/build-configs': minor
 '@milaboratories/ts-builder': minor
 '@milaboratories/ts-configs': minor
 '@platforma-sdk/eslint-config': minor
