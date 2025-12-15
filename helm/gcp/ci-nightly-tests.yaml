@@ -1,0 +1,123 @@
+# =============================================================================
+# Platforma Helm Chart Configuration
+# =============================================================================
+
+# -- Number of replicas for the deployment
+replicaCount: 1
+
+# -- Image configuration
+image:
+  repository: europe-west3-docker.pkg.dev/mik8s-euwe3-prod-gke-project/pl/pl
+  pullPolicy: Always
+  tag: "main" # or Chart.AppVersion
+
+# -- Service Account configuration
+serviceAccount:
+  create: false
+  name: "platforma-ci-sa"
+  annotations: {}
+    # eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/my-platforma-iam-role
+    # iam.gke.io/sa-name: my-platforma-gsa # For Workload Identity on GKE
+
+deployment:
+  redeployOnUpgrade: true
+  securityContext:
+    privileged: false
+    runAsUser: 0
+    runAsGroup: 0
+    runAsNonRoot: false
+    capabilities:
+      add: []
+      drop: [ "ALL" ]
+
+  podSecurityContext:
+    fsGroup: 3000 # Group ID for volume ownership
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 8Gi
+  requests:
+    cpu: 1000m
+    memory: 4Gi
+
+env:
+  variables:
+    PL_ENVIRONMENT: "CI"
+
+  secretVariables:
+  - name: PL_LICENSE
+    secretKeyRef:
+      name: pl-license-secret
+      key: pl-license-key
+
+logging:
+  # Supported values:
+  #   - "stream://stdout" (default): Logs are sent to the standard output of the container.
+  #   - "stream://stderr": Logs are sent to the standard error of the container.
+  #   - "dir:///var/log/platforma": Logs are written to files in the specified directory,
+  #     which can be backed by a persistent volume. The path should match `persistence.mountPath`.
+  destination: "stream://stderr"
+
+monitoring:
+  enabled: true
+
+debug:
+  enabled: true
+
+persistence:
+  mainRoot:
+    enabled: false
+
+  dbDir:
+    enabled: true
+    storageClass: "standard-rwo"
+    mountPath: /data/rocksdb
+
+gcp:
+  gar: "europe-west3-docker.pkg.dev/mik8s-euwe3-prod-gke-project/pl-containers/milaboratories/pl-containers"
+  serviceAccount: "mik8s-platforma-ci-access@mik8s-euwe3-prod-gke-project.iam.gserviceaccount.com"
+  projectId: "mik8s-euwe3-prod-gke-project"
+
+primaryStorage:
+  gcs:
+    enabled: true
+    url: "gs://mik8s-platforma-ci-euwe3-dev-gke/platforma-ci-primary/" # e.g., gs://<bucket>[/<prefix-in-bucket>]
+
+dataLibrary:
+  gcs:
+  - id: "test-assets"
+    enabled: true
+    url: "gs://mik8s-platforma-ci-euwe3-dev-gke/test-assets/"
+
+authOptions:
+  ldap:
+    enabled: true
+    server: "ldap://pl-dev-glauth.dev-gke.svc.cluster.local:3893"
+    dn: "cn=%u,ou=users,ou=users,dc=pldev,dc=io"
+
+extraArgs:
+  - --skip-extended-self-check
+#   - --log-level=debug
+#   - --log-dst=dir:///var/log/platforma
+#   - --log-rotation-size=100MiB
+
+googleBatch:
+  enabled: true
+  region: "europe-west3"
+
+  network: "projects/mik8s-euwe3-prod-gke-project/global/networks/mik8s-euwe3-prod-gke-vpc"
+  subnetwork: "projects/mik8s-euwe3-prod-gke-project/regions/europe-west3/subnetworks/mik8s-euwe3-prod-gke-private-1"
+
+  storage: "/data=nfs://10.244.108.130/nfs_share"
+  volumes:
+    enabled: true
+    name: "nfs-volume"
+    mountPath: "/data"
+    workDirName: "ci/platforma-nightly-tests/work"
+    packagesDirName: "ci/platforma-nightly-tests/packages"
+    existingClaim: "filestore-ci-fast-pvc"
+
+  jobNamePrefix: "platforma-nightly-tests"
+  jobImage: ""
+  provisioning: "SPOT"

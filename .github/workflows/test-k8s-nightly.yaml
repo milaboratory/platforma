@@ -24,7 +24,7 @@ jobs:
       pnpm-build-command: '--filter "*/workflow-tengo*"'
       pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --maxWorkers=5 --testTimeout=1800000 --no-cache'
       helm-release-name: 'pl-dev-gcp'
-      helm-chart-values-file: 'helm/gcp/values.yaml'
+      helm-chart-values-file: 'helm/gcp/ci-nightly-tests.yaml'
       notify-slack: true
       namespace: 'dev-gke'
       npmrc-config: |
