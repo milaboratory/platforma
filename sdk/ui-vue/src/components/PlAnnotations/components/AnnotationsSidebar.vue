@@ -10,6 +10,7 @@ import {
 } from '@milaboratories/uikit';
 import type { Annotation } from '../types';
 import $commonStyle from './style.module.css';
+import { isString } from 'es-toolkit';
 
 // Models
 const annotation = defineModel<Annotation>('annotation', { required: true });
@@ -63,14 +64,14 @@ function handleAddStep() {
           </template>
         </PlElementList>
         <PlCheckbox
-          :model-value="annotation.enableLeftOver ?? false"
+          :model-value="isString(annotation.defaultValue)"
           label="Mark left over"
-          @update:model-value="annotation.enableLeftOver = $event"
+          @update:model-value="annotation.defaultValue = $event ? '' : undefined"
         >
           <PlEditableTitle
-            v-model="annotation.leftOverLabel"
+            v-model="annotation.defaultValue"
             placeholder="Left over label"
-            :class="{ [$style.leftOverLabelDisabled]: !annotation.enableLeftOver }"
+            :class="{ [$style.leftOverLabelDisabled]: !isString(annotation.defaultValue) }"
             :max-length="40"
             @click.stop
           />
