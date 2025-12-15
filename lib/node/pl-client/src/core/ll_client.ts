@@ -465,7 +465,7 @@ export class LLPlClient implements WireClientProviderFactory {
   /**
    * Detects the best available wire protocol.
    * If wireProtocol is explicitly configured, returns that.
-   * Otherwise probes REST support and returns 'rest' if available, 'grpc' as fallback.
+   * Otherwise probes the current protocol via ping; if it fails, switches to the alternative.
    * @returns the detected wire protocol and whether it differs from current
    */
   private async detectOptimalWireProtocol(): Promise<{ protocol: wireProtocol; shouldSwitch: boolean }> {
