@@ -85,6 +85,24 @@ export interface SelectStep {
   columns: Expression[];
 }
 
+export interface UniqueStep {
+  /**
+   * The type identifier for this step.
+   * Must be 'unique'.
+   */
+  type: 'unique';
+
+  /**
+   * The name of the input table in the tablespace from which unique rows will be selected.
+   */
+  inputTable: string;
+
+  /**
+   * The name for the resulting unique table that will be added to the tablespace.
+   */
+  outputTable: string;
+}
+
 /**
  * Defines a step that adds new columns to an input table (or replaces existing ones
  * if names collide) and outputs the result to a new table in the tablespace.

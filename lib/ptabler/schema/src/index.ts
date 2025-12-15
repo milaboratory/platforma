@@ -13,6 +13,7 @@ import type {
   FilterStep,
   LimitStep,
   SelectStep,
+  UniqueStep,
   WithColumnsStep,
   WithoutColumnsStep,
 } from './basic_steps';
@@ -38,6 +39,7 @@ export type PTablerStep =
   | ConcatenateStep
   | SortStep
   | SelectStep
+  | UniqueStep
   | WithColumnsStep
   | WithoutColumnsStep
   | WriteFrameStep

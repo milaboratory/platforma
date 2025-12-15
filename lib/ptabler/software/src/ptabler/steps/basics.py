@@ -15,6 +15,7 @@ class AddColumns(PStep, tag="add_columns"):
     table in the tablespace with these new columns.
     Corresponds to the AddColumnsStep defined in the TypeScript type definitions.
     """
+
     table: str
     columns: List[AnyExpression]
 
@@ -30,11 +31,12 @@ class AddColumns(PStep, tag="add_columns"):
 
 class Select(PStep, tag="select"):
     """
-    PStep to select a specific set of columns from an input table, 
+    PStep to select a specific set of columns from an input table,
     potentially applying transformations or creating new columns, and outputs
     the result to a new table in the tablespace.
     Corresponds to the SelectStep defined in the TypeScript type definitions.
     """
+
     input_table: str = msgspec.field(name="inputTable")
     output_table: str = msgspec.field(name="outputTable")
     columns: List[AnyExpression]
@@ -48,6 +50,22 @@ class Select(PStep, tag="select"):
         ctx.put_table(self.output_table, lf_output)
 
 
+class Unique(PStep, tag="unique"):
+    """
+    PStep to remove duplicate rows from an input table and outputs
+    the result to a new table in the tablespace.
+    Corresponds to the UniqueStep defined in the TypeScript type definitions.
+    """
+
+    input_table: str = msgspec.field(name="inputTable")
+    output_table: str = msgspec.field(name="outputTable")
+
+    def execute(self, ctx: StepContext):
+        lf_input = ctx.get_table(self.input_table)
+        lf_output = lf_input.unique()
+        ctx.put_table(self.output_table, lf_output)
+
+
 class WithColumns(PStep, tag="with_columns"):
     """
     PStep to add new columns to an input table (or replace existing ones
@@ -55,6 +73,7 @@ class WithColumns(PStep, tag="with_columns"):
     All original columns from the input table are retained.
     Corresponds to the WithColumnsStep defined in the TypeScript type definitions.
     """
+
     input_table: str = msgspec.field(name="inputTable")
     output_table: str = msgspec.field(name="outputTable")
     columns: List[AnyExpression]
@@ -74,9 +93,10 @@ class WithoutColumns(PStep, tag="without_columns"):
     the result to a new table in the tablespace.
     Corresponds to the WithoutColumnsStep defined in the TypeScript type definitions.
     """
+
     input_table: str = msgspec.field(name="inputTable")
     output_table: str = msgspec.field(name="outputTable")
-    columns: List[str] # List of column names to exclude
+    columns: List[str]  # List of column names to exclude
 
     def execute(self, ctx: StepContext):
         lf_input = ctx.get_table(self.input_table)
