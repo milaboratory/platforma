@@ -26,7 +26,7 @@ import type { WireClientProvider, WireClientProviderFactory, WireConnection } fr
 import { parseHttpAuth } from '@milaboratories/pl-model-common';
 import type * as grpcTypes from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { type PlApiPaths, type PlRestClientType, createClient, parseResponseError } from '../proto-rest';
-import { notEmpty } from '@milaboratories/ts-helpers';
+import { notEmpty, retry, withTimeout, type RetryOptions } from '@milaboratories/ts-helpers';
 import { Code } from '../proto-grpc/google/rpc/code';
 import { WebSocketBiDiStream } from './websocket_stream';
 import { TxAPI_ClientMessage, TxAPI_ServerMessage } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
@@ -54,8 +54,6 @@ class WireClientProviderImpl<Client> implements WireClientProvider<Client> {
 
 /** Abstract out low level networking and authorization details */
 export class LLPlClient implements WireClientProviderFactory {
-  public readonly conf: PlClientConfig;
-
   /** Initial authorization information */
   private authInformation?: AuthInformation;
   /** Will be executed by the client when it is required */
@@ -70,7 +68,7 @@ export class LLPlClient implements WireClientProviderFactory {
   private _status: PlConnectionStatus = 'OK';
   private readonly statusListener?: PlConnectionStatusListener;
 
-  private _wireProto: wireProtocol | undefined = undefined;
+  private _wireProto: wireProtocol = 'grpc';
   private _wireConn!: WireConnection;
 
   private readonly _restInterceptors: Dispatcher.DispatcherComposeInterceptor[];
@@ -82,18 +80,29 @@ export class LLPlClient implements WireClientProviderFactory {
 
   public readonly httpDispatcher: Dispatcher;
 
-  constructor(
+  public static async build(
     configOrAddress: PlClientConfig | string,
+    ops: {
+      auth?: AuthOps;
+      statusListener?: PlConnectionStatusListener;
+      shouldUseGzip?: boolean;
+    } = {},
+  ) {
+    const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
+
+    const pl = new LLPlClient(conf, ops);
+    await pl.detectOptimalWireProtocol();
+    return pl;
+  }
+
+  private constructor(
+    public readonly conf: PlClientConfig,
     private readonly ops: {
       auth?: AuthOps;
       statusListener?: PlConnectionStatusListener;
       shouldUseGzip?: boolean;
     } = {},
   ) {
-    this.conf = typeof configOrAddress === 'string'
-      ? plAddressToConfig(configOrAddress)
-      : configOrAddress;
-
     const { auth, statusListener } = ops;
 
     if (auth !== undefined) {
@@ -120,8 +129,11 @@ export class LLPlClient implements WireClientProviderFactory {
     this._grpcInterceptors.push(this.createGrpcErrorInterceptor());
 
     this.httpDispatcher = defaultHttpDispatcher(this.conf.httpProxy);
+    if (this.conf.wireProtocol) {
+      this._wireProto = this.conf.wireProtocol;
+    }
 
-    this.initWireConnection();
+    this.initWireConnection(this._wireProto);
 
     if (statusListener !== undefined) {
       this.statusListener = statusListener;
@@ -142,13 +154,8 @@ export class LLPlClient implements WireClientProviderFactory {
     });
   }
 
-  private initWireConnection() {
-    if (this._wireProto === undefined) {
-      // TODO: implement automatic server mode detection
-      this._wireProto = this.conf.wireProtocol ?? 'grpc';
-    }
-
-    switch (this._wireProto) {
+  private initWireConnection(protocol: wireProtocol) {
+    switch (protocol) {
       case 'rest':
         this.initRestConnection();
         return;
@@ -158,7 +165,7 @@ export class LLPlClient implements WireClientProviderFactory {
       default:
         ((v: never) => {
           throw new Error(`Unsupported wire protocol '${v as string}'. Use one of: ${SUPPORTED_WIRE_PROTOCOLS.join(', ')}`);
-        })(this._wireProto);
+        })(protocol);
     }
   }
 
@@ -221,6 +228,7 @@ export class LLPlClient implements WireClientProviderFactory {
   private _replaceWireConnection(newConn: WireConnection): void {
     const oldConn = this._wireConn;
     this._wireConn = newConn;
+    this._wireProto = newConn.type;
 
     // Reset all providers to let them reinitialize their clients
     for (let i = 0; i < this.providers.length; i++) {
@@ -267,6 +275,10 @@ export class LLPlClient implements WireClientProviderFactory {
 
   public get wireConnection(): WireConnection {
     return this._wireConn;
+  }
+
+  public get wireProtocol(): wireProtocol | undefined {
+    return this._wireProto;
   }
 
   /** Returns true if client is authenticated. Even with anonymous auth information
@@ -442,6 +454,32 @@ export class LLPlClient implements WireClientProviderFactory {
     } else {
       return notEmpty((await cl.GET('/v1/ping')).data);
     }
+  }
+
+  /**
+   * Detects the best available wire protocol.
+   * If wireProtocol is explicitly configured, does nothing.
+   * Otherwise probes the current protocol via ping; if it fails, switches to the alternative.
+   */
+  private async detectOptimalWireProtocol() {
+    if (this.conf.wireProtocol) {
+      return;
+    }
+
+    const retryOptions: RetryOptions = {
+      type: 'exponentialBackoff',
+      maxAttempts: 80,
+      initialDelay: 30,
+      backoffMultiplier: 1.3,
+      jitter: 0.2,
+      maxDelay: 500,
+    };
+
+    await retry(() => withTimeout(this.ping(), 500), retryOptions, () => {
+      const protocol = this._wireProto === 'grpc' ? 'rest' : 'grpc';
+      this.initWireConnection(protocol);
+      return true;
+    });
   }
 
   public async license(): Promise<grpcTypes.MaintenanceAPI_License_Response> {

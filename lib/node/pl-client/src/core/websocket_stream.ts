@@ -3,6 +3,7 @@ import type { BiDiStream } from './abstract_stream';
 import Denque from 'denque';
 import type { RetryConfig } from '../helpers/retry_strategy';
 import { RetryStrategy } from '../helpers/retry_strategy';
+import { DisconnectedError } from './errors';
 
 interface QueuedMessage<InType extends object> {
   message: InType;
@@ -182,6 +183,18 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
 
   private onClose(): void {
     this.progressConnectionState(ConnectionState.CLOSED);
+
+    // If abort signal was triggered, use that as the error source
+    if (this.options.abortSignal?.aborted && !this.lastError) {
+      const reason = this.options.abortSignal.reason;
+      if (reason instanceof Error) {
+        this.lastError = reason;
+      } else if (reason !== undefined) {
+        this.lastError = new Error(String(reason), { cause: reason });
+      } else {
+        this.lastError = this.createStreamClosedError();
+      }
+    }
 
     if (!this.lastError) {
       this.rejectAllSendOperations(this.createStreamClosedError());
@@ -380,7 +393,15 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
 
   private toError(error: unknown): Error {
     if (error instanceof Error) return error;
-    if (error instanceof ErrorEvent) return error.error;
+    if (error instanceof ErrorEvent) {
+      const err = error.error;
+      // undici WebSocket throws TypeError with empty message on socket close
+      // (e.g., when connection is lost or server disconnects)
+      if (err instanceof TypeError && !err.message) {
+        return new DisconnectedError('WebSocket connection closed unexpectedly');
+      }
+      return err instanceof Error ? err : new Error('WebSocket error', { cause: error });
+    }
     return new Error(String(error));
   }
 

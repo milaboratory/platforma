@@ -230,7 +230,7 @@ export async function initNetworkCheck(
   // projects of the user.
   plConfig.alternativeRoot = `check_network_${randomUUID()}`;
 
-  const uaClient = new UnauthenticatedPlClient(plConfig);
+  const uaClient = await UnauthenticatedPlClient.build(plConfig);
 
   let auth: AuthInformation = {};
   if (plUser && plPassword) {
