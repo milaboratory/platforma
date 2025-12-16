@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.7.3
+
+### Patch Changes
+
+- 87251ed: Support parquet format in block-facing data export/import
+
 ## 5.7.2
 
 ### Patch Changes
