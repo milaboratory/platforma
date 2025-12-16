@@ -46,8 +46,8 @@ jobs:
           "TEST_CACHE_CRUTCH": "${{ github.sha }}-${{ github.run_id }}" }
     secrets:
       env: |
-        { "PL_CI_TEST_USER": "testuser1" }},
-          "PL_CI_TEST_PASSWORD": "testpassword1" }},
+        { "PL_CI_TEST_USER": "testuser1",
+          "PL_CI_TEST_PASSWORD": "testpassword1",
 
           "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
           "AWS_CI_IAM_MONOREPO_SIMPLE_ROLE": ${{ toJSON(secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE) }},
