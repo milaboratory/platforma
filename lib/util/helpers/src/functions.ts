@@ -24,7 +24,7 @@ export class AwaitLock {
 
   release(): void {
     if (!this.acquired) {
-      throw new Error('Cannot release an unacquired lock');
+      throw new Error('Cannot release not acquired lock');
     }
 
     if (this.resolvers.length) {
