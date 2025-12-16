@@ -155,7 +155,6 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   private initWireConnection(protocol: wireProtocol) {
-    console.log(`[ll_client] Initializing wire connection for protocol: ${protocol}`);
     switch (protocol) {
       case 'rest':
         this.initRestConnection();
@@ -229,6 +228,7 @@ export class LLPlClient implements WireClientProviderFactory {
   private _replaceWireConnection(newConn: WireConnection): void {
     const oldConn = this._wireConn;
     this._wireConn = newConn;
+    this._wireProto = newConn.type;
 
     // Reset all providers to let them reinitialize their clients
     for (let i = 0; i < this.providers.length; i++) {
@@ -448,7 +448,6 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   public async ping(): Promise<grpcTypes.MaintenanceAPI_Ping_Response> {
-    console.log(`[ll_client] Pinging local platforma... , wireProtocol: ${this._wireProto}`);
     const cl = this.clientProvider.get();
     if (cl instanceof GrpcPlApiClient) {
       return (await cl.ping({})).response;
@@ -469,21 +468,16 @@ export class LLPlClient implements WireClientProviderFactory {
 
     const retryOptions: RetryOptions = {
       type: 'exponentialBackoff',
-      maxAttempts: 15,
-      initialDelay: 100,
+      maxAttempts: 80,
+      initialDelay: 30,
       backoffMultiplier: 1.3,
       jitter: 0.2,
-      maxDelay: 300,
+      maxDelay: 500,
     };
 
-    let attempt = 0;
-    await retry(() => withTimeout(this.ping(), 500), retryOptions, (e) => {
-      // const protocol = this._wireProto === 'grpc' ? 'rest' : 'grpc';
-
-      attempt++;
-      console.log(`[ll_client] failed attempt: ${attempt}, error: ${e}`);
-
-      // this.initWireConnection(protocol);
+    await retry(() => withTimeout(this.ping(), 500), retryOptions, () => {
+      const protocol = this._wireProto === 'grpc' ? 'rest' : 'grpc';
+      this.initWireConnection(protocol);
       return true;
     });
   }
