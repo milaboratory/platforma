@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.7.2
+
+### Patch Changes
+
+- ce1303d: annotations: reorder labels execution
+
 ## 5.7.1
 
 ### Patch Changes

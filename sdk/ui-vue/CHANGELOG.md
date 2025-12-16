@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.48.6
+
+### Patch Changes
+
+- ce1303d: annotations: reorder labels execution
+
 ## 1.48.5
 
 ### Patch Changes
