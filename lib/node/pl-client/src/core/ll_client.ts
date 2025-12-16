@@ -26,8 +26,7 @@ import type { WireClientProvider, WireClientProviderFactory, WireConnection } fr
 import { parseHttpAuth } from '@milaboratories/pl-model-common';
 import type * as grpcTypes from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { type PlApiPaths, type PlRestClientType, createClient, parseResponseError } from '../proto-rest';
-import { notEmpty, sleep } from '@milaboratories/ts-helpers';
-import { isConnectionProblem } from './errors';
+import { notEmpty, retry, withTimeout, type RetryOptions } from '@milaboratories/ts-helpers';
 import { Code } from '../proto-grpc/google/rpc/code';
 import { WebSocketBiDiStream } from './websocket_stream';
 import { TxAPI_ClientMessage, TxAPI_ServerMessage } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
@@ -89,21 +88,10 @@ export class LLPlClient implements WireClientProviderFactory {
       shouldUseGzip?: boolean;
     } = {},
   ) {
-    console.log('Building LLPlClient...');
     const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
 
     const pl = new LLPlClient(conf, ops);
-    if (conf.wireProtocol) {
-      return pl;
-    }
-
-    const { protocol: detectedProtocol, shouldSwitch } = await pl.detectOptimalWireProtocol();
-    if (shouldSwitch) {
-      console.log(`Switching to ${detectedProtocol} wire protocol`);
-      await pl.close();
-      conf.wireProtocol = detectedProtocol;
-      return new LLPlClient(conf, ops);
-    }
+    await pl.detectOptimalWireProtocol();
     return pl;
   }
 
@@ -141,8 +129,10 @@ export class LLPlClient implements WireClientProviderFactory {
     this._grpcInterceptors.push(this.createGrpcErrorInterceptor());
 
     this.httpDispatcher = defaultHttpDispatcher(this.conf.httpProxy);
+    if (this.conf.wireProtocol) {
+      this._wireProto = this.conf.wireProtocol;
+    }
 
-    this._wireProto = this.conf.wireProtocol ?? 'grpc';
     this.initWireConnection(this._wireProto);
 
     if (statusListener !== undefined) {
@@ -165,6 +155,7 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   private initWireConnection(protocol: wireProtocol) {
+    console.log(`[ll_client] Initializing wire connection for protocol: ${protocol}`);
     switch (protocol) {
       case 'rest':
         this.initRestConnection();
@@ -457,6 +448,7 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   public async ping(): Promise<grpcTypes.MaintenanceAPI_Ping_Response> {
+    console.log(`[ll_client] Pinging local platforma... , wireProtocol: ${this._wireProto}`);
     const cl = this.clientProvider.get();
     if (cl instanceof GrpcPlApiClient) {
       return (await cl.ping({})).response;
@@ -467,42 +459,33 @@ export class LLPlClient implements WireClientProviderFactory {
 
   /**
    * Detects the best available wire protocol.
-   * If wireProtocol is explicitly configured, returns that.
+   * If wireProtocol is explicitly configured, does nothing.
    * Otherwise probes the current protocol via ping; if it fails, switches to the alternative.
-   * @returns the detected wire protocol and whether it differs from current
    */
-  private async detectOptimalWireProtocol(): Promise<{ protocol: wireProtocol; shouldSwitch: boolean }> {
-    const getAlternativeWireProtocol = (protocol: wireProtocol): wireProtocol => {
-      return protocol === 'grpc' ? 'rest' : 'grpc';
-    };
-
+  private async detectOptimalWireProtocol() {
     if (this.conf.wireProtocol) {
-      return {
-        protocol: this.conf.wireProtocol,
-        shouldSwitch: this._wireProto !== this.conf.wireProtocol,
-      };
+      return;
     }
 
-    for (let attempt = 0; attempt < 100; attempt++) {
-      try {
-        await this.ping();
-        return {
-          protocol: this._wireProto,
-          shouldSwitch: false,
-        };
-      } catch (err) {
-        if (!isConnectionProblem(err)) {
-          break;
-        }
-        console.log(`Ping failed, retrying...`, err);
-        await sleep(100);
-      }
-    }
-
-    return {
-      protocol: getAlternativeWireProtocol(this._wireProto),
-      shouldSwitch: true,
+    const retryOptions: RetryOptions = {
+      type: 'exponentialBackoff',
+      maxAttempts: 15,
+      initialDelay: 100,
+      backoffMultiplier: 1.3,
+      jitter: 0.2,
+      maxDelay: 300,
     };
+
+    let attempt = 0;
+    await retry(() => withTimeout(this.ping(), 500), retryOptions, (e) => {
+      // const protocol = this._wireProto === 'grpc' ? 'rest' : 'grpc';
+
+      attempt++;
+      console.log(`[ll_client] failed attempt: ${attempt}, error: ${e}`);
+
+      // this.initWireConnection(protocol);
+      return true;
+    });
   }
 
   public async license(): Promise<grpcTypes.MaintenanceAPI_License_Response> {
