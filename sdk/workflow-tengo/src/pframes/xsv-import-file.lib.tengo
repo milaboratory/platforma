@@ -84,8 +84,7 @@ getColumnSpec := func(axesSpec, col) {
  * @return map: reference - a reference to a map resource storing imported data.
  */
 importFile := func(xsvFile, xsvType, spec, ...ops) {
-	ll.assert(xsvType == "csv" || xsvType == "tsv" || xsvType == "parquet",
-		"expected one of [csv, tsv, parquet] types, found: %v", xsvType)
+	util.validateXsvType(xsvType)
 
 	validation.assertType(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
 

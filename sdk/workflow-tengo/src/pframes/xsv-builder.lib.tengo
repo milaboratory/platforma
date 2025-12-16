@@ -8,9 +8,10 @@ pBuilder := import(":pframes.builder")
 xsv := import(":pframes.xsv")
 canonical := import(":canonical")
 execConstants := import(":exec.constants")
+util := import(":pframes.util")
 
 xsvFileBuilder := func(xsvType) {
-    ll.assert(xsvType == "csv" || xsvType == "tsv" || xsvType == "parquet", "xsvType must be 'csv', 'tsv', or 'parquet'")
+    util.validateXsvType(xsvType)
 
     PTablerNA := "%%NA%%" // Constant for PTabler NA representation
     naValueInternal := ""  // Default NA value, can be changed by setNA

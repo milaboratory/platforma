@@ -15,6 +15,7 @@ pframesSpec := import(":pframes.spec")
 render := import(":render")
 maps := import(":maps")
 canonical := import(":canonical")
+validation := import(":validation")
 
 /**
  * This library provides a high-level API, inspired by Polars DataFrames, for building and executing
@@ -468,17 +469,14 @@ workflow := func() {
 
 			// Format resolution logic: format > xsvType > auto-detection
 			if !is_undefined(opts.format) {
-				if opts.format != "csv" && opts.format != "tsv" && opts.format != "ndjson" && opts.format != "parquet" {
-					ll.panic("format must be 'csv', 'tsv', 'ndjson', or 'parquet'. Got: %v", opts.format)
-				}
+				validation.assertType(opts.format, "string,regex=csv|tsv|parquet|ndjson",
+					"format must be one of [csv, tsv, parquet, ndjson], found: %v", opts.format)
 				if !is_undefined(finalFormat) && finalFormat != opts.format {
 					ll.panic("format and xsvType from structural input cannot be used together. Got: %v and %v", opts.format, finalFormat)
 				}
 				finalFormat = opts.format
 			} else if !is_undefined(opts.xsvType) {
-				if opts.xsvType != "csv" && opts.xsvType != "tsv" && opts.xsvType != "parquet" {
-					ll.panic("xsvType must be 'csv', 'tsv', or 'parquet'. Got: %v", opts.xsvType)
-				}
+				pframesUtil.validateXsvType(opts.xsvType)
 				if !is_undefined(finalFormat) && finalFormat != opts.xsvType {
 					ll.panic("opts.xsvType and xsvType from structural input cannot be used together. Got: %v and %v", opts.xsvType, finalFormat)
 				}
@@ -1044,14 +1042,11 @@ _newDataFrame = func(parentWorkflow, dfName) {
 
 		// Format resolution: explicit format > xsvType > auto-detection from extension
 		if !is_undefined(opts.format) {
-			if opts.format != "csv" && opts.format != "tsv" && opts.format != "ndjson" && opts.format != "parquet" {
-				ll.panic("format must be 'csv', 'tsv', 'ndjson', or 'parquet'. Got: %v", opts.format)
-			}
+			validation.assertType(opts.format, "string,regex=csv|tsv|parquet|ndjson",
+				"format must be one of [csv, tsv, parquet, ndjson], found: %v", opts.format)
 			finalFormat = opts.format
 		} else if !is_undefined(opts.xsvType) {
-			if opts.xsvType != "csv" && opts.xsvType != "tsv" && opts.xsvType != "parquet" {
-				ll.panic("xsvType must be 'csv', 'tsv', or 'parquet'. Got: %v", opts.xsvType)
-			}
+			pframesUtil.validateXsvType(opts.xsvType)
 			finalFormat = opts.xsvType
 		} else {
 			// Auto-detect from file extension

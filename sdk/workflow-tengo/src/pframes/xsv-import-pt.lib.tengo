@@ -59,10 +59,14 @@ applyNaRegex := func(colExpr, naRegex, colType) {
  * @return map: reference - a reference to a map resource storing imported data
  */
 importFileParquet := func(xsvFile, xsvType, spec, ops) {
-	ll.assert(xsvType == "csv" || xsvType == "tsv" || xsvType == "parquet",
-		"expected xsvType to be one of [csv, tsv, parquet], found: %v", xsvType)
+	util.validateXsvType(xsvType)
 
 	validation.assertType(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
+	if xsvType == "parquet" {
+		ll.assert(is_undefined(spec.separator), "separator is not supported with xsvType 'parquet'")
+		ll.assert(is_undefined(spec.commentLinePrefix), "commentLinePrefix is not supported with xsvType 'parquet'")
+		ll.assert(is_undefined(spec.skipEmptyLines), "skipEmptyLines is not supported with xsvType 'parquet'")
+	}
 	// Index can easily be supported by adding pl.int_range like in the example
 	// <https://docs.pola.rs/api/python/stable/reference/dataframe/api/polars.DataFrame.with_row_index.html#polars.DataFrame.with_row_index>
 	ll.assert(is_undefined(spec.index), "index axis is not supported with Parquet storage format")
@@ -70,7 +74,6 @@ importFileParquet := func(xsvFile, xsvType, spec, ops) {
 	ll.assert(is_undefined(spec.allowArtificialColumns), "allowArtificialColumns are not supported with Parquet storage format")
 	// Calling site effectively ignores separator option in favor of xsvType, so we need to warn user here
 	if !is_undefined(spec.separator) {
-		ll.assert(xsvType != "parquet", "separator is not supported with xsvType 'parquet'")
 		expectedSeparator := ","
 		if xsvType == "tsv" {
 			expectedSeparator = "\t"
@@ -78,12 +81,6 @@ importFileParquet := func(xsvFile, xsvType, spec, ops) {
 		ll.assert(spec.separator == expectedSeparator,
 			"separator does not match xsvType %v, expected '%v', got '%v'",
 			xsvType, expectedSeparator, spec.separator)
-	}
-	if !is_undefined(spec.commentLinePrefix) {
-		ll.assert(xsvType != "parquet", "commentLinePrefix is not supported with xsvType 'parquet'")
-	}
-	if !is_undefined(spec.skipEmptyLines) {
-		ll.assert(xsvType != "parquet", "skipEmptyLines is not supported with xsvType 'parquet'")
 	}
 
 	wf := pt.workflow()
