@@ -26,6 +26,8 @@ export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): b
   if (err instanceof Aborted || (err as any).name == 'AbortError') return true;
   if ((err as any).name == 'TimeoutError') return true;
   if ((err as any).code == 'ABORT_ERR') return true;
+  // Check for DOMException with ABORT_ERR code (thrown by AbortSignal.timeout)
+  if (err instanceof DOMException && err.code === DOMException.ABORT_ERR) return true;
   if ((err as any).code == Code.ABORTED) return true;
   if (
     (err as any).name == 'RpcError'
@@ -88,9 +90,17 @@ export class DisconnectedError extends Error {
 }
 
 export function rethrowMeaningfulError(error: any, wrapIfUnknown: boolean = false): never {
-  if (isUnauthenticated(error)) throw new UnauthenticatedError(error.message);
-  if (isConnectionProblem(error)) throw new DisconnectedError(error.message);
+  if (isUnauthenticated(error)) {
+    if (error instanceof UnauthenticatedError) throw error;
+    throw new UnauthenticatedError(error.message);
+  }
+  if (isConnectionProblem(error)) {
+    if (error instanceof DisconnectedError) throw error;
+    throw new DisconnectedError(error.message);
+  }
   if (isTimeoutOrCancelError(error)) throw new Aborted(error);
-  if (wrapIfUnknown) throw new Error(error.message, { cause: error });
-  else throw error;
+  if (wrapIfUnknown) {
+    const message = error.message || String(error) || 'Unknown error';
+    throw new Error(message, { cause: error });
+  } else throw error;
 }
