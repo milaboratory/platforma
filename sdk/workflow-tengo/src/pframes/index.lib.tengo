@@ -455,7 +455,7 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                      }
  *                    | {
  *                        type: "Xsv",          // CSV/TSV formatted text file for xsv conversion
- *						  xsvType: "tsv"|"csv", // Expected file format
+ *						  xsvType: "tsv"|"csv"|"parquet", // Expected file format
  *                        settings: object,     // Xsv conversion specification
  *                        cpu: number,          // Override CPU for this output
  *                        mem: number | string, // Override MEM for this output
@@ -1106,5 +1106,6 @@ export ll.toStrict({
 	pColumnResourceMapDataBuilder: pColumnResourceMapDataBuilder,
 	tsvFileBuilder: func() { return xsvBuilder.xsvFileBuilder("tsv") },
 	csvFileBuilder: func() { return xsvBuilder.xsvFileBuilder("csv") },
+	parquetFileBuilder: func() { return xsvBuilder.xsvFileBuilder("parquet") },
 	parseToJson: parseToJson
 })

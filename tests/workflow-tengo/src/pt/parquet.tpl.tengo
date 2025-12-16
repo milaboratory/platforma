@@ -1,0 +1,125 @@
+pt := import("@platforma-sdk/workflow-tengo:pt")
+file := import("@platforma-sdk/workflow-tengo:file")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+util := import("@platforma-sdk/workflow-tengo:pframes.util")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+self.defineOutputs("outputCsv1", "outputCsv2", "outputCsv3", "outputCsv4", "outputCsv5")
+
+self.body(func(inputs) {
+    csvData := inputs.csvData
+    axes := inputs.axes
+    columns := inputs.columns
+
+    // # Direct import
+
+    // ## With xsvType specified
+
+    wf := pt.workflow()
+    fileName := "output.parquet"
+    wf.frame(csvData, { xsvType: "csv" }).save(fileName, { xsvType: "parquet" })
+    ptResult := wf.run()
+    parquetFile := ptResult.getFile(fileName)
+
+    wf = pt.workflow()
+    fileName = "output.csv"
+    wf.frame(parquetFile, { xsvType: "parquet" }).save(fileName, { xsvType: "csv" })
+    ptResult = wf.run()
+    csvFile1 := ptResult.getFile(fileName)
+
+    // ## With format specified
+
+    wf = pt.workflow()
+    fileName = "output.parquet"
+    wf.frame(csvData, { format: "csv" }).save(fileName, { format: "parquet" })
+    ptResult = wf.run()
+    parquetFile = ptResult.getFile(fileName)
+
+    wf = pt.workflow()
+    fileName = "output.csv"
+    wf.frame(parquetFile, { format: "parquet" }).save(fileName, { format: "csv" })
+    ptResult = wf.run()
+    csvFile2 := ptResult.getFile(fileName)
+
+    // ## With fileName specified
+
+    wf = pt.workflow()
+    fileName = "output.parquet"
+    wf.frame(csvData, { fileName: "output.csv" }).save(fileName)
+    ptResult = wf.run()
+    parquetFile = ptResult.getFile(fileName)
+
+    wf = pt.workflow()
+    fileName = "output.csv"
+    wf.frame(parquetFile, { fileName: "output.parquet" }).save(fileName)
+    ptResult = wf.run()
+    csvFile3 := ptResult.getFile(fileName)
+
+    // # Via pframes
+
+    // ## parquetFileBuilder - buildForPT
+
+    wf = pt.workflow()
+    frameName := "outputFrame"
+    wf.frame(csvData, { format: "csv" }).saveFrameDirect(frameName, {
+        axes: axes,
+        columns: columns
+    })
+    ptResult = wf.run()
+    pf := ptResult.getFrameDirect(frameName)
+
+    builder := pframes.parquetFileBuilder()
+    for axis in axes {
+        builder.setAxisHeader(axis.spec, axis.column)
+    }
+    columnsMap := util.pFrameToColumnsMap(pf)
+    for col in columns {
+        builder.add(columnsMap[col.column], { header: col.column })
+    }
+    parquetFile = builder.buildForPT()
+
+    wf = pt.workflow()
+    fileName = "output.csv"
+    wf.frame(parquetFile, { format: "parquet" }).save(fileName)
+    ptResult = wf.run()
+    csvFile4 := ptResult.getFile(fileName)
+
+    // ## parquetFileBuilder - build
+    
+    wf = pt.workflow()
+    fileName = "output.parquet"
+    wf.frame(csvData, { fileName: "output.csv" }).save(fileName)
+    ptResult = wf.run()
+    parquetFile = ptResult.getFile(fileName)
+
+    pf = xsv.importFile(parquetFile, "parquet", {
+        axes: axes,
+        columns: columns
+    })
+
+    builder = pframes.parquetFileBuilder()
+    for axis in axes {
+        builder.setAxisHeader(axis.spec, axis.column)
+    }
+    columnsMap = util.pFrameToColumnsMap(pf)
+    for col in columns {
+        builder.add(columnsMap[col.column], { header: col.column })
+    }
+    parquetFile = builder.build()
+
+    wf = pt.workflow()
+    fileName = "output.csv"
+    wf.frame(parquetFile, { format: "parquet" }).save(fileName)
+    ptResult = wf.run()
+    csvFile5 := ptResult.getFile(fileName)
+
+    return {
+        outputCsv1: file.exportFile(csvFile1),
+        outputCsv2: file.exportFile(csvFile2),
+        outputCsv3: file.exportFile(csvFile3),
+        outputCsv4: file.exportFile(csvFile4),
+        outputCsv5: file.exportFile(csvFile5)
+    }
+})

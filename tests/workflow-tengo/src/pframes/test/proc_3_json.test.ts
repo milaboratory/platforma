@@ -1,11 +1,12 @@
 import type { PUniversalColumnSpec } from '@milaboratories/pl-middle-layer';
 import { Pl, resourceType } from '@milaboratories/pl-middle-layer';
 import { awaitStableState } from '@platforma-sdk/test';
+import type { SimpleTreeHelper } from './extended_tpl_test';
 import { assertJson, assertResource, eTplTest } from './extended_tpl_test';
 import { expect } from 'vitest';
-import type { Computable } from '@milaboratories/computable';
 import { getLongTestTimeout } from '@milaboratories/test-helpers';
 import { vi } from 'vitest';
+import type { PlTreeEntry } from '@milaboratories/pl-tree';
 
 const TIMEOUT = getLongTestTimeout(15_000);
 
@@ -23,9 +24,9 @@ const INPUT_SPEC: PUniversalColumnSpec = {
   ],
 };
 
-async function waitForResultMap(
-  result: { resultEntry: unknown },
-  stHelper: { tree(entry: unknown): Computable<unknown, unknown> },
+async function awaitResourceMap(
+  result: { resultEntry: PlTreeEntry },
+  stHelper: SimpleTreeHelper,
   timeout = TIMEOUT,
 ) {
   const r = stHelper.tree(result.resultEntry);
@@ -78,7 +79,7 @@ eTplTest.concurrent(
       },
     );
 
-    const theResult = await waitForResultMap(result, stHelper);
+    const theResult = await awaitResourceMap(result, stHelper);
 
     // In mapping mode, each primitive value should be processed individually
     for (const [key, expected] of [
@@ -135,7 +136,7 @@ eTplTest.concurrent(
       },
     );
 
-    const theResult = await waitForResultMap(result, stHelper);
+    const theResult = await awaitResourceMap(result, stHelper);
 
     // In aggregation mode, values should be grouped by second axis (group key)
     // Group [1]: contains values 10 (from [1,1]) and 30 (from [2,1]) -> sum = 40, count = 2
@@ -191,7 +192,7 @@ eTplTest.concurrent(
       },
     );
 
-    const theResult = await waitForResultMap(result, stHelper);
+    const theResult = await awaitResourceMap(result, stHelper);
 
     // In aggregation mode, values should be grouped by first axis (when aggregating by second axis)
     // Group [1]: contains values 10 (from [1,1]) and 20 (from [1,2]) -> sum = 40, count = 2

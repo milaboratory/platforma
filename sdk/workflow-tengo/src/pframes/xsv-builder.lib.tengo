@@ -8,9 +8,10 @@ pBuilder := import(":pframes.builder")
 xsv := import(":pframes.xsv")
 canonical := import(":canonical")
 execConstants := import(":exec.constants")
+util := import(":pframes.util")
 
 xsvFileBuilder := func(xsvType) {
-    ll.assert(xsvType == "csv" || xsvType == "tsv", "xsvType must be 'csv' or 'tsv'")
+    util.validateXsvType(xsvType)
 
     PTablerNA := "%%NA%%" // Constant for PTabler NA representation
     naValueInternal := ""  // Default NA value, can be changed by setNA
@@ -664,7 +665,7 @@ xsvFileBuilder := func(xsvType) {
         },
 
         /**
-         * Builds the XSV file (CSV or TSV) from the added columns and configurations.
+         * Builds the XSV file (CSV, TSV, or Parquet) from the added columns and configurations.
          *
          * This method performs spec distillation, applies header and axis label configurations,
          * constructs a PFrame internally, and then exports it to the specified XSV format.
@@ -727,7 +728,7 @@ xsvFileBuilder := func(xsvType) {
          *
          * @returns map - A map containing:
          *                  {
-         *                    xsvType: "tsv" | "csv", // The format of the XSV file.
+         *                    xsvType: "tsv" | "csv" | "parquet", // The format of the XSV file.
          *                    file: ResourceRef, // Reference to the generated XSV file.
          *                    schema: array       // Array of PTabler column schema objects.
          *                  }

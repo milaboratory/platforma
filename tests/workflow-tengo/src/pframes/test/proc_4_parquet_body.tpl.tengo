@@ -1,0 +1,22 @@
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+self.defineOutputs(
+	"parquet"
+)
+
+self.body(func(inputs) {
+	csvData := inputs[pConstants.VALUE_FIELD_NAME]
+
+	wf := pt.workflow()
+    fileName := "output.parquet"
+    wf.frame(csvData, { format: "csv" }).save(fileName, { format: "parquet" })
+    ptResult := wf.run()
+    parquetFile := ptResult.getFile(fileName)
+
+	return {
+		parquet: parquetFile
+	}
+})

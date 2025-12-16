@@ -798,6 +798,11 @@ isStructuredPfMap := func(pf) {
 	return true
 }
 
+validateXsvType := func(xsvType) {
+	validation.assertType(xsvType, "string,regex=csv|tsv|parquet",
+		"xsvType must be one of [csv, tsv, parquet], found: %v", xsvType)
+}
+
 export ll.toStrict({
 	PFCONV_IMPORT_CFG_SCHEMA: PFCONV_IMPORT_CFG_SCHEMA,
 	PFCONV_EXPORT_CFG_SCHEMA: PFCONV_EXPORT_CFG_SCHEMA,
@@ -810,5 +815,6 @@ export ll.toStrict({
 	pFrameToColumnsMap: pFrameToColumnsMap,
 	addColumnToWd: addColumnToWd,
 	isFlatPfMap: isFlatPfMap,
-	isStructuredPfMap: isStructuredPfMap
+	isStructuredPfMap: isStructuredPfMap,
+	validateXsvType: validateXsvType
 })
