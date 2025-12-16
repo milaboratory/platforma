@@ -90,7 +90,7 @@ export type DownloadDriverOps = {
 
 /** DownloadDriver holds a queue of downloading tasks,
  * and notifies every watcher when a file were downloaded. */
-export class DownloadDriver implements BlobDriver {
+export class DownloadDriver implements BlobDriver, AsyncDisposable {
   /** Represents a unique key to the path of a blob as a map. */
   private keyToDownload: Map<string, DownloadBlobTask> = new Map();
 
@@ -642,6 +642,14 @@ export class DownloadDriver implements BlobDriver {
       this.keyToDownload.delete(key);
       task.change.markChanged(`task ${resourceIdToString(task.rInfo.id)} released`);
     });
+  }
+
+  async dispose(): Promise<void> {
+    await this.rangesCache.dispose();
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.dispose();
   }
 }
 
