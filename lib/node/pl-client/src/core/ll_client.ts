@@ -155,6 +155,7 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   private initWireConnection(protocol: wireProtocol) {
+    this.log(`initializing wire connection (protocol=${protocol})`);
     switch (protocol) {
       case 'rest':
         this.initRestConnection();
@@ -456,6 +457,10 @@ export class LLPlClient implements WireClientProviderFactory {
     }
   }
 
+  private log(message: string, ...args: any[]): void {
+    console.log(`[LLPlClient] ${message}`, ...args);
+  }
+
   /**
    * Detects the best available wire protocol.
    * If wireProtocol is explicitly configured, does nothing.
@@ -475,7 +480,9 @@ export class LLPlClient implements WireClientProviderFactory {
       maxDelay: 500,
     };
 
-    await retry(() => withTimeout(this.ping(), 500), retryOptions, () => {
+    let attempts = 0;
+    await retry(() => withTimeout(this.ping(), 500), retryOptions, (e) => {
+      this.log(`attempt=${attempts++} failed to ping server (protocol=${this._wireProto}), error=${e.message}`);
       const protocol = this._wireProto === 'grpc' ? 'rest' : 'grpc';
       this.initWireConnection(protocol);
       return true;
