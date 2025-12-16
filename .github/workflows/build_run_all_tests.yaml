@@ -20,7 +20,7 @@ jobs:
       app-name-slug: 'platforma-sdk'
       gha-runner-label: 'dev-pl-sdk'
       node-version: '22.x'
-      pl-docker-tag: '1.44.1' 
+      pl-docker-tag: '1.43.0' 
       pnpm-build-args: '--filter=@milaboratories/pl-drivers'
       pnpm-tests-args: '--filter=@milaboratories/pl-drivers'
       build-script-name: 'build'
