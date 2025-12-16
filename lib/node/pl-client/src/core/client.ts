@@ -188,7 +188,12 @@ export class PlClient {
   private async init() {
     if (this.initialized) throw new Error('Already initialized');
 
-    // Will reinitialize client after getting available feature from server.
+    // Initial client is created without gzip to perform server ping and detect optimal wire protocol.
+    // LLPlClient.build() internally calls detectOptimalWireProtocol() which starts with default 'grpc',
+    // then retries with 'rest' if ping fails, alternating until a working protocol is found.
+    // We save the detected wireProtocol here because if the server supports gzip compression,
+    // we'll need to reinitialize the client with gzip enabled - passing the already-detected
+    // wireProtocol avoids redundant protocol detection on reinit.
     this._ll = await this.buildLLPlClient(false);
     const wireProtocol = this._ll.wireProtocol;
 
