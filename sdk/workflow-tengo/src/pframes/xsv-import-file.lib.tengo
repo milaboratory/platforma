@@ -57,7 +57,7 @@ getColumnSpec := func(axesSpec, col) {
  * provided by the spec used as map keys). Resulting p-columns will be always single-partitioned at most.
  *
  * @param xsvFile: reference - a reference to a file
- * @param xsvType: string - either csv or tsv
+ * @param xsvType: string - either csv, tsv, or parquet
  * @param spec: object - xsv conversion specification
  * @param ops: object - additional options
  *               {
@@ -84,7 +84,8 @@ getColumnSpec := func(axesSpec, col) {
  * @return map: reference - a reference to a map resource storing imported data.
  */
 importFile := func(xsvFile, xsvType, spec, ...ops) {
-	ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types, found: " + xsvType)
+	ll.assert(xsvType == "csv" || xsvType == "tsv" || xsvType == "parquet",
+		"expected one of [csv, tsv, parquet] types, found: %v", xsvType)
 
 	validation.assertType(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
 
@@ -106,6 +107,8 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	ops := renderOps({ dataOnly: false, splitDataAndSpec: false, queue: execConstants.LIGHT_QUEUE, inputCache: undefined }, ops...)
 
 	if ops.transpose != undefined {
+		ll.assert(xsvType != "parquet",
+			"transpose is not supported with xsvType 'parquet', please use 'csv' or 'tsv' instead")
 
 		tops := ops.transpose
 
@@ -170,6 +173,8 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	if storageFormat == "Parquet" {
 		return xsvImportPt.importFileParquet(xsvFile, xsvType, spec, ops)
 	}
+	ll.assert(xsvType != "parquet",
+		"storageFormat '%v' is not supported with xsvType 'parquet', please use storageFormat 'Parquet'", storageFormat)
 
 	// spec without any metadata (for caching purposes)
 	pureSpec := util.purifySpec(spec)

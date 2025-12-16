@@ -1106,5 +1106,6 @@ export ll.toStrict({
 	pColumnResourceMapDataBuilder: pColumnResourceMapDataBuilder,
 	tsvFileBuilder: func() { return xsvBuilder.xsvFileBuilder("tsv") },
 	csvFileBuilder: func() { return xsvBuilder.xsvFileBuilder("csv") },
+	parquetFileBuilder: func() { return xsvBuilder.xsvFileBuilder("parquet") },
 	parseToJson: parseToJson
 })

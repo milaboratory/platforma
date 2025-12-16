@@ -375,7 +375,7 @@ workflow := func() {
 		 * The input can be a resource reference, a string containing file content, or a structured map
 		 * specifying the file and its properties.
 		 *
-		 * The structured input format (`{ file: ResourceRef, xsvType: "csv"|"tsv", schema?: map }`) is primarily
+		 * The structured input format (`{ file: ResourceRef, xsvType: "csv"|"tsv"|"parquet", schema?: map }`) is primarily
 		 * intended for compatibility with the output of `xsvFileBuilder.buildForPT()` from
 		 * `@platforma-sdk/workflow-tengo:pframes.xsv-builder`.
 		 *
@@ -384,13 +384,13 @@ workflow := func() {
 		 *   - A string containing the raw content of the file (e.g., "colA\\tcolB\\n1\\t2" or NDJSON content).
 		 *   - A map with the following fields (i.e. result of `xsvFileBuilder.buildForPT()`):
 		 *     - `file` {object}: A resource reference to the input file.
-		 *     - `xsvType` {string}: The type of the file, either "csv" or "tsv".
+		 *     - `xsvType` {string}: The type of the file, either "csv", "tsv", or "parquet".
 		 *     - `schema` {map} (optional): A PTabler schema definition for the input file.
 		 *   - A p-frame resource or frame-like map (acceptable by `pframes.util.pFrameToColumnsMap()`)
 		 * @param ...optionsRaw {map} (optional) - A single map argument for additional options:
 		 *   - `format` {string}: The file format ("csv", "tsv", or "ndjson"). Takes priority over `xsvType`.
 		 *                        If not provided, auto-detects from file extension or uses `xsvType`.
-		 *   - `xsvType` {string}: The type of the file ("csv" or "tsv"). For backward compatibility.
+		 *   - `xsvType` {string}: The type of the file ("csv", "tsv", or "parquet"). For backward compatibility.
 		 *                         Required if `frameInput` is direct content/reference and `format` is not provided.
 		 *   - `id` {string} (optional): A specific ID to assign to this DataFrame. If not provided, an anonymous ID is generated.
 		 *   - `fileName` {string} (optional): A specific name for the input file within PTabler. If not provided, an anonymous name is generated.
@@ -468,16 +468,16 @@ workflow := func() {
 
 			// Format resolution logic: format > xsvType > auto-detection
 			if !is_undefined(opts.format) {
-				if opts.format != "csv" && opts.format != "tsv" && opts.format != "ndjson" {
-					ll.panic("format must be 'csv', 'tsv', or 'ndjson'. Got: %v", opts.format)
+				if opts.format != "csv" && opts.format != "tsv" && opts.format != "ndjson" && opts.format != "parquet" {
+					ll.panic("format must be 'csv', 'tsv', 'ndjson', or 'parquet'. Got: %v", opts.format)
 				}
 				if !is_undefined(finalFormat) && finalFormat != opts.format {
 					ll.panic("format and xsvType from structural input cannot be used together. Got: %v and %v", opts.format, finalFormat)
 				}
 				finalFormat = opts.format
 			} else if !is_undefined(opts.xsvType) {
-				if opts.xsvType != "csv" && opts.xsvType != "tsv" {
-					ll.panic("xsvType must be 'csv' or 'tsv'. Got: %v", opts.xsvType)
+				if opts.xsvType != "csv" && opts.xsvType != "tsv" && opts.xsvType != "parquet" {
+					ll.panic("xsvType must be 'csv', 'tsv', or 'parquet'. Got: %v", opts.xsvType)
 				}
 				if !is_undefined(finalFormat) && finalFormat != opts.xsvType {
 					ll.panic("opts.xsvType and xsvType from structural input cannot be used together. Got: %v and %v", opts.xsvType, finalFormat)
@@ -594,23 +594,23 @@ workflow := func() {
 					translation: translation
 				}
 			} else if finalFormat == "parquet" {
-					step = {
-						type: "read_parquet",
-						file: finalFileName,
-						name: finalDataFrameId
-					}
-				} else if finalFormat == "ndjson" {
-					step = {
-						type: "read_ndjson",
-						file: finalFileName,
-						name: finalDataFrameId
-					}
-				} else { // csv or tsv
-					step = {
-						type: "read_csv",
-						file: finalFileName,
-						name: finalDataFrameId
-					}
+				step = {
+					type: "read_parquet",
+					file: finalFileName,
+					name: finalDataFrameId
+				}
+			} else if finalFormat == "ndjson" {
+				step = {
+					type: "read_ndjson",
+					file: finalFileName,
+					name: finalDataFrameId
+				}
+			} else { // csv or tsv
+				step = {
+					type: "read_csv",
+					file: finalFileName,
+					name: finalDataFrameId
+				}
 
 				if finalFormat == "csv" {
 					step.delimiter = ","
@@ -1044,13 +1044,13 @@ _newDataFrame = func(parentWorkflow, dfName) {
 
 		// Format resolution: explicit format > xsvType > auto-detection from extension
 		if !is_undefined(opts.format) {
-			if opts.format != "csv" && opts.format != "tsv" && opts.format != "ndjson" {
-				ll.panic("format must be 'csv', 'tsv', or 'ndjson'. Got: %v", opts.format)
+			if opts.format != "csv" && opts.format != "tsv" && opts.format != "ndjson" && opts.format != "parquet" {
+				ll.panic("format must be 'csv', 'tsv', 'ndjson', or 'parquet'. Got: %v", opts.format)
 			}
 			finalFormat = opts.format
 		} else if !is_undefined(opts.xsvType) {
-			if opts.xsvType != "csv" && opts.xsvType != "tsv" {
-				ll.panic("xsvType must be 'csv' or 'tsv'. Got: %v", opts.xsvType)
+			if opts.xsvType != "csv" && opts.xsvType != "tsv" && opts.xsvType != "parquet" {
+				ll.panic("xsvType must be 'csv', 'tsv', or 'parquet'. Got: %v", opts.xsvType)
 			}
 			finalFormat = opts.xsvType
 		} else {
@@ -1257,8 +1257,8 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *
 		 * @param outputFile {string} - The path/name of the file to save the DataFrame to (e.g., "result.csv", "data/output.tsv", "output.ndjson").
 		 * @param ...options {map} (optional) - A single map argument for additional options:
-		 *   - `format` {string} (optional): Specify "csv", "tsv", or "ndjson". Takes priority over `xsvType` and overrides file extension inference.
-		 *   - `xsvType` {string} (optional): Specify "csv" or "tsv". For backward compatibility. Overridden by `format` if both provided.
+		 *   - `format` {string} (optional): Specify "csv", "tsv", "ndjson", or "parquet". Takes priority over `xsvType` and overrides file extension inference.
+		 *   - `xsvType` {string} (optional): Specify "csv", "tsv", or "parquet". For backward compatibility. Overridden by `format` if both provided.
 		 *   - `columns` {array} (optional): An array of column name strings to include in the output. If not provided, all columns are saved.
 		 * @returns {object} - The same DataFrame object (for chaining).
 		 * @example

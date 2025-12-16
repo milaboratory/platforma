@@ -251,7 +251,7 @@ exportFrame := func(pf, xsvType, params, ...ops) {
 		mem: ops.mem,
 		inputCache: ops.inputCache
 	}
-	// Many blocks mistakengly put ops and params together, so we need to handle this gracefully
+	// Many blocks mistakenly put ops and params together, so we need to handle this gracefully
 	if !is_undefined(params.queue) {
 		runMetaInputs.queue = params.queue
 		delete(params, "queue")
