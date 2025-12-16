@@ -22,7 +22,7 @@ jobs:
       node-version: '22.x'
       pl-version: 'main'
       pnpm-build-command: '--filter "*/workflow-tengo*"'
-      pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --maxWorkers=5 --testTimeout=1800000 --no-cache'
+      pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=20 --maxWorkers=10 --testTimeout=1800000 --no-cache'
       helm-release-name: 'ci-platforma-nightly-${{ github.run_id }}'
       helm-chart-values-file: 'helm/gcp/ci-nightly-tests.yaml'
       notify-slack: true
