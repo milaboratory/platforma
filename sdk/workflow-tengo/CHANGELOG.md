@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.7.1
+
+### Patch Changes
+
+- 1eb721e: annotations default value
+
 ## 5.7.0
 
 ### Minor Changes
