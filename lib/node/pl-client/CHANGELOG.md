@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.16.14
+
+### Patch Changes
+
+- 6b35c32: gRPC/REST automatic detection
+
 ## 2.16.13
 
 ### Patch Changes
