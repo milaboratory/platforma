@@ -11,7 +11,7 @@ export type PTableCachePerFrameOps = {
   /**
    * Maximum size of `calculateTableData` results cached for PFrames overall.
    * The limit is soft, as the same table could be materialized with other requests and will not be deleted in such case.
-   * Also each table has predeccessors, overlapping predecessors will be counted twice, so the effective limit is smaller.
+   * Also each table has predecessors, overlapping predecessors will be counted twice, so the effective limit is smaller.
    */
   pFramesCacheMaxSize: number;
 };

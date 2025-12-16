@@ -85,7 +85,7 @@ export class SparseCacheFsFile implements SparseFileStorage {
 }
 
 /** LRU cache for ranges of sparse files. */
-export class SparseCache {
+export class SparseCache implements AsyncDisposable {
   /** Fields are public for tests. */
 
   /** The lock to make sure cache requests are done one by one. */
@@ -228,6 +228,14 @@ export class SparseCache {
     await this.storage.delete(key);
     await this.ranges.delete(key);
     this.keyToLastAccessTime.delete(key);
+  }
+
+  async dispose(): Promise<void> {
+    await this.lock.acquireAsync();
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.dispose();
   }
 }
 
