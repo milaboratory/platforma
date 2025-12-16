@@ -4,7 +4,6 @@ self := import(":tpl")
 util := import(":annotations.util")
 pSpec := import(":pframes.spec")
 slices := import(":slices")
-canonical := import(":canonical")
 pframesUtil := import(":pframes.util")
 
 ANNOTATION_FRAME := "annotation_frame"
@@ -18,7 +17,6 @@ self.body(func(inputs) {
     columnBundle := inputs.columnBundle
 	steps := inputs.params.steps
     columns := inputs.params.columns
-	anchorRef := inputs.params.anchorRef
 	defaultValue := inputs.params.defaultValue
 	resultColumnSpec := inputs.params.resultColumnSpec
 	shouldComputeFilters := inputs.params.shouldComputeFilters
@@ -34,16 +32,12 @@ self.body(func(inputs) {
 	})
 
 	if (is_string(defaultValue) && len(defaultValue) > 0) {
-		anchorRefName := canonical.encode(anchorRef)
-		columns = append(columns, anchorRefName)
-		finalExpressions = append(finalExpressions, {
+		defaultValueExpression := {
 			type: "alias",
 			name: util.encodeColumnName(defaultValue, idx + 1),
-			value: {
-				type: "const",
-				value: true
-			}
-		})
+			value: { type: "const", value: true }
+		}
+		finalExpressions = [defaultValueExpression] + finalExpressions
 	}
 
 	finalRawExpressions := slices.map(finalExpressions, func(step) { return pt.rawExp(step) })

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import $commonStyle from './style.module.css';
+
 import { randomInt } from '@milaboratories/helpers';
 import {
   PlBtnGhost,
@@ -6,11 +8,9 @@ import {
   PlEditableTitle,
   PlElementList,
   PlSidebarItem,
-  PlCheckbox,
+  PlTextField,
 } from '@milaboratories/uikit';
 import type { Annotation } from '../types';
-import $commonStyle from './style.module.css';
-import { isString } from 'es-toolkit';
 
 // Models
 const annotation = defineModel<Annotation>('annotation', { required: true });
@@ -63,19 +63,12 @@ function handleAddStep() {
             {{ item.label }}
           </template>
         </PlElementList>
-        <PlCheckbox
-          :model-value="isString(annotation.defaultValue)"
-          label="Mark left over"
-          @update:model-value="annotation.defaultValue = $event ? '' : undefined"
-        >
-          <PlEditableTitle
-            v-model="annotation.defaultValue"
-            placeholder="Left over label"
-            :class="{ [$style.leftOverLabelDisabled]: !isString(annotation.defaultValue) }"
-            :max-length="40"
-            @click.stop
-          />
-        </PlCheckbox>
+        <PlTextField
+          :model-value="annotation.defaultValue ?? ''"
+          label="Left over label"
+          @click.stop
+          @update:model-value="annotation.defaultValue = $event === '' ? undefined : $event"
+        />
         <PlBtnSecondary icon="add" @click="handleAddStep">
           Add label
         </PlBtnSecondary>
@@ -115,11 +108,5 @@ function handleAddStep() {
 
 .stepItem {
   cursor: pointer;
-}
-
-.leftOverLabelDisabled {
-  cursor: not-allowed;
-  pointer-events: none;
-  opacity: 0.5;
 }
 </style>

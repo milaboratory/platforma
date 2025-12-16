@@ -62,7 +62,6 @@ computeAnnotations := func(inputs) {
 		params: {
 			steps: steps,
 			columns: columns,
-			anchorRef: anchorRef,
 			defaultValue: defaultValue,
 			resultColumnSpec: resultColumnSpec,
 			shouldComputeFilters: shouldComputeFilters
