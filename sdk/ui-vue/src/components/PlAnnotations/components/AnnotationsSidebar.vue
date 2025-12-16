@@ -49,15 +49,7 @@ function handleAddStep() {
     </template>
     <template v-if="annotation" #body-content>
       <div :class="[$style.root, { [$commonStyle.disabled]: annotation.title.length === 0 }]">
-        <span :class="$style.tip">Lower annotations override the ones above. Rearrange them by dragging.</span>
-
-        <PlTextField
-          :model-value="annotation.defaultValue ?? ''"
-          label="Default label"
-          clearable
-          @click.stop
-          @update:model-value="annotation.defaultValue = $event === '' ? undefined : $event"
-        />
+        <span :class="$style.tip">Above annotations override the ones below. Rearrange them by dragging.</span>
 
         <PlElementList
           v-model:items="annotation.steps"
@@ -71,6 +63,15 @@ function handleAddStep() {
             {{ item.label }}
           </template>
         </PlElementList>
+
+        <PlTextField
+          :model-value="annotation.defaultValue ?? ''"
+          label="Label remaining with"
+          placeholder="No label"
+          clearable
+          @click.stop
+          @update:model-value="annotation.defaultValue = $event === '' ? undefined : $event"
+        />
 
         <PlBtnSecondary icon="add" @click="handleAddStep">
           Add label

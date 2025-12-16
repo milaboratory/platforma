@@ -37,18 +37,17 @@ self.body(func(inputs) {
 			name: util.encodeColumnName(defaultValue, idx + 1),
 			value: { type: "const", value: true }
 		}
-		finalExpressions = [defaultValueExpression] + finalExpressions
+		finalExpressions = append(finalExpressions, defaultValueExpression)
 	}
 
 	finalRawExpressions := slices.map(finalExpressions, func(step) { return pt.rawExp(step) })
 	columnNames := slices.map(finalExpressions, func(spec) { return spec.name })
 
 	filterColumnNames := shouldComputeFilters ? columnNames : [];
-	columnNamesReversed := slices.reverse(columnNames)
 	resultAxesSpecName := slices.map(resultColumnSpec.axesSpec, func(axis) { return pSpec.getAxisId(axis) })
 
 	annotationColumnExpr := slices.
-		reduce(columnNamesReversed, func(exp, colName) {
+		reduce(columnNames, func(exp, colName) {
 			return exp.when(pt.col(colName)).then(pt.lit(util.decodeColumnName(colName)))
 		}, pt).
 		otherwise(pt.lit(undefined)).
