@@ -9,7 +9,6 @@ export const createViteDevConfig = ({ mode, command }: ConfigEnv): UserConfig =>
 
   return {
     base: './',
-    logLevel: 'warn',
     plugins: [vue()],
     build: {
       emptyOutDir: isProd,
