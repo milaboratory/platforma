@@ -188,7 +188,6 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
           @dragover="dragOver"
         >
           <PlCheckbox
-            v-if="item.type === 'not'"
             :model-value="item.type === 'not'"
             :class="$style.notCheckbox"
             @update:model-value="inverseRootNode(index)"
