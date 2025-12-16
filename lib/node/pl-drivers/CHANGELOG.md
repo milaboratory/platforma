@@ -1,5 +1,13 @@
 # @milaboratories/pl-drivers
 
+## 1.11.29
+
+### Patch Changes
+
+- f62e11c: Proper sparse cache disposal
+- Updated dependencies [f62e11c]
+  - @milaboratories/helpers@1.12.1
+
 ## 1.11.28
 
 ### Patch Changes

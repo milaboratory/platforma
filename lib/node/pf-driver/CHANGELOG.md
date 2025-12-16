@@ -1,5 +1,12 @@
 # @milaboratories/pf-driver
 
+## 1.0.13
+
+### Patch Changes
+
+- f62e11c: Proper sparse cache disposal
+  - @platforma-sdk/model@1.48.4
+
 ## 1.0.12
 
 ### Patch Changes
