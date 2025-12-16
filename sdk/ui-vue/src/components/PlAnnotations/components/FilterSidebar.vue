@@ -99,7 +99,7 @@ const supportedFilters = [
         :class="{ [$commonStyle.flashing]: step.label.length === 0 }"
         :max-length="40"
         max-width="600px"
-        placeholder="Label name"
+        placeholder="Label"
         :autofocus="step.label.length === 0"
       />
     </template>
