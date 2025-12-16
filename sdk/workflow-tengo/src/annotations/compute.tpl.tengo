@@ -17,6 +17,7 @@ self.body(func(inputs) {
     columnBundle := inputs.columnBundle
 	steps := inputs.params.steps
     columns := inputs.params.columns
+	defaultValue := inputs.params.defaultValue
 	resultColumnSpec := inputs.params.resultColumnSpec
 	shouldComputeFilters := inputs.params.shouldComputeFilters
 
@@ -29,6 +30,16 @@ self.body(func(inputs) {
 			value: step.value
 		}
 	})
+
+	if (is_string(defaultValue) && len(defaultValue) > 0) {
+		defaultValueExpression := {
+			type: "alias",
+			name: util.encodeColumnName(defaultValue, idx + 1),
+			value: { type: "const", value: true }
+		}
+		finalExpressions = [defaultValueExpression] + finalExpressions
+	}
+
 	finalRawExpressions := slices.map(finalExpressions, func(step) { return pt.rawExp(step) })
 	columnNames := slices.map(finalExpressions, func(spec) { return spec.name })
 
@@ -54,6 +65,7 @@ self.body(func(inputs) {
 
 	dfData.
 		select(ANNOTATION_HEADER, resultAxesSpecName...).
+		unique().
 		saveFrameDirect(ANNOTATION_FRAME, {
 			axes: slices.map(resultColumnSpec.axesSpec, func(v) { return { column: pSpec.getAxisId(v), spec: v } }),
 			columns: [{ column: ANNOTATION_HEADER, spec: resultColumnSpec }],
@@ -66,6 +78,7 @@ self.body(func(inputs) {
 			filter(pt.col(ANNOTATION_HEADER).eq(pt.lit(label))).
 			withColumns(pt.lit(1).alias(colName)).
 			select(colName, resultAxesSpecName...).
+			unique().
 			saveFrameDirect(util.createFilterFrameName(colName), {
 				axes: slices.map(resultColumnSpec.axesSpec, func(v) { return { column: pSpec.getAxisId(v), spec: v } }),
 				columns: [{ column: colName, spec: util.createFilterColumnSpec(resultColumnSpec, colName, label) }],

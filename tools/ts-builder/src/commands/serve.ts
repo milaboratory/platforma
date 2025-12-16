@@ -10,8 +10,8 @@ import {
 
 export const serveCommand = new Command('serve')
   .description('Start development server')
-  .option('-p, --port <port>', 'Port number', '3000')
-  .option('--host <host>', 'Host address', 'localhost')
+  .option('-p, --port <port>', 'Port number')
+  .option('--host <host>', 'Host address')
   .action(async (options, command) => {
     const globalOpts = getGlobalOptions(command);
     const target = globalOpts.target;
@@ -30,8 +30,8 @@ export const serveCommand = new Command('serve')
 
       viteArgs.push('--config', configPath);
 
-      viteArgs.push('--port', options.port);
-      viteArgs.push('--host', options.host);
+      if (options.port) viteArgs.push('--port', options.port);
+      if (options.host) viteArgs.push('--host', options.host);
 
       const env = useSources ? { USE_SOURCES: '1' } : undefined;
       await executeCommand(viteCommand, viteArgs, env);
