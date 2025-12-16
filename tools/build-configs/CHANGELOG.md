@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.2.1
+
+### Patch Changes
+
+- 1eb721e: annotations default value
+
 ## 1.2.0
 
 ### Minor Changes

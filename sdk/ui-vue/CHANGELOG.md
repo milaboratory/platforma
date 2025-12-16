@@ -1,5 +1,15 @@
 # @platforma-sdk/ui-vue
 
+## 1.48.5
+
+### Patch Changes
+
+- 1eb721e: annotations default value
+  - @milaboratories/biowasm-tools@2.0.0
+  - @milaboratories/uikit@2.8.2
+  - @platforma-sdk/model@1.48.4
+  - @milaboratories/ptabler-expression-js@1.1.7
+
 ## 1.48.4
 
 ### Patch Changes
