@@ -89,7 +89,8 @@ getColumnSpec := func(axesSpec, col) {
  * @return map: reference - a reference to a map resource storing imported data.
  */
 importFile := func(xsvFile, xsvType, spec, ...ops) {
-	ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types, found: " + xsvType)
+	ll.assert(xsvType == "csv" || xsvType == "tsv" || xsvType == "parquet",
+		"expected one of [csv, tsv, parquet] types, found: %v", xsvType)
 
 	validation.assertType(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
 
@@ -251,7 +252,7 @@ exportFrame := func(pf, xsvType, params, ...ops) {
 		mem: ops.mem,
 		inputCache: ops.inputCache
 	}
-	// Many blocks mistakengly put ops and params together, so we need to handle this gracefully
+	// Many blocks mistakenly put ops and params together, so we need to handle this gracefully
 	if !is_undefined(params.queue) {
 		runMetaInputs.queue = params.queue
 		delete(params, "queue")

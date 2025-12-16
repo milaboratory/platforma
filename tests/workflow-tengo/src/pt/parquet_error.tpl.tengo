@@ -1,0 +1,42 @@
+pt := import("@platforma-sdk/workflow-tengo:pt")
+file := import("@platforma-sdk/workflow-tengo:file")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+util := import("@platforma-sdk/workflow-tengo:pframes.util")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+self.defineOutputs("outputCsv")
+
+self.body(func(inputs) {
+    csvData := inputs.csvData
+    axes := inputs.axes
+    columns := inputs.columns
+    storageFormat := inputs.storageFormat
+
+    wf := pt.workflow()
+    fileName := "output.parquet"
+    wf.frame(csvData, { fileName: "output.csv" }).save(fileName)
+    ptResult := wf.run()
+    parquetFile := ptResult.getFile(fileName)
+
+    pf := xsv.importFile(parquetFile, "parquet", {
+        axes: axes,
+        columns: columns,
+        storageFormat: storageFormat
+    })
+
+    builder := pframes.csvFileBuilder()
+    for axis in axes {
+        builder.setAxisHeader(axis.spec, axis.column)
+    }
+    columnsMap := util.pFrameToColumnsMap(pf)
+    for col in columns {
+        builder.add(columnsMap[col.column], { header: col.column })
+    }
+    csvFile := builder.build()
+
+    return {
+        outputCsv: file.exportFile(csvFile)
+    }
+})

@@ -327,14 +327,14 @@ self.body(func(inputs) {
 				ll.panic("malformed output: %v", output)
 			}
 
-			reultMightBeNull := false
+			resultMightBeNull := false
 			for p in output.path {
 				if is_map(p) && p.optional {
-					reultMightBeNull = true
+					resultMightBeNull = true
 					break
 				}
 			}
-			if reultMightBeNull {
+			if resultMightBeNull {
 				optionalOutputs[output.name] = true
 			}
 
@@ -395,7 +395,7 @@ self.body(func(inputs) {
 					json.encode({ keyLength: groupKeyLength })
 				)
 			} else {
-				ll.panic("unknonw output type: %v", output.type)
+				ll.panic("unknown output type: %v", output.type)
 			}
 		}
 
@@ -430,10 +430,10 @@ self.body(func(inputs) {
 				}
 
 				ref := renderResult.resolveOutput(path)
-				reultMightBeNull := optionalOutputs[output.name]
+				resultMightBeNull := optionalOutputs[output.name]
 
 				if output.type == "Xsv" {
-					importOps := { dataOnly: true, allowNullInput: reultMightBeNull }
+					importOps := { dataOnly: true, allowNullInput: resultMightBeNull }
 
 					// Per-output override
 					if !is_undefined(output.cpu) {
@@ -461,7 +461,7 @@ self.body(func(inputs) {
 					pf := xsv.importFile(ref, output.xsvType, output.settings, importOps)
 					for col in output.settings.columns {
 						id := pUtil.xsvColumnId(col)
-						data := pf.getFutureInputField({name: id, optional: reultMightBeNull})
+						data := pf.getFutureInputField({name: id, optional: resultMightBeNull})
 						outputMaps[output.name][id][sGroupKey] = data
 					}
 				} else if output.type == "TsvContent" {
@@ -530,7 +530,7 @@ self.body(func(inputs) {
 					})
 				}
 
-				// aggragation column results from all iterations into super-partitioned structures
+				// aggregation column results from all iterations into super-partitioned structures
 				// or unwrap them and pass as is if groupKeyLength == 0
 
 				columnResults := {}

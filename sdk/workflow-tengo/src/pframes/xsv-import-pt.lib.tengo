@@ -59,10 +59,15 @@ applyNaRegex := func(colExpr, naRegex, colType) {
  * @return map: reference - a reference to a map resource storing imported data
  */
 importFileParquet := func(xsvFile, xsvType, spec, ops) {
-	ll.assert(xsvType == "csv" || xsvType == "tsv", "unknown xsv type: %v", xsvType)
+	util.validateXsvType(xsvType)
 
 	validation.assertType(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
-	// Index can easily be supported by adding pl.int_range like in the examile
+	if xsvType == "parquet" {
+		ll.assert(is_undefined(spec.separator), "separator is not supported with xsvType 'parquet'")
+		ll.assert(is_undefined(spec.commentLinePrefix), "commentLinePrefix is not supported with xsvType 'parquet'")
+		ll.assert(is_undefined(spec.skipEmptyLines), "skipEmptyLines is not supported with xsvType 'parquet'")
+	}
+	// Index can easily be supported by adding pl.int_range like in the example
 	// <https://docs.pola.rs/api/python/stable/reference/dataframe/api/polars.DataFrame.with_row_index.html#polars.DataFrame.with_row_index>
 	ll.assert(is_undefined(spec.index), "index axis is not supported with Parquet storage format")
 	// Artificial columns can be supported by adding a new column with NA values
