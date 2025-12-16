@@ -283,7 +283,7 @@ export type PlTableFilterCommon = PlTableFilterIsNotNA | PlTableFilterIsNA;
 export type PlTableFilterNumberEquals = {
   /** Predicate type */
   type: 'number_equals';
-  /** Referense value */
+  /** Reference value */
   reference: number;
 };
 
@@ -291,7 +291,7 @@ export type PlTableFilterNumberEquals = {
 export type PlTableFilterNumberNotEquals = {
   /** Predicate type */
   type: 'number_notEquals';
-  /** Referense value */
+  /** Reference value */
   reference: number;
 };
 
@@ -299,7 +299,7 @@ export type PlTableFilterNumberNotEquals = {
 export type PlTableFilterNumberGreaterThan = {
   /** Predicate type */
   type: 'number_greaterThan';
-  /** Referense value */
+  /** Reference value */
   reference: number;
 };
 
@@ -307,7 +307,7 @@ export type PlTableFilterNumberGreaterThan = {
 export type PlTableFilterNumberGreaterThanOrEqualTo = {
   /** Predicate type */
   type: 'number_greaterThanOrEqualTo';
-  /** Referense value */
+  /** Reference value */
   reference: number;
 };
 
@@ -315,7 +315,7 @@ export type PlTableFilterNumberGreaterThanOrEqualTo = {
 export type PlTableFilterNumberLessThan = {
   /** Predicate type */
   type: 'number_lessThan';
-  /** Referense value */
+  /** Reference value */
   reference: number;
 };
 
@@ -323,7 +323,7 @@ export type PlTableFilterNumberLessThan = {
 export type PlTableFilterNumberLessThanOrEqualTo = {
   /** Predicate type */
   type: 'number_lessThanOrEqualTo';
-  /** Referense value */
+  /** Reference value */
   reference: number;
 };
 
@@ -331,11 +331,11 @@ export type PlTableFilterNumberLessThanOrEqualTo = {
 export type PlTableFilterNumberBetween = {
   /** Predicate type */
   type: 'number_between';
-  /** Referense value for the lower bound */
+  /** Reference value for the lower bound */
   lowerBound: number;
   /** Defines whether values equal to lower bound reference value should be matched */
   includeLowerBound: boolean;
-  /** Referense value for the upper bound */
+  /** Reference value for the upper bound */
   upperBound: number;
   /** Defines whether values equal to upper bound reference value should be matched */
   includeUpperBound: boolean;
@@ -358,7 +358,7 @@ export type PlTableFilterNumberType = PlTableFilterNumber['type'];
 export type PlTableFilterStringEquals = {
   /** Predicate type */
   type: 'string_equals';
-  /** Referense value */
+  /** Reference value */
   reference: string;
 };
 
@@ -366,7 +366,7 @@ export type PlTableFilterStringEquals = {
 export type PlTableFilterStringNotEquals = {
   /** Predicate type */
   type: 'string_notEquals';
-  /** Referense value */
+  /** Reference value */
   reference: string;
 };
 
@@ -374,7 +374,7 @@ export type PlTableFilterStringNotEquals = {
 export type PlTableFilterStringContains = {
   /** Predicate type */
   type: 'string_contains';
-  /** Referense value */
+  /** Reference value */
   reference: string;
 };
 
@@ -382,7 +382,7 @@ export type PlTableFilterStringContains = {
 export type PlTableFilterStringDoesNotContain = {
   /** Predicate type */
   type: 'string_doesNotContain';
-  /** Referense value */
+  /** Reference value */
   reference: string;
 };
 
@@ -390,7 +390,7 @@ export type PlTableFilterStringDoesNotContain = {
 export type PlTableFilterStringMatches = {
   /** Predicate type */
   type: 'string_matches';
-  /** Referense value */
+  /** Reference value */
   reference: string;
 };
 
@@ -398,7 +398,7 @@ export type PlTableFilterStringMatches = {
 export type PlTableFilterStringDoesNotMatch = {
   /** Predicate type */
   type: 'string_doesNotMatch';
-  /** Referense value */
+  /** Reference value */
   reference: string;
 };
 
@@ -406,7 +406,7 @@ export type PlTableFilterStringDoesNotMatch = {
 export type PlTableFilterStringContainsFuzzyMatch = {
   /** Predicate type */
   type: 'string_containsFuzzyMatch';
-  /** Referense value */
+  /** Reference value */
   reference: string;
   /**
    * Maximum acceptable edit distance between reference value and matched substring
@@ -468,19 +468,11 @@ export type CreatePlDataTableOps = {
    *
    * All non-core columns will be left joined to the table produced by the core
    * columns, in other words records form the pool of non-core columns will only
-   * make their way into the final table if core table contins corresponding key.
+   * make their way into the final table if core table contains corresponding key.
    *
    * Default: 'full'
    */
   coreJoinType?: 'inner' | 'full';
-
-  /**
-   * Determines if technical columns should be skipped from the table.
-   * Intended for use in Table block only.
-   *
-   * Default: false
-   */
-  doNotSkipTechnicalColumns?: boolean;
 };
 
 /** Get all label columns from the result pool */
@@ -638,13 +630,10 @@ export function isColumnOptional(spec: { annotations?: Annotation }): boolean {
  */
 export function createPlDataTableV2<A, U>(
   ctx: RenderCtx<A, U>,
-  inputColumns: PColumn<PColumnDataUniversal>[],
+  columns: PColumn<PColumnDataUniversal>[],
   tableState: PlDataTableStateV2 | undefined,
   ops?: CreatePlDataTableOps,
 ): PlDataTableModel | undefined {
-  const columns = ops?.doNotSkipTechnicalColumns
-    ? inputColumns
-    : inputColumns.filter((c) => isLinkerColumn(c.spec) || !isColumnHidden(c.spec));
   if (columns.length === 0) return undefined;
 
   const tableStateNormalized = upgradePlDataTableStateV2(tableState);
@@ -656,7 +645,7 @@ export function createPlDataTableV2<A, U>(
   const fullColumns = [...columns, ...fullLabelColumns];
 
   const fullColumnsAxes = uniqueBy(
-    [...fullColumns.flatMap((c) => c.spec.axesSpec.map((a) => getAxisId(a)))],
+    fullColumns.flatMap((c) => c.spec.axesSpec.map((a) => getAxisId(a))),
     (a) => canonicalizeJson<AxisId>(a),
   );
   const fullColumnsIds: PTableColumnId[] = [
