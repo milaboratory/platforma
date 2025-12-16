@@ -190,7 +190,7 @@ implements AbstractInternalPFrameDriver<PColumnData> {
   }
 
   //
-  // PFrame istance methods
+  // PFrame instance methods
   //
 
   public async findColumns(
@@ -215,9 +215,9 @@ implements AbstractInternalPFrameDriver<PColumnData> {
     const { pFramePromise } = this.pFrames.getByKey(handle);
     const pFrame = await pFramePromise;
 
-    const responce = await pFrame.findColumns(iRequest);
+    const response = await pFrame.findColumns(iRequest);
     return {
-      hits: responce.hits
+      hits: response.hits
         .filter((h) => // only exactly matching columns
           h.mappingVariants.length === 0
           || h.mappingVariants.some((v) =>
@@ -312,7 +312,7 @@ implements AbstractInternalPFrameDriver<PColumnData> {
   }
 
   //
-  // PTable istance methods
+  // PTable instance methods
   //
 
   public async getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]> {
@@ -506,7 +506,7 @@ function migrateFilters(
   if (filtersV1.length > 0) {
     const filtersV1Json = JSON.stringify(filtersV1);
     logger('warn',
-      `type overriten from 'bySingleColumn' to 'bySingleColumnV2' for filters: ${filtersV1Json}`,
+      `type overwritten from 'bySingleColumn' to 'bySingleColumnV2' for filters: ${filtersV1Json}`,
     );
   }
   return filtersV2;
