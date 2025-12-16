@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.48.4
+
+### Patch Changes
+
+- 3e168c4: Remove extra filters from createPlDataTableV2
+
 ## 1.48.2
 
 ### Patch Changes

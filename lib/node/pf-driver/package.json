@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pf-driver",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "PFrameDriver implementation abstracted from Middle Layer",
   "engines": {
     "node": ">=22.19.0"
