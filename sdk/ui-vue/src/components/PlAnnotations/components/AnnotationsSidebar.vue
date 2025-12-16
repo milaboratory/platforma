@@ -66,6 +66,7 @@ function handleAddStep() {
         <PlTextField
           :model-value="annotation.defaultValue ?? ''"
           label="Left over label"
+          clearable
           @click.stop
           @update:model-value="annotation.defaultValue = $event === '' ? undefined : $event"
         />
