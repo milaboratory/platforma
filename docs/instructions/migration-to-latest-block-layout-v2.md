@@ -120,17 +120,17 @@ packages:
 
 catalog:
   # SDK packages - EXACT VERSIONS (no ^ or ~)
-  '@milaboratories/ts-builder': 1.2.0
+  '@milaboratories/ts-builder': 1.2.1
   '@milaboratories/ts-configs': 1.2.0
-  '@platforma-sdk/workflow-tengo': 5.6.6
-  '@platforma-sdk/model': 1.47.5
-  '@platforma-sdk/ui-vue': 1.48.0
-  '@platforma-sdk/tengo-builder': 2.4.1
+  '@platforma-sdk/workflow-tengo': 5.7.3
+  '@platforma-sdk/model': 1.48.4
+  '@platforma-sdk/ui-vue': 1.48.8
+  '@platforma-sdk/tengo-builder': 2.4.2
   '@platforma-sdk/package-builder': 3.10.7
   '@platforma-sdk/block-tools': 2.6.27
   '@platforma-sdk/eslint-config': 1.2.0
-  '@platforma-sdk/test': 1.48.1
-  '@milaboratories/helpers': 1.12.0
+  '@platforma-sdk/test': 1.48.8
+  '@milaboratories/helpers': 1.12.1
 
   # Common dependencies - can use ^ or ~
   'vue': ^3.5.24
