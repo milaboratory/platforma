@@ -42,6 +42,7 @@
     "vitest": "catalog:",
     "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "dedent": "catalog:"
+    "dedent": "catalog:",
+    "es-toolkit": "catalog:"
   }
 }

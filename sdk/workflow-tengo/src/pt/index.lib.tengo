@@ -632,7 +632,7 @@ workflow := func() {
 			}
 
 			// Add common optional fields to the step
-			if !is_undefined(finalSchemaToUse) {
+			if !is_undefined(finalSchemaToUse) && finalFormat != "parquet" {
 				step.schema = finalSchemaToUse
 			}
 
