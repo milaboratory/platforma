@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/workflow-tengo",
-  "version": "5.7.1",
+  "version": "5.7.3",
   "description": "Tengo SDK library",
   "type": "module",
   "types": "./dist/index.d.ts",

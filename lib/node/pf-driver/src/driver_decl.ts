@@ -29,7 +29,7 @@ export interface AbstractInternalPFrameDriver<PColumnData>
    * Dump active PFrames allocations in pprof format.
    * The result of this function should be saved as `profile.pb.gz`.
    * Use {@link https://pprof.me/} or {@link https://www.speedscope.app/}
-   * to view the allocation flamechart.
+   * to view the allocation flame graph.
    * @warning This method will always reject on Windows!
    */
   pprofDump(): Promise<Uint8Array>;

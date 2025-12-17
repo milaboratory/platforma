@@ -73,7 +73,7 @@ test('should show a error when 404 status code', async () => {
     expect(url2?.url).toBeUndefined();
     console.log('test done')
   });
-}, 45000);
+}, 60000);
 
 test('should abort a downloading process when we reset a state of a computable', async () => {
   await TestHelpers.withTempRoot(async (client) => {

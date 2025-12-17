@@ -9,6 +9,7 @@ import {
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { vi } from 'vitest';
 import dedent from 'dedent';
+import { mapValues } from 'es-toolkit';
 import { Timeout, getFileContent, getTableData } from './helpers';
 
 vi.setConfig({ testTimeout: Timeout });
@@ -543,5 +544,121 @@ tplTest.concurrent(
     expect(normalizeAndSortNdjson(csvToNdjsonContent)).toEqual(
       normalizeAndSortNdjson(expectedOutputCsvToNdjson),
     );
+  },
+);
+
+tplTest.concurrent.for([
+  {
+    case: '1 axis, 1 column',
+    csvData: dedent`
+      a,b
+      1,X
+      4,Y
+      9,Z
+    `,
+    axes: [
+      { column: 'a', spec: { name: 'a', type: 'Int' } },
+    ],
+    columns: [
+      { column: 'b', spec: { name: 'b', valueType: 'String' } },
+    ],
+  },
+  {
+    case: '1 axis, 2 columns',
+    csvData: dedent`
+      a,b,c
+      1,X,0.1
+      4,Y,0.3
+      9,Z,0.2
+    `,
+    axes: [
+      { column: 'a', spec: { name: 'a', type: 'Int' } },
+    ],
+    columns: [
+      { column: 'b', spec: { name: 'b', valueType: 'String' } },
+      { column: 'c', spec: { name: 'c', valueType: 'Float' } },
+    ],
+  },
+  {
+    case: '2 axes, 1 column',
+    csvData: dedent`
+      a,b,c
+      1,X,0.1
+      4,Y,0.3
+      9,Z,0.2
+    `,
+    axes: [
+      { column: 'a', spec: { name: 'a', type: 'Int' } },
+      { column: 'b', spec: { name: 'b', type: 'String' } },
+    ],
+    columns: [
+      { column: 'c', spec: { name: 'c', valueType: 'Float' } },
+    ],
+  },
+])(
+  'pt parquet test - comprehensive Parquet format support - $case',
+  async (inputs, { helper, expect, driverKit }) => {
+    const outputs = Array.from({ length: 5 }, (_, i) => `outputCsv${i + 1}`);
+    const result = await helper.renderTemplate(
+      false,
+      'pt.parquet',
+      outputs,
+      (tx) => mapValues(inputs, (input) => tx.createJsonValue(input)),
+    );
+    const outputCsvs = await Promise.all(
+      outputs.map((output) => getFileContent(result, output, driverKit)),
+    );
+    for (const outputCsv of outputCsvs) {
+      expect(normalizeCsv(outputCsv)).toEqual(normalizeCsv(inputs.csvData));
+    }
+  },
+);
+
+tplTest.concurrent.fails.for([
+  {
+    case: 'Json storage format',
+    csvData: dedent`
+      a,b,c
+      1,X,0.1
+      4,Y,0.3
+      9,Z,0.2
+    `,
+    axes: [
+      { column: 'a', spec: { name: 'a', type: 'Int' } },
+    ],
+    columns: [
+      { column: 'b', spec: { name: 'b', valueType: 'String' } },
+      { column: 'c', spec: { name: 'c', valueType: 'Float' } },
+    ],
+    storageFormat: 'Json',
+  },
+  {
+    case: 'Binary storage format',
+    csvData: dedent`
+      a,b,c
+      1,X,0.1
+      4,Y,0.3
+      9,Z,0.2
+    `,
+    axes: [
+      { column: 'a', spec: { name: 'a', type: 'Int' } },
+      { column: 'b', spec: { name: 'b', type: 'String' } },
+    ],
+    columns: [
+      { column: 'c', spec: { name: 'c', valueType: 'Float' } },
+    ],
+    storageFormat: 'Binary',
+  },
+])(
+  'pt parquet error test - fails when storageFormat is not supported - $case',
+  async (inputs, { helper, expect, driverKit }) => {
+    const result = await helper.renderTemplate(
+      false,
+      'pt.parquet_error',
+      ['outputCsv'],
+      (tx) => mapValues(inputs, (input) => tx.createJsonValue(input)),
+    );
+    const outputCsv = await getFileContent(result, 'outputCsv', driverKit);
+    expect(normalizeCsv(outputCsv)).toEqual(normalizeCsv(inputs.csvData));
   },
 );
