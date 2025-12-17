@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.48.10
+
+### Patch Changes
+
+- 76b89a7: Suppress abort error from calculateGridOptions
+
 ## 1.48.8
 
 ### Patch Changes
