@@ -2,17 +2,29 @@ import { BlockModel, type InferHrefType, type InferOutputsType } from '@platform
 
 export type BlockArgs = {
   titleArg: string;
+  subtitleArg: string;
+  badgeArg: string;
+  tagArgs: string[];
 };
 
 export const platforma = BlockModel.create('Heavy')
 
-  .withArgs<BlockArgs>({ titleArg: 'The title' })
+  .withArgs<BlockArgs>({
+    titleArg: 'The title',
+    subtitleArg: 'The subtitle',
+    badgeArg: 'The badge',
+    tagArgs: [],
+  })
 
-  .sections((_ctx) => {
-    return [{ type: 'link', href: '/', label: 'Main' }];
+  .sections((ctx) => {
+    return [{ type: 'link', href: '/', label: 'Main', badge: ctx.args.badgeArg }];
   })
 
   .title((ctx) => ctx.args.titleArg + ' <- the title')
+
+  .subtitle((ctx) => ctx.args.subtitleArg + ' <- the subtitle')
+
+  .tags((ctx) => ctx.args.tagArgs)
 
   .done();
 
