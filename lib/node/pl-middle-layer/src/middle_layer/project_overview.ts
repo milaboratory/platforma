@@ -182,9 +182,8 @@ export function projectOverview(
                 codeWithInfo,
                 bpId,
               ).wrap({
-                recover: (e) => {
-                  env.logger.error('Error in block model sections');
-                  env.logger.error(e);
+                recover: (cause) => {
+                  env.logger.error(new Error('Error in block model sections', { cause }));
                   return [];
                 },
               }) as ComputableStableDefined<BlockSection[]>,
@@ -198,9 +197,8 @@ export function projectOverview(
                     codeWithInfo,
                     bpId,
                   ).wrap({
-                    recover: (e) => {
-                      env.logger.error('Error in block model title');
-                      env.logger.error(e);
+                    recover: (cause) => {
+                      env.logger.error(new Error('Error in block model title', { cause }));
                       return 'Invalid title';
                     },
                   }) as ComputableStableDefined<string>,
@@ -215,9 +213,8 @@ export function projectOverview(
                     codeWithInfo,
                     bpId,
                   ).wrap({
-                    recover: (e) => {
-                      env.logger.error('Error in block model subtitle');
-                      env.logger.error(e);
+                    recover: (cause) => {
+                      env.logger.error(new Error('Error in block model subtitle', { cause }));
                       return 'Invalid subtitle';
                     },
                   }) as ComputableStableDefined<string>,
@@ -232,9 +229,8 @@ export function projectOverview(
                     codeWithInfo,
                     bpId,
                   ).wrap({
-                    recover: (e) => {
-                      env.logger.error('Error in block model tags');
-                      env.logger.error(e);
+                    recover: (cause) => {
+                      env.logger.error(new Error('Error in block model tags', { cause }));
                       return [];
                     },
                   }) as ComputableStableDefined<string[]>,
@@ -246,10 +242,9 @@ export function projectOverview(
                 codeWithInfo,
                 bpId,
               ).wrap({
-                recover: (e) => {
+                recover: (cause) => {
                   // I'm not sure that we should write an error here, because it just means "Invalid args"
-                  env.logger.error('Error in block model argsValid');
-                  env.logger.error(e);
+                  env.logger.error(new Error('Error in block model argsValid', { cause }));
                   return false;
                 },
               }) as ComputableStableDefined<boolean>,
