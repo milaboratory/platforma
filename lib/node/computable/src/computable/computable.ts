@@ -251,6 +251,11 @@ export class Computable<T, StableT extends T = T> {
    * @param uTag optional tag to check if a new value is calculated after retrieval of a specified tag.
    * */
   public async awaitChange(abortSignal?: AbortSignal, uTag?: string): Promise<void> {
+    console.log('Computable.awaitChange called', {
+      hasState: this.state !== undefined,
+      stateWatcherChildrenCount: (this.state?.watcher as any)?.children?.length,
+    });
+
     if (this._changed(uTag)) {
       // this counts as "changed flag" polling
       const hooks = this.state?.hooks;
@@ -262,6 +267,7 @@ export class Computable<T, StableT extends T = T> {
       return;
     }
 
+    console.log('Computable.awaitChange: getting promise from state.watcher');
     const lPromise = this.state!.watcher.awaitChange(abortSignal);
     const hooks = this.state?.hooks;
     if (hooks !== undefined) {
@@ -378,10 +384,18 @@ export class Computable<T, StableT extends T = T> {
    * Error result in {@link ComputableResultErrors} object returned by this method.
    * */
   public async getValueOrError(): Promise<ComputableResult<T>> {
+    console.log('Computable.getValueOrError called', {
+      hasState: this.state !== undefined,
+      stateWatcherChanged: this.state?.watcher.isChanged,
+      stateValueNotCalculated: this.state?.valueNotCalculated,
+      hasStateCalculation: this.stateCalculation !== undefined,
+    });
+
     // to check that epoch is still ours when we finish updating the state
     const ourEpoch = this.epoch;
 
     if (this.stateCalculation !== undefined) {
+      console.log('Computable.getValueOrError: waiting for existing state calculation');
       // waiting for stat to update in case update was triggered elsewhere
       await this.stateCalculation;
     } else if (
@@ -389,6 +403,7 @@ export class Computable<T, StableT extends T = T> {
       || this.state.watcher.isChanged
       || this.state.valueNotCalculated
     ) {
+      console.log('Computable.getValueOrError: starting new state calculation');
       // starting async state update
       this.stateCalculation = (async () => {
         try {
@@ -409,6 +424,10 @@ export class Computable<T, StableT extends T = T> {
           if (this.listenCounter !== 0) throw new Error('Concurrent listening and state update.');
 
           // updating the state
+          console.log('Computable: assigning new state', {
+            hadPreviousState: this.state !== undefined,
+            newStateWatcherChildrenCount: (newState.watcher as any).children?.length,
+          });
           this.state = newState;
 
           // updating uTag as we just assigned new state
@@ -448,6 +467,11 @@ export class Computable<T, StableT extends T = T> {
    * onDestroy callbacks down the state tree.
    */
   public resetState(): void {
+    console.log('Computable.resetState called', {
+      hasState: this.state !== undefined,
+      hasStateCalculation: this.stateCalculation !== undefined,
+      stackTrace: new Error().stack,
+    });
     if (this.state === undefined && this.stateCalculation === undefined) return;
     if (this.stateCalculation !== undefined) {
       this.stateCalculation = undefined;

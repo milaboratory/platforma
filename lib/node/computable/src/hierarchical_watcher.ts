@@ -29,6 +29,11 @@ export class HierarchicalWatcher implements Watcher {
 
   constructor(children: HierarchicalWatcher[] = []) {
     this.children = children;
+    console.log('HierarchicalWatcher constructor', {
+      childrenCount: this.children.length,
+      childrenIsArray: Array.isArray(this.children),
+      someChildChanged: this.children.some((c) => c.changed),
+    });
 
     if (this.children.some((c) => c.changed)) this.changed = true;
     else this.children.forEach((c) => c.setParent(this));

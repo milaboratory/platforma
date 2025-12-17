@@ -417,6 +417,11 @@ function renderSelfState<T>(
 }
 
 export function destroyState(_state: CellState<unknown>) {
+  console.log('destroyState called', {
+    hasWatcher: _state.watcher !== undefined,
+    watcherChildrenCount: _state.watcher?.['children']?.length,
+    stackTrace: new Error().stack,
+  });
   for (const { state } of _state.childrenStates.values()) destroyState(state);
   _state.selfState.ctx.destroy();
 }
@@ -509,10 +514,21 @@ function finalizeCellState<T>(
 
   nestedWatchers.push(incompleteState.selfState.selfWatcher);
 
+  console.log('finalizeCellState: creating parent watcher', {
+    nestedWatchersCount: nestedWatchers.length,
+    selfWatcherIsLast: nestedWatchers[nestedWatchers.length - 1] === incompleteState.selfState.selfWatcher,
+  });
+
   if (incompleteState.selfState.ctx.hooks !== undefined) {
     if (hooks === undefined) hooks = new Set();
     for (const h of incompleteState.selfState.ctx.hooks) hooks.add(h);
   }
+
+  const parentWatcher = new HierarchicalWatcher(nestedWatchers);
+  console.log('finalizeCellState: parent watcher created', {
+    parentChildrenCount: (parentWatcher as any).children.length,
+    parentChildrenArrayIsSame: (parentWatcher as any).children === nestedWatchers,
+  });
 
   return {
     isLatest: true,
@@ -520,7 +536,7 @@ function finalizeCellState<T>(
     stable,
     allErrors: [], // will be filled on the second rendering stage
     unstableMarker: undefined, // will be filled on the second rendering stage
-    watcher: new HierarchicalWatcher(nestedWatchers),
+    watcher: parentWatcher,
 
     hooks,
 
