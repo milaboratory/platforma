@@ -49,7 +49,19 @@ export class HierarchicalWatcher implements Watcher {
   }
 
   public markChanged(marker?: string): void {
-    if (this.changed) return;
+    console.log('HierarchicalWatcher.markChanged called', {
+      alreadyChanged: this.changed,
+      hasCallbacks: this.onChangeCallbacks !== undefined,
+      callbacksCount: this.onChangeCallbacks?.size ?? 0,
+      hasParent: this.parent !== undefined,
+      childrenCount: this.children.length,
+      marker,
+    });
+
+    if (this.changed) {
+      console.log('HierarchicalWatcher.markChanged: already changed, returning early');
+      return;
+    }
 
     this.changed = true;
     this.changeSourceMarker = marker;
@@ -57,14 +69,24 @@ export class HierarchicalWatcher implements Watcher {
 
     // triggering change event for those who listen
     if (this.onChangeCallbacks !== undefined) {
+      console.log('HierarchicalWatcher.markChanged: calling callbacks', {
+        count: this.onChangeCallbacks.size,
+      });
       this.onChangeCallbacks.forEach((cb) => cb());
       this.onChangeCallbacks = undefined; // for gc
+      console.log('HierarchicalWatcher.markChanged: callbacks called and cleared');
+    } else {
+      console.log('HierarchicalWatcher.markChanged: no callbacks to call');
     }
 
     if (this.parent != undefined) {
+      console.log('HierarchicalWatcher.markChanged: propagating to parent');
       this.parent.markChanged(marker);
       this.parent = undefined;
+    } else {
+      console.log('HierarchicalWatcher.markChanged: no parent to propagate to');
     }
+    console.log('HierarchicalWatcher.markChanged: finished');
   }
 
   /** @deprecated use {@link awaitChange} */
@@ -73,7 +95,17 @@ export class HierarchicalWatcher implements Watcher {
   }
 
   public awaitChange(abortSignal?: AbortSignal): Promise<void> {
-    if (this.changed) return Promise.resolve();
+    console.log('HierarchicalWatcher.awaitChange called', {
+      alreadyChanged: this.changed,
+      hasCallbacks: this.onChangeCallbacks !== undefined,
+      hasParent: this.parent !== undefined,
+      childrenCount: this.children.length,
+    });
+
+    if (this.changed) {
+      console.log('HierarchicalWatcher.awaitChange: already changed, returning immediately');
+      return Promise.resolve();
+    }
 
     // lazy creating a map to hold change callbacks if not yet created
     if (this.onChangeCallbacks === undefined)
@@ -84,6 +116,8 @@ export class HierarchicalWatcher implements Watcher {
     // generating unique symbol that will allow to address resources
     // allocated for created promise
     const callId = Symbol();
+
+    console.log('HierarchicalWatcher.awaitChange: creating promise and registering callback');
 
     if (abortSignal !== undefined)
       return new Promise<void>((res, rej) => {
@@ -101,6 +135,7 @@ export class HierarchicalWatcher implements Watcher {
         };
 
         const resolveCb = () => {
+          console.log('HierarchicalWatcher.awaitChange: resolveCb called!');
           // removing our promise from abort signal listener
           abortSignal.removeEventListener('abort', abortCb);
           // resolving the promise to send the change signal
@@ -112,11 +147,18 @@ export class HierarchicalWatcher implements Watcher {
 
         // adding callback to be called once the watcher is marked as changed
         callbacks.set(callId, resolveCb);
+        console.log('HierarchicalWatcher.awaitChange: callback registered', {
+          callbacksCount: callbacks.size,
+        });
       });
     else
-      return new Promise((resolve) =>
+      return new Promise((resolve) => {
         // adding the resolve callback forever until the watcher is marked as changed
-        callbacks.set(callId, resolve),
-      );
+        callbacks.set(callId, resolve);
+        console.log('HierarchicalWatcher.awaitChange: callback registered', {
+          callbacksCount: callbacks.size,
+          callbackFunction: resolve.toString(),
+        });
+      });
   }
 }
