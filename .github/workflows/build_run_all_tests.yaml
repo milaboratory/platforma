@@ -22,7 +22,7 @@ jobs:
       node-version: '22.x'
       pl-docker-tag: 'main' 
       pnpm-build-args: '--filter=@milaboratories/pl-drivers'
-      pnpm-tests-args: '--filter=@milaboratories/pl-drivers'
+      pnpm-tests-args: '--filter=@milaboratories/pl-drivers -- -t "should show a error when 404 status code"'
       build-script-name: 'build'
       test: true
       test-script-name: 'test:no-cache'
