@@ -44,7 +44,11 @@ export class PTableDefPool extends RefCountPoolBase<FullPTableDef, PTableHandle,
 
   public getByKey(key: PTableHandle): PTableDefHolder {
     const resource = super.tryGetByKey(key);
-    if (!resource) throw new PFrameDriverError(`PTable definition not found, handle = ${key}`);
+    if (!resource) {
+      const error = new PFrameDriverError(`Invalid PTable handle`);
+      error.cause = new Error(`PTable definition for handle ${key} not found`);
+      throw error;
+    }
     return resource;
   }
 }
