@@ -514,9 +514,11 @@ function finalizeCellState<T>(
 
   nestedWatchers.push(incompleteState.selfState.selfWatcher);
 
+  const selfWatcherId = (incompleteState.selfState.selfWatcher as any)._debugId ?? 'no-id';
   console.log('finalizeCellState: creating parent watcher', {
     nestedWatchersCount: nestedWatchers.length,
     selfWatcherIsLast: nestedWatchers[nestedWatchers.length - 1] === incompleteState.selfState.selfWatcher,
+    selfWatcherId,
   });
 
   if (incompleteState.selfState.ctx.hooks !== undefined) {
@@ -525,9 +527,13 @@ function finalizeCellState<T>(
   }
 
   const parentWatcher = new HierarchicalWatcher(nestedWatchers);
+  const parentWatcherId = Math.random().toString(36).substring(7);
+  (parentWatcher as any)._debugId = parentWatcherId;
   console.log('finalizeCellState: parent watcher created', {
+    parentWatcherId,
     parentChildrenCount: (parentWatcher as any).children.length,
     parentChildrenArrayIsSame: (parentWatcher as any).children === nestedWatchers,
+    parentChildren0IsSelfWatcher: (parentWatcher as any).children[0] === incompleteState.selfState.selfWatcher,
   });
 
   return {

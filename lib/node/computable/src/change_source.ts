@@ -45,10 +45,14 @@ export class ChangeSource {
 
     let calledCount = 0;
     let undefinedCount = 0;
-    this.watchers.forEach((w) => {
+    this.watchers.forEach((w, index) => {
       const watcher = w.deref();
       if (watcher === undefined) {
         undefinedCount++;
+        console.log('ChangeSource.markChanged: watcher GC\'d', {
+          index,
+          watcherType: w.constructor.name,
+        });
       } else {
         calledCount++;
         watcher.markChanged(marker);

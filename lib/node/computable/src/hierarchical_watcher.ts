@@ -28,8 +28,10 @@ export class HierarchicalWatcher implements Watcher {
   private changed: boolean = false;
 
   constructor(children: HierarchicalWatcher[] = []) {
+    (this as any)._debugId = Math.random().toString(36).substring(7);
     this.children = children;
     console.log('HierarchicalWatcher constructor', {
+      debugId: (this as any)._debugId,
       childrenCount: this.children.length,
       childrenIsArray: Array.isArray(this.children),
       someChildChanged: this.children.some((c) => c.changed),

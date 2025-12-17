@@ -253,7 +253,9 @@ export class Computable<T, StableT extends T = T> {
   public async awaitChange(abortSignal?: AbortSignal, uTag?: string): Promise<void> {
     console.log('Computable.awaitChange called', {
       hasState: this.state !== undefined,
+      stateWatcherDebugId: (this.state?.watcher as any)?._debugId,
       stateWatcherChildrenCount: (this.state?.watcher as any)?.children?.length,
+      stateWatcherChild0DebugId: (this.state?.watcher as any)?.children?.[0]?._debugId,
     });
 
     if (this._changed(uTag)) {
