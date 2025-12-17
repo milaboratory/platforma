@@ -16,6 +16,7 @@ import type {
 import { plAddressToConfig, type wireProtocol, SUPPORTED_WIRE_PROTOCOLS } from './config';
 import type { GrpcOptions } from '@protobuf-ts/grpc-transport';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import { LoggingGrpcTransport } from './grpc_transport_logger';
 import { LLPlTransaction } from './ll_transaction';
 import { parsePlJwt } from '../util/pl';
 import { type Dispatcher, interceptors } from 'undici';
@@ -141,6 +142,7 @@ export class LLPlClient implements WireClientProviderFactory {
     }
 
     this.clientProvider = this.createWireClientProvider((wireConn) => {
+      console.log('createWireClientProvider', { wireConnType: wireConn.type });
       if (wireConn.type === 'grpc') {
         return new GrpcPlApiClient(wireConn.Transport);
       } else {
@@ -155,6 +157,7 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   private initWireConnection(protocol: wireProtocol) {
+    console.log('initWireConnection', { protocol });
     switch (protocol) {
       case 'rest':
         this.initRestConnection();
@@ -179,6 +182,7 @@ export class LLPlClient implements WireClientProviderFactory {
    * @param gzip - whether to enable gzip compression
    */
   private initGrpcConnection(gzip: boolean) {
+    console.log('initGrpcConnection', { gzip });
     const clientOptions: ClientOptions = {
       'grpc.keepalive_time_ms': 30_000, // 30 seconds
       'grpc.service_config_disable_resolution': 1, // Disable DNS TXT lookups for service config
@@ -222,7 +226,7 @@ export class LLPlClient implements WireClientProviderFactory {
       delete process.env.grpc_proxy;
     }
 
-    this._replaceWireConnection({ type: 'grpc', Transport: new GrpcTransport(grpcOptions) });
+    this._replaceWireConnection({ type: 'grpc', Transport: new LoggingGrpcTransport(new GrpcTransport(grpcOptions)) as unknown as GrpcTransport });
   }
 
   private _replaceWireConnection(newConn: WireConnection): void {
@@ -253,11 +257,13 @@ export class LLPlClient implements WireClientProviderFactory {
    * @param clientConstructor - a factory function that creates a grpc client
    */
   public createWireClientProvider<Client>(clientConstructor: (transport: WireConnection) => Client): WireClientProvider<Client> {
+    console.log('createWireClientProvider');
     // We need to cleanup providers periodically to avoid memory leaks.
     // This is a simple heuristic to avoid memory leaks.
     // We could use a more sophisticated algorithm, but this is good enough for now.
     this.providerCleanupCounter++;
     if (this.providerCleanupCounter >= 16) {
+      console.log('createWireClientProvider cleanup');
       for (let i = 0; i < this.providers.length; i++) {
         const provider = this.providers[i].deref();
         if (provider === undefined) {

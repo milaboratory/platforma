@@ -47,23 +47,31 @@ test('should show a error when 404 status code', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test1-'));
+    
+    console.log('creating download url driver')
     const driver = new DownloadUrlDriver(logger, client.httpDispatcher, dir, genSigner());
 
     const url = new URL(
       'https://block.registry.platforma.bio/releases/v1/milaboratory/NOT_FOUND',
     );
 
+    console.log('getting url1 from driver')
     const c = driver.getUrl(url);
 
+    console.log('getting url1 value')
     const url1 = await c.getValue();
     expect(url1).toBeUndefined();
 
+    console.log('waiting for driver URL to change')
     await c.awaitChange();
 
+    console.log('getting url2 value')
     const url2 = await c.getValue();
+    console.log('url2 value', url2);
     expect(url2).not.toBeUndefined();
     expect(url2?.error).not.toBeUndefined();
     expect(url2?.url).toBeUndefined();
+    console.log('test done')
   });
 }, 45000);
 

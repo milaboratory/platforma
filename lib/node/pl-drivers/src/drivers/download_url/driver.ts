@@ -134,8 +134,10 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
 
   /** Downloads and extracts a tar archive if it wasn't downloaded yet. */
   async downloadUrl(task: DownloadByUrlTask, callerId: string) {
+    console.log('DownloadUrlDriver.downloadUrl', { task, callerId });
     await task.download(this.downloadHelper, this.opts.withGunzip);
-    // Might be undefined if a error happened
+    console.log('DownloadUrlDriver.downloadUrl awaited', { task, callerId });
+    // Might be undefined if an error happened
     if (task.getUrl()?.url !== undefined) this.cache.addCache(task, callerId);
   }
 

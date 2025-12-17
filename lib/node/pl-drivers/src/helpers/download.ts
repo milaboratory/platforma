@@ -31,6 +31,7 @@ export class RemoteFileDownloader {
       headers['Range'] = `bytes=${ops.range.from}-${ops.range.to - (offByOne ? 0 : 1)}`;
     }
 
+    console.log('downloading remote file', { url, headers });
     const { statusCode, body, headers: responseHeaders } = await request(url, {
       dispatcher: this.httpClient,
       // Undici automatically sets certain headers, so we need to lowercase user-provided headers
@@ -39,6 +40,7 @@ export class RemoteFileDownloader {
       signal: ops.signal,
       highWaterMark: 1 * 1024 * 1024, // 1MB chunks instead of 64KB, tested to be optimal for Human Aging dataset
     });
+    console.log('remote file download request awaited', { statusCode });
     ops.signal?.throwIfAborted();
 
     const webBody = Readable.toWeb(body);
@@ -85,6 +87,7 @@ export class RemoteFileDownloader {
       }
 
       handlerSuccess = true;
+      console.log('remote file download request handled', { result });
       return result;
     } catch (error) {
       // Cleanup on error (including handler errors)
@@ -95,6 +98,8 @@ export class RemoteFileDownloader {
           // Ignore cleanup errors
         }
       }
+
+      console.log('remote file download error', { error });
       throw error;
     }
   }

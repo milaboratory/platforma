@@ -60,13 +60,16 @@ export class DownloadByUrlTask {
       this.change.markChanged(`download of ${this.url} finished`);
     } catch (e: unknown) {
       if (e instanceof URLAborted || isDownloadNetworkError400(e)) {
+        console.log('DownloadByUrlTask.download well-known error', { error: e });
         this.setError(e);
         this.change.markChanged(`download of ${this.url} failed`);
         // Just in case we were half-way extracting an archive.
         await rmRFDir(this.path);
+        console.log('DownloadByUrlTask.download well-known error: directory removed', { path: this.path });
         return;
       }
 
+      console.log('DownloadByUrlTask.download error', { error: e });
       throw e;
     }
   }
