@@ -62,7 +62,7 @@ export class DownloadByUrlTask {
       if (e instanceof URLAborted || isDownloadNetworkError400(e)) {
         console.log('DownloadByUrlTask.download well-known error', { error: e });
         this.setError(e);
-        console.log('DownloadByUrlTask.download well-known error: setErrror called', { changeSize: this.change.size });
+        console.log('DownloadByUrlTask.download well-known error: setErrror called', { changeSize: this.change.size, changeRawSize: this.change.rawSize });
         this.change.markChanged(`download of ${this.url} failed`);
         // Just in case we were half-way extracting an archive.
         await rmRFDir(this.path);

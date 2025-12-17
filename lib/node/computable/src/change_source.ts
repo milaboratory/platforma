@@ -50,6 +50,12 @@ export class ChangeSource {
     this.watcherSet = undefined;
   }
 
+  /** Returns number of watchers before GC housekeeping. */
+  public get rawSize(): number {
+    if (this.watchers === undefined) return 0;
+    return this.watchers.length;
+  }
+
   /** Returns actual number of watchers in this source. For that GC round is
    * executed, so beware, complexity of this method is O(N). */
   public get size(): number {
