@@ -211,8 +211,19 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
   }
 
   private removeTask(task: DownloadByUrlTask, reason: string) {
+    console.log('DownloadUrlDriver.removeTask: about to call markChanged', {
+      url: task.url.toString(),
+      path: task.path,
+      reason,
+      changeSize: task.change.size,
+      changeRawSize: task.change.rawSize,
+      taskDone: task.done,
+      taskError: task.error,
+      stackTrace: new Error().stack
+    });
     task.abort(reason);
     task.change.markChanged(`task for url ${task.url} removed: ${reason}`);
+    console.log('DownloadUrlDriver.removeTask: markChanged called');
     this.urlToDownload.delete(task.url.toString());
   }
 

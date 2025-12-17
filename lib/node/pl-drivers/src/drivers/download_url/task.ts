@@ -49,22 +49,55 @@ export class DownloadByUrlTask {
   }
 
   attach(w: Watcher, callerId: string) {
-    console.log('DownloadByUrlTask.attach', { callerId, url: this.url.toString(), error: this.error, done: this.done, size: this.size });
+    console.log('DownloadByUrlTask.attach', {
+      callerId,
+      url: this.url.toString(),
+      error: this.error,
+      done: this.done,
+      size: this.size,
+      changeSize: this.change.size,
+      changeRawSize: this.change.rawSize,
+      willAttachWatcher: !this.done
+    });
     this.counter.inc(callerId);
-    if (!this.done) this.change.attachWatcher(w);
+    if (!this.done) {
+      this.change.attachWatcher(w);
+      console.log('DownloadByUrlTask.attach: watcher attached', {
+        changeSize: this.change.size,
+        changeRawSize: this.change.rawSize
+      });
+    } else {
+      console.log('DownloadByUrlTask.attach: watcher NOT attached (task already done)');
+    }
   }
 
   async download(clientDownload: RemoteFileDownloader, withGunzip: boolean) {
     try {
       const size = await this.downloadAndUntar(clientDownload, withGunzip, this.signalCtl.signal);
       this.setDone(size);
+      console.log('DownloadByUrlTask.download SUCCESS: calling markChanged', {
+        url: this.url.toString(),
+        path: this.path,
+        changeSize: this.change.size,
+        changeRawSize: this.change.rawSize,
+        stackTrace: new Error().stack
+      });
       this.change.markChanged(`download of ${this.url} finished`);
     } catch (e: unknown) {
       if (e instanceof URLAborted || isDownloadNetworkError400(e)) {
         console.log('DownloadByUrlTask.download well-known error', { error: e });
         this.setError(e);
-        console.log('DownloadByUrlTask.download well-known error: setErrror called', { changeSize: this.change.size, changeRawSize: this.change.rawSize });
+        console.log('DownloadByUrlTask.download ERROR: about to call markChanged', {
+          url: this.url.toString(),
+          path: this.path,
+          changeSize: this.change.size,
+          changeRawSize: this.change.rawSize,
+          done: this.done,
+          error: this.error,
+          stackTrace: new Error().stack
+        });
         this.change.markChanged(`download of ${this.url} failed`);
+        console.log('DownloadByUrlTask.download ERROR: markChanged called');
         // Just in case we were half-way extracting an archive.
         await rmRFDir(this.path);
         console.log('DownloadByUrlTask.download well-known error: directory removed', { path: this.path });
