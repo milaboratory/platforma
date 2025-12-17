@@ -43,27 +43,18 @@ export class ChangeSource {
   public markChanged(marker?: string) {
     if (this.watchers === undefined) return;
 
-    console.log('ChangeSource.markChanged: iterating watchers', {
-      watchersCount: this.watchers.length,
-      marker,
-    });
     let calledCount = 0;
     let undefinedCount = 0;
     this.watchers.forEach((w) => {
       const watcher = w.deref();
       if (watcher === undefined) {
         undefinedCount++;
-        console.log('ChangeSource.markChanged: watcher deref returned undefined (GC\'d)');
       } else {
         calledCount++;
-        console.log('ChangeSource.markChanged: calling watcher.markChanged', {
-          watcherAlreadyChanged: watcher.isChanged,
-        });
         watcher.markChanged(marker);
-        console.log('ChangeSource.markChanged: watcher.markChanged called');
       }
     });
-    console.log('ChangeSource.markChanged: finished iterating', { calledCount, undefinedCount });
+    console.log('ChangeSource.markChanged done', { calledCount, undefinedCount, marker });
 
     this.modCount = 0;
     this.watchers = undefined;
