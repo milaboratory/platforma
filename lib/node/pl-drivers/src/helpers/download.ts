@@ -31,6 +31,7 @@ export class RemoteFileDownloader {
       headers['Range'] = `bytes=${ops.range.from}-${ops.range.to - (offByOne ? 0 : 1)}`;
     }
 
+    const requestStartTime = performance.now();
     console.log('downloading remote file', { url, headers });
     const { statusCode, body, headers: responseHeaders } = await request(url, {
       dispatcher: this.httpClient,
@@ -40,7 +41,7 @@ export class RemoteFileDownloader {
       signal: ops.signal,
       highWaterMark: 1 * 1024 * 1024, // 1MB chunks instead of 64KB, tested to be optimal for Human Aging dataset
     });
-    console.log('remote file download request awaited', { statusCode });
+    console.log('remote file download request awaited', { statusCode, requestTime: performance.now() - requestStartTime });
     ops.signal?.throwIfAborted();
 
     const webBody = Readable.toWeb(body);
