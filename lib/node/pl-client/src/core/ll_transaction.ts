@@ -337,7 +337,9 @@ export class LLPlTransaction {
   public async complete() {
     if (this._completed) return;
     this._completed = true;
+    console.log('LLPlTransaction: complete sent');
     await this.stream.requests.complete();
+    console.log('LLPlTransaction: complete awaited');
   }
 
   private isTerminalResponse(message: TxAPI_ServerMessage): boolean {
