@@ -111,10 +111,12 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
     const task = this.urlToDownload.get(key);
 
     if (task !== undefined) {
+      console.log('DownloadUrlDriver.getUrlNoCtx existing task found', { task, callerId });
       task.attach(w, callerId);
       return task.getUrl();
     }
 
+    console.log('DownloadUrlDriver.getUrlNoCtx new task created', { task, callerId });
     const newTask = this.setNewTask(w, url, callerId);
     this.downloadQueue.push({
       fn: async () => this.downloadUrl(newTask, callerId),
