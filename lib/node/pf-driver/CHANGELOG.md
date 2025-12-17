@@ -1,5 +1,11 @@
 # @milaboratories/pf-driver
 
+## 1.0.14
+
+### Patch Changes
+
+- 36c5cc7: Make PFrameDriverError messages static
+
 ## 1.0.13
 
 ### Patch Changes
