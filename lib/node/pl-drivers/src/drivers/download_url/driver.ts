@@ -95,7 +95,10 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
     const callerId = randomUUID();
 
     // read as ~ golang's defer
-    ctx.addOnDestroy(() => this.releasePath(url, callerId));
+    ctx.addOnDestroy(() => {
+      console.log('DownloadUrlDriver.getUrl onDestroy callback', { url, callerId });
+      this.releasePath(url, callerId);
+    });
 
     const result = this.getUrlNoCtx(url, ctx.watcher, callerId);
     if (result?.url === undefined)
@@ -111,12 +114,12 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
     const task = this.urlToDownload.get(key);
 
     if (task !== undefined) {
-      console.log('DownloadUrlDriver.getUrlNoCtx existing task found', { task, callerId });
+      console.log('DownloadUrlDriver.getUrlNoCtx existing task found', { url, task, callerId });
       task.attach(w, callerId);
       return task.getUrl();
     }
 
-    console.log('DownloadUrlDriver.getUrlNoCtx new task created', { task, callerId });
+    console.log('DownloadUrlDriver.getUrlNoCtx new task created', { url, task, callerId });
     const newTask = this.setNewTask(w, url, callerId);
     this.downloadQueue.push({
       fn: async () => this.downloadUrl(newTask, callerId),

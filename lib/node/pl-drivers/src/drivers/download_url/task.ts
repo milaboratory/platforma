@@ -49,6 +49,7 @@ export class DownloadByUrlTask {
   }
 
   attach(w: Watcher, callerId: string) {
+    console.log('DownloadByUrlTask.attach', { callerId, url: this.url.toString(), error: this.error, done: this.done, size: this.size });
     this.counter.inc(callerId);
     if (!this.done) this.change.attachWatcher(w);
   }
