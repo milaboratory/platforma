@@ -13,8 +13,11 @@ export function makeJsonDataInfo(
   const keyLength = spec.axesSpec.length;
   const jsonData: Record<string, PColumnValue> = {};
   for (const { key, val } of data) {
-    if (key.length !== keyLength)
-      throw new PFrameDriverError(`inline column key length ${key.length} differs from axes count ${keyLength}`);
+    if (key.length !== keyLength) {
+      const error = new PFrameDriverError(`Inconsistent inline column key length`);
+      error.cause = new Error(`Inline column key length ${key.length} differs from axes count ${keyLength}`);
+      throw error;
+    }
     jsonData[JSON.stringify(key)] = val;
   }
 

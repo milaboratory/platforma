@@ -109,7 +109,11 @@ export class PTablePool<TreeEntry extends JsonSerializable>
 
   public getByKey(key: PTableHandle): PTableHolder {
     const resource = super.tryGetByKey(key);
-    if (!resource) throw new PFrameDriverError(`PTable not found, handle = ${key}`);
+    if (!resource) {
+      const error = new PFrameDriverError(`Invalid PTable handle`);
+      error.cause = new Error(`PTable with handle ${key} not found`);
+      throw error;
+    }
     return resource;
   }
 }
