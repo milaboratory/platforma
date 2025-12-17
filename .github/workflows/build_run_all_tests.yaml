@@ -20,7 +20,8 @@ jobs:
       app-name-slug: 'platforma-sdk'
       gha-runner-label: 'dev-pl-sdk'
       node-version: '22.x'
-      pl-docker-tag: '1.43.0' 
+      # pl: MILAB-5161_monorepo_test_timeout_investigation
+      pl-docker-tag: '1.45.0-15-1555-merge' 
       pnpm-build-args: '--filter=@milaboratories/pl-drivers'
       pnpm-tests-args: '--filter=@milaboratories/pl-drivers'
       build-script-name: 'build'
