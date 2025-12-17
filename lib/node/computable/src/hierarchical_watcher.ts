@@ -102,8 +102,9 @@ export class HierarchicalWatcher implements Watcher {
       childrenCount: this.children.length,
     });
 
+    let promise: Promise<void>;
     if (abortSignal !== undefined)
-      return new Promise<void>((res, rej) => {
+      promise = new Promise<void>((res, rej) => {
         if (abortSignal.aborted) {
           rej(new Aborted(abortSignal.reason));
           return;
@@ -132,9 +133,13 @@ export class HierarchicalWatcher implements Watcher {
         callbacks.set(callId, resolveCb);
       });
     else
-      return new Promise((resolve) => {
+      promise = new Promise((resolve) => {
         // adding the resolve callback forever until the watcher is marked as changed
         callbacks.set(callId, resolve);
       });
+
+    // Attach watcher to promise to prevent GC while promise is pending
+    (promise as any)._watcher = this;
+    return promise;
   }
 }
