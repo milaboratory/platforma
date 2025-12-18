@@ -24,6 +24,7 @@ import type { PlAdvancedFilterColumnId } from '../../PlAdvancedFilter/types';
 import type { Filter } from '../types';
 
 import $commonStyle from './style.module.css';
+import { validateTitle } from '../utils';
 
 // Models
 const step = defineModel<Filter>('step', { required: true });
@@ -101,6 +102,7 @@ const supportedFilters = [
         max-width="600px"
         placeholder="Label"
         :autofocus="step.label.length === 0"
+        :validate="validateTitle"
       />
     </template>
     <template #body-content>
