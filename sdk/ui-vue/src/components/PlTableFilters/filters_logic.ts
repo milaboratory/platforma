@@ -19,7 +19,7 @@ import {
   parseJson,
   readAnnotationJson,
 } from '@platforma-sdk/model';
-import semver from 'semver';
+import * as semver from 'semver';
 import type { ListOption } from '@milaboratories/uikit';
 
 export function isFilterValid(

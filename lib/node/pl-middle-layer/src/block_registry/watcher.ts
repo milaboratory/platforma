@@ -15,7 +15,7 @@ import { getDevV1PacketMtime, getDevV2PacketMtime } from './registry';
 import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import type { V2RegistryProvider } from './registry-v2-provider';
-import semver from 'semver';
+import * as semver from 'semver';
 import canonicalize from 'canonicalize';
 
 export const DefaultBlockUpdateWatcherOps: PollPoolOps = {

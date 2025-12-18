@@ -21,7 +21,7 @@ onMounted(() => {
 });
 
 function onStop() {
-  stopAnimation && stopAnimation();
+  if (stopAnimation) stopAnimation();
 }
 </script>
 

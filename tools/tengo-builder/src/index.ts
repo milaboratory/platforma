@@ -6,7 +6,6 @@ import Cmd2 from './commands/test';
 import Cmd3 from './commands/dump/artifacts';
 import Cmd4 from './commands/dump/software';
 
-// prettier-ignore
 export const COMMANDS = {
   'build': Cmd0,
   'check': Cmd1,

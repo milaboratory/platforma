@@ -16,7 +16,7 @@
   "scripts": {
     "type-check": "pl-tengo check",
     "build": "rm -rf dist && pl-tengo build",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "lint": "eslint .",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
@@ -40,6 +40,7 @@
     "@milaboratories/test-helpers": "workspace:*",
     "@types/node": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "dedent": "catalog:",

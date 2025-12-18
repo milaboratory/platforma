@@ -10,7 +10,7 @@ const models = reactive({
   model2: NaN,
   model3: '23a' as unknown as number, // to cause runtime error
   model4: '100' as unknown as number, // to cause runtime error
-  model5: 8768769869.878687687
+  model5: 8768769869.878687,
 });
 </script>
 <template>
@@ -66,7 +66,7 @@ const models = reactive({
         </div>
         <div class="container">
           <div class="text-h3 h3">No arrow buttons</div>
-          <PlNumberField v-model="models.model5" :useIncrementButtons=false placeholder="Some placeholder" />
+          <PlNumberField v-model="models.model5" :useIncrementButtons="false" placeholder="Some placeholder" />
         </div>
         <div class="container">
           <div class="text-h3 h3">Model updates only when on focus removing</div>

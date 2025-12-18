@@ -32,7 +32,6 @@
     "@types/node": "catalog:",
     "@types/readline-sync": "catalog:",
     "eslint": "catalog:",
-    "prettier": "catalog:",
     "ts-node": "catalog:",
     "typescript": "catalog:"
   },

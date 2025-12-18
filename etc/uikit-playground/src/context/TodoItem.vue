@@ -18,7 +18,7 @@ const completed = computed(() => unref(item)?.completed);
 
 <template>
   <div class="todo-item" @click.stop="() => state.markAsCompleted(id)">
-    {{ id }}) {{ text }} <button class="todo-item__status" :class="{ completed }"></button>
+    {{ id }}) {{ text }} <button class="todo-item__status" :class="{ completed }"/>
   </div>
 </template>
 

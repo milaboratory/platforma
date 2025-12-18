@@ -1,14 +1,14 @@
-import {expect, test} from 'vitest';
-import {collections} from '@milaboratories/helpers';
-import {utils} from '@milaboratories/helpers';
+import { expect, test } from 'vitest';
+import { collections } from '@milaboratories/helpers';
+import { utils } from '@milaboratories/helpers';
 
-const {toList, range} = utils;
+const { toList, range } = utils;
 
 test('Times', () => {
-  expect(utils.times(0, i => i)).toEqual([]);
-  expect(utils.times(1, i => i).reduce((x, y) => x + y)).toBe(0);
-  expect(utils.times(2, i => i).reduce((x, y) => x + y)).toBe(1);
-  expect(utils.times(3, i => i).reduce((x, y) => x + y)).toBe(3);
+  expect(utils.times(0, (i) => i)).toEqual([]);
+  expect(utils.times(1, (i) => i).reduce((x, y) => x + y)).toBe(0);
+  expect(utils.times(2, (i) => i).reduce((x, y) => x + y)).toBe(1);
+  expect(utils.times(3, (i) => i).reduce((x, y) => x + y)).toBe(3);
 });
 
 test('SliceBy', async () => {
@@ -37,7 +37,7 @@ test('SliceBy', async () => {
   const right = 9100;
 
   const expected = toList(range(left + 1, right));
-  
+
   const slice = collections.sliceBy(big, (el) => {
     return el > left && el < right;
   });

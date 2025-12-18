@@ -11,7 +11,6 @@ import Cmd8 from './restore-overview-from-snapshot';
 import Cmd9 from './upload-package-v1';
 import Cmd10 from './update-deps';
 
-// prettier-ignore
 export const COMMANDS = {
   'build-meta': Cmd0,
   'build-model': Cmd1,

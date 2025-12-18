@@ -1,6 +1,6 @@
 import type { RegistryStorage } from '../io/storage';
 import { randomUUID } from 'node:crypto';
-import semver from 'semver';
+import * as semver from 'semver';
 import type {
   BlockPackageNameWithoutVersion,
   FullBlockPackageName,

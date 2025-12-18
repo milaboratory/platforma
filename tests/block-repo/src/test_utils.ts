@@ -6,10 +6,11 @@ import { randomUUID } from 'node:crypto';
 export const regTest = test.extend<{
   tmpFolder: string;
 }>({
+  // eslint-disable-next-line no-empty-pattern
   tmpFolder: async ({}, use) => {
     const workFolder = path.resolve(`work/${randomUUID()}`);
     await fsp.mkdir(workFolder, { recursive: true });
     await use(workFolder);
     // await fsp.rm(workFolder, { recursive: true });
-  }
+  },
 });

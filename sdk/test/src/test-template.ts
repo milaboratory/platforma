@@ -120,7 +120,6 @@ export class TplTestHelpers {
     const { resultMapRid } = await this.pl.withWriteTx('TemplateRender', async (tx) => {
       const tpl = loadTemplate(tx, spec);
       const renderedInputs = await inputs(tx);
-      // prettier-ignore
       const futureOutputs = await createRenderTemplate(
         tx, tpl, ephemeral, renderedInputs, outputs);
       const resultMap = Pl.createPlMap(tx, futureOutputs, ephemeral);

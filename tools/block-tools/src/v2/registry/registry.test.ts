@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import path from 'path';
 import fsp from 'fs/promises';
 import { BlockRegistryV2 } from './registry';
-import semver from 'semver';
+import * as semver from 'semver';
 import { UpdateSuggestions, BlockPackManifest } from '@milaboratories/pl-model-middle-layer';
 import { inferUpdateSuggestions } from './registry_reader';
 import { OverviewSnapshotsPrefix } from './schema_internal';

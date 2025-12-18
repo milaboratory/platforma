@@ -59,7 +59,7 @@
     "@types/mime-types": "catalog:",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
     "oclif": "catalog:",
     "rollup-plugin-node-externals": "catalog:",

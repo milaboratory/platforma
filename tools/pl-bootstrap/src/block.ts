@@ -2,12 +2,11 @@ import { createWriteStream } from 'node:fs';
 import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import type winston from 'winston';
-import { Writable, Transform } from 'node:stream';
+import { Writable } from 'node:stream';
 import os from 'node:os';
 import readlineSync from 'readline-sync';
 import { z } from 'zod';
 import decompress from 'decompress';
-import yaml from 'yaml';
 
 const blockPlatformsToChoose = ['Python'];
 const allPlatforms = ['Tengo', 'Python'] as const;

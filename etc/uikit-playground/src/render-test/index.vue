@@ -10,7 +10,7 @@ const MyComponent: Component = {
   setup(props, { emit }) {
     return () =>
       h(TestForm, {
-        modelValue: props.modelValue,
+        'modelValue': props.modelValue,
         'onUpdate:modelValue': (value) => emit('update:modelValue', value),
       });
   },

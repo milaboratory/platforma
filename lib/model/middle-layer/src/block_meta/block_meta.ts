@@ -56,21 +56,18 @@ export function BlockPackMeta<
   });
 }
 
-// prettier-ignore
 export const BlockPackMetaDescriptionRaw = BlockPackMeta(
   DescriptionContentText,
   DescriptionContentBinary,
 );
 export type BlockPackMetaDescriptionRaw = z.infer<typeof BlockPackMetaDescriptionRaw>;
 
-// prettier-ignore
 export const BlockPackMetaEmbeddedBase64 = BlockPackMeta(
   z.string(),
   ContentExplicitBase64,
 );
 export type BlockPackMetaEmbeddedBase64 = z.infer<typeof BlockPackMetaEmbeddedBase64>;
 
-// prettier-ignore
 export const BlockPackMetaEmbeddedBytes = BlockPackMeta(
   z.string(),
   ContentExplicitBytes,

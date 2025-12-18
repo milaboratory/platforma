@@ -24,7 +24,6 @@ export default class Check extends Command {
 
     const testerArgs: string[] = argv.length == 0 ? ['./src'] : (argv as string[]);
 
-    // prettier-ignore
     const tester = spawnEmbed(
       TengoTesterBinaryPath,
       'check', '--log-level', flags['log-level'],

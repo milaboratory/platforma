@@ -1,19 +1,14 @@
-import { defineConfig } from 'vitest/config';
+import { createVitestConfig } from '@milaboratories/build-configs';
+import { defineProject } from 'vitest/config';
 
-export default defineConfig({
-  test: {
-    pool: 'threads',
-    environment: 'node',
-    include: ['tests/**/*.test.ts'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'dist/',
-        'tests/',
-        '**/*.d.ts'
-      ]
-    }
-  }
-});
+export default defineProject(
+  createVitestConfig({
+    test: {
+      environment: 'node',
+      include: ['tests/**/*.test.ts'],
+      coverage: {
+        exclude: ['node_modules/', 'dist/', 'tests/', '**/*.d.ts'],
+      },
+    },
+  }),
+);

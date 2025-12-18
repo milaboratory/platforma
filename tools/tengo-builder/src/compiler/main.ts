@@ -364,7 +364,6 @@ export function parseSources(
     }
 
     // if (subdir != '') {
-    //   // prettier-ignore
     //   throw new Error(`Templates and libraries should reside only inside '${root}' dir.
     //    You are free to have any file and dirs structure inside '${root}' keeping other files where you want,
     //    but regarding ${compilableSuffixes.join(', ')}, the flat file structure is mandatory.`);

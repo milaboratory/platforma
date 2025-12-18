@@ -1,4 +1,4 @@
-import { Command, Flags } from '@oclif/core';
+import { Command } from '@oclif/core';
 import * as cmdOpts from '../cmd-opts';
 import * as util from '../util';
 import * as block from '../block';
