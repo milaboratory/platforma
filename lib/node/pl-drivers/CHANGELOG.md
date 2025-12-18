@@ -1,5 +1,13 @@
 # @milaboratories/pl-drivers
 
+## 1.11.30
+
+### Patch Changes
+
+- Updated dependencies [bf86c9c]
+  - @milaboratories/computable@2.7.5
+  - @milaboratories/pl-tree@1.8.22
+
 ## 1.11.29
 
 ### Patch Changes

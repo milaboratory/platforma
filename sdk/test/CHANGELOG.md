@@ -1,5 +1,14 @@
 # @platforma-sdk/test
 
+## 1.48.11
+
+### Patch Changes
+
+- Updated dependencies [bf86c9c]
+  - @milaboratories/computable@2.7.5
+  - @milaboratories/pl-middle-layer@1.43.97
+  - @milaboratories/pl-tree@1.8.22
+
 ## 1.48.9
 
 ### Patch Changes
