@@ -1,5 +1,11 @@
 # @milaboratories/computable
 
+## 2.7.5
+
+### Patch Changes
+
+- bf86c9c: Fix race condition where HierarchicalWatcher could be garbage collected before awaitChange() promise resolved, causing tests to timeout. Added global registry to pin watchers with pending promises.
+
 ## 2.7.4
 
 ### Patch Changes
