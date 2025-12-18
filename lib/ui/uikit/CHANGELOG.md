@@ -1,5 +1,13 @@
 # @milaboratories/uikit
 
+## 2.8.4
+
+### Patch Changes
+
+- 8abf3c6: fix annotations problems
+- Updated dependencies [8abf3c6]
+  - @platforma-sdk/model@1.48.12
+
 ## 2.8.3
 
 ### Patch Changes
