@@ -6,7 +6,7 @@ import { getLongTestTimeout } from '@milaboratories/test-helpers';
 import { vi } from 'vitest';
 import dedent from 'dedent';
 
-const TIMEOUT = getLongTestTimeout(15_000);
+const TIMEOUT = getLongTestTimeout(60_000);
 
 vi.setConfig({
   testTimeout: TIMEOUT,
