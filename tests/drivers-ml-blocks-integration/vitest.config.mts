@@ -7,7 +7,7 @@ export default defineConfig({
     passWithNoTests: true,
     testTimeout: 10000,
     coverage: {
-      include: ['src'],
+      include: ['src/**/*.{ts,js,vue,mts,mjs,cts,cjs}'],
       provider: 'istanbul',
       reporter: ['lcov', 'text'],
       reportsDirectory: './coverage'

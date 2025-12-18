@@ -8,7 +8,7 @@ export default defineConfig({
     testTimeout: 10000,
     maxConcurrency: 1,
     coverage: {
-      include: ['src'],
+      include: ['src/**/*.{ts,js,vue,mts,mjs,cts,cjs}'],
       provider: 'istanbul',
       reporter: ['lcov', 'text'],
       reportsDirectory: './coverage'

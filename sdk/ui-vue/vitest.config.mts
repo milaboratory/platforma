@@ -6,7 +6,7 @@ export default defineConfig({
     includeSource: ['src/**/*.{js,ts}'],
     passWithNoTests: true,
     coverage: {
-      include: ['src'],
+      include: ['src/**/*.{ts,js,vue,mts,mjs,cts,cjs}'],
       provider: 'istanbul',
       reporter: ['lcov', 'text'],
       reportsDirectory: './coverage'

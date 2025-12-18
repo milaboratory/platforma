@@ -23,7 +23,7 @@ export default defineConfig({
       concurrent: false, // run tests per-file sequentially by default
     },
     coverage: {
-      include: ['src'],
+      include: ['src/**/*.{ts,js,vue,mts,mjs,cts,cjs}'],
       provider: 'istanbul',
       reporter: ['lcov', 'text'],
       reportsDirectory: './coverage'

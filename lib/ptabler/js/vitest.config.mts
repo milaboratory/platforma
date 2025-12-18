@@ -7,7 +7,7 @@ export default defineConfig({
     passWithNoTests: true,
     include: ['tests/**/*.test.ts'],
     coverage: {
-      include: ['src'],
+      include: ['src/**/*.{ts,js,vue,mts,mjs,cts,cjs}'],
       exclude: [
         'node_modules/',
         'dist/',

@@ -8,7 +8,7 @@ export default defineConfig({
     testTimeout: 80000,
     hookTimeout: 80000, 
     coverage: {
-      include: ['src'],
+      include: ['src/**/*.{ts,js,vue,mts,mjs,cts,cjs}'],
       provider: 'istanbul',
       reporter: ['lcov', 'text'],
       reportsDirectory: './coverage',

@@ -13,7 +13,7 @@ export default defineConfig((configEnv) => mergeConfig(
       root: fileURLToPath(new URL('./', import.meta.url)),
       passWithNoTests: true,
       coverage: {
-        include: ['src'],
+        include: ['src/**/*.{ts,js,vue,mts,mjs,cts,cjs}'],
         provider: 'istanbul',
         reporter: ['lcov', 'text'],
         reportsDirectory: './coverage'
