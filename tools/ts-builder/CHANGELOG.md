@@ -1,5 +1,13 @@
 # @milaboratories/ts-builder
 
+## 1.2.1
+
+### Patch Changes
+
+- 1eb721e: annotations default value
+- Updated dependencies [1eb721e]
+  - @milaboratories/build-configs@1.2.1
+
 ## 1.2.0
 
 ### Minor Changes

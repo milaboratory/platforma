@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.12.1
+
+### Patch Changes
+
+- f62e11c: Proper sparse cache disposal
+
 ## 1.12.0
 
 ### Minor Changes

@@ -193,6 +193,7 @@ export async function retry<T>(
     } catch (e: any) {
       const nextRetryState = tryNextRetryState(retryState);
       if (!recoverablePredicate(e) || !nextRetryState) throw e;
+      await sleep(nextRetryState.nextDelay);
       retryState = nextRetryState;
     }
   }

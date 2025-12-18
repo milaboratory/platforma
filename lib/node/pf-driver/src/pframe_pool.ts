@@ -110,18 +110,20 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
         .catch((err) => {
           this.dispose();
           pFrame.dispose();
-          throw new PFrameDriverError(
-            `PFrame creation failed asynchronously, `
-            + `columns: ${JSON.stringify(jsonifiedColumns)}, `
-            + `error: ${ensureError(err)}`,
+          const error = new PFrameDriverError('PFrame creation failed asynchronously');
+          error.cause = new Error(
+            `PFrame cannot be created from columns: ${JSON.stringify(jsonifiedColumns)}`,
+            { cause: ensureError(err) },
           );
+          throw error;
         });
     } catch (err: unknown) {
-      throw new PFrameDriverError(
-        `PFrame creation failed synchronously, `
-        + `columns: ${JSON.stringify(jsonifiedColumns)}, `
-        + `error: ${ensureError(err)}`,
+      const error = new PFrameDriverError('PFrame creation failed synchronously');
+      error.cause = new Error(
+        `PFrame cannot be created from columns: ${JSON.stringify(jsonifiedColumns)}`,
+        { cause: ensureError(err) },
       );
+      throw error;
     }
   }
 
@@ -183,7 +185,11 @@ export class PFramePool<TreeEntry extends JsonSerializable>
 
   public getByKey(key: PFrameHandle): PFrameHolder<TreeEntry> {
     const resource = super.tryGetByKey(key);
-    if (!resource) throw new PFrameDriverError(`PFrame not found, handle = ${key}`);
+    if (!resource) {
+      const error = new PFrameDriverError(`Invalid PFrame handle`);
+      error.cause = new Error(`PFrame with handle ${key} not found`);
+      throw error;
+    }
     return resource;
   }
 }

@@ -1,5 +1,34 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.7.3
+
+### Patch Changes
+
+- 87251ed: Support parquet format in block-facing data export/import
+
+## 5.7.2
+
+### Patch Changes
+
+- ce1303d: annotations: reorder labels execution
+
+## 5.7.1
+
+### Patch Changes
+
+- 1eb721e: annotations default value
+
+## 5.7.0
+
+### Minor Changes
+
+- 2e7bc1c: add unique operation for ptabler df
+
+### Patch Changes
+
+- Updated dependencies [2e7bc1c]
+  - @platforma-open/milaboratories.software-ptabler@1.14.0
+
 ## 5.6.6
 
 ### Patch Changes

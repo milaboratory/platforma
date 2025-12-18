@@ -1849,6 +1849,7 @@ export ll.toStrict({
 	sc: sc,
 	_newExpression: _newExpression,
 	_isExpression: _isExpression,
+	_isSelector: _isSelector,
 	_isAggregation: _isAggregation,
 	_mapToExpressionStructList: _mapToExpressionStructList,
 	_mapToSingleExpressionStruct: _mapToSingleExpressionStruct

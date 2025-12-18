@@ -1,5 +1,50 @@
 # @platforma-sdk/ui-vue
 
+## 1.48.10
+
+### Patch Changes
+
+- 76b89a7: Suppress abort error from calculateGridOptions
+
+## 1.48.8
+
+### Patch Changes
+
+- @milaboratories/uikit@2.8.3
+- @platforma-sdk/model@1.48.4
+
+## 1.48.6
+
+### Patch Changes
+
+- ce1303d: annotations: reorder labels execution
+
+## 1.48.5
+
+### Patch Changes
+
+- 1eb721e: annotations default value
+  - @milaboratories/biowasm-tools@2.0.0
+  - @milaboratories/uikit@2.8.2
+  - @platforma-sdk/model@1.48.4
+  - @milaboratories/ptabler-expression-js@1.1.7
+
+## 1.48.4
+
+### Patch Changes
+
+- Updated dependencies [3e168c4]
+  - @platforma-sdk/model@1.48.4
+  - @milaboratories/uikit@2.8.2
+
+## 1.48.2
+
+### Patch Changes
+
+- @milaboratories/ptabler-expression-js@1.1.7
+- @platforma-sdk/model@1.48.2
+- @milaboratories/uikit@2.8.1
+
 ## 1.48.0
 
 ### Minor Changes

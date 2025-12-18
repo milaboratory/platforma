@@ -1,6 +1,14 @@
 from .base import PStep, GlobalSettings, TableSpace, StepContext
-from .io import ColumnSchema, ReadCsv, ReadNdjson, ReadParquet, WriteCsv, WriteNdjson, WriteParquet
-from .basics import AddColumns, Select, WithColumns, WithoutColumns
+from .io import (
+    ColumnSchema,
+    ReadCsv,
+    ReadNdjson,
+    ReadParquet,
+    WriteCsv,
+    WriteNdjson,
+    WriteParquet,
+)
+from .basics import AddColumns, Select, Unique, WithColumns, WithoutColumns
 from .filter import Filter
 from .limit import Limit
 from .join import Join
@@ -21,6 +29,7 @@ type AnyPStep = Union[
     WriteParquet,
     AddColumns,
     Select,
+    Unique,
     WithColumns,
     WithoutColumns,
     Filter,
@@ -43,6 +52,7 @@ __all__ = [
     "WriteParquet",
     "AddColumns",
     "Select",
+    "Unique",
     "WithColumns",
     "WithoutColumns",
     "Filter",
@@ -53,11 +63,9 @@ __all__ = [
     "Sort",
     "WriteFrame",
     "ReadFrame",
-
     "PStep",
     "GlobalSettings",
     "TableSpace",
     "StepContext",
-
     "AnyPStep",
 ]

@@ -3236,6 +3236,9 @@ importers:
       dedent:
         specifier: 'catalog:'
         version: 1.7.0
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.39.10
       vitest:
         specifier: 'catalog:'
         version: 4.0.7(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
