@@ -21,6 +21,7 @@
     "typescript": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
     "@milaboratories/eslint-config": "workspace:*"
   },

@@ -22,18 +22,15 @@
     "lint": "turbo run lint",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json,yaml}\"",
     "prepare": "husky",
     "check": "true || turbo run check"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
     "husky": "catalog:",
-    "prettier": "catalog:",
     "rimraf": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
     "rollup": "catalog:",
     "vite": "catalog:",
     "@types/node": "catalog:"

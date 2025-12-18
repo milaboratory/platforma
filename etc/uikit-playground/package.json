@@ -20,6 +20,7 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
     "vue": "catalog:",
     "@vitejs/plugin-vue": "catalog:",

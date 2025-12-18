@@ -187,7 +187,6 @@ export function DefaultDriverKitOpsPaths(
 }
 
 /** Fields with default values are marked as optional here. */
-// prettier-ignore
 export type DriverKitOpsConstructor =
   Omit<DriverKitOpsSettings, keyof typeof DefaultDriverKitOpsSettings>
   & Partial<typeof DefaultDriverKitOpsSettings>

@@ -48,7 +48,6 @@
     "@types/ssh2": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
-    "prettier": "catalog:",
     "testcontainers": "catalog:",
     "tsconfig-paths": "catalog:",
     "typescript": "catalog:",

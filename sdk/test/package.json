@@ -17,8 +17,7 @@
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
-    "test": "vitest run --coverage",
-    "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
+    "test": "vitest run --coverage"
   },
   "files": [
     "dist/**/*"

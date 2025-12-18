@@ -40,7 +40,6 @@
     "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "@types/node": "catalog:",
-    "prettier": "catalog:",
     "tsconfig-paths": "catalog:",
     "typescript": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
