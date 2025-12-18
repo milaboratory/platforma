@@ -28,14 +28,14 @@
       "support": "mailto:support@milaboratories.com",
       "description": "Test block for monetization",
       "longDescription": "Monetization",
-      "changelog": "",
+      "changelog": "file:CHANGELOG.md",
       "tags": [
         "tutorial"
       ],
       "organization": {
         "name": "MiLaboratories Inc",
         "url": "https://milaboratories.com/",
-        "logo": "file:logos/block-logo.png"
+        "logo": "file:logos/organization-logo.png"
       }
     }
   },
