@@ -28,6 +28,7 @@
     "@platforma-open/milaboratories.software-ptabler.schema": "workspace:*"
   },
   "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",

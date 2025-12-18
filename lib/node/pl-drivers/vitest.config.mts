@@ -1,16 +1,12 @@
-import { defineConfig } from 'vitest/config';
+import { createVitestConfig } from '@milaboratories/build-configs';
+import { defineProject } from 'vitest/config';
 
-export default defineConfig({
-  test: {
-    pool: 'threads',
-    watch: false,
-    passWithNoTests: true,
-    coverage: {
-      include: ['src/**/*.{ts,js,vue,mts,mjs,cts,cjs}'],
-      exclude: ['src/proto', '**/*.js'],
-      provider: 'istanbul',
-      reporter: ['lcov', 'text'],
-      reportsDirectory: './coverage'
-    }
-  }
-});
+export default defineProject(
+  createVitestConfig({
+    test: {
+      coverage: {
+        exclude: ['src/proto', '**/*.js'],
+      },
+    },
+  }),
+);

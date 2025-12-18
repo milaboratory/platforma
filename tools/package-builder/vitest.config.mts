@@ -1,17 +1,11 @@
-import { defineConfig } from 'vitest/config';
+import { createVitestConfig } from '@milaboratories/build-configs';
+import { defineProject } from 'vitest/config';
 
-export default defineConfig({
-  test: {
-    pool: 'threads',
-    watch: false,
-    passWithNoTests: true,
-    testTimeout: 10000,
-    maxConcurrency: 1,
-    coverage: {
-      include: ['src/**/*.{ts,js,vue,mts,mjs,cts,cjs}'],
-      provider: 'istanbul',
-      reporter: ['lcov', 'text'],
-      reportsDirectory: './coverage'
-    }
-  }
-});
+export default defineProject(
+  createVitestConfig({
+    test: {
+      testTimeout: 10000,
+      maxConcurrency: 1,
+    },
+  }),
+);

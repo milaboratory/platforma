@@ -13,10 +13,11 @@
     "@platforma-sdk/workflow-tengo": "workspace:*"
   },
   "devDependencies": {
-    "vitest": "catalog:",
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:*",
+    "@platforma-sdk/tengo-builder": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
-    "@milaboratories/eslint-config": "workspace:*",
-    "@platforma-sdk/tengo-builder": "workspace:*"
+    "vitest": "catalog:"
   }
 }
