@@ -2,6 +2,12 @@ import type { Watcher } from './watcher';
 import { Aborted } from '@milaboratories/ts-helpers';
 
 /**
+ * Global registry to pin watchers that have pending awaitChange() promises.
+ * This prevents garbage collection while promises are pending.
+ */
+const activePendingWatchers = new Map<symbol, HierarchicalWatcher>();
+
+/**
  * Instances of this class may form a tree of watchers having parent-child relations.
  * If a node is changed, the change bubbles up to the root.
  * A client can check manually or listen to a Promise that resolves
@@ -85,6 +91,9 @@ export class HierarchicalWatcher implements Watcher {
     // allocated for created promise
     const callId = Symbol();
 
+    // Pin watcher in global registry to prevent GC while promise is pending
+    activePendingWatchers.set(callId, this);
+
     if (abortSignal !== undefined)
       return new Promise<void>((res, rej) => {
         if (abortSignal.aborted) {
@@ -96,6 +105,8 @@ export class HierarchicalWatcher implements Watcher {
           // removing our promise from the set of promises that will be
           // fulfilled on watcher change
           callbacks.delete(callId);
+          // Unpin watcher from global registry
+          activePendingWatchers.delete(callId);
           // rejecting the promise
           rej(new Aborted(abortSignal.reason));
         };
@@ -103,6 +114,8 @@ export class HierarchicalWatcher implements Watcher {
         const resolveCb = () => {
           // removing our promise from abort signal listener
           abortSignal.removeEventListener('abort', abortCb);
+          // Unpin watcher from global registry
+          activePendingWatchers.delete(callId);
           // resolving the promise to send the change signal
           res();
         };
@@ -114,9 +127,14 @@ export class HierarchicalWatcher implements Watcher {
         callbacks.set(callId, resolveCb);
       });
     else
-      return new Promise((resolve) =>
+      return new Promise((resolve) => {
         // adding the resolve callback forever until the watcher is marked as changed
-        callbacks.set(callId, resolve),
-      );
+        callbacks.set(callId, () => {
+          // Unpin watcher from global registry
+          activePendingWatchers.delete(callId);
+          // resolve the promise
+          resolve();
+        });
+      });
   }
 }
