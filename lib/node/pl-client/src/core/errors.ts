@@ -5,49 +5,65 @@ import { Code } from '../proto-grpc/google/rpc/code';
 export function isConnectionProblem(err: unknown, nested: boolean = false): boolean {
   if (err instanceof DisconnectedError) return true;
   if ((err as any).name == 'RpcError' && (err as any).code == 'UNAVAILABLE') return true;
-  if ((err as any).code == Code.UNAVAILABLE) return true;
-  if ((err as any).cause !== undefined && !nested)
-    // nested limits the depth of search
-    return isConnectionProblem((err as any).cause, true);
+  if ((err as any).name == 'RESTError' && (err as any).status.code == Code.UNAVAILABLE) return true;
+  if ((err as any).cause !== undefined && !nested) return isConnectionProblem((err as any).cause, true);
   return false;
 }
 
 export function isUnauthenticated(err: unknown, nested: boolean = false): boolean {
   if (err instanceof UnauthenticatedError) return true;
   if ((err as any).name == 'RpcError' && (err as any).code == 'UNAUTHENTICATED') return true;
-  if ((err as any).code == Code.UNAUTHENTICATED) return true;
-  if ((err as any).cause !== undefined && !nested)
-    // nested limits the depth of search
-    return isUnauthenticated((err as any).cause, true);
+  if ((err as any).name == 'RESTError' && (err as any).status.code == Code.UNAUTHENTICATED) return true;
+  if ((err as any).cause !== undefined && !nested) return isUnauthenticated((err as any).cause, true);
+  return false;
+}
+
+export function isTimeoutError(err: unknown, nested: boolean = false): boolean {
+  if ((err as any).name == 'TimeoutError') return true;
+  if ((err as any).name == 'RpcError' && (err as any).code == 'DEADLINE_EXCEEDED') return true;
+  if ((err as any).name == 'RESTError' && (err as any).status.code == Code.DEADLINE_EXCEEDED) return true;
+  if ((err as any).cause !== undefined && !nested) return isTimeoutError((err as any).cause, true);
+  return false;
+}
+
+export function isCancelError(err: unknown, nested: boolean = false): boolean {
+  if ((err as any).name == 'RpcError' && (err as any).code == 'CANCELLED') return true;
+  if ((err as any).name == 'RESTError' && (err as any).status.code == Code.CANCELLED) return true;
+  if ((err as any).cause !== undefined && !nested) return isCancelError((err as any).cause, true);
+  return false;
+}
+
+export function isAbortedError(err: unknown, nested: boolean = false): boolean {
+  if (err instanceof Aborted || (err as any).name == 'AbortError') return true;
+  if ((err as any).code == 'ABORT_ERR') return true;
+  if (err instanceof DOMException && err.code === DOMException.ABORT_ERR) return true; // WebSocket error
+  if ((err as any).name == 'RpcError' && (err as any).code == 'ABORTED') return true;
+  if ((err as any).name == 'RESTError' && (err as any).status.code == Code.ABORTED) return true;
+  if ((err as any).cause !== undefined && !nested) isAbortedError((err as any).cause, true);
   return false;
 }
 
 export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): boolean {
-  if (err instanceof Aborted || (err as any).name == 'AbortError') return true;
-  if ((err as any).name == 'TimeoutError') return true;
-  if ((err as any).code == 'ABORT_ERR') return true;
-  // Check for DOMException with ABORT_ERR code (thrown by AbortSignal.timeout)
-  if (err instanceof DOMException && err.code === DOMException.ABORT_ERR) return true;
-  if ((err as any).code == Code.ABORTED) return true;
-  if (
-    (err as any).name == 'RpcError'
-    && ((err as any).code == 'CANCELLED' || (err as any).code == 'DEADLINE_EXCEEDED')
-  )
-    return true;
-  if ((err as any).code == Code.CANCELLED || (err as any).code == Code.DEADLINE_EXCEEDED)
-    return true;
-  if ((err as any).cause !== undefined && !nested)
-    // nested limits the depth of search
-    return isTimeoutOrCancelError((err as any).cause, true);
+  if (isAbortedError(err, true)) return true;
+  if (isTimeoutError(err, true)) return true;
+  if (isCancelError(err, true)) return true;
+  if ((err as any).cause !== undefined && !nested) return isTimeoutOrCancelError((err as any).cause, true);
   return false;
 }
 
-export const PlErrorCodeNotFound = 5;
+export function isNotFoundError(err: unknown, nested: boolean = false): boolean {
+  if ((err as any).name == 'RpcError' && (err as any).code == 'NOT_FOUND') return true;
+  if ((err as any).name == 'RESTError' && (err as any).status.code == Code.NOT_FOUND) return true;
+  if ((err as any).cause !== undefined && !nested) return isNotFoundError((err as any).cause, true);
+  return err instanceof RecoverablePlError && err.status.code === PlErrorCodeNotFound;
+}
+
+export const PlErrorCodeNotFound: number = Code.NOT_FOUND;
 
 export class PlError extends Error {
   name = 'PlError';
-  constructor(public readonly status: Status) {
-    super(`code=${status.code} ${status.message}`);
+  constructor(public readonly status: Status, opts?: ErrorOptions) {
+    super(`code=${status.code} ${status.message}`, opts);
   }
 }
 
@@ -69,12 +85,6 @@ export class UnrecoverablePlError extends PlError {
   }
 }
 
-export function isNotFoundError(err: unknown, nested: boolean = false): boolean {
-  if ((err as any).name == 'RpcError' && (err as any).code == 'NOT_FOUND') return true;
-  if ((err as any).cause !== undefined && !nested) return isNotFoundError((err as any).cause, true);
-  return err instanceof RecoverablePlError && err.status.code === PlErrorCodeNotFound;
-}
-
 export class UnauthenticatedError extends Error {
   name = 'UnauthenticatedError';
   constructor(message: string) {
@@ -86,6 +96,13 @@ export class DisconnectedError extends Error {
   name = 'DisconnectedError';
   constructor(message: string) {
     super('Disconnected: ' + message);
+  }
+}
+
+export class RESTError extends PlError {
+  name = 'RESTError';
+  constructor(status: Status, opts?: ErrorOptions) {
+    super(status, opts);
   }
 }
 
