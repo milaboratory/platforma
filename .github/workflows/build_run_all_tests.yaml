@@ -57,7 +57,7 @@ jobs:
           "QUAY_ROBOT_TOKEN": ${{ toJSON(secrets.QUAY_ROBOT_TOKEN) }} }
 
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      SLACK_CHANNEL: ${{ secrets.SLACK_PL_CHANNEL }}
+      SLACK_CHANNEL: ${{ secrets.SLACK_PL_SDK_CHANNEL }}
 
       GH_ZEN_APP_ID: ${{ secrets.GH_ZEN_APP_ID }}
       GH_ZEN_APP_PRIVATE_KEY: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}
