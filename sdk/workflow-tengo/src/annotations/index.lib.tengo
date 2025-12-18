@@ -50,7 +50,7 @@ computeAnnotations := func(inputs) {
 	
 	columnsFromExpressions := util.extractColumnsFromExpressions(slices.map(steps, func(step) { return step.value }))
 	additionalColumns := is_array(inputs.additionalColumns) ? inputs.additionalColumns : []
-	columns := columnsFromExpressions + additionalColumns
+	columns := slices.unique(columnsFromExpressions + additionalColumns)
 	
 	bundleBuilder := wf.createPBundleBuilder()
 	bundleBuilder.addAnchor("main", anchorRef)
