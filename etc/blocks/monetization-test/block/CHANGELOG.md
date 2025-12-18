@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.1.0
+
+### Minor Changes
+
+- ab5d4f8: Publish monetization-test block
+
 ## 1.0.196
 
 ### Patch Changes
