@@ -2,13 +2,13 @@ import {
   BlockRegistryV2,
   RegistryV2Reader,
   folderReaderByUrl,
-  storageByUrl
+  storageByUrl,
 } from '@platforma-sdk/block-tools';
 import {
   AnyChannel,
   BlockPackManifest,
   overrideManifestVersion,
-  StableChannel
+  StableChannel,
 } from '@milaboratories/pl-model-middle-layer';
 import fsp from 'fs/promises';
 import { regTest } from './test_utils';
@@ -42,17 +42,17 @@ regTest('simple repo test', async ({ expect, tmpFolder }) => {
   // Publishing
 
   const manifestPath = require.resolve(
-    '@milaboratories/milaboratories.test-enter-numbers/block-pack/manifest.json'
+    '@milaboratories/milaboratories.test-enter-numbers/block-pack/manifest.json',
   );
   const manifest1 = BlockPackManifest.parse(
-    JSON.parse(await fsp.readFile(manifestPath, { encoding: 'utf-8' }))
+    JSON.parse(await fsp.readFile(manifestPath, { encoding: 'utf-8' })),
   );
   const manifestRoot = path.dirname(manifestPath);
   const storage = storageByUrl(registryUrl);
   const registry = new BlockRegistryV2(storage);
   const version1 = manifest1.description.id.version;
   await registry.publishPackage(manifest1, async (file) =>
-    Buffer.from(await fsp.readFile(path.resolve(manifestRoot, file)))
+    Buffer.from(await fsp.readFile(path.resolve(manifestRoot, file))),
   );
 
   // bumping version, and adding another one
@@ -60,7 +60,7 @@ regTest('simple repo test', async ({ expect, tmpFolder }) => {
   // patching manifest
   const manifest2 = overrideManifestVersion(manifest1, version2);
   await registry.publishPackage(manifest2, async (file) =>
-    Buffer.from(await fsp.readFile(path.resolve(manifestRoot, file)))
+    Buffer.from(await fsp.readFile(path.resolve(manifestRoot, file))),
   );
 
   await registry.updateIfNeeded();
@@ -73,7 +73,7 @@ regTest('simple repo test', async ({ expect, tmpFolder }) => {
 
   const registryReader = new RegistryV2Reader(folderReaderByUrl(registryUrl), {
     cacheBlockListFor: 1,
-    keepStaleBlockListFor: 1
+    keepStaleBlockListFor: 1,
   });
   const overview1 = await registryReader.listBlockPacks();
   expect(overview1).length.greaterThanOrEqual(1);

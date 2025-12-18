@@ -1,8 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { createVitestConfig } from '@milaboratories/build-configs';
+import { defineProject } from 'vitest/config';
 
-export default defineConfig({
-  test: {
-    pool: 'threads',
-    watch: false,
-  },
-});
+export default defineProject(createVitestConfig());

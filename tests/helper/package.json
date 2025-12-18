@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
+    "lint": "eslint .",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -18,7 +19,7 @@
     "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
     "@types/node": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "vitest": "catalog:",
     "canonicalize": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"

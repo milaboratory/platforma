@@ -9,7 +9,6 @@ import Cmd5 from './commands/publish/all';
 import Cmd6 from './commands/publish/docker';
 import Cmd7 from './commands/publish/packages';
 
-// prettier-ignore
 export const COMMANDS = {
   'build': Cmd0,
   'prepublish': Cmd1,

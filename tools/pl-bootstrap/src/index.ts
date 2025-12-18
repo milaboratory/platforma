@@ -17,7 +17,6 @@ import Cmd14 from './commands/svc/create/local';
 import Cmd15 from './commands/svc/create/docker/s3';
 import Cmd16 from './commands/svc/create/local/s3';
 
-// prettier-ignore
 export const COMMANDS = {
   'create-block': Cmd0,
   'reset': Cmd1,

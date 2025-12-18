@@ -4,7 +4,6 @@ import { state } from '../state';
 import ToggleMenu from './ToggleMenu.vue';
 import { routes } from '../router';
 
-// eslint-disable-next-line no-undef
 const appVersion = APP_VERSION;
 </script>
 

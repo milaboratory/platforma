@@ -2,4 +2,3 @@ proto/.proto/
 proto/plapi/.proto/
 proto/shared/.proto/
 sync-proto.log
-coverage/

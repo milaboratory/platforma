@@ -9,9 +9,9 @@ import {
 } from '@milaboratories/pl-middle-layer';
 import type { SynchronizedTreeOps } from '@milaboratories/pl-tree';
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import * as fsp from 'node:fs/promises';
-import path from 'path';
+import path from 'node:path';
 import { test } from 'vitest';
 
 export const plTest = test.extend<{

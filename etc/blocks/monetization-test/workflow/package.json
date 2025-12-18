@@ -5,12 +5,19 @@
   "description": "Block Workflow",
   "scripts": {
     "build": "rm -rf dist && pl-tengo check && pl-tengo build",
-    "format": "/usr/bin/env emacs --script ./format.el"
+    "format": "/usr/bin/env emacs --script ./format.el",
+    "lint": "eslint .",
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "@platforma-sdk/workflow-tengo": "workspace:*"
   },
   "devDependencies": {
-    "@platforma-sdk/tengo-builder": "workspace:*"
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:*",
+    "@platforma-sdk/tengo-builder": "workspace:*",
+    "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
+    "vitest": "catalog:"
   }
 }
