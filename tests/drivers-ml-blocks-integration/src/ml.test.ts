@@ -1,26 +1,26 @@
-import type { blockSpec as downloadBlobURLSpec } from '@milaboratories/milaboratories.test-blob-url-custom-protocol';
+import { blockSpec as downloadBlobURLSpec } from '@milaboratories/milaboratories.test-blob-url-custom-protocol';
 import type { platforma as downloadBlobURLModel } from '@milaboratories/milaboratories.test-blob-url-custom-protocol.model';
-import type { blockSpec as downloadFileSpec } from '@milaboratories/milaboratories.test-download-file';
+import { blockSpec as downloadFileSpec } from '@milaboratories/milaboratories.test-download-file';
 import type { platforma as downloadFileModel } from '@milaboratories/milaboratories.test-download-file.model';
-import type { blockSpec as enterNumberSpec } from '@milaboratories/milaboratories.test-enter-numbers';
-import type { blockSpec as readLogsSpec } from '@milaboratories/milaboratories.test-read-logs';
+import { blockSpec as enterNumberSpec } from '@milaboratories/milaboratories.test-enter-numbers';
+import { blockSpec as readLogsSpec } from '@milaboratories/milaboratories.test-read-logs';
 import type { platforma as readLogsModel } from '@milaboratories/milaboratories.test-read-logs.model';
-import type { blockSpec as sumNumbersSpec } from '@milaboratories/milaboratories.test-sum-numbers';
-import type { blockSpec as uploadFileSpec } from '@milaboratories/milaboratories.test-upload-file';
+import { blockSpec as sumNumbersSpec } from '@milaboratories/milaboratories.test-sum-numbers';
+import { blockSpec as uploadFileSpec } from '@milaboratories/milaboratories.test-upload-file';
 import type { platforma as uploadFileModel } from '@milaboratories/milaboratories.test-upload-file.model';
-import type { blockSpec as transferFilesSpec } from '@milaboratories/milaboratories.transfer-files';
+import { blockSpec as transferFilesSpec } from '@milaboratories/milaboratories.transfer-files';
 import type { platforma as transferFilesModel } from '@milaboratories/milaboratories.transfer-files.model';
 import { type PlClient, DisconnectedError } from '@milaboratories/pl-client';
-import type {
-  FolderURL,
-  ImportFileHandle,
-  InferBlockState,
+import {
+  type FolderURL,
+  type ImportFileHandle,
+  type InferBlockState,
   InitialBlockSettings,
-  LocalBlobHandleAndSize,
-  PlRef,
-  Project,
-  RangeBytes,
-  RemoteBlobHandleAndSize,
+  type LocalBlobHandleAndSize,
+  type PlRef,
+  type Project,
+  type RangeBytes,
+  type RemoteBlobHandleAndSize,
 } from '@milaboratories/pl-middle-layer';
 import {
   MiddleLayer,
