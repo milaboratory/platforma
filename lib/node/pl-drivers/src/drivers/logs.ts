@@ -6,6 +6,7 @@ import type * as sdk from '@milaboratories/pl-model-common';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import type { DownloadDriver } from './download_blob/download_blob';
 import { isLiveLogHandle } from './helpers/logs_handle';
+import { isNotFoundError } from '@milaboratories/pl-client';
 
 export class LogsDriver implements sdk.LogsDriver {
   constructor(
@@ -36,7 +37,7 @@ export class LogsDriver implements sdk.LogsDriver {
     try {
       return this.logsStreamDriver.getLastLogs(stream, lines, ctx);
     } catch (e: any) {
-      if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
+      if (isNotFoundError(e)) {
         ctx.markUnstable(`NOT_FOUND in logs stream driver while getting last logs: ${e}`);
         return undefined;
       }
@@ -67,7 +68,7 @@ export class LogsDriver implements sdk.LogsDriver {
     try {
       return this.logsStreamDriver.getProgressLog(stream, patternToSearch, ctx);
     } catch (e: any) {
-      if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
+      if (isNotFoundError(e)) {
         ctx.markUnstable(`NOT_FOUND in logs stream driver while getting a progress log: ${e}`);
         return undefined;
       }
@@ -110,7 +111,7 @@ export class LogsDriver implements sdk.LogsDriver {
         live: true,
       }
     } catch (e: any) {
-      if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
+      if (isNotFoundError(e)) {
         ctx.markUnstable(`NOT_FOUND in logs stream driver while getting a progress log with info: ${e}`);
         return undefined;
       }
