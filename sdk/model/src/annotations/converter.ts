@@ -17,7 +17,12 @@ function filterPredicate(item: FilterSpec): boolean {
     return item.filters.length > 0;
   }
 
-  return true;
+  if (item.type === 'not') {
+    return filterPredicate(item.filter);
+  }
+
+  // Filter out any item that has undefined values in required fields
+  return !Object.values(item).some((v) => v === undefined);
 }
 
 function filterEmptyPeaces(item: FilterSpec): FilterSpec {

@@ -376,6 +376,24 @@ sortUnique := func(list) {
     return quickSortInPlace(uniqueList)
 }
 
+/**
+ * Returns a slice with only unique elements.
+ *
+ * @param list: []any - a slice of elements
+ * @return unique slice: []any - a slice with unique elements
+ */
+unique := func(list) {
+	arr := []
+	map := {}
+	for _, item in list {
+		if is_undefined(map[item]) {
+			arr = append(arr, item)
+			map[item] = true
+		}
+	}
+	return arr
+}
+
 export ll.toStrict({
 	length: length,
 	safeAppend: safeAppend,
@@ -396,5 +414,6 @@ export ll.toStrict({
 	fromSet: fromSet,
 	slice: slice,
 	normalize: normalize,
-	sortUnique: sortUnique
+	sortUnique: sortUnique,
+	unique: unique
 })

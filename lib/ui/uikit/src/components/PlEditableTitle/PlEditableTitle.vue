@@ -31,6 +31,18 @@ const props = withDefaults(
      * If true, input will be focused on mount
      */
     autofocus?: boolean;
+    /**
+     * A function that validates the input value.
+     * @example
+     * ```ts
+     * validate: (v: string) => {
+     *   if (v.length < 3) {
+     *     throw Error('Title must be at least 3 characters');
+     *   }
+     * }
+     * ```
+     */
+    validate?: (v: string) => unknown;
   }>(),
   {
     placeholder: 'Title',
@@ -38,6 +50,7 @@ const props = withDefaults(
     prefix: undefined,
     maxLength: 1000,
     minLength: undefined,
+    validate: undefined,
   },
 );
 
@@ -56,6 +69,10 @@ const local = useTransformedModel(model, {
 
     if (props.minLength && v.length < props.minLength) {
       throw Error(`Min title length is ${props.minLength} characters`);
+    }
+
+    if (typeof props.validate === 'function') {
+      props.validate(v);
     }
 
     return v.trim();

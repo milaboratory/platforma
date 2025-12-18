@@ -11,6 +11,8 @@ import {
   PlTextField,
 } from '@milaboratories/uikit';
 import type { Annotation } from '../types';
+import { validateTitle } from '../utils';
+import { isEmpty } from 'es-toolkit/compat';
 
 // Models
 const annotation = defineModel<Annotation>('annotation', { required: true });
@@ -45,6 +47,7 @@ function handleAddStep() {
         max-width="600px"
         placeholder="Annotation Title"
         :autofocus="annotation.title.length === 0"
+        :validate="validateTitle"
       />
     </template>
     <template v-if="annotation" #body-content>
@@ -64,18 +67,20 @@ function handleAddStep() {
           </template>
         </PlElementList>
 
+        <PlBtnSecondary icon="add" @click="handleAddStep">
+          Add label
+        </PlBtnSecondary>
+
         <PlTextField
+          :class="[$style.defaultValue, { [$style.emptyDefaultValue]: isEmpty(annotation.defaultValue) }]"
           :model-value="annotation.defaultValue ?? ''"
           label="Label remaining with"
           placeholder="No label"
           clearable
+          helper="This label will be applied to the remaining rows, after all other filters are applied."
           @click.stop
           @update:model-value="annotation.defaultValue = $event === '' ? undefined : $event"
         />
-
-        <PlBtnSecondary icon="add" @click="handleAddStep">
-          Add label
-        </PlBtnSecondary>
       </div>
     </template>
     <template #footer-content>
@@ -112,5 +117,17 @@ function handleAddStep() {
 
 .stepItem {
   cursor: pointer;
+}
+
+.defaultValue {
+  margin-top: 8px;
+}
+.emptyDefaultValue {
+  opacity: 0.5;
+  transition: opacity 0.2s ease-in-out;
+
+  &:hover {
+    opacity: 1;
+  }
 }
 </style>
