@@ -20,7 +20,7 @@
     "watch": "ts-builder build --target browser-lib --watch --build-config ./build.browser-lib.config.js",
     "type-check": "ts-builder types --target browser-lib",
     "test:unit": "vitest run",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "create-svg-components": "node scripts/create-svg-components.js",
     "parse-icons-folder": "node scripts/parse-icons.js",
     "minify-icons": "svgo -f src/assets/icons/icon-assets -o src/assets/icons/icon-assets-min",
@@ -56,6 +56,7 @@
     "@milaboratories/eslint-config": "workspace:*",
     "jsdom": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "yarpm": "catalog:",
     "svgo": "catalog:",
     "typescript": "catalog:"

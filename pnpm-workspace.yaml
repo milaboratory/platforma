@@ -283,7 +283,7 @@ catalog:
   # Test
 
   'vitest': &vitest-version ^4.0.7
-  '@vitest/coverage-v8': *vitest-version
+  '@vitest/coverage-istanbul': *vitest-version
   '@faker-js/faker': ^9.2.0
   'happy-dom': ^15.11.7
   'jsdom': ^25.0.1

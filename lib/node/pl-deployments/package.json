@@ -46,7 +46,7 @@
     "@types/decompress": "catalog:",
     "@types/node": "catalog:",
     "@types/ssh2": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "testcontainers": "catalog:",

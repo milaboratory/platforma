@@ -4,16 +4,13 @@ export default defineConfig({
   test: {
     pool: 'threads',
     environment: 'node',
+    passWithNoTests: true,
     include: ['tests/**/*.test.ts'],
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'dist/',
-        'tests/',
-        '**/*.d.ts'
-      ]
+      include: ['src'],
+      provider: 'istanbul',
+      reporter: ['lcov', 'text'],
+      reportsDirectory: './coverage'
     }
   }
 });

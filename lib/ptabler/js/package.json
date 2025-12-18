@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "build": "ts-builder build --target node",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "type-check": "ts-builder types --target node",
     "lint": "eslint .",
@@ -34,6 +34,7 @@
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:"
   }
 }

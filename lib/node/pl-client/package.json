@@ -56,7 +56,7 @@
     "openapi-typescript": "catalog:",
     "@types/http-proxy": "catalog:",
     "@types/node": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "vitest": "catalog:",
     "typescript": "catalog:"
   }

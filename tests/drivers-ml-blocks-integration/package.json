@@ -7,7 +7,7 @@
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
-    "test": "vitest run"
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "undici": "catalog:",
@@ -35,6 +35,7 @@
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "@types/node": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }

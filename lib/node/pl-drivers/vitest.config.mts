@@ -4,9 +4,12 @@ export default defineConfig({
   test: {
     pool: 'threads',
     watch: false,
+    passWithNoTests: true,
     coverage: {
-      exclude: ['src/proto', '**/*.js'],
       include: ['src'],
+      provider: 'istanbul',
+      reporter: ['lcov', 'text'],
+      reportsDirectory: './coverage'
     }
   }
 });

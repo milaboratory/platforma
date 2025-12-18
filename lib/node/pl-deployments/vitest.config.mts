@@ -4,7 +4,13 @@ export default defineConfig({
   test: {
     pool: 'threads',
     watch: false,
+    passWithNoTests: true,
     testTimeout: 80000,
     hookTimeout: 80000, 
-  }
+    coverage: {
+      include: ['src'],
+      provider: 'istanbul',
+      reporter: ['lcov', 'text'],
+      reportsDirectory: './coverage'
+    }  }
 });

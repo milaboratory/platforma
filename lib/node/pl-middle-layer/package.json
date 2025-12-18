@@ -14,7 +14,7 @@
     "build": "ts-builder build --target node --build-config ./build.node.config.mjs",
     "watch": "ts-builder build --target node --build-config ./build.node.config.mjs --watch",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -60,6 +60,7 @@
     "@types/semver": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "@types/node": "catalog:",
     "@milaboratories/ts-configs": "workspace:*",
     "tslib": "catalog:"

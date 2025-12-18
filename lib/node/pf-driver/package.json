@@ -40,7 +40,7 @@
     "typescript": "catalog:",
     "tslib": "catalog:",
     "vitest": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "@types/node": "catalog:"
   },
   "dependencies": {

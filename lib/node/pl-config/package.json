@@ -38,7 +38,7 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "vitest": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "@types/node": "catalog:",
     "prettier": "catalog:",
     "tsconfig-paths": "catalog:",

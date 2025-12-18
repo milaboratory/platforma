@@ -34,7 +34,7 @@
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
     "@milaboratories/ts-configs": "workspace:*",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "vitest": "catalog:"
   }
 }

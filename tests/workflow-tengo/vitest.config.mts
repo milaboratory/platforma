@@ -6,6 +6,7 @@ export default defineConfig({
     setupFiles: ['./vitest/setup.worker-jitter.ts'],
 
     watch: false,
+    passWithNoTests: true,
     testTimeout: 15000,
     maxConcurrency: 1, // do not run tests of one file in parallel, even when they are marked with .concurrent()
     maxWorkers: 2,
@@ -21,5 +22,11 @@ export default defineConfig({
       seed: Number(process.env.VITEST_SEED ?? Date.now()),
       concurrent: false, // run tests per-file sequentially by default
     },
+    coverage: {
+      include: ['src'],
+      provider: 'istanbul',
+      reporter: ['lcov', 'text'],
+      reportsDirectory: './coverage'
+    }
   }
 });

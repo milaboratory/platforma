@@ -16,7 +16,7 @@
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
   },
   "files": [
@@ -30,7 +30,8 @@
     "@milaboratories/pl-tree": "workspace:*",
     "@milaboratories/computable": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

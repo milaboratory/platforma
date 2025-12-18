@@ -7,7 +7,7 @@
     "type-check": "ts-builder types --target node",
     "build": "oclif-index && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "lint": "eslint ."
   },
@@ -47,7 +47,8 @@
     "@types/archiver": "^6.0.3",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:"
   },
   "oclif": {
     "bin": "pl-pkg",
