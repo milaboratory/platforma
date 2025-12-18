@@ -1,5 +1,20 @@
 # @milaboratories/pl-tree
 
+## 1.8.22
+
+### Patch Changes
+
+- Updated dependencies [bf86c9c]
+  - @milaboratories/computable@2.7.5
+
+## 1.8.21
+
+### Patch Changes
+
+- Updated dependencies [6b35c32]
+  - @milaboratories/pl-client@2.16.14
+  - @milaboratories/pl-errors@1.1.46
+
 ## 1.8.20
 
 ### Patch Changes

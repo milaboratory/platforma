@@ -1,14 +1,22 @@
-# JS Builder
+# TS Builder
 
 Universal build tool for monorepo packages.
 
 ## Description
 
-JS Builder provides a unified interface for building different types of projects in the monorepo:
+TS Builder provides a unified interface for building different types of projects in the monorepo.
+
+### Block Targets (recommended for blocks)
+
+- `block-model` - Block model packages (ES + UMD bundle, uses Rollup)
+- `block-ui` - Block UI packages (Vue + browser, uses Vite, vue-tsc for type-check)
+- `block-test` - Block test packages (type-check only, no build)
+
+### General Targets
+
 - `node` - Node.js projects (uses Rollup)
-- `browser` - Browser applications (uses Vite)  
+- `browser` - Browser applications (uses Vite)
 - `browser-lib` - Browser libraries (uses Vite)
-- `block-model` - Block models (uses Rollup)
 
 ## Installation and Usage
 
@@ -98,19 +106,35 @@ ts-builder --target browser init-tsconfig
 - `serve --host <host>` - Host for dev server (default: localhost)
 - `types -p, --project <path>` - Path to tsconfig.json
 
-## Usage Examples
+## Block Development Examples
 
 ```bash
-# Example: build Node.js package
+# Block model: build
+ts-builder --target block-model build
+
+# Block UI: dev server
+ts-builder --target block-ui serve
+
+# Block UI: build for production
+ts-builder --target block-ui build
+
+# Block test: type-check only (no build supported)
+ts-builder --target block-test types
+```
+
+## General Usage Examples
+
+```bash
+# Build Node.js package
 ts-builder --target node build
 
-# Example: dev server for browser application
+# Dev server for browser application
 ts-builder --target browser serve --port 8080
 
-# Example: type checking for library
+# Type checking for library
 ts-builder --target browser-lib types
 
-# Example: initialize all configs for new project
+# Initialize configs for new project
 ts-builder --target node init-tsconfig
 ts-builder --target node init-build-config
 ```

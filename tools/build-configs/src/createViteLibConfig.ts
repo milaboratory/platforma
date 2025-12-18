@@ -4,17 +4,20 @@ import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 import dts from 'vite-plugin-dts';
 import { externalizeDeps } from 'vite-plugin-externalize-deps';
 import { createViteDevConfig } from './createViteDevConfig';
+import { ModuleResolutionKind } from 'typescript';
 
-export const createViteLibConfig = ((configEnv: ConfigEnv): UserConfig => {
-  const isProd = configEnv.mode === 'production';
+export const createViteLibConfig = (configEnv: ConfigEnv): UserConfig => {
   const useSources = process.env.USE_SOURCES === '1';
 
   return mergeConfig(createViteDevConfig(configEnv), {
     plugins: [
       dts({
-        // Override customConditions from tsconfig to not use 'sources' during build
-        // unless USE_SOURCES is explicitly set
-        compilerOptions: useSources ? undefined : { customConditions: [] },
+        compilerOptions: {
+          declaration: true,
+          declarationMap: true,
+          moduleResolution: useSources ? ModuleResolutionKind.Bundler : ModuleResolutionKind.NodeJs,
+          customConditions: useSources ? ['sources'] : [],
+        },
       }),
       externalizeDeps(),
       cssInjectedByJsPlugin({ relativeCSSInjection: true }),
@@ -34,9 +37,9 @@ export const createViteLibConfig = ((configEnv: ConfigEnv): UserConfig => {
           inlineDynamicImports: false,
           entryFileNames: '[name].js',
           chunkFileNames: '[name]-[hash].js',
-          assetFileNames: '[name][extname]'
-        }
+          assetFileNames: '[name][extname]',
+        },
       },
     },
   });
-})
+};

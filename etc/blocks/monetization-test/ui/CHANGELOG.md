@@ -1,5 +1,69 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.143
+
+### Patch Changes
+
+- Updated dependencies [76b89a7]
+  - @platforma-sdk/ui-vue@1.48.10
+
+## 1.1.142
+
+### Patch Changes
+
+- @platforma-sdk/model@1.48.4
+- @platforma-sdk/ui-vue@1.48.8
+
+## 1.1.141
+
+### Patch Changes
+
+- Updated dependencies [ce1303d]
+  - @platforma-sdk/ui-vue@1.48.6
+
+## 1.1.140
+
+### Patch Changes
+
+- Updated dependencies [1eb721e]
+  - @platforma-sdk/ui-vue@1.48.5
+  - @milaboratories/milaboratories.monetization-test.model@1.0.37
+  - @platforma-sdk/model@1.48.4
+
+## 1.1.139
+
+### Patch Changes
+
+- Updated dependencies [3e168c4]
+  - @platforma-sdk/model@1.48.4
+  - @milaboratories/milaboratories.monetization-test.model@1.0.37
+  - @platforma-sdk/ui-vue@1.48.4
+
+## 1.1.138
+
+### Patch Changes
+
+- @platforma-sdk/model@1.48.2
+- @platforma-sdk/ui-vue@1.48.2
+- @milaboratories/milaboratories.monetization-test.model@1.0.36
+
+## 1.1.137
+
+### Patch Changes
+
+- 557172d: Add eslint configuration files and lint scripts to published block model and UI packages
+- Updated dependencies [557172d]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.35
+
+## 1.1.136
+
+### Patch Changes
+
+- Updated dependencies [8398f3a]
+- Updated dependencies [8398f3a]
+- Updated dependencies [8398f3a]
+  - @platforma-sdk/ui-vue@1.48.0
+
 ## 1.1.135
 
 ### Patch Changes

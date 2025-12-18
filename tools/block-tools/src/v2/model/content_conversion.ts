@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import path from 'path';
+import path from 'node:path';
 import fsp from 'node:fs/promises';
 import * as mime from 'mime-types';
 import * as tar from 'tar';
-import {
+import type {
   ContentAbsoluteBinaryLocal,
   ContentAbsoluteFile,
   ContentAbsoluteFolder,
@@ -14,7 +14,7 @@ import {
   ContentExplicitString,
   ContentRelative,
   ContentRelativeBinary,
-  ContentRelativeText
+  ContentRelativeText,
 } from '@milaboratories/pl-model-middle-layer';
 import { tryResolve } from '@milaboratories/resolve-helper';
 
@@ -33,6 +33,7 @@ type ContentCtxUrl = {
 /** Describes a place relative to which any content references should be interpreted */
 export type ContentCtx = ContentCtxFs | ContentCtxUrl;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- utility function for future use
 function mustResolve(root: string, request: string): string {
   const res = tryResolve(root, request);
   if (res === undefined) throw new Error(`Can't resolve ${request} against ${root}`);
@@ -46,13 +47,13 @@ export function ResolvedModuleFile(moduleRoot: string) {
     if (result === undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Can't resolve ${request} against ${moduleRoot}`
+        message: `Can't resolve ${request} against ${moduleRoot}`,
       });
       return z.NEVER;
     }
     return {
       type: 'absolute-file',
-      file: result
+      file: result,
     };
   });
 }
@@ -75,21 +76,21 @@ export function ResolvedModuleFolder(
           throw new Error(`Unexpected resolve result ${result} with index file ${idxFile}`);
         return {
           type: 'absolute-folder',
-          folder: result.slice(0, result.length - idxFile.length)
+          folder: result.slice(0, result.length - idxFile.length),
         };
       }
     }
 
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `Can't resolve ${request} folder against ${moduleRoot}, no index file found (${indexFilesToLookFor.join(', ')})`
+      message: `Can't resolve ${request} folder against ${moduleRoot}, no index file found (${indexFilesToLookFor.join(', ')})`,
     });
     return z.NEVER;
   });
 }
 
 export function mapLocalToAbsolute(
-  root: string
+  root: string,
 ): <T extends ContentAnyLocal>(value: T) => Exclude<T, ContentRelative> | ContentAbsoluteFile {
   return <T extends ContentAnyLocal>(value: T) =>
     value.type === 'relative'
@@ -107,7 +108,7 @@ export function absoluteToString(): (value: ContentAbsoluteTextLocal) => Promise
 
 // TODO add type and size limitations
 export function absoluteToBase64(): (
-  value: ContentAbsoluteBinaryLocal
+value: ContentAbsoluteBinaryLocal
 ) => Promise<ContentExplicitBase64> {
   return async (value) => {
     if (value.type === 'absolute-file') {
@@ -116,14 +117,14 @@ export function absoluteToBase64(): (
       return {
         type: 'explicit-base64',
         mimeType,
-        content: await fsp.readFile(value.file, { encoding: 'base64' })
+        content: await fsp.readFile(value.file, { encoding: 'base64' }),
       };
     } else return value;
   };
 }
 
 export function absoluteToBytes(): (
-  value: ContentAbsoluteBinaryLocal
+value: ContentAbsoluteBinaryLocal
 ) => Promise<ContentExplicitBytes> {
   return async (value) => {
     if (value.type === 'absolute-file') {
@@ -132,13 +133,13 @@ export function absoluteToBytes(): (
       return {
         type: 'explicit-bytes',
         mimeType,
-        content: Buffer.from(await fsp.readFile(value.file))
+        content: Buffer.from(await fsp.readFile(value.file)),
       };
     } else if (value.type === 'explicit-base64') {
       return {
         type: 'explicit-bytes',
         mimeType: value.mimeType,
-        content: Buffer.from(value.content, 'base64')
+        content: Buffer.from(value.content, 'base64'),
       };
     } else return value;
   };
@@ -146,15 +147,16 @@ export function absoluteToBytes(): (
 
 export function cpAbsoluteToRelative(
   dstFolder: string,
-  fileAccumulator?: string[]
+  fileAccumulator?: string[],
 ): <T extends Exclude<ContentAnyLocal, ContentRelative>>(
-  value: T
-) => Promise<Exclude<T, ContentAbsoluteFile> | ContentRelative> {
+    value: T
+  ) => Promise<Exclude<T, ContentAbsoluteFile> | ContentRelative> {
   return async <T extends Exclude<ContentAnyLocal, ContentRelative>>(value: T) => {
     if (value.type === 'absolute-file') {
       const fileName = path.basename(value.file);
       const dst = path.resolve(dstFolder, fileName);
       fileAccumulator?.push(fileName);
+      // eslint-disable-next-line n/no-unsupported-features/node-builtins
       await fsp.cp(value.file, dst);
       return { type: 'relative', path: fileName };
     } else return value as Exclude<T, ContentAbsoluteFile>;
@@ -164,7 +166,7 @@ export function cpAbsoluteToRelative(
 export function packFolderToRelativeTgz(
   dstFolder: string,
   tgzName: string,
-  fileAccumulator?: string[]
+  fileAccumulator?: string[],
 ): (value: ContentAbsoluteFolder) => Promise<ContentRelative> {
   if (!tgzName.endsWith('.tgz')) throw new Error(`Unexpected tgz file name: ${tgzName}`);
   return async (value: ContentAbsoluteFolder) => {
@@ -173,9 +175,9 @@ export function packFolderToRelativeTgz(
       {
         gzip: true,
         file: dst,
-        cwd: value.folder
+        cwd: value.folder,
       },
-      ['.']
+      ['.'],
     );
     fileAccumulator?.push(tgzName);
     return { type: 'relative', path: tgzName };
@@ -185,7 +187,7 @@ export function packFolderToRelativeTgz(
 export type RelativeContentReader = (relativePath: string) => Promise<Buffer>;
 
 export function relativeToExplicitString(
-  reader: RelativeContentReader
+  reader: RelativeContentReader,
 ): (value: ContentRelativeText) => Promise<ContentExplicitString> {
   return async (value) =>
     value.type === 'explicit-string'
@@ -194,14 +196,14 @@ export function relativeToExplicitString(
 }
 
 export function relativeToContentString(
-  reader: RelativeContentReader
+  reader: RelativeContentReader,
 ): (value: ContentRelativeText) => Promise<string> {
   return async (value) =>
     value.type === 'explicit-string' ? value.content : (await reader(value.path)).toString('utf8');
 }
 
 export function relativeToExplicitBinary64(
-  reader: RelativeContentReader
+  reader: RelativeContentReader,
 ): (value: ContentRelativeBinary) => Promise<ContentExplicitBase64> {
   return async (value) => {
     if (value.type === 'explicit-base64') return value;
@@ -210,27 +212,27 @@ export function relativeToExplicitBinary64(
     return {
       type: 'explicit-base64',
       mimeType,
-      content: (await reader(value.path)).toString('base64')
+      content: (await reader(value.path)).toString('base64'),
     };
   };
 }
 
 export function relativeToExplicitBytes(
-  reader: RelativeContentReader
+  reader: RelativeContentReader,
 ): (value: ContentRelativeBinary) => Promise<ContentExplicitBytes> {
   return async (value) => {
     if (value.type === 'explicit-base64')
       return {
         type: 'explicit-bytes',
         mimeType: value.mimeType,
-        content: Buffer.from(value.content, 'base64')
+        content: Buffer.from(value.content, 'base64'),
       };
     const mimeType = mime.lookup(value.path);
     if (!mimeType) throw new Error(`Can't recognize mime type of the file: ${value.path}.`);
     return {
       type: 'explicit-bytes',
       mimeType,
-      content: await reader(value.path)
+      content: await reader(value.path),
     };
   };
 }

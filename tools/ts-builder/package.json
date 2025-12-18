@@ -1,6 +1,6 @@
 {
     "name": "@milaboratories/ts-builder",
-    "version": "1.0.6",
+    "version": "1.2.1",
     "description": "TS build tool for the milaboratories packages",
     "type": "module",
     "main": "./dist/index.js",
@@ -10,7 +10,10 @@
     },
     "scripts": {
         "build": "rollup -c",
-        "watch": "rollup -c --watch"
+        "watch": "rollup -c --watch",
+        "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+        "lint": "eslint .",
+        "type-check": "tsc --noEmit"
     },
     "dependencies": {
         "@milaboratories/build-configs": "workspace:*",
@@ -21,6 +24,10 @@
         "typescript": "catalog:",
         "vue-tsc": "catalog:",
         "vite": "catalog:"
+    },
+    "devDependencies": {
+        "@milaboratories/eslint-config": "workspace:*",
+        "eslint": "catalog:"
     },
     "files": [
         "dist",

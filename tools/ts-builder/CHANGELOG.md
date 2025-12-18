@@ -1,5 +1,52 @@
 # @milaboratories/ts-builder
 
+## 1.2.1
+
+### Patch Changes
+
+- 1eb721e: annotations default value
+- Updated dependencies [1eb721e]
+  - @milaboratories/build-configs@1.2.1
+
+## 1.2.0
+
+### Minor Changes
+
+- 25fd324: Standardize block build tooling with explicit targets and config exports
+
+  - Add `block-ui` and `block-test` targets to ts-builder
+  - `block-ui`: Uses Vite for building, vue-tsc for type-checking
+  - `block-test`: Type-check only, errors on build attempt
+  - Add clean export aliases for ts-configs: `block/model`, `block/ui`, `block/test`
+  - Add `test` export to eslint-config with vitest globals
+  - Create dedicated config files for each block target (tsconfig and vite/rollup configs)
+
+### Patch Changes
+
+- Updated dependencies [25fd324]
+  - @milaboratories/build-configs@1.2.0
+  - @milaboratories/ts-configs@1.2.0
+
+## 1.1.1
+
+### Patch Changes
+
+- 9e496f1: use custom typescript declaration for model separate bundle
+- Updated dependencies [9e496f1]
+  - @milaboratories/build-configs@1.1.1
+
+## 1.1.0
+
+### Minor Changes
+
+- 4a90a47: correct usage use-sources for typecheck command
+
+### Patch Changes
+
+- Updated dependencies [4a90a47]
+  - @milaboratories/build-configs@1.1.0
+  - @milaboratories/ts-configs@1.1.0
+
 ## 1.0.6
 
 ### Patch Changes

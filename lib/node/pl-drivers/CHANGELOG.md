@@ -1,5 +1,39 @@
 # @milaboratories/pl-drivers
 
+## 1.11.30
+
+### Patch Changes
+
+- Updated dependencies [bf86c9c]
+  - @milaboratories/computable@2.7.5
+  - @milaboratories/pl-tree@1.8.22
+
+## 1.11.29
+
+### Patch Changes
+
+- f62e11c: Proper sparse cache disposal
+- Updated dependencies [f62e11c]
+  - @milaboratories/helpers@1.12.1
+
+## 1.11.28
+
+### Patch Changes
+
+- Updated dependencies [6b35c32]
+  - @milaboratories/pl-client@2.16.14
+  - @milaboratories/pl-tree@1.8.21
+
+## 1.11.27
+
+### Patch Changes
+
+- c02c206: Fix infinite retry loop in download URL driver that caused test timeouts
+
+  The `recoverableErrorPredicate` always returned `true`, causing `URLAborted` and `DownloadNetworkError400` errors to be infinitely retried. Since `task.ts` only calls `change.markChanged()` for these specific errors before returning, `awaitChange()` would hang forever on any terminal error.
+
+  Now terminal errors (`URLAborted`, `DownloadNetworkError400`) are not retried, while transient errors (network issues, 5xx) still are.
+
 ## 1.11.26
 
 ### Patch Changes

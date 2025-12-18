@@ -1,5 +1,5 @@
 {
-  "version": "1.0.9",
+  "version": "1.2.1",
   "name": "@milaboratories/build-configs",
   "type": "module",
   "deprecated": {
@@ -28,16 +28,18 @@
     "./tsconfig_lib_bundled.json"
   ],
   "scripts": {
+    "build": "vite build",
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@rollup/plugin-commonjs": "catalog:",
     "@rollup/plugin-json": "catalog:",
     "@rollup/plugin-node-resolve": "catalog:",
     "@rollup/plugin-typescript": "catalog:",
-    "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "vue": "catalog:",
     "rollup": "catalog:",
     "rollup-plugin-cleandir": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
@@ -48,5 +50,9 @@
     "vite-plugin-css-injected-by-js": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vite-plugin-externalize-deps": "^0.9.0"
+  },
+  "devDependencies": {
+    "@milaboratories/eslint-config": "workspace:*",
+    "eslint": "catalog:"
   }
 }

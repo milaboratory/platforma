@@ -1,5 +1,32 @@
 # @milaboratories/uikit
 
+## 2.8.3
+
+### Patch Changes
+
+- Updated dependencies [f62e11c]
+  - @milaboratories/helpers@1.12.1
+  - @platforma-sdk/model@1.48.4
+
+## 2.8.2
+
+### Patch Changes
+
+- Updated dependencies [3e168c4]
+  - @platforma-sdk/model@1.48.4
+
+## 2.8.1
+
+### Patch Changes
+
+- @platforma-sdk/model@1.48.2
+
+## 2.8.0
+
+### Minor Changes
+
+- 8398f3a: Add PlPlaceholder and PlLoaderLogo components
+
 ## 2.7.3
 
 ### Patch Changes

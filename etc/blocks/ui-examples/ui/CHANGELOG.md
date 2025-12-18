@@ -1,5 +1,35 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.7.5
+
+### Patch Changes
+
+- Updated dependencies [3e168c4]
+  - @platforma-sdk/model@1.48.4
+  - @milaboratories/milaboratories.ui-examples.model@1.3.12
+
+## 1.7.4
+
+### Patch Changes
+
+- @platforma-sdk/model@1.48.2
+- @milaboratories/milaboratories.ui-examples.model@1.3.11
+
+## 1.7.3
+
+### Patch Changes
+
+- 557172d: Add eslint configuration files and lint scripts to published block model and UI packages
+- Updated dependencies [557172d]
+  - @milaboratories/milaboratories.ui-examples.model@1.3.10
+
+## 1.7.2
+
+### Patch Changes
+
+- 8398f3a: Updated PlSplashPage example
+- 8398f3a: Remove overlayType prop from PlAgOverlayLoadingParams
+
 ## 1.7.1
 
 ### Patch Changes

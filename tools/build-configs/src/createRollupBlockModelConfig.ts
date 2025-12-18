@@ -1,29 +1,37 @@
 import commonjs from '@rollup/plugin-commonjs';
-import resolve from '@rollup/plugin-node-resolve';
-import typescript from '@rollup/plugin-typescript';
-import { RollupOptions } from 'rollup';
+import type { RollupOptions } from 'rollup';
 import { createRollupNodeConfig } from './createRollupNodeConfig';
+import { createRollupTypescriptPlugin, createRollupResolvePlugin } from './rollupUtils';
 
 export function createRollupBlockModelConfig(props?: {
   entry?: string[];
   output?: string;
-  formats?: ('es' | 'cjs')[]
+  formats?: ('es' | 'cjs')[];
 }): RollupOptions[] {
   const base = createRollupNodeConfig(props);
+  const input = props?.entry ?? ['./src/index.ts'];
+  const output = props?.output ?? 'dist';
   const useSources = process.env.USE_SOURCES === '1';
-  
+
   return [
     ...base,
     {
-      input: props?.entry ?? ['./src/index.ts'],
+      input,
       plugins: [
-        typescript(),
-        resolve(useSources ? { exportConditions: ['sources'] } : {}),
+        createRollupTypescriptPlugin({ output, useSources }),
+        createRollupResolvePlugin({ useSources }),
         commonjs(),
       ],
+      onwarn(warning, warn) {
+        // Suppress TS5098: customConditions requires moduleResolution bundler/node16/nodenext
+        if (warning.code === 'PLUGIN_WARNING' && warning.message?.includes('TS5098')) {
+          return;
+        }
+        warn(warning);
+      },
       output: [
         {
-          dir: props?.output ?? 'dist',
+          dir: output,
           name: 'block-model',
           format: 'umd',
           entryFileNames: 'bundle.js',

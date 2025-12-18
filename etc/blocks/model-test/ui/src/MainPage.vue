@@ -8,6 +8,6 @@ const app = useApp();
 
 <template>
   <PlBlockPage>
-    <PlTextField label="Enter title" v-model:model-value="app.model.args.titleArg" />
+    <PlTextField v-model:model-value="app.model.args.titleArg" label="Enter title" />
   </PlBlockPage>
 </template>

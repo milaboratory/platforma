@@ -68,7 +68,7 @@ catalogs:
       version: 16.0.1
     '@rollup/plugin-typescript':
       specifier: ^12.1.4
-      version: 12.1.4
+      version: 12.3.0
     '@stylistic/eslint-plugin':
       specifier: ^2.11.0
       version: 2.11.0
@@ -356,15 +356,6 @@ importers:
       '@changesets/cli':
         specifier: 'catalog:'
         version: 2.29.5
-      '@rollup/plugin-commonjs':
-        specifier: 'catalog:'
-        version: 28.0.6(rollup@4.52.4)
-      '@rollup/plugin-node-resolve':
-        specifier: 'catalog:'
-        version: 16.0.1(rollup@4.52.4)
-      '@rollup/plugin-typescript':
-        specifier: 'catalog:'
-        version: 12.1.4(rollup@4.52.4)(tslib@2.8.1)(typescript@5.6.3)
       '@types/node':
         specifier: 'catalog:'
         version: 24.5.2
@@ -380,9 +371,6 @@ importers:
       rollup:
         specifier: 'catalog:'
         version: 4.52.4
-      rollup-plugin-node-externals:
-        specifier: 'catalog:'
-        version: 8.0.0(rollup@4.52.4)
       turbo:
         specifier: 'catalog:'
         version: 2.5.3
@@ -436,6 +424,12 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -467,6 +461,12 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -524,6 +524,12 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -558,6 +564,12 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -615,6 +627,12 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -643,6 +661,12 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -697,6 +721,12 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -722,6 +752,12 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -773,6 +809,12 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -804,6 +846,12 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -855,6 +903,12 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -886,6 +940,12 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -943,6 +1003,12 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -974,6 +1040,12 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1071,6 +1143,12 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1128,6 +1206,12 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1162,9 +1246,15 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
       '@zip.js/zip.js':
         specifier: 'catalog:'
         version: 2.8.8
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1222,6 +1312,12 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1256,6 +1352,9 @@ importers:
       '@milaboratories/uikit':
         specifier: workspace:*
         version: link:../../../../lib/ui/uikit
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
       '@platforma-sdk/ui-vue':
         specifier: workspace:*
         version: link:../../../../sdk/ui-vue
@@ -1265,6 +1364,9 @@ importers:
       ag-grid-vue3:
         specifier: 'catalog:'
         version: 34.1.2(vue@3.5.24(typescript@5.6.3))
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1331,6 +1433,12 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1359,6 +1467,12 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -3122,6 +3236,9 @@ importers:
       dedent:
         specifier: 'catalog:'
         version: 1.7.0
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.39.10
       vitest:
         specifier: 'catalog:'
         version: 4.0.7(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
@@ -3183,6 +3300,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../build-configs
+      '@milaboratories/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@milaboratories/oclif-index':
         specifier: workspace:*
         version: link:../oclif-index
@@ -3204,6 +3324,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 4.0.7(vitest@4.0.7(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       oclif:
         specifier: 'catalog:'
         version: 4.16.2(@types/node@24.5.2)
@@ -3249,10 +3372,7 @@ importers:
         version: 16.0.1(rollup@4.52.4)
       '@rollup/plugin-typescript':
         specifier: 'catalog:'
-        version: 12.1.4(rollup@4.52.4)(tslib@2.8.1)(typescript@5.6.3)
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.5.2
+        version: 12.3.0(rollup@4.52.4)(tslib@2.8.1)(typescript@5.6.3)
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))(vue@3.5.24(typescript@5.6.3))
@@ -3286,6 +3406,16 @@ importers:
       vite-plugin-externalize-deps:
         specifier: ^0.9.0
         version: 0.9.0(vite@6.3.5(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.24(typescript@5.6.3)
+    devDependencies:
+      '@milaboratories/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
 
   tools/eslint-config:
     dependencies:
@@ -3463,6 +3593,9 @@ importers:
       '@types/readline-sync':
         specifier: 'catalog:'
         version: 1.4.8
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
       prettier:
         specifier: 'catalog:'
         version: 3.4.1
@@ -3567,6 +3700,13 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 2.2.10(typescript@5.6.3)
+    devDependencies:
+      '@milaboratories/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
 
   tools/ts-configs: {}
 
@@ -5173,8 +5313,8 @@ packages:
       rollup:
         optional: true
 
-  '@rollup/plugin-typescript@12.1.4':
-    resolution: {integrity: sha512-s5Hx+EtN60LMlDBvl5f04bEiFZmAepk27Q+mr85L/00zPDn1jtzlTV6FWn81MaIwqfWzKxmOJrBWHU6vtQyedQ==}
+  '@rollup/plugin-typescript@12.3.0':
+    resolution: {integrity: sha512-7DP0/p7y3t67+NabT9f8oTBFE6gGkto4SA6Np2oudYmZE/m1dt8RB0SjL1msMxFpLo631qjRCcBlAbq1ml/Big==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       rollup: ^2.14.0||^3.0.0||^4.0.0
@@ -11435,7 +11575,7 @@ snapshots:
     optionalDependencies:
       rollup: 4.52.4
 
-  '@rollup/plugin-typescript@12.1.4(rollup@4.52.4)(tslib@2.8.1)(typescript@5.6.3)':
+  '@rollup/plugin-typescript@12.3.0(rollup@4.52.4)(tslib@2.8.1)(typescript@5.6.3)':
     dependencies:
       '@rollup/pluginutils': 5.1.4(rollup@4.52.4)
       resolve: 1.22.8

@@ -130,7 +130,7 @@ export async function defaultPlClient(): Promise<PlClient> {
   }
 
   if (authInformation === undefined) {
-    const client = new UnauthenticatedPlClient(config);
+    const client = await UnauthenticatedPlClient.build(config);
 
     if (await client.requireAuth()) {
       if (config.user === undefined || config.password === undefined)

@@ -1,16 +1,13 @@
-import {
-  Args,
-  BlockModel,
-  getJsonField,
+import type {
   InferHrefType,
-  InferOutputsType,
-  isEmpty,
-  not
+  InferOutputsType } from '@platforma-sdk/model';
+import {
+  BlockModel,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
 export const $BlockArgs = z.object({
-  numbers: z.array(z.coerce.number())
+  numbers: z.array(z.coerce.number()),
 });
 
 export type BlockArgs = z.infer<typeof $BlockArgs>;
@@ -23,7 +20,7 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('errorIfNumberIs999', (ctx) => {
     if (ctx.args.numbers.length === 1 && ctx.args.numbers[0] === 999) {
-      return ctx.prerun?.resolve('numbers')?.getFileContentAsJson<number[]>()
+      return ctx.prerun?.resolve('numbers')?.getFileContentAsJson<number[]>();
     }
     return ctx.args.numbers;
   })
@@ -32,7 +29,7 @@ export const platforma = BlockModel.create('Heavy')
 
   .argsValid((ctx) => ctx.args.numbers.length > 0)
 
-  .sections((ctx) => {
+  .sections((_ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
   })
 

@@ -1,5 +1,67 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.0.196
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.143
+
+## 1.0.195
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.142
+
+## 1.0.194
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.58
+
+## 1.0.193
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.57
+- @milaboratories/milaboratories.monetization-test.ui@1.1.141
+
+## 1.0.192
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.37
+- @milaboratories/milaboratories.monetization-test.ui@1.1.140
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.56
+
+## 1.0.191
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.37
+- @milaboratories/milaboratories.monetization-test.ui@1.1.139
+
+## 1.0.190
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.55
+- @milaboratories/milaboratories.monetization-test.model@1.0.36
+- @milaboratories/milaboratories.monetization-test.ui@1.1.138
+
+## 1.0.189
+
+### Patch Changes
+
+- Updated dependencies [557172d]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.35
+  - @milaboratories/milaboratories.monetization-test.ui@1.1.137
+
+## 1.0.188
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.136
+
 ## 1.0.187
 
 ### Patch Changes

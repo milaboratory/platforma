@@ -1,19 +1,20 @@
+import type {
+  BlockPackId } from '@milaboratories/pl-model-middle-layer';
 import {
   AnyChannel,
   BlockComponentsManifest,
   BlockPackDescriptionManifest,
-  BlockPackId,
   BlockPackIdNoVersion,
   BlockPackMeta,
   ContentRelativeBinary,
   ContentRelativeText,
   CreateBlockPackDescriptionSchema,
-  SemVer,
   Sha256Schema,
-  VersionWithChannels
+  VersionWithChannels,
 } from '@milaboratories/pl-model-middle-layer';
 import { z } from 'zod';
-import { RelativeContentReader, relativeToExplicitBytes, relativeToExplicitString } from '../model';
+import type { RelativeContentReader } from '../model';
+import { relativeToExplicitBytes, relativeToExplicitString } from '../model';
 
 export const MainPrefix = 'v2/';
 
@@ -43,13 +44,13 @@ export const ManifestSuffix = '/' + ManifestFileName;
 export const PackageOverviewVersionEntry = z.object({
   description: BlockPackDescriptionManifest,
   channels: z.array(z.string()).default(() => []),
-  manifestSha256: Sha256Schema
+  manifestSha256: Sha256Schema,
 }).passthrough();
 export type PackageOverviewVersionEntry = z.infer<typeof PackageOverviewVersionEntry>;
 
 export const PackageOverview = z.object({
   schema: z.literal('v2'),
-  versions: z.array(PackageOverviewVersionEntry)
+  versions: z.array(PackageOverviewVersionEntry),
 }).passthrough();
 export type PackageOverview = z.infer<typeof PackageOverview>;
 
@@ -69,14 +70,14 @@ export function packageChannelPrefix(bp: BlockPackId): string {
   return `${MainPrefix}${packageChannelPrefixInsideV2(bp)}`;
 }
 
-export const PackageManifestPattern =
-  /(?<packageKeyWithoutVersion>(?<organization>[^\/]+)\/(?<name>[^\/]+))\/(?<version>[^\/]+)\/manifest\.json$/;
+export const PackageManifestPattern
+  = /(?<packageKeyWithoutVersion>(?<organization>[^/]+)\/(?<name>[^/]+))\/(?<version>[^/]+)\/manifest\.json$/;
 
 export const GlobalOverviewPath = `${MainPrefix}${GlobalOverviewFileName}`;
 export const GlobalOverviewGzPath = `${MainPrefix}${GlobalOverviewGzFileName}`;
 
 export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
-  descriptionType: Description
+  descriptionType: Description,
 ) {
   const universalSchema = z.object({
     id: BlockPackIdNoVersion,
@@ -92,10 +93,10 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
         z.string(),
         z.object({
           description: descriptionType,
-          manifestSha256: Sha256Schema
-        }).passthrough()
+          manifestSha256: Sha256Schema,
+        }).passthrough(),
       )
-      .default({})
+      .default({}),
   }).passthrough();
   return (
     universalSchema
@@ -104,9 +105,10 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
         else
           return {
             ...o,
-            allVersionsWithChannels: o.allVersions!.map((v) => ({ version: v, channels: [] }))
+            allVersionsWithChannels: o.allVersions!.map((v) => ({ version: v, channels: [] })),
           };
       })
+      /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
       // make sure "any" channel set from main body
       .transform((o: any) =>
         o.latestByChannel[AnyChannel]
@@ -115,10 +117,11 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
               ...o,
               latestByChannel: {
                 ...o.latestByChannel,
-                [AnyChannel]: { description: o.latest!, manifestSha256: o.latestManifestSha256! }
-              }
-            }
+                [AnyChannel]: { description: o.latest!, manifestSha256: o.latestManifestSha256! },
+              },
+            },
       )
+      /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
       .pipe(universalSchema.required({ allVersionsWithChannels: true }))
   );
 }
@@ -126,11 +129,11 @@ export const GlobalOverviewEntryReg = GlobalOverviewEntry(BlockPackDescriptionMa
 export type GlobalOverviewEntryReg = z.infer<typeof GlobalOverviewEntryReg>;
 
 export function GlobalOverview<const Description extends z.ZodTypeAny>(
-  descriptionType: Description
+  descriptionType: Description,
 ) {
   return z.object({
     schema: z.literal('v2'),
-    packages: z.array(GlobalOverviewEntry(descriptionType))
+    packages: z.array(GlobalOverviewEntry(descriptionType)),
   }).passthrough();
 }
 
@@ -142,8 +145,8 @@ export function BlockDescriptionToExplicitBinaryBytes(reader: RelativeContentRea
     BlockComponentsManifest,
     BlockPackMeta(
       ContentRelativeText.transform(relativeToExplicitString(reader)),
-      ContentRelativeBinary.transform(relativeToExplicitBytes(reader))
-    )
+      ContentRelativeBinary.transform(relativeToExplicitBytes(reader)),
+    ),
   );
 }
 export function GlobalOverviewToExplicitBinaryBytes(reader: RelativeContentReader) {
@@ -152,9 +155,9 @@ export function GlobalOverviewToExplicitBinaryBytes(reader: RelativeContentReade
       BlockComponentsManifest,
       BlockPackMeta(
         ContentRelativeText.transform(relativeToExplicitString(reader)),
-        ContentRelativeBinary.transform(relativeToExplicitBytes(reader))
-      )
-    )
+        ContentRelativeBinary.transform(relativeToExplicitBytes(reader)),
+      ),
+    ),
   );
 }
 export type GlobalOverviewExplicitBinaryBytes = z.infer<
@@ -167,9 +170,9 @@ export function GlobalOverviewToExplicitBinaryBase64(reader: RelativeContentRead
       BlockComponentsManifest,
       BlockPackMeta(
         ContentRelativeText.transform(relativeToExplicitString(reader)),
-        ContentRelativeBinary.transform(relativeToExplicitBytes(reader))
-      )
-    )
+        ContentRelativeBinary.transform(relativeToExplicitBytes(reader)),
+      ),
+    ),
   );
 }
 export type GlobalOverviewExplicitBinaryBase64 = z.infer<

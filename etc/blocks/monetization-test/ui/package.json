@@ -1,13 +1,13 @@
 {
   "name": "@milaboratories/milaboratories.monetization-test.ui",
-  "version": "1.1.135",
+  "version": "1.1.143",
   "type": "module",
   "scripts": {
-    "dev": "ts-builder serve --target browser",
+    "dev": "ts-builder serve --target block-ui",
     "lint": "eslint .",
-    "watch": "ts-builder build --target browser --watch",
-    "build": "ts-builder build --target browser",
-    "type-check": "ts-builder types --target browser"
+    "watch": "ts-builder build --target block-ui --watch",
+    "build": "ts-builder build --target block-ui",
+    "type-check": "ts-builder types --target block-ui"
   },
   "dependencies": {
     "@milaboratories/milaboratories.monetization-test.model": "workspace:*",
@@ -17,9 +17,11 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@platforma-sdk/eslint-config": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/build-configs": "workspace:*",
+    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

@@ -1,5 +1,31 @@
 # @milaboratories/pf-driver
 
+## 1.0.14
+
+### Patch Changes
+
+- 36c5cc7: Make PFrameDriverError messages static
+
+## 1.0.13
+
+### Patch Changes
+
+- f62e11c: Proper sparse cache disposal
+  - @platforma-sdk/model@1.48.4
+
+## 1.0.12
+
+### Patch Changes
+
+- Updated dependencies [3e168c4]
+  - @platforma-sdk/model@1.48.4
+
+## 1.0.11
+
+### Patch Changes
+
+- @platforma-sdk/model@1.48.2
+
 ## 1.0.10
 
 ### Patch Changes

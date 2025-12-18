@@ -17,6 +17,7 @@ import {
   matchAxisId,
   getAxisId,
   canonicalizeJson,
+  isAbortError,
 } from '@platforma-sdk/model';
 import type {
   CellRendererSelectorFunc,
@@ -561,6 +562,7 @@ watch(
         }
       }).catch((error: unknown) => {
         if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
+        if (isAbortError(error)) return;
         console.trace(error);
       }).finally(() => {
         if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;

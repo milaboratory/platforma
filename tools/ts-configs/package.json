@@ -1,11 +1,16 @@
 {
-  "version": "1.0.6",
+  "version": "1.2.0",
   "name": "@milaboratories/ts-configs",
   "exports": {
     "./package.json": "./package.json",
     "./browser": "./src/tsconfig.browser.json",
+    "./node": "./src/tsconfig.node.json",
+    "./block/model": "./src/blocks/tsconfig.model.json",
+    "./block/ui": "./src/blocks/tsconfig.ui.json",
+    "./block/test": "./src/blocks/tsconfig.test.json",
     "./*": "./src/*"
   },
-  "scripts": {},
-  "dependencies": {}
+  "scripts": {
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+  }
 }

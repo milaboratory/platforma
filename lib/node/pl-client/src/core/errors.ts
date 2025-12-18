@@ -36,6 +36,7 @@ export function isCancelError(err: unknown, nested: boolean = false): boolean {
 export function isAbortedError(err: unknown, nested: boolean = false): boolean {
   if (err instanceof Aborted || (err as any).name == 'AbortError') return true;
   if ((err as any).code == 'ABORT_ERR') return true;
+  if (err instanceof DOMException && err.code === DOMException.ABORT_ERR) return true; // WebSocket error
   if ((err as any).name == 'RpcError' && (err as any).code == 'ABORTED') return true;
   if ((err as any).name == 'RESTError' && (err as any).status.code == Code.ABORTED) return true;
   if ((err as any).cause !== undefined && !nested) isAbortedError((err as any).cause, true);
@@ -106,9 +107,17 @@ export class RESTError extends PlError {
 }
 
 export function rethrowMeaningfulError(error: any, wrapIfUnknown: boolean = false): never {
-  if (isUnauthenticated(error)) throw new UnauthenticatedError(error.message);
-  if (isConnectionProblem(error)) throw new DisconnectedError(error.message);
+  if (isUnauthenticated(error)) {
+    if (error instanceof UnauthenticatedError) throw error;
+    throw new UnauthenticatedError(error.message);
+  }
+  if (isConnectionProblem(error)) {
+    if (error instanceof DisconnectedError) throw error;
+    throw new DisconnectedError(error.message);
+  }
   if (isTimeoutOrCancelError(error)) throw new Aborted(error);
-  if (wrapIfUnknown) throw new Error(error.message, { cause: error });
-  else throw error;
+  if (wrapIfUnknown) {
+    const message = error.message || String(error) || 'Unknown error';
+    throw new Error(message, { cause: error });
+  } else throw error;
 }

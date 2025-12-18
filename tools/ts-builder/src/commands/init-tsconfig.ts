@@ -1,10 +1,10 @@
 import { Command } from 'commander';
 import {
-    createTsConfig,
-    getGlobalOptions,
-    getTarget,
-    type CommandOptions,
-    type TargetType
+  createTsConfig,
+  getGlobalOptions,
+  getTarget,
+  type CommandOptions,
+  type TargetType,
 } from './utils/index';
 
 export const initTsconfigCommand = new Command('init-tsconfig')
@@ -13,7 +13,7 @@ export const initTsconfigCommand = new Command('init-tsconfig')
   .action(async (options: CommandOptions, command) => {
     const globalOpts = getGlobalOptions(command);
     const target = getTarget(options, globalOpts) as TargetType;
-    
+
     console.log(`Initializing tsconfig.json for ${target} target...`);
 
     try {

@@ -1,20 +1,20 @@
 import { Command } from 'commander';
 import {
   executeCommand,
+  getConfigInfo,
   getGlobalOptions,
   getValidatedConfigPath,
   resolveVite,
   validateTargetForBrowser,
-  type TargetType
 } from './utils/index';
 
 export const serveCommand = new Command('serve')
   .description('Start development server')
-  .option('-p, --port <port>', 'Port number', '3000')
-  .option('--host <host>', 'Host address', 'localhost')
+  .option('-p, --port <port>', 'Port number')
+  .option('--host <host>', 'Host address')
   .action(async (options, command) => {
     const globalOpts = getGlobalOptions(command);
-    const target = globalOpts.target as TargetType;
+    const target = globalOpts.target;
     const customServeConfig = globalOpts.serveConfig;
     const useSources = globalOpts.useSources;
 
@@ -25,16 +25,16 @@ export const serveCommand = new Command('serve')
     try {
       const viteCommand = resolveVite();
       const viteArgs = ['dev'];
-      const configPath = getValidatedConfigPath(customServeConfig, `vite.${target}.config.js`);
-      
+      const configInfo = getConfigInfo(target);
+      const configPath = getValidatedConfigPath(customServeConfig, configInfo!.filename);
+
       viteArgs.push('--config', configPath);
-      
-      viteArgs.push('--port', options.port);
-      viteArgs.push('--host', options.host);
+
+      if (options.port) viteArgs.push('--port', options.port);
+      if (options.host) viteArgs.push('--host', options.host);
 
       const env = useSources ? { USE_SOURCES: '1' } : undefined;
       await executeCommand(viteCommand, viteArgs, env);
-      
     } catch (error) {
       console.error('Failed to start dev server:', error);
       process.exit(1);

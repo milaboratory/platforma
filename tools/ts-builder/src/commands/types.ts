@@ -1,13 +1,14 @@
 import { Command } from 'commander';
-import { existsSync } from 'fs';
-import { executeCommand, getGlobalOptions, resolveTypeChecker, type TargetType } from './utils/index';
+import { existsSync } from 'node:fs';
+import { executeCommand, getGlobalOptions, resolveTypeChecker } from './utils/index';
 
 export const typesCommand = new Command('types')
   .description('Type check the project')
   .option('-p, --project <path>', 'Path to tsconfig.json', './tsconfig.json')
   .action(async (options, command) => {
     const globalOpts = getGlobalOptions(command);
-    const target = globalOpts.target as TargetType;
+    const target = globalOpts.target;
+    const useSources = globalOpts.useSources;
     const tsconfigPath = options.project;
 
     if (!existsSync(tsconfigPath)) {
@@ -16,7 +17,11 @@ export const typesCommand = new Command('types')
     }
 
     const commandPath = resolveTypeChecker(target);
-    const args = ['--noEmit', '--project', tsconfigPath];
-    
+    const args = [
+      '--noEmit',
+      '--project', tsconfigPath,
+      '--customConditions', useSources ? 'sources' : ',',
+    ];
+
     await executeCommand(commandPath, args);
   });

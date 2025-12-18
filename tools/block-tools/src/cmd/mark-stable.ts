@@ -1,10 +1,9 @@
 import { Command, Flags } from '@oclif/core';
 import { BlockRegistryV2, loadPackDescriptionRaw } from '../v2';
-import path from 'path';
+import path from 'node:path';
 import {
   overrideDescriptionVersion,
-  overrideManifestVersion,
-  StableChannel
+  StableChannel,
 } from '@milaboratories/pl-model-middle-layer';
 import { storageByUrl } from '../io';
 import { OclifLoggerAdapter } from '@milaboratories/ts-helpers-oclif';
@@ -13,46 +12,46 @@ export default class MarkStable extends Command {
   static description = 'Mark target block stable';
 
   static flags = {
-    modulePath: Flags.string({
+    'modulePath': Flags.string({
       char: 'i',
       summary: 'input module path',
       helpValue: '<path>',
-      default: '.'
+      default: '.',
     }),
 
-    channel: Flags.string({
+    'channel': Flags.string({
       char: 'c',
       hidden: true,
       summary: 'custom channel',
       helpValue: '<channel name>',
-      default: StableChannel
+      default: StableChannel,
     }),
 
     'version-override': Flags.file({
       char: 'v',
-      summary: 'override package version'
+      summary: 'override package version',
     }),
 
-    registry: Flags.string({
+    'registry': Flags.string({
       char: 'r',
       summary: 'full address of the registry',
       helpValue: '<address>',
       env: 'PL_REGISTRY',
-      required: true
+      required: true,
     }),
 
-    refresh: Flags.boolean({
+    'refresh': Flags.boolean({
       summary: 'refresh repository after adding the package',
       default: true,
       allowNo: true,
-      env: 'PL_REGISTRY_REFRESH'
+      env: 'PL_REGISTRY_REFRESH',
     }),
 
-    unmark: Flags.boolean({
+    'unmark': Flags.boolean({
       summary:
         'reverses meaning of this command, flag can be used to remove "stable" flag from the package',
-      default: false
-    })
+      default: false,
+    }),
   };
 
   public async run(): Promise<void> {

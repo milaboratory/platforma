@@ -25,7 +25,9 @@ export type FolderPath = Branded<string, 'FolderPath'>;
 
 export function makeFolderPath(dataFolder: string): FolderPath {
   if (!fs.statSync(dataFolder, { throwIfNoEntry: false })?.isDirectory()) {
-    throw new PFrameDriverError(`Data folder ${dataFolder} does not exist`);
+    const error = new PFrameDriverError(`Invalid data folder`);
+    error.cause = new Error(`Folder ${dataFolder} does not exist`);
+    throw error;
   }
   return dataFolder as FolderPath;
 }
@@ -48,14 +50,20 @@ class LocalBlobProviderImpl
   protected createNewResource(params: FileName, _key: PFrameInternal.PFrameBlobId): FilePath {
     const filePath = path.join(this.dataFolder, params);
     if (!fs.statSync(filePath, { throwIfNoEntry: false })?.isFile()) {
-      throw new PFrameDriverError(`File ${filePath} does not exist`);
+      const error = new PFrameDriverError(`Invalid file name`);
+      error.cause = new Error(`File ${filePath} does not exist`);
+      throw error;
     }
     return filePath as FilePath;
   }
 
   public getByKey(blobId: PFrameInternal.PFrameBlobId): FilePath {
     const resource = super.tryGetByKey(blobId);
-    if (!resource) throw new PFrameDriverError(`Local blob with id ${blobId} not found.`);
+    if (!resource) {
+      const error = new PFrameDriverError(`Invalid blob id`);
+      error.cause = new Error(`Blob with id ${blobId} not found.`);
+      throw error;
+    }
     return resource;
   }
 
