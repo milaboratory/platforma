@@ -8,6 +8,12 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     coverage: {
       include: ['src'],
+      exclude: [
+        'node_modules/',
+        'dist/',
+        'tests/',
+        '**/*.d.ts'
+      ],
       provider: 'istanbul',
       reporter: ['lcov', 'text'],
       reportsDirectory: './coverage'

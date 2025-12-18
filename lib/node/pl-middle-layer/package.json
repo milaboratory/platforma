@@ -61,6 +61,7 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
     "@types/node": "catalog:",
     "@milaboratories/ts-configs": "workspace:*",
     "tslib": "catalog:"

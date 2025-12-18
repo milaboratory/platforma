@@ -4,6 +4,7 @@
   "description": "Tests for block registry reader",
   "version": "1.1.0",
   "scripts": {
+    "lint": "eslint .",
     "test": "vitest run --coverage"
   },
   "//": {
@@ -17,6 +18,8 @@
     "@platforma-sdk/block-tools": "workspace:*",
     "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
+    "@milaboratories/eslint-config": "workspace:*",
     "@types/node": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }

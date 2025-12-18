@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-expect-error legacy code
 import init from '../assets/kalign';
 
 export default async function kalign(

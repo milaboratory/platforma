@@ -57,6 +57,7 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
     "@vue/test-utils": "catalog:",
     "yarpm": "catalog:",
     "fast-json-patch": "catalog:",

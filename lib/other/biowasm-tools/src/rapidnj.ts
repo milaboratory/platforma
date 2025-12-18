@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-expect-error legacy code
 import init from '../assets/rapidnj';
 
 export default async function rapidnj(

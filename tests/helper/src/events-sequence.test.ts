@@ -1,8 +1,8 @@
-import {test, expect} from 'vitest';
-import {utils} from '@milaboratories/helpers';
-import {sequence, Emitter} from '@milaboratories/sequences';
+import { test, expect } from 'vitest';
+import { utils } from '@milaboratories/helpers';
+import { sequence, Emitter } from '@milaboratories/sequences';
 
-const {delay, timer} = utils;
+const { delay, timer } = utils;
 
 test('test 1', async () => {
   async function* gen() {
@@ -13,7 +13,7 @@ test('test 1', async () => {
 
   const s = sequence(gen());
 
-  const values = await s.map(v => v + 1).map(v => v * 10).filter(v => v % 2 === 0).toArray();
+  const values = await s.map((v) => v + 1).map((v) => v * 10).filter((v) => v % 2 === 0).toArray();
 
   expect(values.reduce((x, y) => x + y)).toBe(650);
 }, 100000);
@@ -33,17 +33,16 @@ test('InfiniteTest', async () => {
     }
   }
 
-  const s = sequence(gen()).map(v => `dt: ${v} ms`);
+  const s = sequence(gen()).map((v) => `dt: ${v} ms`);
 
   const dt = timer();
 
-  for await (const v of s.it()) {
+  for await (const _v of s.it()) {
     // console.log('v', v);
   }
 
   expect(dt()).toBeGreaterThan(DELAY_MS);
 }, 100000);
-
 
 test('MergeTest', async () => {
   async function* gen(delta: number) {
@@ -59,10 +58,10 @@ test('MergeTest', async () => {
     }
   }
 
-  const s1 = sequence(gen(10)).map(v => ['s1', v]);
-  const s2 = sequence(gen(5)).map(v => ['s2', v]);
+  const s1 = sequence(gen(10)).map((v) => ['s1', v]);
+  const s2 = sequence(gen(5)).map((v) => ['s2', v]);
 
-  for await (const v of s1.merge(s2).it()) {
+  for await (const _v of s1.merge(s2).it()) {
     // console.log('tuple', v);
   }
 }, 100000);
@@ -113,7 +112,6 @@ test('PushTestSync', async () => {
   await it.next('hello again');
 }, 100000);
 
-
 test('PushTestAsync', async () => {
   async function* gen() {
     yield 1;
@@ -139,8 +137,8 @@ test('PushTestAsync', async () => {
     await it.next(3);
   })().catch(console.error);
 
-  // @ts-ignore
-  for await (const v of it) {
+  // @ts-expect-error legacy code
+  for await (const _v of it) {
     // console.log('v', v);
   }
 

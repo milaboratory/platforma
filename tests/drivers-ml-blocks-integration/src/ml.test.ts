@@ -1,40 +1,41 @@
-import { blockSpec as downloadBlobURLSpec } from '@milaboratories/milaboratories.test-blob-url-custom-protocol';
-import { platforma as downloadBlobURLModel } from '@milaboratories/milaboratories.test-blob-url-custom-protocol.model';
-import { blockSpec as downloadFileSpec } from '@milaboratories/milaboratories.test-download-file';
-import { platforma as downloadFileModel } from '@milaboratories/milaboratories.test-download-file.model';
-import { blockSpec as enterNumberSpec } from '@milaboratories/milaboratories.test-enter-numbers';
-import { blockSpec as readLogsSpec } from '@milaboratories/milaboratories.test-read-logs';
-import { platforma as readLogsModel } from '@milaboratories/milaboratories.test-read-logs.model';
-import { blockSpec as sumNumbersSpec } from '@milaboratories/milaboratories.test-sum-numbers';
-import { blockSpec as uploadFileSpec } from '@milaboratories/milaboratories.test-upload-file';
-import { platforma as uploadFileModel } from '@milaboratories/milaboratories.test-upload-file.model';
-import { blockSpec as transferFilesSpec } from '@milaboratories/milaboratories.transfer-files';
-import { platforma as transferFilesModel } from '@milaboratories/milaboratories.transfer-files.model';
-import { PlClient, DisconnectedError } from '@milaboratories/pl-client';
-import {
+import type { blockSpec as downloadBlobURLSpec } from '@milaboratories/milaboratories.test-blob-url-custom-protocol';
+import type { platforma as downloadBlobURLModel } from '@milaboratories/milaboratories.test-blob-url-custom-protocol.model';
+import type { blockSpec as downloadFileSpec } from '@milaboratories/milaboratories.test-download-file';
+import type { platforma as downloadFileModel } from '@milaboratories/milaboratories.test-download-file.model';
+import type { blockSpec as enterNumberSpec } from '@milaboratories/milaboratories.test-enter-numbers';
+import type { blockSpec as readLogsSpec } from '@milaboratories/milaboratories.test-read-logs';
+import type { platforma as readLogsModel } from '@milaboratories/milaboratories.test-read-logs.model';
+import type { blockSpec as sumNumbersSpec } from '@milaboratories/milaboratories.test-sum-numbers';
+import type { blockSpec as uploadFileSpec } from '@milaboratories/milaboratories.test-upload-file';
+import type { platforma as uploadFileModel } from '@milaboratories/milaboratories.test-upload-file.model';
+import type { blockSpec as transferFilesSpec } from '@milaboratories/milaboratories.transfer-files';
+import type { platforma as transferFilesModel } from '@milaboratories/milaboratories.transfer-files.model';
+import { type PlClient, DisconnectedError } from '@milaboratories/pl-client';
+import type {
   FolderURL,
   ImportFileHandle,
   InferBlockState,
   InitialBlockSettings,
   LocalBlobHandleAndSize,
-  MiddleLayer,
   PlRef,
   Project,
   RangeBytes,
   RemoteBlobHandleAndSize,
-  TestHelpers
+} from '@milaboratories/pl-middle-layer';
+import {
+  MiddleLayer,
+  TestHelpers,
 } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, blockTest } from '@platforma-sdk/test';
-import fs from 'fs';
+import fs from 'node:fs';
 import { createHash, randomUUID } from 'node:crypto';
 import * as fsp from 'node:fs/promises';
-import os from 'os';
-import path from 'path';
+import path from 'node:path';
 import { test } from 'vitest';
 import { compareBuffersInChunks, computeHashIncremental, shuffleInPlace } from './imports';
 
 export async function withMl(
-  cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
+  cb: (ml: MiddleLayer, workFolder: string) => Promise<void>,
 ): Promise<void> {
   const workFolder = path.resolve(`work/${randomUUID()}`);
 
@@ -46,7 +47,7 @@ export async function withMl(
       localProjections: [], // TODO must be different with local pl
       openFileDialogCallback: () => {
         throw new Error('Not implemented.');
-      }
+      },
     });
     ml.addRuntimeCapability('requiresUIAPIVersion', 1);
     ml.addRuntimeCapability('requiresUIAPIVersion', 2);
@@ -60,7 +61,7 @@ export async function withMl(
 }
 
 export async function withMlAndProxy(
-  cb: (ml: MiddleLayer, workFolder: string, proxy: TestHelpers.TestTcpProxy) => Promise<void>
+  cb: (ml: MiddleLayer, workFolder: string, proxy: TestHelpers.TestTcpProxy) => Promise<void>,
 ): Promise<void> {
   const workFolder = path.resolve(`work/${randomUUID()}`);
 
@@ -72,7 +73,7 @@ export async function withMlAndProxy(
       localProjections: [], // TODO must be different with local pl
       openFileDialogCallback: () => {
         throw new Error('Not implemented.');
-      }
+      },
     });
     ml.addRuntimeCapability('requiresUIAPIVersion', 1);
     ml.addRuntimeCapability('requiresUIAPIVersion', 2);
@@ -82,7 +83,7 @@ export async function withMlAndProxy(
       console.log(JSON.stringify(pl.allTxStat));
       await ml.close();
     }
-  }, {viaTcpProxy: true});
+  }, { viaTcpProxy: true });
 }
 
 export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 5000) {
@@ -102,22 +103,22 @@ export async function awaitBlockDone(prj: Project, blockId: string, timeout: num
     if (blockOverview.calculationStatus === 'Done') return;
     try {
       await overview.awaitChange(abortSignal);
-    } catch (e: any) {
+    } catch (_e: any) {
       console.dir(await state.getValue(), { depth: 5 });
-      throw new Error('Aborted.', { cause: e });
+      throw new Error('Aborted.', { cause: _e });
     }
   }
 }
 
 test.skip('disconnect:runBlock throws DisconnectedError when connection drops mid-operation', async ({ expect }) => {
-  await expect(() =>  withMlAndProxy(async (ml, _wd, proxy) => {
+  await expect(() => withMlAndProxy(async (ml, _wd, proxy) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
     expect(await prj.overview.awaitStableValue()).toMatchObject({
       meta: { label: 'Project 1' },
-      blocks: []
+      blocks: [],
     });
 
     const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
@@ -126,7 +127,7 @@ test.skip('disconnect:runBlock throws DisconnectedError when connection drops mi
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
 
     await prj.setBlockArgs(block2Id, {
-      sources: [outputRef(block1Id, 'numbers')]
+      sources: [outputRef(block1Id, 'numbers')],
     });
 
     // Start transaction without awaiting, disconnect while in-flight, then await result.
@@ -152,8 +153,8 @@ test('project list manipulations test', async ({ expect }) => {
         id: 'id1',
         rid: pRid1,
         meta: { label: 'Project 1' },
-        opened: false
-      }
+        opened: false,
+      },
     ]);
 
     await ml.setProjectMeta(pRid1, { label: 'Project 1A' });
@@ -164,11 +165,11 @@ test('project list manipulations test', async ({ expect }) => {
         id: 'id1',
         rid: pRid1,
         meta: { label: 'Project 1A' },
-        opened: false
-      }
+        opened: false,
+      },
     ]);
     expect(listSnapshot1![0].lastModified.valueOf()).toBeGreaterThan(
-      listSnapshot1![0].created.valueOf()
+      listSnapshot1![0].created.valueOf(),
     );
 
     await ml.openProject(pRid1);
@@ -178,8 +179,8 @@ test('project list manipulations test', async ({ expect }) => {
         id: 'id1',
         rid: pRid1,
         meta: { label: 'Project 1A' },
-        opened: true
-      }
+        opened: true,
+      },
     ]);
 
     await ml.closeProject(pRid1);
@@ -189,8 +190,8 @@ test('project list manipulations test', async ({ expect }) => {
         id: 'id1',
         rid: pRid1,
         meta: { label: 'Project 1A' },
-        opened: false
-      }
+        opened: false,
+      },
     ]);
 
     await ml.deleteProject('id1');
@@ -214,8 +215,8 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
         id: 'id1',
         rid: pRid1,
         meta: { label: 'Project 1' },
-        opened: false
-      }
+        opened: false,
+      },
     ]);
 
     const lastModInitial = projectListValue1![0].lastModified.valueOf();
@@ -226,18 +227,18 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     expect(await prj.overview.awaitStableValue()).toMatchObject({
       meta: { label: 'Project 1' },
       authorMarker: undefined,
-      blocks: []
+      blocks: [],
     });
     await ml.setProjectMeta(
       pRid1,
       { label: 'New Project Label' },
-      { authorId: 'test_author', localVersion: 1 }
+      { authorId: 'test_author', localVersion: 1 },
     );
     await prj.overview.refreshState();
     expect(await prj.overview.awaitStableValue()).toMatchObject({
       meta: { label: 'New Project Label' },
       authorMarker: { authorId: 'test_author', localVersion: 1 },
-      blocks: []
+      blocks: [],
     });
 
     const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
@@ -246,7 +247,7 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
 
     expect(await prj.overview.awaitStableValue()).toMatchObject({
       meta: { label: 'New Project Label' },
-      authorMarker: undefined
+      authorMarker: undefined,
     });
 
     const overviewSnapshot0 = await prj.overview.awaitStableValue();
@@ -258,20 +259,20 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
       expect(block.navigationState).toStrictEqual({ href: '/' });
     });
 
-    const block1StableState0 = await prj.getBlockState(block1Id).awaitStableValue();
-    const block2StableState0 = await prj.getBlockState(block2Id).awaitStableValue();
-    const block3StableState0 = await prj.getBlockState(block3Id).awaitStableValue();
+    const _block1StableState0 = await prj.getBlockState(block1Id).awaitStableValue();
+    const _block2StableState0 = await prj.getBlockState(block2Id).awaitStableValue();
+    const _block3StableState0 = await prj.getBlockState(block3Id).awaitStableValue();
 
-    expect(block1StableState0.outputs!['activeArgs']).toStrictEqual({
+    expect(_block1StableState0.outputs!['activeArgs']).toStrictEqual({
       ok: true,
-      value: undefined
+      value: undefined,
     });
 
     await prj.setNavigationState(block1Id, { href: '/section1' });
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
     await prj.setBlockArgs(block3Id, {
-      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')]
+      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')],
     });
     await prj.runBlock(block3Id);
     await awaitBlockDone(prj, block3Id);
@@ -302,23 +303,23 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     // console.dir({ block1StableFrontend, block2StableFrontend, block3StableFrontend }, { depth: 5 });
 
     const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
-    const block2StableState1 = await prj.getBlockState(block2Id).awaitStableValue();
+    const _block2StableState1 = await prj.getBlockState(block2Id).awaitStableValue();
     const block3StableState1 = await prj.getBlockState(block3Id).awaitStableValue();
     expect(block1StableState1.navigationState).toStrictEqual({ href: '/section1' });
-    expect(block2StableState1.navigationState).toStrictEqual({ href: '/' });
+    expect(_block2StableState1.navigationState).toStrictEqual({ href: '/' });
     expect(block3StableState1.navigationState).toStrictEqual({ href: '/' });
     console.dir(block1StableState1, { depth: 5 });
-    console.dir(block2StableState1, { depth: 5 });
+    console.dir(_block2StableState1, { depth: 5 });
     console.dir(block3StableState1, { depth: 5 });
 
     expect(block1StableState1.outputs!['activeArgs']).toStrictEqual({
       ok: true,
-      value: { numbers: [1, 2, 3] }
+      value: { numbers: [1, 2, 3] },
     });
 
     expect(block3StableState1.outputs!['sum']).toStrictEqual({
       ok: true,
-      value: 18
+      value: 18,
     });
 
     const overviewSnapshot3 = await prj.overview.awaitStableValue();
@@ -342,7 +343,7 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.stale).toEqual(true);
     expect(overviewSnapshot2.blocks.find((b) => b.id === block2Id)?.stale).toEqual(true);
     expect(overviewSnapshot2.blocks.find((b) => b.id === block2Id)?.settings).toEqual({
-      versionLock: 'patch'
+      versionLock: 'patch',
     });
   });
 });
@@ -373,7 +374,7 @@ test('reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
     await prj.setBlockArgs(block3Id, {
-      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')]
+      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')],
     });
     await prj.runBlock(block3Id);
     await awaitBlockDone(prj, block3Id);
@@ -383,8 +384,8 @@ test('reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
       blocks: [
         { id: block1Id, calculationStatus: 'Done' },
         { id: block2Id, calculationStatus: 'Done' },
-        { id: block3Id, calculationStatus: 'Done' }
-      ]
+        { id: block3Id, calculationStatus: 'Done' },
+      ],
     });
 
     await prj.reorderBlocks([block2Id, block3Id, block1Id]);
@@ -394,12 +395,11 @@ test('reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
       blocks: [
         { id: block2Id, calculationStatus: 'Done' },
         { id: block3Id, calculationStatus: 'Limbo' },
-        { id: block1Id, calculationStatus: 'Done' }
-      ]
+        { id: block1Id, calculationStatus: 'Done' },
+      ],
     });
   });
 });
-
 
 test('dependency test', { timeout: 20000 }, async ({ expect }) => {
   await withMl(async (ml) => {
@@ -429,13 +429,13 @@ test('dependency test', { timeout: 20000 }, async ({ expect }) => {
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
     await prj.setBlockArgs(block3Id, {
-      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')]
+      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')],
     });
     await prj.setBlockArgs(block4Id, {
-      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')]
+      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')],
     });
     await prj.setBlockArgs(block5Id, {
-      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')]
+      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')],
     });
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
 
@@ -444,17 +444,17 @@ test('dependency test', { timeout: 20000 }, async ({ expect }) => {
       { upstreams: [], downstreams: [block3Id, block4Id, block5Id] },
       { upstreams: [block1Id, block2Id], downstreams: [] },
       { upstreams: [block1Id, block2Id], downstreams: [] },
-      { upstreams: [block1Id, block2Id], downstreams: [] }
+      { upstreams: [block1Id, block2Id], downstreams: [] },
     ]);
 
     await prj.setBlockArgs(block3Id, {
-      sources: [outputRef(block1Id, 'numbers', true), outputRef(block2Id, 'numbers', true)]
+      sources: [outputRef(block1Id, 'numbers', true), outputRef(block2Id, 'numbers', true)],
     });
     await prj.setBlockArgs(block4Id, {
-      sources: [outputRef(block2Id, 'numbers', true)]
+      sources: [outputRef(block2Id, 'numbers', true)],
     });
     await prj.setBlockArgs(block5Id, {
-      sources: [outputRef(block1Id, 'numbers', true)]
+      sources: [outputRef(block1Id, 'numbers', true)],
     });
     const overviewSnapshot2 = await prj.overview.awaitStableValue();
 
@@ -463,11 +463,10 @@ test('dependency test', { timeout: 20000 }, async ({ expect }) => {
       { upstreams: new Set(), downstreams: new Set([block3Id, block4Id, block5Id]) },
       { upstreams: new Set([block1Id, block2Id]), downstreams: new Set([block5Id]) },
       { upstreams: new Set([block2Id]), downstreams: new Set() },
-      { upstreams: new Set([block1Id, block2Id, block3Id]), downstreams: new Set() }
+      { upstreams: new Set([block1Id, block2Id, block3Id]), downstreams: new Set() },
     ]);
   });
 });
-
 
 test('limbo test', async ({ expect }) => {
   await withMl(async (ml) => {
@@ -487,7 +486,7 @@ test('limbo test', async ({ expect }) => {
 
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, {
-      sources: [outputRef(block1Id, 'numbers')]
+      sources: [outputRef(block1Id, 'numbers')],
     });
 
     const overview1 = await prj.overview.awaitStableValue();
@@ -503,7 +502,7 @@ test('limbo test', async ({ expect }) => {
     const block2StableState1 = await prj.getBlockState(block2Id).getValue();
     expect(block2StableState1.outputs!['sum']).toStrictEqual({
       ok: true,
-      value: 6
+      value: 6,
     });
 
     const overview2 = await prj.overview.awaitStableValue();
@@ -529,7 +528,7 @@ test('limbo test', async ({ expect }) => {
     const block2StableState2 = await prj.getBlockState(block2Id).getValue();
     expect(block2StableState2.outputs!['sum']).toStrictEqual({
       ok: true,
-      value: 5
+      value: 5,
     });
 
     const overview4 = await prj.overview.awaitStableValue();
@@ -559,11 +558,10 @@ test('test error propagation', async ({ expect }) => {
     const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
     expect(block1StableState1.outputs!['errorIfNumberIs999']).toStrictEqual({
       ok: true,
-      value: [1]
+      value: [1],
     });
 
     await prj.setBlockArgs(block1Id, { numbers: [999] });
-
 
     const block1StableState2 = await prj.getBlockState(block1Id).awaitStableValue();
 
@@ -604,8 +602,8 @@ test('block duplication test', async ({ expect }) => {
     const overviewAfter = await prj.overview.awaitStableValue();
     expect(overviewAfter.blocks).toHaveLength(2);
 
-    const originalBlock = overviewAfter.blocks.find(b => b.id === originalBlockId);
-    const duplicatedBlock = overviewAfter.blocks.find(b => b.id === duplicatedBlockId);
+    const originalBlock = overviewAfter.blocks.find((b) => b.id === originalBlockId);
+    const duplicatedBlock = overviewAfter.blocks.find((b) => b.id === duplicatedBlockId);
 
     expect(originalBlock).toBeDefined();
     expect(duplicatedBlock).toBeDefined();
@@ -650,7 +648,7 @@ test('block update test', async ({ expect }) => {
     // touch
     await fs.promises.appendFile(
       path.resolve('..', '..', 'etc', 'blocks', 'enter-numbers', 'model', 'dist', 'model.json'),
-      ' '
+      ' ',
     );
 
     // await update watcher
@@ -662,7 +660,7 @@ test('block update test', async ({ expect }) => {
 
     const overview2 = await prj.overview.awaitStableValue();
     expect(overview2.blocks[0].currentBlockPack).toStrictEqual(
-      overview1.blocks[0].updatedBlockPack
+      overview1.blocks[0].updatedBlockPack,
     );
     expect(overview2.blocks[0].updatedBlockPack).toBeUndefined();
   });
@@ -696,13 +694,13 @@ test('block error test', async ({ expect }) => {
 
     expect(await prj.overview.awaitStableValue()).toMatchObject({
       meta: { label: 'Project 1' },
-      blocks: []
+      blocks: [],
     });
 
     const block3Id = await prj.addBlock('Block 3', sumNumbersSpec);
 
     await prj.setBlockArgs(block3Id, {
-      sources: [] // empty reference list should produce an error
+      sources: [], // empty reference list should produce an error
     });
 
     await prj.runBlock(block3Id);
@@ -720,10 +718,10 @@ test('block error test', async ({ expect }) => {
     const sum = block3StableState.outputs!['sum'];
     expect(sum.ok).toStrictEqual(false);
     if (!sum.ok) {
-      console.log("ml, block error test, the error:");
+      console.log('ml, block error test, the error:');
       console.dir(sum.errors[0], { depth: 150 });
       expect(typeof sum.errors[0] == 'string' ? sum.errors[0] : sum.errors[0].message).toContain(
-        "At least 1 data source must be set. It's needed in 'block error test'"
+        'At least 1 data source must be set. It\'s needed in \'block error test\'',
       );
     }
   });
@@ -737,7 +735,7 @@ blockTest(
     const inputHandle = await lsDriverGetFileHandleFromAssets(
       ml,
       expect,
-      'answer_to_the_ultimate_question.txt'
+      'answer_to_the_ultimate_question.txt',
     );
 
     await project.setBlockArgs(blockId, { inputHandle });
@@ -747,7 +745,7 @@ blockTest(
     while (true) {
       const state = (await awaitStableState(
         project.getBlockState(blockId),
-        25000
+        25000,
       )) as InferBlockState<typeof downloadFileModel>;
       // console.dir(state, { depth: 5 });
 
@@ -769,25 +767,25 @@ blockTest(
         const quickJsRemoteBlob = (outputs.onDemandBlobContent1 as any).value as RemoteBlobHandleAndSize;
 
         expect(
-          Buffer.from(await ml.driverKit.blobDriver.getContent(localBlob.handle)).toString('utf-8')
+          Buffer.from(await ml.driverKit.blobDriver.getContent(localBlob.handle)).toString('utf-8'),
         ).toEqual('42\n');
 
         expect(
-          Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString('utf-8')
+          Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString('utf-8'),
         ).toEqual('42\n');
 
         expect(
-          Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle, { from: 1, to: 2 })).toString('utf-8')
+          Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle, { from: 1, to: 2 })).toString('utf-8'),
         ).toEqual('2');
 
         expect(
-          Buffer.from(await ml.driverKit.blobDriver.getContent(quickJsRemoteBlob.handle, { from: 1, to: 2 })).toString('utf-8')
+          Buffer.from(await ml.driverKit.blobDriver.getContent(quickJsRemoteBlob.handle, { from: 1, to: 2 })).toString('utf-8'),
         ).toEqual('2');
 
         return;
       }
     }
-  }
+  },
 );
 
 blockTest(
@@ -836,12 +834,12 @@ blockTest(
       console.log('  Test: Chunked download with hash verification, chunkSize', chunkSize);
 
       const totalChunks = Math.ceil(originalBuffer.length / chunkSize);
-      
+
       console.log(`    - Downloading ${originalBuffer.length} bytes in ${totalChunks} chunks of ${chunkSize} bytes`);
-      
+
       const downloadedChunks: Buffer[] = [];
       let downloadedBytes = 0;
-      
+
       const startTime = Date.now();
 
       const tasks = [] as { chunkIndex: number; range: RangeBytes }[];
@@ -861,16 +859,16 @@ blockTest(
         const from = chunkIndex * chunkSize;
         const to = Math.min(from + chunkSize, exportedBlob.size);
         const expectedChunkSize = to - from;
-        
+
         const chunk = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, { from, to });
         const chunkBuffer = Buffer.from(chunk);
-        
+
         // Verify chunk size
         if (chunkBuffer.length !== expectedChunkSize) {
           console.error(`    ❌ Chunk ${chunkIndex}: size mismatch! Expected ${expectedChunkSize}, got ${chunkBuffer.length}`);
           console.error(`       Range: from=${from}, to=${to}`);
         }
-        
+
         // Verify chunk content against original
         const originalChunk = originalBuffer.subarray(from, to);
         if (!chunkBuffer.equals(originalChunk)) {
@@ -878,7 +876,7 @@ blockTest(
           console.error(`       Range: from=${from}, to=${to}`);
           console.error(`       First 20 bytes of original:   ${originalChunk.subarray(0, 20).toString('hex')}`);
           console.error(`       First 20 bytes of downloaded: ${chunkBuffer.subarray(0, 20).toString('hex')}`);
-          
+
           // Find first differing byte
           for (let i = 0; i < Math.min(originalChunk.length, chunkBuffer.length); i++) {
             if (originalChunk[i] !== chunkBuffer[i]) {
@@ -887,10 +885,10 @@ blockTest(
             }
           }
         }
-        
+
         // downloadedChunks.push(chunkBuffer);
         downloadedBytes += chunk.length;
-        
+
         if ((chunkIndex + 1) % 10 === 0 || chunkIndex === totalChunks - 1) {
           const progress = ((downloadedBytes / originalBuffer.length) * 100).toFixed(1);
           console.log(`    - Downloaded ${chunkIndex + 1}/${totalChunks} chunks (${progress}%)`);
@@ -907,44 +905,44 @@ blockTest(
       for (const result of sortedResults) {
         downloadedChunks.push(result.chunkBuffer);
       }
-      
+
       const downloadTime = Date.now() - startTime;
       const downloadSpeed = (downloadedBytes / 1024 / 1024 / (downloadTime / 1000)).toFixed(2);
       console.log(`    - Download completed in ${downloadTime}ms (${downloadSpeed} MB/s)`);
-      
+
       // Concatenate all chunks
       console.log('    - Concatenating chunks...');
       const downloadedBuffer = Buffer.concat(downloadedChunks);
-      
+
       // Verify size
       expect(downloadedBuffer.length).toBe(originalBuffer.length);
       console.log(`    ✓ Downloaded size matches: ${downloadedBuffer.length} bytes`);
-      
+
       // Compute hashes
       console.log('    - Computing hashes...');
       const originalHash = computeHashIncremental(originalBuffer);
       const downloadedHash = computeHashIncremental(downloadedBuffer);
-      
+
       console.log(`    - Original hash:    ${originalHash}`);
       console.log(`    - Downloaded hash:  ${downloadedHash}`);
-      
+
       // Verify hashes match
       expect(downloadedHash).toBe(originalHash);
       console.log('    ✓ Hashes match - data integrity verified!');
-      
+
       // Additional verification: compare buffers in chunks
       console.log('    - Comparing buffers in chunks...');
       const buffersMatch = compareBuffersInChunks(originalBuffer, downloadedBuffer);
       expect(buffersMatch).toBe(true);
       console.log('    ✓ Chunk-by-chunk comparison passed!');
-      
+
       console.log('  ✓ Chunked download test passed');
     }
 
     while (true) {
       const state = (await awaitStableState(
         project.getBlockState(blockId),
-        25000
+        25000,
       )) as InferBlockState<typeof transferFilesModel>;
 
       const blockFrontend = await project.getBlockFrontend(blockId).awaitStableValue();
@@ -995,12 +993,12 @@ blockTest(
         }));
 
         console.log('\n=== All transfer-files tests completed successfully ===');
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         return;
       }
     }
-  }
+  },
 );
 
 blockTest(
@@ -1032,25 +1030,25 @@ blockTest(
     // Helper function to compare buffers in chunks
     const compareBuffersInChunks = (buffer1: Buffer, buffer2: Buffer): boolean => {
       if (buffer1.length !== buffer2.length) return false;
-      
+
       const chunkSize = 64 * 1024 * 1024; // 64 MB chunks
       const totalChunks = Math.ceil(buffer1.length / chunkSize);
       let chunksCompared = 0;
-      
+
       for (let offset = 0; offset < buffer1.length; offset += chunkSize) {
         const end = Math.min(offset + chunkSize, buffer1.length);
         const chunk1 = buffer1.subarray(offset, end);
         const chunk2 = buffer2.subarray(offset, end);
-        
+
         if (!chunk1.equals(chunk2)) return false;
-        
+
         chunksCompared++;
         if (chunksCompared % 20 === 0 || chunksCompared === totalChunks) {
           const progress = ((chunksCompared / totalChunks) * 100).toFixed(1);
           console.log(`    - Compared ${chunksCompared}/${totalChunks} chunks (${progress}%)`);
         }
       }
-      
+
       return true;
     };
 
@@ -1101,7 +1099,7 @@ blockTest(
     while (true) {
       const state = (await awaitStableState(
         project.getBlockState(blockId),
-        25000
+        25000,
       )) as InferBlockState<typeof transferFilesModel>;
 
       const blockFrontend = await project.getBlockFrontend(blockId).awaitStableValue();
@@ -1138,31 +1136,31 @@ blockTest(
 
           {
             console.log('Chunked download with hash verification');
-            
+
             const chunkSize = 1024 * 1024; // 1 MiB chunks
             const totalChunks = Math.ceil(originalBuffer.length / chunkSize);
-            
+
             console.log(`    - Downloading ${originalBuffer.length} bytes in ${totalChunks} chunks of ${chunkSize} bytes`);
-            
+
             const downloadedChunks: Buffer[] = [];
             let downloadedBytes = 0;
-            
+
             const startTime = Date.now();
-            
+
             for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
               const from = chunkIndex * chunkSize;
               const to = Math.min(from + chunkSize, exportedBlob.size);
               const expectedChunkSize = to - from;
-              
+
               const chunk = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, { from, to });
               const chunkBuffer = Buffer.from(chunk);
-              
+
               // Verify chunk size
               if (chunkBuffer.length !== expectedChunkSize) {
                 console.error(`    ❌ Chunk ${chunkIndex}: size mismatch! Expected ${expectedChunkSize}, got ${chunkBuffer.length}`);
                 console.error(`       Range: from=${from}, to=${to}`);
               }
-              
+
               // Verify chunk content against original
               const originalChunk = originalBuffer.subarray(from, to);
               if (!chunkBuffer.equals(originalChunk)) {
@@ -1170,7 +1168,7 @@ blockTest(
                 console.error(`       Range: from=${from}, to=${to}`);
                 console.error(`       First 20 bytes of original:   ${originalChunk.subarray(0, 20).toString('hex')}`);
                 console.error(`       First 20 bytes of downloaded: ${chunkBuffer.subarray(0, 20).toString('hex')}`);
-                
+
                 // Find first differing byte
                 for (let i = 0; i < Math.min(originalChunk.length, chunkBuffer.length); i++) {
                   if (originalChunk[i] !== chunkBuffer[i]) {
@@ -1179,46 +1177,46 @@ blockTest(
                   }
                 }
               }
-              
+
               downloadedChunks.push(chunkBuffer);
               downloadedBytes += chunk.length;
-              
+
               if ((chunkIndex + 1) % 10 === 0 || chunkIndex === totalChunks - 1) {
                 const progress = ((downloadedBytes / originalBuffer.length) * 100).toFixed(1);
                 console.log(`    - Downloaded ${chunkIndex + 1}/${totalChunks} chunks (${progress}%)`);
               }
             }
-            
+
             const downloadTime = Date.now() - startTime;
             const downloadSpeed = (downloadedBytes / 1024 / 1024 / (downloadTime / 1000)).toFixed(2);
             console.log(`    - Download completed in ${downloadTime}ms (${downloadSpeed} MB/s)`);
-            
+
             // Concatenate all chunks
             console.log('    - Concatenating chunks...');
             const downloadedBuffer = Buffer.concat(downloadedChunks);
-            
+
             // Verify size
             expect(downloadedBuffer.length).toBe(originalBuffer.length);
             console.log(`    ✓ Downloaded size matches: ${downloadedBuffer.length} bytes`);
-            
+
             // Compute hashes
             console.log('    - Computing hashes...');
             const originalHash = computeHashIncremental(originalBuffer);
             const downloadedHash = computeHashIncremental(downloadedBuffer);
-            
+
             console.log(`    - Original hash:    ${originalHash}`);
             console.log(`    - Downloaded hash:  ${downloadedHash}`);
-            
+
             // Verify hashes match
             expect(downloadedHash).toBe(originalHash);
             console.log('    ✓ Hashes match - data integrity verified!');
-            
+
             // Additional verification: compare buffers in chunks
             console.log('    - Comparing buffers in chunks...');
             const buffersMatch = compareBuffersInChunks(originalBuffer, downloadedBuffer);
             expect(buffersMatch).toBe(true);
             console.log('    ✓ Chunk-by-chunk comparison passed!');
-            
+
             console.log('  ✓ Chunked download test passed');
           }
 
@@ -1226,17 +1224,17 @@ blockTest(
         }));
 
         console.log('\n=== All transfer-files tests completed successfully ===');
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         return;
       }
     }
-  }
+  },
 );
 
 blockTest(
   'should create blob-url-custom-protocol block, render it and gets outputs from its config',
-  {timeout: 30000},
+  { timeout: 30000 },
   async ({ rawPrj: project, ml, expect }) => {
     const blockId = await project.addBlock('DownloadBlobUrl', downloadBlobURLSpec);
 
@@ -1250,7 +1248,7 @@ blockTest(
     while (true) {
       const state = (await awaitStableState(
         project.getBlockState(blockId),
-        13000
+        13000,
       )) as InferBlockState<typeof downloadBlobURLModel>;
       // console.dir(state, { depth: 5 });
 
@@ -1275,7 +1273,7 @@ blockTest(
         return;
       }
     }
-  }
+  },
 );
 
 blockTest(
@@ -1286,7 +1284,7 @@ blockTest(
     const inputHandle = await lsDriverGetFileHandleFromAssets(
       ml,
       expect,
-      'another_answer_to_the_ultimate_question.txt'
+      'another_answer_to_the_ultimate_question.txt',
     );
 
     await project.setBlockArgs(blockId, { inputHandle });
@@ -1296,7 +1294,7 @@ blockTest(
     while (true) {
       const state = (await awaitStableState(
         project.getBlockState(blockId),
-        25000
+        25000,
       )) as InferBlockState<typeof uploadFileModel>;
 
       // console.dir(state, { depth: 5 });
@@ -1308,27 +1306,27 @@ blockTest(
         return;
       }
     }
-  }
+  },
 );
 
 blockTest(
   'should create read-logs block, render it and read logs from a file',
   // The timeout is higher here because pl - core must download a software for this test.
   { timeout: 20000 },
-  async ({ rawPrj: project, ml, helpers, expect }) => {
+  async ({ rawPrj: project, ml, helpers: _helpers, expect }) => {
     const blockId = await project.addBlock('ReadLogs', readLogsSpec);
 
     const inputHandle = await lsDriverGetFileHandleFromAssets(
       ml,
       expect,
-      'maybe_the_number_of_lines_is_the_answer.txt'
+      'maybe_the_number_of_lines_is_the_answer.txt',
     );
 
     await project.setBlockArgs(blockId, {
       inputHandle,
       // args are from here:
       // https://github.com/milaboratory/sleep/blob/3c046cdcc504b63f1a6e592a4aa87ee773a94d72/read-file-to-stdout-with-sleep.go#L24
-      readFileWithSleepArgs: 'PREFIX,100,1000'
+      readFileWithSleepArgs: 'PREFIX,100,1000',
     });
 
     await project.runBlock(blockId);
@@ -1336,7 +1334,7 @@ blockTest(
     while (true) {
       const state = (await awaitStableState(
         project.getBlockState(blockId),
-        25000
+        25000,
       )) as InferBlockState<typeof readLogsModel>;
 
       // console.dir(state, { depth: 5 });
@@ -1355,7 +1353,7 @@ blockTest(
 async function lsDriverGetFileHandleFromAssets(
   ml: MiddleLayer,
   expect: any,
-  fName: string
+  fName: string,
 ): Promise<ImportFileHandle> {
   const storages = await ml.driverKit.lsDriver.getStorageList();
 
@@ -1372,10 +1370,11 @@ async function lsDriverGetFileHandleFromAssets(
   return (ourFile as any).handle;
 }
 
+/*
 async function getImportFileHandleFromTmp(
   ml: MiddleLayer,
   fName: string,
-  fileSize: number
+  fileSize: number,
 ): Promise<ImportFileHandle> {
   const storages = await ml.driverKit.lsDriver.getStorageList();
 
@@ -1395,6 +1394,7 @@ async function getImportFileHandleFromTmp(
 
   return (ourFile as any).handle;
 }
+*/
 
 function outputRef(blockId: string, name: string, requireEnrichments?: true): PlRef {
   return { __isRef: true, blockId, name, requireEnrichments };

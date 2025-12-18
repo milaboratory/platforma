@@ -16,6 +16,7 @@
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
+    "lint": "eslint .",
     "test": "vitest run --coverage",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
   },
@@ -31,7 +32,9 @@
     "@milaboratories/computable": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
     "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:"
+    "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
+    "@milaboratories/eslint-config": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

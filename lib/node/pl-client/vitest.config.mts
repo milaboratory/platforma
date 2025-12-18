@@ -7,6 +7,7 @@ export default defineConfig({
     passWithNoTests: true,
     coverage: {
       include: ['src'],
+      exclude: ['src/proto', '**/*.js'],
       provider: 'istanbul',
       reporter: ['lcov', 'text'],
       reportsDirectory: './coverage'

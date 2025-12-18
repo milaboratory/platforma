@@ -19,8 +19,8 @@
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
-    "test": "vitest run --coverage",
     "lint": "eslint .",
+    "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -40,6 +40,8 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*"
   }
 }

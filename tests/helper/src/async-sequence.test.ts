@@ -1,9 +1,9 @@
-import {test, expect} from 'vitest';
-import {utils} from '@milaboratories/helpers';
-import {sequence} from '@milaboratories/sequences';
+import { test, expect } from 'vitest';
+import { utils } from '@milaboratories/helpers';
+import { sequence } from '@milaboratories/sequences';
 
 test('AsyncSequence 1', async () => {
-  let values = utils.arrayFrom(10, i => i);
+  const values = utils.arrayFrom(10, (i) => i);
 
   async function* gen() {
     while (values.length) {
@@ -13,10 +13,10 @@ test('AsyncSequence 1', async () => {
   }
 
   const s = sequence(gen())
-    .map(v => v + 1)
-    .map(v => v * 10)
-    .map(v => v / 10)
-    .filter(v => v % 2 === 0);
+    .map((v) => v + 1)
+    .map((v) => v * 10)
+    .map((v) => v / 10)
+    .filter((v) => v % 2 === 0);
 
   const results: number[] = [];
 
@@ -28,7 +28,7 @@ test('AsyncSequence 1', async () => {
 }, 10000);
 
 test('AsyncSequence 1', async () => {
-  const arr = utils.arrayFrom(1000, i => i);
+  const arr = utils.arrayFrom(1000, (i) => i);
 
   async function* gen(): AsyncIterable<number> {
     while (arr.length) {
@@ -37,12 +37,12 @@ test('AsyncSequence 1', async () => {
   }
 
   const result = await sequence(gen())
-    .map(v => v * 3)
-    .map(v => v * 3)
-    .map(v => v / 3)
-    .map(v => v * 3)
-    .filter(v => v % 2 === 0)
-    .filter(v => v % 10 === 0)
+    .map((v) => v * 3)
+    .map((v) => v * 3)
+    .map((v) => v / 3)
+    .map((v) => v * 3)
+    .filter((v) => v % 2 === 0)
+    .filter((v) => v % 10 === 0)
     .slice(0, 10)
     .reduce((acc, v) => acc + v, 0)
   ;
@@ -50,4 +50,4 @@ test('AsyncSequence 1', async () => {
   expect(result).toBe(4050);
 }, 10000);
 
-export {}
+export {};

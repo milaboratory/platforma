@@ -57,6 +57,7 @@
     "jsdom": "catalog:",
     "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
     "yarpm": "catalog:",
     "svgo": "catalog:",
     "typescript": "catalog:"

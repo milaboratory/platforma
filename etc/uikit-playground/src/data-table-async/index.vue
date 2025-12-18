@@ -16,6 +16,7 @@ class Api implements DataTable.Types.ExternalApi<Person> {
       this.deferred?.resolve(e.data);
     };
   }
+
   query(options: { offset: number; limit: number }): Promise<Person[]> {
     return this.sendMessage({
       type: 'query',

@@ -48,7 +48,9 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:"
+    "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
+    "@milaboratories/eslint-config": "workspace:*"
   },
   "oclif": {
     "bin": "pl-pkg",

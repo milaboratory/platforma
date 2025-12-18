@@ -7,6 +7,7 @@
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
+    "lint": "eslint .",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -36,6 +37,8 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
+    "@milaboratories/eslint-config": "workspace:*",
     "@types/node": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }

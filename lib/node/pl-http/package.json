@@ -35,6 +35,8 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
+    "@milaboratories/eslint-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/http-proxy": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
