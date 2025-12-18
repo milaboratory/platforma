@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.48.12
+
+### Patch Changes
+
+- 8abf3c6: fix annotations problems
+- Updated dependencies [8abf3c6]
+  - @milaboratories/uikit@2.8.4
+  - @platforma-sdk/model@1.48.12
+
 ## 1.48.10
 
 ### Patch Changes

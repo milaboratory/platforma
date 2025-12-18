@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.48.12
+
+### Patch Changes
+
+- 8abf3c6: fix annotations problems
+
 ## 1.48.4
 
 ### Patch Changes
