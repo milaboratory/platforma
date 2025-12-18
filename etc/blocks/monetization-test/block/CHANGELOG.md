@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.2.0
+
+### Minor Changes
+
+- 42981f2: Update logo
+
 ## 1.1.0
 
 ### Minor Changes
