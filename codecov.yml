@@ -12,8 +12,10 @@ coverage:
 component_management:
   default_rules:
     statuses:
-      - project
-      - patch
+      - type: project
+        target: auto
+      - type: patch
+        target: auto
   individual_components:
     - component_id: ui
       name: UI
