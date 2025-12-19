@@ -7,3 +7,8 @@ coverage:
     patch: # New lines coverage
       default:
         target: 50%
+
+ignore:
+  - "etc/uikit-playground/**/*"
+  - "sdk/ui-vue/**/*"
+  - "lib/ui/uikit/**/*"
