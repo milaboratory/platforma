@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.48.14
+
+### Patch Changes
+
+- d6856e2: reexport functions
+
 ## 1.48.13
 
 ### Patch Changes
