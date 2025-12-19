@@ -62,6 +62,37 @@ jobs:
         tools/block-tools/coverage/lcov.info,
         tools/package-builder/coverage/lcov.info,
         tools/tengo-builder/coverage/lcov.info
+      test-results-reports: >-
+        etc/blocks/monetization-test/workflow/test-report.junit.xml,
+        etc/uikit-playground/test-report.junit.xml,
+        lib/model/common/test-report.junit.xml,
+        lib/model/pl-error-like/test-report.junit.xml,
+        lib/node/computable/test-report.junit.xml,
+        lib/node/pf-driver/test-report.junit.xml,
+        lib/node/pl-client/test-report.junit.xml,
+        lib/node/pl-config/test-report.junit.xml,
+        lib/node/pl-deployments/test-report.junit.xml,
+        lib/node/pl-drivers/test-report.junit.xml,
+        lib/node/pl-errors/test-report.junit.xml,
+        lib/node/pl-http/test-report.junit.xml,
+        lib/node/pl-middle-layer/test-report.junit.xml,
+        lib/node/pl-tree/test-report.junit.xml,
+        lib/node/ts-helpers/test-report.junit.xml,
+        lib/other/biowasm-tools/test-report.junit.xml,
+        lib/ptabler/js/test-report.junit.xml,
+        lib/ui/uikit/test-report.junit.xml,
+        lib/util/helpers/test-report.junit.xml,
+        sdk/model/test-report.junit.xml,
+        sdk/test/test-report.junit.xml,
+        sdk/ui-vue/test-report.junit.xml,
+        tests/block-repo/test-report.junit.xml,
+        tests/config-local-ml-integration/test-report.junit.xml,
+        tests/drivers-ml-blocks-integration/test-report.junit.xml,
+        tests/helper/test-report.junit.xml,
+        tests/workflow-tengo/test-report.junit.xml,
+        tools/block-tools/test-report.junit.xml,
+        tools/package-builder/test-report.junit.xml,
+        tools/tengo-builder/test-report.junit.xml
       test-script-name: 'test'
       publish-to-public: 'true'
       pnpm-recursive-build: false

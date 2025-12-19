@@ -13,6 +13,7 @@ export const createVitestConfig = (overrides: ViteUserConfig = {}): ViteUserConf
           reporter: ['lcov', 'text'],
           reportsDirectory: './coverage',
         },
+        reporters: ['default', ['junit', { outputFile: 'test-report.junit.xml' }]],
       },
     },
     overrides,
