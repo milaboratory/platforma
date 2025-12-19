@@ -1,5 +1,12 @@
 # @milaboratories/pf-driver
 
+## 1.0.16
+
+### Patch Changes
+
+- Updated dependencies [72bb768]
+  - @platforma-sdk/model@1.48.13
+
 ## 1.0.15
 
 ### Patch Changes

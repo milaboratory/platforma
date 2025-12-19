@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.48.13
+
+### Patch Changes
+
+- 72bb768: separate logic for aggregating columns for graphics
+
 ## 1.48.12
 
 ### Patch Changes
