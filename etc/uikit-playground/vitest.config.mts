@@ -1,4 +1,4 @@
 import { createVitestVueConfig } from '@milaboratories/build-configs';
-import { defineProject } from 'vitest/config';
+import { defineConfig } from 'vitest/config';
 
-export default defineProject(createVitestVueConfig());
+export default defineConfig(createVitestVueConfig());

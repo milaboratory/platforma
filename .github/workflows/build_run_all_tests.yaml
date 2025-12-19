@@ -22,6 +22,9 @@ jobs:
       node-version: '22.x'
       build-script-name: 'build'
       test: true
+      test-coverage: true
+      test-coverage-reports: '**/coverage/lcov.info'
+      test-results-reports: '**/test-report.junit.xml'
       test-script-name: 'test:no-cache'
       test-skip-dry-run: 'true'
       publish-to-public: 'true'
