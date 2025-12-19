@@ -29,7 +29,7 @@
       "dependsOn": ["type-check", "lint", "^build"]
     },
     "test": {
-      "outputs": ["./coverage/**"],
+      "outputs": ["./coverage/**", "test-report.junit.xml"],
       "env": ["TEST_CACHE_CRUTCH"],
       "dependsOn": ["build"],
       "passThroughEnv": [
