@@ -1,9 +1,9 @@
 import { fileURLToPath } from 'node:url';
 import { createVitestConfig } from '@milaboratories/build-configs';
-import { configDefaults, defineProject, mergeConfig } from 'vitest/config';
+import { configDefaults, defineConfig, mergeConfig } from 'vitest/config';
 import viteConfig from './build.browser-lib.config';
 
-export default defineProject((configEnv) =>
+export default defineConfig((configEnv) =>
   createVitestConfig(
     mergeConfig(viteConfig(configEnv), {
       test: {
