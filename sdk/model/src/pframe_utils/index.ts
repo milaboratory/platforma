@@ -19,6 +19,8 @@ import type {
 } from '@milaboratories/pl-model-common';
 import { pTableValue, Annotation, canonicalizeAxisId, getAxisId, readAnnotation, PColumnName } from '@milaboratories/pl-model-common';
 
+export * from './columns';
+
 // Types
 type PValue = string | number | null;
 
