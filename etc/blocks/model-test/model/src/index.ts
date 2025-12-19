@@ -4,6 +4,7 @@ export type BlockArgs = {
   titleArg: string;
   subtitleArg: string;
   badgeArg: string;
+  tagToWorkflow: string;
   tagArgs: string[];
 };
 
@@ -13,18 +14,33 @@ export const platforma = BlockModel.create('Heavy')
     titleArg: 'The title',
     subtitleArg: 'The subtitle',
     badgeArg: 'The badge',
+    tagToWorkflow: 'workflow-tag',
     tagArgs: [],
   })
 
   .sections((ctx) => {
-    return [{ type: 'link', href: '/', label: 'Main', badge: ctx.args.badgeArg }];
+    return [{
+      type: 'link',
+      href: '/',
+      label: 'Main',
+      badge: ctx.args.badgeArg,
+    }];
   })
 
   .title((ctx) => ctx.args.titleArg + ' <- the title')
 
   .subtitle((ctx) => ctx.args.subtitleArg + ' <- the subtitle')
 
-  .tags((ctx) => ctx.args.tagArgs)
+  .tags((ctx) => {
+    const result = ['test-tag', ...ctx.args.tagArgs];
+    const outputFormTheWorkflow = ctx.outputs
+      ?.resolve('theOutput')
+      ?.getDataAsJson<string>();
+    if (outputFormTheWorkflow) {
+      result.push(outputFormTheWorkflow);
+    }
+    return result;
+  })
 
   .done();
 
