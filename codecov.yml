@@ -1,12 +1,53 @@
 coverage:
   status:
-    project: # Overall project coverage
+    project:
       default:
-        target: auto
-        threshold: 5%
-    patch: # New lines coverage
+        target: auto # Overall code coverage
+        threshold: 5% # Overall code coverage drop
+    patch: # Changed lines coverage
       default:
-        target: 50%
+        target: 50% # New code coverage
+        threshold: 5%  # Existing code coverage drop
+
+component_management:
+  default_rules:
+    statuses:
+      - project
+      - patch
+  individual_components:
+    - component_id: ui
+      name: UI
+      paths:
+        - etc/ui-vue-docs/**/*
+        - etc/uikit-playground/**/*
+        - lib/ui/uikit/**/*
+        - sdk/ui-vue/**/*
+    - component_id: backend
+      name: Backend
+      paths:
+        - helm/**/*
+        - lib/other/**/*
+        - lib/ptabler/**/*
+        - lib/ptexter/**/*
+        - sdk/workflow-tengo/**/*
+        - tests/config-local-ml-integration/**/*
+        - tests/helper/**/*
+        - tests/package-builder/**/*
+        - tests/tengo-builder/**/*
+        - tests/workflow-tengo/**/*
+        - tools/**/*
+    - component_id: desktop
+      name: Desktop
+      paths:
+        - etc/blocks/**/*
+        - lib/model/**/*
+        - lib/node/**/*
+        - lib/util/**/*
+        - sdk/eslint-config/**/*
+        - sdk/model/**/*
+        - sdk/test/**/*
+        - tests/block-repo/**/*
+        - tests/drivers-ml-blocks-integration/**/*
 
 ignore:
   - "etc/uikit-playground/**/*"
