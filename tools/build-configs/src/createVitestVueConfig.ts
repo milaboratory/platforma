@@ -7,6 +7,11 @@ export const createVitestVueConfig = (overrides: ViteUserConfig = {}): ViteUserC
     mergeConfig(
       {
         plugins: [vue()],
+        test: {
+          coverage: {
+            reporter: ['text'],
+          },
+        },
       },
       overrides,
     ),
