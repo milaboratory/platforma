@@ -1,0 +1,9 @@
+coverage:
+  status:
+    project: # Overall project coverage
+      default:
+        target: auto
+        threshold: 5%
+    patch: # New lines coverage
+      default:
+        target: 50%

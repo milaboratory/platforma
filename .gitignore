@@ -12,6 +12,7 @@ test-dry-run.json
 .test/
 /test-registry/
 coverage/
+test-report.junit.xml
 
 # Building
 /.tags

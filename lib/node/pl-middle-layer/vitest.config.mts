@@ -1,8 +1,8 @@
 import { resolve } from 'path';
 import { createVitestConfig } from '@milaboratories/build-configs';
-import { defineProject } from 'vitest/config';
+import { defineConfig } from 'vitest/config';
 
-export default defineProject(
+export default defineConfig(
   createVitestConfig({
     test: {
       testTimeout: 80000,
