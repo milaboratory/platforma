@@ -7,6 +7,15 @@ import { test, expect } from 'vitest';
 
 import { UnauthenticatedError } from './errors';
 
+test('wire protocol detection', async () => {
+  const { conf, auth } = await getTestClientConf();
+  const expectedWireProtocol = conf.wireProtocol ?? 'grpc';
+  conf.wireProtocol = undefined;
+
+  const client = await LLPlClient.build(conf, { auth });
+  expect(client.wireProtocol).toBe(expectedWireProtocol);
+});
+
 test('authenticated instance test', async () => {
   const client = await getTestLLClient();
   const tx = client.createTx(true);
