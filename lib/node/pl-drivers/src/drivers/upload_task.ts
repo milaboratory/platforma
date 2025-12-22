@@ -333,7 +333,7 @@ function doneProgressIfExisted(alreadyExisted: boolean, status: sdk.ImportStatus
 }
 
 export function isTerminalUploadError(e: any) {
-  if (e.name !== 'RpcError') return false;
+  if (e?.name !== 'RpcError') return false;
   switch (e.code) {
     case 'NOT_FOUND':
     case 'ABORTED':
