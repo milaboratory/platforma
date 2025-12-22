@@ -81,10 +81,9 @@ export class UploadTask {
       this.change.markChanged(`blob upload for ${resourceIdToString(this.res.id)} finished`);
     } catch (e: any) {
 
-      if (isResourceWasDeletedError(e)) {
-        this.setRetriableError(e);
-        this.logger.warn(`resource was deleted while uploading a blob: ${e}`);
-        this.change.markChanged(`blob upload for ${resourceIdToString(this.res.id)} aborted, resource was deleted`);
+      if (isTerminalUploadError(e)) {
+        this.logger.warn(`terminal error while uploading a blob: ${e}`);
+        this.change.markChanged(`blob upload for ${resourceIdToString(this.res.id)} aborted: ${e.code}`);
         this.setDone(true);
 
         return;
@@ -130,11 +129,11 @@ export class UploadTask {
         return;
       }
 
-      if (isResourceWasDeletedError(e)) {
+      if (isTerminalUploadError(e)) {
         this.logger.warn(
-          `resource was not found while updating a status of BlobImport: ${e}, ${stringifyWithResourceId(this.res)}`,
+          `terminal error while updating BlobImport status: ${e}, ${stringifyWithResourceId(this.res)}`,
         );
-        this.change.markChanged(`upload status for ${resourceIdToString(this.res.id)} changed, resource not found`);
+        this.change.markChanged(`upload status for ${resourceIdToString(this.res.id)} aborted: ${e.code}`);
         this.setDone(true);
         return;
       }
@@ -333,11 +332,16 @@ function doneProgressIfExisted(alreadyExisted: boolean, status: sdk.ImportStatus
   return status;
 }
 
-export function isResourceWasDeletedError(e: any) {
-  return (
-    e.name == 'RpcError'
-    && (e.code == 'NOT_FOUND' || e.code == 'ABORTED' || e.code == 'ALREADY_EXISTS')
-  );
+export function isTerminalUploadError(e: any) {
+  if (e?.name !== 'RpcError') return false;
+  switch (e.code) {
+    case 'NOT_FOUND':
+    case 'ABORTED':
+    case 'ALREADY_EXISTS':
+      return true;
+    default:
+      return false;
+  }
 }
 
 export function nonRecoverableError(e: any) {
