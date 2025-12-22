@@ -3,6 +3,8 @@ import { Aborted } from '@milaboratories/ts-helpers';
 import { Code } from '../proto-grpc/google/rpc/code';
 
 export function isConnectionProblem(err: unknown, nested: boolean = false): boolean {
+  if (err === undefined || err === null) return false;
+
   if (err instanceof DisconnectedError) return true;
   if ((err as any).name == 'RpcError' && (err as any).code == 'UNAVAILABLE') return true;
   if ((err as any).name == 'RESTError' && (err as any).status.code == Code.UNAVAILABLE) return true;
@@ -11,6 +13,8 @@ export function isConnectionProblem(err: unknown, nested: boolean = false): bool
 }
 
 export function isUnauthenticated(err: unknown, nested: boolean = false): boolean {
+  if (err === undefined || err === null) return false;
+
   if (err instanceof UnauthenticatedError) return true;
   if ((err as any).name == 'RpcError' && (err as any).code == 'UNAUTHENTICATED') return true;
   if ((err as any).name == 'RESTError' && (err as any).status.code == Code.UNAUTHENTICATED) return true;
@@ -19,6 +23,8 @@ export function isUnauthenticated(err: unknown, nested: boolean = false): boolea
 }
 
 export function isTimeoutError(err: unknown, nested: boolean = false): boolean {
+  if (err === undefined || err === null) return false;
+
   if ((err as any).name == 'TimeoutError') return true;
   if ((err as any).name == 'RpcError' && (err as any).code == 'DEADLINE_EXCEEDED') return true;
   if ((err as any).name == 'RESTError' && (err as any).status.code == Code.DEADLINE_EXCEEDED) return true;
@@ -27,6 +33,8 @@ export function isTimeoutError(err: unknown, nested: boolean = false): boolean {
 }
 
 export function isCancelError(err: unknown, nested: boolean = false): boolean {
+  if (err === undefined || err === null) return false;
+
   if ((err as any).name == 'RpcError' && (err as any).code == 'CANCELLED') return true;
   if ((err as any).name == 'RESTError' && (err as any).status.code == Code.CANCELLED) return true;
   if ((err as any).cause !== undefined && !nested) return isCancelError((err as any).cause, true);
@@ -34,6 +42,8 @@ export function isCancelError(err: unknown, nested: boolean = false): boolean {
 }
 
 export function isAbortedError(err: unknown, nested: boolean = false): boolean {
+  if (err === undefined || err === null) return false;
+
   if (err instanceof Aborted || (err as any).name == 'AbortError') return true;
   if ((err as any).code == 'ABORT_ERR') return true;
   if (err instanceof DOMException && err.code === DOMException.ABORT_ERR) return true; // WebSocket error
@@ -44,6 +54,8 @@ export function isAbortedError(err: unknown, nested: boolean = false): boolean {
 }
 
 export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): boolean {
+  if (err === undefined || err === null) return false;
+
   if (isAbortedError(err, true)) return true;
   if (isTimeoutError(err, true)) return true;
   if (isCancelError(err, true)) return true;
@@ -52,6 +64,8 @@ export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): b
 }
 
 export function isNotFoundError(err: unknown, nested: boolean = false): boolean {
+  if (err === undefined || err === null) return false;
+
   if ((err as any).name == 'RpcError' && (err as any).code == 'NOT_FOUND') return true;
   if ((err as any).name == 'RESTError' && (err as any).status.code == Code.NOT_FOUND) return true;
   if ((err as any).cause !== undefined && !nested) return isNotFoundError((err as any).cause, true);
