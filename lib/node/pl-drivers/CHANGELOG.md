@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.11.32
+
+### Patch Changes
+
+- 35d3bdd: Updated logging messages to clearly indicate 'terminal error' and include the specific error code when an upload or status update is aborted due to such an error.
+
 ## 1.11.31
 
 ### Patch Changes
