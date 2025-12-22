@@ -443,7 +443,7 @@ export class LLPlClient implements WireClientProviderFactory {
         body: { expiration: `${ttlSeconds}s` },
         headers,
       });
-      return notEmpty((await resp).data).token;
+      return notEmpty((await resp).data, 'REST: empty response for JWT token request').token;
     }
   }
 
@@ -452,7 +452,7 @@ export class LLPlClient implements WireClientProviderFactory {
     if (cl instanceof GrpcPlApiClient) {
       return (await cl.ping({})).response;
     } else {
-      return notEmpty((await cl.GET('/v1/ping')).data);
+      return notEmpty((await cl.GET('/v1/ping')).data, 'REST: empty response for ping request');
     }
   }
 
@@ -475,11 +475,14 @@ export class LLPlClient implements WireClientProviderFactory {
       maxDelay: 500,
     };
 
-    await retry(() => withTimeout(this.ping(), 500), retryOptions, () => {
-      const protocol = this._wireProto === 'grpc' ? 'rest' : 'grpc';
-      this.initWireConnection(protocol);
-      return true;
-    });
+    await retry(
+      () => withTimeout(this.ping(), 500),
+      retryOptions,
+      () => {
+        const protocol = this._wireProto === 'grpc' ? 'rest' : 'grpc';
+        this.initWireConnection(protocol);
+        return true;
+      });
   }
 
   public async license(): Promise<grpcTypes.MaintenanceAPI_License_Response> {
@@ -487,7 +490,7 @@ export class LLPlClient implements WireClientProviderFactory {
     if (cl instanceof GrpcPlApiClient) {
       return (await cl.license({})).response;
     } else {
-      const resp = notEmpty((await cl.GET('/v1/license')).data);
+      const resp = notEmpty((await cl.GET('/v1/license')).data, 'REST: empty response for license request');
       return {
         status: resp.status,
         isOk: resp.isOk,
@@ -501,7 +504,7 @@ export class LLPlClient implements WireClientProviderFactory {
     if (cl instanceof GrpcPlApiClient) {
       return (await cl.authMethods({})).response;
     } else {
-      return notEmpty((await cl.GET('/v1/auth/methods')).data);
+      return notEmpty((await cl.GET('/v1/auth/methods')).data, 'REST: empty response for auth methods request');
     }
   }
 
