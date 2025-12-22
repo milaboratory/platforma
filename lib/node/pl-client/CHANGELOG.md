@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.16.15
+
+### Patch Changes
+
+- 4fceb9d: More informative errors for empty data in ll_client
+
 ## 2.16.14
 
 ### Patch Changes
