@@ -82,7 +82,6 @@ export class UploadTask {
     } catch (e: any) {
 
       if (isResourceWasDeletedError(e)) {
-        this.setRetriableError(e);
         this.logger.warn(`resource was deleted while uploading a blob: ${e}`);
         this.change.markChanged(`blob upload for ${resourceIdToString(this.res.id)} aborted, resource was deleted`);
         this.setDone(true);
@@ -333,7 +332,7 @@ function doneProgressIfExisted(alreadyExisted: boolean, status: sdk.ImportStatus
   return status;
 }
 
-export function isResourceWasDeletedError(e: any) {
+export function isResourceWasDeletedError(e: any) {//
   return (
     e.name == 'RpcError'
     && (e.code == 'NOT_FOUND' || e.code == 'ABORTED' || e.code == 'ALREADY_EXISTS')
