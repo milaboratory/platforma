@@ -82,8 +82,8 @@ export class UploadTask {
     } catch (e: any) {
 
       if (isTerminalUploadError(e)) {
-        this.logger.warn(`resource was deleted while uploading a blob: ${e}`);
-        this.change.markChanged(`blob upload for ${resourceIdToString(this.res.id)} aborted, resource was deleted`);
+        this.logger.warn(`terminal error while uploading a blob: ${e}`);
+        this.change.markChanged(`blob upload for ${resourceIdToString(this.res.id)} aborted: ${e.code}`);
         this.setDone(true);
 
         return;
@@ -131,9 +131,9 @@ export class UploadTask {
 
       if (isTerminalUploadError(e)) {
         this.logger.warn(
-          `resource was not found while updating a status of BlobImport: ${e}, ${stringifyWithResourceId(this.res)}`,
+          `terminal error while updating BlobImport status: ${e}, ${stringifyWithResourceId(this.res)}`,
         );
-        this.change.markChanged(`upload status for ${resourceIdToString(this.res.id)} changed, resource not found`);
+        this.change.markChanged(`upload status for ${resourceIdToString(this.res.id)} aborted: ${e.code}`);
         this.setDone(true);
         return;
       }
