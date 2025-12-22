@@ -333,10 +333,15 @@ function doneProgressIfExisted(alreadyExisted: boolean, status: sdk.ImportStatus
 }
 
 export function isTerminalUploadError(e: any) {
-  return (
-    e.name == 'RpcError'
-    && (e.code == 'NOT_FOUND' || e.code == 'ABORTED' || e.code == 'ALREADY_EXISTS')
-  );
+  if (e.name !== 'RpcError') return false;
+  switch (e.code) {
+    case 'NOT_FOUND':
+    case 'ABORTED':
+    case 'ALREADY_EXISTS':
+      return true;
+    default:
+      return false;
+  }
 }
 
 export function nonRecoverableError(e: any) {
