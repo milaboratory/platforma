@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest.concurrent('package-loads-and-installs', async ({ helper, expect }) => {
+tplTest.concurrent('pkg-loads-and-installs', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     false,
     'exec.pkg.pkg-install',
@@ -19,7 +19,7 @@ tplTest.concurrent('package-loads-and-installs', async ({ helper, expect }) => {
 tplTest.concurrent('pkg-file-is-exported', async ({ helper, expect, driverKit }) => {
   const result = await helper.renderTemplate(
     false,
-    'exec.pkg.pkg-export',
+    'exec.pkg.pkg-file-export',
     ['pkgFileContent', 'pkgFile'],
     (tx) => ({}),
   );
@@ -47,18 +47,3 @@ tplTest.concurrent('pkg-file-is-exported', async ({ helper, expect, driverKit })
   expect(assetData).toContain('Hello');
   expect(assetContent).toEqual(assetData);
 });
-
-// tplTest("asset-is-loaded", async ({ helper, expect, driverKit }) => {
-//   const result = await helper.renderTemplate(
-//     false,
-//     "exec.pkg.asset-export",
-//     ["main"],
-//     (tx) => ({})
-//   );
-
-//   // Wait for asset content
-//   const assetContentOutput = result.computeOutput("main", (a) => a?.getData().toString());
-//   const assetContent = await assetContentOutput.awaitStableValue()
-
-//   expect(assetContent).toEqual("file1.txt content\n")
-// });

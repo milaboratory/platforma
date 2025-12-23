@@ -2,8 +2,9 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 self := import("@platforma-sdk/workflow-tengo:tpl")
 blobs := import("@platforma-sdk/workflow-tengo:file.internal")
 workdir := import("@platforma-sdk/workflow-tengo:workdir")
+execConstants := import("@platforma-sdk/workflow-tengo:exec.constants")
 
-asset := assets.importAsset(":exec.pkg.asset")
+asset := assets.importAsset("@platforma-open/milaboratories.software-small-binaries:small-asset")
 
 self.defineOutputs(["main"])
 
@@ -21,14 +22,15 @@ self.prepare(func(inputs) {
 
 self.body(func(inputs) {
 	wd := workdir.builder().
-        addFromZip(inputs.archive, ".", []).
-        build()
+		inQueue(execConstants.LIGHT_QUEUE).
+		addFromZip(inputs.archive, ".", []).
+		build()
 
-    fileName := "file1.txt"
+	fileName := "file1.txt"
 
-    result := workdir.save(wd).
-        saveFileContent(fileName).
-        build()
+	result := workdir.save(wd).
+		saveFileContent(fileName).
+		build()
 
 	return {
 		main: result.filesContent.getFutureInputField(fileName)
