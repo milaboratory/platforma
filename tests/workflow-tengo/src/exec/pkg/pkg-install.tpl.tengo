@@ -3,7 +3,7 @@ self := import("@platforma-sdk/workflow-tengo:tpl")
 pkg := import("@platforma-sdk/workflow-tengo:exec.package")
 maps := import("@platforma-sdk/workflow-tengo:maps")
 
-sw := assets.importSoftware(":exec.pkg.sleep")
+sw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:sleep")
 
 self.defineOutputs(["installed"])
 

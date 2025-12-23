@@ -2,10 +2,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest.concurrent('software-info-loads', async ({ helper, expect }) => {
+tplTest.concurrent('software-metadata-loads', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     false,
-    'exec.artifacts-software',
+    'assets.import-software',
     ['main'],
     (tx) => ({}),
   );
@@ -19,17 +19,17 @@ tplTest.concurrent('software-info-loads', async ({ helper, expect }) => {
     execs: string[];
   };
 
-  expect(val.name).eq('@platforma-sdk/workflow-tengo-tests:exec.pkg.sleep');
+  expect(val.name).eq('@platforma-sdk/workflow-tengo-tests:assets.software-meta');
   expect(val.version).not.eq('');
   expect(val.execs.length).gt(0);
   expect(val).toHaveProperty('blobRef');
   expect(val).toHaveProperty('descriptor');
 });
 
-tplTest.concurrent('asset-info-loads', async ({ helper, expect }) => {
+tplTest.concurrent('asset-metadata-loads', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     false,
-    'exec.artifacts-asset',
+    'assets.import-asset',
     ['main'],
     (tx) => ({}),
   );
@@ -43,8 +43,23 @@ tplTest.concurrent('asset-info-loads', async ({ helper, expect }) => {
     execs: string[];
   };
 
-  expect(val.name).eq('@platforma-sdk/workflow-tengo-tests:exec.pkg.asset');
+  expect(val.name).eq('@platforma-sdk/workflow-tengo-tests:assets.asset-meta');
   expect(val.version).not.eq('');
   expect(val).toHaveProperty('blobRef');
   expect(val).toHaveProperty('descriptor');
+});
+
+tplTest.concurrent('real-asset-download', async ({ helper, expect, driverKit }) => {
+  const result = await helper.renderTemplate(
+    false,
+    'assets.real-asset-download',
+    ['main'],
+    (tx) => ({}),
+  );
+
+  // Wait for asset content
+  const assetContentOutput = result.computeOutput('main', (a) => a?.getData()?.toString());
+  const assetContent = await assetContentOutput.awaitStableValue();
+
+  expect(assetContent).toEqual('file1.txt content\n');
 });
