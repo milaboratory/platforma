@@ -1,0 +1,30 @@
+// ll_agg_1
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pLl := import("@platforma-sdk/workflow-tengo:pframes.ll")
+
+bodyTpl := assets.importTemplate(":pframes.agg_1_body_pure")
+
+self.awaitState("InputsLocked")
+self.awaitState("params", "ResourceReady")
+
+self.body(func(inputs) {
+	params := inputs.params
+	extraFields := {}
+	if !is_undefined(inputs.base) {
+		extraFields.base = inputs.base
+	}
+
+	outputsToCollect := [{ type: "Resource", name: "result" }]
+
+	if inputs.nested {
+		extraFields.nested = true
+		outputsToCollect = [{ type: "Resource", name: "result", path: ["result", "nested"] }]
+	}
+
+	return {
+		result: pLl.aggregate(inputs.data, params.indices, bodyTpl, outputsToCollect, params.eph, extraFields).output("result")
+	}
+})

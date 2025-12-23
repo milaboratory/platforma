@@ -1,0 +1,21 @@
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+sw := assets.importSoftware(":exec.pkg.sleep")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	result := {
+		main: {
+			name: sw.name,
+			version: sw.version,
+			descriptor: ll.fromStrict(sw.descriptor),
+			blobRef: ll.fromStrict(sw.blobRef),
+			execs: ll.getExecutorsList()
+		}
+	}
+
+	return result
+})

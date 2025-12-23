@@ -1,0 +1,36 @@
+assets := import("@platforma-sdk/workflow-tengo:assets")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+blobs := import("@platforma-sdk/workflow-tengo:file.internal")
+workdir := import("@platforma-sdk/workflow-tengo:workdir")
+
+asset := assets.importAsset(":exec.pkg.asset")
+
+self.defineOutputs(["main"])
+
+self.prepare(func(inputs) {
+	assetDescriptor := asset.descriptor.asset
+
+	archive := blobs.createBlobImportExternal({
+		dataURL: assetDescriptor.url
+	}).file
+
+	return {
+		archive: archive
+	}
+})
+
+self.body(func(inputs) {
+	wd := workdir.builder().
+        addFromZip(inputs.archive, ".", []).
+        build()
+
+    fileName := "file1.txt"
+
+    result := workdir.save(wd).
+        saveFileContent(fileName).
+        build()
+
+	return {
+		main: result.filesContent.getFutureInputField(fileName)
+	}
+})
