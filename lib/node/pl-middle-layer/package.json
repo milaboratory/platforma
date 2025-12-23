@@ -9,6 +9,12 @@
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node --build-config ./build.node.config.mjs",

@@ -23,6 +23,7 @@ export const createViteLibConfig = (configEnv: ConfigEnv): UserConfig => {
       cssInjectedByJsPlugin({ relativeCSSInjection: true }),
     ],
     build: {
+      sourcemap: true,
       lib: {
         fileName: 'lib',
         formats: ['es'],
@@ -38,6 +39,7 @@ export const createViteLibConfig = (configEnv: ConfigEnv): UserConfig => {
           entryFileNames: '[name].js',
           chunkFileNames: '[name]-[hash].js',
           assetFileNames: '[name][extname]',
+          sourcemap: true,
         },
       },
     },

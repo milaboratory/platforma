@@ -6,7 +6,7 @@
   "styles": "dist/index.js",
   "exports": {
     ".": {
-      "sources": "./src/index.ts",
+      "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./styles": "./dist/index.js"
