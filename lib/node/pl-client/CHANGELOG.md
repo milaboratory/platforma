@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.16.17
+
+### Patch Changes
+
+- 2762d16: Unauth client now accepts options with logger
+
 ## 2.16.16
 
 ### Patch Changes
