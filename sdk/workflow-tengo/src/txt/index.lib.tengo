@@ -65,6 +65,65 @@ head := func(fileRef, opts) {
     return result.getFileContent("output.txt")
 }
 
+/**
+ * Counts lines in a text file with optional regex filtering.
+ *
+ * @param fileRef {resource} - Resource reference to the input text file
+ * @param ...opts {map} (optional) - Options map with optional fields:
+ *   - ignorePattern {string} (optional): Regex pattern - lines matching this will be ignored
+ * @returns {number} - Number of lines in the file (excluding ignored lines)
+ * @example
+ *   // Count all lines
+ *   lineCount := txt.countLines(inputs.myFile)
+ *
+ *   // Count lines ignoring comments
+ *   lineCount := txt.countLines(inputs.myFile, {ignorePattern: "^#"})
+ *
+ *   // Count non-empty lines
+ *   lineCount := txt.countLines(inputs.myFile, {ignorePattern: "^\\s*$"})
+ */
+countLines := func(fileRef, ...opts) {
+    if !smart.isReference(fileRef) {
+        ll.panic("fileRef must be a valid resource reference. Got: %T", fileRef)
+    }
+
+    if len(opts) == 0 {
+        opts = {}
+    } else if len(opts) == 1 {
+        opts = opts[0]
+    } else {
+        ll.panic("too many arguments")
+    }
+
+    if !is_map(opts) {
+        ll.panic("opts must be a map or undefined. Got: %T", opts)
+    }
+
+    wcSw := assets.importSoftware("@platforma-open/milaboratories.software-ptexter:wc-l")
+
+    cmdBuilder := exec.builder().
+        software(wcSw)
+
+    if !is_undefined(opts.ignorePattern) {
+        if !is_string(opts.ignorePattern) {
+            ll.panic("opts.ignorePattern must be a string. Got: %T", opts.ignorePattern)
+        }
+        cmdBuilder = cmdBuilder.
+            arg("--ignore-pattern").
+            arg(opts.ignorePattern)
+    }
+
+    cmdBuilder = cmdBuilder.
+        arg("input.txt").
+        arg("output.txt").
+        addFile("input.txt", fileRef).
+        saveFileContent("output.txt")
+
+    result := cmdBuilder.run()
+    return result.getFileContent("output.txt")
+}
+
 export ll.toStrict({
-    head: head
+    head: head,
+    countLines: countLines
 })
