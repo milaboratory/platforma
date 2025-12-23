@@ -10,7 +10,6 @@ export function createRollupTypescriptPlugin({ output, useSources }: {
       declaration: true,
       declarationMap: true,
       declarationDir: output,
-      sourceMap: true,
       moduleResolution: useSources ? 'bundler' : 'node',
       customConditions: useSources ? ['sources'] : [],
     },

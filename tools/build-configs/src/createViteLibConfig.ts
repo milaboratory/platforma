@@ -23,7 +23,6 @@ export const createViteLibConfig = (configEnv: ConfigEnv): UserConfig => {
       cssInjectedByJsPlugin({ relativeCSSInjection: true }),
     ],
     build: {
-      sourcemap: true,
       lib: {
         fileName: 'lib',
         formats: ['es'],
