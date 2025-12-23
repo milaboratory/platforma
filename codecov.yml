@@ -14,8 +14,10 @@ component_management:
     statuses:
       - type: project
         target: auto
+        threshold: 5%
       - type: patch
         target: auto
+        threshold: 5%
   individual_components:
     - component_id: ui
       name: UI
