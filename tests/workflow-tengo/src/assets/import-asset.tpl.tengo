@@ -2,7 +2,7 @@ ll := import("@platforma-sdk/workflow-tengo:ll")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 self := import("@platforma-sdk/workflow-tengo:tpl")
 
-asset := assets.importAsset(":exec.pkg.asset")
+asset := assets.importAsset(":assets.asset-meta")
 
 self.defineOutputs(["main"])
 
