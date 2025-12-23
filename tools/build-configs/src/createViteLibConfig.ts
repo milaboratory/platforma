@@ -39,7 +39,6 @@ export const createViteLibConfig = (configEnv: ConfigEnv): UserConfig => {
           entryFileNames: '[name].js',
           chunkFileNames: '[name]-[hash].js',
           assetFileNames: '[name][extname]',
-          sourcemap: true,
         },
       },
     },
