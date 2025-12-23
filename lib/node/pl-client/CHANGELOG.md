@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.16.16
+
+### Patch Changes
+
+- 2dc3476: Make wire protocol automatic detection to be more stable in slow networks
+
 ## 2.16.15
 
 ### Patch Changes

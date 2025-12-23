@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-drivers",
-  "version": "1.11.32",
+  "version": "1.11.33",
   "engines": {
     "node": ">=22"
   },
