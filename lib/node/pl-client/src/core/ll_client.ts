@@ -89,12 +89,17 @@ export class LLPlClient implements WireClientProviderFactory {
       statusListener?: PlConnectionStatusListener;
       shouldUseGzip?: boolean;
       logger?: MiLogger;
+      useAutoDetectWireProtocol?: boolean;
     } = {},
   ) {
     const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
 
     const pl = new LLPlClient(conf, ops);
-    await pl.detectOptimalWireProtocol();
+
+    // FIXME(rfiskov)[MILAB-5275]: Investigate why autodetect randomly fails; temporary turn it off.
+    if (ops.useAutoDetectWireProtocol) {
+      await pl.detectOptimalWireProtocol();
+    }
     return pl;
   }
 
