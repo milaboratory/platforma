@@ -117,8 +117,8 @@ const reactiveTextProps = computed(() => {
   if (!reactiveText.value) return;
   const formattedNow = timeFormatter.format(now.value);
   return {
-    loadingText: 'Loading at ' + formattedNow,
-    notReadyText: 'Not ready at ' + formattedNow,
+    dataLoadingText: 'Loading at ' + formattedNow,
+    dataNotReadyText: 'Not ready at ' + formattedNow,
     noRowsText: 'No rows at ' + formattedNow,
   };
 });
