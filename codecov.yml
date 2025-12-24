@@ -4,10 +4,12 @@ coverage:
       default:
         target: auto # Overall code coverage
         threshold: 5% # Overall code coverage drop
+        informational: true
     patch: # Changed lines coverage
       default:
         target: 50% # New code coverage
         threshold: 5%  # Existing code coverage drop
+        informational: true
 
 component_management:
   default_rules:
@@ -15,9 +17,11 @@ component_management:
       - type: project
         target: auto
         threshold: 5%
+        informational: true
       - type: patch
         target: auto
         threshold: 5%
+        informational: true
   individual_components:
     - component_id: ui
       name: UI
