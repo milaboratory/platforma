@@ -51,7 +51,7 @@ export const createVitestConfig = (overrides: ViteUserConfig = {}): ViteUserConf
           include: coverageInclude,
           exclude: coverageExclude,
           provider: 'istanbul',
-          reporter: ['lcov', 'text'],
+          reporter: ['lcovonly', 'text'],
           reportsDirectory: './coverage',
         },
         reporters: ['default', ['junit', { outputFile: 'test-report.junit.xml' }]],
