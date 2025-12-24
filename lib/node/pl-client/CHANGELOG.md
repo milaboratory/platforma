@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.16.18
+
+### Patch Changes
+
+- edbbd2e: turn off rest wire protocol autodetection
+
 ## 2.16.17
 
 ### Patch Changes
