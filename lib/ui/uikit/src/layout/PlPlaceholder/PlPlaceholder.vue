@@ -1,9 +1,18 @@
 <script lang="ts">
+import paintWorkletCode from './paint-worklet.js?raw';
+
 export interface PlPlaceholderProps {
   variant?: 'table' | 'graph';
   title?: string;
   subtitle?: string | string[];
 }
+
+// Register paint worklet once at module load (uses blob URL to comply with CSP)
+const workletBlob = new Blob([paintWorkletCode], { type: 'application/javascript' });
+const workletUrl = URL.createObjectURL(workletBlob);
+(CSS as unknown as {
+  paintWorklet: { addModule: (url: string) => void };
+}).paintWorklet.addModule(workletUrl);
 </script>
 
 <script setup lang="ts">
@@ -22,10 +31,6 @@ const {
 } = defineProps<PlPlaceholderProps>();
 
 const styles = useCssModule();
-
-(CSS as unknown as {
-  paintWorklet: { addModule: (url: URL) => void };
-}).paintWorklet.addModule(new URL('paint-worklet.js', import.meta.url));
 </script>
 
 <template>
