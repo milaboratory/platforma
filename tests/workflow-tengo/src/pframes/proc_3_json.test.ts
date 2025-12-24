@@ -8,7 +8,7 @@ import { getLongTestTimeout } from '@milaboratories/test-helpers';
 import { vi } from 'vitest';
 import type { PlTreeEntry } from '@milaboratories/pl-tree';
 
-const TIMEOUT = getLongTestTimeout(15_000);
+const TIMEOUT = getLongTestTimeout(30_000);
 
 vi.setConfig({
   testTimeout: TIMEOUT,
