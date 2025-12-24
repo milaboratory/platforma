@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.8.7
+
+### Patch Changes
+
+- 35a16d0: use blob URL for paint worklet to comply with CSP
+
 ## 2.8.6
 
 ### Patch Changes
