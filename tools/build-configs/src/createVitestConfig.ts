@@ -44,7 +44,7 @@ export const createVitestConfig = (overrides: ViteUserConfig = {}): ViteUserConf
         passWithNoTests: true,
         server: {
           deps: {
-            inline: [/@milaboratories\//, /@platforma-open\//],
+            inline: [/@milaboratories\//],
           },
         },
         coverage: {
