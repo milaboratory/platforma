@@ -1,5 +1,27 @@
 # @milaboratories/pl-middle-layer
 
+## 1.44.0
+
+### Minor Changes
+
+- 88f33fa: Block model upgrade: subtitle, tags, and section badges
+
+### Patch Changes
+
+- Updated dependencies [88f33fa]
+  - @milaboratories/pl-model-middle-layer@1.9.0
+  - @milaboratories/pl-model-common@1.22.0
+  - @platforma-sdk/model@1.49.0
+  - @milaboratories/pf-driver@1.0.18
+  - @platforma-sdk/block-tools@2.6.28
+  - @milaboratories/pl-client@2.16.19
+  - @milaboratories/pl-deployments@2.14.1
+  - @milaboratories/pl-drivers@1.11.36
+  - @milaboratories/pl-model-backend@1.1.36
+  - @milaboratories/pl-errors@1.1.51
+  - @milaboratories/pl-tree@1.8.27
+  - @platforma-sdk/workflow-tengo@5.7.3
+
 ## 1.43.105
 
 ### Patch Changes
