@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { PlPlaceholder } from '@milaboratories/uikit';
+import { PL_PLACEHOLDER_TEXTS, PlPlaceholder } from '@milaboratories/uikit';
 import type { PlPlaceholderProps } from '@milaboratories/uikit';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import style from './pl-ag-overlay-loading.module.scss';
 import type { PlAgOverlayLoadingParams } from './types';
 
@@ -14,32 +14,40 @@ const props = defineProps<{
 
 const params = ref(props.params);
 
-const placeholderTexts = computed<
-  Pick<PlPlaceholderProps, 'title' | 'subtitle'>
->(() => {
-  const loadingText = params.value.loadingText;
-  if (!loadingText) {
-    return {};
-  }
-  if (typeof loadingText === 'string') {
-    return { title: loadingText };
-  }
-  return loadingText;
-});
-
 defineExpose({
   refresh: (newParams: PlAgOverlayLoadingParams) => {
     params.value = newParams;
   },
 });
+
+function normalizePlaceholderText(
+  text: string | Pick<PlPlaceholderProps, 'title' | 'subtitle'>,
+): Pick<PlPlaceholderProps, 'title' | 'subtitle'> {
+  if (typeof text === 'string') return { title: text };
+  return text;
+}
 </script>
 
 <template>
   <div :class="style.container">
-    <div v-if="params.notReady" :class="style.notReadyWrapper">
+    <div
+      v-if="params.variant === 'data-not-ready'"
+      :class="style.notReadyWrapper"
+    >
       <div :class="style.iconCatInBag" />
-      <h3 :class="style.text">{{ params.notReadyText || 'No datasource' }}</h3>
+      <h3 :class="style.text">
+        {{ params.dataNotReadyText || 'No datasource' }}
+      </h3>
     </div>
-    <PlPlaceholder v-else v-bind="placeholderTexts" variant="table" />
+    <PlPlaceholder
+      v-else
+      variant="table"
+      v-bind="normalizePlaceholderText(
+        {
+          'data-loading': params.dataLoadingText ?? PL_PLACEHOLDER_TEXTS.LOADING,
+          'block-running': params.blockRunningText ?? PL_PLACEHOLDER_TEXTS.RUNNING,
+        }[params.variant],
+      )"
+    />
   </div>
 </template>

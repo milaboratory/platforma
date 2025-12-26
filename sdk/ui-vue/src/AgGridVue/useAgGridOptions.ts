@@ -328,9 +328,9 @@ export function useAgGridOptions<TData>(
     return {
       ...options,
       loadingOverlayComponentParams: {
-        notReady: options.notReady,
-        notReadyText: options.notReadyText,
-        loadingText: options.loadingText,
+        variant: options.notReady ? 'data-not-ready' : 'data-loading',
+        dataNotReadyText: options.notReadyText,
+        dataLoadingText: options.loadingText,
       } satisfies PlAgOverlayLoadingParams,
     };
   });
@@ -346,10 +346,10 @@ export function useAgGridOptions<TData>(
     () => extOptions.value.loading,
   ], ([notReady, loading]) => {
     const loadingOverlayComponentParams = {
-      notReady,
+      variant: notReady ? 'data-not-ready' : 'data-loading',
       // we probably don't need to update the parameters below
-      notReadyText: extOptions.value.notReadyText,
-      loadingText: extOptions.value.loadingText,
+      dataNotReadyText: extOptions.value.notReadyText,
+      dataLoadingText: extOptions.value.loadingText,
     } satisfies PlAgOverlayLoadingParams;
 
     // Hack to apply loadingOverlayComponentParams

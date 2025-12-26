@@ -105,11 +105,14 @@ const props = defineProps<{
    */
   cellButtonInvokeRowsOnDoubleClick?: boolean;
 
-  /** @see {@link PlAgOverlayLoadingParams.loadingText} */
-  loadingText?: string;
+  /** @see {@link PlAgOverlayLoadingParams.blockRunningText} */
+  blockRunningText?: PlAgOverlayLoadingParams['blockRunningText'];
 
-  /** @see {@link PlAgOverlayLoadingParams.notReadyText} */
-  notReadyText?: string;
+  /** @see {@link PlAgOverlayLoadingParams.dataLoadingText} */
+  dataLoadingText?: PlAgOverlayLoadingParams['dataLoadingText'];
+
+  /** @see {@link PlAgOverlayLoadingParams.dataNotReadyText} */
+  dataNotReadyText?: PlAgOverlayLoadingParams['dataNotReadyText'];
 
   /** @see {@link PlAgOverlayNoRowsParams.text} */
   noRowsText?: string;
@@ -160,6 +163,8 @@ const filtersSettings = computed<PlDataTableFiltersSettings>(() => {
   return result;
 });
 
+const rowCountStatusPanel = { statusPanel: PlAgRowCount, align: 'left' };
+
 const gridApi = shallowRef<GridApi<PlAgDataTableV2Row> | null>(null);
 const dataRenderedTracker = new DeferredCircular<GridApi<PlAgDataTableV2Row>>();
 const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
@@ -200,7 +205,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
     loadingError: '...',
   },
   rowModelType: 'serverSide',
-  // cacheBlockSize should be tha same as PlMultiSequenceAlignment limit
+  // cacheBlockSize should be the same as PlMultiSequenceAlignment limit
   // so that selectAll will add all rows to selection
   cacheBlockSize: 1000,
   maxBlocksInCache: 100,
@@ -210,9 +215,10 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
   getRowId: (params) => params.data.id,
   loading: true,
   loadingOverlayComponentParams: {
-    notReady: true,
-    loadingText: props.loadingText,
-    notReadyText: props.notReadyText,
+    variant: 'data-not-ready',
+    blockRunningText: props.blockRunningText,
+    dataLoadingText: props.dataLoadingText,
+    dataNotReadyText: props.dataNotReadyText,
   } satisfies PlAgOverlayLoadingParams,
   loadingOverlayComponent: PlOverlayLoading,
   noRowsOverlayComponent: PlOverlayNoRows,
@@ -223,11 +229,6 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
     allColumns: true,
     suppressQuotes: true,
     fileName: 'table.csv',
-  },
-  statusBar: {
-    statusPanels: [
-      { statusPanel: PlAgRowCount, align: 'left' },
-    ],
   },
   onGridReady: (event) => {
     const api = event.api;
@@ -318,7 +319,7 @@ let oldOptions: GridOptions | null = null;
 watch(
   () => [gridApi.value, gridOptions.value] as const,
   ([gridApi, options]) => {
-    // Wait for AgGrid reinitialization, gridApi will eventially become initialized
+    // Wait for AgGrid reinitialization, gridApi will eventually become initialized
     if (!gridApi || gridApi.isDestroyed()) return;
     if (options.loading && oldOptions?.loading && !isJsonEqual(
       options.loadingOverlayComponentParams,
@@ -428,7 +429,7 @@ const generation = ref(0);
 watch(
   () => [gridApi.value, settings.value] as const,
   ([gridApi, settings]) => {
-    // Wait for AgGrid reinitialization, gridApi will eventially become initialized
+    // Wait for AgGrid reinitialization, gridApi will eventually become initialized
     if (!gridApi || gridApi.isDestroyed()) return;
     // Verify that this is not a false watch trigger
     if (isJsonEqual(settings, oldSettings)) return;
@@ -439,15 +440,16 @@ watch(
       dataRenderedTracker.reset();
 
       // No data source selected -> reset state to default
-      if (!settings.sourceId) {
+      if (settings.sourceId === null) {
         gridApi.updateGridOptions({
           loading: true,
           loadingOverlayComponentParams: {
             ...gridOptions.value.loadingOverlayComponentParams,
-            notReady: true,
+            variant: settings.blockIsRunning ? 'block-running' : 'data-not-ready',
           } satisfies PlAgOverlayLoadingParams,
           columnDefs: undefined,
           serverSideDatasource: undefined,
+          statusBar: undefined,
         });
         if (selection.value) {
           if (selection.value && !isJsonEqual(selection.value, defaultSelection)) {
@@ -467,8 +469,9 @@ watch(
           loading: true,
           loadingOverlayComponentParams: {
             ...gridOptions.value.loadingOverlayComponentParams,
-            notReady: false,
+            variant: 'data-loading',
           } satisfies PlAgOverlayLoadingParams,
+          statusBar: undefined,
         });
         if (selection.value && oldSettings?.sourceId) {
           if (selection.value && !isJsonEqual(selection.value, defaultSelection)) {
@@ -568,6 +571,9 @@ watch(
         if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
         gridApi.updateGridOptions({
           loading: false,
+          statusBar: {
+            statusPanels: [rowCountStatusPanel],
+          },
         });
       });
       dataRenderedTracker.promise.then(() => emit('newDataRendered'));
@@ -582,17 +588,19 @@ watch(
 watch(
   () => ({
     gridApi: gridApi.value,
-    loadingText: props.loadingText,
-    notReadyText: props.notReadyText,
+    blockRunningText: props.blockRunningText,
+    dataLoadingText: props.dataLoadingText,
+    dataNotReadyText: props.dataNotReadyText,
     noRowsText: props.noRowsText,
   }),
-  ({ gridApi, loadingText, notReadyText, noRowsText }) => {
+  ({ gridApi, blockRunningText, dataLoadingText, dataNotReadyText, noRowsText }) => {
     if (!gridApi || gridApi.isDestroyed()) return;
     gridApi.updateGridOptions({
       loadingOverlayComponentParams: {
         ...gridOptions.value.loadingOverlayComponentParams,
-        loadingText,
-        notReadyText,
+        blockRunningText,
+        dataLoadingText,
+        dataNotReadyText,
       },
       noRowsOverlayComponentParams: {
         ...gridOptions.value.noRowsOverlayComponentParams,

@@ -18,6 +18,7 @@ import type { ComputedRef, MaybeRefOrGetter } from 'vue';
 import { computed, toValue } from 'vue';
 import canonicalize from 'canonicalize';
 import { deepClone } from '@milaboratories/helpers';
+import type { PlPlaceholderProps } from '@milaboratories/uikit';
 
 export type PlDataTableFilterConfig = {
   options?: PlTableFilterType[];
@@ -25,7 +26,10 @@ export type PlDataTableFilterConfig = {
 };
 
 export type PlDataTableSettingsV2Base =
-  | { sourceId: null }
+  | {
+    sourceId: null;
+    blockIsRunning: boolean;
+  }
   | {
     /** Unique source id for state caching */
     sourceId: string;
@@ -48,17 +52,19 @@ type OptionsBasic = {
   /** Block output created by `createPlDataTableV2` */
   model: MaybeRefOrGetter<PlDataTableModel | undefined>;
   /**
-    * Sheets for partitioned data sources.
-    * Do not set if data source is never partitioned.
-    */
+   * Sheets for partitioned data sources.
+   * Do not set if data source is never partitioned.
+   */
   sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
+  /** Signal to PlAgDataTable whether the block itself is running. */
+  blockIsRunning?: MaybeRefOrGetter<boolean | undefined>;
 };
 
 type OptionsSimple = OptionsBasic & {
   /**
-    * Callback configuring filters for the table.
-    * If not provided, filtering will be disabled.
-    */
+   * Callback configuring filters for the table.
+   * If not provided, filtering will be disabled.
+   */
   filtersConfig?: (info: {
     column: PTableColumnSpec;
   }) => PlDataTableFilterConfig;
@@ -66,17 +72,17 @@ type OptionsSimple = OptionsBasic & {
 
 type OptionsAdvanced<T> = OptionsBasic & {
   /**
-    * Block property (such as inputAnchor) used to produce the data source.
-    * Mandatory for cases when the table can change without block run.
-    * Skip when the table is changed only after block run.
-    * Ask developers for help if you don't know what to set here.
-    */
+   * Block property (such as inputAnchor) used to produce the data source.
+   * Mandatory for cases when the table can change without block run.
+   * Skip when the table is changed only after block run.
+   * Ask developers for help if you don't know what to set here.
+   */
   sourceId: MaybeRefOrGetter<T | undefined>;
   /**
-    * Callback configuring filters for the table.
-    * If not provided, filtering will be disabled.
-    * Parameter `sourceId` should be compared using `isJsonEqual` from `@milaboratories/helpers`.
-    */
+   * Callback configuring filters for the table.
+   * If not provided, filtering will be disabled.
+   * Parameter `sourceId` should be compared using `isJsonEqual` from `@milaboratories/helpers`.
+   */
   filtersConfig?: (info: {
     sourceId: JsonCompatible<T>;
     column: PTableColumnSpec;
@@ -106,6 +112,7 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
   return computed(() => {
     const modelValue = deepClone(toValue(options.model));
     let settingsBase: PlDataTableSettingsV2Base;
+    const blockIsRunning = toValue(options.blockIsRunning) ?? false;
     if ('sourceId' in options) {
       const sourceIdValue = deepClone(toValue(options.sourceId));
       if (options.sheets) {
@@ -116,7 +123,7 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
               sheets: sheetsValue,
               model: modelValue,
             }
-          : { sourceId: null };
+          : { sourceId: null, blockIsRunning };
       } else {
         settingsBase = sourceIdValue
           ? {
@@ -124,7 +131,7 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
               sheets: [],
               model: modelValue,
             }
-          : { sourceId: null };
+          : { sourceId: null, blockIsRunning };
       }
     } else {
       if (options.sheets) {
@@ -135,7 +142,7 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
               sheets: sheetsValue,
               model: modelValue,
             }
-          : { sourceId: null };
+          : { sourceId: null, blockIsRunning };
       } else {
         settingsBase = modelValue
           ? {
@@ -143,7 +150,7 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
               sheets: [],
               model: modelValue,
             }
-          : { sourceId: null };
+          : { sourceId: null, blockIsRunning };
       }
     }
     return {
@@ -151,7 +158,7 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
       filtersConfig: filtersConfigValue,
     };
   });
-};
+}
 
 /** PlTableFilters restriction entry */
 export type PlTableFiltersRestriction = {
@@ -208,21 +215,14 @@ export type PlAgDataTableV2Row = {
 };
 
 export type PlAgOverlayLoadingParams = {
-  /**
-   * Required flag, that shows catInBag icon with message if `true`, shows PlSplash component if `false`.
-   */
-  notReady?: boolean;
-  /**
-   * Prop to override default "Loading" text
-   */
-  loadingText?: string | {
-    title: string;
-    subtitle: string | string[];
-  };
-  /**
-   * Prop to override default "No datasource" text (So why props name is notReady? Good question)
-   */
-  notReadyText?: string;
+  /** Determines which loading overlay variant to show. */
+  variant: 'block-running' | 'data-loading' | 'data-not-ready';
+  /** Prop to override default "Running analysis..." title text (and subtitles) */
+  blockRunningText?: string | Pick<PlPlaceholderProps, 'title' | 'subtitle'>;
+  /** Prop to override default "Loading data..." title text (and subtitles) */
+  dataLoadingText?: string | Pick<PlPlaceholderProps, 'title' | 'subtitle'>;
+  /** Prop to override default "No datasource" text */
+  dataNotReadyText?: string;
 };
 
 export type PlAgOverlayNoRowsParams = {
