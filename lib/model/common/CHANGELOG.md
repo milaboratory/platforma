@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.22.0
+
+### Minor Changes
+
+- 88f33fa: Block model upgrade: subtitle, tags, and section badges
+
 ## 1.21.10
 
 ### Patch Changes

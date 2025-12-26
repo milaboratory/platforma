@@ -1,5 +1,17 @@
 # @platforma-sdk/model
 
+## 1.49.0
+
+### Minor Changes
+
+- 88f33fa: Block model upgrade: subtitle, tags, and section badges
+
+### Patch Changes
+
+- Updated dependencies [88f33fa]
+  - @milaboratories/pl-model-common@1.22.0
+  - @milaboratories/ptabler-expression-js@1.1.8
+
 ## 1.48.14
 
 ### Patch Changes
