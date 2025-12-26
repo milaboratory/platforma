@@ -57,22 +57,28 @@ export class BlockModel<
   Href extends `/${string}` = '/',
 > {
   private constructor(
-    private readonly _renderingMode: BlockRenderingMode,
-    private readonly _initialArgs: Args | undefined,
-    private readonly _initialUiState: UiState,
-    private readonly _outputs: OutputsCfg,
-    private readonly _inputsValid: TypedConfigOrConfigLambda,
-    private readonly _sections: TypedConfigOrConfigLambda,
-    private readonly _title: ConfigRenderLambda | undefined,
-    private readonly _enrichmentTargets: ConfigRenderLambda | undefined,
-    private readonly _featureFlags: BlockCodeKnownFeatureFlags,
+    private config: {
+      readonly renderingMode: BlockRenderingMode;
+      readonly initialArgs?: Args;
+      readonly initialUiState: UiState;
+      readonly outputs: OutputsCfg;
+      readonly inputsValid: TypedConfigOrConfigLambda;
+      readonly sections: TypedConfigOrConfigLambda;
+      readonly title?: ConfigRenderLambda;
+      readonly subtitle?: ConfigRenderLambda;
+      readonly tags?: ConfigRenderLambda;
+      readonly enrichmentTargets?: ConfigRenderLambda;
+      readonly featureFlags: BlockCodeKnownFeatureFlags;
+    },
   ) {}
 
-  public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
-    supportsLazyState: true,
-    requiresUIAPIVersion: 1,
-    requiresModelAPIVersion: 1,
-  };
+  public static get INITIAL_BLOCK_FEATURE_FLAGS(): BlockCodeKnownFeatureFlags {
+    return {
+      supportsLazyState: true,
+      requiresUIAPIVersion: 1,
+      requiresModelAPIVersion: 1,
+    };
+  }
 
   /** Initiates configuration builder */
   public static create(renderingMode: BlockRenderingMode): BlockModel<NoOb, {}, NoOb>;
@@ -89,17 +95,14 @@ export class BlockModel<
    */
   public static create<Args>(): BlockModel<Args, {}, NoOb>;
   public static create(renderingMode: BlockRenderingMode = 'Heavy'): BlockModel<NoOb, {}, NoOb> {
-    return new BlockModel<NoOb, {}, NoOb>(
+    return new BlockModel<NoOb, {}, NoOb>({
       renderingMode,
-      undefined,
-      {},
-      {},
-      getImmediate(true),
-      getImmediate([]),
-      undefined,
-      undefined,
-      { ...BlockModel.INITIAL_BLOCK_FEATURE_FLAGS },
-    );
+      initialUiState: {},
+      outputs: {},
+      inputsValid: getImmediate(true),
+      sections: getImmediate([]),
+      featureFlags: BlockModel.INITIAL_BLOCK_FEATURE_FLAGS,
+    });
   }
 
   /**
@@ -140,39 +143,26 @@ export class BlockModel<
     if (typeof cfgOrRf === 'function') {
       const handle = `output#${key}`;
       tryRegisterCallback(handle, () => cfgOrRf(new RenderCtx()));
-      return new BlockModel(
-        this._renderingMode,
-        this._initialArgs,
-        this._initialUiState,
-        {
-          ...this._outputs,
+      return new BlockModel({
+        ...this.config,
+        outputs: {
+          ...this.config.outputs,
           [key]: {
             __renderLambda: true,
             handle,
             ...flags,
-          } satisfies ConfigRenderLambda,
+          },
         },
-        this._inputsValid,
-        this._sections,
-        this._title,
-        this._enrichmentTargets,
-        this._featureFlags,
-      );
-    } else
-      return new BlockModel(
-        this._renderingMode,
-        this._initialArgs,
-        this._initialUiState,
-        {
-          ...this._outputs,
+      });
+    } else {
+      return new BlockModel({
+        ...this.config,
+        outputs: {
+          ...this.config.outputs,
           [key]: cfgOrRf,
         },
-        this._inputsValid,
-        this._sections,
-        this._title,
-        this._enrichmentTargets,
-        this._featureFlags,
-      );
+      });
+    }
   }
 
   /** Shortcut for {@link output} with retentive flag set to true. */
@@ -202,32 +192,19 @@ export class BlockModel<
   ): BlockModel<Args, OutputsCfg, UiState, `/${string}`> {
     if (typeof cfgOrRf === 'function') {
       tryRegisterCallback('inputsValid', () => cfgOrRf(new RenderCtx()));
-      return new BlockModel<Args, OutputsCfg, UiState>(
-        this._renderingMode,
-        this._initialArgs,
-        this._initialUiState,
-        this._outputs,
-        {
+      return new BlockModel<Args, OutputsCfg, UiState>({
+        ...this.config,
+        inputsValid: {
           __renderLambda: true,
           handle: 'inputsValid',
-        } satisfies ConfigRenderLambda,
-        this._sections,
-        this._title,
-        this._enrichmentTargets,
-        this._featureFlags,
-      );
-    } else
-      return new BlockModel<Args, OutputsCfg, UiState>(
-        this._renderingMode,
-        this._initialArgs,
-        this._initialUiState,
-        this._outputs,
-        cfgOrRf,
-        this._sections,
-        this._title,
-        this._enrichmentTargets,
-        this._featureFlags,
-      );
+        },
+      });
+    } else {
+      return new BlockModel<Args, OutputsCfg, UiState>({
+        ...this.config,
+        inputsValid: cfgOrRf,
+      });
+    }
   }
 
   /** Sets the config to generate list of section in the left block overviews panel
@@ -255,29 +232,19 @@ export class BlockModel<
       return this.sections(getImmediate(arrOrCfgOrRf));
     } else if (typeof arrOrCfgOrRf === 'function') {
       tryRegisterCallback('sections', () => arrOrCfgOrRf(new RenderCtx()));
-      return new BlockModel<Args, OutputsCfg, UiState>(
-        this._renderingMode,
-        this._initialArgs,
-        this._initialUiState,
-        this._outputs,
-        this._inputsValid,
-        { __renderLambda: true, handle: 'sections' } as ConfigRenderLambda,
-        this._title,
-        this._enrichmentTargets,
-        this._featureFlags,
-      );
-    } else
-      return new BlockModel<Args, OutputsCfg, UiState>(
-        this._renderingMode,
-        this._initialArgs,
-        this._initialUiState,
-        this._outputs,
-        this._inputsValid,
-        arrOrCfgOrRf as TypedConfig,
-        this._title,
-        this._enrichmentTargets,
-        this._featureFlags,
-      );
+      return new BlockModel<Args, OutputsCfg, UiState>({
+        ...this.config,
+        sections: {
+          __renderLambda: true,
+          handle: 'sections',
+        },
+      });
+    } else {
+      return new BlockModel<Args, OutputsCfg, UiState>({
+        ...this.config,
+        sections: arrOrCfgOrRf as TypedConfig,
+      });
+    }
   }
 
   /** Sets a rendering function to derive block title, shown for the block in the left blocks-overview panel. */
@@ -285,17 +252,39 @@ export class BlockModel<
     rf: RenderFunction<Args, UiState, string>,
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
     tryRegisterCallback('title', () => rf(new RenderCtx()));
-    return new BlockModel<Args, OutputsCfg, UiState, Href>(
-      this._renderingMode,
-      this._initialArgs,
-      this._initialUiState,
-      this._outputs,
-      this._inputsValid,
-      this._sections,
-      { __renderLambda: true, handle: 'title' } as ConfigRenderLambda,
-      this._enrichmentTargets,
-      this._featureFlags,
-    );
+    return new BlockModel<Args, OutputsCfg, UiState, Href>({
+      ...this.config,
+      title: {
+        __renderLambda: true,
+        handle: 'title',
+      },
+    });
+  }
+
+  public subtitle(
+    rf: RenderFunction<Args, UiState, string>,
+  ): BlockModel<Args, OutputsCfg, UiState, Href> {
+    tryRegisterCallback('subtitle', () => rf(new RenderCtx()));
+    return new BlockModel<Args, OutputsCfg, UiState, Href>({
+      ...this.config,
+      subtitle: {
+        __renderLambda: true,
+        handle: 'subtitle',
+      },
+    });
+  }
+
+  public tags(
+    rf: RenderFunction<Args, UiState, string[]>,
+  ): BlockModel<Args, OutputsCfg, UiState, Href> {
+    tryRegisterCallback('tags', () => rf(new RenderCtx()));
+    return new BlockModel<Args, OutputsCfg, UiState, Href>({
+      ...this.config,
+      tags: {
+        __renderLambda: true,
+        handle: 'tags',
+      },
+    });
   }
 
   /**
@@ -303,62 +292,34 @@ export class BlockModel<
    * @deprecated use {@link withArgs}
    * */
   public initialArgs(value: Args): BlockModel<Args, OutputsCfg, UiState, Href> {
-    return new BlockModel<Args, OutputsCfg, UiState, Href>(
-      this._renderingMode,
-      value,
-      this._initialUiState,
-      this._outputs,
-      this._inputsValid,
-      this._sections,
-      this._title,
-      this._enrichmentTargets,
-      this._featureFlags,
-    );
+    return this.withArgs(value);
   }
 
   /** Sets initial args for the block, this value must be specified. */
-  public withArgs<Args>(initialValue: Args): BlockModel<Args, OutputsCfg, UiState, Href> {
-    return new BlockModel<Args, OutputsCfg, UiState, Href>(
-      this._renderingMode,
-      initialValue,
-      this._initialUiState,
-      this._outputs,
-      this._inputsValid,
-      this._sections,
-      this._title,
-      this._enrichmentTargets,
-      this._featureFlags,
-    );
+  public withArgs<Args>(initialArgs: Args): BlockModel<Args, OutputsCfg, UiState, Href> {
+    return new BlockModel<Args, OutputsCfg, UiState, Href>({
+      ...this.config,
+      initialArgs,
+    });
   }
 
   /** Defines type and sets initial value for block UiState. */
-  public withUiState<UiState>(initialValue: UiState): BlockModel<Args, OutputsCfg, UiState, Href> {
-    return new BlockModel<Args, OutputsCfg, UiState, Href>(
-      this._renderingMode,
-      this._initialArgs,
-      initialValue,
-      this._outputs,
-      this._inputsValid,
-      this._sections,
-      this._title,
-      this._enrichmentTargets,
-      this._featureFlags,
-    );
+  public withUiState<UiState>(initialUiState: UiState): BlockModel<Args, OutputsCfg, UiState, Href> {
+    return new BlockModel<Args, OutputsCfg, UiState, Href>({
+      ...this.config,
+      initialUiState,
+    });
   }
 
   /** Sets or overrides feature flags for the block. */
   public withFeatureFlags(flags: Partial<BlockCodeKnownFeatureFlags>): BlockModel<Args, OutputsCfg, UiState, Href> {
-    return new BlockModel<Args, OutputsCfg, UiState, Href>(
-      this._renderingMode,
-      this._initialArgs,
-      this._initialUiState,
-      this._outputs,
-      this._inputsValid,
-      this._sections,
-      this._title,
-      this._enrichmentTargets,
-      { ...this._featureFlags, ...flags },
-    );
+    return new BlockModel<Args, OutputsCfg, UiState, Href>({
+      ...this.config,
+      featureFlags: {
+        ...this.config.featureFlags,
+        ...flags,
+      },
+    });
   }
 
   /**
@@ -369,17 +330,13 @@ export class BlockModel<
     lambda: (args: Args) => PlRef[],
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
     tryRegisterCallback('enrichmentTargets', lambda);
-    return new BlockModel<Args, OutputsCfg, UiState, Href>(
-      this._renderingMode,
-      this._initialArgs,
-      this._initialUiState,
-      this._outputs,
-      this._inputsValid,
-      this._sections,
-      this._title,
-      { __renderLambda: true, handle: 'enrichmentTargets' } as ConfigRenderLambda,
-      this._featureFlags,
-    );
+    return new BlockModel<Args, OutputsCfg, UiState, Href>({
+      ...this.config,
+      enrichmentTargets: {
+        __renderLambda: true,
+        handle: 'enrichmentTargets',
+      },
+    });
   }
 
   public done(apiVersion?: 1): PlatformaV1<
@@ -399,53 +356,54 @@ export class BlockModel<
   /** Renders all provided block settings into a pre-configured platforma API
    * instance, that can be used in frontend to interact with block state, and
    * other features provided by the platforma to the block. */
-  public done(apiVersion?: PlatformaApiVersion): Platforma<
+  public done(apiVersion: PlatformaApiVersion = 1): Platforma<
     Args,
     InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
     UiState,
     Href
   > {
-    const requiresUIAPIVersion = apiVersion ?? 1;
     return this.withFeatureFlags({
-      ...this._featureFlags,
-      requiresUIAPIVersion,
-    })._done(requiresUIAPIVersion);
+      ...this.config.featureFlags,
+      requiresUIAPIVersion: apiVersion,
+    }).#done();
   }
 
-  public _done(apiVersion: PlatformaApiVersion): Platforma<
+  #done(): Platforma<
     Args,
     InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
     UiState,
     Href
   > {
-    if (this._initialArgs === undefined) throw new Error('Initial arguments not set.');
+    if (this.config.initialArgs === undefined) throw new Error('Initial arguments not set.');
 
     const config: BlockConfigContainer = {
       v3: {
         sdkVersion: PlatformaSDKVersion,
-        renderingMode: this._renderingMode,
-        initialArgs: this._initialArgs,
-        initialUiState: this._initialUiState,
-        inputsValid: this._inputsValid,
-        sections: this._sections,
-        title: this._title,
-        outputs: this._outputs,
-        enrichmentTargets: this._enrichmentTargets,
-        featureFlags: this._featureFlags,
+        renderingMode: this.config.renderingMode,
+        initialArgs: this.config.initialArgs,
+        initialUiState: this.config.initialUiState,
+        inputsValid: this.config.inputsValid,
+        sections: this.config.sections,
+        title: this.config.title,
+        subtitle: this.config.subtitle,
+        tags: this.config.tags,
+        outputs: this.config.outputs,
+        enrichmentTargets: this.config.enrichmentTargets,
+        featureFlags: this.config.featureFlags,
       },
 
       // fields below are added to allow previous desktop versions read generated configs
       sdkVersion: PlatformaSDKVersion,
-      renderingMode: this._renderingMode,
-      initialArgs: this._initialArgs,
-      inputsValid: downgradeCfgOrLambda(this._inputsValid),
-      sections: downgradeCfgOrLambda(this._sections),
+      renderingMode: this.config.renderingMode,
+      initialArgs: this.config.initialArgs,
+      inputsValid: downgradeCfgOrLambda(this.config.inputsValid),
+      sections: downgradeCfgOrLambda(this.config.sections),
       outputs: Object.fromEntries(
-        Object.entries(this._outputs).map(([key, value]) => [key, downgradeCfgOrLambda(value)]),
+        Object.entries(this.config.outputs).map(([key, value]) => [key, downgradeCfgOrLambda(value)]),
       ),
     };
 
-    globalThis.platformaApiVersion = apiVersion;
+    globalThis.platformaApiVersion = this.config.featureFlags.requiresUIAPIVersion as PlatformaApiVersion;
 
     if (!isInUI())
     // we are in the configuration rendering routine, not in actual UI

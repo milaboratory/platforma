@@ -1,0 +1,27 @@
+{
+  "name": "@milaboratories/milaboratories.test-block-model.test",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Block tests",
+  "scripts": {
+    "test": "vitest",
+    "lint": "eslint .",
+    "type-check": "ts-builder types --target block-test"
+  },
+  "files": [],
+  "keywords": [],
+  "dependencies": {
+    "@milaboratories/milaboratories.test-block-model.model": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
+    "this-block": "workspace:@milaboratories/milaboratories.test-block-model@*"
+  },
+  "devDependencies": {
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/eslint-config": "workspace:*",
+    "@platforma-sdk/test": "workspace:*",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

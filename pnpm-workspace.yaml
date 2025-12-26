@@ -101,6 +101,7 @@ packages:
   - etc/blocks/model-test/model
   - etc/blocks/model-test/ui
   - etc/blocks/model-test/block
+  - etc/blocks/model-test/test
 
   - etc/blocks/pool-explorer/workflow
   - etc/blocks/pool-explorer/model

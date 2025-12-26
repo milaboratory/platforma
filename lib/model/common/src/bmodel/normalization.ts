@@ -32,6 +32,8 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
       featureFlags,
       sections,
       title,
+      subtitle,
+      tags,
       enrichmentTargets,
     } = cfg.v3;
     const { code } = cfg;
@@ -45,6 +47,8 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
       featureFlags,
       sections,
       title,
+      subtitle,
+      tags,
       code,
       enrichmentTargets,
     };

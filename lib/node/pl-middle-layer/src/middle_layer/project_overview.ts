@@ -23,7 +23,7 @@ import type {
   ProjectMeta,
   ProjectOverview,
 } from '@milaboratories/pl-model-middle-layer';
-import { constructBlockContextArgsOnly } from './block_ctx';
+import { constructBlockContext, constructBlockContextArgsOnly } from './block_ctx';
 import { ifNotUndef } from '../cfg_render/util';
 import { type BlockSection } from '@platforma-sdk/model';
 import { extractCodeWithInfo, wrapCallback } from '@platforma-sdk/model';
@@ -155,7 +155,7 @@ export function projectOverview(
 
         const bp = getBlockPackInfo(prj, id);
 
-        const { sections, title, inputsValid, sdkVersion, featureFlags, isIncompatibleWithRuntime }
+        const { sections, title, subtitle, tags, inputsValid, sdkVersion, featureFlags, isIncompatibleWithRuntime }
           = ifNotUndef(bp, ({ bpId, cfg }) => {
             if (!env.runtimeCapabilities.checkCompatibility(cfg.featureFlags)) {
               return {
@@ -163,6 +163,7 @@ export function projectOverview(
                 featureFlags: cfg.featureFlags,
               };
             }
+            const blockCtx = constructBlockContext(prjEntry, id);
             const blockCtxArgsOnly = constructBlockContextArgsOnly(prjEntry, id);
             const codeWithInfoOrError = wrapCallback(() => extractCodeWithInfo(cfg));
             if (codeWithInfoOrError.error) {
@@ -176,14 +177,13 @@ export function projectOverview(
             return {
               sections: computableFromCfgOrRF(
                 env,
-                blockCtxArgsOnly,
+                blockCtx,
                 cfg.sections,
                 codeWithInfo,
                 bpId,
               ).wrap({
-                recover: (e) => {
-                  env.logger.error('Error in block model sections');
-                  env.logger.error(e);
+                recover: (cause) => {
+                  env.logger.error(new Error('Error in block model sections', { cause }));
                   return [];
                 },
               }) as ComputableStableDefined<BlockSection[]>,
@@ -197,12 +197,43 @@ export function projectOverview(
                     codeWithInfo,
                     bpId,
                   ).wrap({
-                    recover: (e) => {
-                      env.logger.error('Error in block model title');
-                      env.logger.error(e);
+                    recover: (cause) => {
+                      env.logger.error(new Error('Error in block model title', { cause }));
                       return 'Invalid title';
                     },
                   }) as ComputableStableDefined<string>,
+              ),
+              subtitle: ifNotUndef(
+                cfg.subtitle,
+                (subtitle) =>
+                  computableFromCfgOrRF(
+                    env,
+                    blockCtxArgsOnly,
+                    subtitle,
+                    codeWithInfo,
+                    bpId,
+                  ).wrap({
+                    recover: (cause) => {
+                      env.logger.error(new Error('Error in block model subtitle', { cause }));
+                      return 'Invalid subtitle';
+                    },
+                  }) as ComputableStableDefined<string>,
+              ),
+              tags: ifNotUndef(
+                cfg.tags,
+                (tags) =>
+                  computableFromCfgOrRF(
+                    env,
+                    blockCtx,
+                    tags,
+                    codeWithInfo,
+                    bpId,
+                  ).wrap({
+                    recover: (cause) => {
+                      env.logger.error(new Error('Error in block model tags', { cause }));
+                      return [];
+                    },
+                  }) as ComputableStableDefined<string[]>,
               ),
               inputsValid: computableFromCfgOrRF(
                 env,
@@ -211,10 +242,9 @@ export function projectOverview(
                 codeWithInfo,
                 bpId,
               ).wrap({
-                recover: (e) => {
+                recover: (cause) => {
                   // I'm not sure that we should write an error here, because it just means "Invalid args"
-                  env.logger.error('Error in block model argsValid');
-                  env.logger.error(e);
+                  env.logger.error(new Error('Error in block model argsValid', { cause }));
                   return false;
                 },
               }) as ComputableStableDefined<boolean>,
@@ -241,6 +271,8 @@ export function projectOverview(
           id,
           label: title ?? defaultLabel,
           title: title ?? defaultLabel,
+          subtitle,
+          tags,
           renderingMode,
           stale: info.prod?.stale !== false || calculationStatus === 'Limbo',
           missingReference: gNode.missingReferences,
