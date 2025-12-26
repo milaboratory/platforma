@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.15.0
+
+### Minor Changes
+
+- 8d1b495: Change built-in version to 1.44.1
+
 ## 2.14.1
 
 ### Patch Changes
