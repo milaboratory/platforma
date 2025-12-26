@@ -2,7 +2,9 @@ wf := import("@platforma-sdk/workflow-tengo:workflow")
 
 wf.body(func(args) {
 	return {
-		outputs: {},
+		outputs: {
+			theOutput: args.tagToWorkflow
+		},
 		exports: {}
 	}
 })
