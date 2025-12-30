@@ -39,7 +39,7 @@ const sources = [...new Array(10)].map((_, i) => {
 const loading = ref(false);
 const tableSettings = usePlDataTableSettingsV2({
   sourceId: () => loading.value ? 'loading_source' : app.model.ui.dataTableV2.sourceId,
-  model: () => loading.value ? undefined : app.model.outputs.ptV2,
+  model: () => app.model.outputs.ptV2,
   sheets: () => app.model.outputs.ptV2Sheets,
   filtersConfig: ({ sourceId, column }) => {
     if (isJsonEqual(sourceId, sources[0].value)) {

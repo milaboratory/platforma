@@ -30,7 +30,7 @@ import type {
   ManagedGridOptions,
 } from 'ag-grid-enterprise';
 import { AgGridVue } from 'ag-grid-vue3';
-import { computed, effectScope, ref, shallowRef, toRefs, watch } from 'vue';
+import { computed, effectScope, ref, shallowRef, toRefs, watch, watchEffect } from 'vue';
 import { AgGridTheme } from '../../aggrid';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
@@ -107,6 +107,9 @@ const props = defineProps<{
 
   /** @see {@link PlAgOverlayLoadingParams.loadingText} */
   loadingText?: string;
+
+  /** @see {@link PlAgOverlayLoadingParams.runningText} */
+  runningText?: string;
 
   /** @see {@link PlAgOverlayLoadingParams.notReadyText} */
   notReadyText?: string;
@@ -200,7 +203,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
     loadingError: '...',
   },
   rowModelType: 'serverSide',
-  // cacheBlockSize should be tha same as PlMultiSequenceAlignment limit
+  // cacheBlockSize should be the same as PlMultiSequenceAlignment limit
   // so that selectAll will add all rows to selection
   cacheBlockSize: 1000,
   maxBlocksInCache: 100,
@@ -210,8 +213,9 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
   getRowId: (params) => params.data.id,
   loading: true,
   loadingOverlayComponentParams: {
-    notReady: true,
+    variant: 'not-ready',
     loadingText: props.loadingText,
+    runningText: props.runningText,
     notReadyText: props.notReadyText,
   } satisfies PlAgOverlayLoadingParams,
   loadingOverlayComponent: PlOverlayLoading,
@@ -223,11 +227,6 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
     allColumns: true,
     suppressQuotes: true,
     fileName: 'table.csv',
-  },
-  statusBar: {
-    statusPanels: [
-      { statusPanel: PlAgRowCount, align: 'left' },
-    ],
   },
   onGridReady: (event) => {
     const api = event.api;
@@ -311,26 +310,6 @@ watch(
       ++reloadKey.value;
     }
   },
-);
-
-// Make loadingOverlayComponentParams reactive
-let oldOptions: GridOptions | null = null;
-watch(
-  () => [gridApi.value, gridOptions.value] as const,
-  ([gridApi, options]) => {
-    // Wait for AgGrid reinitialization, gridApi will eventially become initialized
-    if (!gridApi || gridApi.isDestroyed()) return;
-    if (options.loading && oldOptions?.loading && !isJsonEqual(
-      options.loadingOverlayComponentParams,
-      oldOptions?.loadingOverlayComponentParams,
-    )) {
-      // Hack to reapply loadingOverlayComponentParams
-      gridApi.setGridOption('loading', false);
-      gridApi.setGridOption('loading', true);
-    }
-    oldOptions = options;
-  },
-  { immediate: true },
 );
 
 // Make cellRendererSelector reactive
@@ -428,7 +407,7 @@ const generation = ref(0);
 watch(
   () => [gridApi.value, settings.value] as const,
   ([gridApi, settings]) => {
-    // Wait for AgGrid reinitialization, gridApi will eventially become initialized
+    // Wait for AgGrid reinitialization, gridApi will eventually become initialized
     if (!gridApi || gridApi.isDestroyed()) return;
     // Verify that this is not a false watch trigger
     if (isJsonEqual(settings, oldSettings)) return;
@@ -439,12 +418,12 @@ watch(
       dataRenderedTracker.reset();
 
       // No data source selected -> reset state to default
-      if (!settings.sourceId) {
+      if (settings.sourceId === null) {
         gridApi.updateGridOptions({
           loading: true,
           loadingOverlayComponentParams: {
             ...gridOptions.value.loadingOverlayComponentParams,
-            notReady: true,
+            variant: settings.pending ? 'running' : 'not-ready',
           } satisfies PlAgOverlayLoadingParams,
           columnDefs: undefined,
           serverSideDatasource: undefined,
@@ -467,7 +446,7 @@ watch(
           loading: true,
           loadingOverlayComponentParams: {
             ...gridOptions.value.loadingOverlayComponentParams,
-            notReady: false,
+            variant: 'loading',
           } satisfies PlAgOverlayLoadingParams,
         });
         if (selection.value && oldSettings?.sourceId) {
@@ -583,15 +562,17 @@ watch(
   () => ({
     gridApi: gridApi.value,
     loadingText: props.loadingText,
+    runningText: props.runningText,
     notReadyText: props.notReadyText,
     noRowsText: props.noRowsText,
   }),
-  ({ gridApi, loadingText, notReadyText, noRowsText }) => {
+  ({ gridApi, loadingText, runningText, notReadyText, noRowsText }) => {
     if (!gridApi || gridApi.isDestroyed()) return;
     gridApi.updateGridOptions({
       loadingOverlayComponentParams: {
         ...gridOptions.value.loadingOverlayComponentParams,
         loadingText,
+        runningText,
         notReadyText,
       },
       noRowsOverlayComponentParams: {
@@ -601,6 +582,19 @@ watch(
     });
   },
 );
+
+watchEffect(() => {
+  if (!gridApi.value || gridApi.value?.isDestroyed()) return;
+  gridApi.value.updateGridOptions({
+    statusBar: gridOptions.value.loading
+      ? undefined
+      : {
+          statusPanels: [
+            { statusPanel: PlAgRowCount, align: 'left' },
+          ],
+        },
+  });
+});
 </script>
 
 <template>

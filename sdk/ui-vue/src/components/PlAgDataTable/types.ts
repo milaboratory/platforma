@@ -1,17 +1,18 @@
-import {
-  type JsonCompatible,
-  type AxisId,
-  type CanonicalizedJson,
-  type ListOptionBase,
-  type PlDataTableModel,
-  type PlDataTableSheet,
-  type PlDataTableSheetState,
-  type PlTableFilter,
-  type PlTableFilterType,
-  type PTableColumnId,
-  type PTableColumnSpec,
-  type PTableKey,
-  type PTableValue,
+import type {
+  JsonCompatible,
+  AxisId,
+  CanonicalizedJson,
+  ListOptionBase,
+  PlDataTableModel,
+  PlDataTableSheet,
+  PlDataTableSheetState,
+  PlTableFilter,
+  PlTableFilterType,
+  PTableColumnId,
+  PTableColumnSpec,
+  PTableKey,
+  PTableValue,
+  OutputWithStatus,
 } from '@platforma-sdk/model';
 import type { PTableHidden } from './sources/common';
 import type { ComputedRef, MaybeRefOrGetter } from 'vue';
@@ -25,7 +26,7 @@ export type PlDataTableFilterConfig = {
 };
 
 export type PlDataTableSettingsV2Base =
-  | { sourceId: null }
+  | { sourceId: null; pending: boolean }
   | {
     /** Unique source id for state caching */
     sourceId: string;
@@ -46,7 +47,7 @@ export type PlDataTableSettingsV2 = PlDataTableSettingsV2Base & {
 
 type OptionsBasic = {
   /** Block output created by `createPlDataTableV2` */
-  model: MaybeRefOrGetter<PlDataTableModel | undefined>;
+  model: MaybeRefOrGetter<OutputWithStatus<PlDataTableModel | undefined>>;
   /**
     * Sheets for partitioned data sources.
     * Do not set if data source is never partitioned.
@@ -104,9 +105,11 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
       }
     : () => ({});
   return computed(() => {
-    const modelValue = deepClone(toValue(options.model));
+    const model = deepClone(toValue(options.model));
     let settingsBase: PlDataTableSettingsV2Base;
-    if ('sourceId' in options) {
+    if (!model.ok) {
+      settingsBase = { sourceId: null, pending: false };
+    } else if ('sourceId' in options) {
       const sourceIdValue = deepClone(toValue(options.sourceId));
       if (options.sheets) {
         const sheetsValue = deepClone(toValue(options.sheets));
@@ -114,17 +117,17 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
           ? {
               sourceId: canonicalize(sourceIdValue)!,
               sheets: sheetsValue,
-              model: modelValue,
+              model: model.value,
             }
-          : { sourceId: null };
+          : { sourceId: null, pending: !model.stable };
       } else {
         settingsBase = sourceIdValue
           ? {
               sourceId: canonicalize(sourceIdValue)!,
               sheets: [],
-              model: modelValue,
+              model: model.value,
             }
-          : { sourceId: null };
+          : { sourceId: null, pending: !model.stable };
       }
     } else {
       if (options.sheets) {
@@ -133,17 +136,17 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
           ? {
               sourceId: canonicalize('static')!,
               sheets: sheetsValue,
-              model: modelValue,
+              model: model.value,
             }
-          : { sourceId: null };
+          : { sourceId: null, pending: !model.stable };
       } else {
-        settingsBase = modelValue
+        settingsBase = model.value
           ? {
               sourceId: canonicalize('static')!,
               sheets: [],
-              model: modelValue,
+              model: model.value,
             }
-          : { sourceId: null };
+          : { sourceId: null, pending: !model.stable };
       }
     }
     return {
@@ -211,11 +214,18 @@ export type PlAgOverlayLoadingParams = {
   /**
    * Required flag, that shows catInBag icon with message if `true`, shows PlSplash component if `false`.
    */
-  notReady?: boolean;
+  variant: 'not-ready' | 'running' | 'loading';
   /**
-   * Prop to override default "Loading" text
+   * Prop to override default "Loading data..." text and the subtitles
    */
   loadingText?: string | {
+    title: string;
+    subtitle: string | string[];
+  };
+  /**
+   * Prop to override default "Running analysis..." text and the subtitles
+   */
+  runningText?: string | {
     title: string;
     subtitle: string | string[];
   };
