@@ -11,7 +11,7 @@ import {
 } from '@platforma-sdk/ui-vue';
 import { faker } from '@faker-js/faker';
 import { computed, reactive } from 'vue';
-import { ensureErrorLike, type AnyLogHandle, type ValueOrErrors } from '@platforma-sdk/model';
+import { ensureErrorLike, type OutputWithStatus, type AnyLogHandle } from '@platforma-sdk/model';
 import { listToOptions } from '@milaboratories/helpers';
 
 const data = reactive({
@@ -26,7 +26,7 @@ const options = listToOptions(['value', 'output', 'handle']);
 
 const error = computed(() => (data.showError ? faker.lorem.paragraph() : undefined));
 
-const output = computed<ValueOrErrors<string> | undefined>(() => {
+const output = computed<OutputWithStatus<string> | undefined>(() => {
   if (data.showError) {
     return {
       ok: false as const,
@@ -38,6 +38,7 @@ const output = computed<ValueOrErrors<string> | undefined>(() => {
   return {
     ok: true as const,
     value: data.logContent,
+    stable: true,
   };
 });
 
@@ -68,7 +69,7 @@ const dropHandle = () => {
       <PlLogView :value="data.logContent" label="PlLogView label" :error="error" />
     </template>
     <template v-if="data.type === 'output'">
-      <h4>Output (ValueOrErrors)</h4>
+      <h4>Output (OutputWithStatus)</h4>
       <PlLogView :output="output" label="PlLogView label" />
     </template>
     <template v-if="data.type === 'handle'">

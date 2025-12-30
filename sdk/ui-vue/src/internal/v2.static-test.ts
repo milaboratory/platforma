@@ -1,7 +1,7 @@
 import type { Expect, Equal } from '@milaboratories/helpers';
 import { z } from 'zod';
 import type { ModelOptions, Model } from '../types';
-import type { BlockOutputsBase, InferHrefType, InferOutputsType, Platforma, ValueOrErrors } from '@platforma-sdk/model';
+import type { BlockOutputsBase, InferHrefType, InferOutputsType, OutputWithStatus, Platforma } from '@platforma-sdk/model';
 import type { BaseAppV2, createAppV2 } from './createAppV2';
 import { type App } from '../defineApp';
 import { computed, type Component } from 'vue';
@@ -49,7 +49,7 @@ type _Args = {
 };
 
 type _Outputs = {
-  sum: ValueOrErrors<number>;
+  sum: OutputWithStatus<number> & { __unwrap: true };
 };
 
 type _UiState = {

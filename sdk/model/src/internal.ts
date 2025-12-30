@@ -1,4 +1,4 @@
-import type { ValueOrErrors } from '@milaboratories/pl-model-common';
+import type { OutputWithStatus } from '@milaboratories/pl-model-common';
 import { } from './global';
 import type { Platforma, PlatformaApiVersion } from './platforma';
 import type { FutureHandle, GlobalCfgRenderCtx } from './render/internal';
@@ -13,7 +13,7 @@ export function isInUI() {
 /** Utility code helping to retrieve a platforma instance form the environment */
 export function getPlatformaInstance<
   Args = unknown,
-  Outputs extends Record<string, ValueOrErrors<unknown>> = Record<string, ValueOrErrors<unknown>>,
+  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<string, OutputWithStatus<unknown>>,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
 >(config?: { sdkVersion: string; apiVersion: PlatformaApiVersion }): Platforma<Args, Outputs, UiState, Href> {

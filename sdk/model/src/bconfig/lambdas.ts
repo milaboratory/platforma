@@ -29,12 +29,21 @@ export type ConfigRenderLambdaFlags = {
    * nobody is actively monitoring rendered values. Like file upload progress, that triggers upload itself.
    * */
   isActive?: boolean;
+
+  /**
+   * If true, result will be wrapped with additional status information,
+   * such as stability status and explicit error
+   */
+  withStatus?: boolean;
 };
 
 /** Creates branded Cfg type */
-export interface ConfigRenderLambda<_Return = unknown> extends ConfigRenderLambdaFlags {
+export interface ConfigRenderLambda<Return = unknown> extends ConfigRenderLambdaFlags {
   /** Type marker */
   __renderLambda: true;
+
+  /** Phantom property for type inference. Never set at runtime. */
+  __phantomReturn?: Return;
 
   /** Reference to a callback registered inside the model code. */
   handle: string;

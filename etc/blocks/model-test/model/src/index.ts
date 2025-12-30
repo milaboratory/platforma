@@ -42,7 +42,11 @@ export const platforma = BlockModel.create('Heavy')
     return result;
   })
 
-  .done();
+  .output('delayedOutput', (ctx) => ctx.outputs?.resolve('delayedContent')?.getDataAsString())
+
+  .outputWithStatus('delayedOutputWithStatus', (ctx) => ctx.outputs?.resolve('delayedContent')?.getDataAsString())
+
+  .done(2);
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

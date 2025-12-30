@@ -1,9 +1,25 @@
 wf := import("@platforma-sdk/workflow-tengo:workflow")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
 
 wf.body(func(args) {
+	readLogsSW := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:read-file-to-stdout-with-sleep")
+
+	run := exec.builder().
+		cpu(1).ram("50Mi").
+		software(readLogsSW).
+		writeFile("file.txt", "a\nb\nc\n" + args.titleArg + "\n" + args.subtitleArg + "\n").
+		arg("file.txt").
+		arg("progress").
+		arg("1000").
+		arg("500")
+
+	result := run.saveStdoutContent().run()
+
 	return {
 		outputs: {
-			theOutput: args.tagToWorkflow
+			theOutput: args.tagToWorkflow,
+			delayedContent: result.getStdoutContent()
 		},
 		exports: {}
 	}

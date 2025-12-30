@@ -266,6 +266,7 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     expect(_block1StableState0.outputs!['activeArgs']).toStrictEqual({
       ok: true,
       value: undefined,
+      stable: true,
     });
 
     await prj.setNavigationState(block1Id, { href: '/section1' });
@@ -315,11 +316,13 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     expect(block1StableState1.outputs!['activeArgs']).toStrictEqual({
       ok: true,
       value: { numbers: [1, 2, 3] },
+      stable: true,
     });
 
     expect(block3StableState1.outputs!['sum']).toStrictEqual({
       ok: true,
       value: 18,
+      stable: true,
     });
 
     const overviewSnapshot3 = await prj.overview.awaitStableValue();
@@ -503,6 +506,7 @@ test('limbo test', async ({ expect }) => {
     expect(block2StableState1.outputs!['sum']).toStrictEqual({
       ok: true,
       value: 6,
+      stable: true,
     });
 
     const overview2 = await prj.overview.awaitStableValue();
@@ -529,6 +533,7 @@ test('limbo test', async ({ expect }) => {
     expect(block2StableState2.outputs!['sum']).toStrictEqual({
       ok: true,
       value: 5,
+      stable: true,
     });
 
     const overview4 = await prj.overview.awaitStableValue();
@@ -559,6 +564,7 @@ test('test error propagation', async ({ expect }) => {
     expect(block1StableState1.outputs!['errorIfNumberIs999']).toStrictEqual({
       ok: true,
       value: [1],
+      stable: true,
     });
 
     await prj.setBlockArgs(block1Id, { numbers: [999] });
