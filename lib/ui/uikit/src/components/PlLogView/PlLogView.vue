@@ -12,7 +12,7 @@ import { computed, ref, useSlots, watch } from 'vue';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import './pl-log-view.scss';
 import { okOptional, tapIf } from '@milaboratories/helpers';
-import type { AnyLogHandle, Platforma, ValueOrErrors } from '@platforma-sdk/model';
+import type { AnyLogHandle, OutputWithStatus, Platforma } from '@platforma-sdk/model';
 import { useLogHandle } from './useLogHandle';
 import { useLabelNotch } from '../../utils/useLabelNotch';
 import DoubleContour from '../../utils/DoubleContour.vue';
@@ -20,7 +20,7 @@ import { PlTooltip } from '../PlTooltip';
 import { PlIcon24 } from '../PlIcon24';
 import { downloadContent } from '../../helpers/dom';
 
-const getOutputError = <T>(o?: ValueOrErrors<T>) => {
+const getOutputError = <T>(o?: OutputWithStatus<T>) => {
   if (o && o.ok === false) {
     return o.errors.join('\n');
   }
@@ -52,7 +52,7 @@ const props = defineProps<{
   /**
    * Block output (Note: error and value take precedence over output property)
    */
-  output?: ValueOrErrors<unknown>;
+  output?: OutputWithStatus<unknown>;
   /**
    * Max retries for AnyLogHandle fetch (with the same parameters)
    */

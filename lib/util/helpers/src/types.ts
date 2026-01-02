@@ -104,3 +104,5 @@ export type SimpleErrorOrValue<S, F = Error> = {
   error: F;
   value?: undefined;
 };
+
+export type OmitOverUnion<T, K extends PropertyKey> = T extends T ? Omit<T, K> : never;

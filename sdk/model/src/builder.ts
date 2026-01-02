@@ -1,4 +1,4 @@
-import type { BlockRenderingMode, BlockSection, ValueOrErrors, AnyFunction, PlRef, BlockCodeKnownFeatureFlags, BlockConfigContainer } from '@milaboratories/pl-model-common';
+import type { BlockRenderingMode, BlockSection, AnyFunction, PlRef, BlockCodeKnownFeatureFlags, BlockConfigContainer, OutputWithStatus } from '@milaboratories/pl-model-common';
 import type { Checked, ConfigResult, TypedConfig } from './config';
 import { getImmediate } from './config';
 import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
@@ -17,6 +17,7 @@ import type {
 } from './bconfig';
 import {
   downgradeCfgOrLambda,
+  isConfigLambda,
 } from './bconfig';
 
 type SectionsExpectedType = readonly BlockSection[];
@@ -118,6 +119,24 @@ export class BlockModel<
     cfg: Cfg
   ): BlockModel<Args, OutputsCfg & { [K in Key]: Cfg }, UiState, Href>;
   /**
+   * Add output cell wrapped with additional status information to the configuration
+   *
+   * @param key output cell name, that can be later used to retrieve the rendered value
+   * @param rf  callback calculating output value using context, that allows to access
+   *            workflows outputs and interact with platforma drivers
+   * @param flags additional flags that may alter lambda rendering procedure
+   * */
+  public output<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
+    key: Key,
+    rf: RF,
+    flags: ConfigRenderLambdaFlags & { withStatus: true }
+  ): BlockModel<
+    Args,
+    OutputsCfg & { [K in Key]: ConfigRenderLambda<InferRenderFunctionReturn<RF>> & { withStatus: true } },
+    UiState,
+    Href
+  >;
+  /**
    * Add output cell to the configuration
    *
    * @param key output cell name, that can be later used to retrieve the rendered value
@@ -169,13 +188,24 @@ export class BlockModel<
   public retentiveOutput<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
     key: Key,
     rf: RF,
-  ): BlockModel<
-      Args,
-    OutputsCfg & { [K in Key]: ConfigRenderLambda<InferRenderFunctionReturn<RF>> },
-    UiState,
-    Href
-    > {
+  ) {
     return this.output(key, rf, { retentive: true });
+  }
+
+  /** Shortcut for {@link output} with withStatus flag set to true. */
+  public outputWithStatus<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
+    key: Key,
+    rf: RF,
+  ) {
+    return this.output(key, rf, { withStatus: true });
+  }
+
+  /** Shortcut for {@link output} with retentive and withStatus flags set to true. */
+  public retentiveOutputWithStatus<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
+    key: Key,
+    rf: RF,
+  ) {
+    return this.output(key, rf, { retentive: true, withStatus: true });
   }
 
   /** Sets custom configuration predicate on the block args at which block can be executed
@@ -339,41 +369,41 @@ export class BlockModel<
     });
   }
 
-  public done(apiVersion?: 1): PlatformaV1<
+  public done(apiVersion?: 1): PlatformaExtended<PlatformaV1<
     Args,
     InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
     UiState,
     Href
-  >;
+  >>;
 
-  public done(apiVersion: 2): PlatformaV2<
+  public done(apiVersion: 2): PlatformaExtended<PlatformaV2<
     Args,
     InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
     UiState,
     Href
-  >;
+  >>;
 
   /** Renders all provided block settings into a pre-configured platforma API
    * instance, that can be used in frontend to interact with block state, and
    * other features provided by the platforma to the block. */
-  public done(apiVersion: PlatformaApiVersion = 1): Platforma<
+  public done(apiVersion: PlatformaApiVersion = 1): PlatformaExtended<Platforma<
     Args,
     InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
     UiState,
     Href
-  > {
+  >> {
     return this.withFeatureFlags({
       ...this.config.featureFlags,
       requiresUIAPIVersion: apiVersion,
     }).#done();
   }
 
-  #done(): Platforma<
+  #done(): PlatformaExtended<Platforma<
     Args,
     InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
     UiState,
     Href
-  > {
+  >> {
     if (this.config.initialArgs === undefined) throw new Error('Initial arguments not set.');
 
     const config: BlockConfigContainer = {
@@ -409,7 +439,17 @@ export class BlockModel<
     // we are in the configuration rendering routine, not in actual UI
       return { config } as any;
     // normal operation inside the UI
-    else return getPlatformaInstance({ sdkVersion: PlatformaSDKVersion, apiVersion: platformaApiVersion }) as any;
+    else return {
+      ...getPlatformaInstance({ sdkVersion: PlatformaSDKVersion, apiVersion: platformaApiVersion }),
+      blockModelInfo: {
+        outputs: Object.fromEntries(
+          Object.entries(this.config.outputs)
+            .map(([key, value]) => [key, {
+              withStatus: Boolean(isConfigLambda(value) && value.withStatus),
+            }]),
+        ),
+      },
+    };
   }
 }
 
@@ -424,5 +464,17 @@ type InferOutputsFromConfigs<
   OutputsCfg extends Record<string, TypedConfigOrConfigLambda>,
   UiState,
 > = {
-  [Key in keyof OutputsCfg]: ValueOrErrors<InferOutputType<OutputsCfg[Key], Args, UiState>>;
+  [Key in keyof OutputsCfg]:
+    & OutputWithStatus<InferOutputType<OutputsCfg[Key], Args, UiState>>
+    & { __unwrap: (OutputsCfg[Key] extends { withStatus: true } ? false : true) };
+};
+
+export type PlatformaExtended<Pl extends Platforma = Platforma> = Pl & {
+  blockModelInfo: BlockModelInfo;
+};
+
+export type BlockModelInfo = {
+  outputs: Record<string, {
+    withStatus: boolean;
+  }>;
 };

@@ -1,4 +1,4 @@
-import type { ValueOrErrors } from '@milaboratories/pl-model-common';
+import type { OutputWithStatus } from '@milaboratories/pl-model-common';
 import {} from './global';
 import { getPlatformaInstance } from './internal';
 import type { Platforma, PlatformaApiVersion } from './platforma';
@@ -10,7 +10,7 @@ export function getPlatformaApiVersion(): PlatformaApiVersion {
 
 export function getRawPlatformaInstance<
   Args = unknown,
-  Outputs extends Record<string, ValueOrErrors<unknown>> = Record<string, ValueOrErrors<unknown>>,
+  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<string, OutputWithStatus<unknown>>,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
 >(): Platforma<Args, Outputs, UiState, Href> {

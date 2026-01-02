@@ -4,13 +4,12 @@ import type { ErrorLike } from '@milaboratories/pl-error-like';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AnyFunction = (...args: any[]) => any;
 
-/** Value or errors */
-export type ValueOrErrors<T> =
-  | { ok: true; value: T }
+export type OutputWithStatus<T> =
+  | { ok: true; value: T; stable: boolean }
   | { ok: false; errors: ErrorLike[]; moreErrors: boolean };
 
 /** Base type for block outputs */
-export type BlockOutputsBase = Record<string, ValueOrErrors<unknown>>;
+export type BlockOutputsBase = Record<string, OutputWithStatus<unknown>>;
 
 export type ListOptionBase<T = unknown> = {
   label: string;

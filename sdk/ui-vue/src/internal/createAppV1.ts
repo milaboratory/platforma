@@ -1,12 +1,12 @@
 import { deepClone, isJsonEqual, tap } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
-import type { NavigationState, BlockOutputsBase, BlockState, PlatformaV1 } from '@platforma-sdk/model';
+import type { NavigationState, BlockOutputsBase, BlockState, PlatformaV1, PlatformaExtended } from '@platforma-sdk/model';
 import { reactive, nextTick, computed, watch } from 'vue';
 import type { StateModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors, AppSettings } from '../types';
 import { createModel } from '../createModel';
 import { createAppModel } from './createAppModel';
 import { parseQuery } from '../urls';
-import { MultiError, unwrapValueOrErrors } from '../utils';
+import { ensureOutputHasStableFlag, MultiError, unwrapOutput } from '../utils';
 import { useDebounceFn } from '@vueuse/core';
 /**
  * Creates an application instance with reactive state management, outputs, and methods for state updates and navigation.
@@ -29,7 +29,7 @@ export function createAppV1<
   Href extends `/${string}` = `/${string}`,
 >(
   state: BlockState<Args, Outputs, UiState, Href>,
-  platforma: PlatformaV1<Args, Outputs, UiState, Href>,
+  platforma: PlatformaExtended<PlatformaV1<Args, Outputs, UiState, Href>>,
   settings: AppSettings,
 ) {
   type AppModel = {
@@ -187,7 +187,7 @@ export function createAppV1<
      */
     unwrapOutputs<K extends keyof Outputs>(...keys: K[]): UnwrapOutputs<Outputs, K> {
       const outputs = snapshot.outputs;
-      const entries = keys.map((key) => [key, unwrapValueOrErrors(outputs[key])]);
+      const entries = keys.map((key) => [key, unwrapOutput(outputs[key])]);
       return Object.fromEntries(entries);
     },
     /**
@@ -237,7 +237,11 @@ export function createAppV1<
   };
 
   const outputs = computed<OutputValues<Outputs>>(() => {
-    const entries = Object.entries(snapshot.outputs).map(([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined]);
+    const entries = Object.entries(snapshot.outputs)
+      .map(([k, outputWithStatus]) => platforma.blockModelInfo.outputs[k].withStatus
+        ? [k, ensureOutputHasStableFlag(outputWithStatus)]
+        : [k, outputWithStatus.ok && outputWithStatus.value !== undefined ? outputWithStatus.value : undefined],
+      );
     return Object.fromEntries(entries);
   });
 

@@ -1,5 +1,5 @@
 import { notEmpty } from '@milaboratories/helpers';
-import type { PlatformaV1, PlatformaV2 } from '@platforma-sdk/model';
+import type { PlatformaExtended, PlatformaV1, PlatformaV2 } from '@platforma-sdk/model';
 import { getPlatformaApiVersion, unwrapResult, type BlockOutputsBase, type Platforma } from '@platforma-sdk/model';
 import type { Component, Reactive } from 'vue';
 import { inject, markRaw, reactive } from 'vue';
@@ -21,7 +21,7 @@ export function defineApp<
   Href extends `/${string}` = `/${string}`,
   Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
 >(
-  platforma: PlatformaV1<Args, Outputs, UiState, Href>,
+  platforma: PlatformaExtended<PlatformaV1<Args, Outputs, UiState, Href>>,
   extendApp: (app: BaseAppV1<Args, Outputs, UiState, Href>) => Extend,
   settings?: AppSettings,
 ): SdkPluginV1<Args, Outputs, UiState, Href, Extend>;
@@ -33,7 +33,7 @@ export function defineApp<
   Href extends `/${string}` = `/${string}`,
   Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
 >(
-  platforma: PlatformaV2<Args, Outputs, UiState, Href>,
+  platforma: PlatformaExtended<PlatformaV2<Args, Outputs, UiState, Href>>,
   extendApp: (app: BaseAppV2<Args, Outputs, UiState, Href>) => Extend,
   settings?: AppSettings,
 ): SdkPluginV2<Args, Outputs, UiState, Href, Extend>;
@@ -45,7 +45,7 @@ export function defineApp<
   Href extends `/${string}` = `/${string}`,
   Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
 >(
-  platforma: Platforma<Args, Outputs, UiState, Href>,
+  platforma: PlatformaExtended<Platforma<Args, Outputs, UiState, Href>>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   extendApp: (app: any) => Extend,
   settings: AppSettings = {},

@@ -1,4 +1,4 @@
-import { type ErrorLike, type ValueOrErrors } from '@platforma-sdk/model';
+import type { ErrorLike, OutputWithStatus } from '@platforma-sdk/model';
 import type { OptionalResult } from './types';
 import type { ZodError } from 'zod';
 
@@ -30,23 +30,26 @@ export class MultiError extends Error {
   }
 }
 
-export function wrapValueOrErrors<V>(value: V): ValueOrErrors<V> {
-  return {
-    ok: true,
-    value,
-  };
-}
-
-export function unwrapValueOrErrors<V>(valueOrErrors?: ValueOrErrors<V>): V {
-  if (!valueOrErrors) {
+export function unwrapOutput<V>(output?: OutputWithStatus<V>): V {
+  if (!output) {
     throw new UnresolvedError();
   }
 
-  if (!valueOrErrors.ok) {
-    throw new MultiError(valueOrErrors.errors);
+  if (!output.ok) {
+    throw new MultiError(output.errors);
   }
 
-  return valueOrErrors.value;
+  return output.value;
+}
+
+export function ensureOutputHasStableFlag<T>(output?: OutputWithStatus<T>) {
+  if (!output) {
+    throw new UnresolvedError();
+  }
+  if (output.ok) {
+    output.stable ??= true;
+  }
+  return output;
 }
 
 // Optional Result

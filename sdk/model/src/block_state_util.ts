@@ -1,4 +1,4 @@
-import type { BlockOutputsBase, ValueOrErrors } from '@milaboratories/pl-model-common';
+import type { BlockOutputsBase, OutputWithStatus } from '@milaboratories/pl-model-common';
 import type { ErrorLike } from '@milaboratories/pl-error-like';
 
 export class OutputError extends Error {
@@ -10,12 +10,12 @@ export class OutputError extends Error {
   }
 }
 
-export function readOutput<T>(outputValue: ValueOrErrors<T>): T {
+export function readOutput<T>(outputValue: OutputWithStatus<T>): T {
   if (!outputValue.ok) throw new OutputError(outputValue.errors, outputValue.moreErrors);
   return outputValue.value;
 }
 
-type ExtractValueType<V extends ValueOrErrors<unknown>> = Extract<V, { ok: true }>['value'];
+type ExtractValueType<V extends OutputWithStatus<unknown>> = Extract<V, { ok: true }>['value'];
 type SimpleOutputs<Outputs extends BlockOutputsBase> = {
   [Key in keyof Outputs]: ExtractValueType<Outputs[Key]>;
 };

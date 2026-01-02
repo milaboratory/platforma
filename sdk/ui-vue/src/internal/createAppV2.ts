@@ -1,13 +1,13 @@
 import { deepClone, delay, uniqueId } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
-import type { NavigationState, BlockOutputsBase, BlockState, PlatformaV2, ValueWithUTag, AuthorMarker } from '@platforma-sdk/model';
+import type { NavigationState, BlockOutputsBase, BlockState, PlatformaV2, ValueWithUTag, AuthorMarker, PlatformaExtended } from '@platforma-sdk/model';
 import { hasAbortError, unwrapResult } from '@platforma-sdk/model';
 import type { Ref } from 'vue';
 import { reactive, computed, ref } from 'vue';
 import type { StateModelOptions, UnwrapOutputs, OutputValues, OutputErrors, AppSettings } from '../types';
 import { createModel } from '../createModel';
 import { parseQuery } from '../urls';
-import { MultiError, unwrapValueOrErrors } from '../utils';
+import { ensureOutputHasStableFlag, MultiError, unwrapOutput } from '../utils';
 import { applyPatch } from 'fast-json-patch';
 import { UpdateSerializer } from './UpdateSerializer';
 import { watchIgnorable } from '@vueuse/core';
@@ -48,7 +48,7 @@ export function createAppV2<
   Href extends `/${string}` = `/${string}`,
 >(
   state: ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>,
-  platforma: PlatformaV2<Args, Outputs, UiState, Href>,
+  platforma: PlatformaExtended<PlatformaV2<Args, Outputs, UiState, Href>>,
   settings: AppSettings,
 ) {
   const debug = (msg: string, ...rest: unknown[]) => {
@@ -117,7 +117,11 @@ export function createAppV2<
   };
 
   const outputs = computed<OutputValues<Outputs>>(() => {
-    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined]);
+    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>)
+      .map(([k, outputWithStatus]) => platforma.blockModelInfo.outputs[k].withStatus
+        ? [k, ensureOutputHasStableFlag(outputWithStatus)]
+        : [k, outputWithStatus.ok && outputWithStatus.value !== undefined ? outputWithStatus.value : undefined],
+      );
     return Object.fromEntries(entries);
   });
 
@@ -272,7 +276,7 @@ export function createAppV2<
      */
     unwrapOutputs<K extends keyof Outputs>(...keys: K[]): UnwrapOutputs<Outputs, K> {
       const outputs = snapshot.value.outputs as Partial<Readonly<Outputs>>;
-      const entries = keys.map((key) => [key, unwrapValueOrErrors(outputs[key])]);
+      const entries = keys.map((key) => [key, unwrapOutput(outputs[key])]);
       return Object.fromEntries(entries);
     },
     /**

@@ -1,8 +1,7 @@
-import type { Equal, Expect } from '@milaboratories/helpers';
-import type { BlockOutputsBase, ErrorLike, ValueOrErrors } from '@platforma-sdk/model';
+import type { Equal, Expect, OmitOverUnion } from '@milaboratories/helpers';
+import type { BlockOutputsBase, ErrorLike, OutputWithStatus } from '@platforma-sdk/model';
 import type { Component, ComputedGetter } from 'vue';
 
-export type UnwrapValueOrErrors<R extends ValueOrErrors<unknown>> = Extract<R, { ok: true }>['value'];
 export interface StateModelOptions<A, T = A> {
   transform?: (v: A) => T;
   validate?: (v: unknown) => A;
@@ -117,7 +116,9 @@ export type ModelResult<T, E = unknown> =
   };
 
 export type OutputValues<Outputs extends BlockOutputsBase> = {
-  [P in keyof Outputs]?: UnwrapValueOrError<Outputs[P]>;
+  [P in keyof Outputs]: Outputs[P] extends { __unwrap: true }
+    ? UnwrapValueOrError<Outputs[P]> | undefined
+    : OmitOverUnion<Outputs[P], '__unwrap'>;
 };
 
 export type OutputErrors<Outputs extends BlockOutputsBase> = {
@@ -139,4 +140,4 @@ export type OptionalResult<T> =
 
 // Static tests
 
-type _cases = [Expect<Equal<number, UnwrapValueOrError<ValueOrErrors<number>>>>];
+type _cases = [Expect<Equal<number, UnwrapValueOrError<OutputWithStatus<number>>>>];

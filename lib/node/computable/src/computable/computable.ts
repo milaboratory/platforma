@@ -103,7 +103,7 @@ export class AggregateComputableError extends AggregateError {
  * and ErrorLike is from new ML versions.
  * We might consider removing string after 1st of July 2025 (3 months after implementing ErrorLike). */
 export type ComputableValueOrErrors<T> =
-  | { ok: true; value: T }
+  | { ok: true; value: T; stable: boolean }
   | { ok: false; errors: (ErrorLike | string)[]; moreErrors: boolean };
 
 export interface ComputableRenderingOps extends CellRenderingOps {
@@ -625,7 +625,7 @@ export class Computable<T, StableT extends T = T> {
     maxErrors: number = 1,
   ): Computable<ComputableValueOrErrors<T>> {
     return Computable.make(() => computable, {
-      postprocessValue: (value) => ({ ok: true, value: value as T }) as ComputableValueOrErrors<T>,
+      postprocessValue: (value, { stable }) => ({ ok: true, value: value as T, stable }) as ComputableValueOrErrors<T>,
       recover: (error: unknown[]) => {
         const errors: (ErrorLike | string)[] = [];
         for (let i = 0; i < Math.min(maxErrors, error.length); i++) {
