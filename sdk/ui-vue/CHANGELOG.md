@@ -1,5 +1,19 @@
 # @platforma-sdk/ui-vue
 
+## 1.50.0
+
+### Minor Changes
+
+- fc75a16: defineApp now expects platforma extended with `blockModelInfo` field
+
+### Patch Changes
+
+- Updated dependencies [fc75a16]
+- Updated dependencies [fc75a16]
+  - @platforma-sdk/model@1.50.0
+  - @milaboratories/uikit@2.8.9
+  - @milaboratories/ptabler-expression-js@1.1.9
+
 ## 1.49.0
 
 ### Patch Changes
