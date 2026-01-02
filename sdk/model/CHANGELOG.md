@@ -1,5 +1,18 @@
 # @platforma-sdk/model
 
+## 1.50.0
+
+### Minor Changes
+
+- fc75a16: - Added new `withStatus` flag for outputs and respective shortcuts
+  - `BlockModel.done()` now returns platforma extended with `blockModelInfo` field
+
+### Patch Changes
+
+- Updated dependencies [fc75a16]
+  - @milaboratories/pl-model-common@1.23.0
+  - @milaboratories/ptabler-expression-js@1.1.9
+
 ## 1.49.0
 
 ### Minor Changes

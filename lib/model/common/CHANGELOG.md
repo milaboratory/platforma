@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.23.0
+
+### Minor Changes
+
+- fc75a16: Added `OutputWithStatus` type
+
 ## 1.22.0
 
 ### Minor Changes

@@ -1,5 +1,15 @@
 # @milaboratories/uikit
 
+## 2.8.9
+
+### Patch Changes
+
+- fc75a16: Updated `PlLogView` to work with `OutputWithStatus`
+- Updated dependencies [fc75a16]
+- Updated dependencies [fc75a16]
+  - @platforma-sdk/model@1.50.0
+  - @milaboratories/helpers@1.13.0
+
 ## 2.8.8
 
 ### Patch Changes

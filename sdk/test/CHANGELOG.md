@@ -1,5 +1,18 @@
 # @platforma-sdk/test
 
+## 1.50.0
+
+### Patch Changes
+
+- fc75a16: Updated tests to use extended platforma type
+- Updated dependencies [fc75a16]
+- Updated dependencies [fc75a16]
+  - @milaboratories/computable@2.8.0
+  - @platforma-sdk/model@1.50.0
+  - @milaboratories/pl-middle-layer@1.44.2
+  - @milaboratories/pl-tree@1.8.28
+  - @milaboratories/pl-client@2.16.20
+
 ## 1.49.1
 
 ### Patch Changes
