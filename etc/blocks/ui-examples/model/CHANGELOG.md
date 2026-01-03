@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.3.18
+
+### Patch Changes
+
+- a12641f: Updated PlAgDataTableV2 example.
+
 ## 1.3.17
 
 ### Patch Changes
