@@ -9,7 +9,7 @@ export default {
 import { computed, useSlots } from 'vue';
 import { PlBlockPageTitleTeleportId } from './PlBlockPageTitleTeleportId';
 import './pl-block-page.scss';
-import { PlPlaceholder, type PlPlaceholderProps } from '../PlPlaceholder';
+import { PL_PLACEHOLDER_TEXTS, PlPlaceholder, type PlPlaceholderProps } from '../PlPlaceholder';
 
 const slots = useSlots();
 
@@ -26,7 +26,7 @@ const props = defineProps<{
 
 const loadingPlaceholder = computed<PlPlaceholderProps | undefined>(() => {
   if (typeof props.bodyLoading === 'string') {
-    return { variant: props.bodyLoading };
+    return { variant: props.bodyLoading, ...PL_PLACEHOLDER_TEXTS.LOADING };
   }
   return props.bodyLoading;
 });

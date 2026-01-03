@@ -119,7 +119,7 @@ export const platforma = BlockModel.create('Heavy')
     return rowCount > 0 ? sheets : [];
   })
 
-  .output('ptV2', (ctx) => {
+  .outputWithStatus('ptV2', (ctx) => {
     const rowCount = ctx.uiState.dataTableV2.numRows ?? 0;
     const makePartitionId = (rowCount: number, i: number) => Math.floor((2 * i) / (rowCount + 1));
     const columns: PColumn<PColumnValues>[] = [
