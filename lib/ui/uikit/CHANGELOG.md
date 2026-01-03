@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.9.0
+
+### Minor Changes
+
+- a12641f: Removed default text from PlPlaceholder, made a separate export for text variants.
+
 ## 2.8.9
 
 ### Patch Changes

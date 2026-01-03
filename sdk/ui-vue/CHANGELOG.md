@@ -1,5 +1,19 @@
 # @platforma-sdk/ui-vue
 
+## 1.51.0
+
+### Minor Changes
+
+- a12641f: - `usePlDataTableSettingsV2` expects `OutputWithStatus` now
+  - `PlAgOverlayLoading`: replaced `notReady: boolean` with `variant: 'not-ready' | 'running' | 'loading'`
+  - `PlAgDataTableV2`: only show status bar when data is loaded
+  - `PlAgDataTableV2`: old loading hack removed
+
+### Patch Changes
+
+- Updated dependencies [a12641f]
+  - @milaboratories/uikit@2.9.0
+
 ## 1.50.0
 
 ### Minor Changes
