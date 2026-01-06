@@ -607,15 +607,19 @@ export class ProjectMutator {
       context: ctx,
     });
 
+    // Here we set the staging ctx to the input context of the staging workflow, not the output because exports
+    // of one staging context should stay within the same block, and not travel downstream.
+    // We may change this decision in the future if wanted to support traveling staging exports downstream.
     this.setBlockField(
       blockId,
       'stagingCtx',
-      Pl.wrapInEphHolder(this.tx, results.context),
+      Pl.wrapInEphHolder(this.tx, ctx),
       'NotReady',
     );
 
+    // Yet the staging UI Ctx is the output context of the staging workflow, because it is used to form the result pool
+    // thus creating a certain discrepancy between staging workflow context behavior and desktop's result pool.
     this.setBlockField(blockId, 'stagingUiCtx', this.exportCtx(results.context), 'NotReady');
-
     this.setBlockField(blockId, 'stagingOutput', results.result, 'NotReady');
   }
 
@@ -1006,9 +1010,12 @@ export class ProjectMutator {
       }
     }
 
-    // blocks under stopped blocks, but still having results, goes to limbo
+    // blocks under stopped blocks, but having finished production results, goes to limbo
     for (const blockId of activeProdGraph.traverseIdsExcludingRoots('downstream', ...stopped))
       this.resetOrLimboProduction(blockId);
+
+    // reset staging outputs for all downstream blocks
+    this.getStagingGraph().traverse('downstream', stopped, ({ id }) => this.resetStaging(id));
   }
 
   private traverseWithStagingLag(cb: (blockId: string, lag: number) => void) {
