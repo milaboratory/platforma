@@ -485,7 +485,7 @@ export function getAllLabelColumns(
     .getColumns({
       name: PColumnName.Label,
       axes: [{}], // exactly one axis
-    }, { dontWaitAllData: true });
+    }, { dontWaitAllData: true, overrideLabelAnnotation: false });
 }
 
 /** Get label columns matching the provided columns from the result pool */
