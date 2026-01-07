@@ -480,10 +480,7 @@ export class PColumnCollection {
   public getColumns(
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
     opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): PColumn<PColumnDataUniversal>[] | undefined {
-    const entries = this.getUniversalEntries(predicateOrSelectors, {
-      overrideLabelAnnotation: true, // default for getColumns
-      ...(opts ?? {}),
-    } as UniversalPColumnOpts);
+    const entries = this.getUniversalEntries(predicateOrSelectors, (opts ?? {}) as UniversalPColumnOpts);
     if (!entries) return undefined;
 
     const columns: PColumn<PColumnDataUniversal>[] = [];
