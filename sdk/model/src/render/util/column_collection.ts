@@ -180,7 +180,7 @@ type UniversalPColumnOptsNoDeriver = {
    * If true, the derived label will override the 'pl7.app/label' annotation
    * in the resulting PColumnSpec. It also forces `includeNativeLabel` in `labelOps` to true,
    * unless `labelOps.includeNativeLabel` is explicitly set to false.
-   * Default value in getUniversalEntries is false, in getColumns it is true.
+   * Default value is false
    */
   overrideLabelAnnotation?: boolean;
   /** If true, resulting columns will be enriched by other columns considering linker columns. Default is false. */
