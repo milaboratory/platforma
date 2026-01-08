@@ -24,6 +24,15 @@ _RTYPE_QUOTA := { Name: "Quota", Version: "1" }
  * @return bool - true = we should use batch executor, false = run command locally.
  */
 useBatch := func(queueName) {
+	// Use backend-provided runner selection when available
+	if feats.hasGetRunnerFor {
+		runner := feats.getRunnerFor(queueName)
+		if !is_undefined(runner) {
+			return runner == "batch"
+		}
+	}
+
+	// Fallback: existing logic for backward compatibility with older backends
 	return feats.hasBatch && !slices.hasElement([ constants.UI_TASKS_QUEUE ], queueName)
 }
 
