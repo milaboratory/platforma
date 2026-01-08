@@ -650,7 +650,7 @@ export function createPlDataTableV2<A, U>(
       spec: {
         ...v.value.spec,
         annotations: {
-          ...(v.value.spec.annotations ?? {}),
+          ...v.value.spec.annotations,
           [Annotation.Label]: v.label,
         },
       },
