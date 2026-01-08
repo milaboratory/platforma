@@ -180,7 +180,7 @@ type UniversalPColumnOptsNoDeriver = {
    * If true, the derived label will override the 'pl7.app/label' annotation
    * in the resulting PColumnSpec. It also forces `includeNativeLabel` in `labelOps` to true,
    * unless `labelOps.includeNativeLabel` is explicitly set to false.
-   * Default value is false
+   * Default value in getUniversalEntries is false, in getColumns it is true.
    */
   overrideLabelAnnotation?: boolean;
   /** If true, resulting columns will be enriched by other columns considering linker columns. Default is false. */
@@ -480,7 +480,10 @@ export class PColumnCollection {
   public getColumns(
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
     opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): PColumn<PColumnDataUniversal>[] | undefined {
-    const entries = this.getUniversalEntries(predicateOrSelectors, (opts ?? {}) as UniversalPColumnOpts);
+    const entries = this.getUniversalEntries(predicateOrSelectors, {
+      overrideLabelAnnotation: true, // default for getColumns
+      ...(opts ?? {}),
+    } as UniversalPColumnOpts);
     if (!entries) return undefined;
 
     const columns: PColumn<PColumnDataUniversal>[] = [];

@@ -39,8 +39,10 @@ import type {
 } from '../render';
 import {
   allPColumnsReady,
+  deriveLabels,
   PColumnCollection,
 } from '../render';
+import { identity } from 'es-toolkit';
 
 export type PlTableColumnId = {
   /** Original column spec */
@@ -641,7 +643,20 @@ export function createPlDataTableV2<A, U>(
   const allLabelColumns = getAllLabelColumns(ctx.resultPool);
   if (!allLabelColumns) return undefined;
 
-  const fullLabelColumns = getMatchingLabelColumns(columns.map(getColumnIdAndSpec), allLabelColumns);
+  let fullLabelColumns = getMatchingLabelColumns(columns.map(getColumnIdAndSpec), allLabelColumns);
+  fullLabelColumns = deriveLabels(fullLabelColumns, identity, { includeNativeLabel: true }).map((v) => {
+    return {
+      ...v.value,
+      spec: {
+        ...v.value.spec,
+        annotations: {
+          ...(v.value.spec.annotations ?? {}),
+          [Annotation.Label]: v.label,
+        },
+      },
+    };
+  });
+
   const fullColumns = [...columns, ...fullLabelColumns];
 
   const fullColumnsAxes = uniqueBy(
