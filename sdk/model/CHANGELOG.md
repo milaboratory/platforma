@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.51.2
+
+### Patch Changes
+
+- 5dc0a70: disable default flag overriding in getColumns method
+
 ## 1.50.0
 
 ### Minor Changes
