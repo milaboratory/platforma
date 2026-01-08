@@ -11,6 +11,10 @@ MEDIUM_QUEUE   := "medium"
 LIGHT_QUEUE    := "light"
 UI_TASKS_QUEUE := "ui-tasks"
 
+// Runner types for command execution
+RUNNER_BATCH    := "batch"    // batch system execution (k8s jobs, etc.)
+RUNNER_EXECUTOR := "executor" // local binary execution
+
 export ll.toStrict({
 	ARG_TYPE_STRING: ARG_TYPE_STRING,
 	ARG_TYPE_EXPRESSION: ARG_TYPE_EXPRESSION,
@@ -21,5 +25,8 @@ export ll.toStrict({
 	UI_TASKS_QUEUE: UI_TASKS_QUEUE,
 	LIGHT_QUEUE: LIGHT_QUEUE,
 	MEDIUM_QUEUE: MEDIUM_QUEUE,
-	HEAVY_QUEUE: HEAVY_QUEUE
+	HEAVY_QUEUE: HEAVY_QUEUE,
+
+	RUNNER_BATCH: RUNNER_BATCH,
+	RUNNER_EXECUTOR: RUNNER_EXECUTOR
 })
