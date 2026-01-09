@@ -46,9 +46,7 @@ export ll.toStrict({
 	hasExec:                    _hasRunner("executor"),     // local binary execution is available
 	hasBatch:                   _hasRunner("batch"),        // batch system execution is available
 
-	// true when backend supports getRunnerFor method for queue-to-runner mapping
-	hasGetRunnerFor:            _hasGetRunnerFor,
-	// get runner type for a specific queue (returns undefined if not available)
+	// get runner type for a specific queue (returns undefined if backend doesn't support it)
 	getRunnerFor:               _getRunnerFor,
 
 	pureFutureFields:           _isEnabled("pureFutureFields")   || _api >= 1, // 'pure' future fields magic that provides deduplication
