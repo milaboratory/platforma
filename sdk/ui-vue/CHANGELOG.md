@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.51.4
+
+### Patch Changes
+
+- 0f0a802: PlAgDataTable: Reclaimed some wasted vertical spacing
+- Updated dependencies [0f0a802]
+  - @milaboratories/uikit@2.10.0
+
 ## 1.51.2
 
 ### Patch Changes

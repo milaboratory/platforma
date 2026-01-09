@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.10.0
+
+### Minor Changes
+
+- 0f0a802: PlBlockPage: Added editable subtitles and made title into a prop
+
 ## 2.9.1
 
 ### Patch Changes
