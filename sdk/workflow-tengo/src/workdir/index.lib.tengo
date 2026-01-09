@@ -323,7 +323,7 @@ _fill := func() {
 					quotaBuilder.ram(ram)
 				}
 
-				if limits.useBatch(queue) {
+				if limits.getRunnerType(queue) == execConstants.RUNNER_BATCH {
 					quotaBuilder.queue(execConstants.BATCH_QUEUE)
 				} else {
 					quotaBuilder.queue(queue)

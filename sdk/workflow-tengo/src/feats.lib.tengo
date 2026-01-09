@@ -30,9 +30,24 @@ _hasRunner := func(e_id) {
 	return !is_undefined(_executors[e_id])
 }
 
+// Check if getRunnerFor method is available in current backend
+_hasGetRunnerFor := ll.methodExists(plapi, "getRunnerFor")
+
+// Get runner type for a specific queue from backend.
+// Returns the runner type (e.g., "executor", "batch") or undefined if not available.
+_getRunnerFor := func(queueName) {
+	if !_hasGetRunnerFor {
+		return undefined
+	}
+	return plapi.getRunnerFor(queueName)
+}
+
 export ll.toStrict({
 	hasExec:                    _hasRunner("executor"),     // local binary execution is available
 	hasBatch:                   _hasRunner("batch"),        // batch system execution is available
+
+	// get runner type for a specific queue (returns undefined if backend doesn't support it)
+	getRunnerFor:               _getRunnerFor,
 
 	pureFutureFields:           _isEnabled("pureFutureFields")   || _api >= 1, // 'pure' future fields magic that provides deduplication
 	commandExpressions:         _isEnabled("commandExpressions") || _api >= 2, // rich expressions in command arguments ( {{ system.ram_bytes / 20 }} )
