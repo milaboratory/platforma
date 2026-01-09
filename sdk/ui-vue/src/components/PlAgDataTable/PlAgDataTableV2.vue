@@ -296,7 +296,7 @@ function makePartialState(state: GridState): PlDataTableGridStateCore {
       hiddenColIds: PlTableColumnIdJson[];
     } | undefined,
   };
-};
+}
 
 // Reload AgGrid when new state arrives from server
 const reloadKey = ref(0);
@@ -616,10 +616,10 @@ watchEffect(() => {
       v-model="sheetsState"
       :settings="sheetsSettings"
     >
-      <template #before>
+      <template v-if="$slots['before-sheets']" #before>
         <slot name="before-sheets" />
       </template>
-      <template #after>
+      <template v-if="$slots['after-sheets']" #after>
         <slot name="after-sheets" />
       </template>
     </PlAgDataTableSheets>
