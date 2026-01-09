@@ -18,23 +18,27 @@ feats := import(":feats")
 _RTYPE_QUOTA := { Name: "Quota", Version: "1" }
 
 /**
- * Get runner type for command execution in given queue.
+ * Get resource types for command execution in given queue.
  *
  * @param queueName: string - name of the queue.
- * @return string - runner type (constants.RUNNER_BATCH, constants.RUNNER_EXECUTOR, etc.)
+ * @return { runCommand: {Name, Version}, computeRequest: {Name, Version} }
  */
-getRunnerType := func(queueName) {
-	// Use backend-provided runner selection when available
-	runner := feats.getRunnerFor(queueName)
-	if !is_undefined(runner) {
-		return runner
+getResourceTypesFor := func(queueName) {
+	// Use backend-provided resource types when available
+	result := feats.getResourceTypesFor(queueName)
+	if !is_undefined(result) {
+		return result
 	}
 
 	// Fallback: existing logic for backward compatibility with older backends
+	runnerType := constants.RUNNER_EXECUTOR
 	if feats.hasBatch && !slices.hasElement([ constants.UI_TASKS_QUEUE ], queueName) {
-		return constants.RUNNER_BATCH
+		runnerType = constants.RUNNER_BATCH
 	}
-	return constants.RUNNER_EXECUTOR
+	return {
+		runCommand:     { Name: "RunCommand/" + runnerType, Version: "2" },
+		computeRequest: { Name: "ComputeRequest/" + runnerType, Version: "1" }
+	}
 }
 
 /**
@@ -168,9 +172,6 @@ storageSpaceRequestBuilder := func() {
 	return self
 }
 
-_computeRequestResourceType := func(runnerType) {
-	return { Name: "ComputeRequest/" + runnerType, Version: "1" }
-}
 
 _CR_FIELD_REQUEST                   := "request"    // input
 _CR_FIELD_ALLOCATION                := "allocation" // output
@@ -216,8 +217,8 @@ computeRequestBuilder := func() {
 			ll.assert(smart.isReference(quota), "exec.limits.build: quota of ComputeRequest must be a valid reference")
 			ll.assert(queue_name != "", "exec.limits.build: queue name is required for computeRequestBuilder")
 
-			runnerType := getRunnerType(queue_name)
-			requestBuilder := smart.ephemeralBuilder(_computeRequestResourceType(runnerType))
+			resourceTypes := getResourceTypesFor(queue_name)
+			requestBuilder := smart.ephemeralBuilder(resourceTypes.computeRequest)
 
 			requestBuilder.getField(_CR_FIELD_REQUEST).set(quota)
 
@@ -235,7 +236,7 @@ computeRequestBuilder := func() {
 }
 
 export ll.toStrict({
-	getRunnerType:                   getRunnerType,
+	getResourceTypesFor:             getResourceTypesFor,
 	quotaBuilder:                    quotaBuilder,
 	storageSpaceRequestBuilder:      storageSpaceRequestBuilder,
 	computeRequestBuilder:           computeRequestBuilder
