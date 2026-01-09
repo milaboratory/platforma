@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.8.0
+
+### Minor Changes
+
+- 582dde9: Introduced a new mechanism to allow the backend to dynamically determine the appropriate runner
+
 ## 5.7.3
 
 ### Patch Changes
