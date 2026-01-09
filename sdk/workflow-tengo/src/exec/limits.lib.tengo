@@ -25,11 +25,9 @@ _RTYPE_QUOTA := { Name: "Quota", Version: "1" }
  */
 getRunnerType := func(queueName) {
 	// Use backend-provided runner selection when available
-	if feats.hasGetRunnerFor {
-		runner := feats.getRunnerFor(queueName)
-		if !is_undefined(runner) {
-			return runner
-		}
+	runner := feats.getRunnerFor(queueName)
+	if !is_undefined(runner) {
+		return runner
 	}
 
 	// Fallback: existing logic for backward compatibility with older backends
