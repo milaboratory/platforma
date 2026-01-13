@@ -475,7 +475,7 @@ export class SwJsonRenderer {
 
     return {
       tag: artInfo.remoteArtifactLocation,
-      entrypoint: [],
+      entrypoint: artInfo.entrypoint ?? [],
       cmd: ep.cmd,
       pkg: dockerArtifact.pkg || '/',
     };
@@ -493,6 +493,10 @@ export type builtArtifactInfo = {
   remoteArtifactLocation: string; // path to put into sw.json or as.json file
   uploadPath?: string; // custom upload path if it does not match pathForSwJson
 
+  // docker-specific fields
+  entrypoint?: string[]; // entrypoint of resulting docker image. Can be overriden by setting in package.json
+
+  // conda-specific fields
   spec?: string; // path to spec.yaml file within conda package
   ['micromamba-version']?: string; // version of micromamba used in this conda package
 };

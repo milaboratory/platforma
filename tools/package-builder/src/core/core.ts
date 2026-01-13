@@ -400,6 +400,7 @@ export class Core {
       type: 'docker',
       platform: util.currentPlatform(),
       remoteArtifactLocation: dstTag,
+      entrypoint: docker.getImageEntrypoint(localTag),
     });
 
     this.logger.info(`Docker image is built:

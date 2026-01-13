@@ -147,6 +147,28 @@
             "true"
           ]
         }
+      },
+      "custom-docker": {
+        "binary": {
+          "artifact": {
+            "type": "binary",
+            "roots": {
+              "linux-x64": "./src",
+              "linux-aarch64": "./src",
+              "macosx-x64": "./src",
+              "macosx-aarch64": "./src",
+              "windows-x64": "./src"
+            }
+          },
+          "cmd": [ "true" ]
+        },
+        "docker": {
+          "artifact": {
+            "context": "./src",
+            "dockerfile": "Dockerfile"
+          },
+          "cmd": [ "true" ]
+        }
       }
     }
   },
