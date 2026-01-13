@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.51.5
+
+### Patch Changes
+
+- dd9a004: prefer user table sorting instead default presetted settings
+
 ## 1.51.2
 
 ### Patch Changes
