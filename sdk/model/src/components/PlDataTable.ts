@@ -680,7 +680,7 @@ export function createPlDataTableV2<A, U>(
       });
   const filters: PTableRecordSingleValueFilterV2[]
     = uniqueBy(
-      [...(ops?.filters ?? []), ...tableStateNormalized.pTableParams.filters],
+      [...tableStateNormalized.pTableParams.filters, ...(ops?.filters ?? [])],
       (f) => canonicalizeJson<PTableColumnId>(f.column),
     ).filter((f) => {
       const valid = isValidColumnId(f.column);
@@ -689,7 +689,7 @@ export function createPlDataTableV2<A, U>(
     });
   const sorting: PTableSorting[]
     = uniqueBy(
-      [...(ops?.sorting ?? []), ...tableStateNormalized.pTableParams.sorting],
+      [...tableStateNormalized.pTableParams.sorting, ...(ops?.sorting ?? [])],
       (s) => canonicalizeJson<PTableColumnId>(s.column),
     ).filter((s) => {
       const valid = isValidColumnId(s.column);
