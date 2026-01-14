@@ -407,7 +407,9 @@ export class BlockModel<
     if (this.config.initialArgs === undefined) throw new Error('Initial arguments not set.');
 
     const config: BlockConfigContainer = {
+      v4: undefined,
       v3: {
+        configVersion: 3,
         sdkVersion: PlatformaSDKVersion,
         renderingMode: this.config.renderingMode,
         initialArgs: this.config.initialArgs,

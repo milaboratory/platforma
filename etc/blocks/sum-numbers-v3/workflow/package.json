@@ -1,0 +1,16 @@
+{
+  "name": "@milaboratories/milaboratories.test-sum-numbers-v3.workflow",
+  "private": true,
+  "version": "1.0.18",
+  "type": "module",
+  "description": "Tengo-based template",
+  "scripts": {
+    "build": "rm -rf dist && pl-tengo check && pl-tengo build"
+  },
+  "dependencies": {
+    "@platforma-sdk/workflow-tengo": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/tengo-builder": "workspace:*"
+  }
+}

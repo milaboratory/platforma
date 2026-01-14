@@ -39,8 +39,6 @@ type BlockInfo = {
   prod?: ProdState;
 };
 
-type _CalculationStatus = 'Running' | 'Done';
-
 type ProdState = {
   finished: boolean;
 
@@ -262,9 +260,36 @@ export function projectOverview(
           })
           .getDataAsJson() as BlockSettings;
 
+        // Get block storage info by calling VM function
+        const blockStorageInfo = ifNotUndef(bp, ({ cfg }) => {
+          const storageNode = prj.traverse({
+            field: projectFieldName(id, 'blockStorage'),
+            assertFieldType: 'Dynamic',
+            stableIfNotFound: true,
+          });
+          const rawStorageJson = storageNode?.getDataAsString();
+          return env.projectHelper.getStorageInfoInVM(cfg, rawStorageJson);
+        });
+
+        // Read inputsValid field (set during setState when args derivation is used)
+        // If inputsValid is false, the block can't run
+        const inputsValidNode = prj.traverse({
+          field: projectFieldName(id, 'inputsValid'),
+          assertFieldType: 'Dynamic',
+          stableIfNotFound: true,
+        });
+        const inputsValidFromField = inputsValidNode !== undefined
+          ? inputsValidNode.getDataAsJson() as boolean
+          : undefined;
+
         const updates = ifNotUndef(bp, ({ info }) =>
           env.blockUpdateWatcher.get({ currentSpec: info.source, settings }),
         );
+
+        // Combine inputsValid from stored field (args derivation result) with cfg callback
+        // For v3 blocks with .args() callback: inputsValidFromField is set to true/false based on derivation result
+        // For v1/v2 blocks without .args(): inputsValidFromField is undefined, use cfg.inputsValid callback
+        const finalInputsValid = inputsValidFromField ?? inputsValid;
 
         return {
           projectResourceId: resourceIdToString(prjEntry.rid),
@@ -284,7 +309,7 @@ export function projectOverview(
           exportsError: info.prod?.exportsError,
           settings,
           sections,
-          inputsValid,
+          inputsValid: finalInputsValid,
           updateInfo: {},
           currentBlockPack: bp?.info?.source,
           updates,
@@ -292,6 +317,7 @@ export function projectOverview(
           featureFlags,
           isIncompatibleWithRuntime,
           navigationState: navigationStates.getState(id),
+          blockStorageInfo,
         };
       });
 

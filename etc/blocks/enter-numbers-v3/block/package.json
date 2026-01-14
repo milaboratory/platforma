@@ -1,0 +1,39 @@
+{
+  "name": "@milaboratories/milaboratories.test-enter-numbers-v3",
+  "version": "1.0.249",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf ./block-pack && block-tools pack",
+    "publish-to-local-registry": "block-tools publish --registry file:./../../../../test-registry && block-tools publish --version-override 100.0.0 --registry file:./../../../../test-registry && block-tools mark-stable --registry file:./../../../../test-registry"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers-v3.workflow": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers-v3.model": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers-v3.ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.test-enter-numbers-v3.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.test-enter-numbers-v3.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.test-enter-numbers-v3.ui/dist"
+    },
+    "meta": {
+      "title": "Enter Numbers (new api)",
+      "description": "Enter Numbers",
+      "logo": "file:logos/block-logo.png",
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/",
+        "logo": "file:logos/organization-logo.png"
+      }
+    }
+  }
+}

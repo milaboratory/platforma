@@ -16,12 +16,32 @@ function upgradeCfgOrLambda(
 /**
  * Takes universal config, and converts it into latest config structure.
  *
- * **Important**: This operation is not meant to be executed recusively.
+ * **Important**: This operation is not meant to be executed recursively.
  *                In no circumstance result of this function should be persisted!
  * */
 export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGeneric {
-  if (cfg.v3 !== undefined) {
-    // version 3
+  if (cfg.v4 !== undefined) {
+    // version 4 (BlockModelV3)
+    const { args, preRunArgs, initialState, inputsValid, outputs, renderingMode, sdkVersion, featureFlags, sections, title, enrichmentTargets, migrations } = cfg.v4;
+    const { code } = cfg;
+    return {
+      configVersion: 4,
+      args,
+      preRunArgs,
+      initialState,
+      inputsValid,
+      outputs,
+      renderingMode,
+      sdkVersion,
+      featureFlags,
+      sections,
+      title,
+      enrichmentTargets,
+      migrations,
+      code,
+    };
+  } else if (cfg.v3 !== undefined) {
+    // version 3 (BlockModel v1)
     const {
       initialArgs,
       initialUiState,
@@ -38,6 +58,7 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
     } = cfg.v3;
     const { code } = cfg;
     return {
+      configVersion: 3,
       initialArgs,
       initialUiState,
       inputsValid,
@@ -53,7 +74,7 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
       enrichmentTargets,
     };
   } else if (cfg.inputsValid !== undefined) {
-    // version 2
+    // version 2 (legacy) - normalize to v3 format
     const { sdkVersion, renderingMode, outputs, inputsValid, sections, initialArgs, code } = cfg;
     const fields = Object.keys(cfg);
     if (
@@ -68,6 +89,7 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
         `Malformed config v2. SDK version ${sdkVersion}; Fields = ${fields.join(', ')}`,
       );
     return {
+      configVersion: 3,
       sdkVersion,
       renderingMode,
       initialArgs,
@@ -80,7 +102,7 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
       code,
     };
   } else if (cfg.renderingMode !== undefined) {
-    // version 1
+    // version 1 (legacy) - normalize to v3 format
     const { sdkVersion, canRun, renderingMode, outputs, sections, initialArgs, code } = cfg;
     const fields = Object.keys(cfg);
     if (
@@ -94,6 +116,7 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
         `Malformed config v1. SDK version ${sdkVersion}; Fields = ${fields.join(', ')}`,
       );
     return {
+      configVersion: 3,
       sdkVersion: sdkVersion ?? 'unknown',
       renderingMode,
       initialArgs,

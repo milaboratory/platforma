@@ -8,7 +8,22 @@ export function useInfo() {
 
   const app = computed(() => (sdk.loaded ? sdk.useApp() : undefined));
 
-  const hasMonetization = computed(() => '__mnzDate' in (app.value?.model?.args as Record<string, unknown>));
+  // TODO v3 (temp hack)
+  const getModelArgsOrState = (model: Record<string, unknown> | undefined) => {
+    if (!model) return {};
+    if ('state' in model) {
+      return model.state as Record<string, unknown>;
+    } else if ('args' in model) {
+      return model.args as Record<string, unknown>;
+    }
+    return {};
+  };
+
+  const model = computed(() => getModelArgsOrState(app.value?.model));
+
+  const hasMonetization = computed(() => {
+    return model.value && ('__mnzDate' in model.value);
+  });
 
   const parsed = computed(() => Response.safeParse(app.value?.model.outputs['__mnzInfo']));
 
@@ -48,12 +63,12 @@ export function useInfo() {
 
   const refresh = () => {
     isLoading.value = true;
-    (app.value?.model.args as Record<string, unknown>)['__mnzDate'] = new Date().toISOString();
+    (model.value)['__mnzDate'] = new Date().toISOString();
   };
 
   watch(canRun, (v) => {
     if (hasMonetization.value) {
-      (app.value?.model.args as Record<string, unknown>)['__mnzCanRun'] = v;
+      (model.value as Record<string, unknown>)['__mnzCanRun'] = v;
     }
   });
 

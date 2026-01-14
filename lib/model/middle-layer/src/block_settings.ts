@@ -15,7 +15,7 @@ export type VersionLock = 'major' | 'minor' | 'patch';
  * currently only updates.
  * */
 export type BlockSettings = {
-  /** Only version stricktly greater that this one will be suggested for auto-update. */
+  /** Only version strictly greater that this one will be suggested for auto-update. */
   skipVersion?: string;
   /**
    * If certain version locking policy is set, auto-updates will only be suggested,

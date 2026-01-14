@@ -1,10 +1,11 @@
 import { notEmpty } from '@milaboratories/helpers';
-import type { PlatformaExtended, PlatformaV1, PlatformaV2 } from '@platforma-sdk/model';
-import { getPlatformaApiVersion, unwrapResult, type BlockOutputsBase, type Platforma } from '@platforma-sdk/model';
+import type { PlatformaExtended, PlatformaV3, PlatformaV1, PlatformaV2 } from '@platforma-sdk/model';
+import { getPlatformaApiVersion, unwrapResult, type BlockOutputsBase, type Platforma, type BlockModelInfo } from '@platforma-sdk/model';
 import type { Component, Reactive } from 'vue';
 import { inject, markRaw, reactive } from 'vue';
 import { createAppV1, type BaseAppV1 } from './internal/createAppV1';
 import { createAppV2, type BaseAppV2 } from './internal/createAppV2';
+import { createAppV3, type BaseAppV3 } from './internal/createAppV3';
 import type { AppSettings, ExtendSettings, Routes } from './types';
 import { activateAgGrid } from './aggrid';
 
@@ -21,7 +22,9 @@ export function defineApp<
   Href extends `/${string}` = `/${string}`,
   Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
 >(
-  platforma: PlatformaExtended<PlatformaV1<Args, Outputs, UiState, Href>>,
+  platforma: PlatformaV1<Args, Outputs, UiState, Href> & {
+    blockModelInfo: BlockModelInfo;
+  },
   extendApp: (app: BaseAppV1<Args, Outputs, UiState, Href>) => Extend,
   settings?: AppSettings,
 ): SdkPluginV1<Args, Outputs, UiState, Href, Extend>;
@@ -33,10 +36,26 @@ export function defineApp<
   Href extends `/${string}` = `/${string}`,
   Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
 >(
-  platforma: PlatformaExtended<PlatformaV2<Args, Outputs, UiState, Href>>,
+  platforma: PlatformaV2<Args, Outputs, UiState, Href> & {
+    blockModelInfo: BlockModelInfo;
+  },
   extendApp: (app: BaseAppV2<Args, Outputs, UiState, Href>) => Extend,
   settings?: AppSettings,
 ): SdkPluginV2<Args, Outputs, UiState, Href, Extend>;
+
+export function defineApp<
+  Args = unknown,
+  Outputs extends BlockOutputsBase = BlockOutputsBase,
+  State = unknown,
+  Href extends `/${string}` = `/${string}`,
+  Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
+>(
+  platforma: PlatformaV3<Args, Outputs, State, Href> & {
+    blockModelInfo: BlockModelInfo;
+  },
+  extendApp: (app: BaseAppV3<Args, Outputs, State, Href>) => Extend,
+  settings?: AppSettings,
+): SdkPluginV3<Args, Outputs, State, Href, Extend>;
 
 export function defineApp<
   Args = unknown,
@@ -68,6 +87,7 @@ export function defineApp<
       await platforma
         .loadBlockState()
         .then((state) => {
+          console.log('v1 state', state);
           plugin.loaded = true;
           const baseApp = createAppV1<Args, Outputs, UiState, Href>(state, platforma, settings);
 
@@ -92,8 +112,35 @@ export function defineApp<
         .loadBlockState()
         .then((stateOrError) => {
           const state = unwrapResult(stateOrError);
+          console.log('v2 state unwrapped', state);
           plugin.loaded = true;
           const baseApp = createAppV2<Args, Outputs, UiState, Href>(state, platforma, settings);
+
+          const localState = extendApp(baseApp);
+
+          const routes = Object.fromEntries(
+            Object.entries(localState.routes as Routes<Href>).map(([href, component]) => {
+              const c = typeof component === 'function' ? component() : component;
+              return [href, markRaw(c as Component)];
+            }),
+          );
+
+          app = Object.assign(baseApp, {
+            ...localState,
+            getRoute(href: Href): Component | undefined {
+              return routes[href];
+            },
+          } as unknown as AppV2<Args, Outputs, UiState, Href, Extend>);
+        });
+    } else if (platforma.apiVersion === 3) {
+      await platforma
+        .loadBlockState()
+        .then((stateOrError) => {
+          console.log('v3 stateOrError', stateOrError);
+          const state = unwrapResult(stateOrError);
+          plugin.loaded = true;
+          console.log('v3 state', state);
+          const baseApp = createAppV3<Args, Outputs, UiState, Href>(state, platforma, settings);
 
           const localState = extendApp(baseApp);
 
@@ -115,6 +162,7 @@ export function defineApp<
   };
 
   const plugin = reactive({
+    apiVersion: platforma.apiVersion ?? 1,
     loaded: false,
     error: undefined as unknown,
     // Href to get typed query parameters for a specific route
@@ -151,13 +199,21 @@ export type AppV2<
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
 > = (BaseAppV2<Args, Outputs, UiState, Href>) & Reactive<Omit<Local, 'routes'>> & { getRoute(href: Href): Component | undefined };
 
+export type AppV3<
+  Args = unknown,
+  Outputs extends BlockOutputsBase = BlockOutputsBase,
+  State = unknown,
+  Href extends `/${string}` = `/${string}`,
+  Local extends ExtendSettings<Href> = ExtendSettings<Href>,
+> = (BaseAppV3<Args, Outputs, State, Href>) & Reactive<Omit<Local, 'routes'>> & { getRoute(href: Href): Component | undefined };
+
 export type App<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
-> = AppV1<Args, Outputs, UiState, Href, Local> | AppV2<Args, Outputs, UiState, Href, Local>;
+> = AppV1<Args, Outputs, UiState, Href, Local> | AppV2<Args, Outputs, UiState, Href, Local> | AppV3<Args, Outputs, UiState, Href, Local>;
 
 export type SdkPluginV1<
   Args = unknown,
@@ -166,6 +222,7 @@ export type SdkPluginV1<
   Href extends `/${string}` = `/${string}`,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
 > = {
+  apiVersion: 1;
   loaded: boolean;
   error: unknown;
   useApp<PageHref extends Href = Href>(): AppV1<Args, Outputs, UiState, PageHref, Local>;
@@ -179,9 +236,24 @@ export type SdkPluginV2<
   Href extends `/${string}` = `/${string}`,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
 > = {
+  apiVersion: 2;
   loaded: boolean;
   error: unknown;
   useApp<PageHref extends Href = Href>(): AppV2<Args, Outputs, UiState, PageHref, Local>;
+  install(app: unknown): void;
+};
+
+export type SdkPluginV3<
+  Args = unknown,
+  Outputs extends BlockOutputsBase = BlockOutputsBase,
+  State = unknown,
+  Href extends `/${string}` = `/${string}`,
+  Local extends ExtendSettings<Href> = ExtendSettings<Href>,
+> = {
+  apiVersion: 3;
+  loaded: boolean;
+  error: unknown;
+  useApp<PageHref extends Href = Href>(): AppV3<Args, Outputs, State, PageHref, Local>;
   install(app: unknown): void;
 };
 
@@ -191,4 +263,4 @@ export type SdkPlugin<
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
-> = SdkPluginV1<Args, Outputs, UiState, Href, Local> | SdkPluginV2<Args, Outputs, UiState, Href, Local>;
+> = SdkPluginV1<Args, Outputs, UiState, Href, Local> | SdkPluginV2<Args, Outputs, UiState, Href, Local> | SdkPluginV3<Args, Outputs, UiState, Href, Local>;

@@ -61,7 +61,7 @@ export const platforma = BlockModel.create('Heavy')
     return [{ type: 'link', href: '/', label: 'Main' }];
   })
 
-  .done();
+  .done(2); // ui api version 2
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

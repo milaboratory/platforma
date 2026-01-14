@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PlAlert, PlBlockPage, PlTextField, PlBtnPrimary, useWatchFetch } from '@platforma-sdk/ui-vue';
+import { PlAlert, PlBlockPage, PlTextField, useWatchFetch } from '@platforma-sdk/ui-vue';
 import { useApp } from './app';
 import { computed } from 'vue';
 import { delay } from '@milaboratories/helpers';
@@ -55,16 +55,9 @@ const resultRef = useWatchFetch(() => app.model.outputs.numbers, (numbers) => {
     <code>{{ app.model }}</code>
     <h4>Result ref</h4>
     <code>{{ resultRef }}</code>
-    <PlAlert label="app.model.outputs" type="info" monospace>
-      {{ app.model.outputs }}
-    </PlAlert>
-    <PlAlert type="info" monospace>
-      outputs:
-      {{ app.model.outputs }}
-    </PlAlert>
+    <PlAlert label="app.model.outputs!!!" type="info" white-space-pre monospace>{{ JSON.stringify(app.model.outputs, null, 2) }}</PlAlert>
     <PlAlert v-if="app.hasErrors" type="error">
       {{ app.model.outputErrors }}
     </PlAlert>
-    <PlBtnPrimary v-if="app.error" @click="app.revert">Revert changes</PlBtnPrimary>
   </PlBlockPage>
 </template>

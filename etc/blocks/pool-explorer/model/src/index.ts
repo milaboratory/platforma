@@ -1,12 +1,18 @@
-import { BlockModel, type InferHrefType, type InferOutputsType } from '@platforma-sdk/model';
+import { BlockModelV3, type InferHrefType, type InferOutputsType } from '@platforma-sdk/model';
 
-export type BlockArgs = {
-  titleArg: string;
+export type BlockState = {
+  titleArgs: string;
 };
 
-export const platforma = BlockModel.create('Heavy')
+export type BlockArgs = BlockState;
 
-  .withArgs<BlockArgs>({ titleArg: 'The title' })
+export const platforma = BlockModelV3.create('Heavy')
+
+  .withState<BlockState>({ titleArgs: 'The title' })
+
+  .args<BlockArgs>((state) => {
+    return { titleArgs: state.titleArgs };
+  })
 
   .output('allSpecs', (ctx) => ctx.resultPool.getSpecs())
 

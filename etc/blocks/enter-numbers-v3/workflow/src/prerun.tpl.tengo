@@ -1,0 +1,20 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+wf.body(func(args) {
+	// Count the number of even numbers
+	numbersCount := 0
+	if !is_undefined(args.evenNumbers) {
+		numbersCount = len(args.evenNumbers)
+	}
+
+	return {
+		outputs: {
+			numbersCount: smart.createJsonResource(numbersCount),
+			evenNumbers: smart.createJsonResource(args.evenNumbers),
+			// Store args directly as object, not as JSON string
+			preRunArgsJson: smart.createJsonResource(args)
+		},
+		exports: {}
+	}
+})

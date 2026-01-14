@@ -1,12 +1,13 @@
 import type { ConfigResult, PlResourceEntry, TypedConfig } from '../config';
 
-export type StdCtxArgsOnly<Args, UiState = undefined> = {
+export type StdCtxArgsOnly<Args, Data = undefined> = {
   readonly $blockId: string;
   readonly $args: Args;
-  readonly $ui: UiState;
+  readonly $ui: Data; // TODO v3
+  readonly $data: Data;
 };
 
-export type StdCtx<Args, UiState = undefined> = StdCtxArgsOnly<Args, UiState> & {
+export type StdCtx<Args, Data = undefined> = StdCtxArgsOnly<Args, Data> & {
   readonly $prod: PlResourceEntry;
   readonly $staging: PlResourceEntry;
 };
@@ -20,7 +21,7 @@ export type ResolveCfgType<Cfg extends TypedConfig, Args, UiState = undefined> =
 export type ConfigRenderLambdaFlags = {
   /**
    * Tells the system that corresponding computable should be created with StableOnlyRetentive rendering mode.
-   * This flag can be overriden by the system.
+   * This flag can be overridden by the system.
    * */
   retentive?: boolean;
 

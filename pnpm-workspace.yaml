@@ -62,10 +62,20 @@ packages:
   - etc/blocks/enter-numbers/ui
   - etc/blocks/enter-numbers/block
 
+  - etc/blocks/enter-numbers-v3/workflow
+  - etc/blocks/enter-numbers-v3/model
+  - etc/blocks/enter-numbers-v3/ui
+  - etc/blocks/enter-numbers-v3/block
+
   - etc/blocks/sum-numbers/workflow
   - etc/blocks/sum-numbers/model
   - etc/blocks/sum-numbers/ui
   - etc/blocks/sum-numbers/block
+
+  - etc/blocks/sum-numbers-v3/workflow
+  - etc/blocks/sum-numbers-v3/model
+  - etc/blocks/sum-numbers-v3/ui
+  - etc/blocks/sum-numbers-v3/block
 
   - etc/blocks/upload-file/workflow
   - etc/blocks/upload-file/model

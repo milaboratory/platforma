@@ -11,19 +11,15 @@ import {
 } from '../model/project_model';
 import { allBlocks } from '../model/project_model_util';
 import { ResultPool } from '../pool/result_pool';
-
-export type BlockContextMaterialized = {
-  readonly blockId: string;
-  readonly args: string;
-  readonly uiState?: string;
-};
+import { isBlockStorage, getStorageData } from '@platforma-sdk/model';
 
 export type BlockContextArgsOnly = {
   readonly blockId: string;
   readonly args: (cCtx: ComputableCtx) => string;
   readonly activeArgs: (cCtx: ComputableCtx) => string | undefined;
-  readonly uiState: (cCtx: ComputableCtx) => string | undefined;
   readonly blockMeta: (cCtx: ComputableCtx) => Map<string, Block>;
+  readonly data: (cCtx: ComputableCtx) => string | undefined;
+  readonly preRunArgs: (cCtx: ComputableCtx) => string | undefined;
 };
 
 export type BlockContextFull = BlockContextArgsOnly & {
@@ -60,12 +56,40 @@ export function constructBlockContextArgsOnly(
       ?.getData();
     return data ? cachedDecode(data) : undefined;
   };
-  const uiState = (cCtx: ComputableCtx) => {
+  const data = (cCtx: ComputableCtx) => {
     const data = cCtx
       .accessor(projectEntry)
       .node()
       .traverse({
-        field: projectFieldName(blockId, 'uiState'),
+        field: projectFieldName(blockId, 'blockStorage'),
+        stableIfNotFound: true,
+      })
+      ?.getData();
+    if (!data) return undefined;
+
+    const rawJson = cachedDecode(data);
+    if (!rawJson) return undefined;
+
+    // Parse to check if it's BlockStorage format
+    try {
+      const parsed = JSON.parse(rawJson);
+      if (isBlockStorage(parsed)) {
+        // Extract data from BlockStorage format
+        return JSON.stringify(getStorageData(parsed));
+      }
+    } catch {
+      // If parsing fails, return raw
+    }
+
+    // Return raw for legacy format
+    return rawJson;
+  };
+  const preRunArgs = (cCtx: ComputableCtx) => {
+    const data = cCtx
+      .accessor(projectEntry)
+      .node()
+      .traverse({
+        field: projectFieldName(blockId, 'currentPreRunArgs'),
         stableIfNotFound: true,
       })
       ?.getData();
@@ -75,7 +99,8 @@ export function constructBlockContextArgsOnly(
     blockId,
     args,
     activeArgs,
-    uiState,
+    data,
+    preRunArgs,
     blockMeta: (cCtx: ComputableCtx) => {
       const prj = cCtx.accessor(projectEntry).node();
       const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
@@ -104,15 +129,27 @@ export function constructBlockContext(
         ?.persist();
     },
     staging: (cCtx: ComputableCtx) => {
+      // Check if staging is expected (currentPreRunArgs is set)
+      // For blocks with failed args derivation, staging will never be rendered
+      const hasPreRunArgs = cCtx
+        .accessor(projectEntry)
+        .node({ ignoreError: true })
+        .traverse({
+          field: projectFieldName(blockId, 'currentPreRunArgs'),
+          stableIfNotFound: true,
+          ignoreError: true,
+        }) !== undefined;
+
       const result = cCtx
         .accessor(projectEntry)
         .node({ ignoreError: true })
         .traverse({
           field: projectFieldName(blockId, 'stagingOutput'),
+          // Only mark stable if staging is NOT expected (no preRunArgs)
+          stableIfNotFound: !hasPreRunArgs,
           ignoreError: true,
         })
         ?.persist();
-      if (result === undefined) cCtx.markUnstable('staging_not_rendered');
       return result;
     },
     getResultsPool: (cCtx: ComputableCtx) => ResultPool.create(cCtx, projectEntry, blockId),

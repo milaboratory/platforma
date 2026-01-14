@@ -499,6 +499,21 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         vm.newFunction(name, fn).consume((fnh) => vm.setProp(configCtx, name + '__internal__', fnh));
       };
 
+      // Check if this is a v1/v2 block (requiresModelAPIVersion !== 2)
+      // For v1/v2 blocks, state is {args, uiState} and we need to inject uiState separately
+      const isLegacyBlock = !checkBlockFlag(this.featureFlags, 'requiresModelAPIVersion', 2);
+
+      // Helper to extract uiState from legacy state format {args, uiState}
+      const extractUiState = (stateJson: string | undefined): string => {
+        if (!stateJson) return '{}';
+        try {
+          const parsed = JSON.parse(stateJson);
+          return JSON.stringify(parsed?.uiState ?? {});
+        } catch {
+          return '{}';
+        }
+      };
+
       if (checkBlockFlag(this.featureFlags, 'supportsLazyState')) {
         // injecting lazy state functions
         exportCtxFunction('args', () => {
@@ -506,10 +521,10 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
             throw new Error(`Add dummy call to ctx.args outside the future lambda. Can't be directly used in this context.`);
           return vm.newString(this.blockCtx.args(this.computableCtx));
         });
-        exportCtxFunction('uiState', () => {
+        exportCtxFunction('data', () => {
           if (this.computableCtx === undefined)
-            throw new Error(`Add dummy call to ctx.uiState outside the future lambda. Can't be directly used in this context.`);
-          return vm.newString(this.blockCtx.uiState(this.computableCtx) ?? '{}');
+            throw new Error(`Add dummy call to ctx.state outside the future lambda. Can't be directly used in this context.`);
+          return vm.newString(this.blockCtx.data(this.computableCtx) ?? '{}');
         });
         exportCtxFunction('activeArgs', () => {
           if (this.computableCtx === undefined)
@@ -517,14 +532,26 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
           const res = this.blockCtx.activeArgs(this.computableCtx);
           return res === undefined ? vm.undefined : vm.newString(res);
         });
+        // For v1/v2 blocks, also inject uiState (extracted from state.uiState)
+        if (isLegacyBlock) {
+          exportCtxFunction('uiState', () => {
+            if (this.computableCtx === undefined)
+              throw new Error(`Add dummy call to ctx.uiState outside the future lambda. Can't be directly used in this context.`);
+            return vm.newString(extractUiState(this.blockCtx.data(this.computableCtx)));
+          });
+        }
       } else {
         const args = this.blockCtx.args(this.computableCtx!);
         const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
-        const uiState = this.blockCtx.uiState(this.computableCtx!);
+        const data = this.blockCtx.data(this.computableCtx!);
         vm.setProp(configCtx, 'args', localScope.manage(vm.newString(args)));
-        vm.setProp(configCtx, 'uiState', localScope.manage(vm.newString(uiState ?? '{}')));
+        vm.setProp(configCtx, 'data', localScope.manage(vm.newString(data ?? '{}')));
         if (activeArgs !== undefined)
           vm.setProp(configCtx, 'activeArgs', localScope.manage(vm.newString(activeArgs)));
+        // For v1/v2 blocks, also inject uiState (extracted from state.uiState)
+        if (isLegacyBlock) {
+          vm.setProp(configCtx, 'uiState', localScope.manage(vm.newString(extractUiState(data))));
+        }
       }
 
       //

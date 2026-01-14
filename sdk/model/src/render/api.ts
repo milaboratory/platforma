@@ -515,7 +515,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
-export class RenderCtx<Args, UiState> {
+export class RenderCtx<Args, Data> {
   private readonly ctx: GlobalCfgRenderCtx;
 
   constructor() {
@@ -533,13 +533,30 @@ export class RenderCtx<Args, UiState> {
     return this._argsCache.v;
   }
 
-  private _uiStateCache?: { v: UiState };
+  private _dataCache?: { v: Data };
 
-  public get uiState(): UiState {
-    if (this._uiStateCache === undefined) {
-      const raw = this.ctx.uiState;
+  public get data(): Data {
+    if (this._dataCache === undefined) {
+      const raw = this.ctx.data;
       const value = typeof raw === 'function' ? raw() : raw;
-      this._uiStateCache = { v: value ? JSON.parse(value) : ({} as UiState) };
+      this._dataCache = { v: value ? JSON.parse(value) : ({} as Data) };
+    }
+    return this._dataCache.v;
+  }
+
+  private _uiStateCache?: { v: Data };
+
+  /**
+   * @deprecated Use `state` instead. This is kept for backward compatibility with API v1/v2 blocks.
+   * For v1/v2 blocks, the middle layer injects `uiState` extracted from `state.uiState`.
+   */
+  public get uiState(): Data {
+    if (this._uiStateCache === undefined) {
+      // For v1/v2 blocks, uiState is injected by the middle layer (extracted from state.uiState)
+      // For v3+ blocks, uiState won't be injected, so fall back to state
+      const raw = this.ctx.uiState ?? this.ctx.data;
+      const value = typeof raw === 'function' ? raw() : raw;
+      this._uiStateCache = { v: value ? JSON.parse(value) : ({} as Data) };
     }
     return this._uiStateCache.v;
   }
@@ -691,8 +708,8 @@ export class RenderCtx<Args, UiState> {
   }
 }
 
-export type RenderFunction<Args = unknown, UiState = unknown, Ret = unknown> = (
-  rCtx: RenderCtx<Args, UiState>
+export type RenderFunction<Args = unknown, State = unknown, Ret = unknown> = (
+  rCtx: RenderCtx<Args, State> // TODO v3
 ) => Ret;
 
 export type UnwrapFutureRef<K> =
