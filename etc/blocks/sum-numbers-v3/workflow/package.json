@@ -1,7 +1,7 @@
 {
   "name": "@milaboratories/milaboratories.test-sum-numbers-v3.workflow",
   "private": true,
-  "version": "1.0.18",
+  "version": "1.0.0",
   "type": "module",
   "description": "Tengo-based template",
   "scripts": {
