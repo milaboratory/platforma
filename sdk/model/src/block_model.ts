@@ -105,18 +105,6 @@ export class BlockModelV3<
   }
 
   /**
-   * Add output cell to the configuration
-   *
-   * @param key output cell name, that can be later used to retrieve the rendered value
-   * @param cfg configuration describing how to render cell value from the blocks
-   *            workflow outputs
-   * @deprecated use lambda-based API
-   * */
-  public output<const Key extends string, const Cfg extends TypedConfig>(
-    key: Key,
-    cfg: Cfg
-  ): BlockModelV3<Args, OutputsCfg & { [K in Key]: Cfg }, State, Href>;
-  /**
    * Add output cell wrapped with additional status information to the configuration
    *
    * @param key output cell name, that can be later used to retrieve the rendered value
@@ -154,31 +142,22 @@ export class BlockModelV3<
   >;
   public output(
     key: string,
-    cfgOrRf: TypedConfig | AnyFunction,
+    cfgOrRf: RenderFunction<Args, State>,
     flags: ConfigRenderLambdaFlags = {},
   ): BlockModelV3<Args, OutputsCfg, State, Href> {
-    if (typeof cfgOrRf === 'function') {
-      const handle = `output#${key}`;
-      tryRegisterCallback(handle, () => cfgOrRf(new RenderCtx()));
-      return new BlockModelV3({
-        ...this.config,
-        outputs: {
-          ...this.config.outputs,
-          [key]: {
-            __renderLambda: true,
-            handle,
-            ...flags,
-          } satisfies ConfigRenderLambda,
-        },
-      });
-    } else
-      return new BlockModelV3({
-        ...this.config,
-        outputs: {
-          ...this.config.outputs,
-          [key]: cfgOrRf,
-        },
-      });
+    const handle = `output#${key}`;
+    tryRegisterCallback(handle, () => cfgOrRf(new RenderCtx()));
+    return new BlockModelV3({
+      ...this.config,
+      outputs: {
+        ...this.config.outputs,
+        [key]: {
+          __renderLambda: true,
+          handle,
+          ...flags,
+        } satisfies ConfigRenderLambda,
+      },
+    });
   }
 
   /** Shortcut for {@link output} with retentive flag set to true. */
