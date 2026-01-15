@@ -49,6 +49,26 @@ export function getImageHash(tag: string): string {
   return output;
 }
 
+export function getImageEntrypoint(tag: string): string[] {
+  const result = spawnSync('docker', ['image', 'inspect', tag, '--format', '{{ .Config.Entrypoint | json }}'], {
+    stdio: 'pipe',
+    env: {
+      ...process.env, // PATH variable from parent process affects execution
+      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+    },
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw util.CLIError(`'docker image inspect' failed with status ${result.status}`);
+  }
+
+  const output = result.stdout.toString().trim(); // 'null' or '[<string>, ...]' in JSON format
+  return (JSON.parse(output) ?? []) as string[];
+}
+
 export function localImageExists(tag: string): boolean {
   return getImageHash(tag) !== '';
 }
