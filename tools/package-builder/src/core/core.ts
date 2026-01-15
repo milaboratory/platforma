@@ -114,6 +114,13 @@ export class Core {
     );
   }
 
+  public get dockerPackages(): Map<string, artifacts.withId<artifacts.anyArtifactType>> {
+    return new Map(Array.from(this.packages.entries())
+      .filter(([id, _]) => docker.isVirtualDockerEntrypointName(id)) // do not show virtual docker entrypoints
+      .filter(([, value]) => value.type === 'docker'),
+    );
+  }
+
   public packageHasType(id: string, type: artifacts.artifactType): boolean {
     const pkg = this.packages.get(id);
     if (pkg && pkg.type === type) {
@@ -322,7 +329,7 @@ export class Core {
   ) {
     this.logger.info(`Building docker images...`);
 
-    const packagesToBuild = options?.ids ?? Array.from(this.buildablePackages.keys());
+    const packagesToBuild = options?.ids ?? Array.from(this.dockerPackages.keys());
     this.logger.debug(`Selected packages:\n  ${packagesToBuild.join('\n  ')}`);
     this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join('\n  ')}`);
 
@@ -376,7 +383,7 @@ export class Core {
 
     const localTag = docker.generateLocalTagName(this.pkgInfo.packageRoot, artifact);
 
-    this.logger.info(`Building docker image...`);
+    this.logger.info(`Building docker image for '${pkgID}'...`);
     this.logger.debug(`  dockerfile: '${dockerfile}'
   context: '${context}'
   localTag: '${localTag}'

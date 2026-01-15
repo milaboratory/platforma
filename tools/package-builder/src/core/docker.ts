@@ -65,8 +65,8 @@ export function getImageEntrypoint(tag: string): string[] {
     throw util.CLIError(`'docker image inspect' failed with status ${result.status}`);
   }
 
-  const output = result.stdout.toString().trim();
-  return JSON.parse(output) as string[];
+  const output = result.stdout.toString().trim(); // 'null' or '[<string>, ...]' in JSON format
+  return (JSON.parse(output) ?? []) as string[];
 }
 
 export function localImageExists(tag: string): boolean {

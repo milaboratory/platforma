@@ -1,4 +1,4 @@
 FROM scratch
 COPY . /app/
 
-ENTRYPOINT [ "true", "true" ]
+ENTRYPOINT [ "ep-arg1", "ep-arg2" ]

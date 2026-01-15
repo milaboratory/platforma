@@ -6,7 +6,7 @@
   "scripts": {
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
     "reset": "npm run cleanup && rm -rf ./node_modules/",
-    "check": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build"
+    "check": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build --docker-build && node ./verify.mjs"
   },
   "block-software": {
     "registries": {
@@ -149,25 +149,12 @@
         }
       },
       "custom-docker": {
-        "binary": {
-          "artifact": {
-            "type": "binary",
-            "roots": {
-              "linux-x64": "./src",
-              "linux-aarch64": "./src",
-              "macosx-x64": "./src",
-              "macosx-aarch64": "./src",
-              "windows-x64": "./src"
-            }
-          },
-          "cmd": [ "true" ]
-        },
         "docker": {
           "artifact": {
             "context": "./src",
             "dockerfile": "Dockerfile"
           },
-          "cmd": [ "true" ]
+          "cmd": [ "cmd-arg1", "cmd-arg2" ]
         }
       }
     }
