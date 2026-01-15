@@ -20,7 +20,7 @@ export const createViteLibConfig = (configEnv: ConfigEnv): UserConfig => {
         },
       }),
       externalizeDeps(),
-      cssInjectedByJsPlugin({ relativeCSSInjection: true }),
+      cssInjectedByJsPlugin(),
     ],
     build: {
       lib: {
@@ -28,7 +28,6 @@ export const createViteLibConfig = (configEnv: ConfigEnv): UserConfig => {
         formats: ['es'],
         entry: 'src/index.ts',
       },
-      cssCodeSplit: true,
       rollupOptions: {
         output: {
           format: 'es',
