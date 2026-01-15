@@ -50,6 +50,16 @@ export type Platforma<
   Href extends `/${string}` = `/${string}`,
 > = PlatformaV1<Args, Outputs, UiState, Href> | PlatformaV2<Args, Outputs, UiState, Href> | PlatformaV3<Args, Outputs, UiState, Href>;
 
+export type PlatformaExtended<Pl extends Platforma = Platforma> = Pl & {
+  blockModelInfo: BlockModelInfo;
+};
+
+export type BlockModelInfo = {
+  outputs: Record<string, {
+    withStatus: boolean;
+  }>;
+};
+
 export type PlatformaApiVersion = Platforma['apiVersion'];
 
 export type InferArgsType<Pl extends Platforma> = Pl extends Platforma<infer Args> ? Args : never;

@@ -136,10 +136,8 @@ export function defineApp<
       await platforma
         .loadBlockState()
         .then((stateOrError) => {
-          console.log('v3 stateOrError', stateOrError);
           const state = unwrapResult(stateOrError);
           plugin.loaded = true;
-          console.log('v3 state', state);
           const baseApp = createAppV3<Args, Outputs, UiState, Href>(state, platforma, settings);
 
           const localState = extendApp(baseApp);

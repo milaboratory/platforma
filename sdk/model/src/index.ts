@@ -2,7 +2,7 @@ export * from './block_state_patch';
 export * from './block_state_util';
 export * from './block_storage';
 export * from './builder';
-export { BlockModelV3 } from './builder2';
+export { BlockModelV3 } from './block_model';
 export * from './bconfig';
 export * from './components';
 export * from './config';

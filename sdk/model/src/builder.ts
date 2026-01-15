@@ -1,4 +1,4 @@
-import type { BlockRenderingMode, BlockSection, AnyFunction, PlRef, BlockCodeKnownFeatureFlags, BlockConfigContainer, OutputWithStatus } from '@milaboratories/pl-model-common';
+import type { BlockRenderingMode, BlockSection, AnyFunction, PlRef, BlockCodeKnownFeatureFlags, BlockConfigContainer } from '@milaboratories/pl-model-common';
 import type { Checked, ConfigResult, TypedConfig } from './config';
 import { getImmediate } from './config';
 import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
@@ -11,14 +11,14 @@ import type {
   ConfigRenderLambda,
   StdCtxArgsOnly,
   DeriveHref,
-  ResolveCfgType,
-  ExtractFunctionHandleReturn,
   ConfigRenderLambdaFlags,
+  InferOutputsFromConfigs,
 } from './bconfig';
 import {
   downgradeCfgOrLambda,
   isConfigLambda,
 } from './bconfig';
+import type { PlatformaExtended } from './platforma';
 
 type SectionsExpectedType = readonly BlockSection[];
 
@@ -454,29 +454,3 @@ export class BlockModel<
     };
   }
 }
-
-export type InferOutputType<CfgOrFH, Args, UiState> = CfgOrFH extends TypedConfig
-  ? ResolveCfgType<CfgOrFH, Args, UiState>
-  : CfgOrFH extends ConfigRenderLambda
-    ? ExtractFunctionHandleReturn<CfgOrFH>
-    : never;
-
-type InferOutputsFromConfigs<
-  Args,
-  OutputsCfg extends Record<string, TypedConfigOrConfigLambda>,
-  UiState,
-> = {
-  [Key in keyof OutputsCfg]:
-    & OutputWithStatus<InferOutputType<OutputsCfg[Key], Args, UiState>>
-    & { __unwrap: (OutputsCfg[Key] extends { withStatus: true } ? false : true) };
-};
-
-export type PlatformaExtended<Pl extends Platforma = Platforma> = Pl & {
-  blockModelInfo: BlockModelInfo;
-};
-
-export type BlockModelInfo = {
-  outputs: Record<string, {
-    withStatus: boolean;
-  }>;
-};

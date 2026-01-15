@@ -8,21 +8,21 @@ export function useInfo() {
 
   const app = computed(() => (sdk.loaded ? sdk.useApp() : undefined));
 
-  // TODO v3 (temp hack)
+  // TODO use a separate plugin state when it's implemented
   const getModelArgsOrState = (model: Record<string, unknown> | undefined) => {
     if (!model) return {};
-    if ('state' in model) {
-      return model.state as Record<string, unknown>;
+    if ('data' in model) {
+      return model.data as Record<string, unknown>;
     } else if ('args' in model) {
       return model.args as Record<string, unknown>;
     }
     return {};
   };
 
-  const model = computed(() => getModelArgsOrState(app.value?.model));
+  const inputData = computed(() => getModelArgsOrState(app.value?.model));
 
   const hasMonetization = computed(() => {
-    return model.value && ('__mnzDate' in model.value);
+    return inputData.value && ('__mnzDate' in inputData.value);
   });
 
   const parsed = computed(() => Response.safeParse(app.value?.model.outputs['__mnzInfo']));
@@ -63,12 +63,12 @@ export function useInfo() {
 
   const refresh = () => {
     isLoading.value = true;
-    (model.value)['__mnzDate'] = new Date().toISOString();
+    (inputData.value)['__mnzDate'] = new Date().toISOString();
   };
 
   watch(canRun, (v) => {
     if (hasMonetization.value) {
-      (model.value as Record<string, unknown>)['__mnzCanRun'] = v;
+      (inputData.value as Record<string, unknown>)['__mnzCanRun'] = v;
     }
   });
 

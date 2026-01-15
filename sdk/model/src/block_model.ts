@@ -22,15 +22,15 @@ import type {
   ConfigRenderLambda,
   StdCtxArgsOnly,
   DeriveHref,
-  ResolveCfgType,
-  ExtractFunctionHandleReturn,
   ConfigRenderLambdaFlags,
+  InferOutputType,
+  InferOutputsFromConfigs,
 } from './bconfig';
 import {
   downgradeCfgOrLambda,
   isConfigLambda,
 } from './bconfig';
-import type { PlatformaExtended } from './builder';
+import type { PlatformaExtended } from './platforma';
 
 type SectionsExpectedType = readonly BlockSection[];
 
@@ -38,17 +38,6 @@ type SectionsCfgChecked<Cfg extends TypedConfig, Args, State> = Checked<
   Cfg,
   ConfigResult<Cfg, StdCtxArgsOnly<Args, State>> extends SectionsExpectedType ? true : false
 >;
-
-// For the type tests
-export type Expect<T extends true> = T;
-
-export type Equal<X, Y> =
-  (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;
-
-/** Merges two object types into a single flat object type (B overwrites A) */
-export type Merge<A, B> = {
-  [K in keyof A | keyof B]: K extends keyof B ? B[K] : K extends keyof A ? A[K] : never;
-};
 
 type NoOb = Record<string, never>;
 
@@ -473,23 +462,16 @@ export class BlockModelV3<
   }
 }
 
-export type InferOutputType<CfgOrFH, Args, State> = CfgOrFH extends TypedConfig
-  ? ResolveCfgType<CfgOrFH, Args, State>
-  : CfgOrFH extends ConfigRenderLambda
-    ? ExtractFunctionHandleReturn<CfgOrFH>
-    : never;
-
-type InferOutputsFromConfigs<
-  Args,
-  OutputsCfg extends Record<string, TypedConfigOrConfigLambda>,
-  UiState,
-> = {
-  [Key in keyof OutputsCfg]:
-    & OutputWithStatus<InferOutputType<OutputsCfg[Key], Args, UiState>>
-    & { __unwrap: (OutputsCfg[Key] extends { withStatus: true } ? false : true) };
-};
-
 // Type tests for BlockModelV3
+
+export type Expect<T extends true> = T;
+
+export type Equal<X, Y> =
+  (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;
+
+export type Merge<A, B> = {
+  [K in keyof A | keyof B]: K extends keyof B ? B[K] : K extends keyof A ? A[K] : never;
+};
 
 // Helper types for testing
 type _TestArgs = { inputFile: string; threshold: number };
