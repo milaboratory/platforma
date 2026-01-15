@@ -515,22 +515,11 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
-export class RenderCtx<Args, Data> {
-  private readonly ctx: GlobalCfgRenderCtx;
+export abstract class RenderCtxBase<Args, Data> {
+  protected readonly ctx: GlobalCfgRenderCtx;
 
   constructor() {
     this.ctx = getCfgRenderCtx();
-  }
-
-  private _argsCache?: { v: Args };
-
-  public get args(): Args {
-    if (this._argsCache === undefined) {
-      const raw = this.ctx.args;
-      const value = typeof raw === 'function' ? raw() : raw;
-      this._argsCache = { v: JSON.parse(value) };
-    }
-    return this._argsCache.v;
   }
 
   private _dataCache?: { v: Data };
@@ -542,23 +531,6 @@ export class RenderCtx<Args, Data> {
       this._dataCache = { v: value ? JSON.parse(value) : ({} as Data) };
     }
     return this._dataCache.v;
-  }
-
-  private _uiStateCache?: { v: Data };
-
-  /**
-   * @deprecated Use `state` instead. This is kept for backward compatibility with API v1/v2 blocks.
-   * For v1/v2 blocks, the middle layer injects `uiState` extracted from `state.uiState`.
-   */
-  public get uiState(): Data {
-    if (this._uiStateCache === undefined) {
-      // For v1/v2 blocks, uiState is injected by the middle layer (extracted from state.uiState)
-      // For v3+ blocks, uiState won't be injected, so fall back to state
-      const raw = this.ctx.uiState ?? this.ctx.data;
-      const value = typeof raw === 'function' ? raw() : raw;
-      this._uiStateCache = { v: value ? JSON.parse(value) : ({} as Data) };
-    }
-    return this._uiStateCache.v;
   }
 
   // lazy rendering because this feature is rarely used
@@ -708,8 +680,49 @@ export class RenderCtx<Args, Data> {
   }
 }
 
+/** Main entry point to the API available within model lambdas (like outputs, sections, etc..) for v3+ blocks */
+export class RenderCtx<Args, Data> extends RenderCtxBase<Args, Data> {
+  private _argsCache?: { v: Args };
+  public get args(): Args | undefined {
+    if (this._argsCache === undefined) {
+      const raw = this.ctx.args;
+      const value = typeof raw === 'function' ? raw() : raw;
+      this._argsCache = { v: JSON.parse(value) };
+    }
+    return this._argsCache.v;
+  }
+}
+
+/** Render context for legacy v1/v2 blocks - provides backward compatibility */
+export class RenderCtxLegacy<Args, UiState> extends RenderCtxBase<Args, UiState> {
+  private _argsCache?: { v: Args };
+  public get args(): Args {
+    if (this._argsCache === undefined) {
+      const raw = this.ctx.args;
+      const value = typeof raw === 'function' ? raw() : raw;
+      this._argsCache = { v: JSON.parse(value) };
+    }
+    return this._argsCache.v;
+  }
+
+  private _uiStateCache?: { v: UiState };
+
+  public get uiState(): UiState {
+    if (this._uiStateCache === undefined) {
+      const raw = this.ctx.uiState!;
+      const value = typeof raw === 'function' ? raw() : raw;
+      this._uiStateCache = { v: value ? JSON.parse(value) : ({} as UiState) };
+    }
+    return this._uiStateCache.v;
+  }
+}
+
 export type RenderFunction<Args = unknown, State = unknown, Ret = unknown> = (
-  rCtx: RenderCtx<Args, State> // TODO v3
+  rCtx: RenderCtx<Args, State>
+) => Ret;
+
+export type RenderFunctionLegacy<Args = unknown, State = unknown, Ret = unknown> = (
+  rCtx: RenderCtxLegacy<Args, State>
 ) => Ret;
 
 export type UnwrapFutureRef<K> =

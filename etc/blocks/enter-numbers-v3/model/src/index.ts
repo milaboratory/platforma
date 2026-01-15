@@ -62,18 +62,13 @@ export const platforma = BlockModelV3
   .output('preRunArgsJson', (ctx) => ctx.prerun?.resolve('preRunArgsJson')?.getDataAsJson<Record<string, unknown>>())
 
   .output('errorIfNumberIs999', (ctx) => {
-    if (ctx.args === undefined) {
-      return [];
-    }
+    const numbers = ctx.args?.numbers;
 
-    if (ctx.args.numbers === undefined) {
-      return [];
-    }
-
-    if (ctx.args.numbers.length === 1 && ctx.args.numbers[0] === 999) {
+    if (numbers?.length === 1 && numbers[0] === 999) {
       return ctx.prerun?.resolve('numbers')?.getFileContentAsJson<number[]>();
     }
-    return ctx.args.numbers;
+
+    return numbers ?? [];
   })
 
   .output('ctx', (ctx) => ctx)
@@ -83,8 +78,6 @@ export const platforma = BlockModelV3
   .output('ctx.args', (ctx) => ctx.args)
 
   .output('ctx.data', (ctx) => ctx.data)
-
-  .output('ctx.uiState', (ctx) => ctx.uiState)
 
   .sections((_ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
