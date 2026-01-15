@@ -30,7 +30,7 @@ const fetchTestResult = async (n: number) => {
   return n;
 };
 
-const sumNumbers = (numbers: number[] | undefined) => (numbers ?? []).reduce((x, y) => x + y);
+const sumNumbers = (numbers: number[] | undefined) => (numbers ?? []).reduce((x, y) => x + y, 0);
 
 const resultRef = useWatchFetch(() => app.model.outputs.numbers, (numbers) => {
   return fetchTestResult(sumNumbers(numbers));
@@ -68,8 +68,6 @@ watch(app.model.data, (newState) => {
       <legend>Data (app.snapshot.data)</legend>
       {{ app.snapshot.data }}
     </fieldset>
-    <h3>app.model</h3>
-    <code>{{ app.model }}</code>
     <h4>Result ref</h4>
     <code>{{ resultRef }}</code>
     <PlAlert label="app.model.outputs" type="info" white-space-pre monospace>{{ JSON.stringify(app.model.outputs, null, 2) }}</PlAlert>

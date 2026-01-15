@@ -26,7 +26,7 @@ const fetchTestResult = async (n: number) => {
   return n;
 };
 
-const sumNumbers = (numbers: number[] | undefined) => (numbers ?? []).reduce((x, y) => x + y);
+const sumNumbers = (numbers: number[] | undefined) => (numbers ?? []).reduce((x, y) => x + y, 0);
 
 const resultRef = useWatchFetch(() => app.model.outputs.numbers, (numbers) => {
   return fetchTestResult(sumNumbers(numbers));
