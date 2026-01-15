@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.11.0
+
+### Minor Changes
+
+- e7d03a7: Always save image entrypoint in sw.json
+
 ## 3.10.7
 
 ### Patch Changes

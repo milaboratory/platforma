@@ -154,7 +154,10 @@
             "context": "./src",
             "dockerfile": "Dockerfile"
           },
-          "cmd": [ "cmd-arg1", "cmd-arg2" ]
+          "cmd": [
+            "cmd-arg1",
+            "cmd-arg2"
+          ]
         }
       }
     }
