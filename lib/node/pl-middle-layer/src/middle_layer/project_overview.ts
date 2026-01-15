@@ -28,6 +28,7 @@ import { ifNotUndef } from '../cfg_render/util';
 import { type BlockSection } from '@platforma-sdk/model';
 import { extractCodeWithInfo, wrapCallback } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
+import { checkBlockFlag } from '@milaboratories/pl-model-common';
 import type { NavigationStates } from './navigation_states';
 import { getBlockPackInfo } from './util';
 import { resourceIdToString, type ResourceId } from '@milaboratories/pl-client';
@@ -260,8 +261,11 @@ export function projectOverview(
           })
           .getDataAsJson() as BlockSettings;
 
-        // Get block storage info by calling VM function
+        // Get block storage info by calling VM function (only for Model API v2+ blocks)
         const blockStorageInfo = ifNotUndef(bp, ({ cfg }) => {
+          if (!checkBlockFlag(cfg.featureFlags, 'requiresModelAPIVersion', 2)) {
+            return undefined;
+          }
           const storageNode = prj.traverse({
             field: projectFieldName(id, 'blockStorage'),
             assertFieldType: 'Dynamic',
