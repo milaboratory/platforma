@@ -95,19 +95,15 @@ async function migrateV2ToV3(tx: PlTransaction, rid: ResourceId) {
   for (const block of allBlocks(structure)) {
     // Read existing field values
     const uiStateFieldName = projectFieldName(block.id, 'uiState' as ProjectField['fieldName']);
-    // const blockStorageFieldName = projectFieldName(block.id, 'blockStorage');
     const currentArgsFieldName = projectFieldName(block.id, 'currentArgs');
-    const prodArgsFieldName = projectFieldName(block.id, 'prodArgs');
 
     const uiStateRid = fieldMap.get(uiStateFieldName);
     const currentArgsRid = fieldMap.get(currentArgsFieldName);
-    const prodArgsRid = fieldMap.get(prodArgsFieldName);
 
     // Read field data in parallel where available
-    const [uiStateData, currentArgsData, prodArgsData] = await Promise.all([
+    const [uiStateData, currentArgsData] = await Promise.all([
       uiStateRid ? tx.getResourceData(uiStateRid, false) : Promise.resolve(undefined),
       currentArgsRid ? tx.getResourceData(currentArgsRid, false) : Promise.resolve(undefined),
-      prodArgsRid ? tx.getResourceData(prodArgsRid, false) : Promise.resolve(undefined),
     ]);
 
     // Extract values - in v2, 'blockStorage' contains raw uiState, not wrapped
@@ -126,14 +122,5 @@ async function migrateV2ToV3(tx: PlTransaction, rid: ResourceId) {
     const stateR = tx.createJsonGzValue(unifiedState);
     const stateF = field(rid, blockStorageFieldName);
     tx.createField(stateF, 'Dynamic', stateR);
-
-    // Initialize currentPreRunArgs from prodArgs for v1/v2 compatibility
-    // This ensures staging renders use the same args as prod for legacy blocks
-    // TODO v3: this is wrong!!!
-    if (prodArgsData?.data) {
-      const currentPreRunArgsF = field(rid, projectFieldName(block.id, 'currentPreRunArgs'));
-      const preRunArgsR = tx.createJsonGzValue(cachedDeserialize(prodArgsData.data));
-      tx.createField(currentPreRunArgsF, 'Dynamic', preRunArgsR);
-    }
   }
 }
