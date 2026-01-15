@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.2.2
+
+### Patch Changes
+
+- fc8c6d3: avoid duplicated css
+
 ## 1.2.1
 
 ### Patch Changes
