@@ -2,15 +2,13 @@ import type {
   BlockRenderingMode,
   BlockSection,
   OutputWithStatus,
-  AnyFunction,
   PlRef,
   BlockCodeKnownFeatureFlags,
   BlockConfigContainer,
   MigrationDescriptor,
 } from '@milaboratories/pl-model-common';
-import type { Checked, ConfigResult, TypedConfig } from './config';
 import { getImmediate } from './config';
-import { getPlatformaInstance, isInUI, tryRegisterCallback, tryAppendCallback } from './internal';
+import { getPlatformaInstance, isInUI, tryAppendCallback, createAndRegisterRenderLambda } from './internal';
 import type { PlatformaV3 } from './platforma';
 import type { InferRenderFunctionReturn, RenderFunction } from './render';
 import { RenderCtx } from './render';
@@ -20,7 +18,6 @@ import './block_storage_vm';
 import type {
   TypedConfigOrConfigLambda,
   ConfigRenderLambda,
-  StdCtxArgsOnly,
   DeriveHref,
   ConfigRenderLambdaFlags,
   InferOutputsFromLambdas,
@@ -33,11 +30,6 @@ import type { PlatformaExtended } from './platforma';
 
 type SectionsExpectedType = readonly BlockSection[];
 
-type SectionsCfgChecked<Cfg extends TypedConfig, Args, Data> = Checked<
-  Cfg,
-  ConfigResult<Cfg, StdCtxArgsOnly<Args, Data>> extends SectionsExpectedType ? true : false
->;
-
 type NoOb = Record<string, never>;
 
 interface BlockModelV3Config<
@@ -49,7 +41,7 @@ interface BlockModelV3Config<
   initialData: Data;
   outputs: OutputsCfg;
   inputsValid: TypedConfigOrConfigLambda;
-  sections: TypedConfigOrConfigLambda;
+  sections: ConfigRenderLambda;
   title: ConfigRenderLambda | undefined;
   subtitle: ConfigRenderLambda | undefined;
   tags: ConfigRenderLambda | undefined;
@@ -91,7 +83,8 @@ export class BlockModelV3<
       initialData: {},
       outputs: {},
       inputsValid: getImmediate(true),
-      sections: getImmediate([]),
+      // Register default sections callback (returns empty array)
+      sections: createAndRegisterRenderLambda({ handle: 'sections', lambda: () => [] }, true),
       title: undefined,
       subtitle: undefined,
       tags: undefined,
@@ -144,17 +137,11 @@ export class BlockModelV3<
     cfgOrRf: RenderFunction<Args, Data>,
     flags: ConfigRenderLambdaFlags = {},
   ): BlockModelV3<Args, OutputsCfg, Data, Href> {
-    const handle = `output#${key}`;
-    tryRegisterCallback(handle, () => cfgOrRf(new RenderCtx()));
     return new BlockModelV3({
       ...this.config,
       outputs: {
         ...this.config.outputs,
-        [key]: {
-          __renderLambda: true,
-          handle,
-          ...flags,
-        } satisfies ConfigRenderLambda,
+        [key]: createAndRegisterRenderLambda({ handle: `output#${key}`, lambda: () => cfgOrRf(new RenderCtx()), ...flags }),
       },
     });
   }
@@ -193,12 +180,10 @@ export class BlockModelV3<
    *   return { numbers: data.numbers };
    * })
    */
-  public args<Args>(fn: (data: Data) => Args): BlockModelV3<Args, OutputsCfg, Data, Href> {
-    // Register the function directly - data will be passed as argument when called
-    tryRegisterCallback('args', fn);
+  public args<Args>(lambda: (data: Data) => Args): BlockModelV3<Args, OutputsCfg, Data, Href> {
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
-      args: { __renderLambda: true, handle: 'args' } as ConfigRenderLambda<Args>,
+      args: createAndRegisterRenderLambda<Args>({ handle: 'args', lambda }),
     });
   }
 
@@ -258,83 +243,49 @@ export class BlockModelV3<
    * TODO: generic inference for the return type
    */
   public preRunArgs(fn: (data: Data) => unknown): BlockModelV3<Args, OutputsCfg, Data, Href> {
-    tryRegisterCallback('preRunArgs', fn);
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
-      preRunArgs: { __renderLambda: true, handle: 'preRunArgs' } as ConfigRenderLambda,
+      preRunArgs: createAndRegisterRenderLambda({ handle: 'preRunArgs', lambda: fn }),
     });
   }
 
-  /** Sets the config to generate list of section in the left block overviews panel
-   * @deprecated use lambda-based API */
-  public sections<const S extends SectionsExpectedType>(
-    rf: S
-  ): BlockModelV3<Args, OutputsCfg, Data, DeriveHref<S>>;
-  /** Sets the config to generate list of section in the left block overviews panel */
+  /** Sets the lambda to generate list of sections in the left block overviews panel. */
   public sections<
     const Ret extends SectionsExpectedType,
     const RF extends RenderFunction<Args, Data, Ret>,
-  >(rf: RF): BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>>;
-  public sections<const Cfg extends TypedConfig>(
-    cfg: Cfg & SectionsCfgChecked<Cfg, Args, Data>
-  ): BlockModelV3<
-    Args,
-    OutputsCfg,
-    Data,
-    DeriveHref<ConfigResult<Cfg, StdCtxArgsOnly<Args, Data>>>
-  >;
-  public sections(
-    arrOrCfgOrRf: SectionsExpectedType | TypedConfig | AnyFunction,
-  ): BlockModelV3<Args, OutputsCfg, Data, `/${string}`> {
-    if (Array.isArray(arrOrCfgOrRf)) {
-      return this.sections(getImmediate(arrOrCfgOrRf));
-    } else if (typeof arrOrCfgOrRf === 'function') {
-      tryRegisterCallback('sections', () => arrOrCfgOrRf(new RenderCtx()));
-      return new BlockModelV3<Args, OutputsCfg, Data>({
-        ...this.config,
-        sections: { __renderLambda: true, handle: 'sections' } as ConfigRenderLambda,
-      });
-    } else
-      return new BlockModelV3<Args, OutputsCfg, Data>({
-        ...this.config,
-        sections: arrOrCfgOrRf as TypedConfig,
-      });
+  >(rf: RF): BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>> {
+    return new BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>>({
+      ...this.config,
+      // Replace the default sections callback with the user-provided one
+      sections: createAndRegisterRenderLambda({ handle: 'sections', lambda: () => rf(new RenderCtx()) }, true),
+    });
   }
 
   /** Sets a rendering function to derive block title, shown for the block in the left blocks-overview panel. */
   public title(
     rf: RenderFunction<Args, Data, string>,
   ): BlockModelV3<Args, OutputsCfg, Data, Href> {
-    tryRegisterCallback('title', () => rf(new RenderCtx()));
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
-      title: { __renderLambda: true, handle: 'title' } as ConfigRenderLambda,
+      title: createAndRegisterRenderLambda({ handle: 'title', lambda: () => rf(new RenderCtx()) }),
     });
   }
 
   public subtitle(
     rf: RenderFunction<Args, Data, string>,
   ): BlockModelV3<Args, OutputsCfg, Data, Href> {
-    tryRegisterCallback('subtitle', () => rf(new RenderCtx()));
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
-      subtitle: {
-        __renderLambda: true,
-        handle: 'subtitle',
-      },
+      subtitle: createAndRegisterRenderLambda({ handle: 'subtitle', lambda: () => rf(new RenderCtx()) }),
     });
   }
 
   public tags(
     rf: RenderFunction<Args, Data, string[]>,
   ): BlockModelV3<Args, OutputsCfg, Data, Href> {
-    tryRegisterCallback('tags', () => rf(new RenderCtx()));
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
-      tags: {
-        __renderLambda: true,
-        handle: 'tags',
-      },
+      tags: createAndRegisterRenderLambda({ handle: 'tags', lambda: () => rf(new RenderCtx()) }),
     });
   }
 
@@ -361,10 +312,9 @@ export class BlockModelV3<
   public enriches(
     lambda: (args: Args) => PlRef[],
   ): BlockModelV3<Args, OutputsCfg, Data, Href> {
-    tryRegisterCallback('enrichmentTargets', lambda);
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
-      enrichmentTargets: { __renderLambda: true, handle: 'enrichmentTargets' } as ConfigRenderLambda,
+      enrichmentTargets: createAndRegisterRenderLambda({ handle: 'enrichmentTargets', lambda: lambda }),
     });
   }
 
@@ -414,7 +364,7 @@ export class BlockModelV3<
       sdkVersion: PlatformaSDKVersion,
       renderingMode: this.config.renderingMode,
       inputsValid: downgradeCfgOrLambda(this.config.inputsValid),
-      sections: downgradeCfgOrLambda(this.config.sections),
+      sections: this.config.sections,
       outputs: Object.fromEntries(
         Object.entries(this.config.outputs).map(([key, value]) => [key, downgradeCfgOrLambda(value)]),
       ),
@@ -478,7 +428,7 @@ type _ConfigTest = Expect<Equal<
     initialData: _TestData;
     outputs: _TestOutputs;
     inputsValid: TypedConfigOrConfigLambda;
-    sections: TypedConfigOrConfigLambda;
+    sections: ConfigRenderLambda;
     title: ConfigRenderLambda | undefined;
     subtitle: ConfigRenderLambda | undefined;
     tags: ConfigRenderLambda | undefined;

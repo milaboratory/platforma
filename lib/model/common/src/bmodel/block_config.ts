@@ -55,8 +55,8 @@ export type BlockConfigV4Generic<
    * */
   readonly inputsValid: BroadActiveHandleDescriptor;
 
-  /** Configuration to derive list of section for the left overview panel */
-  readonly sections: BroadActiveHandleDescriptor;
+  /** Lambda to derive list of sections for the left overview panel */
+  readonly sections: NarrowActiveHandleDescriptor;
 
   /** Lambda to derive block title */
   readonly title?: NarrowActiveHandleDescriptor;
