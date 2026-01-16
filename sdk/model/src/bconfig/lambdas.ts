@@ -72,3 +72,12 @@ export type InferOutputsFromConfigs<
     & OutputWithStatus<InferOutputType<OutputsCfg[Key], Args, UiState>>
     & { __unwrap: (OutputsCfg[Key] extends { withStatus: true } ? false : true) };
 };
+
+/** Maps lambda-only outputs configuration to inferred output types (for V3 blocks) */
+export type InferOutputsFromLambdas<
+  OutputsCfg extends Record<string, ConfigRenderLambda>,
+> = {
+  [Key in keyof OutputsCfg]:
+    & OutputWithStatus<ExtractFunctionHandleReturn<OutputsCfg[Key]>>
+    & { __unwrap: (OutputsCfg[Key] extends { withStatus: true } ? false : true) };
+};

@@ -23,8 +23,7 @@ import type {
   StdCtxArgsOnly,
   DeriveHref,
   ConfigRenderLambdaFlags,
-  InferOutputType,
-  InferOutputsFromConfigs,
+  InferOutputsFromLambdas,
 } from './bconfig';
 import {
   downgradeCfgOrLambda,
@@ -43,7 +42,7 @@ type NoOb = Record<string, never>;
 
 interface BlockModelV3Config<
   Args,
-  OutputsCfg extends Record<string, TypedConfigOrConfigLambda>,
+  OutputsCfg extends Record<string, ConfigRenderLambda>,
   State,
 > {
   renderingMode: BlockRenderingMode;
@@ -67,7 +66,7 @@ interface BlockModelV3Config<
  * API version is 3 (for UI) and 2 (for model) */
 export class BlockModelV3<
   Args,
-  OutputsCfg extends Record<string, TypedConfigOrConfigLambda>,
+  OutputsCfg extends Record<string, ConfigRenderLambda>,
   State,
   Href extends `/${string}` = '/',
 > {
@@ -374,7 +373,7 @@ export class BlockModelV3<
    * other features provided by the platforma to the block. */
   public done(): PlatformaExtended<PlatformaV3<
     Args,
-    InferOutputsFromConfigs<Args, OutputsCfg, State>,
+    InferOutputsFromLambdas<OutputsCfg>,
     State,
     Href
   >> {
@@ -386,7 +385,7 @@ export class BlockModelV3<
 
   public _done(): PlatformaExtended<PlatformaV3<
     Args,
-    InferOutputsFromConfigs<Args, OutputsCfg, State>,
+    InferOutputsFromLambdas<OutputsCfg>,
     State,
     Href
   >> {
@@ -508,14 +507,8 @@ type _FullBuilder = BlockModelV3<_TestArgs, _TestOutputs, _TestState, '/main'>;
 type _FullBuilderTest = _FullBuilder extends BlockModelV3<_TestArgs, _TestOutputs, _TestState, '/main'> ? true : false;
 type _VerifyFullBuilder = Expect<_FullBuilderTest>;
 
-// Test: InferOutputType extracts correct type from ConfigRenderLambda
-type _InferLambdaTest = Expect<Equal<
-  InferOutputType<ConfigRenderLambda<string>, _TestArgs, _TestState>,
-  string
->>;
-
-// Test: InferOutputsFromConfigs maps outputs correctly
-type _InferOutputsTest = InferOutputsFromConfigs<_TestArgs, { myOutput: ConfigRenderLambda<number> }, _TestState>;
+// Test: InferOutputsFromLambdas maps outputs correctly
+type _InferOutputsTest = InferOutputsFromLambdas<{ myOutput: ConfigRenderLambda<number> }>;
 type _VerifyInferOutputs = Expect<Equal<
   _InferOutputsTest,
   { myOutput: OutputWithStatus<number> & { __unwrap: true } }
