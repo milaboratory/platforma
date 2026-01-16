@@ -20,7 +20,7 @@ export type MigrationDescriptor = {
  */
 export type BlockConfigV4Generic<
   _Args = unknown,
-  State = unknown,
+  Data extends Record<string, unknown> = Record<string, unknown>,
   BroadActiveHandleDescriptor = unknown,
   NarrowActiveHandleDescriptor extends BroadActiveHandleDescriptor = BroadActiveHandleDescriptor,
   Outputs extends Record<string, BroadActiveHandleDescriptor> = Record<string, BroadActiveHandleDescriptor>,
@@ -44,8 +44,8 @@ export type BlockConfigV4Generic<
    */
   readonly preRunArgs?: NarrowActiveHandleDescriptor;
 
-  /** Initial value for the state when block is added to the project */
-  readonly initialState: State;
+  /** Initial value for the data when block is added to the project */
+  readonly initialData: Data;
 
   /**
    * Config to determine whether the block can be executed with current

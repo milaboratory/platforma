@@ -84,13 +84,13 @@ function normalizeStorage(rawStorage: unknown): NormalizeStorageResult {
 
 /**
  * Applies a state update to the current storage.
- * Used when setState is called from the frontend.
+ * Used when setData is called from the frontend.
  *
  * @param currentStorageJson - Current storage as JSON string (or undefined for new blocks)
- * @param newState - New state from developer
+ * @param newData - New data from application
  * @returns Updated storage as JSON string
  */
-function applyStorageUpdate(currentStorageJson: string | undefined, newState: unknown): string {
+function applyStorageUpdate(currentStorageJson: string | undefined, newData: unknown): string {
   let currentStorage: BlockStorage;
 
   if (currentStorageJson === undefined || currentStorageJson === null || currentStorageJson === '') {
@@ -101,7 +101,7 @@ function applyStorageUpdate(currentStorageJson: string | undefined, newState: un
   }
 
   // Update data while preserving other storage fields (version, plugins)
-  const updatedStorage = updateStorageData(currentStorage, newState);
+  const updatedStorage = updateStorageData(currentStorage, newData);
 
   return JSON.stringify(updatedStorage);
 }

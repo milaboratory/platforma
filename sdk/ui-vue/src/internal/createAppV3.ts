@@ -38,7 +38,7 @@ const stringifyForDebug = (v: unknown) => {
  *
  * @template Args - The type of arguments used in the application.
  * @template Outputs - The type of block outputs extending `BlockOutputsBase`.
- * @template State - The type of the UI state.
+ * @template Data - The type of the block data.
  * @template Href - The type of navigation href, defaulting to a string starting with `/`.
  *
  * @param state - Initial state of the application, including args, outputs, UI state, and navigation state.
@@ -105,7 +105,7 @@ export function createAppV3<
 
   const setBlockData = async (data: Data) => {
     console.log('createAppV3 setBlockData data', data);
-    return platforma.setState(data, nextAuthorMarker());
+    return platforma.setData(data, nextAuthorMarker());
   };
 
   const setNavigationState = async (state: NavigationState<Href>) => {
@@ -143,7 +143,7 @@ export function createAppV3<
     () => appModel.model,
     (_newData) => {
       const newData = deepClone(_newData);
-      debug('setStateQueue appModel.model, data', newData.data);
+      debug('setDataQueue appModel.model, data', newData.data);
       setDataQueue.run(() => setBlockData(newData.data).then(unwrapResult));
     },
     { deep: true },
@@ -269,6 +269,6 @@ export function createAppV3<
 export type BaseAppV3<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  State = unknown,
+  Data = unknown,
   Href extends `/${string}` = `/${string}`,
-> = ReturnType<typeof createAppV3<Args, Outputs, State, Href>>;
+> = ReturnType<typeof createAppV3<Args, Outputs, Data, Href>>;

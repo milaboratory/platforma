@@ -34,9 +34,9 @@ export interface PlatformaV2<
 export interface PlatformaV3<
   Args = unknown,
   Outputs extends Record<string, OutputWithStatus<unknown>> = Record<string, OutputWithStatus<unknown>>,
-  State = unknown,
+  Data = unknown,
   Href extends `/${string}` = `/${string}`,
-> extends BlockApiV3<Args, Outputs, State, Href>,
+> extends BlockApiV3<Args, Outputs, Data, Href>,
   DriverKit {
   /** Information about SDK version current platforma environment was compiled with. */
   readonly sdkInfo: SdkInfo;

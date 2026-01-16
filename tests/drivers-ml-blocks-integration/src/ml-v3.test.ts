@@ -49,9 +49,9 @@ test.skip('v3: disconnect:runBlock throws DisconnectedError when connection drop
     const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
     const block2Id = await prj.addBlock('Block 2', sumNumbersSpec);
 
-    await prj.setState(block1Id, { numbers: [1, 2, 3] });
+    await prj.setData(block1Id, { numbers: [1, 2, 3] });
 
-    await prj.setState(block2Id, {
+    await prj.setData(block2Id, {
       sources: [outputRef(block1Id, 'numbers')],
     });
 
@@ -191,9 +191,9 @@ test('v3: simple project manipulations test', { timeout: 40000 }, async ({ expec
     });
 
     await prj.setNavigationState(block1Id, { href: '/section1' });
-    await prj.setState(block1Id, { numbers: [1, 2, 3] });
-    await prj.setState(block2Id, { numbers: [3, 4, 5] });
-    await prj.setState(block3Id, {
+    await prj.setData(block1Id, { numbers: [1, 2, 3] });
+    await prj.setData(block2Id, { numbers: [3, 4, 5] });
+    await prj.setData(block3Id, {
       sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')],
     });
     await prj.runBlock(block3Id);
@@ -250,7 +250,7 @@ test('v3: simple project manipulations test', { timeout: 40000 }, async ({ expec
     expect(overviewSnapshot3.blocks.find((b) => b.id === block3Id)?.stale).toEqual(false);
     expect(overviewSnapshot3.blocks.find((b) => b.id === block2Id)?.stale).toEqual(false);
 
-    await prj.setState(block2Id, { numbers: [3, 4, 5] });
+    await prj.setData(block2Id, { numbers: [3, 4, 5] });
 
     const overviewSnapshot4 = await prj.overview.awaitStableValue();
     expect(overviewSnapshot4.blocks.find((b) => b.id === block3Id)?.stale).toEqual(false);
@@ -296,14 +296,14 @@ test('v3: reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
     });
 
     await prj.setNavigationState(block1Id, { href: '/section1' });
-    await prj.setState(block1Id, { numbers: [1, 2, 3] });
-    await prj.setState(block2Id, { numbers: [3, 4, 5] });
+    await prj.setData(block1Id, { numbers: [1, 2, 3] });
+    await prj.setData(block2Id, { numbers: [3, 4, 5] });
     // V3 Heavy blocks need to be run to produce outputs
     // await prj.runBlock(block1Id);
     // await awaitBlockDone(prj, block1Id);
     // await prj.runBlock(block2Id);
     // await awaitBlockDone(prj, block2Id);
-    await prj.setState(block3Id, {
+    await prj.setData(block3Id, {
       sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')],
     });
     await prj.runBlock(block3Id);
@@ -356,15 +356,15 @@ test('v3: dependency test', { timeout: 20000 }, async ({ expect }) => {
     });
 
     await prj.setNavigationState(block1Id, { href: '/section1' });
-    await prj.setState(block1Id, { numbers: [1, 2, 3] });
-    await prj.setState(block2Id, { numbers: [3, 4, 5] });
-    await prj.setState(block3Id, {
+    await prj.setData(block1Id, { numbers: [1, 2, 3] });
+    await prj.setData(block2Id, { numbers: [3, 4, 5] });
+    await prj.setData(block3Id, {
       sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')],
     });
-    await prj.setState(block4Id, {
+    await prj.setData(block4Id, {
       sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')],
     });
-    await prj.setState(block5Id, {
+    await prj.setData(block5Id, {
       sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')],
     });
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
@@ -377,13 +377,13 @@ test('v3: dependency test', { timeout: 20000 }, async ({ expect }) => {
       { upstreams: [block1Id, block2Id], downstreams: [] },
     ]);
 
-    await prj.setState(block3Id, {
+    await prj.setData(block3Id, {
       sources: [outputRef(block1Id, 'numbers', true), outputRef(block2Id, 'numbers', true)],
     });
-    await prj.setState(block4Id, {
+    await prj.setData(block4Id, {
       sources: [outputRef(block2Id, 'numbers', true)],
     });
-    await prj.setState(block5Id, {
+    await prj.setData(block5Id, {
       sources: [outputRef(block1Id, 'numbers', true)],
     });
     const overviewSnapshot2 = await prj.overview.awaitStableValue();
@@ -414,12 +414,12 @@ test('v3: limbo test', async ({ expect }) => {
       expect(block.currentBlockPack).toBeDefined();
     });
 
-    await prj.setState(block1Id, { numbers: [1, 2, 3] });
+    await prj.setData(block1Id, { numbers: [1, 2, 3] });
     // V3 Heavy blocks need to be run to produce outputs
     await prj.runBlock(block1Id);
     await awaitBlockDone(prj, block1Id);
 
-    await prj.setState(block2Id, {
+    await prj.setData(block2Id, {
       sources: [outputRef(block1Id, 'numbers')],
     });
 
@@ -446,7 +446,7 @@ test('v3: limbo test', async ({ expect }) => {
       expect(block.currentBlockPack).toBeDefined();
     });
 
-    await prj.setState(block1Id, { numbers: [2, 3] });
+    await prj.setData(block1Id, { numbers: [2, 3] });
     await prj.runBlock(block1Id);
     await awaitBlockDone(prj, block1Id);
 
@@ -487,7 +487,7 @@ test('v3: test error propagation', async ({ expect }) => {
       expect(block.currentBlockPack).toBeDefined();
     });
 
-    await prj.setState(block1Id, { numbers: [1] });
+    await prj.setData(block1Id, { numbers: [1] });
 
     const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
     expect(block1StableState1.outputs!['errorIfNumberIs999']).toStrictEqual({
@@ -496,7 +496,7 @@ test('v3: test error propagation', async ({ expect }) => {
       stable: true,
     });
 
-    await prj.setState(block1Id, { numbers: [999] });
+    await prj.setData(block1Id, { numbers: [999] });
 
     const block1StableState2 = await prj.getBlockState(block1Id).awaitStableValue();
 
@@ -522,7 +522,7 @@ test('v3: block duplication test', async ({ expect }) => {
 
     // Create original block with some configuration
     const originalBlockId = await prj.addBlock('Original Block', enterNumberSpec);
-    await prj.setState(originalBlockId, { numbers: [1, 2, 3] });
+    await prj.setData(originalBlockId, { numbers: [1, 2, 3] });
     await prj.setBlockSettings(originalBlockId, { versionLock: 'patch' });
 
     // Get initial overview
@@ -555,7 +555,7 @@ test('v3: block duplication test', async ({ expect }) => {
     expect(duplicatedState.data).toEqual(originalState.data);
 
     // Verify they are independent - changing one shouldn't affect the other
-    await prj.setState(originalBlockId, { numbers: [4, 5, 6] });
+    await prj.setData(originalBlockId, { numbers: [4, 5, 6] });
 
     const originalStateAfter = await prj.getBlockState(originalBlockId).awaitStableValue();
     const duplicatedStateAfter = await prj.getBlockState(duplicatedBlockId).awaitStableValue();
@@ -618,7 +618,7 @@ test('v3: project open and close test', async ({ expect }) => {
     let prj = ml.getOpenedProject(pRid1);
 
     const blockId = await prj.addBlock('Test Block', enterNumberSpec);
-    await prj.setState(blockId, { numbers: [1, 2, 3] });
+    await prj.setData(blockId, { numbers: [1, 2, 3] });
     const overview1 = await prj.overview.awaitStableValue();
     expect(overview1.blocks[0].canRun).toEqual(true);
 
@@ -644,7 +644,7 @@ test('v3: block error test', async ({ expect }) => {
 
     const block3Id = await prj.addBlock('Block 3', sumNumbersSpec);
 
-    await prj.setState(block3Id, {
+    await prj.setData(block3Id, {
       sources: [], // empty reference list should produce an error
     });
 

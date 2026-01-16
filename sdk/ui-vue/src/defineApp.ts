@@ -46,16 +46,16 @@ export function defineApp<
 export function defineApp<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  State = unknown,
+  Data = unknown,
   Href extends `/${string}` = `/${string}`,
   Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
 >(
-  platforma: PlatformaV3<Args, Outputs, State, Href> & {
+  platforma: PlatformaV3<Args, Outputs, Data, Href> & {
     blockModelInfo: BlockModelInfo;
   },
-  extendApp: (app: BaseAppV3<Args, Outputs, State, Href>) => Extend,
+  extendApp: (app: BaseAppV3<Args, Outputs, Data, Href>) => Extend,
   settings?: AppSettings,
-): SdkPluginV3<Args, Outputs, State, Href, Extend>;
+): SdkPluginV3<Args, Outputs, Data, Href, Extend>;
 
 export function defineApp<
   Args = unknown,
@@ -200,10 +200,10 @@ export type AppV2<
 export type AppV3<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  State = unknown,
+  Data = unknown,
   Href extends `/${string}` = `/${string}`,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
-> = (BaseAppV3<Args, Outputs, State, Href>) & Reactive<Omit<Local, 'routes'>> & { getRoute(href: Href): Component | undefined };
+> = (BaseAppV3<Args, Outputs, Data, Href>) & Reactive<Omit<Local, 'routes'>> & { getRoute(href: Href): Component | undefined };
 
 export type App<
   Args = unknown,
@@ -244,14 +244,14 @@ export type SdkPluginV2<
 export type SdkPluginV3<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  State = unknown,
+  Data = unknown,
   Href extends `/${string}` = `/${string}`,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
 > = {
   apiVersion: 3;
   loaded: boolean;
   error: unknown;
-  useApp<PageHref extends Href = Href>(): AppV3<Args, Outputs, State, PageHref, Local>;
+  useApp<PageHref extends Href = Href>(): AppV3<Args, Outputs, Data, PageHref, Local>;
   install(app: unknown): void;
 };
 

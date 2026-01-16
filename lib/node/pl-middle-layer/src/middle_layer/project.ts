@@ -193,7 +193,7 @@ export class Project {
 
     if (blockCfg.configVersion === 4) {
       // V4 block (BlockModelV3) - derive args from state using config.args() callback
-      initialState = blockCfg.initialState;
+      initialState = blockCfg.initialData;
     } else {
       // V3 and earlier (BlockModel v1) - use initialArgs directly
       // derivedArgs = blockCfg.initialArgs;
@@ -269,7 +269,7 @@ export class Project {
     const blockCfg = extractConfig(await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec));
     // Get initial state based on config version
     const initialState = blockCfg.configVersion === 4
-      ? blockCfg.initialState
+      ? blockCfg.initialData
       : { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState };
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
       mut.migrateBlockPack(
@@ -402,18 +402,18 @@ export class Project {
   }
 
   /**
-   * Sets the unified block state for Model API v3 blocks.
-   * This triggers args derivation (args(state) and preRunArgs(state)).
-   * The derived args are stored atomically with the state.
+   * Sets the unified block data for Model API v3 blocks.
+   * This triggers args derivation (args(data) and preRunArgs(data)).
+   * The derived args are stored atomically with the data.
    *
    * @param blockId - The block ID
-   * @param state - The new unified state
+   * @param data - The new unified block input data
    * @param author - Optional author marker for collaborative editing
    */
-  public async setState(blockId: string, state: unknown, author?: AuthorMarker) {
+  public async setData(blockId: string, data: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
-      mut.setStates([{ blockId, state }]),
-    { name: 'setState', lockId: this.projectLockId });
+      mut.setStates([{ blockId, state: data }]),
+    { name: 'setData', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
 
@@ -453,7 +453,7 @@ export class Project {
       const config = extractConfig(cachedDeserialize<BlockPackInfo>(notEmpty(bpData.data)).config);
       // Get initial state based on config version
       const initialState = config.configVersion === 4
-        ? config.initialState
+        ? config.initialData
         : { args: config.initialArgs, uiState: config.initialUiState };
       await withProjectAuthored(this.env.projectHelper, tx, this.rid, author, (prj) => {
         prj.setStates([{ blockId, state: initialState }]);

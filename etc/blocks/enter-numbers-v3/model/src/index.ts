@@ -7,39 +7,39 @@ import {
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
-// State version 1: just numbers
-type BlockStateV1 = {
+// Data version 1: just numbers
+type BlockDataV1 = {
   numbers: number[];
 };
 
-// State version 2: added labels
-type BlockStateV2 = {
+// Data version 2: added labels
+type BlockDataV2 = {
   numbers: number[];
   labels: string[];
 };
 
-// State version 3 (current): added description
-export const $BlockState = z.object({
+// Data version 3 (current): added description
+export const $BlockData = z.object({
   numbers: z.array(z.coerce.number()),
   labels: z.array(z.string()),
   description: z.string(),
 });
 
-export type BlockState = z.infer<typeof $BlockState>;
+export type BlockData = z.infer<typeof $BlockData>;
 
 export const platforma = BlockModelV3
   .create('Heavy')
 
-  .withState<BlockState>({ numbers: [], labels: [], description: '' })
+  .withData<BlockData>({ numbers: [], labels: [], description: '' })
 
   // Migration v1 → v2: sort numbers and add labels
-  .migration<BlockStateV1>((state) => {
-    return { numbers: state.numbers.toSorted(), labels: ['migrated-from-v1'] };
+  .migration<BlockDataV1>((data) => {
+    return { numbers: data.numbers.toSorted(), labels: ['migrated-from-v1'] };
   })
 
   // Migration v2 → v3: add description
-  .migration<BlockStateV2>((state) => {
-    return { ...state, description: `Migrated: ${state.labels.join(', ')}` };
+  .migration<BlockDataV2>((data) => {
+    return { ...data, description: `Migrated: ${data.labels.join(', ')}` };
   })
 
   .args((data) => {
@@ -49,8 +49,8 @@ export const platforma = BlockModelV3
     return { numbers: data.numbers.toSorted() };
   })
 
-  .preRunArgs((state) => {
-    return { evenNumbers: state.numbers.toSorted().filter((n) => n % 2 === 0) };
+  .preRunArgs((data) => {
+    return { evenNumbers: data.numbers.toSorted().filter((n) => n % 2 === 0) };
   })
 
   .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())

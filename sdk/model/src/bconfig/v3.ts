@@ -13,12 +13,12 @@ export type BlockConfigV3<
 
 export type BlockConfigV4<
   Args = unknown,
-  UiState = unknown,
+  Data extends Record<string, unknown> = Record<string, unknown>,
   Outputs extends Record<string, TypedConfigOrConfigLambda> = Record<
     string,
     TypedConfigOrConfigLambda
   >,
-> = BlockConfigV4Generic<Args, UiState, TypedConfigOrConfigLambda, ConfigRenderLambda, Outputs>;
+> = BlockConfigV4Generic<Args, Data, TypedConfigOrConfigLambda, ConfigRenderLambda, Outputs>;
 
 /** Union of all block config versions with discriminator for type narrowing */
 export type BlockConfig = BlockConfigV3 | BlockConfigV4;

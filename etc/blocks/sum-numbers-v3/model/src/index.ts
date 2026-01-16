@@ -10,28 +10,28 @@ import {
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
-export const BlockState = z.object({
+export const BlockData = z.object({
   sources: z.array(PlRef).optional(),
 });
 
-export type BlockState = z.infer<typeof BlockState>;
+export type BlockData = z.infer<typeof BlockData>;
 
 export const platforma = BlockModelV3.create('Heavy')
 
-  .withState<BlockState>({
+  .withData<BlockData>({
     sources: undefined,
   })
 
-  .args<BlockState>((state) => {
-    if (state.sources === undefined || state.sources.length === 0) {
+  .args<BlockData>((data) => {
+    if (data.sources === undefined || data.sources.length === 0) {
       throw new Error('Sources are required');
     }
-    return { sources: state.sources };
+    return { sources: data.sources };
   })
 
-  .preRunArgs((state) => {
+  .preRunArgs((data) => {
     // Return sources for prerun even if empty (for testing purposes)
-    return { sources: state.sources ?? [] };
+    return { sources: data.sources ?? [] };
   })
 
   .output('opts', (ctx) =>

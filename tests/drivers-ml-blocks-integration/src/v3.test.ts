@@ -43,7 +43,7 @@ test('v3: preRunArgs fastNumbers test', { timeout: 10_000 }, async ({ expect }) 
     });
 
     // Set state with numbers - preRunArgs should derive fastNumbers
-    await prj.setState(enterNumberId, {
+    await prj.setData(enterNumberId, {
       numbers: [3, 1, 2],
     });
 
@@ -54,14 +54,6 @@ test('v3: preRunArgs fastNumbers test', { timeout: 10_000 }, async ({ expect }) 
 
     // Await staging to complete - this waits for all outputs (including prerun-dependent ones) to stabilize
     const blockState = await awaitBlockStateStable(prj, enterNumberId);
-    // console.log('Block state after setState:', JSON.stringify(blockState, null, 2));
-
-    // Check the block dump for staging output
-    // {
-    //   const blockDump = projectWatcher.getBlockDump(enterNumberId);
-    //   console.log('Block dump stagingOutput:', JSON.stringify(blockDump?.stagingOutput, null, 2));
-    //   console.log('blockState.outputs:', JSON.stringify(blockState.outputs, null, 2));
-    // }
 
     // Verify numbersCount from prerun (should be 1 - only even number is 2)
     expect(blockState.outputs?.['numbersCount']).toStrictEqual({
@@ -99,7 +91,7 @@ test('v3: preRunArgs fastNumbers test', { timeout: 10_000 }, async ({ expect }) 
     // ========== TEST: Staging should be SKIPPED when preRunArgs remains the same ==========
     console.log('\n=== TEST: Changing numbers but keeping same evenNumbers (should SKIP staging) ===');
     // Change [3, 1, 2] to [5, 1, 2] - evenNumbers stays [2], so staging should be skipped
-    await prj.setState(enterNumberId, {
+    await prj.setData(enterNumberId, {
       numbers: [5, 1, 2], // odd numbers changed (3→5), but even numbers still just [2]
     });
 
@@ -118,7 +110,7 @@ test('v3: preRunArgs fastNumbers test', { timeout: 10_000 }, async ({ expect }) 
     // ========== TEST: Staging SHOULD run when preRunArgs changes ==========
     console.log('\n=== TEST: Changing numbers with different evenNumbers (should RENDER staging) ===');
     // Change [5, 1, 2] to [5, 1, 4] - evenNumbers changes from [2] to [4], staging should run
-    await prj.setState(enterNumberId, {
+    await prj.setData(enterNumberId, {
       numbers: [5, 1, 4], // now even number is 4 instead of 2
     });
 
@@ -193,11 +185,11 @@ test('v3: project watcher test', { timeout: 20_000 }, async ({ expect }) => {
     });
 
     // v3 state format: direct state object (not wrapped in {args: ...})
-    await prj.setState(enterNumberId, {
+    await prj.setData(enterNumberId, {
       numbers: [1, 2, 3],
     });
 
-    await prj.setState(sumNumbersId, {
+    await prj.setData(sumNumbersId, {
       sources: [outputRef(enterNumberId, 'numbers')],
     });
 
@@ -231,7 +223,7 @@ test('v3: project watcher test', { timeout: 20_000 }, async ({ expect }) => {
       expect(sumNumbersBlock?.canRun).toBe(false);
     });
 
-    await prj.setState(enterNumberId, {
+    await prj.setData(enterNumberId, {
       numbers: [2, 3],
     });
     await prj.runBlock(enterNumberId);

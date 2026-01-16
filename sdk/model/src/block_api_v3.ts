@@ -13,14 +13,14 @@ import type { Operation } from 'fast-json-patch';
 export interface BlockApiV3<
   _Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  State = unknown,
+  Data = unknown,
   Href extends `/${string}` = `/${string}`,
 > {
   /**
    * Use this method to retrieve block state during UI initialization. Then use
    * {@link onStateUpdates} method to subscribe for updates.
    * */
-  loadBlockState(): Promise<ResultOrError<ValueWithUTag<BlockStateV3<Outputs, State, Href>>>>;
+  loadBlockState(): Promise<ResultOrError<ValueWithUTag<BlockStateV3<Outputs, Data, Href>>>>;
 
   /**
    * Get all json patches (rfc6902) that were applied to the block state.
@@ -28,13 +28,13 @@ export interface BlockApiV3<
   getPatches(uTag: string): Promise<ResultOrError<ValueWithUTagAndAuthor<Operation[]>>>;
 
   /**
-   * Sets block's unified state.
+   * Sets block's user data.
    *
-   * This method returns when the state is safely saved so in case the window is
+   * This method returns when the data is safely saved so in case the window is
    * closed there will be no information losses. This function under the hood
    * may delay actual persistence of the supplied values.
    * */
-  setState(state: State, author?: AuthorMarker): Promise<ResultOrError<void>>;
+  setData(data: Data, author?: AuthorMarker): Promise<ResultOrError<void>>;
 
   /**
    * Sets block navigation state.
