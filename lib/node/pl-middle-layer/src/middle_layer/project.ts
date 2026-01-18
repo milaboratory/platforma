@@ -189,15 +189,15 @@ export class Project {
     const blockCfg = extractConfig(blockCfgContainer); // full content of this var should never be persisted
 
     // Determine initial state and args based on block config version (discriminated union)
-    let initialState: unknown;
+    let initialData: unknown;
 
     if (blockCfg.modelAPIVersion === 2) {
-      // V4 block (BlockModelV3) - derive args from state using config.args() callback
-      initialState = blockCfg.initialData;
+      // Get initial data by calling VM lambda
+      initialData = this.env.projectHelper.getInitialDataInVM(blockCfg);
     } else {
-      // V3 and earlier (BlockModel v1) - use initialArgs directly
+      // model API v1
       // derivedArgs = blockCfg.initialArgs;
-      initialState = { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState };
+      initialData = { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState };
     }
 
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
@@ -208,7 +208,7 @@ export class Project {
           renderingMode: blockCfg.renderingMode,
         },
         {
-          state: canonicalize(initialState) ?? '{}',
+          state: canonicalize(initialData) ?? '{}',
           blockPack: preparedBp,
         },
         before,
@@ -269,7 +269,7 @@ export class Project {
     const blockCfg = extractConfig(await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec));
     // Get initial state based on config version
     const initialState = blockCfg.modelAPIVersion === 2
-      ? blockCfg.initialData
+      ? this.env.projectHelper.getInitialDataInVM(blockCfg)
       : { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState };
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
       mut.migrateBlockPack(
@@ -453,7 +453,7 @@ export class Project {
       const config = extractConfig(cachedDeserialize<BlockPackInfo>(notEmpty(bpData.data)).config);
       // Get initial state based on config version
       const initialState = config.modelAPIVersion === 2
-        ? config.initialData
+        ? this.env.projectHelper.getInitialDataInVM(config)
         : { args: config.initialArgs, uiState: config.initialUiState };
       await withProjectAuthored(this.env.projectHelper, tx, this.rid, author, (prj) => {
         prj.setStates([{ blockId, state: initialState }]);

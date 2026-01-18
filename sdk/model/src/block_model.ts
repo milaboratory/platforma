@@ -36,7 +36,7 @@ interface BlockModelV3Config<
   Data,
 > {
   renderingMode: BlockRenderingMode;
-  initialData: Data;
+  initialData: ConfigRenderLambda<Data>;
   outputs: OutputsCfg;
   sections: ConfigRenderLambda;
   title: ConfigRenderLambda | undefined;
@@ -77,7 +77,7 @@ export class BlockModelV3<
   public static create(renderingMode: BlockRenderingMode = 'Heavy'): BlockModelV3<NoOb, {}, NoOb> {
     return new BlockModelV3<NoOb, {}, NoOb>({
       renderingMode,
-      initialData: {},
+      initialData: createAndRegisterRenderLambda({ handle: 'initialData', lambda: () => ({}) }, true),
       outputs: {},
       // Register default sections callback (returns empty array)
       sections: createAndRegisterRenderLambda({ handle: 'sections', lambda: () => [] }, true),
@@ -199,7 +199,7 @@ export class BlockModelV3<
    * type DataV2 = { numbers: number[], labels: string[] };
    * type DataV3 = { numbers: number[], labels: string[], description: string };
    *
-   * .withData<DataV3>({ numbers: [], labels: [], description: '' })
+   * .withData<DataV3>(() => ({ numbers: [], labels: [], description: '' }))
    * .migration<DataV1>((data) => ({ ...data, labels: [] }))           // v1 → v2
    * .migration<DataV2>((data) => ({ ...data, description: '' }))      // v2 → v3
    *
@@ -285,11 +285,11 @@ export class BlockModelV3<
     });
   }
 
-  /** Defines type and sets initial value for block UiData. */
-  public withData<Data extends Record<string, unknown>>(initialValue: Data): BlockModelV3<Args, OutputsCfg, Data, Href> {
+  /** Defines type and sets initial value for block Data via a lambda executed in the VM. */
+  public withData<Data extends Record<string, unknown>>(initialDataFn: () => Data): BlockModelV3<Args, OutputsCfg, Data, Href> {
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
-      initialData: initialValue,
+      initialData: createAndRegisterRenderLambda({ handle: 'initialData', lambda: initialDataFn }, true),
     });
   }
 
@@ -419,7 +419,7 @@ type _ConfigTest = Expect<Equal<
     renderingMode: BlockRenderingMode;
     args: ConfigRenderLambda<_TestArgs> | undefined;
     preRunArgs: ConfigRenderLambda<unknown> | undefined;
-    initialData: _TestData;
+    initialData: ConfigRenderLambda<_TestData>;
     outputs: _TestOutputs;
     sections: ConfigRenderLambda;
     title: ConfigRenderLambda | undefined;

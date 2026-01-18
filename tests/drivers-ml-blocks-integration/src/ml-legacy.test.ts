@@ -1167,6 +1167,9 @@ blockTest(
         console.log('\n=== All transfer-files tests completed successfully ===');
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
+        // Delete the project to clean up resources
+        await ml.deleteProject('test_project');
+
         return;
       }
     }

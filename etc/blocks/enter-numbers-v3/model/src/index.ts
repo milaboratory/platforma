@@ -30,7 +30,7 @@ export type BlockData = z.infer<typeof $BlockData>;
 export const platforma = BlockModelV3
   .create('Heavy')
 
-  .withData<BlockData>({ numbers: [], labels: [], description: '' })
+  .withData<BlockData>(() => ({ numbers: [], labels: [], description: '' }))
 
   // Migration v1 → v2: sort numbers and add labels
   .migration<BlockDataV1>((data) => {

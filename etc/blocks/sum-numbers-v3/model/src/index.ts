@@ -18,9 +18,9 @@ export type BlockData = z.infer<typeof BlockData>;
 
 export const platforma = BlockModelV3.create('Heavy')
 
-  .withData<BlockData>({
+  .withData<BlockData>(() => ({
     sources: undefined,
-  })
+  }))
 
   .args<BlockData>((data) => {
     if (data.sources === undefined || data.sources.length === 0) {

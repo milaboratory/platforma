@@ -20,7 +20,7 @@ export type MigrationDescriptor = {
  */
 export type BlockConfigV4Generic<
   _Args = unknown,
-  Data extends Record<string, unknown> = Record<string, unknown>,
+  _Data extends Record<string, unknown> = Record<string, unknown>,
   BroadActiveHandleDescriptor = unknown,
   NarrowActiveHandleDescriptor extends BroadActiveHandleDescriptor = BroadActiveHandleDescriptor,
   Outputs extends Record<string, BroadActiveHandleDescriptor> = Record<string, BroadActiveHandleDescriptor>,
@@ -46,8 +46,8 @@ export type BlockConfigV4Generic<
    */
   readonly preRunArgs?: NarrowActiveHandleDescriptor;
 
-  /** Initial value for the data when block is added to the project */
-  readonly initialData: Data;
+  /** Lambda to get initial data when block is added to the project */
+  readonly initialData: NarrowActiveHandleDescriptor;
 
   /** Lambda to derive list of sections for the left overview panel */
   readonly sections: NarrowActiveHandleDescriptor;

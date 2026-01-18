@@ -42,6 +42,7 @@ const STORAGE_NORMALIZE_HANDLE: ConfigRenderLambda = { __renderLambda: true, han
 const STORAGE_APPLY_UPDATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__storage_applyUpdate' };
 const STORAGE_GET_INFO_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__storage_getInfo' };
 const STORAGE_MIGRATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__storage_migrate' };
+const INITIAL_DATA_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: 'initialData' };
 
 export class ProjectHelper {
   private readonly enrichmentTargetsCache = new LRUCache<string, EnrichmentTargetsValue, EnrichmentTargetsRequest>({
@@ -121,6 +122,34 @@ export class ProjectHelper {
       return this.calculateEnrichmentTargets(req);
     const cacheKey = `${key.argsRid}:${key.blockPackRid}`;
     return this.enrichmentTargetsCache.memo(cacheKey, { context: req }).value;
+  }
+
+  // =============================================================================
+  // Initial Data
+  // =============================================================================
+
+  /**
+   * Gets the initial data for a block by executing the initialData lambda in the VM.
+   * This is called when a new block is added to the project.
+   *
+   * @param blockConfig The block configuration (provides the model code)
+   * @returns The initial data object
+   */
+  public getInitialDataInVM(blockConfig: BlockConfig): unknown {
+    if (blockConfig.modelAPIVersion !== 2) {
+      throw new Error('getInitialDataInVM is only supported for model API version 2');
+    }
+    try {
+      const result = executeSingleLambda(
+        this.quickJs,
+        INITIAL_DATA_HANDLE,
+        extractCodeWithInfo(blockConfig),
+      );
+      return result;
+    } catch (e) {
+      console.error('[ProjectHelper.getInitialDataInVM] Failed to get initial data:', e);
+      throw new Error(`Failed to get initial data: ${e}`);
+    }
   }
 
   // =============================================================================

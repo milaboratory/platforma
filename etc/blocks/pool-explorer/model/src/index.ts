@@ -8,7 +8,7 @@ export type BlockArgs = BlockData;
 
 export const platforma = BlockModelV3.create('Heavy')
 
-  .withData<BlockData>({ titleArgs: 'The title' })
+  .withData<BlockData>(() => ({ titleArgs: 'The title' }))
 
   .args<BlockArgs>((data) => {
     return { titleArgs: data.titleArgs };
