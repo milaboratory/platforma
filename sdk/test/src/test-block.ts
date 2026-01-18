@@ -119,6 +119,7 @@ export const blockTest = plTest.extend<{
     });
     ml.addRuntimeCapability('requiresUIAPIVersion', 1);
     ml.addRuntimeCapability('requiresUIAPIVersion', 2);
+    ml.addRuntimeCapability('requiresUIAPIVersion', 3);
 
     await use(ml);
 

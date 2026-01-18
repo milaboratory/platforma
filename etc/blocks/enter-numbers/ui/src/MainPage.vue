@@ -13,7 +13,7 @@ const numbers = computed({
   set(v) {
     const numbers = v.split(',').map(Number);
 
-    app.model.args.numbers = v.split(',').map(Number);
+    app.model.args.numbers = v.split(',').map((v) => v.trim()).filter((v) => v !== '').map(Number);
 
     if (numbers.some((n) => isNaN(n))) {
       app.setError('Invalid value: contains NaNs +++');

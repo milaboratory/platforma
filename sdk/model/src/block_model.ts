@@ -7,7 +7,6 @@ import type {
   BlockConfigContainer,
   MigrationDescriptor,
 } from '@milaboratories/pl-model-common';
-import { getImmediate } from './config';
 import { getPlatformaInstance, isInUI, tryAppendCallback, createAndRegisterRenderLambda } from './internal';
 import type { PlatformaV3 } from './platforma';
 import type { InferRenderFunctionReturn, RenderFunction } from './render';
@@ -16,7 +15,6 @@ import { PlatformaSDKVersion } from './version';
 // Import storage VM integration (side-effect: registers internal callbacks)
 import './block_storage_vm';
 import type {
-  TypedConfigOrConfigLambda,
   ConfigRenderLambda,
   DeriveHref,
   ConfigRenderLambdaFlags,
@@ -40,7 +38,6 @@ interface BlockModelV3Config<
   renderingMode: BlockRenderingMode;
   initialData: Data;
   outputs: OutputsCfg;
-  inputsValid: TypedConfigOrConfigLambda;
   sections: ConfigRenderLambda;
   title: ConfigRenderLambda | undefined;
   subtitle: ConfigRenderLambda | undefined;
@@ -82,7 +79,6 @@ export class BlockModelV3<
       renderingMode,
       initialData: {},
       outputs: {},
-      inputsValid: getImmediate(true),
       // Register default sections callback (returns empty array)
       sections: createAndRegisterRenderLambda({ handle: 'sections', lambda: () => [] }, true),
       title: undefined,
@@ -329,7 +325,6 @@ export class BlockModelV3<
   >> {
     return this.withFeatureFlags({
       ...this.config.featureFlags,
-      requiresUIAPIVersion: 3 as const,
     })._done();
   }
 
@@ -346,12 +341,12 @@ export class BlockModelV3<
     const blockConfig: BlockConfigContainer = {
       v4: {
         configVersion: 4,
+        modelAPIVersion: 2,
         sdkVersion: PlatformaSDKVersion,
         renderingMode: this.config.renderingMode,
         args: this.config.args,
         preRunArgs: this.config.preRunArgs,
         initialData: this.config.initialData,
-        inputsValid: this.config.inputsValid,
         sections: this.config.sections,
         title: this.config.title,
         outputs: this.config.outputs,
@@ -363,7 +358,6 @@ export class BlockModelV3<
       // fields below are added to allow previous desktop versions read generated configs
       sdkVersion: PlatformaSDKVersion,
       renderingMode: this.config.renderingMode,
-      inputsValid: downgradeCfgOrLambda(this.config.inputsValid),
       sections: this.config.sections,
       outputs: Object.fromEntries(
         Object.entries(this.config.outputs).map(([key, value]) => [key, downgradeCfgOrLambda(value)]),
@@ -427,7 +421,6 @@ type _ConfigTest = Expect<Equal<
     preRunArgs: ConfigRenderLambda<unknown> | undefined;
     initialData: _TestData;
     outputs: _TestOutputs;
-    inputsValid: TypedConfigOrConfigLambda;
     sections: ConfigRenderLambda;
     title: ConfigRenderLambda | undefined;
     subtitle: ConfigRenderLambda | undefined;

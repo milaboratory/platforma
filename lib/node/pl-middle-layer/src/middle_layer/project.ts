@@ -191,7 +191,7 @@ export class Project {
     // Determine initial state and args based on block config version (discriminated union)
     let initialState: unknown;
 
-    if (blockCfg.configVersion === 4) {
+    if (blockCfg.modelAPIVersion === 2) {
       // V4 block (BlockModelV3) - derive args from state using config.args() callback
       initialState = blockCfg.initialData;
     } else {
@@ -268,7 +268,7 @@ export class Project {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfg = extractConfig(await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec));
     // Get initial state based on config version
-    const initialState = blockCfg.configVersion === 4
+    const initialState = blockCfg.modelAPIVersion === 2
       ? blockCfg.initialData
       : { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState };
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
@@ -452,7 +452,7 @@ export class Project {
       const bpData = await tx.getResourceData(bpRid, false);
       const config = extractConfig(cachedDeserialize<BlockPackInfo>(notEmpty(bpData.data)).config);
       // Get initial state based on config version
-      const initialState = config.configVersion === 4
+      const initialState = config.modelAPIVersion === 2
         ? config.initialData
         : { args: config.initialArgs, uiState: config.initialUiState };
       await withProjectAuthored(this.env.projectHelper, tx, this.rid, author, (prj) => {

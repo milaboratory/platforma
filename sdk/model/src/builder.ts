@@ -398,6 +398,7 @@ export class BlockModel<
       v4: undefined,
       v3: {
         configVersion: 3,
+        modelAPIVersion: 1,
         sdkVersion: PlatformaSDKVersion,
         renderingMode: this.config.renderingMode,
         initialArgs: this.config.initialArgs,

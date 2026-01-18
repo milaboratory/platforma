@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { PlAlert, PlBlockPage, PlTextField, PlBtnPrimary, useWatchFetch } from '@platforma-sdk/ui-vue';
 import { useApp } from './app';
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { delay } from '@milaboratories/helpers';
 
 const app = useApp();
@@ -39,12 +39,6 @@ const resultRef = useWatchFetch(() => app.model.outputs.numbers, (numbers) => {
 const helperText = computed(() => {
   return `Even numbers count: ${app.model.outputs.numbersCount}`;
 });
-
-const states = ref<string[]>([]);
-
-watch(app.model.data, (newState) => {
-  states.value.push(JSON.stringify(newState));
-}, { deep: true });
 </script>
 
 <template>
@@ -54,9 +48,6 @@ watch(app.model.data, (newState) => {
       label="Enter numbers (as comma-separated string)"
       :helper="helperText"
     />
-    <PlAlert type="info" monospace>
-      {{ states }}
-    </PlAlert>
     <PlAlert v-if="app.error" type="error">
       {{ app.error }}
     </PlAlert>

@@ -28,7 +28,6 @@ import { ifNotUndef } from '../cfg_render/util';
 import { type BlockSection } from '@platforma-sdk/model';
 import { extractCodeWithInfo, wrapCallback } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
-import { checkBlockFlag } from '@milaboratories/pl-model-common';
 import type { NavigationStates } from './navigation_states';
 import { getBlockPackInfo } from './util';
 import { resourceIdToString, type ResourceId } from '@milaboratories/pl-client';
@@ -234,19 +233,36 @@ export function projectOverview(
                     },
                   }) as ComputableStableDefined<string[]>,
               ),
-              inputsValid: computableFromCfgOrRF(
-                env,
-                blockCtxArgsOnly,
-                cfg.inputsValid,
-                codeWithInfo,
-                bpId,
-              ).wrap({
-                recover: (cause) => {
-                  // I'm not sure that we should write an error here, because it just means "Invalid args"
-                  env.logger.error(new Error('Error in block model argsValid', { cause }));
-                  return false;
-                },
-              }) as ComputableStableDefined<boolean>,
+              // inputsValid from config (only for V3 and earlier blocks)
+              // V4 blocks derive inputsValid from args() success/failure, stored in pl-tree
+              inputsValid: cfg.modelAPIVersion === 2
+                ? (() => {
+                    // Read inputsValid field (set during setState when args derivation is used)
+                    // If inputsValid is false, the block can't run
+                    const inputsValidNode = prj.traverse({
+                      field: projectFieldName(id, 'inputsValid'),
+                      assertFieldType: 'Dynamic',
+                      stableIfNotFound: true,
+                    });
+                    const inputsValidFromField = inputsValidNode !== undefined
+                      ? inputsValidNode.getDataAsJson() as boolean
+                      : undefined;
+                    return inputsValidFromField;
+                  })()
+                : cfg.inputsValid
+                  ? computableFromCfgOrRF(
+                    env,
+                    blockCtxArgsOnly,
+                    cfg.inputsValid,
+                    codeWithInfo,
+                    bpId,
+                  ).wrap({
+                    recover: (cause) => {
+                      env.logger.error(new Error('Error in block model inputsValid', { cause }));
+                      return false;
+                    },
+                  }) as ComputableStableDefined<boolean>
+                  : undefined,
               sdkVersion: codeWithInfo?.sdkVersion,
               featureFlags: codeWithInfo?.featureFlags ?? {},
               isIncompatibleWithRuntime: false,
@@ -261,9 +277,9 @@ export function projectOverview(
           })
           .getDataAsJson() as BlockSettings;
 
-        // Get block storage info by calling VM function (only for Model API v2+ blocks)
+        // Get block storage info by calling VM function (only for Model API v2 blocks)
         const blockStorageInfo = ifNotUndef(bp, ({ cfg }) => {
-          if (!checkBlockFlag(cfg.featureFlags, 'requiresModelAPIVersion', 2)) {
+          if (cfg.modelAPIVersion !== 2) {
             return undefined;
           }
           const storageNode = prj.traverse({
@@ -275,25 +291,9 @@ export function projectOverview(
           return env.projectHelper.getStorageInfoInVM(cfg, rawStorageJson);
         });
 
-        // Read inputsValid field (set during setState when args derivation is used)
-        // If inputsValid is false, the block can't run
-        const inputsValidNode = prj.traverse({
-          field: projectFieldName(id, 'inputsValid'),
-          assertFieldType: 'Dynamic',
-          stableIfNotFound: true,
-        });
-        const inputsValidFromField = inputsValidNode !== undefined
-          ? inputsValidNode.getDataAsJson() as boolean
-          : undefined;
-
         const updates = ifNotUndef(bp, ({ info }) =>
           env.blockUpdateWatcher.get({ currentSpec: info.source, settings }),
         );
-
-        // Combine inputsValid from stored field (args derivation result) with cfg callback
-        // For v3 blocks with .args() callback: inputsValidFromField is set to true/false based on derivation result
-        // For v1/v2 blocks without .args(): inputsValidFromField is undefined, use cfg.inputsValid callback
-        const finalInputsValid = inputsValidFromField ?? inputsValid;
 
         return {
           projectResourceId: resourceIdToString(prjEntry.rid),
@@ -313,7 +313,7 @@ export function projectOverview(
           exportsError: info.prod?.exportsError,
           settings,
           sections,
-          inputsValid: finalInputsValid,
+          inputsValid,
           updateInfo: {},
           currentBlockPack: bp?.info?.source,
           updates,

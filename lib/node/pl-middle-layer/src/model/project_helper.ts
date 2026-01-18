@@ -63,8 +63,8 @@ export class ProjectHelper {
    * @returns The derived args object, or undefined if no args lambda or derivation fails
    */
   public deriveArgsFromState(blockConfig: BlockConfig, state: unknown): ResultOrError<unknown> {
-    if (blockConfig.configVersion !== 4) {
-      return { error: new Error('deriveArgsFromState is only supported for config version 4') };
+    if (blockConfig.modelAPIVersion !== 2) {
+      return { error: new Error('deriveArgsFromState is only supported for model API version 2') };
     }
 
     // args is always a ConfigRenderLambda in V4 config (BlockModelV3)
@@ -90,8 +90,8 @@ export class ProjectHelper {
    * @returns The derived pre-run args, or undefined if derivation fails
    */
   public derivePreRunArgsFromState(blockConfig: BlockConfig, state: unknown): unknown {
-    if (blockConfig.configVersion !== 4) {
-      return this.deriveArgsFromState(blockConfig, state);
+    if (blockConfig.modelAPIVersion !== 2) {
+      throw new Error('derivePreRunArgsFromState is only supported for model API version 2');
     }
     // Check for preRunArgs lambda in v4 config (BlockModelV3)
     const preRunArgsLambda = blockConfig.preRunArgs;

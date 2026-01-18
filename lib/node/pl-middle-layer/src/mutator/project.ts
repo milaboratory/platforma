@@ -67,7 +67,6 @@ import Denque from 'denque';
 import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
 import { loadTemplate } from './template/template_loading';
 import { cachedDeserialize, notEmpty, canonicalJsonBytes, cachedDecode } from '@milaboratories/ts-helpers';
-import { checkBlockFlag } from '@milaboratories/pl-model-common';
 import type { ProjectHelper } from '../model/project_helper';
 import { extractConfig, UiError, type BlockConfig } from '@platforma-sdk/model';
 import { getDebugFlags } from '../debug';
@@ -614,9 +613,8 @@ export class ProjectMutator {
       let blockChanged = false;
 
       const blockConfig = info.config;
-      // requiresModelAPIVersion === 2 means BlockModelV3 with .args() lambda for deriving args
-      // requiresModelAPIVersion === 1 means BlockModel (v1/v2) with .argsValid() callback
-      const usesArgsDeriv = checkBlockFlag(blockConfig.featureFlags, 'requiresModelAPIVersion', 2);
+      // modelAPIVersion === 2 means BlockModelV3 with .args() lambda for deriving args
+      const usesArgsDeriv = blockConfig.modelAPIVersion === 2;
 
       if (usesArgsDeriv) {
         const currentStorageJson = info.blockStorageJson;
@@ -851,9 +849,8 @@ export class ProjectMutator {
     const initialState = spec.state ? JSON.parse(spec.state) : {};
 
     const blockConfig = info.config;
-    // requiresModelAPIVersion === 2 means BlockModelV3 with .args() lambda for deriving args
-    // requiresModelAPIVersion === 1 means BlockModel (v1/v2) with .argsValid() callback
-    const usesArgsDeriv = checkBlockFlag(blockConfig?.featureFlags, 'requiresModelAPIVersion', 2);
+    // modelAPIVersion === 2 means BlockModelV3 with .args() lambda for deriving args
+    const usesArgsDeriv = blockConfig.modelAPIVersion === 2;
 
     let inputsValid = true;
     let args: unknown;
@@ -873,7 +870,7 @@ export class ProjectMutator {
         // Derive preRunArgs using preRunArgs() callback, or fall back to args
         preRunArgs = this.projectHelper.derivePreRunArgsFromState(blockConfig, initialState);
       }
-    } else if (blockConfig.configVersion === 3) {
+    } else if (blockConfig.modelAPIVersion === 1) {
       // Model API v1: use spec.args directly
       args = JSON.parse(spec.state).args;
       if (args === undefined) {
@@ -881,7 +878,7 @@ export class ProjectMutator {
       }
       preRunArgs = args; // For v1 blocks, preRunArgs = args
     } else {
-      throw new Error('Unknown block config');
+      throw new Error('Unknown model API version');
     }
 
     // currentArgs
@@ -1137,8 +1134,8 @@ export class ProjectMutator {
       this.setStates([{ blockId, state: newClearState.state }]);
     } else {
       // State is being preserved - run migrations if needed via VM
-      // Only V3 blocks (requiresModelAPIVersion === 2) support migrations
-      const supportsStateMigrations = checkBlockFlag(newConfig.featureFlags, 'requiresModelAPIVersion', 2);
+      // Only Model API v2 blocks support migrations
+      const supportsStateMigrations = newConfig.modelAPIVersion === 2;
 
       if (supportsStateMigrations) {
         const currentStorageJson = info.blockStorageJson;

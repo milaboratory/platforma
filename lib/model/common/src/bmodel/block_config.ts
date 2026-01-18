@@ -28,6 +28,8 @@ export type BlockConfigV4Generic<
   /** Discriminator to identify config version */
   readonly configVersion: 4;
 
+  readonly modelAPIVersion: 2;
+
   /** SDK version used by the block */
   readonly sdkVersion: string;
 
@@ -46,14 +48,6 @@ export type BlockConfigV4Generic<
 
   /** Initial value for the data when block is added to the project */
   readonly initialData: Data;
-
-  /**
-   * Config to determine whether the block can be executed with current
-   * arguments.
-   *
-   * Optional to support earlier SDK version configs.
-   * */
-  readonly inputsValid: BroadActiveHandleDescriptor;
 
   /** Lambda to derive list of sections for the left overview panel */
   readonly sections: NarrowActiveHandleDescriptor;
@@ -103,6 +97,8 @@ export type BlockConfigV3Generic<
 > = {
   /** Discriminator to identify config version */
   readonly configVersion: 3;
+
+  readonly modelAPIVersion: 1;
 
   /** SDK version used by the block */
   readonly sdkVersion: string;
