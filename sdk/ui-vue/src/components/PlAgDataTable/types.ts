@@ -230,7 +230,7 @@ export type PlAgOverlayLoadingParams = {
     subtitle: string | string[];
   };
   /**
-   * Prop to override default "No datasource" text (So why props name is notReady? Good question)
+   * Prop to override default "Data is not computed" text (So why props name is notReady? Good question)
    */
   notReadyText?: string;
 };
