@@ -27,11 +27,11 @@ interface GridOptionsExtended<TData = any> extends Omit<GridOptions<TData>, 'col
    */
   loadingText?: string;
   /**
-   * Not ready overlay (No datasource). Takes priority over "loading"
+   * Not ready overlay (Data is not computed). Takes priority over "loading"
    */
   notReady?: boolean;
   /**
-   * "No datasource" by default
+   * "Data is not computed" by default
    */
   notReadyText?: string;
   /**
