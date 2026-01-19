@@ -24,7 +24,7 @@ import {
   isBlockStorage,
   updateStorageData,
 } from './block_storage';
-import { getCallbackCount, tryGetCfgRenderCtx, tryRegisterCallback } from './internal';
+import { tryGetCfgRenderCtx, tryRegisterCallback } from './internal';
 
 /**
  * Result of storage normalization
@@ -175,19 +175,20 @@ export type MigrationResult =
   | { error: string }
   | { error?: undefined; newStorageJson: string; info: string; warn?: string };
 
+/** Result from Migrator.upgrade() */
+interface UpgradeResult {
+  version: number;
+  data: unknown;
+  warning?: string;
+}
+
 /**
- * Runs all necessary migrations on the storage.
+ * Runs storage migration using the Migrator's upgrade callback.
  * This is the main entry point for the middle layer to trigger migrations.
  *
- * Migration logic:
- * - Initial state has version 1
- * - migration[0] transforms version 1 → version 2
- * - migration[1] transforms version 2 → version 3
- * - etc.
- *
- * Returns either:
- * - Success with newStorageJson (migrated, unchanged, or reset to initial with warning)
- * - Error if something seriously wrong (no context available)
+ * Uses the 'upgrade' callback registered by Migrator.registerCallbacks() which:
+ * - Handles all migration logic internally
+ * - Returns { version, data, warning? } - warning present if reset to initial data
  *
  * @param currentStorageJson - Current storage as JSON string (or undefined)
  * @returns MigrationResult
@@ -203,12 +204,6 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
   const { storage: currentStorage, data: currentData } = normalizeStorage(currentStorageJson);
   const currentVersion = currentStorage.__dataVersion;
 
-  // Get migration count from callback registry
-  const migrationCount = getCallbackCount('migrations') ?? 0;
-
-  // Calculate target version: initial is 1, each migration adds 1
-  const targetVersion = 1 + migrationCount;
-
   // Helper to create storage with given data and version
   const createStorageJson = (data: unknown, version: number): string => {
     return JSON.stringify({
@@ -218,71 +213,32 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
     });
   };
 
-  // Helper function to reset to initial data on migration failure (returns success with warning)
-  const resetToInitialData = (warnMsg: string): MigrationResult => {
-    const initialDataCallback = ctx.callbackRegistry['initialData'];
-    if (typeof initialDataCallback !== 'function') {
-      return { error: `${warnMsg}; initialData callback not found` };
-    }
-
-    try {
-      const initialData = initialDataCallback();
-      return {
-        newStorageJson: createStorageJson(initialData, targetVersion),
-        info: `Reset to initial data (v${targetVersion})`,
-        warn: warnMsg,
-      };
-    } catch (initError) {
-      const initErrorMsg = initError instanceof Error ? initError.message : String(initError);
-      return { error: `${warnMsg}; initialData() also failed: ${initErrorMsg}` };
-    }
-  };
-
-  // No migrations defined - return current storage with version set to target
-  if (migrationCount === 0) {
-    return {
-      newStorageJson: createStorageJson(currentData, targetVersion),
-      info: 'No migrations defined',
-    };
+  // Get the upgrade callback (registered by Migrator.registerCallbacks())
+  const upgradeCallback = ctx.callbackRegistry['upgrade'] as ((v: { version: number; data: unknown }) => UpgradeResult) | undefined;
+  if (typeof upgradeCallback !== 'function') {
+    return { error: 'upgrade callback not found (Migrator not registered)' };
   }
 
-  // Check if migrations are needed
-  if (currentVersion >= targetVersion) {
-    return {
-      newStorageJson: JSON.stringify(currentStorage),
-      info: `No migration needed (v${currentVersion} >= v${targetVersion})`,
-    };
+  // Call the migrator's upgrade function
+  let result: UpgradeResult;
+  try {
+    result = upgradeCallback({ version: currentVersion, data: currentData });
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    return { error: `upgrade() threw: ${errorMsg}` };
   }
 
-  const migrationsDispatcher = ctx.callbackRegistry['migrations'];
-  if (typeof migrationsDispatcher !== 'function') {
-    return resetToInitialData('Migrations dispatcher not found');
-  }
-
-  // Run migrations sequentially
-  let data = currentData;
-  const migrationsRun: string[] = [];
-
-  for (let version = currentVersion; version < targetVersion; version++) {
-    const migrationIndex = version - 1;
-
-    // Invalid migration indices (e.g., version 0 would need migration[-1])
-    if (migrationIndex < 0) {
-      return resetToInitialData(`Cannot migrate from version ${version}: no migration[${migrationIndex}]`);
-    }
-
-    try {
-      data = migrationsDispatcher(migrationIndex, data);
-      migrationsRun.push(`v${version}→v${version + 1}`);
-    } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : String(e);
-      return resetToInitialData(`Migration v${version}→v${version + 1} failed: ${errorMsg}`);
-    }
-  }
+  // Build info message
+  const info = result.version === currentVersion
+    ? `No migration needed (v${currentVersion})`
+    : result.warning
+      ? `Reset to initial data (v${result.version})`
+      : `Migrated v${currentVersion}→v${result.version}`;
 
   return {
-    newStorageJson: createStorageJson(data, targetVersion),
-    info: `Migrated ${migrationsRun.join(', ')}`,
+    newStorageJson: createStorageJson(result.data, result.version),
+    info,
+    warn: result.warning,
   };
 }
 

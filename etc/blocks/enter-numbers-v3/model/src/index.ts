@@ -4,6 +4,7 @@ import type {
 } from '@platforma-sdk/model';
 import {
   BlockModelV3,
+  DataModel,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
@@ -27,24 +28,26 @@ export const $BlockData = z.object({
 
 export type BlockData = z.infer<typeof $BlockData>;
 
-export const platforma = BlockModelV3
-  .create('Heavy')
-
-  .withData<BlockData>(() => ({ numbers: [], labels: [], description: '' }))
-
+// TODO: add unique key to be able to drop migrations
+// Define data model with migrations from v1 to current
+const dataModel = DataModel
+  .from<BlockDataV1>()
   // Migration v1 → v2: sort numbers and add labels
   // Throws if numbers contain 666 (for testing migration failure recovery)
-  .migration<BlockDataV1>((data) => {
+  .migrate<BlockDataV2>((data) => { // TODO: migrateTo???
     if (data.numbers.includes(666)) {
       throw new Error('Migration failed: number 666 is forbidden!');
     }
-    return { numbers: data.numbers.toSorted(), labels: ['migrated-from-v1'] };
+    return { numbers: data.numbers.toSorted(), labels: ['migrated-from-v1'] } satisfies BlockDataV2;
   })
-
   // Migration v2 → v3: add description
-  .migration<BlockDataV2>((data) => {
+  .migrate<BlockData>((data) => {
     return { ...data, description: `Migrated: ${data.labels.join(', ')}` };
   })
+  .create<BlockData>(() => ({ numbers: [], labels: [], description: '' }));
+
+export const platforma = BlockModelV3
+  .create({ dataModel, renderingMode: 'Heavy' })
 
   .args((data) => {
     if (data.numbers.length === 0) {

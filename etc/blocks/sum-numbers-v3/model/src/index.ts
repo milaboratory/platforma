@@ -5,6 +5,7 @@ import type {
 import {
   Annotation,
   BlockModelV3,
+  DataModel,
   PlRef,
   readAnnotation,
 } from '@platforma-sdk/model';
@@ -16,11 +17,12 @@ export const BlockData = z.object({
 
 export type BlockData = z.infer<typeof BlockData>;
 
-export const platforma = BlockModelV3.create('Heavy')
+// Simple data model with just initial data (no migrations)
+const dataModel = DataModel.create<BlockData>(() => ({
+  sources: undefined,
+}));
 
-  .withData<BlockData>(() => ({
-    sources: undefined,
-  }))
+export const platforma = BlockModelV3.create({ dataModel, renderingMode: 'Heavy' })
 
   .args<BlockData>((data) => {
     if (data.sources === undefined || data.sources.length === 0) {

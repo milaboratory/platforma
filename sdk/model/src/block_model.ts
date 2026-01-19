@@ -5,9 +5,9 @@ import type {
   PlRef,
   BlockCodeKnownFeatureFlags,
   BlockConfigContainer,
-  MigrationDescriptor,
 } from '@milaboratories/pl-model-common';
-import { getPlatformaInstance, isInUI, tryAppendCallback, createAndRegisterRenderLambda } from './internal';
+import { getPlatformaInstance, isInUI, createAndRegisterRenderLambda, createRenderLambda } from './internal';
+import type { DataModel } from './block_migrations';
 import type { PlatformaV3 } from './platforma';
 import type { InferRenderFunctionReturn, RenderFunction } from './render';
 import { RenderCtx } from './render';
@@ -36,7 +36,7 @@ interface BlockModelV3Config<
   Data,
 > {
   renderingMode: BlockRenderingMode;
-  initialData: ConfigRenderLambda<Data>;
+  dataModel: DataModel<Data>;
   outputs: OutputsCfg;
   sections: ConfigRenderLambda;
   title: ConfigRenderLambda | undefined;
@@ -46,7 +46,14 @@ interface BlockModelV3Config<
   featureFlags: BlockCodeKnownFeatureFlags;
   args: ConfigRenderLambda<Args> | undefined;
   preRunArgs: ConfigRenderLambda<unknown> | undefined;
-  migrations: MigrationDescriptor[];
+}
+
+/** Options for creating a BlockModelV3 */
+export interface BlockModelV3Options<Data extends Record<string, unknown>> {
+  /** The data model that defines initial data and migrations */
+  dataModel: DataModel<Data>;
+  /** Rendering mode for the block (default: 'Heavy') */
+  renderingMode?: BlockRenderingMode;
 }
 
 /** Main entry point that each block should use in it's "config" module. Don't forget
@@ -69,15 +76,29 @@ export class BlockModelV3<
     requiresModelAPIVersion: 2,
   };
 
-  /** Initiates configuration builder */
-  public static create(renderingMode: BlockRenderingMode): BlockModelV3<NoOb, {}, NoOb>;
-  /** Initiates configuration builder */
-  public static create(): BlockModelV3<NoOb, {}, NoOb>;
+  /**
+   * Creates a new BlockModelV3 builder with the specified data model and options.
+   *
+   * @example
+   * const dataModel = DataModel.create<BlockData>(() => ({ numbers: [], labels: [] }));
+   * BlockModelV3.create({ dataModel })
+   *   .args((data) => ({ numbers: data.numbers }))
+   *   .sections(() => [{ type: 'link', href: '/', label: 'Main' }])
+   *   .done();
+   *
+   * @param options Configuration options including required data model
+   */
+  public static create<Data extends Record<string, unknown>>(
+    options: BlockModelV3Options<Data>,
+  ): BlockModelV3<NoOb, {}, Data> {
+    const { dataModel, renderingMode = 'Heavy' } = options;
 
-  public static create(renderingMode: BlockRenderingMode = 'Heavy'): BlockModelV3<NoOb, {}, NoOb> {
-    return new BlockModelV3<NoOb, {}, NoOb>({
+    // Register data model callbacks for VM use (initialData and upgrade)
+    dataModel.registerCallbacks();
+
+    return new BlockModelV3<NoOb, {}, Data>({
       renderingMode,
-      initialData: createAndRegisterRenderLambda({ handle: 'initialData', lambda: () => ({}) }, true),
+      dataModel,
       outputs: {},
       // Register default sections callback (returns empty array)
       sections: createAndRegisterRenderLambda({ handle: 'sections', lambda: () => [] }, true),
@@ -88,7 +109,6 @@ export class BlockModelV3<
       featureFlags: { ...BlockModelV3.INITIAL_BLOCK_FEATURE_FLAGS },
       args: undefined,
       preRunArgs: undefined,
-      migrations: [],
     });
   }
 
@@ -184,40 +204,6 @@ export class BlockModelV3<
   }
 
   /**
-   * Adds a migration function to transform data from a previous version to the next.
-   * Migrations are applied in order when loading projects saved with older block versions.
-   *
-   * Each migration transforms data incrementally:
-   * - migration[0]: v1 → v2
-   * - migration[1]: v2 → v3
-   * - etc.
-   *
-   * The final migration should return a data compatible with the current Data type.
-   *
-   * @example
-   * type DataV1 = { numbers: number[] };
-   * type DataV2 = { numbers: number[], labels: string[] };
-   * type DataV3 = { numbers: number[], labels: string[], description: string };
-   *
-   * .withData<DataV3>(() => ({ numbers: [], labels: [], description: '' }))
-   * .migration<DataV1>((data) => ({ ...data, labels: [] }))           // v1 → v2
-   * .migration<DataV2>((data) => ({ ...data, description: '' }))      // v2 → v3
-   *
-   * @param fn - Function that transforms data from one version to the next
-   * @returns The builder for chaining
-   */
-  public migration<PrevData = unknown>(fn: (data: PrevData) => unknown): BlockModelV3<Args, OutputsCfg, Data, Href> {
-    // Register the callback in the VM (may return undefined if not in render context)
-    tryAppendCallback('migrations', fn);
-    // Index is determined by array position, not callback registry
-    const index = this.config.migrations.length;
-    return new BlockModelV3<Args, OutputsCfg, Data, Href>({
-      ...this.config,
-      migrations: [...this.config.migrations, { index }],
-    });
-  }
-
-  /**
    * Sets a function to derive pre-run args from data (optional).
    * This is called during setData to compute the args that will be used for staging/pre-run phase.
    *
@@ -285,14 +271,6 @@ export class BlockModelV3<
     });
   }
 
-  /** Defines type and sets initial value for block Data via a lambda executed in the VM. */
-  public withData<Data extends Record<string, unknown>>(initialDataFn: () => Data): BlockModelV3<Args, OutputsCfg, Data, Href> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href>({
-      ...this.config,
-      initialData: createAndRegisterRenderLambda({ handle: 'initialData', lambda: initialDataFn }, true),
-    });
-  }
-
   /** Sets or overrides feature flags for the block. */
   public withFeatureFlags(flags: Partial<BlockCodeKnownFeatureFlags>): BlockModelV3<Args, OutputsCfg, Data, Href> {
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
@@ -338,6 +316,8 @@ export class BlockModelV3<
 
     const apiVersion = 3;
 
+    const migrationCount = this.config.dataModel.migrationCount;
+
     const blockConfig: BlockConfigContainer = {
       v4: {
         configVersion: 4,
@@ -346,13 +326,17 @@ export class BlockModelV3<
         renderingMode: this.config.renderingMode,
         args: this.config.args,
         preRunArgs: this.config.preRunArgs,
-        initialData: this.config.initialData,
+        // Reference to initialData callback registered by Migrator
+        initialData: createRenderLambda({ handle: 'initialData' }),
         sections: this.config.sections,
         title: this.config.title,
         outputs: this.config.outputs,
         enrichmentTargets: this.config.enrichmentTargets,
         featureFlags: this.config.featureFlags,
-        migrations: this.config.migrations.length > 0 ? this.config.migrations : undefined,
+        // Generate migration descriptors (indices for metadata)
+        migrations: migrationCount > 0
+          ? Array.from({ length: migrationCount }, (_, i) => ({ index: i }))
+          : undefined,
       },
 
       // fields below are added to allow previous desktop versions read generated configs
@@ -419,7 +403,7 @@ type _ConfigTest = Expect<Equal<
     renderingMode: BlockRenderingMode;
     args: ConfigRenderLambda<_TestArgs> | undefined;
     preRunArgs: ConfigRenderLambda<unknown> | undefined;
-    initialData: ConfigRenderLambda<_TestData>;
+    dataModel: DataModel<_TestData>;
     outputs: _TestOutputs;
     sections: ConfigRenderLambda;
     title: ConfigRenderLambda | undefined;
@@ -427,7 +411,6 @@ type _ConfigTest = Expect<Equal<
     tags: ConfigRenderLambda | undefined;
     enrichmentTargets: ConfigRenderLambda | undefined;
     featureFlags: BlockCodeKnownFeatureFlags;
-    migrations: MigrationDescriptor[];
   }
 >>;
 

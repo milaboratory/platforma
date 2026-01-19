@@ -1,4 +1,4 @@
-import { BlockModelV3, type InferHrefType, type InferOutputsType } from '@platforma-sdk/model';
+import { BlockModelV3, DataModel, type InferHrefType, type InferOutputsType } from '@platforma-sdk/model';
 
 export type BlockData = {
   titleArgs: string;
@@ -6,9 +6,9 @@ export type BlockData = {
 
 export type BlockArgs = BlockData;
 
-export const platforma = BlockModelV3.create('Heavy')
+const dataModel = DataModel.create<BlockData>(() => ({ titleArgs: 'The title' }));
 
-  .withData<BlockData>(() => ({ titleArgs: 'The title' }))
+export const platforma = BlockModelV3.create({ dataModel, renderingMode: 'Heavy' })
 
   .args<BlockArgs>((data) => {
     return { titleArgs: data.titleArgs };
