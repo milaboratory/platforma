@@ -32,7 +32,7 @@ function normalizePlaceholderText(
   <div :class="style.container">
     <div v-if="params.variant === 'not-ready'" :class="style.notReadyWrapper">
       <div :class="style.iconCatInBag" />
-      <h3 :class="style.text">{{ params.notReadyText || 'No datasource' }}</h3>
+      <h3 :class="style.text">{{ params.notReadyText || 'Data is not computed' }}</h3>
     </div>
     <PlPlaceholder
       v-else
