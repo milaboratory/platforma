@@ -18,6 +18,9 @@ import {
   getAxisId,
   canonicalizeJson,
   isAbortError,
+  getPTableColumnId,
+  readAnnotationJson,
+  Annotation,
 } from '@platforma-sdk/model';
 import type {
   CellRendererSelectorFunc,
@@ -36,6 +39,7 @@ import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import type { PlDataTableFiltersSettings } from '../PlTableFilters';
 import PlTableFiltersV2 from '../PlTableFilters/PlTableFiltersV2.vue';
+import { getFilterDefault, isAlphabetic, makeDiscreteOptions } from '../PlTableFilters/filters_logic';
 import PlAgDataTableSheets from './PlAgDataTableSheets.vue';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
@@ -55,7 +59,7 @@ import type {
   PlTableRowId,
   PlTableRowIdJson,
 } from './types';
-import { watchCached } from '@milaboratories/uikit';
+import { PlSearchField, watchCached } from '@milaboratories/uikit';
 import { type PTableHidden } from './sources/common';
 
 const tableState = defineModel<PlDataTableStateV2>({
@@ -90,6 +94,11 @@ const props = defineProps<{
    * This component serves as the target for teleporting the button.
    */
   showExportButton?: boolean;
+
+  /**
+   * Controls visibility of a search input above the table.
+   */
+  showSearchInput?: boolean;
 
   /**
    * The AxisId property is used to configure and display the PlAgTextAndButtonCell component
@@ -131,6 +140,108 @@ const emit = defineEmits<{
 }>();
 
 const { gridState, sheetsState, filtersState } = useTableState(tableState, settings);
+const searchQuery = ref('');
+
+/**
+ * Gets value type for a column spec.
+ */
+function getColumnValueType(column: PTableColumnSpec): string {
+  return column.type === 'column' ? column.spec.valueType : column.spec.type;
+}
+
+/**
+ * Checks if column can be filtered by the search value.
+ * Validates column type, discrete values constraint, and min/max range.
+ */
+function isColumnMatchingSearch(column: PTableColumnSpec, stringValue: string, numericValue: number, isNumeric: boolean): boolean {
+  const valueType = getColumnValueType(column);
+  const isStringColumn = valueType === 'String';
+
+  // Check column type compatibility
+  switch (valueType) {
+    case 'Int':
+    case 'Long':
+    case 'Float':
+    case 'Double':
+      if (!isNumeric) return false;
+      break;
+    case 'String':
+      break;
+    default:
+      return false;
+  }
+
+  // Check discrete values constraint
+  const discreteOptions = makeDiscreteOptions(column);
+  if (discreteOptions.length > 0) {
+    const searchValue = isStringColumn ? stringValue : numericValue;
+    if (!discreteOptions.some((opt) => opt.value === searchValue)) {
+      return false;
+    }
+  }
+
+  // Check min/max constraint for numeric columns
+  if (!isStringColumn) {
+    const min = readAnnotationJson(column.spec, Annotation.Min);
+    if (min !== undefined && Number.isFinite(min) && numericValue < min) {
+      return false;
+    }
+
+    const max = readAnnotationJson(column.spec, Annotation.Max);
+    if (max !== undefined && Number.isFinite(max) && numericValue > max) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Creates equals filters for all columns (string_equals for strings, number_equals for numbers).
+ * Note: Current filter system applies AND between columns.
+ * For true OR search across columns, data model extension is needed.
+ */
+const handleSearchInput = (value: string) => {
+  const trimmedValue = value.trim();
+
+  if (trimmedValue === '') {
+    // Clear search filters - remove string_equals and number_equals filters
+    filtersState.value = filtersState.value.map((state) => {
+      if (state.filter?.value.type === 'string_equals' || state.filter?.value.type === 'number_equals') {
+        return { ...state, filter: null };
+      }
+      return state;
+    });
+    return;
+  }
+
+  // Try to parse as number for number columns
+  const numericValue = Number(trimmedValue);
+  const isNumeric = !Number.isNaN(numericValue);
+
+  // Create equals filters for all columns
+  const newFiltersState = filterableColumns.value
+    .filter((column) => isColumnMatchingSearch(column, trimmedValue, numericValue, isNumeric))
+    .map((column) => {
+      const id = getPTableColumnId(column);
+      const valueType = getColumnValueType(column);
+      const isStringColumn = valueType === 'String';
+      const alphabetic = isAlphabetic(column);
+      const filter = isStringColumn
+        ? getFilterDefault('string_equals', alphabetic ? trimmedValue.toUpperCase() : trimmedValue)
+        : getFilterDefault('number_equals', numericValue);
+      return {
+        id,
+        alphabetic,
+        filter: {
+          value: filter,
+          disabled: false,
+        },
+      };
+    });
+
+  filtersState.value = newFiltersState;
+};
 
 const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
   const settingsCopy = { ...settings.value };
@@ -623,6 +734,13 @@ watchEffect(() => {
         <slot name="after-sheets" />
       </template>
     </PlAgDataTableSheets>
+    <PlSearchField
+      v-if="showSearchInput"
+      v-model="searchQuery"
+      :class="$style.search"
+      clearable
+      @update:model-value="handleSearchInput"
+    />
     <AgGridVue
       :key="reloadKey"
       :theme="AgGridTheme"
@@ -642,5 +760,9 @@ watchEffect(() => {
 
 .grid {
   flex: 1;
+}
+
+.search {
+  width: 100%;
 }
 </style>

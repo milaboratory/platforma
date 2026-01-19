@@ -147,6 +147,7 @@ const resetSelection = async () => {
   await tableRef.value?.updateSelection(initialSelection);
   await tableRef.value?.focusRow(selection.value.selectedKeys[0]);
 };
+
 </script>
 
 <template>
@@ -165,6 +166,7 @@ const resetSelection = async () => {
       :cell-renderer-selector="cellRendererSelector"
       v-bind="reactiveTextProps"
       show-export-button
+      show-search-input
       @new-data-rendered="focusFirstSelectedRow"
     >
       <template #before-sheets>
