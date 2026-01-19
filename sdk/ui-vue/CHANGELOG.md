@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.51.7
+
+### Patch Changes
+
+- c5f448c: PlAgOverlayLoading: change default notReadyText
+
 ## 1.51.6
 
 ### Patch Changes
