@@ -27,13 +27,23 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('activeArgs', (ctx) => ctx.activeArgs)
 
+  .output('ctx', (ctx) => ctx)
+
+  .output('ctx.activeArgs', (ctx) => ctx.activeArgs)
+
+  .output('ctx.args', (ctx) => ctx.args)
+
+  .output('ctx.data', (ctx) => ctx.data)
+
+  .output('ctx.uiState', (ctx) => ctx.uiState)
+
   .argsValid((ctx) => ctx.args.numbers.length > 0)
 
   .sections((_ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
   })
 
-  .done();
+  .done(2); // ui api version 2
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

@@ -60,8 +60,7 @@ export default class BuildModel extends Command {
       );
 
     if (
-      !('canRun' in config || 'inputsValid' in config)
-      || !('outputs' in config)
+      !('outputs' in config)
       || !('sections' in config)
     )
       throw new Error('"config" has unexpected structure');

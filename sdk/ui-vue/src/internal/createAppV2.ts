@@ -85,6 +85,7 @@ export function createAppV2<
   const setUiStateQueue = new UpdateSerializer({ debounceSpan });
   const setArgsAndUiStateQueue = new UpdateSerializer({ debounceSpan });
   const setNavigationStateQueue = new UpdateSerializer({ debounceSpan });
+  console.log('createAppV2 state.value', state.value);
   /**
    * Reactive snapshot of the application state, including args, outputs, UI state, and navigation state.
    */

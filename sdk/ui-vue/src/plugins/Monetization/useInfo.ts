@@ -8,7 +8,22 @@ export function useInfo() {
 
   const app = computed(() => (sdk.loaded ? sdk.useApp() : undefined));
 
-  const hasMonetization = computed(() => '__mnzDate' in (app.value?.model?.args as Record<string, unknown>));
+  // TODO use a separate plugin state when it's implemented
+  const getModelArgsOrState = (model: Record<string, unknown> | undefined) => {
+    if (!model) return {};
+    if ('data' in model) {
+      return model.data as Record<string, unknown>;
+    } else if ('args' in model) {
+      return model.args as Record<string, unknown>;
+    }
+    return {};
+  };
+
+  const inputData = computed(() => getModelArgsOrState(app.value?.model));
+
+  const hasMonetization = computed(() => {
+    return inputData.value && ('__mnzDate' in inputData.value);
+  });
 
   const parsed = computed(() => Response.safeParse(app.value?.model.outputs['__mnzInfo']));
 
@@ -48,12 +63,12 @@ export function useInfo() {
 
   const refresh = () => {
     isLoading.value = true;
-    (app.value?.model.args as Record<string, unknown>)['__mnzDate'] = new Date().toISOString();
+    (inputData.value)['__mnzDate'] = new Date().toISOString();
   };
 
   watch(canRun, (v) => {
     if (hasMonetization.value) {
-      (app.value?.model.args as Record<string, unknown>)['__mnzCanRun'] = v;
+      (inputData.value as Record<string, unknown>)['__mnzCanRun'] = v;
     }
   });
 

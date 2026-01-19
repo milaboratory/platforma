@@ -1,0 +1,89 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+text := import("text")
+slices := import("@platforma-sdk/workflow-tengo:slices")
+json := import("json")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+wf.setPreRun(assets.importTemplate(":prerun"))
+
+mapToPValueData := func(map) {
+	data := {}
+	for key, value in map {
+		data[json.encode([key])] = value
+	}
+	result := {
+		keyLength: 1,
+		data: data
+	}
+	return result
+}
+
+
+createJsonPColumnData := func(data) {
+	return smart.createValueResource(pConstants.RTYPE_P_COLUMN_DATA_JSON, data)
+}
+
+wf.prepare(func(args) {
+	if is_undefined(args.sources) {
+		return {}
+	}
+
+	numbers := {}
+
+	ll.assert(slices.length(args.sources) > 0, "At least 1 data source must be set. It's needed in 'block error test'")
+
+	for i, ref in args.sources {
+		numbers["number"+string(i)] = wf.resolve(ref, { errIfMissing: true })
+	}
+
+	return numbers
+})
+
+wf.body(func(args) {
+	sum := 0
+	for k, numbers in args {
+		if text.has_prefix(k, "number") {
+			numsMap := numbers.data.getDataAsJson().data
+			for _, n in numsMap {
+				sum += n
+			}
+		}
+	}
+
+	blockId := wf.blockId().getDataAsJson()
+
+	return {
+		outputs: {
+			sum: sum
+		},
+		exports: {
+			sum: {
+				spec: {
+					kind: "PColumn",
+					name: "pl7.app/test/numbers",
+					valueType: "Double",
+					annotations: {
+						"pl7.app/label": "Sum"
+					},
+					domain: {
+						"pl7.app/blockId": blockId
+					},
+					axesSpec: [{
+						type: "String",
+						name: "pl7.app/test/numberIndex",
+						annotations: {
+							"pl7.app/label": "Index"
+						},
+						domain: {
+							"pl7.app/blockId": blockId
+						}
+					}]
+				},
+				data: createJsonPColumnData(json.encode(mapToPValueData({ "0": sum })))
+			}
+		}
+	}
+})

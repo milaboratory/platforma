@@ -1,24 +1,24 @@
-import type { BlockRenderingMode, BlockSection, AnyFunction, PlRef, BlockCodeKnownFeatureFlags, BlockConfigContainer, OutputWithStatus } from '@milaboratories/pl-model-common';
+import type { BlockRenderingMode, BlockSection, AnyFunction, PlRef, BlockCodeKnownFeatureFlags, BlockConfigContainer } from '@milaboratories/pl-model-common';
 import type { Checked, ConfigResult, TypedConfig } from './config';
 import { getImmediate } from './config';
 import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
 import type { Platforma, PlatformaApiVersion, PlatformaV1, PlatformaV2 } from './platforma';
-import type { InferRenderFunctionReturn, RenderFunction } from './render';
-import { RenderCtx } from './render';
+import type { InferRenderFunctionReturn, RenderFunctionLegacy } from './render';
+import { RenderCtxLegacy } from './render';
 import { PlatformaSDKVersion } from './version';
 import type {
   TypedConfigOrConfigLambda,
   ConfigRenderLambda,
   StdCtxArgsOnly,
   DeriveHref,
-  ResolveCfgType,
-  ExtractFunctionHandleReturn,
   ConfigRenderLambdaFlags,
+  InferOutputsFromConfigs,
 } from './bconfig';
 import {
   downgradeCfgOrLambda,
   isConfigLambda,
 } from './bconfig';
+import type { PlatformaExtended } from './platforma';
 
 type SectionsExpectedType = readonly BlockSection[];
 
@@ -27,24 +27,12 @@ type SectionsCfgChecked<Cfg extends TypedConfig, Args, UiState> = Checked<
   ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>> extends SectionsExpectedType ? true : false
 >;
 
-// TODO (Unused type in code)
-// type SectionsRFChecked<RF extends Function> = Checked<
-//   RF,
-//   InferRenderFunctionReturn<RF> extends SectionsExpectedType ? true : false
-// >;
-
 type InputsValidExpectedType = boolean;
 
 type InputsValidCfgChecked<Cfg extends TypedConfig, Args, UiState> = Checked<
   Cfg,
   ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>> extends InputsValidExpectedType ? true : false
 >;
-
-// TODO (Unused type in code)
-// type InputsValidRFChecked<RF extends Function> = Checked<
-//   RF,
-//   InferRenderFunctionReturn<RF> extends InputsValidExpectedType ? true : false
-// >;
 
 type NoOb = Record<string, never>;
 
@@ -126,7 +114,7 @@ export class BlockModel<
    *            workflows outputs and interact with platforma drivers
    * @param flags additional flags that may alter lambda rendering procedure
    * */
-  public output<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
+  public output<const Key extends string, const RF extends RenderFunctionLegacy<Args, UiState>>(
     key: Key,
     rf: RF,
     flags: ConfigRenderLambdaFlags & { withStatus: true }
@@ -144,7 +132,7 @@ export class BlockModel<
    *            workflows outputs and interact with platforma drivers
    * @param flags additional flags that may alter lambda rendering procedure
    * */
-  public output<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
+  public output<const Key extends string, const RF extends RenderFunctionLegacy<Args, UiState>>(
     key: Key,
     rf: RF,
     flags?: ConfigRenderLambdaFlags
@@ -161,7 +149,7 @@ export class BlockModel<
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
     if (typeof cfgOrRf === 'function') {
       const handle = `output#${key}`;
-      tryRegisterCallback(handle, () => cfgOrRf(new RenderCtx()));
+      tryRegisterCallback(handle, () => cfgOrRf(new RenderCtxLegacy()));
       return new BlockModel({
         ...this.config,
         outputs: {
@@ -185,7 +173,7 @@ export class BlockModel<
   }
 
   /** Shortcut for {@link output} with retentive flag set to true. */
-  public retentiveOutput<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
+  public retentiveOutput<const Key extends string, const RF extends RenderFunctionLegacy<Args, UiState>>(
     key: Key,
     rf: RF,
   ) {
@@ -193,7 +181,7 @@ export class BlockModel<
   }
 
   /** Shortcut for {@link output} with withStatus flag set to true. */
-  public outputWithStatus<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
+  public outputWithStatus<const Key extends string, const RF extends RenderFunctionLegacy<Args, UiState>>(
     key: Key,
     rf: RF,
   ) {
@@ -201,7 +189,7 @@ export class BlockModel<
   }
 
   /** Shortcut for {@link output} with retentive and withStatus flags set to true. */
-  public retentiveOutputWithStatus<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
+  public retentiveOutputWithStatus<const Key extends string, const RF extends RenderFunctionLegacy<Args, UiState>>(
     key: Key,
     rf: RF,
   ) {
@@ -214,14 +202,14 @@ export class BlockModel<
     cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>
   ): BlockModel<Args, OutputsCfg, UiState, Href>;
   /** Sets custom configuration predicate on the block args at which block can be executed */
-  public argsValid<RF extends RenderFunction<Args, UiState, boolean>>(
+  public argsValid<RF extends RenderFunctionLegacy<Args, UiState, boolean>>(
     rf: RF
   ): BlockModel<Args, OutputsCfg, UiState, Href>;
   public argsValid(
     cfgOrRf: TypedConfig | AnyFunction,
   ): BlockModel<Args, OutputsCfg, UiState, `/${string}`> {
     if (typeof cfgOrRf === 'function') {
-      tryRegisterCallback('inputsValid', () => cfgOrRf(new RenderCtx()));
+      tryRegisterCallback('inputsValid', () => cfgOrRf(new RenderCtxLegacy()));
       return new BlockModel<Args, OutputsCfg, UiState>({
         ...this.config,
         inputsValid: {
@@ -245,7 +233,7 @@ export class BlockModel<
   /** Sets the config to generate list of section in the left block overviews panel */
   public sections<
     const Ret extends SectionsExpectedType,
-    const RF extends RenderFunction<Args, UiState, Ret>,
+    const RF extends RenderFunctionLegacy<Args, UiState, Ret>,
   >(rf: RF): BlockModel<Args, OutputsCfg, UiState, DeriveHref<ReturnType<RF>>>;
   public sections<const Cfg extends TypedConfig>(
     cfg: Cfg & SectionsCfgChecked<Cfg, Args, UiState>
@@ -261,7 +249,7 @@ export class BlockModel<
     if (Array.isArray(arrOrCfgOrRf)) {
       return this.sections(getImmediate(arrOrCfgOrRf));
     } else if (typeof arrOrCfgOrRf === 'function') {
-      tryRegisterCallback('sections', () => arrOrCfgOrRf(new RenderCtx()));
+      tryRegisterCallback('sections', () => arrOrCfgOrRf(new RenderCtxLegacy()));
       return new BlockModel<Args, OutputsCfg, UiState>({
         ...this.config,
         sections: {
@@ -279,9 +267,9 @@ export class BlockModel<
 
   /** Sets a rendering function to derive block title, shown for the block in the left blocks-overview panel. */
   public title(
-    rf: RenderFunction<Args, UiState, string>,
+    rf: RenderFunctionLegacy<Args, UiState, string>,
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
-    tryRegisterCallback('title', () => rf(new RenderCtx()));
+    tryRegisterCallback('title', () => rf(new RenderCtxLegacy()));
     return new BlockModel<Args, OutputsCfg, UiState, Href>({
       ...this.config,
       title: {
@@ -292,9 +280,9 @@ export class BlockModel<
   }
 
   public subtitle(
-    rf: RenderFunction<Args, UiState, string>,
+    rf: RenderFunctionLegacy<Args, UiState, string>,
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
-    tryRegisterCallback('subtitle', () => rf(new RenderCtx()));
+    tryRegisterCallback('subtitle', () => rf(new RenderCtxLegacy()));
     return new BlockModel<Args, OutputsCfg, UiState, Href>({
       ...this.config,
       subtitle: {
@@ -305,9 +293,9 @@ export class BlockModel<
   }
 
   public tags(
-    rf: RenderFunction<Args, UiState, string[]>,
+    rf: RenderFunctionLegacy<Args, UiState, string[]>,
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
-    tryRegisterCallback('tags', () => rf(new RenderCtx()));
+    tryRegisterCallback('tags', () => rf(new RenderCtxLegacy()));
     return new BlockModel<Args, OutputsCfg, UiState, Href>({
       ...this.config,
       tags: {
@@ -407,7 +395,10 @@ export class BlockModel<
     if (this.config.initialArgs === undefined) throw new Error('Initial arguments not set.');
 
     const config: BlockConfigContainer = {
+      v4: undefined,
       v3: {
+        configVersion: 3,
+        modelAPIVersion: 1,
         sdkVersion: PlatformaSDKVersion,
         renderingMode: this.config.renderingMode,
         initialArgs: this.config.initialArgs,
@@ -452,29 +443,3 @@ export class BlockModel<
     };
   }
 }
-
-export type InferOutputType<CfgOrFH, Args, UiState> = CfgOrFH extends TypedConfig
-  ? ResolveCfgType<CfgOrFH, Args, UiState>
-  : CfgOrFH extends ConfigRenderLambda
-    ? ExtractFunctionHandleReturn<CfgOrFH>
-    : never;
-
-type InferOutputsFromConfigs<
-  Args,
-  OutputsCfg extends Record<string, TypedConfigOrConfigLambda>,
-  UiState,
-> = {
-  [Key in keyof OutputsCfg]:
-    & OutputWithStatus<InferOutputType<OutputsCfg[Key], Args, UiState>>
-    & { __unwrap: (OutputsCfg[Key] extends { withStatus: true } ? false : true) };
-};
-
-export type PlatformaExtended<Pl extends Platforma = Platforma> = Pl & {
-  blockModelInfo: BlockModelInfo;
-};
-
-export type BlockModelInfo = {
-  outputs: Record<string, {
-    withStatus: boolean;
-  }>;
-};

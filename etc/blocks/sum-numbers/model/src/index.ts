@@ -49,6 +49,8 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('sum', (ctx) => ctx.outputs?.resolve('sum')?.getDataAsJson<number>())
 
+  .output('uiState', (ctx) => ctx.uiState)
+
   .argsValid((ctx) => ctx.args.sources !== undefined && ctx.args.sources.length > 0)
 
   .enriches((args) =>
@@ -61,7 +63,7 @@ export const platforma = BlockModel.create('Heavy')
     return [{ type: 'link', href: '/', label: 'Main' }];
   })
 
-  .done();
+  .done(2); // ui api version 2
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

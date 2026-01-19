@@ -31,8 +31,7 @@ test('simple test #1', async () => {
       mut.addBlock(
         { id: 'block1', label: 'Block1', renderingMode: 'Heavy' },
         {
-          args: JSON.stringify({ numbers: [1, 2, 3] }),
-          uiState: "{}",
+          state: JSON.stringify({ args: { numbers: [1, 2, 3] } }),
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
         }
       );
@@ -45,8 +44,8 @@ test('simple test #1', async () => {
       mut.addBlock(
         { id: 'block2', label: 'Block2', renderingMode: 'Heavy' },
         {
-          args: JSON.stringify({ numbers: [3, 4, 5] }),
-          uiState: "{}",
+          // args: JSON.stringify({ numbers: [3, 4, 5] }),
+          state: JSON.stringify({ args: { numbers: [3, 4, 5] } }),
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
         }
       );
@@ -60,18 +59,19 @@ test('simple test #1', async () => {
       mut.addBlock(
         { id: 'block3', label: 'Block3', renderingMode: 'Heavy' },
         {
-          args: JSON.stringify({
-            sources: [outputRef('block1', 'column'), outputRef('block2', 'column')]
+          state: JSON.stringify({ 
+            args: { sources: [outputRef('block1', 'column'), outputRef('block2', 'column')] }, 
+            uiState: {"some":2} 
           }),
-          uiState: "{}",
           blockPack: await TestBPPreparer.prepare(BPSpecSumV042NotPrepared)
         }
       );
       const rendered = mut.renderProduction(['block3'], true);
       expect([...rendered]).toEqual(['block3']);
+      // setStates requires complete unified state (not partial updates)
       mut.setStates([
-        { blockId: 'block2', uiState: {"some":1} },
-        { blockId: 'block3', uiState: {"some":2} }
+        { blockId: 'block2', state: { args: { numbers: [3, 4, 5] }, uiState: {"some":1} } },
+        { blockId: 'block3', state: { args: { sources: [outputRef('block1', 'column'), outputRef('block2', 'column')] }, uiState: {"some":2} } }
       ]);
       mut.doRefresh();
       mut.save();
@@ -86,7 +86,6 @@ test('simple test #1', async () => {
       const all = await outputs.getAllFinal();
       expect(new Set(Object.keys(all))).toEqual(new Set(['sum', 'dependsOnBlocks']));
       const v = await outputs.get('sum');
-      console.log(Buffer.from(v.data.data!).toString());
     });
 
     await poll(pl, async (tx) => {
@@ -100,13 +99,15 @@ test('simple test #1', async () => {
 
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
-      const uiStateB2 = await prjR
-        .get(projectFieldName('block2', 'uiState'));
-      expect(Buffer.from(uiStateB2.data.data!).toString()).toEqual('{"some":1}');
+      const blockStorageB2 = await prjR
+        .get(projectFieldName('block2', 'blockStorage'));
+      expect(Buffer.from(blockStorageB2.data.data!).toString()).toEqual('{"args":{"numbers":[3,4,5]},"uiState":{"some":1}}');
 
-      const uiStateB3 = await prjR
-        .get(projectFieldName('block3', 'uiState'));
-      expect(Buffer.from(uiStateB3.data.data!).toString()).toEqual('{"some":2}');
+      const blockStorageB3 = await prjR
+        .get(projectFieldName('block3', 'blockStorage'));
+      expect(JSON.parse(Buffer.from(blockStorageB3.data.data!).toString()).uiState).toStrictEqual({
+        some: 2
+      });
     });
 
     await pl.withWriteTx('DeleteBlock2', async (tx) => {
@@ -118,8 +119,8 @@ test('simple test #1', async () => {
 
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
-      const uiState = prjR.data.fields.find((f) => f.name === projectFieldName('block2', 'uiState'));
-      expect(uiState).toBeUndefined();
+      const blockStorage = prjR.data.fields.find((f) => f.name === projectFieldName('block2', 'blockStorage'));
+      expect(blockStorage).toBeUndefined();
     });
 
     await poll(pl, async (tx) => {
@@ -164,7 +165,6 @@ test('simple test #1', async () => {
         .then((r) => r.final());
       const v = await outputs.get('sum');
       // there should be an error here telling that one of the upstream blocks not found
-      // console.log(Buffer.from(v.data.data!).toString());
       const renderingState = await prjR.getKValueObj<ProjectRenderingState>(BlockRenderingStateKey);
       expect(renderingState.blocksInLimbo).not.toContain('block3');
     });
@@ -187,26 +187,21 @@ test('simple test #2 with bp migration', async () => {
       mut.addBlock(
         { id: 'block1', label: 'Block1', renderingMode: 'Heavy' },
         {
-          args: JSON.stringify({ numbers: [1, 2, 3] }),
-          uiState: "{}",
+          state: JSON.stringify({ args: { numbers: [1, 2, 3] } }),
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
         }
       );
       mut.addBlock(
         { id: 'block2', label: 'Block2', renderingMode: 'Heavy' },
         {
-          args: JSON.stringify({ numbers: [3, 4, 5] }),
-          uiState: "{}",
+          state: JSON.stringify({ args: { numbers: [3, 4, 5] } }),
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
         }
       );
       mut.addBlock(
         { id: 'block3', label: 'Block3', renderingMode: 'Heavy' },
         {
-          args: JSON.stringify({
-            sources: [outputRef('block1', 'column'), outputRef('block2', 'column')]
-          }),
-          uiState: "{}",
+          state: JSON.stringify({ args: { sources: [outputRef('block1', 'column'), outputRef('block2', 'column')] }, uiState: {"some":2} }),
           blockPack: await TestBPPreparer.prepare(BPSpecSumV042NotPrepared)
         }
       );

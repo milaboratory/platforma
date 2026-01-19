@@ -170,4 +170,11 @@ export type BlockStateOverview = {
 
   /** Current navigation state of the block */
   navigationState: NavigationState;
+
+  /**
+   * Block storage info as JSON string (e.g., '{"stateVersion": 1}').
+   * Resolved by calling a function from the model.
+   * Undefined when block-pack for this block is not yet materialized.
+   */
+  blockStorageInfo: string | undefined;
 };

@@ -70,6 +70,43 @@ const simpleOptionsBase = ref<ListOption<unknown>[] | undefined>(
       label: 'Letter D (no group)',
       value: 'D',
     },
+    {
+      label: 'Letter E (no group)',
+      value: 'E',
+    },
+    {
+      label: 'Letter F (no group)',
+      value: 'F',
+    },
+    {
+      label: 'Letter G (group)',
+      value: 'G',
+    },
+    {
+      label: 'Letter H (group)',
+      value: 'H',
+      group: 'Group 1',
+    },
+    {
+      label: 'Letter I (group)',
+      value: 'I',
+      group: 'Group 1',
+    },
+    {
+      label: 'Letter J (group)',
+      value: 'J',
+      group: 'Group 1',
+    },
+    {
+      label: 'Letter K (group)',
+      value: 'K',
+      group: 'Group 1',
+    },
+    {
+      label: 'Letter L (group)',
+      value: 'L',
+      group: 'Group 1',
+    },
   ]),
 );
 

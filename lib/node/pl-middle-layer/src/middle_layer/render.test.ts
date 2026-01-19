@@ -25,6 +25,7 @@ export async function withMl(
     });
     ml.addRuntimeCapability('requiresUIAPIVersion', 1);
     ml.addRuntimeCapability('requiresUIAPIVersion', 2);
+    ml.addRuntimeCapability('requiresUIAPIVersion', 3);
     try {
       await cb(ml, workFolder);
     } finally {
@@ -159,7 +160,6 @@ test.skip('basic quickjs code', async () => {
       vm.newFunction('nextId', () => {
         return vm.newNumber(12); // vm.newArrayBuffer(new Uint8Array([1, 2]));
       }).consume((fn) => vm.setProp(vm.global, 'nextId', fn));
-      console.log('asdasdas');
 
       const nextId = vm.getString(
         scope.manage(

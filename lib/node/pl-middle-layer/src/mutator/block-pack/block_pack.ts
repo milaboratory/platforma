@@ -38,7 +38,7 @@ function parseStringConfig(configContent: string): BlockConfigContainer {
   }
 
   if (!Code.safeParse(res.data.code).success) {
-    throw new Error('No code bundle');
+    throw new Error('parseStringConfig:No code bundle');
   }
 
   return res.data as BlockConfigContainer;
@@ -75,7 +75,6 @@ export class BlockPackPreparer {
 
       case 'dev-v1': {
         const devPaths = await resolveDevPacket(spec.folder, false);
-        console.log('devPaths', devPaths);
         const configContent = await fs.promises.readFile(devPaths.config, { encoding: 'utf-8' });
         return JSON.parse(configContent);
       }

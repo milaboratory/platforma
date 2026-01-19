@@ -35,6 +35,7 @@ import type {
   ColumnProvider,
   PColumnDataUniversal,
   RenderCtx,
+  RenderCtxLegacy,
   TreeNodeAccessor,
 } from '../render';
 import {
@@ -631,7 +632,7 @@ export function isColumnOptional(spec: { annotations?: Annotation }): boolean {
  * @returns PlAgDataTableV2 table source
  */
 export function createPlDataTableV2<A, U>(
-  ctx: RenderCtx<A, U>,
+  ctx: RenderCtx<A, U> | RenderCtxLegacy<A, U>,
   columns: PColumn<PColumnDataUniversal>[],
   tableState: PlDataTableStateV2 | undefined,
   ops?: CreatePlDataTableOps,

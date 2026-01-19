@@ -20,7 +20,7 @@ export function mapRemoteToAbsolute(
  *
  * If prefix = "nested-path/", paths like "somefile.txt" will be transformed to "nested-path/somefile.txt".
  *
- * @param prefix prefix to add to the relaive path, slesh at the end will be added automatically if missed
+ * @param prefix prefix to add to the relative path, slash at the end will be added automatically if missed
  */
 export function addPrefixToRelative(
   prefix: string,

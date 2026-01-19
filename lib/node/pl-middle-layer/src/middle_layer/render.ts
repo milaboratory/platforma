@@ -21,7 +21,7 @@ export function computableFromCfgOrRF(
   ops: Partial<ComputableRenderingOps> = {},
 ): Computable<unknown> {
   if (isConfigLambda(cfgOrFh)) {
-    if (codeWithInfo === undefined) throw new Error('No code bundle.');
+    if (codeWithInfo === undefined) throw new Error('computableFromCfgOrRF: No code bundle.');
     return computableFromRF(env, ctx, cfgOrFh, codeWithInfo, configKey, ops);
   } else return computableFromCfg(env.driverKit, ctx, cfgOrFh, ops);
 }

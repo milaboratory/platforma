@@ -1,0 +1,12 @@
+{
+  "extends": "@milaboratories/ts-configs/block/model",
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}

@@ -180,7 +180,7 @@ export function executeSingleLambda(
     // Initializing the model
     rCtx.evaluateBundle(code.content);
 
-    // Running the lambda
+    // Running the lambda with arguments (e.g., state for args(), args for enrichmentTargets())
     return rCtx.importObjectUniversal(rCtx.runCallback(fh.handle, ...args));
   } finally {
     scope.dispose();

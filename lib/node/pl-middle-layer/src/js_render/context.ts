@@ -51,6 +51,15 @@ export class JsExecutionContext {
 
   public readonly computableHelper: ComputableContextHelper | undefined;
 
+  /**
+   * Creates a new JS execution context.
+   *
+   * @param scope - QuickJS scope for memory management
+   * @param vm - QuickJS VM context
+   * @param deadlineSetter - Function to set execution deadline
+   * @param featureFlags - Block feature flags
+   * @param computableEnv - Optional reactive computable environment (for outputs, inputsValid, etc.)
+   */
   constructor(
     public readonly scope: Scope,
     public readonly vm: QuickJSContext,
@@ -237,12 +246,10 @@ export class JsExecutionContext {
         this.exportObjectUniversal(JsRenderInternal.GlobalCfgRenderCtxFeatureFlags, localScope),
       );
 
-      //
-      // Injecting computable context helper methods if we are running in computable context
-      //
-
-      if (this.computableHelper !== undefined)
+      // Inject context values from computableHelper (reactive context for outputs, inputsValid, etc.)
+      if (this.computableHelper !== undefined) {
         this.computableHelper.injectCtx(configCtx);
+      }
 
       //
       // Creating global variable inside the vm

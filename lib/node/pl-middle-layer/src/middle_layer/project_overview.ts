@@ -39,8 +39,6 @@ type BlockInfo = {
   prod?: ProdState;
 };
 
-type _CalculationStatus = 'Running' | 'Done';
-
 type ProdState = {
   finished: boolean;
 
@@ -235,19 +233,36 @@ export function projectOverview(
                     },
                   }) as ComputableStableDefined<string[]>,
               ),
-              inputsValid: computableFromCfgOrRF(
-                env,
-                blockCtxArgsOnly,
-                cfg.inputsValid,
-                codeWithInfo,
-                bpId,
-              ).wrap({
-                recover: (cause) => {
-                  // I'm not sure that we should write an error here, because it just means "Invalid args"
-                  env.logger.error(new Error('Error in block model argsValid', { cause }));
-                  return false;
-                },
-              }) as ComputableStableDefined<boolean>,
+              // inputsValid from config (only for V3 and earlier blocks)
+              // V4 blocks derive inputsValid from args() success/failure, stored in pl-tree
+              inputsValid: cfg.modelAPIVersion === 2
+                ? (() => {
+                    // Read inputsValid field (set during setState when args derivation is used)
+                    // If inputsValid is false, the block can't run
+                    const inputsValidNode = prj.traverse({
+                      field: projectFieldName(id, 'inputsValid'),
+                      assertFieldType: 'Dynamic',
+                      stableIfNotFound: true,
+                    });
+                    const inputsValidFromField = inputsValidNode !== undefined
+                      ? inputsValidNode.getDataAsJson() as boolean
+                      : undefined;
+                    return inputsValidFromField;
+                  })()
+                : cfg.inputsValid
+                  ? computableFromCfgOrRF(
+                    env,
+                    blockCtxArgsOnly,
+                    cfg.inputsValid,
+                    codeWithInfo,
+                    bpId,
+                  ).wrap({
+                    recover: (cause) => {
+                      env.logger.error(new Error('Error in block model inputsValid', { cause }));
+                      return false;
+                    },
+                  }) as ComputableStableDefined<boolean>
+                  : undefined,
               sdkVersion: codeWithInfo?.sdkVersion,
               featureFlags: codeWithInfo?.featureFlags ?? {},
               isIncompatibleWithRuntime: false,
@@ -261,6 +276,20 @@ export function projectOverview(
             errorIfFieldNotSet: true,
           })
           .getDataAsJson() as BlockSettings;
+
+        // Get block storage info by calling VM function (only for Model API v2 blocks)
+        const blockStorageInfo = ifNotUndef(bp, ({ cfg }) => {
+          if (cfg.modelAPIVersion !== 2) {
+            return undefined;
+          }
+          const storageNode = prj.traverse({
+            field: projectFieldName(id, 'blockStorage'),
+            assertFieldType: 'Dynamic',
+            stableIfNotFound: true,
+          });
+          const rawStorageJson = storageNode?.getDataAsString();
+          return env.projectHelper.getStorageInfoInVM(cfg, rawStorageJson);
+        });
 
         const updates = ifNotUndef(bp, ({ info }) =>
           env.blockUpdateWatcher.get({ currentSpec: info.source, settings }),
@@ -292,6 +321,7 @@ export function projectOverview(
           featureFlags,
           isIncompatibleWithRuntime,
           navigationState: navigationStates.getState(id),
+          blockStorageInfo,
         };
       });
 

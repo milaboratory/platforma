@@ -12,43 +12,42 @@ import { blockArgsAuthorKey } from '../model/project_model';
 import { ifNotUndef } from '../cfg_render/util';
 import type { MiddleLayerEnvironment } from './middle_layer';
 import { getBlockPackInfo } from './util';
-import type { AuthorMarker, BlockStateInternal } from '@milaboratories/pl-model-middle-layer';
+import type { AuthorMarker, BlockStateInternalV3 } from '@milaboratories/pl-model-middle-layer';
 import { computableFromCfgOrRF } from './render';
 import { resourceIdToString } from '@milaboratories/pl-client';
 import { deepFreeze } from '@milaboratories/ts-helpers';
 import { extractCodeWithInfo } from '@platforma-sdk/model';
 import { getDebugFlags } from '../debug';
 
-export type BlockArgsAndUiState = Omit<BlockStateInternal, 'outputs' | 'navigationState'>;
+export type BlockParameters = Omit<BlockStateInternalV3, 'outputs' | 'navigationState'>;
 
-export function blockArgsAndUiState(
+export function getBlockParameters(
   projectEntry: PlTreeEntry,
   blockId: string
-): Computable<BlockArgsAndUiState>;
-export function blockArgsAndUiState(
+): Computable<BlockParameters>;
+export function getBlockParameters(
   projectEntry: PlTreeEntry,
   blockId: string,
   cCtx: ComputableCtx
-): BlockArgsAndUiState;
-export function blockArgsAndUiState(
+): BlockParameters;
+export function getBlockParameters(
   projectEntry: PlTreeEntry,
   blockId: string,
   cCtx?: ComputableCtx,
-): BlockArgsAndUiState | Computable<BlockArgsAndUiState> {
+): BlockParameters | Computable<BlockParameters> {
   if (cCtx === undefined)
-    return Computable.make((c) => blockArgsAndUiState(projectEntry, blockId, c), {
+    return Computable.make((c) => getBlockParameters(projectEntry, blockId, c), {
       key: `inputs#${resourceIdToString(projectEntry.rid)}#${blockId}`,
     });
 
   const prj = cCtx.accessor(projectEntry).node();
   const ctx = constructBlockContextArgsOnly(projectEntry, blockId);
-  const uiState = ctx.uiState(cCtx);
+  const dataJson = ctx.data(cCtx);
+  // @TODO add deserialization caching
+  const data = dataJson !== undefined ? deepFreeze(JSON.parse(dataJson)) : undefined;
   return {
     author: prj.getKeyValueAsJson<AuthorMarker>(blockArgsAuthorKey(blockId)),
-    // @TODO add deserialization caching
-    args: deepFreeze(JSON.parse(ctx.args(cCtx))),
-    // @TODO add deserialization caching
-    ui: uiState !== undefined ? deepFreeze(JSON.parse(uiState)) : undefined,
+    data,
   };
 }
 

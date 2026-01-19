@@ -85,11 +85,13 @@ export class ResultPool {
     if (result !== undefined) return result;
     result = block.staging?.results?.get(exportName)?.spec;
     if (result !== undefined) return result;
-    if (block.staging === undefined) this.ctx.markUnstable(`staging_not_rendered:${blockId}`);
-    else if (!block.staging.locked) this.ctx.markUnstable(`staging_not_locked:${blockId}`);
+    // Note: Don't mark unstable when staging is absent - it may be intentionally skipped
+    // for v3 blocks with undefined preRunArgs.
+    if (block.staging !== undefined && !block.staging.locked)
+      this.ctx.markUnstable(`staging_not_locked:${blockId}`);
     else if (block.prod !== undefined && !block.prod.locked)
       this.ctx.markUnstable(`prod_not_locked:${blockId}`);
-    // if prod is absent, returned undefined value is considered stable
+    // if neither prod nor staging is present, returned undefined value is considered stable
     return undefined;
   }
 
@@ -224,7 +226,10 @@ export class ResultPool {
             });
             exportsProcessed.add(exportName);
           }
-      } else markUnstable(`staging_not_rendered:${blockId}`); // because staging will be inevitably rendered soon
+      }
+      // Note: Don't mark unstable when staging is absent - it may be intentionally skipped
+      // for v3 blocks with undefined preRunArgs. If prod exists, use it; if neither exists,
+      // the block simply has no specs to contribute.
 
       if (block.prod !== undefined) {
         if (!block.prod.locked) markUnstable(`prod_not_locked:${blockId}`);
@@ -296,9 +301,11 @@ export class ResultPool {
           field: projectFieldName(blockInfo.id, 'stagingCtx'),
           ignoreError: true,
           pureFieldErrorToUndefined: true,
+          stableIfNotFound: true,
         }) !== undefined,
         prj.traverseOrError({
           field: projectFieldName(blockInfo.id, 'stagingUiCtx'),
+          stableIfNotFound: true,
         }),
       );
 
