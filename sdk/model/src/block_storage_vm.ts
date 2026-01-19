@@ -167,17 +167,13 @@ tryRegisterCallback('__storage_getInfo', (rawStorage: unknown) => {
 /**
  * Result of storage migration.
  * Returned by __storage_migrate callback.
+ *
+ * - Error result: { error: string } - serious failure (no context, etc.)
+ * - Success result: { newStorageJson: string, info: string, warn?: string } - migration succeeded or reset to initial
  */
-export interface MigrationResult {
-  /** Whether migrations were applied */
-  migrated: boolean;
-  /** New storage JSON string (only present if migrated === true) */
-  newStorageJson?: string;
-  /** Error message if migration failed (only present on error) */
-  error?: string;
-  /** Human-readable info for logging */
-  info: string;
-}
+export type MigrationResult =
+  | { error: string }
+  | { error?: undefined; newStorageJson: string; info: string; warn?: string };
 
 /**
  * Runs all necessary migrations on the storage.
@@ -189,53 +185,78 @@ export interface MigrationResult {
  * - migration[1] transforms version 2 → version 3
  * - etc.
  *
+ * Returns either:
+ * - Success with newStorageJson (migrated, unchanged, or reset to initial with warning)
+ * - Error if something seriously wrong (no context available)
+ *
  * @param currentStorageJson - Current storage as JSON string (or undefined)
- * @returns MigrationResult with new storage or skip/error info
+ * @returns MigrationResult
  */
 function migrateStorage(currentStorageJson: string | undefined): MigrationResult {
-  // Get migration count from callback registry
-  const migrationCount = getCallbackCount('migrations');
-
-  // No migrations defined
-  if (migrationCount === undefined || migrationCount === 0) {
-    return {
-      migrated: false,
-      info: 'No migrations defined',
-    };
+  // Get the callback registry context
+  const ctx = tryGetCfgRenderCtx();
+  if (ctx === undefined) {
+    return { error: 'Not in config rendering context' };
   }
 
   // Normalize storage to get current data and version
   const { storage: currentStorage, data: currentData } = normalizeStorage(currentStorageJson);
   const currentVersion = currentStorage.__dataVersion;
 
+  // Get migration count from callback registry
+  const migrationCount = getCallbackCount('migrations') ?? 0;
+
   // Calculate target version: initial is 1, each migration adds 1
   const targetVersion = 1 + migrationCount;
+
+  // Helper to create storage with given data and version
+  const createStorageJson = (data: unknown, version: number): string => {
+    return JSON.stringify({
+      ...currentStorage,
+      __dataVersion: version,
+      __data: data,
+    });
+  };
+
+  // Helper function to reset to initial data on migration failure (returns success with warning)
+  const resetToInitialData = (warnMsg: string): MigrationResult => {
+    const initialDataCallback = ctx.callbackRegistry['initialData'];
+    if (typeof initialDataCallback !== 'function') {
+      return { error: `${warnMsg}; initialData callback not found` };
+    }
+
+    try {
+      const initialData = initialDataCallback();
+      return {
+        newStorageJson: createStorageJson(initialData, targetVersion),
+        info: `Reset to initial data (v${targetVersion})`,
+        warn: warnMsg,
+      };
+    } catch (initError) {
+      const initErrorMsg = initError instanceof Error ? initError.message : String(initError);
+      return { error: `${warnMsg}; initialData() also failed: ${initErrorMsg}` };
+    }
+  };
+
+  // No migrations defined - return current storage with version set to target
+  if (migrationCount === 0) {
+    return {
+      newStorageJson: createStorageJson(currentData, targetVersion),
+      info: 'No migrations defined',
+    };
+  }
 
   // Check if migrations are needed
   if (currentVersion >= targetVersion) {
     return {
-      migrated: false,
-      info: `No migrations needed: version ${currentVersion} >= target ${targetVersion}`,
-    };
-  }
-
-  // Get the callback registry context to run migrations
-  const ctx = tryGetCfgRenderCtx();
-  if (ctx === undefined) {
-    return {
-      migrated: false,
-      error: 'Not in config rendering context',
-      info: 'Migration failed: not in config rendering context',
+      newStorageJson: JSON.stringify(currentStorage),
+      info: `No migration needed (v${currentVersion} >= v${targetVersion})`,
     };
   }
 
   const migrationsDispatcher = ctx.callbackRegistry['migrations'];
   if (typeof migrationsDispatcher !== 'function') {
-    return {
-      migrated: false,
-      error: 'Migrations dispatcher not found',
-      info: 'Migration failed: migrations dispatcher not found',
-    };
+    return resetToInitialData('Migrations dispatcher not found');
   }
 
   // Run migrations sequentially
@@ -245,13 +266,9 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
   for (let version = currentVersion; version < targetVersion; version++) {
     const migrationIndex = version - 1;
 
-    // Skip invalid migration indices (e.g., version 0 would need migration[-1])
+    // Invalid migration indices (e.g., version 0 would need migration[-1])
     if (migrationIndex < 0) {
-      return {
-        migrated: false,
-        error: `Invalid migration index ${migrationIndex} for version ${version}`,
-        info: `Migration failed: cannot migrate from version ${version} (no migration[${migrationIndex}])`,
-      };
+      return resetToInitialData(`Cannot migrate from version ${version}: no migration[${migrationIndex}]`);
     }
 
     try {
@@ -259,25 +276,13 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
       migrationsRun.push(`v${version}→v${version + 1}`);
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
-      return {
-        migrated: false,
-        error: `Migration[${migrationIndex}] failed: ${errorMsg}`,
-        info: `Migration failed at v${version}→v${version + 1}: ${errorMsg}`,
-      };
+      return resetToInitialData(`Migration v${version}→v${version + 1} failed: ${errorMsg}`);
     }
   }
 
-  // Build new storage by updating data and version in current storage
-  const newStorage = {
-    ...currentStorage,
-    __dataVersion: targetVersion,
-    __data: data,
-  };
-
   return {
-    migrated: true,
-    newStorageJson: JSON.stringify(newStorage),
-    info: `Migrated ${migrationsRun.join(', ')} (v${currentVersion}→v${targetVersion})`,
+    newStorageJson: createStorageJson(data, targetVersion),
+    info: `Migrated ${migrationsRun.join(', ')}`,
   };
 }
 

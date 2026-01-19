@@ -1142,12 +1142,13 @@ export class ProjectMutator {
 
         const migrationResult = this.projectHelper.migrateStorageInVM(newConfig, currentStorageJson);
 
-        if (migrationResult.error) {
-          console.error(`[migrateBlockPack] Migration error for block ${blockId}:`, migrationResult.error);
-          // On migration failure, keep the old state (don't crash)
-          // The block may be in an inconsistent state but at least we don't lose data
-          // TODO v3
-        } else if (migrationResult.migrated && migrationResult.newStorageJson) {
+        if (migrationResult.error !== undefined) {
+          console.error(`[migrateBlockPack] Block ${blockId} migration error: ${migrationResult.error}`);
+        } else {
+          console.log(`[migrateBlockPack] Block ${blockId}: ${migrationResult.info}`);
+          if (migrationResult.warn) {
+            console.warn(`[migrateBlockPack] Block ${blockId} migration warning: ${migrationResult.warn}`);
+          }
           this.setBlockStorageRaw(blockId, migrationResult.newStorageJson);
         }
       }

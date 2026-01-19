@@ -33,7 +33,11 @@ export const platforma = BlockModelV3
   .withData<BlockData>(() => ({ numbers: [], labels: [], description: '' }))
 
   // Migration v1 → v2: sort numbers and add labels
+  // Throws if numbers contain 666 (for testing migration failure recovery)
   .migration<BlockDataV1>((data) => {
+    if (data.numbers.includes(666)) {
+      throw new Error('Migration failed: number 666 is forbidden!');
+    }
     return { numbers: data.numbers.toSorted(), labels: ['migrated-from-v1'] };
   })
 

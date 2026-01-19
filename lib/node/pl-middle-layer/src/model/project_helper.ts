@@ -25,17 +25,13 @@ interface NormalizeStorageResult {
 /**
  * Result of VM-based storage migration.
  * Returned by migrateStorageInVM().
+ *
+ * - Error result: { error: string } - serious failure (no context, etc.)
+ * - Success result: { newStorageJson: string, info: string, warn?: string } - migration succeeded or reset to initial
  */
-export interface MigrationResult {
-  /** Whether migrations were applied */
-  migrated: boolean;
-  /** New storage JSON string (only present if migrated === true) */
-  newStorageJson?: string;
-  /** Error message if migration failed (only present on error) */
-  error?: string;
-  /** Human-readable info for logging */
-  info: string;
-}
+export type MigrationResult =
+  | { error: string }
+  | { error?: undefined; newStorageJson: string; info: string; warn?: string };
 
 // Internal lambda handles for storage operations (registered by SDK's block_storage_vm.ts)
 const STORAGE_NORMALIZE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__storage_normalize' };
@@ -264,11 +260,7 @@ export class ProjectHelper {
       return result;
     } catch (e) {
       console.error('[ProjectHelper.migrateStorageInVM] Migration failed:', e);
-      return {
-        migrated: false,
-        error: `VM execution failed: ${e}`,
-        info: `Migration failed: VM execution error`,
-      };
+      return { error: `VM execution failed: ${e}` };
     }
   }
 }
