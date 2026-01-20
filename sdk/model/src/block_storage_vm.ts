@@ -83,22 +83,15 @@ function normalizeStorage(rawStorage: unknown): NormalizeStorageResult {
 }
 
 /**
- * Applies a state update to the current storage.
+ * Applies a state update to existing storage.
  * Used when setData is called from the frontend.
  *
- * @param currentStorageJson - Current storage as JSON string (or undefined for new blocks)
+ * @param currentStorageJson - Current storage as JSON string (must be defined)
  * @param newData - New data from application
  * @returns Updated storage as JSON string
  */
-function applyStorageUpdate(currentStorageJson: string | undefined, newData: unknown): string {
-  let currentStorage: BlockStorage;
-
-  if (currentStorageJson === undefined || currentStorageJson === null || currentStorageJson === '') {
-    currentStorage = createBlockStorage({});
-  } else {
-    const { storage } = normalizeStorage(currentStorageJson);
-    currentStorage = storage;
-  }
+function applyStorageUpdate(currentStorageJson: string, newData: unknown): string {
+  const { storage: currentStorage } = normalizeStorage(currentStorageJson);
 
   // Update data while preserving other storage fields (version, plugins)
   const updatedStorage = updateStorageData(currentStorage, newData);
@@ -127,8 +120,8 @@ tryRegisterCallback('__storage_normalize', (rawStorage: unknown) => {
   return normalizeStorage(rawStorage);
 });
 
-// Register apply update callback
-tryRegisterCallback('__storage_applyUpdate', (currentStorageJson: string | undefined, newState: unknown) => {
+// Register apply update callback (requires existing storage)
+tryRegisterCallback('__storage_applyUpdate', (currentStorageJson: string, newState: unknown) => {
   return applyStorageUpdate(currentStorageJson, newState);
 });
 

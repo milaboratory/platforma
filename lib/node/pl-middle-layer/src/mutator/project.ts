@@ -595,6 +595,9 @@ export class ProjectMutator {
 
       if (usesArgsDeriv) {
         const currentStorageJson = info.blockStorageJson;
+        if (currentStorageJson === undefined) {
+          throw new Error(`Block ${req.blockId} has no blockStorage - this should not happen`);
+        }
 
         const updatedStorageJson = this.projectHelper.applyStorageUpdateInVM(
           blockConfig,
@@ -871,18 +874,11 @@ export class ProjectMutator {
       this.setBlockField(blockId, 'inputsValid', inputsValidRef, 'Ready', inputsValidData);
     }
 
-    // blockStorage - use VM-based storage for V3+ blocks to write in BlockStorage format
+    // blockStorage - use VM-based storage for V3+ blocks with correct version
     let storageToWrite = spec.state ?? '{}';
     if (usesArgsDeriv && blockConfig !== undefined) {
-      // Apply initial state via VM to create proper BlockStorage format
-      const updatedStorageJson = this.projectHelper.applyStorageUpdateInVM(
-        blockConfig,
-        undefined, // No current storage for new block
-        initialState,
-      );
-      if (updatedStorageJson !== undefined) {
-        storageToWrite = updatedStorageJson;
-      }
+      // Get initial storage with correct version directly from DataModel
+      storageToWrite = this.projectHelper.getInitialStorageInVM(blockConfig);
     }
     this.setBlockFieldObj(blockId, 'blockStorage', this.createJsonFieldValueByContent(storageToWrite));
 

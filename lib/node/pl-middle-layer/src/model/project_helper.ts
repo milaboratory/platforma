@@ -39,6 +39,8 @@ const STORAGE_APPLY_UPDATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, 
 const STORAGE_GET_INFO_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__storage_getInfo' };
 const STORAGE_MIGRATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__storage_migrate' };
 const INITIAL_DATA_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: 'initialData' };
+// Registered by DataModel.registerCallbacks()
+const INITIAL_STORAGE_JSON_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: 'initialStorageJson' };
 
 export class ProjectHelper {
   private readonly enrichmentTargetsCache = new LRUCache<string, EnrichmentTargetsValue, EnrichmentTargetsRequest>({
@@ -179,6 +181,30 @@ export class ProjectHelper {
   }
 
   /**
+   * Creates initial BlockStorage for a new block using VM-based transformation.
+   * This calls the 'initialStorageJson' callback registered by DataModel which:
+   * - Gets initial data from DataModel.getDefaultData()
+   * - Creates BlockStorage with correct version
+   *
+   * @param blockConfig The block configuration (provides the model code)
+   * @returns Initial storage as JSON string
+   * @throws Error if storage creation fails
+   */
+  public getInitialStorageInVM(blockConfig: BlockConfig): string {
+    try {
+      const result = executeSingleLambda(
+        this.quickJs,
+        INITIAL_STORAGE_JSON_HANDLE,
+        extractCodeWithInfo(blockConfig),
+      ) as string;
+      return result;
+    } catch (e) {
+      console.error('[ProjectHelper.getInitialStorageInVM] Initial storage creation failed:', e);
+      throw new Error(`Block initial storage creation failed: ${e}`);
+    }
+  }
+
+  /**
    * Applies a state update using VM-based transformation.
    * This calls the model's `__storage_applyUpdate` callback which:
    * - Normalizes current storage
@@ -186,12 +212,12 @@ export class ProjectHelper {
    * - Returns the updated storage as JSON string
    *
    * @param blockConfig The block configuration (provides the model code)
-   * @param currentStorageJson Current storage as JSON string (or undefined for new blocks)
+   * @param currentStorageJson Current storage as JSON string (must be defined)
    * @param newState New state from developer
    * @returns Updated storage as JSON string
    * @throws Error if storage update fails
    */
-  public applyStorageUpdateInVM(blockConfig: BlockConfig, currentStorageJson: string | undefined, newState: unknown): string {
+  public applyStorageUpdateInVM(blockConfig: BlockConfig, currentStorageJson: string, newState: unknown): string {
     try {
       const result = executeSingleLambda(
         this.quickJs,

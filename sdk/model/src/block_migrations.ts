@@ -1,4 +1,5 @@
 import { tryRegisterCallback } from './internal';
+import { createBlockStorage } from './block_storage';
 
 export type MigrationFn<From, To> = (prev: Readonly<From>) => To;
 
@@ -156,9 +157,15 @@ export class DataModel<State> {
    * Called by BlockModelV3.create() to set up:
    * - 'initialData' callback: returns initial data for new blocks
    * - 'upgrade' callback: upgrades versioned data from any version to latest
+   * - 'initialStorageJson' callback: returns initial BlockStorage as JSON string
    */
   registerCallbacks(): void {
     tryRegisterCallback('initialData', () => this._initialData());
     tryRegisterCallback('upgrade', (versioned: Versioned<unknown>) => this.upgrade(versioned)); // TODO: rename
+    tryRegisterCallback('initialStorageJson', () => {
+      const { version, data } = this.getDefaultData();
+      const storage = createBlockStorage(data, version);
+      return JSON.stringify(storage);
+    });
   }
 }

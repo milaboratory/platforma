@@ -71,10 +71,10 @@ test('v3: fresh block has correct initial dataVersion', async ({ expect }) => {
     const overview = await prj.overview.awaitStableValue();
     expect(overview.blocks[0].blockStorageInfo).toBeDefined();
 
-    // Fresh block should have dataVersion = 1 (initial) - check via overview
+    // Fresh block should have dataVersion = 3 (target version with 2 migrations) - check via overview
     const storageInfo = JSON.parse(overview.blocks[0].blockStorageInfo!) as StorageInfo;
     console.log('[Fresh Block Test] dataVersion:', storageInfo.dataVersion);
-    expect(storageInfo.dataVersion).toBe(1);
+    expect(storageInfo.dataVersion).toBe(3);
 
     // Get the actual state to verify it's the initial state
     const blockState = await prj.getBlockState(block1Id).awaitStableValue();
@@ -94,7 +94,7 @@ test('v3: fresh block has correct initial dataVersion', async ({ expect }) => {
     const blockStorageData = blockDump?.blockStorage?.data as Record<string, unknown> | undefined;
     if (blockStorageData !== undefined) {
       expect(blockStorageData[BLOCK_STORAGE_KEY]).toBe('v1');
-      expect(blockStorageData.__dataVersion).toBe(1);
+      expect(blockStorageData.__dataVersion).toBe(3);
     }
 
     await projectWatcher.abort();
@@ -155,6 +155,9 @@ test('v3: migration from v1 to v3 (two migrations)', async ({ expect }) => {
     const storageInfo3 = JSON.parse(overview3.blocks[0].blockStorageInfo!) as StorageInfo;
     console.log('[v1→v3 Test] After migration, dataVersion:', storageInfo3.dataVersion);
     expect(storageInfo3.dataVersion).toBe(3);
+
+    // Wait for watcher to sync
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     // Log blockStorage after migration
     const blockDump3 = projectWatcher.getBlockDump(block1Id);
@@ -424,6 +427,92 @@ test('v3: migration failure resets to initial data', async ({ expect }) => {
       numbers: [],
       labels: [],
       description: '',
+    });
+
+    await projectWatcher.abort();
+  });
+});
+
+test('v3: fresh block with correct version survives block pack update', async ({ expect }) => {
+  // This test verifies that:
+  // 1. Fresh block is created with dataVersion=3 (target version)
+  // 2. User modifies data
+  // 3. Block pack update does NOT run migration (already at target version)
+  // 4. User's data is preserved
+  await withMl(async (ml, workFolder) => {
+    const pRid1 = await ml.createProject({ label: 'Fresh Block Update Test' }, 'migration-fresh-update');
+    await ml.openProject(pRid1);
+    const prj = ml.getOpenedProject(pRid1);
+
+    // Add a fresh block - gets dataVersion=1 but v3-format data (BUG!)
+    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
+
+    // Create project watcher to track blockStorage
+    const projectWatcher = await createProjectWatcher<BlockDumpUnified>(ml, prj, {
+      workFolder,
+      validator: BlockDumpArraySchemaUnified,
+    });
+
+    // Verify fresh block state
+    const overview1 = await prj.overview.awaitStableValue();
+    const storageInfo1 = JSON.parse(overview1.blocks[0].blockStorageInfo!) as StorageInfo;
+    console.log('[Fresh Update Test] Fresh block dataVersion:', storageInfo1.dataVersion);
+
+    // Fresh block should have dataVersion = 3 (target version with 2 migrations)
+    // BUG: Currently gets dataVersion = 1 (hardcoded default)
+    expect(storageInfo1.dataVersion).toBe(3);
+
+    // Get the actual data - it's already in v3 format!
+    const blockState1 = await prj.getBlockState(block1Id).awaitStableValue();
+    console.log('[Fresh Update Test] Fresh block data:', blockState1.data);
+    expect(blockState1.data).toStrictEqual({
+      numbers: [],
+      labels: [],
+      description: '',
+    });
+
+    // Set some data - this will preserve version 1
+    await prj.setData(block1Id, {
+      numbers: [1, 2, 3],
+      labels: ['my-label'],
+      description: 'My description',
+    });
+
+    // Log the state after setting data
+    const blockDump1 = projectWatcher.getBlockDump(block1Id);
+    console.log('[Fresh Update Test] After setData:');
+    console.log('  blockStorage:', JSON.stringify(blockDump1?.blockStorage?.data, null, 2));
+
+    // Trigger block pack update - this will trigger migration!
+    await triggerBlockPackUpdate(prj);
+
+    const overview2 = await prj.overview.awaitStableValue();
+    expect(overview2.blocks[0].updatedBlockPack).toBeDefined();
+
+    // Apply update - migration will run v1→v2→v3 on data that's ALREADY v3!
+    console.log('[Fresh Update Test] Triggering block pack update...');
+    await prj.updateBlockPack(block1Id, overview2.blocks[0].updatedBlockPack!);
+
+    // Check what happened
+    const overview3 = await prj.overview.awaitStableValue();
+    const storageInfo3 = JSON.parse(overview3.blocks[0].blockStorageInfo!) as StorageInfo;
+    console.log('[Fresh Update Test] After update, dataVersion:', storageInfo3.dataVersion);
+
+    // Log the corrupted storage
+    const blockDump3 = projectWatcher.getBlockDump(block1Id);
+    console.log('[Fresh Update Test] After update (data preserved):');
+    console.log('  blockStorage:', JSON.stringify(blockDump3?.blockStorage?.data, null, 2));
+
+    // Check the corrupted state
+    const blockState3 = await prj.getBlockState(block1Id).awaitStableValue();
+    console.log('[Fresh Update Test] Preserved state:', blockState3.data);
+
+    // With correct dataVersion=3, migration should NOT run
+    // Data should be preserved exactly as the user set it
+    expect(blockState3.data).toStrictEqual({
+      numbers: [1, 2, 3],
+      labels: ['my-label'], // Should be preserved, NOT overwritten
+      description: 'My description', // Should be preserved, NOT overwritten
     });
 
     await projectWatcher.abort();
