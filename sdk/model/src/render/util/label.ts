@@ -158,12 +158,14 @@ export function deriveLabels<T>(
     return result;
   };
 
-  // Checks if a result has all unique labels
-  const hasUniqueLabels = (result: RecordsWithLabel<T>[] | undefined): boolean =>
-    result !== undefined && new Set(result.map((c) => c.label)).size === values.length;
+  const countUniqueLabels = (result: RecordsWithLabel<T>[] | undefined): number =>
+    result === undefined ? 0 : new Set(result.map((c) => c.label)).size;
 
   // Post-processing: try removing types one by one (lowest importance first) to minimize the label set
+  // Accepts removal if it doesn't decrease the number of unique labels (cardinality)
   const minimizeTypeSet = (typeSet: Set<string>): Set<string> => {
+    const currentCardinality = countUniqueLabels(calculate(typeSet));
+
     // Get types sorted by importance ascending (lowest first), excluding forced elements
     const removableSorted = [...typeSet]
       .filter((t) =>
@@ -175,7 +177,7 @@ export function deriveLabels<T>(
       const reducedSet = new Set(typeSet);
       reducedSet.delete(typeToRemove);
       const candidateResult = calculate(reducedSet);
-      if (hasUniqueLabels(candidateResult)) {
+      if (countUniqueLabels(candidateResult) >= currentCardinality) {
         typeSet.delete(typeToRemove);
       }
     }
@@ -207,7 +209,7 @@ export function deriveLabels<T>(
 
     const candidateResult = calculate(currentSet);
 
-    if (hasUniqueLabels(candidateResult)) {
+    if (candidateResult !== undefined && countUniqueLabels(candidateResult) === values.length) {
       minimizeTypeSet(currentSet);
       return calculate(currentSet)!;
     }
