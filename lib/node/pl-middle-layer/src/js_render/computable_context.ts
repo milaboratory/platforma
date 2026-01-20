@@ -519,7 +519,8 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         exportCtxFunction('args', () => {
           if (this.computableCtx === undefined)
             throw new Error(`Add dummy call to ctx.args outside the future lambda. Can't be directly used in this context.`);
-          return vm.newString(this.blockCtx.args(this.computableCtx));
+          const args = this.blockCtx.args(this.computableCtx);
+          return args === undefined ? vm.undefined : vm.newString(args);
         });
         exportCtxFunction('data', () => {
           if (this.computableCtx === undefined)
@@ -544,7 +545,9 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         const args = this.blockCtx.args(this.computableCtx!);
         const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
         const data = this.blockCtx.data(this.computableCtx!);
-        vm.setProp(configCtx, 'args', localScope.manage(vm.newString(args)));
+        if (args !== undefined) {
+          vm.setProp(configCtx, 'args', localScope.manage(vm.newString(args)));
+        }
         vm.setProp(configCtx, 'data', localScope.manage(vm.newString(data ?? '{}')));
         if (activeArgs !== undefined)
           vm.setProp(configCtx, 'activeArgs', localScope.manage(vm.newString(activeArgs)));

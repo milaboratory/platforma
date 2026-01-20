@@ -682,12 +682,13 @@ export abstract class RenderCtxBase<Args, Data> {
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) for v3+ blocks */
 export class RenderCtx<Args, Data> extends RenderCtxBase<Args, Data> {
-  private _argsCache?: { v: Args };
+  private _argsCache?: { v: Args | undefined };
   public get args(): Args | undefined {
     if (this._argsCache === undefined) {
       const raw = this.ctx.args;
       const value = typeof raw === 'function' ? raw() : raw;
-      this._argsCache = { v: JSON.parse(value) };
+      // args can be undefined when derivation fails (e.g., validation error in args())
+      this._argsCache = { v: value === undefined ? undefined : JSON.parse(value) };
     }
     return this._argsCache.v;
   }

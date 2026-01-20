@@ -15,7 +15,7 @@ import { isBlockStorage, getStorageData } from '@platforma-sdk/model';
 
 export type BlockContextArgsOnly = {
   readonly blockId: string;
-  readonly args: (cCtx: ComputableCtx) => string;
+  readonly args: (cCtx: ComputableCtx) => string | undefined;
   readonly activeArgs: (cCtx: ComputableCtx) => string | undefined;
   readonly blockMeta: (cCtx: ComputableCtx) => Map<string, Block>;
   readonly data: (cCtx: ComputableCtx) => string | undefined;
@@ -34,17 +34,17 @@ export function constructBlockContextArgsOnly(
   projectEntry: PlTreeEntry,
   blockId: string,
 ): BlockContextArgsOnly {
-  const args = (cCtx: ComputableCtx) =>
-    cachedDecode(notEmpty(
-      cCtx
-        .accessor(projectEntry)
-        .node()
-        .traverse({
-          field: projectFieldName(blockId, 'currentArgs'),
-          errorIfFieldNotSet: true,
-        })
-        .getData(),
-    ));
+  const args = (cCtx: ComputableCtx) => {
+    const data = cCtx
+      .accessor(projectEntry)
+      .node()
+      .traverse({
+        field: projectFieldName(blockId, 'currentArgs'),
+        stableIfNotFound: true,
+      })
+      ?.getData();
+    return data ? cachedDecode(data) : undefined;
+  };
   const activeArgs = (cCtx: ComputableCtx) => {
     const data = cCtx
       .accessor(projectEntry)

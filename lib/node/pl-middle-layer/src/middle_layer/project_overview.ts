@@ -34,7 +34,7 @@ import { resourceIdToString, type ResourceId } from '@milaboratories/pl-client';
 import * as R from 'remeda';
 
 type BlockInfo = {
-  argsRid: ResourceId;
+  argsRid?: ResourceId;
   currentArguments: unknown;
   prod?: ProdState;
 };
@@ -85,9 +85,9 @@ export function projectOverview(
         const cInputs = prj.traverse({
           field: projectFieldName(id, 'currentArgs'),
           assertFieldType: 'Dynamic',
-          errorIfFieldNotSet: true,
+          stableIfNotFound: true,
         });
-        const currentArguments = cInputs.getDataAsJson() as Record<string, unknown>;
+        const currentArguments = cInputs?.getDataAsJson<Record<string, unknown>>();
 
         let prod: ProdState | undefined = undefined;
 
@@ -127,7 +127,7 @@ export function projectOverview(
           };
         }
 
-        infos.set(id, { currentArguments, prod, argsRid: cInputs.resourceInfo.id });
+        infos.set(id, { currentArguments, prod, argsRid: cInputs?.resourceInfo.id });
       }
 
       const currentGraph = productionGraph(structure, (id) => {
@@ -136,7 +136,13 @@ export function projectOverview(
         const args = bInfo.currentArguments;
         return {
           args,
-          enrichmentTargets: env.projectHelper.getEnrichmentTargets(() => bpInfo.cfg, () => args, { argsRid: bInfo.argsRid, blockPackRid: bpInfo.bpResourceId }),
+          enrichmentTargets: bInfo.argsRid
+            ? env.projectHelper.getEnrichmentTargets(
+              () => bpInfo.cfg,
+              () => args,
+              { argsRid: bInfo.argsRid, blockPackRid: bpInfo.bpResourceId },
+            )
+            : undefined,
         };
       });
 
@@ -233,22 +239,10 @@ export function projectOverview(
                     },
                   }) as ComputableStableDefined<string[]>,
               ),
-              // inputsValid from config (only for V3 and earlier blocks)
-              // V4 blocks derive inputsValid from args() success/failure, stored in pl-tree
+              // inputsValid: for modelAPIVersion 2, it's true if currentArgs exists (args derivation succeeded)
+              // For older blocks, use the inputsValid callback from config
               inputsValid: cfg.modelAPIVersion === 2
-                ? (() => {
-                    // Read inputsValid field (set during setState when args derivation is used)
-                    // If inputsValid is false, the block can't run
-                    const inputsValidNode = prj.traverse({
-                      field: projectFieldName(id, 'inputsValid'),
-                      assertFieldType: 'Dynamic',
-                      stableIfNotFound: true,
-                    });
-                    const inputsValidFromField = inputsValidNode !== undefined
-                      ? inputsValidNode.getDataAsJson() as boolean
-                      : undefined;
-                    return inputsValidFromField;
-                  })()
+                ? info.currentArguments !== undefined
                 : cfg.inputsValid
                   ? computableFromCfgOrRF(
                     env,

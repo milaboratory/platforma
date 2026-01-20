@@ -103,7 +103,6 @@ export interface ProjectField {
     | 'blockPack'
     | 'blockSettings'
     | 'blockStorage' // Persistent storage for v3 blocks (state, plugins data, etc.)
-    | 'inputsValid' // Whether args derivation succeeded (v3 blocks) - stored for backward compatibility
     | 'prodArgs'
     | 'currentArgs'
     | 'currentPreRunArgs' // Derived args for staging/pre-run rendering (from preRunArgs() or args())
