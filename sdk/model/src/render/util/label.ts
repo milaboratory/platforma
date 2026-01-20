@@ -164,7 +164,11 @@ export function deriveLabels<T>(
   // Post-processing: try removing types one by one (lowest importance first) to minimize the label set
   // Accepts removal if it doesn't decrease the number of unique labels (cardinality)
   const minimizeTypeSet = (typeSet: Set<string>): Set<string> => {
-    const currentCardinality = countUniqueLabels(calculate(typeSet));
+    const initialResult = calculate(typeSet);
+    if (initialResult === undefined) {
+      return typeSet;
+    }
+    const currentCardinality = countUniqueLabels(initialResult);
 
     // Get types sorted by importance ascending (lowest first), excluding forced elements
     const removableSorted = [...typeSet]
@@ -177,7 +181,7 @@ export function deriveLabels<T>(
       const reducedSet = new Set(typeSet);
       reducedSet.delete(typeToRemove);
       const candidateResult = calculate(reducedSet);
-      if (countUniqueLabels(candidateResult) >= currentCardinality) {
+      if (candidateResult !== undefined && countUniqueLabels(candidateResult) >= currentCardinality) {
         typeSet.delete(typeToRemove);
       }
     }
