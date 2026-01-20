@@ -31,7 +31,8 @@ test('simple test #1', async () => {
       mut.addBlock(
         { id: 'block1', label: 'Block1', renderingMode: 'Heavy' },
         {
-          state: JSON.stringify({ args: { numbers: [1, 2, 3] } }),
+          storageMode: 'legacy',
+          legacyState: JSON.stringify({ args: { numbers: [1, 2, 3] } }),
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
         }
       );
@@ -44,8 +45,8 @@ test('simple test #1', async () => {
       mut.addBlock(
         { id: 'block2', label: 'Block2', renderingMode: 'Heavy' },
         {
-          // args: JSON.stringify({ numbers: [3, 4, 5] }),
-          state: JSON.stringify({ args: { numbers: [3, 4, 5] } }),
+          storageMode: 'legacy',
+          legacyState: JSON.stringify({ args: { numbers: [3, 4, 5] } }),
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
         }
       );
@@ -59,7 +60,8 @@ test('simple test #1', async () => {
       mut.addBlock(
         { id: 'block3', label: 'Block3', renderingMode: 'Heavy' },
         {
-          state: JSON.stringify({ 
+          storageMode: 'legacy',
+          legacyState: JSON.stringify({ 
             args: { sources: [outputRef('block1', 'column'), outputRef('block2', 'column')] }, 
             uiState: {"some":2} 
           }),
@@ -187,21 +189,24 @@ test('simple test #2 with bp migration', async () => {
       mut.addBlock(
         { id: 'block1', label: 'Block1', renderingMode: 'Heavy' },
         {
-          state: JSON.stringify({ args: { numbers: [1, 2, 3] } }),
+          storageMode: 'legacy',
+          legacyState: JSON.stringify({ args: { numbers: [1, 2, 3] } }),
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
         }
       );
       mut.addBlock(
         { id: 'block2', label: 'Block2', renderingMode: 'Heavy' },
         {
-          state: JSON.stringify({ args: { numbers: [3, 4, 5] } }),
+          storageMode: 'legacy',
+          legacyState: JSON.stringify({ args: { numbers: [3, 4, 5] } }),
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
         }
       );
       mut.addBlock(
         { id: 'block3', label: 'Block3', renderingMode: 'Heavy' },
         {
-          state: JSON.stringify({ args: { sources: [outputRef('block1', 'column'), outputRef('block2', 'column')] }, uiState: {"some":2} }),
+          storageMode: 'legacy',
+          legacyState: JSON.stringify({ args: { sources: [outputRef('block1', 'column'), outputRef('block2', 'column')] }, uiState: {"some":2} }),
           blockPack: await TestBPPreparer.prepare(BPSpecSumV042NotPrepared)
         }
       );

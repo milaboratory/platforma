@@ -240,5 +240,102 @@ tryRegisterCallback('__storage_migrate', (currentStorageJson: string | undefined
   return migrateStorage(currentStorageJson);
 });
 
+// =============================================================================
+// Args Derivation from Storage
+// =============================================================================
+
+/**
+ * Result of args derivation from storage.
+ * Returned by __args_fromStorage and __preRunArgs_fromStorage callbacks.
+ */
+export type ArgsDeriveResult =
+  | { error: string }
+  | { error?: undefined; value: unknown };
+
+/**
+ * Derives args from storage using the registered 'args' callback.
+ * This extracts data from storage and passes it to the block's args() function.
+ *
+ * @param storageJson - Storage as JSON string
+ * @returns ArgsDeriveResult with derived args or error
+ */
+function deriveArgsFromStorage(storageJson: string): ArgsDeriveResult {
+  const ctx = tryGetCfgRenderCtx();
+  if (ctx === undefined) {
+    return { error: 'Not in config rendering context' };
+  }
+
+  // Extract data from storage
+  const { data } = normalizeStorage(storageJson);
+
+  // Get the args callback (registered by BlockModelV3.args())
+  const argsCallback = ctx.callbackRegistry['args'] as ((data: unknown) => unknown) | undefined;
+  if (typeof argsCallback !== 'function') {
+    return { error: 'args callback not found' };
+  }
+
+  // Call the args callback with extracted data
+  try {
+    const result = argsCallback(data);
+    return { value: result };
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    return { error: `args() threw: ${errorMsg}` };
+  }
+}
+
+// Register args from storage callback
+tryRegisterCallback('__args_fromStorage', (storageJson: string) => {
+  return deriveArgsFromStorage(storageJson);
+});
+
+/**
+ * Derives preRunArgs from storage using the registered 'preRunArgs' callback.
+ * Falls back to 'args' callback if 'preRunArgs' is not defined.
+ *
+ * @param storageJson - Storage as JSON string
+ * @returns ArgsDeriveResult with derived preRunArgs or error
+ */
+function derivePreRunArgsFromStorage(storageJson: string): ArgsDeriveResult {
+  const ctx = tryGetCfgRenderCtx();
+  if (ctx === undefined) {
+    return { error: 'Not in config rendering context' };
+  }
+
+  // Extract data from storage
+  const { data } = normalizeStorage(storageJson);
+
+  // Try preRunArgs callback first
+  const preRunArgsCallback = ctx.callbackRegistry['preRunArgs'] as ((data: unknown) => unknown) | undefined;
+  if (typeof preRunArgsCallback === 'function') {
+    try {
+      const result = preRunArgsCallback(data);
+      return { value: result };
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      return { error: `preRunArgs() threw: ${errorMsg}` };
+    }
+  }
+
+  // Fall back to args callback
+  const argsCallback = ctx.callbackRegistry['args'] as ((data: unknown) => unknown) | undefined;
+  if (typeof argsCallback !== 'function') {
+    return { error: 'args callback not found (fallback from missing preRunArgs)' };
+  }
+
+  try {
+    const result = argsCallback(data);
+    return { value: result };
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    return { error: `args() threw (fallback): ${errorMsg}` };
+  }
+}
+
+// Register preRunArgs from storage callback
+tryRegisterCallback('__preRunArgs_fromStorage', (storageJson: string) => {
+  return derivePreRunArgsFromStorage(storageJson);
+});
+
 // Export discriminator key and schema version for external checks
 export { BLOCK_STORAGE_KEY, BLOCK_STORAGE_SCHEMA_VERSION };

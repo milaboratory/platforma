@@ -39,17 +39,19 @@ test('v3 blocks: basic test with unified state', async () => {
       return await toGlobalResourceId(prjRef);
     });
 
-    // Add enter-numbers-v3 block with unified state format
+    // Add enter-numbers-v3 block with storageMode: 'fromModel'
+    // Initial storage comes from VM, then we set desired state via setStates
     await pl.withWriteTx('AddEnterNumbersV3Block', async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
         { id: 'enter1', label: 'Enter Numbers V3', renderingMode: 'Heavy' },
         {
-          // V3 unified state format: direct state object
-          state: JSON.stringify({ numbers: [1, 2, 3] }),
+          storageMode: 'fromModel',
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV3)
         }
       );
+      // Set initial test data
+      mut.setStates([{ blockId: 'enter1', state: { numbers: [1, 2, 3] } }]);
       mut.save();
       await tx.commit();
     });
@@ -68,10 +70,11 @@ test('v3 blocks: basic test with unified state', async () => {
       mut.addBlock(
         { id: 'enter2', label: 'Enter Numbers V3 #2', renderingMode: 'Heavy' },
         {
-          state: JSON.stringify({ numbers: [4, 5, 6] }),
+          storageMode: 'fromModel',
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV3)
         }
       );
+      mut.setStates([{ blockId: 'enter2', state: { numbers: [4, 5, 6] } }]);
       mut.doRefresh();
       mut.save();
       await tx.commit();
@@ -83,13 +86,15 @@ test('v3 blocks: basic test with unified state', async () => {
       mut.addBlock(
         { id: 'sum1', label: 'Sum Numbers V3', renderingMode: 'Heavy' },
         {
-          // V3 unified state: sources field with references to upstream blocks
-          state: JSON.stringify({
-            sources: [outputRef('enter1', 'numbers'), outputRef('enter2', 'numbers')]
-          }),
+          storageMode: 'fromModel',
           blockPack: await TestBPPreparer.prepare(BPSpecSumV3)
         }
       );
+      // Set sources to reference upstream blocks
+      mut.setStates([{
+        blockId: 'sum1',
+        state: { sources: [outputRef('enter1', 'numbers'), outputRef('enter2', 'numbers')] }
+      }]);
       mut.doRefresh();
       mut.save();
       await tx.commit();
@@ -149,11 +154,12 @@ test('v3 blocks: preRunArgs skip test', async () => {
       mut.addBlock(
         { id: 'enter1', label: 'Enter Numbers V3', renderingMode: 'Heavy' },
         {
-          // Initial state: [3, 1, 2] - has one even number (2)
-          state: JSON.stringify({ numbers: [3, 1, 2] }),
+          storageMode: 'fromModel',
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV3)
         }
       );
+      // Set initial state: [3, 1, 2] - has one even number (2)
+      mut.setStates([{ blockId: 'enter1', state: { numbers: [3, 1, 2] } }]);
       mut.doRefresh();
       mut.save();
       await tx.commit();

@@ -188,17 +188,10 @@ export class Project {
     const blockCfgContainer = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
     const blockCfg = extractConfig(blockCfgContainer); // full content of this var should never be persisted
 
-    // Determine initial state and args based on block config version (discriminated union)
-    let initialData: unknown;
-
-    if (blockCfg.modelAPIVersion === 2) {
-      // Get initial data by calling VM lambda
-      initialData = this.env.projectHelper.getInitialDataInVM(blockCfg);
-    } else {
-      // model API v1
-      // derivedArgs = blockCfg.initialArgs;
-      initialData = { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState };
-    }
+    // Build NewBlockSpec based on model API version
+    const newBlockSpec = blockCfg.modelAPIVersion === 2
+      ? { storageMode: 'fromModel' as const, blockPack: preparedBp }
+      : { storageMode: 'legacy' as const, blockPack: preparedBp, legacyState: canonicalize({ args: blockCfg.initialArgs, uiState: blockCfg.initialUiState })! };
 
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
       return mut.addBlock(
@@ -207,10 +200,7 @@ export class Project {
           label: blockLabel,
           renderingMode: blockCfg.renderingMode,
         },
-        {
-          state: canonicalize(initialData) ?? '{}',
-          blockPack: preparedBp,
-        },
+        newBlockSpec,
         before,
       );
     },
@@ -267,15 +257,17 @@ export class Project {
   ): Promise<void> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfg = extractConfig(await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec));
-    // Get initial state based on config version
-    const initialState = blockCfg.modelAPIVersion === 2
-      ? this.env.projectHelper.getInitialDataInVM(blockCfg)
-      : { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState };
+    // resetState signals to mutator to reset storage
+    // For v2+ blocks: mutator gets initial storage directly via getInitialStorageInVM
+    // For v1 blocks: we pass the legacy state format
+    const resetState = resetArgs
+      ? { state: blockCfg.modelAPIVersion === 2 ? {} : { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState } }
+      : undefined;
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
       mut.migrateBlockPack(
         blockId,
         preparedBp,
-        resetArgs ? { state: initialState } : undefined,
+        resetState,
       ),
     { name: 'updateBlockPack', lockId: this.projectLockId },
     );
@@ -451,12 +443,16 @@ export class Project {
       );
       const bpData = await tx.getResourceData(bpRid, false);
       const config = extractConfig(cachedDeserialize<BlockPackInfo>(notEmpty(bpData.data)).config);
-      // Get initial state based on config version
-      const initialState = config.modelAPIVersion === 2
-        ? this.env.projectHelper.getInitialDataInVM(config)
-        : { args: config.initialArgs, uiState: config.initialUiState };
+
       await withProjectAuthored(this.env.projectHelper, tx, this.rid, author, (prj) => {
-        prj.setStates([{ blockId, state: initialState }]);
+        if (config.modelAPIVersion === 2) {
+          // V2+: Reset to initial storage via VM
+          prj.resetToInitialStorage(blockId);
+        } else {
+          // V1: Use legacy state format
+          const initialState = { args: config.initialArgs, uiState: config.initialUiState };
+          prj.setStates([{ blockId, state: initialState }]);
+        }
       }, { name: 'resetBlockArgsAndUiState', lockId: this.projectLockId });
       await tx.commit();
     });

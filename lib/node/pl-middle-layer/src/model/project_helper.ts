@@ -38,9 +38,18 @@ const STORAGE_NORMALIZE_HANDLE: ConfigRenderLambda = { __renderLambda: true, han
 const STORAGE_APPLY_UPDATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__storage_applyUpdate' };
 const STORAGE_GET_INFO_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__storage_getInfo' };
 const STORAGE_MIGRATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__storage_migrate' };
-const INITIAL_DATA_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: 'initialData' };
+const ARGS_FROM_STORAGE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__args_fromStorage' };
+const PRE_RUN_ARGS_FROM_STORAGE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__preRunArgs_fromStorage' };
 // Registered by DataModel.registerCallbacks()
 const INITIAL_STORAGE_JSON_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: 'initialStorageJson' };
+
+/**
+ * Result of args derivation from storage.
+ * Returned by __args_fromStorage and __preRunArgs_fromStorage VM callbacks.
+ */
+type ArgsDeriveResult =
+  | { error: string }
+  | { error?: undefined; value: unknown };
 
 export class ProjectHelper {
   private readonly enrichmentTargetsCache = new LRUCache<string, EnrichmentTargetsValue, EnrichmentTargetsRequest>({
@@ -52,54 +61,69 @@ export class ProjectHelper {
 
   constructor(private readonly quickJs: QuickJSWASMModule) {}
 
+  // =============================================================================
+  // Args Derivation from Storage (V3+)
+  // =============================================================================
+
   /**
-   * Executes the config.args() callback to derive args from state.
-   * The callback is defined in block model as:
-   *   .args<BlockArgs>((ctx) => ({ numbers: ctx.state.numbers }))
+   * Derives args directly from storage JSON using VM callback.
+   * The VM extracts data from storage and calls the block's args() function.
    *
-   * @param blockConfig The block configuration containing the args lambda
-   * @param state The block state to derive args from (v3 format: direct state object)
-   * @returns The derived args object, or undefined if no args lambda or derivation fails
+   * This allows the middle layer to work only with storage JSON,
+   * without needing to know the underlying data structure.
+   *
+   * @param blockConfig The block configuration (provides the model code)
+   * @param storageJson Storage as JSON string
+   * @returns The derived args object, or error if derivation fails
    */
-  public deriveArgsFromState(blockConfig: BlockConfig, state: unknown): ResultOrError<unknown> {
+  public deriveArgsFromStorage(blockConfig: BlockConfig, storageJson: string): ResultOrError<unknown> {
     if (blockConfig.modelAPIVersion !== 2) {
-      return { error: new Error('deriveArgsFromState is only supported for model API version 2') };
+      return { error: new Error('deriveArgsFromStorage is only supported for model API version 2') };
     }
 
-    // args is always a ConfigRenderLambda in V4 config (BlockModelV3)
-    const argsLambda = blockConfig.args;
-
     try {
-      const value = executeSingleLambda(this.quickJs, argsLambda, extractCodeWithInfo(blockConfig), state);
-      return { value };
+      const result = executeSingleLambda(
+        this.quickJs,
+        ARGS_FROM_STORAGE_HANDLE,
+        extractCodeWithInfo(blockConfig),
+        storageJson,
+      ) as ArgsDeriveResult;
+
+      if (result.error !== undefined) {
+        return { error: new Error(result.error) };
+      }
+      return { value: result.value };
     } catch (e) {
-      return { error: new Error('Args derivation failed', { cause: ensureError(e) }) };
+      return { error: new Error('Args derivation from storage failed', { cause: ensureError(e) }) };
     }
   }
 
   /**
-   * Executes the config.preRunArgs() callback to derive pre-run args from state.
-   * Falls back to deriveArgsFromState() if preRunArgs is not defined.
+   * Derives preRunArgs directly from storage JSON using VM callback.
+   * Falls back to args() if preRunArgs is not defined in the block model.
    *
-   * If the model does not define a preRunArgs method, defaults to using args.
-   * If preRunArgs is defined, uses its return value for the staging / pre-run phase.
-   *
-   * @param blockConfig The block configuration containing the preRunArgs lambda
-   * @param state The block state to derive pre-run args from
-   * @returns The derived pre-run args, or undefined if derivation fails
+   * @param blockConfig The block configuration (provides the model code)
+   * @param storageJson Storage as JSON string
+   * @returns The derived preRunArgs, or undefined if derivation fails
    */
-  public derivePreRunArgsFromState(blockConfig: BlockConfig, state: unknown): unknown {
+  public derivePreRunArgsFromStorage(blockConfig: BlockConfig, storageJson: string): unknown {
     if (blockConfig.modelAPIVersion !== 2) {
-      throw new Error('derivePreRunArgsFromState is only supported for model API version 2');
+      throw new Error('derivePreRunArgsFromStorage is only supported for model API version 2');
     }
-    // Check for preRunArgs lambda in v4 config (BlockModelV3)
-    const preRunArgsLambda = blockConfig.preRunArgs;
-    if (preRunArgsLambda === undefined) {
-      // Fall back to args() if preRunArgs not defined
-      return this.deriveArgsFromState(blockConfig, state);
-    }
+
     try {
-      return executeSingleLambda(this.quickJs, preRunArgsLambda, extractCodeWithInfo(blockConfig), state);
+      const result = executeSingleLambda(
+        this.quickJs,
+        PRE_RUN_ARGS_FROM_STORAGE_HANDLE,
+        extractCodeWithInfo(blockConfig),
+        storageJson,
+      ) as ArgsDeriveResult;
+
+      if (result.error !== undefined) {
+        // Return undefined if derivation fails (skip block in staging)
+        return undefined;
+      }
+      return result.value;
     } catch {
       // Return undefined if derivation fails (skip block in staging)
       return undefined;
@@ -120,34 +144,6 @@ export class ProjectHelper {
       return this.calculateEnrichmentTargets(req);
     const cacheKey = `${key.argsRid}:${key.blockPackRid}`;
     return this.enrichmentTargetsCache.memo(cacheKey, { context: req }).value;
-  }
-
-  // =============================================================================
-  // Initial Data
-  // =============================================================================
-
-  /**
-   * Gets the initial data for a block by executing the initialData lambda in the VM.
-   * This is called when a new block is added to the project.
-   *
-   * @param blockConfig The block configuration (provides the model code)
-   * @returns The initial data object
-   */
-  public getInitialDataInVM(blockConfig: BlockConfig): unknown {
-    if (blockConfig.modelAPIVersion !== 2) {
-      throw new Error('getInitialDataInVM is only supported for model API version 2');
-    }
-    try {
-      const result = executeSingleLambda(
-        this.quickJs,
-        INITIAL_DATA_HANDLE,
-        extractCodeWithInfo(blockConfig),
-      );
-      return result;
-    } catch (e) {
-      console.error('[ProjectHelper.getInitialDataInVM] Failed to get initial data:', e);
-      throw new Error(`Failed to get initial data: ${e}`);
-    }
   }
 
   // =============================================================================

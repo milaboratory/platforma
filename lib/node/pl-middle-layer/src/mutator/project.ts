@@ -250,10 +250,14 @@ class BlockInfo {
   }
 }
 
-export interface NewBlockSpec {
-  blockPack: BlockPackSpecPrepared;
-  state: string;
-}
+/**
+ * Specification for creating a new block.
+ * Discriminated union based on `storageMode`.
+ */
+/** Specification for creating a new block. Discriminated union based on `storageMode`. */
+export type NewBlockSpec =
+  | { storageMode: 'fromModel'; blockPack: BlockPackSpecPrepared }
+  | { storageMode: 'legacy'; blockPack: BlockPackSpecPrepared; legacyState: string };
 
 const NoNewBlocks = (blockId: string) => {
   throw new Error(`No new block info for ${blockId}`);
@@ -581,6 +585,42 @@ export class ProjectMutator {
     this.updateLastModified();
   }
 
+  /**
+   * Resets a v2+ block to its initial storage state.
+   * Gets initial storage from VM and derives args from it.
+   *
+   * For v1 blocks, use setStates() instead.
+   *
+   * @param blockId The block to reset
+   */
+  public resetToInitialStorage(blockId: string): void {
+    const info = this.getBlockInfo(blockId);
+    const blockConfig = info.config;
+
+    if (blockConfig.modelAPIVersion !== 2) {
+      throw new Error('resetToInitialStorage is only supported for model API version 2');
+    }
+
+    // Get initial storage from VM
+    const initialStorageJson = this.projectHelper.getInitialStorageInVM(blockConfig);
+    this.setBlockStorageRaw(blockId, initialStorageJson);
+
+    // Derive args from storage
+    const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(blockConfig, initialStorageJson);
+    if (deriveArgsResult.error) {
+      this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValue({}));
+      this.setBlockFieldObj(blockId, 'inputsValid', this.createJsonFieldValue(false));
+    } else {
+      this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValue(deriveArgsResult.value));
+      this.setBlockFieldObj(blockId, 'inputsValid', this.createJsonFieldValue(true));
+      // Derive preRunArgs from storage
+      const preRunArgs = this.projectHelper.derivePreRunArgsFromStorage(blockConfig, initialStorageJson);
+      if (preRunArgs !== undefined) {
+        this.setBlockFieldObj(blockId, 'currentPreRunArgs', this.createJsonFieldValue(preRunArgs));
+      }
+    }
+  }
+
   /** Optimally sets inputs for multiple blocks in one go */
   public setStates(requests: SetStatesRequest[]) {
     const changedArgs: string[] = [];
@@ -593,12 +633,18 @@ export class ProjectMutator {
       // modelAPIVersion === 2 means BlockModelV3 with .args() lambda for deriving args
       const usesArgsDeriv = blockConfig.modelAPIVersion === 2;
 
+      // Derive args from storage using the block's config.args() callback
+      let args: unknown;
+      let preRunArgs: unknown;
+      let argsValid = true; // Track whether args derivation succeeded
+
       if (usesArgsDeriv) {
         const currentStorageJson = info.blockStorageJson;
         if (currentStorageJson === undefined) {
           throw new Error(`Block ${req.blockId} has no blockStorage - this should not happen`);
         }
 
+        // Apply the state update to storage
         const updatedStorageJson = this.projectHelper.applyStorageUpdateInVM(
           blockConfig,
           currentStorageJson,
@@ -606,30 +652,22 @@ export class ProjectMutator {
         );
 
         this.setBlockFieldObj(req.blockId, 'blockStorage', this.createJsonFieldValueByContent(updatedStorageJson));
-      } else {
-        this.setBlockFieldObj(req.blockId, 'blockStorage', this.createJsonFieldValue(req.state));
-      }
 
-      // Derive args from state using the block's config.args() callback
-      let args: unknown;
-      let preRunArgs: unknown;
-      let argsValid = true; // Track whether args derivation succeeded
-
-      if (usesArgsDeriv) {
-        const derivedArgsResult = this.projectHelper.deriveArgsFromState(blockConfig, req.state);
+        // Derive args directly from storage (VM extracts data internally)
+        const derivedArgsResult = this.projectHelper.deriveArgsFromStorage(blockConfig, updatedStorageJson);
         if (derivedArgsResult.error) {
           args = {};
           preRunArgs = undefined;
           argsValid = false;
         } else {
-          const derivedArgs = derivedArgsResult.value;
-          args = derivedArgs;
+          args = derivedArgsResult.value;
           argsValid = true;
 
-          // Derive preRunArgs using preRunArgs() callback, or fall back to args
-          preRunArgs = this.projectHelper.derivePreRunArgsFromState(blockConfig, req.state);
+          // Derive preRunArgs from storage, or fall back to args
+          preRunArgs = this.projectHelper.derivePreRunArgsFromStorage(blockConfig, updatedStorageJson);
         }
       } else {
+        this.setBlockFieldObj(req.blockId, 'blockStorage', this.createJsonFieldValue(req.state));
         if (req.state !== null && typeof req.state === 'object' && 'args' in req.state) {
           args = (req.state as { args: unknown }).args;
         } else {
@@ -819,43 +857,39 @@ export class ProjectMutator {
       this.createJsonFieldValue(InitialBlockSettings),
     );
 
-    // Derive args from initialState using config.args() callback
-    // If args derivation fails (throws), inputsValid is set to false;
-
-    // Parse the initial state
-    const initialState = spec.state ? JSON.parse(spec.state) : {};
-
     const blockConfig = info.config;
-    // modelAPIVersion === 2 means BlockModelV3 with .args() lambda for deriving args
-    const usesArgsDeriv = blockConfig.modelAPIVersion === 2;
 
     let inputsValid = true;
     let args: unknown;
     let preRunArgs: unknown;
+    let storageToWrite: string;
 
-    if (usesArgsDeriv && blockConfig !== undefined) {
-      // Model API v2+: derive args from state using the args() callback
-      const deriveArgsResult = this.projectHelper.deriveArgsFromState(blockConfig, initialState);
+    if (spec.storageMode === 'fromModel') {
+      // Model API v2+: get initial storage and derive args from it
+      storageToWrite = this.projectHelper.getInitialStorageInVM(blockConfig);
+
+      // Derive args directly from storage (VM extracts data internally)
+      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(blockConfig, storageToWrite);
       if (deriveArgsResult.error) {
-        // Args derivation failed (threw exception) - block is not ready
         args = {};
         preRunArgs = undefined;
         inputsValid = false;
       } else {
         args = deriveArgsResult.value;
         inputsValid = true;
-        // Derive preRunArgs using preRunArgs() callback, or fall back to args
-        preRunArgs = this.projectHelper.derivePreRunArgsFromState(blockConfig, initialState);
+        preRunArgs = this.projectHelper.derivePreRunArgsFromStorage(blockConfig, storageToWrite);
       }
-    } else if (blockConfig.modelAPIVersion === 1) {
-      // Model API v1: use spec.args directly
-      args = JSON.parse(spec.state).args;
+    } else if (spec.storageMode === 'legacy') {
+      // Model API v1: use legacyState from spec
+      const parsedState = JSON.parse(spec.legacyState);
+      args = parsedState.args;
       if (args === undefined) {
-        throw new Error('args is undefined in the state for config version 3');
+        throw new Error('args is undefined in legacyState');
       }
-      preRunArgs = args; // For v1 blocks, preRunArgs = args
+      preRunArgs = args;
+      storageToWrite = spec.legacyState;
     } else {
-      throw new Error('Unknown model API version');
+      throw new Error(`Unknown storageMode: ${(spec as NewBlockSpec).storageMode}`);
     }
 
     // currentArgs
@@ -866,20 +900,15 @@ export class ProjectMutator {
       this.setBlockFieldObj(blockId, 'currentPreRunArgs', this.createJsonFieldValue(preRunArgs));
     }
 
-    // inputsValid - only set for Model API v2+ (with args derivation)
-    // For Model API v1, don't set this field so project_overview uses the argsValid callback
-    if (usesArgsDeriv) {
+    // inputsValid - only set for v2+ blocks (with args derivation from storage)
+    // For v1 blocks, don't set this field so project_overview uses the argsValid callback
+    if (spec.storageMode === 'fromModel') {
       const inputsValidData = canonicalJsonBytes(inputsValid);
       const inputsValidRef = this.tx.createValue(Pl.JsonBool, inputsValidData);
       this.setBlockField(blockId, 'inputsValid', inputsValidRef, 'Ready', inputsValidData);
     }
 
-    // blockStorage - use VM-based storage for V3+ blocks with correct version
-    let storageToWrite = spec.state ?? '{}';
-    if (usesArgsDeriv && blockConfig !== undefined) {
-      // Get initial storage with correct version directly from DataModel
-      storageToWrite = this.projectHelper.getInitialStorageInVM(blockConfig);
-    }
+    // blockStorage
     this.setBlockFieldObj(blockId, 'blockStorage', this.createJsonFieldValueByContent(storageToWrite));
 
     // checking structure
@@ -1101,7 +1130,33 @@ export class ProjectMutator {
 
     if (newClearState !== undefined) {
       // State is being reset - no migration needed
-      this.setStates([{ blockId, state: newClearState.state }]);
+      const supportsStorageFromVM = newConfig.modelAPIVersion === 2;
+
+      if (supportsStorageFromVM) {
+        // V2+: Get initial storage directly from VM and derive args from it
+        const initialStorageJson = this.projectHelper.getInitialStorageInVM(newConfig);
+        this.setBlockStorageRaw(blockId, initialStorageJson);
+
+        // Derive args from storage
+        const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(newConfig, initialStorageJson);
+        if (deriveArgsResult.error) {
+          this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValue({}));
+          this.setBlockFieldObj(blockId, 'inputsValid', this.createJsonFieldValue(false));
+        } else {
+          this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValue(deriveArgsResult.value));
+          this.setBlockFieldObj(blockId, 'inputsValid', this.createJsonFieldValue(true));
+          // Derive preRunArgs from storage
+          const preRunArgs = this.projectHelper.derivePreRunArgsFromStorage(newConfig, initialStorageJson);
+          if (preRunArgs !== undefined) {
+            this.setBlockFieldObj(blockId, 'currentPreRunArgs', this.createJsonFieldValue(preRunArgs));
+          }
+        }
+        this.blocksWithChangedInputs.add(blockId);
+        this.updateLastModified();
+      } else {
+        // V1: Use setStates with legacy state format
+        this.setStates([{ blockId, state: newClearState.state }]);
+      }
     } else {
       // State is being preserved - run migrations if needed via VM
       // Only Model API v2 blocks support migrations
