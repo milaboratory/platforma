@@ -9,7 +9,7 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
 
-hwSoftware := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:hello-world")
+hwSoftware := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
 
 self.defineOutputs(
 	"result"

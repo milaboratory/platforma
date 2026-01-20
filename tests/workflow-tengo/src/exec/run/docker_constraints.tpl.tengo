@@ -8,14 +8,22 @@ file := import("@platforma-sdk/workflow-tengo:file")
 
 self.defineOutputs(["main"])
 
-sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:stub-python-script")
+swMap := {
+	"docker-true-ep":  assets.importSoftware("@platforma-open/milaboratories.software-test-utils:docker-true-ep"),
+	"docker-true-cmd": assets.importSoftware("@platforma-open/milaboratories.software-test-utils:docker-true-cmd")
+}
 
 self.body(func(inputs) {
+	epName := inputs.epName
+	sw := swMap[epName]
+
+	/* Checks, that default limits are applied based
+	 * on queue block developer choses when bulding the command */
 	run := exec.builder().
-		cpu(1).ram("50Mi").
-        software(sw).
-		arg(inputs.text).
-		saveStdoutContent().
+		software(sw).
+		inLightQueue().
+		arg("false").
+		saveStdoutContent(). // always empty
 		run()
 
 	result := {

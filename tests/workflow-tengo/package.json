@@ -44,6 +44,7 @@
     "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "dedent": "catalog:",
-    "es-toolkit": "catalog:"
+    "es-toolkit": "catalog:",
+    "@platforma-open/milaboratories.software-test-utils": "catalog:"
   }
 }

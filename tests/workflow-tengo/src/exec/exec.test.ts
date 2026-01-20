@@ -28,6 +28,50 @@ tplTest.concurrent(
   },
 );
 
+/*
+ * Checks that we preserve original image entrypoint when executing software in docker
+ */
+tplTest.concurrent(
+  'check-docker-entrypoint-preserved',
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      'exec.run.docker_constraints',
+      ['main'],
+      (tx) => ({
+        epName: tx.createValue(Pl.JsonObject, JSON.stringify('docker-true-ep')),
+      }),
+    );
+    const mainResult = result.computeOutput('main', (a) =>
+      a?.getDataAsString(),
+    );
+
+    expect(await mainResult.awaitStableValue()).eq('\n');
+  },
+);
+
+/*
+ * Checks that we use cmd parameter from package.json when executing software in docker
+ */
+tplTest.concurrent(
+  'check-docker-cmd-preserved',
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      'exec.run.docker_constraints',
+      ['main'],
+      (tx) => ({
+        epName: tx.createValue(Pl.JsonObject, JSON.stringify('docker-true-cmd')),
+      }),
+    );
+    const mainResult = result.computeOutput('main', (a) =>
+      a?.getDataAsString(),
+    );
+
+    expect(await mainResult.awaitStableValue()).eq('\n');
+  },
+);
+
 tplTest.concurrent(
   'run-empty-conda-env',
   async ({ helper, expect }) => {
