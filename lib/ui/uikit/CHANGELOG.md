@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.10.3
+
+### Patch Changes
+
+- 601a869: PlDropdownMulti: don't show loading spinner when disabled
+
 ## 2.10.2
 
 ### Patch Changes
