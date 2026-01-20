@@ -170,6 +170,31 @@ test.each<{ name: string; traces: Trace[]; labels: string[] }>([
     ],
     // t1 alone distinguishes; t2 and t3 are redundant and should be removed
     labels: ['Unique1', 'Unique2']
+  },
+  {
+    name: 'fallback case: removes types that do not reduce cardinality',
+    traces: [
+      // Two columns with identical traces - cannot be distinguished
+      [
+        { type: 't1', importance: 100, label: 'A' },
+        { type: 't2', importance: 10, label: 'X' },
+        { type: 't3', importance: 1, label: 'Same' }
+      ],
+      [
+        { type: 't1', importance: 100, label: 'A' },
+        { type: 't2', importance: 10, label: 'X' },
+        { type: 't3', importance: 1, label: 'Same' }
+      ],
+      // Third column is different
+      [
+        { type: 't1', importance: 100, label: 'B' },
+        { type: 't2', importance: 10, label: 'Y' },
+        { type: 't3', importance: 1, label: 'Same' }
+      ]
+    ],
+    // Cannot achieve full uniqueness (2 columns are identical), but t3 (Same) can be removed
+    // since it doesn't help distinguish anything. t1 alone gives cardinality 2.
+    labels: ['A', 'A', 'B']
   }
 ])('test label minimization: $name', ({ traces, labels }) => {
   expect(deriveLabels(tracesToSpecs(traces), (s) => s).map((r) => r.label)).toEqual(labels);
