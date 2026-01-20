@@ -72,8 +72,8 @@ test('simple test #1', async () => {
       expect([...rendered]).toEqual(['block3']);
       // setStates requires complete unified state (not partial updates)
       mut.setStates([
-        { blockId: 'block2', state: { args: { numbers: [3, 4, 5] }, uiState: {"some":1} } },
-        { blockId: 'block3', state: { args: { sources: [outputRef('block1', 'column'), outputRef('block2', 'column')] }, uiState: {"some":2} } }
+        { modelAPIVersion: 1, blockId: 'block2', state: { args: { numbers: [3, 4, 5] }, uiState: {"some":1} } },
+        { modelAPIVersion: 1, blockId: 'block3', state: { args: { sources: [outputRef('block1', 'column'), outputRef('block2', 'column')] }, uiState: {"some":2} } }
       ]);
       mut.doRefresh();
       mut.save();

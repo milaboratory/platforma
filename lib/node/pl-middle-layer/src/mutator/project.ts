@@ -272,11 +272,17 @@ const NoNewBlocks = (blockId: string) => {
  * For v3 blocks: state is the block's state
  * For v1/v2 blocks: state should be { args, uiState } format
  */
-export interface SetStatesRequest {
+export type SetStatesRequest = {
   blockId: string;
   /** The unified state to set */
   state: unknown;
-}
+  modelAPIVersion: 1;
+} | {
+  blockId: string;
+  /** Storage operation payload - middle layer is agnostic to specific operations */
+  payload: { operation: string; value: unknown };
+  modelAPIVersion: 2;
+};
 
 export type ClearState = {
   state: unknown;
@@ -638,13 +644,16 @@ export class ProjectMutator {
 
       const blockConfig = info.config;
       // modelAPIVersion === 2 means BlockModelV3 with .args() lambda for deriving args
-      const usesArgsDeriv = blockConfig.modelAPIVersion === 2;
+
+      if (req.modelAPIVersion !== blockConfig.modelAPIVersion) {
+        throw new Error(`Model API version mismatch for block ${req.blockId}: ${req.modelAPIVersion} !== ${blockConfig.modelAPIVersion}`);
+      }
 
       // Derive args from storage using the block's config.args() callback
       let args: unknown;
       let preRunArgs: unknown;
 
-      if (usesArgsDeriv) {
+      if (req.modelAPIVersion === 2) {
         const currentStorageJson = info.blockStorageJson;
         if (currentStorageJson === undefined) {
           throw new Error(`Block ${req.blockId} has no blockStorage - this should not happen`);
@@ -654,7 +663,7 @@ export class ProjectMutator {
         const updatedStorageJson = this.projectHelper.applyStorageUpdateInVM(
           blockConfig,
           currentStorageJson,
-          req.state,
+          req.payload,
         );
 
         this.setBlockFieldObj(req.blockId, 'blockStorage', this.createJsonFieldValueByContent(updatedStorageJson));
@@ -1147,7 +1156,7 @@ export class ProjectMutator {
         this.updateLastModified();
       } else {
         // V1: Use setStates with legacy state format
-        this.setStates([{ blockId, state: newClearState.state }]);
+        this.setStates([{ modelAPIVersion: 1, blockId, state: newClearState.state }]);
       }
     } else {
       // State is being preserved - run migrations if needed via VM

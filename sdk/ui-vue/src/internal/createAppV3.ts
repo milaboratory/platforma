@@ -104,8 +104,7 @@ export function createAppV3<
   }>;
 
   const setBlockData = async (data: Data) => {
-    console.log('createAppV3 setBlockData data', data);
-    return platforma.setData(data, nextAuthorMarker());
+    return platforma.mutateStorage({ operation: 'update-data', value: data }, nextAuthorMarker());
   };
 
   const setNavigationState = async (state: NavigationState<Href>) => {

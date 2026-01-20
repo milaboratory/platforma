@@ -51,7 +51,14 @@ test('v3 blocks: basic test with unified state', async () => {
         }
       );
       // Set initial test data
-      mut.setStates([{ blockId: 'enter1', state: { numbers: [1, 2, 3] } }]);
+      mut.setStates([{ 
+        modelAPIVersion: 2, 
+        blockId: 'enter1', 
+        payload: { 
+          operation: 'update-data', 
+          value: { numbers: [1, 2, 3] } 
+        } 
+      }]);
       mut.save();
       await tx.commit();
     });
@@ -74,7 +81,14 @@ test('v3 blocks: basic test with unified state', async () => {
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV3)
         }
       );
-      mut.setStates([{ blockId: 'enter2', state: { numbers: [4, 5, 6] } }]);
+      mut.setStates([{ 
+        modelAPIVersion: 2, 
+        blockId: 'enter2', 
+        payload: { 
+          operation: 'update-data', 
+          value: { numbers: [4, 5, 6] } 
+        } 
+      }]);
       mut.doRefresh();
       mut.save();
       await tx.commit();
@@ -92,8 +106,12 @@ test('v3 blocks: basic test with unified state', async () => {
       );
       // Set sources to reference upstream blocks
       mut.setStates([{
+        modelAPIVersion: 2,
         blockId: 'sum1',
-        state: { sources: [outputRef('enter1', 'numbers'), outputRef('enter2', 'numbers')] }
+        payload: { 
+          operation: 'update-data', 
+          value: { sources: [outputRef('enter1', 'numbers'), outputRef('enter2', 'numbers')] } 
+        } 
       }]);
       mut.doRefresh();
       mut.save();
@@ -159,7 +177,14 @@ test('v3 blocks: preRunArgs skip test', async () => {
         }
       );
       // Set initial state: [3, 1, 2] - has one even number (2)
-      mut.setStates([{ blockId: 'enter1', state: { numbers: [3, 1, 2] } }]);
+      mut.setStates([{ 
+        modelAPIVersion: 2, 
+        blockId: 'enter1', 
+        payload: { 
+          operation: 'update-data', 
+          value: { numbers: [3, 1, 2] } 
+        } 
+      }]);
       mut.doRefresh();
       mut.save();
       await tx.commit();
@@ -184,8 +209,12 @@ test('v3 blocks: preRunArgs skip test', async () => {
     await pl.withWriteTx('ChangeState_SamePreRunArgs', async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.setStates([{
+        modelAPIVersion: 2,
         blockId: 'enter1',
-        state: { numbers: [5, 1, 2] }  // Changed odd numbers only
+        payload: { 
+          operation: 'update-data', 
+          value: { numbers: [5, 1, 2] } // Changed odd numbers only
+        }
       }]);
       mut.doRefresh();
       mut.save();
@@ -208,8 +237,12 @@ test('v3 blocks: preRunArgs skip test', async () => {
     await pl.withWriteTx('ChangeState_DifferentPreRunArgs', async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.setStates([{
+        modelAPIVersion: 2,
         blockId: 'enter1',
-        state: { numbers: [5, 1, 4] }  // Changed even number from 2 to 4
+        payload: { 
+          operation: 'update-data', 
+          value: { numbers: [5, 1, 4] }  // Changed even number from 2 to 4
+        }
       }]);
       mut.doRefresh();
       mut.save();

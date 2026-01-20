@@ -43,8 +43,9 @@ test('v3: preRunArgs fastNumbers test', { timeout: 10_000 }, async ({ expect }) 
     });
 
     // Set state with numbers - preRunArgs should derive fastNumbers
-    await prj.setData(enterNumberId, {
-      numbers: [3, 1, 2],
+    await prj.mutateBlockStorage(enterNumberId, {
+      operation: 'update-data',
+      value: { numbers: [3, 1, 2] },
     });
 
     await awaitOverview((blocks) => {
@@ -91,8 +92,9 @@ test('v3: preRunArgs fastNumbers test', { timeout: 10_000 }, async ({ expect }) 
     // ========== TEST: Staging should be SKIPPED when preRunArgs remains the same ==========
     console.log('\n=== TEST: Changing numbers but keeping same evenNumbers (should SKIP staging) ===');
     // Change [3, 1, 2] to [5, 1, 2] - evenNumbers stays [2], so staging should be skipped
-    await prj.setData(enterNumberId, {
-      numbers: [5, 1, 2], // odd numbers changed (3→5), but even numbers still just [2]
+    await prj.mutateBlockStorage(enterNumberId, {
+      operation: 'update-data',
+      value: { numbers: [5, 1, 2] }, // odd numbers changed (3→5), but even numbers still just [2]
     });
 
     // Wait a bit for any potential staging to process
@@ -110,8 +112,9 @@ test('v3: preRunArgs fastNumbers test', { timeout: 10_000 }, async ({ expect }) 
     // ========== TEST: Staging SHOULD run when preRunArgs changes ==========
     console.log('\n=== TEST: Changing numbers with different evenNumbers (should RENDER staging) ===');
     // Change [5, 1, 2] to [5, 1, 4] - evenNumbers changes from [2] to [4], staging should run
-    await prj.setData(enterNumberId, {
-      numbers: [5, 1, 4], // now even number is 4 instead of 2
+    await prj.mutateBlockStorage(enterNumberId, {
+      operation: 'update-data',
+      value: { numbers: [5, 1, 4] }, // now even number is 4 instead of 2
     });
 
     const blockState3 = await awaitBlockStateStable(prj, enterNumberId);
@@ -185,12 +188,14 @@ test('v3: project watcher test', { timeout: 20_000 }, async ({ expect }) => {
     });
 
     // v3 state format: direct state object (not wrapped in {args: ...})
-    await prj.setData(enterNumberId, {
-      numbers: [1, 2, 3],
+    await prj.mutateBlockStorage(enterNumberId, {
+      operation: 'update-data',
+      value: { numbers: [1, 2, 3] },
     });
 
-    await prj.setData(sumNumbersId, {
-      sources: [outputRef(enterNumberId, 'numbers')],
+    await prj.mutateBlockStorage(sumNumbersId, {
+      operation: 'update-data',
+      value: { sources: [outputRef(enterNumberId, 'numbers')] },
     });
 
     await awaitOverview((blocks) => {
@@ -223,8 +228,9 @@ test('v3: project watcher test', { timeout: 20_000 }, async ({ expect }) => {
       expect(sumNumbersBlock?.canRun).toBe(false);
     });
 
-    await prj.setData(enterNumberId, {
-      numbers: [2, 3],
+    await prj.mutateBlockStorage(enterNumberId, {
+      operation: 'update-data',
+      value: { numbers: [2, 3] },
     });
     await prj.runBlock(enterNumberId);
     await awaitBlockDone(prj, enterNumberId);

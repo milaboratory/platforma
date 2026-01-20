@@ -213,14 +213,14 @@ export class ProjectHelper {
    * @returns Updated storage as JSON string
    * @throws Error if storage update fails
    */
-  public applyStorageUpdateInVM(blockConfig: BlockConfig, currentStorageJson: string, newState: unknown): string {
+  public applyStorageUpdateInVM(blockConfig: BlockConfig, currentStorageJson: string, payload: { operation: string; value: unknown }): string {
     try {
       const result = executeSingleLambda(
         this.quickJs,
         STORAGE_APPLY_UPDATE_HANDLE,
         extractCodeWithInfo(blockConfig),
         currentStorageJson,
-        newState,
+        payload,
       ) as string;
       return result;
     } catch (e) {

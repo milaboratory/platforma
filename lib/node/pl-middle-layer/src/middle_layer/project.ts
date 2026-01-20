@@ -344,7 +344,7 @@ export class Project {
   public async setBlockArgs(blockId: string, args: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
       const state = mut.mergeBlockState(blockId, { args });
-      mut.setStates([{ blockId, state }]);
+      mut.setStates([{ modelAPIVersion: 1, blockId, state }]);
     }, { name: 'setBlockArgs', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
@@ -359,7 +359,7 @@ export class Project {
   public async setUiState(blockId: string, uiState: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
       const state = mut.mergeBlockState(blockId, { uiState });
-      mut.setStates([{ blockId, state }]);
+      mut.setStates([{ modelAPIVersion: 1, blockId, state }]);
     }, { name: 'setUiState', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
@@ -380,7 +380,7 @@ export class Project {
     // Normalize to unified state format { args, uiState } for v1/v2 blocks
     const state = { args, uiState };
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
-      mut.setStates([{ blockId, state }]);
+      mut.setStates([{ modelAPIVersion: 1, blockId, state }]);
     }, { name: 'setBlockArgsAndUiState', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
@@ -394,18 +394,19 @@ export class Project {
   }
 
   /**
-   * Sets the unified block data for Model API v3 blocks.
-   * This triggers args derivation (args(data) and preRunArgs(data)).
+   * Mutates block storage for Model API v3 blocks.
+   * Applies a storage operation (e.g., 'update-data') which triggers
+   * args derivation (args(data) and preRunArgs(data)).
    * The derived args are stored atomically with the data.
    *
    * @param blockId - The block ID
-   * @param data - The new unified block input data
+   * @param payload - Storage mutation payload with operation and value
    * @param author - Optional author marker for collaborative editing
    */
-  public async setData(blockId: string, data: unknown, author?: AuthorMarker) {
+  public async mutateBlockStorage(blockId: string, payload: { operation: string; value: unknown }, author?: AuthorMarker) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
-      mut.setStates([{ blockId, state: data }]),
-    { name: 'setData', lockId: this.projectLockId });
+      mut.setStates([{ modelAPIVersion: 2, blockId, payload }]),
+    { name: 'mutateBlockStorage', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
 
@@ -451,7 +452,7 @@ export class Project {
         } else {
           // V1: Use legacy state format
           const initialState = { args: config.initialArgs, uiState: config.initialUiState };
-          prj.setStates([{ blockId, state: initialState }]);
+          prj.setStates([{ modelAPIVersion: 1, blockId, state: initialState }]);
         }
       }, { name: 'resetBlockArgsAndUiState', lockId: this.projectLockId });
       await tx.commit();

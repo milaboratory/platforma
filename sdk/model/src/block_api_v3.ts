@@ -8,6 +8,7 @@ import type {
   BlockStateV3,
 } from '@milaboratories/pl-model-common';
 import type { Operation } from 'fast-json-patch';
+import type { MutateStoragePayload } from './block_storage';
 
 /** Defines methods to read and write current block data. */
 export interface BlockApiV3<
@@ -28,13 +29,13 @@ export interface BlockApiV3<
   getPatches(uTag: string): Promise<ResultOrError<ValueWithUTagAndAuthor<Operation[]>>>;
 
   /**
-   * Sets block's user data.
+   * Mutates block storage with the given operation.
    *
    * This method returns when the data is safely saved so in case the window is
    * closed there will be no information losses. This function under the hood
    * may delay actual persistence of the supplied values.
    * */
-  setData(data: Data, author?: AuthorMarker): Promise<ResultOrError<void>>;
+  mutateStorage(payload: MutateStoragePayload, author?: AuthorMarker): Promise<ResultOrError<void>>;
 
   /**
    * Sets block navigation state.

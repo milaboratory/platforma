@@ -118,18 +118,26 @@ export function getStorageData<TState>(storage: BlockStorage<TState>): TState {
   return storage.__data;
 }
 
+/** Payload for storage mutation operations. SDK defines specific operations. */
+export type MutateStoragePayload<T = unknown> = { operation: 'update-data'; value: T };
+
 /**
  * Updates the data in BlockStorage (immutable)
  *
  * @param storage - The current BlockStorage
- * @param data - The new data value
+ * @param payload - The update payload with operation and value
  * @returns A new BlockStorage with updated data
  */
-export function updateStorageData<TState>(
-  storage: BlockStorage<TState>,
-  data: TState,
-): BlockStorage<TState> {
-  return { ...storage, __data: data };
+export function updateStorageData<TValue = unknown>(
+  storage: BlockStorage<TValue>,
+  payload: MutateStoragePayload<TValue>,
+): BlockStorage<TValue> {
+  switch (payload.operation) {
+    case 'update-data':
+      return { ...storage, __data: payload.value };
+    default:
+      throw new Error(`Unknown storage operation: ${(payload as { operation: string }).operation}`);
+  }
 }
 
 /**
@@ -311,7 +319,7 @@ export const defaultBlockStorageHandlers: Required<BlockStorageHandlers<unknown>
   transformStateForStorage: <TState>(
     storage: BlockStorage<TState>,
     newState: TState,
-  ): BlockStorage<TState> => updateStorageData(storage, newState),
+  ): BlockStorage<TState> => updateStorageData(storage, { operation: 'update-data', value: newState }),
 
   deriveStateForArgs: <TState>(storage: BlockStorage<TState>): TState => getStorageData(storage),
 

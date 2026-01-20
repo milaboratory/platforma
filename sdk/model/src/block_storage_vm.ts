@@ -7,7 +7,7 @@
  *
  * Registered callbacks:
  * - `__storage_normalize`: (rawStorage) => { storage, state }
- * - `__storage_applyUpdate`: (currentStorageJson, newState) => updatedStorageJson
+ * - `__storage_applyUpdate`: (currentStorageJson, payload) => updatedStorageJson
  * - `__storage_getInfo`: (rawStorage) => JSON string with storage info
  * - `__storage_migrate`: (currentStorageJson) => MigrationResult
  *
@@ -19,6 +19,7 @@ import {
   BLOCK_STORAGE_KEY,
   BLOCK_STORAGE_SCHEMA_VERSION,
   type BlockStorage,
+  type MutateStoragePayload,
   createBlockStorage,
   getStorageData,
   isBlockStorage,
@@ -71,7 +72,7 @@ function normalizeStorage(rawStorage: unknown): NormalizeStorageResult {
   }
 
   // Check for legacy V1/V2 format: { args, uiState }
-  if (isLegacyV1V2Format(parsed)) {
+  if (isLegacyModelV1ApiFormat(parsed)) {
     // For legacy format, the whole object IS the data
     const storage = createBlockStorage(parsed);
     return { storage, data: parsed };
@@ -90,25 +91,25 @@ function normalizeStorage(rawStorage: unknown): NormalizeStorageResult {
  * @param newData - New data from application
  * @returns Updated storage as JSON string
  */
-function applyStorageUpdate(currentStorageJson: string, newData: unknown): string {
+function applyStorageUpdate(currentStorageJson: string, payload: MutateStoragePayload): string {
   const { storage: currentStorage } = normalizeStorage(currentStorageJson);
 
   // Update data while preserving other storage fields (version, plugins)
-  const updatedStorage = updateStorageData(currentStorage, newData);
+  const updatedStorage = updateStorageData(currentStorage, payload);
 
   return JSON.stringify(updatedStorage);
 }
 
 /**
- * Checks if data is in legacy V1/V2 format.
- * Legacy format has { args, uiState } at top level without the BlockStorage discriminator.
+ * Checks if data is in legacy Model API v1 format.
+ * Legacy format has { args, uiState? } at top level without the BlockStorage discriminator.
  */
-function isLegacyV1V2Format(data: unknown): data is { args?: unknown; uiState?: unknown } {
+function isLegacyModelV1ApiFormat(data: unknown): data is { args?: unknown } {
   if (data === null || typeof data !== 'object') return false;
   if (isBlockStorage(data)) return false;
 
   const obj = data as Record<string, unknown>;
-  return 'args' in obj || 'uiState' in obj;
+  return 'args' in obj;
 }
 
 // =============================================================================
@@ -121,8 +122,8 @@ tryRegisterCallback('__storage_normalize', (rawStorage: unknown) => {
 });
 
 // Register apply update callback (requires existing storage)
-tryRegisterCallback('__storage_applyUpdate', (currentStorageJson: string, newState: unknown) => {
-  return applyStorageUpdate(currentStorageJson, newState);
+tryRegisterCallback('__storage_applyUpdate', (currentStorageJson: string, payload: MutateStoragePayload) => {
+  return applyStorageUpdate(currentStorageJson, payload);
 });
 
 /**
