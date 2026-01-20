@@ -230,7 +230,6 @@ const fieldsToTraverse: (ProjectField['fieldName'])[] = [
   'stagingCtxPrevious',
   'stagingUiCtxPrevious',
   'stagingOutputPrevious',
-  'stagingPreRunArgs',
 ];
 
 export async function createProjectWatcher<Dump>(

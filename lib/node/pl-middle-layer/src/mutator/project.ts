@@ -186,15 +186,6 @@ class BlockInfo {
     },
   );
 
-  private readonly stagingPreRunArgsC = cached(
-    () => this.fields.stagingPreRunArgs?.modCount,
-    () => {
-      const bin = this.fields.stagingPreRunArgs?.value;
-      if (bin === undefined) return undefined;
-      return cachedDeserialize(bin);
-    },
-  );
-
   get currentArgs(): unknown {
     return this.currentArgsC();
   }
@@ -235,33 +226,19 @@ class BlockInfo {
       || Buffer.compare(this.fields.currentArgs!.value!, this.fields.prodArgs.value!) !== 0,
   );
 
-  /** Returns true if currentPreRunArgs differs from stagingPreRunArgs (or if stagingPreRunArgs is not set) */
-  private readonly preRunStaleC: () => boolean = cached(
-    () => `${this.fields.currentPreRunArgs?.modCount}_${this.fields.stagingPreRunArgs?.modCount}`,
-    () => {
-      if (this.fields.currentPreRunArgs === undefined) return false; // No preRunArgs means no staging needed
-      if (this.fields.stagingPreRunArgs === undefined) return true; // Never ran staging with current preRunArgs
-      return Buffer.compare(this.fields.currentPreRunArgs.value!, this.fields.stagingPreRunArgs.value!) !== 0;
-    },
-  );
-
   get requireProductionRendering(): boolean {
     return !this.productionRendered || this.productionStaleC() || this.productionHasErrors;
   }
 
-  /** Returns true if staging should be re-rendered (currentPreRunArgs differs from stagingPreRunArgs) */
+  /** Returns true if staging should be re-rendered (stagingCtx is not set) */
   get requireStagingRendering(): boolean {
     // No staging needed if currentPreRunArgs is undefined (args derivation failed)
     if (this.fields.currentPreRunArgs === undefined) return false;
-    return !this.stagingRendered || this.preRunStaleC();
+    return !this.stagingRendered;
   }
 
   get prodArgs(): unknown {
     return this.prodArgsC();
-  }
-
-  get stagingPreRunArgs(): unknown {
-    return this.stagingPreRunArgsC();
   }
 
   public getTemplate(tx: PlTransaction): AnyRef {
@@ -784,9 +761,6 @@ export class ProjectMutator {
     // thus creating a certain discrepancy between staging workflow context behavior and desktop's result pool.
     this.setBlockField(blockId, 'stagingUiCtx', this.exportCtx(results.context), 'NotReady');
     this.setBlockField(blockId, 'stagingOutput', results.result, 'NotReady');
-
-    // Save stagingPreRunArgs to track which preRunArgs were used for this staging render
-    this.setBlockFieldObj(blockId, 'stagingPreRunArgs', info.fields.currentPreRunArgs!);
   }
 
   private renderProductionFor(blockId: string) {

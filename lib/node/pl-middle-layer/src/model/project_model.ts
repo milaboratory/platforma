@@ -107,7 +107,6 @@ export interface ProjectField {
     | 'prodArgs'
     | 'currentArgs'
     | 'currentPreRunArgs' // Derived args for staging/pre-run rendering (from preRunArgs() or args())
-    | 'stagingPreRunArgs' // Snapshot of currentPreRunArgs at staging run time;
     | 'prodCtx'
     | 'prodUiCtx'
     | 'prodOutput'
@@ -140,7 +139,7 @@ export function projectFieldName(blockId: string, fieldName: ProjectField['field
 }
 
 const projectFieldPattern
-  = /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPreRunArgs|stagingPreRunArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
+  = /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPreRunArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);
