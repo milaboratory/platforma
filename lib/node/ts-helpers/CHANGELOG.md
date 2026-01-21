@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.6.0
+
+### Minor Changes
+
+- 1694d1a: Platforma API v3
+
 ## 1.5.4
 
 ### Patch Changes

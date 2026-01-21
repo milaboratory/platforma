@@ -1,5 +1,13 @@
 # @milaboratories/pl-client
 
+## 2.16.21
+
+### Patch Changes
+
+- Updated dependencies [1694d1a]
+  - @milaboratories/ts-helpers@1.6.0
+  - @milaboratories/pl-model-common@1.24.0
+
 ## 2.16.20
 
 ### Patch Changes
