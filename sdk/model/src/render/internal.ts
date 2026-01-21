@@ -183,7 +183,9 @@ export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
   //
 
   readonly args: string | (() => string);
-  readonly uiState: string | (() => string);
+  /** @deprecated Use `data` instead. Optional for backward compatibility - falls back to `data` if not injected. */
+  readonly uiState?: string | (() => string);
+  readonly data: string | (() => string);
   readonly activeArgs: undefined | string | (() => string | undefined);
 
   // Note: strings below are used because, anyway, using strings is the only way

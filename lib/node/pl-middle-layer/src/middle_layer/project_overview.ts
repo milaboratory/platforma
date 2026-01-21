@@ -34,12 +34,10 @@ import { resourceIdToString, type ResourceId } from '@milaboratories/pl-client';
 import * as R from 'remeda';
 
 type BlockInfo = {
-  argsRid: ResourceId;
+  argsRid?: ResourceId;
   currentArguments: unknown;
   prod?: ProdState;
 };
-
-type _CalculationStatus = 'Running' | 'Done';
 
 type ProdState = {
   finished: boolean;
@@ -87,9 +85,9 @@ export function projectOverview(
         const cInputs = prj.traverse({
           field: projectFieldName(id, 'currentArgs'),
           assertFieldType: 'Dynamic',
-          errorIfFieldNotSet: true,
+          stableIfNotFound: true,
         });
-        const currentArguments = cInputs.getDataAsJson() as Record<string, unknown>;
+        const currentArguments = cInputs?.getDataAsJson<Record<string, unknown>>();
 
         let prod: ProdState | undefined = undefined;
 
@@ -129,7 +127,7 @@ export function projectOverview(
           };
         }
 
-        infos.set(id, { currentArguments, prod, argsRid: cInputs.resourceInfo.id });
+        infos.set(id, { currentArguments, prod, argsRid: cInputs?.resourceInfo.id });
       }
 
       const currentGraph = productionGraph(structure, (id) => {
@@ -138,7 +136,13 @@ export function projectOverview(
         const args = bInfo.currentArguments;
         return {
           args,
-          enrichmentTargets: env.projectHelper.getEnrichmentTargets(() => bpInfo.cfg, () => args, { argsRid: bInfo.argsRid, blockPackRid: bpInfo.bpResourceId }),
+          enrichmentTargets: bInfo.argsRid
+            ? env.projectHelper.getEnrichmentTargets(
+              () => bpInfo.cfg,
+              () => args,
+              { argsRid: bInfo.argsRid, blockPackRid: bpInfo.bpResourceId },
+            )
+            : undefined,
         };
       });
 
@@ -235,19 +239,24 @@ export function projectOverview(
                     },
                   }) as ComputableStableDefined<string[]>,
               ),
-              inputsValid: computableFromCfgOrRF(
-                env,
-                blockCtxArgsOnly,
-                cfg.inputsValid,
-                codeWithInfo,
-                bpId,
-              ).wrap({
-                recover: (cause) => {
-                  // I'm not sure that we should write an error here, because it just means "Invalid args"
-                  env.logger.error(new Error('Error in block model argsValid', { cause }));
-                  return false;
-                },
-              }) as ComputableStableDefined<boolean>,
+              // inputsValid: for modelAPIVersion 2, it's true if currentArgs exists (args derivation succeeded)
+              // For older blocks, use the inputsValid callback from config
+              inputsValid: cfg.modelAPIVersion === 2
+                ? info.currentArguments !== undefined
+                : cfg.inputsValid
+                  ? computableFromCfgOrRF(
+                    env,
+                    blockCtxArgsOnly,
+                    cfg.inputsValid,
+                    codeWithInfo,
+                    bpId,
+                  ).wrap({
+                    recover: (cause) => {
+                      env.logger.error(new Error('Error in block model inputsValid', { cause }));
+                      return false;
+                    },
+                  }) as ComputableStableDefined<boolean>
+                  : undefined,
               sdkVersion: codeWithInfo?.sdkVersion,
               featureFlags: codeWithInfo?.featureFlags ?? {},
               isIncompatibleWithRuntime: false,
@@ -261,6 +270,20 @@ export function projectOverview(
             errorIfFieldNotSet: true,
           })
           .getDataAsJson() as BlockSettings;
+
+        // Get block storage info by calling VM function (only for Model API v2 blocks)
+        const blockStorageInfo = ifNotUndef(bp, ({ cfg }) => {
+          if (cfg.modelAPIVersion !== 2) {
+            return undefined;
+          }
+          const storageNode = prj.traverse({
+            field: projectFieldName(id, 'blockStorage'),
+            assertFieldType: 'Dynamic',
+            stableIfNotFound: true,
+          });
+          const rawStorageJson = storageNode?.getDataAsString();
+          return env.projectHelper.getStorageInfoInVM(cfg, rawStorageJson);
+        });
 
         const updates = ifNotUndef(bp, ({ info }) =>
           env.blockUpdateWatcher.get({ currentSpec: info.source, settings }),
@@ -292,6 +315,7 @@ export function projectOverview(
           featureFlags,
           isIncompatibleWithRuntime,
           navigationState: navigationStates.getState(id),
+          blockStorageInfo,
         };
       });
 

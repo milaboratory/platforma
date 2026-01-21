@@ -581,6 +581,103 @@ importers:
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
 
+  etc/blocks/enter-numbers-v3/block:
+    dependencies:
+      '@milaboratories/milaboratories.test-enter-numbers-v3.model':
+        specifier: workspace:*
+        version: link:../model
+      '@milaboratories/milaboratories.test-enter-numbers-v3.ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@milaboratories/milaboratories.test-enter-numbers-v3.workflow':
+        specifier: workspace:*
+        version: link:../workflow
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+
+  etc/blocks/enter-numbers-v3/model:
+    dependencies:
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+
+  etc/blocks/enter-numbers-v3/ui:
+    dependencies:
+      '@milaboratories/milaboratories.test-enter-numbers-v3.model':
+        specifier: workspace:*
+        version: link:../model
+      '@platforma-sdk/ui-vue':
+        specifier: workspace:*
+        version: link:../../../../sdk/ui-vue
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.24(typescript@5.6.3)
+    devDependencies:
+      '@faker-js/faker':
+        specifier: 'catalog:'
+        version: 9.2.0
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+
+  etc/blocks/enter-numbers-v3/workflow:
+    dependencies:
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
+    devDependencies:
+      '@platforma-sdk/tengo-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/tengo-builder
+
   etc/blocks/enter-numbers/block:
     dependencies:
       '@milaboratories/milaboratories.test-enter-numbers.model':
@@ -1101,6 +1198,106 @@ importers:
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.26
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
+    devDependencies:
+      '@platforma-sdk/tengo-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/tengo-builder
+
+  etc/blocks/sum-numbers-v3/block:
+    dependencies:
+      '@milaboratories/milaboratories.test-sum-numbers-v3.model':
+        specifier: workspace:*
+        version: link:../model
+      '@milaboratories/milaboratories.test-sum-numbers-v3.ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@milaboratories/milaboratories.test-sum-numbers-v3.workflow':
+        specifier: workspace:*
+        version: link:../workflow
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+
+  etc/blocks/sum-numbers-v3/model:
+    dependencies:
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+
+  etc/blocks/sum-numbers-v3/ui:
+    dependencies:
+      '@milaboratories/milaboratories.test-sum-numbers-v3.model':
+        specifier: workspace:*
+        version: link:../model
+      '@platforma-sdk/ui-vue':
+        specifier: workspace:*
+        version: link:../../../../sdk/ui-vue
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.24(typescript@5.6.3)
+    devDependencies:
+      '@faker-js/faker':
+        specifier: 'catalog:'
+        version: 9.2.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1(jiti@2.6.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+
+  etc/blocks/sum-numbers-v3/workflow:
+    dependencies:
       '@platforma-sdk/workflow-tengo':
         specifier: workspace:*
         version: link:../../../../sdk/workflow-tengo
@@ -3147,6 +3344,9 @@ importers:
 
   tests/drivers-ml-blocks-integration:
     dependencies:
+      '@milaboratories/computable':
+        specifier: workspace:*
+        version: link:../../lib/node/computable
       '@milaboratories/milaboratories.test-blob-url-custom-protocol':
         specifier: workspace:*
         version: link:../../etc/blocks/blob-url-custom-protocol/block
@@ -3162,6 +3362,9 @@ importers:
       '@milaboratories/milaboratories.test-enter-numbers':
         specifier: workspace:*
         version: link:../../etc/blocks/enter-numbers/block
+      '@milaboratories/milaboratories.test-enter-numbers-v3':
+        specifier: workspace:*
+        version: link:../../etc/blocks/enter-numbers-v3/block
       '@milaboratories/milaboratories.test-enter-numbers.model':
         specifier: workspace:*
         version: link:../../etc/blocks/enter-numbers/model
@@ -3174,6 +3377,9 @@ importers:
       '@milaboratories/milaboratories.test-sum-numbers':
         specifier: workspace:*
         version: link:../../etc/blocks/sum-numbers/block
+      '@milaboratories/milaboratories.test-sum-numbers-v3':
+        specifier: workspace:*
+        version: link:../../etc/blocks/sum-numbers-v3/block
       '@milaboratories/milaboratories.test-sum-numbers.model':
         specifier: workspace:*
         version: link:../../etc/blocks/sum-numbers/model
@@ -3189,18 +3395,30 @@ importers:
       '@milaboratories/milaboratories.transfer-files.model':
         specifier: workspace:*
         version: link:../../etc/blocks/transfer-files/model
+      '@milaboratories/milaboratories.ui-examples':
+        specifier: workspace:*
+        version: link:../../etc/blocks/ui-examples/block
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../../lib/node/pl-client
       '@milaboratories/pl-middle-layer':
         specifier: workspace:*
         version: link:../../lib/node/pl-middle-layer
+      '@milaboratories/pl-tree':
+        specifier: workspace:*
+        version: link:../../lib/node/pl-tree
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../../lib/node/ts-helpers
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../sdk/model
       '@platforma-sdk/test':
         specifier: workspace:*
         version: link:../../sdk/test
+      quickjs-emscripten:
+        specifier: 'catalog:'
+        version: 0.31.0
       undici:
         specifier: 'catalog:'
         version: 7.16.0
@@ -3232,6 +3450,9 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
 
   tests/helper:
     dependencies:

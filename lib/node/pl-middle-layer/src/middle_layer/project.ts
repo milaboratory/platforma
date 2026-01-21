@@ -24,7 +24,7 @@ import { SynchronizedTreeState, treeDumpStats } from '@milaboratories/pl-tree';
 import { setTimeout } from 'node:timers/promises';
 import { frontendData } from './frontend_path';
 import type { NavigationState } from '@milaboratories/pl-model-common';
-import { blockArgsAndUiState, blockOutputs } from './block';
+import { getBlockParameters, blockOutputs } from './block';
 import type { FrontendData } from '../model/frontend';
 import type { ProjectStructure } from '../model/project_model';
 import { projectFieldName } from '../model/project_model';
@@ -33,8 +33,8 @@ import type { BlockPackInfo } from '../model/block_pack';
 import type {
   ProjectOverview,
   AuthorMarker,
-  BlockStateInternal,
   BlockSettings,
+  BlockStateInternalV3,
 } from '@milaboratories/pl-model-middle-layer';
 import { activeConfigs } from './active_cfg';
 import { NavigationStates } from './navigation_states';
@@ -46,7 +46,7 @@ import { projectOverviewLight } from './project_overview_light';
 import { applyProjectMigrations } from '../mutator/migration';
 
 type BlockStateComputables = {
-  readonly fullState: Computable<BlockStateInternal>;
+  readonly fullState: Computable<BlockStateInternalV3>;
 };
 
 function stringifyForDump(object: unknown): string {
@@ -131,7 +131,7 @@ export class Project {
         await this.activeConfigs.getValue();
         await setTimeout(this.env.ops.projectRefreshInterval, this.abortController.signal);
 
-        // Block computables houskeeping
+        // Block computables housekeeping
         const overviewLight = await this.overviewLight.getValue();
         const existingBlocks = new Set(overviewLight.listOfBlocks);
         // Doing cleanup for deleted blocks
@@ -187,6 +187,12 @@ export class Project {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfgContainer = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
     const blockCfg = extractConfig(blockCfgContainer); // full content of this var should never be persisted
+
+    // Build NewBlockSpec based on model API version
+    const newBlockSpec = blockCfg.modelAPIVersion === 2
+      ? { storageMode: 'fromModel' as const, blockPack: preparedBp }
+      : { storageMode: 'legacy' as const, blockPack: preparedBp, legacyState: canonicalize({ args: blockCfg.initialArgs, uiState: blockCfg.initialUiState })! };
+
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
       return mut.addBlock(
         {
@@ -194,11 +200,7 @@ export class Project {
           label: blockLabel,
           renderingMode: blockCfg.renderingMode,
         },
-        {
-          args: canonicalize(blockCfg.initialArgs)!,
-          uiState: canonicalize(blockCfg.initialUiState)!,
-          blockPack: preparedBp,
-        },
+        newBlockSpec,
         before,
       );
     },
@@ -255,11 +257,17 @@ export class Project {
   ): Promise<void> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfg = extractConfig(await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec));
+    // resetState signals to mutator to reset storage
+    // For v2+ blocks: mutator gets initial storage directly via getInitialStorageInVM
+    // For v1 blocks: we pass the legacy state format
+    const resetState = resetArgs
+      ? { state: blockCfg.modelAPIVersion === 2 ? {} : { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState } }
+      : undefined;
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
       mut.migrateBlockPack(
         blockId,
         preparedBp,
-        resetArgs ? { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState } : undefined,
+        resetState,
       ),
     { name: 'updateBlockPack', lockId: this.projectLockId },
     );
@@ -326,37 +334,54 @@ export class Project {
     await this.projectTree.refreshState();
   }
 
-  // /** Update block label. */
-  // public async setBlockLabel(blockId: string, label: string, author?: AuthorMarker) {
-  //   await withProjectAuthored(this.env.pl, this.rid, author, (mut) => {
-  //     mut.setBlockLabel(blockId, label);
-  //   });
-  //   await this.projectTree.refreshState();
-  // }
-
   /**
+   * @deprecated Use mutateBlockStorage() for V3 blocks.
    * Sets block args, and changes whole project state accordingly.
    * Along with setting arguments one can specify author marker, that will be
    * transactionally associated with the block, to facilitate conflict resolution
    * in collaborative editing scenario.
    * */
   public async setBlockArgs(blockId: string, args: unknown, author?: AuthorMarker) {
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
-      mut.setStates([{ blockId, args }]),
-    { name: 'setBlockArgs', lockId: this.projectLockId });
+    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
+      const state = mut.mergeBlockState(blockId, { args });
+      mut.setStates([{ modelAPIVersion: 1, blockId, state }]);
+    }, { name: 'setBlockArgs', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
 
   /**
+   * @deprecated Use mutateBlockStorage() for V3 blocks.
    * Sets ui block state associated with the block.
    * Along with setting arguments one can specify author marker, that will be
    * transactionally associated with the block, to facilitate conflict resolution
    * in collaborative editing scenario.
    * */
   public async setUiState(blockId: string, uiState: unknown, author?: AuthorMarker) {
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
-      mut.setStates([{ blockId, uiState }]),
-    { name: 'setUiState', lockId: this.projectLockId });
+    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
+      const state = mut.mergeBlockState(blockId, { uiState });
+      mut.setStates([{ modelAPIVersion: 1, blockId, state }]);
+    }, { name: 'setUiState', lockId: this.projectLockId });
+    await this.projectTree.refreshState();
+  }
+
+  /**
+   * @deprecated Use mutateBlockStorage() for V3 blocks.
+   * Sets block args and ui state, and changes the whole project state accordingly.
+   * Along with setting arguments one can specify author marker, that will be
+   * transactionally associated with the block, to facilitate conflict resolution
+   * in collaborative editing scenario.
+   * */
+  public async setBlockArgsAndUiState(
+    blockId: string,
+    args: unknown, // keep for v1/v2 compatibility
+    uiState: unknown, // keep for v1/v2 compatibility
+    author?: AuthorMarker,
+  ) {
+    // Normalize to unified state format { args, uiState } for v1/v2 blocks
+    const state = { args, uiState };
+    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
+      mut.setStates([{ modelAPIVersion: 1, blockId, state }]);
+    }, { name: 'setBlockArgsAndUiState', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
 
@@ -369,20 +394,19 @@ export class Project {
   }
 
   /**
-   * Sets block args and ui state, and changes the whole project state accordingly.
-   * Along with setting arguments one can specify author marker, that will be
-   * transactionally associated with the block, to facilitate conflict resolution
-   * in collaborative editing scenario.
-   * */
-  public async setBlockArgsAndUiState(
-    blockId: string,
-    args: unknown,
-    uiState: unknown,
-    author?: AuthorMarker,
-  ) {
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
-      mut.setStates([{ blockId, args, uiState }]);
-    }, { name: 'setBlockArgsAndUiState', lockId: this.projectLockId });
+   * Mutates block storage for Model API v3 blocks.
+   * Applies a storage operation (e.g., 'update-data') which triggers
+   * args derivation (args(data) and prerunArgs(data)).
+   * The derived args are stored atomically with the data.
+   *
+   * @param blockId - The block ID
+   * @param payload - Storage mutation payload with operation and value
+   * @param author - Optional author marker for collaborative editing
+   */
+  public async mutateBlockStorage(blockId: string, payload: { operation: string; value: unknown }, author?: AuthorMarker) {
+    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
+      mut.setStates([{ modelAPIVersion: 2, blockId, payload }]),
+    { name: 'mutateBlockStorage', lockId: this.projectLockId });
     await this.projectTree.refreshState();
   }
 
@@ -391,6 +415,20 @@ export class Project {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, undefined, (mut) => {
       mut.setBlockSettings(blockId, newValue);
     }, { name: 'setBlockSettings' });
+    await this.projectTree.refreshState();
+  }
+
+  /**
+   * Sets raw block storage content directly.
+   * This bypasses all normalization and VM transformations.
+   *
+   * @param blockId The block to set storage for
+   * @param rawStorageJson Raw storage as JSON string
+   */
+  public async setBlockStorageRaw(blockId: string, rawStorageJson: string): Promise<void> {
+    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, undefined, (mut) => {
+      mut.setBlockStorageRaw(blockId, rawStorageJson);
+    }, { name: 'setBlockStorageRaw' });
     await this.projectTree.refreshState();
   }
 
@@ -406,8 +444,16 @@ export class Project {
       );
       const bpData = await tx.getResourceData(bpRid, false);
       const config = extractConfig(cachedDeserialize<BlockPackInfo>(notEmpty(bpData.data)).config);
+
       await withProjectAuthored(this.env.projectHelper, tx, this.rid, author, (prj) => {
-        prj.setStates([{ blockId, args: config.initialArgs, uiState: config.initialUiState }]);
+        if (config.modelAPIVersion === 2) {
+          // V2+: Reset to initial storage via VM
+          prj.resetToInitialStorage(blockId);
+        } else {
+          // V1: Use legacy state format
+          const initialState = { args: config.initialArgs, uiState: config.initialUiState };
+          prj.setStates([{ modelAPIVersion: 1, blockId, state: initialState }]);
+        }
       }, { name: 'resetBlockArgsAndUiState', lockId: this.projectLockId });
       await tx.commit();
     });
@@ -423,7 +469,7 @@ export class Project {
       const fullState = Computable.make(
         (ctx) => {
           return {
-            argsAndUiState: blockArgsAndUiState(this.projectTree.entry(), blockId, ctx),
+            parameters: getBlockParameters(this.projectTree.entry(), blockId, ctx),
             outputs,
             navigationState: this.navigationStates.getState(blockId),
             overview: this.overview,
@@ -438,10 +484,10 @@ export class Project {
               : v.outputs;
 
             return {
-              ...v.argsAndUiState,
+              ...v.parameters,
               outputs: newOutputs,
               navigationState: v.navigationState,
-            } as BlockStateInternal;
+            } as BlockStateInternalV3;
           },
         },
       );
@@ -461,7 +507,7 @@ export class Project {
    * Returns a computable, that can be used to retrieve and watch full block state,
    * including outputs, arguments, ui state.
    * */
-  public getBlockState(blockId: string): Computable<BlockStateInternal> {
+  public getBlockState(blockId: string): Computable<BlockStateInternalV3> {
     return this.getBlockComputables(blockId).fullState;
   }
 

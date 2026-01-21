@@ -25,8 +25,8 @@
       "ui": "@milaboratories/milaboratories.test-sum-numbers.ui/dist"
     },
     "meta": {
-      "title": "Sum Numbers",
-      "description": "Sum Numbers",
+      "title": "Sum Numbers (old api)",
+      "description": "Sum Numbers (old api)",
       "logo": "file:logos/block-logo.png",
       "organization": {
         "name": "MiLaboratories Inc",

@@ -10,7 +10,7 @@ import { blockSpec as uploadFileSpec } from '@milaboratories/milaboratories.test
 import type { platforma as uploadFileModel } from '@milaboratories/milaboratories.test-upload-file.model';
 import { blockSpec as transferFilesSpec } from '@milaboratories/milaboratories.transfer-files';
 import type { platforma as transferFilesModel } from '@milaboratories/milaboratories.transfer-files.model';
-import { type PlClient, DisconnectedError } from '@milaboratories/pl-client';
+import { DisconnectedError } from '@milaboratories/pl-client';
 import {
   type FolderURL,
   type ImportFileHandle,
@@ -18,97 +18,23 @@ import {
   InitialBlockSettings,
   type LocalBlobHandleAndSize,
   type PlRef,
-  type Project,
   type RangeBytes,
   type RemoteBlobHandleAndSize,
 } from '@milaboratories/pl-middle-layer';
-import {
+import type {
   MiddleLayer,
-  TestHelpers,
 } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, blockTest } from '@platforma-sdk/test';
+import { deriveDataFromStorage } from '@platforma-sdk/model';
 import fs from 'node:fs';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import * as fsp from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'vitest';
 import { compareBuffersInChunks, computeHashIncremental, shuffleInPlace } from './imports';
-
-export async function withMl(
-  cb: (ml: MiddleLayer, workFolder: string) => Promise<void>,
-): Promise<void> {
-  const workFolder = path.resolve(`work/${randomUUID()}`);
-
-  await TestHelpers.withTempRoot(async (pl: PlClient) => {
-    const ml = await MiddleLayer.init(pl, workFolder, {
-      defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
-      devBlockUpdateRecheckInterval: 300,
-      localSecret: MiddleLayer.generateLocalSecret(),
-      localProjections: [], // TODO must be different with local pl
-      openFileDialogCallback: () => {
-        throw new Error('Not implemented.');
-      },
-    });
-    ml.addRuntimeCapability('requiresUIAPIVersion', 1);
-    ml.addRuntimeCapability('requiresUIAPIVersion', 2);
-    try {
-      await cb(ml, workFolder);
-    } finally {
-      console.log(JSON.stringify(pl.allTxStat));
-      await ml.close();
-    }
-  });
-}
-
-export async function withMlAndProxy(
-  cb: (ml: MiddleLayer, workFolder: string, proxy: TestHelpers.TestTcpProxy) => Promise<void>,
-): Promise<void> {
-  const workFolder = path.resolve(`work/${randomUUID()}`);
-
-  await TestHelpers.withTempRoot(async (pl: PlClient, proxy) => {
-    const ml = await MiddleLayer.init(pl, workFolder, {
-      defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
-      devBlockUpdateRecheckInterval: 300,
-      localSecret: MiddleLayer.generateLocalSecret(),
-      localProjections: [], // TODO must be different with local pl
-      openFileDialogCallback: () => {
-        throw new Error('Not implemented.');
-      },
-    });
-    ml.addRuntimeCapability('requiresUIAPIVersion', 1);
-    ml.addRuntimeCapability('requiresUIAPIVersion', 2);
-    try {
-      await cb(ml, workFolder, proxy);
-    } finally {
-      console.log(JSON.stringify(pl.allTxStat));
-      await ml.close();
-    }
-  }, { viaTcpProxy: true });
-}
-
-export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 5000) {
-  const abortSignal = AbortSignal.timeout(timeout);
-  const overview = prj.overview;
-  const state = prj.getBlockState(blockId);
-  // const stateAndOverview = Computable.make(() => ({ overview, state: undefined }));
-  while (true) {
-    // const {
-    //   overview: overviewSnapshot,
-    //   state: stateSnapshot
-    // } = await stateAndOverview.getValue();
-    const overviewSnapshot = (await overview.getValue())!;
-    const blockOverview = overviewSnapshot.blocks.find((b) => b.id == blockId);
-    if (blockOverview === undefined) throw new Error(`Blocks not found: ${blockId}`);
-    if (blockOverview.outputErrors) return;
-    if (blockOverview.calculationStatus === 'Done') return;
-    try {
-      await overview.awaitChange(abortSignal);
-    } catch (_e: any) {
-      console.dir(await state.getValue(), { depth: 5 });
-      throw new Error('Aborted.', { cause: _e });
-    }
-  }
-}
+import { isObject } from '@milaboratories/ts-helpers';
+import { withMl, withMlAndProxy } from './with-ml';
+import { awaitBlockDone } from './test-helpers';
 
 test.skip('disconnect:runBlock throws DisconnectedError when connection drops mid-operation', async ({ expect }) => {
   await expect(() => withMlAndProxy(async (ml, _wd, proxy) => {
@@ -338,8 +264,8 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     await prj.resetBlockArgsAndUiState(block2Id);
     await prj.setBlockSettings(block2Id, { versionLock: 'patch' });
 
-    const block2Inputs = await prj.getBlockState(block2Id).getValue();
-    expect(block2Inputs.args).toEqual({ numbers: [] });
+    const block2State = await prj.getBlockState(block2Id).getValue();
+    expect(deriveDataFromStorage(block2State.blockStorage)).toStrictEqual({ args: { numbers: [] }, uiState: {} });
 
     const overviewSnapshot2 = await prj.overview.awaitStableValue();
     expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.canRun).toEqual(false);
@@ -623,8 +549,7 @@ test('block duplication test', async ({ expect }) => {
     const originalState = await prj.getBlockState(originalBlockId).awaitStableValue();
     const duplicatedState = await prj.getBlockState(duplicatedBlockId).awaitStableValue();
 
-    expect(duplicatedState.args).toEqual(originalState.args);
-    expect(duplicatedState.ui).toEqual(originalState.ui);
+    expect(deriveDataFromStorage(duplicatedState.blockStorage)).toEqual(deriveDataFromStorage(originalState.blockStorage));
 
     // Verify they are independent - changing one shouldn't affect the other
     await prj.setBlockArgs(originalBlockId, { numbers: [4, 5, 6] });
@@ -632,8 +557,19 @@ test('block duplication test', async ({ expect }) => {
     const originalStateAfter = await prj.getBlockState(originalBlockId).awaitStableValue();
     const duplicatedStateAfter = await prj.getBlockState(duplicatedBlockId).awaitStableValue();
 
-    expect(originalStateAfter.args).toEqual({ numbers: [4, 5, 6] });
-    expect(duplicatedStateAfter.args).toEqual({ numbers: [1, 2, 3] }); // unchanged
+    const orig = deriveDataFromStorage(originalStateAfter.blockStorage);
+    const dup = deriveDataFromStorage(duplicatedStateAfter.blockStorage);
+
+    if (!(isObject(orig) && ('args' in orig))) {
+      throw new Error('s1 is not an object');
+    }
+
+    if (!(isObject(dup) && ('args' in dup))) {
+      throw new Error('s2 is not an object');
+    }
+
+    expect(orig.args).toEqual({ numbers: [4, 5, 6] });
+    expect(dup.args).toEqual({ numbers: [1, 2, 3] }); // unchanged
   });
 });
 
@@ -1231,6 +1167,9 @@ blockTest(
 
         console.log('\n=== All transfer-files tests completed successfully ===');
         await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Delete the project to clean up resources
+        await ml.deleteProject('test_project');
 
         return;
       }

@@ -1,7 +1,8 @@
 import path from 'node:path';
 import * as fsp from 'node:fs/promises';
 import type {
-  InferBlockState, LocalImportFileHandle,
+  InferBlockState,
+  LocalImportFileHandle,
   Platforma,
   Project,
 } from '@milaboratories/pl-middle-layer';
@@ -118,6 +119,7 @@ export const blockTest = plTest.extend<{
     });
     ml.addRuntimeCapability('requiresUIAPIVersion', 1);
     ml.addRuntimeCapability('requiresUIAPIVersion', 2);
+    ml.addRuntimeCapability('requiresUIAPIVersion', 3);
 
     await use(ml);
 

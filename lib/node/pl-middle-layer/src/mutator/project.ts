@@ -5,7 +5,8 @@ import type {
   PlTransaction,
   ResourceData,
   ResourceId,
-  TxOps } from '@milaboratories/pl-client';
+  TxOps,
+} from '@milaboratories/pl-client';
 import {
   ensureResourceIdNotNull,
   field,
@@ -65,7 +66,7 @@ import {
 import Denque from 'denque';
 import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
 import { loadTemplate } from './template/template_loading';
-import { cachedDeserialize, notEmpty, canonicalJsonGzBytes, canonicalJsonBytes } from '@milaboratories/ts-helpers';
+import { cachedDeserialize, notEmpty, canonicalJsonBytes, cachedDecode } from '@milaboratories/ts-helpers';
 import type { ProjectHelper } from '../model/project_helper';
 import { extractConfig, UiError, type BlockConfig } from '@platforma-sdk/model';
 import { getDebugFlags } from '../debug';
@@ -141,12 +142,34 @@ class BlockInfo {
 
     if (this.fields.blockPack === undefined) throw new Error('no block pack field');
 
-    if (this.fields.currentArgs === undefined) throw new Error('no current args field');
+    if (this.fields.blockStorage === undefined) throw new Error('no block storage field');
   }
 
   private readonly currentArgsC = cached(
-    () => this.fields.currentArgs!.modCount,
-    () => cachedDeserialize(this.fields.currentArgs!.value!),
+    () => this.fields.currentArgs?.modCount,
+    () => {
+      const bin = this.fields.currentArgs?.value;
+      if (bin === undefined) return undefined;
+      return cachedDeserialize(bin);
+    },
+  );
+
+  private readonly blockStorageC = cached(
+    () => this.fields.blockStorage!.modCount,
+    () => {
+      const bin = this.fields.blockStorage?.value;
+      if (bin === undefined) return undefined;
+      return cachedDeserialize<Record<string, unknown>>(bin);
+    },
+  );
+
+  private readonly blockStorageJ = cached(
+    () => this.fields.blockStorage!.modCount,
+    () => {
+      const bin = this.fields.blockStorage?.value;
+      if (bin === undefined) return undefined;
+      return cachedDecode(bin);
+    },
   );
 
   private readonly prodArgsC = cached(
@@ -158,8 +181,34 @@ class BlockInfo {
     },
   );
 
+  private readonly currentPrerunArgsC = cached(
+    () => this.fields.currentPrerunArgs?.modCount,
+    () => {
+      const bin = this.fields.currentPrerunArgs?.value;
+      if (bin === undefined) return undefined;
+      return cachedDeserialize(bin);
+    },
+  );
+
   get currentArgs(): unknown {
     return this.currentArgsC();
+  }
+
+  get blockStorage(): unknown {
+    try {
+      return this.blockStorageC();
+    } catch (e) {
+      console.error('Error getting blockStorage:', e);
+      return undefined;
+    }
+  }
+
+  get blockStorageJson() {
+    return this.blockStorageJ();
+  }
+
+  get currentPrerunArgs(): unknown {
+    return this.currentPrerunArgsC();
   }
 
   get stagingRendered(): boolean {
@@ -181,12 +230,15 @@ class BlockInfo {
       || Buffer.compare(this.fields.currentArgs!.value!, this.fields.prodArgs.value!) !== 0,
   );
 
-  // get productionStale(): boolean {
-  //   return this.productionRendered && this.productionStaleC() && ;
-  // }
-
   get requireProductionRendering(): boolean {
     return !this.productionRendered || this.productionStaleC() || this.productionHasErrors;
+  }
+
+  /** Returns true if staging should be re-rendered (stagingCtx is not set) */
+  get requireStagingRendering(): boolean {
+    // No staging needed if currentPrerunArgs is undefined (args derivation failed)
+    if (this.fields.currentPrerunArgs === undefined) return false;
+    return !this.stagingRendered;
   }
 
   get prodArgs(): unknown {
@@ -202,33 +254,38 @@ class BlockInfo {
   }
 }
 
-export interface NewBlockSpec {
-  blockPack: BlockPackSpecPrepared;
-  args: string;
-  uiState: string;
-}
+/**
+ * Specification for creating a new block.
+ * Discriminated union based on `storageMode`.
+ */
+/** Specification for creating a new block. Discriminated union based on `storageMode`. */
+export type NewBlockSpec =
+  | { storageMode: 'fromModel'; blockPack: BlockPackSpecPrepared }
+  | { storageMode: 'legacy'; blockPack: BlockPackSpecPrepared; legacyState: string };
 
 const NoNewBlocks = (blockId: string) => {
   throw new Error(`No new block info for ${blockId}`);
 };
 
-export interface SetStatesRequest {
+/**
+ * Request to set block state using unified state format.
+ * For v3 blocks: state is the block's state
+ * For v1/v2 blocks: state should be { args, uiState } format
+ */
+export type SetStatesRequest = {
   blockId: string;
-  args?: unknown;
-  uiState?: unknown;
-}
+  /** The unified state to set */
+  state: unknown;
+  modelAPIVersion: 1;
+} | {
+  blockId: string;
+  /** Storage operation payload - middle layer is agnostic to specific operations */
+  payload: { operation: string; value: unknown };
+  modelAPIVersion: 2;
+};
 
-type _GraphInfoFields =
-  | 'stagingUpstream'
-  | 'stagingDownstream'
-  | 'futureProductionUpstream'
-  | 'futureProductionDownstream'
-  | 'actualProductionUpstream'
-  | 'actualProductionDownstream';
-
-export type ArgsAndUiState = {
-  args: unknown;
-  uiState: unknown;
+export type ClearState = {
+  state: unknown;
 };
 
 export class ProjectMutator {
@@ -295,7 +352,6 @@ export class ProjectMutator {
   }
 
   get structure(): ProjectStructure {
-    // clone
     return JSON.parse(JSON.stringify(this.struct)) as ProjectStructure;
   }
 
@@ -315,7 +371,7 @@ export class ProjectMutator {
   private getProductionGraphBlockInfo(blockId: string, prod: boolean): ProductionGraphBlockInfo | undefined {
     const bInfo = this.getBlockInfo(blockId);
 
-    let argsField: BlockFieldState;
+    let argsField: BlockFieldState | undefined;
     let args: unknown;
 
     if (prod) {
@@ -323,8 +379,13 @@ export class ProjectMutator {
       argsField = bInfo.fields.prodArgs;
       args = bInfo.prodArgs;
     } else {
-      argsField = notEmpty(bInfo.fields.currentArgs);
+      argsField = bInfo.fields.currentArgs;
       args = bInfo.currentArgs;
+    }
+
+    // Can't compute enrichment targets without args
+    if (argsField === undefined) {
+      return { args, enrichmentTargets: undefined };
     }
 
     const blockPackField = notEmpty(bInfo.fields.blockPack);
@@ -371,6 +432,7 @@ export class ProjectMutator {
   }
 
   private createJsonFieldValueByContent(content: string): BlockFieldStateValue {
+    if (content === undefined) throw new Error('content is undefined');
     const value = Buffer.from(content);
     const ref = this.tx.createValue(Pl.JsonObject, value);
     return { ref, value, status: 'Ready' };
@@ -508,6 +570,70 @@ export class ProjectMutator {
     }
   }
 
+  /**
+   * Gets current block state and merges with partial updates.
+   * Used by legacy v1/v2 methods like setBlockArgs and setUiState.
+   *
+   * @param blockId The block to get state for
+   * @param partialUpdate Partial state to merge (e.g. { args } or { uiState })
+   * @returns Merged state in unified format { args, uiState }
+   */
+  public mergeBlockState(
+    blockId: string,
+    partialUpdate: { args?: unknown; uiState?: unknown },
+  ): { args?: unknown; uiState?: unknown } {
+    const info = this.getBlockInfo(blockId);
+    const currentState = info.blockStorage as { args?: unknown; uiState?: unknown } | undefined;
+    return { ...currentState, ...partialUpdate };
+  }
+
+  /**
+   * Sets raw block storage content directly (for testing purposes).
+   * This bypasses all normalization and VM transformations.
+   *
+   * @param blockId The block to set storage for
+   * @param rawStorageJson Raw storage as JSON string
+   */
+  public setBlockStorageRaw(blockId: string, rawStorageJson: string): void {
+    this.setBlockFieldObj(blockId, 'blockStorage', this.createJsonFieldValueByContent(rawStorageJson));
+    this.blocksWithChangedInputs.add(blockId);
+    this.updateLastModified();
+  }
+
+  /**
+   * Resets a v2+ block to its initial storage state.
+   * Gets initial storage from VM and derives args from it.
+   *
+   * For v1 blocks, use setStates() instead.
+   *
+   * @param blockId The block to reset
+   */
+  public resetToInitialStorage(blockId: string): void {
+    const info = this.getBlockInfo(blockId);
+    const blockConfig = info.config;
+
+    if (blockConfig.modelAPIVersion !== 2) {
+      throw new Error('resetToInitialStorage is only supported for model API version 2');
+    }
+
+    // Get initial storage from VM
+    const initialStorageJson = this.projectHelper.getInitialStorageInVM(blockConfig);
+    this.setBlockStorageRaw(blockId, initialStorageJson);
+
+    // Derive args from storage - set or clear currentArgs based on derivation result
+    const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(blockConfig, initialStorageJson);
+    if (!deriveArgsResult.error) {
+      this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValue(deriveArgsResult.value));
+      // Derive prerunArgs from storage
+      const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, initialStorageJson);
+      if (prerunArgs !== undefined) {
+        this.setBlockFieldObj(blockId, 'currentPrerunArgs', this.createJsonFieldValue(prerunArgs));
+      }
+    } else {
+      this.deleteBlockFields(blockId, 'currentArgs');
+    }
+  }
+
   /** Optimally sets inputs for multiple blocks in one go */
   public setStates(requests: SetStatesRequest[]) {
     const changedArgs: string[] = [];
@@ -515,34 +641,87 @@ export class ProjectMutator {
     for (const req of requests) {
       const info = this.getBlockInfo(req.blockId);
       let blockChanged = false;
-      for (const stateKey of ['args', 'uiState'] as const) {
-        if (!(stateKey in req)) continue;
-        const statePart = req[stateKey];
-        if (statePart === undefined || statePart === null)
-          throw new Error(
-            `Can't set ${stateKey} to null or undefined, please omit the key if you don't want to change it`,
-          );
 
-        const fieldName = stateKey === 'args' ? 'currentArgs' : 'uiState';
+      const blockConfig = info.config;
+      // modelAPIVersion === 2 means BlockModelV3 with .args() lambda for deriving args
 
-        let data: Uint8Array;
-        let gzipped: boolean = false;
-        if (stateKey === 'args') {
-          // don't gzip args, workflow code can't uncompress gzip yet
-          data = canonicalJsonBytes(statePart);
-        } else {
-          const { data: binary, isGzipped } = canonicalJsonGzBytes(statePart);
-          data = binary;
-          gzipped = isGzipped;
-        }
-        if (Buffer.compare(info.fields[fieldName]!.value!, data) === 0) continue;
-        // console.log('setting', fieldName, gzipped, data.length);
-        const statePartRef = this.tx.createValue(gzipped ? Pl.JsonGzObject : Pl.JsonObject, data);
-        this.setBlockField(req.blockId, fieldName, statePartRef, 'Ready', data);
-
-        blockChanged = true;
-        if (stateKey === 'args') changedArgs.push(req.blockId);
+      if (req.modelAPIVersion !== blockConfig.modelAPIVersion) {
+        throw new Error(`Model API version mismatch for block ${req.blockId}: ${req.modelAPIVersion} !== ${blockConfig.modelAPIVersion}`);
       }
+
+      // Derive args from storage using the block's config.args() callback
+      let args: unknown;
+      let prerunArgs: unknown;
+
+      if (req.modelAPIVersion === 2) {
+        const currentStorageJson = info.blockStorageJson;
+        if (currentStorageJson === undefined) {
+          throw new Error(`Block ${req.blockId} has no blockStorage - this should not happen`);
+        }
+
+        // Apply the state update to storage
+        const updatedStorageJson = this.projectHelper.applyStorageUpdateInVM(
+          blockConfig,
+          currentStorageJson,
+          req.payload,
+        );
+
+        this.setBlockFieldObj(req.blockId, 'blockStorage', this.createJsonFieldValueByContent(updatedStorageJson));
+
+        // Derive args directly from storage (VM extracts data internally)
+        const derivedArgsResult = this.projectHelper.deriveArgsFromStorage(blockConfig, updatedStorageJson);
+        if (derivedArgsResult.error) {
+          args = undefined;
+          prerunArgs = undefined;
+        } else {
+          args = derivedArgsResult.value;
+          // Derive prerunArgs from storage, or fall back to args
+          prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, updatedStorageJson);
+        }
+      } else {
+        this.setBlockFieldObj(req.blockId, 'blockStorage', this.createJsonFieldValue(req.state));
+        if (req.state !== null && typeof req.state === 'object' && 'args' in req.state) {
+          args = (req.state as { args: unknown }).args;
+        } else {
+          args = req.state;
+        }
+        // For the legacy blocks, prerunArgs = args (same as production args)
+        prerunArgs = args;
+      }
+
+      // Set or clear currentArgs based on derivation result
+      if (args !== undefined) {
+        const currentArgsData = canonicalJsonBytes(args);
+        const argsPartRef = this.tx.createValue(Pl.JsonObject, currentArgsData);
+        this.setBlockField(req.blockId, 'currentArgs', argsPartRef, 'Ready', currentArgsData);
+      } else {
+        this.deleteBlockFields(req.blockId, 'currentArgs');
+      }
+
+      // Set currentPrerunArgs field and check if it actually changed
+      let prerunArgsChanged = false;
+      if (prerunArgs !== undefined) {
+        const prerunArgsData = canonicalJsonBytes(prerunArgs);
+        const oldPrerunArgsData = info.fields.currentPrerunArgs?.value;
+        // Check if prerunArgs actually changed
+        if (oldPrerunArgsData === undefined || Buffer.compare(oldPrerunArgsData, prerunArgsData) !== 0) {
+          prerunArgsChanged = true;
+        }
+        const prerunArgsRef = this.tx.createValue(Pl.JsonObject, prerunArgsData);
+        this.setBlockField(req.blockId, 'currentPrerunArgs', prerunArgsRef, 'Ready', prerunArgsData);
+      } else {
+        // prerunArgs is undefined - check if we previously had one
+        if (info.fields.currentPrerunArgs !== undefined) {
+          prerunArgsChanged = true;
+        }
+      }
+
+      blockChanged = true;
+      // Only add to changedArgs if prerunArgs changed - this controls staging reset
+      if (prerunArgsChanged) {
+        changedArgs.push(req.blockId);
+      }
+
       if (blockChanged) {
         // will be assigned our author marker
         this.blocksWithChangedInputs.add(req.blockId);
@@ -589,10 +768,20 @@ export class ProjectMutator {
     return exportContext(this.tx, Pl.unwrapHolder(this.tx, this.ctxExportTplHolder), ctx);
   }
 
+  /**
+   * Renders staging for a block using currentPrerunArgs.
+   * If currentPrerunArgs is not set (prerunArgs returned undefined), skips staging for this block.
+   */
   private renderStagingFor(blockId: string) {
     this.resetStaging(blockId);
 
     const info = this.getBlockInfo(blockId);
+
+    // If currentPrerunArgs is not set (prerunArgs returned undefined), skip staging for this block
+    const prerunArgsRef = info.fields.currentPrerunArgs?.ref;
+    if (prerunArgsRef === undefined) {
+      return;
+    }
 
     const ctx = this.createStagingCtx(this.getStagingGraph().nodes.get(blockId)!.upstream);
 
@@ -600,8 +789,9 @@ export class ProjectMutator {
 
     const tpl = info.getTemplate(this.tx);
 
+    // Use currentPrerunArgs for staging rendering
     const results = createRenderHeavyBlock(this.tx, tpl, {
-      args: info.fields.currentArgs!.ref!,
+      args: prerunArgsRef,
       blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
       isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(false)),
       context: ctx,
@@ -628,6 +818,11 @@ export class ProjectMutator {
 
     const info = this.getBlockInfo(blockId);
 
+    // Can't render production if currentArgs is not set
+    if (info.fields.currentArgs === undefined) {
+      throw new Error(`Can't render production for block ${blockId}: currentArgs not set`);
+    }
+
     const ctx = this.createProdCtx(this.getPendingProductionGraph().nodes.get(blockId)!.upstream);
 
     if (this.getBlock(blockId).renderingMode === 'Light')
@@ -636,7 +831,7 @@ export class ProjectMutator {
     const tpl = info.getTemplate(this.tx);
 
     const results = createRenderHeavyBlock(this.tx, tpl, {
-      args: info.fields.currentArgs!.ref!,
+      args: info.fields.currentArgs.ref!,
       blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
       isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(true)),
       context: ctx,
@@ -651,7 +846,7 @@ export class ProjectMutator {
     this.setBlockField(blockId, 'prodOutput', results.result, 'NotReady');
 
     // saving inputs for which we rendered the production
-    this.setBlockFieldObj(blockId, 'prodArgs', info.fields.currentArgs!);
+    this.setBlockFieldObj(blockId, 'prodArgs', info.fields.currentArgs);
 
     // removing block from limbo as we juts rendered fresh production for it
     if (this.blocksInLimbo.delete(blockId)) this.renderingStateChanged = true;
@@ -676,11 +871,50 @@ export class ProjectMutator {
       this.createJsonFieldValue(InitialBlockSettings),
     );
 
-    // args
-    this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValueByContent(spec.args));
+    const blockConfig = info.config;
 
-    // uiState
-    this.setBlockFieldObj(blockId, 'uiState', this.createJsonFieldValueByContent(spec.uiState ?? '{}'));
+    let args: unknown;
+    let prerunArgs: unknown;
+    let storageToWrite: string;
+
+    if (spec.storageMode === 'fromModel') {
+      // Model API v2+: get initial storage and derive args from it
+      storageToWrite = this.projectHelper.getInitialStorageInVM(blockConfig);
+
+      // Derive args directly from storage (VM extracts data internally)
+      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(blockConfig, storageToWrite);
+      if (deriveArgsResult.error) {
+        args = undefined;
+        prerunArgs = undefined;
+      } else {
+        args = deriveArgsResult.value;
+        prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageToWrite);
+      }
+    } else if (spec.storageMode === 'legacy') {
+      // Model API v1: use legacyState from spec
+      const parsedState = JSON.parse(spec.legacyState);
+      args = parsedState.args;
+      if (args === undefined) {
+        throw new Error('args is undefined in legacyState');
+      }
+      prerunArgs = args;
+      storageToWrite = spec.legacyState;
+    } else {
+      throw new Error(`Unknown storageMode: ${(spec as NewBlockSpec).storageMode}`);
+    }
+
+    // currentArgs
+    if (args !== undefined) {
+      this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValue(args));
+    }
+
+    // currentPrerunArgs
+    if (prerunArgs !== undefined) {
+      this.setBlockFieldObj(blockId, 'currentPrerunArgs', this.createJsonFieldValue(prerunArgs));
+    }
+
+    // blockStorage
+    this.setBlockFieldObj(blockId, 'blockStorage', this.createJsonFieldValueByContent(storageToWrite));
 
     // checking structure
     info.check();
@@ -888,8 +1122,9 @@ export class ProjectMutator {
   // Block-pack migration
   //
 
-  public migrateBlockPack(blockId: string, spec: BlockPackSpecPrepared, newArgsAndUiState?: ArgsAndUiState): void {
+  public migrateBlockPack(blockId: string, spec: BlockPackSpecPrepared, newClearState?: ClearState): void {
     const info = this.getBlockInfo(blockId);
+    const newConfig = extractConfig(spec.config);
 
     this.setBlockField(
       blockId,
@@ -898,10 +1133,52 @@ export class ProjectMutator {
       'NotReady',
     );
 
-    if (newArgsAndUiState !== undefined) {
-      // this will also reset all downstream stagings
-      this.setStates([{ blockId, args: newArgsAndUiState.args, uiState: newArgsAndUiState.uiState }]);
+    if (newClearState !== undefined) {
+      // State is being reset - no migration needed
+      const supportsStorageFromVM = newConfig.modelAPIVersion === 2;
+
+      if (supportsStorageFromVM) {
+        // V2+: Get initial storage directly from VM and derive args from it
+        const initialStorageJson = this.projectHelper.getInitialStorageInVM(newConfig);
+        this.setBlockStorageRaw(blockId, initialStorageJson);
+
+        // Derive args from storage - only set currentArgs if derivation succeeds
+        const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(newConfig, initialStorageJson);
+        if (!deriveArgsResult.error) {
+          this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValue(deriveArgsResult.value));
+          // Derive prerunArgs from storage
+          const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(newConfig, initialStorageJson);
+          if (prerunArgs !== undefined) {
+            this.setBlockFieldObj(blockId, 'currentPrerunArgs', this.createJsonFieldValue(prerunArgs));
+          }
+        }
+        this.blocksWithChangedInputs.add(blockId);
+        this.updateLastModified();
+      } else {
+        // V1: Use setStates with legacy state format
+        this.setStates([{ modelAPIVersion: 1, blockId, state: newClearState.state }]);
+      }
     } else {
+      // State is being preserved - run migrations if needed via VM
+      // Only Model API v2 blocks support migrations
+      const supportsStateMigrations = newConfig.modelAPIVersion === 2;
+
+      if (supportsStateMigrations) {
+        const currentStorageJson = info.blockStorageJson;
+
+        const migrationResult = this.projectHelper.migrateStorageInVM(newConfig, currentStorageJson);
+
+        if (migrationResult.error !== undefined) {
+          console.error(`[migrateBlockPack] Block ${blockId} migration error: ${migrationResult.error}`);
+        } else {
+          console.log(`[migrateBlockPack] Block ${blockId}: ${migrationResult.info}`);
+          if (migrationResult.warn) {
+            console.warn(`[migrateBlockPack] Block ${blockId} migration warning: ${migrationResult.warn}`);
+          }
+          this.setBlockStorageRaw(blockId, migrationResult.newStorageJson);
+        }
+      }
+
       // resetting staging outputs for all downstream blocks
       this.getStagingGraph().traverse('downstream', [blockId], ({ id }) => this.resetStaging(id));
     }
@@ -1023,12 +1300,17 @@ export class ProjectMutator {
     const stagingGraph = this.getStagingGraph();
     stagingGraph.nodes.forEach((node) => {
       const info = this.getBlockInfo(node.id);
-      let lag = info.stagingRendered ? 0 : 1;
+      // Use requireStagingRendering to check both: staging exists AND prerunArgs hasn't changed
+      const requiresRendering = info.requireStagingRendering;
+      let lag = requiresRendering ? 1 : 0;
       node.upstream.forEach((upstream) => {
         const upstreamLag = lags.get(upstream)!;
         if (upstreamLag === 0) return;
         lag = Math.max(upstreamLag + 1, lag);
       });
+      if (!requiresRendering && info.stagingRendered) {
+        // console.log(`[traverseWithStagingLag] SKIP staging for ${node.id} - prerunArgs unchanged`);
+      }
       cb(node.id, lag);
       lags.set(node.id, lag);
     });
@@ -1047,6 +1329,7 @@ export class ProjectMutator {
         // meaning staging already rendered
         return;
       if (lagThreshold === undefined || lag <= lagThreshold) {
+        // console.log(`[refreshStagings] RENDER staging for ${blockId} (lag=${lag})`);
         this.renderStagingFor(blockId);
         rendered++;
       }
