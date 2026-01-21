@@ -30,6 +30,8 @@ import { notEmpty, retry, withTimeout, type RetryOptions } from '@milaboratories
 import { Code } from '../proto-grpc/google/rpc/code';
 import { WebSocketBiDiStream } from './websocket_stream';
 import { TxAPI_ClientMessage, TxAPI_ServerMessage } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import { isAbortedError } from './errors';
 
 export interface PlCallOps {
   timeout?: number;
@@ -86,12 +88,18 @@ export class LLPlClient implements WireClientProviderFactory {
       auth?: AuthOps;
       statusListener?: PlConnectionStatusListener;
       shouldUseGzip?: boolean;
+      logger?: MiLogger;
+      useAutoDetectWireProtocol?: boolean;
     } = {},
   ) {
     const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
 
     const pl = new LLPlClient(conf, ops);
-    await pl.detectOptimalWireProtocol();
+
+    // FIXME(rfiskov)[MILAB-5275]: Investigate why autodetect randomly fails; temporary turn it off.
+    if (ops.useAutoDetectWireProtocol) {
+      await pl.detectOptimalWireProtocol();
+    }
     return pl;
   }
 
@@ -101,6 +109,7 @@ export class LLPlClient implements WireClientProviderFactory {
       auth?: AuthOps;
       statusListener?: PlConnectionStatusListener;
       shouldUseGzip?: boolean;
+      logger?: MiLogger;
     } = {},
   ) {
     const { auth, statusListener } = ops;
@@ -443,7 +452,7 @@ export class LLPlClient implements WireClientProviderFactory {
         body: { expiration: `${ttlSeconds}s` },
         headers,
       });
-      return notEmpty((await resp).data).token;
+      return notEmpty((await resp).data, 'REST: empty response for JWT token request').token;
     }
   }
 
@@ -452,7 +461,7 @@ export class LLPlClient implements WireClientProviderFactory {
     if (cl instanceof GrpcPlApiClient) {
       return (await cl.ping({})).response;
     } else {
-      return notEmpty((await cl.GET('/v1/ping')).data);
+      return notEmpty((await cl.GET('/v1/ping')).data, 'REST: empty response for ping request');
     }
   }
 
@@ -466,20 +475,50 @@ export class LLPlClient implements WireClientProviderFactory {
       return;
     }
 
+    // Each retry is:
+    //  - ping request timeout (100 to 3_000ms)
+    //  - backoff delay (30 to 500ms)
+    //
+    // 30 attempts are ~43 seconds of overall waiting time.
+    // Think twice on overall time this thing takes to complete when changing these parameters.
+    // It may block UI when connecting to the server and loading projects list.
+    const pingTimeoutFactor = 1.3;
+    const maxPingTimeoutMs = 3_000;
     const retryOptions: RetryOptions = {
       type: 'exponentialBackoff',
-      maxAttempts: 80,
+      maxAttempts: 30,
       initialDelay: 30,
       backoffMultiplier: 1.3,
       jitter: 0.2,
       maxDelay: 500,
     };
 
-    await retry(() => withTimeout(this.ping(), 500), retryOptions, () => {
-      const protocol = this._wireProto === 'grpc' ? 'rest' : 'grpc';
-      this.initWireConnection(protocol);
-      return true;
-    });
+    let attempt = 1;
+    let pingTimeoutMs = 100;
+    await retry(
+      () => withTimeout(this.ping(), pingTimeoutMs),
+      retryOptions,
+      (e: unknown) => {
+        if (isAbortedError(e)) {
+          this.ops.logger?.info(`Wire proto autodetect: ping timed out after ${pingTimeoutMs}ms: attempt=${attempt}, wire=${this._wireProto}`);
+
+          if (attempt % 2 === 0) {
+            // We have 2 wire protocols to check. Increase timeout each 2 attempts.
+            pingTimeoutMs = Math.min(
+              Math.round(pingTimeoutMs * pingTimeoutFactor),
+              maxPingTimeoutMs,
+            );
+          }
+        } else {
+          this.ops.logger?.info(`Wire proto autodetect: ping failed: attempt=${attempt}, wire=${this._wireProto}, err=${String(e)}`);
+        }
+
+        attempt++;
+        const protocol = this._wireProto === 'grpc' ? 'rest' : 'grpc';
+        this.ops.logger?.info(`Wire protocol autodetect next attempt: will try wire '${protocol}' with timeout ${pingTimeoutMs}ms`);
+        this.initWireConnection(protocol);
+        return true;
+      });
   }
 
   public async license(): Promise<grpcTypes.MaintenanceAPI_License_Response> {
@@ -487,7 +526,7 @@ export class LLPlClient implements WireClientProviderFactory {
     if (cl instanceof GrpcPlApiClient) {
       return (await cl.license({})).response;
     } else {
-      const resp = notEmpty((await cl.GET('/v1/license')).data);
+      const resp = notEmpty((await cl.GET('/v1/license')).data, 'REST: empty response for license request');
       return {
         status: resp.status,
         isOk: resp.isOk,
@@ -501,7 +540,7 @@ export class LLPlClient implements WireClientProviderFactory {
     if (cl instanceof GrpcPlApiClient) {
       return (await cl.authMethods({})).response;
     } else {
-      return notEmpty((await cl.GET('/v1/auth/methods')).data);
+      return notEmpty((await cl.GET('/v1/auth/methods')).data, 'REST: empty response for auth methods request');
     }
   }
 

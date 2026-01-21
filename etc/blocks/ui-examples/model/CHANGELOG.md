@@ -1,5 +1,74 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.3.22
+
+### Patch Changes
+
+- Updated dependencies [38534c5]
+  - @platforma-sdk/model@1.51.9
+
+## 1.3.21
+
+### Patch Changes
+
+- Updated dependencies [b0ceca1]
+  - @platforma-sdk/model@1.51.6
+
+## 1.3.20
+
+### Patch Changes
+
+- Updated dependencies [dd9a004]
+  - @platforma-sdk/model@1.51.5
+
+## 1.3.19
+
+### Patch Changes
+
+- Updated dependencies [5dc0a70]
+  - @platforma-sdk/model@1.51.2
+
+## 1.3.18
+
+### Patch Changes
+
+- a12641f: Updated PlAgDataTableV2 example.
+
+## 1.3.17
+
+### Patch Changes
+
+- Updated dependencies [fc75a16]
+  - @platforma-sdk/model@1.50.0
+
+## 1.3.16
+
+### Patch Changes
+
+- Updated dependencies [88f33fa]
+  - @platforma-sdk/model@1.49.0
+
+## 1.3.15
+
+### Patch Changes
+
+- Updated dependencies [d6856e2]
+  - @platforma-sdk/model@1.48.14
+
+## 1.3.14
+
+### Patch Changes
+
+- Updated dependencies [72bb768]
+  - @platforma-sdk/model@1.48.13
+
+## 1.3.13
+
+### Patch Changes
+
+- Updated dependencies [8abf3c6]
+  - @platforma-sdk/model@1.48.12
+
 ## 1.3.12
 
 ### Patch Changes

@@ -1,5 +1,70 @@
 # @milaboratories/pf-driver
 
+## 1.0.23
+
+### Patch Changes
+
+- Updated dependencies [38534c5]
+  - @platforma-sdk/model@1.51.9
+
+## 1.0.22
+
+### Patch Changes
+
+- Updated dependencies [b0ceca1]
+  - @platforma-sdk/model@1.51.6
+
+## 1.0.21
+
+### Patch Changes
+
+- Updated dependencies [dd9a004]
+  - @platforma-sdk/model@1.51.5
+
+## 1.0.20
+
+### Patch Changes
+
+- Updated dependencies [5dc0a70]
+  - @platforma-sdk/model@1.51.2
+
+## 1.0.19
+
+### Patch Changes
+
+- Updated dependencies [fc75a16]
+  - @platforma-sdk/model@1.50.0
+  - @milaboratories/pl-model-middle-layer@1.9.1
+
+## 1.0.18
+
+### Patch Changes
+
+- Updated dependencies [88f33fa]
+  - @milaboratories/pl-model-middle-layer@1.9.0
+  - @platforma-sdk/model@1.49.0
+
+## 1.0.17
+
+### Patch Changes
+
+- Updated dependencies [d6856e2]
+  - @platforma-sdk/model@1.48.14
+
+## 1.0.16
+
+### Patch Changes
+
+- Updated dependencies [72bb768]
+  - @platforma-sdk/model@1.48.13
+
+## 1.0.15
+
+### Patch Changes
+
+- Updated dependencies [8abf3c6]
+  - @platforma-sdk/model@1.48.12
+
 ## 1.0.14
 
 ### Patch Changes

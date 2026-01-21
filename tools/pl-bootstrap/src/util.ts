@@ -12,7 +12,7 @@ export function askYN(prompt: string): boolean {
   return answer.toLowerCase() === 'y';
 }
 
-export function assertNever(n: never) {
+export function assertNever(_n: never) {
   throw new Error('this should never happen');
 }
 
@@ -86,7 +86,7 @@ export function getProcessName(pid: number): string {
     }
 
     return lines[1].trim();
-  } catch (e) {
+  } catch (_e) {
     return '';
   }
 }

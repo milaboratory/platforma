@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ptabler-expression-js",
-  "version": "1.1.7",
+  "version": "1.1.9",
   "description": "JavaScript/TypeScript implementation of PTabler expression system",
   "type": "module",
   "main": "./dist/index.js",
@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "build": "ts-builder build --target node",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "type-check": "ts-builder types --target node",
     "lint": "eslint .",
@@ -28,12 +28,14 @@
     "@platforma-open/milaboratories.software-ptabler.schema": "workspace:*"
   },
   "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:"
   }
 }

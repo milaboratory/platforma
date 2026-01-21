@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-client",
-  "version": "2.16.14",
+  "version": "2.16.20",
   "engines": {
     "node": ">=22.19.0"
   },
@@ -56,8 +56,10 @@
     "openapi-typescript": "catalog:",
     "@types/http-proxy": "catalog:",
     "@types/node": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "vitest": "catalog:",
+    "eslint": "catalog:",
+    "@milaboratories/eslint-config": "workspace:*",
     "typescript": "catalog:"
   }
 }

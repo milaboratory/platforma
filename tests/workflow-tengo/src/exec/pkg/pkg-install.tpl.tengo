@@ -1,0 +1,26 @@
+assets := import("@platforma-sdk/workflow-tengo:assets")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pkg := import("@platforma-sdk/workflow-tengo:exec.package")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+
+sw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:sleep")
+
+self.defineOutputs(["installed"])
+
+self.prepare(func(inputs) {
+	binaryDescriptor := sw.descriptor.binary
+
+	archive := pkg.get(binaryDescriptor.registry, binaryDescriptor.package).archive()
+
+	return {
+		software: pkg.install(archive).package()
+	}
+})
+
+self.body(func(inputs) {
+	software := inputs["software"]
+
+	return {
+		installed: software.kvGetAsJson("ctl/runner/package/installation")
+	}
+})

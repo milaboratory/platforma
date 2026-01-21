@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createAppV2 } from './createAppV2';
-import { unwrapResult, type ValueOrErrors } from '@platforma-sdk/model';
+import { type OutputWithStatus, unwrapResult } from '@platforma-sdk/model';
 import { BlockStateMock } from './test-helpers/BlockMock';
 import { BlockMock } from './test-helpers/BlockMock';
 import { delay } from '@milaboratories/helpers';
@@ -24,7 +24,7 @@ const defaultArgs = () => ({
 });
 
 type Outputs = {
-  sum: ValueOrErrors<number>;
+  sum: OutputWithStatus<number>;
 };
 
 const defaultOutputs = (): Outputs => {
@@ -32,6 +32,7 @@ const defaultOutputs = (): Outputs => {
     sum: {
       ok: true,
       value: 0,
+      stable: true,
     },
   };
 };
@@ -43,7 +44,7 @@ const defaultState = (): BlockStateMock<Args, Outputs, UiState, `/${string}`> =>
 class BlockSum extends BlockMock<Args, Outputs, UiState, `/${string}`> {
   async process(): Promise<void> {
     const { args, author } = this.state;
-    this.state.setState({ author, outputs: { sum: { ok: true, value: args.x + args.y } } });
+    this.state.setState({ author, outputs: { sum: { ok: true, value: args.x + args.y, stable: true } } });
   }
 }
 
@@ -60,7 +61,18 @@ describe('createApp', { timeout: 20_000 }, () => {
   it('should create an app with reactive snapshot', async () => {
     const initialState = await platforma.loadBlockState().then(unwrapResult);
 
-    const app = createAppV2(initialState, platforma, { debug: true, debounceSpan: 10 });
+    const app = createAppV2(
+      initialState,
+      {
+        ...platforma,
+        blockModelInfo: {
+          outputs: {
+            sum: { withStatus: false },
+          },
+        },
+      },
+      { debug: true, debounceSpan: 10 },
+    );
 
     expect(app.model.args).toEqual({ x: 0, y: 0 });
     expect(app.model.ui).toEqual({ label: '' });
@@ -111,8 +123,30 @@ describe('createApp', { timeout: 20_000 }, () => {
     const initialState1 = await platforma1.loadBlockState().then(unwrapResult);
     const initialState2 = await platforma2.loadBlockState().then(unwrapResult);
 
-    const app1 = createAppV2(initialState1, platforma1, { appId: 'app1', debug: true, debounceSpan: 10 });
-    const app2 = createAppV2(initialState2, platforma2, { appId: 'app2', debug: true, debounceSpan: 10 });
+    const app1 = createAppV2(
+      initialState1,
+      {
+        ...platforma1,
+        blockModelInfo: {
+          outputs: {
+            sum: { withStatus: false },
+          },
+        },
+      },
+      { appId: 'app1', debug: true, debounceSpan: 10 },
+    );
+    const app2 = createAppV2(
+      initialState2,
+      {
+        ...platforma2,
+        blockModelInfo: {
+          outputs: {
+            sum: { withStatus: false },
+          },
+        },
+      },
+      { appId: 'app2', debug: true, debounceSpan: 10 },
+    );
 
     app1.model.args.x = 1;
     app1.model.args.y = 2;

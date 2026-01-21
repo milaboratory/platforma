@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/model",
-  "version": "1.48.4",
+  "version": "1.51.9",
   "description": "Platforma.bio SDK / Block Model",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -18,7 +18,7 @@
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -37,11 +37,12 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@platforma-sdk/eslint-config": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "fast-json-patch": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }

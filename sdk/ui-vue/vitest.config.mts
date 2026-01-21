@@ -1,8 +1,8 @@
+import { createVitestVueConfig } from '@milaboratories/build-configs';
 import { defineConfig } from 'vitest/config';
 
-export default defineConfig({
+export default defineConfig(createVitestVueConfig({
   test: {
-    pool: 'threads',
     includeSource: ['src/**/*.{js,ts}'],
   },
-});
+}));

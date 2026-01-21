@@ -119,6 +119,87 @@ test('test fallback to native labels in label derivation', () => {
   ]);
 });
 
+test.each<{ name: string; traces: Trace[]; labels: string[] }>([
+  {
+    name: 'removes redundant low-importance type when high-importance alone suffices',
+    traces: [
+      [
+        { type: 't1', importance: 10, label: 'High1' },
+        { type: 't2', importance: 1, label: 'Low1' }
+      ],
+      [
+        { type: 't1', importance: 10, label: 'High2' },
+        { type: 't2', importance: 1, label: 'Low2' }
+      ]
+    ],
+    // Both t1 and t2 distinguish, but t2 (low importance) should be removed since t1 alone suffices
+    labels: ['High1', 'High2']
+  },
+  {
+    name: 'keeps both types when both are needed for uniqueness',
+    traces: [
+      [
+        { type: 't1', importance: 10, label: 'A' },
+        { type: 't2', importance: 1, label: 'X' }
+      ],
+      [
+        { type: 't1', importance: 10, label: 'A' },
+        { type: 't2', importance: 1, label: 'Y' }
+      ],
+      [
+        { type: 't1', importance: 10, label: 'B' },
+        { type: 't2', importance: 1, label: 'Y' }
+      ]
+    ],
+    // Neither t1 nor t2 alone can distinguish all three, need both
+    labels: ['A / X', 'A / Y', 'B / Y']
+  },
+  {
+    name: 'removes multiple redundant types greedily',
+    traces: [
+      [
+        { type: 't1', importance: 100, label: 'Unique1' },
+        { type: 't2', importance: 10, label: 'Same' },
+        { type: 't3', importance: 1, label: 'Same' }
+      ],
+      [
+        { type: 't1', importance: 100, label: 'Unique2' },
+        { type: 't2', importance: 10, label: 'Same' },
+        { type: 't3', importance: 1, label: 'Same' }
+      ]
+    ],
+    // t1 alone distinguishes; t2 and t3 are redundant and should be removed
+    labels: ['Unique1', 'Unique2']
+  },
+  {
+    name: 'fallback case: removes types that do not reduce cardinality',
+    traces: [
+      // Two columns with identical traces - cannot be distinguished
+      [
+        { type: 't1', importance: 100, label: 'A' },
+        { type: 't2', importance: 10, label: 'X' },
+        { type: 't3', importance: 1, label: 'Same' }
+      ],
+      [
+        { type: 't1', importance: 100, label: 'A' },
+        { type: 't2', importance: 10, label: 'X' },
+        { type: 't3', importance: 1, label: 'Same' }
+      ],
+      // Third column is different
+      [
+        { type: 't1', importance: 100, label: 'B' },
+        { type: 't2', importance: 10, label: 'Y' },
+        { type: 't3', importance: 1, label: 'Same' }
+      ]
+    ],
+    // Cannot achieve full uniqueness (2 columns are identical), but t3 (Same) can be removed
+    // since it doesn't help distinguish anything. t1 alone gives cardinality 2.
+    labels: ['A', 'A', 'B']
+  }
+])('test label minimization: $name', ({ traces, labels }) => {
+  expect(deriveLabels(tracesToSpecs(traces), (s) => s).map((r) => r.label)).toEqual(labels);
+});
+
 test.each<{ name: string; traces: Trace[]; labels: string[]; forceTraceElements: string[] }>([
   {
     name: 'force one element',

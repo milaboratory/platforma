@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.43.97",
+  "version": "1.45.5",
   "description": "Pl Middle Layer",
   "engines": {
     "node": ">=22.19.0"
@@ -9,12 +9,18 @@
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node --build-config ./build.node.config.mjs",
     "watch": "ts-builder build --target node --build-config ./build.node.config.mjs --watch",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -60,6 +66,8 @@
     "@types/semver": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
     "@types/node": "catalog:",
     "@milaboratories/ts-configs": "workspace:*",
     "tslib": "catalog:"

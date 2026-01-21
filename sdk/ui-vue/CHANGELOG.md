@@ -1,5 +1,127 @@
 # @platforma-sdk/ui-vue
 
+## 1.51.9
+
+### Patch Changes
+
+- Updated dependencies [38534c5]
+  - @platforma-sdk/model@1.51.9
+  - @milaboratories/uikit@2.10.4
+
+## 1.51.8
+
+### Patch Changes
+
+- Updated dependencies [601a869]
+  - @milaboratories/uikit@2.10.3
+
+## 1.51.7
+
+### Patch Changes
+
+- c5f448c: PlAgOverlayLoading: change default notReadyText
+
+## 1.51.6
+
+### Patch Changes
+
+- Updated dependencies [b0ceca1]
+  - @platforma-sdk/model@1.51.6
+  - @milaboratories/uikit@2.10.2
+
+## 1.51.5
+
+### Patch Changes
+
+- Updated dependencies [dd9a004]
+  - @platforma-sdk/model@1.51.5
+  - @milaboratories/uikit@2.10.1
+
+## 1.51.4
+
+### Patch Changes
+
+- 0f0a802: PlAgDataTable: Reclaimed some wasted vertical spacing
+- Updated dependencies [0f0a802]
+  - @milaboratories/uikit@2.10.0
+
+## 1.51.2
+
+### Patch Changes
+
+- Updated dependencies [5dc0a70]
+  - @platforma-sdk/model@1.51.2
+  - @milaboratories/uikit@2.9.1
+
+## 1.51.0
+
+### Minor Changes
+
+- a12641f: - `usePlDataTableSettingsV2` expects `OutputWithStatus` now
+  - `PlAgOverlayLoading`: replaced `notReady: boolean` with `variant: 'not-ready' | 'running' | 'loading'`
+  - `PlAgDataTableV2`: only show status bar when data is loaded
+  - `PlAgDataTableV2`: old loading hack removed
+
+### Patch Changes
+
+- Updated dependencies [a12641f]
+  - @milaboratories/uikit@2.9.0
+
+## 1.50.0
+
+### Minor Changes
+
+- fc75a16: defineApp now expects platforma extended with `blockModelInfo` field
+
+### Patch Changes
+
+- Updated dependencies [fc75a16]
+- Updated dependencies [fc75a16]
+  - @platforma-sdk/model@1.50.0
+  - @milaboratories/uikit@2.8.9
+  - @milaboratories/ptabler-expression-js@1.1.9
+
+## 1.49.0
+
+### Patch Changes
+
+- Updated dependencies [88f33fa]
+  - @platforma-sdk/model@1.49.0
+  - @milaboratories/uikit@2.8.8
+  - @milaboratories/ptabler-expression-js@1.1.8
+
+## 1.48.19
+
+### Patch Changes
+
+- Updated dependencies [35a16d0]
+  - @milaboratories/uikit@2.8.7
+
+## 1.48.14
+
+### Patch Changes
+
+- Updated dependencies [d6856e2]
+  - @platforma-sdk/model@1.48.14
+  - @milaboratories/uikit@2.8.6
+
+## 1.48.13
+
+### Patch Changes
+
+- Updated dependencies [72bb768]
+  - @platforma-sdk/model@1.48.13
+  - @milaboratories/uikit@2.8.5
+
+## 1.48.12
+
+### Patch Changes
+
+- 8abf3c6: fix annotations problems
+- Updated dependencies [8abf3c6]
+  - @milaboratories/uikit@2.8.4
+  - @platforma-sdk/model@1.48.12
+
 ## 1.48.10
 
 ### Patch Changes

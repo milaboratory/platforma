@@ -1,10 +1,4 @@
+import { createVitestConfig } from '@milaboratories/build-configs';
 import { defineConfig } from 'vitest/config';
 
-export default defineConfig({
-  test: {
-    coverage: {
-      provider: 'v8',
-      include: ['src'],
-    }
-  }
-});
+export default defineConfig(createVitestConfig());

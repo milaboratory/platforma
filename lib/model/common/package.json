@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-model-common",
-  "version": "1.21.10",
+  "version": "1.23.0",
   "description": "Platforma SDK Model",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -17,7 +17,7 @@
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -32,10 +32,11 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "@platforma-sdk/eslint-config": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:*",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }
 }

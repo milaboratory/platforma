@@ -1,6 +1,6 @@
 import { Pl } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
-import * as env from '../test/env';
+import * as env from '../env';
 
 tplTest.concurrent(
   'should get blob size from file in library storage',

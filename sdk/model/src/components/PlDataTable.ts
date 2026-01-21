@@ -39,8 +39,10 @@ import type {
 } from '../render';
 import {
   allPColumnsReady,
+  deriveLabels,
   PColumnCollection,
 } from '../render';
+import { identity } from 'es-toolkit';
 
 export type PlTableColumnId = {
   /** Original column spec */
@@ -485,7 +487,7 @@ export function getAllLabelColumns(
     .getColumns({
       name: PColumnName.Label,
       axes: [{}], // exactly one axis
-    }, { dontWaitAllData: true });
+    }, { dontWaitAllData: true, overrideLabelAnnotation: false });
 }
 
 /** Get label columns matching the provided columns from the result pool */
@@ -641,7 +643,20 @@ export function createPlDataTableV2<A, U>(
   const allLabelColumns = getAllLabelColumns(ctx.resultPool);
   if (!allLabelColumns) return undefined;
 
-  const fullLabelColumns = getMatchingLabelColumns(columns.map(getColumnIdAndSpec), allLabelColumns);
+  let fullLabelColumns = getMatchingLabelColumns(columns.map(getColumnIdAndSpec), allLabelColumns);
+  fullLabelColumns = deriveLabels(fullLabelColumns, identity, { includeNativeLabel: true }).map((v) => {
+    return {
+      ...v.value,
+      spec: {
+        ...v.value.spec,
+        annotations: {
+          ...v.value.spec.annotations,
+          [Annotation.Label]: v.label,
+        },
+      },
+    };
+  });
+
   const fullColumns = [...columns, ...fullLabelColumns];
 
   const fullColumnsAxes = uniqueBy(
@@ -665,7 +680,7 @@ export function createPlDataTableV2<A, U>(
       });
   const filters: PTableRecordSingleValueFilterV2[]
     = uniqueBy(
-      [...(ops?.filters ?? []), ...tableStateNormalized.pTableParams.filters],
+      [...tableStateNormalized.pTableParams.filters, ...(ops?.filters ?? [])],
       (f) => canonicalizeJson<PTableColumnId>(f.column),
     ).filter((f) => {
       const valid = isValidColumnId(f.column);
@@ -674,7 +689,7 @@ export function createPlDataTableV2<A, U>(
     });
   const sorting: PTableSorting[]
     = uniqueBy(
-      [...(ops?.sorting ?? []), ...tableStateNormalized.pTableParams.sorting],
+      [...tableStateNormalized.pTableParams.sorting, ...(ops?.sorting ?? [])],
       (s) => canonicalizeJson<PTableColumnId>(s.column),
     ).filter((s) => {
       const valid = isValidColumnId(s.column);

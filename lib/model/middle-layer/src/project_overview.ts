@@ -24,7 +24,7 @@ export type ProjectOverview = {
    *   - blocks reordering
    *   - block renaming
    *   - block-pack update
-   * */
+   */
   authorMarker?: AuthorMarker;
 
   /** Overview information for each block */
@@ -41,17 +41,29 @@ export type BlockStateOverview = {
 
   /**
    * Blocks label visible to the user.
-   * Udefined when block-pack for this block is not yet materialized.
+   * Undefined when block-pack for this block is not yet materialized.
    *
    * @deprecated use title
-   * */
+   */
   label: string | undefined;
 
   /**
-   * Block title
-   * Udefined when block-pack for this block is not yet materialized.
+   * Block title.
+   * Undefined when block-pack for this block is not yet materialized.
    */
   title: string | undefined;
+
+  /**
+   * Block subtitle, shown below the title.
+   * Undefined when block-pack for this block is not yet materialized.
+   */
+  subtitle: string | undefined;
+
+  /**
+   * Tags for search functionality.
+   * Undefined when block-pack for this block is not yet materialized.
+   */
+  tags: string[] | undefined;
 
   /** Block rendering mode */
   renderingMode: BlockRenderingMode;
@@ -59,7 +71,7 @@ export type BlockStateOverview = {
   /**
    * True if block have missing references, e.g. referenced block was deleted
    * or moved downstream.
-   * */
+   */
   missingReference: boolean;
 
   /**
@@ -67,25 +79,25 @@ export type BlockStateOverview = {
    * moment) are not in sync with current arguments. This takes into account
    * stale state of all upstream blocks as well. Initial state also considered
    * stale.
-   * */
+   */
   stale: boolean;
 
   /**
    * True if any of the outputs have errors. Errors may appear even before
    * calculations are finished.
-   * */
+   */
   outputErrors: boolean;
 
   /**
    * If outputs have errors, this field will contain the error message extracted
    * from the outputs map.
-   * */
+   */
   outputsError?: string;
 
   /**
    * If exports context have errors, this field will contain the error message
    * extracted from the exports context resource.
-   * */
+   */
   exportsError?: string;
 
   /** Generalized block calculation status */
@@ -94,43 +106,43 @@ export type BlockStateOverview = {
   /**
    * All upstream blocks of this block. In other words all dependencies of this
    * block, including transitive dependencies.
-   * */
+   */
   upstreams: string[];
 
   /**
    * All downstream blocks of this block. In other words all blocks that depends
    * on outputs of this block, accounting for transitive dependencies.
-   * */
+   */
   downstreams: string[];
 
   /**
    * Block sections. May be unavailable, if block-pack for this block is not
    * yet materialized.
-   * */
+   */
   sections: BlockSection[] | undefined;
 
   /**
    * True if inputs of current block are suitable for block execution.
    * May be unavailable, if block-pack for this block is not yet materialized.
-   * */
+   */
   inputsValid: boolean | undefined;
 
   /**
    * True if current block can be executed. This takes into account can run of
    * all upstream blocks as well.
-   * */
+   */
   canRun: boolean;
 
   /**
    * SDK version the block was compiled with.
-   * Udefined when block-pack for this block is not yet materialized.
-   * */
+   * Undefined when block-pack for this block is not yet materialized.
+   */
   sdkVersion: string | undefined;
 
   /**
    * Feature flags the block was compiled with.
-   * Udefined when block-pack for this block is not yet materialized.
-   * */
+   * Undefined when block-pack for this block is not yet materialized.
+   */
   featureFlags: BlockCodeFeatureFlags | undefined;
 
   /**
@@ -138,7 +150,7 @@ export type BlockStateOverview = {
    * Other properties of this block overview will be filled with best effort.
    * This block should not be openable; the only available action for it is deletion.
    * Undefined when block-pack for this block is not yet materialized.
-   * */
+   */
   isIncompatibleWithRuntime: boolean | undefined;
 
   /** Information on where the block pack for this block came from */
@@ -147,7 +159,7 @@ export type BlockStateOverview = {
   /**
    * If block pack update is available this field will contain latest specs to
    * perform the update
-   * */
+   */
   updatedBlockPack: BlockPackSpec | undefined;
 
   /** Current block settings */

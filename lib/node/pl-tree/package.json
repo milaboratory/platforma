@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-tree",
-  "version": "1.8.22",
+  "version": "1.8.28",
   "description": "Reactive pl tree state",
   "engines": {
     "node": ">=22.19.0"
@@ -42,8 +42,10 @@
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
     "@types/node": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "vitest": "catalog:",
+    "eslint": "catalog:",
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*"
   }
 }

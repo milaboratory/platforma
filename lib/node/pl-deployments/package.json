@@ -1,7 +1,7 @@
 {
   "name": "@milaboratories/pl-deployments",
-  "version": "2.14.0",
-  "pl-version": "1.45.1",
+  "version": "2.15.1",
+  "pl-version": "1.44.1",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
   "engines": {
     "node": ">=22.19.0"
@@ -46,9 +46,8 @@
     "@types/decompress": "catalog:",
     "@types/node": "catalog:",
     "@types/ssh2": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
-    "prettier": "catalog:",
     "testcontainers": "catalog:",
     "tsconfig-paths": "catalog:",
     "typescript": "catalog:",

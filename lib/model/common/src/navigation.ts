@@ -16,6 +16,9 @@ export type BlockSectionLink = {
 
   /** Visible section title, can also be used in the window header. */
   readonly label: string;
+
+  /** Optional text shown as a small badge next to the section */
+  readonly badge?: string;
 };
 
 /** Different variants for link section appearance */
@@ -31,7 +34,7 @@ export type BlockSectionDelimiter = {
 /**
  * Part of the block state, representing current navigation information
  * (i.e. currently selected section)
- * */
+ */
 export type NavigationState<Href extends `/${string}` = `/${string}`> = {
   readonly href: Href;
 };

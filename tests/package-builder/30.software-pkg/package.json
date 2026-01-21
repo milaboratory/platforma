@@ -6,7 +6,7 @@
   "scripts": {
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
     "reset": "npm run cleanup && rm -rf ./node_modules/",
-    "check": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build"
+    "check": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build --docker-build && node ./verify.mjs"
   },
   "block-software": {
     "registries": {
@@ -145,6 +145,18 @@
           },
           "cmd": [
             "true"
+          ]
+        }
+      },
+      "custom-docker": {
+        "docker": {
+          "artifact": {
+            "context": "./src",
+            "dockerfile": "Dockerfile"
+          },
+          "cmd": [
+            "cmd-arg1",
+            "cmd-arg2"
           ]
         }
       }

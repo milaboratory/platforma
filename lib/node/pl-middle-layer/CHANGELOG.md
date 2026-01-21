@@ -1,5 +1,183 @@
 # @milaboratories/pl-middle-layer
 
+## 1.45.5
+
+### Patch Changes
+
+- Updated dependencies [38534c5]
+  - @platforma-sdk/model@1.51.9
+  - @milaboratories/pf-driver@1.0.23
+
+## 1.45.4
+
+### Patch Changes
+
+- Updated dependencies [b0ceca1]
+  - @platforma-sdk/model@1.51.6
+  - @milaboratories/pf-driver@1.0.22
+
+## 1.45.3
+
+### Patch Changes
+
+- Updated dependencies [dd9a004]
+  - @platforma-sdk/model@1.51.5
+  - @milaboratories/pf-driver@1.0.21
+
+## 1.45.2
+
+### Patch Changes
+
+- Updated dependencies [582dde9]
+  - @platforma-sdk/workflow-tengo@5.8.0
+
+## 1.45.1
+
+### Patch Changes
+
+- Updated dependencies [5dc0a70]
+  - @platforma-sdk/model@1.51.2
+  - @milaboratories/pf-driver@1.0.20
+
+## 1.45.0
+
+### Minor Changes
+
+- 734b18a: Fix staging context cleanup when stopping blocks
+
+  When a block's production run is stopped, all downstream staging contexts are now properly cleaned up. This fixes a resource leak that prevented processes from terminating when pressing the "Stop" button.
+
+  Additionally, staging context behavior was changed: staging contexts now use input contexts instead of output contexts, meaning staging workflow results stay local to the block and don't propagate to downstream blocks as dependencies. The staging UI context (used by Result Pool in desktop) continues to use workflow output contexts.
+
+## 1.44.2
+
+### Patch Changes
+
+- Updated dependencies [fc75a16]
+- Updated dependencies [fc75a16]
+- Updated dependencies [fc75a16]
+  - @milaboratories/computable@2.8.0
+  - @milaboratories/pl-model-common@1.23.0
+  - @platforma-sdk/model@1.50.0
+  - @milaboratories/pl-drivers@1.11.37
+  - @milaboratories/pl-tree@1.8.28
+  - @milaboratories/pl-model-middle-layer@1.9.1
+  - @milaboratories/pl-client@2.16.20
+  - @milaboratories/pl-deployments@2.15.1
+  - @platforma-sdk/block-tools@2.6.29
+  - @milaboratories/pf-driver@1.0.19
+  - @milaboratories/pl-model-backend@1.1.37
+  - @milaboratories/pl-errors@1.1.52
+  - @platforma-sdk/workflow-tengo@5.7.3
+
+## 1.44.1
+
+### Patch Changes
+
+- Updated dependencies [8d1b495]
+  - @milaboratories/pl-deployments@2.15.0
+
+## 1.44.0
+
+### Minor Changes
+
+- 88f33fa: Block model upgrade: subtitle, tags, and section badges
+
+### Patch Changes
+
+- Updated dependencies [88f33fa]
+  - @milaboratories/pl-model-middle-layer@1.9.0
+  - @milaboratories/pl-model-common@1.22.0
+  - @platforma-sdk/model@1.49.0
+  - @milaboratories/pf-driver@1.0.18
+  - @platforma-sdk/block-tools@2.6.28
+  - @milaboratories/pl-client@2.16.19
+  - @milaboratories/pl-deployments@2.14.1
+  - @milaboratories/pl-drivers@1.11.36
+  - @milaboratories/pl-model-backend@1.1.36
+  - @milaboratories/pl-errors@1.1.51
+  - @milaboratories/pl-tree@1.8.27
+  - @platforma-sdk/workflow-tengo@5.7.3
+
+## 1.43.105
+
+### Patch Changes
+
+- Updated dependencies [edbbd2e]
+  - @milaboratories/pl-client@2.16.18
+  - @milaboratories/pl-model-backend@1.1.35
+  - @milaboratories/pl-drivers@1.11.35
+  - @milaboratories/pl-errors@1.1.50
+  - @milaboratories/pl-tree@1.8.26
+  - @platforma-sdk/workflow-tengo@5.7.3
+
+## 1.43.104
+
+### Patch Changes
+
+- Updated dependencies [2762d16]
+  - @milaboratories/pl-client@2.16.17
+  - @milaboratories/pl-model-backend@1.1.34
+  - @milaboratories/pl-drivers@1.11.34
+  - @milaboratories/pl-errors@1.1.49
+  - @milaboratories/pl-tree@1.8.25
+  - @platforma-sdk/workflow-tengo@5.7.3
+
+## 1.43.103
+
+### Patch Changes
+
+- Updated dependencies [2dc3476]
+  - @milaboratories/pl-client@2.16.16
+  - @milaboratories/pl-model-backend@1.1.33
+  - @milaboratories/pl-drivers@1.11.33
+  - @milaboratories/pl-errors@1.1.48
+  - @milaboratories/pl-tree@1.8.24
+  - @platforma-sdk/workflow-tengo@5.7.3
+
+## 1.43.102
+
+### Patch Changes
+
+- Updated dependencies [35d3bdd]
+  - @milaboratories/pl-drivers@1.11.32
+
+## 1.43.101
+
+### Patch Changes
+
+- Updated dependencies [4fceb9d]
+  - @milaboratories/pl-client@2.16.15
+  - @milaboratories/pl-model-backend@1.1.32
+  - @milaboratories/pl-drivers@1.11.31
+  - @milaboratories/pl-errors@1.1.47
+  - @milaboratories/pl-tree@1.8.23
+  - @platforma-sdk/workflow-tengo@5.7.3
+
+## 1.43.100
+
+### Patch Changes
+
+- Updated dependencies [d6856e2]
+  - @platforma-sdk/model@1.48.14
+  - @milaboratories/pf-driver@1.0.17
+
+## 1.43.99
+
+### Patch Changes
+
+- Updated dependencies [72bb768]
+  - @platforma-sdk/model@1.48.13
+  - @milaboratories/pf-driver@1.0.16
+
+## 1.43.98
+
+### Patch Changes
+
+- Updated dependencies [8abf3c6]
+  - @platforma-sdk/model@1.48.12
+  - @milaboratories/pf-driver@1.0.15
+
 ## 1.43.97
 
 ### Patch Changes

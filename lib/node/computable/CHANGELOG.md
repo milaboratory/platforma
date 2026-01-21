@@ -1,5 +1,11 @@
 # @milaboratories/computable
 
+## 2.8.0
+
+### Minor Changes
+
+- fc75a16: Added `stable` flag in `Computable.wrapError`
+
 ## 2.7.5
 
 ### Patch Changes

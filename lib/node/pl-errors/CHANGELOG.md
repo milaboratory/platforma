@@ -1,5 +1,45 @@
 # @milaboratories/pl-errors
 
+## 1.1.52
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.16.20
+
+## 1.1.51
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.16.19
+
+## 1.1.50
+
+### Patch Changes
+
+- Updated dependencies [edbbd2e]
+  - @milaboratories/pl-client@2.16.18
+
+## 1.1.49
+
+### Patch Changes
+
+- Updated dependencies [2762d16]
+  - @milaboratories/pl-client@2.16.17
+
+## 1.1.48
+
+### Patch Changes
+
+- Updated dependencies [2dc3476]
+  - @milaboratories/pl-client@2.16.16
+
+## 1.1.47
+
+### Patch Changes
+
+- Updated dependencies [4fceb9d]
+  - @milaboratories/pl-client@2.16.15
+
 ## 1.1.46
 
 ### Patch Changes

@@ -1,5 +1,72 @@
 # @platforma-sdk/model
 
+## 1.51.9
+
+### Patch Changes
+
+- 38534c5: Label derivation minimization now also works in fallback/degenerate cases where full label uniqueness cannot be achieved. The algorithm removes types that don't contribute to label diversity (i.e., types whose removal doesn't decrease the number of unique labels), producing shorter labels even when some duplicates are unavoidable.
+
+## 1.51.6
+
+### Patch Changes
+
+- b0ceca1: Label derivation algorithm now minimizes the selected type set after finding a working combination. After the greedy selection finds types that produce unique labels, it attempts to remove types one by one (lowest importance first) while preserving label uniqueness. This produces shorter, cleaner labels when the initial selection included redundant types.
+
+## 1.51.5
+
+### Patch Changes
+
+- dd9a004: prefer user table sorting instead default presetted settings
+
+## 1.51.2
+
+### Patch Changes
+
+- 5dc0a70: disable default flag overriding in getColumns method
+
+## 1.50.0
+
+### Minor Changes
+
+- fc75a16: - Added new `withStatus` flag for outputs and respective shortcuts
+  - `BlockModel.done()` now returns platforma extended with `blockModelInfo` field
+
+### Patch Changes
+
+- Updated dependencies [fc75a16]
+  - @milaboratories/pl-model-common@1.23.0
+  - @milaboratories/ptabler-expression-js@1.1.9
+
+## 1.49.0
+
+### Minor Changes
+
+- 88f33fa: Block model upgrade: subtitle, tags, and section badges
+
+### Patch Changes
+
+- Updated dependencies [88f33fa]
+  - @milaboratories/pl-model-common@1.22.0
+  - @milaboratories/ptabler-expression-js@1.1.8
+
+## 1.48.14
+
+### Patch Changes
+
+- d6856e2: reexport functions
+
+## 1.48.13
+
+### Patch Changes
+
+- 72bb768: separate logic for aggregating columns for graphics
+
+## 1.48.12
+
+### Patch Changes
+
+- 8abf3c6: fix annotations problems
+
 ## 1.48.4
 
 ### Patch Changes

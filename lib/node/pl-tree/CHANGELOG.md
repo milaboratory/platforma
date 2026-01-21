@@ -1,5 +1,53 @@
 # @milaboratories/pl-tree
 
+## 1.8.28
+
+### Patch Changes
+
+- Updated dependencies [fc75a16]
+  - @milaboratories/computable@2.8.0
+  - @milaboratories/pl-client@2.16.20
+  - @milaboratories/pl-errors@1.1.52
+
+## 1.8.27
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.16.19
+- @milaboratories/pl-errors@1.1.51
+
+## 1.8.26
+
+### Patch Changes
+
+- Updated dependencies [edbbd2e]
+  - @milaboratories/pl-client@2.16.18
+  - @milaboratories/pl-errors@1.1.50
+
+## 1.8.25
+
+### Patch Changes
+
+- Updated dependencies [2762d16]
+  - @milaboratories/pl-client@2.16.17
+  - @milaboratories/pl-errors@1.1.49
+
+## 1.8.24
+
+### Patch Changes
+
+- Updated dependencies [2dc3476]
+  - @milaboratories/pl-client@2.16.16
+  - @milaboratories/pl-errors@1.1.48
+
+## 1.8.23
+
+### Patch Changes
+
+- Updated dependencies [4fceb9d]
+  - @milaboratories/pl-client@2.16.15
+  - @milaboratories/pl-errors@1.1.47
+
 ## 1.8.22
 
 ### Patch Changes

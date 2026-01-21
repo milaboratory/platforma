@@ -103,7 +103,6 @@ export default class OclifIndex extends Command {
 
 ${importLines.join('\n')}
 
-// prettier-ignore
 export const ${identifier} = {
   ${commandLines.join(',\n  ')},
 };

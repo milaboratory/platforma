@@ -2,11 +2,11 @@ import { expect, test } from 'vitest';
 import { delay, timer, exclusiveRequest } from '@milaboratories/helpers';
 
 test('Exclusive request', async () => {
-  let num = 0;
+  let _num = 0;
 
   const myCall = async (arg: number) => {
     const d = timer();
-    ++num;
+    ++_num;
     await delay(arg);
     return {
       arg,

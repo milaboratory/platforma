@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/helpers",
-  "version": "1.12.1",
+  "version": "1.13.0",
   "description": "",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -34,7 +34,7 @@
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
     "@milaboratories/ts-configs": "workspace:*",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "vitest": "catalog:"
   }
 }

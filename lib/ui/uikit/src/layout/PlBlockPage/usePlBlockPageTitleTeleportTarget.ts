@@ -1,18 +1,13 @@
-import { nextTick, onMounted, onUpdated, ref } from 'vue';
-import { PlBlockPageTitleTeleportId } from './PlBlockPageTitleTeleportId';
-
-const selector = '#' + PlBlockPageTitleTeleportId;
+import { nextTick, onMounted, onUpdated } from 'vue';
+import { PlBlockPageTitleTeleportTarget } from './PlBlockPageTitleTeleportTarget';
 
 export function usePlBlockPageTitleTeleportTarget(componentName: string) {
-  const target = ref<string>();
-
   const check = () => {
     nextTick(() => {
-      target.value = document.querySelector(selector) ? selector : undefined;
-      if (!target.value) {
+      if (!PlBlockPageTitleTeleportTarget.value) {
         console.error(
-          `[${componentName}] Error: 'PlBlockPage' component is missing. 
-          Ensure that you placed the components inside <PlBlockPage />.`,
+          `[${componentName}] Error: Either 'PlBlockPage' component is missing or it has no title. 
+          Ensure that you placed the components inside <PlBlockPage /> with a title.`,
         );
       }
     });
@@ -21,5 +16,5 @@ export function usePlBlockPageTitleTeleportTarget(componentName: string) {
   onMounted(check);
   onUpdated(check);
 
-  return target;
+  return PlBlockPageTitleTeleportTarget;
 }

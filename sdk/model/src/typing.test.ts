@@ -1,8 +1,8 @@
 import {
   BlockSection,
   LocalBlobHandleAndSize,
-  RemoteBlobHandleAndSize,
-  ValueOrErrors
+  OutputWithStatus,
+  RemoteBlobHandleAndSize
 } from '@milaboratories/pl-model-common';
 import { expect, test } from 'vitest';
 import { DeriveHref, StdCtx } from './bconfig';
@@ -117,8 +117,8 @@ test('test config content', () => {
   assertType<
     InferOutputsType<typeof platforma>,
     {
-      cell1: ValueOrErrors<{ b: string[] }>;
-      cell2: ValueOrErrors<'v1'[]>;
+      cell1: OutputWithStatus<{ b: string[] }>;
+      cell2: OutputWithStatus<'v1'[]>;
     }
   >();
 
@@ -161,7 +161,7 @@ test('test config 2', () => {
   assertType<
     InferOutputsType<typeof platforma>,
     {
-      cell1: ValueOrErrors<{
+      cell1: OutputWithStatus<{
         b: string;
         c: [Uint8Array, 'asd'];
         d: string[];
@@ -169,8 +169,8 @@ test('test config 2', () => {
         f: LocalBlobHandleAndSize;
         g: RemoteBlobHandleAndSize;
       }>;
-      cell2: ValueOrErrors<number>;
-      cell3: ValueOrErrors<undefined>;
+      cell2: OutputWithStatus<number>;
+      cell3: OutputWithStatus<undefined>;
     }
   >();
 

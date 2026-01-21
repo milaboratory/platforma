@@ -20,7 +20,6 @@ export default class Test extends Command {
 
     const testerArgs: string[] = this.argv.length == 0 ? ['./src'] : this.argv;
 
-    // prettier-ignore
     const tester = spawnEmbed(
       TengoTesterBinaryPath,
       'run', '--log-level', flags['log-level'],

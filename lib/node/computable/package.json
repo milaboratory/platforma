@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/computable",
-  "version": "2.7.5",
+  "version": "2.8.0",
   "engines": {
     "node": ">=22.19.0"
   },
@@ -19,8 +19,8 @@
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
-    "test": "vitest run",
     "lint": "eslint .",
+    "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -39,6 +39,9 @@
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*"
   }
 }

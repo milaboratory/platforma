@@ -24,7 +24,7 @@ import {
 } from './schema_public';
 import { BlockComponentsAbsoluteUrl, BlockPackMetaEmbedBytes } from '../model';
 import { LRUCache } from 'lru-cache';
-import semver from 'semver';
+import * as semver from 'semver';
 import { calculateSha256 } from '../../util';
 import { retry, Retry2TimesWithDelay } from '@milaboratories/ts-helpers';
 

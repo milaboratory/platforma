@@ -1,5 +1,120 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.157
+
+### Patch Changes
+
+- Updated dependencies [38534c5]
+  - @platforma-sdk/model@1.51.9
+  - @milaboratories/milaboratories.monetization-test.model@1.0.46
+  - @platforma-sdk/ui-vue@1.51.9
+
+## 1.1.156
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.51.8
+
+## 1.1.155
+
+### Patch Changes
+
+- Updated dependencies [c5f448c]
+  - @platforma-sdk/ui-vue@1.51.7
+
+## 1.1.154
+
+### Patch Changes
+
+- Updated dependencies [b0ceca1]
+  - @platforma-sdk/model@1.51.6
+  - @milaboratories/milaboratories.monetization-test.model@1.0.45
+  - @platforma-sdk/ui-vue@1.51.6
+
+## 1.1.153
+
+### Patch Changes
+
+- Updated dependencies [dd9a004]
+  - @platforma-sdk/model@1.51.5
+  - @milaboratories/milaboratories.monetization-test.model@1.0.44
+  - @platforma-sdk/ui-vue@1.51.5
+
+## 1.1.152
+
+### Patch Changes
+
+- Updated dependencies [0f0a802]
+  - @platforma-sdk/ui-vue@1.51.4
+
+## 1.1.151
+
+### Patch Changes
+
+- Updated dependencies [5dc0a70]
+  - @platforma-sdk/model@1.51.2
+  - @milaboratories/milaboratories.monetization-test.model@1.0.43
+  - @platforma-sdk/ui-vue@1.51.2
+
+## 1.1.150
+
+### Patch Changes
+
+- Updated dependencies [a12641f]
+  - @platforma-sdk/ui-vue@1.51.0
+
+## 1.1.149
+
+### Patch Changes
+
+- Updated dependencies [fc75a16]
+- Updated dependencies [fc75a16]
+  - @platforma-sdk/ui-vue@1.50.0
+  - @platforma-sdk/model@1.50.0
+  - @milaboratories/milaboratories.monetization-test.model@1.0.42
+
+## 1.1.148
+
+### Patch Changes
+
+- Updated dependencies [88f33fa]
+  - @platforma-sdk/model@1.49.0
+  - @milaboratories/milaboratories.monetization-test.model@1.0.41
+  - @platforma-sdk/ui-vue@1.49.0
+
+## 1.1.147
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.48.19
+
+## 1.1.146
+
+### Patch Changes
+
+- Updated dependencies [d6856e2]
+  - @platforma-sdk/model@1.48.14
+  - @milaboratories/milaboratories.monetization-test.model@1.0.40
+  - @platforma-sdk/ui-vue@1.48.14
+
+## 1.1.145
+
+### Patch Changes
+
+- Updated dependencies [72bb768]
+  - @platforma-sdk/model@1.48.13
+  - @milaboratories/milaboratories.monetization-test.model@1.0.39
+  - @platforma-sdk/ui-vue@1.48.13
+
+## 1.1.144
+
+### Patch Changes
+
+- Updated dependencies [8abf3c6]
+  - @platforma-sdk/ui-vue@1.48.12
+  - @platforma-sdk/model@1.48.12
+  - @milaboratories/milaboratories.monetization-test.model@1.0.38
+
 ## 1.1.143
 
 ### Patch Changes

@@ -19,11 +19,9 @@ const teleportTarget = usePlBlockPageTitleTeleportTarget('PlAgCsvExporter');
 </script>
 
 <template>
-  <div>
-    <Teleport v-if="teleportTarget" :to="teleportTarget">
-      <PlBtnGhost :loading="exporting" icon="export" @click.stop="initiateExport">
-        Export
-      </PlBtnGhost>
-    </Teleport>
-  </div>
+  <Teleport v-if="teleportTarget" :to="teleportTarget">
+    <PlBtnGhost :loading="exporting" icon="export" @click.stop="initiateExport">
+      Export
+    </PlBtnGhost>
+  </Teleport>
 </template>

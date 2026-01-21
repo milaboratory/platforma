@@ -101,6 +101,7 @@ packages:
   - etc/blocks/model-test/model
   - etc/blocks/model-test/ui
   - etc/blocks/model-test/block
+  - etc/blocks/model-test/test
 
   - etc/blocks/pool-explorer/workflow
   - etc/blocks/pool-explorer/model
@@ -159,7 +160,6 @@ catalog:
 
   # Build util / linters
 
-  'prettier': ^3.4.1
   '@protobuf-ts/plugin': &protobuf-ts 2.11.1
   'openapi-typescript': '^7.10.0'
   'openapi-fetch': '^0.15.0'
@@ -169,8 +169,6 @@ catalog:
   'eslint': ^9.25.1
   '@eslint/js': ^9.16.0
   'typescript-eslint': ^8.17.0
-  'eslint-config-prettier': ^9.1.0
-  'eslint-plugin-prettier': '^5.1.3'
   'eslint-plugin-vue': '^9.26.0'
   '@stylistic/eslint-plugin': ^2.11.0
   'eslint-plugin-import': ^2.31.0
@@ -274,7 +272,7 @@ catalog:
   # SW
 
   '@milaboratories/software-pframes-conv': &pframes-version 2.2.9
-  '@platforma-open/milaboratories.software-small-binaries': ^1.15.25
+  '@platforma-open/milaboratories.software-small-binaries': ^1.15.26
   '@platforma-open/milaboratories.software-conda-empty': ^0.0.3
   '@biowasm/aioli': ~3.2.1
 
@@ -282,8 +280,8 @@ catalog:
 
   # Test
 
-  'vitest': &vitest-version ^4.0.7
-  '@vitest/coverage-v8': *vitest-version
+  'vitest': &vitest-version ^4.0.16
+  '@vitest/coverage-istanbul': *vitest-version
   '@faker-js/faker': ^9.2.0
   'happy-dom': ^15.11.7
   'jsdom': ^25.0.1

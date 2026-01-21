@@ -1,5 +1,23 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.9.1
+
+### Patch Changes
+
+- Updated dependencies [fc75a16]
+  - @milaboratories/pl-model-common@1.23.0
+
+## 1.9.0
+
+### Minor Changes
+
+- 88f33fa: Block model upgrade: subtitle, tags, and section badges
+
+### Patch Changes
+
+- Updated dependencies [88f33fa]
+  - @milaboratories/pl-model-common@1.22.0
+
 ## 1.8.45
 
 ### Patch Changes

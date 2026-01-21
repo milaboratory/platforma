@@ -1,5 +1,65 @@
 # @milaboratories/pl-drivers
 
+## 1.11.37
+
+### Patch Changes
+
+- Updated dependencies [fc75a16]
+- Updated dependencies [fc75a16]
+- Updated dependencies [fc75a16]
+  - @milaboratories/computable@2.8.0
+  - @milaboratories/pl-model-common@1.23.0
+  - @milaboratories/helpers@1.13.0
+  - @milaboratories/pl-tree@1.8.28
+  - @milaboratories/pl-client@2.16.20
+
+## 1.11.36
+
+### Patch Changes
+
+- Updated dependencies [88f33fa]
+  - @milaboratories/pl-model-common@1.22.0
+  - @milaboratories/pl-client@2.16.19
+  - @milaboratories/pl-tree@1.8.27
+
+## 1.11.35
+
+### Patch Changes
+
+- Updated dependencies [edbbd2e]
+  - @milaboratories/pl-client@2.16.18
+  - @milaboratories/pl-tree@1.8.26
+
+## 1.11.34
+
+### Patch Changes
+
+- Updated dependencies [2762d16]
+  - @milaboratories/pl-client@2.16.17
+  - @milaboratories/pl-tree@1.8.25
+
+## 1.11.33
+
+### Patch Changes
+
+- Updated dependencies [2dc3476]
+  - @milaboratories/pl-client@2.16.16
+  - @milaboratories/pl-tree@1.8.24
+
+## 1.11.32
+
+### Patch Changes
+
+- 35d3bdd: Updated logging messages to clearly indicate 'terminal error' and include the specific error code when an upload or status update is aborted due to such an error.
+
+## 1.11.31
+
+### Patch Changes
+
+- Updated dependencies [4fceb9d]
+  - @milaboratories/pl-client@2.16.15
+  - @milaboratories/pl-tree@1.8.23
+
 ## 1.11.30
 
 ### Patch Changes

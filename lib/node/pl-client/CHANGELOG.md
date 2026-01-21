@@ -1,5 +1,43 @@
 # @milaboratories/pl-client
 
+## 2.16.20
+
+### Patch Changes
+
+- Updated dependencies [fc75a16]
+  - @milaboratories/pl-model-common@1.23.0
+
+## 2.16.19
+
+### Patch Changes
+
+- Updated dependencies [88f33fa]
+  - @milaboratories/pl-model-common@1.22.0
+
+## 2.16.18
+
+### Patch Changes
+
+- edbbd2e: turn off rest wire protocol autodetection
+
+## 2.16.17
+
+### Patch Changes
+
+- 2762d16: Unauth client now accepts options with logger
+
+## 2.16.16
+
+### Patch Changes
+
+- 2dc3476: Make wire protocol automatic detection to be more stable in slow networks
+
+## 2.16.15
+
+### Patch Changes
+
+- 4fceb9d: More informative errors for empty data in ll_client
+
 ## 2.16.14
 
 ### Patch Changes

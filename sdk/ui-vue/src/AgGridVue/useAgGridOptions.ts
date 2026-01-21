@@ -27,11 +27,11 @@ interface GridOptionsExtended<TData = any> extends Omit<GridOptions<TData>, 'col
    */
   loadingText?: string;
   /**
-   * Not ready overlay (No datasource). Takes priority over "loading"
+   * Not ready overlay (Data is not computed). Takes priority over "loading"
    */
   notReady?: boolean;
   /**
-   * "No datasource" by default
+   * "Data is not computed" by default
    */
   notReadyText?: string;
   /**
@@ -328,7 +328,7 @@ export function useAgGridOptions<TData>(
     return {
       ...options,
       loadingOverlayComponentParams: {
-        notReady: options.notReady,
+        variant: options.notReady ? 'not-ready' : 'loading',
         notReadyText: options.notReadyText,
         loadingText: options.loadingText,
       } satisfies PlAgOverlayLoadingParams,
@@ -346,7 +346,7 @@ export function useAgGridOptions<TData>(
     () => extOptions.value.loading,
   ], ([notReady, loading]) => {
     const loadingOverlayComponentParams = {
-      notReady,
+      variant: notReady ? 'not-ready' : 'loading',
       // we probably don't need to update the parameters below
       notReadyText: extOptions.value.notReadyText,
       loadingText: extOptions.value.loadingText,

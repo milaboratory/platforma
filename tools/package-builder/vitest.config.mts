@@ -1,10 +1,4 @@
+import { createVitestConfig } from '@milaboratories/build-configs';
 import { defineConfig } from 'vitest/config';
 
-export default defineConfig({
-  test: {
-    pool: 'threads',
-    watch: false,
-    testTimeout: 10000,
-    maxConcurrency: 1,
-  }
-});
+export default defineConfig(createVitestConfig());

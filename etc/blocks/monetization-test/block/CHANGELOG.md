@@ -1,5 +1,118 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.2.15
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.46
+- @milaboratories/milaboratories.monetization-test.ui@1.1.157
+
+## 1.2.14
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.156
+
+## 1.2.13
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.155
+
+## 1.2.12
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.45
+- @milaboratories/milaboratories.monetization-test.ui@1.1.154
+
+## 1.2.11
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.44
+- @milaboratories/milaboratories.monetization-test.ui@1.1.153
+
+## 1.2.10
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.152
+
+## 1.2.9
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.59
+
+## 1.2.8
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.43
+- @milaboratories/milaboratories.monetization-test.ui@1.1.151
+
+## 1.2.7
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.150
+
+## 1.2.6
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.149
+- @milaboratories/milaboratories.monetization-test.model@1.0.42
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.58
+
+## 1.2.5
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.41
+- @milaboratories/milaboratories.monetization-test.ui@1.1.148
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.58
+
+## 1.2.4
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.147
+
+## 1.2.3
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.40
+- @milaboratories/milaboratories.monetization-test.ui@1.1.146
+
+## 1.2.2
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.39
+- @milaboratories/milaboratories.monetization-test.ui@1.1.145
+
+## 1.2.1
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.144
+- @milaboratories/milaboratories.monetization-test.model@1.0.38
+
+## 1.2.0
+
+### Minor Changes
+
+- 42981f2: Update logo
+
+## 1.1.0
+
+### Minor Changes
+
+- ab5d4f8: Publish monetization-test block
+
 ## 1.0.196
 
 ### Patch Changes

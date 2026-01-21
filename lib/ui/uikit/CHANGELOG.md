@@ -1,5 +1,96 @@
 # @milaboratories/uikit
 
+## 2.10.4
+
+### Patch Changes
+
+- Updated dependencies [38534c5]
+  - @platforma-sdk/model@1.51.9
+
+## 2.10.3
+
+### Patch Changes
+
+- 601a869: PlDropdownMulti: don't show loading spinner when disabled
+
+## 2.10.2
+
+### Patch Changes
+
+- Updated dependencies [b0ceca1]
+  - @platforma-sdk/model@1.51.6
+
+## 2.10.1
+
+### Patch Changes
+
+- Updated dependencies [dd9a004]
+  - @platforma-sdk/model@1.51.5
+
+## 2.10.0
+
+### Minor Changes
+
+- 0f0a802: PlBlockPage: Added editable subtitles and made title into a prop
+
+## 2.9.1
+
+### Patch Changes
+
+- Updated dependencies [5dc0a70]
+  - @platforma-sdk/model@1.51.2
+
+## 2.9.0
+
+### Minor Changes
+
+- a12641f: Removed default text from PlPlaceholder, made a separate export for text variants.
+
+## 2.8.9
+
+### Patch Changes
+
+- fc75a16: Updated `PlLogView` to work with `OutputWithStatus`
+- Updated dependencies [fc75a16]
+- Updated dependencies [fc75a16]
+  - @platforma-sdk/model@1.50.0
+  - @milaboratories/helpers@1.13.0
+
+## 2.8.8
+
+### Patch Changes
+
+- Updated dependencies [88f33fa]
+  - @platforma-sdk/model@1.49.0
+
+## 2.8.7
+
+### Patch Changes
+
+- 35a16d0: use blob URL for paint worklet to comply with CSP
+
+## 2.8.6
+
+### Patch Changes
+
+- Updated dependencies [d6856e2]
+  - @platforma-sdk/model@1.48.14
+
+## 2.8.5
+
+### Patch Changes
+
+- Updated dependencies [72bb768]
+  - @platforma-sdk/model@1.48.13
+
+## 2.8.4
+
+### Patch Changes
+
+- 8abf3c6: fix annotations problems
+- Updated dependencies [8abf3c6]
+  - @platforma-sdk/model@1.48.12
+
 ## 2.8.3
 
 ### Patch Changes

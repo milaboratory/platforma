@@ -1,5 +1,25 @@
 # @milaboratories/pl-local
 
+## 2.15.1
+
+### Patch Changes
+
+- Updated dependencies [fc75a16]
+  - @milaboratories/pl-model-common@1.23.0
+
+## 2.15.0
+
+### Minor Changes
+
+- 8d1b495: Change built-in version to 1.44.1
+
+## 2.14.1
+
+### Patch Changes
+
+- Updated dependencies [88f33fa]
+  - @milaboratories/pl-model-common@1.22.0
+
 ## 2.14.0
 
 ### Minor Changes

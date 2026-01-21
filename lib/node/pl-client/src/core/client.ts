@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import type { OptionalResourceId, ResourceId } from './types';
 import { ensureResourceIdNotNull, isNullResourceId, NullResourceId } from './types';
 import { ClientRoot } from '../helpers/pl';
-import type { RetryOptions } from '@milaboratories/ts-helpers';
+import type { MiLogger, RetryOptions } from '@milaboratories/ts-helpers';
 import { assertNever, createRetryState, nextRetryStateOrError } from '@milaboratories/ts-helpers';
 import type { PlDriver, PlDriverDefinition } from './driver';
 import type { MaintenanceAPI_Ping_Response, MaintenanceAPI_License_Response } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
@@ -90,6 +90,7 @@ export class PlClient {
     ops: {
       statusListener?: PlConnectionStatusListener;
       finalPredicate?: FinalResourceDataPredicate;
+      logger?: MiLogger;
     } = {},
   ) {
     const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
@@ -389,6 +390,7 @@ export class PlClient {
     auth: AuthOps,
     ops: {
       statusListener?: PlConnectionStatusListener;
+      logger?: MiLogger;
     } = {},
   ) {
     const pl = new PlClient(configOrAddress, auth, ops);

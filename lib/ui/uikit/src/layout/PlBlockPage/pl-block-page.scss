@@ -1,9 +1,8 @@
-@use "../../assets/mixins.scss" as *;
+@use '../../assets/mixins.scss' as *;
 
 .pl-block-page {
   --pl-block-page-body-padding: var(--main-spacing, 24px);
 
-  padding: var(--container-spacing);
   background-color: var(--bg-elevated-01);
   height: 100%;
   max-width: 100%;
@@ -15,11 +14,9 @@
   }
 
   &__title {
-    height: 80px;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 20px 24px;
     min-width: 0;
     max-width: 100%;
 
@@ -55,9 +52,7 @@
       gap: 2px;
 
       &__teleport {
-        display: flex;
-        align-items: center;
-        gap: 2px;
+        display: contents;
       }
     }
   }

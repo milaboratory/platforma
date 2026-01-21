@@ -1,8 +1,8 @@
 import { test } from 'vitest';
-import { generateLocalPlConfigs, LocalPlConfigGeneratorOptions } from '@milaboratories/pl-config';
+import { generateLocalPlConfigs, type LocalPlConfigGeneratorOptions } from '@milaboratories/pl-config';
 import { ConsoleLoggerAdapter, sleep } from '@milaboratories/ts-helpers';
-import path from 'path';
-import { LocalPl, localPlatformaInit } from '@milaboratories/pl-deployments';
+import path from 'node:path';
+import { type LocalPl, localPlatformaInit } from '@milaboratories/pl-deployments';
 import { PlClient, UnauthenticatedPlClient } from '@milaboratories/pl-client';
 import { MiddleLayer } from '@milaboratories/pl-middle-layer';
 
@@ -21,9 +21,9 @@ test(
       portsMode: {
         type: 'random',
         from: 11234,
-        to: 11239
+        to: 11239,
       },
-      licenseMode: { type: 'env' }
+      licenseMode: { type: 'env' },
     };
     const genResult = await generateLocalPlConfigs(configOpts);
 
@@ -32,7 +32,7 @@ test(
     const plLocal = await localPlatformaInit(logger, {
       workingDir: genResult.workingDir,
       config: genResult.plConfigContent,
-      onCloseAndErrorNoStop: async (pl: LocalPl) => await pl.start()
+      onCloseAndErrorNoStop: async (pl: LocalPl) => await pl.start(),
     });
 
     // start pl-client
@@ -42,7 +42,7 @@ test(
       try {
         await uaClient.ping();
         break;
-      } catch (e) {
+      } catch (_e) {
         await sleep(30);
       }
     }
@@ -56,7 +56,7 @@ test(
       localProjections: genResult.localStorageProjections,
       openFileDialogCallback: () => {
         throw new Error('Not implemented.');
-      }
+      },
     });
 
     // assertions that everything is working
@@ -73,5 +73,5 @@ test(
     client.close();
     plLocal.stop();
     await plLocal.waitStopped();
-  }
+  },
 );

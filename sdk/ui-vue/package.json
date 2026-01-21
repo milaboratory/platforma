@@ -1,18 +1,19 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.48.10",
+  "version": "1.51.9",
   "type": "module",
   "main": "dist/index.js",
   "styles": "dist/index.js",
   "exports": {
     ".": {
       "sources": "./src/index.ts",
+      "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./styles": "./dist/index.js"
   },
   "scripts": {
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run --coverage",
     "dev": "ts-builder serve --target browser-lib",
     "build": "ts-builder build --target browser-lib",
     "watch": "ts-builder build --target browser-lib --watch",
@@ -56,6 +57,8 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
     "@vue/test-utils": "catalog:",
     "yarpm": "catalog:",
     "fast-json-patch": "catalog:",

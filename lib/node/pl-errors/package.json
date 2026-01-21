@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-errors",
-  "version": "1.1.46",
+  "version": "1.1.52",
   "description": "Parsing errors from Pl backend",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.cjs",
@@ -17,7 +17,7 @@
     "build": "ts-builder build --target node",
     "build:watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -35,6 +35,8 @@
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
     "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*"
   }

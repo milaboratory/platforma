@@ -4,7 +4,7 @@ import type {
   MaintenanceAPI_Ping_Response,
 } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { LLPlClient } from './ll_client';
-import { notEmpty } from '@milaboratories/ts-helpers';
+import { type MiLogger, notEmpty } from '@milaboratories/ts-helpers';
 import { UnauthenticatedError } from './errors';
 
 /** Primarily used for initial authentication (login) */
@@ -15,8 +15,8 @@ export class UnauthenticatedPlClient {
     this.ll = ll;
   }
 
-  public static async build(configOrAddress: PlClientConfig | string): Promise<UnauthenticatedPlClient> {
-    const ll = await LLPlClient.build(configOrAddress);
+  public static async build(configOrAddress: PlClientConfig | string, ops?: { logger?: MiLogger }): Promise<UnauthenticatedPlClient> {
+    const ll = await LLPlClient.build(configOrAddress, ops);
     return new UnauthenticatedPlClient(ll);
   }
 

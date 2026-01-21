@@ -158,6 +158,36 @@ export function deriveLabels<T>(
     return result;
   };
 
+  const countUniqueLabels = (result: RecordsWithLabel<T>[] | undefined): number =>
+    result === undefined ? 0 : new Set(result.map((c) => c.label)).size;
+
+  // Post-processing: try removing types one by one (lowest importance first) to minimize the label set
+  // Accepts removal if it doesn't decrease the number of unique labels (cardinality)
+  const minimizeTypeSet = (typeSet: Set<string>): Set<string> => {
+    const initialResult = calculate(typeSet);
+    if (initialResult === undefined) {
+      return typeSet;
+    }
+    const currentCardinality = countUniqueLabels(initialResult);
+
+    // Get types sorted by importance ascending (lowest first), excluding forced elements
+    const removableSorted = [...typeSet]
+      .filter((t) =>
+        !forceTraceElements?.has(t.split('@')[0])
+        && !(ops.includeNativeLabel && t === LabelTypeFull))
+      .sort((a, b) => (importances.get(a) ?? 0) - (importances.get(b) ?? 0));
+
+    for (const typeToRemove of removableSorted) {
+      const reducedSet = new Set(typeSet);
+      reducedSet.delete(typeToRemove);
+      const candidateResult = calculate(reducedSet);
+      if (candidateResult !== undefined && countUniqueLabels(candidateResult) >= currentCardinality) {
+        typeSet.delete(typeToRemove);
+      }
+    }
+    return typeSet;
+  };
+
   if (mainTypes.length === 0) {
     if (secondaryTypes.length !== 0) throw new Error('Non-empty secondary types list while main types list is empty.');
     return calculate(new Set(LabelTypeFull), true)!;
@@ -183,8 +213,10 @@ export function deriveLabels<T>(
 
     const candidateResult = calculate(currentSet);
 
-    // checking if labels uniquely separate our records
-    if (candidateResult !== undefined && new Set(candidateResult.map((c) => c.label)).size === values.length) return candidateResult;
+    if (candidateResult !== undefined && countUniqueLabels(candidateResult) === values.length) {
+      minimizeTypeSet(currentSet);
+      return calculate(currentSet)!;
+    }
 
     additionalType++;
     if (additionalType >= mainTypes.length) {
@@ -193,5 +225,8 @@ export function deriveLabels<T>(
     }
   }
 
-  return calculate(new Set([...mainTypes, ...secondaryTypes]), true)!;
+  // Fallback: include all types, then try to minimize
+  const fallbackSet = new Set([...mainTypes, ...secondaryTypes]);
+  minimizeTypeSet(fallbackSet);
+  return calculate(fallbackSet, true)!;
 }

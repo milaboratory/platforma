@@ -1,0 +1,23 @@
+// simple wf with pre-run
+
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+
+wf.setPreRun(assets.importTemplate(":workflow.wf1-prerun"))
+
+
+wf.body(func(args) {
+	testValue := args.testValue
+
+	result := args.testValue + " Show Run"
+
+	return {
+		outputs: {
+			outputResult: result
+		},
+
+		exports: {}
+	}
+})

@@ -1,50 +1,49 @@
 <script lang="ts">
+import paintWorkletCode from './paint-worklet.js?raw';
+
 export interface PlPlaceholderProps {
   variant?: 'table' | 'graph';
   title?: string;
   subtitle?: string | string[];
 }
+
+// Register paint worklet once at module load (uses blob URL to comply with CSP)
+const workletBlob = new Blob(
+  [paintWorkletCode],
+  { type: 'application/javascript' },
+);
+const workletUrl = URL.createObjectURL(workletBlob);
+(CSS as unknown as {
+  paintWorklet: { addModule: (url: string) => void };
+}).paintWorklet.addModule(workletUrl);
 </script>
 
 <script setup lang="ts">
 import { useCssModule } from 'vue';
 import PlLoaderLogo from '../../components/PlLoaderLogo.vue';
 
-const {
-  variant,
-  title = 'Running analysis...',
-  subtitle = [
-    'No action needed—the job is active',
-    'Larger datasets take longer to process',
-    'Results will appear here as soon as they’re ready',
-    'Processing may take minutes to hours',
-  ],
-} = defineProps<PlPlaceholderProps>();
+const props = defineProps<PlPlaceholderProps>();
 
 const styles = useCssModule();
-
-(CSS as unknown as {
-  paintWorklet: { addModule: (url: URL) => void };
-}).paintWorklet.addModule(new URL('paint-worklet.js', import.meta.url));
 </script>
 
 <template>
   <div :class="styles.root">
     <div
       :class="[styles.background, {
-        [styles.table]: variant === 'table',
-        [styles.graph]: variant === 'graph',
+        [styles.table]: props.variant === 'table',
+        [styles.graph]: props.variant === 'graph',
       }]"
     />
     <div :class="styles.content">
       <PlLoaderLogo :size="64" color="var(--color-div-grey)" />
-      <div :class="styles.text">
-        <div :class="styles.title">{{ title }}</div>
-        <div :class="styles.subtitle">
-          <template v-if="Array.isArray(subtitle)">
-            <span v-for="(item, key) of subtitle" :key>{{ item }}</span>
+      <div v-if="props.title || props.subtitle" :class="styles.text">
+        <div v-if="props.title" :class="styles.title">{{ props.title }}</div>
+        <div v-if="props.subtitle" :class="styles.subtitle">
+          <template v-if="Array.isArray(props.subtitle)">
+            <span v-for="(item, key) of props.subtitle" :key>{{ item }}</span>
           </template>
-          <span v-else>{{ subtitle }}</span>
+          <span v-else>{{ props.subtitle }}</span>
         </div>
       </div>
     </div>
