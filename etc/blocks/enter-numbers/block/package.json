@@ -26,8 +26,8 @@
       "ui": "@milaboratories/milaboratories.test-enter-numbers.ui/dist"
     },
     "meta": {
-      "title": "Enter Numbers",
-      "description": "Enter Numbers",
+      "title": "Enter Numbers (old api)",
+      "description": "Enter Numbers (old api)",
       "logo": "file:logos/block-logo.png",
       "organization": {
         "name": "MiLaboratories Inc",

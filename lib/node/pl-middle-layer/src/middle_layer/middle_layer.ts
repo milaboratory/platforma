@@ -72,7 +72,7 @@ export interface MiddleLayerEnvironment {
  * are required.
  * */
 export class MiddleLayer {
-  private readonly pl: PlClient;
+  public readonly pl: PlClient;
 
   /** Contains a reactive list of projects along with their meta information. */
   public readonly projectList: ComputableStableDefined<ProjectListEntry[]>;
@@ -279,6 +279,7 @@ export class MiddleLayer {
     const runtimeCapabilities = new RuntimeCapabilities();
     // add runtime capabilities of model here
     runtimeCapabilities.addSupportedRequirement('requiresModelAPIVersion', 1);
+    runtimeCapabilities.addSupportedRequirement('requiresModelAPIVersion', 2);
     // runtime capabilities of the desktop are to be added by the desktop app / test framework
 
     const env: MiddleLayerEnvironment = {
