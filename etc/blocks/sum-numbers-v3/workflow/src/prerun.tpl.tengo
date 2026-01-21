@@ -5,7 +5,7 @@ wf.body(func(args) {
 	// Return all passed args as object for testing
 	return {
 		outputs: {
-			preRunArgsJson: smart.createJsonResource(args)
+			prerunArgsJson: smart.createJsonResource(args)
 		},
 		exports: {}
 	}

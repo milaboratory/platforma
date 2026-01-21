@@ -45,7 +45,7 @@ interface BlockModelV3Config<
   enrichmentTargets: ConfigRenderLambda | undefined;
   featureFlags: BlockCodeKnownFeatureFlags;
   args: ConfigRenderLambda<Args> | undefined;
-  preRunArgs: ConfigRenderLambda<unknown> | undefined;
+  prerunArgs: ConfigRenderLambda<unknown> | undefined;
 }
 
 /** Options for creating a BlockModelV3 */
@@ -108,7 +108,7 @@ export class BlockModelV3<
       enrichmentTargets: undefined,
       featureFlags: { ...BlockModelV3.INITIAL_BLOCK_FEATURE_FLAGS },
       args: undefined,
-      preRunArgs: undefined,
+      prerunArgs: undefined,
     });
   }
 
@@ -208,26 +208,25 @@ export class BlockModelV3<
    * This is called during setData to compute the args that will be used for staging/pre-run phase.
    *
    * If not defined, defaults to using the args() function result.
-   * If defined, uses its return value for the staging / pre-run phase.
+   * If defined, uses its return value for the staging / prerun phase.
    *
-   * The staging / pre-run phase runs only if currentPreRunArgs differs from the executed
-   * version of preRunArgs (same comparison logic as currentArgs vs prodArgs).
-   *
-   * @example
-   * .preRunArgs((data) => ({ numbers: data.numbers }))
+   * The staging / prerun phase runs only if currentPrerunArgs differs from the executed
+   * version of prerunArgs (same comparison logic as currentArgs vs prodArgs).
    *
    * @example
-   * .preRunArgs((data) => {
+   * .prerunArgs((data) => ({ numbers: data.numbers }))
+   *
+   * @example
+   * .prerunArgs((data) => {
    *   // Return undefined to skip staging for this block
    *   if (!data.isReady) return undefined;
    *   return { numbers: data.numbers };
    * })
-   * TODO: generic inference for the return type
    */
-  public preRunArgs(fn: (data: Data) => unknown): BlockModelV3<Args, OutputsCfg, Data, Href> {
+  public prerunArgs(fn: (data: Data) => unknown): BlockModelV3<Args, OutputsCfg, Data, Href> {
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
-      preRunArgs: createAndRegisterRenderLambda({ handle: 'preRunArgs', lambda: fn }),
+      prerunArgs: createAndRegisterRenderLambda({ handle: 'prerunArgs', lambda: fn }),
     });
   }
 
@@ -325,9 +324,9 @@ export class BlockModelV3<
         sdkVersion: PlatformaSDKVersion,
         renderingMode: this.config.renderingMode,
         args: this.config.args,
-        preRunArgs: this.config.preRunArgs,
-        // Reference to initialData callback registered by Migrator
-        initialData: createRenderLambda({ handle: 'initialData' }),
+        prerunArgs: this.config.prerunArgs,
+        // Reference to __pl_data_initial callback registered by DataModel
+        initialData: createRenderLambda({ handle: '__pl_data_initial' }),
         sections: this.config.sections,
         title: this.config.title,
         outputs: this.config.outputs,
@@ -402,7 +401,7 @@ type _ConfigTest = Expect<Equal<
   {
     renderingMode: BlockRenderingMode;
     args: ConfigRenderLambda<_TestArgs> | undefined;
-    preRunArgs: ConfigRenderLambda<unknown> | undefined;
+    prerunArgs: ConfigRenderLambda<unknown> | undefined;
     dataModel: DataModel<_TestData>;
     outputs: _TestOutputs;
     sections: ConfigRenderLambda;

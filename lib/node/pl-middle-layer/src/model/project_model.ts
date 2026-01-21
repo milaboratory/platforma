@@ -105,7 +105,7 @@ export interface ProjectField {
     | 'blockStorage' // Persistent storage for v3 blocks (state, plugins data, etc.)
     | 'prodArgs'
     | 'currentArgs'
-    | 'currentPreRunArgs' // Derived args for staging/pre-run rendering (from preRunArgs() or args())
+    | 'currentPrerunArgs' // Derived args for staging/prerun rendering (from prerunArgs() or args())
     | 'prodCtx'
     | 'prodUiCtx'
     | 'prodOutput'
@@ -127,7 +127,7 @@ export const FieldsToDuplicate: Set<ProjectField['fieldName']> = new Set([
   'blockStorage',
   'prodArgs',
   'currentArgs',
-  'currentPreRunArgs',
+  'currentPrerunArgs',
   'prodCtx',
   'prodUiCtx',
   'prodOutput',
@@ -138,7 +138,7 @@ export function projectFieldName(blockId: string, fieldName: ProjectField['field
 }
 
 const projectFieldPattern
-  = /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPreRunArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
+  = /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);

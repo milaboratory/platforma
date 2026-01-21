@@ -86,7 +86,7 @@ export class ResultPool {
     result = block.staging?.results?.get(exportName)?.spec;
     if (result !== undefined) return result;
     // Note: Don't mark unstable when staging is absent - it may be intentionally skipped
-    // for v3 blocks with undefined preRunArgs.
+    // for v3 blocks with undefined prerunArgs.
     if (block.staging !== undefined && !block.staging.locked)
       this.ctx.markUnstable(`staging_not_locked:${blockId}`);
     else if (block.prod !== undefined && !block.prod.locked)
@@ -228,7 +228,7 @@ export class ResultPool {
           }
       }
       // Note: Don't mark unstable when staging is absent - it may be intentionally skipped
-      // for v3 blocks with undefined preRunArgs. If prod exists, use it; if neither exists,
+      // for v3 blocks with undefined prerunArgs. If prod exists, use it; if neither exists,
       // the block simply has no specs to contribute.
 
       if (block.prod !== undefined) {

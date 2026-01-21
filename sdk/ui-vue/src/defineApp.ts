@@ -87,7 +87,6 @@ export function defineApp<
       await platforma
         .loadBlockState()
         .then((state) => {
-          console.log('v1 state', state);
           plugin.loaded = true;
           const baseApp = createAppV1<Args, Outputs, UiState, Href>(state, platforma, settings);
 
@@ -112,7 +111,6 @@ export function defineApp<
         .loadBlockState()
         .then((stateOrError) => {
           const state = unwrapResult(stateOrError);
-          console.log('v2 state unwrapped', state);
           plugin.loaded = true;
           const baseApp = createAppV2<Args, Outputs, UiState, Href>(state, platforma, settings);
 

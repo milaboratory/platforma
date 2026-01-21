@@ -155,7 +155,7 @@ test('v3 blocks: basic test with unified state', async () => {
   });
 });
 
-test('v3 blocks: preRunArgs skip test', async () => {
+test('v3 blocks: prerunArgs skip test', async () => {
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
@@ -205,8 +205,8 @@ test('v3 blocks: preRunArgs skip test', async () => {
     });
 
     // Change state: [3, 1, 2] -> [5, 1, 2]
-    // preRunArgs (evenNumbers) stays [2], so staging should be SKIPPED
-    await pl.withWriteTx('ChangeState_SamePreRunArgs', async (tx) => {
+    // prerunArgs (evenNumbers) stays [2], so staging should be SKIPPED
+    await pl.withWriteTx('ChangeState_SamePrerunArgs', async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.setStates([{
         modelAPIVersion: 2,
@@ -233,8 +233,8 @@ test('v3 blocks: preRunArgs skip test', async () => {
     });
 
     // Change state: [5, 1, 2] -> [5, 1, 4]
-    // preRunArgs (evenNumbers) changes from [2] to [4], so staging should RUN
-    await pl.withWriteTx('ChangeState_DifferentPreRunArgs', async (tx) => {
+    // prerunArgs (evenNumbers) changes from [2] to [4], so staging should RUN
+    await pl.withWriteTx('ChangeState_DifferentPrerunArgs', async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.setStates([{
         modelAPIVersion: 2,
@@ -260,20 +260,20 @@ test('v3 blocks: preRunArgs skip test', async () => {
       expect(count).toBe(1);  // Still 1 (only [4] is even)
     });
 
-    // Verify preRunArgsJson output contains evenNumbers, not numbers
+    // Verify prerunArgsJson output contains evenNumbers, not numbers
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
       const stagingOutput = await prjR
         .get(projectFieldName('enter1', 'stagingOutput'))
         .then((r) => r.final());
 
-      const preRunArgsValue = await stagingOutput.get('preRunArgsJson');
-      const preRunArgs = JSON.parse(Buffer.from(preRunArgsValue.data.data!).toString());
+      const prerunArgsValue = await stagingOutput.get('prerunArgsJson');
+      const prerunArgs = JSON.parse(Buffer.from(prerunArgsValue.data.data!).toString());
 
       // Should have evenNumbers, NOT numbers
-      expect(preRunArgs).toHaveProperty('evenNumbers');
-      expect(preRunArgs.evenNumbers).toStrictEqual([4]);
-      expect(preRunArgs).not.toHaveProperty('numbers');
+      expect(prerunArgs).toHaveProperty('evenNumbers');
+      expect(prerunArgs.evenNumbers).toStrictEqual([4]);
+      expect(prerunArgs).not.toHaveProperty('numbers');
     });
   });
 });

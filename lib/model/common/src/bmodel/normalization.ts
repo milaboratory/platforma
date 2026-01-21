@@ -22,13 +22,13 @@ function upgradeCfgOrLambda(
 export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGeneric {
   if (cfg.v4 !== undefined) {
     // version 4 (BlockModelV3) - inputsValid is derived from args() success/failure
-    const { args, preRunArgs, initialData, outputs, renderingMode, sdkVersion, featureFlags, sections, title, enrichmentTargets, migrations } = cfg.v4;
+    const { args, prerunArgs, initialData, outputs, renderingMode, sdkVersion, featureFlags, sections, title, enrichmentTargets, migrations } = cfg.v4;
     const { code } = cfg;
     return {
       configVersion: 4,
       modelAPIVersion: 2,
       args,
-      preRunArgs,
+      prerunArgs,
       initialData,
       outputs,
       renderingMode,

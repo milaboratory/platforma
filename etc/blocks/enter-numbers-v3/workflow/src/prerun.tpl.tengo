@@ -13,7 +13,7 @@ wf.body(func(args) {
 			numbersCount: smart.createJsonResource(numbersCount),
 			evenNumbers: smart.createJsonResource(args.evenNumbers),
 			// Store args directly as object, not as JSON string
-			preRunArgsJson: smart.createJsonResource(args)
+			prerunArgsJson: smart.createJsonResource(args)
 		},
 		exports: {}
 	}

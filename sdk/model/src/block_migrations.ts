@@ -154,15 +154,17 @@ export class DataModel<State> {
 
   /**
    * Register callbacks for use in the VM.
-   * Called by BlockModelV3.create() to set up:
-   * - 'initialData' callback: returns initial data for new blocks
-   * - 'upgrade' callback: upgrades versioned data from any version to latest
-   * - 'initialStorageJson' callback: returns initial BlockStorage as JSON string
+   * Called by BlockModelV3.create() to set up internal callbacks.
+   *
+   * All callbacks are prefixed with `__pl_` to indicate internal SDK use:
+   * - `__pl_data_initial`: returns initial data for new blocks
+   * - `__pl_data_upgrade`: upgrades versioned data from any version to latest
+   * - `__pl_storage_initial`: returns initial BlockStorage as JSON string
    */
   registerCallbacks(): void {
-    tryRegisterCallback('initialData', () => this._initialData());
-    tryRegisterCallback('upgrade', (versioned: Versioned<unknown>) => this.upgrade(versioned)); // TODO: rename
-    tryRegisterCallback('initialStorageJson', () => {
+    tryRegisterCallback('__pl_data_initial', () => this._initialData());
+    tryRegisterCallback('__pl_data_upgrade', (versioned: Versioned<unknown>) => this.upgrade(versioned));
+    tryRegisterCallback('__pl_storage_initial', () => {
       const { version, data } = this.getDefaultData();
       const storage = createBlockStorage(data, version);
       return JSON.stringify(storage);

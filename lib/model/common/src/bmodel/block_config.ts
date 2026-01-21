@@ -40,11 +40,11 @@ export type BlockConfigV4Generic<
   readonly args: NarrowActiveHandleDescriptor;
 
   /**
-   * Lambda to derive pre-run args from state (optional).
+   * Lambda to derive prerun args from state (optional).
    * If not defined, defaults to using the args() result.
-   * Used for staging/pre-run phase.
+   * Used for staging/prerun phase.
    */
-  readonly preRunArgs?: NarrowActiveHandleDescriptor;
+  readonly prerunArgs?: NarrowActiveHandleDescriptor;
 
   /** Lambda to get initial data when block is added to the project */
   readonly initialData: NarrowActiveHandleDescriptor;

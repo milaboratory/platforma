@@ -5,11 +5,18 @@
  * to perform storage transformations. Block developers never interact with these
  * directly - they only see `state`.
  *
- * Registered callbacks:
- * - `__storage_normalize`: (rawStorage) => { storage, state }
- * - `__storage_applyUpdate`: (currentStorageJson, payload) => updatedStorageJson
- * - `__storage_getInfo`: (rawStorage) => JSON string with storage info
- * - `__storage_migrate`: (currentStorageJson) => MigrationResult
+ * Registered callbacks (all prefixed with `__pl_` for internal SDK use):
+ * - `__pl_storage_normalize`: (rawStorage) => { storage, data }
+ * - `__pl_storage_applyUpdate`: (currentStorageJson, payload) => updatedStorageJson
+ * - `__pl_storage_getInfo`: (rawStorage) => JSON string with storage info
+ * - `__pl_storage_migrate`: (currentStorageJson) => MigrationResult
+ * - `__pl_args_derive`: (storageJson) => ArgsDeriveResult
+ * - `__pl_prerunArgs_derive`: (storageJson) => ArgsDeriveResult
+ *
+ * Callbacks registered by DataModel.registerCallbacks():
+ * - `__pl_data_initial`: () => initial data
+ * - `__pl_data_upgrade`: (versioned) => UpgradeResult
+ * - `__pl_storage_initial`: () => initial BlockStorage as JSON string
  *
  * @module block_storage_vm
  * @internal
@@ -117,17 +124,17 @@ function isLegacyModelV1ApiFormat(data: unknown): data is { args?: unknown } {
 // =============================================================================
 
 // Register normalize callback
-tryRegisterCallback('__storage_normalize', (rawStorage: unknown) => {
+tryRegisterCallback('__pl_storage_normalize', (rawStorage: unknown) => {
   return normalizeStorage(rawStorage);
 });
 
 // Register apply update callback (requires existing storage)
-tryRegisterCallback('__storage_applyUpdate', (currentStorageJson: string, payload: MutateStoragePayload) => {
+tryRegisterCallback('__pl_storage_applyUpdate', (currentStorageJson: string, payload: MutateStoragePayload) => {
   return applyStorageUpdate(currentStorageJson, payload);
 });
 
 /**
- * Storage info result returned by __storage_getInfo callback.
+ * Storage info result returned by __pl_storage_getInfo callback.
  */
 export interface StorageInfo {
   /** Current data version (1-based, starts at 1) */
@@ -150,7 +157,7 @@ function getStorageInfo(rawStorage: unknown): string {
 }
 
 // Register get info callback
-tryRegisterCallback('__storage_getInfo', (rawStorage: unknown) => {
+tryRegisterCallback('__pl_storage_getInfo', (rawStorage: unknown) => {
   return getStorageInfo(rawStorage);
 });
 
@@ -160,7 +167,7 @@ tryRegisterCallback('__storage_getInfo', (rawStorage: unknown) => {
 
 /**
  * Result of storage migration.
- * Returned by __storage_migrate callback.
+ * Returned by __pl_storage_migrate callback.
  *
  * - Error result: { error: string } - serious failure (no context, etc.)
  * - Success result: { newStorageJson: string, info: string, warn?: string } - migration succeeded or reset to initial
@@ -177,10 +184,10 @@ interface UpgradeResult {
 }
 
 /**
- * Runs storage migration using the Migrator's upgrade callback.
+ * Runs storage migration using the DataModel's upgrade callback.
  * This is the main entry point for the middle layer to trigger migrations.
  *
- * Uses the 'upgrade' callback registered by Migrator.registerCallbacks() which:
+ * Uses the '__pl_data_upgrade' callback registered by DataModel.registerCallbacks() which:
  * - Handles all migration logic internally
  * - Returns { version, data, warning? } - warning present if reset to initial data
  *
@@ -207,10 +214,10 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
     });
   };
 
-  // Get the upgrade callback (registered by Migrator.registerCallbacks())
-  const upgradeCallback = ctx.callbackRegistry['upgrade'] as ((v: { version: number; data: unknown }) => UpgradeResult) | undefined;
+  // Get the upgrade callback (registered by DataModel.registerCallbacks())
+  const upgradeCallback = ctx.callbackRegistry['__pl_data_upgrade'] as ((v: { version: number; data: unknown }) => UpgradeResult) | undefined;
   if (typeof upgradeCallback !== 'function') {
-    return { error: 'upgrade callback not found (Migrator not registered)' };
+    return { error: '__pl_data_upgrade callback not found (DataModel not registered)' };
   }
 
   // Call the migrator's upgrade function
@@ -237,7 +244,7 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
 }
 
 // Register migrate callback
-tryRegisterCallback('__storage_migrate', (currentStorageJson: string | undefined) => {
+tryRegisterCallback('__pl_storage_migrate', (currentStorageJson: string | undefined) => {
   return migrateStorage(currentStorageJson);
 });
 
@@ -247,7 +254,7 @@ tryRegisterCallback('__storage_migrate', (currentStorageJson: string | undefined
 
 /**
  * Result of args derivation from storage.
- * Returned by __args_fromStorage and __preRunArgs_fromStorage callbacks.
+ * Returned by __pl_args_derive and __pl_prerunArgs_derive callbacks.
  */
 export type ArgsDeriveResult =
   | { error: string }
@@ -285,19 +292,19 @@ function deriveArgsFromStorage(storageJson: string): ArgsDeriveResult {
   }
 }
 
-// Register args from storage callback
-tryRegisterCallback('__args_fromStorage', (storageJson: string) => {
+// Register args derivation callback
+tryRegisterCallback('__pl_args_derive', (storageJson: string) => {
   return deriveArgsFromStorage(storageJson);
 });
 
 /**
- * Derives preRunArgs from storage using the registered 'preRunArgs' callback.
- * Falls back to 'args' callback if 'preRunArgs' is not defined.
+ * Derives prerunArgs from storage using the registered 'prerunArgs' callback.
+ * Falls back to 'args' callback if 'prerunArgs' is not defined.
  *
  * @param storageJson - Storage as JSON string
- * @returns ArgsDeriveResult with derived preRunArgs or error
+ * @returns ArgsDeriveResult with derived prerunArgs or error
  */
-function derivePreRunArgsFromStorage(storageJson: string): ArgsDeriveResult {
+function derivePrerunArgsFromStorage(storageJson: string): ArgsDeriveResult {
   const ctx = tryGetCfgRenderCtx();
   if (ctx === undefined) {
     return { error: 'Not in config rendering context' };
@@ -306,22 +313,22 @@ function derivePreRunArgsFromStorage(storageJson: string): ArgsDeriveResult {
   // Extract data from storage
   const { data } = normalizeStorage(storageJson);
 
-  // Try preRunArgs callback first
-  const preRunArgsCallback = ctx.callbackRegistry['preRunArgs'] as ((data: unknown) => unknown) | undefined;
-  if (typeof preRunArgsCallback === 'function') {
+  // Try prerunArgs callback first
+  const prerunArgsCallback = ctx.callbackRegistry['prerunArgs'] as ((data: unknown) => unknown) | undefined;
+  if (typeof prerunArgsCallback === 'function') {
     try {
-      const result = preRunArgsCallback(data);
+      const result = prerunArgsCallback(data);
       return { value: result };
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
-      return { error: `preRunArgs() threw: ${errorMsg}` };
+      return { error: `prerunArgs() threw: ${errorMsg}` };
     }
   }
 
   // Fall back to args callback
   const argsCallback = ctx.callbackRegistry['args'] as ((data: unknown) => unknown) | undefined;
   if (typeof argsCallback !== 'function') {
-    return { error: 'args callback not found (fallback from missing preRunArgs)' };
+    return { error: 'args callback not found (fallback from missing prerunArgs)' };
   }
 
   try {
@@ -333,9 +340,9 @@ function derivePreRunArgsFromStorage(storageJson: string): ArgsDeriveResult {
   }
 }
 
-// Register preRunArgs from storage callback
-tryRegisterCallback('__preRunArgs_fromStorage', (storageJson: string) => {
-  return derivePreRunArgsFromStorage(storageJson);
+// Register prerunArgs derivation callback
+tryRegisterCallback('__pl_prerunArgs_derive', (storageJson: string) => {
+  return derivePrerunArgsFromStorage(storageJson);
 });
 
 // Export discriminator key and schema version for external checks

@@ -31,8 +31,7 @@ export const platforma = BlockModelV3.create({ dataModel, renderingMode: 'Heavy'
     return { sources: data.sources };
   })
 
-  .preRunArgs((data) => {
-    // Return sources for prerun even if empty (for testing purposes)
+  .prerunArgs((data) => {
     return { sources: data.sources ?? [] };
   })
 
@@ -64,7 +63,7 @@ export const platforma = BlockModelV3.create({ dataModel, renderingMode: 'Heavy'
 
   .output('sum', (ctx) => ctx.outputs?.resolve('sum')?.getDataAsJson<number>())
 
-  .output('preRunArgsJson', (ctx) => ctx.prerun?.resolve('preRunArgsJson')?.getDataAsJson<Record<string, unknown>>())
+  .output('prerunArgsJson', (ctx) => ctx.prerun?.resolve('prerunArgsJson')?.getDataAsJson<Record<string, unknown>>())
 
   .enriches((args) =>
     (args.sources !== undefined && args.sources.length > 0)

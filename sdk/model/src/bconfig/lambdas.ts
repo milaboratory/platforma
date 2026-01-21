@@ -5,7 +5,8 @@ import type { TypedConfigOrConfigLambda } from './types';
 export type StdCtxArgsOnly<Args, Data = undefined> = {
   readonly $blockId: string;
   readonly $args: Args;
-  readonly $ui: Data; // TODO v3
+  /** @deprecated Use $data instead. Kept for V1/V2 block compatibility. */
+  readonly $ui: Data;
   readonly $data: Data;
 };
 

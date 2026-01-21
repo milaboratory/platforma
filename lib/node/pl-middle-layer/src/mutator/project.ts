@@ -181,10 +181,10 @@ class BlockInfo {
     },
   );
 
-  private readonly currentPreRunArgsC = cached(
-    () => this.fields.currentPreRunArgs?.modCount,
+  private readonly currentPrerunArgsC = cached(
+    () => this.fields.currentPrerunArgs?.modCount,
     () => {
-      const bin = this.fields.currentPreRunArgs?.value;
+      const bin = this.fields.currentPrerunArgs?.value;
       if (bin === undefined) return undefined;
       return cachedDeserialize(bin);
     },
@@ -207,8 +207,8 @@ class BlockInfo {
     return this.blockStorageJ();
   }
 
-  get currentPreRunArgs(): unknown {
-    return this.currentPreRunArgsC();
+  get currentPrerunArgs(): unknown {
+    return this.currentPrerunArgsC();
   }
 
   get stagingRendered(): boolean {
@@ -236,8 +236,8 @@ class BlockInfo {
 
   /** Returns true if staging should be re-rendered (stagingCtx is not set) */
   get requireStagingRendering(): boolean {
-    // No staging needed if currentPreRunArgs is undefined (args derivation failed)
-    if (this.fields.currentPreRunArgs === undefined) return false;
+    // No staging needed if currentPrerunArgs is undefined (args derivation failed)
+    if (this.fields.currentPrerunArgs === undefined) return false;
     return !this.stagingRendered;
   }
 
@@ -624,10 +624,10 @@ export class ProjectMutator {
     const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(blockConfig, initialStorageJson);
     if (!deriveArgsResult.error) {
       this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValue(deriveArgsResult.value));
-      // Derive preRunArgs from storage
-      const preRunArgs = this.projectHelper.derivePreRunArgsFromStorage(blockConfig, initialStorageJson);
-      if (preRunArgs !== undefined) {
-        this.setBlockFieldObj(blockId, 'currentPreRunArgs', this.createJsonFieldValue(preRunArgs));
+      // Derive prerunArgs from storage
+      const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, initialStorageJson);
+      if (prerunArgs !== undefined) {
+        this.setBlockFieldObj(blockId, 'currentPrerunArgs', this.createJsonFieldValue(prerunArgs));
       }
     } else {
       this.deleteBlockFields(blockId, 'currentArgs');
@@ -651,7 +651,7 @@ export class ProjectMutator {
 
       // Derive args from storage using the block's config.args() callback
       let args: unknown;
-      let preRunArgs: unknown;
+      let prerunArgs: unknown;
 
       if (req.modelAPIVersion === 2) {
         const currentStorageJson = info.blockStorageJson;
@@ -672,11 +672,11 @@ export class ProjectMutator {
         const derivedArgsResult = this.projectHelper.deriveArgsFromStorage(blockConfig, updatedStorageJson);
         if (derivedArgsResult.error) {
           args = undefined;
-          preRunArgs = undefined;
+          prerunArgs = undefined;
         } else {
           args = derivedArgsResult.value;
-          // Derive preRunArgs from storage, or fall back to args
-          preRunArgs = this.projectHelper.derivePreRunArgsFromStorage(blockConfig, updatedStorageJson);
+          // Derive prerunArgs from storage, or fall back to args
+          prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, updatedStorageJson);
         }
       } else {
         this.setBlockFieldObj(req.blockId, 'blockStorage', this.createJsonFieldValue(req.state));
@@ -685,8 +685,8 @@ export class ProjectMutator {
         } else {
           args = req.state;
         }
-        // For the legacy blocks, preRunArgs = args (same as production args)
-        preRunArgs = args;
+        // For the legacy blocks, prerunArgs = args (same as production args)
+        prerunArgs = args;
       }
 
       // Set or clear currentArgs based on derivation result
@@ -698,27 +698,27 @@ export class ProjectMutator {
         this.deleteBlockFields(req.blockId, 'currentArgs');
       }
 
-      // Set currentPreRunArgs field and check if it actually changed
-      let preRunArgsChanged = false;
-      if (preRunArgs !== undefined) {
-        const preRunArgsData = canonicalJsonBytes(preRunArgs);
-        const oldPreRunArgsData = info.fields.currentPreRunArgs?.value;
-        // Check if preRunArgs actually changed
-        if (oldPreRunArgsData === undefined || Buffer.compare(oldPreRunArgsData, preRunArgsData) !== 0) {
-          preRunArgsChanged = true;
+      // Set currentPrerunArgs field and check if it actually changed
+      let prerunArgsChanged = false;
+      if (prerunArgs !== undefined) {
+        const prerunArgsData = canonicalJsonBytes(prerunArgs);
+        const oldPrerunArgsData = info.fields.currentPrerunArgs?.value;
+        // Check if prerunArgs actually changed
+        if (oldPrerunArgsData === undefined || Buffer.compare(oldPrerunArgsData, prerunArgsData) !== 0) {
+          prerunArgsChanged = true;
         }
-        const preRunArgsRef = this.tx.createValue(Pl.JsonObject, preRunArgsData);
-        this.setBlockField(req.blockId, 'currentPreRunArgs', preRunArgsRef, 'Ready', preRunArgsData);
+        const prerunArgsRef = this.tx.createValue(Pl.JsonObject, prerunArgsData);
+        this.setBlockField(req.blockId, 'currentPrerunArgs', prerunArgsRef, 'Ready', prerunArgsData);
       } else {
-        // preRunArgs is undefined - check if we previously had one
-        if (info.fields.currentPreRunArgs !== undefined) {
-          preRunArgsChanged = true;
+        // prerunArgs is undefined - check if we previously had one
+        if (info.fields.currentPrerunArgs !== undefined) {
+          prerunArgsChanged = true;
         }
       }
 
       blockChanged = true;
-      // Only add to changedArgs if preRunArgs changed - this controls staging reset
-      if (preRunArgsChanged) {
+      // Only add to changedArgs if prerunArgs changed - this controls staging reset
+      if (prerunArgsChanged) {
         changedArgs.push(req.blockId);
       }
 
@@ -769,17 +769,17 @@ export class ProjectMutator {
   }
 
   /**
-   * Renders staging for a block using currentPreRunArgs.
-   * If currentPreRunArgs is not set (preRunArgs returned undefined), skips staging for this block.
+   * Renders staging for a block using currentPrerunArgs.
+   * If currentPrerunArgs is not set (prerunArgs returned undefined), skips staging for this block.
    */
   private renderStagingFor(blockId: string) {
     this.resetStaging(blockId);
 
     const info = this.getBlockInfo(blockId);
 
-    // If currentPreRunArgs is not set (preRunArgs returned undefined), skip staging for this block
-    const preRunArgsRef = info.fields.currentPreRunArgs?.ref;
-    if (preRunArgsRef === undefined) {
+    // If currentPrerunArgs is not set (prerunArgs returned undefined), skip staging for this block
+    const prerunArgsRef = info.fields.currentPrerunArgs?.ref;
+    if (prerunArgsRef === undefined) {
       return;
     }
 
@@ -789,9 +789,9 @@ export class ProjectMutator {
 
     const tpl = info.getTemplate(this.tx);
 
-    // Use currentPreRunArgs for staging rendering
+    // Use currentPrerunArgs for staging rendering
     const results = createRenderHeavyBlock(this.tx, tpl, {
-      args: preRunArgsRef,
+      args: prerunArgsRef,
       blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
       isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(false)),
       context: ctx,
@@ -874,7 +874,7 @@ export class ProjectMutator {
     const blockConfig = info.config;
 
     let args: unknown;
-    let preRunArgs: unknown;
+    let prerunArgs: unknown;
     let storageToWrite: string;
 
     if (spec.storageMode === 'fromModel') {
@@ -885,10 +885,10 @@ export class ProjectMutator {
       const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(blockConfig, storageToWrite);
       if (deriveArgsResult.error) {
         args = undefined;
-        preRunArgs = undefined;
+        prerunArgs = undefined;
       } else {
         args = deriveArgsResult.value;
-        preRunArgs = this.projectHelper.derivePreRunArgsFromStorage(blockConfig, storageToWrite);
+        prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageToWrite);
       }
     } else if (spec.storageMode === 'legacy') {
       // Model API v1: use legacyState from spec
@@ -897,7 +897,7 @@ export class ProjectMutator {
       if (args === undefined) {
         throw new Error('args is undefined in legacyState');
       }
-      preRunArgs = args;
+      prerunArgs = args;
       storageToWrite = spec.legacyState;
     } else {
       throw new Error(`Unknown storageMode: ${(spec as NewBlockSpec).storageMode}`);
@@ -908,9 +908,9 @@ export class ProjectMutator {
       this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValue(args));
     }
 
-    // currentPreRunArgs
-    if (preRunArgs !== undefined) {
-      this.setBlockFieldObj(blockId, 'currentPreRunArgs', this.createJsonFieldValue(preRunArgs));
+    // currentPrerunArgs
+    if (prerunArgs !== undefined) {
+      this.setBlockFieldObj(blockId, 'currentPrerunArgs', this.createJsonFieldValue(prerunArgs));
     }
 
     // blockStorage
@@ -1146,10 +1146,10 @@ export class ProjectMutator {
         const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(newConfig, initialStorageJson);
         if (!deriveArgsResult.error) {
           this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValue(deriveArgsResult.value));
-          // Derive preRunArgs from storage
-          const preRunArgs = this.projectHelper.derivePreRunArgsFromStorage(newConfig, initialStorageJson);
-          if (preRunArgs !== undefined) {
-            this.setBlockFieldObj(blockId, 'currentPreRunArgs', this.createJsonFieldValue(preRunArgs));
+          // Derive prerunArgs from storage
+          const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(newConfig, initialStorageJson);
+          if (prerunArgs !== undefined) {
+            this.setBlockFieldObj(blockId, 'currentPrerunArgs', this.createJsonFieldValue(prerunArgs));
           }
         }
         this.blocksWithChangedInputs.add(blockId);
@@ -1300,7 +1300,7 @@ export class ProjectMutator {
     const stagingGraph = this.getStagingGraph();
     stagingGraph.nodes.forEach((node) => {
       const info = this.getBlockInfo(node.id);
-      // Use requireStagingRendering to check both: staging exists AND preRunArgs hasn't changed
+      // Use requireStagingRendering to check both: staging exists AND prerunArgs hasn't changed
       const requiresRendering = info.requireStagingRendering;
       let lag = requiresRendering ? 1 : 0;
       node.upstream.forEach((upstream) => {
@@ -1309,7 +1309,7 @@ export class ProjectMutator {
         lag = Math.max(upstreamLag + 1, lag);
       });
       if (!requiresRendering && info.stagingRendered) {
-        // console.log(`[traverseWithStagingLag] SKIP staging for ${node.id} - preRunArgs unchanged`);
+        // console.log(`[traverseWithStagingLag] SKIP staging for ${node.id} - prerunArgs unchanged`);
       }
       cb(node.id, lag);
       lags.set(node.id, lag);

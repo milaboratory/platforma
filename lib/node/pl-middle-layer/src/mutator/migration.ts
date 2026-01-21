@@ -66,13 +66,13 @@ async function migrateV1ToV2(tx: PlTransaction, rid: ResourceId) {
  *
  * Summary of changes:
  * - Introduces unified 'blockStorage' field containing { args, uiState }
- * - Adds 'currentPreRunArgs' field for staging/pre-run rendering
+ * - Adds 'currentPrerunArgs' field for staging/prerun rendering
  * - For each block:
  *   1. Read existing 'blockStorage' field (contains uiState in v2)
  *   2. Read existing 'currentArgs' field (contains args)
  *   3. Create unified state = { args: currentArgs, uiState: oldState }
  *   4. Write to new {blockId}-blockStorage field (overwrites)
- *   5. Initialize {blockId}-currentPreRunArgs (same as prodArgs for v1/v2 blocks)
+ *   5. Initialize {blockId}-currentPrerunArgs (same as prodArgs for v1/v2 blocks)
  * - Note: currentArgs and prodArgs fields remain for compatibility layer
  *
  * @param tx - The transaction to use.

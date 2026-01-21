@@ -335,7 +335,7 @@ export class Project {
   }
 
   /**
-   * @deprecated use setState instead
+   * @deprecated Use mutateBlockStorage() for V3 blocks.
    * Sets block args, and changes whole project state accordingly.
    * Along with setting arguments one can specify author marker, that will be
    * transactionally associated with the block, to facilitate conflict resolution
@@ -350,7 +350,7 @@ export class Project {
   }
 
   /**
-   * @deprecated use setState instead.
+   * @deprecated Use mutateBlockStorage() for V3 blocks.
    * Sets ui block state associated with the block.
    * Along with setting arguments one can specify author marker, that will be
    * transactionally associated with the block, to facilitate conflict resolution
@@ -365,7 +365,7 @@ export class Project {
   }
 
   /**
-   * @deprecated use setState instead
+   * @deprecated Use mutateBlockStorage() for V3 blocks.
    * Sets block args and ui state, and changes the whole project state accordingly.
    * Along with setting arguments one can specify author marker, that will be
    * transactionally associated with the block, to facilitate conflict resolution
@@ -396,7 +396,7 @@ export class Project {
   /**
    * Mutates block storage for Model API v3 blocks.
    * Applies a storage operation (e.g., 'update-data') which triggers
-   * args derivation (args(data) and preRunArgs(data)).
+   * args derivation (args(data) and prerunArgs(data)).
    * The derived args are stored atomically with the data.
    *
    * @param blockId - The block ID

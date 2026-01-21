@@ -34,7 +34,7 @@ const dataModel = DataModel
   .from<BlockDataV1>()
   // Migration v1 → v2: sort numbers and add labels
   // Throws if numbers contain 666 (for testing migration failure recovery)
-  .migrate<BlockDataV2>((data) => { // TODO: migrateTo???
+  .migrate<BlockDataV2>((data) => {
     if (data.numbers.includes(666)) {
       throw new Error('Migration failed: number 666 is forbidden!');
     }
@@ -56,7 +56,7 @@ export const platforma = BlockModelV3
     return { numbers: data.numbers.toSorted() };
   })
 
-  .preRunArgs((data) => {
+  .prerunArgs((data) => {
     return { evenNumbers: data.numbers.toSorted().filter((n) => n % 2 === 0) };
   })
 
@@ -66,7 +66,7 @@ export const platforma = BlockModelV3
 
   .output('numbersCount', (ctx) => ctx.prerun?.resolve('numbersCount')?.getDataAsJson<number>() ?? 0)
 
-  .output('preRunArgsJson', (ctx) => ctx.prerun?.resolve('preRunArgsJson')?.getDataAsJson<Record<string, unknown>>())
+  .output('prerunArgsJson', (ctx) => ctx.prerun?.resolve('prerunArgsJson')?.getDataAsJson<Record<string, unknown>>())
 
   .output('errorIfNumberIs999', (ctx) => {
     const numbers = ctx.args?.numbers;

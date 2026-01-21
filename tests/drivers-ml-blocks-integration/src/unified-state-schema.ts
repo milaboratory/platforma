@@ -60,7 +60,7 @@ export const BlockDumpArraySchemaV2 = z.array(BlockDumpSchemaV2);
  * Schema v3 introduces unified state management:
  * - state: Single unified field containing all persistent state
  * - prodArgs: Derived args for production (from args(state))
- * - stagingArgs: Derived args for staging/pre-run (from preRunArgs(state))
+ * - stagingArgs: Derived args for staging/prerun (from prerunArgs(state))
  * - currentArgs: Snapshot at production run time
  *
  * For Model API v1/v2 blocks, state = { args, uiState } with compatibility layer.

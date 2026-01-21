@@ -34,18 +34,19 @@ export type MigrationResult =
   | { error?: undefined; newStorageJson: string; info: string; warn?: string };
 
 // Internal lambda handles for storage operations (registered by SDK's block_storage_vm.ts)
-const STORAGE_NORMALIZE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__storage_normalize' };
-const STORAGE_APPLY_UPDATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__storage_applyUpdate' };
-const STORAGE_GET_INFO_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__storage_getInfo' };
-const STORAGE_MIGRATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__storage_migrate' };
-const ARGS_FROM_STORAGE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__args_fromStorage' };
-const PRE_RUN_ARGS_FROM_STORAGE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__preRunArgs_fromStorage' };
+// All callbacks are prefixed with `__pl_` to indicate internal SDK use
+const STORAGE_NORMALIZE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_normalize' };
+const STORAGE_APPLY_UPDATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_applyUpdate' };
+const STORAGE_GET_INFO_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_getInfo' };
+const STORAGE_MIGRATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_migrate' };
+const ARGS_DERIVE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_args_derive' };
+const PRERUN_ARGS_DERIVE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_prerunArgs_derive' };
 // Registered by DataModel.registerCallbacks()
-const INITIAL_STORAGE_JSON_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: 'initialStorageJson' };
+const INITIAL_STORAGE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_initial' };
 
 /**
  * Result of args derivation from storage.
- * Returned by __args_fromStorage and __preRunArgs_fromStorage VM callbacks.
+ * Returned by __pl_args_derive and __pl_prerunArgs_derive VM callbacks.
  */
 type ArgsDeriveResult =
   | { error: string }
@@ -84,7 +85,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        ARGS_FROM_STORAGE_HANDLE,
+        ARGS_DERIVE_HANDLE,
         extractCodeWithInfo(blockConfig),
         storageJson,
       ) as ArgsDeriveResult;
@@ -99,22 +100,22 @@ export class ProjectHelper {
   }
 
   /**
-   * Derives preRunArgs directly from storage JSON using VM callback.
-   * Falls back to args() if preRunArgs is not defined in the block model.
+   * Derives prerunArgs directly from storage JSON using VM callback.
+   * Falls back to args() if prerunArgs is not defined in the block model.
    *
    * @param blockConfig The block configuration (provides the model code)
    * @param storageJson Storage as JSON string
-   * @returns The derived preRunArgs, or undefined if derivation fails
+   * @returns The derived prerunArgs, or undefined if derivation fails
    */
-  public derivePreRunArgsFromStorage(blockConfig: BlockConfig, storageJson: string): unknown {
+  public derivePrerunArgsFromStorage(blockConfig: BlockConfig, storageJson: string): unknown {
     if (blockConfig.modelAPIVersion !== 2) {
-      throw new Error('derivePreRunArgsFromStorage is only supported for model API version 2');
+      throw new Error('derivePrerunArgsFromStorage is only supported for model API version 2');
     }
 
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        PRE_RUN_ARGS_FROM_STORAGE_HANDLE,
+        PRERUN_ARGS_DERIVE_HANDLE,
         extractCodeWithInfo(blockConfig),
         storageJson,
       ) as ArgsDeriveResult;
@@ -152,7 +153,7 @@ export class ProjectHelper {
 
   /**
    * Normalizes raw blockStorage data using VM-based transformation.
-   * This calls the model's `__storage_normalize` callback which:
+   * This calls the model's `__pl_storage_normalize` callback which:
    * - Handles BlockStorage format (with discriminator)
    * - Handles legacy V1/V2 format ({ args, uiState })
    * - Handles raw V3 state
@@ -178,7 +179,7 @@ export class ProjectHelper {
 
   /**
    * Creates initial BlockStorage for a new block using VM-based transformation.
-   * This calls the 'initialStorageJson' callback registered by DataModel which:
+   * This calls the '__pl_storage_initial' callback registered by DataModel which:
    * - Gets initial data from DataModel.getDefaultData()
    * - Creates BlockStorage with correct version
    *
@@ -190,7 +191,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        INITIAL_STORAGE_JSON_HANDLE,
+        INITIAL_STORAGE_HANDLE,
         extractCodeWithInfo(blockConfig),
       ) as string;
       return result;
@@ -202,7 +203,7 @@ export class ProjectHelper {
 
   /**
    * Applies a state update using VM-based transformation.
-   * This calls the model's `__storage_applyUpdate` callback which:
+   * This calls the model's `__pl_storage_applyUpdate` callback which:
    * - Normalizes current storage
    * - Updates state while preserving other fields (version, plugins)
    * - Returns the updated storage as JSON string
@@ -230,7 +231,7 @@ export class ProjectHelper {
   }
 
   /**
-   * Gets storage info from raw storage data by calling the VM's __storage_getInfo callback.
+   * Gets storage info from raw storage data by calling the VM's __pl_storage_getInfo callback.
    * Returns structured info about the storage (e.g., dataVersion).
    *
    * @param blockConfig Block configuration
@@ -258,7 +259,7 @@ export class ProjectHelper {
 
   /**
    * Runs block state migrations via VM-based transformation.
-   * This calls the model's `__storage_migrate` callback which:
+   * This calls the model's `__pl_storage_migrate` callback which:
    * - Normalizes current storage to get state and version
    * - Calculates target version from number of registered migrations
    * - Runs all necessary migrations sequentially

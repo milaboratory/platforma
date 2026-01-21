@@ -19,7 +19,7 @@ export type BlockContextArgsOnly = {
   readonly activeArgs: (cCtx: ComputableCtx) => string | undefined;
   readonly blockMeta: (cCtx: ComputableCtx) => Map<string, Block>;
   readonly data: (cCtx: ComputableCtx) => string | undefined;
-  readonly preRunArgs: (cCtx: ComputableCtx) => string | undefined;
+  readonly prerunArgs: (cCtx: ComputableCtx) => string | undefined;
 };
 
 export type BlockContextFull = BlockContextArgsOnly & {
@@ -84,12 +84,12 @@ export function constructBlockContextArgsOnly(
     // Return raw for legacy format
     return rawJson;
   };
-  const preRunArgs = (cCtx: ComputableCtx) => {
+  const prerunArgs = (cCtx: ComputableCtx) => {
     const data = cCtx
       .accessor(projectEntry)
       .node()
       .traverse({
-        field: projectFieldName(blockId, 'currentPreRunArgs'),
+        field: projectFieldName(blockId, 'currentPrerunArgs'),
         stableIfNotFound: true,
       })
       ?.getData();
@@ -100,7 +100,7 @@ export function constructBlockContextArgsOnly(
     args,
     activeArgs,
     data,
-    preRunArgs,
+    prerunArgs,
     blockMeta: (cCtx: ComputableCtx) => {
       const prj = cCtx.accessor(projectEntry).node();
       const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
@@ -129,13 +129,13 @@ export function constructBlockContext(
         ?.persist();
     },
     staging: (cCtx: ComputableCtx) => {
-      // Check if staging is expected (currentPreRunArgs is set)
+      // Check if staging is expected (currentPrerunArgs is set)
       // For blocks with failed args derivation, staging will never be rendered
-      const hasPreRunArgs = cCtx
+      const hasPrerunArgs = cCtx
         .accessor(projectEntry)
         .node({ ignoreError: true })
         .traverse({
-          field: projectFieldName(blockId, 'currentPreRunArgs'),
+          field: projectFieldName(blockId, 'currentPrerunArgs'),
           stableIfNotFound: true,
           ignoreError: true,
         }) !== undefined;
@@ -145,8 +145,8 @@ export function constructBlockContext(
         .node({ ignoreError: true })
         .traverse({
           field: projectFieldName(blockId, 'stagingOutput'),
-          // Only mark stable if staging is NOT expected (no preRunArgs)
-          stableIfNotFound: !hasPreRunArgs,
+          // Only mark stable if staging is NOT expected (no prerunArgs)
+          stableIfNotFound: !hasPrerunArgs,
           ignoreError: true,
         })
         ?.persist();

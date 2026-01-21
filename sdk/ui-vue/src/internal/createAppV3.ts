@@ -57,7 +57,6 @@ export function createAppV3<
   platforma: PlatformaV3<Args, Outputs, Data, Href>,
   settings: AppSettings,
 ) {
-  console.log('createAppV3 state', state);
   const debug = (msg: string, ...rest: unknown[]) => {
     if (settings.debug) {
       console.log(`%c>>> %c${msg}`, 'color: orange; font-weight: bold', 'color: orange', ...rest.map((r) => stringifyForDebug(r)));

@@ -12,10 +12,10 @@ import type { BlockDumpUnified } from './unified-state-schema';
 import { BlockDumpArraySchemaUnified } from './unified-state-schema';
 import type { BlockStateOverview } from '@milaboratories/pl-middle-layer';
 
-// Test for preRunArgs / fastNumbers feature
-test('v3: preRunArgs fastNumbers test', { timeout: 10_000 }, async ({ expect }) => {
+// Test for prerunArgs / fastNumbers feature
+test('v3: prerunArgs fastNumbers test', { timeout: 10_000 }, async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
-    const pRid = await ml.createProject({ label: 'PreRunArgs Test' }, 'prerun-test');
+    const pRid = await ml.createProject({ label: 'PrerunArgs Test' }, 'prerun-test');
     await ml.openProject(pRid);
     const prj = ml.getOpenedProject(pRid);
 
@@ -42,7 +42,7 @@ test('v3: preRunArgs fastNumbers test', { timeout: 10_000 }, async ({ expect }) 
       expect(enterNumberBlock?.canRun).toBe(false);
     });
 
-    // Set state with numbers - preRunArgs should derive fastNumbers
+    // Set state with numbers - prerunArgs should derive fastNumbers
     await prj.mutateBlockStorage(enterNumberId, {
       operation: 'update-data',
       value: { numbers: [3, 1, 2] },
@@ -75,21 +75,21 @@ test('v3: preRunArgs fastNumbers test', { timeout: 10_000 }, async ({ expect }) 
       expect(evenNumbersData).toStrictEqual([2]);
     }
 
-    // Verify preRunArgsJson output - should contain ONLY evenNumbers, NOT numbers
-    expect(blockState.outputs?.['preRunArgsJson']).toBeDefined();
-    if (blockState.outputs?.['preRunArgsJson']?.ok) {
-      const preRunArgs = blockState.outputs['preRunArgsJson'].value as Record<string, unknown>;
-      // console.log('preRunArgs:', preRunArgs);
+    // Verify prerunArgsJson output - should contain ONLY evenNumbers, NOT numbers
+    expect(blockState.outputs?.['prerunArgsJson']).toBeDefined();
+    if (blockState.outputs?.['prerunArgsJson']?.ok) {
+      const prerunArgs = blockState.outputs['prerunArgsJson'].value as Record<string, unknown>;
+      // console.log('prerunArgs:', prerunArgs);
 
       // Should have evenNumbers
-      expect(preRunArgs).toHaveProperty('evenNumbers');
-      expect(preRunArgs.evenNumbers).toStrictEqual([2]);
+      expect(prerunArgs).toHaveProperty('evenNumbers');
+      expect(prerunArgs.evenNumbers).toStrictEqual([2]);
 
-      // Should NOT have numbers - this proves preRunArgs is used, not args
-      expect(preRunArgs).not.toHaveProperty('numbers');
+      // Should NOT have numbers - this proves prerunArgs is used, not args
+      expect(prerunArgs).not.toHaveProperty('numbers');
     }
 
-    // ========== TEST: Staging should be SKIPPED when preRunArgs remains the same ==========
+    // ========== TEST: Staging should be SKIPPED when prerunArgs remains the same ==========
     console.log('\n=== TEST: Changing numbers but keeping same evenNumbers (should SKIP staging) ===');
     // Change [3, 1, 2] to [5, 1, 2] - evenNumbers stays [2], so staging should be skipped
     await prj.mutateBlockStorage(enterNumberId, {
@@ -109,7 +109,7 @@ test('v3: preRunArgs fastNumbers test', { timeout: 10_000 }, async ({ expect }) 
     });
     console.log('After changing [3,1,2] to [5,1,2]: numbersCount still 1 ✓');
 
-    // ========== TEST: Staging SHOULD run when preRunArgs changes ==========
+    // ========== TEST: Staging SHOULD run when prerunArgs changes ==========
     console.log('\n=== TEST: Changing numbers with different evenNumbers (should RENDER staging) ===');
     // Change [5, 1, 2] to [5, 1, 4] - evenNumbers changes from [2] to [4], staging should run
     await prj.mutateBlockStorage(enterNumberId, {
@@ -127,13 +127,13 @@ test('v3: preRunArgs fastNumbers test', { timeout: 10_000 }, async ({ expect }) 
     });
 
     // But evenNumbers should now be [4]
-    if (blockState3.outputs?.['preRunArgsJson']?.ok) {
-      const preRunArgs3 = blockState3.outputs['preRunArgsJson'].value as Record<string, unknown>;
-      expect(preRunArgs3.evenNumbers).toStrictEqual([4]);
+    if (blockState3.outputs?.['prerunArgsJson']?.ok) {
+      const prerunArgs3 = blockState3.outputs['prerunArgsJson'].value as Record<string, unknown>;
+      expect(prerunArgs3.evenNumbers).toStrictEqual([4]);
       console.log('After changing to [5,1,4]: evenNumbers now [4] ✓');
     }
 
-    // Run the block to verify production uses args (numbers) not preRunArgs (fastNumbers)
+    // Run the block to verify production uses args (numbers) not prerunArgs (fastNumbers)
     await prj.runBlock(enterNumberId);
     await awaitBlockDone(prj, enterNumberId);
 
