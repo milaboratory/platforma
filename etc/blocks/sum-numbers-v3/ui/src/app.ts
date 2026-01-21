@@ -15,7 +15,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     data.counter++;
   }
 
-  const dataAsJson = computed(() => JSON.stringify(base.snapshot.data));
+  const dataAsJson = computed(() => JSON.stringify(base.snapshot.blockStorage));
 
   return {
     data,

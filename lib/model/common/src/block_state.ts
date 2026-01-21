@@ -34,11 +34,11 @@ export type BlockState<
 
 export type BlockStateV3<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  Data = unknown,
+  _Data = unknown,
   Href extends `/${string}` = `/${string}`,
 > = {
-  /** Unified state persisted in the block state */
-  data: Data;
+  /** Block storage persisted in the block state */
+  blockStorage: unknown;
 
   /** Outputs rendered with block config */
   outputs: Outputs;

@@ -1,6 +1,6 @@
 import { blockSpec as enterNumberSpec } from '@milaboratories/milaboratories.test-enter-numbers-v3';
 import type { Project } from '@milaboratories/pl-middle-layer';
-import { BLOCK_STORAGE_KEY } from '@platforma-sdk/model';
+import { BLOCK_STORAGE_KEY, deriveDataFromStorage } from '@platforma-sdk/model';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'vitest';
@@ -78,8 +78,8 @@ test('v3: fresh block has correct initial dataVersion', async ({ expect }) => {
 
     // Get the actual state to verify it's the initial state
     const blockState = await prj.getBlockState(block1Id).awaitStableValue();
-    console.log('[Fresh Block Test] data:', blockState.data);
-    expect(blockState.data).toStrictEqual({
+    console.log('[Fresh Block Test] data:', deriveDataFromStorage(blockState.blockStorage));
+    expect(deriveDataFromStorage(blockState.blockStorage)).toStrictEqual({
       numbers: [],
       labels: [],
       description: '',
@@ -171,13 +171,13 @@ test('v3: migration from v1 to v3 (two migrations)', async ({ expect }) => {
 
     // Check the migrated state
     const blockState = await prj.getBlockState(block1Id).awaitStableValue();
-    console.log('[v1→v3 Test] Migrated state:', blockState.data);
+    console.log('[v1→v3 Test] Migrated state:', deriveDataFromStorage(blockState.blockStorage));
 
     // After migration:
     // - numbers should be sorted: [1, 2, 3]
     // - labels should be ['migrated-from-v1'] (from migration[0])
     // - description should be 'Migrated: migrated-from-v1' (from migration[1])
-    expect(blockState.data).toStrictEqual({
+    expect(deriveDataFromStorage(blockState.blockStorage)).toStrictEqual({
       numbers: [1, 2, 3],
       labels: ['migrated-from-v1'],
       description: 'Migrated: migrated-from-v1',
@@ -254,13 +254,13 @@ test('v3: migration from v2 to v3 (one migration)', async ({ expect }) => {
 
     // Check the migrated state
     const blockState = await prj.getBlockState(block1Id).awaitStableValue();
-    console.log('[v2→v3 Test] Migrated state:', blockState.data);
+    console.log('[v2→v3 Test] Migrated state:', deriveDataFromStorage(blockState.blockStorage));
 
     // After migration:
     // - numbers should be preserved: [10, 20, 30]
     // - labels should be preserved: ['custom-label-1', 'custom-label-2']
     // - description should be 'Migrated: custom-label-1, custom-label-2' (from migration[1])
-    expect(blockState.data).toStrictEqual({
+    expect(deriveDataFromStorage(blockState.blockStorage)).toStrictEqual({
       numbers: [10, 20, 30],
       labels: ['custom-label-1', 'custom-label-2'],
       description: 'Migrated: custom-label-1, custom-label-2',
@@ -340,7 +340,7 @@ test('v3: no migration needed when already at target version', async ({ expect }
 
       // State should be preserved exactly
       const blockState = await prj.getBlockState(block1Id).awaitStableValue();
-      expect(blockState.data).toStrictEqual(v3State);
+      expect(deriveDataFromStorage(blockState.blockStorage)).toStrictEqual(v3State);
     }
 
     await projectWatcher.abort();
@@ -417,13 +417,13 @@ test('v3: migration failure resets to initial data', async ({ expect }) => {
 
     // Check the state - should be reset to initialData (empty arrays and empty string)
     const blockState = await prj.getBlockState(block1Id).awaitStableValue();
-    console.log('[Migration Failure Test] Reset state:', blockState.data);
+    console.log('[Migration Failure Test] Reset state:', deriveDataFromStorage(blockState.blockStorage));
 
     // After migration failure, data should be reset to initialData:
     // - numbers: [] (initial)
     // - labels: [] (initial)
     // - description: '' (initial)
-    expect(blockState.data).toStrictEqual({
+    expect(deriveDataFromStorage(blockState.blockStorage)).toStrictEqual({
       numbers: [],
       labels: [],
       description: '',
@@ -464,8 +464,8 @@ test('v3: fresh block with correct version survives block pack update', async ({
 
     // Get the actual data - it's already in v3 format!
     const blockState1 = await prj.getBlockState(block1Id).awaitStableValue();
-    console.log('[Fresh Update Test] Fresh block data:', blockState1.data);
-    expect(blockState1.data).toStrictEqual({
+    console.log('[Fresh Update Test] Fresh block data:', deriveDataFromStorage(blockState1.blockStorage));
+    expect(deriveDataFromStorage(blockState1.blockStorage)).toStrictEqual({
       numbers: [],
       labels: [],
       description: '',
@@ -508,11 +508,11 @@ test('v3: fresh block with correct version survives block pack update', async ({
 
     // Check the corrupted state
     const blockState3 = await prj.getBlockState(block1Id).awaitStableValue();
-    console.log('[Fresh Update Test] Preserved state:', blockState3.data);
+    console.log('[Fresh Update Test] Preserved state:', deriveDataFromStorage(blockState3.blockStorage));
 
     // With correct dataVersion=3, migration should NOT run
     // Data should be preserved exactly as the user set it
-    expect(blockState3.data).toStrictEqual({
+    expect(deriveDataFromStorage(blockState3.blockStorage)).toStrictEqual({
       numbers: [1, 2, 3],
       labels: ['my-label'], // Should be preserved, NOT overwritten
       description: 'My description', // Should be preserved, NOT overwritten
@@ -588,8 +588,8 @@ test('v3: version 0 edge case - resets to initial data', async ({ expect }) => {
 
       // Data should be reset to initialData (empty arrays and empty string)
       const blockState = await prj.getBlockState(block1Id).awaitStableValue();
-      console.log('[Edge Case Test] Reset state:', blockState.data);
-      expect(blockState.data).toStrictEqual({
+      console.log('[Edge Case Test] Reset state:', deriveDataFromStorage(blockState.blockStorage));
+      expect(deriveDataFromStorage(blockState.blockStorage)).toStrictEqual({
         numbers: [],
         labels: [],
         description: '',

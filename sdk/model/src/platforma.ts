@@ -84,7 +84,6 @@ export type PlatformaFactory = (config: { sdkVersion: string }) => Platforma;
 
 export type InferBlockState<Pl extends Platforma> = BlockStateV3<
   InferOutputsType<Pl>,
-  InferDataType<Pl>,
   InferHrefType<Pl>
 >;
 

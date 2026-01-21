@@ -56,8 +56,8 @@ const helperText = computed(() => {
       {{ app.model }}
     </fieldset>
     <fieldset>
-      <legend>Data (app.snapshot.data)</legend>
-      {{ app.snapshot.data }}
+      <legend>Block Storage (app.snapshot.blockStorage)</legend>
+      {{ app.snapshot.blockStorage }}
     </fieldset>
     <h4>Result ref</h4>
     <code>{{ resultRef }}</code>

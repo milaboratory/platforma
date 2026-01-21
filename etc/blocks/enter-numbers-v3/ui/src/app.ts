@@ -5,7 +5,7 @@ import type { Component } from 'vue';
 import { computed, reactive, ref } from 'vue';
 import type { Equal, Expect } from '@milaboratories/helpers';
 
-export const sdkPlugin = defineApp(platforma, (base) => {
+export const sdkPlugin = defineApp(platforma, () => {
   // Additional data
   const data = reactive({
     counter: 0,
@@ -17,7 +17,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     data.counter++;
   }
 
-  const stateAsJson = computed(() => JSON.stringify(base.snapshot.data));
+  const stateAsJson = computed(() => 'not implemented');
 
   return {
     data,

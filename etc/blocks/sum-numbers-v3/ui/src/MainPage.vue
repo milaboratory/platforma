@@ -32,8 +32,8 @@ const sources = computed({
       {{ app.error }}
     </PlAlert>
     <fieldset>
-      <legend>Data (app.snapshot.data)</legend>
-      {{ app.snapshot.data }}
+      <legend>Block Storage (app.snapshot.blockStorage)</legend>
+      {{ app.snapshot.blockStorage }}
     </fieldset>
     <h3>app.model</h3>
     <code>{{ app.model }}</code>

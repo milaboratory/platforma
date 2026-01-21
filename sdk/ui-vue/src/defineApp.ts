@@ -60,16 +60,16 @@ export function defineApp<
 export function defineApp<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown,
+  UiStateOrData = unknown,
   Href extends `/${string}` = `/${string}`,
   Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
 >(
-  platforma: PlatformaExtended<Platforma<Args, Outputs, UiState, Href>>,
+  platforma: PlatformaExtended<Platforma<Args, Outputs, UiStateOrData, Href>>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   extendApp: (app: any) => Extend,
   settings: AppSettings = {},
-): SdkPlugin<Args, Outputs, UiState, Href, Extend> {
-  let app: undefined | AppV1<Args, Outputs, UiState, Href, Extend> | AppV2<Args, Outputs, UiState, Href, Extend> = undefined;
+): SdkPlugin<Args, Outputs, UiStateOrData, Href, Extend> {
+  let app: undefined | AppV1<Args, Outputs, UiStateOrData, Href, Extend> | AppV2<Args, Outputs, UiStateOrData, Href, Extend> | AppV3<Args, Outputs, UiStateOrData, Href, Extend> = undefined;
 
   activateAgGrid();
 
@@ -88,7 +88,7 @@ export function defineApp<
         .loadBlockState()
         .then((state) => {
           plugin.loaded = true;
-          const baseApp = createAppV1<Args, Outputs, UiState, Href>(state, platforma, settings);
+          const baseApp = createAppV1<Args, Outputs, UiStateOrData, Href>(state, platforma, settings);
 
           const localState = extendApp(baseApp);
 
@@ -104,7 +104,7 @@ export function defineApp<
             getRoute(href: Href): Component | undefined {
               return routes[href];
             },
-          } as unknown as AppV1<Args, Outputs, UiState, Href, Extend>);
+          } as unknown as AppV1<Args, Outputs, UiStateOrData, Href, Extend>);
         });
     } else if (platforma.apiVersion === 2) {
       await platforma
@@ -112,7 +112,7 @@ export function defineApp<
         .then((stateOrError) => {
           const state = unwrapResult(stateOrError);
           plugin.loaded = true;
-          const baseApp = createAppV2<Args, Outputs, UiState, Href>(state, platforma, settings);
+          const baseApp = createAppV2<Args, Outputs, UiStateOrData, Href>(state, platforma, settings);
 
           const localState = extendApp(baseApp);
 
@@ -128,7 +128,7 @@ export function defineApp<
             getRoute(href: Href): Component | undefined {
               return routes[href];
             },
-          } as unknown as AppV2<Args, Outputs, UiState, Href, Extend>);
+          } as unknown as AppV2<Args, Outputs, UiStateOrData, Href, Extend>);
         });
     } else if (platforma.apiVersion === 3) {
       await platforma
@@ -136,7 +136,7 @@ export function defineApp<
         .then((stateOrError) => {
           const state = unwrapResult(stateOrError);
           plugin.loaded = true;
-          const baseApp = createAppV3<Args, Outputs, UiState, Href>(state, platforma, settings);
+          const baseApp = createAppV3<Args, Outputs, UiStateOrData, Href>(state, platforma, settings);
 
           const localState = extendApp(baseApp);
 
@@ -152,7 +152,7 @@ export function defineApp<
             getRoute(href: Href): Component | undefined {
               return routes[href];
             },
-          } as unknown as AppV2<Args, Outputs, UiState, Href, Extend>);
+          } as unknown as AppV3<Args, Outputs, UiStateOrData, Href, Extend>);
         });
     }
   };
@@ -163,7 +163,7 @@ export function defineApp<
     error: undefined as unknown,
     // Href to get typed query parameters for a specific route
     useApp<PageHref extends Href = Href>() {
-      return notEmpty(app, 'App is not loaded') as App<Args, Outputs, UiState, PageHref, Extend>;
+      return notEmpty(app, 'App is not loaded') as App<Args, Outputs, UiStateOrData, PageHref, Extend>;
     },
     // @todo type portability issue with Vue
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -176,7 +176,7 @@ export function defineApp<
     },
   });
 
-  return plugin as SdkPlugin<Args, Outputs, UiState, Href, Extend>;
+  return plugin as SdkPlugin<Args, Outputs, UiStateOrData, Href, Extend>;
 }
 
 export type AppV1<

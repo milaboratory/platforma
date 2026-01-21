@@ -42,12 +42,12 @@ export function getBlockParameters(
 
   const prj = cCtx.accessor(projectEntry).node();
   const ctx = constructBlockContextArgsOnly(projectEntry, blockId);
-  const dataJson = ctx.data(cCtx);
-  // @TODO add deserialization caching
-  const data = dataJson !== undefined ? deepFreeze(JSON.parse(dataJson)) : undefined;
+  const blockStorageJson = ctx.blockStorage(cCtx);
+  // Parse raw storage JSON - UI will derive data using sdk/model
+  const blockStorage = blockStorageJson !== undefined ? deepFreeze(JSON.parse(blockStorageJson)) : undefined;
   return {
     author: prj.getKeyValueAsJson<AuthorMarker>(blockArgsAuthorKey(blockId)),
-    data,
+    blockStorage,
   };
 }
 

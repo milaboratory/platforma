@@ -1,4 +1,4 @@
-import type { BlockOutputsBase, BlockState, BlockStateV3 } from '@milaboratories/pl-model-common';
+import type { AuthorMarker, BlockOutputsBase, BlockState, NavigationState } from '@milaboratories/pl-model-common';
 import type { Optional } from 'utility-types';
 
 // @deprecated TODO v3: keep this name, or rename to BlockStateInternalLegacy?
@@ -9,8 +9,19 @@ export type BlockStateInternal<
   Href extends `/${string}` = `/${string}`,
 > = Optional<Readonly<BlockState<Args, Outputs, UiState, Href>>, 'outputs'>;
 
+// TODO: we should move this abstract convert for middle layer to the model
 export type BlockStateInternalV3<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  Data = unknown,
   Href extends `/${string}` = `/${string}`,
-> = Optional<Readonly<BlockStateV3<Outputs, Data, Href>>, 'outputs'>;
+> = {
+  /** Raw block storage - UI derives data using sdk/model */
+  readonly blockStorage: unknown;
+
+  /** Outputs rendered with block config */
+  outputs?: Outputs;
+
+  /** Current navigation state */
+  readonly navigationState: NavigationState<Href>;
+
+  readonly author: AuthorMarker | undefined;
+};

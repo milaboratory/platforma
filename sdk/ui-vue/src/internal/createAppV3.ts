@@ -8,7 +8,7 @@ import type {
   ValueWithUTag,
   AuthorMarker,
 } from '@platforma-sdk/model';
-import { hasAbortError, unwrapResult } from '@platforma-sdk/model';
+import { hasAbortError, unwrapResult, deriveDataFromStorage } from '@platforma-sdk/model';
 import type { Ref } from 'vue';
 import { reactive, computed, ref } from 'vue';
 import type { OutputValues, OutputErrors, AppSettings } from '../types';
@@ -94,16 +94,16 @@ export function createAppV3<
    */
   const snapshot = ref<{
     outputs: Partial<Outputs>;
-    data: Data;
+    blockStorage: unknown;
     navigationState: NavigationState<Href>;
   }>(state.value) as Ref<{
     outputs: Partial<Outputs>;
-    data: Data;
+    blockStorage: unknown;
     navigationState: NavigationState<Href>;
   }>;
 
-  const setBlockData = async (data: Data) => {
-    return platforma.mutateStorage({ operation: 'update-data', value: data }, nextAuthorMarker());
+  const updateData = async (value: Data) => {
+    return platforma.mutateStorage({ operation: 'update-data', value }, nextAuthorMarker());
   };
 
   const setNavigationState = async (state: NavigationState<Href>) => {
@@ -124,7 +124,7 @@ export function createAppV3<
     apiVersion: 3,
     error: '',
     model: {
-      data: deepClone(snapshot.value.data) as Data,
+      data: deepClone(deriveDataFromStorage<Data>(snapshot.value.blockStorage)) as Data,
       outputs,
       outputErrors,
     },
@@ -142,7 +142,7 @@ export function createAppV3<
     (_newData) => {
       const newData = deepClone(_newData);
       debug('setDataQueue appModel.model, data', newData.data);
-      setDataQueue.run(() => setBlockData(newData.data).then(unwrapResult));
+      setDataQueue.run(() => updateData(newData.data).then(unwrapResult));
     },
     { deep: true },
   );
@@ -186,7 +186,7 @@ export function createAppV3<
           debug('got external changes, applying them to the snapshot', patches.value);
           ignoreUpdates(() => {
             snapshot.value = applyPatch(snapshot.value, patches.value, false, false).newDocument;
-            updateAppModel({ data: snapshot.value.data });
+            updateAppModel({ data: deriveDataFromStorage<Data>(snapshot.value.blockStorage) });
             data.isExternalSnapshot = isAuthorChanged;
           });
         } else {
@@ -227,7 +227,7 @@ export function createAppV3<
       const newData = cb(cloneData());
       debug('updateData', newData);
       appModel.model.data = newData;
-      return setDataQueue.run(() => setBlockData(newData).then(unwrapResult));
+      return setDataQueue.run(() => updateData(newData).then(unwrapResult));
     },
     /**
      * Navigates to a specific href by updating the navigation state.

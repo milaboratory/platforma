@@ -11,7 +11,7 @@ import {
 } from '../model/project_model';
 import { allBlocks } from '../model/project_model_util';
 import { ResultPool } from '../pool/result_pool';
-import { isBlockStorage, getStorageData } from '@platforma-sdk/model';
+import { deriveDataFromStorage } from '@platforma-sdk/model';
 
 export type BlockContextArgsOnly = {
   readonly blockId: string;
@@ -19,6 +19,7 @@ export type BlockContextArgsOnly = {
   readonly activeArgs: (cCtx: ComputableCtx) => string | undefined;
   readonly blockMeta: (cCtx: ComputableCtx) => Map<string, Block>;
   readonly data: (cCtx: ComputableCtx) => string | undefined;
+  readonly blockStorage: (cCtx: ComputableCtx) => string | undefined;
   readonly prerunArgs: (cCtx: ComputableCtx) => string | undefined;
 };
 
@@ -73,16 +74,24 @@ export function constructBlockContextArgsOnly(
     // Parse to check if it's BlockStorage format
     try {
       const parsed = JSON.parse(rawJson);
-      if (isBlockStorage(parsed)) {
-        // Extract data from BlockStorage format
-        return JSON.stringify(getStorageData(parsed));
-      }
-    } catch {
-      // If parsing fails, return raw
+      return JSON.stringify(deriveDataFromStorage(parsed));
+    } catch (err) {
+      console.error('Error deriving data from storage', err);
+      return undefined;
     }
-
-    // Return raw for legacy format
-    return rawJson;
+  };
+  // Returns raw blockStorage JSON - UI derives data using sdk/model
+  const blockStorage = (cCtx: ComputableCtx) => {
+    const storageData = cCtx
+      .accessor(projectEntry)
+      .node()
+      .traverse({
+        field: projectFieldName(blockId, 'blockStorage'),
+        stableIfNotFound: true,
+      })
+      ?.getData();
+    if (!storageData) return undefined;
+    return cachedDecode(storageData);
   };
   const prerunArgs = (cCtx: ComputableCtx) => {
     const data = cCtx
@@ -100,6 +109,7 @@ export function constructBlockContextArgsOnly(
     args,
     activeArgs,
     data,
+    blockStorage,
     prerunArgs,
     blockMeta: (cCtx: ComputableCtx) => {
       const prj = cCtx.accessor(projectEntry).node();

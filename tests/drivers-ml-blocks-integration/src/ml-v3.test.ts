@@ -34,6 +34,7 @@ import { compareBuffersInChunks, computeHashIncremental, shuffleInPlace } from '
 import { isObject } from '@milaboratories/ts-helpers';
 import { withMl, withMlAndProxy } from './with-ml';
 import { awaitBlockDone } from './test-helpers';
+import { deriveDataFromStorage } from '@platforma-sdk/model';
 
 test.skip('v3: disconnect:runBlock throws DisconnectedError when connection drops mid-operation', async ({ expect }) => {
   await expect(() => withMlAndProxy(async (ml, _wd, proxy) => {
@@ -263,7 +264,9 @@ test('v3: simple project manipulations test', { timeout: 40000 }, async ({ expec
 
     const block2State = await prj.getBlockState(block2Id).getValue();
     // V3 blocks store state directly without nested args/uiState structure
-    expect(block2State.data).toStrictEqual({ numbers: [], labels: [], description: '' });
+    console.log('block2State:----------------------------');
+    console.dir(block2State, { depth: 5 });
+    expect(deriveDataFromStorage(block2State.blockStorage)).toStrictEqual({ numbers: [], labels: [], description: '' });
 
     const overviewSnapshot2 = await prj.overview.awaitStableValue();
     expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.canRun).toEqual(false);
@@ -300,11 +303,7 @@ test('v3: reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
     await prj.setNavigationState(block1Id, { href: '/section1' });
     await prj.mutateBlockStorage(block1Id, { operation: 'update-data', value: { numbers: [1, 2, 3] } });
     await prj.mutateBlockStorage(block2Id, { operation: 'update-data', value: { numbers: [3, 4, 5] } });
-    // V3 Heavy blocks need to be run to produce outputs
-    // await prj.runBlock(block1Id);
-    // await awaitBlockDone(prj, block1Id);
-    // await prj.runBlock(block2Id);
-    // await awaitBlockDone(prj, block2Id);
+
     await prj.mutateBlockStorage(block3Id, {
       operation: 'update-data',
       value: { sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')] },
@@ -562,7 +561,7 @@ test('v3: block duplication test', async ({ expect }) => {
     const originalState = await prj.getBlockState(originalBlockId).awaitStableValue();
     const duplicatedState = await prj.getBlockState(duplicatedBlockId).awaitStableValue();
 
-    expect(duplicatedState.data).toEqual(originalState.data);
+    expect(duplicatedState.blockStorage).toEqual(originalState.blockStorage);
 
     // Verify they are independent - changing one shouldn't affect the other
     await prj.mutateBlockStorage(originalBlockId, { operation: 'update-data', value: { numbers: [4, 5, 6] } });
@@ -570,8 +569,8 @@ test('v3: block duplication test', async ({ expect }) => {
     const originalStateAfter = await prj.getBlockState(originalBlockId).awaitStableValue();
     const duplicatedStateAfter = await prj.getBlockState(duplicatedBlockId).awaitStableValue();
 
-    const orig = originalStateAfter.data;
-    const dup = duplicatedStateAfter.data;
+    const orig = deriveDataFromStorage(originalStateAfter.blockStorage);
+    const dup = deriveDataFromStorage(duplicatedStateAfter.blockStorage);
 
     if (!(isObject(orig) && ('numbers' in orig))) {
       throw new Error('s1 is not an object');

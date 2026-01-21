@@ -118,6 +118,25 @@ export function getStorageData<TState>(storage: BlockStorage<TState>): TState {
   return storage.__data;
 }
 
+/**
+ * Derives data from raw block storage.
+ * This function is meant to be called from sdk/ui-vue to extract
+ * user-facing data from the raw storage returned by the middle layer.
+ *
+ * The middle layer returns raw storage (opaque to it), and the UI
+ * uses this function to derive the actual data value.
+ *
+ * @param rawStorage - Raw storage data from middle layer (may be any format)
+ * @returns The extracted data value, or undefined if storage is undefined/null
+ */
+export function deriveDataFromStorage<TData = unknown>(
+  rawStorage: unknown,
+): TData {
+  // Normalize to BlockStorage format (handles legacy formats too)
+  const storage = normalizeBlockStorage<TData>(rawStorage);
+  return getStorageData(storage);
+}
+
 /** Payload for storage mutation operations. SDK defines specific operations. */
 export type MutateStoragePayload<T = unknown> = { operation: 'update-data'; value: T };
 

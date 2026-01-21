@@ -25,6 +25,7 @@ import type {
   MiddleLayer,
 } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, blockTest } from '@platforma-sdk/test';
+import { deriveDataFromStorage } from '@platforma-sdk/model';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import * as fsp from 'node:fs/promises';
@@ -264,7 +265,7 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     await prj.setBlockSettings(block2Id, { versionLock: 'patch' });
 
     const block2State = await prj.getBlockState(block2Id).getValue();
-    expect(block2State.data).toStrictEqual({ args: { numbers: [] }, uiState: {} });
+    expect(deriveDataFromStorage(block2State.blockStorage)).toStrictEqual({ args: { numbers: [] }, uiState: {} });
 
     const overviewSnapshot2 = await prj.overview.awaitStableValue();
     expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.canRun).toEqual(false);
@@ -548,7 +549,7 @@ test('block duplication test', async ({ expect }) => {
     const originalState = await prj.getBlockState(originalBlockId).awaitStableValue();
     const duplicatedState = await prj.getBlockState(duplicatedBlockId).awaitStableValue();
 
-    expect(duplicatedState.data).toEqual(originalState.data);
+    expect(deriveDataFromStorage(duplicatedState.blockStorage)).toEqual(deriveDataFromStorage(originalState.blockStorage));
 
     // Verify they are independent - changing one shouldn't affect the other
     await prj.setBlockArgs(originalBlockId, { numbers: [4, 5, 6] });
@@ -556,8 +557,8 @@ test('block duplication test', async ({ expect }) => {
     const originalStateAfter = await prj.getBlockState(originalBlockId).awaitStableValue();
     const duplicatedStateAfter = await prj.getBlockState(duplicatedBlockId).awaitStableValue();
 
-    const orig = originalStateAfter.data;
-    const dup = duplicatedStateAfter.data;
+    const orig = deriveDataFromStorage(originalStateAfter.blockStorage);
+    const dup = deriveDataFromStorage(duplicatedStateAfter.blockStorage);
 
     if (!(isObject(orig) && ('args' in orig))) {
       throw new Error('s1 is not an object');
