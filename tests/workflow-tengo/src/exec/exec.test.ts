@@ -46,7 +46,7 @@ tplTest.concurrent(
       a?.getDataAsString(),
     );
 
-    expect(await mainResult.awaitStableValue()).eq('\n');
+    expect(await mainResult.awaitStableValue()).eq('');
   },
 );
 
@@ -68,7 +68,7 @@ tplTest.concurrent(
       a?.getDataAsString(),
     );
 
-    expect(await mainResult.awaitStableValue()).eq('\n');
+    expect(await mainResult.awaitStableValue()).eq('');
   },
 );
 
