@@ -7,8 +7,9 @@ import dns from 'node:dns';
 import fs from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import upath from 'upath';
-import { RetryablePromise, type MiLogger } from '@milaboratories/ts-helpers';
+import { RetryablePromise, retry, type MiLogger, type RetryOptions } from '@milaboratories/ts-helpers';
 import { randomBytes } from 'node:crypto';
+import { SFTPUploadError, SFTPError } from './ssh_errors';
 
 const defaultConfig: ConnectConfig = {
   keepaliveInterval: 60000,
@@ -309,31 +310,44 @@ export class SshClient {
    * @returns A promise resolving with `true` if the file was successfully uploaded.
    */
   public async uploadFile(localPath: string, remotePath: string): Promise<boolean> {
-    return await this.withSftp(async (sftp) => {
-      return new Promise((resolve, reject) => {
-        sftp.fastPut(localPath, remotePath, (err) => {
-          if (err) {
-            const newErr = new Error(
-              `ssh.uploadFile: err: ${err}, localPath: ${localPath}, remotePath: ${remotePath}`);
-            return reject(newErr);
-          }
-          resolve(true);
+    const retryOptions: RetryOptions = {
+      type: 'exponentialBackoff',
+      maxAttempts: 5,
+      initialDelay: 100,
+      backoffMultiplier: 2,
+      jitter: 0.2,
+    };
+
+    return await retry<boolean>(
+      async () => {
+        return await this.withSftp(async (sftp) => {
+          return new Promise((resolve, reject) => {
+            sftp.fastPut(localPath, remotePath, (err) => {
+              if (err) {
+                const newErr = new SFTPUploadError(err, localPath, remotePath);
+                return reject(newErr);
+              }
+              resolve(true);
+            });
+          });
         });
-      });
-    });
+      },
+      retryOptions,
+      (e: any) => SFTPError.from(e)?.isGenericFailure ?? false, // retry unknown upload errors
+    );
   }
 
   public async withSftp<R>(callback: (sftp: SFTPWrapper) => Promise<R>): Promise<R> {
     return new Promise((resolve, reject) => {
       this.client.sftp((err, sftp) => {
         if (err) {
-          return reject(new Error(`ssh.withSftp: sftp err: ${err}`));
+          return reject(new Error(`ssh.withSftp: sftp err: ${err}`, { cause: err }));
         }
 
         callback(sftp)
           .then(resolve)
           .catch((err) => {
-            reject(new Error(`ssh.withSftp.callback: err ${err}`));
+            reject(new Error(`ssh.withSftp.callback: err ${err}`, { cause: err }));
           })
           .finally(() => {
             sftp?.end();
