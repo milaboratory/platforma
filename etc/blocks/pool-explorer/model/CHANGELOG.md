@@ -1,5 +1,16 @@
 # @milaboratories/milaboratories.pool-explorer.model
 
+## 1.1.0
+
+### Minor Changes
+
+- 1694d1a: Platforma API v3
+
+### Patch Changes
+
+- Updated dependencies [1694d1a]
+  - @platforma-sdk/model@1.52.0
+
 ## 1.0.126
 
 ### Patch Changes

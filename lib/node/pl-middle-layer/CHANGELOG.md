@@ -1,5 +1,31 @@
 # @milaboratories/pl-middle-layer
 
+## 1.46.0
+
+### Minor Changes
+
+- 1694d1a: Platforma API v3
+
+### Patch Changes
+
+- Updated dependencies [1694d1a]
+- Updated dependencies [1694d1a]
+  - @platforma-sdk/block-tools@2.6.30
+  - @milaboratories/pl-model-middle-layer@1.10.0
+  - @milaboratories/ts-helpers@1.6.0
+  - @milaboratories/pl-model-common@1.24.0
+  - @platforma-sdk/model@1.52.0
+  - @milaboratories/pf-driver@1.0.24
+  - @milaboratories/computable@2.8.1
+  - @milaboratories/pl-client@2.16.21
+  - @milaboratories/pl-config@1.7.10
+  - @milaboratories/pl-deployments@2.15.2
+  - @milaboratories/pl-drivers@1.11.38
+  - @milaboratories/pl-errors@1.1.53
+  - @milaboratories/pl-tree@1.8.29
+  - @milaboratories/pl-model-backend@1.1.38
+  - @platforma-sdk/workflow-tengo@5.8.0
+
 ## 1.45.5
 
 ### Patch Changes

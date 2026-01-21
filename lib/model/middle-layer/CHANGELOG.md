@@ -1,5 +1,16 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.10.0
+
+### Minor Changes
+
+- 1694d1a: Platforma API v3
+
+### Patch Changes
+
+- Updated dependencies [1694d1a]
+  - @milaboratories/pl-model-common@1.24.0
+
 ## 1.9.1
 
 ### Patch Changes

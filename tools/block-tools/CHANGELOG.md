@@ -1,5 +1,16 @@
 # @platforma-sdk/block-tools
 
+## 2.6.30
+
+### Patch Changes
+
+- 1694d1a: Remove obsolete config shape check
+- Updated dependencies [1694d1a]
+  - @milaboratories/pl-model-middle-layer@1.10.0
+  - @milaboratories/ts-helpers@1.6.0
+  - @milaboratories/pl-model-common@1.24.0
+  - @milaboratories/ts-helpers-oclif@1.1.34
+
 ## 2.6.29
 
 ### Patch Changes
