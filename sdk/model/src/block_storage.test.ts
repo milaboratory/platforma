@@ -131,7 +131,7 @@ describe('BlockStorage', () => {
     });
 
     it('updateStorageData should return new storage with updated data', () => {
-      const newStorage = updateStorageData(storage, { count: 100 });
+      const newStorage = updateStorageData(storage, { operation: 'update-data', value: { count: 100 } });
       expect(newStorage.__data).toEqual({ count: 100 });
       expect(newStorage.__dataVersion).toBe(3);
       expect(newStorage[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
