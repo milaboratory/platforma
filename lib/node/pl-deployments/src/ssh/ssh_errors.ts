@@ -30,6 +30,7 @@ export class SFTPError extends SSHError {
     super(code, opts);
   }
 
+  /** Optionally wraps an error into SFTPError, if it is not already of this type */
   static wrap(err: Error): SFTPError;
   static wrap(err: undefined): undefined;
   static wrap(err: Error | undefined): SFTPError | undefined {
@@ -39,7 +40,6 @@ export class SFTPError extends SSHError {
     return new SFTPError(err.message, { cause: err });
   }
 
-  /** Optionally wraps an error into SFTPError, if it is not already of this type */
   static from(err: unknown): SFTPError | undefined {
     return findNamedErrorInCauses(err, SFTPError, MAX_UNWRAP_DEPTH);
   }
