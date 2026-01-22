@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.15.3
+
+### Patch Changes
+
+- 39108f8: Retry SFTP uploads up to 5 times before giving up. Provide typed errors to the caller
+
 ## 2.15.2
 
 ### Patch Changes
