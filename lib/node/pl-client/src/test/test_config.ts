@@ -230,6 +230,10 @@ export async function withTempRoot<T>(
     } catch (cleanupErr: any) {
       // Cleanup may fail if test intentionally deleted resources
       console.warn(`Failed to clean up alternative root ${alternativeRoot}:`, cleanupErr.message);
+    } finally {
+      // Close the cleanup client to avoid dangling gRPC channels that can cause
+      // segfaults during process exit
+      await rawClient.close();
     }
     return value;
   } catch (err: any) {
