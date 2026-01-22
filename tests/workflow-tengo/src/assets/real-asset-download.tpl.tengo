@@ -4,7 +4,7 @@ blobs := import("@platforma-sdk/workflow-tengo:file.internal")
 workdir := import("@platforma-sdk/workflow-tengo:workdir")
 execConstants := import("@platforma-sdk/workflow-tengo:exec.constants")
 
-asset := assets.importAsset("@platforma-open/milaboratories.software-small-binaries:small-asset")
+asset := assets.importAsset("@platforma-open/milaboratories.software-test-utils:small-asset")
 
 self.defineOutputs(["main"])
 

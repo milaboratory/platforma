@@ -11,6 +11,7 @@
     "@platforma-sdk/workflow-tengo": "workspace:*"
   },
   "devDependencies": {
-    "@platforma-sdk/tengo-builder": "workspace:*"
+    "@platforma-sdk/tengo-builder": "workspace:*",
+    "@platforma-open/milaboratories.software-test-utils": "catalog:"
   }
 }

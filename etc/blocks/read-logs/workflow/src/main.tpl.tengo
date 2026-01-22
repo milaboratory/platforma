@@ -9,7 +9,7 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 wf.body(func(args) {
 	inputFile := file.importFile(args.inputHandle)
 
-	readLogsSW := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:read-file-to-stdout-with-sleep")
+	readLogsSW := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:read-file-to-stdout-with-sleep")
 
 	run := exec.builder().
 		cpu(1).ram("50Mi").

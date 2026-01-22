@@ -282,7 +282,8 @@ catalog:
   # SW
 
   '@milaboratories/software-pframes-conv': &pframes-version 2.2.9
-  '@platforma-open/milaboratories.software-small-binaries': ^1.15.26
+  '@platforma-open/milaboratories.software-small-binaries': ^2.0.1
+  '@platforma-open/milaboratories.software-test-utils': ^1.1.1
   '@platforma-open/milaboratories.software-conda-empty': ^0.0.3
   '@biowasm/aioli': ~3.2.1
 
