@@ -1,5 +1,12 @@
 # @milaboratories/pf-driver
 
+## 1.0.26
+
+### Patch Changes
+
+- Updated dependencies [a267fe8]
+  - @milaboratories/ts-helpers@1.7.0
+
 ## 1.0.25
 
 ### Patch Changes
