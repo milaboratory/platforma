@@ -47,7 +47,13 @@ export const plTest = test.extend<{
         onTestFinished(async (context) => {
           if (context.task.result?.state === 'pass') {
             const rawClient = await TestHelpers.getTestClient();
-            await rawClient.deleteAlternativeRoot(alternativeRoot);
+            try {
+              await rawClient.deleteAlternativeRoot(alternativeRoot);
+            } finally {
+              // Close the cleanup client to avoid dangling gRPC channels
+              // that can cause segfaults during process exit
+              await rawClient.close();
+            }
           } else {
             console.log(
               `TEST FAILED SO ALTERNATIVE ROOT IS PRESERVED IN PL: ${alternativeRoot} (${resourceIdToString(
