@@ -121,9 +121,11 @@ export const blockTest = plTest.extend<{
     ml.addRuntimeCapability('requiresUIAPIVersion', 2);
     ml.addRuntimeCapability('requiresUIAPIVersion', 3);
 
-    await use(ml);
-
-    await ml.close();
+    try {
+      await use(ml);
+    } finally {
+      await ml.close();
+    }
   },
   rawPrj: async ({ ml }, use) => {
     const pRid1 = await ml.createProject(
@@ -132,8 +134,11 @@ export const blockTest = plTest.extend<{
     );
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
-    await use(prj);
-    ml.closeProject(pRid1);
+    try {
+      await use(prj);
+    } finally {
+      ml.closeProject(pRid1);
+    }
   },
   helpers: async ({ ml, rawPrj }, use) => {
     await use({
