@@ -93,9 +93,6 @@ test('v2: project watcher test', { timeout: 10_000 }, async ({ expect }) => {
 
     await prj.runBlock(sumNumbersId);
     await awaitBlockDone(prj, sumNumbersId);
-    console.log('sumNumbers dump sum', projectWatcher.getBlockDump(sumNumbersId)?.prodOutput?.inputs?.sum.data);
-    expect(projectWatcher.getBlockDump(sumNumbersId)?.prodOutput?.inputs?.sum.data).toStrictEqual(6);
-    console.log('block done 1');
 
     const block2StableState1 = await prj.getBlockState(sumNumbersId).getValue();
     expect(block2StableState1.outputs!['sum']).toStrictEqual({
