@@ -1,4 +1,10 @@
 import { readFileSync } from 'fs';
+import os from 'os';
+
+if (os.arch() !== 'x64') {
+  console.log(`Skipping test on non-x64 architecture: we don't build docker images on others`);
+  process.exit(0);
+}
 
 const json = JSON.parse(readFileSync('dist/tengo/software/custom-docker.sw.json', 'utf8'));
 const { docker } = json;
