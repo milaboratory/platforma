@@ -6,12 +6,12 @@ export class SSHError extends Error {
   name = 'SSHError';
 
   constructor(message: string, opts?: { cause: Error });
-  constructor(cause: Error);
-  constructor(messageOrCause: string | Error, opts?: { cause: Error }) {
-    if (messageOrCause instanceof Error) {
-      super(`SSHError: ${messageOrCause.message}`, { cause: opts?.cause ?? messageOrCause });
+  constructor(err: Error);
+  constructor(messageOrErr: string | Error, opts?: { cause: Error }) {
+    if (messageOrErr instanceof Error) {
+      super(`SSHError: ${messageOrErr.message}`, { cause: opts?.cause ?? messageOrErr });
     } else {
-      super(`SSHError: ${messageOrCause}`, opts);
+      super(`SSHError: ${messageOrErr}`, opts);
     }
   }
 
@@ -56,11 +56,11 @@ export class SFTPUploadError extends SSHError {
   name = 'SFTPUploadError';
 
   constructor(
-    public readonly cause: Error,
+    err: Error,
     public readonly localPath: string,
     public readonly remotePath: string,
   ) {
-    super(`ssh.uploadFile: ${cause}, localPath: ${localPath}, remotePath: ${remotePath}`, { cause: SFTPError.wrap(cause) });
+    super(`ssh.uploadFile: ${err.message}, localPath: ${localPath}, remotePath: ${remotePath}`, { cause: SFTPError.wrap(err) });
   }
 
   static from(err: unknown): SFTPUploadError | undefined {
