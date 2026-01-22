@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.24.0
+
+### Minor Changes
+
+- 1694d1a: Platforma API v3
+
 ## 1.23.0
 
 ### Minor Changes

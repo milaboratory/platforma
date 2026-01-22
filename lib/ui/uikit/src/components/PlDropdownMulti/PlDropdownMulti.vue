@@ -19,7 +19,7 @@ import DropdownOverlay from '../../utils/DropdownOverlay/DropdownOverlay.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
 import DropdownListItem from '../DropdownListItem.vue';
 import { PlChip } from '../PlChip';
-import { PlMaskIcon24 } from '../PlMaskIcon24';
+import { PlIcon24 } from '../PlIcon24';
 import { PlSvg } from '../PlSvg';
 import { PlTooltip } from '../PlTooltip';
 import './pl-dropdown-multi.scss';
@@ -141,6 +141,10 @@ const filteredOptionsRef = computed(() => {
 
 const isLoadingOptions = computed(() => {
   return props.options === undefined;
+});
+
+const showLoadingSpinner = computed(() => {
+  return !props.disabled && isLoadingOptions.value;
 });
 
 const isDisabled = computed(() => {
@@ -270,7 +274,7 @@ watchPostEffect(() => {
           </div>
 
           <div class="pl-dropdown-multi__controls">
-            <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
+            <PlIcon24 v-if="showLoadingSpinner" name="loading" />
             <slot name="append" />
             <div class="pl-dropdown-multi__arrow-wrapper" @click.stop="toggleModel">
               <div class="arrow-icon arrow-icon-default" />

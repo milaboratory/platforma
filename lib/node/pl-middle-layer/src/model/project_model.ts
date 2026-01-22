@@ -73,7 +73,8 @@ export const InitialBlockMeta: ProjectMeta = {
 export const ProjectResourceType: ResourceType = { name: 'UserProject', version: '2' };
 
 export const SchemaVersionKey = 'SchemaVersion';
-export const SchemaVersionCurrent = '2';
+export const SchemaVersionV2 = '2';
+export const SchemaVersionCurrent = '3';
 
 export const ProjectCreatedTimestamp = 'ProjectCreated';
 export const ProjectLastModifiedTimestamp = 'ProjectLastModified';
@@ -101,9 +102,10 @@ export interface ProjectField {
   fieldName:
     | 'blockPack'
     | 'blockSettings'
-    | 'uiState'
+    | 'blockStorage' // Persistent storage for v3 blocks (state, plugins data, etc.)
     | 'prodArgs'
     | 'currentArgs'
+    | 'currentPrerunArgs' // Derived args for staging/prerun rendering (from prerunArgs() or args())
     | 'prodCtx'
     | 'prodUiCtx'
     | 'prodOutput'
@@ -115,15 +117,17 @@ export interface ProjectField {
     | 'stagingOutput'
     | 'stagingCtxPrevious'
     | 'stagingUiCtxPrevious'
-    | 'stagingOutputPrevious';
+    | 'stagingOutputPrevious'
+  ;
 }
 
 export const FieldsToDuplicate: Set<ProjectField['fieldName']> = new Set([
   'blockPack',
   'blockSettings',
-  'uiState',
+  'blockStorage',
   'prodArgs',
   'currentArgs',
+  'currentPrerunArgs',
   'prodCtx',
   'prodUiCtx',
   'prodOutput',
@@ -134,7 +138,7 @@ export function projectFieldName(blockId: string, fieldName: ProjectField['field
 }
 
 const projectFieldPattern
-  = /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|uiState|prodArgs|currentArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
+  = /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);

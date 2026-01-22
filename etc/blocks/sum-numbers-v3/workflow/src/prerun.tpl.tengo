@@ -1,0 +1,14 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+wf.body(func(args) {
+	// Return all passed args as object for testing
+	return {
+		outputs: {
+			prerunArgsJson: smart.createJsonResource(args)
+		},
+		exports: {}
+	}
+})
+
+

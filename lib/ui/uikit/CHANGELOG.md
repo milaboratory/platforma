@@ -1,5 +1,25 @@
 # @milaboratories/uikit
 
+## 2.10.5
+
+### Patch Changes
+
+- Updated dependencies [1694d1a]
+  - @platforma-sdk/model@1.52.0
+
+## 2.10.4
+
+### Patch Changes
+
+- Updated dependencies [38534c5]
+  - @platforma-sdk/model@1.51.9
+
+## 2.10.3
+
+### Patch Changes
+
+- 601a869: PlDropdownMulti: don't show loading spinner when disabled
+
 ## 2.10.2
 
 ### Patch Changes

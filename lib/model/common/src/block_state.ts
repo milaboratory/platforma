@@ -31,3 +31,20 @@ export type BlockState<
 
   readonly author: AuthorMarker | undefined;
 };
+
+export type BlockStateV3<
+  Outputs extends BlockOutputsBase = BlockOutputsBase,
+  _Data = unknown,
+  Href extends `/${string}` = `/${string}`,
+> = {
+  /** Block storage persisted in the block state */
+  blockStorage: unknown;
+
+  /** Outputs rendered with block config */
+  outputs: Outputs;
+
+  /** Current navigation state */
+  navigationState: NavigationState<Href>;
+
+  readonly author: AuthorMarker | undefined;
+};

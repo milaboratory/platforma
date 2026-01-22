@@ -1,5 +1,23 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.4.0
+
+### Minor Changes
+
+- 1694d1a: Platforma API v3
+
+### Patch Changes
+
+- Updated dependencies [1694d1a]
+  - @platforma-sdk/model@1.52.0
+
+## 1.3.22
+
+### Patch Changes
+
+- Updated dependencies [38534c5]
+  - @platforma-sdk/model@1.51.9
+
 ## 1.3.21
 
 ### Patch Changes

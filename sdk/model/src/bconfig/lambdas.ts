@@ -1,12 +1,16 @@
 import type { ConfigResult, PlResourceEntry, TypedConfig } from '../config';
+import type { OutputWithStatus } from '@milaboratories/pl-model-common';
+import type { TypedConfigOrConfigLambda } from './types';
 
-export type StdCtxArgsOnly<Args, UiState = undefined> = {
+export type StdCtxArgsOnly<Args, Data = undefined> = {
   readonly $blockId: string;
   readonly $args: Args;
-  readonly $ui: UiState;
+  /** @deprecated Use $data instead. Kept for V1/V2 block compatibility. */
+  readonly $ui: Data;
+  readonly $data: Data;
 };
 
-export type StdCtx<Args, UiState = undefined> = StdCtxArgsOnly<Args, UiState> & {
+export type StdCtx<Args, Data = undefined> = StdCtxArgsOnly<Args, Data> & {
   readonly $prod: PlResourceEntry;
   readonly $staging: PlResourceEntry;
 };
@@ -20,7 +24,7 @@ export type ResolveCfgType<Cfg extends TypedConfig, Args, UiState = undefined> =
 export type ConfigRenderLambdaFlags = {
   /**
    * Tells the system that corresponding computable should be created with StableOnlyRetentive rendering mode.
-   * This flag can be overriden by the system.
+   * This flag can be overridden by the system.
    * */
   retentive?: boolean;
 
@@ -51,3 +55,30 @@ export interface ConfigRenderLambda<Return = unknown> extends ConfigRenderLambda
 
 export type ExtractFunctionHandleReturn<Func extends ConfigRenderLambda> =
   Func extends ConfigRenderLambda<infer Return> ? Return : never;
+
+/** Infers the output type from a TypedConfig or ConfigRenderLambda */
+export type InferOutputType<CfgOrFH, Args, UiState> = CfgOrFH extends TypedConfig
+  ? ResolveCfgType<CfgOrFH, Args, UiState>
+  : CfgOrFH extends ConfigRenderLambda
+    ? ExtractFunctionHandleReturn<CfgOrFH>
+    : never;
+
+/** Maps outputs configuration to inferred output types with status wrapper */
+export type InferOutputsFromConfigs<
+  Args,
+  OutputsCfg extends Record<string, TypedConfigOrConfigLambda>,
+  UiState,
+> = {
+  [Key in keyof OutputsCfg]:
+    & OutputWithStatus<InferOutputType<OutputsCfg[Key], Args, UiState>>
+    & { __unwrap: (OutputsCfg[Key] extends { withStatus: true } ? false : true) };
+};
+
+/** Maps lambda-only outputs configuration to inferred output types (for V3 blocks) */
+export type InferOutputsFromLambdas<
+  OutputsCfg extends Record<string, ConfigRenderLambda>,
+> = {
+  [Key in keyof OutputsCfg]:
+    & OutputWithStatus<ExtractFunctionHandleReturn<OutputsCfg[Key]>>
+    & { __unwrap: (OutputsCfg[Key] extends { withStatus: true } ? false : true) };
+};

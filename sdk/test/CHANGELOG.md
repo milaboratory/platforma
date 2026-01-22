@@ -1,5 +1,29 @@
 # @platforma-sdk/test
 
+## 1.52.0
+
+### Minor Changes
+
+- 1694d1a: Platforma API v3
+
+### Patch Changes
+
+- Updated dependencies [1694d1a]
+  - @milaboratories/pl-middle-layer@1.46.0
+  - @milaboratories/ts-helpers@1.6.0
+  - @platforma-sdk/model@1.52.0
+  - @milaboratories/computable@2.8.1
+  - @milaboratories/pl-client@2.16.21
+  - @milaboratories/pl-tree@1.8.29
+
+## 1.51.9
+
+### Patch Changes
+
+- Updated dependencies [38534c5]
+  - @platforma-sdk/model@1.51.9
+  - @milaboratories/pl-middle-layer@1.45.5
+
 ## 1.51.6
 
 ### Patch Changes

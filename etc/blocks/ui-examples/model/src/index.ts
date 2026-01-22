@@ -372,7 +372,7 @@ export const platforma = BlockModel.create('Heavy')
     ];
   })
 
-  .done(); // api version 2
+  .done(2); // api version 2
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

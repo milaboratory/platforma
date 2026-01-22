@@ -10,6 +10,10 @@ export function deepFreeze<T extends object>(object: T): T {
   return Object.freeze(object);
 }
 
+export function isObject(test: unknown): test is object {
+  return typeof test === 'object' && test !== null;
+}
+
 export function isDisposable(object: unknown): object is Disposable {
   return typeof object === 'object'
     && object !== null
