@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.52.3
+
+### Patch Changes
+
+- 1e4b72a: Replace RenderCtx with RenderCtxBase where applicable
+
 ## 1.52.0
 
 ### Minor Changes
