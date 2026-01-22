@@ -14,7 +14,7 @@ jobs:
   run:
     needs:
       - init
-    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm-k8s.yaml@v4
+    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm-k8s.yaml@v4-beta
     with:
       app-name: Platforma SDK Google Batch Int Tests
       app-name-slug: 'platforma-sdk-gcp'
@@ -23,8 +23,8 @@ jobs:
       pl-version: 'main'
       pnpm-build-command: '--filter "*/workflow-tengo*"'
       pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --maxWorkers=5 --testTimeout=1800000 --no-cache'
-      helm-release-name: 'pl-dev-gcp'
-      helm-chart-values-file: 'helm/gcp/values.yaml'
+      helm-release-name: 'ci-platforma-nightly-${{ github.run_id }}'
+      helm-chart-values-file: 'helm/gcp/ci-nightly-tests.yaml'
       notify-slack: true
       namespace: 'dev-gke'
       npmrc-config: |
@@ -46,9 +46,13 @@ jobs:
           "TEST_CACHE_CRUTCH": "${{ github.sha }}-${{ github.run_id }}" }
     secrets:
       env: |
-        { "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
-          "PL_CI_TEST_PASSWORD": ${{ toJSON(secrets.PL_CI_TEST_PASSWORD) }},
+        { "PL_CI_TEST_USER": "testuser1",
+          "PL_CI_TEST_PASSWORD": "testpassword1",
+
           "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
+          "AWS_CI_IAM_MONOREPO_SIMPLE_ROLE": ${{ toJSON(secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE) }},
+          "AWS_CI_TURBOREPO_S3_BUCKET": ${{ toJSON(secrets.AWS_CI_TURBOREPO_S3_BUCKET) }},
+
           "GCLOUD_CI_GKE_BUCKET_NAME": ${{ toJSON(secrets.GCLOUD_CI_GKE_BUCKET_NAME) }},
           "QUAY_USERNAME": ${{ toJSON(secrets.QUAY_USERNAME) }},
           "QUAY_ROBOT_TOKEN": ${{ toJSON(secrets.QUAY_ROBOT_TOKEN) }} }
