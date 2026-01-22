@@ -1,5 +1,21 @@
 # @platforma-sdk/test
 
+## 1.52.2
+
+### Patch Changes
+
+- 0044f7f: Test Stability Improvement
+- Updated dependencies [0044f7f]
+  - @milaboratories/pl-client@2.16.22
+  - @milaboratories/pl-middle-layer@1.46.2
+  - @milaboratories/pl-tree@1.8.30
+
+## 1.52.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.46.1
+
 ## 1.52.0
 
 ### Minor Changes

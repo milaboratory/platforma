@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.16.22
+
+### Patch Changes
+
+- 0044f7f: Test Stability Improvement
+
 ## 2.16.21
 
 ### Patch Changes
