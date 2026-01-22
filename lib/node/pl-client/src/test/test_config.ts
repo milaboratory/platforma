@@ -223,19 +223,24 @@ export async function withTempRoot<T>(
 
     const client = await getTestClient(alternativeRoot, confOverrides);
     altRootId = client.clientRoot;
-    const value = await body(client, proxy);
-    const rawClient = await getTestClient();
     try {
-      await rawClient.deleteAlternativeRoot(alternativeRoot);
-    } catch (cleanupErr: any) {
-      // Cleanup may fail if test intentionally deleted resources
-      console.warn(`Failed to clean up alternative root ${alternativeRoot}:`, cleanupErr.message);
+      const value = await body(client, proxy);
+      const rawClient = await getTestClient();
+      try {
+        await rawClient.deleteAlternativeRoot(alternativeRoot);
+      } catch (cleanupErr: any) {
+        // Cleanup may fail if test intentionally deleted resources
+        console.warn(`Failed to clean up alternative root ${alternativeRoot}:`, cleanupErr.message);
+      } finally {
+        // Close the cleanup client to avoid dangling gRPC channels that can cause
+        // segfaults during process exit
+        await rawClient.close();
+      }
+      return value;
     } finally {
-      // Close the cleanup client to avoid dangling gRPC channels that can cause
-      // segfaults during process exit
-      await rawClient.close();
+      // Close the test client to avoid dangling gRPC channels
+      await client.close();
     }
-    return value;
   } catch (err: any) {
     console.log(`ALTERNATIVE ROOT: ${alternativeRoot} (${resourceIdToString(altRootId)})`);
     throw err;
