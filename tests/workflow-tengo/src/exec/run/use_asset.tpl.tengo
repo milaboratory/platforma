@@ -2,7 +2,7 @@ self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 
-asset := assets.importAsset("@platforma-open/milaboratories.software-small-binaries:small-asset")
+asset := assets.importAsset("@platforma-open/milaboratories.software-test-utils:small-asset")
 
 self.defineOutputs(["main"])
 

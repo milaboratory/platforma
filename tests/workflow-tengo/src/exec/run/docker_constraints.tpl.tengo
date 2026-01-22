@@ -1,0 +1,34 @@
+/** Runs a cat on the file and returns it's content as a value resource. */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+self.defineOutputs(["main"])
+
+swMap := {
+	"docker-true-ep":  assets.importSoftware("@platforma-open/milaboratories.software-test-utils:docker-true-ep"),
+	"docker-true-cmd": assets.importSoftware("@platforma-open/milaboratories.software-test-utils:docker-true-cmd")
+}
+
+self.body(func(inputs) {
+	epName := inputs.epName
+	sw := swMap[epName]
+
+	/* Checks, that default limits are applied based
+	 * on queue block developer choses when bulding the command */
+	run := exec.builder().
+		software(sw).
+		inLightQueue().
+		arg("false").
+		saveStdoutContent(). // always empty
+		run()
+
+	result := {
+		main: run.getStdoutContent()
+	}
+
+	return result
+})
