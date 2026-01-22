@@ -7,7 +7,7 @@ import dns from 'node:dns';
 import fs from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import upath from 'upath';
-import { RetryablePromise, retry, type MiLogger, type RetryOptions } from '@milaboratories/ts-helpers';
+import { RetryablePromise, retry, type MiLogger, Retry3TimesWithDelay } from '@milaboratories/ts-helpers';
 import { randomBytes } from 'node:crypto';
 import { SFTPUploadError, SFTPError } from './ssh_errors';
 
@@ -310,14 +310,6 @@ export class SshClient {
    * @returns A promise resolving with `true` if the file was successfully uploaded.
    */
   public async uploadFile(localPath: string, remotePath: string): Promise<boolean> {
-    const retryOptions: RetryOptions = {
-      type: 'exponentialBackoff',
-      maxAttempts: 5,
-      initialDelay: 100,
-      backoffMultiplier: 2,
-      jitter: 0.2,
-    };
-
     return await retry<boolean>(
       async () => {
         return await this.withSftp(async (sftp) => {
@@ -332,7 +324,7 @@ export class SshClient {
           });
         });
       },
-      retryOptions,
+      Retry3TimesWithDelay,
       (e: any) => SFTPError.from(e)?.isGenericFailure ?? false, // retry unknown upload errors
     );
   }
