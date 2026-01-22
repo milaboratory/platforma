@@ -2,11 +2,11 @@ import type { PColumn, PColumnSpec, PColumnLazy, PFrameDef } from '@milaboratori
 import { getNormalizedAxesList, getAxisId, canonicalizeJson, isLinkerColumn, matchAxisId, isLabelColumn } from '@milaboratories/pl-model-common';
 import type { AxesVault } from '../components';
 import { enrichCompatible, getAvailableWithLinkersAxes } from '../components';
-import type { RenderCtx, PColumnDataUniversal } from '../render';
+import type { RenderCtxBase, PColumnDataUniversal } from '../render';
 import { PColumnCollection } from '../render';
 
 export function getAllRelatedColumns<A, U>(
-  ctx: RenderCtx<A, U>, predicate: (spec: PColumnSpec) => boolean,
+  ctx: RenderCtxBase<A, U>, predicate: (spec: PColumnSpec) => boolean,
 ): PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>> {
   // if current block doesn't produce own columns then use all columns from result pool
   const columns = new PColumnCollection();
@@ -26,7 +26,7 @@ export function getAllRelatedColumns<A, U>(
   return extendedColumns;
 }
 
-export function getRelatedColumns<A, U>(ctx: RenderCtx<A, U>, { columns: rootColumns, predicate }: {
+export function getRelatedColumns<A, U>(ctx: RenderCtxBase<A, U>, { columns: rootColumns, predicate }: {
   columns: PColumn<PColumnDataUniversal>[];
   predicate: (spec: PColumnSpec) => boolean;
 }): PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>> {

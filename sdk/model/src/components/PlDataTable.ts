@@ -34,8 +34,7 @@ import type {
   AxisLabelProvider,
   ColumnProvider,
   PColumnDataUniversal,
-  RenderCtx,
-  RenderCtxLegacy,
+  RenderCtxBase,
   TreeNodeAccessor,
 } from '../render';
 import {
@@ -632,7 +631,7 @@ export function isColumnOptional(spec: { annotations?: Annotation }): boolean {
  * @returns PlAgDataTableV2 table source
  */
 export function createPlDataTableV2<A, U>(
-  ctx: RenderCtx<A, U> | RenderCtxLegacy<A, U>,
+  ctx: RenderCtxBase<A, U>,
   columns: PColumn<PColumnDataUniversal>[],
   tableState: PlDataTableStateV2 | undefined,
   ops?: CreatePlDataTableOps,
@@ -766,7 +765,7 @@ export function createPlDataTableV2<A, U>(
 
 /** Create sheet entries for PlDataTable */
 export function createPlDataTableSheet<A, U>(
-  ctx: RenderCtx<A, U>,
+  ctx: RenderCtxBase<A, U>,
   axis: AxisSpec,
   values: (string | number)[],
 ): PlDataTableSheet {

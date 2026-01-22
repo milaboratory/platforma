@@ -17,7 +17,7 @@ import {
   readAnnotationJson,
   stringifyJson,
 } from '@milaboratories/pl-model-common';
-import type { PColumnDataUniversal, PColumnEntryUniversal, PColumnEntryWithLabel, RenderCtx } from '../render';
+import type { PColumnDataUniversal, PColumnEntryUniversal, PColumnEntryWithLabel, RenderCtxBase } from '../render';
 import { getAllRelatedColumns, getRelatedColumns } from '../pframe_utils/columns';
 
 /** Create id for column copy with added keys in axes domains */
@@ -179,7 +179,7 @@ function getAdditionalColumnsForColumn<T extends Omit<PColumn<PColumnDataUnivers
  and modified label (with added domain values in case if more than one copy with different domains exist).
  */
 export function createPFrameForGraphs<A, U>(
-  ctx: RenderCtx<A, U>,
+  ctx: RenderCtxBase<A, U>,
   blockColumns?: PColumn<PColumnDataUniversal>[],
 ): PFrameHandle | undefined {
   const suitableSpec = (spec: PColumnSpec) => !isHiddenFromUIColumn(spec) && !isHiddenFromGraphColumn(spec);
