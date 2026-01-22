@@ -43,7 +43,13 @@ export const plTest = test.extend<{
         let altRootId: OptionalResourceId = NullResourceId;
         const client = await TestHelpers.getTestClient(alternativeRoot);
         altRootId = client.clientRoot;
-        await use(client);
+        try {
+          await use(client);
+        } finally {
+          // Close the test client to avoid dangling gRPC channels
+          // that can cause segfaults during process exit
+          await client.close();
+        }
         onTestFinished(async (context) => {
           if (context.task.result?.state === 'pass') {
             const rawClient = await TestHelpers.getTestClient();
@@ -66,24 +72,26 @@ export const plTest = test.extend<{
 
       createTree: async ({ pl }, use) => {
         const trees = new Map<ResourceId, Promise<SynchronizedTreeState>>();
-        await use((res, ops) => {
-          let treePromise = trees.get(res);
-          if (treePromise === undefined) {
-            treePromise = SynchronizedTreeState.init(
-              pl,
-              res,
-              ops ?? {
-                pollingInterval: 200,
-                stopPollingDelay: 400,
-              },
-            );
-            trees.set(res, treePromise);
+        try {
+          await use((res, ops) => {
+            let treePromise = trees.get(res);
+            if (treePromise === undefined) {
+              treePromise = SynchronizedTreeState.init(
+                pl,
+                res,
+                ops ?? {
+                  pollingInterval: 200,
+                  stopPollingDelay: 400,
+                },
+              );
+              trees.set(res, treePromise);
+            }
+            return treePromise;
+          });
+        } finally {
+          for (const [, treePromise] of trees) {
+            await (await treePromise).terminate();
           }
-          return treePromise;
-        });
-        for (const [, treePromise] of trees) {
-          // TODO implement termination
-          await (await treePromise).terminate();
         }
       },
 
