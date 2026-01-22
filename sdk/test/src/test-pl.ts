@@ -43,7 +43,13 @@ export const plTest = test.extend<{
         let altRootId: OptionalResourceId = NullResourceId;
         const client = await TestHelpers.getTestClient(alternativeRoot);
         altRootId = client.clientRoot;
-        await use(client);
+        try {
+          await use(client);
+        } finally {
+          // Close the test client to avoid dangling gRPC channels
+          // that can cause segfaults during process exit
+          await client.close();
+        }
         onTestFinished(async (context) => {
           if (context.task.result?.state === 'pass') {
             const rawClient = await TestHelpers.getTestClient();
