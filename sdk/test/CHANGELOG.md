@@ -1,5 +1,17 @@
 # @platforma-sdk/test
 
+## 1.52.4
+
+### Patch Changes
+
+- dc0aa24: Test stability improvement
+- Updated dependencies [a267fe8]
+  - @milaboratories/ts-helpers@1.7.0
+  - @milaboratories/computable@2.8.2
+  - @milaboratories/pl-client@2.16.23
+  - @milaboratories/pl-middle-layer@1.46.4
+  - @milaboratories/pl-tree@1.8.31
+
 ## 1.52.3
 
 ### Patch Changes

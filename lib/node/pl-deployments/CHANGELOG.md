@@ -1,5 +1,13 @@
 # @milaboratories/pl-local
 
+## 2.15.4
+
+### Patch Changes
+
+- Updated dependencies [a267fe8]
+  - @milaboratories/ts-helpers@1.7.0
+  - @milaboratories/pl-config@1.7.11
+
 ## 2.15.3
 
 ### Patch Changes
