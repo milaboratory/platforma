@@ -23,9 +23,9 @@ _RTYPE_QUOTA := { Name: "Quota", Version: "1" }
  * @param queueName: string - name of the queue.
  * @return { runCommand: {Name, Version}, computeRequest: {Name, Version} }
  */
-getResourceTypesFor := func(queueName) {
+getResourceTypes := func(queueName) {
 	// Use backend-provided resource types when available
-	result := feats.getResourceTypesFor(queueName)
+	result := feats.getResourceTypes(queueName)
 	if !is_undefined(result) {
 		return result
 	}
@@ -217,7 +217,7 @@ computeRequestBuilder := func() {
 			ll.assert(smart.isReference(quota), "exec.limits.build: quota of ComputeRequest must be a valid reference")
 			ll.assert(queue_name != "", "exec.limits.build: queue name is required for computeRequestBuilder")
 
-			resourceTypes := getResourceTypesFor(queue_name)
+			resourceTypes := getResourceTypes(queue_name)
 			requestBuilder := smart.ephemeralBuilder(resourceTypes.computeRequest)
 
 			requestBuilder.getField(_CR_FIELD_REQUEST).set(quota)
@@ -236,7 +236,7 @@ computeRequestBuilder := func() {
 }
 
 export ll.toStrict({
-	getResourceTypesFor:             getResourceTypesFor,
+	getResourceTypes:                getResourceTypes,
 	quotaBuilder:                    quotaBuilder,
 	storageSpaceRequestBuilder:      storageSpaceRequestBuilder,
 	computeRequestBuilder:           computeRequestBuilder
