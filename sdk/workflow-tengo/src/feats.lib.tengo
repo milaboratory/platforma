@@ -31,12 +31,12 @@ _hasRunner := func(e_id) {
 }
 
 // Check if getRunnerFor method is available in current backend
-_hasGetRunnerFor := ll.methodExists(plapi, "getRunnerFor")
+_hasGetResourceTypesFor := ll.methodExists(plapi, "getRunnerFor")
 
 // Get resource types for a specific queue from backend.
 // Returns { runCommand: {Name, Version}, computeRequest: {Name, Version} } or undefined if not available.
-_getResourceTypes := func(queueName) {
-	if !_hasGetRunnerFor {
+_getResourceTypesFor := func(queueName) {
+	if !_hasGetResourceTypesFor {
 		return undefined
 	}
 	return plapi.getRunnerFor(queueName)
@@ -47,7 +47,7 @@ export ll.toStrict({
 	hasBatch:                   _hasRunner("batch"),        // batch system execution is available
 
 	// get resource types for a specific queue (returns undefined if backend doesn't support it)
-	getResourceTypes:           _getResourceTypes,
+	getResourceTypes:           _getResourceTypesFor,
 
 	pureFutureFields:           _isEnabled("pureFutureFields")   || _api >= 1, // 'pure' future fields magic that provides deduplication
 	commandExpressions:         _isEnabled("commandExpressions") || _api >= 2, // rich expressions in command arguments ( {{ system.ram_bytes / 20 }} )

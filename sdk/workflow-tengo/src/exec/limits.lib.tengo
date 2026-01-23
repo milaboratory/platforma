@@ -9,7 +9,6 @@ ll := import(":ll")
 
 oop := import(":oop")
 validation := import(":validation")
-slices := import(":slices")
 smart := import(":smart")
 json := import("json")
 constants := import(":exec.constants")
@@ -33,7 +32,7 @@ getResourceTypes := func(queueName) {
 
 	// Fallback: existing logic for backward compatibility with older backends
 	runnerType := constants.RUNNER_EXECUTOR
-	if feats.hasBatch && !slices.hasElement([ constants.UI_TASKS_QUEUE ], queueName) {
+	if feats.hasBatch && queueName != constants.UI_TASKS_QUEUE {
 		runnerType = constants.RUNNER_BATCH
 	}
 	return {
