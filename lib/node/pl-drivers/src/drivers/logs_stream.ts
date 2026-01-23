@@ -278,6 +278,18 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     this.keepRunning = false;
   }
 
+  /** Stops polling loop and waits for it to finish */
+  public async terminate(): Promise<void> {
+    this.keepRunning = false;
+    if (this.currentLoop !== undefined) {
+      await this.currentLoop;
+    }
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.terminate();
+  }
+
   /** If true, main loop will continue polling pl state. */
   private keepRunning = false;
   /** Actual state of main loop. */
