@@ -39,7 +39,7 @@ export const createVitestConfig = (overrides: ViteUserConfig = {}): ViteUserConf
   return mergeConfig(
     {
       test: {
-        pool: 'threads',
+        pool: 'forks',
         watch: false,
         passWithNoTests: true,
         server: {
