@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.11.41
+
+### Patch Changes
+
+- f7fc2ae: Graceful Termination in tests
+
 ## 1.11.40
 
 ### Patch Changes
