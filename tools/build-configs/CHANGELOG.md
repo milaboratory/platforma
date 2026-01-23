@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.3.0
+
+### Minor Changes
+
+- 3b11738: Update for vitest config
+
 ## 1.2.2
 
 ### Patch Changes
