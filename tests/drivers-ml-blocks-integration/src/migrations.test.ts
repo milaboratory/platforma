@@ -242,6 +242,9 @@ test('v3: migration from v2 to v3 (one migration)', async ({ expect }) => {
     console.log('[v2→v3 Test] After migration, dataVersion:', storageInfo3.dataVersion);
     expect(storageInfo3.dataVersion).toBe(3);
 
+    // Wait for watcher to sync
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
     // Log blockStorage after migration
     const blockDump3 = projectWatcher.getBlockDump(block1Id);
     console.log('[v2→v3 Test] Step 4 - After migration:');
@@ -327,6 +330,9 @@ test('v3: no migration needed when already at target version', async ({ expect }
       console.log('[No Migration Test] After update, dataVersion:', storageInfo3.dataVersion);
       expect(storageInfo3.dataVersion).toBe(3);
 
+      // Wait for watcher to sync
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
       // Log blockStorage after update (should be unchanged)
       const blockDump3 = projectWatcher.getBlockDump(block1Id);
       console.log('[No Migration Test] Step 4 - After update (no migration):');
@@ -404,6 +410,9 @@ test('v3: migration failure resets to initial data', async ({ expect }) => {
     const storageInfo3 = JSON.parse(overview3.blocks[0].blockStorageInfo!) as StorageInfo;
     console.log('[Migration Failure Test] After failed migration, dataVersion:', storageInfo3.dataVersion);
     expect(storageInfo3.dataVersion).toBe(3);
+
+    // Wait for watcher to sync
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     // Log blockStorage after failed migration
     const blockDump3 = projectWatcher.getBlockDump(block1Id);
@@ -501,6 +510,9 @@ test('v3: fresh block with correct version survives block pack update', async ({
     const storageInfo3 = JSON.parse(overview3.blocks[0].blockStorageInfo!) as StorageInfo;
     console.log('[Fresh Update Test] After update, dataVersion:', storageInfo3.dataVersion);
 
+    // Wait for watcher to sync
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
     // Log the corrupted storage
     const blockDump3 = projectWatcher.getBlockDump(block1Id);
     console.log('[Fresh Update Test] After update (data preserved):');
@@ -572,6 +584,9 @@ test('v3: version 0 edge case - resets to initial data', async ({ expect }) => {
       const overview3 = await prj.overview.awaitStableValue();
       const storageInfo3 = JSON.parse(overview3.blocks[0].blockStorageInfo!) as StorageInfo;
       console.log('[Edge Case Test] After migration reset, dataVersion:', storageInfo3.dataVersion);
+
+      // Wait for watcher to sync
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Log blockStorage after migration reset
       const blockDump3 = projectWatcher.getBlockDump(block1Id);
