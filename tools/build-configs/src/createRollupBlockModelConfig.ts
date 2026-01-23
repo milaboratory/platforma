@@ -1,7 +1,8 @@
 import commonjs from '@rollup/plugin-commonjs';
+import json from '@rollup/plugin-json';
 import type { RollupOptions } from 'rollup';
 import { createRollupNodeConfig } from './createRollupNodeConfig';
-import { createRollupTypescriptPlugin, createRollupResolvePlugin } from './rollupUtils';
+import { createRollupResolvePlugin, createRollupTypescriptPlugin } from './rollupUtils';
 
 export function createRollupBlockModelConfig(props?: {
   entry?: string[];
@@ -21,6 +22,7 @@ export function createRollupBlockModelConfig(props?: {
         createRollupTypescriptPlugin({ output, useSources }),
         createRollupResolvePlugin({ useSources }),
         commonjs(),
+        json(),
       ],
       onwarn(warning, warn) {
         // Suppress TS5098: customConditions requires moduleResolution bundler/node16/nodenext

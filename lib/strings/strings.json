@@ -1,0 +1,21 @@
+{
+  "callToActions": {
+    "configureSettingsAndRun": "Configure settings and click \"Run\" to see the data"
+  },
+  "states": {
+    "noDataAvailable": "No data available"
+  },
+  "titles": {
+    "advancedSettings": "Advanced Settings",
+    "annotations": "Annotations",
+    "cancel": "Cancel",
+    "dataset": "Dataset",
+    "export": "Export",
+    "histogram": "Histogram",
+    "logs": "Logs",
+    "main": "Main",
+    "multipleSequenceAlignment": "Multiple Sequence Alignment",
+    "settings": "Settings",
+    "stats": "Stats"
+  }
+}

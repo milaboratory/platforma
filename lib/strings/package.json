@@ -1,0 +1,11 @@
+{
+  "name": "@milaboratories/strings",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./strings.json"
+  },
+  "scripts": {
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+  }
+}
