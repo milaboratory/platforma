@@ -1,4 +1,5 @@
-import type { AuthorMarker, BlockOutputsBase, BlockState, NavigationState } from '@milaboratories/pl-model-common';
+import type { AuthorMarker, BlockOutputsBase, BlockState, NavigationState, StringifiedJson } from '@milaboratories/pl-model-common';
+import type { StorageDebugView } from '@platforma-sdk/model';
 import type { Optional } from 'utility-types';
 
 // @deprecated TODO v3: keep this name, or rename to BlockStateInternalLegacy?
@@ -16,6 +17,9 @@ export type BlockStateInternalV3<
 > = {
   /** Raw block storage - UI derives data using sdk/model */
   readonly blockStorage: unknown;
+
+  /** Storage debug view (JSON string) for block debug panel. */
+  readonly storageDebugView?: StringifiedJson<StorageDebugView>;
 
   /** Outputs rendered with block config */
   outputs?: Outputs;

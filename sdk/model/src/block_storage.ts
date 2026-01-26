@@ -183,6 +183,17 @@ export function updateStorageDataVersion<TState>(
   return { ...storage, __dataVersion: version };
 }
 
+/**
+ * Storage debug view returned by __pl_storage_debugView callback.
+ * Used by developer tools to display block storage info.
+ */
+export interface StorageDebugView {
+  /** Current data version (1-based, starts at 1) */
+  dataVersion: number;
+  /** Raw data payload stored in BlockStorage */
+  data: unknown;
+}
+
 // =============================================================================
 // Plugin Data Functions
 // =============================================================================
