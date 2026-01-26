@@ -76,11 +76,17 @@ export function readMetadataJson<M extends Metadata, T extends keyof MetadataJso
 export const Domain = {
   Alphabet: 'pl7.app/alphabet',
   BlockId: 'pl7.app/blockId',
+  VDJ: {
+    ScClonotypeChain: {
+      Index: 'pl7.app/vdj/scClonotypeChain/index',
+    },
+  },
 } as const;
 
 export type Domain = Metadata & Partial<{
-  [Domain.Alphabet]: 'nucleotide' | 'aminoacid' | string;
+  [Domain.Alphabet]: 'nucleotide' | 'aminoacid' | (string & {});
   [Domain.BlockId]: string;
+  [Domain.VDJ.ScClonotypeChain.Index]: 'primary' | 'secondary' | (string & {});
 }>;
 
 export type DomainJson = MetadataJson<Domain>;
@@ -152,11 +158,14 @@ export const Annotation = {
     Visibility: 'pl7.app/table/visibility',
   },
   Trace: 'pl7.app/trace',
+  VDJ: {
+    IsAssemblingFeature: 'pl7.app/vdj/isAssemblingFeature',
+  },
 } as const;
 
 export type Annotation = Metadata & Partial<{
-  [Annotation.Alphabet]: 'nucleotide' | 'aminoacid' | string;
-  [Annotation.AxisNature]: 'homogeneous' | 'heterogeneous' | 'scaleCompatible' | string;
+  [Annotation.Alphabet]: 'nucleotide' | 'aminoacid' | (string & {});
+  [Annotation.AxisNature]: 'homogeneous' | 'heterogeneous' | 'scaleCompatible' | (string & {});
   [Annotation.Description]: string;
   [Annotation.DiscreteValues]: StringifiedJson<number[]> | StringifiedJson<string[]>;
   [Annotation.Format]: string;
@@ -169,8 +178,8 @@ export type Annotation = Metadata & Partial<{
   [Annotation.Graph.Palette]: StringifiedJson<{ mapping: Record<string, number>; name: string }>;
   [Annotation.Graph.Thresholds]: StringifiedJson<{ columnId: { valueType: ValueType; name: string }; value: number }[]>;
   [Annotation.Graph.TreatAbsentValuesAs]: StringifiedJson<number>;
-  [Annotation.HideDataFromUi]: StringifiedJson<boolean>;
   [Annotation.HideDataFromGraphs]: StringifiedJson<boolean>;
+  [Annotation.HideDataFromUi]: StringifiedJson<boolean>;
   [Annotation.IsDiscreteFilter]: StringifiedJson<boolean>;
   [Annotation.IsLinkerColumn]: StringifiedJson<boolean>;
   [Annotation.IsSubset]: StringifiedJson<boolean>;
@@ -183,8 +192,9 @@ export type Annotation = Metadata & Partial<{
   [Annotation.Sequence.IsAnnotation]: StringifiedJson<boolean>;
   [Annotation.Table.FontFamily]: string;
   [Annotation.Table.OrderPriority]: StringifiedJson<number>;
-  [Annotation.Table.Visibility]: 'hidden' | 'optional' | string;
+  [Annotation.Table.Visibility]: 'hidden' | 'optional' | (string & {});
   [Annotation.Trace]: StringifiedJson<Record<string, unknown>>;
+  [Annotation.VDJ.IsAssemblingFeature]: StringifiedJson<boolean>;
 }>;
 
 // export const AxisSpec = z.object({
@@ -236,6 +246,7 @@ export const AnnotationJson: AnnotationJson = {
   [Annotation.Sequence.IsAnnotation]: z.boolean(),
   [Annotation.Table.OrderPriority]: z.number(),
   [Annotation.Trace]: z.record(z.string(), z.unknown()),
+  [Annotation.VDJ.IsAssemblingFeature]: z.boolean(),
 };
 
 /// Helper function for reading plain annotation values
@@ -502,6 +513,19 @@ export const PColumnName = {
   Label: 'pl7.app/label',
   Table: {
     RowSelection: 'pl7.app/table/row-selection',
+  },
+  VDJ: {
+    Sequence: 'pl7.app/vdj/sequence',
+  },
+} as const;
+
+/// Well-known axis names
+export const PAxisName = {
+  VDJ: {
+    Assay: {
+      SequenceId: 'pl7.app/vdj/assay/sequenceId',
+    },
+    ScClonotypeKey: 'pl7.app/vdj/scClonotypeKey',
   },
 } as const;
 
