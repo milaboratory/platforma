@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.software-ptabler.schema",
-  "version": "1.13.3",
+  "version": "1.13.4",
   "description": "Type definitions for PTabler",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
