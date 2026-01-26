@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.4.0
+
+### Minor Changes
+
+- 3adaafd: Added JSON plugin to createRollupBlockModelConfig
+
 ## 1.3.0
 
 ### Minor Changes
