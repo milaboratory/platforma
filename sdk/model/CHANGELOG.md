@@ -1,5 +1,17 @@
 # @platforma-sdk/model
 
+## 1.53.0
+
+### Minor Changes
+
+- 43b4247: Update PColumnPredicate to distinguish between columns selected by default and not
+
+### Patch Changes
+
+- Updated dependencies [f819dfd]
+  - @milaboratories/pl-model-common@1.24.1
+  - @milaboratories/ptabler-expression-js@1.1.11
+
 ## 1.52.7
 
 ### Patch Changes

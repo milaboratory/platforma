@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.24.1
+
+### Patch Changes
+
+- f819dfd: Added well-known VDJ labels
+
 ## 1.24.0
 
 ### Minor Changes
