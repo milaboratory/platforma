@@ -19,10 +19,6 @@ limits := import(":exec.limits")
 delayedCompAlloc := import(":exec.delayed-compute-allocation")
 
 _RTYPE_RUN_COMMAND_V1 := { Name: "RunCommand/executor", Version: "1" }
-
-_runCommandResourceType := func(runnerType) {
-	return { Name: "RunCommand/" + runnerType, Version: "2" }
-}
 _RTYPE_RUN_COMMAND_CMD := { Name: "RunCommandCmd", Version: "1" }
 _RTYPE_RUN_COMMAND_ARGS := { Name: "RunCommandArgs", Version: "1" }
 _RTYPE_RUN_COMMAND_OPTIONS := { Name: "run-command/options", Version: "1" }
@@ -671,8 +667,8 @@ builder := func(workdir, ...initialState) {
 
 			ll.assert(!is_undefined(queue), "runcmd.builder.build: queue is required for any command run")
 
-			runnerType := limits.getRunnerType(queue)
-			runRes = smart.ephemeralBuilder(_runCommandResourceType(runnerType))
+			resourceTypes := limits.getResourceTypes(queue)
+			runRes = smart.ephemeralBuilder(resourceTypes.runCommand)
 
 			runRes.getField(_FIELD_WORKDIR_IN).set(workdir)
 
