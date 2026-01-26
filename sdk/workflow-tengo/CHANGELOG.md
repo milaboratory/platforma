@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.8.1
+
+### Patch Changes
+
+- 1f6b75c: Centralized Resource Type Logic
+
 ## 5.8.0
 
 ### Minor Changes
