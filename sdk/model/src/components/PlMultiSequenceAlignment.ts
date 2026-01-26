@@ -1,20 +1,24 @@
+import type {
+  PColumn,
+  PColumnIdAndSpec,
+  PColumnKey,
+  PColumnValues,
+  PObjectId,
+  PTableColumnId,
+} from '@milaboratories/pl-model-common';
 import {
   Annotation,
   isPTableAbsent,
-  type PColumn,
-  type PColumnIdAndSpec,
-  type PColumnKey,
   PColumnName,
-  type PColumnValues,
-  type PObjectId,
-  type PTableColumnId,
   stringifyJson,
   uniquePlId,
   ValueType,
 } from '@milaboratories/pl-model-common';
-import { type PlSelectionModel } from './PlSelectionModel';
+import type { PlSelectionModel } from './PlSelectionModel';
 
-export type PColumnPredicate = (column: PColumnIdAndSpec) => boolean;
+export type PColumnPredicate = (column: PColumnIdAndSpec) =>
+  | boolean
+  | { default: boolean };
 
 export interface PlMultiSequenceAlignmentSettings {
   sequenceColumnIds?: PObjectId[];
