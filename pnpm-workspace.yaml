@@ -37,6 +37,8 @@ packages:
 
   - lib/ui/uikit
 
+  - lib/strings
+
   - tools/tengo-builder
   - tools/oclif-index
   - tools/block-tools

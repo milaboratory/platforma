@@ -2852,6 +2852,8 @@ importers:
         specifier: 'workspace:'
         version: link:../../tools/package-builder
 
+  lib/strings: {}
+
   lib/ui/uikit:
     dependencies:
       '@milaboratories/helpers':
