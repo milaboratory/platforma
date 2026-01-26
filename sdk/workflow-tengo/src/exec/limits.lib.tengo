@@ -25,8 +25,7 @@ _RTYPE_QUOTA := { Name: "Quota", Version: "1" }
 getResourceTypes := func(queueName) {
 	// Use backend-provided resource types when available
 	result := feats.getResourceTypes(queueName)
-	// Check if result is a map - older backends might return a string instead
-	if ll.isMap(result) {
+	if !is_undefined(result) {
 		return result
 	}
 
