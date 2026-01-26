@@ -6,9 +6,8 @@
  * directly - they only see `state`.
  *
  * Registered callbacks (all prefixed with `__pl_` for internal SDK use):
- * - `__pl_storage_normalize`: (rawStorage) => { storage, data }
  * - `__pl_storage_applyUpdate`: (currentStorageJson, payload) => updatedStorageJson
- * - `__pl_storage_getInfo`: (rawStorage) => JSON string with storage info
+ * - `__pl_storage_debugView`: (rawStorage) => JSON string with storage debug view
  * - `__pl_storage_migrate`: (currentStorageJson) => MigrationResult
  * - `__pl_args_derive`: (storageJson) => ArgsDeriveResult
  * - `__pl_prerunArgs_derive`: (storageJson) => ArgsDeriveResult
@@ -27,11 +26,13 @@ import {
   BLOCK_STORAGE_SCHEMA_VERSION,
   type BlockStorage,
   type MutateStoragePayload,
+  type StorageDebugView,
   createBlockStorage,
   getStorageData,
   isBlockStorage,
   updateStorageData,
 } from './block_storage';
+import { stringifyJson, type StringifiedJson } from '@milaboratories/pl-model-common';
 import { tryGetCfgRenderCtx, tryRegisterCallback } from './internal';
 
 /**
@@ -123,42 +124,30 @@ function isLegacyModelV1ApiFormat(data: unknown): data is { args?: unknown } {
 // Auto-register internal callbacks when module is loaded in VM
 // =============================================================================
 
-// Register normalize callback
-tryRegisterCallback('__pl_storage_normalize', (rawStorage: unknown) => {
-  return normalizeStorage(rawStorage);
-});
-
 // Register apply update callback (requires existing storage)
 tryRegisterCallback('__pl_storage_applyUpdate', (currentStorageJson: string, payload: MutateStoragePayload) => {
   return applyStorageUpdate(currentStorageJson, payload);
 });
 
 /**
- * Storage info result returned by __pl_storage_getInfo callback.
- */
-export interface StorageInfo {
-  /** Current data version (1-based, starts at 1) */
-  dataVersion: number;
-}
-
-/**
- * Gets storage info from raw storage data.
- * Returns structured info about the storage state.
+ * Gets storage debug view from raw storage data.
+ * Returns structured debug info about the storage state.
  *
  * @param rawStorage - Raw data from blockStorage field (may be JSON string or object)
- * @returns JSON string with storage info
+ * @returns JSON string with storage debug view
  */
-function getStorageInfo(rawStorage: unknown): string {
+function getStorageDebugView(rawStorage: unknown): StringifiedJson<StorageDebugView> {
   const { storage } = normalizeStorage(rawStorage);
-  const info: StorageInfo = {
+  const debugView: StorageDebugView = {
     dataVersion: storage.__dataVersion,
+    data: storage.__data,
   };
-  return JSON.stringify(info);
+  return stringifyJson(debugView);
 }
 
-// Register get info callback
-tryRegisterCallback('__pl_storage_getInfo', (rawStorage: unknown) => {
-  return getStorageInfo(rawStorage);
+// Register debug view callback
+tryRegisterCallback('__pl_storage_debugView', (rawStorage: unknown) => {
+  return getStorageDebugView(rawStorage);
 });
 
 // =============================================================================

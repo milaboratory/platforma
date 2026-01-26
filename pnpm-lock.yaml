@@ -1901,6 +1901,9 @@ importers:
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../common
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../sdk/model
       remeda:
         specifier: 'catalog:'
         version: 2.28.0
@@ -3412,6 +3415,9 @@ importers:
       '@milaboratories/pl-middle-layer':
         specifier: workspace:*
         version: link:../../lib/node/pl-middle-layer
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../../lib/model/common
       '@milaboratories/pl-tree':
         specifier: workspace:*
         version: link:../../lib/node/pl-tree

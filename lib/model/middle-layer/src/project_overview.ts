@@ -1,6 +1,7 @@
 import type { ProjectMeta } from './project';
 import type { BlockPackSpec } from './block_registry/block_pack_spec';
-import type { BlockCodeFeatureFlags, BlockRenderingMode, BlockSection, NavigationState, AuthorMarker } from '@milaboratories/pl-model-common';
+import type { BlockCodeFeatureFlags, BlockRenderingMode, BlockSection, NavigationState, AuthorMarker, StringifiedJson } from '@milaboratories/pl-model-common';
+import type { StorageDebugView } from '@platforma-sdk/model';
 import type { UpdateSuggestions } from './update_info';
 import type { BlockSettings } from './block_settings';
 
@@ -172,9 +173,9 @@ export type BlockStateOverview = {
   navigationState: NavigationState;
 
   /**
-   * Block storage info as JSON string (e.g., '{"stateVersion": 1}').
-   * Resolved by calling a function from the model.
-   * Undefined when block-pack for this block is not yet materialized.
+   * Storage debug view as JSON string (e.g., '{"dataVersion": 1}').
+   * Used by developer tools to display block state info.
+   * Undefined when block-pack is not yet materialized or for non-V2 blocks.
    */
-  blockStorageInfo: string | undefined;
+  storageDebugView: StringifiedJson<StorageDebugView> | undefined;
 };
