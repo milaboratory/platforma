@@ -30,8 +30,8 @@ _hasRunner := func(e_id) {
 	return !is_undefined(_executors[e_id])
 }
 
-// Check if getRunnerFor method is available in current backend
-_hasGetResourceTypesFor := ll.methodExists(plapi, "getRunnerFor")
+// Check if getResourceTypesFor method is available in current backend
+_hasGetResourceTypesFor := ll.methodExists(plapi, "getResourceTypesFor")
 
 // Get resource types for a specific queue from backend.
 // Returns { runCommand: {Name, Version}, computeRequest: {Name, Version} } or undefined if not available.
@@ -39,7 +39,7 @@ _getResourceTypesFor := func(queueName) {
 	if !_hasGetResourceTypesFor {
 		return undefined
 	}
-	return plapi.getRunnerFor(queueName)
+	return plapi.getResourceTypesFor(queueName)
 }
 
 export ll.toStrict({
