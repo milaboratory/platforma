@@ -1,5 +1,16 @@
 # @milaboratories/pl-middle-layer
 
+## 1.46.7
+
+### Patch Changes
+
+- 48e8984: Removed **pl_storage_normalize, **pl_storage_getInfo changed to \_\_pl_storage_debugView
+- Updated dependencies [48e8984]
+  - @milaboratories/pl-model-middle-layer@1.10.1
+  - @platforma-sdk/model@1.52.7
+  - @milaboratories/pf-driver@1.0.27
+  - @platforma-sdk/block-tools@2.6.32
+
 ## 1.46.6
 
 ### Patch Changes

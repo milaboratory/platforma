@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.52.7
+
+### Patch Changes
+
+- 48e8984: Removed **pl_storage_normalize, **pl_storage_getInfo changed to \_\_pl_storage_debugView
+
 ## 1.52.3
 
 ### Patch Changes
