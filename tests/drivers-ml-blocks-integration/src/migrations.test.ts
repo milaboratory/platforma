@@ -1,6 +1,7 @@
 import { blockSpec as enterNumberSpec } from '@milaboratories/milaboratories.test-enter-numbers-v3';
 import type { Project } from '@milaboratories/pl-middle-layer';
-import { BLOCK_STORAGE_KEY, deriveDataFromStorage } from '@platforma-sdk/model';
+import { parseJson } from '@milaboratories/pl-model-common';
+import { BLOCK_STORAGE_KEY, deriveDataFromStorage, type StorageDebugView } from '@platforma-sdk/model';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'vitest';
@@ -19,10 +20,6 @@ function createRawBlockStorage(data: unknown, dataVersion: number): string {
     __dataVersion: dataVersion,
     __data: data,
   });
-}
-
-interface StorageInfo {
-  dataVersion: number;
 }
 
 /**
@@ -69,10 +66,10 @@ test('v3: fresh block has correct initial dataVersion', async ({ expect }) => {
 
     // Get initial overview and wait for block state to stabilize
     const overview = await prj.overview.awaitStableValue();
-    expect(overview.blocks[0].blockStorageInfo).toBeDefined();
+    expect(overview.blocks[0].storageDebugView).toBeDefined();
 
     // Fresh block should have dataVersion = 3 (target version with 2 migrations) - check via overview
-    const storageInfo = JSON.parse(overview.blocks[0].blockStorageInfo!) as StorageInfo;
+    const storageInfo = parseJson<StorageDebugView>(overview.blocks[0].storageDebugView!);
     console.log('[Fresh Block Test] dataVersion:', storageInfo.dataVersion);
     expect(storageInfo.dataVersion).toBe(3);
 
@@ -127,7 +124,7 @@ test('v3: migration from v1 to v3 (two migrations)', async ({ expect }) => {
 
     // Verify storage was set - log full blockStorage
     const overview1 = await prj.overview.awaitStableValue();
-    const storageInfo1 = JSON.parse(overview1.blocks[0].blockStorageInfo!) as StorageInfo;
+    const storageInfo1 = parseJson<StorageDebugView>(overview1.blocks[0].storageDebugView!);
     expect(storageInfo1.dataVersion).toBe(1);
 
     // Log blockStorage after setting v1 state
@@ -152,7 +149,7 @@ test('v3: migration from v1 to v3 (two migrations)', async ({ expect }) => {
 
     // Verify migration ran and state version is now 3
     const overview3 = await prj.overview.awaitStableValue();
-    const storageInfo3 = JSON.parse(overview3.blocks[0].blockStorageInfo!) as StorageInfo;
+    const storageInfo3 = parseJson<StorageDebugView>(overview3.blocks[0].storageDebugView!);
     console.log('[v1→v3 Test] After migration, dataVersion:', storageInfo3.dataVersion);
     expect(storageInfo3.dataVersion).toBe(3);
 
@@ -213,7 +210,7 @@ test('v3: migration from v2 to v3 (one migration)', async ({ expect }) => {
 
     // Verify storage was set - log full blockStorage
     const overview1 = await prj.overview.awaitStableValue();
-    const storageInfo1 = JSON.parse(overview1.blocks[0].blockStorageInfo!) as StorageInfo;
+    const storageInfo1 = parseJson<StorageDebugView>(overview1.blocks[0].storageDebugView!);
     expect(storageInfo1.dataVersion).toBe(2);
 
     // Log blockStorage after setting v2 state
@@ -238,7 +235,7 @@ test('v3: migration from v2 to v3 (one migration)', async ({ expect }) => {
 
     // Verify migration ran and state version is now 3
     const overview3 = await prj.overview.awaitStableValue();
-    const storageInfo3 = JSON.parse(overview3.blocks[0].blockStorageInfo!) as StorageInfo;
+    const storageInfo3 = parseJson<StorageDebugView>(overview3.blocks[0].storageDebugView!);
     console.log('[v2→v3 Test] After migration, dataVersion:', storageInfo3.dataVersion);
     expect(storageInfo3.dataVersion).toBe(3);
 
@@ -303,7 +300,7 @@ test('v3: no migration needed when already at target version', async ({ expect }
 
     // Verify storage was set - log full blockStorage
     const overview1 = await prj.overview.awaitStableValue();
-    const storageInfo1 = JSON.parse(overview1.blocks[0].blockStorageInfo!) as StorageInfo;
+    const storageInfo1 = parseJson<StorageDebugView>(overview1.blocks[0].storageDebugView!);
     expect(storageInfo1.dataVersion).toBe(3);
 
     // Log blockStorage after setting v3 state
@@ -326,7 +323,7 @@ test('v3: no migration needed when already at target version', async ({ expect }
 
       // Verify no migration ran - state should be unchanged
       const overview3 = await prj.overview.awaitStableValue();
-      const storageInfo3 = JSON.parse(overview3.blocks[0].blockStorageInfo!) as StorageInfo;
+      const storageInfo3 = parseJson<StorageDebugView>(overview3.blocks[0].storageDebugView!);
       console.log('[No Migration Test] After update, dataVersion:', storageInfo3.dataVersion);
       expect(storageInfo3.dataVersion).toBe(3);
 
@@ -382,7 +379,7 @@ test('v3: migration failure resets to initial data', async ({ expect }) => {
 
     // Verify storage was set
     const overview1 = await prj.overview.awaitStableValue();
-    const storageInfo1 = JSON.parse(overview1.blocks[0].blockStorageInfo!) as StorageInfo;
+    const storageInfo1 = parseJson<StorageDebugView>(overview1.blocks[0].storageDebugView!);
     expect(storageInfo1.dataVersion).toBe(1);
 
     // Log blockStorage after setting v1 state
@@ -407,7 +404,7 @@ test('v3: migration failure resets to initial data', async ({ expect }) => {
 
     // Verify dataVersion is now 3 (target version) despite migration failure
     const overview3 = await prj.overview.awaitStableValue();
-    const storageInfo3 = JSON.parse(overview3.blocks[0].blockStorageInfo!) as StorageInfo;
+    const storageInfo3 = parseJson<StorageDebugView>(overview3.blocks[0].storageDebugView!);
     console.log('[Migration Failure Test] After failed migration, dataVersion:', storageInfo3.dataVersion);
     expect(storageInfo3.dataVersion).toBe(3);
 
@@ -464,7 +461,7 @@ test('v3: fresh block with correct version survives block pack update', async ({
 
     // Verify fresh block state
     const overview1 = await prj.overview.awaitStableValue();
-    const storageInfo1 = JSON.parse(overview1.blocks[0].blockStorageInfo!) as StorageInfo;
+    const storageInfo1 = parseJson<StorageDebugView>(overview1.blocks[0].storageDebugView!);
     console.log('[Fresh Update Test] Fresh block dataVersion:', storageInfo1.dataVersion);
 
     // Fresh block should have dataVersion = 3 (target version with 2 migrations)
@@ -507,7 +504,7 @@ test('v3: fresh block with correct version survives block pack update', async ({
 
     // Check what happened
     const overview3 = await prj.overview.awaitStableValue();
-    const storageInfo3 = JSON.parse(overview3.blocks[0].blockStorageInfo!) as StorageInfo;
+    const storageInfo3 = parseJson<StorageDebugView>(overview3.blocks[0].storageDebugView!);
     console.log('[Fresh Update Test] After update, dataVersion:', storageInfo3.dataVersion);
 
     // Wait for watcher to sync
@@ -560,7 +557,7 @@ test('v3: version 0 edge case - resets to initial data', async ({ expect }) => {
 
     // Verify storage was set - log full blockStorage
     const overview1 = await prj.overview.awaitStableValue();
-    const storageInfo1 = JSON.parse(overview1.blocks[0].blockStorageInfo!) as StorageInfo;
+    const storageInfo1 = parseJson<StorageDebugView>(overview1.blocks[0].storageDebugView!);
     expect(storageInfo1.dataVersion).toBe(0);
 
     // Log blockStorage after setting version 0 state
@@ -582,7 +579,7 @@ test('v3: version 0 edge case - resets to initial data', async ({ expect }) => {
       await prj.updateBlockPack(block1Id, overview2.blocks[0].updatedBlockPack);
 
       const overview3 = await prj.overview.awaitStableValue();
-      const storageInfo3 = JSON.parse(overview3.blocks[0].blockStorageInfo!) as StorageInfo;
+      const storageInfo3 = parseJson<StorageDebugView>(overview3.blocks[0].storageDebugView!);
       console.log('[Edge Case Test] After migration reset, dataVersion:', storageInfo3.dataVersion);
 
       // Wait for watcher to sync

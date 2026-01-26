@@ -271,8 +271,8 @@ export function projectOverview(
           })
           .getDataAsJson() as BlockSettings;
 
-        // Get block storage info by calling VM function (only for Model API v2 blocks)
-        const blockStorageInfo = ifNotUndef(bp, ({ cfg }) => {
+        // Get block storage debug view by calling VM function (only for Model API v2 blocks)
+        const storageDebugView = ifNotUndef(bp, ({ cfg }) => {
           if (cfg.modelAPIVersion !== 2) {
             return undefined;
           }
@@ -282,7 +282,7 @@ export function projectOverview(
             stableIfNotFound: true,
           });
           const rawStorageJson = storageNode?.getDataAsString();
-          return env.projectHelper.getStorageInfoInVM(cfg, rawStorageJson);
+          return env.projectHelper.getStorageDebugViewInVM(cfg, rawStorageJson);
         });
 
         const updates = ifNotUndef(bp, ({ info }) =>
@@ -315,7 +315,7 @@ export function projectOverview(
           featureFlags,
           isIncompatibleWithRuntime,
           navigationState: navigationStates.getState(id),
-          blockStorageInfo,
+          storageDebugView,
         };
       });
 

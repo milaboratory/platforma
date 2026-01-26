@@ -17,6 +17,7 @@
     "@platforma-sdk/test": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
     "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
     "@milaboratories/pl-tree": "workspace:*",
     "@milaboratories/computable": "workspace:*",

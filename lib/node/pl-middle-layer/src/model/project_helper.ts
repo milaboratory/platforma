@@ -1,4 +1,5 @@
-import type { ResultOrError, BlockConfig, PlRef, ConfigRenderLambda } from '@platforma-sdk/model';
+import type { ResultOrError, BlockConfig, PlRef, ConfigRenderLambda, StorageDebugView } from '@platforma-sdk/model';
+import type { StringifiedJson } from '@milaboratories/pl-model-common';
 import { extractCodeWithInfo, ensureError } from '@platforma-sdk/model';
 import { LRUCache } from 'lru-cache';
 import type { QuickJSWASMModule } from 'quickjs-emscripten';
@@ -15,14 +16,6 @@ type EnrichmentTargetsValue = {
 };
 
 /**
- * Result of VM-based storage normalization
- */
-interface NormalizeStorageResult {
-  storage: unknown;
-  data: unknown;
-}
-
-/**
  * Result of VM-based storage migration.
  * Returned by migrateStorageInVM().
  *
@@ -35,9 +28,8 @@ export type MigrationResult =
 
 // Internal lambda handles for storage operations (registered by SDK's block_storage_vm.ts)
 // All callbacks are prefixed with `__pl_` to indicate internal SDK use
-const STORAGE_NORMALIZE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_normalize' };
 const STORAGE_APPLY_UPDATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_applyUpdate' };
-const STORAGE_GET_INFO_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_getInfo' };
+const STORAGE_DEBUG_VIEW_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_debugView' };
 const STORAGE_MIGRATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_migrate' };
 const ARGS_DERIVE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_args_derive' };
 const PRERUN_ARGS_DERIVE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_prerunArgs_derive' };
@@ -152,32 +144,6 @@ export class ProjectHelper {
   // =============================================================================
 
   /**
-   * Normalizes raw blockStorage data using VM-based transformation.
-   * This calls the model's `__pl_storage_normalize` callback which:
-   * - Handles BlockStorage format (with discriminator)
-   * - Handles legacy V1/V2 format ({ args, uiState })
-   * - Handles raw V3 state
-   *
-   * @param blockConfig The block configuration (provides the model code)
-   * @param rawStorage Raw storage data from resource tree (may be JSON string or object)
-   * @returns Object with { storage, state } or undefined if transformation fails
-   */
-  public normalizeStorageInVM(blockConfig: BlockConfig, rawStorage: unknown): NormalizeStorageResult | undefined {
-    try {
-      const result = executeSingleLambda(
-        this.quickJs,
-        STORAGE_NORMALIZE_HANDLE,
-        extractCodeWithInfo(blockConfig),
-        rawStorage,
-      ) as NormalizeStorageResult;
-      return result;
-    } catch (e) {
-      console.warn('[ProjectHelper.normalizeStorageInVM] Storage normalization failed:', e);
-      return undefined;
-    }
-  }
-
-  /**
    * Creates initial BlockStorage for a new block using VM-based transformation.
    * This calls the '__pl_storage_initial' callback registered by DataModel which:
    * - Gets initial data from DataModel.getDefaultData()
@@ -231,24 +197,24 @@ export class ProjectHelper {
   }
 
   /**
-   * Gets storage info from raw storage data by calling the VM's __pl_storage_getInfo callback.
-   * Returns structured info about the storage (e.g., dataVersion).
+   * Gets storage debug view from raw storage data by calling the VM's __pl_storage_debugView callback.
+   * Returns structured debug info about the storage (e.g., dataVersion).
    *
    * @param blockConfig Block configuration
    * @param rawStorageJson Raw storage as JSON string (or undefined)
-   * @returns Storage info as JSON string (e.g., '{"dataVersion": 1}')
+   * @returns Storage debug view as JSON string (e.g., '{"dataVersion": 1}')
    */
-  public getStorageInfoInVM(blockConfig: BlockConfig, rawStorageJson: string | undefined): string | undefined {
+  public getStorageDebugViewInVM(blockConfig: BlockConfig, rawStorageJson: string | undefined): StringifiedJson<StorageDebugView> | undefined {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        STORAGE_GET_INFO_HANDLE,
+        STORAGE_DEBUG_VIEW_HANDLE,
         extractCodeWithInfo(blockConfig),
         rawStorageJson,
-      ) as string;
+      ) as StringifiedJson<StorageDebugView>;
       return result;
     } catch (e) {
-      console.error('[ProjectHelper.getStorageInfoInVM] Get storage info failed:', e);
+      console.error('[ProjectHelper.getStorageDebugViewInVM] Get storage debug view failed:', e);
       return undefined;
     }
   }
