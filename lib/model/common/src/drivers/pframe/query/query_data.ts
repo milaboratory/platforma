@@ -1,26 +1,15 @@
-import type { JsonDataInfo } from '../data_info';
+import type { PObjectId } from '../../../pool';
 import type {
-  ColumnTypeSpec,
-  ExprAggregation,
   ExprBinaryMath,
-  ExprCast,
-  ExprConditional,
   ExprConstant,
-  ExprCumulative,
-  ExprIfNull,
   ExprIsIn,
   ExprIsInPolygon,
-  ExprIsNA,
-  ExprLogicalUnary,
-  ExprLogicalVariadic,
-  ExprRanking,
-  ExprStringContains,
+  ExprIsNA, ExprLogicalUnary,
+  ExprLogicalVariadic, ExprStringContains,
   ExprStringContainsFuzzy,
   ExprStringEquals,
   ExprStringRegex,
-  ExprUnaryMath,
-  QueryAxisFilter,
-  QueryAxisSelector,
+  ExprUnaryMath, QueryAxisSelector,
   QueryColumn,
   QueryColumnSelector,
   QueryCrossJoinColumn,
@@ -32,9 +21,13 @@ import type {
   QuerySort,
   QuerySortEntry,
   QuerySymmetricJoin,
-  Type,
-  Value,
+  TypeSpec,
 } from './query_common';
+
+type ColumnIdAndTypeSpec = {
+  id: PObjectId;
+  typeSpec: TypeSpec;
+};
 
 /** Axis selector (data layer) */
 export type AxisSelectorData = QueryAxisSelector<number>;
@@ -44,9 +37,6 @@ export type ColumnSelectorData = QueryColumnSelector<number>;
 
 /** Axis or column selector (data layer) */
 export type SelectorData = AxisSelectorData | ColumnSelectorData;
-
-/** Axis filter for slicing (data layer) */
-export type AxisFilterData = QueryAxisFilter<number>;
 
 /** Sort entry (data layer) */
 export type QuerySortEntryData = QuerySortEntry<SelectorData>;
@@ -61,10 +51,10 @@ export interface QueryJoinEntryData extends QueryJoinEntry<QueryData> {
 export type QueryColumnData = QueryColumn;
 
 /** Inline column with data (data layer) */
-export type QueryInlineColumnData = QueryInlineColumn<ColumnTypeSpec, JsonDataInfo>;
+export type QueryInlineColumnData = QueryInlineColumn<ColumnIdAndTypeSpec>;
 
 /** Cross join column (data layer) */
-export type QueryCrossJoinColumnData = QueryCrossJoinColumn<ColumnTypeSpec>;
+export type QueryCrossJoinColumnData = QueryCrossJoinColumn<ColumnIdAndTypeSpec>;
 
 /** Symmetric join (data layer) */
 export type QuerySymmetricJoinData = QuerySymmetricJoin<QueryJoinEntryData>;
@@ -73,7 +63,7 @@ export type QuerySymmetricJoinData = QuerySymmetricJoin<QueryJoinEntryData>;
 export type QueryOuterJoinData = QueryOuterJoin<QueryJoinEntryData>;
 
 /** Slice axes operation (data layer) */
-export type QuerySliceAxesData = QuerySliceAxes<QueryData, AxisFilterData, ColumnTypeSpec>;
+export type QuerySliceAxesData = QuerySliceAxes<QueryData, number>;
 
 /** Sort operation (data layer) */
 export type QuerySortData = QuerySort<QueryData, QuerySortEntryData>;
@@ -93,23 +83,15 @@ export type QueryData =
   | QueryFilterData;
 
 /** Axis reference (data layer) */
-export interface ExprAxisRefData extends Type<'axisRef'>, Value<number> {}
+export interface ExprAxisRefData { type: 'axisRef'; value: number }
 /** Column reference (data layer) */
-export interface ExprColumnRefData extends Type<'columnRef'>, Value<number> {}
-
-/** Data-layer ranking expression (with SelectorData) */
-export type ExprRankingData = ExprRanking<QueryExpressionData, SelectorData>;
-/** Data-layer cumulative expression (with SelectorData) */
-export type ExprCumulativeData = ExprCumulative<QueryExpressionData, SelectorData>;
-/** Data-layer aggregation expression (with SelectorData) */
-export type ExprAggregationData = ExprAggregation<QueryExpressionData, SelectorData>;
+export interface ExprColumnRefData { type: 'columnRef'; value: number }
 
 export type QueryExpressionData =
   | ExprColumnRefData | ExprAxisRefData | ExprConstant
-  | ExprCast<QueryExpressionData>
   | ExprBinaryMath<QueryExpressionData> | ExprUnaryMath<QueryExpressionData>
   | ExprStringEquals<QueryExpressionData> | ExprStringContains<QueryExpressionData> | ExprStringRegex<QueryExpressionData> | ExprStringContainsFuzzy<QueryExpressionData>
   | ExprLogicalUnary<QueryExpressionData> | ExprLogicalVariadic<QueryExpressionData>
   | ExprIsIn<QueryExpressionData, string> | ExprIsIn<QueryExpressionData, number> | ExprIsInPolygon<QueryExpressionData>
-  | ExprConditional<QueryExpressionData> | ExprIfNull<QueryExpressionData> | ExprIsNA<QueryExpressionData>
-  | ExprAggregationData | ExprRankingData | ExprCumulativeData;
+  | ExprIsNA<QueryExpressionData>
+  ;

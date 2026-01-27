@@ -1,4 +1,5 @@
 import type { PObjectId } from '../../../pool';
+import type { JsonDataInfo } from '../data_info';
 import type { AxisValueType, ColumnValueType } from '../spec';
 
 // ============ Type Spec Types ============
@@ -8,30 +9,25 @@ export type TypeSpec = {
   columns: ColumnValueType[];
 };
 
-export type ColumnTypeSpec = {
-  id: PObjectId;
-  typeSpec: TypeSpec;
-};
-
 // ============ Operand Types ============
 
 /** Unary math operation kinds */
-export type UnaryMathOperand = 'abs' | 'ceil' | 'floor' | 'round' | 'sqrt' | 'ln' | 'log10' | 'exp' | 'sign' | 'negate';
+export type UnaryMathOperand = 'abs' | 'ceil' | 'floor' | 'round' | 'sqrt' | 'log' | 'log2' | 'log10' | 'exp' | 'negate';
 
 /** Binary math operation kinds */
 export type BinaryMathOperand = 'add' | 'sub' | 'mul' | 'div' | 'mod' | 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge';
 
 /** Aggregation kinds */
-export type AggregationOperand = 'sum' | 'avg' | 'min' | 'max' | 'count' | 'countDistinct' | 'first' | 'last' | 'stdDev' | 'variance';
+export type AggregationOperand = 'sum' | 'avg' | 'min' | 'max' | 'count' | 'median' | 'first' | 'last' | 'stdDev' | 'variance';
 
 /** Ranking kinds */
-export type RankingOperand = 'rowNumber' | 'rank' | 'denseRank' | 'percentRank' | 'ntile';
+export type RankOperand = 'rank' | 'denseRank' | 'rowNumber';
 
 /** Cumulative aggregation kinds */
 export type CumulativeOperand = 'sum' | 'avg' | 'min' | 'max' | 'count';
 
 /** If-null mode */
-export type IfNullMode = 'absent' | 'null' | 'nan' | 'any';
+export type IfNullMode = 'absent' | 'na' | 'both';
 
 // ============ Geometric Types ============
 
@@ -41,153 +37,100 @@ export type Point2D = {
   y: number;
 };
 
-// ============ Type Building Helpers ============
-
-export type Type<T extends string> = { type: T };
-export type Operand<T extends string> = { operand: T };
-export type Value<T> = { value: T };
-export type Input<T> = { input: T };
-export type Binary<L, R = L> = { left: L; right: R };
-
 // ============ Constant Expression ============
 
 /** Constant expression */
-export type ExprConstant = Type<'constant'> & Value<string | number | boolean>;
+export type ExprConstant = {
+  type: 'constant';
+  value: string | number | boolean;
+};
 
 // ============ Generic Expression Interfaces ============
 // I = expression type (recursive), S = selector type
 
-/** Type cast expression */
-export interface ExprCast<I> extends
-  Type<'cast'>,
-  Input<I> {
-  targetType: ColumnValueType;
+/** Unary math expression (abs, ceil, floor, etc.) */
+export interface ExprUnaryMath<I> {
+  type: 'unaryMath';
+  operand: UnaryMathOperand;
+  input: I;
 }
 
-/** Unary math expression (abs, ceil, floor, etc.) */
-export interface ExprUnaryMath<I> extends
-  Type<'unaryMath'>,
-  Operand<UnaryMathOperand>,
-  Input<I>
-{}
-
 /** Binary math expression (add, sub, mul, div, comparisons) */
-export interface ExprBinaryMath<I> extends
-  Type<'binaryMath'>,
-  Operand<BinaryMathOperand>,
-  Binary<I>
-{}
+export interface ExprBinaryMath<I> {
+  type: 'binaryMath';
+  operand: BinaryMathOperand;
+  left: I;
+  right: I;
+}
 
 /** String equality check */
-export interface ExprStringEquals<I> extends
-  Type<'stringEquals'>,
-  Value<string>,
-  Input<I>
-{}
+export interface ExprStringEquals<I> {
+  type: 'stringEquals';
+  input: I;
+  value: string;
+}
 
 /** String regex match */
-export interface ExprStringRegex<I> extends
-  Type<'stringRegex'>,
-  Value<string>,
-  Input<I>
-{}
+export interface ExprStringRegex<I> {
+  type: 'stringRegex';
+  input: I;
+  value: string;
+}
 
 /** String contains check */
-export interface ExprStringContains<I> extends
-  Type<'stringContains'>,
-  Value<string>,
-  Input<I> {
-  caseInsensitive?: boolean;
+export interface ExprStringContains<I> {
+  type: 'stringContains';
+  input: I;
+  value: string;
+  caseInsensitive: boolean;
 }
 
 /** Fuzzy string contains check */
-export interface ExprStringContainsFuzzy<I> extends
-  Type<'stringContainsFuzzy'>,
-  Value<string>,
-  Input<I> {
-  wildcard?: string;
-  maxEdits?: number;
-  substitutionsOnly?: boolean;
-  caseInsensitive?: boolean;
+export interface ExprStringContainsFuzzy<I> {
+  type: 'stringContainsFuzzy';
+  input: I;
+  value: string;
+  maxEdits: number;
+  caseInsensitive: boolean;
+  substitutionsOnly: boolean;
+  wildcard: null | string;
 }
 
 /** Logical NOT expression */
-export interface ExprLogicalUnary<I> extends
-  Type<'logical'>,
-  Operand<'not'>,
-  Input<I>
-{}
+export interface ExprLogicalUnary<I> {
+  type: 'logical';
+  operand: 'not';
+  input: I;
+}
 
 /** Logical AND/OR expression */
-export interface ExprLogicalVariadic<I> extends
-  Type<'logical'>,
-  Operand<'and' | 'or'>,
-  Input<I[]>
-{}
+export interface ExprLogicalVariadic<I> {
+  type: 'logical';
+  operand: 'and' | 'or';
+  input: I[];
+}
 
 /** Check if value is in a set */
-export interface ExprIsIn<I, T extends string | number> extends
-  Type<'isIn'>,
-  Input<I> {
+export interface ExprIsIn<I, T extends string | number> {
+  type: 'isIn';
+  input: I;
   set: T[];
-  negate?: boolean;
+  negate: boolean;
 }
 
 /** Check if point is inside a polygon */
-export interface ExprIsInPolygon<X, Y = X> extends
-  Type<'isInPolygon'> {
+export interface ExprIsInPolygon<X, Y = X> {
+  type: 'isInPolygon';
   x: X;
   y: Y;
   polygon: Point2D[];
-  negate?: boolean;
-}
-
-/** Conditional (CASE WHEN) expression */
-export interface ExprConditional<W, T = W, O = W | T> extends
-  Type<'conditional'> {
-  cases: { when: W; then: T }[];
-  otherwise?: O;
-}
-
-/** If-null replacement expression */
-export interface ExprIfNull<I> extends
-  Type<'ifNull'>,
-  Input<I> {
-  mode: IfNullMode;
-  replacement: I;
+  negate: boolean;
 }
 
 /** Check if value is NA (null/absent/nan) */
-export interface ExprIsNA<I> extends
-  Type<'isNA'>,
-  Input<I>
-{}
-
-/** Window ranking expression (row_number, rank, dense_rank, etc.) */
-export interface ExprRanking<I, S> extends
-  Type<'ranking'>,
-  Operand<RankingOperand> {
-  orderBy: I;
-  ascending?: boolean;
-  partitionBy?: S[];
-}
-
-/** Cumulative aggregation expression (running sum, avg, etc.) */
-export interface ExprCumulative<I, S> extends
-  Type<'cumulative'>,
-  Operand<CumulativeOperand>,
-  Input<I> {
-  orderBy: I;
-  ascending?: boolean;
-  partitionBy?: S[];
-}
-
-/** Aggregation expression (sum, avg, min, max, count, etc.) */
-export interface ExprAggregation<I, S> extends
-  Type<'aggregation'>,
-  Operand<AggregationOperand>,
-  Input<I> {
-  over?: S[];
+export interface ExprIsNA<I> {
+  type: 'isNA';
+  input: I;
 }
 
 // ============ Generic Query Types ============
@@ -195,67 +138,75 @@ export interface ExprAggregation<I, S> extends
 // AF = Axis filter type, SE = Sort entry type, JE = Join entry type, SO = Spec override type
 
 /** Axis selector */
-export interface QueryAxisSelector<A> extends Type<'axis'> {
+export interface QueryAxisSelector<A> {
+  type: 'axis';
   id: A;
 }
 
 /** Column selector */
-export interface QueryColumnSelector<C> extends Type<'column'> {
+export interface QueryColumnSelector<C> {
+  type: 'column';
   id: C;
 }
 
 /** Axis filter for slicing */
-export interface QueryAxisFilter<A> extends Type<'constant'> {
+export interface QueryAxisFilter<A> {
+  type: 'constant';
+  constant: string | number;
   axisSelector: A;
-  constant: 'string' | 'number' | 'boolean';
 }
 
 /** Sort entry */
 export interface QuerySortEntry<S> {
   axisOrColumn: S;
   ascending: boolean;
-  nullsFirst?: boolean | null;
+  nullsFirst: null | boolean;
 }
 
 /** Outer join */
-export interface QueryOuterJoin<JE> extends Type<'outerJoin'> {
+export interface QueryOuterJoin<JE> {
+  type: 'outerJoin';
   primary: JE;
   secondary: JE[];
 }
 
 /** Slice axes operation */
-export interface QuerySliceAxes<Q, AF, SO> extends Type<'sliceAxes'> {
+export interface QuerySliceAxes<Q, A> {
+  type: 'sliceAxes';
   input: Q;
-  axisFilters: AF[];
-  specOverride?: SO;
+  axisFilters: QueryAxisFilter<A>[];
 }
 
 /** Sort operation */
-export interface QuerySort<Q, SE> extends Type<'sort'> {
+export interface QuerySort<Q, SE> {
+  type: 'sort';
   input: Q;
   sortBy: SE[];
 }
 
 /** Filter operation */
-export interface QueryFilter<Q, E> extends Type<'filter'> {
+export interface QueryFilter<Q, E> {
+  type: 'filter';
   input: Q;
   predicate: E;
 }
 
 /** Column reference query */
-export interface QueryColumn extends Type<'column'> {
+export interface QueryColumn {
+  type: 'column';
   columnId: PObjectId;
 }
 
 /** Inline column with data */
-export interface QueryInlineColumn<T, D> extends Type<'inlineColumn'> {
-  specOverride: T;
-  typeSpec: T;
-  dataInfo: D;
+export interface QueryInlineColumn<T> {
+  type: 'inlineColumn';
+  spec: T;
+  dataInfo: JsonDataInfo;
 }
 
 /** Cross join column */
-export interface QueryCrossJoinColumn<SO> extends Type<'crossJoinColumn'> {
+export interface QueryCrossJoinColumn<SO> {
+  type: 'crossJoinColumn';
   columnId: PObjectId;
   specOverride?: SO;
   axesIndices: number[];
