@@ -173,7 +173,7 @@ export type BlockStateOverview = {
   navigationState: NavigationState;
 
   /**
-   * Storage debug view as JSON string (e.g., '{"dataVersion": 1}').
+   * Storage debug view as JSON string (e.g., '{"dataVersion": "v1"}').
    * Used by developer tools to display block state info.
    * Undefined when block-pack is not yet materialized or for non-V2 blocks.
    */

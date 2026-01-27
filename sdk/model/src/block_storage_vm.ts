@@ -14,7 +14,7 @@
  *
  * Callbacks registered by DataModel.registerCallbacks():
  * - `__pl_data_initial`: () => initial data
- * - `__pl_data_upgrade`: (versioned) => UpgradeResult
+ * - `__pl_data_migrate`: (versioned) => DataMigrationResult
  * - `__pl_storage_initial`: () => initial BlockStorage as JSON string
  *
  * @module block_storage_vm
@@ -30,6 +30,7 @@ import {
   createBlockStorage,
   getStorageData,
   isBlockStorage,
+  normalizeBlockStorage,
   updateStorageData,
 } from './block_storage';
 import { stringifyJson, type StringifiedJson } from '@milaboratories/pl-model-common';
@@ -76,7 +77,8 @@ function normalizeStorage(rawStorage: unknown): NormalizeStorageResult {
 
   // Check for BlockStorage format (has discriminator)
   if (isBlockStorage(parsed)) {
-    return { storage: parsed, data: getStorageData(parsed) };
+    const storage = normalizeBlockStorage(parsed);
+    return { storage, data: getStorageData(storage) };
   }
 
   // Check for legacy V1/V2 format: { args, uiState }
@@ -165,18 +167,18 @@ export type MigrationResult =
   | { error: string }
   | { error?: undefined; newStorageJson: string; info: string; warn?: string };
 
-/** Result from Migrator.upgrade() */
-interface UpgradeResult {
-  version: number;
+/** Result from DataModel.migrate() */
+interface DataMigrationResult {
+  version: string;
   data: unknown;
   warning?: string;
 }
 
 /**
- * Runs storage migration using the DataModel's upgrade callback.
+ * Runs storage migration using the DataModel's migrate callback.
  * This is the main entry point for the middle layer to trigger migrations.
  *
- * Uses the '__pl_data_upgrade' callback registered by DataModel.registerCallbacks() which:
+ * Uses the '__pl_data_migrate' callback registered by DataModel.registerCallbacks() which:
  * - Handles all migration logic internally
  * - Returns { version, data, warning? } - warning present if reset to initial data
  *
@@ -195,7 +197,7 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
   const currentVersion = currentStorage.__dataVersion;
 
   // Helper to create storage with given data and version
-  const createStorageJson = (data: unknown, version: number): string => {
+  const createStorageJson = (data: unknown, version: string): string => {
     return JSON.stringify({
       ...currentStorage,
       __dataVersion: version,
@@ -203,27 +205,27 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
     });
   };
 
-  // Get the upgrade callback (registered by DataModel.registerCallbacks())
-  const upgradeCallback = ctx.callbackRegistry['__pl_data_upgrade'] as ((v: { version: number; data: unknown }) => UpgradeResult) | undefined;
-  if (typeof upgradeCallback !== 'function') {
-    return { error: '__pl_data_upgrade callback not found (DataModel not registered)' };
+  // Get the migrate callback (registered by DataModel.registerCallbacks())
+  const migrateCallback = ctx.callbackRegistry['__pl_data_migrate'] as ((v: { version: string; data: unknown }) => DataMigrationResult) | undefined;
+  if (typeof migrateCallback !== 'function') {
+    return { error: '__pl_data_migrate callback not found (DataModel not registered)' };
   }
 
-  // Call the migrator's upgrade function
-  let result: UpgradeResult;
+  // Call the migrator's migrate function
+  let result: DataMigrationResult;
   try {
-    result = upgradeCallback({ version: currentVersion, data: currentData });
+    result = migrateCallback({ version: currentVersion, data: currentData });
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
-    return { error: `upgrade() threw: ${errorMsg}` };
+    return { error: `migrate() threw: ${errorMsg}` };
   }
 
   // Build info message
   const info = result.version === currentVersion
-    ? `No migration needed (v${currentVersion})`
+    ? `No migration needed (${currentVersion})`
     : result.warning
-      ? `Reset to initial data (v${result.version})`
-      : `Migrated v${currentVersion}→v${result.version}`;
+      ? `Reset to initial data (${result.version})`
+      : `Migrated ${currentVersion}→${result.version}`;
 
   return {
     newStorageJson: createStorageJson(result.data, result.version),

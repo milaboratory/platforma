@@ -202,7 +202,7 @@ export class ProjectHelper {
    *
    * @param blockConfig Block configuration
    * @param rawStorageJson Raw storage as JSON string (or undefined)
-   * @returns Storage debug view as JSON string (e.g., '{"dataVersion": 1}')
+   * @returns Storage debug view as JSON string (e.g., '{"dataVersion": "v1"}')
    */
   public getStorageDebugViewInVM(blockConfig: BlockConfig, rawStorageJson: string | undefined): StringifiedJson<StorageDebugView> | undefined {
     try {
@@ -227,7 +227,7 @@ export class ProjectHelper {
    * Runs block state migrations via VM-based transformation.
    * This calls the model's `__pl_storage_migrate` callback which:
    * - Normalizes current storage to get state and version
-   * - Calculates target version from number of registered migrations
+   * - Applies DataModel upgrade to reach target version key
    * - Runs all necessary migrations sequentially
    * - Returns new storage with updated state and version
    *
