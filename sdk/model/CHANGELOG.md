@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.53.1
+
+### Patch Changes
+
+- a748b92: Updated the migrations for DataModel
+
 ## 1.53.0
 
 ### Minor Changes

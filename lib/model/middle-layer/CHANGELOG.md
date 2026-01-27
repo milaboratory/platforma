@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.10.3
+
+### Patch Changes
+
+- a748b92: Updated the migrations for DataModel
+- Updated dependencies [a748b92]
+  - @platforma-sdk/model@1.53.1
+
 ## 1.10.2
 
 ### Patch Changes
