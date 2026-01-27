@@ -113,29 +113,29 @@ export function serializeBlockStorage(storage: BlockStorage): string {
 }
 
 /**
- * Checks if the storage needs migration based on version.
+ * Checks if the storage needs migration based on version key.
  *
  * @param storage - Current BlockStorage
- * @param targetVersion - Target schema version
+ * @param targetVersion - Target version key
  * @returns true if migration is needed
  */
-export function needsMigration(storage: BlockStorage, targetVersion: number): boolean {
-  return getStorageDataVersion(storage) < targetVersion;
+export function needsMigration(storage: BlockStorage, targetVersion: string): boolean {
+  return getStorageDataVersion(storage) !== targetVersion;
 }
 
 /**
  * Migrates BlockStorage from one version to another.
  *
  * @param storage - Current BlockStorage
- * @param fromVersion - Source version
- * @param toVersion - Target version
+ * @param fromVersion - Source version key
+ * @param toVersion - Target version key
  * @param handlers - Optional custom handlers
  * @returns Migrated BlockStorage
  */
 export function migrateBlockStorage<TState>(
   storage: BlockStorage<TState>,
-  fromVersion: number,
-  toVersion: number,
+  fromVersion: string,
+  toVersion: string,
   handlers: BlockStorageHandlers<TState> = defaultBlockStorageHandlers as BlockStorageHandlers<TState>,
 ): BlockStorage<TState> {
   const migrate = handlers.migrateStorage ?? defaultBlockStorageHandlers.migrateStorage;
@@ -175,7 +175,7 @@ export function isLegacyV1V2Format(rawData: unknown): rawData is LegacyV1V2State
  * @returns BlockStorage with legacy data as state
  */
 export function convertLegacyToBlockStorage(legacyData: LegacyV1V2State): BlockStorage<LegacyV1V2State> {
-  return createBlockStorage(legacyData, 1);
+  return createBlockStorage(legacyData);
 }
 
 /**

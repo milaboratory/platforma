@@ -5,6 +5,7 @@ import type {
 import {
   BlockModelV3,
   DataModel,
+  defineDataVersions,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
@@ -28,20 +29,31 @@ export const $BlockData = z.object({
 
 export type BlockData = z.infer<typeof $BlockData>;
 
-// TODO: add unique key to be able to drop migrations
+const Version = defineDataVersions({
+  Initial: 'v1',
+  AddedLabels: 'v2',
+  AddedDescription: 'v3',
+});
+
+type VersionedData = {
+  [Version.Initial]: BlockDataV1;
+  [Version.AddedLabels]: BlockDataV2;
+  [Version.AddedDescription]: BlockData;
+};
+
 // Define data model with migrations from v1 to current
 const dataModel = DataModel
-  .from<BlockDataV1>()
+  .from<VersionedData>(Version.Initial)
   // Migration v1 → v2: sort numbers and add labels
   // Throws if numbers contain 666 (for testing migration failure recovery)
-  .migrate<BlockDataV2>((data) => {
+  .migrate(Version.AddedLabels, (data) => {
     if (data.numbers.includes(666)) {
       throw new Error('Migration failed: number 666 is forbidden!');
     }
     return { numbers: data.numbers.toSorted(), labels: ['migrated-from-v1'] } satisfies BlockDataV2;
   })
   // Migration v2 → v3: add description
-  .migrate<BlockData>((data) => {
+  .migrate(Version.AddedDescription, (data) => {
     return { ...data, description: `Migrated: ${data.labels.join(', ')}` };
   })
   .create<BlockData>(() => ({ numbers: [], labels: [], description: '' }));
