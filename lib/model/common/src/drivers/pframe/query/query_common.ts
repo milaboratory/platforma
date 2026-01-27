@@ -23,7 +23,7 @@ export type TypeSpec = {
  * Unary mathematical operation kinds.
  *
  * These operations take a single numeric input and produce a numeric output.
- * **Null handling**: If input is null/NA/NaN, result is null.
+ * **Null handling**: If input is null/NaN, result is null.
  *
  * Operations:
  * - `abs` - Absolute value: |x|
@@ -42,17 +42,25 @@ export type UnaryMathOperand = 'abs' | 'ceil' | 'floor' | 'round' | 'sqrt' | 'lo
 /**
  * Binary mathematical operation kinds.
  *
- * These operations take two numeric inputs and produce a numeric or boolean result.
- * **Null handling**: If either operand is null/NA, result is null.
+ * These operations take two numeric inputs and produce a numeric result.
+ * **Null handling**: If either operand is null, result is null.
  *
- * Arithmetic operations (return number):
+ * Operations:
  * - `add` - Addition: left + right
  * - `sub` - Subtraction: left - right
  * - `mul` - Multiplication: left * right
  * - `div` - Division: left / right (division by zero returns Infinity or NaN)
  * - `mod` - Modulo: left % right
+ */
+export type BinaryMathOperand = 'add' | 'sub' | 'mul' | 'div' | 'mod';
+
+/**
+ * Numeric comparison operation kinds.
  *
- * Comparison operations (return boolean):
+ * These operations compare two numeric inputs and produce a boolean result.
+ * **Null handling**: If either operand is null, result is null (three-valued logic).
+ *
+ * Operations:
  * - `eq` - Equal: left == right
  * - `ne` - Not equal: left != right
  * - `lt` - Less than: left < right
@@ -60,7 +68,7 @@ export type UnaryMathOperand = 'abs' | 'ceil' | 'floor' | 'round' | 'sqrt' | 'lo
  * - `gt` - Greater than: left > right
  * - `ge` - Greater or equal: left >= right
  */
-export type BinaryMathOperand = 'add' | 'sub' | 'mul' | 'div' | 'mod' | 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge';
+export type NumericComparisonOperand = 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge';
 
 // ============ Geometric Types ============
 
@@ -108,7 +116,7 @@ export type ExprConstant = {
  * Applies a unary mathematical function to a single input expression.
  * **Input**: One expression that evaluates to a numeric value.
  * **Output**: Numeric value.
- * **Null handling**: If input is null/NA/NaN, result is null.
+ * **Null handling**: If input is null, result is null.
  *
  * @template I - The expression type (for recursion)
  *
@@ -132,10 +140,10 @@ export interface ExprUnaryMath<I> {
 /**
  * Binary mathematical expression.
  *
- * Applies a binary mathematical operation to two input expressions.
+ * Applies a binary arithmetic operation to two input expressions.
  * **Input**: Two expressions that evaluate to numeric values.
- * **Output**: Numeric value (arithmetic) or boolean (comparisons).
- * **Null handling**: If either operand is null/NA, result is null.
+ * **Output**: Numeric value.
+ * **Null handling**: If either operand is null, result is null.
  *
  * @template I - The expression type (for recursion)
  *
@@ -143,15 +151,50 @@ export interface ExprUnaryMath<I> {
  * // Addition: col_a + col_b
  * { type: 'binaryMath', operand: 'add', left: colA, right: colB }
  *
- * // Comparison: col_a > 10
- * { type: 'binaryMath', operand: 'gt', left: colA, right: { type: 'constant', value: 10 } }
+ * // Division: col_a / 2
+ * { type: 'binaryMath', operand: 'div', left: colA, right: { type: 'constant', value: 2 } }
  *
  * @see BinaryMathOperand for available operations
  */
 export interface ExprBinaryMath<I> {
   type: 'binaryMath';
-  /** The mathematical operation to apply */
+  /** The arithmetic operation to apply */
   operand: BinaryMathOperand;
+  /** Left operand expression */
+  left: I;
+  /** Right operand expression */
+  right: I;
+}
+
+/**
+ * Numeric comparison expression.
+ *
+ * Compares two numeric expressions and produces a boolean result.
+ * **Input**: Two expressions that evaluate to numeric values.
+ * **Output**: Boolean.
+ * **Null handling**: If either operand is null, result is null (three-valued logic).
+ *
+ * @template I - The expression type (for recursion)
+ *
+ * @example
+ * // Greater than: col_a > 10
+ * { type: 'numericComparison', operand: 'gt', left: colA, right: { type: 'constant', value: 10 } }
+ *
+ * // Equality: col_a == col_b
+ * { type: 'numericComparison', operand: 'eq', left: colA, right: colB }
+ *
+ * // Range check (combine with logical AND): 0 <= x && x < 100
+ * // { type: 'logical', operand: 'and', input: [
+ * //   { type: 'numericComparison', operand: 'ge', left: colX, right: { type: 'constant', value: 0 } },
+ * //   { type: 'numericComparison', operand: 'lt', left: colX, right: { type: 'constant', value: 100 } }
+ * // ]}
+ *
+ * @see NumericComparisonOperand for available operations
+ */
+export interface ExprNumericComparison<I> {
+  type: 'numericComparison';
+  /** The comparison operation to apply */
+  operand: NumericComparisonOperand;
   /** Left operand expression */
   left: I;
   /** Right operand expression */
@@ -380,73 +423,6 @@ export interface ExprIsIn<I, T extends string | number> {
   set: T[];
   /** If true, checks that value is NOT in set */
   negate: boolean;
-}
-
-/**
- * Point-in-polygon test expression.
- *
- * Tests if a 2D point (x, y) lies inside a polygon.
- * Common use case: flow cytometry gating where cell measurements
- * are tested against user-defined polygon gates.
- *
- * **Input**: Two expressions evaluating to numeric coordinates.
- * **Output**: Boolean (true if point is inside polygon).
- * **Null handling**: Returns false if x or y is null.
- *
- * The polygon is automatically closed (last point connected to first).
- * Uses ray casting algorithm for point-in-polygon determination.
- *
- * @template X - Expression type for X coordinate
- * @template Y - Expression type for Y coordinate (defaults to X)
- *
- * @example
- * // Check if (fsc, ssc) is inside a gate polygon
- * {
- *   type: 'isInPolygon',
- *   x: fscColumn,
- *   y: sscColumn,
- *   polygon: [
- *     { x: 0, y: 0 },
- *     { x: 100, y: 0 },
- *     { x: 100, y: 100 },
- *     { x: 0, y: 100 }
- *   ],
- *   negate: false
- * }
- */
-export interface ExprIsInPolygon<X, Y = X> {
-  type: 'isInPolygon';
-  /** Expression for X coordinate */
-  x: X;
-  /** Expression for Y coordinate */
-  y: Y;
-  /** Polygon vertices (auto-closed: last point connects to first) */
-  polygon: Point2D[];
-  /** If true, checks that point is OUTSIDE polygon */
-  negate: boolean;
-}
-
-/**
- * NA/Null check expression.
- *
- * Tests if a value is NA (Not Available), null, or NaN.
- * **Input**: Any expression.
- * **Output**: Boolean (true if value is null/NA/NaN).
- * **Null handling**: Returns true for null values (that's the point!).
- *
- * @template I - The expression type (for recursion)
- *
- * @example
- * // Check if value is missing
- * { type: 'isNA', input: valueColumn }
- *
- * // Combine with NOT to check for non-null
- * { type: 'logical', operand: 'not', input: { type: 'isNA', input: valueColumn } }
- */
-export interface ExprIsNA<I> {
-  type: 'isNA';
-  /** Input expression to check for null/NA/NaN */
-  input: I;
 }
 
 // ============ Generic Query Types ============
@@ -691,7 +667,7 @@ export interface QuerySort<Q, SE> {
  *     type: 'logical',
  *     operand: 'and',
  *     input: [
- *       { type: 'binaryMath', operand: 'gt', left: valueRef, right: { type: 'constant', value: 10 } },
+ *       { type: 'numericComparison', operand: 'gt', left: valueRef, right: { type: 'constant', value: 10 } },
  *       { type: 'stringEquals', input: statusRef, value: 'active' }
  *     ]
  *   }

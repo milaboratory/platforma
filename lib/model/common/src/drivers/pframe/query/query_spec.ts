@@ -3,8 +3,7 @@ import type {
   ExprBinaryMath,
   ExprConstant,
   ExprIsIn,
-  ExprIsInPolygon,
-  ExprIsNA, ExprLogicalUnary,
+  ExprLogicalUnary,
   ExprLogicalVariadic,
   ExprStringContains,
   ExprStringContainsFuzzy,
@@ -91,5 +90,4 @@ export type QueryExpressionSpec =
   | ExprBinaryMath<QueryExpressionSpec> | ExprUnaryMath<QueryExpressionSpec>
   | ExprStringEquals<QueryExpressionSpec> | ExprStringContains<QueryExpressionSpec> | ExprStringRegex<QueryExpressionSpec> | ExprStringContainsFuzzy<QueryExpressionSpec>
   | ExprLogicalUnary<QueryExpressionSpec> | ExprLogicalVariadic<QueryExpressionSpec>
-  | ExprIsIn<QueryExpressionSpec, string> | ExprIsIn<QueryExpressionSpec, number> | ExprIsInPolygon<QueryExpressionSpec>
-  | ExprIsNA<QueryExpressionSpec>;
+  | ExprIsIn<QueryExpressionSpec, string> | ExprIsIn<QueryExpressionSpec, number>;
