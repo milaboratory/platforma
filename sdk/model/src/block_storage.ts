@@ -26,6 +26,12 @@ export const BLOCK_STORAGE_KEY = '__pl_a7f3e2b9__';
 export const BLOCK_STORAGE_SCHEMA_VERSION = 'v1';
 
 /**
+ * Default data version for new blocks without migrations.
+ * Unique identifier ensures blocks are created via DataModel API.
+ */
+export const DATA_MODEL_DEFAULT_VERSION = '__pl_v1_d4e8f2a1__';
+
+/**
  * Type for valid schema versions
  */
 export type BlockStorageSchemaVersion = 'v1'; // Add 'v2', 'v3', etc. as schema evolves
@@ -38,7 +44,7 @@ export type PluginKey = `@plugin/${string}`;
 /**
  * Core BlockStorage type that holds:
  * - __pl_a7f3e2b9__: Schema version (discriminator key identifies BlockStorage format)
- * - __dataVersion: Version number for block data migrations
+ * - __dataVersion: Version key for block data migrations
  * - __data: The block's user-facing data (state)
  * - @plugin/*: Optional plugin-specific data
  */
@@ -46,7 +52,7 @@ export type BlockStorage<TState = unknown> = {
   /** Schema version - the key itself is the discriminator */
   readonly [BLOCK_STORAGE_KEY]: BlockStorageSchemaVersion;
   /** Version of the block data, used for migrations */
-  __dataVersion: number;
+  __dataVersion: string;
   /** The block's user-facing data (state) */
   __data: TState;
 } & {
@@ -74,12 +80,12 @@ export function isBlockStorage(value: unknown): value is BlockStorage {
  * Creates a BlockStorage with the given initial data
  *
  * @param initialData - The initial data value (defaults to empty object)
- * @param version - The initial data version (defaults to 1)
+ * @param version - The initial data version key (defaults to 'v1')
  * @returns A new BlockStorage instance with discriminator key
  */
 export function createBlockStorage<TState = unknown>(
   initialData: TState = {} as TState,
-  version: number = 1,
+  version: string = DATA_MODEL_DEFAULT_VERSION,
 ): BlockStorage<TState> {
   return {
     [BLOCK_STORAGE_KEY]: BLOCK_STORAGE_SCHEMA_VERSION,
@@ -98,10 +104,11 @@ export function createBlockStorage<TState = unknown>(
  */
 export function normalizeBlockStorage<TState = unknown>(raw: unknown): BlockStorage<TState> {
   if (isBlockStorage(raw)) {
-    return raw as BlockStorage<TState>;
+    const storage = raw as BlockStorage<TState>;
+    return { ...storage, __dataVersion: String(storage.__dataVersion) };
   }
   // Legacy format: raw is the state directly
-  return createBlockStorage(raw as TState, 1);
+  return createBlockStorage(raw as TState);
 }
 
 // =============================================================================
@@ -163,9 +170,9 @@ export function updateStorageData<TValue = unknown>(
  * Gets the data version from BlockStorage
  *
  * @param storage - The BlockStorage instance
- * @returns The data version number
+ * @returns The data version key
  */
-export function getStorageDataVersion(storage: BlockStorage): number {
+export function getStorageDataVersion(storage: BlockStorage): string {
   return storage.__dataVersion;
 }
 
@@ -173,12 +180,12 @@ export function getStorageDataVersion(storage: BlockStorage): number {
  * Updates the data version in BlockStorage (immutable)
  *
  * @param storage - The current BlockStorage
- * @param version - The new version number
+ * @param version - The new version key
  * @returns A new BlockStorage with updated version
  */
 export function updateStorageDataVersion<TState>(
   storage: BlockStorage<TState>,
-  version: number,
+  version: string,
 ): BlockStorage<TState> {
   return { ...storage, __dataVersion: version };
 }
@@ -188,8 +195,8 @@ export function updateStorageDataVersion<TState>(
  * Used by developer tools to display block storage info.
  */
 export interface StorageDebugView {
-  /** Current data version (1-based, starts at 1) */
-  dataVersion: number;
+  /** Current data version key */
+  dataVersion: string;
   /** Raw data payload stored in BlockStorage */
   data: unknown;
 }
@@ -337,8 +344,8 @@ export interface BlockStorageHandlers<TState = unknown> {
    */
   migrateStorage?: (
     oldStorage: BlockStorage<TState>,
-    fromVersion: number,
-    toVersion: number,
+    fromVersion: string,
+    toVersion: string,
   ) => BlockStorage<TState>;
 }
 
@@ -355,8 +362,8 @@ export const defaultBlockStorageHandlers: Required<BlockStorageHandlers<unknown>
 
   migrateStorage: <TState>(
     storage: BlockStorage<TState>,
-    _fromVersion: number,
-    toVersion: number,
+    _fromVersion: string,
+    toVersion: string,
   ): BlockStorage<TState> => updateStorageDataVersion(storage, toVersion),
 };
 

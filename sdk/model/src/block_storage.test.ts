@@ -57,11 +57,11 @@ describe('BlockStorage', () => {
     });
 
     it('should return false for objects without discriminator', () => {
-      expect(isBlockStorage({ __dataVersion: 1, __data: {} })).toBe(false);
+      expect(isBlockStorage({ __dataVersion: 'v1', __data: {} })).toBe(false);
     });
 
     it('should return false for objects with wrong discriminator value', () => {
-      expect(isBlockStorage({ [BLOCK_STORAGE_KEY]: 'wrong', __dataVersion: 1, __data: {} })).toBe(false);
+      expect(isBlockStorage({ [BLOCK_STORAGE_KEY]: 'wrong', __dataVersion: 'v1', __data: {} })).toBe(false);
     });
   });
 
@@ -69,7 +69,7 @@ describe('BlockStorage', () => {
     it('should create storage with discriminator key and default values', () => {
       const storage = createBlockStorage();
       expect(storage[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(storage.__dataVersion).toBe(1);
+      expect(storage.__dataVersion).toBe('v1');
       expect(storage.__data).toEqual({});
     });
 
@@ -77,21 +77,21 @@ describe('BlockStorage', () => {
       const data = { numbers: [1, 2, 3] };
       const storage = createBlockStorage(data);
       expect(storage[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(storage.__dataVersion).toBe(1);
+      expect(storage.__dataVersion).toBe('v1');
       expect(storage.__data).toEqual(data);
     });
 
     it('should create storage with custom version', () => {
-      const storage = createBlockStorage({ foo: 'bar' }, 5);
+      const storage = createBlockStorage({ foo: 'bar' }, 'v5');
       expect(storage[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(storage.__dataVersion).toBe(5);
+      expect(storage.__dataVersion).toBe('v5');
       expect(storage.__data).toEqual({ foo: 'bar' });
     });
   });
 
   describe('normalizeBlockStorage', () => {
     it('should return BlockStorage as-is', () => {
-      const storage = createBlockStorage({ data: 'test' }, 2);
+      const storage = createBlockStorage({ data: 'test' }, 'v2');
       const normalized = normalizeBlockStorage(storage);
       expect(normalized).toEqual(storage);
     });
@@ -100,52 +100,52 @@ describe('BlockStorage', () => {
       const legacyData = { numbers: [1, 2, 3], name: 'test' };
       const normalized = normalizeBlockStorage(legacyData);
       expect(normalized[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(normalized.__dataVersion).toBe(1);
+      expect(normalized.__dataVersion).toBe('v1');
       expect(normalized.__data).toEqual(legacyData);
     });
 
     it('should wrap primitive legacy data', () => {
       const normalized = normalizeBlockStorage('simple string');
       expect(normalized[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(normalized.__dataVersion).toBe(1);
+      expect(normalized.__dataVersion).toBe('v1');
       expect(normalized.__data).toBe('simple string');
     });
 
     it('should wrap null legacy data', () => {
       const normalized = normalizeBlockStorage(null);
       expect(normalized[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(normalized.__dataVersion).toBe(1);
+      expect(normalized.__dataVersion).toBe('v1');
       expect(normalized.__data).toBeNull();
     });
   });
 
   describe('Data access functions', () => {
-    const storage = createBlockStorage({ count: 42 }, 3);
+    const storage = createBlockStorage({ count: 42 }, 'v3');
 
     it('getStorageData should return the data', () => {
       expect(getStorageData(storage)).toEqual({ count: 42 });
     });
 
     it('getStorageDataVersion should return the version', () => {
-      expect(getStorageDataVersion(storage)).toBe(3);
+      expect(getStorageDataVersion(storage)).toBe('v3');
     });
 
     it('updateStorageData should return new storage with updated data', () => {
       const newStorage = updateStorageData(storage, { operation: 'update-data', value: { count: 100 } });
       expect(newStorage.__data).toEqual({ count: 100 });
-      expect(newStorage.__dataVersion).toBe(3);
+      expect(newStorage.__dataVersion).toBe('v3');
       expect(newStorage[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
       // Original should be unchanged
       expect(storage.__data).toEqual({ count: 42 });
     });
 
     it('updateStorageDataVersion should return new storage with updated version', () => {
-      const newStorage = updateStorageDataVersion(storage, 5);
-      expect(newStorage.__dataVersion).toBe(5);
+      const newStorage = updateStorageDataVersion(storage, 'v5');
+      expect(newStorage.__dataVersion).toBe('v5');
       expect(newStorage.__data).toEqual({ count: 42 });
       expect(newStorage[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
       // Original should be unchanged
-      expect(storage.__dataVersion).toBe(3);
+      expect(storage.__dataVersion).toBe('v3');
     });
   });
 
@@ -189,14 +189,14 @@ describe('BlockStorage', () => {
   });
 
   describe('Generic storage access', () => {
-    const storage = createBlockStorage('hello', 2);
+    const storage = createBlockStorage('hello', 'v2');
 
     it('getFromStorage should get __data', () => {
       expect(getFromStorage(storage, '__data')).toBe('hello');
     });
 
     it('getFromStorage should get __dataVersion', () => {
-      expect(getFromStorage(storage, '__dataVersion')).toBe(2);
+      expect(getFromStorage(storage, '__dataVersion')).toBe('v2');
     });
 
     it('updateStorage should update any key', () => {
@@ -212,7 +212,7 @@ describe('BlockStorage', () => {
         const storage = createBlockStorage('old');
         const result = defaultBlockStorageHandlers.transformStateForStorage(storage, 'new');
         expect(result.__data).toBe('new');
-        expect(result.__dataVersion).toBe(1);
+        expect(result.__dataVersion).toBe('v1');
       });
 
       it('deriveStateForArgs should return data directly', () => {
@@ -222,8 +222,8 @@ describe('BlockStorage', () => {
 
       it('migrateStorage should update version only', () => {
         const storage = createBlockStorage({ data: 'test' });
-        const result = defaultBlockStorageHandlers.migrateStorage(storage, 1, 3);
-        expect(result.__dataVersion).toBe(3);
+        const result = defaultBlockStorageHandlers.migrateStorage(storage, 'v1', 'v3');
+        expect(result.__dataVersion).toBe('v3');
         expect(result.__data).toEqual({ data: 'test' });
       });
     });
@@ -242,7 +242,7 @@ describe('BlockStorage', () => {
         const customTransform = <T>(storage: ReturnType<typeof createBlockStorage<T>>, data: T) => ({
           ...storage,
           __data: data,
-          __dataVersion: storage.__dataVersion + 1,
+          __dataVersion: `${storage.__dataVersion}-next`,
         });
 
         const handlers = mergeBlockStorageHandlers({
