@@ -56,15 +56,15 @@ export type DataMigrationResult<T> = DataVersioned<T> & {
 };
 
 /** Thrown by recover() to signal unrecoverable data. */
-export class DataUnrecoverable extends Error {
-  name = 'DataUnrecoverable';
+export class DataUnrecoverableError extends Error {
+  name = 'DataUnrecoverableError';
   constructor(dataVersion: DataVersionKey) {
     super(`Unknown version '${dataVersion}'`);
   }
 }
 
-export function isDataUnrecoverable(error: unknown): error is DataUnrecoverable {
-  return error instanceof Error && error.name === 'DataUnrecoverable';
+export function isDataUnrecoverableError(error: unknown): error is DataUnrecoverableError {
+  return error instanceof Error && error.name === 'DataUnrecoverableError';
 }
 
 type MigrationStep = {
@@ -73,8 +73,9 @@ type MigrationStep = {
   migrate: (data: unknown) => unknown;
 };
 
-const defaultRecover: DataRecoverFn<never> = (version) => {
-  throw new DataUnrecoverable(version);
+/** Default recover function for unknown versions */
+export const defaultRecover: DataRecoverFn<never> = (version, _data) => {
+  throw new DataUnrecoverableError(version);
 };
 
 /** Internal builder for chaining migrations */
@@ -173,13 +174,19 @@ class DataModelBuilder<
  *   .from<VersionedData>(Version.V1)
  *   .migrate(Version.V2, (data) => ({ ...data, labels: [] }))
  *   .migrate(Version.V3, (data) => ({ ...data, description: '' }))
+ *   .recover((version, data) => {
+ *     if (version === 'legacy' && typeof data === 'object' && data !== null && 'numbers' in data) {
+ *       return { numbers: (data as { numbers: number[] }).numbers, labels: [], description: '' };
+ *     }
+ *     return defaultRecover(version, data);
+ *   })
  *   .create(() => ({ numbers: [], labels: [], description: '' }));
  */
 export class DataModel<State> {
   private readonly versionChain: DataVersionKey[];
   private readonly steps: MigrationStep[];
-  private readonly _initialData: () => State;
-  private readonly _recover: DataRecoverFn<State>;
+  private readonly initialDataFn: () => State;
+  private readonly recoverFn: DataRecoverFn<State>;
 
   private constructor(
     versionChain: DataVersionKey[],
@@ -192,8 +199,8 @@ export class DataModel<State> {
     }
     this.versionChain = versionChain;
     this.steps = steps;
-    this._initialData = initialData;
-    this._recover = recover;
+    this.initialDataFn = initialData;
+    this.recoverFn = recover;
   }
 
   /** Start a migration chain from an initial type */
@@ -233,19 +240,19 @@ export class DataModel<State> {
 
   /** Get initial data */
   initialData(): State {
-    return this._initialData();
+    return this.initialDataFn();
   }
 
   /** Get default data wrapped with current version */
   getDefaultData(): DataVersioned<State> {
-    return makeDataVersioned(this.version, this._initialData());
+    return makeDataVersioned(this.version, this.initialDataFn());
   }
 
   private recoverFrom(data: unknown, version: DataVersionKey): DataMigrationResult<State> {
     try {
-      return { version: this.version, data: this._recover(version, data) };
+      return { version: this.version, data: this.recoverFn(version, data) };
     } catch (error) {
-      if (isDataUnrecoverable(error)) {
+      if (isDataUnrecoverableError(error)) {
         return { ...this.getDefaultData(), warning: error.message };
       }
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -300,7 +307,7 @@ export class DataModel<State> {
    * - `__pl_storage_initial`: returns initial BlockStorage as JSON string
    */
   registerCallbacks(): void {
-    tryRegisterCallback('__pl_data_initial', () => this._initialData());
+    tryRegisterCallback('__pl_data_initial', () => this.initialDataFn());
     tryRegisterCallback('__pl_data_migrate', (versioned: DataVersioned<unknown>) => this.migrate(versioned));
     tryRegisterCallback('__pl_storage_initial', () => {
       const { version, data } = this.getDefaultData();

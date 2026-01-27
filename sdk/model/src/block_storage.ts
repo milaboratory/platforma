@@ -80,7 +80,7 @@ export function isBlockStorage(value: unknown): value is BlockStorage {
  * Creates a BlockStorage with the given initial data
  *
  * @param initialData - The initial data value (defaults to empty object)
- * @param version - The initial data version key (defaults to 'v1')
+ * @param version - The initial data version key (defaults to DATA_MODEL_DEFAULT_VERSION)
  * @returns A new BlockStorage instance with discriminator key
  */
 export function createBlockStorage<TState = unknown>(

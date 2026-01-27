@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BLOCK_STORAGE_KEY,
   BLOCK_STORAGE_SCHEMA_VERSION,
+  DATA_MODEL_DEFAULT_VERSION,
   createBlockStorage,
   defaultBlockStorageHandlers,
   getFromStorage,
@@ -69,7 +70,7 @@ describe('BlockStorage', () => {
     it('should create storage with discriminator key and default values', () => {
       const storage = createBlockStorage();
       expect(storage[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(storage.__dataVersion).toBe('v1');
+      expect(storage.__dataVersion).toBe(DATA_MODEL_DEFAULT_VERSION);
       expect(storage.__data).toEqual({});
     });
 
@@ -77,7 +78,7 @@ describe('BlockStorage', () => {
       const data = { numbers: [1, 2, 3] };
       const storage = createBlockStorage(data);
       expect(storage[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(storage.__dataVersion).toBe('v1');
+      expect(storage.__dataVersion).toBe(DATA_MODEL_DEFAULT_VERSION);
       expect(storage.__data).toEqual(data);
     });
 
@@ -100,21 +101,21 @@ describe('BlockStorage', () => {
       const legacyData = { numbers: [1, 2, 3], name: 'test' };
       const normalized = normalizeBlockStorage(legacyData);
       expect(normalized[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(normalized.__dataVersion).toBe('v1');
+      expect(normalized.__dataVersion).toBe(DATA_MODEL_DEFAULT_VERSION);
       expect(normalized.__data).toEqual(legacyData);
     });
 
     it('should wrap primitive legacy data', () => {
       const normalized = normalizeBlockStorage('simple string');
       expect(normalized[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(normalized.__dataVersion).toBe('v1');
+      expect(normalized.__dataVersion).toBe(DATA_MODEL_DEFAULT_VERSION);
       expect(normalized.__data).toBe('simple string');
     });
 
     it('should wrap null legacy data', () => {
       const normalized = normalizeBlockStorage(null);
       expect(normalized[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(normalized.__dataVersion).toBe('v1');
+      expect(normalized.__dataVersion).toBe(DATA_MODEL_DEFAULT_VERSION);
       expect(normalized.__data).toBeNull();
     });
   });
@@ -212,7 +213,7 @@ describe('BlockStorage', () => {
         const storage = createBlockStorage('old');
         const result = defaultBlockStorageHandlers.transformStateForStorage(storage, 'new');
         expect(result.__data).toBe('new');
-        expect(result.__dataVersion).toBe('v1');
+        expect(result.__dataVersion).toBe(DATA_MODEL_DEFAULT_VERSION);
       });
 
       it('deriveStateForArgs should return data directly', () => {

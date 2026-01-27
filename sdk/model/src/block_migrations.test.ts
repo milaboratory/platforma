@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { DataModel, DataUnrecoverable, defineDataVersions, makeDataVersioned } from './block_migrations';
+import {
+  DataModel,
+  defaultRecover,
+  defineDataVersions,
+  makeDataVersioned,
+} from './block_migrations';
 
 describe('defineDataVersions', () => {
   it('throws on duplicate version values', () => {
@@ -78,7 +83,7 @@ describe('DataModel migrations', () => {
         if (version === 'legacy' && typeof data === 'object' && data !== null && 'count' in data) {
           return { count: (data as { count: number }).count, label: 'recovered' };
         }
-        throw new DataUnrecoverable(version);
+        return defaultRecover(version, data);
       })
       .create(() => ({ count: 0, label: '' }));
 
@@ -86,6 +91,29 @@ describe('DataModel migrations', () => {
     expect(result.version).toBe('v2');
     expect(result.data).toStrictEqual({ count: 7, label: 'recovered' });
     expect(result.warning).toBeUndefined();
+  });
+
+  it('allows recover() to delegate to defaultRecover', () => {
+    const Version = {
+      V1: 'v1',
+      V2: 'v2',
+    } as const;
+
+    type VersionedData = {
+      [Version.V1]: { count: number };
+      [Version.V2]: { count: number; label: string };
+    };
+
+    const dataModel = DataModel
+      .from<VersionedData>(Version.V1)
+      .migrate(Version.V2, (v1) => ({ ...v1, label: '' }))
+      .recover((version, data) => defaultRecover(version, data))
+      .create(() => ({ count: 0, label: '' }));
+
+    const result = dataModel.migrate(makeDataVersioned('legacy', { count: 7 }));
+    expect(result.version).toBe('v2');
+    expect(result.data).toStrictEqual({ count: 0, label: '' });
+    expect(result.warning).toBe(`Unknown version 'legacy'`);
   });
 
   it('returns initial data on migration failure', () => {
