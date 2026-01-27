@@ -4,7 +4,7 @@ import type {
 } from '@platforma-sdk/model';
 import {
   BlockModelV3,
-  DataModel,
+  DataModelBuilder,
   defineDataVersions,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
@@ -42,8 +42,8 @@ type VersionedData = {
 };
 
 // Define data model with migrations from v1 to current
-const dataModel = DataModel
-  .from<VersionedData>(Version.Initial)
+const dataModel = new DataModelBuilder<VersionedData>()
+  .from(Version.Initial)
   // Migration v1 → v2: sort numbers and add labels
   // Throws if numbers contain 666 (for testing migration failure recovery)
   .migrate(Version.AddedLabels, (data) => {
@@ -56,7 +56,7 @@ const dataModel = DataModel
   .migrate(Version.AddedDescription, (data) => {
     return { ...data, description: `Migrated: ${data.labels.join(', ')}` };
   })
-  .create<BlockData>(() => ({ numbers: [], labels: [], description: '' }));
+  .init(() => ({ numbers: [], labels: [], description: '' }));
 
 export const platforma = BlockModelV3
   .create({ dataModel, renderingMode: 'Heavy' })
