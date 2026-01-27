@@ -1,5 +1,16 @@
 # @milaboratories/pl-middle-layer
 
+## 1.46.9
+
+### Patch Changes
+
+- a748b92: Updated the migrations for DataModel
+- Updated dependencies [a748b92]
+  - @milaboratories/pl-model-middle-layer@1.10.3
+  - @platforma-sdk/model@1.53.1
+  - @milaboratories/pf-driver@1.0.29
+  - @platforma-sdk/block-tools@2.6.34
+
 ## 1.46.8
 
 ### Patch Changes
