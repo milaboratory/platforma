@@ -522,7 +522,7 @@ export class DataModel<State> {
    */
   registerCallbacks(): void {
     tryRegisterCallback('__pl_data_initial', () => this.initialDataFn());
-    tryRegisterCallback('__pl_data_migrate', (versioned: DataVersioned<unknown>) => this.migrate(versioned));
+    tryRegisterCallback('__pl_data_upgrade', (versioned: DataVersioned<unknown>) => this.migrate(versioned));
     tryRegisterCallback('__pl_storage_initial', () => {
       const { version, data } = this.getDefaultData();
       const storage = createBlockStorage(data, version);
