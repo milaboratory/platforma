@@ -23,7 +23,7 @@ export type TypeSpec = {
  * Unary mathematical operation kinds.
  *
  * These operations take a single numeric input and produce a numeric output.
- * **Null handling**: If input is null/NaN, result is null.
+ * **Null handling**: If input is null, result is null.
  *
  * Operations:
  * - `abs` - Absolute value: |x|
@@ -37,7 +37,7 @@ export type TypeSpec = {
  * - `exp` - Exponential function (e^x)
  * - `negate` - Negation (-x)
  */
-export type UnaryMathOperand = 'abs' | 'ceil' | 'floor' | 'round' | 'sqrt' | 'log' | 'log2' | 'log10' | 'exp' | 'negate';
+export type NumericUnaryOperand = 'abs' | 'ceil' | 'floor' | 'round' | 'sqrt' | 'log' | 'log2' | 'log10' | 'exp' | 'negate';
 
 /**
  * Binary mathematical operation kinds.
@@ -52,13 +52,13 @@ export type UnaryMathOperand = 'abs' | 'ceil' | 'floor' | 'round' | 'sqrt' | 'lo
  * - `div` - Division: left / right (division by zero returns Infinity or NaN)
  * - `mod` - Modulo: left % right
  */
-export type BinaryMathOperand = 'add' | 'sub' | 'mul' | 'div' | 'mod';
+export type NumericBinaryOperand = 'add' | 'sub' | 'mul' | 'div' | 'mod';
 
 /**
  * Numeric comparison operation kinds.
  *
  * These operations compare two numeric inputs and produce a boolean result.
- * **Null handling**: If either operand is null, result is null (three-valued logic).
+ * **Null handling**: If either operand is null, result is null.
  *
  * Operations:
  * - `eq` - Equal: left == right
@@ -127,12 +127,12 @@ export type ExprConstant = {
  * // Natural log of expression
  * { type: 'unaryMath', operand: 'log', input: someExpr }
  *
- * @see UnaryMathOperand for available operations
+ * @see NumericUnaryOperand for available operations
  */
-export interface ExprUnaryMath<I> {
-  type: 'unaryMath';
+export interface ExprNumericUnary<I> {
+  type: 'numericUnary';
   /** The mathematical operation to apply */
-  operand: UnaryMathOperand;
+  operand: NumericUnaryOperand;
   /** Input expression (must evaluate to numeric) */
   input: I;
 }
@@ -154,12 +154,12 @@ export interface ExprUnaryMath<I> {
  * // Division: col_a / 2
  * { type: 'binaryMath', operand: 'div', left: colA, right: { type: 'constant', value: 2 } }
  *
- * @see BinaryMathOperand for available operations
+ * @see NumericBinaryOperand for available operations
  */
-export interface ExprBinaryMath<I> {
-  type: 'binaryMath';
+export interface ExprNumericBinary<I> {
+  type: 'numericBinary';
   /** The arithmetic operation to apply */
-  operand: BinaryMathOperand;
+  operand: NumericBinaryOperand;
   /** Left operand expression */
   left: I;
   /** Right operand expression */
@@ -172,7 +172,7 @@ export interface ExprBinaryMath<I> {
  * Compares two numeric expressions and produces a boolean result.
  * **Input**: Two expressions that evaluate to numeric values.
  * **Output**: Boolean.
- * **Null handling**: If either operand is null, result is null (three-valued logic).
+ * **Null handling**: If either operand is null, result is null.
  *
  * @template I - The expression type (for recursion)
  *
@@ -202,9 +202,9 @@ export interface ExprNumericComparison<I> {
 }
 
 /**
- * Case-insensitive string equality check.
+ * String equality check.
  *
- * Compares input string to a reference value, ignoring case.
+ * Compares input string to a reference value.
  * **Input**: Expression evaluating to a string.
  * **Output**: Boolean.
  * **Null handling**: Returns false if input is null.
@@ -212,16 +212,23 @@ export interface ExprNumericComparison<I> {
  * @template I - The expression type (for recursion)
  *
  * @example
+ * // Check if name equals "John" (case-sensitive)
+ * // Matches only: "John"
+ * { type: 'stringEquals', input: nameColumn, value: 'John' }
+ *
+ * @example
  * // Check if name equals "John" (case-insensitive)
  * // Matches: "john", "JOHN", "John", "jOhN"
- * { type: 'stringEquals', input: nameColumn, value: 'John' }
+ * { type: 'stringEquals', input: nameColumn, value: 'John', caseInsensitive: true }
  */
 export interface ExprStringEquals<I> {
   type: 'stringEquals';
   /** Input expression (must evaluate to string) */
   input: I;
-  /** Reference string to compare against (case-insensitive) */
+  /** Reference string to compare against */
   value: string;
+  /** If true, comparison ignores case */
+  caseInsensitive: boolean;
 }
 
 /**
@@ -240,6 +247,8 @@ export interface ExprStringEquals<I> {
  *
  * // Check if starts with "prefix"
  * { type: 'stringRegex', input: valueColumn, value: '^prefix' }
+ *
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions | MDN Regular Expressions Guide}
  */
 export interface ExprStringRegex<I> {
   type: 'stringRegex';
@@ -342,17 +351,16 @@ export interface ExprStringContainsFuzzy<I> {
  * Negates a boolean expression.
  * **Input**: Expression evaluating to boolean.
  * **Output**: Boolean (inverted).
- * **Null handling**: NOT null = null (three-valued logic).
+ * **Null handling**: NOT null = null.
  *
  * @template I - The expression type (for recursion)
  *
  * @example
  * // NOT (value > 10)
- * { type: 'logical', operand: 'not', input: comparisonExpr }
+ * { type: 'not', input: comparisonExpr }
  */
 export interface ExprLogicalUnary<I> {
-  type: 'logical';
-  operand: 'not';
+  type: 'not';
   /** Input boolean expression to negate */
   input: I;
 }
@@ -364,25 +372,22 @@ export interface ExprLogicalUnary<I> {
  * **Input**: Array of expressions evaluating to boolean (minimum 2).
  * **Output**: Boolean.
  *
- * **Null handling** (three-valued logic):
+ * **Null handling**
  * - AND: null AND true = null, null AND false = false
  * - OR: null OR true = true, null OR false = null
- *
- * **Short-circuit evaluation**: AND stops at first false, OR stops at first true.
  *
  * @template I - The expression type (for recursion)
  *
  * @example
  * // (a > 0) AND (b < 100)
- * { type: 'logical', operand: 'and', input: [exprA, exprB] }
+ * { type: 'and', input: [exprA, exprB] }
  *
  * // (status == 'active') OR (status == 'pending')
- * { type: 'logical', operand: 'or', input: [statusActive, statusPending] }
+ * { type: 'or', input: [statusActive, statusPending] }
  */
 export interface ExprLogicalVariadic<I> {
-  type: 'logical';
   /** Logical operation: 'and' or 'or' */
-  operand: 'and' | 'or';
+  type: 'and' | 'or';
   /** Array of boolean expressions to combine (minimum 2 elements) */
   input: I[];
 }
@@ -393,7 +398,7 @@ export interface ExprLogicalVariadic<I> {
  * Tests if a value is present in a predefined set of values.
  * **Input**: Expression evaluating to string or number.
  * **Output**: Boolean.
- * **Null handling**: Returns false if input is null (or true if negated).
+ * **Null handling**: Returns false if input is null.
  *
  * @template I - The expression type (for recursion)
  * @template T - The type of set elements (string or number)
@@ -403,16 +408,7 @@ export interface ExprLogicalVariadic<I> {
  * {
  *   type: 'isIn',
  *   input: statusColumn,
- *   set: ['active', 'pending', 'review'],
- *   negate: false
- * }
- *
- * // Check if id is NOT in [1, 2, 3]
- * {
- *   type: 'isIn',
- *   input: idColumn,
- *   set: [1, 2, 3],
- *   negate: true
+ *   set: ['active', 'pending', 'review']
  * }
  */
 export interface ExprIsIn<I, T extends string | number> {
@@ -421,8 +417,6 @@ export interface ExprIsIn<I, T extends string | number> {
   input: I;
   /** Set of allowed values */
   set: T[];
-  /** If true, checks that value is NOT in set */
-  negate: boolean;
 }
 
 // ============ Generic Query Types ============
@@ -473,33 +467,6 @@ export interface QueryColumnSelector<C> {
   type: 'column';
   /** Column identifier (name or index depending on context) */
   id: C;
-}
-
-/**
- * Axis filter for slicing data along an axis.
- *
- * Filters an axis to a specific constant value, effectively
- * reducing the dimensionality of the data by one.
- * The filtered axis is removed from the resulting spec.
- *
- * @template A - Axis selector type
- *
- * @example
- * // Filter "sample" axis to "Sample1"
- * // Before: data has shape [sample, gene] = [3, 1000]
- * // After: data has shape [gene] = [1000] (sample dimension removed)
- * {
- *   type: 'constant',
- *   axisSelector: { type: 'axis', id: 'sample' },
- *   constant: 'Sample1'
- * }
- */
-export interface QueryAxisFilter<A> {
-  type: 'constant';
-  /** The constant value to filter the axis to */
-  constant: string | number;
-  /** Selector identifying which axis to filter */
-  axisSelector: A;
 }
 
 /**
@@ -604,7 +571,12 @@ export interface QuerySliceAxes<Q, A> {
   /** Input query to slice */
   input: Q;
   /** List of axis filters to apply (at least one required) */
-  axisFilters: QueryAxisFilter<A>[];
+  axisFilters: {
+    /** Selector identifying which axis to filter */
+    axisSelector: A;
+    /** The constant value to filter the axis to */
+    constant: string | number;
+  }[];
 }
 
 /**

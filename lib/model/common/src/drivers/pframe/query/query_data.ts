@@ -1,14 +1,16 @@
 import type { PObjectId } from '../../../pool';
 import type {
-  ExprBinaryMath,
+  ExprNumericBinary,
   ExprConstant,
   ExprIsIn,
   ExprLogicalUnary,
-  ExprLogicalVariadic, ExprStringContains,
+  ExprLogicalVariadic,
+  ExprStringContains,
   ExprStringContainsFuzzy,
   ExprStringEquals,
   ExprStringRegex,
-  ExprUnaryMath, QueryAxisSelector,
+  ExprNumericUnary,
+  QueryAxisSelector,
   QueryColumn,
   QueryColumnSelector,
   QueryCrossJoinColumn,
@@ -88,7 +90,7 @@ export interface ExprColumnRefData { type: 'columnRef'; value: number }
 
 export type QueryExpressionData =
   | ExprColumnRefData | ExprAxisRefData | ExprConstant
-  | ExprBinaryMath<QueryExpressionData> | ExprUnaryMath<QueryExpressionData>
+  | ExprNumericBinary<QueryExpressionData> | ExprNumericUnary<QueryExpressionData>
   | ExprStringEquals<QueryExpressionData> | ExprStringContains<QueryExpressionData> | ExprStringRegex<QueryExpressionData> | ExprStringContainsFuzzy<QueryExpressionData>
   | ExprLogicalUnary<QueryExpressionData> | ExprLogicalVariadic<QueryExpressionData>
   | ExprIsIn<QueryExpressionData, string> | ExprIsIn<QueryExpressionData, number>
