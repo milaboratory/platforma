@@ -8,3 +8,5 @@ export * from './table';
 
 export * from './pframe';
 export * from './http_helpers';
+
+export type { SingleAxisSelector } from '@milaboratories/pl-model-common';

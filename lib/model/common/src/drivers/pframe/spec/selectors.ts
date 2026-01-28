@@ -1,5 +1,5 @@
 import { isPColumnSpec, type PObjectSpec } from '../../../pool';
-import type { AxisId, PColumnSpec, ValueType } from './spec';
+import type { AxisId, AxisValueType, Domain, PColumnSpec, ValueType } from './spec';
 import { getAxisId } from './spec';
 
 /**
@@ -35,6 +35,18 @@ export interface AxisSelector {
    * An axis with additional domain entries not present in this selector will still match.
    */
   domain?: Record<string, string>;
+}
+
+/** Single axis selector */
+export interface SingleAxisSelector {
+  /** Axis name (required) */
+  name: string;
+  /** Axis type (optional) */
+  type?: AxisValueType;
+  /** Domain requirements (optional) */
+  domain?: Domain;
+  /** Parent axes requirements (optional) */
+  parentAxes?: SingleAxisSelector[];
 }
 
 /**

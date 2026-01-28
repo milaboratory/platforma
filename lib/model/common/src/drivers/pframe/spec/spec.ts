@@ -20,6 +20,9 @@ export const ValueType = {
   Bytes: 'Bytes',
 } as const;
 
+export type AxisValueType = Extract<ValueType, 'Int' | 'Long' | 'String'>;
+export type ColumnValueType = ValueType;
+
 /** PFrame columns and axes within them may store one of these types. */
 export type ValueType = (typeof ValueType)[keyof typeof ValueType];
 
