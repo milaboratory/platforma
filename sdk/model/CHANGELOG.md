@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.53.2
+
+### Patch Changes
+
+- 57799dd: Change DataModel creation interface
+
 ## 1.53.1
 
 ### Patch Changes
