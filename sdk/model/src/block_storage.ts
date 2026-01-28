@@ -105,7 +105,13 @@ export function createBlockStorage<TState = unknown>(
 export function normalizeBlockStorage<TState = unknown>(raw: unknown): BlockStorage<TState> {
   if (isBlockStorage(raw)) {
     const storage = raw as BlockStorage<TState>;
-    return { ...storage, __dataVersion: String(storage.__dataVersion) };
+    return {
+      ...storage,
+      // Fix for early released version where __dataVersion was a number
+      __dataVersion: typeof storage.__dataVersion === 'number'
+        ? DATA_MODEL_DEFAULT_VERSION
+        : storage.__dataVersion,
+    };
   }
   // Legacy format: raw is the state directly
   return createBlockStorage(raw as TState);
