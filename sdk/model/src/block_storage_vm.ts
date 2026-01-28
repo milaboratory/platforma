@@ -14,7 +14,7 @@
  *
  * Callbacks registered by DataModel.registerCallbacks():
  * - `__pl_data_initial`: () => initial data
- * - `__pl_data_migrate`: (versioned) => DataMigrationResult
+ * - `__pl_data_upgrade`: (versioned) => DataMigrationResult
  * - `__pl_storage_initial`: () => initial BlockStorage as JSON string
  *
  * @module block_storage_vm
@@ -178,7 +178,7 @@ interface DataMigrationResult {
  * Runs storage migration using the DataModel's migrate callback.
  * This is the main entry point for the middle layer to trigger migrations.
  *
- * Uses the '__pl_data_migrate' callback registered by DataModel.registerCallbacks() which:
+ * Uses the '__pl_data_upgrade' callback registered by DataModel.registerCallbacks() which:
  * - Handles all migration logic internally
  * - Returns { version, data, warning? } - warning present if reset to initial data
  *
@@ -206,9 +206,9 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
   };
 
   // Get the migrate callback (registered by DataModel.registerCallbacks())
-  const migrateCallback = ctx.callbackRegistry['__pl_data_migrate'] as ((v: { version: string; data: unknown }) => DataMigrationResult) | undefined;
+  const migrateCallback = ctx.callbackRegistry['__pl_data_upgrade'] as ((v: { version: string; data: unknown }) => DataMigrationResult) | undefined;
   if (typeof migrateCallback !== 'function') {
-    return { error: '__pl_data_migrate callback not found (DataModel not registered)' };
+    return { error: '__pl_data_upgrade callback not found (DataModel not registered)' };
   }
 
   // Call the migrator's migrate function

@@ -5,6 +5,7 @@ export * from './builder';
 export { BlockModelV3 } from './block_model';
 export {
   DataModel,
+  DataModelBuilder,
   DataUnrecoverableError,
   isDataUnrecoverableError,
   defineDataVersions,
