@@ -1,5 +1,5 @@
 import { tryRegisterCallback } from './internal';
-import { createBlockStorage, DATA_MODEL_DEFAULT_VERSION } from './block_storage';
+import { createBlockStorage } from './block_storage';
 
 export type DataVersionKey = string;
 export type DataVersionMap = Record<string, unknown>;
@@ -148,7 +148,9 @@ class DataModelBuilderWithRecover<
   init<S extends VersionedData[CurrentVersion]>(
     initialData: DataCreateFn<S>,
     // Compile-time check: S must have exactly the same keys as VersionedData[CurrentVersion]
-    ..._noExtraKeys: Exclude<keyof S, keyof VersionedData[CurrentVersion]> extends never ? [] : [never]
+    ..._noExtraKeys: Exclude<keyof S, keyof VersionedData[CurrentVersion]> extends never
+      ? []
+      : [never]
   ): DataModel<VersionedData[CurrentVersion]> {
     return DataModel[FROM_BUILDER]<VersionedData[CurrentVersion]>({
       versionChain: this.versionChain,
@@ -176,7 +178,10 @@ class DataModelBuilderWithRecover<
 class DataModelMigrationChain<
   VersionedData extends DataVersionMap,
   CurrentVersion extends keyof VersionedData & string,
-  RemainingVersions extends keyof VersionedData & string = Exclude<keyof VersionedData & string, CurrentVersion>,
+  RemainingVersions extends keyof VersionedData & string = Exclude<
+    keyof VersionedData & string,
+    CurrentVersion
+  >,
 > {
   private readonly versionChain: DataVersionKey[];
   private readonly migrationSteps: MigrationStep[];
@@ -218,8 +223,16 @@ class DataModelMigrationChain<
       throw new Error(`Duplicate version '${nextVersion}' in migration chain`);
     }
     const fromVersion = this.versionChain[this.versionChain.length - 1];
-    const step: MigrationStep = { fromVersion, toVersion: nextVersion, migrate: fn as (data: unknown) => unknown };
-    return new DataModelMigrationChain<VersionedData, NextVersion, Exclude<RemainingVersions, NextVersion>>({
+    const step: MigrationStep = {
+      fromVersion,
+      toVersion: nextVersion,
+      migrate: fn as (data: unknown) => unknown,
+    };
+    return new DataModelMigrationChain<
+      VersionedData,
+      NextVersion,
+      Exclude<RemainingVersions, NextVersion>
+    >({
       versionChain: [...this.versionChain, nextVersion],
       steps: [...this.migrationSteps, step],
     });
@@ -276,7 +289,9 @@ class DataModelMigrationChain<
     this: DataModelMigrationChain<VersionedData, CurrentVersion, never>,
     initialData: DataCreateFn<S>,
     // Compile-time check: S must have exactly the same keys as VersionedData[CurrentVersion]
-    ..._noExtraKeys: Exclude<keyof S, keyof VersionedData[CurrentVersion]> extends never ? [] : [never]
+    ..._noExtraKeys: Exclude<keyof S, keyof VersionedData[CurrentVersion]> extends never
+      ? []
+      : [never]
   ): DataModel<VersionedData[CurrentVersion]> {
     return DataModel[FROM_BUILDER]<VersionedData[CurrentVersion]>({
       versionChain: this.versionChain,
@@ -322,7 +337,11 @@ export class DataModelBuilder<VersionedData extends DataVersionMap> {
    */
   from<InitialVersion extends keyof VersionedData & string>(
     initialVersion: InitialVersion,
-  ): DataModelMigrationChain<VersionedData, InitialVersion, Exclude<keyof VersionedData & string, InitialVersion>> {
+  ): DataModelMigrationChain<
+      VersionedData,
+      InitialVersion,
+      Exclude<keyof VersionedData & string, InitialVersion>
+    > {
     return new DataModelMigrationChain<
       VersionedData,
       InitialVersion,
@@ -335,19 +354,21 @@ export class DataModelBuilder<VersionedData extends DataVersionMap> {
  * DataModel defines the block's data structure, initial values, and migrations.
  * Used by BlockModelV3 to manage data state.
  *
- * Two ways to create a DataModel:
+ * Use `new DataModelBuilder<VersionedData>()` to create a DataModel:
  *
- * 1. **Simple (no migrations)** - Use `DataModel.create()`:
+ * **Simple (no migrations):**
  * @example
- * const dataModel = DataModel.create<BlockData>(() => ({
- *   numbers: [],
- *   labels: [],
- * }));
+ * const Version = defineDataVersions({ V1: DATA_MODEL_DEFAULT_VERSION });
+ * type VersionedData = { [Version.V1]: BlockData };
  *
- * 2. **With migrations** - Use `new DataModelBuilder<VersionedData>()`:
+ * const dataModel = new DataModelBuilder<VersionedData>()
+ *   .from(Version.V1)
+ *   .init(() => ({ numbers: [], labels: [] }));
+ *
+ * **With migrations:**
  * @example
  * const Version = defineDataVersions({
- *   V1: 'v1',
+ *   V1: DATA_MODEL_DEFAULT_VERSION,
  *   V2: 'v2',
  *   V3: 'v3',
  * });
@@ -394,31 +415,6 @@ export class DataModel<State> {
     this.steps = steps;
     this.initialDataFn = initialDataFn;
     this.recoverFn = recoverFn;
-  }
-
-  /**
-   * Create a DataModel with just initial data (no migrations).
-   *
-   * Use this for simple blocks that don't need version migrations.
-   * The version will be set to an internal default value.
-   *
-   * @typeParam S - The state type
-   * @param initialData - Factory function returning initial state
-   * @param version - Optional custom version key (defaults to internal version)
-   * @returns Finalized DataModel instance
-   *
-   * @example
-   * const dataModel = DataModel.create<BlockData>(() => ({
-   *   numbers: [],
-   *   labels: [],
-   * }));
-   */
-  static create<S>(initialData: () => S, version: DataVersionKey = DATA_MODEL_DEFAULT_VERSION): DataModel<S> {
-    return new DataModel<S>({
-      versionChain: [version],
-      steps: [],
-      initialDataFn: initialData,
-    });
   }
 
   /**
@@ -522,7 +518,9 @@ export class DataModel<State> {
    */
   registerCallbacks(): void {
     tryRegisterCallback('__pl_data_initial', () => this.initialDataFn());
-    tryRegisterCallback('__pl_data_upgrade', (versioned: DataVersioned<unknown>) => this.migrate(versioned));
+    tryRegisterCallback('__pl_data_upgrade', (versioned: DataVersioned<unknown>) =>
+      this.migrate(versioned),
+    );
     tryRegisterCallback('__pl_storage_initial', () => {
       const { version, data } = this.getDefaultData();
       const storage = createBlockStorage(data, version);

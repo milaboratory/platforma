@@ -151,166 +151,167 @@ packages:
 
 catalog:
   # Build
-  'typescript': ~5.6.3
-  'tslib': ~2.7.0
-  'tsconfig-paths': ^4.2.0
-  'tsup': ~8.3.5
-  'vite': ^6.3.5
-  'rollup': ^4.45.1
-  '@rollup/plugin-node-resolve': ^16.0.1
-  '@rollup/plugin-typescript': ^12.1.4
-  '@rollup/plugin-commonjs': ^28.0.6
-  'rollup-plugin-cleandir': ^3.0.0
-  '@rollup/plugin-json': ^6.1.0
-  'rollup-plugin-node-externals': ^8.0.0
-  'rollup-plugin-sourcemaps2': ^0.5.2
-  'vite-plugin-dts': ^4.5.3
-  'vite-plugin-css-injected-by-js': ^3.5.2
-  'tsc-alias': ^1.8.11
-  'yarpm': ^1.2.0
-  'ts-node': ^10.9.2
+  "typescript": ~5.6.3
+  "tslib": ~2.7.0
+  "tsconfig-paths": ^4.2.0
+  "tsup": ~8.3.5
+  "vite": ^6.3.5
+  "rollup": ^4.45.1
+  "@rollup/plugin-node-resolve": ^16.0.1
+  "@rollup/plugin-typescript": ^12.1.4
+  "@rollup/plugin-commonjs": ^28.0.6
+  "rollup-plugin-cleandir": ^3.0.0
+  "@rollup/plugin-json": ^6.1.0
+  "rollup-plugin-node-externals": ^8.0.0
+  "rollup-plugin-sourcemaps2": ^0.5.2
+  "vite-plugin-dts": ^4.5.3
+  "vite-plugin-css-injected-by-js": ^3.5.2
+  "tsc-alias": ^1.8.11
+  "yarpm": ^1.2.0
+  "ts-node": ^10.9.2
 
   # Build util / linters
 
-  '@protobuf-ts/plugin': &protobuf-ts 2.11.1
-  'openapi-typescript': '^7.10.0'
-  'openapi-fetch': '^0.15.0'
+  "@protobuf-ts/plugin": &protobuf-ts 2.11.1
+  "openapi-typescript": "^7.10.0"
+  "openapi-fetch": "^0.15.0"
 
-  '@changesets/cli': ^2.29.5
+  "@changesets/cli": ^2.29.5
 
-  'eslint': ^9.25.1
-  '@eslint/js': ^9.16.0
-  'typescript-eslint': ^8.17.0
-  'eslint-plugin-vue': '^9.26.0'
-  '@stylistic/eslint-plugin': ^2.11.0
-  'eslint-plugin-import': ^2.31.0
-  'eslint-plugin-n': ^17.12.0
-  'globals': ^15.13.0
+  "eslint": ^9.25.1
+  "@eslint/js": ^9.16.0
+  "typescript-eslint": ^8.17.0
+  "eslint-plugin-vue": "^9.26.0"
+  "@stylistic/eslint-plugin": ^2.11.0
+  "eslint-plugin-import": ^2.31.0
+  "eslint-plugin-n": ^17.12.0
+  "globals": ^15.13.0
+  "@zed-industries/vscode-langservers-extracted": ^4.10.7
 
-  'oclif': ^4.16.2
+  "oclif": ^4.16.2
 
-  'turbo': 2.5.3
+  "turbo": 2.5.3
 
-  'husky': ^9.1.7
+  "husky": ^9.1.7
 
-  '@vitejs/plugin-vue': ^5.2.3
+  "@vitejs/plugin-vue": ^5.2.3
 
-  'svgo': ^3.3.2
+  "svgo": ^3.3.2
 
-  'rimraf': ^6.0.1
+  "rimraf": ^6.0.1
 
   # Net
 
-  'undici': ~7.16.0
-  '@grpc/grpc-js': ~1.13.4
-  '@protobuf-ts/grpc-transport': *protobuf-ts
-  '@protobuf-ts/runtime': *protobuf-ts
-  '@protobuf-ts/runtime-rpc': *protobuf-ts
-  'https-proxy-agent': ^7.0.6
-  '@aws-sdk/client-s3': &aws-sdk-version 3.859.0
-  '@aws-sdk/lib-storage': *aws-sdk-version
+  "undici": ~7.16.0
+  "@grpc/grpc-js": ~1.13.4
+  "@protobuf-ts/grpc-transport": *protobuf-ts
+  "@protobuf-ts/runtime": *protobuf-ts
+  "@protobuf-ts/runtime-rpc": *protobuf-ts
+  "https-proxy-agent": ^7.0.6
+  "@aws-sdk/client-s3": &aws-sdk-version 3.859.0
+  "@aws-sdk/lib-storage": *aws-sdk-version
 
   # Util & other libs
 
-  'testcontainers': ^10.18.0
-  'utility-types': ^3.11.0
-  'denque': ^2.1.0
-  'lru-cache': ^11.2.2
-  'canonicalize': ~2.1.0
-  'long': ^5.3.2
-  'mime-types': ^2.1.35
-  'semver': ^7.7.2
+  "testcontainers": ^10.18.0
+  "utility-types": ^3.11.0
+  "denque": ^2.1.0
+  "lru-cache": ^11.2.2
+  "canonicalize": ~2.1.0
+  "long": ^5.3.2
+  "mime-types": ^2.1.35
+  "semver": ^7.7.2
 
-  'upath': ^2.0.1
-  'tar': ^7.4.3
-  'tar-fs': ^3.0.9
-  'decompress': ^4.2.1
-  'readline-sync': ^1.4.10
-  'ssh2': ^1.16.0
-  'json-stringify-safe': ^5.0.1
+  "upath": ^2.0.1
+  "tar": ^7.4.3
+  "tar-fs": ^3.0.9
+  "decompress": ^4.2.1
+  "readline-sync": ^1.4.10
+  "ssh2": ^1.16.0
+  "json-stringify-safe": ^5.0.1
 
-  'fs-extra': '^11.2.0'
+  "fs-extra": "^11.2.0"
 
-  'fast-json-patch': ^3.1.1
+  "fast-json-patch": ^3.1.1
 
-  'es-toolkit': ^1.39.10
+  "es-toolkit": ^1.39.10
 
   # dont upgrade, ask @dbolotin first
-  'zod': ~3.23.8
+  "zod": ~3.23.8
 
-  'yaml': ^2.8.0
+  "yaml": ^2.8.0
 
-  '@oclif/core': ^4.0.37
+  "@oclif/core": ^4.0.37
 
-  'winston': ^3.17.0
+  "winston": ^3.17.0
 
-  '@milaboratories/tengo-tester': ^1.6.4
-  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.109
+  "@milaboratories/tengo-tester": ^1.6.4
+  "@milaboratories/pframes-rs-node": &pframes-rs-version 1.0.109
 
-  'remeda': ^2.28.0
+  "remeda": ^2.28.0
 
-  'quickjs-emscripten': 0.31.0
+  "quickjs-emscripten": 0.31.0
 
   # UI
 
-  'vue': ^3.5.24
-  '@vueuse/core': ^13.3.0
-  '@vueuse/integrations': ^13.3.0
-  'vue-tsc': ^2.2.10
-  'sass': ~1.83.4
-  'vitepress': '1.5.0'
-  'highlight.js': '11.10.0'
-  'd3-scale': ^4.0.2
-  '@types/d3-scale': ^4.0.9
-  'd3-selection': ^3.0.0
-  '@types/d3-selection': ^3.0.11
-  'd3-array': ^3.0.0
-  '@types/d3-array': ^3.2.1
-  'd3-axis': ^3.0.0
-  '@types/d3-axis': ^3.0.6
-  'd3-format': ^3.1.0
-  '@types/d3-format': ^3.0.4
+  "vue": ^3.5.24
+  "@vueuse/core": ^13.3.0
+  "@vueuse/integrations": ^13.3.0
+  "vue-tsc": ^2.2.10
+  "sass": ~1.83.4
+  "vitepress": "1.5.0"
+  "highlight.js": "11.10.0"
+  "d3-scale": ^4.0.2
+  "@types/d3-scale": ^4.0.9
+  "d3-selection": ^3.0.0
+  "@types/d3-selection": ^3.0.11
+  "d3-array": ^3.0.0
+  "@types/d3-array": ^3.2.1
+  "d3-axis": ^3.0.0
+  "@types/d3-axis": ^3.0.6
+  "d3-format": ^3.1.0
+  "@types/d3-format": ^3.0.4
 
-  'ag-grid-enterprise': &ag-grid ~34.1.2
-  'ag-grid-vue3': *ag-grid
+  "ag-grid-enterprise": &ag-grid ~34.1.2
+  "ag-grid-vue3": *ag-grid
 
-  'monaco-editor': ^0.52.2
+  "monaco-editor": ^0.52.2
 
-  'sortablejs': ^1.15.6
-  '@types/sortablejs': ^1.15.6
+  "sortablejs": ^1.15.6
+  "@types/sortablejs": ^1.15.6
 
-  '@zip.js/zip.js': ^2.8.2
+  "@zip.js/zip.js": ^2.8.2
 
   # SW
 
-  '@milaboratories/software-pframes-conv': &pframes-version 2.2.9
-  '@platforma-open/milaboratories.software-small-binaries': ^2.0.1
-  '@platforma-open/milaboratories.software-test-utils': ^1.1.1
-  '@platforma-open/milaboratories.software-conda-empty': ^0.0.3
-  '@biowasm/aioli': ~3.2.1
+  "@milaboratories/software-pframes-conv": &pframes-version 2.2.9
+  "@platforma-open/milaboratories.software-small-binaries": ^2.0.1
+  "@platforma-open/milaboratories.software-test-utils": ^1.1.1
+  "@platforma-open/milaboratories.software-conda-empty": ^0.0.3
+  "@biowasm/aioli": ~3.2.1
 
-  '@platforma-open/milaboratories.runenv-python-3': 1.7.4
+  "@platforma-open/milaboratories.runenv-python-3": 1.7.4
 
   # Test
 
-  'vitest': &vitest-version ^4.0.16
-  '@vitest/coverage-istanbul': *vitest-version
-  '@faker-js/faker': ^9.2.0
-  'happy-dom': ^15.11.7
-  'jsdom': ^25.0.1
-  '@vue/test-utils': ^2.4.6
-  'resize-observer-polyfill': ^1.5.1
-  'dedent': ^1.7.0
+  "vitest": &vitest-version ^4.0.16
+  "@vitest/coverage-istanbul": *vitest-version
+  "@faker-js/faker": ^9.2.0
+  "happy-dom": ^15.11.7
+  "jsdom": ^25.0.1
+  "@vue/test-utils": ^2.4.6
+  "resize-observer-polyfill": ^1.5.1
+  "dedent": ^1.7.0
 
   # Types
 
-  '@types/json-stringify-safe': ^5.0.3
-  '@types/decompress': ^4.2.7
-  '@types/readline-sync': ^1.4.8
-  '@types/http-proxy': ^1.17.16
-  '@types/node': ~24.5.2
-  '@types/eslint__js': ^8.42.3
-  '@types/semver': ^7.7.0
-  '@types/mime-types': ^2.1.4
-  '@types/tar-fs': ^2.0.4
-  '@types/ssh2': ^1.15.5
+  "@types/json-stringify-safe": ^5.0.3
+  "@types/decompress": ^4.2.7
+  "@types/readline-sync": ^1.4.8
+  "@types/http-proxy": ^1.17.16
+  "@types/node": ~24.5.2
+  "@types/eslint__js": ^8.42.3
+  "@types/semver": ^7.7.0
+  "@types/mime-types": ^2.1.4
+  "@types/tar-fs": ^2.0.4
+  "@types/ssh2": ^1.15.5
