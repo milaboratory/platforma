@@ -4,6 +4,7 @@
 *.tgz
 .DS_Store
 .vscode/
+.claude/settings.local.json
 
 # Testing
 test_config.json
