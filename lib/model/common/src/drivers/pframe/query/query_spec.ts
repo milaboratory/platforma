@@ -1,5 +1,7 @@
 import type { PObjectId } from '../../../pool';
 import type {
+  ExprAxisRef,
+  ExprColumnRef,
   ExprNumericBinary,
   ExprConstant,
   ExprIsIn,
@@ -23,7 +25,7 @@ import type {
   QuerySortEntry,
   QuerySymmetricJoin,
 } from './query_common';
-import type { PColumnIdAndSpec, PColumnSpec, SingleAxisSelector } from '../spec';
+import type { Domain, PColumnIdAndSpec, PColumnSpec, SingleAxisSelector } from '../spec';
 
 /** Column type spec (id + type info, used in QueryData) */
 type ColumnIdAndSpec = {
@@ -44,7 +46,12 @@ export type SelectorSpec = AxisSelectorSpec | ColumnSelectorSpec;
 export type QuerySortEntrySpec = QuerySortEntry<SelectorSpec>;
 
 /** Join entry for spec layer (no mapping) */
-export type QueryJoinEntrySpec = QueryJoinEntry<QuerySpec>;
+export type QueryJoinEntrySpec = QueryJoinEntry<QuerySpec> & {
+  qualifications: {
+    axis: SingleAxisSelector;
+    additionalDomains: Domain;
+  }[];
+};
 
 /** Column reference */
 export type QueryColumnSpec = QueryColumn;
@@ -81,10 +88,10 @@ export type QuerySpec =
   | QuerySortSpec
   | QueryFilterSpec;
 
-/** Axis reference expression */
-export type ExprAxisRefSpec = { type: 'axisRef'; value: SingleAxisSelector };
-/** Column reference expression */
-export type ExprColumnRefSpec = { type: 'columnRef'; value: PObjectId };
+/** Axis reference expression (spec layer) */
+export type ExprAxisRefSpec = ExprAxisRef<SingleAxisSelector>;
+/** Column reference expression (spec layer) */
+export type ExprColumnRefSpec = ExprColumnRef<PObjectId>;
 
 export type QueryExpressionSpec =
   | ExprColumnRefSpec | ExprAxisRefSpec | ExprConstant

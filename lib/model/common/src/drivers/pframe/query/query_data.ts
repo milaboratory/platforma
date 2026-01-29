@@ -1,5 +1,7 @@
 import type { PObjectId } from '../../../pool';
 import type {
+  ExprAxisRef,
+  ExprColumnRef,
   ExprNumericBinary,
   ExprConstant,
   ExprIsIn,
@@ -45,7 +47,6 @@ export type QuerySortEntryData = QuerySortEntry<SelectorData>;
 /** Join entry for data layer (with mapping) */
 export interface QueryJoinEntryData extends QueryJoinEntry<QueryData> {
   axesMapping: number[];
-  columnsMapping: number[];
 }
 
 /** Column reference (data layer) */
@@ -84,9 +85,9 @@ export type QueryData =
   | QueryFilterData;
 
 /** Axis reference (data layer) */
-export interface ExprAxisRefData { type: 'axisRef'; value: number }
+export type ExprAxisRefData = ExprAxisRef<number>;
 /** Column reference (data layer) */
-export interface ExprColumnRefData { type: 'columnRef'; value: number }
+export type ExprColumnRefData = ExprColumnRef<number>;
 
 export type QueryExpressionData =
   | ExprColumnRefData | ExprAxisRefData | ExprConstant

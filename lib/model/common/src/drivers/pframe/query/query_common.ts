@@ -419,6 +419,50 @@ export interface ExprIsIn<I, T extends string | number> {
   set: T[];
 }
 
+// ============ Reference Expression Types ============
+
+/**
+ * Axis reference expression.
+ *
+ * References an axis value for use in expressions (filtering, sorting, etc.).
+ * The axis identifier type varies by context (spec vs data layer).
+ *
+ * @template A - Axis identifier type (e.g., SingleAxisSelector for spec, number for data)
+ *
+ * @example
+ * // Reference axis by selector (spec layer)
+ * { type: 'axisRef', value: { name: 'sample' } }
+ *
+ * // Reference axis by index (data layer)
+ * { type: 'axisRef', value: 0 }
+ */
+export interface ExprAxisRef<A> {
+  type: 'axisRef';
+  /** Axis identifier (selector or index depending on context) */
+  value: A;
+}
+
+/**
+ * Column reference expression.
+ *
+ * References a column value for use in expressions (filtering, arithmetic, etc.).
+ * The column identifier type varies by context (spec vs data layer).
+ *
+ * @template C - Column identifier type (e.g., PObjectId for spec, number for data)
+ *
+ * @example
+ * // Reference column by ID (spec layer)
+ * { type: 'columnRef', value: 'col_abc123' }
+ *
+ * // Reference column by index (data layer)
+ * { type: 'columnRef', value: 0 }
+ */
+export interface ExprColumnRef<C> {
+  type: 'columnRef';
+  /** Column identifier (ID or index depending on context) */
+  value: C;
+}
+
 // ============ Generic Query Types ============
 // A = Axis ID type, S = Selector type, Q = Query type, E = Expression type
 // AF = Axis filter type, SE = Sort entry type, JE = Join entry type, SO = Spec override type
