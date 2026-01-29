@@ -1,4 +1,11 @@
-import { BlockModelV3, DataModel, type InferHrefType, type InferOutputsType } from '@platforma-sdk/model';
+import {
+  BlockModelV3,
+  DATA_MODEL_DEFAULT_VERSION,
+  DataModelBuilder,
+  defineDataVersions,
+  type InferHrefType,
+  type InferOutputsType,
+} from '@platforma-sdk/model';
 
 export type BlockData = {
   titleArgs: string;
@@ -6,7 +13,13 @@ export type BlockData = {
 
 export type BlockArgs = BlockData;
 
-const dataModel = DataModel.create<BlockData>(() => ({ titleArgs: 'The title' }));
+const Version = defineDataVersions({ V1: DATA_MODEL_DEFAULT_VERSION });
+
+type VersionedData = { [Version.V1]: BlockData };
+
+const dataModel = new DataModelBuilder<VersionedData>()
+  .from(Version.V1)
+  .init(() => ({ titleArgs: 'The title' }));
 
 export const platforma = BlockModelV3.create({ dataModel, renderingMode: 'Heavy' })
 

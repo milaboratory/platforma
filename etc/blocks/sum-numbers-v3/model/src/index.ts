@@ -1,11 +1,10 @@
-import type {
-  InferHrefType,
-  InferOutputsType,
-} from '@platforma-sdk/model';
+import type { InferHrefType, InferOutputsType } from '@platforma-sdk/model';
 import {
   Annotation,
   BlockModelV3,
-  DataModel,
+  DATA_MODEL_DEFAULT_VERSION,
+  DataModelBuilder,
+  defineDataVersions,
   PlRef,
   readAnnotation,
 } from '@platforma-sdk/model';
@@ -17,10 +16,13 @@ export const BlockData = z.object({
 
 export type BlockData = z.infer<typeof BlockData>;
 
-// Simple data model with just initial data (no migrations)
-const dataModel = DataModel.create<BlockData>(() => ({
-  sources: undefined,
-}));
+const Version = defineDataVersions({ V1: DATA_MODEL_DEFAULT_VERSION });
+
+type VersionedData = { [Version.V1]: BlockData };
+
+const dataModel = new DataModelBuilder<VersionedData>()
+  .from(Version.V1)
+  .init(() => ({ sources: undefined }));
 
 export const platforma = BlockModelV3.create({ dataModel, renderingMode: 'Heavy' })
 
@@ -63,12 +65,12 @@ export const platforma = BlockModelV3.create({ dataModel, renderingMode: 'Heavy'
 
   .output('sum', (ctx) => ctx.outputs?.resolve('sum')?.getDataAsJson<number>())
 
-  .output('prerunArgsJson', (ctx) => ctx.prerun?.resolve('prerunArgsJson')?.getDataAsJson<Record<string, unknown>>())
+  .output('prerunArgsJson', (ctx) =>
+    ctx.prerun?.resolve('prerunArgsJson')?.getDataAsJson<Record<string, unknown>>(),
+  )
 
   .enriches((args) =>
-    (args.sources !== undefined && args.sources.length > 0)
-      ? [args.sources[0]]
-      : [],
+    args.sources !== undefined && args.sources.length > 0 ? [args.sources[0]] : [],
   )
 
   .sections((_ctx) => {
