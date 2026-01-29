@@ -35,6 +35,8 @@ jobs:
       test-results-reports: '**/test-report.junit.xml'
       test-script-name: 'test'
       publish-to-public: 'true'
+      cache-monitoring: true
+      cache-monitoring-duration-minutes: 10
       pnpm-recursive-build: false
       pnpm-recursive-tests: false
       npmrc-config: |
