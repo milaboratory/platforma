@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.pool-explorer.model
 
+## 1.1.6
+
+### Patch Changes
+
+- f459e5a: Refined DataModel
+- Updated dependencies [f459e5a]
+  - @platforma-sdk/model@1.53.3
+
 ## 1.1.5
 
 ### Patch Changes

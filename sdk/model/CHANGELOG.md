@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.53.3
+
+### Patch Changes
+
+- f459e5a: Refined DataModel
+
 ## 1.53.2
 
 ### Patch Changes

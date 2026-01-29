@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.pool-explorer.ui
 
+## 1.1.266
+
+### Patch Changes
+
+- Updated dependencies [f459e5a]
+  - @milaboratories/milaboratories.pool-explorer.model@1.1.6
+  - @platforma-sdk/ui-vue@1.53.3
+
 ## 1.1.265
 
 ### Patch Changes
