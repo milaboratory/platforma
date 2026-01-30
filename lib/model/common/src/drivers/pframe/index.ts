@@ -8,7 +8,7 @@ export * from './table';
 export * from './table_calculate';
 export * from './table_common';
 export * from './unique_values';
-
+export * from './query';
 export * from './spec';
 
 export * from './driver';

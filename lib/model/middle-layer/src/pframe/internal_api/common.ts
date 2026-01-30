@@ -1,8 +1,7 @@
 import type {
-  AxisSpec,
-  PFrameHandle,
+  AxisSpec, PFrameHandle,
   PTableHandle,
-  ValueType,
+  SingleAxisSelector,
 } from '@milaboratories/pl-model-common';
 
 export type Logger = (
@@ -13,12 +12,6 @@ export type Logger = (
 export type PFrameId = PFrameHandle;
 
 export type PTableId = PTableHandle;
-
-export interface SingleAxisSelector {
-  name: string;
-  type?: ValueType;
-  domain?: Record<string, string>;
-}
 
 export interface AxisQualification {
   axis: SingleAxisSelector;
