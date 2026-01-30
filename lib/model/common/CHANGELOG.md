@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.24.2
+
+### Patch Changes
+
+- 4713838: query_data, query_spec types
+
 ## 1.24.1
 
 ### Patch Changes
