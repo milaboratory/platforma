@@ -463,6 +463,17 @@ export interface ExprColumnRef<C> {
   value: C;
 }
 
+export type InferBooleanExpressionUnion<E> = [
+  E extends ExprNumericComparison<unknown> ? Extract<E, { type: 'numericComparison' }> : never,
+  E extends ExprStringEquals<unknown> ? Extract<E, { type: 'stringEquals' }> : never,
+  E extends ExprStringContains<unknown> ? Extract<E, { type: 'stringContains' }> : never,
+  E extends ExprStringContainsFuzzy<unknown> ? Extract<E, { type: 'stringContainsFuzzy' }> : never,
+  E extends ExprStringRegex<unknown> ? Extract<E, { type: 'stringRegex' }> : never,
+  E extends ExprLogicalUnary<unknown> ? Extract<E, { type: 'not' }> : never,
+  E extends ExprLogicalVariadic<unknown> ? Extract<E, { type: 'and' | 'or' }> : never,
+  E extends ExprIsIn<unknown, string | number> ? Extract<E, { type: 'isIn' }> : never,
+][number];
+
 // ============ Generic Query Types ============
 // A = Axis ID type, S = Selector type, Q = Query type, E = Expression type
 // AF = Axis filter type, SE = Sort entry type, JE = Join entry type, SO = Spec override type
@@ -514,44 +525,6 @@ export interface QueryColumnSelector<C> {
 }
 
 /**
- * Sort entry specifying sort criteria.
- *
- * Defines how to sort by a single axis or column.
- * Multiple sort entries can be combined for multi-level sorting
- * (first entry has highest priority).
- *
- * @template S - Selector type (axis or column selector)
- *
- * @example
- * // Sort by "score" column descending, nulls last
- * {
- *   axisOrColumn: { type: 'column', id: 'score' },
- *   ascending: false,
- *   nullsFirst: false
- * }
- *
- * // Sort by "name" axis ascending, default null handling
- * {
- *   axisOrColumn: { type: 'axis', id: 'name' },
- *   ascending: true,
- *   nullsFirst: null
- * }
- */
-export interface QuerySortEntry<S> {
-  /** Selector for axis or column to sort by */
-  axisOrColumn: S;
-  /** If true, sort ascending (A-Z, 0-9); if false, descending */
-  ascending: boolean;
-  /**
-   * Null placement control:
-   * - true: nulls sort before non-null values
-   * - false: nulls sort after non-null values
-   * - null: use default behavior (typically nulls last)
-   */
-  nullsFirst: null | boolean;
-}
-
-/**
  * Left outer join query operation.
  *
  * Joins a primary query with one or more secondary queries using left outer join semantics.
@@ -577,7 +550,7 @@ export interface QuerySortEntry<S> {
  * }
  * // Result has all samples; annotations/metadata are null where not available
  */
-export interface QueryOuterJoin<JE> {
+export interface QueryOuterJoin<JE extends QueryJoinEntry<unknown>> {
   type: 'outerJoin';
   /** Primary query - all its records are preserved */
   primary: JE;
@@ -610,7 +583,7 @@ export interface QueryOuterJoin<JE> {
  *   ]
  * }
  */
-export interface QuerySliceAxes<Q, A> {
+export interface QuerySliceAxes<Q, A extends QueryAxisSelector<unknown>> {
   type: 'sliceAxes';
   /** Input query to slice */
   input: Q;
@@ -649,12 +622,23 @@ export interface QuerySliceAxes<Q, A> {
  *   ]
  * }
  */
-export interface QuerySort<Q, SE> {
+export interface QuerySort<Q, E> {
   type: 'sort';
   /** Input query to sort */
   input: Q;
   /** Sort criteria in priority order (at least one required) */
-  sortBy: SE[];
+  sortBy: {
+    data: E;
+    /** If true, sort ascending (A-Z, 0-9); if false, descending */
+    ascending: boolean;
+    /**
+     * Null placement control:
+     * - true: nulls sort before non-null values
+     * - false: nulls sort after non-null values
+     * - null: use default behavior (typically nulls last)
+     */
+    nullsFirst: null | boolean;
+  }[];
 }
 
 /**
@@ -811,7 +795,7 @@ export interface QueryCrossJoinColumn<SO> {
  *   entries: [query1Entry, query2Entry]
  * }
  */
-export interface QuerySymmetricJoin<JE> {
+export interface QuerySymmetricJoin<JE extends QueryJoinEntry<unknown>> {
   /** 'innerJoin' for intersection, 'fullJoin' for union with nulls */
   type: 'innerJoin' | 'fullJoin';
   /** Queries to join (at least one required) */

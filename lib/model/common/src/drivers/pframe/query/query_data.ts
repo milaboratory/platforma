@@ -13,67 +13,76 @@ import type {
   ExprStringRegex,
   ExprNumericUnary,
   QueryAxisSelector,
-  QueryColumn,
-  QueryColumnSelector,
-  QueryCrossJoinColumn,
+  QueryColumn, QueryCrossJoinColumn,
   QueryFilter,
   QueryInlineColumn,
   QueryJoinEntry,
   QueryOuterJoin,
   QuerySliceAxes,
   QuerySort,
-  QuerySortEntry,
   QuerySymmetricJoin,
   TypeSpec,
+  InferBooleanExpressionUnion,
 } from './query_common';
 
+/**
+ * Column identifier with type specification.
+ *
+ * Pairs a column ID with its full type specification (axes and column types).
+ * Used in data layer to carry type information alongside column references.
+ */
 type ColumnIdAndTypeSpec = {
+  /** Unique identifier of the column */
   id: PObjectId;
+  /** Type specification defining axes and column types */
   typeSpec: TypeSpec;
 };
 
-/** Axis selector (data layer) */
-export type AxisSelectorData = QueryAxisSelector<number>;
-
-/** Column selector (data layer) */
-export type ColumnSelectorData = QueryColumnSelector<number>;
-
-/** Axis or column selector (data layer) */
-export type SelectorData = AxisSelectorData | ColumnSelectorData;
-
-/** Sort entry (data layer) */
-export type QuerySortEntryData = QuerySortEntry<SelectorData>;
-
-/** Join entry for data layer (with mapping) */
+/**
+ * Join entry for data layer queries.
+ *
+ * Extends the base join entry with axes mapping information.
+ * The mapping specifies how axes from this entry align with the joined result.
+ *
+ * @example
+ * // Join entry with axes mapping [0, 2] means:
+ * // - This entry's axis 0 maps to result axis 0
+ * // - This entry's axis 1 maps to result axis 2
+ * { entry: queryData, axesMapping: [0, 2] }
+ */
 export interface QueryJoinEntryData extends QueryJoinEntry<QueryData> {
+  /** Maps this entry's axes to the result axes by index */
   axesMapping: number[];
 }
 
-/** Column reference (data layer) */
+/** @see QueryColumn */
 export type QueryColumnData = QueryColumn;
-
-/** Inline column with data (data layer) */
+/** @see QueryInlineColumn */
 export type QueryInlineColumnData = QueryInlineColumn<ColumnIdAndTypeSpec>;
-
-/** Cross join column (data layer) */
+/** @see QueryCrossJoinColumn */
 export type QueryCrossJoinColumnData = QueryCrossJoinColumn<ColumnIdAndTypeSpec>;
-
-/** Symmetric join (data layer) */
+/** @see QuerySymmetricJoin */
 export type QuerySymmetricJoinData = QuerySymmetricJoin<QueryJoinEntryData>;
-
-/** Outer join (data layer) */
+/** @see QueryOuterJoin */
 export type QueryOuterJoinData = QueryOuterJoin<QueryJoinEntryData>;
+/** @see QuerySliceAxes */
+export type QuerySliceAxesData = QuerySliceAxes<QueryData, QueryAxisSelector<number>>;
+/** @see QuerySort */
+export type QuerySortData = QuerySort<QueryData, QueryExpressionData>;
+/** @see QueryFilter */
+export type QueryFilterData = QueryFilter<QueryData, QueryBooleanExpressionData>;
 
-/** Slice axes operation (data layer) */
-export type QuerySliceAxesData = QuerySliceAxes<QueryData, number>;
-
-/** Sort operation (data layer) */
-export type QuerySortData = QuerySort<QueryData, QuerySortEntryData>;
-
-/** Filter operation (data layer) */
-export type QueryFilterData = QueryFilter<QueryData, QueryExpressionData>;
-
-/** QueryData - union of all data layer query types */
+/**
+ * Union of all data layer query types.
+ *
+ * The data layer operates with numeric indices for axes and columns,
+ * making it suitable for runtime query execution and optimization.
+ *
+ * Includes:
+ * - Leaf nodes: column, inlineColumn, crossJoinColumn
+ * - Join operations: innerJoin, fullJoin, outerJoin
+ * - Transformations: sliceAxes, sort, filter
+ */
 export type QueryData =
   | QueryColumnData
   | QueryInlineColumnData
@@ -84,15 +93,18 @@ export type QueryData =
   | QuerySortData
   | QueryFilterData;
 
-/** Axis reference (data layer) */
+/** @see ExprAxisRef */
 export type ExprAxisRefData = ExprAxisRef<number>;
-/** Column reference (data layer) */
+/** @see ExprColumnRef */
 export type ExprColumnRefData = ExprColumnRef<number>;
 
 export type QueryExpressionData =
   | ExprColumnRefData | ExprAxisRefData | ExprConstant
   | ExprNumericBinary<QueryExpressionData> | ExprNumericUnary<QueryExpressionData>
-  | ExprStringEquals<QueryExpressionData> | ExprStringContains<QueryExpressionData> | ExprStringRegex<QueryExpressionData> | ExprStringContainsFuzzy<QueryExpressionData>
+  | ExprStringEquals<QueryExpressionData> | ExprStringContains<QueryExpressionData>
+  | ExprStringRegex<QueryExpressionData> | ExprStringContainsFuzzy<QueryExpressionData>
   | ExprLogicalUnary<QueryExpressionData> | ExprLogicalVariadic<QueryExpressionData>
   | ExprIsIn<QueryExpressionData, string> | ExprIsIn<QueryExpressionData, number>
   ;
+
+export type QueryBooleanExpressionData = InferBooleanExpressionUnion<QueryExpressionData>;
