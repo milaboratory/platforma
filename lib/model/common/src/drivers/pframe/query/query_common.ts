@@ -728,7 +728,7 @@ export interface QueryInlineColumn<T> {
 }
 
 /**
- * Cross join column query operation.
+ * Sparse to dense column query operation.
  *
  * Expands a column across additional axes using Cartesian product.
  * Creates all combinations of existing axis values with new axis values.
@@ -746,14 +746,14 @@ export interface QueryInlineColumn<T> {
  * @example
  * // Expand column across axes at indices 0 and 2
  * {
- *   type: 'crossJoinColumn',
+ *   type: 'sparseToDenseColumn',
  *   columnId: 'col_abc123',
  *   axesIndices: [0, 2],
  *   specOverride: { ... } // optional spec modifications
  * }
  */
-export interface QueryCrossJoinColumn<SO> {
-  type: 'crossJoinColumn';
+export interface QuerySparseToDenseColumn<SO> {
+  type: 'sparseToDenseColumn';
   /** ID of the column to cross-join */
   columnId: PObjectId;
   /** Optional override for the column specification */

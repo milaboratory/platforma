@@ -13,7 +13,7 @@ import type {
   ExprStringRegex,
   ExprNumericUnary,
   QueryAxisSelector,
-  QueryColumn, QueryCrossJoinColumn,
+  QueryColumn, QuerySparseToDenseColumn,
   QueryFilter,
   QueryInlineColumn,
   QueryJoinEntry,
@@ -59,8 +59,8 @@ export interface QueryJoinEntryData extends QueryJoinEntry<QueryData> {
 export type QueryColumnData = QueryColumn;
 /** @see QueryInlineColumn */
 export type QueryInlineColumnData = QueryInlineColumn<ColumnIdAndTypeSpec>;
-/** @see QueryCrossJoinColumn */
-export type QueryCrossJoinColumnData = QueryCrossJoinColumn<ColumnIdAndTypeSpec>;
+/** @see QuerySparseToDenseColumn */
+export type QuerySparseToDenseColumnData = QuerySparseToDenseColumn<ColumnIdAndTypeSpec>;
 /** @see QuerySymmetricJoin */
 export type QuerySymmetricJoinData = QuerySymmetricJoin<QueryJoinEntryData>;
 /** @see QueryOuterJoin */
@@ -79,14 +79,14 @@ export type QueryFilterData = QueryFilter<QueryData, QueryBooleanExpressionData>
  * making it suitable for runtime query execution and optimization.
  *
  * Includes:
- * - Leaf nodes: column, inlineColumn, crossJoinColumn
+ * - Leaf nodes: column, inlineColumn, sparseToDenseColumn
  * - Join operations: innerJoin, fullJoin, outerJoin
  * - Transformations: sliceAxes, sort, filter
  */
 export type QueryData =
   | QueryColumnData
   | QueryInlineColumnData
-  | QueryCrossJoinColumnData
+  | QuerySparseToDenseColumnData
   | QuerySymmetricJoinData
   | QueryOuterJoinData
   | QuerySliceAxesData

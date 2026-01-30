@@ -13,7 +13,7 @@ import type {
   ExprStringRegex,
   ExprNumericUnary,
   QueryAxisSelector,
-  QueryColumn, QueryCrossJoinColumn,
+  QueryColumn, QuerySparseToDenseColumn,
   QueryFilter,
   QueryInlineColumn,
   QueryJoinEntry,
@@ -68,8 +68,8 @@ export type QueryJoinEntrySpec = QueryJoinEntry<QuerySpec> & {
 export type QueryColumnSpec = QueryColumn;
 /** @see QueryInlineColumn */
 export type QueryInlineColumnSpec = QueryInlineColumn<ColumnIdAndSpec>;
-/** @see QueryCrossJoinColumn */
-export type QueryCrossJoinColumnSpec = QueryCrossJoinColumn<PColumnIdAndSpec>;
+/** @see QuerySparseToDenseColumn */
+export type QuerySparseToDenseColumnSpec = QuerySparseToDenseColumn<PColumnIdAndSpec>;
 /** @see QuerySymmetricJoin */
 export type QuerySymmetricJoinSpec = QuerySymmetricJoin<QueryJoinEntrySpec>;
 /** @see QueryOuterJoin */
@@ -88,14 +88,14 @@ export type QueryFilterSpec = QueryFilter<QuerySpec, QueryBooleanExpressionSpec>
  * making it suitable for user-facing query construction and validation.
  *
  * Includes:
- * - Leaf nodes: column, inlineColumn, crossJoinColumn
+ * - Leaf nodes: column, inlineColumn, sparseToDenseColumn
  * - Join operations: innerJoin, fullJoin, outerJoin
  * - Transformations: sliceAxes, sort, filter
  */
 export type QuerySpec =
   | QueryColumnSpec
   | QueryInlineColumnSpec
-  | QueryCrossJoinColumnSpec
+  | QuerySparseToDenseColumnSpec
   | QuerySymmetricJoinSpec
   | QueryOuterJoinSpec
   | QuerySliceAxesSpec
