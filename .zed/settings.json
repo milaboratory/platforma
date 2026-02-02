@@ -1,29 +1,41 @@
 {
-  "lsp": {
-    "eslint": {
-      "binary": {
-        "path": "vscode-eslint-language-server",
-        "arguments": ["--stdio"]
-      },
-      "settings": {
-        "codeActionOnSave": {
-          "mode": "all"
-        },
-        "format": true,
-        "workingDirectory": {
-          "mode": "auto"
-        }
-      }
-    }
+  "auto_install_extensions": {
+    "vue": true,
+    "yaml": true,
+    "toml": true,
+    "scss": true,
+    "dockerfile": true,
+    "docker-compose": true,
+    "proto": true,
+    "python": true,
+    "ruff": true,
+    "html": true,
+    "basher": true,
+    "github-actions": true,
+    "markdownlint": true,
+    "typos": true
+  },
+  "prettier": {
+    "allowed": false,
   },
   "languages": {
     "JavaScript": {
-      "language_servers": ["eslint"],
-      "formatter": "language_server",
+      "language_servers": [
+        "typescript-language-server",
+        "eslint"
+      ],
+      "formatter": {
+        "language_server": {
+          "name": "eslint"
+        }
+      },
       "format_on_save": "on"
     },
     "TypeScript": {
-      "language_servers": ["typescript-language-server", "eslint"],
+      "language_servers": [
+        "typescript-language-server",
+        "eslint"
+      ],
       "formatter": {
         "language_server": {
           "name": "eslint"
