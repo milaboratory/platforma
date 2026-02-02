@@ -9,13 +9,13 @@
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "docs:test": "echo 'Hola!'",
-    "lint": "eslint ."
+    "lint": "ts-builder lint --target browser"
   },
   "devDependencies": {
     "sass": "catalog:",
     "vitepress": "catalog:",
-    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "vite": "catalog:",
     "typescript": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"

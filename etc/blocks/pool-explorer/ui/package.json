@@ -7,7 +7,7 @@
     "watch": "ts-builder build --target block-ui --watch",
     "build": "ts-builder build --target block-ui",
     "type-check": "ts-builder types --target block-ui",
-    "lint": "eslint ."
+    "lint": "ts-builder lint --target block-ui"
   },
   "dependencies": {
     "@milaboratories/milaboratories.pool-explorer.model": "workspace:*",
@@ -17,11 +17,9 @@
     "@milaboratories/helpers": "workspace:*"
   },
   "devDependencies": {
-    "@platforma-sdk/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:",
     "zod": "catalog:"
   }

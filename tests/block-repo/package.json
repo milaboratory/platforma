@@ -4,7 +4,7 @@
   "description": "Tests for block registry reader",
   "version": "1.1.0",
   "scripts": {
-    "lint": "eslint .",
+    "lint": "ts-builder lint --target node",
     "test": "vitest run --coverage"
   },
   "//": {
@@ -13,13 +13,12 @@
   "devDependencies": {
     "remeda": "catalog:",
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/milaboratories.test-enter-numbers": "workspace:*",
     "@milaboratories/pl-model-middle-layer": "workspace:*",
     "@platforma-sdk/block-tools": "workspace:*",
     "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
-    "@milaboratories/eslint-config": "workspace:*",
     "@types/node": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }

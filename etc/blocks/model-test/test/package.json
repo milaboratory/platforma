@@ -5,7 +5,7 @@
   "description": "Block tests",
   "scripts": {
     "test": "vitest",
-    "lint": "eslint .",
+    "lint": "ts-builder lint --target block-test",
     "type-check": "ts-builder types --target block-test"
   },
   "files": [],
@@ -18,9 +18,7 @@
   "devDependencies": {
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@platforma-sdk/eslint-config": "workspace:*",
     "@platforma-sdk/test": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

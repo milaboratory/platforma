@@ -21,16 +21,14 @@
     "typescript": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
-    "@milaboratories/eslint-config": "workspace:*"
+    "@vitest/coverage-istanbul": "catalog:"
   },
   "scripts": {
     "dev": "ts-builder serve --target browser-lib --build-config ./build.config.ts",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "build": "ts-builder build --target browser-lib --build-config ./build.config.ts",
     "generate-assets": "docker build --output=assets .",
-    "lint": "eslint .",
+    "lint": "ts-builder lint --target browser-lib",
     "test": "vitest run --coverage"
   }
 }

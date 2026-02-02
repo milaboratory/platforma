@@ -7,7 +7,7 @@
     "build": "oclif-index && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "eslint ."
+    "lint": "ts-builder lint --target node"
   },
   "bin": {
     "pl-dev": "./bin/run.js"
@@ -24,14 +24,12 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@types/decompress": "catalog:",
     "@types/node": "catalog:",
     "@types/readline-sync": "catalog:",
-    "eslint": "catalog:",
     "ts-node": "catalog:",
     "typescript": "catalog:"
   },

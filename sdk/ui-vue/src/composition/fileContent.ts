@@ -66,7 +66,7 @@ export class ReactiveFileContent {
   private currentKey: string | undefined;
 
   private constructor(private currentScope: EffectScope, _ops?: Partial<ReactiveFileContentOps>) {
-    const ops: ReactiveFileContentOps = { ...DefaultReactiveFileContentOps, ...(_ops ?? {}) };
+    const ops: ReactiveFileContentOps = { ...DefaultReactiveFileContentOps, ..._ops };
     this.fileDataCache = ops.lruCache ?? new LRUCache<FileHandle, FileContentData>({
       maxSize: ops.cacheSize,
       sizeCalculation: (value) => value.bytes.length,

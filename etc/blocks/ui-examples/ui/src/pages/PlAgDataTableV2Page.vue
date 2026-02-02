@@ -29,7 +29,7 @@ const app = useApp();
 
 const settingsOpen = ref(false);
 
-const sources = [...new Array(10)].map((_, i) => {
+const sources = new Array(10).fill().map((_, i) => {
   return {
     label: `Source ${1 + i}`,
     value: `source_${1 + i}`,

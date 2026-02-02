@@ -241,7 +241,7 @@ export class PColumnCollection {
 
     const labelOps: LabelDerivationOps = {
       ...(overrideLabelAnnotation && rawLabelOps?.includeNativeLabel !== false ? { includeNativeLabel: true } : {}),
-      ...(rawLabelOps ?? {}),
+      ...rawLabelOps,
     };
 
     let excludePredicate: ((spec: PColumnSpec) => boolean) = () => false;
@@ -421,7 +421,7 @@ export class PColumnCollection {
         finalSpec = {
           ...finalSpec,
           annotations: {
-            ...(finalSpec.annotations ?? {}),
+            ...finalSpec.annotations,
             [Annotation.Label]: label,
           } satisfies Annotation,
         };
@@ -482,7 +482,7 @@ export class PColumnCollection {
     opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): PColumn<PColumnDataUniversal>[] | undefined {
     const entries = this.getUniversalEntries(predicateOrSelectors, {
       overrideLabelAnnotation: true, // default for getColumns
-      ...(opts ?? {}),
+      ...opts,
     } as UniversalPColumnOpts);
     if (!entries) return undefined;
 

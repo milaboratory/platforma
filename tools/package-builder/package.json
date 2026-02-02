@@ -9,7 +9,7 @@
     "watch": "ts-builder build --target node --watch",
     "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "eslint ."
+    "lint": "ts-builder lint --target node"
   },
   "bin": {
     "pl-pkg": "./bin/run.mjs"
@@ -42,14 +42,12 @@
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:*",
     "@platforma-open/milaboratories.runenv-python-3": "catalog:",
     "@types/archiver": "^6.0.3",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:"
+    "@vitest/coverage-istanbul": "catalog:"
   },
   "oclif": {
     "bin": "pl-pkg",

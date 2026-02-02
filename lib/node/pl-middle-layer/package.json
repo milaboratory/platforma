@@ -19,7 +19,7 @@
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node --build-config ./build.node.config.mjs",
     "watch": "ts-builder build --target node --build-config ./build.node.config.mjs --watch",
-    "lint": "eslint .",
+    "lint": "ts-builder lint --target node",
     "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
@@ -61,13 +61,11 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:*",
     "semver": "catalog:",
     "@types/semver": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
     "@types/node": "catalog:",
     "@milaboratories/ts-configs": "workspace:*",
     "tslib": "catalog:"

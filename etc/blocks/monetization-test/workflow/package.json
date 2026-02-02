@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rm -rf dist && pl-tengo check && pl-tengo build",
     "format": "/usr/bin/env emacs --script ./format.el",
-    "lint": "eslint .",
+    "lint": "ts-builder lint --target node",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -14,10 +14,9 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "@platforma-sdk/tengo-builder": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
     "vitest": "catalog:"
   }
 }

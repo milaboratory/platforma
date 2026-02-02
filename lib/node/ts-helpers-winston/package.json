@@ -15,7 +15,7 @@
   "scripts": {
     "build": "ts-builder build --target node",
     "type-check": "ts-builder types --target node",
-    "lint": "eslint .",
+    "lint": "ts-builder lint --target node",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [

@@ -43,7 +43,7 @@ describe('parsePlError', () => {
     expect(result.name).toBe('PlErrorReport');
     expect(result.plErrorType).toBe('');
     expect(result.fieldName).toBe('fieldName');
-    expect(stringifyWithResourceId(result.resource)).toBe('\"NG:0x2331a5\"');
+    expect(stringifyWithResourceId(result.resource)).toBe('"NG:0x2331a5"');
 
     expect(result.errors.length).toBe(1);
     expect(result.errors[0]).toBeInstanceOf(PlRunnerError);
@@ -73,7 +73,7 @@ License manager thread died.
     expect(result.name).toBe('PlErrorReport');
     expect(result.plErrorType).toBe('');
     expect(result.fieldName).toBe('fieldName');
-    expect(stringifyWithResourceId(result.resource)).toBe('\"NG:0x16a\"');
+    expect(stringifyWithResourceId(result.resource)).toBe('"NG:0x16a"');
 
     expect(result.errors.length).toBe(1);
     expect(result.errors[0]).toBeInstanceOf(PlTengoError);

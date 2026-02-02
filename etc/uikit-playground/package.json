@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint .",
+    "lint": "ts-builder lint --target browser",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -16,12 +16,11 @@
   "devDependencies": {
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
     "vue": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@milaboratories/helpers": "workspace:*",

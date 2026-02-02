@@ -19,7 +19,7 @@
     "test": "vitest run --coverage",
     "watch": "ts-builder build --target node --watch",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "eslint ."
+    "lint": "ts-builder lint --target node"
   },
   "files": [
     "./dist/**/*",
@@ -29,7 +29,6 @@
     "node": ">=22"
   },
   "devDependencies": {
-    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",

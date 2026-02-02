@@ -19,7 +19,7 @@
     "watch": "ts-builder build --target browser-lib --watch",
     "type-check": "ts-builder types --target browser-lib",
     "preview": "vite preview",
-    "lint": "eslint .",
+    "lint": "ts-builder lint --target browser-lib",
     "check": "yarpm type-check && yarpm lint && yarpm test",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
@@ -47,7 +47,6 @@
   "devDependencies": {
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "happy-dom": "catalog:",
@@ -59,7 +58,6 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
     "@vue/test-utils": "catalog:",
     "yarpm": "catalog:",
     "@faker-js/faker": "catalog:"

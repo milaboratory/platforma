@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "lint": "eslint .",
+    "lint": "ts-builder lint --target node",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -15,8 +15,8 @@
     "@milaboratories/node-streams": "workspace:*"
   },
   "devDependencies": {
-    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",

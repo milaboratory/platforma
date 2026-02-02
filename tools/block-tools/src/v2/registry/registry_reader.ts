@@ -71,7 +71,7 @@ export class RegistryV2Reader {
     ops?: Partial<RegistryV2ReaderOps>,
   ) {
     this.v2RootFolderReader = registryReader.relativeReader(MainPrefix);
-    this.ops = { ...DefaultRegistryV2ReaderOps, ...(ops ?? {}) };
+    this.ops = { ...DefaultRegistryV2ReaderOps, ...ops };
   }
 
   /**

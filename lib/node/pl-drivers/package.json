@@ -19,7 +19,7 @@
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "test": "vitest run --coverage",
-    "lint": "eslint .",
+    "lint": "ts-builder lint --target node",
     "update-proto": "./sync-proto.sh && ./generate-grpc.sh && ./generate-rest.sh",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
@@ -49,7 +49,6 @@
   },
   "devDependencies": {
     "@types/decompress": "catalog:",
-    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
@@ -58,7 +57,6 @@
     "@types/node": "catalog:",
     "@types/tar-fs": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

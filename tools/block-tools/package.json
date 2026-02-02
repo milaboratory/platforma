@@ -19,7 +19,7 @@
     "readme": "oclif readme",
     "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "eslint ."
+    "lint": "ts-builder lint --target node"
   },
   "bin": {
     "block-tools": "./bin/run.js"
@@ -52,7 +52,7 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@rollup/plugin-node-resolve": "catalog:",
@@ -60,7 +60,6 @@
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
     "oclif": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "semver": "catalog:",

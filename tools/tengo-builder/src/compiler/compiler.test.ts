@@ -26,11 +26,11 @@ test('compile package 1', () => {
       type: 'pl.tengo-template.v3',
       hashToSource: {
         '2e0d81deae0220df5901292911fd96065be96bc2187debb24bd869b47e1caa77': `
-lib := import(\"package1:other-lib-1\")
+lib := import("package1:other-lib-1")
 `,
         '3f850fa4c5f6a8a3017fa883fc03fc2dee159f65e2dbb9c6cd0c6dff0aae6419': `
 export {
-    \"some\": \"value1\"
+    "some": "value1"
 }
 `,
       },
