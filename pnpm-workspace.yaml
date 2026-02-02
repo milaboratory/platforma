@@ -186,7 +186,6 @@ catalog:
   "eslint-plugin-import": ^2.31.0
   "eslint-plugin-n": ^17.12.0
   "globals": ^15.13.0
-  "@zed-industries/vscode-langservers-extracted": ^4.10.7
 
   "oclif": ^4.16.2
 
