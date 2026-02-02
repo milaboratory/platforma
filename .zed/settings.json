@@ -1,4 +1,20 @@
 {
+  "auto_install_extensions": {
+    "vue": true,
+    "yaml": true,
+    "toml": true,
+    "scss": true,
+    "dockerfile": true,
+    "docker-compose": true,
+    "proto": true,
+    "python": true,
+    "ruff": true,
+    "html": true,
+    "basher": true,
+    "github-actions": true,
+    "markdownlint": true,
+    "typos": true
+  },
   "lsp": {
     "eslint": {
       "binary": {
@@ -20,6 +36,9 @@
     "JavaScript": {
       "language_servers": ["eslint"],
       "formatter": "language_server",
+      "prettier": {
+        "allowed": false
+      },
       "format_on_save": "on"
     },
     "TypeScript": {
@@ -28,6 +47,9 @@
         "language_server": {
           "name": "eslint"
         }
+      },
+      "prettier": {
+        "allowed": false
       },
       "format_on_save": "on"
     }
