@@ -27,6 +27,7 @@ import type {
 } from "./bconfig";
 import { downgradeCfgOrLambda, isConfigLambda } from "./bconfig";
 import type { PlatformaExtended } from "./platforma";
+import { BLOCK_STORAGE_FACADE_VERSION } from "./block_storage_facade";
 
 type SectionsExpectedType = readonly BlockSection[];
 
@@ -69,7 +70,7 @@ export class BlockModelV3<
   public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
     supportsLazyState: true,
     requiresUIAPIVersion: 3,
-    requiresModelAPIVersion: 2,
+    requiresModelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
     requiresCreatePTableV2: true,
   };
 
