@@ -15,41 +15,31 @@
     "markdownlint": true,
     "typos": true
   },
-  "lsp": {
-    "eslint": {
-      "binary": {
-        "path": "vscode-eslint-language-server",
-        "arguments": ["--stdio"]
-      },
-      "settings": {
-        "codeActionOnSave": {
-          "mode": "all"
-        },
-        "format": true,
-        "workingDirectory": {
-          "mode": "auto"
-        }
-      }
-    }
+  "prettier": {
+    "allowed": false,
   },
   "languages": {
     "JavaScript": {
-      "language_servers": ["eslint"],
-      "formatter": "language_server",
-      "prettier": {
-        "allowed": false
-      },
-      "format_on_save": "on"
-    },
-    "TypeScript": {
-      "language_servers": ["typescript-language-server", "eslint"],
+      "language_servers": [
+        "typescript-language-server",
+        "eslint"
+      ],
       "formatter": {
         "language_server": {
           "name": "eslint"
         }
       },
-      "prettier": {
-        "allowed": false
+      "format_on_save": "on"
+    },
+    "TypeScript": {
+      "language_servers": [
+        "typescript-language-server",
+        "eslint"
+      ],
+      "formatter": {
+        "language_server": {
+          "name": "eslint"
+        }
       },
       "format_on_save": "on"
     }
