@@ -1,36 +1,37 @@
 {
-    "name": "@milaboratories/ts-builder",
-    "version": "1.2.4",
-    "description": "TS build tool for the milaboratories packages",
-    "type": "module",
-    "main": "./dist/index.js",
-    "module": "./dist/index.js",
-    "bin": {
-        "ts-builder": "./bin/ts-builder.js"
-    },
-    "scripts": {
-        "build": "rollup -c",
-        "watch": "rollup -c --watch",
-        "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-        "lint": "eslint .",
-        "type-check": "tsc --noEmit"
-    },
-    "dependencies": {
-        "@milaboratories/build-configs": "workspace:*",
-        "@milaboratories/ts-configs": "workspace:*",
-        "commander": "^12.0.0",
-        "rollup": "catalog:",
-        "rollup-plugin-copy": "^3.5.0",
-        "typescript": "catalog:",
-        "vue-tsc": "catalog:",
-        "vite": "catalog:"
-    },
-    "devDependencies": {
-        "@milaboratories/eslint-config": "workspace:*",
-        "eslint": "catalog:"
-    },
-    "files": [
-        "dist",
-        "bin"
-    ]
+  "name": "@milaboratories/ts-builder",
+  "version": "1.2.4",
+  "description": "TS build tool for the milaboratories packages",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "bin": {
+    "ts-builder": "./bin/ts-builder.js"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c --watch",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "commander": "^12.0.0",
+    "oxlint": "^0.16.0",
+    "rollup": "catalog:",
+    "rollup-plugin-copy": "^3.5.0",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:",
+    "vite": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/eslint-config": "workspace:*",
+    "eslint": "catalog:"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ]
 }

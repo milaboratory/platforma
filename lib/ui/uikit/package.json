@@ -26,7 +26,7 @@
     "parse-icons-folder": "node scripts/parse-icons.js",
     "minify-icons": "svgo -f src/assets/icons/icon-assets -o src/assets/icons/icon-assets-min",
     "generate-icons": "pnpm run parse-icons-folder && pnpm run minify-icons",
-    "lint": "eslint .",
+    "lint": "ts-builder lint --target browser-lib --fix",
     "check": "yarpm type-check && yarpm test && yarpm lint",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },

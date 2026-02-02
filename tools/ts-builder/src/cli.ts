@@ -4,6 +4,7 @@ import { buildCommand } from './commands/build';
 import { initBuildConfigCommand } from './commands/init-build-config';
 import { initServeConfigCommand } from './commands/init-serve-config';
 import { initTsconfigCommand } from './commands/init-tsconfig';
+import { lintCommand } from './commands/lint';
 import { serveCommand } from './commands/serve';
 import { typesCommand } from './commands/types';
 
@@ -23,6 +24,7 @@ program
 program.addCommand(buildCommand);
 program.addCommand(serveCommand);
 program.addCommand(typesCommand);
+program.addCommand(lintCommand);
 program.addCommand(initTsconfigCommand);
 program.addCommand(initBuildConfigCommand);
 program.addCommand(initServeConfigCommand);

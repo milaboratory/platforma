@@ -47,3 +47,10 @@ export function resolveVite(): string {
 export function resolveRollup(): string {
   return resolveExecutable('rollup', 'rollup');
 }
+
+/**
+ * Resolves oxlint executable
+ */
+export function resolveOxlint(): string {
+  return resolveExecutable('oxlint', 'oxlint');
+}
