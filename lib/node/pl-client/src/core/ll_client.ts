@@ -357,7 +357,7 @@ export class LLPlClient implements WireClientProviderFactory {
   private createRestErrorMiddleware(): Middleware {
     return {
       onResponse: async ({ request: _request, response, options: _options }) => {
-        const { body: body, ...resOptions } = response;
+        const { body, ...resOptions } = response;
 
         if ([502, 503, 504].includes(response.status)) {
           // Service unavailable, bad gateway, gateway timeout

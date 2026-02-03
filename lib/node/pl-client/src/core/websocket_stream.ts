@@ -69,7 +69,7 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
       await this.drainSendQueue(); // ensure we sent all already queued messages before closing the stream
       try {
         await this.onComplete(this); // custom onComplete may send additional messages
-      } catch (_: unknown) {
+      } catch {
         // When 'complete' gets called concurrently with connection break or over a broken
         // transaction stream (server decided it should drop transaction), server would close
         // connection anyway on its end. We can safely ignore error here and just continue working.

@@ -302,7 +302,7 @@ export function isSignMatch(signer: Signer, path: string, signature: string): bo
   try {
     signer.verify(path, signature);
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }

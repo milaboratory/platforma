@@ -25,7 +25,6 @@ import { scheduler } from 'node:timers/promises';
 import type { StreamingAPI_Response } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
 import type * as sdk from '@milaboratories/pl-model-common';
 import type { PollingOps } from './helpers/polling_ops';
-import type { RpcError } from '@protobuf-ts/runtime-rpc';
 import { getResourceInfoFromLogHandle, isLiveLogHandle, newLogHandle } from './helpers/logs_handle';
 import { WrongResourceTypeError } from './helpers/helpers';
 

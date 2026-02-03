@@ -42,7 +42,7 @@ test(
       try {
         await uaClient.ping();
         break;
-      } catch (_e) {
+      } catch {
         await sleep(30);
       }
     }

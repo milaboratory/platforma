@@ -24,7 +24,7 @@ test('simple test #1', async () => {
       tx.createField(field(tx.clientRoot, 'prj'), 'Dynamic', prjRef);
       await tx.commit();
       return await toGlobalResourceId(prjRef);
-    });  
+    });
 
     await pl.withWriteTx('AddBlock1', async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
@@ -61,9 +61,9 @@ test('simple test #1', async () => {
         { id: 'block3', label: 'Block3', renderingMode: 'Heavy' },
         {
           storageMode: 'legacy',
-          legacyState: JSON.stringify({ 
-            args: { sources: [outputRef('block1', 'column'), outputRef('block2', 'column')] }, 
-            uiState: {"some":2} 
+          legacyState: JSON.stringify({
+            args: { sources: [outputRef('block1', 'column'), outputRef('block2', 'column')] },
+            uiState: {"some":2}
           }),
           blockPack: await TestBPPreparer.prepare(BPSpecSumV042NotPrepared)
         }
@@ -87,7 +87,6 @@ test('simple test #1', async () => {
         .then((r) => r.final());
       const all = await outputs.getAllFinal();
       expect(new Set(Object.keys(all))).toEqual(new Set(['sum', 'dependsOnBlocks']));
-      const v = await outputs.get('sum');
     });
 
     await poll(pl, async (tx) => {
@@ -162,10 +161,6 @@ test('simple test #1', async () => {
 
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
-      const outputs = await prjR
-        .get(projectFieldName('block3', 'prodOutput'))
-        .then((r) => r.final());
-      const v = await outputs.get('sum');
       // there should be an error here telling that one of the upstream blocks not found
       const renderingState = await prjR.getKValueObj<ProjectRenderingState>(BlockRenderingStateKey);
       expect(renderingState.blocksInLimbo).not.toContain('block3');

@@ -50,7 +50,7 @@ export const assertTypeExtends = <T, Expected>(
   // noop
 };
 
-function typeTest1() {
+function _typeTest1() {
   const a = getJsonField(Args, 'field1');
   const dd = getResourceValueAsJson<{ s: boolean; g: number }>()(
     getResourceField(MainOutputs, 'a')
@@ -82,7 +82,7 @@ function typeTest1() {
   >();
 }
 
-function testCreateSections<const S extends BlockSection[]>(sections: () => S): DeriveHref<S> {
+function testCreateSections<const S extends BlockSection[]>(_sections: () => S): DeriveHref<S> {
   return undefined as any;
 }
 
@@ -106,7 +106,7 @@ test('test config content', () => {
     .argsValid(isEmpty(getJsonField(Args, 'a')))
     .output('cell1', makeObject({ b: getJsonField(Args, 'a') }))
     .output('cell2', mapArrayValues(getJsonField(Args, 'a'), getImmediate('v1')))
-    .sections((r) => {
+    .sections(() => {
       return [
         { type: 'link', href: '/', label: 'Main' },
         { type: 'link', href: '/subsection', label: 'Subsection' }
@@ -146,7 +146,7 @@ test('test config 2', () => {
         g: getOnDemandBlobContent(getResourceField(MainOutputs, 'field5'))
       })
     )
-    .output('cell2', (ctx) => 42)
+    .output('cell2', () => 42)
     .output('cell3', () => undefined)
     .withArgs(isEmpty(getJsonField(Args, 'a')))
     .sections(

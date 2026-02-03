@@ -4,9 +4,9 @@ import { WatchableValue } from '../watchable_value';
 
 test('raw computable simple test', async () => {
   let users = 0;
-  const c1 = Computable.make((ctx) => {
+  const c1 = Computable.make((_ctx) => {
     users++;
-    ctx.addOnDestroy(() => users--);
+    _ctx.addOnDestroy(() => users--);
     return 12;
   });
 
@@ -18,7 +18,7 @@ test('raw computable simple test', async () => {
 
 test('computable with post-process', async () => {
   const c1 = Computable.make(
-    (ctx) => {
+    () => {
       return 12;
     },
     {
@@ -30,7 +30,7 @@ test('computable with post-process', async () => {
 });
 
 test('computable with null value', async () => {
-  const c1 = Computable.make((ctx) => {
+  const c1 = Computable.make(() => {
     return null;
   });
 
@@ -39,8 +39,8 @@ test('computable with null value', async () => {
 
 test('nested computable with post-process', async () => {
   const c1 = Computable.make(
-    (ctx) => {
-      return Computable.make((ctx) => 12);
+    () => {
+      return Computable.make(() => 12);
     },
     {
       postprocessValue: (value) => String(value)
@@ -52,7 +52,7 @@ test('nested computable with post-process', async () => {
 
 test('computable with recover', async () => {
   const c1 = Computable.make(
-    (ctx): number => {
+    (): number => {
       throw new Error();
       return 12;
     },
@@ -66,7 +66,7 @@ test('computable with recover', async () => {
 
 test('computable with post-process and recover, error in kernel callback', async () => {
   const c1 = Computable.make(
-    (ctx) => {
+    () => {
       throw new Error();
       return 12;
     },
@@ -81,7 +81,7 @@ test('computable with post-process and recover, error in kernel callback', async
 
 test('computable with post-process and recover, error in postprocess', async () => {
   const c1 = Computable.make(
-    (ctx) => {
+    () => {
       return 12;
     },
     {
@@ -135,8 +135,8 @@ test('wrap errors ok', async () => {
 
 test('nested computable with post-process and recover', async () => {
   const c1 = Computable.make(
-    (ctx) => {
-      return Computable.make((ctx) => {
+    () => {
+      return Computable.make(() => {
         throw new Error();
         return 12;
       });
@@ -152,13 +152,13 @@ test('nested computable with post-process and recover', async () => {
 
 test('raw computable nested test', async () => {
   let users = 0;
-  const c1 = Computable.make((ctx) => {
+  const c1 = Computable.make((_ctx) => {
     users++;
-    ctx.addOnDestroy(() => users--);
+    _ctx.addOnDestroy(() => users--);
     return 12;
   });
 
-  const c2 = Computable.make((ctx) => {
+  const c2 = Computable.make(() => {
     return c1;
   });
 
@@ -178,12 +178,12 @@ test('raw computable nested test', async () => {
 });
 
 test('nested unstable state', async () => {
-  const c1 = Computable.make((ctx) => {
-    ctx.markUnstable('unstable_marker');
+  const c1 = Computable.make((_ctx) => {
+    _ctx.markUnstable('unstable_marker');
     return 12;
   });
 
-  const c2 = Computable.make((ctx) => {
+  const _c2 = Computable.make(() => {
     return c1;
   });
 
@@ -207,7 +207,7 @@ test('testing wider range of types in computables', async () => {
 test('change source marker', async () => {
   const watchable = new WatchableValue(1);
   const wc = watchable;
-  const c1 = Computable.make((ctx) => ctx.accessor(wc).getValue() + (ctx.changeSourceMarker ?? 'undefined'));
+  const c1 = Computable.make((_ctx) => _ctx.accessor(wc).getValue() + (_ctx.changeSourceMarker ?? 'undefined'));
 
   expect(await c1.getValue()).toBe('1undefined');
 
@@ -219,7 +219,7 @@ test('change source marker', async () => {
 test('nested computable test 1', async () => {
   const watchable = new WatchableValue(1);
   const wc = watchable.asComputable();
-  const c1 = Computable.make((ctx) => wc);
+  const c1 = Computable.make(() => wc);
 
   expect(await c1.getValue()).toBe(1);
 
@@ -231,7 +231,7 @@ test('nested computable test 1', async () => {
 test('nested computable test 2', async () => {
   const watchable = new WatchableValue(1);
   const wc = watchable.asComputable();
-  const c1 = Computable.make((ctx) => ({ a: wc, b: wc }));
+  const c1 = Computable.make(() => ({ a: wc, b: wc }));
 
   expect(await c1.getValue()).toEqual({ a: 1, b: 1 });
 
@@ -243,7 +243,7 @@ test('nested computable test 2', async () => {
 test('nested computable test 3', async () => {
   const watchable = new WatchableValue(1);
   const wc = watchable.asComputable();
-  const c1 = Computable.make((ctx) => ({ a: wc, b: wc }), {
+  const c1 = Computable.make(() => ({ a: wc, b: wc }), {
     postprocessValue: ({ a, b }) => a + b
   });
 
@@ -258,7 +258,7 @@ test('nested computable test 4', async () => {
   const watchable = new WatchableValue(1);
   const wc = watchable.asComputable();
   const c1 = Computable.make(() =>
-    Computable.make((ctx) => ({ a: wc, b: wc }), {
+    Computable.make(() => ({ a: wc, b: wc }), {
       postprocessValue: ({ a, b }) => a + b,
       key: 'a'
     })

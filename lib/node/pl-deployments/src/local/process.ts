@@ -33,7 +33,7 @@ export async function isProcessAlive(pid: number) {
     // Linux and Mac OS X behave differently (so can different Linux distributions).
     // Process name can contain original path to the binary file or just its name.
     return processName.endsWith('/platforma') || processName === 'platforma';
-  } catch (_e) {
+  } catch {
     return false;
   }
 }
@@ -58,7 +58,7 @@ function getProcessName(pid: number): string {
       const processName = output.trim();
       return processName;
     }
-  } catch (_error) {
+  } catch {
     // If we can't get the process name, return empty string
     return '';
   }

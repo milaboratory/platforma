@@ -2,8 +2,7 @@ import path from 'path';
 import { describe, test, expect } from 'vitest';
 import { getPathForBlockUIURL, getPathForFolderURL } from './url';
 import type { Signer } from '@milaboratories/ts-helpers';
-import { HmacSha256Signer } from '@milaboratories/ts-helpers';
-import { FolderURL, isFolderURL } from '@milaboratories/pl-model-common';
+import { isFolderURL } from '@milaboratories/pl-model-common';
 
 describe('isFolderURL', () => {
   test('should return true for a valid URL', () => {
@@ -24,8 +23,8 @@ describe('isFolderURL', () => {
 
 describe('getPathForFolderURL', () => {
   const signer: Signer = {
-    sign: (data: string | Uint8Array) => 'signature',
-    verify: (data: string | Uint8Array, signature: string, validationErrorMessage?: string) => null,
+    sign: () => 'signature',
+    verify: () => null,
   };
 
   test('should be ok', () => {
@@ -39,8 +38,8 @@ describe('getPathForFolderURL', () => {
 
 describe('getPathForBlockUIURL', () => {
   const signer: Signer = {
-    sign: (data: string | Uint8Array) => 'signature',
-    verify: (data: string | Uint8Array, signature: string, validationErrorMessage?: string) => null,
+    sign: () => 'signature',
+    verify: () => null,
   };
 
   test('should be ok', () => {

@@ -5,7 +5,7 @@ import { generateSshPlConfigs } from './config';
 import fs from 'fs/promises';
 import upath from 'upath';
 import yaml from 'yaml';
-import type { PlAuthDriverJwt, PlConfig, PlS3StorageSettings } from '../common/types';
+import type { PlAuthDriverJwt, PlConfig } from '../common/types';
 
 test('should return right configs', async ({ expect }) => {
   const logger = new ConsoleLoggerAdapter();

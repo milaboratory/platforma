@@ -9,7 +9,6 @@ import {
   nextRetryStateOrError,
   RetryOptions,
   sleep,
-  tryNextRetryState,
   withTimeout
 } from './temporal';
 

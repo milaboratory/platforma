@@ -6,7 +6,6 @@ import {
     ValueType,
     getDenormalizedAxesList,
     getNormalizedAxesList,
-    canonicalizeAxisWithParents,
 } from './spec';
 import { canonicalizeJson, stringifyJson } from '../../../json'
 import {
@@ -77,7 +76,7 @@ describe('Linker columns', () => {
         // case 2
         const normalized3 = getNormalizedAxesList([
             makeTestAxisWithParentIdxs({ name: 'd' }),
-            makeTestAxisWithParentIdxs({ name: 'c' }), 
+            makeTestAxisWithParentIdxs({ name: 'c' }),
             makeTestAxisWithParentIdxs({ name: 'b', parents: [0] }), // parent D
             makeTestAxisWithParentIdxs({ name: 'a', parents: [1, 2] }) // parents B C
         ])
@@ -87,7 +86,7 @@ describe('Linker columns', () => {
         const axisB2 = makeTestAxis({ name: 'b', parents: [axisD2]  });
         const axisA2 = makeTestAxis({ name: 'a', parents: [axisB2, axisC2] });
         const normalized4 = getNormalizedAxesList([axisD2, axisC2, axisB2, axisA2]);
-        
+
         compareAxesLists(normalized3, normalized4);
 
         // case 3
@@ -106,7 +105,7 @@ describe('Linker columns', () => {
         const axisB3 = makeTestAxis({ name: 'b', parents: [axisC3] });
         const axisA3 = makeTestAxis({ name: 'a', parents: [axisB3] });
         const normalized6 = getNormalizedAxesList([axisE3, axisD3, axisC3, axisB3, axisA3]);
-        
+
         compareAxesLists(normalized5, normalized6);
     })
 

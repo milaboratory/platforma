@@ -61,7 +61,7 @@ test('load resources', async () => {
       value: undefined
     });
 
-    const r3 = await cl.withWriteTx(
+    await cl.withWriteTx(
       'CreatingStructure3',
       async (tx) => {
         const rr3 = tx.createValue(TestStructuralResourceType1, 'hi!');

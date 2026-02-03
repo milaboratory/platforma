@@ -44,7 +44,7 @@ export async function downloadBinaryNoExtract(
   try {
     await downloadArchive({ logger, archiveUrl, archivePath, dispatcher });
     opts.wasDownloadedFrom = archiveUrl;
-  } catch (_e) {
+  } catch {
     await downloadArchive({ logger, archiveUrl: alternativeArchiveGAUrl, archivePath, dispatcher });
     opts.wasDownloadedFrom = alternativeArchiveGAUrl;
   }
@@ -69,7 +69,7 @@ export async function downloadBinary(
   try {
     await downloadArchive({ logger, archiveUrl, archivePath, dispatcher });
     opts.wasDownloadedFrom = archiveUrl;
-  } catch (_e) {
+  } catch {
     await downloadArchive({ logger, archiveUrl: alternativeArchiveGAUrl, archivePath, dispatcher });
     opts.wasDownloadedFrom = alternativeArchiveGAUrl;
   }

@@ -42,7 +42,6 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import * as readline from 'node:readline/promises';
 import { buffer } from 'node:stream/consumers';
-import { Readable } from 'node:stream';
 import type { ClientDownload } from '../../clients/download';
 import type { ClientLogs } from '../../clients/logs';
 import { withFileContent } from '../helpers/read_file';
@@ -370,7 +369,7 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
         options,
         async (content, size) => {
           const [handlerStream, cacheStream] = content.tee();
-          
+
           const handlerPromise = handler(handlerStream, size);
           const _cachePromise = buffer(cacheStream)
             .then((data) => this.rangesCache.set(key, range ?? { from: 0, to: result.size }, data))

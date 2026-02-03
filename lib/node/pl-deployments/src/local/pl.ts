@@ -236,7 +236,7 @@ async function localPlatformaReadPidAndStop(
       trace('stopped', processStop(oldPid));
       try {
         trace('waitStopped', await processWaitStopped(oldPid, 15_000)); // larger, that 10s we provide to backend in config.
-      } catch (_e) {
+      } catch {
         trace('forceStopped', processStop(oldPid, true));
         trace('waitForceStopped', await processWaitStopped(oldPid, 5_000));
       }

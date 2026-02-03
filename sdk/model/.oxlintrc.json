@@ -1,0 +1,6 @@
+{
+  "rules": {
+    "unicorn/no-thenable": "off",
+    "unicorn/no-new-array": "off"
+  }
+}

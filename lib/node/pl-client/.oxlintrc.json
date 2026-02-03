@@ -1,0 +1,6 @@
+{
+  "ignorePatterns": ["src/proto-grpc/**"],
+  "rules": {
+    "unicorn/no-thenable": "off"
+  }
+}

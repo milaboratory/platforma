@@ -6,20 +6,20 @@ import { GrpcClientProviderFactory } from './grpc';
 import { test, expect } from 'vitest';
 
 test('test client init', async () => {
-  const client = await getTestClient(undefined);
+  await getTestClient(undefined);
 });
 
 test('test client alternative root init', async () => {
   const aRootName = 'test_root';
   const { conf, auth } = await getTestClientConf();
-  const clientA = await PlClient.init({ ...conf, alternativeRoot: aRootName }, auth);
+  await PlClient.init({ ...conf, alternativeRoot: aRootName }, auth);
   const clientB = await PlClient.init(conf, auth);
   const result = await clientB.deleteAlternativeRoot(aRootName);
   expect(result).toBe(true);
 });
 
-test('test client init', async () => {
-  const client = await getTestClient();
+test('test client init 2', async () => {
+  await getTestClient();
 });
 
 interface SimpleDriver extends PlDriver {

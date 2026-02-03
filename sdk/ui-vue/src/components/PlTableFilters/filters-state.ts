@@ -108,8 +108,8 @@ export function useFilters(
       }
 
       // States with not null filters should go first, in order they were added, then follow null filters in alphabetic order
-      const states = stateMap.values().filter((s) => s.filter);
-      const hiddenFilters = stateMap.values().filter((s) => !s.filter);
+      const states = stateMap.values().filter((s) => s.filter).toArray();
+      const hiddenFilters = stateMap.values().filter((s) => !s.filter).toArray();
       states.push(...hiddenFilters.sort((a, b) => a.label.localeCompare(b.label)));
       filters.value = states;
     },

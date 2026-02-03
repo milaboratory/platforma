@@ -71,7 +71,7 @@ export function isRegexpValid(exp: string) {
   try {
     new RegExp(exp);
     return true;
-  } catch (_e) {
+  } catch {
     return false;
   }
 }

@@ -89,7 +89,7 @@ export class PollPool<A extends PollActor = PollActor> {
           // awaiting at least one of the actors to change pause request
           try {
             await watcher.awaitChange(this.terminateController.signal);
-          } catch (_e) {
+          } catch {
             // will terminate on next iteration
           }
 
@@ -119,7 +119,7 @@ export class PollPool<A extends PollActor = PollActor> {
             this.currentLoopDelayInterrupt = new AbortController();
             await tp.setTimeout(delay, undefined,
               { signal: AbortSignal.any([this.terminateController.signal, this.currentLoopDelayInterrupt.signal]) });
-          } catch (_e) {
+          } catch {
             // will terminate on next iteration if terminated
           } finally {
             this.currentLoopDelayInterrupt = undefined;

@@ -11,7 +11,7 @@ export class Aborted extends Error {
 export async function sleep(timeout: number, abortSignal?: AbortSignal): Promise<void> {
   try {
     await tp.setTimeout(timeout, undefined, { signal: abortSignal });
-  } catch (_e) {
+  } catch {
     throw new Aborted({ cause: abortSignal?.reason });
   }
 }

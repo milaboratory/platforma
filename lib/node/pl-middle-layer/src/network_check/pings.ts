@@ -124,7 +124,7 @@ export function reportToString<T>(report: NetworkReport<T>[]): {
 } {
   const successes = report.filter((r) => r.response.ok);
   const errorsLen = report.length - successes.length;
-  const { mean: mean, median: median } = elapsedStat(report);
+  const { mean, median } = elapsedStat(report);
 
   const details = `
   total: ${report.length};

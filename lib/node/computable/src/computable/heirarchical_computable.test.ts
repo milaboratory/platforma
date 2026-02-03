@@ -66,31 +66,12 @@ function traverse(a: FakeTreeAccessor, ...path: string[]): FakeTreeAccessor | un
 
 function getValueFromTree(
   tree: FakeTreeDriver,
-  ops: Partial<ComputableRenderingOps> = {},
+  _ops: Partial<ComputableRenderingOps> = {},
   ...path: string[]
 ): Computable<undefined | string> {
-  return Computable.make((ctx) => {
-    return traverse(ctx.accessor(tree.accessor), ...path)?.getValue();
+  return Computable.make((_ctx) => {
+    return traverse(_ctx.accessor(tree.accessor), ...path)?.getValue();
   });
-}
-
-function getValueFromTreeAsNested(
-  node: PersistentFakeTreeNode,
-  ops: Partial<ComputableRenderingOps> = {},
-  ...pathLeft: string[]
-): Computable<undefined | string> {
-  return Computable.make(
-    (ctx) => {
-      const a = ctx.accessor(node);
-      if (pathLeft.length === 0) return a.getValue();
-      else {
-        const next = a.get(pathLeft[0])?.persist;
-        if (next === undefined) return undefined;
-        return getValueFromTreeAsNested(next, {}, ...pathLeft.slice(1));
-      }
-    },
-    { key: node.uuid + pathLeft.join('---'), ...ops }
-  );
 }
 
 function getValueFromTreeAsNestedWithDestroy(

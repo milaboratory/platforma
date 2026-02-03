@@ -26,7 +26,7 @@ import { scheduler } from 'node:timers/promises';
 import type { PollingOps } from './helpers/polling_ops';
 import type { ImportResourceSnapshot } from './types';
 import { IndexResourceSnapshot, UploadResourceSnapshot } from './types';
-import { isMyUpload, nonRecoverableError, UploadTask } from './upload_task';
+import { nonRecoverableError, UploadTask } from './upload_task';
 import { WrongResourceTypeError } from './helpers/helpers';
 
 export function makeBlobImportSnapshot(

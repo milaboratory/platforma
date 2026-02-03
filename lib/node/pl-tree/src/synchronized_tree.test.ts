@@ -65,7 +65,7 @@ test('simple synchronized tree test', async () => {
       value: undefined
     });
 
-    const r3 = await pl.withWriteTx(
+    await pl.withWriteTx(
       'CreatingStructure3',
       async (tx) => {
         const rr3 = tx.createValue(TestStructuralResourceType1, 'hi!');

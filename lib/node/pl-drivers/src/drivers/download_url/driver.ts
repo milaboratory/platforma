@@ -177,7 +177,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
     this.downloadQueue.stop();
 
     await Promise.all(
-      Array.from(this.urlToDownload.entries()).map(async ([id, task]) => {
+      Array.from(this.urlToDownload.entries()).map(async ([, task]) => {
         await rmRFDir(task.path);
         this.cache.removeCache(task);
 

@@ -100,8 +100,8 @@ function getTestSetups() {
       const synchronized = new SynchronizedWatchableValue(observableSource.asComputable(), 1, {
         stopDebounce: 10
       });
-      const res1 = synchronized.asComputable();
-      const res2 = Computable.make((ctx) => ({ r1: synchronized.getValue(ctx) }), {
+      const _res1 = synchronized.asComputable();
+      const res2 = Computable.make((_ctx) => ({ r1: synchronized.getValue(_ctx) }), {
         postprocessValue: ({ r1 }) => r1 * 2
       });
       return { context: 'nested', observableSource, synchronized, res2 };
@@ -174,7 +174,7 @@ test.skip.each(getTestSetups())(
 // @todo unskip when migrating to vitest (revise the test code, remove timeouts)
 test.skip.each(getTestSetups())(
   'simple reactor test pre-calculation in $context context',
-  async ({ observableSource, synchronized, res2 }) => {
+  async ({ observableSource: _observableSource, synchronized, res2 }) => {
     res2 = res2.withPreCalculatedValueTree();
     await new Promise((resolve) => setTimeout(resolve, 1));
     expect(await res2.getValue()).toEqual(4);

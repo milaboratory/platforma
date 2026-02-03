@@ -126,7 +126,7 @@ describe('Linker columns', () => {
             expect(linkers.map(item => item.spec.name).sort()).toEqual(params.expected);
         }
 
-        testCase({ from: getNormalizedAxesList([axisA, axisB]), to: getNormalizedAxesList([axisC]), expected: ['abc'] });        
+        testCase({ from: getNormalizedAxesList([axisA, axisB]), to: getNormalizedAxesList([axisC]), expected: ['abc'] });
     })
 
     test('Axis tree - without parents', () => {
@@ -220,7 +220,7 @@ describe('Linker columns', () => {
         const group3 = [axisH];
         const group1Normalized = getNormalizedAxesList(group1);
         const group2Normalized = getNormalizedAxesList(group2);
-        const [axisAn, axisBn, axisCn, axisDn, axisEn] = group1Normalized;
+        const [axisAn, axisBn,, axisDn, axisEn] = group1Normalized;
 
         const linker1 = makeLinkerColumn({ name: 'linker1', from: group1, to: group2 });
         const linker2 = makeLinkerColumn({ name: 'linker2', from: group2, to: group3 });
@@ -252,7 +252,7 @@ describe('Linker columns', () => {
         const axisC2 = makeTestAxis({ name: 'c', parents: [axisB, axisA] });
         const axisD = makeTestAxis({ name: 'd' });
 
-        const [a, b, c1, c2, d] = getNormalizedAxesList([axisA, axisB, axisC1, axisC2, axisD]);
+        const [,, c1, c2] = getNormalizedAxesList([axisA, axisB, axisC1, axisC2, axisD]);
         const linkerMap = LinkerMap.fromColumns([
             makeLinkerColumn({ name: 'linker1', from: [axisA, axisB, axisC1], to: [axisD] })
         ]);
@@ -268,7 +268,6 @@ describe('Linker columns', () => {
         const axisD = makeTestAxis({ name: 'd' });
         const axisE = makeTestAxis({ name: 'e' });
 
-        const axesList = getNormalizedAxesList([axisA, axisB, axisC, axisD, axisE]);
         const linkerMap = LinkerMap.fromColumns([
             makeLinkerColumn({ name: 'linker1', from: [axisA, axisB, axisC], to: [axisD] })
         ]);

@@ -83,7 +83,7 @@ export class UpdateSerializer {
     // awaiting previous operation to finish
     try {
       await this.ongoingOperation;
-    } catch (_err: unknown) {
+    } catch {
       // ignoring the error here, original caller will receive any rejections
     }
 

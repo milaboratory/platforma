@@ -1,8 +1,6 @@
 import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
 import { LsDriver } from './ls';
-import { createLsFilesClient } from '../clients/constructors';
 import { TestHelpers } from '@milaboratories/pl-client';
-import * as os from 'node:os';
 import * as path from 'node:path';
 import { test, expect } from 'vitest';
 import { isImportFileHandleIndex, isImportFileHandleUpload } from '@milaboratories/pl-model-common';
@@ -14,7 +12,6 @@ test('should ok when get all storages from ls driver', async () => {
   const signer = new HmacSha256Signer('abc');
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
-    const lsClient = createLsFilesClient(client, logger);
     const driver = await LsDriver.init(logger, client, signer, [], () => {
       throw Error();
     });
@@ -97,9 +94,6 @@ test('should ok when list files from local storage in ls driver and correctly ap
       [{ storageId: 'test_storage', localPath: path.join(assetsPath, 'ls_dir_structure_test') }],
       async () => [dialogRet],
     );
-
-    const storages = await driver.getStorageList();
-    const local = storages.find((se) => se.name == 'local')!;
 
     {
       dialogRet = path.join(assetsPath, 'ls_dir_structure_test', 'abc', '42.txt');

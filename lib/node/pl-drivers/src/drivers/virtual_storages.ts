@@ -38,7 +38,7 @@ export async function DefaultVirtualLocalStorages(): Promise<VirtualLocalStorage
           initialPath: isHomeDrive ? home : `${drive}:\\`,
         };
       });
-    } catch (e: any) {
+    } catch {
       return [
         {
           name: `local_disk_${homeDrive}`,

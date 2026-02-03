@@ -147,7 +147,7 @@ export function exclusiveRequest<A, R>(request: (...args: A[]) => Promise<R>) {
 
     try {
       await ongoingOperation;
-    } catch (_cause: unknown) {
+    } catch {
       // ignoring the error here, original caller will receive any rejections
     }
 

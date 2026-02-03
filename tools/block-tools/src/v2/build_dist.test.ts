@@ -1,8 +1,7 @@
 import { randomUUID } from 'crypto';
-import { test, expect } from 'vitest';
+import { test } from 'vitest';
 import { loadPackDescription } from './source_package';
 import path from 'path';
-import fsp from 'node:fs/promises';
 import { buildBlockPackDist } from './build_dist';
 
 test.skip('create dist test', async () => {

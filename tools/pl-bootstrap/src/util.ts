@@ -86,7 +86,7 @@ export function getProcessName(pid: number): string {
     }
 
     return lines[1].trim();
-  } catch (_e) {
+  } catch {
     return '';
   }
 }

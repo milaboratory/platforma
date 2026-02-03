@@ -1,4 +1,4 @@
-import { newTemplateFromContent, newTemplateFromData, Template } from './template';
+import { newTemplateFromContent, newTemplateFromData } from './template';
 import { formatArtefactNameAndVersion, FullArtifactName } from './package';
 import { test, expect } from 'vitest';
 

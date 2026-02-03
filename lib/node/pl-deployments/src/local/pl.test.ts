@@ -9,7 +9,6 @@ import * as os from 'os';
 import { mergeDefaultOps } from './pl';
 import type { LocalPlOptions, LocalPlOptionsFull } from './pl';
 import { plProcessOps } from './pl';
-import { describe, it, beforeEach, afterEach } from 'vitest';
 import { getPorts } from '@milaboratories/pl-config';
 
 test(
@@ -288,7 +287,7 @@ const mergeDefaultOpsCases: {
     },
   ];
 
-test.each(mergeDefaultOpsCases)('mergeDefaultOps: $name', ({ name, input, expected }) => {
+test.each(mergeDefaultOpsCases)('mergeDefaultOps: $name', ({ input, expected }) => {
   const result = mergeDefaultOps(input.ops, input.numCpu);
 
   expect(result).toEqual(expected);
@@ -438,7 +437,7 @@ const plProcessOpsCases: {
     },
   ];
 
-test.each(plProcessOpsCases)('plProcessOps: $name', ({ name, input, expected }) => {
+test.each(plProcessOpsCases)('plProcessOps: $name', ({ input, expected }) => {
   const result = plProcessOps(
     input.binaryPath,
     input.configPath,

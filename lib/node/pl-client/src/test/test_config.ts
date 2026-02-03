@@ -113,7 +113,7 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
         && cache.expiration > Date.now()
       )
         authInformation = cache.authInformation;
-    } catch (_e) {
+    } catch {
       // removing cache file on any error
       fs.rmSync(getFullAuthDataFilePath());
     }
@@ -216,7 +216,7 @@ export async function withTempRoot<T>(
           console.warn('*** skipping proxy-based test, PL_ADDRESS is not localhost', process.env.PL_ADDRESS);
           return;
         }
-      } catch (_e) {
+      } catch {
         // ignore proxy setup errors; tests will run against original address
       }
     }
@@ -250,10 +250,10 @@ export async function withTempRoot<T>(
     if (proxy) {
       try {
         await proxy.disconnectAll();
-      } catch (_e) { /* ignore */ }
+      } catch { /* ignore */ }
       try {
         await new Promise<void>((resolve) => proxy!.server.close(() => resolve()));
-      } catch (_e) { /* ignore */ }
+      } catch { /* ignore */ }
     }
   }
 }

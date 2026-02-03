@@ -38,7 +38,7 @@ export async function verify(token: string) {
 
     if (result) return 'Signature is correct';
     else return 'Signature is incorrect';
-  } catch (_e: unknown) {
+  } catch {
     return 'Verification failed';
   }
 }

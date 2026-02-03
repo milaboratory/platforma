@@ -162,7 +162,7 @@ export function dumpSoftware(
   const sourceMap = new Map<string, string>();
   for (const tpl of compiled.templates) {
     Object.entries(tpl.data.hashToSource).forEach(([hash, src]) => sourceMap.set(hash, src));
-    getTemplateSoftware(stream, tpl.data.template).forEach((hash) => hashes.add(hash));
+    getTemplateSoftware(tpl.data.template).forEach((hash) => hashes.add(hash));
   }
 
   for (const hash of hashes) {
@@ -182,13 +182,13 @@ export function dumpSoftware(
   }
 }
 
-function getTemplateSoftware(stream: NodeJS.WritableStream, tpl: TemplateDataV3): Set<string> {
+function getTemplateSoftware(tpl: TemplateDataV3): Set<string> {
   const hashes = new Set<string>();
   for (const sw of Object.values(tpl.software)) {
     hashes.add(sw.sourceHash);
   }
   for (const subTpl of Object.values(tpl.templates)) {
-    getTemplateSoftware(stream, subTpl).forEach((hash) => hashes.add(hash));
+    getTemplateSoftware(subTpl).forEach((hash) => hashes.add(hash));
   }
 
   return new Set(hashes);

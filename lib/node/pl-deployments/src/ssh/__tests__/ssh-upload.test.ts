@@ -1,6 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SshClient } from '../ssh';
-import { SFTPError } from '../ssh_errors';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import type { SFTPWrapper } from 'ssh2';
 import { writeFile, unlink } from 'node:fs/promises';
@@ -29,15 +28,15 @@ describe('mocked SSHClient', () => {
 
   test('should retry upload in case of a failure', async () => {
     const logger = new ConsoleLoggerAdapter();
-    
+
     // Track upload attempts
     let uploadAttempt = 0;
-    
+
     // Create a mock SFTP wrapper
     const mockSftp = {
       fastPut: vi.fn((localPath: string, remotePath: string, callback: (err: Error | null) => void) => {
         uploadAttempt++;
-        
+
         if (uploadAttempt === 1) {
           // First attempt: return 'Failure' error (generic failure that triggers retry)
           const failureError = new Error('Failure');
@@ -67,7 +66,7 @@ describe('mocked SSHClient', () => {
 
     // The upload should succeed on the second attempt
     const result = await sshClient.uploadFile(testFilePath, remoteFilePath);
-    
+
     expect(result).toBe(true);
     expect(uploadAttempt).toBe(2); // Should succeed on 2nd attempt
     expect(mockSftp.fastPut).toHaveBeenCalledTimes(2);

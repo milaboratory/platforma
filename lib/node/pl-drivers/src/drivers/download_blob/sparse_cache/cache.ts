@@ -2,7 +2,7 @@ import { RangeBytes } from '@milaboratories/pl-model-common';
 import { ensureDirExists, fileExists, mapEntries, MiLogger } from '@milaboratories/ts-helpers';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { addRange, doesRangeExist, Ranges, rangesFileName, rangesFilePostfix, rangesSize, readRangesFile, writeRangesFile } from './ranges';
+import { addRange, doesRangeExist, Ranges, rangesFileName, rangesSize, readRangesFile, writeRangesFile } from './ranges';
 import { writeToSparseFile } from './file';
 import { functions } from '@milaboratories/helpers';
 

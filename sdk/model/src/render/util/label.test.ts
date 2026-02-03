@@ -105,7 +105,7 @@ test.each<{ name: string; traces: Trace[]; labels: string[] }>([
     ],
     labels: ['Unique entry 1', 'Unique entry 2']
   }
-])('test label derivation: $name', ({ name, traces, labels }) => {
+])('test label derivation: $name', ({ traces, labels }) => {
   expect(deriveLabels(tracesToSpecs(traces), (s) => s).map((r) => r.label)).toEqual(labels);
   expect(
     deriveLabels(tracesToSpecs(traces), (s) => s, { includeNativeLabel: true }).map((r) => r.label)

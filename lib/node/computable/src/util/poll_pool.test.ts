@@ -113,9 +113,9 @@ test('nested poll pool computable test', async () => {
   const pool = new TestComputablePool();
 
   const selector = new WatchableValue('a');
-  const c = Computable.make((c) => {
-    return Computable.make((c) => {
-      const s = selector.getValue(c);
+  const c = Computable.make(() => {
+    return Computable.make((ctx) => {
+      const s = selector.getValue(ctx);
       return pool.get(s);
     });
   });

@@ -644,7 +644,7 @@ export class SshPl {
 
     try {
       await this.sshClient.exec('hash tar');
-    } catch (_) {
+    } catch {
       throw new Error(`tar is not installed on the server. Please install it before running Platforma.`);
     }
 
