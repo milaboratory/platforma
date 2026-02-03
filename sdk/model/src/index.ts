@@ -1,6 +1,7 @@
 export * from './block_state_patch';
 export * from './block_state_util';
 export * from './block_storage';
+export * from './block_storage_facade';
 export * from './builder';
 export { BlockModelV3 } from './block_model';
 export {
@@ -12,6 +13,8 @@ export {
   defaultRecover,
   makeDataVersioned,
 } from './block_migrations';
+export { PluginModelBuilder, PluginModelFactory, PluginModel } from './plugin_model';
+export type { PluginRenderCtx } from './plugin_model';
 export * from './bconfig';
 export * from './components';
 export * from './config';

@@ -1,6 +1,6 @@
-import type { ResultOrError, BlockConfig, PlRef, ConfigRenderLambda, StorageDebugView } from '@platforma-sdk/model';
+import type { ResultOrError, BlockConfig, PlRef, StorageDebugView } from '@platforma-sdk/model';
 import type { StringifiedJson } from '@milaboratories/pl-model-common';
-import { extractCodeWithInfo, ensureError } from '@platforma-sdk/model';
+import { extractCodeWithInfo, ensureError, BlockStorageFacadeV2Callbacks, BlockStorageFacadeV2Handles } from '@platforma-sdk/model';
 import { LRUCache } from 'lru-cache';
 import type { QuickJSWASMModule } from 'quickjs-emscripten';
 import { executeSingleLambda } from '../js_render';
@@ -25,16 +25,6 @@ type EnrichmentTargetsValue = {
 export type MigrationResult =
   | { error: string }
   | { error?: undefined; newStorageJson: string; info: string; warn?: string };
-
-// Internal lambda handles for storage operations (registered by SDK's block_storage_vm.ts)
-// All callbacks are prefixed with `__pl_` to indicate internal SDK use
-const STORAGE_APPLY_UPDATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_applyUpdate' };
-const STORAGE_DEBUG_VIEW_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_debugView' };
-const STORAGE_MIGRATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_migrate' };
-const ARGS_DERIVE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_args_derive' };
-const PRERUN_ARGS_DERIVE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_prerunArgs_derive' };
-// Registered by DataModel.registerCallbacks()
-const INITIAL_STORAGE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_initial' };
 
 /**
  * Result of args derivation from storage.
@@ -77,7 +67,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        ARGS_DERIVE_HANDLE,
+        BlockStorageFacadeV2Handles[BlockStorageFacadeV2Callbacks.ArgsDerive],
         extractCodeWithInfo(blockConfig),
         storageJson,
       ) as ArgsDeriveResult;
@@ -107,7 +97,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        PRERUN_ARGS_DERIVE_HANDLE,
+        BlockStorageFacadeV2Handles[BlockStorageFacadeV2Callbacks.PrerunArgsDerive],
         extractCodeWithInfo(blockConfig),
         storageJson,
       ) as ArgsDeriveResult;
@@ -157,7 +147,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        INITIAL_STORAGE_HANDLE,
+        BlockStorageFacadeV2Handles[BlockStorageFacadeV2Callbacks.StorageInitial],
         extractCodeWithInfo(blockConfig),
       ) as string;
       return result;
@@ -184,7 +174,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        STORAGE_APPLY_UPDATE_HANDLE,
+        BlockStorageFacadeV2Handles[BlockStorageFacadeV2Callbacks.StorageApplyUpdate],
         extractCodeWithInfo(blockConfig),
         currentStorageJson,
         payload,
@@ -208,7 +198,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        STORAGE_DEBUG_VIEW_HANDLE,
+        BlockStorageFacadeV2Handles[BlockStorageFacadeV2Callbacks.StorageDebugView],
         extractCodeWithInfo(blockConfig),
         rawStorageJson,
       ) as StringifiedJson<StorageDebugView>;
@@ -242,7 +232,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        STORAGE_MIGRATE_HANDLE,
+        BlockStorageFacadeV2Handles[BlockStorageFacadeV2Callbacks.StorageMigrate],
         extractCodeWithInfo(blockConfig),
         currentStorageJson,
       ) as MigrationResult;
