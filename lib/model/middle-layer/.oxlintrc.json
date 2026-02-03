@@ -1,9 +1,5 @@
 {
   "extends": [
     "node_modules/@milaboratories/ts-builder/dist/configs/oxclint-block-model.json"
-  ],
-  "rules": {
-    "unicorn/no-thenable": "off",
-    "unicorn/no-new-array": "off"
-  }
+  ]
 }

@@ -1,8 +1,5 @@
 {
   "extends": [
     "node_modules/@milaboratories/ts-builder/dist/configs/oxclint-node.json"
-  ],
-  "rules": {
-    "unicorn/no-thenable": "off"
-  }
+  ]
 }

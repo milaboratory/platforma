@@ -1,6 +1,5 @@
 {
   "rules": {
-    "no-useless-rename": "error",
     "unicorn/no-useless-fallback-in-spread": "off"
   }
 }

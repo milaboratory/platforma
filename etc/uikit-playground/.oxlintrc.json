@@ -1,0 +1,5 @@
+{
+  "extends": [
+    "node_modules/@milaboratories/ts-builder/dist/configs/oxclint-block-ui.json"
+  ]
+}

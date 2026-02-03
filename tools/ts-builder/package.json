@@ -5,6 +5,9 @@
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
+  "exports": {
+    "./configs/*": "./dist/configs/*"
+  },
   "bin": {
     "ts-builder": "./bin/ts-builder.js"
   },

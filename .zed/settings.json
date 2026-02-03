@@ -16,31 +16,30 @@
     "typos": true
   },
   "prettier": {
-    "allowed": false,
+    "allowed": false
+  },
+  "lsp": {
+    "oxlint": {
+      "initialization_options": {
+        "settings": {
+          "disableNestedConfig": false,
+          "fixKind": "safe_fix",
+          "run": "onType",
+          "typeAware": true,
+          "unusedDisableDirectives": "deny"
+        }
+      }
+    }
   },
   "languages": {
     "JavaScript": {
-      "language_servers": [
-        "typescript-language-server",
-        "eslint"
-      ],
-      "formatter": {
-        "language_server": {
-          "name": "eslint"
-        }
-      },
+      "language_servers": ["oxlint"],
+      "formatter": [{ "code_action": "source.fixAll.oxc" }],
       "format_on_save": "on"
     },
     "TypeScript": {
-      "language_servers": [
-        "typescript-language-server",
-        "eslint"
-      ],
-      "formatter": {
-        "language_server": {
-          "name": "eslint"
-        }
-      },
+      "language_servers": ["typescript-language-server", "oxlint"],
+      "formatter": [{ "code_action": "source.fixAll.oxc" }],
       "format_on_save": "on"
     }
   }

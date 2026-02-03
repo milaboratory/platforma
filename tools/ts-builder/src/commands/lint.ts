@@ -9,7 +9,7 @@ const __dirname = dirname(__filename);
 
 function getDefaultConfigPath(): string {
   // __dirname points to dist/commands after build, config is in dist/configs
-  return join(__dirname, '..', 'configs', 'oxlintrc.json');
+  return join(__dirname, '..', 'configs', 'oxclint-base.json');
 }
 
 export const lintCommand = new Command('lint')
