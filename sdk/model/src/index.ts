@@ -1,6 +1,7 @@
 export * from './block_state_patch';
 export * from './block_state_util';
 export * from './block_storage';
+export * from './block_storage_facade';
 export * from './builder';
 export { BlockModelV3 } from './block_model';
 export {
