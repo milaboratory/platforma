@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-model-common",
-  "version": "1.24.2",
+  "version": "1.24.3",
   "description": "Platforma SDK Model",
   "type": "module",
   "types": "./dist/index.d.ts",
