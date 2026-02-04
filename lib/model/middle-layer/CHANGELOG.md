@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.11.0
+
+### Minor Changes
+
+- 7cca3e8: Added WASM API definition
+
 ## 1.10.8
 
 ### Patch Changes
