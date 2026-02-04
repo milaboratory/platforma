@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.10.8
+
+### Patch Changes
+
+- db932b2: add changeset
+
 ## 1.10.7
 
 ### Patch Changes
