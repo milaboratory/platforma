@@ -481,7 +481,7 @@ export type InferBooleanExpressionUnion<E> = [
   E extends ExprStringRegex<unknown> ? Extract<E, { type: 'stringRegex' }> : never,
   E extends ExprLogicalUnary<unknown> ? Extract<E, { type: 'not' }> : never,
   E extends ExprLogicalVariadic<unknown> ? Extract<E, { type: 'and' | 'or' }> : never,
-  E extends ExprIsIn<unknown, string | number> ? Extract<E, { type: 'isIn' }> : never
+  E extends ExprIsIn<unknown, string | number> ? Extract<E, { type: 'isIn' }> : never,
 ][number];
 
 // ============ Generic Query Types ============
