@@ -37,7 +37,17 @@ export type TypeSpec = {
  * - `exp` - Exponential function (e^x)
  * - `negate` - Negation (-x)
  */
-export type NumericUnaryOperand = 'abs' | 'ceil' | 'floor' | 'round' | 'sqrt' | 'log' | 'log2' | 'log10' | 'exp' | 'negate';
+export type NumericUnaryOperand =
+  | 'abs'
+  | 'ceil'
+  | 'floor'
+  | 'round'
+  | 'sqrt'
+  | 'log'
+  | 'log2'
+  | 'log10'
+  | 'exp'
+  | 'negate';
 
 /**
  * Binary mathematical operation kinds.
@@ -471,7 +481,7 @@ export type InferBooleanExpressionUnion<E> = [
   E extends ExprStringRegex<unknown> ? Extract<E, { type: 'stringRegex' }> : never,
   E extends ExprLogicalUnary<unknown> ? Extract<E, { type: 'not' }> : never,
   E extends ExprLogicalVariadic<unknown> ? Extract<E, { type: 'and' | 'or' }> : never,
-  E extends ExprIsIn<unknown, string | number> ? Extract<E, { type: 'isIn' }> : never,
+  E extends ExprIsIn<unknown, string | number> ? Extract<E, { type: 'isIn' }> : never
 ][number];
 
 // ============ Generic Query Types ============
@@ -617,8 +627,8 @@ export interface QuerySliceAxes<Q, A extends QueryAxisSelector<unknown>> {
  *   type: 'sort',
  *   input: dataQuery,
  *   sortBy: [
- *     { axisOrColumn: { type: 'column', id: 'score' }, ascending: false, nullsFirst: null },
- *     { axisOrColumn: { type: 'axis', id: 'name' }, ascending: true, nullsFirst: null }
+ *     { expression: { type: 'columnRef', value: 'score' }, ascending: false, nullsFirst: null },
+ *     { expression: { type: 'axisRef', value: { name: 'name' } }, ascending: true, nullsFirst: null }
  *   ]
  * }
  */
@@ -628,7 +638,7 @@ export interface QuerySort<Q, E> {
   input: Q;
   /** Sort criteria in priority order (at least one required) */
   sortBy: {
-    data: E;
+    expression: E;
     /** If true, sort ascending (A-Z, 0-9); if false, descending */
     ascending: boolean;
     /**
