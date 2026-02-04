@@ -54,7 +54,6 @@ import type { LabelDerivationOps } from './util/label';
 import { deriveLabels } from './util/label';
 import type { APColumnSelectorWithSplit } from './util/split_selectors';
 import { patchInSetFilters } from './util/pframe_upgraders';
-import { allPColumnsReady } from './util/pcolumn_data';
 
 export type PColumnDataUniversal<TreeEntry = TreeNodeAccessor> = TreeEntry | DataInfo<TreeEntry> | PColumnValues;
 
@@ -81,7 +80,7 @@ export type UniversalColumnOption = { label: string; value: SUniversalPColumnId 
  * @returns Transformed data compatible with platform API
  */
 function transformPColumnData(
-  data: PColumn<PColumnDataUniversal> | PColumnLazy<PColumnDataUniversal>,
+  data: PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>,
 ): PColumn<PColumnValues | AccessorHandle | DataInfo<AccessorHandle>> {
   return mapPObjectData(data, (d) => {
     if (d instanceof TreeNodeAccessor) {
@@ -89,7 +88,7 @@ function transformPColumnData(
     } else if (isDataInfo(d)) {
       return mapDataInfo(d, (accessor) => accessor.handle);
     } else {
-      return d;
+      return d ?? [];
     }
   });
 }
@@ -612,7 +611,7 @@ export abstract class RenderCtxBase<Args, Data> {
   // TODO remove all non-PColumn fields
   public createPFrame(def: PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>>): PFrameHandle | undefined {
     this.verifyInlineAndExplicitColumnsSupport(def);
-    if (!allPColumnsReady(def)) return undefined;
+    // if (!allPColumnsReady(def)) return undefined;
     return this.ctx.createPFrame(
       def.map((c) => transformPColumnData(c)),
     );
@@ -652,7 +651,7 @@ export abstract class RenderCtxBase<Args, Data> {
     }
     const columns = extractAllColumns(rawDef.src);
     this.verifyInlineAndExplicitColumnsSupport(columns);
-    if (!allPColumnsReady(columns)) return undefined;
+    // if (!allPColumnsReady(columns)) return undefined;
     return this.ctx.createPTable(
       mapPTableDef(rawDef, (po) => transformPColumnData(po)),
     );
