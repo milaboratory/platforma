@@ -17,7 +17,8 @@ const base = tseslint.config(
   stylistic.configs.customize({
     semi: true,
     braceStyle: '1tbs',
-    arrowParens: true
+    arrowParens: true,
+    commaDangle: 'always-multiline'
   }),
   {
     rules: {
@@ -45,7 +46,7 @@ export const model = tseslint.config(
       'eslint.config.js',
       'jest.config.cjs',
       'vite.config.mts',
-      'vite.config.mts.*' 
+      'vite.config.mts.*'
     ],
   },
   {
