@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.24.3
+
+### Patch Changes
+
+- 0099ff7: small updates
+
 ## 1.24.2
 
 ### Patch Changes
