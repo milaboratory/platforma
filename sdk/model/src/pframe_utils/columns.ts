@@ -48,7 +48,7 @@ export function getRelatedColumns<A, U>(ctx: RenderCtxBase<A, U>, { columns: roo
   }
 
   // all linker columns always go to pFrame - even it's impossible to use some of them they all are hidden
-  const linkerColumns = columns.getColumns((spec) => predicate(spec) && isLinkerColumn(spec)) ?? [];
+  const linkerColumns = columns.getColumns((spec) => predicate(spec) && isLinkerColumn(spec), { dontWaitAllData: true }) ?? [];
   const availableWithLinkersAxes = getAvailableWithLinkersAxes(linkerColumns, blockAxes);
 
   // all possible axes from connected linkers
