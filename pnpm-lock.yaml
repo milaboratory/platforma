@@ -3053,6 +3053,9 @@ importers:
       es-toolkit:
         specifier: 'catalog:'
         version: 1.39.10
+      fast-json-patch:
+        specifier: 'catalog:'
+        version: 3.1.1
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
@@ -3078,9 +3081,6 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
-      fast-json-patch:
-        specifier: 'catalog:'
-        version: 3.1.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -3184,6 +3184,9 @@ importers:
       es-toolkit:
         specifier: 'catalog:'
         version: 1.39.10
+      fast-json-patch:
+        specifier: 'catalog:'
+        version: 3.1.1
       lru-cache:
         specifier: 'catalog:'
         version: 11.2.2
@@ -3224,9 +3227,6 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 9.25.1(jiti@2.6.1)
-      fast-json-patch:
-        specifier: 'catalog:'
-        version: 3.1.1
       happy-dom:
         specifier: 'catalog:'
         version: 15.11.7

@@ -34,6 +34,7 @@
     "ag-grid-enterprise": "catalog:",
     "ag-grid-vue3": "catalog:",
     "canonicalize": "catalog:",
+    "fast-json-patch": "catalog:",
     "lru-cache": "catalog:",
     "vue": "catalog:",
     "@vueuse/core": "catalog:",
@@ -61,7 +62,6 @@
     "eslint": "catalog:",
     "@vue/test-utils": "catalog:",
     "yarpm": "catalog:",
-    "fast-json-patch": "catalog:",
     "@faker-js/faker": "catalog:"
   }
 }

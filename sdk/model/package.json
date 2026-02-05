@@ -30,6 +30,7 @@
     "@milaboratories/ptabler-expression-js": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/pl-error-like": "workspace:*",
+    "fast-json-patch": "catalog:",
     "utility-types": "catalog:",
     "canonicalize": "catalog:",
     "es-toolkit": "catalog:",
@@ -43,7 +44,6 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "fast-json-patch": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }
 }
