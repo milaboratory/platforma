@@ -5,7 +5,8 @@
   "version": "1.1.0",
   "scripts": {
     "lint": "ts-builder lint --target node",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "fmt": "ts-builder format"
   },
   "//": {
     "build": "rm -rf ./the-reg && block-tools publish -m ./node_modules/@milaboratories/milaboratories.test-enter-numbers/block-pack/manifest.json -r file:./the-reg"

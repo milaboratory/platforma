@@ -21,7 +21,8 @@
     "preview": "vite preview",
     "lint": "ts-builder lint --target browser-lib",
     "check": "yarpm type-check && yarpm lint && yarpm test",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
   "dependencies": {
     "@milaboratories/ptabler-expression-js": "workspace:*",

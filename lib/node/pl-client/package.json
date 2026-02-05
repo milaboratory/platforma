@@ -23,7 +23,8 @@
     "lint": "ts-builder lint --target node",
     "test": "vitest run --coverage",
     "update-proto": "./sync-proto.sh && ./generate-grpc.sh && ./generate-rest.sh",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
   "files": [
     "./dist/**/*",

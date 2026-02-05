@@ -9,7 +9,8 @@
     "build": "oclif-index && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
   "bin": {
     "pl-tengo": "./bin/run.js"

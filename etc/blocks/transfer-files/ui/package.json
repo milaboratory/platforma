@@ -8,7 +8,8 @@
     "watch": "ts-builder build --target block-ui --watch",
     "build": "ts-builder build --target block-ui",
     "type-check": "ts-builder types --target block-ui",
-    "lint": "ts-builder lint --target block-ui"
+    "lint": "ts-builder lint --target block-ui",
+    "fmt": "ts-builder format"
   },
   "dependencies": {
     "@milaboratories/milaboratories.transfer-files.model": "workspace:*",

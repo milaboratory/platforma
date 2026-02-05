@@ -20,6 +20,7 @@
     "do-pack": "PL_PKG_DEV=local turbo run do-pack",
     "do-pack:remote": "turbo run do-pack",
     "lint": "turbo run lint",
+    "fmt": "turbo run fmt",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "prepare": "husky",

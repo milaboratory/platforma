@@ -22,7 +22,8 @@
     "test:ui": "vitest --ui",
     "type-check": "ts-builder types --target node",
     "lint": "ts-builder lint --target node",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
   "dependencies": {
     "@platforma-open/milaboratories.software-ptabler.schema": "workspace:*"

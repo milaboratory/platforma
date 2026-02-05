@@ -19,7 +19,8 @@
     "test": "echo 'No tests for test-helpers package'",
     "watch": "ts-builder build --target node --watch",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "ts-builder lint --target node"
+    "lint": "ts-builder lint --target node",
+    "fmt": "ts-builder format"
   },
   "files": [
     "./dist/**/*",

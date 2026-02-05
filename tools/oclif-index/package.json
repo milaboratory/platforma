@@ -9,7 +9,8 @@
   "scripts": {
     "build": "ts-builder build --target node",
     "type-check": "ts-builder types --target node",
-    "watch": "ts-builder build --target node --watch"
+    "watch": "ts-builder build --target node --watch",
+    "fmt": "ts-builder format"
   },
   "bin": {
     "oclif-index": "./bin/run.mjs"

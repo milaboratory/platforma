@@ -9,7 +9,8 @@
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "docs:test": "echo 'Hola!'",
-    "lint": "ts-builder lint --target browser"
+    "lint": "ts-builder lint --target browser",
+    "fmt": "ts-builder format"
   },
   "devDependencies": {
     "sass": "catalog:",

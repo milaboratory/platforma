@@ -8,7 +8,8 @@
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "lint": "ts-builder lint --target node",
-    "test": "vitest run --coverage --no-file-parallelism --sequence.concurrent=false"
+    "test": "vitest run --coverage --no-file-parallelism --sequence.concurrent=false",
+    "fmt": "ts-builder format"
   },
   "dependencies": {
     "undici": "catalog:",

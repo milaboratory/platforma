@@ -28,7 +28,8 @@
     "generate-icons": "pnpm run parse-icons-folder && pnpm run minify-icons",
     "lint": "ts-builder lint --target browser-lib",
     "check": "yarpm type-check && yarpm test && yarpm lint",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
   "dependencies": {
     "@types/d3-scale": "catalog:",

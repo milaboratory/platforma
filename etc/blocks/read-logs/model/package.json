@@ -10,7 +10,8 @@
   "scripts": {
     "build": "ts-builder build --target block-model && block-tools build-model",
     "type-check": "ts-builder types --target block-model",
-    "lint": "ts-builder lint --target block-model"
+    "lint": "ts-builder lint --target block-model",
+    "fmt": "ts-builder format"
   },
   "dependencies": {
     "@platforma-sdk/model": "workspace:*",

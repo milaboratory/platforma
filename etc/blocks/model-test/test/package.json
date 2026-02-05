@@ -6,7 +6,8 @@
   "scripts": {
     "test": "vitest",
     "lint": "ts-builder lint --target block-test",
-    "type-check": "ts-builder types --target block-test"
+    "type-check": "ts-builder types --target block-test",
+    "fmt": "ts-builder format"
   },
   "files": [],
   "keywords": [],

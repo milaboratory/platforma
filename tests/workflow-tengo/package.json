@@ -21,7 +21,8 @@
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
     "vscode-tags": "cd ../../ && bash ./sdk/workflow-tengo/create_tags.sh .tags false",
-    "emacs-tags": "./create_tags.sh ../TAGS false -e"
+    "emacs-tags": "./create_tags.sh ../TAGS false -e",
+    "fmt": "ts-builder format"
   },
   "dependencies": {
     "@platforma-sdk/workflow-tengo": "workspace:*",

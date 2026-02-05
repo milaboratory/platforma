@@ -18,7 +18,8 @@
     "watch": "ts-builder build --target node --watch",
     "lint": "ts-builder lint --target node",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
   "files": [
     "./dist/**/*",

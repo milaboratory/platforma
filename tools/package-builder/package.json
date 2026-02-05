@@ -9,7 +9,8 @@
     "watch": "ts-builder build --target node --watch",
     "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "ts-builder lint --target node"
+    "lint": "ts-builder lint --target node",
+    "fmt": "ts-builder format"
   },
   "bin": {
     "pl-pkg": "./bin/run.mjs"

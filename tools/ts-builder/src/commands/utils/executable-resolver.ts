@@ -54,3 +54,10 @@ export function resolveRollup(): string {
 export function resolveOxlint(): string {
   return resolveExecutable('oxlint', 'oxlint');
 }
+
+/**
+ * Resolves oxfmt executable
+ */
+export function resolveOxfmt(): string {
+  return resolveExecutable('oxfmt', 'oxfmt');
+}

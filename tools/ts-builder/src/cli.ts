@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { version } from '../package.json' with { type: 'json' };
 import { buildCommand } from './commands/build';
+import { formatCommand } from './commands/format';
 import { initBuildConfigCommand } from './commands/init-build-config';
 import { initServeConfigCommand } from './commands/init-serve-config';
 import { initTsconfigCommand } from './commands/init-tsconfig';
@@ -25,6 +26,7 @@ program.addCommand(buildCommand);
 program.addCommand(serveCommand);
 program.addCommand(typesCommand);
 program.addCommand(lintCommand);
+program.addCommand(formatCommand);
 program.addCommand(initTsconfigCommand);
 program.addCommand(initBuildConfigCommand);
 program.addCommand(initServeConfigCommand);

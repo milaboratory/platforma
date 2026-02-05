@@ -19,7 +19,8 @@
     "readme": "oclif readme",
     "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "ts-builder lint --target node"
+    "lint": "ts-builder lint --target node",
+    "fmt": "ts-builder format"
   },
   "bin": {
     "block-tools": "./bin/run.js"
