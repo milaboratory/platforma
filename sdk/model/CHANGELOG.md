@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.53.11
+
+### Patch Changes
+
+- 209554d: Move fast-json-patch to regular dependencies
+
 ## 1.53.10
 
 ### Patch Changes
