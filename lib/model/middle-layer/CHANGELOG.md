@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.11.4
+
+### Patch Changes
+
+- 77db818: Rename joinEntry to dataQuery in WASM API
+
 ## 1.11.3
 
 ### Patch Changes
