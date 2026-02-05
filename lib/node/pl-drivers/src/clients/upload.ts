@@ -149,9 +149,8 @@ export class ClientUpload {
     const chunk = await readFileChunk(path, info.chunkStart, info.chunkEnd);
     await checkExpectedMTime(path, expectedMTimeUnix);
 
-    const crc32cChecksum = calculateCrc32cChecksum(chunk);
-    if (checksumAlgorithm === UploadAPI_ChecksumAlgorithm.CRC32C) {
-      info.headers.push({ name: checksumHeader, value: crc32cChecksum });
+    if (checksumHeader && checksumAlgorithm === UploadAPI_ChecksumAlgorithm.CRC32C) {
+      info.headers.push({ name: checksumHeader, value: calculateCrc32cChecksum(chunk) });
     }
 
     const contentLength = Number(info.chunkEnd - info.chunkStart);
