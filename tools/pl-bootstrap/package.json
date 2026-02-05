@@ -7,7 +7,7 @@
     "build": "oclif-index && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "ts-builder lint --target node",
+    "lint": "ts-builder lint",
     "fmt": "ts-builder format"
   },
   "bin": {

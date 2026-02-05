@@ -27,7 +27,7 @@ export const lintCommand = new Command('lint')
       configPath = options.config;
     } else {
       // Check if local .oxlintrc.json exists in current directory
-      const localConfig = join(process.cwd(), '.oxlint.json');
+      const localConfig = join(process.cwd(), '.oxlintrc.json');
       if (existsSync(localConfig)) {
         configPath = localConfig;
       } else {

@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "lint": "ts-builder lint --target node",
+    "lint": "ts-builder lint",
     "test": "vitest run --coverage",
     "fmt": "ts-builder format"
   },

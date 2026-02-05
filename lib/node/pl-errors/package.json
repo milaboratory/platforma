@@ -16,7 +16,7 @@
     "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "build:watch": "ts-builder build --target node --watch",
-    "lint": "ts-builder lint --target node",
+    "lint": "ts-builder lint",
     "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"

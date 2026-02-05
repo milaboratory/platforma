@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "ts-builder lint --target browser",
+    "lint": "ts-builder lint",
     "test": "vitest run --coverage",
     "fmt": "ts-builder format"
   },

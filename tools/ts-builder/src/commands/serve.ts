@@ -4,6 +4,7 @@ import {
   getConfigInfo,
   getGlobalOptions,
   getValidatedConfigPath,
+  requireTarget,
   resolveVite,
   validateTargetForBrowser,
 } from './utils/index';
@@ -14,7 +15,7 @@ export const serveCommand = new Command('serve')
   .option('--host <host>', 'Host address')
   .action(async (options, command) => {
     const globalOpts = getGlobalOptions(command);
-    const target = globalOpts.target;
+    const target = requireTarget(globalOpts);
     const customServeConfig = globalOpts.serveConfig;
     const useSources = globalOpts.useSources;
 

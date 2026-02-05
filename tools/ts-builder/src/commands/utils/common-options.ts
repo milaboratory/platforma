@@ -20,6 +20,14 @@ export function getGlobalOptions(command: Command): GlobalOptions {
   return (command.parent?.opts() || {}) as GlobalOptions;
 }
 
+export function requireTarget(globalOpts: GlobalOptions): TargetType {
+  if (!globalOpts.target) {
+    console.error('Target type is required. Use --target flag.');
+    process.exit(1);
+  }
+  return globalOpts.target;
+}
+
 export function getTarget(options: CommandOptions, globalOpts: GlobalOptions): string {
   const target = options.target || globalOpts.target;
 

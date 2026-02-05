@@ -4,7 +4,7 @@
   "description": "Pl Tengo Template Builder",
   "type": "module",
   "scripts": {
-    "lint": "ts-builder lint --target node",
+    "lint": "ts-builder lint",
     "type-check": "ts-builder types --target node",
     "build": "oclif-index && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",

@@ -5,6 +5,7 @@ import {
   getGlobalOptions,
   getValidatedConfigPath,
   isBuildableTarget,
+  requireTarget,
   resolveRollup,
   resolveVite,
   type TargetType,
@@ -15,7 +16,7 @@ export const buildCommand = new Command('build')
   .option('-w, --watch', 'Watch for changes and rebuild')
   .action(async (options, command) => {
     const globalOpts = getGlobalOptions(command);
-    const target = globalOpts.target;
+    const target = requireTarget(globalOpts);
     const customBuildConfig = globalOpts.buildConfig;
     const useSources = globalOpts.useSources;
     const isWatch = options.watch;

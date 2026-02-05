@@ -28,7 +28,7 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "build": "ts-builder build --target browser-lib --build-config ./build.config.ts",
     "generate-assets": "docker build --output=assets .",
-    "lint": "ts-builder lint --target browser-lib",
+    "lint": "ts-builder lint",
     "test": "vitest run --coverage",
     "fmt": "ts-builder format"
   }
