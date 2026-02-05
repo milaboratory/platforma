@@ -17,13 +17,13 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "lint": "oxlint",
     "type-check": "tsc --noEmit",
-    "fmt": "ts-builder format"
+    "fmt": "oxfmt"
   },
   "dependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "commander": "^12.0.0",
-    "oxfmt": "^0.1.0",
+    "oxfmt": "^0.28.0",
     "oxlint": "^0.16.0",
     "rollup": "catalog:",
     "rollup-plugin-copy": "^3.5.0",

@@ -15,7 +15,7 @@ function getDefaultConfigPath(): string {
 export const lintCommand = new Command('lint')
   .description('Lint the project using oxlint')
   .option('--fix', 'Apply fixes automatically')
-  .option('-c, --config <path>', 'Path to oxlint config file')
+  .option('--config <path>', 'Path to oxlint config file')
   .argument('[paths...]', 'Paths to lint (defaults to current directory)')
   .action(async (paths, options) => {
     const oxlintCommand = resolveOxlint();
@@ -37,7 +37,7 @@ export const lintCommand = new Command('lint')
     }
 
     if (configPath) {
-      oxlintArgs.push('-c', configPath);
+      oxlintArgs.push('--config', configPath);
     }
 
     // Treat all warnings as errors

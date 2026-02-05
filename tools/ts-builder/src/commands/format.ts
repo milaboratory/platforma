@@ -15,7 +15,7 @@ function getDefaultConfigPath(): string {
 export const formatCommand = new Command('format')
   .description('Format the project using oxfmt')
   .option('--check', 'Check if files are formatted without writing')
-  .option('-c, --config <path>', 'Path to oxfmt config file')
+  .option('--config <path>', 'Path to oxfmt config file')
   .argument('[paths...]', 'Paths to format (defaults to current directory)')
   .action(async (paths, options) => {
     const oxfmtCommand = resolveOxfmt();
@@ -36,18 +36,16 @@ export const formatCommand = new Command('format')
       }
     }
 
-    if (configPath) {
-      oxfmtArgs.push('-c', configPath);
-    }
-
     if (options.check) {
       oxfmtArgs.push('--check');
     }
 
+    if (configPath) {
+      oxfmtArgs.push('--config', configPath);
+    }
+
     if (paths && paths.length > 0) {
       oxfmtArgs.push(...paths);
-    } else {
-      oxfmtArgs.push('.');
     }
 
     console.log(options.check ? 'Checking formatting...' : 'Formatting project...');
