@@ -17,7 +17,7 @@ import {
   readAnnotationJson,
   stringifyJson,
 } from '@milaboratories/pl-model-common';
-import type { PColumnDataUniversal, PColumnEntryUniversal, PColumnEntryWithLabel, RenderCtxBase } from '../render';
+import type { PColumnDataUniversal, RenderCtxBase } from '../render';
 import { getAllRelatedColumns, getRelatedColumns } from '../pframe_utils/columns';
 
 /** Create id for column copy with added keys in axes domains */
@@ -61,7 +61,7 @@ export function isHiddenFromUIColumn(column: PColumnSpec): boolean {
 export type AxesVault = Map<CanonicalizedJson<AxisId>, AxisSpecNormalized>;
 
 export function getAvailableWithLinkersAxes(
-  linkerColumns: (PColumnEntryWithLabel | PColumnEntryUniversal)[],
+  linkerColumns: (PColumn<PColumnDataUniversal>)[],
   blockAxes: AxesVault,
 ): AxesVault {
   const linkerMap = LinkerMap.fromColumns(linkerColumns.map(getColumnIdAndSpec));

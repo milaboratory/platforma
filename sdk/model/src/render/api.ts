@@ -54,7 +54,7 @@ import type { LabelDerivationOps } from './util/label';
 import { deriveLabels } from './util/label';
 import type { APColumnSelectorWithSplit } from './util/split_selectors';
 import { patchInSetFilters } from './util/pframe_upgraders';
-import { allPColumnsReady } from './util/pcolumn_data';
+import { allPColumnsReady } from './util';
 
 export type PColumnDataUniversal<TreeEntry = TreeNodeAccessor> = TreeEntry | DataInfo<TreeEntry> | PColumnValues;
 

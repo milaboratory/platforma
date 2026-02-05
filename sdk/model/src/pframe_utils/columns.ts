@@ -11,7 +11,7 @@ export function getAllRelatedColumns<A, U>(
   // if current block doesn't produce own columns then use all columns from result pool
   const columns = new PColumnCollection();
   columns.addColumnProvider(ctx.resultPool);
-  const allColumns = columns.getUniversalEntries(predicate, { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
+  const allColumns = columns.getColumns(predicate, { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
 
   const allAxes: AxesVault = new Map(allColumns
     .flatMap((column) => getNormalizedAxesList(column.spec.axesSpec))
@@ -48,7 +48,7 @@ export function getRelatedColumns<A, U>(ctx: RenderCtxBase<A, U>, { columns: roo
   }
 
   // all linker columns always go to pFrame - even it's impossible to use some of them they all are hidden
-  const linkerColumns = columns.getUniversalEntries((spec) => predicate(spec) && isLinkerColumn(spec)) ?? [];
+  const linkerColumns = columns.getColumns((spec) => predicate(spec) && isLinkerColumn(spec), { dontWaitAllData: true }) ?? [];
   const availableWithLinkersAxes = getAvailableWithLinkersAxes(linkerColumns, blockAxes);
 
   // all possible axes from connected linkers
@@ -59,7 +59,7 @@ export function getRelatedColumns<A, U>(ctx: RenderCtxBase<A, U>, { columns: roo
 
   const blockAxesArr = Array.from(blockAxes.values());
   // all compatible with block columns but without label columns
-  let compatibleWithoutLabels = (columns.getUniversalEntries((spec) => predicate(spec) && spec.axesSpec.some((axisSpec) => {
+  let compatibleWithoutLabels = (columns.getColumns((spec) => predicate(spec) && spec.axesSpec.some((axisSpec) => {
     const axisId = getAxisId(axisSpec);
     return blockAxesArr.some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
@@ -74,13 +74,13 @@ export function getRelatedColumns<A, U>(ctx: RenderCtxBase<A, U>, { columns: roo
 
   const allAxesArr = Array.from(allAxes.values());
   // extend allowed columns - add columns thad doesn't have axes from block, but have all axes in 'allAxes' list (that means all axes from linkers or from 'hanging' of other selected columns)
-  compatibleWithoutLabels = (columns.getUniversalEntries((spec) => predicate(spec) && spec.axesSpec.every((axisSpec) => {
+  compatibleWithoutLabels = (columns.getColumns((spec) => predicate(spec) && spec.axesSpec.every((axisSpec) => {
     const axisId = getAxisId(axisSpec);
     return allAxesArr.some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
 
   // label columns must be compatible with full set of axes - block axes and axes from compatible columns from result pool
-  const compatibleLabels = (columns.getUniversalEntries((spec) => predicate(spec) && spec.axesSpec.some((axisSpec) => {
+  const compatibleLabels = (columns.getColumns((spec) => predicate(spec) && spec.axesSpec.some((axisSpec) => {
     const axisId = getAxisId(axisSpec);
     return allAxesArr.some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => isLabelColumn(column.spec));
