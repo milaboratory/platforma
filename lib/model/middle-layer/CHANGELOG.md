@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.11.1
+
+### Patch Changes
+
+- b069fbe: Update createTableByDataQuery to accept a structured request with tableSpec and joinEntry.
+
 ## 1.11.0
 
 ### Minor Changes
