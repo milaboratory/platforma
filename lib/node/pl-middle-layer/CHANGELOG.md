@@ -1,5 +1,15 @@
 # @milaboratories/pl-middle-layer
 
+## 1.46.19
+
+### Patch Changes
+
+- Updated dependencies [209554d]
+  - @platforma-sdk/model@1.53.11
+  - @milaboratories/pl-model-middle-layer@1.11.3
+  - @milaboratories/pf-driver@1.0.38
+  - @platforma-sdk/block-tools@2.6.43
+
 ## 1.46.18
 
 ### Patch Changes

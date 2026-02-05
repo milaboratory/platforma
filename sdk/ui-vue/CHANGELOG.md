@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.53.11
+
+### Patch Changes
+
+- 209554d: Move fast-json-patch to regular dependencies
+- Updated dependencies [209554d]
+  - @platforma-sdk/model@1.53.11
+  - @milaboratories/uikit@2.10.15
+
 ## 1.53.10
 
 ### Patch Changes
