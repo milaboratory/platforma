@@ -7,6 +7,8 @@ import type {
   UniqueValuesRequest,
   UniqueValuesResponse,
   QueryData,
+  AxisId,
+  PColumnIdAndSpec,
 } from '@milaboratories/pl-model-common';
 import type { CreateTableRequestV4 } from './create_table';
 import type { PTableV8 } from './table';
@@ -40,7 +42,13 @@ export interface PFrameReadAPIV11 {
   createTable(tableId: PTableId, request: CreateTableRequestV4): PTableV8;
 
   /** Creates table from data query and returns an object to access it */
-  createTableByDataQuery(tableId: PTableId, request: QueryData): PTableV8;
+  createTableByDataQuery(tableId: PTableId, request: {
+    tableSpec: {
+      axes: AxisId[];
+      columns: PColumnIdAndSpec[];
+    };
+    dataQuery: QueryData;
+  }): PTableV8;
 
   /** Calculate set of unique values for a specific axis for the filtered set of records */
   getUniqueValues(
