@@ -22,11 +22,18 @@
     "oxlint": {
       "initialization_options": {
         "settings": {
-          "disableNestedConfig": false,
-          "fixKind": "safe_fix",
           "run": "onType",
+          "fixKind": "safe_fix",
           "typeAware": true,
+          "disableNestedConfig": false,
           "unusedDisableDirectives": "deny"
+        }
+      }
+    },
+    "oxfmt": {
+      "initialization_options": {
+        "settings": {
+          "run": "onSave"
         }
       }
     }
