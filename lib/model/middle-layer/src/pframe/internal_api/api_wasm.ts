@@ -96,7 +96,7 @@ export type EvaluateQueryResponse = {
    * The data layer query representation with numeric indices,
    * suitable for execution by the data processing engine.
    */
-  joinEntry: QueryData;
+  dataQuery: QueryData;
 };
 
 /**
