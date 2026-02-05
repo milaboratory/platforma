@@ -47,7 +47,7 @@ export interface PFrameReadAPIV11 {
       axes: AxisId[];
       columns: PColumnIdAndSpec[];
     };
-    joinEntry: QueryData;
+    dataQuery: QueryData;
   }): PTableV8;
 
   /** Calculate set of unique values for a specific axis for the filtered set of records */
