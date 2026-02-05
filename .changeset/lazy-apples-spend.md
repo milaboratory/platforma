@@ -2,4 +2,4 @@
 "@milaboratories/pl-model-middle-layer": patch
 ---
 
-correct request arg createTableByDataQuery(tableId: PTableId, request: {
+Update createTableByDataQuery to accept a structured request with tableSpec and joinEntry.
