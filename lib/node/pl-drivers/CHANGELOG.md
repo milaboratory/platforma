@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.11.45
+
+### Patch Changes
+
+- 5e95dca: Do not set empty HTTP header to checksum in part uploads
+
 ## 1.11.44
 
 ### Patch Changes
