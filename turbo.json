@@ -2,6 +2,9 @@
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["tsconfig.json"],
   "tasks": {
+    "fmt": {
+      "outputs": []
+    },
     "lint": {
       "outputs": [],
       "inputs": ["$TURBO_DEFAULT$", "eslint.config.*", ".eslintrc.*"],

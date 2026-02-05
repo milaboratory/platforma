@@ -21,6 +21,7 @@
     "do-pack:remote": "turbo run do-pack",
     "lint": "turbo run lint",
     "fmt": "turbo run fmt",
+    "fmt:check": "turbo run fmt -- --check",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "prepare": "husky",
