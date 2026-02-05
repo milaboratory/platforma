@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.53.10
+
+### Patch Changes
+
+- d963d19: fix for not ready columns in pframe
+
 ## 1.53.5
 
 ### Patch Changes
