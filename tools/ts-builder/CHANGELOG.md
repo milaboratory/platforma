@@ -34,7 +34,6 @@
 ### Minor Changes
 
 - 25fd324: Standardize block build tooling with explicit targets and config exports
-
   - Add `block-ui` and `block-test` targets to ts-builder
   - `block-ui`: Uses Vite for building, vue-tsc for type-checking
   - `block-test`: Type-check only, errors on build attempt

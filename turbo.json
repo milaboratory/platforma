@@ -6,14 +6,10 @@
       "outputs": []
     },
     "lint": {
-      "outputs": [],
-      "inputs": ["$TURBO_DEFAULT$", "eslint.config.*", ".eslintrc.*"],
-      "env": ["PL_PKG_DEV"],
-      "dependsOn": ["^build"]
+      "outputs": []
     },
     "type-check": {
-      "outputs": [],
-      "dependsOn": ["^build"]
+      "outputs": []
     },
     "build": {
       "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"],
@@ -29,7 +25,7 @@
         "PL_DOCKER_NO_AUTOPUSH"
       ],
       "env": ["PL_PKG_DEV"],
-      "dependsOn": ["type-check", "lint", "^build"]
+      "dependsOn": ["type-check", "fmt", "lint", "^build"]
     },
     "test": {
       "outputs": ["./coverage/**", "test-report.junit.xml"],

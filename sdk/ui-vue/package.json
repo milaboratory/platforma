@@ -13,16 +13,13 @@
     "./styles": "./dist/index.js"
   },
   "scripts": {
-    "test": "vitest run --coverage",
+    "fmt": "ts-builder format",
     "dev": "ts-builder serve --target browser-lib",
     "build": "ts-builder build --target browser-lib",
     "watch": "ts-builder build --target browser-lib --watch",
-    "type-check": "ts-builder types --target browser-lib",
-    "preview": "vite preview",
-    "lint": "ts-builder lint",
-    "check": "yarpm type-check && yarpm lint && yarpm test",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "fmt": "ts-builder format"
+    "check": "ts-builder check --target browser-lib",
+    "test": "vitest run --coverage",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
     "@milaboratories/ptabler-expression-js": "workspace:*",

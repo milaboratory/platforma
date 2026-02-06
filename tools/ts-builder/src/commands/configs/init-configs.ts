@@ -1,4 +1,4 @@
-import { Command } from 'commander';
+import { Command } from "commander";
 import {
   createConfigFile,
   createFmtConfig,
@@ -11,11 +11,14 @@ import {
   isBuildableTarget,
   type CommandOptions,
   type TargetType,
-} from '../utils/index';
+} from "../utils/index";
 
-export const initConfigsCommand = new Command('init-configs')
-  .description('Initialize all config files for the target (tsconfig, build, lint, fmt)')
-  .option('--target <target>', 'Target type (node|browser|browser-lib|block-model|block-ui|block-test)')
+export const initConfigsCommand = new Command("init-configs")
+  .description("Initialize all config files for the target (tsconfig, build, lint, fmt)")
+  .option(
+    "--target <target>",
+    "Target type (node|browser|browser-lib|block-model|block-ui|block-test)",
+  )
   .action(async (options: CommandOptions, command) => {
     const globalOpts = getGlobalOptions(command);
     const target = getTarget(options, globalOpts) as TargetType;
@@ -25,23 +28,24 @@ export const initConfigsCommand = new Command('init-configs')
     try {
       createTsConfig(target);
     } catch (error) {
-      console.error('Failed to create tsconfig.json:', error);
+      console.error("Failed to create tsconfig.json:", error);
     }
 
     if (isBuildableTarget(target)) {
       try {
         createConfigFile(target);
       } catch (error) {
-        console.error('Failed to create build config:', error);
+        console.error("Failed to create build config:", error);
       }
     }
 
-    const isBrowserTarget = target === 'browser' || target === 'browser-lib' || target === 'block-ui';
+    const isBrowserTarget =
+      target === "browser" || target === "browser-lib" || target === "block-ui";
     if (isBrowserTarget) {
       try {
         createServeConfig();
       } catch (error) {
-        console.error('Failed to create serve config:', error);
+        console.error("Failed to create serve config:", error);
       }
     }
 
@@ -49,14 +53,14 @@ export const initConfigsCommand = new Command('init-configs')
       const configType = getOxlintConfigForTarget(target);
       createLintConfig(configType);
     } catch (error) {
-      console.error('Failed to create .oxlintrc.json:', error);
+      console.error("Failed to create .oxlintrc.json:", error);
     }
 
     try {
       createFmtConfig();
     } catch (error) {
-      console.error('Failed to create .oxfmtrc.json:', error);
+      console.error("Failed to create .oxfmtrc.json:", error);
     }
 
-    console.log('\nDone.');
+    console.log("\nDone.");
   });
