@@ -13,15 +13,16 @@
     "ptable"
   ],
   "[typescript]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "[vue]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "[javascript]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "typescript.tsdk": "./node_modules/typescript/lib",
-  "eslint.format.enable": true,
+  "oxc.format.enable": true,
+  "oxc.lint.enable": true,
   "vitest.maximumConfigs": 1000
 }
