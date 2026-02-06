@@ -7,6 +7,7 @@ import {
   canonicalizeJson,
   bigintReplacer,
   ValueType,
+  type AxisId,
   type CalculateTableDataRequest,
   type CalculateTableDataResponse,
   type FindColumnsRequest,
@@ -19,6 +20,7 @@ import {
   type PTableHandle,
   type PTableShape,
   type PTableVector,
+  type QueryData,
   type TableRange,
   type UniqueValuesRequest,
   type UniqueValuesResponse,
@@ -171,8 +173,11 @@ implements AbstractInternalPFrameDriver<PColumnData> {
   ): PoolEntry<PTableHandle> {
     const pFrameEntry = this.createPFrame(extractAllColumns(rawDef.src));
     const sortedDef = sortPTableDef(migratePTableFilters(mapPTableDef(rawDef, (c) => c.id), this.logger));
-
-    const pTableEntry = this.pTableDefs.acquire({ def: sortedDef, pFrameHandle: pFrameEntry.key });
+    const pTableEntry = this.pTableDefs.acquire({
+      type: 'v1',
+      def: sortedDef,
+      pFrameHandle: pFrameEntry.key,
+    });
     if (logPFrames()) {
       this.logger('info', `Create PTable call (pFrameHandle = ${pFrameEntry.key}; pTableHandle = ${pTableEntry.key})`);
     }
@@ -181,6 +186,40 @@ implements AbstractInternalPFrameDriver<PColumnData> {
       pTableEntry.unref();
       pFrameEntry.unref();
     };
+    return {
+      key: pTableEntry.key,
+      resource: pTableEntry.resource,
+      unref,
+      [Symbol.dispose]: unref,
+    };
+  }
+
+  public createTableByDataQuery(
+    def: PFrameDef<PColumn<PColumnData>>,
+    request: {
+      tableSpec: {
+        axes: AxisId[];
+        columns: PColumnIdAndSpec[];
+      };
+      dataQuery: QueryData;
+    },
+  ): PoolEntry<PTableHandle> {
+    const pFrameEntry = this.createPFrame(def);
+    const pTableEntry = this.pTableDefs.acquire({
+      type: 'v2',
+      pFrameHandle: pFrameEntry.key,
+      request,
+    });
+
+    if (logPFrames()) {
+      this.logger('info', `Create PTableByDataQuery call (pFrameHandle = ${pFrameEntry.key}; pTableHandle = ${pTableEntry.key})`);
+    }
+
+    const unref = () => {
+      pTableEntry.unref();
+      pFrameEntry.unref();
+    };
+
     return {
       key: pTableEntry.key,
       resource: pTableEntry.resource,
@@ -252,6 +291,7 @@ implements AbstractInternalPFrameDriver<PColumnData> {
     }
 
     const table = this.pTables.acquire({
+      type: 'v1',
       pFrameHandle: handle,
       def: sortPTableDef(migratePTableFilters(request, this.logger)),
     });

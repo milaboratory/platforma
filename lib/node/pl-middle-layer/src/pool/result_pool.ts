@@ -8,7 +8,8 @@ import type {
   PlRef,
   ResultCollection,
   ResultPoolEntry,
-  ValueOrError } from '@platforma-sdk/model';
+  ValueOrError,
+} from '@platforma-sdk/model';
 import {
   executePSpecPredicate,
   mapValueInVOE,
@@ -17,7 +18,8 @@ import { notEmpty } from '@milaboratories/ts-helpers';
 import { outputRef } from '../model/args';
 import type {
   Block,
-  ProjectStructure } from '../model/project_model';
+  ProjectStructure,
+} from '../model/project_model';
 import {
   ProjectStructureKey,
   projectFieldName,
@@ -27,7 +29,8 @@ import type { Optional } from 'utility-types';
 import { deriveGlobalPObjectId } from './data';
 import type {
   RawPObjectCollection,
-  RawPObjectEntry } from './p_object_collection';
+  RawPObjectEntry,
+} from './p_object_collection';
 import {
   parseRawPObjectCollection,
 } from './p_object_collection';
