@@ -1,12 +1,6 @@
 <script setup lang="ts">
-import {
-  PlDropdown,
-  PlTextField,
-  PlToggleSwitch,
-  Slider,
-  PlBtnGhost,
-} from '@milaboratories/uikit';
-import { isJsonEqual } from '@milaboratories/helpers';
+import { PlDropdown, PlTextField, PlToggleSwitch, Slider, PlBtnGhost } from "@milaboratories/uikit";
+import { isJsonEqual } from "@milaboratories/helpers";
 import {
   changeFilter,
   parseNumber,
@@ -15,9 +9,9 @@ import {
   makeWildcardOptions,
   isFilterDiscrete,
   getFilterDefault,
-} from './filters_logic';
-import type { PlDataTableFilterStateInternal } from './types';
-import { watchEffect } from 'vue';
+} from "./filters_logic";
+import type { PlDataTableFilterStateInternal } from "./types";
+import { watchEffect } from "vue";
 
 const entry = defineModel<PlDataTableFilterStateInternal>({ required: true });
 watchEffect(() => {
@@ -38,24 +32,24 @@ watchEffect(() => {
       :options="entry.options"
       :disabled="entry.filter.disabled"
       label="Predicate"
-      @update:model-value="(type) => (entry.filter!.value = changeFilter(entry.filter!.value, type!, entry.discreteOptions))"
+      @update:model-value="
+        (type) =>
+          (entry.filter!.value = changeFilter(entry.filter!.value, type!, entry.discreteOptions))
+      "
     />
 
     <template v-if="entry.discreteOptions.length > 0 && isFilterDiscrete(entry.filter.value)">
-      <PlDropdown
-        v-model="entry.filter.value.reference"
-        :options="entry.discreteOptions"
-      />
+      <PlDropdown v-model="entry.filter.value.reference" :options="entry.discreteOptions" />
     </template>
     <template v-else>
       <template
         v-if="
           entry.filter.value.type === 'number_equals' ||
-            entry.filter.value.type === 'number_notEquals' ||
-            entry.filter.value.type === 'number_lessThan' ||
-            entry.filter.value.type === 'number_lessThanOrEqualTo' ||
-            entry.filter.value.type === 'number_greaterThan' ||
-            entry.filter.value.type === 'number_greaterThanOrEqualTo'
+          entry.filter.value.type === 'number_notEquals' ||
+          entry.filter.value.type === 'number_lessThan' ||
+          entry.filter.value.type === 'number_lessThanOrEqualTo' ||
+          entry.filter.value.type === 'number_greaterThan' ||
+          entry.filter.value.type === 'number_greaterThanOrEqualTo'
         "
       >
         <PlTextField
@@ -66,11 +60,7 @@ watchEffect(() => {
         />
       </template>
 
-      <template
-        v-if="
-          entry.filter.value.type === 'number_between'
-        "
-      >
+      <template v-if="entry.filter.value.type === 'number_between'">
         <PlTextField
           v-model="entry.filter.value.lowerBound"
           :disabled="entry.filter.disabled"
@@ -98,9 +88,9 @@ watchEffect(() => {
       <template
         v-if="
           entry.filter.value.type === 'string_equals' ||
-            entry.filter.value.type === 'string_notEquals' ||
-            entry.filter.value.type === 'string_contains' ||
-            entry.filter.value.type === 'string_doesNotContain'
+          entry.filter.value.type === 'string_notEquals' ||
+          entry.filter.value.type === 'string_contains' ||
+          entry.filter.value.type === 'string_doesNotContain'
         "
       >
         <PlTextField
@@ -114,7 +104,7 @@ watchEffect(() => {
       <template
         v-if="
           entry.filter.value.type === 'string_matches' ||
-            entry.filter.value.type === 'string_doesNotMatch'
+          entry.filter.value.type === 'string_doesNotMatch'
         "
       >
         <PlTextField
@@ -125,11 +115,7 @@ watchEffect(() => {
         />
       </template>
 
-      <template
-        v-if="
-          entry.filter.value.type === 'string_containsFuzzyMatch'
-        "
-      >
+      <template v-if="entry.filter.value.type === 'string_containsFuzzyMatch'">
         <PlTextField
           v-model="entry.filter.value.reference"
           :disabled="entry.filter.disabled"
@@ -140,7 +126,8 @@ watchEffect(() => {
           v-model="entry.filter.value.maxEdits"
           :max="5"
           :disabled="entry.filter.disabled"
-          breakpoints label="Maximum nuber of substitutions and indels"
+          breakpoints
+          label="Maximum nuber of substitutions and indels"
         />
         <PlToggleSwitch
           v-model="entry.filter.value.substitutionsOnly"

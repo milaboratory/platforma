@@ -8,9 +8,8 @@ import {
   ContentRelativeText,
   DescriptionContentBinary,
   DescriptionContentText,
-} from '@milaboratories/pl-model-middle-layer';
-import type {
-  RelativeContentReader } from './content_conversion';
+} from "@milaboratories/pl-model-middle-layer";
+import type { RelativeContentReader } from "./content_conversion";
 import {
   absoluteToBase64,
   absoluteToBytes,
@@ -19,8 +18,8 @@ import {
   mapLocalToAbsolute,
   relativeToContentString,
   relativeToExplicitBytes,
-} from './content_conversion';
-import type { z } from 'zod';
+} from "./content_conversion";
+import type { z } from "zod";
 
 export function BlockPackMetaDescription(root: string) {
   return BlockPackMeta(

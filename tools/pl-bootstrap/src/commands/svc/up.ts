@@ -1,13 +1,13 @@
-import { Command, Args } from '@oclif/core';
-import Core from '../../core';
-import * as cmdOpts from '../../cmd-opts';
-import * as util from '../../util';
-import state from '../../state';
+import { Command, Args } from "@oclif/core";
+import Core from "../../core";
+import * as cmdOpts from "../../cmd-opts";
+import * as util from "../../util";
+import state from "../../state";
 
 export default class Up extends Command {
-  static override description = 'List available instances';
+  static override description = "List available instances";
 
-  static override examples = ['<%= config.bin %> <%= command.id %>'];
+  static override examples = ["<%= config.bin %> <%= command.id %>"];
 
   static override flags = {
     ...cmdOpts.GlobalFlags,
@@ -20,13 +20,15 @@ export default class Up extends Command {
   public async run(): Promise<void> {
     const { flags, args } = await this.parse(Up);
 
-    const logger = util.createLogger(flags['log-level']);
+    const logger = util.createLogger(flags["log-level"]);
     const core = new Core(logger);
 
     const name = args.name ?? state.currentInstanceName;
 
     if (!name) {
-      logger.error(`no pl service instance is selected. Select instance with 'select' command or provide name to 'up'`);
+      logger.error(
+        `no pl service instance is selected. Select instance with 'select' command or provide name to 'up'`,
+      );
       process.exit(1);
     }
 
@@ -47,10 +49,12 @@ export default class Up extends Command {
 
     const results: Promise<void>[] = [];
     for (const child of children) {
-      results.push(new Promise((resolve, reject) => {
-        child.on('close', resolve);
-        child.on('error', reject);
-      }));
+      results.push(
+        new Promise((resolve, reject) => {
+          child.on("close", resolve);
+          child.on("error", reject);
+        }),
+      );
     }
 
     await Promise.all(results);

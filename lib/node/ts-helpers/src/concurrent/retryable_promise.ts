@@ -20,7 +20,7 @@ export class RetryablePromise<T> {
       return this.promise;
     }
 
-    return this.promise = this.factory(this);
+    return (this.promise = this.factory(this));
   }
 
   /**

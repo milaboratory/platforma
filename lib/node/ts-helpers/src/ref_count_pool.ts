@@ -1,4 +1,4 @@
-import { isAsyncDisposable, isDisposable } from './obj';
+import { isAsyncDisposable, isDisposable } from "./obj";
 
 /**
  * Function associated with particular entry from the RefCountResourcePool.
@@ -35,14 +35,17 @@ export interface RefCountPool<P, K extends string, R extends {}> {
   getByKey(key: K): R;
 }
 
-export abstract class RefCountPoolBase<P, K extends string, R extends {}>
-implements RefCountPool<P, K, R> {
+export abstract class RefCountPoolBase<P, K extends string, R extends {}> implements RefCountPool<
+  P,
+  K,
+  R
+> {
   private readonly resources = new Map<K, RefCountEnvelope<R>>();
   private readonly disposeQueue = Promise.resolve();
 
   private check(key: K) {
     const envelope = this.resources.get(key);
-    if (envelope === undefined) throw new Error('Unexpected state.');
+    if (envelope === undefined) throw new Error("Unexpected state.");
     if (envelope.refCount === 0) {
       this.resources.delete(key);
       const resource = envelope.resource;

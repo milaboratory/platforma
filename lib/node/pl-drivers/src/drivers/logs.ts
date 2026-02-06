@@ -1,12 +1,12 @@
-import type { ComputableCtx } from '@milaboratories/computable';
-import { Computable } from '@milaboratories/computable';
-import type { PlTreeEntry, ResourceInfo } from '@milaboratories/pl-tree';
-import type { LogsStreamDriver } from './logs_stream';
-import type * as sdk from '@milaboratories/pl-model-common';
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import type { DownloadDriver } from './download_blob/download_blob';
-import { isLiveLogHandle } from './helpers/logs_handle';
-import { isNotFoundError } from '@milaboratories/pl-client';
+import type { ComputableCtx } from "@milaboratories/computable";
+import { Computable } from "@milaboratories/computable";
+import type { PlTreeEntry, ResourceInfo } from "@milaboratories/pl-tree";
+import type { LogsStreamDriver } from "./logs_stream";
+import type * as sdk from "@milaboratories/pl-model-common";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import type { DownloadDriver } from "./download_blob/download_blob";
+import { isLiveLogHandle } from "./helpers/logs_handle";
+import { isNotFoundError } from "@milaboratories/pl-client";
 
 export class LogsDriver implements sdk.LogsDriver {
   constructor(
@@ -28,7 +28,7 @@ export class LogsDriver implements sdk.LogsDriver {
 
     const stream = streamManagerGetStream(ctx, res);
     if (stream === undefined) {
-      ctx.markUnstable('no stream in stream manager');
+      ctx.markUnstable("no stream in stream manager");
       return undefined;
     }
 
@@ -59,7 +59,7 @@ export class LogsDriver implements sdk.LogsDriver {
 
     const stream = streamManagerGetStream(ctx, res);
     if (stream === undefined) {
-      ctx.markUnstable('no stream in stream manager');
+      ctx.markUnstable("no stream in stream manager");
       return undefined;
     }
 
@@ -80,8 +80,15 @@ export class LogsDriver implements sdk.LogsDriver {
    * The previous getProgressLog couldn't be extended.
    * Returns a last line that has patternToSearch.
    * Notifies when a new line appeared or EOF reached. */
-  getProgressLogWithInfo(res: PlTreeEntry, patternToSearch: string): Computable<sdk.ProgressLogWithInfo | undefined>;
-  getProgressLogWithInfo(res: PlTreeEntry, patternToSearch: string, ctx: ComputableCtx): sdk.ProgressLogWithInfo | undefined;
+  getProgressLogWithInfo(
+    res: PlTreeEntry,
+    patternToSearch: string,
+  ): Computable<sdk.ProgressLogWithInfo | undefined>;
+  getProgressLogWithInfo(
+    res: PlTreeEntry,
+    patternToSearch: string,
+    ctx: ComputableCtx,
+  ): sdk.ProgressLogWithInfo | undefined;
   getProgressLogWithInfo(
     res: PlTreeEntry,
     patternToSearch: string,
@@ -92,7 +99,7 @@ export class LogsDriver implements sdk.LogsDriver {
 
     const stream = streamManagerGetStream(ctx, res);
     if (stream === undefined) {
-      ctx.markUnstable('no stream in stream manager');
+      ctx.markUnstable("no stream in stream manager");
       return undefined;
     }
 
@@ -101,7 +108,7 @@ export class LogsDriver implements sdk.LogsDriver {
       return {
         progressLine: log,
         live: false,
-      }
+      };
     }
 
     try {
@@ -109,10 +116,12 @@ export class LogsDriver implements sdk.LogsDriver {
       return {
         progressLine: log,
         live: true,
-      }
+      };
     } catch (e: any) {
       if (isNotFoundError(e)) {
-        ctx.markUnstable(`NOT_FOUND in logs stream driver while getting a progress log with info: ${e}`);
+        ctx.markUnstable(
+          `NOT_FOUND in logs stream driver while getting a progress log with info: ${e}`,
+        );
         return undefined;
       }
       throw e;
@@ -131,7 +140,7 @@ export class LogsDriver implements sdk.LogsDriver {
 
     const stream = streamManagerGetStream(ctx, res);
     if (stream === undefined) {
-      ctx.markUnstable('no stream in stream manager');
+      ctx.markUnstable("no stream in stream manager");
       return undefined;
     }
 
@@ -164,9 +173,9 @@ export class LogsDriver implements sdk.LogsDriver {
 }
 
 function isBlob(rInfo: ResourceInfo) {
-  return !rInfo.type.name.startsWith('StreamWorkdir');
+  return !rInfo.type.name.startsWith("StreamWorkdir");
 }
 
 function streamManagerGetStream(ctx: ComputableCtx, manager: PlTreeEntry) {
-  return ctx.accessor(manager).node().traverse('stream')?.resourceInfo;
+  return ctx.accessor(manager).node().traverse("stream")?.resourceInfo;
 }

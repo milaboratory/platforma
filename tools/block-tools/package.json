@@ -2,9 +2,19 @@
   "name": "@platforma-sdk/block-tools",
   "version": "2.6.44",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
-  "types": "./dist/lib.d.ts",
+  "license": "UNLICENSED",
+  "bin": {
+    "block-tools": "./bin/run.js"
+  },
+  "files": [
+    "./bin/*",
+    "./dist/**/*",
+    "./src/**/*",
+    "./README.md"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
+  "types": "./dist/lib.d.ts",
   "exports": {
     ".": {
       "types": "./dist/lib.d.ts",
@@ -21,39 +31,29 @@
     "check": "ts-builder check --target node",
     "fmt": "ts-builder format"
   },
-  "bin": {
-    "block-tools": "./bin/run.js"
-  },
-  "files": [
-    "./bin/*",
-    "./dist/**/*",
-    "./src/**/*",
-    "./README.md"
-  ],
-  "license": "UNLICENSED",
   "dependencies": {
-    "@platforma-sdk/blocks-deps-updater": "workspace:*",
     "@aws-sdk/client-s3": "catalog:",
-    "@milaboratories/resolve-helper": "workspace:*",
     "@milaboratories/pl-http": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/pl-model-middle-layer": "workspace:*",
+    "@milaboratories/resolve-helper": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
     "@milaboratories/ts-helpers-oclif": "workspace:*",
-    "remeda": "catalog:",
     "@oclif/core": "catalog:",
+    "@platforma-sdk/blocks-deps-updater": "workspace:*",
     "canonicalize": "catalog:",
     "lru-cache": "catalog:",
-    "undici": "catalog:",
     "mime-types": "catalog:",
+    "remeda": "catalog:",
     "tar": "catalog:",
+    "undici": "catalog:",
     "yaml": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@rollup/plugin-node-resolve": "catalog:",
     "@types/mime-types": "catalog:",
@@ -71,9 +71,9 @@
   "oclif": {
     "bin": "block-tools",
     "commands": {
+      "identifier": "COMMANDS",
       "strategy": "explicit",
-      "target": "./dist/cli.js",
-      "identifier": "COMMANDS"
+      "target": "./dist/cli.js"
     },
     "dirname": "block-tools",
     "topicSeparator": " "

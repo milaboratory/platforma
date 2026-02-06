@@ -1,4 +1,4 @@
-import { StatefulPromise } from './StatefulPromise';
+import { StatefulPromise } from "./StatefulPromise";
 
 /**
  * Tracks pending promises to ensure they are all awaited before proceeding.
@@ -18,9 +18,8 @@ export class PromiseTracker {
   }
 
   track<T>(promiseOrCallback: Promise<T> | (() => Promise<T>)): Promise<T> {
-    const _promise = typeof promiseOrCallback === 'function'
-      ? promiseOrCallback()
-      : promiseOrCallback;
+    const _promise =
+      typeof promiseOrCallback === "function" ? promiseOrCallback() : promiseOrCallback;
 
     const promise = StatefulPromise.fromDeferredReject(_promise, (p) => {
       this.promises.delete(p);

@@ -1,3 +1,3 @@
-import { ref } from 'vue';
+import { ref } from "vue";
 
 export const PlBlockPageTitleTeleportTarget = ref<HTMLElement | null>();

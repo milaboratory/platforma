@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="M">
-import { provide } from 'vue';
-import { radioGroupModelKey, radioGroupNameKey } from './keys';
-import PlRadio from './PlRadio.vue';
+import { provide } from "vue";
+import { radioGroupModelKey, radioGroupNameKey } from "./keys";
+import PlRadio from "./PlRadio.vue";
 
 type RadioGroupOption = {
   label: string;
@@ -58,17 +58,17 @@ provide(radioGroupModelKey, model);
 </template>
 
 <style module>
-  .container {
-    margin: 0;
-    padding: 0;
-    border: none;
-  }
-  .label {
-    margin-block-end: 12px;
-    padding: 0;
-    color: var(--txt-01);
-    line-height: calc(20 / 14);
-    font-weight: 500;
-    text-box: trim-both cap alphabetic;
-  }
+.container {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.label {
+  margin-block-end: 12px;
+  padding: 0;
+  color: var(--txt-01);
+  line-height: calc(20 / 14);
+  font-weight: 500;
+  text-box: trim-both cap alphabetic;
+}
 </style>

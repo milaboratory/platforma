@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync } from "node:fs";
 import {
   type TypedArtifactName,
   type FullArtifactName,
@@ -6,42 +6,42 @@ import {
   type CompileMode,
   type CompilerOption,
   fullNameToString,
-} from './package';
-import type { ArtifactMap } from './artifactset';
-import { createArtifactNameSet } from './artifactset';
-import { createHash } from 'node:crypto';
-import type { MiLogger } from '@milaboratories/ts-helpers';
+} from "./package";
+import type { ArtifactMap } from "./artifactset";
+import { createArtifactNameSet } from "./artifactset";
+import { createHash } from "node:crypto";
+import type { MiLogger } from "@milaboratories/ts-helpers";
 
 // matches any valid name in tengo. Don't forget to use '\b' when needed to limit the boundaries!
-const namePattern = '[_a-zA-Z][_a-zA-Z0-9]*';
+const namePattern = "[_a-zA-Z][_a-zA-Z0-9]*";
 
 const functionCallRE = (moduleName: string, fnName: string) => {
   return new RegExp(
-    `\\b${moduleName}\\.(?<fnCall>(?<fnName>`
-    + fnName
-    + `)\\s*\\(\\s*"(?<templateName>[^"]+)"\\s*\\))`,
-    'g',
+    `\\b${moduleName}\\.(?<fnCall>(?<fnName>` +
+      fnName +
+      `)\\s*\\(\\s*"(?<templateName>[^"]+)"\\s*\\))`,
+    "g",
   );
 };
 
 const functionCallLikeRE = (moduleName: string, fnName: string) => {
-  return new RegExp(
-    `\\b${moduleName}\\.(?<fnName>`
-    + fnName
-    + `)\\s*\\(`,
-    'g',
-  );
+  return new RegExp(`\\b${moduleName}\\.(?<fnName>` + fnName + `)\\s*\\(`, "g");
 };
 
-export const newGetTemplateIdRE = (moduleName: string) => functionCallRE(moduleName, 'getTemplateId');
-export const newGetSoftwareInfoRE = (moduleName: string) => functionCallRE(moduleName, 'getSoftwareInfo');
+export const newGetTemplateIdRE = (moduleName: string) =>
+  functionCallRE(moduleName, "getTemplateId");
+export const newGetSoftwareInfoRE = (moduleName: string) =>
+  functionCallRE(moduleName, "getSoftwareInfo");
 
-const newImportTemplateRE = (moduleName: string) => functionCallRE(moduleName, 'importTemplate');
-const newImportTemplateDetector = (moduleName: string) => functionCallLikeRE(moduleName, 'importTemplate');
-const newImportSoftwareRE = (moduleName: string) => functionCallRE(moduleName, 'importSoftware');
-const newImportSoftwareDetector = (moduleName: string) => functionCallLikeRE(moduleName, 'importSoftware');
-const newImportAssetRE = (moduleName: string) => functionCallRE(moduleName, 'importAsset');
-const newImportAssetDetector = (moduleName: string) => functionCallLikeRE(moduleName, 'importAsset');
+const newImportTemplateRE = (moduleName: string) => functionCallRE(moduleName, "importTemplate");
+const newImportTemplateDetector = (moduleName: string) =>
+  functionCallLikeRE(moduleName, "importTemplate");
+const newImportSoftwareRE = (moduleName: string) => functionCallRE(moduleName, "importSoftware");
+const newImportSoftwareDetector = (moduleName: string) =>
+  functionCallLikeRE(moduleName, "importSoftware");
+const newImportAssetRE = (moduleName: string) => functionCallRE(moduleName, "importAsset");
+const newImportAssetDetector = (moduleName: string) =>
+  functionCallLikeRE(moduleName, "importAsset");
 
 const emptyLineRE = /^\s*$/;
 const compilerOptionRE = /^\/\/tengo:[\w]/;
@@ -69,11 +69,11 @@ const dependencyRE = /(?<pkgName>[^"]+)?:(?<depID>[^"]+)/; // use it to parse <m
  *  //tengo:<option name> [<option arg1> [<option arg 2> [...]]]
  */
 const parseComplierOption = (opt: string): CompilerOption => {
-  const parts = opt.split(' ');
-  const namePart = parts[0].split(':');
+  const parts = opt.split(" ");
+  const namePart = parts[0].split(":");
   if (namePart.length != 2) {
     throw new Error(
-      'compiler option format is wrong: expect to have option name after \'tengo:\' prefix, like \'tengo:MyOption\'',
+      "compiler option format is wrong: expect to have option name after 'tengo:' prefix, like 'tengo:MyOption'",
     );
   }
   const optName = namePart[1];
@@ -133,7 +133,15 @@ export function parseSource(
 ): ArtifactSource {
   const { deps, normalized, opts } = parseSourceData(logger, src, fullSourceName, normalize);
 
-  return new ArtifactSource(mode, fullSourceName, getSha256(normalized), normalized, '', deps.array, opts);
+  return new ArtifactSource(
+    mode,
+    fullSourceName,
+    getSha256(normalized),
+    normalized,
+    "",
+    deps.array,
+    opts,
+  );
 }
 
 /**
@@ -149,15 +157,15 @@ function parseSourceData(
   fullSourceName: FullArtifactName,
   globalizeImports: boolean,
 ): {
-    normalized: string;
-    deps: ArtifactMap<TypedArtifactName>;
-    opts: CompilerOption[];
-  } {
+  normalized: string;
+  deps: ArtifactMap<TypedArtifactName>;
+  opts: CompilerOption[];
+} {
   const dependencySet = createArtifactNameSet();
   const optionList: CompilerOption[] = [];
 
   // iterating over lines
-  const lines = src.split('\n');
+  const lines = src.split("\n");
 
   // processedLines keep all the original lines from <src>.
   // If <globalizeImport>==true, the parser modifies 'import' and 'getTemplateId' lines
@@ -169,7 +177,7 @@ function parseSourceData(
     canDetectOptions: true,
     artifactImportREs: new Map<string, [ArtifactType, RegExp][]>(),
     importLikeREs: new Map<string, [ArtifactType, RegExp][]>(),
-    multilineStatement: '',
+    multilineStatement: "",
     lineNo: 0,
   };
 
@@ -177,13 +185,12 @@ function parseSourceData(
     parserContext.lineNo++;
 
     try {
-      const { line: processedLine, context: newContext, artifacts, option } = parseSingleSourceLine(
-        logger,
-        line,
-        parserContext,
-        fullSourceName.pkg,
-        globalizeImports,
-      );
+      const {
+        line: processedLine,
+        context: newContext,
+        artifacts,
+        option,
+      } = parseSingleSourceLine(logger, line, parserContext, fullSourceName.pkg, globalizeImports);
       processedLines.push(processedLine);
       parserContext = newContext;
 
@@ -195,12 +202,15 @@ function parseSourceData(
       }
     } catch (error: unknown) {
       const err = error as Error;
-      throw new Error(`[line ${parserContext.lineNo} in ${fullNameToString(fullSourceName)}]: ${err.message}\n\t${line}`, { cause: err });
+      throw new Error(
+        `[line ${parserContext.lineNo} in ${fullNameToString(fullSourceName)}]: ${err.message}\n\t${line}`,
+        { cause: err },
+      );
     }
   }
 
   return {
-    normalized: processedLines.join('\n'),
+    normalized: processedLines.join("\n"),
     deps: dependencySet,
     opts: optionList,
   };
@@ -233,7 +243,7 @@ export function parseSingleSourceLine(
     if (multilineCommentEndRE.exec(line)) {
       context.isInCommentBlock = false;
     }
-    return { line: '', context, artifacts: [], option: undefined };
+    return { line: "", context, artifacts: [], option: undefined };
   }
 
   if (compilerOptionRE.exec(line)) {
@@ -241,7 +251,9 @@ export function parseSingleSourceLine(
       logger.error(
         `[line ${context.lineNo}]: compiler option '//tengo:' was detected, but it cannot be applied as compiler options can be set only at the file header, before any code line'`,
       );
-      throw new Error('tengo compiler options (\'//tengo:\' comments) can be set only in file header');
+      throw new Error(
+        "tengo compiler options ('//tengo:' comments) can be set only in file header",
+      );
     }
     return { line, context, artifacts: [], option: parseComplierOption(line) };
   }
@@ -254,18 +266,18 @@ export function parseSingleSourceLine(
   }
 
   if (singlelineCommentRE.test(line) || singlelineTerminatedCommentRE.test(line)) {
-    return { line: '', context, artifacts: [], option: undefined };
+    return { line: "", context, artifacts: [], option: undefined };
   }
 
-  const canBeInlinedComment = line.includes('*/');
+  const canBeInlinedComment = line.includes("*/");
   if (multilineCommentStartRE.exec(line) && !canBeInlinedComment) {
     context.isInCommentBlock = true;
-    return { line: '', context, artifacts: [], option: undefined };
+    return { line: "", context, artifacts: [], option: undefined };
   }
 
   const statement = context.multilineStatement + line.trim();
 
-  const mayContainAComment = line.includes('//') || line.includes('/*');
+  const mayContainAComment = line.includes("//") || line.includes("/*");
   if (multilineStatementRE.test(line) && !mayContainAComment) {
     // We accumulate multiline statements into single line before analyzing them.
     // This dramatically simplifies parsing logic: things like
@@ -295,7 +307,7 @@ export function parseSingleSourceLine(
     return result;
   }
 
-  context.multilineStatement = ''; // reset accumulated multiline statement parts once we reach statement end.
+  context.multilineStatement = ""; // reset accumulated multiline statement parts once we reach statement end.
 
   if (emptyLineRE.exec(statement)) {
     return { line, context, artifacts: [], option: undefined };
@@ -320,60 +332,63 @@ function processModuleImport(
   // If we have plapi, ll or assets, then try to parse
   // getTemplateId, getSoftwareInfo, getSoftware and getAsset calls.
 
-  if (iInfo.module === 'plapi') {
+  if (iInfo.module === "plapi") {
     if (!context.artifactImportREs.has(iInfo.module)) {
       context.artifactImportREs.set(iInfo.module, [
-        ['template', newGetTemplateIdRE(iInfo.alias)],
-        ['software', newGetSoftwareInfoRE(iInfo.alias)],
+        ["template", newGetTemplateIdRE(iInfo.alias)],
+        ["software", newGetSoftwareInfoRE(iInfo.alias)],
       ]);
     }
     return { line: originalLine, context, artifacts: [], option: undefined };
   }
 
   if (
-    iInfo.module === '@milaboratory/tengo-sdk:ll'
-    || iInfo.module === '@platforma-sdk/workflow-tengo:ll'
-    || ((localPackageName === '@milaboratory/tengo-sdk'
-      || localPackageName === '@platforma-sdk/workflow-tengo')
-    && iInfo.module === ':ll')
+    iInfo.module === "@milaboratory/tengo-sdk:ll" ||
+    iInfo.module === "@platforma-sdk/workflow-tengo:ll" ||
+    ((localPackageName === "@milaboratory/tengo-sdk" ||
+      localPackageName === "@platforma-sdk/workflow-tengo") &&
+      iInfo.module === ":ll")
   ) {
     if (!context.artifactImportREs.has(iInfo.module)) {
       context.artifactImportREs.set(iInfo.module, [
-        ['template', newImportTemplateRE(iInfo.alias)],
-        ['software', newImportSoftwareRE(iInfo.alias)],
+        ["template", newImportTemplateRE(iInfo.alias)],
+        ["software", newImportSoftwareRE(iInfo.alias)],
       ]);
     }
   }
 
   if (
-    iInfo.module === '@milaboratory/tengo-sdk:assets'
-    || iInfo.module === '@platforma-sdk/workflow-tengo:assets'
-    || ((localPackageName === '@milaboratory/tengo-sdk'
-      || localPackageName === '@platforma-sdk/workflow-tengo')
-    && iInfo.module === ':assets')
+    iInfo.module === "@milaboratory/tengo-sdk:assets" ||
+    iInfo.module === "@platforma-sdk/workflow-tengo:assets" ||
+    ((localPackageName === "@milaboratory/tengo-sdk" ||
+      localPackageName === "@platforma-sdk/workflow-tengo") &&
+      iInfo.module === ":assets")
   ) {
     if (!context.artifactImportREs.has(iInfo.module)) {
       context.artifactImportREs.set(iInfo.module, [
-        ['template', newImportTemplateRE(iInfo.alias)],
-        ['software', newImportSoftwareRE(iInfo.alias)],
-        ['asset', newImportAssetRE(iInfo.alias)],
+        ["template", newImportTemplateRE(iInfo.alias)],
+        ["software", newImportSoftwareRE(iInfo.alias)],
+        ["asset", newImportAssetRE(iInfo.alias)],
       ]);
       context.importLikeREs.set(iInfo.module, [
-        ['template', newImportTemplateDetector(iInfo.alias)],
-        ['software', newImportSoftwareDetector(iInfo.alias)],
-        ['asset', newImportAssetDetector(iInfo.alias)],
+        ["template", newImportTemplateDetector(iInfo.alias)],
+        ["software", newImportSoftwareDetector(iInfo.alias)],
+        ["asset", newImportAssetDetector(iInfo.alias)],
       ]);
     }
   }
 
-  const artifact = parseArtifactName(iInfo.module, 'library', localPackageName);
+  const artifact = parseArtifactName(iInfo.module, "library", localPackageName);
   if (!artifact) {
     // not a Platforma Tengo library import
     return { line: originalLine, context, artifacts: [], option: undefined };
   }
 
   if (globalizeImports) {
-    originalLine = originalLine.replace(importInstruction[0], ` := import("${artifact.pkg}:${artifact.id}")`);
+    originalLine = originalLine.replace(
+      importInstruction[0],
+      ` := import("${artifact.pkg}:${artifact.id}")`,
+    );
   }
 
   return { line: originalLine, context, artifacts: [artifact], option: undefined };
@@ -396,7 +411,14 @@ function processAssetImport(
   const importInstruction = importRE.exec(statement);
 
   if (importInstruction) {
-    return processModuleImport(importInstruction, originalLine, statement, context, localPackageName, globalizeImports);
+    return processModuleImport(
+      importInstruction,
+      originalLine,
+      statement,
+      context,
+      localPackageName,
+      globalizeImports,
+    );
   }
 
   if (context.artifactImportREs.size > 0) {
@@ -429,7 +451,10 @@ function processAssetImport(
 
           if (globalizeImports) {
             // Replace all occurrences of this fnCall in originalLine
-            originalLine = originalLine.replaceAll(fnCall, `${fnName}("${artifact.pkg}:${artifact.id}")`);
+            originalLine = originalLine.replaceAll(
+              fnCall,
+              `${fnName}("${artifact.pkg}:${artifact.id}")`,
+            );
           }
         }
 
@@ -446,7 +471,9 @@ function processAssetImport(
           continue;
         }
 
-        throw Error(`incorrect '${artifactType}' import statement: use string literal as ID (variables are not allowed) in the same line with brackets (i.e. 'importSoftware("sw:main")').`);
+        throw Error(
+          `incorrect '${artifactType}' import statement: use string literal as ID (variables are not allowed) in the same line with brackets (i.e. 'importSoftware("sw:main")').`,
+        );
       }
     }
   }
@@ -504,5 +531,5 @@ function parseArtifactName(
 }
 
 export function getSha256(source: string): string {
-  return createHash('sha256').update(source).digest('hex');
+  return createHash("sha256").update(source).digest("hex");
 }

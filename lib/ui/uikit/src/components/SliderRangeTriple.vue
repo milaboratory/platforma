@@ -1,17 +1,17 @@
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref, unref, useSlots } from 'vue';
-import { useMouseCapture } from '../composition/useMouseCapture';
-import { tapIf } from '../helpers/functions';
-import { clamp } from '../helpers/math';
-import { PlTooltip } from './PlTooltip';
-import type { SliderMode } from '../types';
-import { useSliderBreakpoints } from '../composition/useSliderBreakpoints';
-import { getErrorMessage } from '../helpers/error.ts';
+import { computed, onMounted, reactive, ref, unref, useSlots } from "vue";
+import { useMouseCapture } from "../composition/useMouseCapture";
+import { tapIf } from "../helpers/functions";
+import { clamp } from "../helpers/math";
+import { PlTooltip } from "./PlTooltip";
+import type { SliderMode } from "../types";
+import { useSliderBreakpoints } from "../composition/useSliderBreakpoints";
+import { getErrorMessage } from "../helpers/error.ts";
 
 type ModelType = [number, number, number];
 const slots = useSlots();
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(["update:modelValue"]);
 
 const props = withDefaults(
   defineProps<{
@@ -33,8 +33,8 @@ const props = withDefaults(
     error: undefined,
     min: 0,
     step: 1,
-    mode: 'text',
-    measure: '%',
+    mode: "text",
+    measure: "%",
     breakpoints: false,
     disabled: false,
   },
@@ -57,9 +57,15 @@ const propsRef = computed(() => props);
 
 const breakpointsRef = useSliderBreakpoints(propsRef);
 
-const localValue1 = computed(() => clamp((props.modelValue[0] ?? 0) + data.deltaValue1, props.min, props.max));
-const localValue2 = computed(() => clamp((props.modelValue[1] ?? 0) + data.deltaValue2, props.min, props.max));
-const localValue3 = computed(() => clamp((props.modelValue[2] ?? 0) + data.deltaValue3, props.min, props.max));
+const localValue1 = computed(() =>
+  clamp((props.modelValue[0] ?? 0) + data.deltaValue1, props.min, props.max),
+);
+const localValue2 = computed(() =>
+  clamp((props.modelValue[1] ?? 0) + data.deltaValue2, props.min, props.max),
+);
+const localValue3 = computed(() =>
+  clamp((props.modelValue[2] ?? 0) + data.deltaValue3, props.min, props.max),
+);
 
 const error = computed(() => {
   const v = props.modelValue as unknown;
@@ -67,7 +73,7 @@ const error = computed(() => {
   const isValidModel = Array.isArray(v) && v.length === 3 && v.every((it) => Number.isFinite(it));
 
   if (!isValidModel) {
-    return 'Expected model [number, number, number]';
+    return "Expected model [number, number, number]";
   }
 
   const errors: string[] = [];
@@ -77,12 +83,12 @@ const error = computed(() => {
       errors.push(`Max model value must be lower than max props ${props.max}.`);
     }
     if (v < props.min) {
-      errors.push('Min model value must be greater than max props.');
+      errors.push("Min model value must be greater than max props.");
     }
   });
 
   if (errors.length > 0) {
-    return errors.join(' ');
+    return errors.join(" ");
   }
 
   return getErrorMessage(props.error);
@@ -103,20 +109,20 @@ const position3 = computed(() => {
 const leftRight = computed(() => getLeftAndRight());
 
 const progressStyle = computed(() => ({
-  right: leftRight.value[0] + '%',
-  left: 100 - leftRight.value[2] + '%',
+  right: leftRight.value[0] + "%",
+  left: 100 - leftRight.value[2] + "%",
 }));
 
 const thumbStyle1 = computed(() => ({
-  right: Math.ceil((1 - position1.value) * 100) + '%',
+  right: Math.ceil((1 - position1.value) * 100) + "%",
 }));
 
 const thumbStyle2 = computed(() => ({
-  right: Math.ceil((1 - position2.value) * 100) + '%',
+  right: Math.ceil((1 - position2.value) * 100) + "%",
 }));
 
 const thumbStyle3 = computed(() => ({
-  right: Math.ceil((1 - position3.value) * 100) + '%',
+  right: Math.ceil((1 - position3.value) * 100) + "%",
 }));
 
 useMouseCapture(thumbRef1, (ev) => {
@@ -187,7 +193,7 @@ function round(value: number) {
 }
 
 function setModelValue(value: ModelType) {
-  emit('update:modelValue', value);
+  emit("update:modelValue", value);
 }
 
 function getHint() {
@@ -202,24 +208,28 @@ function getHint() {
   ].sort((a, b) => a.r - b.r);
 
   if (arr[0].th.value) {
-    arr[0].th.value.dataset.hint = 'high';
+    arr[0].th.value.dataset.hint = "high";
   }
   if (arr[1].th.value) {
-    arr[1].th.value.dataset.hint = 'mid';
+    arr[1].th.value.dataset.hint = "mid";
   }
 
   if (arr[2].th.value) {
-    arr[2].th.value.dataset.hint = 'low';
+    arr[2].th.value.dataset.hint = "low";
   }
 }
 
 function handleKeyPress(e: { code: string; preventDefault(): void }, index: number) {
-  if (['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Enter'].includes(e.code)) {
+  if (["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft", "Enter"].includes(e.code)) {
     e.preventDefault();
   }
 
-  const nextStep
-    = e.code === 'ArrowUp' || e.code === 'ArrowRight' ? props.step * 1 : e.code === 'ArrowDown' || e.code === 'ArrowLeft' ? props.step * -1 : 0;
+  const nextStep =
+    e.code === "ArrowUp" || e.code === "ArrowRight"
+      ? props.step * 1
+      : e.code === "ArrowDown" || e.code === "ArrowLeft"
+        ? props.step * -1
+        : 0;
 
   const arr: ModelType = [...props.modelValue];
   arr[index] = clamp(arr[index] + nextStep, props.min, props.max);
@@ -233,7 +243,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div :class="props.disabled ? 'ui-slider__disabled' : undefined" class="ui-slider__envelope ui-slider__triple">
+  <div
+    :class="props.disabled ? 'ui-slider__disabled' : undefined"
+    class="ui-slider__envelope ui-slider__triple"
+  >
     <div :class="`ui-slider__mode-${props.mode}`" class="ui-slider">
       <div class="ui-slider__wrapper">
         <div class="ui-slider__label-section">
@@ -254,7 +267,12 @@ onMounted(() => {
           </div>
           <div class="ui-slider__container ui-slider__container-thumb">
             <template v-if="props.breakpoints">
-              <div v-for="(item, index) in breakpointsRef" :key="index" :style="{ right: `${item}%` }" class="ui-slider__thumb-step"/>
+              <div
+                v-for="(item, index) in breakpointsRef"
+                :key="index"
+                :style="{ right: `${item}%` }"
+                class="ui-slider__thumb-step"
+              />
             </template>
             <div
               ref="thumbRef1"

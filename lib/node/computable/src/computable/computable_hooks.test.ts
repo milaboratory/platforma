@@ -1,12 +1,12 @@
-import { WatchableValue, ObservableAccessor } from '../watchable_value';
-import { test, expect } from 'vitest';
+import { WatchableValue, ObservableAccessor } from "../watchable_value";
+import { test, expect } from "vitest";
 
-import { AccessorProvider, UsageGuard } from './accessor_provider';
-import { Aborted, sleep } from '@milaboratories/ts-helpers';
-import { Computable } from './computable';
-import { ChangeSource } from '../change_source';
-import { ComputableCtx } from './kernel';
-import { PollingComputableHooks, StartStopComputableHooksOps } from './hooks_util';
+import { AccessorProvider, UsageGuard } from "./accessor_provider";
+import { Aborted, sleep } from "@milaboratories/ts-helpers";
+import { Computable } from "./computable";
+import { ChangeSource } from "../change_source";
+import { ComputableCtx } from "./kernel";
+import { PollingComputableHooks, StartStopComputableHooksOps } from "./hooks_util";
 
 class SynchronizedWatchableValue<T> implements AccessorProvider<ObservableAccessor<T>> {
   private readonly change = new ChangeSource();
@@ -15,12 +15,12 @@ class SynchronizedWatchableValue<T> implements AccessorProvider<ObservableAccess
   constructor(
     private readonly src: Computable<T>,
     private value: T,
-    ops: StartStopComputableHooksOps
+    ops: StartStopComputableHooksOps,
   ) {
     this.hooks = new PollingComputableHooks(
       () => this.startUpdating(),
       () => this.stopUpdating(),
-      ops
+      ops,
     );
   }
 
@@ -47,7 +47,7 @@ class SynchronizedWatchableValue<T> implements AccessorProvider<ObservableAccess
         ctx.attacheHooks(this.hooks);
         this.change.attachWatcher(ctx.watcher);
         return this.value;
-      }
+      },
     } as ObservableAccessor<T>;
   }
 
@@ -80,7 +80,7 @@ class SynchronizedWatchableValue<T> implements AccessorProvider<ObservableAccess
   }
 
   private stopUpdating(): void {
-    if (this.schedulerAbort === undefined) throw new Error('Unexpected call.');
+    if (this.schedulerAbort === undefined) throw new Error("Unexpected call.");
     this.schedulerAbort();
   }
 }
@@ -90,27 +90,27 @@ function getTestSetups() {
     (() => {
       const observableSource = new WatchableValue(2);
       const synchronized = new SynchronizedWatchableValue(observableSource.asComputable(), 1, {
-        stopDebounce: 10
+        stopDebounce: 10,
       });
       const res2 = Computable.make((ctx) => synchronized.getValue(ctx) * 2);
-      return { context: 'plain', observableSource, synchronized, res2 };
+      return { context: "plain", observableSource, synchronized, res2 };
     })(),
     (() => {
       const observableSource = new WatchableValue(2);
       const synchronized = new SynchronizedWatchableValue(observableSource.asComputable(), 1, {
-        stopDebounce: 10
+        stopDebounce: 10,
       });
       const _res1 = synchronized.asComputable();
       const res2 = Computable.make((_ctx) => ({ r1: synchronized.getValue(_ctx) }), {
-        postprocessValue: ({ r1 }) => r1 * 2
+        postprocessValue: ({ r1 }) => r1 * 2,
       });
-      return { context: 'nested', observableSource, synchronized, res2 };
-    })()
+      return { context: "nested", observableSource, synchronized, res2 };
+    })(),
   ];
 }
 
 test.each(getTestSetups())(
-  'simple reactor test poll in $context context',
+  "simple reactor test poll in $context context",
   async ({ observableSource, synchronized, res2 }) => {
     expect(synchronized.active).toEqual(false);
     expect(await res2.getValue()).toEqual(2);
@@ -135,12 +135,12 @@ test.each(getTestSetups())(
     expect(synchronized.active).toEqual(true);
 
     await res2.refreshState();
-  }
+  },
 );
 
 // @todo unskip when migrating to vitest (revise the test code, remove timeouts)
 test.skip.each(getTestSetups())(
-  'simple reactor test listen in $context context',
+  "simple reactor test listen in $context context",
   async ({ observableSource, synchronized, res2 }) => {
     expect(await res2.getValue()).toEqual(2);
     await new Promise((resolve) => setTimeout(resolve, 1));
@@ -168,12 +168,12 @@ test.skip.each(getTestSetups())(
     expect(synchronized.active).toEqual(false);
 
     await res2.refreshState();
-  }
+  },
 );
 
 // @todo unskip when migrating to vitest (revise the test code, remove timeouts)
 test.skip.each(getTestSetups())(
-  'simple reactor test pre-calculation in $context context',
+  "simple reactor test pre-calculation in $context context",
   async ({ observableSource: _observableSource, synchronized, res2 }) => {
     res2 = res2.withPreCalculatedValueTree();
     await new Promise((resolve) => setTimeout(resolve, 1));
@@ -188,5 +188,5 @@ test.skip.each(getTestSetups())(
     expect(synchronized.active).toEqual(true);
     await sleep(20);
     expect(synchronized.active).toEqual(false);
-  }
+  },
 );

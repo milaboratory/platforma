@@ -1,31 +1,30 @@
 <script setup lang="ts">
-import {
-  PlBlockPage,
-  PlBtnPrimary,
-  PlEditableTitle,
-  PlRow,
-} from '@platforma-sdk/ui-vue';
-import { computed } from 'vue';
-import { useApp } from '../app';
+import { PlBlockPage, PlBtnPrimary, PlEditableTitle, PlRow } from "@platforma-sdk/ui-vue";
+import { computed } from "vue";
+import { useApp } from "../app";
 
 const app = useApp();
 
-const section = computed(() => app.model.ui.dynamicSections.find((it) => it.id === app.queryParams.id));
+const section = computed(() =>
+  app.model.ui.dynamicSections.find((it) => it.id === app.queryParams.id),
+);
 
 const label = computed({
   get() {
-    return section.value?.label ?? '';
+    return section.value?.label ?? "";
   },
   set(v) {
     if (section.value) {
-      section.value.label = v ?? '';
+      section.value.label = v ?? "";
     }
   },
 });
 
 const deleteSection = () => {
-  app.model.ui.dynamicSections = app.model.ui.dynamicSections.filter((it) => it.id !== app.queryParams.id);
-  app.navigateTo('/add-section');
+  app.model.ui.dynamicSections = app.model.ui.dynamicSections.filter(
+    (it) => it.id !== app.queryParams.id,
+  );
+  app.navigateTo("/add-section");
 };
 </script>
 

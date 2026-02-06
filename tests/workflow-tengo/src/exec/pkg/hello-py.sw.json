@@ -1,26 +1,21 @@
 {
-    "name": "@platforma-open/milaboratories.software-small-binaries.python-stub:main",
-    "binary": {
-        "type": "python",
-        "registry": "platforma-open",
-        "package": "platforma-open/milaboratories.software-small-binaries.python-stub/main/1.0.3.tgz",
-        "cmd": [
-            "python",
-            "got fake python by dependency",
-            "pkg={pkg}",
-            "python={python}"
-        ],
-        "envVars": [],
-        "runEnv": {
-            "name": "@platforma-open/milaboratories.software-small-binaries.runenv-python-stub:main",
-            "type": "python",
-            "registry": "platforma-open",
-            "package": "platforma-open/milaboratories.software-small-binaries.runenv-python-stub/main/1.0.5-{os}-{arch}.tgz",
-            "binDir": "bin/"
-        },
-        "toolset": "pip",
-        "dependencies": {
-            "requirements": "./requirements.txt"
-        }
+  "name": "@platforma-open/milaboratories.software-small-binaries.python-stub:main",
+  "binary": {
+    "type": "python",
+    "registry": "platforma-open",
+    "package": "platforma-open/milaboratories.software-small-binaries.python-stub/main/1.0.3.tgz",
+    "cmd": ["python", "got fake python by dependency", "pkg={pkg}", "python={python}"],
+    "envVars": [],
+    "runEnv": {
+      "name": "@platforma-open/milaboratories.software-small-binaries.runenv-python-stub:main",
+      "type": "python",
+      "registry": "platforma-open",
+      "package": "platforma-open/milaboratories.software-small-binaries.runenv-python-stub/main/1.0.5-{os}-{arch}.tgz",
+      "binDir": "bin/"
+    },
+    "toolset": "pip",
+    "dependencies": {
+      "requirements": "./requirements.txt"
     }
+  }
 }

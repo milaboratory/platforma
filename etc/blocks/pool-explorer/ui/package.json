@@ -10,11 +10,11 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
+    "@milaboratories/helpers": "workspace:*",
     "@milaboratories/milaboratories.pool-explorer.model": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:*",
-    "vue": "catalog:",
     "monaco-editor": "catalog:",
-    "@milaboratories/helpers": "workspace:*"
+    "vue": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

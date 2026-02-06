@@ -2,14 +2,13 @@
 
 export function parseHttpAuth(input: string): HttpAuth {
   const match = /(?<scheme>.*?) (?<parameters>.*)/.exec(input);
-  if (match?.groups?.scheme === 'Basic') {
-    const credentialsMatch = /(?<username>.*?):(?<password>.*)/
-      .exec(atob(match.groups.parameters));
+  if (match?.groups?.scheme === "Basic") {
+    const credentialsMatch = /(?<username>.*?):(?<password>.*)/.exec(atob(match.groups.parameters));
     if (!credentialsMatch?.groups) {
       throw new Error(`Malformed credentials.`);
     }
     return {
-      scheme: 'Basic',
+      scheme: "Basic",
       username: credentialsMatch.groups.username,
       password: credentialsMatch.groups.password,
     };
@@ -18,7 +17,7 @@ export function parseHttpAuth(input: string): HttpAuth {
 }
 
 export function serializeHttpAuth(input: HttpAuth): string {
-  if (input.scheme === 'Basic') {
+  if (input.scheme === "Basic") {
     return `Basic ${btoa(`${input.username}:${input.password}`)}`;
   }
   throw new Error(`Unsupported auth scheme: ${input.scheme as string}.`);
@@ -27,7 +26,7 @@ export function serializeHttpAuth(input: HttpAuth): string {
 export type HttpAuth = BasicHttpAuth;
 
 export interface BasicHttpAuth {
-  scheme: 'Basic';
+  scheme: "Basic";
   username: string;
   password: string;
 }

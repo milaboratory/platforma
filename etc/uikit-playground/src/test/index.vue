@@ -1,21 +1,21 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
-import Layout from '../Layout.vue';
-import Scrollable from './Scrollable.vue';
-import { PlTooltip, useTheme, useResizeObserver, PlMaskIcon16 } from '@milaboratories/uikit';
+import { ref } from "vue";
+import Layout from "../Layout.vue";
+import Scrollable from "./Scrollable.vue";
+import { PlTooltip, useTheme, useResizeObserver, PlMaskIcon16 } from "@milaboratories/uikit";
 
 const resizable = ref<HTMLElement | undefined>();
 
 useResizeObserver(resizable, () => {
-  console.log('size changed');
+  console.log("size changed");
 });
 
 useTheme((mode) => {
-  console.log('new mode', mode);
+  console.log("new mode", mode);
 });
 
 function onCloseTooltip() {
-  console.log('closed');
+  console.log("closed");
 }
 </script>
 
@@ -66,7 +66,10 @@ function onCloseTooltip() {
     </div>
     <div style="width: 800px; height: 500px; background-color: #fff; padding: 24px; display: flex">
       <Scrollable />
-      <div ref="resizable" style="resize: both; padding: 20px; border: 1px solid #333; overflow: auto"/>
+      <div
+        ref="resizable"
+        style="resize: both; padding: 20px; border: 1px solid #333; overflow: auto"
+      />
     </div>
   </Layout>
 </template>

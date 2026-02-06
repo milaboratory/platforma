@@ -2,9 +2,13 @@
   "name": "@milaboratories/node-streams",
   "version": "1.0.7",
   "description": "",
-  "types": "./dist/index.d.ts",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,15 +23,11 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
-    "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "typescript": "catalog:"
   }
 }

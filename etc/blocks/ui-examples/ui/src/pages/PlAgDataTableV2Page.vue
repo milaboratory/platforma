@@ -14,15 +14,7 @@ import {
   type PlAgDataTableV2Controller,
 } from "@platforma-sdk/ui-vue";
 import type { ICellRendererParams } from "ag-grid-enterprise";
-import {
-  computed,
-  onWatcherCleanup,
-  ref,
-  watch,
-  watchEffect,
-  useTemplateRef,
-  toRaw,
-} from "vue";
+import { computed, onWatcherCleanup, ref, watch, watchEffect, useTemplateRef, toRaw } from "vue";
 import { useApp } from "../app";
 
 const app = useApp();
@@ -36,8 +28,7 @@ const sources = Array.from({ length: 10 }, (_, i) => ({
 
 const loading = ref(false);
 const tableSettings = usePlDataTableSettingsV2({
-  sourceId: () =>
-    loading.value ? "loading_source" : app.model.ui.dataTableV2.sourceId,
+  sourceId: () => (loading.value ? "loading_source" : app.model.ui.dataTableV2.sourceId),
   model: () => app.model.outputs.ptV2,
   sheets: () => app.model.outputs.ptV2Sheets,
   filtersConfig: ({ sourceId, column }) => {
@@ -102,7 +93,7 @@ const initialSelection: PlSelectionModel = {
 const selection = ref<PlSelectionModel>(initialSelection);
 watch(
   () => selection.value,
-  (selection) => console.log(`selection changed`, toRaw(selection))
+  (selection) => console.log(`selection changed`, toRaw(selection)),
 );
 
 const reactiveText = ref(false);
@@ -150,10 +141,7 @@ const resetSelection = async () => {
   <PlBlockPage>
     <template #title>PlAgDataTable V2</template>
     <template #append>
-      <PlBtnGhost
-        icon="settings"
-        @click.exact.stop="() => (settingsOpen = true)"
-      >
+      <PlBtnGhost icon="settings" @click.exact.stop="() => (settingsOpen = true)">
         Settings
       </PlBtnGhost>
     </template>
@@ -168,26 +156,16 @@ const resetSelection = async () => {
       @new-data-rendered="focusFirstSelectedRow"
     >
       <template #before-sheets>
-        <PlDropdown
-          v-model="app.model.ui.dataTableV2.sourceId"
-          :options="sources"
-          clearable
-        />
+        <PlDropdown v-model="app.model.ui.dataTableV2.sourceId" :options="sources" clearable />
         <PlNumberField v-model="app.model.ui.dataTableV2.numRows" />
       </template>
     </PlAgDataTableV2>
   </PlBlockPage>
   <PlSlideModal v-model="settingsOpen" :close-on-outside-click="true">
     <template #title>Settings</template>
-    <PlCheckbox v-model="verbose"
-      >Apply custom cell renderer for numbers</PlCheckbox
-    >
+    <PlCheckbox v-model="verbose">Apply custom cell renderer for numbers</PlCheckbox>
     <PlCheckbox v-model="loading">Display infinite loading</PlCheckbox>
-    <PlCheckbox v-model="reactiveText"
-      >Show reactive loading message</PlCheckbox
-    >
-    <PlBtnSecondary @click="resetSelection"
-      >Reset selection to default</PlBtnSecondary
-    >
+    <PlCheckbox v-model="reactiveText">Show reactive loading message</PlCheckbox>
+    <PlBtnSecondary @click="resetSelection">Reset selection to default</PlBtnSecondary>
   </PlSlideModal>
 </template>

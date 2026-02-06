@@ -1,18 +1,13 @@
 <script setup lang="ts">
-import {
-  PlBtnGhost,
-  PlIcon16,
-  PlIcon24,
-  useClickOutside,
-} from '@milaboratories/uikit';
-import { ZipWriter } from '@zip.js/zip.js';
-import { reactive, computed, ref } from 'vue';
-import type { ExportItem, ExportsMap, FileExportEntry } from './types';
-import Item from './Item.vue';
-import { getFileNameFromHandle, ChunkedStreamReader } from '@platforma-sdk/model';
-import { getRawPlatformaInstance } from '@platforma-sdk/model';
-import { uniqueId } from '@milaboratories/helpers';
-import Summary from './Summary.vue';
+import { PlBtnGhost, PlIcon16, PlIcon24, useClickOutside } from "@milaboratories/uikit";
+import { ZipWriter } from "@zip.js/zip.js";
+import { reactive, computed, ref } from "vue";
+import type { ExportItem, ExportsMap, FileExportEntry } from "./types";
+import Item from "./Item.vue";
+import { getFileNameFromHandle, ChunkedStreamReader } from "@platforma-sdk/model";
+import { getRawPlatformaInstance } from "@platforma-sdk/model";
+import { uniqueId } from "@milaboratories/helpers";
+import Summary from "./Summary.vue";
 
 type FilePickerAcceptType = {
   description?: string;
@@ -24,13 +19,13 @@ const props = defineProps<{
   suggestedFileName?: string;
   disabled?: boolean;
   filePickerTypes?: FilePickerAcceptType[];
-  strategy?: 'parallel'; // default is sequential
+  strategy?: "parallel"; // default is sequential
   debugFn?: (fileName: string) => Promise<void>;
 }>();
 
 const defaultData = () => ({
   loading: false,
-  name: '',
+  name: "",
   exports: undefined as ExportsMap | undefined,
   showExports: false,
 });
@@ -57,8 +52,12 @@ const archive = computed<ExportItem>(() => {
     fileName: data.name,
     current: items.value.reduce((acc, item) => acc + item.current, 0),
     size: items.value.reduce((acc, item) => acc + item.size, 0),
-    status: items.value.some((item) => item.status === 'in-progress') ? 'in-progress' : items.value.every((item) => item.status === 'completed') ? 'completed' : 'pending',
-    hasErrors: items.value.some((item) => item.status === 'error'),
+    status: items.value.some((item) => item.status === "in-progress")
+      ? "in-progress"
+      : items.value.every((item) => item.status === "completed")
+        ? "completed"
+        : "pending",
+    hasErrors: items.value.some((item) => item.status === "error"),
   };
 });
 
@@ -79,13 +78,15 @@ const exportRawTsvs = async () => {
     return;
   }
 
-  const defaultFileName = `${new Date().toISOString().split('T')[0]}_Export.zip`;
-  const defaultTypes = [{
-    description: 'ZIP files',
-    accept: {
-      'application/zip': ['.zip'],
+  const defaultFileName = `${new Date().toISOString().split("T")[0]}_Export.zip`;
+  const defaultTypes = [
+    {
+      description: "ZIP files",
+      accept: {
+        "application/zip": [".zip"],
+      },
     },
-  }];
+  ];
 
   // @ts-expect-error - type definition issue TODO: fix this
   const newHandle = await window.showSaveFilePicker({
@@ -100,7 +101,11 @@ const exportRawTsvs = async () => {
 
   try {
     const writableStream = await newHandle.createWritable();
-    const zip = new ZipWriter(writableStream, { keepOrder: true, zip64: true, bufferedWrite: false });
+    const zip = new ZipWriter(writableStream, {
+      keepOrder: true,
+      zip64: true,
+      bufferedWrite: false,
+    });
     try {
       const requests = [] as ZipRequest[];
 
@@ -111,7 +116,7 @@ const exportRawTsvs = async () => {
 
         const id = uniqueId();
 
-        data.exports?.set(id, { fileName, current: 0, size, status: 'pending' });
+        data.exports?.set(id, { fileName, current: 0, size, status: "pending" });
 
         const stream = ChunkedStreamReader.create({
           fetchChunk: async ({ from, to }) => {
@@ -123,9 +128,9 @@ const exportRawTsvs = async () => {
           },
           totalSize: size,
           onError: async (error) => {
-            updateExportsItem(id, { status: 'error', error });
+            updateExportsItem(id, { status: "error", error });
             await new Promise((resolve) => setTimeout(resolve, 1000)); // primitive for now
-            return 'continue';
+            return "continue";
           },
         });
 
@@ -144,21 +149,21 @@ const exportRawTsvs = async () => {
         await zip.add(fileName, stream, {
           bufferedWrite: true,
           onstart: () => {
-            update({ status: 'in-progress' });
+            update({ status: "in-progress" });
             return undefined;
           },
           onprogress: (current: number) => {
-            update({ current, status: 'in-progress' });
+            update({ current, status: "in-progress" });
             return undefined;
           },
           onend() {
-            update({ current: size, status: 'completed' });
+            update({ current: size, status: "completed" });
             return undefined;
           },
         });
       };
 
-      if (props.strategy === 'parallel') {
+      if (props.strategy === "parallel") {
         await Promise.all(requests.map(processRequest));
       } else {
         for (const request of requests) {
@@ -167,7 +172,7 @@ const exportRawTsvs = async () => {
       }
     } finally {
       await zip.close().catch((error) => {
-        console.error('Error closing zip', error);
+        console.error("Error closing zip", error);
       });
     }
   } finally {
@@ -184,7 +189,9 @@ useClickOutside([progressesRef], () => {
 
 <template>
   <PlBtnGhost
-    :disabled="!isReadyToExport" :loading="data.loading" :class="{ [$style['has-exports']]: data.exports }"
+    :disabled="!isReadyToExport"
+    :loading="data.loading"
+    :class="{ [$style['has-exports']]: data.exports }"
     @click.stop="exportRawTsvs"
   >
     <slot />

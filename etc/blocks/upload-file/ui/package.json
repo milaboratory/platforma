@@ -12,14 +12,14 @@
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-upload-file.model": "workspace:*",
-    "vue": "catalog:",
-    "@platforma-sdk/ui-vue": "workspace:*"
+    "@platforma-sdk/ui-vue": "workspace:*",
+    "vue": "catalog:"
   },
   "devDependencies": {
+    "@faker-js/faker": "catalog:",
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@faker-js/faker": "catalog:",
     "typescript": "catalog:",
     "zod": "catalog:"
   }

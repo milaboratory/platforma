@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { PlBlockPage, PlNumberField, PlTextField, useWatchFetch } from '@platforma-sdk/ui-vue';
-import { reactive } from 'vue';
-import { fetchTestResult } from './fetchTestResult';
+import { PlBlockPage, PlNumberField, PlTextField, useWatchFetch } from "@platforma-sdk/ui-vue";
+import { reactive } from "vue";
+import { fetchTestResult } from "./fetchTestResult";
 
 const data = reactive({
   number: 0,
-  text: '',
+  text: "",
 });
 
 const numberRef = useWatchFetch(

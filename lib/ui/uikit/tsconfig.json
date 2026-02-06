@@ -2,12 +2,7 @@
   "extends": "@milaboratories/ts-configs/tsconfig.browser.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "./src"
   },
-  "include": [
-    "src/**/*.ts", 
-    "src/**/*.tsx", 
-    "src/**/*.vue", 
-    "src/**/*.json"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.json"]
 }

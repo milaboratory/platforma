@@ -1,13 +1,14 @@
 {
   "name": "@milaboratories/computable",
   "version": "2.8.2",
-  "engines": {
-    "node": ">=22.19.0"
-  },
   "description": "Watcher / Computable Abstraction",
-  "types": "./dist/index.d.ts",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -23,13 +24,9 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "dependencies": {
-    "@milaboratories/ts-helpers": "workspace:*",
     "@milaboratories/pl-error-like": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
     "@types/node": "catalog:",
     "utility-types": "catalog:",
     "zod": "catalog:"
@@ -37,9 +34,12 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.19.0"
   }
 }

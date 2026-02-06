@@ -1,7 +1,7 @@
-import type { PFrameFactoryAPIV4 } from './api_factory';
-import type { PFrameReadAPIV11 } from './api_read';
-import type { Logger } from './common';
-import type { PFrameId } from './common';
+import type { PFrameFactoryAPIV4 } from "./api_factory";
+import type { PFrameReadAPIV11 } from "./api_read";
+import type { Logger } from "./common";
+import type { PFrameId } from "./common";
 
 export interface PFrameV13 extends PFrameFactoryAPIV4, PFrameReadAPIV11 {}
 
@@ -30,4 +30,4 @@ export interface PFrameFactoryV4 {
    * @warning This method will always reject on Windows!
    */
   pprofDump: () => Promise<Uint8Array>;
-};
+}

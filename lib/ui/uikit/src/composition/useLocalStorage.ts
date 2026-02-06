@@ -1,6 +1,6 @@
-import type { Ref } from 'vue';
-import { ref, watch } from 'vue';
-import { notEmpty } from '@milaboratories/helpers';
+import type { Ref } from "vue";
+import { ref, watch } from "vue";
+import { notEmpty } from "@milaboratories/helpers";
 
 const $store = new Map<string, Ref<string | null>>();
 
@@ -9,7 +9,7 @@ function getValue(key: string) {
     $store.set(key, ref(localStorage.getItem(key)));
   }
 
-  return notEmpty($store.get(key), '...');
+  return notEmpty($store.get(key), "...");
 }
 
 function setValue(key: string, v: string | null | undefined) {

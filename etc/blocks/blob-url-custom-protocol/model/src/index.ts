@@ -1,14 +1,11 @@
-import type {
-  ImportFileHandle,
-  InferHrefType,
-  InferOutputsType } from '@platforma-sdk/model';
+import type { ImportFileHandle, InferHrefType, InferOutputsType } from "@platforma-sdk/model";
 import {
   BlockModel,
   extractArchiveAndGetURL,
   getResourceField,
   MainOutputs,
-} from '@platforma-sdk/model';
-import { z } from 'zod';
+} from "@platforma-sdk/model";
+import { z } from "zod";
 
 export const ImportFileHandleSchema = z
   .string()
@@ -24,21 +21,21 @@ export const BlockArgs = z.object({
 
 export type BlockArgs = z.infer<typeof BlockArgs>;
 
-export const platforma = BlockModel.create('Heavy')
+export const platforma = BlockModel.create("Heavy")
 
   .withArgs({
     inputTgzHandle: undefined,
     inputZipHandle: undefined,
   })
 
-  .output('handleTgz', (ctx) => ctx.outputs?.resolve('handleTgz')?.getImportProgress())
-  .output('handleZip', (ctx) => ctx.outputs?.resolve('handleZip')?.getImportProgress())
+  .output("handleTgz", (ctx) => ctx.outputs?.resolve("handleTgz")?.getImportProgress())
+  .output("handleZip", (ctx) => ctx.outputs?.resolve("handleZip")?.getImportProgress())
 
-  .output('tgz_content', extractArchiveAndGetURL(getResourceField(MainOutputs, 'siteTgz'), 'tgz'))
+  .output("tgz_content", extractArchiveAndGetURL(getResourceField(MainOutputs, "siteTgz"), "tgz"))
 
-  .output('zip_content', (ctx) => ctx.outputs?.resolve('siteZip')?.extractArchiveAndGetURL('zip'))
+  .output("zip_content", (ctx) => ctx.outputs?.resolve("siteZip")?.extractArchiveAndGetURL("zip"))
   .sections((_ctx) => {
-    return [{ type: 'link', href: '/', label: 'Main' }];
+    return [{ type: "link", href: "/", label: "Main" }];
   })
 
   .done();

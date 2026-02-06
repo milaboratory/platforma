@@ -1,5 +1,5 @@
-import { delay } from '@milaboratories/helpers';
-import { hasAbortError } from '@platforma-sdk/model';
+import { delay } from "@milaboratories/helpers";
+import { hasAbortError } from "@platforma-sdk/model";
 
 export type RetryState = {
   i: number;
@@ -12,28 +12,29 @@ export class UpdateSerializer {
   private ongoingOperation: Promise<void> = Promise.resolve();
   private counter = 0;
 
-  constructor(private readonly options: {
-    debounceSpan?: number;
-  } = {}) {}
+  constructor(
+    private readonly options: {
+      debounceSpan?: number;
+    } = {},
+  ) {}
 
   async allSettled(): Promise<void> {
     await delay(this.options.debounceSpan ?? 0);
     let completed = false;
     do {
       await delay(0);
-      completed = await this.ongoingRun.then(() => {
-        return true;
-      }).catch((e) => {
-        console.log('ongoingRun error', e);
-        return false;
-      });
+      completed = await this.ongoingRun
+        .then(() => {
+          return true;
+        })
+        .catch((e) => {
+          console.log("ongoingRun error", e);
+          return false;
+        });
     } while (!completed);
   }
 
-  async retry<T>(
-    op: () => Promise<T>,
-    onNext: OnNext,
-  ): Promise<T> {
+  async retry<T>(op: () => Promise<T>, onNext: OnNext): Promise<T> {
     const state: RetryState = {
       i: 0,
     };
@@ -58,7 +59,7 @@ export class UpdateSerializer {
    * @returns true if operation succeeded, or false if operation was evicted by a more recent call
    */
   public async run(op: () => Promise<void>): Promise<boolean> {
-    return this.ongoingRun = this._run(op);
+    return (this.ongoingRun = this._run(op));
   }
 
   /**
@@ -95,12 +96,15 @@ export class UpdateSerializer {
     }
 
     // asynchronously starting the operation
-    const opPromise = this.retry(() => op(), (e) => {
-      console.warn('UpdateSerializer.run error, retrying...', e);
-      return {
-        delayMs: 100, // TODO: flexible delay
-      };
-    });
+    const opPromise = this.retry(
+      () => op(),
+      (e) => {
+        console.warn("UpdateSerializer.run error, retrying...", e);
+        return {
+          delayMs: 100, // TODO: flexible delay
+        };
+      },
+    );
     // publishing the promise for the next operation to await
     this.ongoingOperation = opPromise;
     // actually awaiting for the operation result, any rejections will be thrown here

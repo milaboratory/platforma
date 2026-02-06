@@ -1,7 +1,7 @@
-import { computed, watch, ref } from 'vue';
-import { useSdkPlugin } from '../../defineApp';
-import { Response } from './validation';
-import { useIntervalFn } from '@vueuse/core';
+import { computed, watch, ref } from "vue";
+import { useSdkPlugin } from "../../defineApp";
+import { Response } from "./validation";
+import { useIntervalFn } from "@vueuse/core";
 
 export function useInfo() {
   const sdk = useSdkPlugin();
@@ -11,9 +11,9 @@ export function useInfo() {
   // TODO use a separate plugin state when it's implemented
   const getModelArgsOrState = (model: Record<string, unknown> | undefined) => {
     if (!model) return {};
-    if ('data' in model) {
+    if ("data" in model) {
       return model.data as Record<string, unknown>;
-    } else if ('args' in model) {
+    } else if ("args" in model) {
       return model.args as Record<string, unknown>;
     }
     return {};
@@ -22,10 +22,10 @@ export function useInfo() {
   const inputData = computed(() => getModelArgsOrState(app.value?.model));
 
   const hasMonetization = computed(() => {
-    return inputData.value && ('__mnzDate' in inputData.value);
+    return inputData.value && "__mnzDate" in inputData.value;
   });
 
-  const parsed = computed(() => Response.safeParse(app.value?.model.outputs['__mnzInfo']));
+  const parsed = computed(() => Response.safeParse(app.value?.model.outputs["__mnzInfo"]));
 
   const currentInfo = computed<Response | undefined>(() => parsed.value?.data);
 
@@ -37,23 +37,27 @@ export function useInfo() {
 
   const version = ref(0);
 
-  watch([currentInfo], ([i]) => {
-    if (i) {
-      info.value = i;
-      const v = ++version.value;
-      setTimeout(() => {
-        if (version.value === v) {
-          isLoading.value = false;
-        }
-      }, 1000);
-    }
-  }, { immediate: true });
+  watch(
+    [currentInfo],
+    ([i]) => {
+      if (i) {
+        info.value = i;
+        const v = ++version.value;
+        setTimeout(() => {
+          if (version.value === v) {
+            isLoading.value = false;
+          }
+        }, 1000);
+      }
+    },
+    { immediate: true },
+  );
 
   const result = computed(() => info.value?.response?.result);
 
   const canRun = computed(() => !!result.value?.canRun);
 
-  const status = computed(() => currentInfo.value ? result.value?.status : '');
+  const status = computed(() => (currentInfo.value ? result.value?.status : ""));
 
   const customerEmail = computed(() => result.value?.customerEmail);
 
@@ -63,12 +67,12 @@ export function useInfo() {
 
   const refresh = () => {
     isLoading.value = true;
-    (inputData.value)['__mnzDate'] = new Date().toISOString();
+    inputData.value["__mnzDate"] = new Date().toISOString();
   };
 
   watch(canRun, (v) => {
     if (hasMonetization.value) {
-      (inputData.value as Record<string, unknown>)['__mnzCanRun'] = v;
+      (inputData.value as Record<string, unknown>)["__mnzCanRun"] = v;
     }
   });
 

@@ -1,4 +1,4 @@
-import { computed, type MaybeRefOrGetter, toValue } from 'vue';
+import { computed, type MaybeRefOrGetter, toValue } from "vue";
 
 export function useFilteredItems<T>(
   props: MaybeRefOrGetter<{

@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { cellEventOptions } from './constants';
-import type { CellEvent, CellProps, ShowContextOptions } from './types';
-import { reactive, ref } from 'vue';
+import { cellEventOptions } from "./constants";
+import type { CellEvent, CellProps, ShowContextOptions } from "./types";
+import { reactive, ref } from "vue";
 
-const emit = defineEmits(['delete:row', 'update:value']);
+const emit = defineEmits(["delete:row", "update:value"]);
 
 const props = defineProps<{
   cell: CellProps;
@@ -17,7 +17,7 @@ const data = reactive({
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function onInput(ev: any) {
-  emit('update:value', {
+  emit("update:value", {
     rowIndex: props.cell.rowIndex,
     name: props.cell.colName,
     value: ev.target.value,
@@ -29,7 +29,7 @@ function showContextMenu() {
   const cellEvents = props.cellEvents ?? [];
 
   if (!props.showContextOptions) {
-    console.warn('inject showContextOptions interface for the table');
+    console.warn("inject showContextOptions interface for the table");
     return;
   }
 
@@ -50,7 +50,7 @@ function onClick() {
   if (props.cell.editable) {
     data.edit = true;
     requestAnimationFrame(() => {
-      cellRef.value?.querySelector('input')?.focus();
+      cellRef.value?.querySelector("input")?.focus();
     });
   }
 }

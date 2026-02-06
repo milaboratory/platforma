@@ -1,25 +1,25 @@
 /** Gets either manually-selected, random or free ports, converts them to localhost or other endpoints.
  * Optionally returns minio ports as well. */
 
-import { assertNever } from '@milaboratories/ts-helpers';
-import type { AddressInfo } from 'node:net';
-import net from 'node:net';
+import { assertNever } from "@milaboratories/ts-helpers";
+import type { AddressInfo } from "node:net";
+import net from "node:net";
 
 /** Gets ports according to options, and concatenated them with the host. */
 export async function getLocalhostEndpoints(opts: PlConfigPorts): Promise<Endpoints> {
-  return withHost('127.0.0.1', '127.0.0.1', await getPorts(opts));
+  return withHost("127.0.0.1", "127.0.0.1", await getPorts(opts));
 }
 
 export async function getPorts(opts: PlConfigPorts): Promise<Ports> {
   const t = opts.type;
   switch (t) {
-    case 'custom':
+    case "custom":
       return opts.ports;
-    case 'customWithMinio':
+    case "customWithMinio":
       return opts.ports;
-    case 'pickFree':
+    case "pickFree":
       return await getFreePorts();
-    case 'random':
+    case "random":
       return getRandomPorts(opts);
     default:
       assertNever(t);
@@ -27,23 +27,23 @@ export async function getPorts(opts: PlConfigPorts): Promise<Ports> {
 }
 
 export type PlConfigPortsCustom = {
-  readonly type: 'custom';
+  readonly type: "custom";
   readonly ports: Ports;
 };
 
 export type PlConfigPortsCustomWithMinio = {
-  readonly type: 'customWithMinio';
+  readonly type: "customWithMinio";
   readonly ports: PortsWithMinio;
 };
 
 export type PlConfigPortsRandom = {
-  readonly type: 'random';
+  readonly type: "random";
   readonly from: number;
   readonly to: number;
 };
 
 export type PlConfigPortsPickFree = {
-  readonly type: 'pickFree';
+  readonly type: "pickFree";
 };
 
 export type Ports = {
@@ -79,7 +79,6 @@ export type Endpoints = {
   httpLocal?: string;
   grpcLocal?: string;
   minioLocal?: string;
-
 };
 
 export type PortsWithMinio = {

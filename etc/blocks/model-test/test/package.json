@@ -1,15 +1,15 @@
 {
   "name": "@milaboratories/milaboratories.test-block-model.test",
-  "private": true,
   "version": "1.0.0",
+  "private": true,
   "description": "Block tests",
+  "keywords": [],
+  "files": [],
   "scripts": {
     "test": "vitest",
     "check": "ts-builder check --target block-test",
     "fmt": "ts-builder format"
   },
-  "files": [],
-  "keywords": [],
   "dependencies": {
     "@milaboratories/milaboratories.test-block-model.model": "workspace:*",
     "@platforma-sdk/model": "workspace:*",

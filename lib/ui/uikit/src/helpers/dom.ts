@@ -1,6 +1,6 @@
-import { animate, makeEaseOut } from './utils';
+import { animate, makeEaseOut } from "./utils";
 
-export { downloadContent } from './downloadContent';
+export { downloadContent } from "./downloadContent";
 
 export function isElementVisible(parent: HTMLElement, el: HTMLElement) {
   const scrollTop = parent.scrollTop;
@@ -17,29 +17,33 @@ export function getElementScrollPosition(parent: HTMLElement, el: HTMLElement) {
   const elHeight = el.getBoundingClientRect().height;
 
   if (elOffsetTop + elHeight < parentHeight + scrollTop) {
-    return 'ceil' as const;
+    return "ceil" as const;
   }
 
   if (elOffsetTop > scrollTop) {
-    return 'floor' as const;
+    return "floor" as const;
   }
 
-  return 'visible' as const;
+  return "visible" as const;
 }
 
-export function scrollIntoView(parent: HTMLElement, el: HTMLElement, options: { duration?: number } = {}) {
+export function scrollIntoView(
+  parent: HTMLElement,
+  el: HTMLElement,
+  options: { duration?: number } = {},
+) {
   const scrollTop = parent.scrollTop;
   const parentHeight = parent.getBoundingClientRect().height;
   const elHeight = el.getBoundingClientRect().height;
   const offsetTop = el.offsetTop;
   const scrollPosition = getElementScrollPosition(parent, el);
 
-  if (scrollPosition === 'visible') {
+  if (scrollPosition === "visible") {
     return;
   }
 
   const draw = (progress: number) => {
-    const to = scrollPosition === 'floor' ? offsetTop - (parentHeight - elHeight) : offsetTop;
+    const to = scrollPosition === "floor" ? offsetTop - (parentHeight - elHeight) : offsetTop;
     parent.scrollTop = scrollTop + progress * (to - scrollTop);
   };
 

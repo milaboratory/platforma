@@ -2,9 +2,13 @@
   "name": "@platforma-open/milaboratories.software-ptabler.schema",
   "version": "1.13.6",
   "description": "Type definitions for PTabler",
-  "types": "./dist/index.d.ts",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -18,16 +22,12 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "dependencies": {
     "@milaboratories/pl-model-common": "workspace:*"
   },
   "devDependencies": {
-    "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
     "typescript": "catalog:"
   }
 }

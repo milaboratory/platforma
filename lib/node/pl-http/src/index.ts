@@ -1,5 +1,5 @@
-import type { Client, Dispatcher } from 'undici';
-import { Agent, ProxyAgent, interceptors } from 'undici';
+import type { Client, Dispatcher } from "undici";
+import { Agent, ProxyAgent, interceptors } from "undici";
 
 export type ProxySettings = {
   url?: string;
@@ -30,12 +30,11 @@ export function defaultHttpDispatcher(
     keepAliveMaxTimeout: 60e3,
   };
 
-  const proxy = typeof httpProxy === 'string' ? { url: httpProxy } : httpProxy;
+  const proxy = typeof httpProxy === "string" ? { url: httpProxy } : httpProxy;
 
   const dispatcher = proxy?.url
     ? new ProxyAgent({ uri: proxy.url, token: proxy.auth, ...httpOptions })
-    : new Agent(httpOptions)
-      .compose(
+    : new Agent(httpOptions).compose(
         interceptors.dns({
           maxTTL: 60e3, // Cache DNS results for 1 minute (default: 10 seconds)
           affinity: 4,

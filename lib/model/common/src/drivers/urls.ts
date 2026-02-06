@@ -3,7 +3,7 @@
  */
 export type FolderURL = `plblob+folder://${string}`;
 
-export type ArchiveFormat = 'zip' | 'tar' | 'tgz';
+export type ArchiveFormat = "zip" | "tar" | "tgz";
 
 export interface BlobToURLDriver {
   getPathForCustomProtocol(url: FolderURL): string;
@@ -11,7 +11,7 @@ export interface BlobToURLDriver {
 
 export function isFolderURL(url: string): url is FolderURL {
   const parsed = new URL(url);
-  return parsed.protocol == 'plblob+folder:';
+  return parsed.protocol == "plblob+folder:";
 }
 
 /**
@@ -26,5 +26,5 @@ export interface FrontendDriver {
 
 export function isBlockUIURL(url: string): url is BlockUIURL {
   const parsed = new URL(url);
-  return parsed.protocol == 'block-ui:';
+  return parsed.protocol == "block-ui:";
 }

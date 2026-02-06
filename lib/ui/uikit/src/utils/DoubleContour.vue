@@ -1,13 +1,24 @@
 <script lang="ts" setup>
-withDefaults(defineProps<{
-  groupPosition?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
-}>(), {
-  groupPosition: undefined,
-});
+withDefaults(
+  defineProps<{
+    groupPosition?:
+      | "top"
+      | "bottom"
+      | "left"
+      | "right"
+      | "top-left"
+      | "top-right"
+      | "bottom-left"
+      | "bottom-right"
+      | "middle";
+  }>(),
+  {
+    groupPosition: undefined,
+  },
+);
 </script>
 
 <script lang="ts">
-
 export default {
   inheritAttrs: false,
 };
@@ -46,7 +57,7 @@ export default {
   }
 }
 .double-contour {
-  &.top-left > div{
+  &.top-left > div {
     border-top-right-radius: 0;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;

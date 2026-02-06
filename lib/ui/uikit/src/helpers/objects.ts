@@ -1,5 +1,5 @@
 export function isRecord<V, T extends Record<string, V>>(obj: T | unknown): obj is T {
-  return obj !== null && typeof obj === 'object';
+  return obj !== null && typeof obj === "object";
 }
 
 export function deepEqual(a: unknown, b: unknown): boolean {

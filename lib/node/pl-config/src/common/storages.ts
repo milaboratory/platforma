@@ -1,6 +1,9 @@
-import upath from 'upath';
-import fs from 'node:fs/promises';
-import type { PlControllerDataMainStoragesSettings, PlControllerDataStoragesSettings } from './types';
+import upath from "upath";
+import fs from "node:fs/promises";
+import type {
+  PlControllerDataMainStoragesSettings,
+  PlControllerDataStoragesSettings,
+} from "./types";
 
 /** Settings that are needed for config generation:
  * runner's working dir (usually this is "work" storage),
@@ -35,22 +38,22 @@ export function newRemoteConfigStoragesFS(
   workdir: string,
   localHTTPPort?: number,
 ): StoragesSettings {
-  const workPath = upath.join(workdir, 'storages', 'work');
-  const mainPath = upath.join(workdir, 'storages', 'main');
+  const workPath = upath.join(workdir, "storages", "work");
+  const mainPath = upath.join(workdir, "storages", "main");
 
   if (!localHTTPPort) {
-    throw new Error('httpPort is required for remote FS storage config generation');
+    throw new Error("httpPort is required for remote FS storage config generation");
   }
 
   const main: StorageSettings = {
     main: {
-      mode: 'primary',
+      mode: "primary",
       downloadable: true,
     },
     storage: {
-      id: 'main',
-      type: 'FS',
-      indexCachePeriod: '0s',
+      id: "main",
+      type: "FS",
+      indexCachePeriod: "0s",
       rootPath: mainPath,
       externalURL: `http://localhost:${localHTTPPort}`,
       allowRemoteAccess: true,
@@ -58,28 +61,28 @@ export function newRemoteConfigStoragesFS(
   };
 
   const remoteRoot: StorageSettings = {
-    localPath: '',
+    localPath: "",
     main: {
-      mode: 'passive',
+      mode: "passive",
       downloadable: true,
     },
     storage: {
-      id: 'remoteRoot',
-      type: 'FS',
-      indexCachePeriod: '1m',
-      rootPath: '',
+      id: "remoteRoot",
+      type: "FS",
+      indexCachePeriod: "1m",
+      rootPath: "",
     },
   };
 
   const work: StorageSettings = {
     main: {
-      mode: 'active',
+      mode: "active",
       downloadable: false,
     },
     storage: {
-      id: 'work',
-      type: 'FS',
-      indexCachePeriod: '1m',
+      id: "work",
+      type: "FS",
+      indexCachePeriod: "1m",
       rootPath: workPath,
     },
   };
@@ -96,60 +99,60 @@ export function newRemoteConfigStoragesMinio(
   workdir: string,
   minioOpts: RemoteMinioSettings,
 ): StoragesSettings {
-  const workPath = upath.join(workdir, 'storages', 'work');
-  const mainPath = upath.join(workdir, 'storages', 'main');
+  const workPath = upath.join(workdir, "storages", "work");
+  const mainPath = upath.join(workdir, "storages", "main");
 
   const main: StorageSettings = {
     main: {
-      mode: 'primary',
+      mode: "primary",
       downloadable: true,
     },
     storage: {
-      id: 'main',
-      type: 'S3',
-      indexCachePeriod: '0s',
+      id: "main",
+      type: "S3",
+      indexCachePeriod: "0s",
       endpoint: minioOpts.endpoint,
-      region: '',
+      region: "",
       presignEndpoint: minioOpts.presignEndpoint,
       bucketName: minioOpts.bucketName,
       createBucket: true,
       forcePathStyle: true,
       key: `static:${minioOpts.key}`,
       secret: `static:${minioOpts.secret}`,
-      keyPrefix: '',
-      accessPrefixes: [''],
-      uploadKeyPrefix: '',
+      keyPrefix: "",
+      accessPrefixes: [""],
+      uploadKeyPrefix: "",
     },
   };
 
   const remoteRoot: StorageSettings = {
-    localPath: '',
+    localPath: "",
     main: {
-      mode: 'passive',
+      mode: "passive",
       downloadable: true,
     },
     storage: {
-      id: 'remoteRoot',
-      type: 'FS',
-      indexCachePeriod: '1m',
-      rootPath: '',
+      id: "remoteRoot",
+      type: "FS",
+      indexCachePeriod: "1m",
+      rootPath: "",
       allowRemoteAccess: false,
-      externalURL: '',
+      externalURL: "",
     },
   };
 
   const work: StorageSettings = {
     main: {
-      mode: 'active',
+      mode: "active",
       downloadable: false,
     },
     storage: {
-      id: 'work',
-      type: 'FS',
-      indexCachePeriod: '1m',
+      id: "work",
+      type: "FS",
+      indexCachePeriod: "1m",
       rootPath: workPath,
       allowRemoteAccess: false,
-      externalURL: '',
+      externalURL: "",
     },
   };
 
@@ -161,7 +164,10 @@ export function newRemoteConfigStoragesMinio(
   };
 }
 
-export async function createDefaultLocalStorages(workdir: string, externalURL: string): Promise<StoragesSettings> {
+export async function createDefaultLocalStorages(
+  workdir: string,
+  externalURL: string,
+): Promise<StoragesSettings> {
   const storages = newDefaultLocalStorages(workdir, externalURL);
 
   for (const d of storages.dirsToCreate) {
@@ -172,38 +178,38 @@ export async function createDefaultLocalStorages(workdir: string, externalURL: s
 }
 
 function newDefaultLocalStorages(workdir: string, externalURL: string): StoragesSettings {
-  const workPath = upath.join(workdir, 'storages', 'work');
-  const mainPath = upath.join(workdir, 'storages', 'main');
+  const workPath = upath.join(workdir, "storages", "work");
+  const mainPath = upath.join(workdir, "storages", "main");
 
   // root storage will be ignored in a local pl deployments in the driver
   // (Platforma needs to be able to upload any file by absolute paths
   // in the local deployment, that's why it exists.)
   const root: StorageSettings = {
-    localPath: '',
+    localPath: "",
     main: {
-      mode: 'passive',
+      mode: "passive",
       downloadable: true,
     },
     storage: {
-      id: 'root',
-      type: 'FS',
-      indexCachePeriod: '1m',
-      rootPath: '',
+      id: "root",
+      type: "FS",
+      indexCachePeriod: "1m",
+      rootPath: "",
       allowRemoteAccess: false,
-      externalURL: '',
+      externalURL: "",
     },
   };
 
   const main: StorageSettings = {
     localPath: mainPath,
     main: {
-      mode: 'primary',
+      mode: "primary",
       downloadable: true,
     },
     storage: {
-      id: 'main',
-      type: 'FS',
-      indexCachePeriod: '0m',
+      id: "main",
+      type: "FS",
+      indexCachePeriod: "0m",
       rootPath: mainPath,
       allowRemoteAccess: false, // should launch a http-server but leave upload / download URL with 'storage://' prefix
       externalURL: externalURL,
@@ -212,16 +218,16 @@ function newDefaultLocalStorages(workdir: string, externalURL: string): Storages
 
   const work: StorageSettings = {
     main: {
-      mode: 'active',
+      mode: "active",
       downloadable: false,
     },
     storage: {
-      id: 'work',
-      type: 'FS',
-      indexCachePeriod: '1m',
+      id: "work",
+      type: "FS",
+      indexCachePeriod: "1m",
       rootPath: workPath,
       allowRemoteAccess: false,
-      externalURL: '',
+      externalURL: "",
     },
   };
 

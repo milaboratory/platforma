@@ -17,10 +17,10 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@platforma-sdk/block-tools": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/block-tools": "workspace:*",
+    "typescript": "catalog:"
   }
 }

@@ -8,12 +8,12 @@ styles.replaceSync(`
 `);
 
 export class WebStopWatchElement extends HTMLElement {
-  static define(tag = 'web-stop-watch') {
+  static define(tag = "web-stop-watch") {
     customElements.define(tag, this);
   }
 
   // Give this element its own encapsulated DOM
-  shadowRoot = this.attachShadow({ mode: 'open' });
+  shadowRoot = this.attachShadow({ mode: "open" });
 
   // Initialize private state
   #start = Date.now();
@@ -28,9 +28,9 @@ export class WebStopWatchElement extends HTMLElement {
 
   #tick() {
     const milliseconds = Date.now() - this.#start;
-    const minutes = String(Math.floor(milliseconds / (1000 * 60))).padStart(2, '0');
-    const seconds = String(Math.floor((milliseconds / 1000) % 60)).padStart(2, '0');
-    const hundredths = String(Math.floor((milliseconds % 1000) / 10)).padStart(2, '0');
+    const minutes = String(Math.floor(milliseconds / (1000 * 60))).padStart(2, "0");
+    const seconds = String(Math.floor((milliseconds / 1000) % 60)).padStart(2, "0");
+    const hundredths = String(Math.floor((milliseconds % 1000) / 10)).padStart(2, "0");
 
     this.shadowRoot.replaceChildren(`${minutes}:${seconds}:${hundredths}`);
 

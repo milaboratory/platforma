@@ -3,6 +3,16 @@
   "version": "1.1.1",
   "private": true,
   "description": "Small script for building static oclif commands indexes",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "bin": {
+    "oclif-index": "./bin/run.mjs"
+  },
+  "files": [
+    "./bin/run.cmd",
+    "./bin/run.mjs",
+    "./dist/"
+  ],
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -12,32 +22,22 @@
     "check": "ts-builder check --target node",
     "fmt": "ts-builder format"
   },
-  "bin": {
-    "oclif-index": "./bin/run.mjs"
+  "dependencies": {
+    "@oclif/core": "catalog:",
+    "winston": "catalog:"
   },
-  "files": [
-    "./bin/run.cmd",
-    "./bin/run.mjs",
-    "./dist/"
-  ],
-  "keywords": [],
-  "license": "UNLICENSED",
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  },
   "oclif": {
     "bin": "oclif-index",
     "commands": {
       "strategy": "single",
       "target": "./dist/index.js"
     }
-  },
-  "dependencies": {
-    "winston": "catalog:",
-    "@oclif/core": "catalog:"
-  },
-  "devDependencies": {
-    "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "@types/node": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
   }
 }

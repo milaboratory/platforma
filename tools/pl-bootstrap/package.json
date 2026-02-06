@@ -2,13 +2,8 @@
   "name": "@platforma-sdk/bootstrap",
   "version": "5.2.41",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
-  "scripts": {
-    "build": "oclif-index && ts-builder build --target node",
-    "watch": "ts-builder build --target node --watch",
-    "check": "ts-builder check --target node",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "fmt": "ts-builder format"
-  },
+  "keywords": [],
+  "license": "UNLICENSED",
   "bin": {
     "pl-dev": "./bin/run.js"
   },
@@ -20,18 +15,12 @@
     "./assets/**",
     "./postinstall.js"
   ],
-  "keywords": [],
-  "license": "UNLICENSED",
-  "devDependencies": {
-    "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/oclif-index": "workspace:*",
-    "@milaboratories/ts-builder": "workspace:*",
-    "@milaboratories/ts-configs": "workspace:*",
-    "@types/decompress": "catalog:",
-    "@types/node": "catalog:",
-    "@types/readline-sync": "catalog:",
-    "ts-node": "catalog:",
-    "typescript": "catalog:"
+  "scripts": {
+    "build": "oclif-index && ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
+    "check": "ts-builder check --target node",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
   "dependencies": {
     "@milaboratories/pl-deployments": "workspace:*",
@@ -44,12 +33,23 @@
     "yaml": "catalog:",
     "zod": "catalog:"
   },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/oclif-index": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@types/decompress": "catalog:",
+    "@types/node": "catalog:",
+    "@types/readline-sync": "catalog:",
+    "ts-node": "catalog:",
+    "typescript": "catalog:"
+  },
   "oclif": {
     "bin": "pl-dev",
     "commands": {
+      "identifier": "COMMANDS",
       "strategy": "explicit",
-      "target": "./dist/index.js",
-      "identifier": "COMMANDS"
+      "target": "./dist/index.js"
     },
     "dirname": "pl-service",
     "topicSeparator": " "

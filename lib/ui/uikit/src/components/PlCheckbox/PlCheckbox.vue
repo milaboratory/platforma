@@ -1,20 +1,20 @@
 <script lang="ts">
 /** Component for boolean model manipulation */
 export default {
-  name: 'PlCheckbox',
+  name: "PlCheckbox",
 };
 </script>
 
 <script lang="ts" setup>
-import { useSlots } from 'vue';
-import './pl-checkbox.scss';
-import PlCheckboxBase from './PlCheckboxBase.vue';
+import { useSlots } from "vue";
+import "./pl-checkbox.scss";
+import PlCheckboxBase from "./PlCheckboxBase.vue";
 
 defineEmits<{
   /**
    * Emitted when the model value is updated.
    */
-  (e: 'update:modelValue', value: boolean): void;
+  (e: "update:modelValue", value: boolean): void;
 }>();
 
 const props = defineProps<{

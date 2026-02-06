@@ -5,29 +5,29 @@ import {
   Pl,
   pTableValue,
   type PTableColumnSpec,
-} from '@milaboratories/pl-middle-layer';
-import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import { vi } from 'vitest';
-import dedent from 'dedent';
-import { mapValues } from 'es-toolkit';
-import { Timeout, getFileContent, getTableData } from './helpers';
+} from "@milaboratories/pl-middle-layer";
+import { awaitStableState, tplTest } from "@platforma-sdk/test";
+import { vi } from "vitest";
+import dedent from "dedent";
+import { mapValues } from "es-toolkit";
+import { Timeout, getFileContent, getTableData } from "./helpers";
 
 vi.setConfig({ testTimeout: Timeout });
 
-const normalizeCsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
+const normalizeCsv = (str: string) => str.replace(/\r\n/g, "\n").trim();
 const normalizeTsv = normalizeCsv;
 const normalizeNdjson = normalizeCsv;
 
 const normalizeAndSortCsv = (str: string) => {
-  const lines = normalizeCsv(str).split('\n');
+  const lines = normalizeCsv(str).split("\n");
   const header = lines.shift();
   lines.sort();
-  return [header, ...lines].join('\n');
+  return [header, ...lines].join("\n");
 };
 const normalizeAndSortTsv = normalizeAndSortCsv;
 const normalizeAndSortNdjson = (str: string) =>
   normalizeNdjson(str)
-    .split('\n')
+    .split("\n")
     .map((line) => {
       // Parse and re-stringify to normalize JSON formatting
       try {
@@ -37,114 +37,117 @@ const normalizeAndSortNdjson = (str: string) =>
       }
     })
     .sort() // Sort lines for consistent comparison
-    .join('\n');
+    .join("\n");
 
-tplTest.concurrent(
-  'pt simple test',
-  async ({ helper, expect, driverKit }) => {
-    const inputTsvData = dedent`
+tplTest.concurrent("pt simple test", async ({ helper, expect, driverKit }) => {
+  const inputTsvData = dedent`
       a	b
       1	X
       4	Y
       9	Z
     `;
-    const expectedOutputTsvData = dedent`
+  const expectedOutputTsvData = dedent`
       a	a_sqrt
       1	1.0
       4	2.0
       9	3.0
     `;
 
-    const result = await helper.renderTemplate(
-      false,
-      'pt.simple',
-      ['out'],
-      (tx) => ({
-        inputTsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputTsvData)),
-      }),
-    );
+  const result = await helper.renderTemplate(false, "pt.simple", ["out"], (tx) => ({
+    inputTsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputTsvData)),
+  }));
 
-    const outputTsvContent = await getFileContent(result, 'out', driverKit);
+  const outputTsvContent = await getFileContent(result, "out", driverKit);
 
-    expect(normalizeTsv(outputTsvContent)).toEqual(normalizeTsv(expectedOutputTsvData));
-  },
-);
+  expect(normalizeTsv(outputTsvContent)).toEqual(normalizeTsv(expectedOutputTsvData));
+});
 
-tplTest.concurrent(
-  'pt write frame test',
-  async ({ helper, expect, driverKit }) => {
-    const workflow = await helper.renderWorkflow('pt.write_frame', false, {
-      inputCsv: dedent`
+tplTest.concurrent("pt write frame test", async ({ helper, expect, driverKit }) => {
+  const workflow = await helper.renderWorkflow("pt.write_frame", false, {
+    inputCsv: dedent`
           a,b
           1,X
           9,Z
           4,Y
         `,
-      saveFrameParams: {
-        axes: [{
-          column: 'a',
-          spec: { name: 'a', type: 'Int' },
-        }],
-        columns: [{
-          column: 'b',
-          spec: { name: 'b', valueType: 'String' },
-        }],
-      },
-    });
-
-    const pTable = await getTableData(workflow, 'pf', driverKit);
-
-    const pTableSpecs = pTable.map((col) => col.spec);
-    expect(pTableSpecs).toEqual([
-      {
-        type: 'axis',
-        id: { name: 'a', type: 'Int' },
-        spec: { name: 'a', type: 'Int' },
-      },
-      {
-        type: 'column',
-        id: deriveLocalPObjectId(['pf'], 'b'),
-        spec: {
-          kind: 'PColumn',
-          name: 'b',
-          valueType: 'String',
-          axesSpec: [{ name: 'a', type: 'Int' }],
+    saveFrameParams: {
+      axes: [
+        {
+          column: "a",
+          spec: { name: "a", type: "Int" },
         },
-      },
-    ] satisfies PTableColumnSpec[]);
+      ],
+      columns: [
+        {
+          column: "b",
+          spec: { name: "b", valueType: "String" },
+        },
+      ],
+    },
+  });
 
-    const pTableData = pTable.map((col) => {
-      const rows: string[] = [];
-      for (let i = 0; i < col.data.data.length; i++) {
-        rows.push(pTableValue(col.data, i, { absent: '', na: '' })?.toString() ?? '');
-      }
-      return rows;
-    });
-    expect(pTableData).toEqual([
-      ['1', '4', '9'],
-      ['X', 'Y', 'Z'],
-    ]);
-  },
-);
+  const pTable = await getTableData(workflow, "pf", driverKit);
+
+  const pTableSpecs = pTable.map((col) => col.spec);
+  expect(pTableSpecs).toEqual([
+    {
+      type: "axis",
+      id: { name: "a", type: "Int" },
+      spec: { name: "a", type: "Int" },
+    },
+    {
+      type: "column",
+      id: deriveLocalPObjectId(["pf"], "b"),
+      spec: {
+        kind: "PColumn",
+        name: "b",
+        valueType: "String",
+        axesSpec: [{ name: "a", type: "Int" }],
+      },
+    },
+  ] satisfies PTableColumnSpec[]);
+
+  const pTableData = pTable.map((col) => {
+    const rows: string[] = [];
+    for (let i = 0; i < col.data.data.length; i++) {
+      rows.push(pTableValue(col.data, i, { absent: "", na: "" })?.toString() ?? "");
+    }
+    return rows;
+  });
+  expect(pTableData).toEqual([
+    ["1", "4", "9"],
+    ["X", "Y", "Z"],
+  ]);
+});
 
 tplTest.concurrent.for([
   {
-    case: '1 axis, 1 column',
+    case: "1 axis, 1 column",
     csvData: dedent`
       a,b
       1,X
       9,Z
       4,Y
     `,
-    axes: [
-      { column: 'a', spec: { name: 'a', type: 'Int' } },
-    ],
+    axes: [{ column: "a", spec: { name: "a", type: "Int" } }],
+    columns: [{ column: "b", spec: { name: "b", valueType: "String" } }],
+  },
+  {
+    case: "1 axis, 2 columns",
+    csvData: dedent`
+      a,b,c
+      1,X,0.1
+      9,Z,0.2
+      4,Y,0.3
+    `,
+    axes: [{ column: "a", spec: { name: "a", type: "Int" } }],
     columns: [
-      { column: 'b', spec: { name: 'b', valueType: 'String' } },
+      { column: "b", spec: { name: "b", valueType: "String" } },
+      { column: "c", spec: { name: "c", valueType: "Float" } },
     ],
   },
   {
-    case: '1 axis, 2 columns',
+    case: "2 axes, 1 column",
     csvData: dedent`
       a,b,c
       1,X,0.1
@@ -152,50 +155,42 @@ tplTest.concurrent.for([
       4,Y,0.3
     `,
     axes: [
-      { column: 'a', spec: { name: 'a', type: 'Int' } },
+      { column: "a", spec: { name: "a", type: "Int" } },
+      { column: "b", spec: { name: "b", type: "String" } },
     ],
-    columns: [
-      { column: 'b', spec: { name: 'b', valueType: 'String' } },
-      { column: 'c', spec: { name: 'c', valueType: 'Float' } },
-    ],
-  },
-  {
-    case: '2 axes, 1 column',
-    csvData: dedent`
-      a,b,c
-      1,X,0.1
-      9,Z,0.2
-      4,Y,0.3
-    `,
-    axes: [
-      { column: 'a', spec: { name: 'a', type: 'Int' } },
-      { column: 'b', spec: { name: 'b', type: 'String' } },
-    ],
-    columns: [
-      { column: 'c', spec: { name: 'c', valueType: 'Float' } },
-    ],
+    columns: [{ column: "c", spec: { name: "c", valueType: "Float" } }],
   },
 ])(
-  'pt frame roundtrip test - $case',
+  "pt frame roundtrip test - $case",
   async ({ csvData, axes, columns }, { helper, expect, driverKit }) => {
-    const workflow1 = await helper.renderWorkflow('pt.write_frame', false, {
-      inputCsv: csvData,
-      saveFrameParams: { axes, columns },
-    }, { blockId: 'block1' });
+    const workflow1 = await helper.renderWorkflow(
+      "pt.write_frame",
+      false,
+      {
+        inputCsv: csvData,
+        saveFrameParams: { axes, columns },
+      },
+      { blockId: "block1" },
+    );
 
     const context1 = await awaitStableState(workflow1.context(), Timeout);
-    const workflow2 = await helper.renderWorkflow('pt.read_frame', false, {
-      axesNames: axes.map((axis) => axis.spec.name),
-      columnNames: columns.map((column) => column.spec.name),
-    }, { blockId: 'block2', parent: context1 });
+    const workflow2 = await helper.renderWorkflow(
+      "pt.read_frame",
+      false,
+      {
+        axesNames: axes.map((axis) => axis.spec.name),
+        columnNames: columns.map((column) => column.spec.name),
+      },
+      { blockId: "block2", parent: context1 },
+    );
 
-    const csvContent = await getFileContent(workflow2, 'csv', driverKit);
+    const csvContent = await getFileContent(workflow2, "csv", driverKit);
     expect(normalizeCsv(csvContent)).eq(normalizeAndSortCsv(csvData));
   },
 );
 
 tplTest.concurrent(
-  'pt ex1 test - window and groupBy operations',
+  "pt ex1 test - window and groupBy operations",
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = dedent`
       category	user_id	score	value
@@ -226,16 +221,16 @@ tplTest.concurrent(
 
     const result = await helper.renderTemplate(
       false,
-      'pt.ex1',
-      ['out_windows', 'out_grouped'],
+      "pt.ex1",
+      ["out_windows", "out_grouped"],
       (tx) => ({
         inputTsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputTsvData)),
       }),
     );
 
     const [outputWindowsContent, outputGroupedContent] = await Promise.all([
-      getFileContent(result, 'out_windows', driverKit),
-      getFileContent(result, 'out_grouped', driverKit),
+      getFileContent(result, "out_windows", driverKit),
+      getFileContent(result, "out_grouped", driverKit),
     ]);
 
     expect(normalizeAndSortTsv(outputWindowsContent)).toEqual(
@@ -248,7 +243,7 @@ tplTest.concurrent(
 );
 
 tplTest.concurrent(
-  'pt ex2 test - filter, sort, limit operations',
+  "pt ex2 test - filter, sort, limit operations",
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = dedent`
       category	user_id	score	value
@@ -287,16 +282,16 @@ tplTest.concurrent(
 
     const result = await helper.renderTemplate(
       false,
-      'pt.ex2',
-      ['out_filtered_sorted', 'out_limited'],
+      "pt.ex2",
+      ["out_filtered_sorted", "out_limited"],
       (tx) => ({
         inputTsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputTsvData)),
       }),
     );
 
     const [outputContent, outputLimitedContent] = await Promise.all([
-      getFileContent(result, 'out_filtered_sorted', driverKit),
-      getFileContent(result, 'out_limited', driverKit),
+      getFileContent(result, "out_filtered_sorted", driverKit),
+      getFileContent(result, "out_limited", driverKit),
     ]);
 
     expect(normalizeTsv(outputContent)).toEqual(normalizeTsv(expectedOutputTsvData));
@@ -304,36 +299,34 @@ tplTest.concurrent(
   },
 );
 
-tplTest.concurrent(
-  'pt ex3 test - join operations',
-  async ({ helper, expect, driverKit }) => {
-    // No input files needed as data is defined in the template as strings
+tplTest.concurrent("pt ex3 test - join operations", async ({ helper, expect, driverKit }) => {
+  // No input files needed as data is defined in the template as strings
 
-    const expectedOutputInnerJoin = dedent`
+  const expectedOutputInnerJoin = dedent`
       id,name,val_left,name_from_right,val_right,info_for_test1
       1,Alice,100,Alice_R1,10,R_Info_1
       2,Bob,200,Bob_R1,20,R_Info_2
       4,David,400,David_R1,40,R_Info_4
     `;
 
-    // dfLeft: id,name,val_left (1,Alice,100; 2,Bob,200; 3,Charlie,300; 4,David,400)
-    // dfRight: id_r,name,val_right,info (ID1,Alice,10; ID2,Bob,20; ID4,David,40; ID5,Frank,50)
-    // Joining on 'name'
-    const expectedOutputLeftJoinOn = dedent`
+  // dfLeft: id,name,val_left (1,Alice,100; 2,Bob,200; 3,Charlie,300; 4,David,400)
+  // dfRight: id_r,name,val_right,info (ID1,Alice,10; ID2,Bob,20; ID4,David,40; ID5,Frank,50)
+  // Joining on 'name'
+  const expectedOutputLeftJoinOn = dedent`
       id,name,val_left,id_from_right,val_right,info
       1,Alice,100,ID1,10,R_Info_Alice
       2,Bob,200,ID2,20,R_Info_Bob
       3,Charlie,300,,,
       4,David,400,ID4,40,R_Info_David
     `; // David is in both
-    // Frank from right is not included due to left join
+  // Frank from right is not included due to left join
 
-    // dfLeftOn: common_key,name_l,val_l (K1,Alice_LO,100; K2,Bob_LO,200; K3,Charlie_LO,300)
-    // dfRightOn: common_key,name_r,val_r (K1,Andrea_RO,10; K2,Robert_RO,20; K4,David_RO,400)
-    // Joining on 'common_key' with coalesce=false
-    // Polars default for coalesce=false on full join with common key names like 'common_key'
-    // will create 'common_key' (from left) and 'common_key_right' (from right)
-    const expectedOutputFullJoinOnNoCoalesce = dedent`
+  // dfLeftOn: common_key,name_l,val_l (K1,Alice_LO,100; K2,Bob_LO,200; K3,Charlie_LO,300)
+  // dfRightOn: common_key,name_r,val_r (K1,Andrea_RO,10; K2,Robert_RO,20; K4,David_RO,400)
+  // Joining on 'common_key' with coalesce=false
+  // Polars default for coalesce=false on full join with common key names like 'common_key'
+  // will create 'common_key' (from left) and 'common_key_right' (from right)
+  const expectedOutputFullJoinOnNoCoalesce = dedent`
       common_key,name_l,common_key_right,name_r
       K1,Alice_LO,K1,Andrea_RO
       K2,Bob_LO,K2,Robert_RO
@@ -341,9 +334,9 @@ tplTest.concurrent(
       ,,K4,David_RO
     `; // K3 only in left, K4 only in right
 
-    // dfCrossLeft: item_id,item_name (L1,Apple; L2,Banana)
-    // dfCrossRight: color_id,color_name (C1,Red; C2,Yellow)
-    const expectedOutputCrossJoin = dedent`
+  // dfCrossLeft: item_id,item_name (L1,Apple; L2,Banana)
+  // dfCrossRight: color_id,color_name (C1,Red; C2,Yellow)
+  const expectedOutputCrossJoin = dedent`
       item_name,item_color
       Apple,Red
       Apple,Yellow
@@ -351,99 +344,86 @@ tplTest.concurrent(
       Banana,Yellow
     `;
 
-    const result = await helper.renderTemplate(
-      false,
-      'pt.ex3',
-      [
-        'out_inner_join',
-        'out_left_join_on',
-        'out_full_join_on_nocoalesce',
-        'out_cross_join',
-      ],
-      (_tx) => ({}), // No dynamic inputs needed for this test
-    );
+  const result = await helper.renderTemplate(
+    false,
+    "pt.ex3",
+    ["out_inner_join", "out_left_join_on", "out_full_join_on_nocoalesce", "out_cross_join"],
+    (_tx) => ({}), // No dynamic inputs needed for this test
+  );
 
-    const [
-      innerJoinContent,
-      leftJoinOnContent,
-      fullJoinOnNoCoalesceContent,
-      crossJoinContent,
-    ] = await Promise.all([
-      getFileContent(result, 'out_inner_join', driverKit),
-      getFileContent(result, 'out_left_join_on', driverKit),
-      getFileContent(result, 'out_full_join_on_nocoalesce', driverKit),
-      getFileContent(result, 'out_cross_join', driverKit),
+  const [innerJoinContent, leftJoinOnContent, fullJoinOnNoCoalesceContent, crossJoinContent] =
+    await Promise.all([
+      getFileContent(result, "out_inner_join", driverKit),
+      getFileContent(result, "out_left_join_on", driverKit),
+      getFileContent(result, "out_full_join_on_nocoalesce", driverKit),
+      getFileContent(result, "out_cross_join", driverKit),
     ]);
 
-    expect(normalizeAndSortTsv(innerJoinContent)).toEqual(
-      normalizeAndSortTsv(expectedOutputInnerJoin),
-    );
-    expect(normalizeAndSortTsv(leftJoinOnContent)).toEqual(
-      normalizeAndSortTsv(expectedOutputLeftJoinOn),
-    );
-    expect(normalizeAndSortTsv(fullJoinOnNoCoalesceContent)).toEqual(
-      normalizeAndSortTsv(expectedOutputFullJoinOnNoCoalesce),
-    );
-    expect(normalizeAndSortTsv(crossJoinContent)).toEqual(
-      normalizeAndSortTsv(expectedOutputCrossJoin),
-    );
-  },
-);
+  expect(normalizeAndSortTsv(innerJoinContent)).toEqual(
+    normalizeAndSortTsv(expectedOutputInnerJoin),
+  );
+  expect(normalizeAndSortTsv(leftJoinOnContent)).toEqual(
+    normalizeAndSortTsv(expectedOutputLeftJoinOn),
+  );
+  expect(normalizeAndSortTsv(fullJoinOnNoCoalesceContent)).toEqual(
+    normalizeAndSortTsv(expectedOutputFullJoinOnNoCoalesce),
+  );
+  expect(normalizeAndSortTsv(crossJoinContent)).toEqual(
+    normalizeAndSortTsv(expectedOutputCrossJoin),
+  );
+});
 
-tplTest.concurrent(
-  'pt ex4 test - dynamic substring',
-  async ({ helper, expect, driverKit }) => {
-    const inputTsvData = dedent`
+tplTest.concurrent("pt ex4 test - dynamic substring", async ({ helper, expect, driverKit }) => {
+  const inputTsvData = dedent`
       text	start	len	end
       HelloWorld	0	5	5
       AnotherTest	2	4	6
       Short	1	10	11
     `;
 
-    const expectedOutputSubstrLen = dedent`
+  const expectedOutputSubstrLen = dedent`
       text	sub
       HelloWorld	Hello
       AnotherTest	othe
       Short	hort
     `;
 
-    const expectedOutputSubstrEnd = dedent`
+  const expectedOutputSubstrEnd = dedent`
       text	sub
       HelloWorld	Hello
       AnotherTest	othe
       Short	hort
     `;
 
-    const expectedOutputSubstrStatic = dedent`
+  const expectedOutputSubstrStatic = dedent`
       text	sub
       HelloWorld	ello
       AnotherTest	noth
       Short	hort
     `;
 
-    const result = await helper.renderTemplate(
-      false,
-      'pt.ex4',
-      ['out_substr_len', 'out_substr_end', 'out_substr_static'],
-      (tx) => ({
-        inputTsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputTsvData)),
-      }),
-    );
+  const result = await helper.renderTemplate(
+    false,
+    "pt.ex4",
+    ["out_substr_len", "out_substr_end", "out_substr_static"],
+    (tx) => ({
+      inputTsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputTsvData)),
+    }),
+  );
 
-    const [outputSubstrLen, outputSubstrEnd, outputSubstrStatic] = await Promise.all([
-      getFileContent(result, 'out_substr_len', driverKit),
-      getFileContent(result, 'out_substr_end', driverKit),
-      getFileContent(result, 'out_substr_static', driverKit),
-    ]);
+  const [outputSubstrLen, outputSubstrEnd, outputSubstrStatic] = await Promise.all([
+    getFileContent(result, "out_substr_len", driverKit),
+    getFileContent(result, "out_substr_end", driverKit),
+    getFileContent(result, "out_substr_static", driverKit),
+  ]);
 
-    expect(normalizeTsv(outputSubstrLen)).toEqual(normalizeTsv(expectedOutputSubstrLen));
-    expect(normalizeTsv(outputSubstrEnd)).toEqual(normalizeTsv(expectedOutputSubstrEnd));
-    expect(normalizeTsv(outputSubstrStatic)).toEqual(normalizeTsv(expectedOutputSubstrStatic));
-  },
-);
+  expect(normalizeTsv(outputSubstrLen)).toEqual(normalizeTsv(expectedOutputSubstrLen));
+  expect(normalizeTsv(outputSubstrEnd)).toEqual(normalizeTsv(expectedOutputSubstrEnd));
+  expect(normalizeTsv(outputSubstrStatic)).toEqual(normalizeTsv(expectedOutputSubstrStatic));
+});
 
 tplTest.concurrent(
-  'pt ex5 test - comprehensive string functions',
+  "pt ex5 test - comprehensive string functions",
   async ({ helper, expect, driverKit }) => {
     // No input needed - data is embedded in template
 
@@ -458,19 +438,19 @@ tplTest.concurrent(
 
     const result = await helper.renderTemplate(
       false,
-      'pt.ex5',
-      ['out_string_functions'],
+      "pt.ex5",
+      ["out_string_functions"],
       (_tx) => ({}), // No dynamic inputs needed for this test
     );
 
-    const outputContent = await getFileContent(result, 'out_string_functions', driverKit);
+    const outputContent = await getFileContent(result, "out_string_functions", driverKit);
 
     expect(normalizeTsv(outputContent)).toEqual(normalizeTsv(expectedOutputStringFunctions));
   },
 );
 
 tplTest.concurrent(
-  'pt ndjson test - comprehensive NDJSON format support',
+  "pt ndjson test - comprehensive NDJSON format support",
   async ({ helper, expect, driverKit }) => {
     // No input needed - data is embedded in template
 
@@ -509,27 +489,18 @@ tplTest.concurrent(
 
     const result = await helper.renderTemplate(
       false,
-      'pt.ndjson',
-      [
-        'out_ndjson_basic',
-        'out_ndjson_limited',
-        'out_ndjson_to_csv',
-        'out_csv_to_ndjson',
-      ],
+      "pt.ndjson",
+      ["out_ndjson_basic", "out_ndjson_limited", "out_ndjson_to_csv", "out_csv_to_ndjson"],
       (_tx) => ({}), // No dynamic inputs needed for this test
     );
 
-    const [
-      ndjsonBasicContent,
-      ndjsonLimitedContent,
-      ndjsonToCsvContent,
-      csvToNdjsonContent,
-    ] = await Promise.all([
-      getFileContent(result, 'out_ndjson_basic', driverKit),
-      getFileContent(result, 'out_ndjson_limited', driverKit),
-      getFileContent(result, 'out_ndjson_to_csv', driverKit),
-      getFileContent(result, 'out_csv_to_ndjson', driverKit),
-    ]);
+    const [ndjsonBasicContent, ndjsonLimitedContent, ndjsonToCsvContent, csvToNdjsonContent] =
+      await Promise.all([
+        getFileContent(result, "out_ndjson_basic", driverKit),
+        getFileContent(result, "out_ndjson_limited", driverKit),
+        getFileContent(result, "out_ndjson_to_csv", driverKit),
+        getFileContent(result, "out_csv_to_ndjson", driverKit),
+      ]);
 
     // Test all outputs
     expect(normalizeAndSortNdjson(ndjsonBasicContent)).toEqual(
@@ -538,9 +509,7 @@ tplTest.concurrent(
     expect(normalizeAndSortNdjson(ndjsonLimitedContent)).toEqual(
       normalizeAndSortNdjson(expectedOutputNdjsonLimited),
     );
-    expect(normalizeCsv(ndjsonToCsvContent)).toEqual(
-      normalizeCsv(expectedOutputNdjsonToCsv),
-    );
+    expect(normalizeCsv(ndjsonToCsvContent)).toEqual(normalizeCsv(expectedOutputNdjsonToCsv));
     expect(normalizeAndSortNdjson(csvToNdjsonContent)).toEqual(
       normalizeAndSortNdjson(expectedOutputCsvToNdjson),
     );
@@ -549,22 +518,32 @@ tplTest.concurrent(
 
 tplTest.concurrent.for([
   {
-    case: '1 axis, 1 column',
+    case: "1 axis, 1 column",
     csvData: dedent`
       a,b
       1,X
       4,Y
       9,Z
     `,
-    axes: [
-      { column: 'a', spec: { name: 'a', type: 'Int' } },
-    ],
+    axes: [{ column: "a", spec: { name: "a", type: "Int" } }],
+    columns: [{ column: "b", spec: { name: "b", valueType: "String" } }],
+  },
+  {
+    case: "1 axis, 2 columns",
+    csvData: dedent`
+      a,b,c
+      1,X,0.1
+      4,Y,0.3
+      9,Z,0.2
+    `,
+    axes: [{ column: "a", spec: { name: "a", type: "Int" } }],
     columns: [
-      { column: 'b', spec: { name: 'b', valueType: 'String' } },
+      { column: "b", spec: { name: "b", valueType: "String" } },
+      { column: "c", spec: { name: "c", valueType: "Float" } },
     ],
   },
   {
-    case: '1 axis, 2 columns',
+    case: "2 axes, 1 column",
     csvData: dedent`
       a,b,c
       1,X,0.1
@@ -572,38 +551,17 @@ tplTest.concurrent.for([
       9,Z,0.2
     `,
     axes: [
-      { column: 'a', spec: { name: 'a', type: 'Int' } },
+      { column: "a", spec: { name: "a", type: "Int" } },
+      { column: "b", spec: { name: "b", type: "String" } },
     ],
-    columns: [
-      { column: 'b', spec: { name: 'b', valueType: 'String' } },
-      { column: 'c', spec: { name: 'c', valueType: 'Float' } },
-    ],
-  },
-  {
-    case: '2 axes, 1 column',
-    csvData: dedent`
-      a,b,c
-      1,X,0.1
-      4,Y,0.3
-      9,Z,0.2
-    `,
-    axes: [
-      { column: 'a', spec: { name: 'a', type: 'Int' } },
-      { column: 'b', spec: { name: 'b', type: 'String' } },
-    ],
-    columns: [
-      { column: 'c', spec: { name: 'c', valueType: 'Float' } },
-    ],
+    columns: [{ column: "c", spec: { name: "c", valueType: "Float" } }],
   },
 ])(
-  'pt parquet test - comprehensive Parquet format support - $case',
+  "pt parquet test - comprehensive Parquet format support - $case",
   async (inputs, { helper, expect, driverKit }) => {
     const outputs = Array.from({ length: 5 }, (_, i) => `outputCsv${i + 1}`);
-    const result = await helper.renderTemplate(
-      false,
-      'pt.parquet',
-      outputs,
-      (tx) => mapValues(inputs, (input) => tx.createJsonValue(input)),
+    const result = await helper.renderTemplate(false, "pt.parquet", outputs, (tx) =>
+      mapValues(inputs, (input) => tx.createJsonValue(input)),
     );
     const outputCsvs = await Promise.all(
       outputs.map((output) => getFileContent(result, output, driverKit)),
@@ -616,24 +574,22 @@ tplTest.concurrent.for([
 
 tplTest.concurrent.fails.for([
   {
-    case: 'Json storage format',
+    case: "Json storage format",
     csvData: dedent`
       a,b,c
       1,X,0.1
       4,Y,0.3
       9,Z,0.2
     `,
-    axes: [
-      { column: 'a', spec: { name: 'a', type: 'Int' } },
-    ],
+    axes: [{ column: "a", spec: { name: "a", type: "Int" } }],
     columns: [
-      { column: 'b', spec: { name: 'b', valueType: 'String' } },
-      { column: 'c', spec: { name: 'c', valueType: 'Float' } },
+      { column: "b", spec: { name: "b", valueType: "String" } },
+      { column: "c", spec: { name: "c", valueType: "Float" } },
     ],
-    storageFormat: 'Json',
+    storageFormat: "Json",
   },
   {
-    case: 'Binary storage format',
+    case: "Binary storage format",
     csvData: dedent`
       a,b,c
       1,X,0.1
@@ -641,24 +597,19 @@ tplTest.concurrent.fails.for([
       9,Z,0.2
     `,
     axes: [
-      { column: 'a', spec: { name: 'a', type: 'Int' } },
-      { column: 'b', spec: { name: 'b', type: 'String' } },
+      { column: "a", spec: { name: "a", type: "Int" } },
+      { column: "b", spec: { name: "b", type: "String" } },
     ],
-    columns: [
-      { column: 'c', spec: { name: 'c', valueType: 'Float' } },
-    ],
-    storageFormat: 'Binary',
+    columns: [{ column: "c", spec: { name: "c", valueType: "Float" } }],
+    storageFormat: "Binary",
   },
 ])(
-  'pt parquet error test - fails when storageFormat is not supported - $case',
+  "pt parquet error test - fails when storageFormat is not supported - $case",
   async (inputs, { helper, expect, driverKit }) => {
-    const result = await helper.renderTemplate(
-      false,
-      'pt.parquet_error',
-      ['outputCsv'],
-      (tx) => mapValues(inputs, (input) => tx.createJsonValue(input)),
+    const result = await helper.renderTemplate(false, "pt.parquet_error", ["outputCsv"], (tx) =>
+      mapValues(inputs, (input) => tx.createJsonValue(input)),
     );
-    const outputCsv = await getFileContent(result, 'outputCsv', driverKit);
+    const outputCsv = await getFileContent(result, "outputCsv", driverKit);
     expect(normalizeCsv(outputCsv)).toEqual(normalizeCsv(inputs.csvData));
   },
 );

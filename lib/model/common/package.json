@@ -2,9 +2,13 @@
   "name": "@milaboratories/pl-model-common",
   "version": "1.24.3",
   "description": "Platforma SDK Model",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "type": "module",
-  "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,21 +24,17 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "dependencies": {
-    "zod": "catalog:",
+    "@milaboratories/pl-error-like": "workspace:*",
     "canonicalize": "catalog:",
-    "@milaboratories/pl-error-like": "workspace:*"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

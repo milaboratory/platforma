@@ -1,32 +1,23 @@
-import type {
-  ComputableCtx,
-  Watcher,
-} from '@milaboratories/computable';
-import {
-  ChangeSource,
-  Computable,
-  PollingComputableHooks,
-} from '@milaboratories/computable';
-import type {
-  ResourceId,
-  ResourceType } from '@milaboratories/pl-client';
+import type { ComputableCtx, Watcher } from "@milaboratories/computable";
+import { ChangeSource, Computable, PollingComputableHooks } from "@milaboratories/computable";
+import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
 import {
   isNotFoundError,
   resourceIdToString,
   stringifyWithResourceId,
-} from '@milaboratories/pl-client';
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import { asyncPool, CallersCounter } from '@milaboratories/ts-helpers';
-import type { ClientLogs } from '../clients/logs';
-import { randomUUID } from 'node:crypto';
-import type { PlTreeEntry, ResourceInfo } from '@milaboratories/pl-tree';
-import { treeEntryToResourceInfo } from '@milaboratories/pl-tree';
-import { scheduler } from 'node:timers/promises';
-import type { StreamingAPI_Response } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
-import type * as sdk from '@milaboratories/pl-model-common';
-import type { PollingOps } from './helpers/polling_ops';
-import { getResourceInfoFromLogHandle, isLiveLogHandle, newLogHandle } from './helpers/logs_handle';
-import { WrongResourceTypeError } from './helpers/helpers';
+} from "@milaboratories/pl-client";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import { asyncPool, CallersCounter } from "@milaboratories/ts-helpers";
+import type { ClientLogs } from "../clients/logs";
+import { randomUUID } from "node:crypto";
+import type { PlTreeEntry, ResourceInfo } from "@milaboratories/pl-tree";
+import { treeEntryToResourceInfo } from "@milaboratories/pl-tree";
+import { scheduler } from "node:timers/promises";
+import type { StreamingAPI_Response } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol";
+import type * as sdk from "@milaboratories/pl-model-common";
+import type { PollingOps } from "./helpers/polling_ops";
+import { getResourceInfoFromLogHandle, isLiveLogHandle, newLogHandle } from "./helpers/logs_handle";
+import { WrongResourceTypeError } from "./helpers/helpers";
 
 export type LogsStreamDriverOps = PollingOps & {
   /** Max number of concurrent requests to log streaming backend while calculating computable states */
@@ -64,7 +55,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
   getLastLogs(
     res: ResourceInfo | PlTreeEntry,
     lines: number,
-    ctx: ComputableCtx
+    ctx: ComputableCtx,
   ): Computable<string | undefined>;
   getLastLogs(
     res: ResourceInfo | PlTreeEntry,
@@ -80,7 +71,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
 
     const result = this.getLastLogsNoCtx(ctx.watcher, r, lines, callerId);
     ctx.markUnstable(
-      'The logs are from stream, so we consider them unstable. Final values will be got from blobs.',
+      "The logs are from stream, so we consider them unstable. Final values will be got from blobs.",
     );
 
     return result;
@@ -92,7 +83,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     lines: number,
     callerId: string,
   ): string | undefined {
-    validateResourceType('getLastLogs', rInfo.type);
+    validateResourceType("getLastLogs", rInfo.type);
 
     let logGetter = this.idToLastLines.get(rInfo.id);
 
@@ -114,12 +105,12 @@ export class LogsStreamDriver implements sdk.LogsDriver {
    * Notifies when a new line appeared or EOF reached. */
   getProgressLog(
     res: ResourceInfo | PlTreeEntry,
-    patternToSearch: string
+    patternToSearch: string,
   ): Computable<string | undefined>;
   getProgressLog(
     res: ResourceInfo | PlTreeEntry,
     patternToSearch: string,
-    ctx: ComputableCtx
+    ctx: ComputableCtx,
   ): string | undefined;
   getProgressLog(
     res: ResourceInfo | PlTreeEntry,
@@ -136,7 +127,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
 
     const result = this.getProgressLogNoCtx(ctx.watcher, r, patternToSearch, callerId);
     ctx.markUnstable(
-      'The progress log is from the stream, so we consider it unstable. Final value will be got from blobs.',
+      "The progress log is from the stream, so we consider it unstable. Final value will be got from blobs.",
     );
 
     return result;
@@ -148,7 +139,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     patternToSearch: string,
     callerId: string,
   ): string | undefined {
-    validateResourceType('getProgressLog', rInfo.type);
+    validateResourceType("getProgressLog", rInfo.type);
 
     let logGetter = this.idToProgressLog.get(rInfo.id);
 
@@ -186,7 +177,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
   }
 
   private getLogHandleNoCtx(rInfo: ResourceInfo): sdk.AnyLogHandle {
-    validateResourceType('getLogHandle', rInfo.type);
+    validateResourceType("getLogHandle", rInfo.type);
 
     return newLogHandle(true, rInfo);
   }
@@ -371,7 +362,8 @@ class LogGetter {
       );
 
       const newLogs = new TextDecoder().decode(resp.data);
-      if (this.logs != newLogs) this.change.markChanged(`logs for ${resourceIdToString(this.rInfo.id)} updated`);
+      if (this.logs != newLogs)
+        this.change.markChanged(`logs for ${resourceIdToString(this.rInfo.id)} updated`);
       this.logs = newLogs;
       this.error = undefined;
 
@@ -379,7 +371,7 @@ class LogGetter {
     } catch (e: any) {
       if (isNotFoundError(e)) {
         // No resource
-        this.logs = '';
+        this.logs = "";
         this.error = e;
         this.change.markChanged();
         return;
@@ -399,10 +391,10 @@ type ScheduledRefresh = {
 };
 
 function validateResourceType(methodName: string, rType: ResourceType) {
-  if (!rType.name.startsWith('StreamWorkdir')) {
+  if (!rType.name.startsWith("StreamWorkdir")) {
     throw new WrongResourceTypeError(
-      `${methodName}: wrong resource type: ${rType.name}, `
-      + `expected: a resource of type 'StreamWorkdir'.`,
+      `${methodName}: wrong resource type: ${rType.name}, ` +
+        `expected: a resource of type 'StreamWorkdir'.`,
     );
   }
 }

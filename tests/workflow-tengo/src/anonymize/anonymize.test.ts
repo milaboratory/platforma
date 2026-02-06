@@ -1,16 +1,20 @@
-import { field, Pl } from '@milaboratories/pl-middle-layer';
-import { tplTest } from '@platforma-sdk/test';
+import { field, Pl } from "@milaboratories/pl-middle-layer";
+import { tplTest } from "@platforma-sdk/test";
 
-tplTest.concurrent('anonymizeFields simple test', async ({ helper, expect }) => {
+tplTest.concurrent("anonymizeFields simple test", async ({ helper, expect }) => {
   const renderAnonymize = async (target: Record<string, string>) => {
     const result = await helper.renderTemplate(
       true,
-      'anonymize.apply-anonymize-fields',
-      ['result'],
+      "anonymize.apply-anonymize-fields",
+      ["result"],
       (tx) => {
-        const targetRef = tx.createStruct({ name: 'Test', version: '1' });
+        const targetRef = tx.createStruct({ name: "Test", version: "1" });
         for (const [key, value] of Object.entries(target)) {
-          tx.createField(field(targetRef, key), 'Input', tx.createValue(Pl.JsonObject, JSON.stringify({ value })));
+          tx.createField(
+            field(targetRef, key),
+            "Input",
+            tx.createValue(Pl.JsonObject, JSON.stringify({ value })),
+          );
         }
         tx.lock(targetRef);
         return {
@@ -19,12 +23,12 @@ tplTest.concurrent('anonymizeFields simple test', async ({ helper, expect }) => 
         };
       },
     );
-    return result.computeOutput('result', (a) => a?.listInputFields());
+    return result.computeOutput("result", (a) => a?.listInputFields());
   };
 
   const values = {
-    valA: 'value-a',
-    valB: 'value-b',
+    valA: "value-a",
+    valB: "value-b",
   };
 
   const target1 = {
@@ -45,34 +49,41 @@ tplTest.concurrent('anonymizeFields simple test', async ({ helper, expect }) => 
   expect(result1Fields!.sort()).toEqual(result2Fields!.sort());
 });
 
-tplTest.concurrent('anonymizePKeys simple test', async ({ helper, expect }) => {
+tplTest.concurrent("anonymizePKeys simple test", async ({ helper, expect }) => {
   const renderAnonymizePKeys = async (target: Record<string, unknown>, pKeyIndices: number[]) => {
     const result = await helper.renderTemplate(
       true,
-      'anonymize.apply-anonymize-pkeys',
-      ['result', 'mapping', 'deanonymizeResult'],
+      "anonymize.apply-anonymize-pkeys",
+      ["result", "mapping", "deanonymizeResult"],
       (tx) => {
-        const targetRef = tx.createStruct({ name: 'TestPkeys', version: '1' });
+        const targetRef = tx.createStruct({ name: "TestPkeys", version: "1" });
         for (const [key, value] of Object.entries(target)) {
-          tx.createField(field(targetRef, key), 'Input', tx.createValue(Pl.JsonObject, JSON.stringify(value)));
+          tx.createField(
+            field(targetRef, key),
+            "Input",
+            tx.createValue(Pl.JsonObject, JSON.stringify(value)),
+          );
         }
         tx.lock(targetRef);
         return {
           target: targetRef,
-          params: tx.createValue(Pl.JsonObject, JSON.stringify({ pKeyIndices, originalKeyLength: 3 })),
+          params: tx.createValue(
+            Pl.JsonObject,
+            JSON.stringify({ pKeyIndices, originalKeyLength: 3 }),
+          ),
         };
       },
     );
     return {
-      result: result.computeOutput('result', (a) => a?.listInputFields()),
-      deanonymizeResult: result.computeOutput('deanonymizeResult', (a) => a?.listInputFields()),
-      mapping: result.computeOutput('mapping', (a) => a?.getDataAsJson<Record<string, string>>()),
+      result: result.computeOutput("result", (a) => a?.listInputFields()),
+      deanonymizeResult: result.computeOutput("deanonymizeResult", (a) => a?.listInputFields()),
+      mapping: result.computeOutput("mapping", (a) => a?.getDataAsJson<Record<string, string>>()),
     };
   };
 
   const values = {
-    valA: 'value-a',
-    valB: 'value-b',
+    valA: "value-a",
+    valB: "value-b",
   };
 
   const createPColumnFields = (keyTuple: string[], value: string, index: string) => {
@@ -84,13 +95,13 @@ tplTest.concurrent('anonymizePKeys simple test', async ({ helper, expect }) => {
   };
 
   const target1 = {
-    ...createPColumnFields(['user1', 'common', 'p1'], values.valA, 'index-a'),
-    ...createPColumnFields(['user1', 'common', 'p2'], values.valB, 'index-b'),
+    ...createPColumnFields(["user1", "common", "p1"], values.valA, "index-a"),
+    ...createPColumnFields(["user1", "common", "p2"], values.valB, "index-b"),
   };
 
   const target2 = {
-    ...createPColumnFields(['user2', 'common', 'p1'], values.valA, 'index-a'),
-    ...createPColumnFields(['user2', 'common', 'p2'], values.valB, 'index-b'),
+    ...createPColumnFields(["user2", "common", "p1"], values.valA, "index-a"),
+    ...createPColumnFields(["user2", "common", "p2"], values.valB, "index-b"),
   };
 
   const pKeyIndicesToAnonymize = [0];

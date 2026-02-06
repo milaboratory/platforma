@@ -2,13 +2,16 @@
   "name": "@milaboratories/pf-driver",
   "version": "1.0.39",
   "description": "PFrameDriver implementation abstracted from Middle Layer",
-  "engines": {
-    "node": ">=22.19.0"
-  },
+  "keywords": [],
+  "license": "UNLICENSED",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "type": "module",
-  "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -24,29 +27,26 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
-  "keywords": [],
-  "license": "UNLICENSED",
+  "dependencies": {
+    "@milaboratories/pframes-rs-node": "catalog:",
+    "@milaboratories/pl-model-middle-layer": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
+    "es-toolkit": "catalog:",
+    "lru-cache": "catalog:"
+  },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "tsconfig-paths": "catalog:",
     "@milaboratories/ts-configs": "workspace:*",
-    "typescript": "catalog:",
-    "tslib": "catalog:",
-    "vitest": "catalog:",
+    "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "@types/node": "catalog:"
+    "tsconfig-paths": "catalog:",
+    "tslib": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
-  "dependencies": {
-    "@milaboratories/pframes-rs-node": "catalog:",
-    "@milaboratories/ts-helpers": "workspace:*",
-    "@milaboratories/pl-model-middle-layer": "workspace:*",
-    "@platforma-sdk/model": "workspace:*",
-    "lru-cache": "catalog:",
-    "es-toolkit": "catalog:"
+  "engines": {
+    "node": ">=22.19.0"
   }
 }

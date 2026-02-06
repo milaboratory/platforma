@@ -1,9 +1,9 @@
-import { findNamedErrorInCauses } from '@milaboratories/ts-helpers';
+import { findNamedErrorInCauses } from "@milaboratories/ts-helpers";
 
 const MAX_UNWRAP_DEPTH = 10;
 
 export class SSHError extends Error {
-  name = 'SSHError';
+  name = "SSHError";
 
   constructor(message: string, opts?: { cause: Error });
   constructor(err: Error);
@@ -21,7 +21,7 @@ export class SSHError extends Error {
 }
 
 export class SFTPError extends SSHError {
-  name = 'SFTPError';
+  name = "SFTPError";
 
   constructor(
     public readonly code: string, // raw SFTP error code, i.e. from OpenSSH server
@@ -48,19 +48,21 @@ export class SFTPError extends SSHError {
     // OpenSSH server returns this message in case of general failure.
     // See https://github.com/openssh/openssh-portable/blob/1cc936b2fabffeac7fff14ca1070d7d7a317ab7b/sftp-server.c#L244
     // See https://github.com/openssh/openssh-portable/blob/1cc936b2fabffeac7fff14ca1070d7d7a317ab7b/sftp-common.c#L195
-    return this.code === 'Failure';
+    return this.code === "Failure";
   }
 }
 
 export class SFTPUploadError extends SSHError {
-  name = 'SFTPUploadError';
+  name = "SFTPUploadError";
 
   constructor(
     err: Error,
     public readonly localPath: string,
     public readonly remotePath: string,
   ) {
-    super(`ssh.uploadFile: ${err.message}, localPath: ${localPath}, remotePath: ${remotePath}`, { cause: SFTPError.wrap(err) });
+    super(`ssh.uploadFile: ${err.message}, localPath: ${localPath}, remotePath: ${remotePath}`, {
+      cause: SFTPError.wrap(err),
+    });
   }
 
   static from(err: unknown): SFTPUploadError | undefined {

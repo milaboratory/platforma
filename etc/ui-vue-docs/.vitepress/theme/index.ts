@@ -1,10 +1,10 @@
 // https://vitepress.dev/guide/custom-theme
-import { h } from 'vue';
-import type { Theme } from 'vitepress';
-import DefaultTheme from 'vitepress/theme';
-import './override.scss';
-import './style.css';
-import 'highlight.js/styles/a11y-dark.css';
+import { h } from "vue";
+import type { Theme } from "vitepress";
+import DefaultTheme from "vitepress/theme";
+import "./override.scss";
+import "./style.css";
+import "highlight.js/styles/a11y-dark.css";
 
 export default {
   extends: DefaultTheme,
@@ -15,7 +15,7 @@ export default {
   },
   async enhanceApp({ app }) {
     if (!import.meta.env.SSR) {
-      const components = await import('../docs-components');
+      const components = await import("../docs-components");
       for (const k in components) {
         app.component(k, components[k]);
       }

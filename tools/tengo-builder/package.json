@@ -2,6 +2,15 @@
   "name": "@platforma-sdk/tengo-builder",
   "version": "2.4.14",
   "description": "Pl Tengo Template Builder",
+  "license": "UNLICENSED",
+  "bin": {
+    "pl-tengo": "./bin/run.js"
+  },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*",
+    "README.md"
+  ],
   "type": "module",
   "scripts": {
     "build": "oclif-index && ts-builder build --target node",
@@ -11,23 +20,11 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
-  "bin": {
-    "pl-tengo": "./bin/run.js"
-  },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*",
-    "README.md"
-  ],
-  "license": "UNLICENSED",
-  "engines": {
-    "node": ">=22"
-  },
   "dependencies": {
-    "@milaboratories/ts-helpers": "workspace:*",
+    "@milaboratories/pl-model-backend": "workspace:*",
     "@milaboratories/resolve-helper": "workspace:*",
     "@milaboratories/tengo-tester": "catalog:",
-    "@milaboratories/pl-model-backend": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
     "@oclif/core": "catalog:",
     "canonicalize": "catalog:",
     "winston": "catalog:"
@@ -36,20 +33,23 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@vitest/coverage-istanbul": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "oclif": {
     "bin": "pl-tengo",
     "commands": {
+      "identifier": "COMMANDS",
       "strategy": "explicit",
-      "target": "./dist/index.js",
-      "identifier": "COMMANDS"
+      "target": "./dist/index.js"
     },
     "dirname": "pl-tengo",
     "topicSeparator": " "
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

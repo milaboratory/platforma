@@ -1,27 +1,22 @@
-import type { ProcessOptions } from './process';
-import {
-  isProcessAlive,
-  processStop,
-  processWaitStopped,
-  processRun,
-} from './process';
-import type { PlBinarySource } from '../common/pl_binary';
-import { newDefaultPlBinarySource, resolveLocalPlBinaryPath } from '../common/pl_binary';
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import { notEmpty } from '@milaboratories/ts-helpers';
-import type { ChildProcess, SpawnOptions } from 'node:child_process';
-import { filePid, readPid, writePid } from './pid';
-import type { Trace } from './trace';
-import { withTrace } from './trace';
-import upath from 'upath';
-import fsp from 'node:fs/promises';
-import type { Required } from 'utility-types';
-import * as os from 'node:os';
-import type { ProxySettings } from '@milaboratories/pl-http';
-import { defaultHttpDispatcher } from '@milaboratories/pl-http';
-import { parseHttpAuth } from '@milaboratories/pl-model-common';
+import type { ProcessOptions } from "./process";
+import { isProcessAlive, processStop, processWaitStopped, processRun } from "./process";
+import type { PlBinarySource } from "../common/pl_binary";
+import { newDefaultPlBinarySource, resolveLocalPlBinaryPath } from "../common/pl_binary";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import { notEmpty } from "@milaboratories/ts-helpers";
+import type { ChildProcess, SpawnOptions } from "node:child_process";
+import { filePid, readPid, writePid } from "./pid";
+import type { Trace } from "./trace";
+import { withTrace } from "./trace";
+import upath from "upath";
+import fsp from "node:fs/promises";
+import type { Required } from "utility-types";
+import * as os from "node:os";
+import type { ProxySettings } from "@milaboratories/pl-http";
+import { defaultHttpDispatcher } from "@milaboratories/pl-http";
+import { parseHttpAuth } from "@milaboratories/pl-model-common";
 
-export const LocalConfigYaml = 'config-local.yaml';
+export const LocalConfigYaml = "config-local.yaml";
 
 /**
  * Represents a local running pl-core,
@@ -50,7 +45,7 @@ export class LocalPl {
     await withTrace(this.logger, async (trace, t) => {
       this.wasStopped = false;
       const instance = processRun(this.logger, this.startOptions);
-      instance.on('error', (e: any) => {
+      instance.on("error", (e: any) => {
         this.logger.error(
           `error '${e}', while running platforma, started opts: ${JSON.stringify(this.debugInfo())}`,
         );
@@ -61,7 +56,7 @@ export class LocalPl {
         if (this.onCloseAndErrorNoStop !== undefined && !this.wasStopped)
           void this.onCloseAndErrorNoStop(this);
       });
-      instance.on('close', () => {
+      instance.on("close", () => {
         this.logger.warn(`platforma was closed, started opts: ${JSON.stringify(this.debugInfo())}`);
 
         // keep in mind there are no awaits here, it will be asynchronous
@@ -71,11 +66,11 @@ export class LocalPl {
           void this.onCloseAndErrorNoStop(this);
       });
 
-      trace('started', true);
+      trace("started", true);
 
-      const pidFile = trace('pidFile', filePid(this.workingDir));
-      trace('pid', notEmpty(instance.pid));
-      trace('pidWritten', await writePid(pidFile, notEmpty(instance.pid)));
+      const pidFile = trace("pidFile", filePid(this.workingDir));
+      trace("pid", notEmpty(instance.pid));
+      trace("pidWritten", await writePid(pidFile, notEmpty(instance.pid)));
 
       this.nRuns++;
       this.instance = instance;
@@ -143,7 +138,7 @@ export type LocalPlOptions = {
   readonly onCloseAndErrorNoStop?: (pl: LocalPl) => Promise<void>;
 };
 
-export type LocalPlOptionsFull = Required<LocalPlOptions, 'plBinary' | 'spawnOptions' | 'closeOld'>;
+export type LocalPlOptionsFull = Required<LocalPlOptions, "plBinary" | "spawnOptions" | "closeOld">;
 
 /**
  * Starts pl-core, if the option was provided downloads a binary, reads license environments etc.
@@ -157,12 +152,12 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
   const ops = mergeDefaultOps(_ops, numCpu);
 
   return await withTrace(logger, async (trace, t) => {
-    trace('startOptions', { ...ops, config: 'too wordy' });
+    trace("startOptions", { ...ops, config: "too wordy" });
 
     const workDir = upath.resolve(ops.workingDir);
 
     if (ops.closeOld) {
-      trace('closeOld', await localPlatformaReadPidAndStop(logger, workDir));
+      trace("closeOld", await localPlatformaReadPidAndStop(logger, workDir));
     }
 
     const configPath = upath.join(workDir, LocalConfigYaml);
@@ -170,14 +165,14 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
     logger.info(`writing configuration '${configPath}'...`);
     await fsp.writeFile(configPath, ops.config);
 
-    const plBinPath = upath.join(workDir, 'binaries');
+    const plBinPath = upath.join(workDir, "binaries");
     const baseBinaryPath = await resolveLocalPlBinaryPath({
       logger,
       downloadDir: plBinPath,
       src: ops.plBinary,
       dispatcher: defaultHttpDispatcher(ops.proxy),
     });
-    const binaryPath = trace('binaryPath', upath.join('binaries', baseBinaryPath));
+    const binaryPath = trace("binaryPath", upath.join("binaries", baseBinaryPath));
 
     const env = { ...process.env };
 
@@ -185,7 +180,7 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
       const url = new URL(ops.proxy.url);
       if (ops.proxy.auth) {
         const parsed = parseHttpAuth(ops.proxy.auth);
-        if (parsed.scheme !== 'Basic') {
+        if (parsed.scheme !== "Basic") {
           throw new Error(`\
 Unsupported auth scheme: ${parsed.scheme}. \
 Only Basic auth is supported by the backend.`);
@@ -198,7 +193,7 @@ Only Basic auth is supported by the backend.`);
     }
 
     const processOpts = plProcessOps(binaryPath, configPath, ops, workDir, env);
-    trace('processOpts', {
+    trace("processOpts", {
       cmd: processOpts.cmd,
       args: processOpts.args,
       cwd: processOpts.opts.cwd,
@@ -227,18 +222,18 @@ async function localPlatformaReadPidAndStop(
   workingDir: string,
 ): Promise<Record<string, any>> {
   return await withTrace(logger, async (trace, t) => {
-    const file = trace('pidFilePath', filePid(workingDir));
+    const file = trace("pidFilePath", filePid(workingDir));
 
-    const oldPid = trace('pid', await readPid(file));
-    const alive = trace('wasAlive', await isProcessAlive(oldPid));
+    const oldPid = trace("pid", await readPid(file));
+    const alive = trace("wasAlive", await isProcessAlive(oldPid));
 
     if (oldPid !== undefined && alive) {
-      trace('stopped', processStop(oldPid));
+      trace("stopped", processStop(oldPid));
       try {
-        trace('waitStopped', await processWaitStopped(oldPid, 15_000)); // larger, that 10s we provide to backend in config.
+        trace("waitStopped", await processWaitStopped(oldPid, 15_000)); // larger, that 10s we provide to backend in config.
       } catch {
-        trace('forceStopped', processStop(oldPid, true));
-        trace('waitForceStopped', await processWaitStopped(oldPid, 5_000));
+        trace("forceStopped", processStop(oldPid, true));
+        trace("waitForceStopped", await processWaitStopped(oldPid, 5_000));
       }
     }
 
@@ -269,12 +264,12 @@ export function mergeDefaultOps(ops: LocalPlOptions, numCpu: number): LocalPlOpt
 
   if (ops.spawnOptions) {
     const withoutEnv = { ...ops.spawnOptions };
-    delete withoutEnv['env'];
+    delete withoutEnv["env"];
     result.spawnOptions = { ...result.spawnOptions, ...withoutEnv };
   }
 
   const withoutSpawnOps = { ...ops };
-  delete withoutSpawnOps['spawnOptions'];
+  delete withoutSpawnOps["spawnOptions"];
 
   return { ...result, ...withoutSpawnOps };
 }
@@ -290,11 +285,11 @@ export function plProcessOps(
 ): ProcessOptions {
   const result: ProcessOptions = {
     cmd: binaryPath,
-    args: ['--config', configPath],
+    args: ["--config", configPath],
     opts: {
       env: { ...defaultEnv },
       cwd: workDir,
-      stdio: ['pipe', 'ignore', 'inherit'],
+      stdio: ["pipe", "ignore", "inherit"],
       windowsHide: true, // hide a terminal on Windows
     },
   };
@@ -304,7 +299,7 @@ export function plProcessOps(
   }
 
   const withoutEnv = { ...ops.spawnOptions };
-  delete withoutEnv['env'];
+  delete withoutEnv["env"];
   result.opts = { ...result.opts, ...withoutEnv };
 
   return result;

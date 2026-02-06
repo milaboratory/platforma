@@ -1,9 +1,9 @@
-import { WebSocket, type WebSocketInit, type Dispatcher, ErrorEvent } from 'undici';
-import type { BiDiStream } from './abstract_stream';
-import Denque from 'denque';
-import type { RetryConfig } from '../helpers/retry_strategy';
-import { RetryStrategy } from '../helpers/retry_strategy';
-import { DisconnectedError } from './errors';
+import { WebSocket, type WebSocketInit, type Dispatcher, ErrorEvent } from "undici";
+import type { BiDiStream } from "./abstract_stream";
+import Denque from "denque";
+import type { RetryConfig } from "../helpers/retry_strategy";
+import { RetryStrategy } from "../helpers/retry_strategy";
+import { DisconnectedError } from "./errors";
 
 interface QueuedMessage<InType extends object> {
   message: InType;
@@ -38,7 +38,10 @@ export type WSStreamOptions<ClientMsg extends object, ServerMsg extends object> 
  * WebSocket-based bidirectional stream implementation for LLTransaction.
  * Implements BiDiStream interface which is compatible with DuplexStreamingCall.
  */
-export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends object> implements BiDiStream<ClientMsg, ServerMsg> {
+export class WebSocketBiDiStream<
+  ClientMsg extends object,
+  ServerMsg extends object,
+> implements BiDiStream<ClientMsg, ServerMsg> {
   // Connection
   private ws: WebSocket | null = null;
   private connectionState: ConnectionState = ConnectionState.NEW;
@@ -47,7 +50,9 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
   // Send management
   private readonly sendQueue = new Denque<QueuedMessage<ClientMsg>>();
   private sendCompleted = false;
-  private readonly onComplete: (stream: WebSocketBiDiStream<ClientMsg, ServerMsg>) => void | Promise<void>;
+  private readonly onComplete: (
+    stream: WebSocketBiDiStream<ClientMsg, ServerMsg>,
+  ) => void | Promise<void>;
 
   // Response management
   private readonly responseQueue = new Denque<ServerMsg>();
@@ -106,7 +111,9 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
 
     const retryConfig = this.options.retryConfig ?? {};
     this.reconnection = new RetryStrategy(retryConfig, {
-      onRetry: () => { void this.connect(); },
+      onRetry: () => {
+        void this.connect();
+      },
       onMaxAttemptsReached: (error) => this.handleError(error),
     });
 
@@ -115,7 +122,7 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
       return;
     }
 
-    this.options.abortSignal?.addEventListener('abort', () => this.close());
+    this.options.abortSignal?.addEventListener("abort", () => this.close());
     this.connect();
   }
 
@@ -130,10 +137,10 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
     try {
       this.ws = this.createWebSocket();
 
-      this.ws.addEventListener('open', () => this.onOpen());
-      this.ws.addEventListener('message', (event) => this.onMessage(event.data));
-      this.ws.addEventListener('error', (error) => this.onError(error));
-      this.ws.addEventListener('close', () => this.onClose());
+      this.ws.addEventListener("open", () => this.onOpen());
+      this.ws.addEventListener("message", (event) => this.onMessage(event.data));
+      this.ws.addEventListener("error", (error) => this.onError(error));
+      this.ws.addEventListener("close", () => this.onClose());
     } catch (error) {
       this.lastError = this.toError(error);
       this.reconnection.schedule();
@@ -143,11 +150,12 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
   private createWebSocket(): WebSocket {
     const options: WebSocketInit = {};
 
-    if (this.options.jwtToken) options.headers = { authorization: `Bearer ${this.options.jwtToken}` };
+    if (this.options.jwtToken)
+      options.headers = { authorization: `Bearer ${this.options.jwtToken}` };
     if (this.options.dispatcher) options.dispatcher = this.options.dispatcher;
 
     const ws = new WebSocket(this.url, options);
-    ws.binaryType = 'arraybuffer';
+    ws.binaryType = "arraybuffer";
     return ws;
   }
 
@@ -208,11 +216,11 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
 
   private enqueueSend(message: ClientMsg): Promise<void> {
     if (this.sendCompleted) {
-      throw new Error('Cannot send: stream already completed');
+      throw new Error("Cannot send: stream already completed");
     }
 
     if (this.options.abortSignal?.aborted) {
-      throw new Error('Cannot send: stream aborted');
+      throw new Error("Cannot send: stream aborted");
     }
 
     return new Promise<void>((resolve, reject) => {
@@ -238,7 +246,7 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
     try {
       const ws = this.ws;
       if (!ws) {
-        throw new Error('WebSocket is not connected');
+        throw new Error("WebSocket is not connected");
       }
 
       // Check if WebSocket is in a valid state for sending
@@ -258,33 +266,27 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
     const POLL_INTERVAL_MS = 5;
 
     while (this.sendQueue.length > 0) {
-      await this.waitForCondition(
-        () => this.sendQueue.length === 0,
-        POLL_INTERVAL_MS,
-      );
+      await this.waitForCondition(() => this.sendQueue.length === 0, POLL_INTERVAL_MS);
     }
   }
 
-  private waitForCondition(
-    condition: () => boolean,
-    intervalMs: number,
-  ): Promise<void> {
+  private waitForCondition(condition: () => boolean, intervalMs: number): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       if (this.options.abortSignal?.aborted) {
-        return reject(this.toError(this.options.abortSignal.reason) ?? new Error('Stream aborted'));
+        return reject(this.toError(this.options.abortSignal.reason) ?? new Error("Stream aborted"));
       }
 
       let timeoutId: ReturnType<typeof setTimeout>;
       const onAbort = () => {
         clearTimeout(timeoutId);
-        reject(this.toError(this.options.abortSignal?.reason) ?? new Error('Stream aborted'));
+        reject(this.toError(this.options.abortSignal?.reason) ?? new Error("Stream aborted"));
       };
 
-      this.options.abortSignal?.addEventListener('abort', onAbort, { once: true });
+      this.options.abortSignal?.addEventListener("abort", onAbort, { once: true });
 
       const check = () => {
         if (condition() || this.isStreamEnded()) {
-          this.options.abortSignal?.removeEventListener('abort', onAbort);
+          this.options.abortSignal?.removeEventListener("abort", onAbort);
           resolve();
         } else {
           timeoutId = setTimeout(check, intervalMs);
@@ -379,16 +381,18 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
       if (reason instanceof Error) {
         return reason;
       }
-      return new Error('Stream aborted', { cause: reason });
+      return new Error("Stream aborted", { cause: reason });
     }
 
-    return new Error('Stream closed');
+    return new Error("Stream closed");
   }
 
   // === Helpers ===
 
   private isStreamEnded(): boolean {
-    return this.connectionState === ConnectionState.CLOSED || this.options.abortSignal?.aborted || false;
+    return (
+      this.connectionState === ConnectionState.CLOSED || this.options.abortSignal?.aborted || false
+    );
   }
 
   private toError(error: unknown): Error {
@@ -398,9 +402,9 @@ export class WebSocketBiDiStream<ClientMsg extends object, ServerMsg extends obj
       // undici WebSocket throws TypeError with empty message on socket close
       // (e.g., when connection is lost or server disconnects)
       if (err instanceof TypeError && !err.message) {
-        return new DisconnectedError('WebSocket connection closed unexpectedly');
+        return new DisconnectedError("WebSocket connection closed unexpectedly");
       }
-      return err instanceof Error ? err : new Error('WebSocket error', { cause: error });
+      return err instanceof Error ? err : new Error("WebSocket error", { cause: error });
     }
     return new Error(String(error));
   }

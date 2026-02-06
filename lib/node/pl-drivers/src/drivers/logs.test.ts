@@ -1,5 +1,5 @@
-import { expect, test } from 'vitest';
-import { Computable } from '@milaboratories/computable';
+import { expect, test } from "vitest";
+import { Computable } from "@milaboratories/computable";
 import type {
   AnyFieldRef,
   FieldId,
@@ -8,22 +8,19 @@ import type {
   PlTransaction,
   ResourceId,
   ResourceRef,
-  ResourceType } from '@milaboratories/pl-client';
-import {
-  TestHelpers,
-  jsonToData,
-  stringifyWithResourceId,
-} from '@milaboratories/pl-client';
-import { SynchronizedTreeState } from '@milaboratories/pl-tree';
-import { ConsoleLoggerAdapter, HmacSha256Signer, notEmpty } from '@milaboratories/ts-helpers';
-import * as fsp from 'node:fs/promises';
-import * as os from 'node:os';
-import * as path from 'node:path';
-import { scheduler } from 'node:timers/promises';
-import { createDownloadClient, createLogsClient } from '../clients/constructors';
-import { DownloadDriver } from './download_blob/download_blob';
-import { LogsDriver } from './logs';
-import { LogsStreamDriver } from './logs_stream';
+  ResourceType,
+} from "@milaboratories/pl-client";
+import { TestHelpers, jsonToData, stringifyWithResourceId } from "@milaboratories/pl-client";
+import { SynchronizedTreeState } from "@milaboratories/pl-tree";
+import { ConsoleLoggerAdapter, HmacSha256Signer, notEmpty } from "@milaboratories/ts-helpers";
+import * as fsp from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
+import { scheduler } from "node:timers/promises";
+import { createDownloadClient, createLogsClient } from "../clients/constructors";
+import { DownloadDriver } from "./download_blob/download_blob";
+import { LogsDriver } from "./logs";
+import { LogsStreamDriver } from "./logs_stream";
 
 const downloadDriverOps = {
   cacheSoftSizeBytes: 700 * 1024,
@@ -31,7 +28,7 @@ const downloadDriverOps = {
   rangesCacheMaxSizeBytes: 1024,
 };
 
-test('should get all logs', async () => {
+test("should get all logs", async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
 
@@ -40,8 +37,8 @@ test('should get all logs', async () => {
       pollingInterval: 10,
     });
     const logsStream = new LogsStreamDriver(logger, createLogsClient(client, logger));
-    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-1-'));
-    const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-ranges'));
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "test-logs-1-"));
+    const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), "test-logs-ranges"));
     const download = await DownloadDriver.init(
       logger,
       createDownloadClient(logger, client, []),
@@ -53,12 +50,12 @@ test('should get all logs', async () => {
     );
     const logs = new LogsDriver(logger, logsStream, download);
 
-    await createRunCommandWithStdoutStream(client, 'bash', ['-c', 'echo 1; sleep 1; echo 2']);
+    await createRunCommandWithStdoutStream(client, "bash", ["-c", "echo 1; sleep 1; echo 2"]);
 
     const c = Computable.make((ctx) => {
-      const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
+      const streamManager = ctx.accessor(tree.entry()).node().traverse("result")?.persist();
       if (streamManager === undefined) {
-        ctx.markUnstable('no stream manager');
+        ctx.markUnstable("no stream manager");
         return;
       }
 
@@ -71,14 +68,14 @@ test('should get all logs', async () => {
 
       logger.info(`got result: ${JSON.stringify(result)}`);
       if (result.stable) {
-        expect(result.value).toStrictEqual('1\n2\n');
+        expect(result.value).toStrictEqual("1\n2\n");
         return;
       }
     }
   });
 });
 
-test('should get last line with a prefix', async () => {
+test("should get last line with a prefix", async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
 
@@ -87,8 +84,8 @@ test('should get last line with a prefix', async () => {
       pollingInterval: 10,
     });
     const logsStream = new LogsStreamDriver(logger, createLogsClient(client, logger));
-    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-2-'));
-    const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-ranges'));
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "test-logs-2-"));
+    const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), "test-logs-ranges"));
     const download = await DownloadDriver.init(
       logger,
       createDownloadClient(logger, client, []),
@@ -101,20 +98,20 @@ test('should get last line with a prefix', async () => {
     const logs = new LogsDriver(logger, logsStream, download);
 
     const c = Computable.make((ctx) => {
-      const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
+      const streamManager = ctx.accessor(tree.entry()).node().traverse("result")?.persist();
       if (streamManager === undefined) {
-        ctx.markUnstable('no stream manager');
+        ctx.markUnstable("no stream manager");
         return;
       }
 
-      return logs.getProgressLogWithInfo(streamManager, 'PREFIX', ctx);
+      return logs.getProgressLogWithInfo(streamManager, "PREFIX", ctx);
     });
 
     expect(await c.getValue()).toBeUndefined();
 
-    await createRunCommandWithStdoutStream(client, 'bash', [
-      '-c',
-      'echo PREFIX1; echo PREFIX2; echo 3; sleep 0.1; echo PREFIX4',
+    await createRunCommandWithStdoutStream(client, "bash", [
+      "-c",
+      "echo PREFIX1; echo PREFIX2; echo 3; sleep 0.1; echo PREFIX4",
     ]);
 
     while (true) {
@@ -124,7 +121,7 @@ test('should get last line with a prefix', async () => {
       logger.info(`got result: ${JSON.stringify(result)}`);
       if (result.stable) {
         expect(result.value).toMatchObject({
-          progressLine: 'PREFIX4\n',
+          progressLine: "PREFIX4\n",
           live: false,
         });
         return;
@@ -133,7 +130,7 @@ test('should get last line with a prefix', async () => {
   });
 });
 
-test('should get log smart object and get log lines from that', async () => {
+test("should get log smart object and get log lines from that", async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
 
@@ -142,8 +139,8 @@ test('should get log smart object and get log lines from that', async () => {
       pollingInterval: 10,
     });
     const logsStream = new LogsStreamDriver(logger, createLogsClient(client, logger));
-    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-3-'));
-    const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-ranges'));
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "test-logs-3-"));
+    const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), "test-logs-ranges"));
     const download = await DownloadDriver.init(
       logger,
       createDownloadClient(logger, client, []),
@@ -156,16 +153,16 @@ test('should get log smart object and get log lines from that', async () => {
     const logs = new LogsDriver(logger, logsStream, download);
 
     const c = Computable.make((ctx) => {
-      const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
+      const streamManager = ctx.accessor(tree.entry()).node().traverse("result")?.persist();
       if (streamManager === undefined) {
-        ctx.markUnstable('no stream manager');
+        ctx.markUnstable("no stream manager");
         return;
       }
 
       return logs.getLogHandle(streamManager, ctx);
     });
 
-    await createRunCommandWithStdoutStream(client, 'bash', ['-c', 'echo 1; sleep 1; echo 2']);
+    await createRunCommandWithStdoutStream(client, "bash", ["-c", "echo 1; sleep 1; echo 2"]);
 
     let handle = await c.getValue();
 
@@ -185,7 +182,7 @@ test('should get log smart object and get log lines from that', async () => {
       }
 
       if (response.data.toString().length == 4) {
-        expect(response.data.toString()).toStrictEqual('1\n2\n');
+        expect(response.data.toString()).toStrictEqual("1\n2\n");
         return;
       }
 
@@ -199,7 +196,7 @@ async function createRunCommandWithStdoutStream(
   cmd: string,
   args: string[],
 ): Promise<ResourceId> {
-  return await client.withWriteTx('CreateRunCommandWithStreaming', async (tx: PlTransaction) => {
+  return await client.withWriteTx("CreateRunCommandWithStreaming", async (tx: PlTransaction) => {
     const wdFId: FieldRef = createWd(tx);
     const workdirOut: FieldRef = createRunCommand(tx, wdFId, cmd, args);
     const blobsOut: FieldRef = createWdSave(tx, workdirOut);
@@ -208,9 +205,9 @@ async function createRunCommandWithStdoutStream(
 
     const dynamicId: FieldId = {
       resourceId: client.clientRoot,
-      fieldName: 'result',
+      fieldName: "result",
     };
-    tx.createField(dynamicId, 'Dynamic', streamManagerId);
+    tx.createField(dynamicId, "Dynamic", streamManagerId);
 
     await tx.commit();
 
@@ -219,22 +216,30 @@ async function createRunCommandWithStdoutStream(
 }
 
 function createWd(tx: PlTransaction): FieldRef {
-  const wd = tx.createEphemeral({ name: 'WorkdirCreate', version: '1' });
-  return { resourceId: wd, fieldName: 'workdir' };
+  const wd = tx.createEphemeral({ name: "WorkdirCreate", version: "1" });
+  return { resourceId: wd, fieldName: "workdir" };
 }
 
-function requestComputeAllocation(tx: PlTransaction, queue: string, cpu: number, memory: string): FieldRef {
-  const quotaID = tx.createEphemeral({ name: 'Quota', version: '1' }, JSON.stringify({
-    queue: queue,
-    cpuCores: cpu,
-    memory: memory,
-  }));
+function requestComputeAllocation(
+  tx: PlTransaction,
+  queue: string,
+  cpu: number,
+  memory: string,
+): FieldRef {
+  const quotaID = tx.createEphemeral(
+    { name: "Quota", version: "1" },
+    JSON.stringify({
+      queue: queue,
+      cpuCores: cpu,
+      memory: memory,
+    }),
+  );
 
-  const reqID = tx.createEphemeral({ name: 'ComputeRequest/executor', version: '1' });
+  const reqID = tx.createEphemeral({ name: "ComputeRequest/executor", version: "1" });
 
-  tx.setField({ resourceId: reqID, fieldName: 'request' }, quotaID);
+  tx.setField({ resourceId: reqID, fieldName: "request" }, quotaID);
 
-  return { resourceId: reqID, fieldName: 'allocation' };
+  return { resourceId: reqID, fieldName: "allocation" };
 }
 
 function createRunCommand(
@@ -243,70 +248,70 @@ function createRunCommand(
   cmd: string,
   args: string[],
 ): FieldRef {
-  const refsId = tx.createStruct({ name: 'RunCommandRefs', version: '1' });
-  const allocation = requestComputeAllocation(tx, 'heavy', 1, '1');
+  const refsId = tx.createStruct({ name: "RunCommandRefs", version: "1" });
+  const allocation = requestComputeAllocation(tx, "heavy", 1, "1");
   tx.lock(refsId);
   const cmdData = {
-    type: 'string',
+    type: "string",
     value: cmd,
   };
   const argsData = args.map((arg) => {
     return {
-      type: 'string',
+      type: "string",
       value: arg,
     };
   });
   const optsData = {
     errorLines: 200,
-    redirectStdout: 'logs.txt',
-    redirectStderr: 'logs.txt',
+    redirectStdout: "logs.txt",
+    redirectStderr: "logs.txt",
     envs: [],
   };
 
-  const runCmdId = tx.createEphemeral({ name: 'RunCommand/executor', version: '2' });
+  const runCmdId = tx.createEphemeral({ name: "RunCommand/executor", version: "2" });
 
   const setInputValue = (fName: string, rType: ResourceType, data: unknown) => {
     const valResId = tx.createValue(rType, jsonToData(data));
     tx.setField({ resourceId: runCmdId, fieldName: fName }, valResId);
   };
 
-  tx.setField({ resourceId: runCmdId, fieldName: 'workdirIn' }, wdFId);
-  tx.setField({ resourceId: runCmdId, fieldName: 'refs' }, refsId);
-  tx.setField({ resourceId: runCmdId, fieldName: 'allocation' }, allocation);
-  setInputValue('cmd', { name: 'RunCommandCmd', version: '1' }, cmdData);
-  setInputValue('args', { name: 'RunCommandArgs', version: '1' }, argsData);
-  setInputValue('options', { name: 'run-command/options', version: '1' }, optsData);
+  tx.setField({ resourceId: runCmdId, fieldName: "workdirIn" }, wdFId);
+  tx.setField({ resourceId: runCmdId, fieldName: "refs" }, refsId);
+  tx.setField({ resourceId: runCmdId, fieldName: "allocation" }, allocation);
+  setInputValue("cmd", { name: "RunCommandCmd", version: "1" }, cmdData);
+  setInputValue("args", { name: "RunCommandArgs", version: "1" }, argsData);
+  setInputValue("options", { name: "run-command/options", version: "1" }, optsData);
 
-  return { resourceId: runCmdId, fieldName: 'workdirOut' };
+  return { resourceId: runCmdId, fieldName: "workdirOut" };
 }
 
 function createWdSave(tx: PlTransaction, workdirOut: FieldRef): FieldRef {
-  const wdSave = tx.createEphemeral({ name: 'WorkdirSave', version: '1' });
+  const wdSave = tx.createEphemeral({ name: "WorkdirSave", version: "1" });
   const wdSaveRules = tx.createValue(
-    { name: 'WorkdirSave/rules', version: '1' },
+    { name: "WorkdirSave/rules", version: "1" },
     jsonToData([
       {
-        blobKey: 'logs.txt',
-        type: 'file',
-        filePath: 'logs.txt',
+        blobKey: "logs.txt",
+        type: "file",
+        filePath: "logs.txt",
       },
     ]),
   );
-  tx.setField({ resourceId: wdSave, fieldName: 'workdirIn' }, workdirOut);
-  tx.setField({ resourceId: wdSave, fieldName: 'rules' }, wdSaveRules);
+  tx.setField({ resourceId: wdSave, fieldName: "workdirIn" }, workdirOut);
+  tx.setField({ resourceId: wdSave, fieldName: "rules" }, wdSaveRules);
 
-  return { resourceId: wdSave, fieldName: 'blobsOut' };
+  return { resourceId: wdSave, fieldName: "blobsOut" };
 }
 
 function createDownloadableBlobFromStdout(tx: PlTransaction, blobsOut: FieldRef): FieldRef {
-  const blobOut = tx.getFutureFieldValue(blobsOut, 'logs.txt', 'Input');
+  const blobOut = tx.getFutureFieldValue(blobsOut, "logs.txt", "Input");
   const blobDownloadId = tx.createStruct({
-    name: 'BlobDownload',
-    version: '2',
+    name: "BlobDownload",
+    version: "2",
   });
-  tx.setField({ resourceId: blobDownloadId, fieldName: 'blob' }, blobOut);
+  tx.setField({ resourceId: blobDownloadId, fieldName: "blob" }, blobOut);
 
-  return { resourceId: blobDownloadId, fieldName: 'downloadable' };
+  return { resourceId: blobDownloadId, fieldName: "downloadable" };
 }
 
 function createStreamManager(
@@ -314,18 +319,18 @@ function createStreamManager(
   wdFId: FieldRef,
   downloadableFId: AnyFieldRef,
 ): ResourceRef {
-  const streamId = tx.createEphemeral({ name: 'CreateStream', version: '2' });
-  tx.setField({ resourceId: streamId, fieldName: 'workdir' }, wdFId);
-  const filePathId = tx.createValue({ name: 'json/string', version: '1' }, jsonToData('logs.txt'));
-  tx.setField({ resourceId: streamId, fieldName: 'filePath' }, filePathId);
-  const streamFId = { resourceId: streamId, fieldName: 'stream' };
+  const streamId = tx.createEphemeral({ name: "CreateStream", version: "2" });
+  tx.setField({ resourceId: streamId, fieldName: "workdir" }, wdFId);
+  const filePathId = tx.createValue({ name: "json/string", version: "1" }, jsonToData("logs.txt"));
+  tx.setField({ resourceId: streamId, fieldName: "filePath" }, filePathId);
+  const streamFId = { resourceId: streamId, fieldName: "stream" };
 
   const streamManagerId = tx.createEphemeral({
-    name: 'StreamManager',
-    version: '2',
+    name: "StreamManager",
+    version: "2",
   });
-  tx.setField({ resourceId: streamManagerId, fieldName: 'downloadable' }, downloadableFId);
-  tx.setField({ resourceId: streamManagerId, fieldName: 'stream' }, streamFId);
+  tx.setField({ resourceId: streamManagerId, fieldName: "downloadable" }, downloadableFId);
+  tx.setField({ resourceId: streamManagerId, fieldName: "stream" }, streamFId);
 
   return streamManagerId;
 }

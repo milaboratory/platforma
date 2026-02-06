@@ -1,18 +1,15 @@
-import type { ComputableCtx } from '@milaboratories/computable';
-import type {
-  BlockCodeKnownFeatureFlags } from '@platforma-sdk/model';
-import {
-  JsRenderInternal,
-} from '@platforma-sdk/model';
-import { notEmpty } from '@milaboratories/ts-helpers';
-import { randomUUID } from 'node:crypto';
-import type { QuickJSContext, QuickJSHandle } from 'quickjs-emscripten';
-import { Scope, errors } from 'quickjs-emscripten';
-import type { BlockContextAny } from '../middle_layer/block_ctx';
-import type { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
-import { stringifyWithResourceId } from '@milaboratories/pl-client';
-import { PlQuickJSError } from '@milaboratories/pl-errors';
-import { ComputableContextHelper } from './computable_context';
+import type { ComputableCtx } from "@milaboratories/computable";
+import type { BlockCodeKnownFeatureFlags } from "@platforma-sdk/model";
+import { JsRenderInternal } from "@platforma-sdk/model";
+import { notEmpty } from "@milaboratories/ts-helpers";
+import { randomUUID } from "node:crypto";
+import type { QuickJSContext, QuickJSHandle } from "quickjs-emscripten";
+import { Scope, errors } from "quickjs-emscripten";
+import type { BlockContextAny } from "../middle_layer/block_ctx";
+import type { MiddleLayerEnvironment } from "../middle_layer/middle_layer";
+import { stringifyWithResourceId } from "@milaboratories/pl-client";
+import { PlQuickJSError } from "@milaboratories/pl-errors";
+import { ComputableContextHelper } from "./computable_context";
 
 export type DeadlineSettings = {
   currentExecutionTarget: string;
@@ -70,28 +67,37 @@ export class JsExecutionContext {
     this.callbackRegistry = this.scope.manage(this.vm.newObject());
 
     this.fnJSONStringify = scope.manage(
-      vm.getProp(vm.global, 'JSON').consume((json) => vm.getProp(json, 'stringify')),
+      vm.getProp(vm.global, "JSON").consume((json) => vm.getProp(json, "stringify")),
     );
-    if (vm.typeof(this.fnJSONStringify) !== 'function')
+    if (vm.typeof(this.fnJSONStringify) !== "function")
       throw new Error(`JSON.stringify() not found.`);
 
     this.fnJSONParse = scope.manage(
-      vm.getProp(vm.global, 'JSON').consume((json) => vm.getProp(json, 'parse')),
+      vm.getProp(vm.global, "JSON").consume((json) => vm.getProp(json, "parse")),
     );
-    if (vm.typeof(this.fnJSONParse) !== 'function') throw new Error(`JSON.parse() not found.`);
+    if (vm.typeof(this.fnJSONParse) !== "function") throw new Error(`JSON.parse() not found.`);
 
     if (computableEnv !== undefined)
-      this.computableHelper = new ComputableContextHelper(this, computableEnv.blockCtx, computableEnv.mlEnv, featureFlags, computableEnv.computableCtx);
+      this.computableHelper = new ComputableContextHelper(
+        this,
+        computableEnv.blockCtx,
+        computableEnv.mlEnv,
+        featureFlags,
+        computableEnv.computableCtx,
+      );
 
     this.injectCtx();
   }
 
   public resetComputableCtx() {
-    notEmpty(this.computableHelper, 'Computable context helper is not initialized').resetComputableCtx();
+    notEmpty(
+      this.computableHelper,
+      "Computable context helper is not initialized",
+    ).resetComputableCtx();
   }
 
   private static cleanErrorContext(error: unknown): void {
-    if (typeof error === 'object' && error !== null && 'context' in error) delete error['context'];
+    if (typeof error === "object" && error !== null && "context" in error) delete error["context"];
   }
 
   // private static cleanError(error: unknown): unknown {
@@ -106,8 +112,11 @@ export class JsExecutionContext {
 
   public evaluateBundle(code: string) {
     try {
-      this.deadlineSetter({ currentExecutionTarget: 'evaluateBundle', deadline: Date.now() + 10000 });
-      this.vm.unwrapResult(this.vm.evalCode(code, 'bundle.js', { type: 'global' })).dispose();
+      this.deadlineSetter({
+        currentExecutionTarget: "evaluateBundle",
+        deadline: Date.now() + 10000,
+      });
+      this.vm.unwrapResult(this.vm.evalCode(code, "bundle.js", { type: "global" })).dispose();
     } catch (err: unknown) {
       JsExecutionContext.cleanErrorContext(err);
       throw err;
@@ -122,7 +131,7 @@ export class JsExecutionContext {
       return Scope.withScope((localScope) => {
         const targetCallback = localScope.manage(this.vm.getProp(this.callbackRegistry, cbName));
 
-        if (this.vm.typeof(targetCallback) !== 'function')
+        if (this.vm.typeof(targetCallback) !== "function")
           throw new Error(`No such callback: ${cbName}`);
 
         return this.scope.manage(
@@ -154,7 +163,9 @@ export class JsExecutionContext {
   ): QuickJSHandle {
     const result = this.tryExportSingleValue(obj, scope);
     if (result === undefined) {
-      throw new Error(`Can't export value: ${obj === undefined ? 'undefined' : JSON.stringify(obj)}`);
+      throw new Error(
+        `Can't export value: ${obj === undefined ? "undefined" : JSON.stringify(obj)}`,
+      );
     }
     return result;
   }
@@ -163,18 +174,18 @@ export class JsExecutionContext {
     let handle: QuickJSHandle;
     let manage = false;
     switch (typeof obj) {
-      case 'string':
+      case "string":
         handle = this.vm.newString(obj);
         manage = true;
         break;
-      case 'number':
+      case "number":
         handle = this.vm.newNumber(obj);
         manage = true;
         break;
-      case 'undefined':
+      case "undefined":
         handle = this.vm.undefined;
         break;
-      case 'boolean':
+      case "boolean":
         handle = obj ? this.vm.true : this.vm.false;
         break;
       default:
@@ -210,11 +221,11 @@ export class JsExecutionContext {
   public importObjectUniversal(handle: QuickJSHandle | undefined): unknown {
     if (handle === undefined) return undefined;
     switch (this.vm.typeof(handle)) {
-      case 'undefined':
+      case "undefined":
         return undefined;
-      case 'boolean':
-      case 'number':
-      case 'string':
+      case "boolean":
+      case "number":
+      case "string":
         return this.vm.dump(handle);
       default:
         return this.importObjectViaJson(handle);
@@ -225,7 +236,7 @@ export class JsExecutionContext {
     const text = this.vm
       .unwrapResult(this.vm.callFunction(this.fnJSONStringify, this.vm.undefined, handle))
       .consume((strHandle) => this.vm.getString(strHandle));
-    if (text === 'undefined')
+    if (text === "undefined")
       // special case with futures
       return undefined;
     return JSON.parse(text);
@@ -239,10 +250,10 @@ export class JsExecutionContext {
       // Core props
       //
 
-      this.vm.setProp(configCtx, 'callbackRegistry', this.callbackRegistry);
+      this.vm.setProp(configCtx, "callbackRegistry", this.callbackRegistry);
       this.vm.setProp(
         configCtx,
-        'featureFlags',
+        "featureFlags",
         this.exportObjectUniversal(JsRenderInternal.GlobalCfgRenderCtxFeatureFlags, localScope),
       );
 
@@ -255,7 +266,7 @@ export class JsExecutionContext {
       // Creating global variable inside the vm
       //
 
-      this.vm.setProp(this.vm.global, 'cfgRenderCtx', configCtx);
+      this.vm.setProp(this.vm.global, "cfgRenderCtx", configCtx);
     });
   }
 }
@@ -290,25 +301,42 @@ export class ErrorRepository {
   /** Returns the original error that was stored by parsing uuid of mimicrated error. */
   public getOriginal(quickJSError: unknown): unknown {
     if (!(quickJSError instanceof errors.QuickJSUnwrapError)) {
-      console.warn('ErrorRepo: quickJSError is not a QuickJSUnwrapError', stringifyWithResourceId(quickJSError));
+      console.warn(
+        "ErrorRepo: quickJSError is not a QuickJSUnwrapError",
+        stringifyWithResourceId(quickJSError),
+      );
       return quickJSError;
     }
 
     const cause = quickJSError.cause;
-    if (!(typeof cause === 'object' && cause !== null && ('name' in cause) && typeof cause.name === 'string')) {
-      console.warn('ErrorRepo: quickJSError.cause is not an Error (can be stack limit exceeded)', stringifyWithResourceId(quickJSError));
+    if (
+      !(
+        typeof cause === "object" &&
+        cause !== null &&
+        "name" in cause &&
+        typeof cause.name === "string"
+      )
+    ) {
+      console.warn(
+        "ErrorRepo: quickJSError.cause is not an Error (can be stack limit exceeded)",
+        stringifyWithResourceId(quickJSError),
+      );
       return quickJSError;
     }
 
     const causeName = cause.name;
-    const errorId = causeName.slice(causeName.indexOf('/uuid:') + '/uuid:'.length);
+    const errorId = causeName.slice(causeName.indexOf("/uuid:") + "/uuid:".length);
     if (!errorId) {
-      throw new Error(`ErrorRepo: quickJSError.cause.name does not contain errorId: ${causeName}, ${stringifyWithResourceId(quickJSError)}`);
+      throw new Error(
+        `ErrorRepo: quickJSError.cause.name does not contain errorId: ${causeName}, ${stringifyWithResourceId(quickJSError)}`,
+      );
     }
 
     const error = this.errorIdToError.get(errorId);
     if (error === undefined) {
-      throw new Error(`ErrorRepo: errorId not found: ${errorId}, ${stringifyWithResourceId(quickJSError)}`);
+      throw new Error(
+        `ErrorRepo: errorId not found: ${errorId}, ${stringifyWithResourceId(quickJSError)}`,
+      );
     }
 
     return new PlQuickJSError(quickJSError, error as Error);

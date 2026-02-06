@@ -1,7 +1,7 @@
-import type { AnyFunction } from './types';
+import type { AnyFunction } from "./types";
 
 export function isFunction(value: unknown): value is AnyFunction {
-  return typeof value === 'function';
+  return typeof value === "function";
 }
 
 /**
@@ -24,7 +24,7 @@ export class AwaitLock {
 
   release(): void {
     if (!this.acquired) {
-      throw new Error('Cannot release not acquired lock');
+      throw new Error("Cannot release not acquired lock");
     }
 
     if (this.resolvers.length) {
@@ -39,7 +39,10 @@ export class AwaitLock {
  * A utility to add a timeout to a promise, rejecting the promise if the timeout is exceeded.
  */
 export function promiseTimeout<T>(prom: PromiseLike<T>, ms: number): Promise<T> {
-  return Promise.race<T>([prom, new Promise((_r, reject) => setTimeout(() => reject(Error(`Timeout exceeded ${ms}`)), ms))]);
+  return Promise.race<T>([
+    prom,
+    new Promise((_r, reject) => setTimeout(() => reject(Error(`Timeout exceeded ${ms}`)), ms)),
+  ]);
 }
 
 /**
@@ -49,7 +52,11 @@ export function promiseTimeout<T>(prom: PromiseLike<T>, ms: number): Promise<T> 
  * @param immediate (if first call is required)
  * @returns
  */
-export function debounce<F extends AnyFunction>(callback: F, ms: number, immediate?: boolean): (...args: Parameters<F>) => void {
+export function debounce<F extends AnyFunction>(
+  callback: F,
+  ms: number,
+  immediate?: boolean,
+): (...args: Parameters<F>) => void {
   let timeout: ReturnType<typeof setTimeout> | undefined;
   return function (this: unknown, ...args: Parameters<F>) {
     const i = immediate && !timeout;
@@ -75,8 +82,13 @@ export function debounce<F extends AnyFunction>(callback: F, ms: number, immedia
  * @param trailing (ensure last call)
  * @returns
  */
-export function throttle<F extends AnyFunction>(callback: F, ms: number, trailing = true): (...args: Parameters<F>) => void {
-  let t = 0, call: AnyFunction | null;
+export function throttle<F extends AnyFunction>(
+  callback: F,
+  ms: number,
+  trailing = true,
+): (...args: Parameters<F>) => void {
+  let t = 0,
+    call: AnyFunction | null;
   return function (this: unknown, ...args: Parameters<F>) {
     call = () => {
       callback.apply(this, args);
@@ -109,10 +121,7 @@ export const memoize = <F extends AnyFunction>(fn: F) => {
 /**
  * Function wrapper utility: executes a function before the main function is called.
  */
-export const wrapFunction = <T extends unknown[], U>(
-  fn: (...args: T) => U,
-  before: () => void,
-) => {
+export const wrapFunction = <T extends unknown[], U>(fn: (...args: T) => U, before: () => void) => {
   return (...args: T): U => {
     before();
     return fn(...args);
@@ -137,12 +146,15 @@ export function exclusiveRequest<A, R>(request: (...args: A[]) => Promise<R>) {
   let counter = 0n;
   let ongoingOperation: Promise<R> | undefined;
 
-  return async function (...params: A[]): Promise<{
-    ok: false;
-  } | {
-    ok: true;
-    value: R;
-  }> {
+  return async function (...params: A[]): Promise<
+    | {
+        ok: false;
+      }
+    | {
+        ok: true;
+        value: R;
+      }
+  > {
     const myId = ++counter;
 
     try {

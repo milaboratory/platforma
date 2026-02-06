@@ -1,9 +1,9 @@
-import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
+import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
 import type {
   ProjectListEntry as ProjectListEntryFromModel,
   ProjectMeta,
-} from '@milaboratories/pl-model-middle-layer';
-import type { BlockRenderingMode } from '@platforma-sdk/model';
+} from "@milaboratories/pl-model-middle-layer";
+import type { BlockRenderingMode } from "@platforma-sdk/model";
 
 export interface ProjectListEntry extends ProjectListEntryFromModel {
   /** Project resource ID. */
@@ -44,7 +44,7 @@ export interface ProjectStructure {
 }
 
 export const InitialBlockStructure: ProjectStructure = {
-  groups: [{ id: 'default', label: 'Default', blocks: [] }],
+  groups: [{ id: "default", label: "Default", blocks: [] }],
 };
 
 /** Root of project rendering state */
@@ -63,35 +63,35 @@ export const InitialProjectRenderingState: ProjectRenderingState = {
 };
 
 export const InitialBlockMeta: ProjectMeta = {
-  label: 'New Project',
+  label: "New Project",
 };
 
 //
 // Pl Model
 //
 
-export const ProjectResourceType: ResourceType = { name: 'UserProject', version: '2' };
+export const ProjectResourceType: ResourceType = { name: "UserProject", version: "2" };
 
-export const SchemaVersionKey = 'SchemaVersion';
-export const SchemaVersionV2 = '2';
-export const SchemaVersionCurrent = '3';
+export const SchemaVersionKey = "SchemaVersion";
+export const SchemaVersionV2 = "2";
+export const SchemaVersionCurrent = "3";
 
-export const ProjectCreatedTimestamp = 'ProjectCreated';
-export const ProjectLastModifiedTimestamp = 'ProjectLastModified';
-export const ProjectMetaKey = 'ProjectMeta';
-export const ProjectStructureKey = 'ProjectStructure';
-export const BlockRenderingStateKey = 'BlockRenderingState';
+export const ProjectCreatedTimestamp = "ProjectCreated";
+export const ProjectLastModifiedTimestamp = "ProjectLastModified";
+export const ProjectMetaKey = "ProjectMeta";
+export const ProjectStructureKey = "ProjectStructure";
+export const BlockRenderingStateKey = "BlockRenderingState";
 
-export const BlockArgsAuthorKeyPrefix = 'BlockArgsAuthor/';
+export const BlockArgsAuthorKeyPrefix = "BlockArgsAuthor/";
 export const BlockArgsAuthorKeyPattern = /^BlockArgsAuthor\/(?<blockid>.*)$/;
 
 export function blockArgsAuthorKey(blockId: string): string {
   return `${BlockArgsAuthorKeyPrefix}${blockId}`;
 }
 
-export const ProjectStructureAuthorKey = 'ProjectStructureAuthor';
+export const ProjectStructureAuthorKey = "ProjectStructureAuthor";
 
-export const ServiceTemplateCacheFieldPrefix = '__serviceTemplate_';
+export const ServiceTemplateCacheFieldPrefix = "__serviceTemplate_";
 
 export function getServiceTemplateField(hash: string): string {
   return `${ServiceTemplateCacheFieldPrefix}${hash}`;
@@ -100,45 +100,44 @@ export function getServiceTemplateField(hash: string): string {
 export interface ProjectField {
   blockId: string;
   fieldName:
-    | 'blockPack'
-    | 'blockSettings'
-    | 'blockStorage' // Persistent storage for v3 blocks (state, plugins data, etc.)
-    | 'prodArgs'
-    | 'currentArgs'
-    | 'currentPrerunArgs' // Derived args for staging/prerun rendering (from prerunArgs() or args())
-    | 'prodCtx'
-    | 'prodUiCtx'
-    | 'prodOutput'
-    | 'prodCtxPrevious'
-    | 'prodUiCtxPrevious'
-    | 'prodOutputPrevious'
-    | 'stagingCtx'
-    | 'stagingUiCtx'
-    | 'stagingOutput'
-    | 'stagingCtxPrevious'
-    | 'stagingUiCtxPrevious'
-    | 'stagingOutputPrevious'
-  ;
+    | "blockPack"
+    | "blockSettings"
+    | "blockStorage" // Persistent storage for v3 blocks (state, plugins data, etc.)
+    | "prodArgs"
+    | "currentArgs"
+    | "currentPrerunArgs" // Derived args for staging/prerun rendering (from prerunArgs() or args())
+    | "prodCtx"
+    | "prodUiCtx"
+    | "prodOutput"
+    | "prodCtxPrevious"
+    | "prodUiCtxPrevious"
+    | "prodOutputPrevious"
+    | "stagingCtx"
+    | "stagingUiCtx"
+    | "stagingOutput"
+    | "stagingCtxPrevious"
+    | "stagingUiCtxPrevious"
+    | "stagingOutputPrevious";
 }
 
-export const FieldsToDuplicate: Set<ProjectField['fieldName']> = new Set([
-  'blockPack',
-  'blockSettings',
-  'blockStorage',
-  'prodArgs',
-  'currentArgs',
-  'currentPrerunArgs',
-  'prodCtx',
-  'prodUiCtx',
-  'prodOutput',
+export const FieldsToDuplicate: Set<ProjectField["fieldName"]> = new Set([
+  "blockPack",
+  "blockSettings",
+  "blockStorage",
+  "prodArgs",
+  "currentArgs",
+  "currentPrerunArgs",
+  "prodCtx",
+  "prodUiCtx",
+  "prodOutput",
 ]);
 
-export function projectFieldName(blockId: string, fieldName: ProjectField['fieldName']): string {
+export function projectFieldName(blockId: string, fieldName: ProjectField["fieldName"]): string {
   return `${blockId}-${fieldName}`;
 }
 
-const projectFieldPattern
-  = /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
+const projectFieldPattern =
+  /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);

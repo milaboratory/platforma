@@ -1,14 +1,15 @@
 {
   "name": "@milaboratories/pl-client",
   "version": "2.16.26",
-  "engines": {
-    "node": ">=22.19.0"
-  },
   "description": "New TS/JS client for Platform API",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "type": "module",
-  "types": "./dist/index.d.ts",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -25,10 +26,6 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "dependencies": {
     "@grpc/grpc-js": "catalog:",
     "@milaboratories/pl-http": "workspace:*",
@@ -42,8 +39,8 @@
     "https-proxy-agent": "catalog:",
     "long": "catalog:",
     "lru-cache": "catalog:",
-    "tslib": "catalog:",
     "openapi-fetch": "catalog:",
+    "tslib": "catalog:",
     "undici": "catalog:",
     "utility-types": "catalog:",
     "yaml": "catalog:"
@@ -53,11 +50,14 @@
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@protobuf-ts/plugin": "catalog:",
-    "openapi-typescript": "catalog:",
     "@types/http-proxy": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "vitest": "catalog:",
-    "typescript": "catalog:"
+    "openapi-typescript": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.19.0"
   }
 }

@@ -1,4 +1,4 @@
-import { deepClone, isJsonEqual } from '@milaboratories/helpers';
+import { deepClone, isJsonEqual } from "@milaboratories/helpers";
 import {
   computed,
   ref,
@@ -7,7 +7,7 @@ import {
   type ComputedSetter,
   type ComputedRef,
   type WritableComputedRef,
-} from 'vue';
+} from "vue";
 
 /**
  * Alternative to `computed`, but triggering only on actual data changes.
@@ -18,13 +18,17 @@ export function computedCached<T>(options: {
   set: ComputedSetter<T>;
 }): WritableComputedRef<T>;
 export function computedCached<T>(getter: ComputedGetter<T>): ComputedRef<T>;
-export function computedCached<T>(arg: ComputedGetter<T> | {
-  get: ComputedGetter<T>;
-  set: ComputedSetter<T>;
-}) {
+export function computedCached<T>(
+  arg:
+    | ComputedGetter<T>
+    | {
+        get: ComputedGetter<T>;
+        set: ComputedSetter<T>;
+      },
+) {
   let getter: ComputedGetter<T>;
   let setter: ComputedSetter<T> | undefined = undefined;
-  if (typeof arg === 'function') {
+  if (typeof arg === "function") {
     getter = arg;
   } else {
     getter = arg.get;

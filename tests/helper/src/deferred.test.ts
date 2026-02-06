@@ -1,7 +1,7 @@
-import { expect, test } from 'vitest';
-import { utils } from '@milaboratories/helpers';
+import { expect, test } from "vitest";
+import { utils } from "@milaboratories/helpers";
 
-test('Deferred ok', async () => {
+test("Deferred ok", async () => {
   const deferred = new utils.Deferred<number>();
 
   const expected = 100;
@@ -15,10 +15,10 @@ test('Deferred ok', async () => {
   expect(v1).toEqual(expected);
 }, 1000);
 
-test('Deferred bad', async () => {
+test("Deferred bad", async () => {
   const deferred = new utils.Deferred<number>();
 
-  const expected = 'test err';
+  const expected = "test err";
 
   utils.delay(1).then(() => {
     deferred.reject(Error(expected));

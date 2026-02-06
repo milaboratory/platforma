@@ -1,9 +1,9 @@
-import fs from 'node:fs';
-import * as types from './types';
-import { assertNever, resolveTilde } from '../util';
-import state from '../state';
+import fs from "node:fs";
+import * as types from "./types";
+import { assertNever, resolveTilde } from "../util";
+import state from "../state";
 
-export type { plOptions } from './types';
+export type { plOptions } from "./types";
 
 export function storageSettingsFromURL(
   storageURL: string,
@@ -14,57 +14,57 @@ export function storageSettingsFromURL(
   const url = new URL(storageURL, `file:${baseDir}`);
 
   switch (url.protocol) {
-    case 's3:': {
+    case "s3:": {
       const bucketName = url.hostname;
-      const region = url.searchParams.get('region');
+      const region = url.searchParams.get("region");
       const keyPrefix = url.pathname.slice(1); // 's3://bucket/' will have '/' as pathname. We don't want to always have '/' prefix
 
       return {
         ...defaults,
 
-        type: 'S3',
+        type: "S3",
         bucketName,
         region,
         keyPrefix,
       } as types.storageOptions;
     }
-    case 's3e:': {
-      const p = url.pathname.split('/').slice(1); // '/bucket/key/prefix' -> ['', 'bucket', 'key' 'prefix'] -> ['bucket', 'key', 'prefix']
+    case "s3e:": {
+      const p = url.pathname.split("/").slice(1); // '/bucket/key/prefix' -> ['', 'bucket', 'key' 'prefix'] -> ['bucket', 'key', 'prefix']
       const bucketName = p[0];
-      const keyPrefix = p.length > 1 ? p.slice(1).join('/') : '';
+      const keyPrefix = p.length > 1 ? p.slice(1).join("/") : "";
 
       return {
         ...defaults,
 
-        type: 'S3',
+        type: "S3",
         endpoint: `http://${url.host}/`,
         bucketName,
         keyPrefix,
-        region: url.searchParams.get('region'),
-        key: url.username ? `static:${url.username}` : '',
-        secret: url.password ? `static:${url.password}` : '',
+        region: url.searchParams.get("region"),
+        key: url.username ? `static:${url.username}` : "",
+        secret: url.password ? `static:${url.password}` : "",
       } as types.storageOptions;
     }
-    case 's3es:': {
-      const p = url.pathname.split('/').slice(1); // '/bucket/key/prefix' -> ['', 'bucket', 'key' 'prefix'] -> ['bucket', 'key', 'prefix']
+    case "s3es:": {
+      const p = url.pathname.split("/").slice(1); // '/bucket/key/prefix' -> ['', 'bucket', 'key' 'prefix'] -> ['bucket', 'key', 'prefix']
       const bucketName = p[0];
-      const keyPrefix = p.length > 1 ? p.slice(1).join('/') : '';
+      const keyPrefix = p.length > 1 ? p.slice(1).join("/") : "";
 
       return {
         ...defaults,
 
-        type: 'S3',
+        type: "S3",
         endpoint: `https://${url.host}/`,
         bucketName,
         keyPrefix,
-        region: url.searchParams.get('region'),
-        key: url.username ? `static:${url.username}` : '',
-        secret: url.password ? `static:${url.password}` : '',
+        region: url.searchParams.get("region"),
+        key: url.username ? `static:${url.username}` : "",
+        secret: url.password ? `static:${url.password}` : "",
       } as types.storageOptions;
     }
-    case 'file:':
+    case "file:":
       return {
-        type: 'FS',
+        type: "FS",
         rootPath: url.pathname,
       };
 
@@ -74,18 +74,18 @@ export function storageSettingsFromURL(
 }
 
 export function loadDefaults(jwtKey: string, options?: types.plOptions): types.plSettings {
-  const localRoot = options?.localRoot ?? state.instanceDir('default');
+  const localRoot = options?.localRoot ?? state.instanceDir("default");
 
   const log: types.logSettings = {
-    level: options?.log?.level ?? 'info',
+    level: options?.log?.level ?? "info",
     path: options?.log?.path ?? `${localRoot}/logs/platforma.log`,
   };
 
   const grpc: types.grpcSettings = {
-    listen: options?.grpc?.listen ?? 'localhost:6345',
+    listen: options?.grpc?.listen ?? "localhost:6345",
     tls: {
       enable: defaultBool(options?.grpc?.tls?.enable, false),
-      clientAuthMode: options?.grpc?.tls?.clientAuthMode ?? 'NoAuth',
+      clientAuthMode: options?.grpc?.tls?.clientAuthMode ?? "NoAuth",
       certFile: options?.grpc?.tls?.certFile ?? `${localRoot}/certs/tls.cert`,
       keyFile: options?.grpc?.tls?.keyFile ?? `${localRoot}/certs/tls.key`,
 
@@ -97,8 +97,8 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
     auth: {
       enabled: options?.core?.auth?.enabled ?? false,
       drivers: options?.core?.auth?.drivers ?? [
-        { driver: 'jwt', key: jwtKey },
-        { driver: 'htpasswd', path: `${localRoot}/users.htpasswd` },
+        { driver: "jwt", key: jwtKey },
+        { driver: "htpasswd", path: `${localRoot}/users.htpasswd` },
       ],
     },
     db: {
@@ -107,9 +107,9 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
   };
 
   const primary = defaultStorageSettings(
-    'main',
+    "main",
     `${localRoot}/storages/main`,
-    'platforma-primary-bucket',
+    "platforma-primary-bucket",
     options?.storages?.primary,
   );
 
@@ -117,34 +117,36 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
   const wType = options?.storages?.work?.type;
   switch (wType) {
     case undefined:
-    case 'FS':
-      work = types.emptyFSSettings('work');
+    case "FS":
+      work = types.emptyFSSettings("work");
       work.rootPath = options?.storages?.work?.rootPath ?? `${localRoot}/storages/work`;
-      work.indexCachePeriod = options?.storages?.work?.indexCachePeriod ?? '1m';
+      work.indexCachePeriod = options?.storages?.work?.indexCachePeriod ?? "1m";
       break;
 
     default:
-      throw new Error('work storage MUST have \'FS\' type as it is used for working directories management');
+      throw new Error(
+        "work storage MUST have 'FS' type as it is used for working directories management",
+      );
   }
 
   const library = defaultStorageSettings(
-    'library',
+    "library",
     `${localRoot}/storages/library`,
-    'platforma-library-bucket',
+    "platforma-library-bucket",
     options?.storages?.library,
   );
 
   const monitoring: types.monitoringSettings = {
     enabled: defaultBool(options?.monitoring?.enabled, true),
-    listen: options?.monitoring?.listen ?? '127.0.0.1:9090',
+    listen: options?.monitoring?.listen ?? "127.0.0.1:9090",
   };
   const debug: types.debugSettings = {
     enabled: defaultBool(options?.debug?.enabled, true),
-    listen: options?.debug?.listen ?? '127.0.0.1:9091',
+    listen: options?.debug?.listen ?? "127.0.0.1:9091",
   };
   const license: types.licenseSettings = {
-    value: options?.license?.value ?? '',
-    file: options?.license?.file ?? '',
+    value: options?.license?.value ?? "",
+    file: options?.license?.file ?? "",
   };
 
   return {
@@ -171,12 +173,12 @@ function defaultStorageSettings(
   const pType = options?.type;
   switch (pType) {
     case undefined:
-    case 'FS':
+    case "FS":
       storage = types.emptyFSSettings(storageID);
       storage.rootPath = options?.rootPath ?? defaultLocation;
       break;
 
-    case 'S3':
+    case "S3":
       storage = types.emptyS3Settings(storageID);
 
       storage.endpoint = options?.endpoint;
@@ -185,31 +187,31 @@ function defaultStorageSettings(
       storage.bucketName = options?.bucketName ?? defaultBucket;
       storage.createBucket = defaultBool(options?.createBucket, true);
       storage.forcePathStyle = defaultBool(options?.forcePathStyle, true);
-      storage.key = options?.key ?? '';
-      storage.secret = options?.secret ?? '';
-      storage.keyPrefix = options?.keyPrefix ?? '';
-      storage.accessPrefixes = options?.accessPrefixes ?? [''];
-      storage.uploadKeyPrefix = options?.uploadKeyPrefix ?? '';
+      storage.key = options?.key ?? "";
+      storage.secret = options?.secret ?? "";
+      storage.keyPrefix = options?.keyPrefix ?? "";
+      storage.accessPrefixes = options?.accessPrefixes ?? [""];
+      storage.uploadKeyPrefix = options?.uploadKeyPrefix ?? "";
       break;
 
     default:
       assertNever(pType);
-      throw new Error('unknown storage type'); // calm down TS type analyzer
+      throw new Error("unknown storage type"); // calm down TS type analyzer
   }
 
   return storage;
 }
 
 export function render(options: types.plSettings): string {
-  const disableMon = options.monitoring.enabled ? '' : ' disabled';
-  const disableDbg = options.debug.enabled ? '' : ' disabled';
-  const libraryDownloadable = options.hacks.libraryDownloadable ? 'true' : 'false';
+  const disableMon = options.monitoring.enabled ? "" : " disabled";
+  const disableDbg = options.debug.enabled ? "" : " disabled";
+  const libraryDownloadable = options.hacks.libraryDownloadable ? "true" : "false";
   let miLicenseSecret = options.license.value;
-  if (options.license.file != '') {
+  if (options.license.file != "") {
     miLicenseSecret = fs.readFileSync(options.license.file).toString().trimEnd();
   }
 
-  let cpuLimit = '';
+  let cpuLimit = "";
   if (options.numCpu) {
     cpuLimit = `
     resources:
@@ -281,7 +283,7 @@ controllers:
 
   runner:
     type: local
-    storageRoot: '${(options.storages.work).rootPath}'
+    storageRoot: '${options.storages.work.rootPath}'
     workdirCacheOnSuccess: 20m
     workdirCacheOnFailure: 1h
 ${cpuLimit}

@@ -1,4 +1,4 @@
-import type { RangeBytes } from './blob';
+import type { RangeBytes } from "./blob";
 
 /**
  * Status returned by onError handler to indicate what action to take
@@ -6,7 +6,7 @@ import type { RangeBytes } from './blob';
  * - 'error': Error the stream (calls controller.error, aborts ongoing fetches)
  * - 'cancel': Cancel the stream gracefully (calls controller.close, aborts ongoing fetches)
  */
-export type ErrorHandlerStatus = 'continue' | 'error' | 'cancel';
+export type ErrorHandlerStatus = "continue" | "error" | "cancel";
 
 /**
  * Options for creating a ChunkedStreamReader
@@ -60,17 +60,19 @@ export class ChunkedStreamReader {
     this.options = {
       ...options,
       chunkSize: options.chunkSize ?? 16 * 1024 * 1024,
-      onError: options.onError ?? (async () => {
-        // Default behavior: error (will automatically call controller.error)
-        return 'error';
-      }),
+      onError:
+        options.onError ??
+        (async () => {
+          // Default behavior: error (will automatically call controller.error)
+          return "error";
+        }),
     };
 
     if (this.totalSize < 0) {
-      throw new Error('Total size must be non-negative');
+      throw new Error("Total size must be non-negative");
     }
     if (this.chunkSize <= 0) {
-      throw new Error('Chunk size must be positive');
+      throw new Error("Chunk size must be positive");
     }
   }
 
@@ -175,20 +177,20 @@ export class ChunkedStreamReader {
       // If any error occurs during chunk reading, call the error handler
       const status = await this.onError(error);
 
-      if (status === 'error') {
+      if (status === "error") {
         this._errored = true;
         // Error the stream and abort any ongoing fetch operations
         controller.error(error);
-        this.abortController?.abort('Stream errored');
+        this.abortController?.abort("Stream errored");
         return true; // Stop reading
       }
 
-      if (status === 'cancel') {
+      if (status === "cancel") {
         this._canceled = true;
         // Close the stream gracefully and abort any ongoing fetch operations
         controller.close();
-        this.abortController?.abort('Stream cancelled');
-        console.debug('ChunkedStreamReader cancelled due to error');
+        this.abortController?.abort("Stream cancelled");
+        console.debug("ChunkedStreamReader cancelled due to error");
         return true; // Stop reading
       }
     }
@@ -236,7 +238,7 @@ export class ChunkedStreamReader {
         this._canceled = true;
         // Abort any ongoing fetch operations
         this.abortController?.abort(reason);
-        console.debug('ChunkedStreamReader cancelled:', reason);
+        console.debug("ChunkedStreamReader cancelled:", reason);
       },
     });
   }

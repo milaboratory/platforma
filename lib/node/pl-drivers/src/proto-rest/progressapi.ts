@@ -4,156 +4,156 @@
  */
 
 export interface paths {
-    "/v1/get-progress": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Progress_GetStatus"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/v1/get-progress": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/realtime-progress": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Progress_RealtimeStatus"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Progress_GetStatus"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/realtime-progress": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    post: operations["Progress_RealtimeStatus"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        GetStatus_Request: {
-            resourceId: string;
-        };
-        GetStatus_Response: {
-            report: components["schemas"]["ProgressAPI_Report"];
-        };
-        /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
-        GoogleProtobufAny: {
-            /** @description The type of the serialized message. */
-            "@type": string;
-        } & {
-            [key: string]: unknown;
-        };
-        ProgressAPI_Report: {
-            /** Format: float */
-            progress: number;
-            bytesProcessed: string;
-            bytesTotal: string;
-            done: boolean;
-            /** @description Name of current progress stage (if any) */
-            name: string;
-        };
-        RealtimeStatus_Request: {
-            resourceId: string;
-            updateInterval: string;
-        };
-        RealtimeStatus_Response: {
-            report: components["schemas"]["ProgressAPI_Report"];
-        };
-        /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
-        Status: {
-            /**
-             * Format: int32
-             * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
-             */
-            code: number;
-            /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
-            message: string;
-            /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
-            details: components["schemas"]["GoogleProtobufAny"][];
-        };
+  schemas: {
+    GetStatus_Request: {
+      resourceId: string;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    GetStatus_Response: {
+      report: components["schemas"]["ProgressAPI_Report"];
+    };
+    /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
+    GoogleProtobufAny: {
+      /** @description The type of the serialized message. */
+      "@type": string;
+    } & {
+      [key: string]: unknown;
+    };
+    ProgressAPI_Report: {
+      /** Format: float */
+      progress: number;
+      bytesProcessed: string;
+      bytesTotal: string;
+      done: boolean;
+      /** @description Name of current progress stage (if any) */
+      name: string;
+    };
+    RealtimeStatus_Request: {
+      resourceId: string;
+      updateInterval: string;
+    };
+    RealtimeStatus_Response: {
+      report: components["schemas"]["ProgressAPI_Report"];
+    };
+    /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
+    Status: {
+      /**
+       * Format: int32
+       * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+       */
+      code: number;
+      /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
+      message: string;
+      /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
+      details: components["schemas"]["GoogleProtobufAny"][];
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    Progress_GetStatus: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GetStatus_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetStatus_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  Progress_GetStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    Progress_RealtimeStatus: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RealtimeStatus_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RealtimeStatus_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GetStatus_Request"];
+      };
     };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GetStatus_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Progress_RealtimeStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RealtimeStatus_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RealtimeStatus_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
 }

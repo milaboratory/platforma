@@ -1,22 +1,22 @@
 <script lang="ts">
-import type { Props as BaseProps } from './FilterSidebar.vue';
+import type { Props as BaseProps } from "./FilterSidebar.vue";
 export type Props = BaseProps & {
   onDeleteSchema?: () => void;
 };
 </script>
 
 <script setup lang="ts">
-import { computed, effect, shallowRef } from 'vue';
+import { computed, effect, shallowRef } from "vue";
 
-import { isNil } from '@milaboratories/helpers';
-import { PlSidebarGroup, useConfirm } from '@milaboratories/uikit';
+import { isNil } from "@milaboratories/helpers";
+import { PlSidebarGroup, useConfirm } from "@milaboratories/uikit";
 
-import type { Annotation } from '../types';
-import AnnotationsSidebar from './AnnotationsSidebar.vue';
-import FilterSidebar from './FilterSidebar.vue';
+import type { Annotation } from "../types";
+import AnnotationsSidebar from "./AnnotationsSidebar.vue";
+import FilterSidebar from "./FilterSidebar.vue";
 
 // Models
-const annotation = defineModel<Annotation>('annotation', { required: true });
+const annotation = defineModel<Annotation>("annotation", { required: true });
 // Props
 const props = defineProps<Props>();
 // State
@@ -35,10 +35,10 @@ effect(function setDefaultStepId() {
 });
 // Hooks
 const confirmResetSchema = useConfirm({
-  title: 'Reset Schema',
-  message: 'Are you sure you want to reset the schema? This action cannot be undone.',
-  confirmLabel: 'Yes, reset',
-  cancelLabel: 'No, cancel',
+  title: "Reset Schema",
+  message: "Are you sure you want to reset the schema? This action cannot be undone.",
+  confirmLabel: "Yes, reset",
+  cancelLabel: "No, cancel",
 });
 // Actions
 async function handleDeleteSchema() {
@@ -47,7 +47,6 @@ async function handleDeleteSchema() {
     props.onDeleteSchema?.();
   }
 }
-
 </script>
 
 <template>

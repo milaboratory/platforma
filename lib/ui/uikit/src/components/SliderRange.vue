@@ -1,17 +1,17 @@
 <script lang="ts" setup>
-import { computed, reactive, ref, unref, useSlots, watch } from 'vue';
-import { useMouseCapture } from '../composition/useMouseCapture';
-import { tapIf } from '../helpers/functions';
-import { clamp } from '../helpers/math';
-import { PlTooltip } from './PlTooltip';
-import type { SliderMode } from '../types';
-import InputRange from './InputRange.vue';
-import { useSliderBreakpoints } from '../composition/useSliderBreakpoints';
-import { getErrorMessage } from '../helpers/error.ts';
+import { computed, reactive, ref, unref, useSlots, watch } from "vue";
+import { useMouseCapture } from "../composition/useMouseCapture";
+import { tapIf } from "../helpers/functions";
+import { clamp } from "../helpers/math";
+import { PlTooltip } from "./PlTooltip";
+import type { SliderMode } from "../types";
+import InputRange from "./InputRange.vue";
+import { useSliderBreakpoints } from "../composition/useSliderBreakpoints";
+import { getErrorMessage } from "../helpers/error.ts";
 
 const slots = useSlots();
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(["update:modelValue"]);
 
 const props = withDefaults(
   defineProps<{
@@ -33,8 +33,8 @@ const props = withDefaults(
     error: undefined,
     min: 0,
     step: 1,
-    mode: 'text',
-    measure: '',
+    mode: "text",
+    measure: "",
     breakpoints: false,
     disabled: false,
   },
@@ -56,7 +56,9 @@ const propsRef = computed(() => props);
 
 const breakpointsRef = useSliderBreakpoints(propsRef);
 
-const textModelValue = computed(() => [leftDelta.value, rightDelta.value].sort((a, b) => a - b).join('-'));
+const textModelValue = computed(() =>
+  [leftDelta.value, rightDelta.value].sort((a, b) => a - b).join("-"),
+);
 
 const range = computed(() => props.max - props.min);
 
@@ -64,7 +66,9 @@ const localValue1 = computed(() => {
   return clamp((props.modelValue[0] ?? 0) + data.deltaValue1, props.min, props.max);
 });
 
-const localValue2 = computed(() => clamp((props.modelValue[1] ?? 0) + data.deltaValue2, props.min, props.max));
+const localValue2 = computed(() =>
+  clamp((props.modelValue[1] ?? 0) + data.deltaValue2, props.min, props.max),
+);
 
 const error = computed(() => {
   const v = props.modelValue as unknown;
@@ -72,7 +76,7 @@ const error = computed(() => {
   const isValidModel = Array.isArray(v) && v.length === 2 && v.every((it) => Number.isFinite(it));
 
   if (!isValidModel) {
-    return 'Expected model [number, number]';
+    return "Expected model [number, number]";
   }
 
   return getErrorMessage(props.error);
@@ -89,16 +93,16 @@ const position2 = computed(() => {
 const leftRight = computed(() => getLeftAndRight());
 
 const progressStyle = computed(() => ({
-  right: leftRight.value[0] + '%',
-  left: 100 - leftRight.value[1] + '%',
+  right: leftRight.value[0] + "%",
+  left: 100 - leftRight.value[1] + "%",
 }));
 
 const thumbStyle1 = computed(() => ({
-  right: Math.ceil((1 - position1.value) * 100) + '%',
+  right: Math.ceil((1 - position1.value) * 100) + "%",
 }));
 
 const thumbStyle2 = computed(() => ({
-  right: Math.ceil((1 - position2.value) * 100) + '%',
+  right: Math.ceil((1 - position2.value) * 100) + "%",
 }));
 
 watch(
@@ -117,9 +121,13 @@ useMouseCapture(thumbRef1, (ev) => {
 
     data.deltaValue1 = (dx / rect.width) * range.value;
 
-    leftDelta.value = round(clamp((props.modelValue[0] ?? 0) + data.deltaValue1, props.min, props.max));
+    leftDelta.value = round(
+      clamp((props.modelValue[0] ?? 0) + data.deltaValue1, props.min, props.max),
+    );
 
-    inputRange.value = ([leftDelta.value, rightDelta.value] as [number, number]).sort((a, b) => a - b);
+    inputRange.value = ([leftDelta.value, rightDelta.value] as [number, number]).sort(
+      (a, b) => a - b,
+    );
 
     if (ev.stop) {
       setModelValue([round(localValue1.value), round(localValue2.value)]);
@@ -134,9 +142,13 @@ useMouseCapture(thumbRef2, (ev) => {
 
     data.deltaValue2 = (dx / rect.width) * range.value;
 
-    rightDelta.value = round(clamp((props.modelValue[1] ?? 0) + data.deltaValue2, props.min, props.max));
+    rightDelta.value = round(
+      clamp((props.modelValue[1] ?? 0) + data.deltaValue2, props.min, props.max),
+    );
 
-    inputRange.value = ([leftDelta.value, rightDelta.value] as [number, number]).sort((a, b) => a - b);
+    inputRange.value = ([leftDelta.value, rightDelta.value] as [number, number]).sort(
+      (a, b) => a - b,
+    );
 
     if (ev.stop) {
       setModelValue([round(localValue1.value), round(localValue2.value)]);
@@ -158,16 +170,20 @@ function round(value: number) {
 }
 
 function setModelValue(value: [number, number]) {
-  emit('update:modelValue', value);
+  emit("update:modelValue", value);
 }
 
 function handleKeyPress(e: { code: string; preventDefault(): void }, index: number) {
-  if (['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Enter'].includes(e.code)) {
+  if (["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft", "Enter"].includes(e.code)) {
     e.preventDefault();
   }
 
-  const nextStep
-    = e.code === 'ArrowUp' || e.code === 'ArrowRight' ? props.step * 1 : e.code === 'ArrowDown' || e.code === 'ArrowLeft' ? props.step * -1 : 0;
+  const nextStep =
+    e.code === "ArrowUp" || e.code === "ArrowRight"
+      ? props.step * 1
+      : e.code === "ArrowDown" || e.code === "ArrowLeft"
+        ? props.step * -1
+        : 0;
 
   const arr: [number, number] = [...props.modelValue];
   arr[index] = clamp(arr[index] + nextStep, props.min, props.max);
@@ -189,7 +205,9 @@ function handleKeyPress(e: { code: string; preventDefault(): void }, index: numb
               </template>
             </PlTooltip>
           </label>
-          <div v-if="props.mode === 'text'" class="ui-slider__value-static text-s">{{ textModelValue }}</div>
+          <div v-if="props.mode === 'text'" class="ui-slider__value-static text-s">
+            {{ textModelValue }}
+          </div>
         </div>
         <div class="ui-slider__base">
           <div class="ui-slider__container">
@@ -199,12 +217,29 @@ function handleKeyPress(e: { code: string; preventDefault(): void }, index: numb
           </div>
           <div class="ui-slider__container ui-slider__container-thumb">
             <template v-if="props.breakpoints">
-              <div v-for="(item, index) in breakpointsRef" :key="index" :style="{ right: `${item}%` }" class="ui-slider__thumb-step"/>
+              <div
+                v-for="(item, index) in breakpointsRef"
+                :key="index"
+                :style="{ right: `${item}%` }"
+                class="ui-slider__thumb-step"
+              />
             </template>
-            <div ref="thumbRef1" :style="thumbStyle1" class="ui-slider__thumb" tabindex="0" @keydown="handleKeyPress($event, 0)">
+            <div
+              ref="thumbRef1"
+              :style="thumbStyle1"
+              class="ui-slider__thumb"
+              tabindex="0"
+              @keydown="handleKeyPress($event, 0)"
+            >
               <div class="ui-slider__thumb-focused-contour" />
             </div>
-            <div ref="thumbRef2" :style="thumbStyle2" class="ui-slider__thumb" tabindex="0" @keydown="handleKeyPress($event, 1)">
+            <div
+              ref="thumbRef2"
+              :style="thumbStyle2"
+              class="ui-slider__thumb"
+              tabindex="0"
+              @keydown="handleKeyPress($event, 1)"
+            >
               <div class="ui-slider__thumb-focused-contour" />
             </div>
           </div>
@@ -212,7 +247,12 @@ function handleKeyPress(e: { code: string; preventDefault(): void }, index: numb
       </div>
 
       <div class="ui-slider__input-wrapper d-flex">
-        <InputRange v-if="props.mode === 'input'" v-model="inputRange" class="ui-focused-border" @change="setModelValue" />
+        <InputRange
+          v-if="props.mode === 'input'"
+          v-model="inputRange"
+          class="ui-focused-border"
+          @change="setModelValue"
+        />
       </div>
     </div>
     <!-- <div v-if="helper" class="ui-slider__helper">

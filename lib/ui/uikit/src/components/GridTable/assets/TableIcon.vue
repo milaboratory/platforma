@@ -1,6 +1,11 @@
 <template>
   <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M24 41.5H9C7.61929 41.5 6.5 40.3807 6.5 39V24H9.5V38.5H24V41.5Z" fill="#CFD1DB" />
+    <path
+      fill-rule="evenodd"
+      clip-rule="evenodd"
+      d="M24 41.5H9C7.61929 41.5 6.5 40.3807 6.5 39V24H9.5V38.5H24V41.5Z"
+      fill="#CFD1DB"
+    />
     <path
       fill-rule="evenodd"
       clip-rule="evenodd"

@@ -2,13 +2,14 @@
   "name": "@milaboratories/ts-helpers",
   "version": "1.7.0",
   "description": "Useful helpers for our TS projects",
-  "engines": {
-    "node": ">=22.19.0"
-  },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "type": "module",
-  "types": "./dist/index.d.ts",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -24,10 +25,6 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "dependencies": {
     "canonicalize": "catalog:",
     "denque": "catalog:"
@@ -35,10 +32,13 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "vitest": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.19.0"
   }
 }

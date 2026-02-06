@@ -1,11 +1,11 @@
 {
   "name": "@platforma-sdk/workflow-tengo-tests",
-  "private": true,
   "version": "1.7.6",
+  "private": true,
   "description": "Tengo SDK library tests",
   "type": "module",
-  "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -23,27 +23,27 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@platforma-sdk/workflow-tengo": "workspace:*",
-    "@platforma-open/milaboratories.software-conda-empty": "catalog:"
+    "@platforma-open/milaboratories.software-conda-empty": "catalog:",
+    "@platforma-sdk/workflow-tengo": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/computable": "workspace:*",
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pl-drivers": "workspace:*",
-    "@milaboratories/pl-tree": "workspace:*",
-    "@milaboratories/ts-helpers": "workspace:*",
-    "@platforma-sdk/tengo-builder": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
-    "@platforma-sdk/test": "workspace:*",
+    "@milaboratories/pl-tree": "workspace:*",
     "@milaboratories/test-helpers": "workspace:*",
-    "@types/node": "catalog:",
-    "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
+    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
+    "@platforma-open/milaboratories.software-test-utils": "catalog:",
+    "@platforma-sdk/tengo-builder": "workspace:*",
+    "@platforma-sdk/test": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "dedent": "catalog:",
     "es-toolkit": "catalog:",
-    "@platforma-open/milaboratories.software-test-utils": "catalog:"
+    "vitest": "catalog:"
   }
 }

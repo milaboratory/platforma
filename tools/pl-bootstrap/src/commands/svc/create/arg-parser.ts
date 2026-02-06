@@ -12,7 +12,7 @@ export interface ParsedArgs {
 
 export interface FlagDefinition {
   name: string;
-  type: 'string' | 'boolean' | 'number' | 'array';
+  type: "string" | "boolean" | "number" | "array";
   required?: boolean;
   default?: any;
   multiple?: boolean;
@@ -45,7 +45,7 @@ export class ArgParser {
    */
   parse(argv: string[]): ParsedArgs {
     const result: ParsedArgs = {
-      instanceName: '',
+      instanceName: "",
       knownFlags: {},
       unknownFlags: [],
       positionalArgs: [],
@@ -55,11 +55,11 @@ export class ArgParser {
     while (i < argv.length) {
       const arg = argv[i];
 
-      if (arg.startsWith('--')) {
+      if (arg.startsWith("--")) {
         // Handle flag
-        if (arg.includes('=')) {
+        if (arg.includes("=")) {
           // Flag with value: --flag=value
-          const [flagName, value] = arg.split('=', 2);
+          const [flagName, value] = arg.split("=", 2);
           const cleanFlagName = flagName.substring(2);
 
           if (this.knownFlags.has(cleanFlagName)) {
@@ -74,10 +74,10 @@ export class ArgParser {
           if (this.knownFlags.has(flagName)) {
             const flagDef = this.flagDefinitions.get(flagName);
 
-            if (flagDef?.type === 'boolean') {
+            if (flagDef?.type === "boolean") {
               // Boolean flag
               result.knownFlags[flagName] = true;
-            } else if (i + 1 < argv.length && !argv[i + 1].startsWith('-')) {
+            } else if (i + 1 < argv.length && !argv[i + 1].startsWith("-")) {
               // Flag with value in next argument
               const value = argv[i + 1];
               result.knownFlags[flagName] = this.parseFlagValue(flagName, value);
@@ -90,9 +90,9 @@ export class ArgParser {
             result.unknownFlags.push(arg);
           }
         }
-      } else if (arg.startsWith('-') && arg.length > 1) {
+      } else if (arg.startsWith("-") && arg.length > 1) {
         // Short flags: -f, -abc
-        const shortFlags = arg.substring(1).split('');
+        const shortFlags = arg.substring(1).split("");
         for (const shortFlag of shortFlags) {
           // Find long name for short flag
           const longFlagName = this.findLongFlagName(shortFlag);
@@ -131,19 +131,19 @@ export class ArgParser {
     }
 
     switch (flagDef.type) {
-      case 'number':
+      case "number":
         const num = parseFloat(value);
         if (isNaN(num)) {
           throw new Error(`Invalid number value for flag --${flagName}: ${value}`);
         }
         return num;
 
-      case 'boolean':
-        if (value === 'true' || value === '1') return true;
-        if (value === 'false' || value === '0') return false;
+      case "boolean":
+        if (value === "true" || value === "1") return true;
+        if (value === "false" || value === "0") return false;
         return Boolean(value);
 
-      case 'array':
+      case "array":
         if (flagDef.multiple) {
           // For multiple flags create array
           // This will be handled in main parse method

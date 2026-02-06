@@ -1,14 +1,21 @@
 {
   "name": "@milaboratories/pl-deployments",
   "version": "2.15.7",
-  "pl-version": "1.44.1",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
-  "engines": {
-    "node": ">=22.19.0"
-  },
-  "types": "./dist/index.d.ts",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*",
+    "README.md",
+    "bin/run.cmd",
+    "bin/run.js",
+    "assets",
+    "postinstall.js"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -27,17 +34,19 @@
     "exec-dev-docker": "docker exec -ti $(docker ps --format=json | jq -r 'select(.Image == \"pl-ssh-dev:local\").ID') bash",
     "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*",
-    "README.md",
-    "bin/run.cmd",
-    "bin/run.js",
-    "assets",
-    "postinstall.js"
-  ],
-  "keywords": [],
-  "license": "UNLICENSED",
+  "dependencies": {
+    "@milaboratories/pl-config": "workspace:*",
+    "@milaboratories/pl-http": "workspace:*",
+    "@milaboratories/pl-model-common": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
+    "decompress": "catalog:",
+    "ssh2": "catalog:",
+    "tar": "catalog:",
+    "undici": "catalog:",
+    "upath": "catalog:",
+    "yaml": "catalog:",
+    "zod": "catalog:"
+  },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
@@ -52,17 +61,8 @@
     "utility-types": "catalog:",
     "vitest": "catalog:"
   },
-  "dependencies": {
-    "@milaboratories/pl-config": "workspace:*",
-    "@milaboratories/pl-http": "workspace:*",
-    "@milaboratories/pl-model-common": "workspace:*",
-    "@milaboratories/ts-helpers": "workspace:*",
-    "decompress": "catalog:",
-    "ssh2": "catalog:",
-    "tar": "catalog:",
-    "undici": "catalog:",
-    "upath": "catalog:",
-    "yaml": "catalog:",
-    "zod": "catalog:"
-  }
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "pl-version": "1.44.1"
 }

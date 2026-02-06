@@ -5,38 +5,34 @@ import type {
   PlRef,
   BlockCodeKnownFeatureFlags,
   BlockConfigContainer,
-} from '@milaboratories/pl-model-common';
+} from "@milaboratories/pl-model-common";
 import {
   getPlatformaInstance,
   isInUI,
   createAndRegisterRenderLambda,
   createRenderLambda,
-} from './internal';
-import type { DataModel } from './block_migrations';
-import type { PlatformaV3 } from './platforma';
-import type { InferRenderFunctionReturn, RenderFunction } from './render';
-import { RenderCtx } from './render';
-import { PlatformaSDKVersion } from './version';
+} from "./internal";
+import type { DataModel } from "./block_migrations";
+import type { PlatformaV3 } from "./platforma";
+import type { InferRenderFunctionReturn, RenderFunction } from "./render";
+import { RenderCtx } from "./render";
+import { PlatformaSDKVersion } from "./version";
 // Import storage VM integration (side-effect: registers internal callbacks)
-import './block_storage_vm';
+import "./block_storage_vm";
 import type {
   ConfigRenderLambda,
   DeriveHref,
   ConfigRenderLambdaFlags,
   InferOutputsFromLambdas,
-} from './bconfig';
-import { downgradeCfgOrLambda, isConfigLambda } from './bconfig';
-import type { PlatformaExtended } from './platforma';
+} from "./bconfig";
+import { downgradeCfgOrLambda, isConfigLambda } from "./bconfig";
+import type { PlatformaExtended } from "./platforma";
 
 type SectionsExpectedType = readonly BlockSection[];
 
 type NoOb = Record<string, never>;
 
-interface BlockModelV3Config<
-  Args,
-  OutputsCfg extends Record<string, ConfigRenderLambda>,
-  Data,
-> {
+interface BlockModelV3Config<Args, OutputsCfg extends Record<string, ConfigRenderLambda>, Data> {
   renderingMode: BlockRenderingMode;
   dataModel: DataModel<Data>;
   outputs: OutputsCfg;
@@ -66,18 +62,15 @@ export class BlockModelV3<
   Args,
   OutputsCfg extends Record<string, ConfigRenderLambda>,
   Data extends Record<string, unknown> = Record<string, unknown>,
-  Href extends `/${string}` = '/',
+  Href extends `/${string}` = "/",
 > {
-  private constructor(
-    private readonly config: BlockModelV3Config<Args, OutputsCfg, Data>,
-  ) { }
+  private constructor(private readonly config: BlockModelV3Config<Args, OutputsCfg, Data>) {}
 
-  public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags
-    = {
-      supportsLazyState: true,
-      requiresUIAPIVersion: 3,
-      requiresModelAPIVersion: 2,
-    };
+  public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
+    supportsLazyState: true,
+    requiresUIAPIVersion: 3,
+    requiresModelAPIVersion: 2,
+  };
 
   /**
    * Creates a new BlockModelV3 builder with the specified data model and options.
@@ -101,7 +94,7 @@ export class BlockModelV3<
   public static create<Data extends Record<string, unknown>>(
     options: BlockModelV3Options<Data>,
   ): BlockModelV3<NoOb, {}, Data> {
-    const { dataModel, renderingMode = 'Heavy' } = options;
+    const { dataModel, renderingMode = "Heavy" } = options;
 
     // Register data model callbacks for VM use (initialData and upgrade)
     dataModel.registerCallbacks();
@@ -111,10 +104,7 @@ export class BlockModelV3<
       dataModel,
       outputs: {},
       // Register default sections callback (returns empty array)
-      sections: createAndRegisterRenderLambda(
-        { handle: 'sections', lambda: () => [] },
-        true,
-      ),
+      sections: createAndRegisterRenderLambda({ handle: "sections", lambda: () => [] }, true),
       title: undefined,
       subtitle: undefined,
       tags: undefined,
@@ -133,13 +123,10 @@ export class BlockModelV3<
    *            workflows outputs and interact with platforma drivers
    * @param flags additional flags that may alter lambda rendering procedure
    * */
-  public output<
-    const Key extends string,
-    const RF extends RenderFunction<Args, Data>,
-  >(
+  public output<const Key extends string, const RF extends RenderFunction<Args, Data>>(
     key: Key,
     rf: RF,
-    flags: ConfigRenderLambdaFlags & { withStatus: true }
+    flags: ConfigRenderLambdaFlags & { withStatus: true },
   ): BlockModelV3<
     Args,
     OutputsCfg & {
@@ -158,13 +145,10 @@ export class BlockModelV3<
    *            workflows outputs and interact with platforma drivers
    * @param flags additional flags that may alter lambda rendering procedure
    * */
-  public output<
-    const Key extends string,
-    const RF extends RenderFunction<Args, Data>,
-  >(
+  public output<const Key extends string, const RF extends RenderFunction<Args, Data>>(
     key: Key,
     rf: RF,
-    flags?: ConfigRenderLambdaFlags
+    flags?: ConfigRenderLambdaFlags,
   ): BlockModelV3<
     Args,
     OutputsCfg & {
@@ -192,28 +176,25 @@ export class BlockModelV3<
   }
 
   /** Shortcut for {@link output} with retentive flag set to true. */
-  public retentiveOutput<
-    const Key extends string,
-    const RF extends RenderFunction<Args, Data>,
-  >(
+  public retentiveOutput<const Key extends string, const RF extends RenderFunction<Args, Data>>(
     key: Key,
     rf: RF,
   ): BlockModelV3<
-      Args,
-      OutputsCfg & {
-        [K in Key]: ConfigRenderLambda<InferRenderFunctionReturn<RF>>;
-      },
-      Data,
-      Href
-    > {
+    Args,
+    OutputsCfg & {
+      [K in Key]: ConfigRenderLambda<InferRenderFunctionReturn<RF>>;
+    },
+    Data,
+    Href
+  > {
     return this.output(key, rf, { retentive: true });
   }
 
   /** Shortcut for {@link output} with withStatus flag set to true. */
-  public outputWithStatus<
-    const Key extends string,
-    const RF extends RenderFunction<Args, Data>,
-  >(key: Key, rf: RF) {
+  public outputWithStatus<const Key extends string, const RF extends RenderFunction<Args, Data>>(
+    key: Key,
+    rf: RF,
+  ) {
     return this.output(key, rf, { withStatus: true });
   }
 
@@ -230,12 +211,10 @@ export class BlockModelV3<
    *   return { numbers: data.numbers };
    * })
    */
-  public args<Args>(
-    lambda: (data: Data) => Args,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href> {
+  public args<Args>(lambda: (data: Data) => Args): BlockModelV3<Args, OutputsCfg, Data, Href> {
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
-      args: createAndRegisterRenderLambda<Args>({ handle: 'args', lambda }),
+      args: createAndRegisterRenderLambda<Args>({ handle: "args", lambda }),
     });
   }
 
@@ -259,13 +238,11 @@ export class BlockModelV3<
    *   return { numbers: data.numbers };
    * })
    */
-  public prerunArgs(
-    fn: (data: Data) => unknown,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href> {
+  public prerunArgs(fn: (data: Data) => unknown): BlockModelV3<Args, OutputsCfg, Data, Href> {
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
       prerunArgs: createAndRegisterRenderLambda({
-        handle: 'prerunArgs',
+        handle: "prerunArgs",
         lambda: fn,
       }),
     });
@@ -276,26 +253,22 @@ export class BlockModelV3<
     const Ret extends SectionsExpectedType,
     const RF extends RenderFunction<Args, Data, Ret>,
   >(rf: RF): BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>> {
-    return new BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>>(
-      {
-        ...this.config,
-        // Replace the default sections callback with the user-provided one
-        sections: createAndRegisterRenderLambda(
-          { handle: 'sections', lambda: () => rf(new RenderCtx()) },
-          true,
-        ),
-      },
-    );
+    return new BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>>({
+      ...this.config,
+      // Replace the default sections callback with the user-provided one
+      sections: createAndRegisterRenderLambda(
+        { handle: "sections", lambda: () => rf(new RenderCtx()) },
+        true,
+      ),
+    });
   }
 
   /** Sets a rendering function to derive block title, shown for the block in the left blocks-overview panel. */
-  public title(
-    rf: RenderFunction<Args, Data, string>,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href> {
+  public title(rf: RenderFunction<Args, Data, string>): BlockModelV3<Args, OutputsCfg, Data, Href> {
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
       title: createAndRegisterRenderLambda({
-        handle: 'title',
+        handle: "title",
         lambda: () => rf(new RenderCtx()),
       }),
     });
@@ -307,7 +280,7 @@ export class BlockModelV3<
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
       subtitle: createAndRegisterRenderLambda({
-        handle: 'subtitle',
+        handle: "subtitle",
         lambda: () => rf(new RenderCtx()),
       }),
     });
@@ -319,7 +292,7 @@ export class BlockModelV3<
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
       tags: createAndRegisterRenderLambda({
-        handle: 'tags',
+        handle: "tags",
         lambda: () => rf(new RenderCtx()),
       }),
     });
@@ -339,13 +312,11 @@ export class BlockModelV3<
    * Defines how to derive list of upstream references this block is meant to enrich with its exports from block args.
    * Influences dependency graph construction.
    */
-  public enriches(
-    lambda: (args: Args) => PlRef[],
-  ): BlockModelV3<Args, OutputsCfg, Data, Href> {
+  public enriches(lambda: (args: Args) => PlRef[]): BlockModelV3<Args, OutputsCfg, Data, Href> {
     return new BlockModelV3<Args, OutputsCfg, Data, Href>({
       ...this.config,
       enrichmentTargets: createAndRegisterRenderLambda({
-        handle: 'enrichmentTargets',
+        handle: "enrichmentTargets",
         lambda: lambda,
       }),
     });
@@ -365,8 +336,7 @@ export class BlockModelV3<
   public _done(): PlatformaExtended<
     PlatformaV3<Args, InferOutputsFromLambdas<OutputsCfg>, Data, Href>
   > {
-    if (this.config.args === undefined)
-      throw new Error('Args rendering function not set.');
+    if (this.config.args === undefined) throw new Error("Args rendering function not set.");
 
     const apiVersion = 3;
 
@@ -381,7 +351,7 @@ export class BlockModelV3<
         args: this.config.args,
         prerunArgs: this.config.prerunArgs,
         // Reference to __pl_data_initial callback registered by DataModel
-        initialData: createRenderLambda({ handle: '__pl_data_initial' }),
+        initialData: createRenderLambda({ handle: "__pl_data_initial" }),
         sections: this.config.sections,
         title: this.config.title,
         outputs: this.config.outputs,
@@ -436,18 +406,11 @@ export class BlockModelV3<
 
 export type Expect<T extends true> = T;
 
-export type Equal<X, Y> = (<T>() => T extends X ? 1 : 2) extends <
-  T,
->() => T extends Y ? 1 : 2
-  ? true
-  : false;
+export type Equal<X, Y> =
+  (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2 ? true : false;
 
 export type Merge<A, B> = {
-  [K in keyof A | keyof B]: K extends keyof B
-    ? B[K]
-    : K extends keyof A
-      ? A[K]
-      : never;
+  [K in keyof A | keyof B]: K extends keyof B ? B[K] : K extends keyof A ? A[K] : never;
 };
 
 // Helper types for testing
@@ -461,21 +424,14 @@ type _TestOutputs = {
 // Test: Merge type works correctly
 type _MergeTest1 = Expect<Equal<Merge<{ a: 1 }, { b: 2 }>, { a: 1; b: 2 }>>;
 type _MergeTest2 = Expect<Equal<Merge<{ a: 1 }, { a: 2 }>, { a: 2 }>>;
-type _MergeTest3 = Expect<
-  Equal<Merge<{ a: 1; b: 1 }, { b: 2; c: 3 }>, { a: 1; b: 2; c: 3 }>
->;
+type _MergeTest3 = Expect<Equal<Merge<{ a: 1; b: 1 }, { b: 2; c: 3 }>, { a: 1; b: 2; c: 3 }>>;
 
 // Test: create() returns a BlockModelV3 instance
 // Note: Due to function overloads, ReturnType uses the last overload signature.
 // We verify the structure is correct using a simpler assignability test.
 type _CreateResult = ReturnType<typeof BlockModelV3.create>;
-type _CreateIsBlockModelV3 = _CreateResult extends BlockModelV3<
-  infer _A,
-  infer _O,
-  infer _S
->
-  ? true
-  : false;
+type _CreateIsBlockModelV3 =
+  _CreateResult extends BlockModelV3<infer _A, infer _O, infer _S> ? true : false;
 type _CreateTest = Expect<_CreateIsBlockModelV3>;
 
 // Test: BlockModelV3Config interface structure
@@ -499,46 +455,29 @@ type _ConfigTest = Expect<
 >;
 
 // Test: Default Href is '/'
-type _HrefDefaultTest = BlockModelV3<
-  _TestArgs,
-  {},
-  _TestData
-> extends BlockModelV3<_TestArgs, {}, _TestData, '/'>
-  ? true
-  : false;
+type _HrefDefaultTest =
+  BlockModelV3<_TestArgs, {}, _TestData> extends BlockModelV3<_TestArgs, {}, _TestData, "/">
+    ? true
+    : false;
 type _VerifyHrefDefault = Expect<_HrefDefaultTest>;
 
 // Test: Custom Href can be specified
-type _CustomHref = '/settings' | '/main';
+type _CustomHref = "/settings" | "/main";
 type _HrefCustomBuilder = BlockModelV3<_TestArgs, {}, _TestData, _CustomHref>;
-type _HrefCustomTest = _HrefCustomBuilder extends BlockModelV3<
-  _TestArgs,
-  {},
-  _TestData,
-  _CustomHref
->
-  ? true
-  : false;
+type _HrefCustomTest =
+  _HrefCustomBuilder extends BlockModelV3<_TestArgs, {}, _TestData, _CustomHref> ? true : false;
 type _VerifyHrefCustom = Expect<_HrefCustomTest>;
 
 // Test: Output type accumulation with & intersection
 type _OutputsAccumulation = { a: ConfigRenderLambda<string> } & {
   b: ConfigRenderLambda<number>;
 };
-type _VerifyOutputsHaveKeys = Expect<
-  Equal<keyof _OutputsAccumulation, 'a' | 'b'>
->;
+type _VerifyOutputsHaveKeys = Expect<Equal<keyof _OutputsAccumulation, "a" | "b">>;
 
 // Test: Builder with all type parameters specified compiles
-type _FullBuilder = BlockModelV3<_TestArgs, _TestOutputs, _TestData, '/main'>;
-type _FullBuilderTest = _FullBuilder extends BlockModelV3<
-  _TestArgs,
-  _TestOutputs,
-  _TestData,
-  '/main'
->
-  ? true
-  : false;
+type _FullBuilder = BlockModelV3<_TestArgs, _TestOutputs, _TestData, "/main">;
+type _FullBuilderTest =
+  _FullBuilder extends BlockModelV3<_TestArgs, _TestOutputs, _TestData, "/main"> ? true : false;
 type _VerifyFullBuilder = Expect<_FullBuilderTest>;
 
 // Test: InferOutputsFromLambdas maps outputs correctly
@@ -546,8 +485,5 @@ type _InferOutputsTest = InferOutputsFromLambdas<{
   myOutput: ConfigRenderLambda<number>;
 }>;
 type _VerifyInferOutputs = Expect<
-  Equal<
-    _InferOutputsTest,
-    { myOutput: OutputWithStatus<number> & { __unwrap: true } }
-  >
+  Equal<_InferOutputsTest, { myOutput: OutputWithStatus<number> & { __unwrap: true } }>
 >;

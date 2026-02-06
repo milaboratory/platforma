@@ -1,7 +1,7 @@
 @use "./mixins" as *;
 
 .ui-slider {
-  --progress-bg: linear-gradient(to right, #A1E59C, #D0F5B0);
+  --progress-bg: linear-gradient(to right, #a1e59c, #d0f5b0);
   --border-color: var(--color-border-default);
   --padding-gap: 8px; // half of thumb width
 
@@ -122,8 +122,10 @@
     width: 16px;
     height: 16px;
     border: 1px solid var(--color-border-default);
-    background: var(--color-ic-00, #FFF);
-    box-shadow: 0 2px 6px 0 rgba(17, 5, 41, 0.16), 0px -3px 0px 0px rgba(36, 34, 61, 0.12) inset;
+    background: var(--color-ic-00, #fff);
+    box-shadow:
+      0 2px 6px 0 rgba(17, 5, 41, 0.16),
+      0px -3px 0px 0px rgba(36, 34, 61, 0.12) inset;
   }
 
   &__thumb:active {
@@ -225,7 +227,6 @@
   }
 
   &__disabled {
-
     *,
     *::before,
     *::after {

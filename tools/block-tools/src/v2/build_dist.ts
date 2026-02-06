@@ -1,16 +1,13 @@
 import type {
   BlockPackDescriptionManifest,
   ManifestFileInfo,
-} from '@milaboratories/pl-model-middle-layer';
-import {
-  BlockPackManifest,
-  BlockPackManifestFile,
-} from '@milaboratories/pl-model-middle-layer';
-import type { BlockPackDescriptionAbsolute } from './model';
-import { BlockPackDescriptionConsolidateToFolder } from './model';
-import fsp from 'node:fs/promises';
-import path from 'node:path';
-import { calculateSha256 } from '../util';
+} from "@milaboratories/pl-model-middle-layer";
+import { BlockPackManifest, BlockPackManifestFile } from "@milaboratories/pl-model-middle-layer";
+import type { BlockPackDescriptionAbsolute } from "./model";
+import { BlockPackDescriptionConsolidateToFolder } from "./model";
+import fsp from "node:fs/promises";
+import path from "node:path";
+import { calculateSha256 } from "../util";
 
 export async function buildBlockPackDist(
   description: BlockPackDescriptionAbsolute,
@@ -18,8 +15,8 @@ export async function buildBlockPackDist(
 ): Promise<BlockPackManifest> {
   await fsp.mkdir(dst, { recursive: true });
   const files: string[] = [];
-  const descriptionRelative: BlockPackDescriptionManifest
-    = await BlockPackDescriptionConsolidateToFolder(dst, files).parseAsync(description);
+  const descriptionRelative: BlockPackDescriptionManifest =
+    await BlockPackDescriptionConsolidateToFolder(dst, files).parseAsync(description);
   const filesForManifest = await Promise.all(
     files.map(async (f): Promise<ManifestFileInfo> => {
       const bytes = await fsp.readFile(path.resolve(dst, f));
@@ -29,7 +26,7 @@ export async function buildBlockPackDist(
   );
 
   const manifest: BlockPackManifest = BlockPackManifest.parse({
-    schema: 'v2',
+    schema: "v2",
     description: {
       ...descriptionRelative,
     },

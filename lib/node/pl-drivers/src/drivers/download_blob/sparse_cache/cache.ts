@@ -1,14 +1,22 @@
-import { RangeBytes } from '@milaboratories/pl-model-common';
-import { ensureDirExists, fileExists, mapEntries, MiLogger } from '@milaboratories/ts-helpers';
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
-import { addRange, doesRangeExist, Ranges, rangesFileName, rangesSize, readRangesFile, writeRangesFile } from './ranges';
-import { writeToSparseFile } from './file';
-import { functions } from '@milaboratories/helpers';
+import { RangeBytes } from "@milaboratories/pl-model-common";
+import { ensureDirExists, fileExists, mapEntries, MiLogger } from "@milaboratories/ts-helpers";
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import {
+  addRange,
+  doesRangeExist,
+  Ranges,
+  rangesFileName,
+  rangesSize,
+  readRangesFile,
+  writeRangesFile,
+} from "./ranges";
+import { writeToSparseFile } from "./file";
+import { functions } from "@milaboratories/helpers";
 
 /** The implementer of SparseCacheRanges could throw it if ranges were corrupted. */
 export class CorruptedRangesError extends Error {
-  name = 'CorruptedRangesError';
+  name = "CorruptedRangesError";
 }
 
 /** Extracted ranges methods to be able to store ranges somewhere else (e.g. in memory for tests). */
@@ -53,7 +61,7 @@ export interface SparseFileStorage {
 
 /** Stores sparse files in a directory (the default implementation). */
 export class SparseCacheFsFile implements SparseFileStorage {
-  private readonly suffix = '.sparse.bin';
+  private readonly suffix = ".sparse.bin";
 
   constructor(
     private readonly logger: MiLogger,
@@ -89,7 +97,7 @@ export class SparseCache implements AsyncDisposable {
   /** Fields are public for tests. */
 
   /** The lock to make sure cache requests are done one by one. */
-  private lock = new functions.AwaitLock()
+  private lock = new functions.AwaitLock();
 
   public keyToLastAccessTime = new Map<string, Date>();
   public size = 0;
@@ -107,7 +115,7 @@ export class SparseCache implements AsyncDisposable {
   async reset() {
     await withLock(this.lock, async () => {
       await this.resetUnsafe();
-    })
+    });
   }
 
   /** Returns a path to the key if the range exists in a cache, otherwise returns undefined.
@@ -123,7 +131,7 @@ export class SparseCache implements AsyncDisposable {
   async set(key: string, range: RangeBytes, data: Uint8Array): Promise<void> {
     await withLock(this.lock, async () => {
       await this.setUnsafe(key, range, data);
-    })
+    });
   }
 
   private async resetUnsafe() {
@@ -160,7 +168,7 @@ export class SparseCache implements AsyncDisposable {
     return undefined;
   }
 
-  private async setUnsafe(key: string, range: { from: number; to: number; }, data: Uint8Array) {
+  private async setUnsafe(key: string, range: { from: number; to: number }, data: Uint8Array) {
     await this.setWithoutEviction(key, range, data);
     await this.ensureEvicted();
   }
@@ -169,8 +177,8 @@ export class SparseCache implements AsyncDisposable {
   async setWithoutEviction(key: string, range: RangeBytes, data: Uint8Array): Promise<void> {
     if (range.to - range.from !== data.length) {
       throw new Error(
-        `SparseCache.set: trying to set ${key} with wrong range length: `
-        + `range: ${JSON.stringify(range)}, data: ${data.length}`
+        `SparseCache.set: trying to set ${key} with wrong range length: ` +
+          `range: ${JSON.stringify(range)}, data: ${data.length}`,
       );
     }
 

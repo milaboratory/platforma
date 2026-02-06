@@ -1,28 +1,27 @@
 <script setup lang="ts">
-import {
-  PlBlockPage,
-  PlRow,
-  PlBtnGroup,
-  PlContainer,
-} from '@platforma-sdk/ui-vue';
-import type { Component } from 'vue';
-import { shallowRef } from 'vue';
-import WithTooltips from './WithTooltips.vue';
-import Main from './Main.vue';
-import Dropdowns from './Dropdowns.vue';
+import { PlBlockPage, PlRow, PlBtnGroup, PlContainer } from "@platforma-sdk/ui-vue";
+import type { Component } from "vue";
+import { shallowRef } from "vue";
+import WithTooltips from "./WithTooltips.vue";
+import Main from "./Main.vue";
+import Dropdowns from "./Dropdowns.vue";
 
 const current = shallowRef<Component>(Main);
 
-const options = [{
-  label: 'Main',
-  value: Main,
-}, {
-  label: 'Tooltips',
-  value: WithTooltips,
-}, {
-  label: 'Dropdown Examples',
-  value: Dropdowns,
-}];
+const options = [
+  {
+    label: "Main",
+    value: Main,
+  },
+  {
+    label: "Tooltips",
+    value: WithTooltips,
+  },
+  {
+    label: "Dropdown Examples",
+    value: Dropdowns,
+  },
+];
 </script>
 
 <template>

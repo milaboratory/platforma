@@ -1,11 +1,11 @@
-import * as tp from 'node:timers/promises';
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
-import type { ComputableHooks } from '../computable/computable_hooks';
-import { Computable } from '../computable/computable';
-import type { UnwrapComputables } from '../computable/kernel';
-import { HierarchicalWatcher } from '../hierarchical_watcher';
-import { ChangeSource } from '../change_source';
+import * as tp from "node:timers/promises";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
+import type { ComputableHooks } from "../computable/computable_hooks";
+import { Computable } from "../computable/computable";
+import type { UnwrapComputables } from "../computable/kernel";
+import { HierarchicalWatcher } from "../hierarchical_watcher";
+import { ChangeSource } from "../change_source";
 
 export interface PollPoolOps {
   /** Minimal delay between subsequent polling cycles */
@@ -66,8 +66,8 @@ export class PollPool<A extends PollActor = PollActor> {
           }
 
           if (
-            actor.pollPauseRequest !== undefined
-            && wrapper.lastPauseRequest === actor.pollPauseRequest
+            actor.pollPauseRequest !== undefined &&
+            wrapper.lastPauseRequest === actor.pollPauseRequest
           )
             continue;
 
@@ -106,7 +106,7 @@ export class PollPool<A extends PollActor = PollActor> {
           try {
             await actor.poll();
           } catch (e: unknown) {
-            this.logger.error('Polling actor error');
+            this.logger.error("Polling actor error");
             this.logger.error(e);
           }
         }
@@ -117,8 +117,12 @@ export class PollPool<A extends PollActor = PollActor> {
           try {
             const delay = Math.max(0, this.ops.minDelay - (Date.now() - begin));
             this.currentLoopDelayInterrupt = new AbortController();
-            await tp.setTimeout(delay, undefined,
-              { signal: AbortSignal.any([this.terminateController.signal, this.currentLoopDelayInterrupt.signal]) });
+            await tp.setTimeout(delay, undefined, {
+              signal: AbortSignal.any([
+                this.terminateController.signal,
+                this.currentLoopDelayInterrupt.signal,
+              ]),
+            });
           } catch {
             // will terminate on next iteration if terminated
           } finally {
@@ -297,7 +301,9 @@ export abstract class PollComputablePool<Req, Res> {
       error: unknown = undefined;
       readonly change = new ChangeSource();
 
-      readonly hooks = new PollPoolPauseComputableAdapter(() => parent.pool.requestImmediateRefresh());
+      readonly hooks = new PollPoolPauseComputableAdapter(() =>
+        parent.pool.requestImmediateRefresh(),
+      );
 
       get pollPauseRequest(): symbol | undefined {
         return this.hooks.pollPauseRequest;
@@ -312,11 +318,11 @@ export abstract class PollComputablePool<Req, Res> {
         try {
           const newValue = await parent.readValue(req);
           if (
-            this.error !== undefined
-            || ((newValue !== undefined || this.value !== undefined)
-              && (newValue === undefined
-                || this.value === undefined
-                || !parent.resultsEqual(this.value, newValue)))
+            this.error !== undefined ||
+            ((newValue !== undefined || this.value !== undefined) &&
+              (newValue === undefined ||
+                this.value === undefined ||
+                !parent.resultsEqual(this.value, newValue)))
           ) {
             this.value = newValue;
             this.error = undefined;
@@ -334,7 +340,7 @@ export abstract class PollComputablePool<Req, Res> {
       }
 
       onPoolTerminated(): void {
-        this.error = new Error('Polling pool terminated');
+        this.error = new Error("Polling pool terminated");
         this.value = undefined;
         this.change.markChanged();
       }

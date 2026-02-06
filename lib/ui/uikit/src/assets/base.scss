@@ -1,4 +1,4 @@
-@use './variables.scss';
+@use "./variables.scss";
 
 :root {
   --main-dark-color: #110529;
@@ -32,8 +32,8 @@
 
   --border-radius-control: 6px;
 
-  --font-family-base: 'Manrope', sans-serif;
-  --font-family-monospace: 'Spline Sans Mono', monospace;
+  --font-family-base: "Manrope", sans-serif;
+  --font-family-monospace: "Spline Sans Mono", monospace;
 
   --font-size-base: 14px;
   --font-weigh-base: 500;
@@ -46,8 +46,10 @@
 
   --contour-offset: 4px;
 
-  --btn-shape-shadow: inset 0px -3px 0px rgba(36, 34, 61, 0.12), inset 0px 3px 0px rgba(255, 255, 255, 0.4);
-  --btn-group-shape-shadow: inset 0px -3px 0px rgba(36, 34, 61, 0.12), inset 0px 3px 0px rgba(255, 255, 255, 0.4);
+  --btn-shape-shadow:
+    inset 0px -3px 0px rgba(36, 34, 61, 0.12), inset 0px 3px 0px rgba(255, 255, 255, 0.4);
+  --btn-group-shape-shadow:
+    inset 0px -3px 0px rgba(36, 34, 61, 0.12), inset 0px 3px 0px rgba(255, 255, 255, 0.4);
 
   --btn-switcher-bg: linear-gradient(180deg, #a1e69c 0%, #d0f5b0 100%);
   --btn-switcher-option-color: var(--txt-01);
@@ -72,7 +74,7 @@
   --pl-dropdown-options-bg: #fff;
 }
 
-[data-theme='dark'] {
+[data-theme="dark"] {
   --color-div-grey: #232329;
   --color-div-bw: #000000;
   --color-div-black: #000000;
@@ -106,7 +108,8 @@
   --control-mask-fill: var(--color-ic-01);
 
   --btn-shape-shadow: none;
-  --btn-group-shape-shadow: inset 0px -3px 0px rgba(13, 13, 15, 0.24), inset 0px 3px 0px rgba(255, 255, 255, 0.12);
+  --btn-group-shape-shadow:
+    inset 0px -3px 0px rgba(13, 13, 15, 0.24), inset 0px 3px 0px rgba(255, 255, 255, 0.12);
 
   --btn-switcher-bg: #5e5e70;
   --btn-switcher-option-color: var(--txt-03);

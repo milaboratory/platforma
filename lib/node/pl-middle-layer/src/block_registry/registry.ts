@@ -1,35 +1,29 @@
-import type { Dispatcher } from 'undici';
-import { request } from 'undici';
-import type {
-  BlockPackDescriptionAbsolute } from '@platforma-sdk/block-tools';
-import {
-  BlockPackMetaEmbedAbsoluteBytes,
-  RegistryV1,
-} from '@platforma-sdk/block-tools';
-import fs from 'node:fs';
-import path from 'node:path';
-import YAML from 'yaml';
-import { assertNever } from '@milaboratories/ts-helpers';
-import { LegacyDevBlockPackFiles } from '../dev_env';
-import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
-import type { V2RegistryProvider } from './registry-v2-provider';
+import type { Dispatcher } from "undici";
+import { request } from "undici";
+import type { BlockPackDescriptionAbsolute } from "@platforma-sdk/block-tools";
+import { BlockPackMetaEmbedAbsoluteBytes, RegistryV1 } from "@platforma-sdk/block-tools";
+import fs from "node:fs";
+import path from "node:path";
+import YAML from "yaml";
+import { assertNever } from "@milaboratories/ts-helpers";
+import { LegacyDevBlockPackFiles } from "../dev_env";
+import { tryLoadPackDescription } from "@platforma-sdk/block-tools";
+import type { V2RegistryProvider } from "./registry-v2-provider";
 import type {
   BlockPackId,
   BlockPackListing,
   BlockPackOverview,
   RegistryEntry,
   RegistryStatus,
-  SingleBlockPackOverview } from '@milaboratories/pl-model-middle-layer';
-import {
-  AnyChannel,
-  StableChannel,
-} from '@milaboratories/pl-model-middle-layer';
+  SingleBlockPackOverview,
+} from "@milaboratories/pl-model-middle-layer";
+import { AnyChannel, StableChannel } from "@milaboratories/pl-model-middle-layer";
 
 async function getFileContent(path: string) {
   try {
-    return await fs.promises.readFile(path, 'utf8');
+    return await fs.promises.readFile(path, "utf8");
   } catch (error: unknown) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return undefined;
     }
     throw error;
@@ -40,7 +34,7 @@ async function getFileStat(path: string) {
   try {
     return await fs.promises.stat(path, { bigint: true });
   } catch (error: unknown) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return undefined;
     }
     throw error;
@@ -79,8 +73,7 @@ export class BlockPackRegistry {
     const result: BlockPackOverview[] = [];
     const regSpec = regEntry.spec;
     switch (regSpec.type) {
-      case 'remote-v1':
-      {
+      case "remote-v1": {
         const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
 
         const overviewResponse = await request(
@@ -98,15 +91,15 @@ export class BlockPackRegistry {
           const latestOverview: SingleBlockPackOverview = {
             id,
             meta: {
-              title: (latestMeta['title'] as string | undefined) ?? 'No title',
-              description: (latestMeta['description'] as string | undefined) ?? 'No Description',
+              title: (latestMeta["title"] as string | undefined) ?? "No title",
+              description: (latestMeta["description"] as string | undefined) ?? "No Description",
               organization: {
                 name: organization,
-                url: 'https://unknown.com',
+                url: "https://unknown.com",
               },
             },
             spec: {
-              type: 'from-registry-v1',
+              type: "from-registry-v1",
               id,
               registryUrl: regSpec.url,
             },
@@ -124,30 +117,32 @@ export class BlockPackRegistry {
         return result;
       }
 
-      case 'remote-v2':
-        return (await this.v2Provider.getRegistry(regSpec.url).listBlockPacks())
-          .map((e) => ({ ...e, registryId: regEntry.id }));
-        // e.latestByChannel[StableChannel]
-        //   ? {
-        //       ...e,
-        //       registryId: regEntry.id,
-        //     }
-        //   : {
-        //       ...e,
-        //       latestByChannel: {
-        //         ...e.latestByChannel,
-        //         [StableChannel]: ((s: SingleBlockPackOverview) => {
-        //           if (s.spec.type === 'from-registry-v2') {
-        //             return { ...s, spec: { ...s.spec, channel: StableChannel } };
-        //           }
+      case "remote-v2":
+        return (await this.v2Provider.getRegistry(regSpec.url).listBlockPacks()).map((e) => ({
+          ...e,
+          registryId: regEntry.id,
+        }));
+      // e.latestByChannel[StableChannel]
+      //   ? {
+      //       ...e,
+      //       registryId: regEntry.id,
+      //     }
+      //   : {
+      //       ...e,
+      //       latestByChannel: {
+      //         ...e.latestByChannel,
+      //         [StableChannel]: ((s: SingleBlockPackOverview) => {
+      //           if (s.spec.type === 'from-registry-v2') {
+      //             return { ...s, spec: { ...s.spec, channel: StableChannel } };
+      //           }
 
-        //           return s;
-        //         })(e.latestByChannel[AnyChannel]),
-        //       },
-        //       registryId: regEntry.id,
-        //     },
+      //           return s;
+      //         })(e.latestByChannel[AnyChannel]),
+      //       },
+      //       registryId: regEntry.id,
+      //     },
 
-      case 'local-dev':
+      case "local-dev":
         for (const entry of await fs.promises.readdir(regSpec.path, { withFileTypes: true })) {
           if (!entry.isDirectory()) continue;
           const devPath = path.join(regSpec.path, entry.name);
@@ -163,21 +158,21 @@ export class BlockPackRegistry {
             const id = {
               organization: config.organization,
               name: config.package,
-              version: 'DEV',
+              version: "DEV",
             };
 
             const latestOverview: SingleBlockPackOverview = {
               id,
               meta: {
-                title: (config.meta['title'] as string) ?? 'No title',
-                description: (config.meta['description'] as string) ?? 'No Description',
+                title: (config.meta["title"] as string) ?? "No title",
+                description: (config.meta["description"] as string) ?? "No Description",
                 organization: {
                   name: config.organization,
-                  url: 'https://unknown.com',
+                  url: "https://unknown.com",
                 },
               },
               spec: {
-                type: 'dev-v2',
+                type: "dev-v2",
                 folder: devPath,
                 mtime,
               },
@@ -198,7 +193,7 @@ export class BlockPackRegistry {
 
             if (v2Description === undefined)
               // iterating over expected subfolder names where block developer may put root block-pack package
-              for (const bpSubfolder of ['block', 'meta']) {
+              for (const bpSubfolder of ["block", "meta"]) {
                 actualDevPath = path.join(devPath, bpSubfolder);
                 v2Description = await tryLoadPackDescription(actualDevPath);
                 if (v2Description !== undefined) break;
@@ -212,7 +207,7 @@ export class BlockPackRegistry {
                 meta: await BlockPackMetaEmbedAbsoluteBytes.parseAsync(v2Description.meta),
                 featureFlags: v2Description.featureFlags,
                 spec: {
-                  type: 'dev-v2',
+                  type: "dev-v2",
                   folder: actualDevPath,
                   mtime,
                 },
@@ -242,7 +237,7 @@ export class BlockPackRegistry {
     const blockPacks: BlockPackOverview[] = [];
     const registries: RegistryStatus[] = [];
     for (const regSpecs of this.registries) {
-      registries.push({ ...regSpecs, status: 'online' });
+      registries.push({ ...regSpecs, status: "online" });
       blockPacks.push(...(await this.getPackagesForRoot(regSpecs)));
     }
     return { registries, blockPacks };
@@ -255,7 +250,7 @@ export class BlockPackRegistry {
   ): Promise<SingleBlockPackOverview> {
     const regSpec = this.registries.find((reg) => reg.id === registryId)?.spec;
     if (!regSpec) throw new Error(`Registry with id "${registryId}" not found`);
-    if (regSpec.type !== 'remote-v2')
+    if (regSpec.type !== "remote-v2")
       throw new Error(
         `Only "remote-v2" registries support specific package version overview retrieval.`,
       );

@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import { listToOptions } from '@milaboratories/helpers';
-import { PlBlockPage, PlBtnGroup, PlCheckbox, PlRow } from '@platforma-sdk/ui-vue';
-import { computed, reactive } from 'vue';
+import { listToOptions } from "@milaboratories/helpers";
+import { PlBlockPage, PlBtnGroup, PlCheckbox, PlRow } from "@platforma-sdk/ui-vue";
+import { computed, reactive } from "vue";
 
 const data = reactive({
   longTitle: false,
   noBodyGutters: false,
-  group: 'Lorem ipsum',
+  group: "Lorem ipsum",
 });
 
-const loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
+const loremIpsum =
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 
-const pageTitle = computed(() => data.longTitle ? loremIpsum : 'Layout page');
+const pageTitle = computed(() => (data.longTitle ? loremIpsum : "Layout page"));
 
-const options = listToOptions(['Lorem ipsum', 'two words', 'cccc dddd zzzz']);
+const options = listToOptions(["Lorem ipsum", "two words", "cccc dddd zzzz"]);
 </script>
 
 <template>
@@ -21,7 +22,7 @@ const options = listToOptions(['Lorem ipsum', 'two words', 'cccc dddd zzzz']);
     <template #title> {{ pageTitle }} </template>
     <template #append>
       <PlRow>
-        <PlBtnGroup v-model="data.group" :options="options"/>
+        <PlBtnGroup v-model="data.group" :options="options" />
         <PlCheckbox v-model="data.longTitle">Long title</PlCheckbox>
         <PlCheckbox v-model="data.noBodyGutters">No body gutters</PlCheckbox>
       </PlRow>

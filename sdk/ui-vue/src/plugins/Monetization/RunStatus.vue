@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed } from "vue";
 
 const props = defineProps<{
   canRun: boolean | undefined;
@@ -9,14 +9,14 @@ const props = defineProps<{
 
 const badgeText = computed(() => {
   if (props.isLoading) {
-    return 'Updating...';
+    return "Updating...";
   }
 
   if (props.canRun) {
-    return 'Ready to run';
+    return "Ready to run";
   }
 
-  return 'Cannot run';
+  return "Cannot run";
 });
 </script>
 
@@ -42,16 +42,16 @@ const badgeText = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  --blob-color: #FF5C5C;
+  --blob-color: #ff5c5c;
   --badge-background: rgba(255, 92, 92, 0.12);
 
   &.can-run {
-    --blob-color: #49CC49;
+    --blob-color: #49cc49;
     --badge-background: rgba(99, 224, 36, 0.12);
   }
 
   &.loading {
-    --blob-color: #FFAD0A;
+    --blob-color: #ffad0a;
     --badge-background: rgba(255, 173, 10, 0.12);
   }
 }
@@ -82,7 +82,7 @@ const badgeText = computed(() => {
   place-items: center;
   place-content: center;
 
-  >span {
+  > span {
     display: flex;
     width: 16px;
     height: 16px;

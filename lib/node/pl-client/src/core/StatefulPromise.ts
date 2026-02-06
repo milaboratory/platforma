@@ -1,4 +1,4 @@
-type PromiseState = 'pending' | 'fulfilled' | 'rejected';
+type PromiseState = "pending" | "fulfilled" | "rejected";
 
 type StatefulPromiseOptions<T> = {
   /**
@@ -30,32 +30,41 @@ export class StatefulPromise<T> implements Promise<T> {
     return new StatefulPromise(promise, options);
   }
 
-  static fromDeferredReject<T>(promise: Promise<T>, onUnwrap?: (promise: StatefulPromise<T>) => void): StatefulPromise<T> {
+  static fromDeferredReject<T>(
+    promise: Promise<T>,
+    onUnwrap?: (promise: StatefulPromise<T>) => void,
+  ): StatefulPromise<T> {
     return new StatefulPromise(promise, { deferReject: true, onUnwrap });
   }
 
-  static fromDeferredRejectCallback<T>(asyncFn: () => Promise<T>, onUnwrap?: (promise: StatefulPromise<T>) => void): StatefulPromise<T> {
+  static fromDeferredRejectCallback<T>(
+    asyncFn: () => Promise<T>,
+    onUnwrap?: (promise: StatefulPromise<T>) => void,
+  ): StatefulPromise<T> {
     return new StatefulPromise(asyncFn(), { deferReject: true, onUnwrap });
   }
 
-  private constructor(private readonly promise: Promise<T>, private readonly options: StatefulPromiseOptions<T> = {}) {
-    this._state = 'pending';
+  private constructor(
+    private readonly promise: Promise<T>,
+    private readonly options: StatefulPromiseOptions<T> = {},
+  ) {
+    this._state = "pending";
     this._id = StatefulPromise.idCounter++;
 
     this.promise
       .then((value) => {
-        this._state = 'fulfilled';
+        this._state = "fulfilled";
         return value;
       })
       .catch((err) => {
-        this._state = 'rejected';
+        this._state = "rejected";
         if (!options.deferReject) {
           throw err;
         }
       });
   }
 
-  readonly [Symbol.toStringTag] = 'Promise';
+  readonly [Symbol.toStringTag] = "Promise";
 
   get id(): bigint {
     return this._id;

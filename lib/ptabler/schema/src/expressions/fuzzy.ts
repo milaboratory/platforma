@@ -1,10 +1,7 @@
-import type { Expression } from './base';
+import type { Expression } from "./base";
 
 /** Defines the supported string distance metrics. */
-export type StringDistanceMetric =
-  | 'levenshtein'
-  | 'optimal_string_alignment'
-  | 'jaro_winkler';
+export type StringDistanceMetric = "levenshtein" | "optimal_string_alignment" | "jaro_winkler";
 
 /**
  * Represents a string distance/similarity calculation between two expressions.
@@ -12,7 +9,7 @@ export type StringDistanceMetric =
  */
 export interface StringDistanceExpression {
   /** The type of operation, always 'string_distance'. */
-  type: 'string_distance';
+  type: "string_distance";
   /** The specific distance metric to use. */
   metric: StringDistanceMetric;
   /** The first string expression. */
@@ -28,7 +25,7 @@ export interface StringDistanceExpression {
 }
 
 /** Defines the supported fuzzy string filter distance metrics. */
-export type FuzzyFilterDistanceMetric = 'levenshtein' | 'hamming';
+export type FuzzyFilterDistanceMetric = "levenshtein" | "hamming";
 
 /**
  * Represents a fuzzy string filter operation on an expression.
@@ -39,7 +36,7 @@ export type FuzzyFilterDistanceMetric = 'levenshtein' | 'hamming';
  */
 export interface FuzzyStringFilterExpression {
   /** The type of operation, always 'fuzzy_string_filter'. */
-  type: 'fuzzy_string_filter';
+  type: "fuzzy_string_filter";
   /** The distance metric to use for the fuzzy comparison. */
   metric: FuzzyFilterDistanceMetric;
   /** The expression whose string value will be compared. */

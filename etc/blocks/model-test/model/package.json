@@ -16,10 +16,10 @@
     "@platforma-sdk/model": "workspace:*"
   },
   "devDependencies": {
-    "@platforma-sdk/block-tools": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/block-tools": "workspace:*",
     "typescript": "catalog:"
   }
 }

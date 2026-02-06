@@ -1,4 +1,4 @@
-@forward './base-btn';
+@forward "./base-btn";
 
 @mixin mask-var($bg) {
   -webkit-mask-image: $bg;
@@ -13,7 +13,7 @@
 }
 
 @mixin vendor-prefix($name, $value) {
-  @each $vendor in ('-webkit-', '-moz-', '-ms-', '-o-', '') {
+  @each $vendor in ("-webkit-", "-moz-", "-ms-", "-o-", "") {
     #{$vendor}#{$name}: #{$value};
   }
 }
@@ -23,9 +23,7 @@
 
   @if $h ==null {
     height: $w;
-  }
-
-  @else {
+  } @else {
     height: $h;
   }
 }
@@ -36,9 +34,7 @@
 
   @if $h ==null {
     height: $w;
-  }
-
-  @else {
+  } @else {
     height: $h;
   }
 }
@@ -50,9 +46,7 @@
 
   @if $h ==null {
     height: $w;
-  }
-
-  @else {
+  } @else {
     height: $h;
   }
 }
@@ -70,9 +64,7 @@
 
   @if $h ==null {
     height: $w;
-  }
-
-  @else {
+  } @else {
     height: $h;
   }
 }
@@ -116,7 +108,7 @@
   position: relative;
 
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     top: $offset;
     left: $offset;
@@ -155,7 +147,7 @@
   border-bottom-left-radius: 4px;
   background: var(--bg-elevated-01);
 
-  >span {
+  > span {
     overflow: hidden;
     white-space: pre;
     text-overflow: ellipsis;

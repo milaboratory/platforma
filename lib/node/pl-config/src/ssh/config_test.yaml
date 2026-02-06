@@ -1,12 +1,12 @@
 # a config for tests, the generated config is more or less the same
 license:
-  value: 'abc'
-  file: ''
+  value: "abc"
+  file: ""
 
 logging:
   level: info
   destinations:
-    - type: 'file'
+    - type: "file"
       path: platforma.log
 
 monitoring:
@@ -42,7 +42,7 @@ core:
 controllers:
   common:
     timeouts:
-      stop: '10s'
+      stop: "10s"
 
   workflows: {}
 
@@ -55,7 +55,7 @@ controllers:
     workdirCacheOnFailure: 1h
     secrets:
       - map:
-          MI_LICENSE: 'abc'
+          MI_LICENSE: "abc"
 
   data:
     main:
@@ -74,7 +74,7 @@ controllers:
       - id: remoteRoot
         type: FS
         indexCachePeriod: 1m
-        rootPath: ''
+        rootPath: ""
       - id: work
         type: FS
         indexCachePeriod: 1m
@@ -82,7 +82,7 @@ controllers:
 
       - id: main
         type: FS
-        indexCachePeriod: '0s'
+        indexCachePeriod: "0s"
         rootPath: /home/pl-doctor/platforma_backend/storages/main
         allowRemoteAccess: true
-        externalURL: 'http://localhost:11112'
+        externalURL: "http://localhost:11112"

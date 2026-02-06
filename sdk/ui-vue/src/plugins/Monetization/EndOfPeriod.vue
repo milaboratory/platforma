@@ -4,10 +4,10 @@ defineProps<{
 }>();
 
 const formateStringDate = (date: string | null) => {
-  if (!date) return 'N/A';
+  if (!date) return "N/A";
   const dateObj = new Date(date);
-  const day = dateObj.getDate().toString().padStart(2, '0');
-  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0'); // Month is 0-indexed
+  const day = dateObj.getDate().toString().padStart(2, "0");
+  const month = (dateObj.getMonth() + 1).toString().padStart(2, "0"); // Month is 0-indexed
   const year = dateObj.getFullYear();
   return `${day}.${month}.${year}`;
 };
@@ -27,7 +27,7 @@ const formateStringDate = (date: string | null) => {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  background-color: #F7F8FA;
+  background-color: #f7f8fa;
   border-radius: 6px;
   min-height: 40px;
   padding: 0 12px 0 12px;

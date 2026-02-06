@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { reactive } from 'vue';
-import { PlTextField } from '@platforma-sdk/ui-vue';
+import { reactive } from "vue";
+import { PlTextField } from "@platforma-sdk/ui-vue";
 
 const data = reactive({
-  stringValue: 'Input text',
+  stringValue: "Input text",
 });
 </script>
 

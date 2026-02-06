@@ -1,4 +1,9 @@
-import type { AAxisSelector, AnchoredPColumnSelector, AxisSelector, PColumnSelector } from '@milaboratories/pl-model-common';
+import type {
+  AAxisSelector,
+  AnchoredPColumnSelector,
+  AxisSelector,
+  PColumnSelector,
+} from "@milaboratories/pl-model-common";
 
 /**
  * AAxisSelector with an optional split flag

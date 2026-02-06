@@ -1,7 +1,7 @@
-import { z } from 'zod';
-import type { InferSnapshot } from '@milaboratories/pl-tree';
-import { rsSchema } from '@milaboratories/pl-tree';
-import { RangeBytes } from '@milaboratories/pl-model-common';
+import { z } from "zod";
+import type { InferSnapshot } from "@milaboratories/pl-tree";
+import { rsSchema } from "@milaboratories/pl-tree";
+import { RangeBytes } from "@milaboratories/pl-model-common";
 
 //
 // download
@@ -9,7 +9,7 @@ import { RangeBytes } from '@milaboratories/pl-model-common';
 /** ResourceSnapshot that can be passed to OnDemandBlob */
 export const OnDemandBlobResourceSnapshot = rsSchema({
   kv: {
-    'ctl/file/blobInfo': z.object({
+    "ctl/file/blobInfo": z.object({
       sizeBytes: z.coerce.number(),
     }),
   },
@@ -18,11 +18,13 @@ export const OnDemandBlobResourceSnapshot = rsSchema({
 export type OnDemandBlobResourceSnapshot = InferSnapshot<typeof OnDemandBlobResourceSnapshot>;
 
 export function getSize(bs: OnDemandBlobResourceSnapshot, range?: RangeBytes): number {
-  const size = bs.kv['ctl/file/blobInfo'].sizeBytes;
+  const size = bs.kv["ctl/file/blobInfo"].sizeBytes;
   if (range) {
     const newSize = range.to - range.from;
     if (newSize > size) {
-      throw new Error(`getSize: range (${JSON.stringify(range)}, newSize: ${newSize}) is greater than size (${size})`);
+      throw new Error(
+        `getSize: range (${JSON.stringify(range)}, newSize: ${newSize}) is greater than size (${size})`,
+      );
     }
 
     return newSize;

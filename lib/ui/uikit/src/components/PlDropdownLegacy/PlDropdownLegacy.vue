@@ -3,34 +3,34 @@
  * A component for selecting one value from a list of options
  */
 export default {
-  name: 'PlDropdown',
+  name: "PlDropdown",
 };
 </script>
 
 <script lang="ts" setup generic="M = unknown">
-import './pl-dropdown-legacy.scss';
-import { computed, reactive, ref, unref, useSlots, watch, watchPostEffect } from 'vue';
-import { tap, tapIf } from '../../helpers/functions';
-import { PlTooltip } from '../PlTooltip';
-import DoubleContour from '../../utils/DoubleContour.vue';
-import { useLabelNotch } from '../../utils/useLabelNotch';
-import type { ListOption, ListOptionNormalized } from '../../types';
-import { scrollIntoView } from '../../helpers/dom';
-import { deepEqual } from '../../helpers/objects';
-import DropdownListItem from '../DropdownListItem.vue';
-import LongText from '../LongText.vue';
-import { PlIcon16 } from '../PlIcon16';
-import { PlMaskIcon24 } from '../PlMaskIcon24';
-import { normalizeListOptions } from '../../helpers/utils';
-import { getErrorMessage } from '../../helpers/error.ts';
-import { PlSvg } from '../PlSvg';
-import SvgRequired from '../../assets/images/required.svg?raw';
+import "./pl-dropdown-legacy.scss";
+import { computed, reactive, ref, unref, useSlots, watch, watchPostEffect } from "vue";
+import { tap, tapIf } from "../../helpers/functions";
+import { PlTooltip } from "../PlTooltip";
+import DoubleContour from "../../utils/DoubleContour.vue";
+import { useLabelNotch } from "../../utils/useLabelNotch";
+import type { ListOption, ListOptionNormalized } from "../../types";
+import { scrollIntoView } from "../../helpers/dom";
+import { deepEqual } from "../../helpers/objects";
+import DropdownListItem from "../DropdownListItem.vue";
+import LongText from "../LongText.vue";
+import { PlIcon16 } from "../PlIcon16";
+import { PlMaskIcon24 } from "../PlMaskIcon24";
+import { normalizeListOptions } from "../../helpers/utils";
+import { getErrorMessage } from "../../helpers/error.ts";
+import { PlSvg } from "../PlSvg";
+import SvgRequired from "../../assets/images/required.svg?raw";
 
 const emit = defineEmits<{
   /**
    * Emitted when the model value is updated.
    */
-  (e: 'update:modelValue', value: M | undefined): void;
+  (e: "update:modelValue", value: M | undefined): void;
 }>();
 
 const props = withDefaults(
@@ -86,20 +86,20 @@ const props = withDefaults(
     /**
      * Option list item size
      */
-    optionSize?: 'small' | 'medium';
+    optionSize?: "small" | "medium";
   }>(),
   {
-    label: '',
+    label: "",
     helper: undefined,
     loadingOptionsHelper: undefined,
     error: undefined,
-    placeholder: '...',
+    placeholder: "...",
     clearable: false,
     required: false,
     disabled: false,
     arrowIcon: undefined,
     arrowIconLarge: undefined,
-    optionSize: 'small',
+    optionSize: "small",
     options: undefined,
   },
 );
@@ -111,7 +111,7 @@ const list = ref<HTMLElement | undefined>();
 const input = ref<HTMLInputElement | undefined>();
 
 const data = reactive({
-  search: '',
+  search: "",
   activeIndex: -1,
   open: false,
 });
@@ -150,7 +150,7 @@ const computedError = computed(() => {
   }
 
   if (props.modelValue !== undefined && selectedIndex.value === -1) {
-    return 'The selected value is not one of the options';
+    return "The selected value is not one of the options";
   }
 
   return undefined;
@@ -175,7 +175,7 @@ const textValue = computed(() => {
 
 const computedPlaceholder = computed(() => {
   if (!data.open && props.modelValue) {
-    return '';
+    return "";
   }
 
   return props.modelValue ? String(textValue.value) : props.placeholder;
@@ -200,7 +200,7 @@ const filteredRef = computed(() => {
         return true;
       }
 
-      if (typeof o.value === 'string') {
+      if (typeof o.value === "string") {
         return o.value.toLowerCase().includes(search);
       }
 
@@ -211,16 +211,16 @@ const filteredRef = computed(() => {
   return options;
 });
 
-const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
+const tabindex = computed(() => (isDisabled.value ? undefined : "0"));
 
 const selectOption = (v: M | undefined) => {
-  emit('update:modelValue', v);
-  data.search = '';
+  emit("update:modelValue", v);
+  data.search = "";
   data.open = false;
   root?.value?.focus();
 };
 
-const clear = () => emit('update:modelValue', undefined);
+const clear = () => emit("update:modelValue", undefined);
 
 const setFocusOnInput = () => input.value?.focus();
 
@@ -230,7 +230,7 @@ const onInputFocus = () => (data.open = true);
 
 const onFocusOut = (event: FocusEvent) => {
   if (!root?.value?.contains(event.relatedTarget as Node | null)) {
-    data.search = '';
+    data.search = "";
     data.open = false;
   }
 };
@@ -242,13 +242,13 @@ const scrollIntoActive = () => {
     return;
   }
 
-  tapIf($list.querySelector('.hovered-item') as HTMLElement, (opt) => {
+  tapIf($list.querySelector(".hovered-item") as HTMLElement, (opt) => {
     scrollIntoView($list, opt);
   });
 };
 
 const handleKeydown = (e: { code: string; preventDefault(): void }) => {
-  if (!['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.code)) {
+  if (!["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(e.code)) {
     return;
   } else {
     e.preventDefault();
@@ -257,13 +257,13 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
   const { open, activeIndex } = data;
 
   if (!open) {
-    if (e.code === 'Enter') {
+    if (e.code === "Enter") {
       data.open = true;
     }
     return;
   }
 
-  if (e.code === 'Escape') {
+  if (e.code === "Escape") {
     data.open = false;
     root.value?.focus();
   }
@@ -276,13 +276,13 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
     return;
   }
 
-  if (e.code === 'Enter') {
+  if (e.code === "Enter") {
     selectOption(filtered.find((it) => it.index === activeIndex)?.value);
   }
 
   const localIndex = filtered.findIndex((it) => it.index === activeIndex) ?? -1;
 
-  const delta = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
+  const delta = e.code === "ArrowDown" ? 1 : e.code === "ArrowUp" ? -1 : 0;
 
   const newIndex = Math.abs(localIndex + delta + length) % length;
 
@@ -295,7 +295,7 @@ watch(() => props.modelValue, updateActive, { immediate: true });
 
 watch(
   () => data.open,
-  (open) => (open ? input.value?.focus() : ''),
+  (open) => (open ? input.value?.focus() : ""),
 );
 
 watchPostEffect(() => {
@@ -338,10 +338,25 @@ watchPostEffect(() => {
 
           <div class="ui-dropdown__controls">
             <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
-            <PlIcon16 v-if="clearable && hasValue" class="clear" name="delete-clear" @click.stop="clear" />
+            <PlIcon16
+              v-if="clearable && hasValue"
+              class="clear"
+              name="delete-clear"
+              @click.stop="clear"
+            />
             <slot name="append" />
-            <div v-if="arrowIconLarge" class="arrow-icon" :class="[`icon-24 ${arrowIconLarge}`]" @click.stop="toggleOpen" />
-            <div v-else-if="arrowIcon" class="arrow-icon" :class="[`icon-16 ${arrowIcon}`]" @click.stop="toggleOpen" />
+            <div
+              v-if="arrowIconLarge"
+              class="arrow-icon"
+              :class="[`icon-24 ${arrowIconLarge}`]"
+              @click.stop="toggleOpen"
+            />
+            <div
+              v-else-if="arrowIcon"
+              class="arrow-icon"
+              :class="[`icon-16 ${arrowIcon}`]"
+              @click.stop="toggleOpen"
+            />
             <div v-else class="arrow-icon arrow-icon-default" @click.stop="toggleOpen" />
           </div>
         </div>
@@ -370,7 +385,9 @@ watchPostEffect(() => {
       </div>
     </div>
     <div v-if="computedError" class="ui-dropdown__error">{{ computedError }}</div>
-    <div v-else-if="isLoadingOptions && loadingOptionsHelper" class="ui-dropdown__helper">{{ loadingOptionsHelper }}</div>
+    <div v-else-if="isLoadingOptions && loadingOptionsHelper" class="ui-dropdown__helper">
+      {{ loadingOptionsHelper }}
+    </div>
     <div v-else-if="helper" class="ui-dropdown__helper">{{ helper }}</div>
   </div>
 </template>

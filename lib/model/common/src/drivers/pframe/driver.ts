@@ -1,23 +1,20 @@
-import type { Branded } from '../../branding';
-import type { PTable } from './table';
-import type { PFrame } from './pframe';
-import type { AddParameterToAllMethods } from './type_util';
-import type { PTableShape, PTableVector, TableRange } from './data_types';
-import type { FindColumnsRequest, FindColumnsResponse } from './find_columns';
-import type { PObjectId } from '../../pool';
-import type { PColumnIdAndSpec, PColumnSpec } from './spec/spec';
-import type {
-  CalculateTableDataRequest,
-  CalculateTableDataResponse,
-} from './table_calculate';
-import type { UniqueValuesRequest, UniqueValuesResponse } from './unique_values';
-import type { PTableColumnSpec } from './table_common';
+import type { Branded } from "../../branding";
+import type { PTable } from "./table";
+import type { PFrame } from "./pframe";
+import type { AddParameterToAllMethods } from "./type_util";
+import type { PTableShape, PTableVector, TableRange } from "./data_types";
+import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
+import type { PObjectId } from "../../pool";
+import type { PColumnIdAndSpec, PColumnSpec } from "./spec/spec";
+import type { CalculateTableDataRequest, CalculateTableDataResponse } from "./table_calculate";
+import type { UniqueValuesRequest, UniqueValuesResponse } from "./unique_values";
+import type { PTableColumnSpec } from "./table_common";
 
 /** PFrame handle */
-export type PFrameHandle = Branded<string, 'PFrame'>;
+export type PFrameHandle = Branded<string, "PFrame">;
 
 /** PFrame handle */
-export type PTableHandle = Branded<string, 'PTable'>;
+export type PTableHandle = Branded<string, "PTable">;
 
 /** Allows to access main data layer features of platforma */
 export interface PFrameDriver {
@@ -29,16 +26,10 @@ export interface PFrameDriver {
    * Finds columns given filtering criteria on column name, annotations etc.
    * and a set of axes ids to find only columns with compatible specs.
    * */
-  findColumns(
-    handle: PFrameHandle,
-    request: FindColumnsRequest
-  ): Promise<FindColumnsResponse>;
+  findColumns(handle: PFrameHandle, request: FindColumnsRequest): Promise<FindColumnsResponse>;
 
   /** Retrieve single column spec */
-  getColumnSpec(
-    handle: PFrameHandle,
-    columnId: PObjectId
-  ): Promise<PColumnSpec | null>;
+  getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec | null>;
 
   /** Retrieve information about all columns currently added to the PFrame */
   listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]>;
@@ -53,7 +44,7 @@ export interface PFrameDriver {
   /** Calculate set of unique values for a specific axis for the filtered set of records */
   getUniqueValues(
     handle: PFrameHandle,
-    request: UniqueValuesRequest
+    request: UniqueValuesRequest,
   ): Promise<UniqueValuesResponse>;
 
   //
@@ -85,7 +76,7 @@ export interface PFrameDriver {
   getData(
     handle: PTableHandle,
     columnIndices: number[],
-    range?: TableRange
+    range?: TableRange,
   ): Promise<PTableVector[]>;
 }
 
@@ -94,16 +85,9 @@ export interface PFrameDriver {
 // PFrame and PTable interfaces.
 //
 
-type ExpectedPFrameDriverTypeF = AddParameterToAllMethods<
-  PFrame,
-  [handle: PFrameHandle]
->;
-type ExpectedPFrameDriverTypeT = AddParameterToAllMethods<
-  PTable,
-  [handle: PTableHandle]
->;
-type ExpectedPFrameDriverType = ExpectedPFrameDriverTypeF &
-  ExpectedPFrameDriverTypeT;
+type ExpectedPFrameDriverTypeF = AddParameterToAllMethods<PFrame, [handle: PFrameHandle]>;
+type ExpectedPFrameDriverTypeT = AddParameterToAllMethods<PTable, [handle: PTableHandle]>;
+type ExpectedPFrameDriverType = ExpectedPFrameDriverTypeF & ExpectedPFrameDriverTypeT;
 
 type TypeEqualityGuard<A, B> = Exclude<A, B> | Exclude<B, A>;
 function assert<_T extends never>() {}

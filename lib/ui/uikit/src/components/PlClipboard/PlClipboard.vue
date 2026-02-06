@@ -1,30 +1,30 @@
 <script lang="ts">
 export default {
-  name: 'PlClipboard',
+  name: "PlClipboard",
 };
 </script>
 
 <script lang="ts" setup>
-import { PlMaskIcon16 } from '../PlMaskIcon16';
-import type { Size } from '../../types.ts';
-import { computed, onUnmounted, ref } from 'vue';
+import { PlMaskIcon16 } from "../PlMaskIcon16";
+import type { Size } from "../../types.ts";
+import { computed, onUnmounted, ref } from "vue";
 
 const props = defineProps<{
   size?: Size;
 }>();
 
-const emit = defineEmits(['copy']);
+const emit = defineEmits(["copy"]);
 
 const copyEffect = ref<boolean>(false);
 
-const iconName = computed(() => copyEffect.value ? 'clipboard-copied' : 'clipboard');
+const iconName = computed(() => (copyEffect.value ? "clipboard-copied" : "clipboard"));
 
 let timeoutId: undefined | number;
 
 function onCopy() {
   clearTimeout(timeoutId);
   copyEffect.value = true;
-  emit('copy');
+  emit("copy");
   timeoutId = window.setTimeout(() => {
     copyEffect.value = false;
   }, 1000);

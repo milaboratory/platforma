@@ -1,117 +1,122 @@
-import type { FieldId, ResourceId } from '@milaboratories/pl-middle-layer';
-import { Pl, field, resourceType, toGlobalFieldId, toGlobalResourceId } from '@milaboratories/pl-middle-layer';
-import { sleep } from '@milaboratories/ts-helpers';
-import { tplTest } from '@platforma-sdk/test';
+import type { FieldId, ResourceId } from "@milaboratories/pl-middle-layer";
+import {
+  Pl,
+  field,
+  resourceType,
+  toGlobalFieldId,
+  toGlobalResourceId,
+} from "@milaboratories/pl-middle-layer";
+import { sleep } from "@milaboratories/ts-helpers";
+import { tplTest } from "@platforma-sdk/test";
 
 tplTest.concurrent.for([
-  { isEph: true, name: 'ephemeral mode' },
-  { isEph: false, name: 'pure field' },
+  { isEph: true, name: "ephemeral mode" },
+  { isEph: false, name: "pure field" },
 ])(
-  'should resolve future field with default value: field exists ($name)',
+  "should resolve future field with default value: field exists ($name)",
   async ({ isEph }, { helper, expect }) => {
     // Create a sample resource with fields
-    const result = await helper.renderTemplate(
-      true,
-      'll.test-get-field',
-      ['result'],
-      (tx) => {
-        const resourceWithField = tx.createStruct(resourceType('std/map', '1'));
-        tx.createField(field(resourceWithField, 'x'), 'Input');
-        tx.setField(
-          field(resourceWithField, 'x'),
-          tx.createValue(Pl.JsonObject, JSON.stringify('value-exists')),
-        );
-        tx.lock(resourceWithField);
-        return {
-          resource: resourceWithField,
-          fieldInfo: tx.createValue(Pl.JsonObject, JSON.stringify({
-            name: 'x',
-            type: 'input',
+    const result = await helper.renderTemplate(true, "ll.test-get-field", ["result"], (tx) => {
+      const resourceWithField = tx.createStruct(resourceType("std/map", "1"));
+      tx.createField(field(resourceWithField, "x"), "Input");
+      tx.setField(
+        field(resourceWithField, "x"),
+        tx.createValue(Pl.JsonObject, JSON.stringify("value-exists")),
+      );
+      tx.lock(resourceWithField);
+      return {
+        resource: resourceWithField,
+        fieldInfo: tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify({
+            name: "x",
+            type: "input",
             isEph: isEph,
-          })),
-          defaultValue: tx.createValue(Pl.JsonObject, JSON.stringify('default-value')),
-        };
-      },
-    );
+          }),
+        ),
+        defaultValue: tx.createValue(Pl.JsonObject, JSON.stringify("default-value")),
+      };
+    });
 
     // Check that we get the actual field value when it exists
-    const fieldResult = result.computeOutput('result', (a) => a?.getDataAsJson());
-    expect(await fieldResult.awaitStableValue()).toBe('value-exists');
+    const fieldResult = result.computeOutput("result", (a) => a?.getDataAsJson());
+    expect(await fieldResult.awaitStableValue()).toBe("value-exists");
   },
 );
 
 tplTest.concurrent.for([
-  { isEph: true, name: 'ephemeral mode' },
-  { isEph: false, name: 'pure field' },
+  { isEph: true, name: "ephemeral mode" },
+  { isEph: false, name: "pure field" },
 ])(
-  'should resolve future field with default value: field does not exist ($name)',
+  "should resolve future field with default value: field does not exist ($name)",
   async ({ isEph }, { helper, expect }) => {
     // Create a sample resource without the target field
-    const result = await helper.renderTemplate(
-      true,
-      'll.test-get-field',
-      ['result'],
-      (tx) => {
-        const resourceWithoutField = tx.createStruct(resourceType('std/map', '1'));
-        tx.createField(field(resourceWithoutField, 'otherField'), 'Input');
-        tx.setField(
-          field(resourceWithoutField, 'otherField'),
-          tx.createValue(Pl.JsonObject, JSON.stringify('other-value')),
-        );
-        tx.lock(resourceWithoutField);
-        return {
-          resource: resourceWithoutField,
-          fieldInfo: tx.createValue(Pl.JsonObject, JSON.stringify({
-            name: 'nonExistentField',
-            type: 'input',
+    const result = await helper.renderTemplate(true, "ll.test-get-field", ["result"], (tx) => {
+      const resourceWithoutField = tx.createStruct(resourceType("std/map", "1"));
+      tx.createField(field(resourceWithoutField, "otherField"), "Input");
+      tx.setField(
+        field(resourceWithoutField, "otherField"),
+        tx.createValue(Pl.JsonObject, JSON.stringify("other-value")),
+      );
+      tx.lock(resourceWithoutField);
+      return {
+        resource: resourceWithoutField,
+        fieldInfo: tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify({
+            name: "nonExistentField",
+            type: "input",
             isEph: isEph,
-          })),
-          defaultValue: tx.createValue(Pl.JsonObject, JSON.stringify('default-value')),
-        };
-      },
-    );
+          }),
+        ),
+        defaultValue: tx.createValue(Pl.JsonObject, JSON.stringify("default-value")),
+      };
+    });
 
     // Check that we get the default value when field doesn't exist
-    const fieldResult = result.computeOutput('result', (a) => a?.getDataAsJson());
-    expect(await fieldResult.awaitStableValue()).toBe('default-value');
+    const fieldResult = result.computeOutput("result", (a) => a?.getDataAsJson());
+    expect(await fieldResult.awaitStableValue()).toBe("default-value");
   },
 );
 
 tplTest.concurrent.for([
-  { isEph: true, name: 'ephemeral mode' },
-  { isEph: false, name: 'pure field' },
+  { isEph: true, name: "ephemeral mode" },
+  { isEph: false, name: "pure field" },
 ])(
-  'should resolve future field with default value: field does not exist & default appears later ($name)',
+  "should resolve future field with default value: field does not exist & default appears later ($name)",
   async ({ isEph }, { helper, pl, expect }) => {
     // Create a sample resource without the target field
     let defaultValueField: FieldId | undefined = undefined;
     const result = await helper.renderTemplate(
       true,
-      'll.test-get-field',
-      ['result'],
+      "ll.test-get-field",
+      ["result"],
       async (tx) => {
-        const resourceWithoutField = tx.createStruct(resourceType('std/map', '1'));
-        tx.createField(field(resourceWithoutField, 'otherField'), 'Input');
+        const resourceWithoutField = tx.createStruct(resourceType("std/map", "1"));
+        tx.createField(field(resourceWithoutField, "otherField"), "Input");
         tx.setField(
-          field(resourceWithoutField, 'otherField'),
-          tx.createValue(Pl.JsonObject, JSON.stringify('other-value')),
+          field(resourceWithoutField, "otherField"),
+          tx.createValue(Pl.JsonObject, JSON.stringify("other-value")),
         );
         tx.lock(resourceWithoutField);
 
-        const defaultHolder = tx.createStruct(resourceType('std/map', '1'));
-        const defaultValueFieldLocal = field(defaultHolder, 'defaultValue');
-        tx.createField(defaultValueFieldLocal, 'Input');
+        const defaultHolder = tx.createStruct(resourceType("std/map", "1"));
+        const defaultValueFieldLocal = field(defaultHolder, "defaultValue");
+        tx.createField(defaultValueFieldLocal, "Input");
         tx.lock(defaultHolder);
 
         defaultValueField = await toGlobalFieldId(defaultValueFieldLocal);
 
         return {
           resource: resourceWithoutField,
-          fieldInfo: tx.createValue(Pl.JsonObject, JSON.stringify({
-            name: 'nonExistentField',
-            type: 'input',
-            isEph: isEph,
-          })),
+          fieldInfo: tx.createValue(
+            Pl.JsonObject,
+            JSON.stringify({
+              name: "nonExistentField",
+              type: "input",
+              isEph: isEph,
+            }),
+          ),
           defaultValue: defaultValueField,
         };
       },
@@ -119,46 +124,52 @@ tplTest.concurrent.for([
 
     await sleep(3);
 
-    await pl.withWriteTx('setDefault', async (tx) => {
-      tx.setField(defaultValueField!, tx.createValue(Pl.JsonObject, JSON.stringify('default-value')));
+    await pl.withWriteTx("setDefault", async (tx) => {
+      tx.setField(
+        defaultValueField!,
+        tx.createValue(Pl.JsonObject, JSON.stringify("default-value")),
+      );
       await tx.commit();
     });
 
     // Check that we get the default value when field doesn't exist
-    const fieldResult = result.computeOutput('result', (a) => a?.getDataAsJson());
-    expect(await fieldResult.awaitStableValue()).toBe('default-value');
+    const fieldResult = result.computeOutput("result", (a) => a?.getDataAsJson());
+    expect(await fieldResult.awaitStableValue()).toBe("default-value");
   },
 );
 
 tplTest.concurrent.for([
-  { isEph: true, name: 'ephemeral mode' },
-  { isEph: false, name: 'pure field' },
+  { isEph: true, name: "ephemeral mode" },
+  { isEph: false, name: "pure field" },
 ])(
-  'should resolve future field with default value: when target resource appears later ($name)',
+  "should resolve future field with default value: when target resource appears later ($name)",
   async ({ isEph }, { helper, pl, expect }) => {
     // Create a holder for the resource that will appear later
     let resourceHolderField: FieldId | undefined = undefined;
     const result = await helper.renderTemplate(
       true,
-      'll.test-get-field',
-      ['result'],
+      "ll.test-get-field",
+      ["result"],
       async (tx) => {
         // Create a placeholder resource to hold our actual resource
-        const resourceHolder = tx.createStruct(resourceType('std/map', '1'));
-        const resourceHolderFieldLocal = field(resourceHolder, 'resourceValue');
-        tx.createField(resourceHolderFieldLocal, 'Input');
+        const resourceHolder = tx.createStruct(resourceType("std/map", "1"));
+        const resourceHolderFieldLocal = field(resourceHolder, "resourceValue");
+        tx.createField(resourceHolderFieldLocal, "Input");
         tx.lock(resourceHolder);
 
         resourceHolderField = await toGlobalFieldId(resourceHolderFieldLocal);
 
         return {
           resource: resourceHolderFieldLocal,
-          fieldInfo: tx.createValue(Pl.JsonObject, JSON.stringify({
-            name: 'x',
-            type: 'input',
-            isEph: isEph,
-          })),
-          defaultValue: tx.createValue(Pl.JsonObject, JSON.stringify('default-value')),
+          fieldInfo: tx.createValue(
+            Pl.JsonObject,
+            JSON.stringify({
+              name: "x",
+              type: "input",
+              isEph: isEph,
+            }),
+          ),
+          defaultValue: tx.createValue(Pl.JsonObject, JSON.stringify("default-value")),
         };
       },
     );
@@ -166,12 +177,12 @@ tplTest.concurrent.for([
     await sleep(3);
 
     // Now create and set the actual resource with the field
-    await pl.withWriteTx('setResource', async (tx) => {
-      const actualResource = tx.createStruct(resourceType('std/map', '1'));
-      tx.createField(field(actualResource, 'x'), 'Input');
+    await pl.withWriteTx("setResource", async (tx) => {
+      const actualResource = tx.createStruct(resourceType("std/map", "1"));
+      tx.createField(field(actualResource, "x"), "Input");
       tx.setField(
-        field(actualResource, 'x'),
-        tx.createValue(Pl.JsonObject, JSON.stringify('delayed-resource-value')),
+        field(actualResource, "x"),
+        tx.createValue(Pl.JsonObject, JSON.stringify("delayed-resource-value")),
       );
       tx.lock(actualResource);
 
@@ -180,40 +191,43 @@ tplTest.concurrent.for([
     });
 
     // Check that we get the field value from the resource that appeared later
-    const fieldResult = result.computeOutput('result', (a) => a?.getDataAsJson());
-    expect(await fieldResult.awaitStableValue()).toBe('delayed-resource-value');
+    const fieldResult = result.computeOutput("result", (a) => a?.getDataAsJson());
+    expect(await fieldResult.awaitStableValue()).toBe("delayed-resource-value");
   },
 );
 
 tplTest.concurrent.for([
-  { isEph: true, name: 'ephemeral mode' },
-  { isEph: false, name: 'pure field' },
+  { isEph: true, name: "ephemeral mode" },
+  { isEph: false, name: "pure field" },
 ])(
-  'should resolve future field with default value: when target resource appears later with delayed locking and field creation ($name)',
+  "should resolve future field with default value: when target resource appears later with delayed locking and field creation ($name)",
   async ({ isEph }, { helper, pl, expect }) => {
     // Create a holder for the resource that will appear later
     let resourceHolderField: FieldId | undefined = undefined;
     const result = await helper.renderTemplate(
       true,
-      'll.test-get-field',
-      ['result'],
+      "ll.test-get-field",
+      ["result"],
       async (tx) => {
         // Create a placeholder resource to hold our actual resource
-        const resourceHolder = tx.createStruct(resourceType('std/map', '1'));
-        const resourceHolderFieldLocal = field(resourceHolder, 'resourceValue');
-        tx.createField(resourceHolderFieldLocal, 'Input');
+        const resourceHolder = tx.createStruct(resourceType("std/map", "1"));
+        const resourceHolderFieldLocal = field(resourceHolder, "resourceValue");
+        tx.createField(resourceHolderFieldLocal, "Input");
         tx.lock(resourceHolder);
 
         resourceHolderField = await toGlobalFieldId(resourceHolderFieldLocal);
 
         return {
           resource: resourceHolderFieldLocal,
-          fieldInfo: tx.createValue(Pl.JsonObject, JSON.stringify({
-            name: 'x',
-            type: 'input',
-            isEph: isEph,
-          })),
-          defaultValue: tx.createValue(Pl.JsonObject, JSON.stringify('default-value')),
+          fieldInfo: tx.createValue(
+            Pl.JsonObject,
+            JSON.stringify({
+              name: "x",
+              type: "input",
+              isEph: isEph,
+            }),
+          ),
+          defaultValue: tx.createValue(Pl.JsonObject, JSON.stringify("default-value")),
         };
       },
     );
@@ -221,12 +235,12 @@ tplTest.concurrent.for([
     await sleep(3);
 
     // Create, populate, lock and publish the actual resource in one transaction
-    await pl.withWriteTx('setResource_locked_before_publish', async (tx) => {
-      const actualResourceLocal = tx.createStruct(resourceType('std/map', '1'));
-      tx.createField(field(actualResourceLocal, 'x'), 'Input');
+    await pl.withWriteTx("setResource_locked_before_publish", async (tx) => {
+      const actualResourceLocal = tx.createStruct(resourceType("std/map", "1"));
+      tx.createField(field(actualResourceLocal, "x"), "Input");
       tx.setField(
-        field(actualResourceLocal, 'x'),
-        tx.createValue(Pl.JsonObject, JSON.stringify('delayed-resource-value')),
+        field(actualResourceLocal, "x"),
+        tx.createValue(Pl.JsonObject, JSON.stringify("delayed-resource-value")),
       );
       tx.lock(actualResourceLocal);
       tx.setField(resourceHolderField!, actualResourceLocal);
@@ -234,40 +248,43 @@ tplTest.concurrent.for([
     });
 
     // Check that we get the field value from the resource that appeared later
-    const fieldResult = result.computeOutput('result', (a) => a?.getDataAsJson());
-    expect(await fieldResult.awaitStableValue()).toBe('delayed-resource-value');
+    const fieldResult = result.computeOutput("result", (a) => a?.getDataAsJson());
+    expect(await fieldResult.awaitStableValue()).toBe("delayed-resource-value");
   },
 );
 
 tplTest.concurrent.for([
-  { isEph: true, name: 'ephemeral mode' },
-  { isEph: false, name: 'pure field' },
+  { isEph: true, name: "ephemeral mode" },
+  { isEph: false, name: "pure field" },
 ])(
-  'should resolve future field with default value: field does not exist & target resource appears later with delayed locking and field creation ($name)',
+  "should resolve future field with default value: field does not exist & target resource appears later with delayed locking and field creation ($name)",
   async ({ isEph }, { helper, pl, expect }) => {
     // Create a holder for the resource that will appear later
     let resourceHolderField: FieldId | undefined = undefined;
     const result = await helper.renderTemplate(
       true,
-      'll.test-get-field',
-      ['result'],
+      "ll.test-get-field",
+      ["result"],
       async (tx) => {
         // Create a placeholder resource to hold our actual resource
-        const resourceHolder = tx.createStruct(resourceType('std/map', '1'));
-        const resourceHolderFieldLocal = field(resourceHolder, 'resourceValue');
-        tx.createField(resourceHolderFieldLocal, 'Input');
+        const resourceHolder = tx.createStruct(resourceType("std/map", "1"));
+        const resourceHolderFieldLocal = field(resourceHolder, "resourceValue");
+        tx.createField(resourceHolderFieldLocal, "Input");
         tx.lock(resourceHolder);
 
         resourceHolderField = await toGlobalFieldId(resourceHolderFieldLocal);
 
         return {
           resource: resourceHolderFieldLocal,
-          fieldInfo: tx.createValue(Pl.JsonObject, JSON.stringify({
-            name: 'nonExistentField',
-            type: 'input',
-            isEph: isEph,
-          })),
-          defaultValue: tx.createValue(Pl.JsonObject, JSON.stringify('default-value')),
+          fieldInfo: tx.createValue(
+            Pl.JsonObject,
+            JSON.stringify({
+              name: "nonExistentField",
+              type: "input",
+              isEph: isEph,
+            }),
+          ),
+          defaultValue: tx.createValue(Pl.JsonObject, JSON.stringify("default-value")),
         };
       },
     );
@@ -277,8 +294,8 @@ tplTest.concurrent.for([
     let actualResource: ResourceId | undefined = undefined;
 
     // Now create and set the actual resource with the field
-    await pl.withWriteTx('setResource', async (tx) => {
-      const actualResourceLocal = tx.createStruct(resourceType('std/map', '1'));
+    await pl.withWriteTx("setResource", async (tx) => {
+      const actualResourceLocal = tx.createStruct(resourceType("std/map", "1"));
       actualResource = await toGlobalResourceId(actualResourceLocal);
       tx.setField(resourceHolderField!, actualResourceLocal);
       await tx.commit();
@@ -287,11 +304,11 @@ tplTest.concurrent.for([
     await sleep(3);
 
     // Now create and set the actual resource with the field
-    await pl.withWriteTx('setField', async (tx) => {
-      tx.createField(field(actualResource!, 'x'), 'Input');
+    await pl.withWriteTx("setField", async (tx) => {
+      tx.createField(field(actualResource!, "x"), "Input");
       tx.setField(
-        field(actualResource!, 'x'),
-        tx.createValue(Pl.JsonObject, JSON.stringify('delayed-resource-value')),
+        field(actualResource!, "x"),
+        tx.createValue(Pl.JsonObject, JSON.stringify("delayed-resource-value")),
       );
       await tx.commit();
     });
@@ -299,13 +316,13 @@ tplTest.concurrent.for([
     await sleep(3);
 
     // Now create and set the actual resource with the field
-    await pl.withWriteTx('setField', async (tx) => {
+    await pl.withWriteTx("setField", async (tx) => {
       tx.lock(actualResource!);
       await tx.commit();
     });
 
     // Check that we get the field value from the resource that appeared later
-    const fieldResult = result.computeOutput('result', (a) => a?.getDataAsJson());
-    expect(await fieldResult.awaitStableValue()).toBe('default-value');
+    const fieldResult = result.computeOutput("result", (a) => a?.getDataAsJson());
+    expect(await fieldResult.awaitStableValue()).toBe("default-value");
   },
 );

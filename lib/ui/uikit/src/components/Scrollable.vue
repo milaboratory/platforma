@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import VScroll from './VScroll.vue';
-import HScroll from './HScroll.vue';
-import { onMounted, onUnmounted, reactive, ref, unref } from 'vue';
-import { tapIf, copyProps } from '../helpers/functions';
-import { useResizeObserver } from '../composition/useResizeObserver';
+import VScroll from "./VScroll.vue";
+import HScroll from "./HScroll.vue";
+import { onMounted, onUnmounted, reactive, ref, unref } from "vue";
+import { tapIf, copyProps } from "../helpers/functions";
+import { useResizeObserver } from "../composition/useResizeObserver";
 
 const containerRef = ref<HTMLElement>();
 
@@ -17,7 +17,16 @@ const data = reactive({
 });
 
 function updateState(container: HTMLElement) {
-  copyProps(data, container, 'scrollTop', 'scrollLeft', 'clientHeight', 'clientWidth', 'scrollHeight', 'scrollWidth');
+  copyProps(
+    data,
+    container,
+    "scrollTop",
+    "scrollLeft",
+    "clientHeight",
+    "clientWidth",
+    "scrollHeight",
+    "scrollWidth",
+  );
 }
 
 const onWheel = (e: WheelEvent) => {
@@ -49,12 +58,12 @@ useResizeObserver(containerRef, (el) => {
 onMounted(() => {
   tapIf(unref(containerRef), (root) => {
     updateState(root);
-    root.addEventListener('wheel', onWheel);
+    root.addEventListener("wheel", onWheel);
   });
 });
 
 onUnmounted(() => {
-  tapIf(unref(containerRef), (root) => root.removeEventListener('wheel', onWheel));
+  tapIf(unref(containerRef), (root) => root.removeEventListener("wheel", onWheel));
 });
 </script>
 

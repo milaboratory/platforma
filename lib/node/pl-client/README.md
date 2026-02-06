@@ -30,7 +30,8 @@ Dependencies:
 - `protodep`
   - `go install github.com/milaboratory/protodep@v0.1.7-milab`
 
-      check that you have `${HOME}/go/bin` in `PATH`
+    check that you have `${HOME}/go/bin` in `PATH`
+
 - `rsync`
 
 ```bash

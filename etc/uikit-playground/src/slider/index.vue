@@ -1,13 +1,13 @@
 <script lang="ts" setup>
-import Layout from '../Layout.vue';
-import Split from '../Split.vue';
-import { ref } from 'vue';
-import { Slider, SliderRange, SliderRangeTriple, PlBtnSecondary } from '@milaboratories/uikit';
+import Layout from "../Layout.vue";
+import Split from "../Split.vue";
+import { ref } from "vue";
+import { Slider, SliderRange, SliderRangeTriple, PlBtnSecondary } from "@milaboratories/uikit";
 
 const value = ref(2);
 const value2 = ref<[number, number]>([2, 15]);
 const invalidModel = ref([1, 2, 3] as unknown as [number, number]); // to check runtime validation
-const invalidModel2 = ref([1, '2'] as unknown as [number, number]); // to check runtime validation
+const invalidModel2 = ref([1, "2"] as unknown as [number, number]); // to check runtime validation
 const modelTriple = ref([2, 20, 30] as [number, number, number]);
 
 // const lorem =
@@ -80,7 +80,13 @@ const modelTriple = ref([2, 20, 30] as [number, number, number]);
         </div>
         <div class="demo-slider-container">
           <h4 class="ma-0 mb-6">Disabled</h4>
-          <SliderRangeTriple v-model="modelTriple" label="Range Slider" :min="0" :max="30" disabled />
+          <SliderRangeTriple
+            v-model="modelTriple"
+            label="Range Slider"
+            :min="0"
+            :max="30"
+            disabled
+          />
         </div>
       </div>
 

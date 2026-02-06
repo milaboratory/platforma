@@ -1,6 +1,4 @@
 {
-  "extends": [
-    "node_modules/@milaboratories/ts-builder/dist/configs/oxlint-node.json"
-  ],
+  "extends": ["node_modules/@milaboratories/ts-builder/dist/configs/oxlint-node.json"],
   "ignorePatterns": ["src/proto-grpc/**"]
 }

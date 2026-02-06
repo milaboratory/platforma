@@ -1,33 +1,24 @@
-import { randomUUID } from 'node:crypto';
-import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
-import type {
-  Watcher,
-  ComputableCtx } from '@milaboratories/computable';
-import {
-  Computable,
-  PollingComputableHooks,
-} from '@milaboratories/computable';
-import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
-import { asyncPool, TaskProcessor } from '@milaboratories/ts-helpers';
-import type * as sdk from '@milaboratories/pl-model-common';
-import type { ClientProgress } from '../clients/progress';
-import type { ClientUpload } from '../clients/upload';
-import type {
-  PlTreeEntry,
-  PlTreeEntryAccessor,
-  PlTreeNodeAccessor,
-} from '@milaboratories/pl-tree';
+import { randomUUID } from "node:crypto";
+import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
+import type { Watcher, ComputableCtx } from "@milaboratories/computable";
+import { Computable, PollingComputableHooks } from "@milaboratories/computable";
+import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
+import { asyncPool, TaskProcessor } from "@milaboratories/ts-helpers";
+import type * as sdk from "@milaboratories/pl-model-common";
+import type { ClientProgress } from "../clients/progress";
+import type { ClientUpload } from "../clients/upload";
+import type { PlTreeEntry, PlTreeEntryAccessor, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import {
   isPlTreeEntry,
   isPlTreeEntryAccessor,
   makeResourceSnapshot,
-} from '@milaboratories/pl-tree';
-import { scheduler } from 'node:timers/promises';
-import type { PollingOps } from './helpers/polling_ops';
-import type { ImportResourceSnapshot } from './types';
-import { IndexResourceSnapshot, UploadResourceSnapshot } from './types';
-import { nonRecoverableError, UploadTask } from './upload_task';
-import { WrongResourceTypeError } from './helpers/helpers';
+} from "@milaboratories/pl-tree";
+import { scheduler } from "node:timers/promises";
+import type { PollingOps } from "./helpers/polling_ops";
+import type { ImportResourceSnapshot } from "./types";
+import { IndexResourceSnapshot, UploadResourceSnapshot } from "./types";
+import { nonRecoverableError, UploadTask } from "./upload_task";
+import { WrongResourceTypeError } from "./helpers/helpers";
 
 export function makeBlobImportSnapshot(
   entryOrAccessor: PlTreeEntry | PlTreeNodeAccessor | PlTreeEntryAccessor,
@@ -39,7 +30,7 @@ export function makeBlobImportSnapshot(
       ? entryOrAccessor.node()
       : entryOrAccessor;
 
-  if (node.resourceType.name.startsWith('BlobUpload'))
+  if (node.resourceType.name.startsWith("BlobUpload"))
     return makeResourceSnapshot(node, UploadResourceSnapshot);
   return makeResourceSnapshot(node, IndexResourceSnapshot);
 }
@@ -78,7 +69,7 @@ export class UploadDriver {
     },
   ) {
     this.uploadQueue = new TaskProcessor(this.logger, 1, {
-      type: 'exponentialWithMaxDelayBackoff',
+      type: "exponentialWithMaxDelayBackoff",
       initialDelay: 20,
       maxDelay: 15000, // 15 seconds
       backoffMultiplier: 1.5,
@@ -95,11 +86,11 @@ export class UploadDriver {
 
   /** Returns a progress id and schedules an upload task if it's necessary. */
   getProgressId(
-    handleResource: ImportResourceSnapshot | PlTreeEntry
+    handleResource: ImportResourceSnapshot | PlTreeEntry,
   ): Computable<sdk.ImportProgress>;
   getProgressId(
     handleResource: ImportResourceSnapshot | PlTreeEntry,
-    ctx: ComputableCtx
+    ctx: ComputableCtx,
   ): sdk.ImportProgress;
   getProgressId(
     handleResource: ImportResourceSnapshot | PlTreeEntry,
@@ -125,7 +116,7 @@ export class UploadDriver {
     res: ImportResourceSnapshot,
     callerId: string,
   ): sdk.ImportProgress {
-    validateResourceType('getProgressId', res.type);
+    validateResourceType("getProgressId", res.type);
 
     const task = this.idToProgress.get(res.id);
 
@@ -245,10 +236,10 @@ type ScheduledRefresh = {
 };
 
 function validateResourceType(methodName: string, rType: ResourceType) {
-  if (!rType.name.startsWith('BlobUpload') && !rType.name.startsWith('BlobIndex')) {
+  if (!rType.name.startsWith("BlobUpload") && !rType.name.startsWith("BlobIndex")) {
     throw new WrongResourceTypeError(
-      `${methodName}: wrong resource type: ${rType.name}, `
-      + `expected: a resource of either type 'BlobUpload' or 'BlobIndex'.`,
+      `${methodName}: wrong resource type: ${rType.name}, ` +
+        `expected: a resource of either type 'BlobUpload' or 'BlobIndex'.`,
     );
   }
 }

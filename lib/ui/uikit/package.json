@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "exports": {
     ".": {
-      "sources": "./src/index.ts",
       "types": "./dist/index.d.ts",
+      "sources": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./styles": "./dist/index.js",
@@ -30,34 +30,34 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@types/d3-scale": "catalog:",
-    "@types/d3-array": "catalog:",
-    "@types/d3-selection": "catalog:",
-    "@types/d3-axis": "catalog:",
-    "@types/sortablejs": "catalog:",
     "@milaboratories/helpers": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
+    "@types/d3-array": "catalog:",
+    "@types/d3-axis": "catalog:",
+    "@types/d3-scale": "catalog:",
+    "@types/d3-selection": "catalog:",
+    "@types/sortablejs": "catalog:",
     "@vue/test-utils": "catalog:",
-    "@vueuse/integrations": "catalog:",
-    "sortablejs": "catalog:",
-    "vue": "catalog:",
     "@vueuse/core": "catalog:",
-    "d3-scale": "catalog:",
+    "@vueuse/integrations": "catalog:",
+    "canonicalize": "catalog:",
     "d3-array": "catalog:",
-    "d3-selection": "catalog:",
     "d3-axis": "catalog:",
+    "d3-scale": "catalog:",
+    "d3-selection": "catalog:",
     "resize-observer-polyfill": "catalog:",
-    "canonicalize": "catalog:"
+    "sortablejs": "catalog:",
+    "vue": "catalog:"
   },
   "devDependencies": {
-    "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "jsdom": "catalog:",
-    "vitest": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
-    "yarpm": "catalog:",
+    "jsdom": "catalog:",
     "svgo": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "yarpm": "catalog:"
   }
 }

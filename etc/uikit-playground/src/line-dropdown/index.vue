@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { PlDropdownLine } from '@milaboratories/uikit';
-import Layout from '../Layout.vue';
-import Split from '../Split.vue';
-import { generate } from '../imports';
-import { ref } from 'vue';
-import PropsDisplay from '../PropsDisplay.vue';
-import { listToOptions } from '@milaboratories/helpers';
+import { PlDropdownLine } from "@milaboratories/uikit";
+import Layout from "../Layout.vue";
+import Split from "../Split.vue";
+import { generate } from "../imports";
+import { ref } from "vue";
+import PropsDisplay from "../PropsDisplay.vue";
+import { listToOptions } from "@milaboratories/helpers";
 
-const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ';
+const lorem =
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ";
 
 const items0 = generate(40, (i) => {
   if (i % 2 === 0) {
@@ -72,37 +73,38 @@ const model1 = ref({ i: 35 });
 const model2 = ref({ i: 2 });
 
 const propsDescription = {
-  'modelValue': {
-    type: 'unknown',
-    description: 'Model for component v-model',
+  modelValue: {
+    type: "unknown",
+    description: "Model for component v-model",
   },
-  'disabled?': {
-    type: 'boolean;',
-    description: 'Is component disabled or not',
+  "disabled?": {
+    type: "boolean;",
+    description: "Is component disabled or not",
   },
-  'prefix?': {
-    type: 'string;',
-    description: 'Prefix in UI',
+  "prefix?": {
+    type: "string;",
+    description: "Prefix in UI",
   },
-  'options': {
-    type: 'Option<unknown>[];',
-    description: 'Items for component',
+  options: {
+    type: "Option<unknown>[];",
+    description: "Items for component",
   },
-  'placeholder?': {
-    type: 'string;',
-    description: 'UI placeholder',
+  "placeholder?": {
+    type: "string;",
+    description: "UI placeholder",
   },
-  'mode?': {
+  "mode?": {
     type: '"list" | "tabs";',
     description: 'Component has two types of list "tabs" view and "list" view',
   },
-  'tabsContainerStyles?': {
-    type: 'StyleValue (vue)',
+  "tabsContainerStyles?": {
+    type: "StyleValue (vue)",
     description: 'Styles for "tabs" view',
   },
-  'clearable?': {
-    type: 'boolean;',
-    description: 'Allows you show or hide clear icon. Button will be shown whe you have selected item and you opened list.',
+  "clearable?": {
+    type: "boolean;",
+    description:
+      "Allows you show or hide clear icon. Button will be shown whe you have selected item and you opened list.",
   },
 };
 </script>
@@ -115,11 +117,24 @@ const propsDescription = {
         <PlDropdownLine v-model="model3" :options="listToOptions([0, 1, 2, 3])" prefix="Option:" />
       </div>
       <div style="display: flex">
-        <PlDropdownLine v-model="model0" :options="items0" prefix="Option(s):" :input-max-width="'400px'" clearable/>
+        <PlDropdownLine
+          v-model="model0"
+          :options="items0"
+          prefix="Option(s):"
+          :input-max-width="'400px'"
+          clearable
+        />
         <PlDropdownLine v-model="model0" :options="itemsLong" prefix="Option:" />
         <PlDropdownLine v-model="model1" :options="items1" prefix="List:" :disabled="true" />
         <PlDropdownLine v-model="model1" :options="items1" prefix="List:" clearable />
-        <PlDropdownLine v-model="model2" mode="tabs" :options="items2" prefix="Tab:" :tabs-container-styles="{ maxWidth: '700px' }" clearable />
+        <PlDropdownLine
+          v-model="model2"
+          mode="tabs"
+          :options="items2"
+          prefix="Tab:"
+          :tabs-container-styles="{ maxWidth: '700px' }"
+          clearable
+        />
       </div>
       {{ model0 }} {{ typeof model0 }}
       <template #props>

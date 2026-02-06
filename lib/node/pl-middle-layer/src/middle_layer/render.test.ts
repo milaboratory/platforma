@@ -1,15 +1,15 @@
-import { expect, test } from 'vitest';
-import * as tp from 'node:timers/promises';
-import path from 'path';
-import { getQuickJS, Scope, shouldInterruptAfterDeadline } from 'quickjs-emscripten';
-import { randomUUID } from 'node:crypto';
-import { MiddleLayer } from './middle_layer';
-import { PlClient, TestHelpers } from '@milaboratories/pl-client';
-import { Project } from './project';
-import * as env from '../test_env';
+import { expect, test } from "vitest";
+import * as tp from "node:timers/promises";
+import path from "path";
+import { getQuickJS, Scope, shouldInterruptAfterDeadline } from "quickjs-emscripten";
+import { randomUUID } from "node:crypto";
+import { MiddleLayer } from "./middle_layer";
+import { PlClient, TestHelpers } from "@milaboratories/pl-client";
+import { Project } from "./project";
+import * as env from "../test_env";
 
 export async function withMl(
-  cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
+  cb: (ml: MiddleLayer, workFolder: string) => Promise<void>,
 ): Promise<void> {
   const workFolder = path.resolve(`work/${randomUUID()}`);
 
@@ -20,12 +20,12 @@ export async function withMl(
       localSecret: MiddleLayer.generateLocalSecret(),
       localProjections: [], // TODO must be different with local pl
       openFileDialogCallback: () => {
-        throw new Error('Not implemented.');
-      }
+        throw new Error("Not implemented.");
+      },
     });
-    ml.addRuntimeCapability('requiresUIAPIVersion', 1);
-    ml.addRuntimeCapability('requiresUIAPIVersion', 2);
-    ml.addRuntimeCapability('requiresUIAPIVersion', 3);
+    ml.addRuntimeCapability("requiresUIAPIVersion", 1);
+    ml.addRuntimeCapability("requiresUIAPIVersion", 2);
+    ml.addRuntimeCapability("requiresUIAPIVersion", 3);
     try {
       await cb(ml, workFolder);
     } finally {
@@ -48,26 +48,26 @@ export async function awaitBlockDone(prj: Project, blockId: string, timeout: num
     const blockOverview = overviewSnapshot.blocks.find((b) => b.id == blockId);
     if (blockOverview === undefined) throw new Error(`Blocks not found: ${blockId}`);
     if (blockOverview.outputErrors) return;
-    if (blockOverview.calculationStatus === 'Done') return;
+    if (blockOverview.calculationStatus === "Done") return;
     try {
       await overview.awaitChange(abortSignal);
     } catch (e: any) {
       console.dir(await state.getValue(), { depth: 5 });
-      throw new Error('Aborted.', { cause: e });
+      throw new Error("Aborted.", { cause: e });
     }
   }
 }
 
-test('test JS render enter numbers', async () => {
+test("test JS render enter numbers", async () => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    const block1Id = await prj.addBlock('Block 1', {
-      type: 'from-registry-v1',
-      registryUrl: 'https://block.registry.platforma.bio/releases',
-      id: { organization: 'milaboratory', name: 'enter-numbers', version: '1.1.1' }
+    const block1Id = await prj.addBlock("Block 1", {
+      type: "from-registry-v1",
+      registryUrl: "https://block.registry.platforma.bio/releases",
+      id: { organization: "milaboratory", name: "enter-numbers", version: "1.1.1" },
     });
 
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
@@ -76,26 +76,26 @@ test('test JS render enter numbers', async () => {
     const blockState = prj.getBlockState(block1Id);
     await blockState.awaitStableValue();
     const stateSnapshot = await blockState.getValue();
-    expect((stateSnapshot.outputs!['dependsOnBlocks1'] as any).value.length).toBeGreaterThan(5);
+    expect((stateSnapshot.outputs!["dependsOnBlocks1"] as any).value.length).toBeGreaterThan(5);
   });
 });
 
-test.skip('test JS render options', async () => {
+test.skip("test JS render options", async () => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    const block1Id = await prj.addBlock('Block 1', {
-      type: 'from-registry-v1',
-      registryUrl: 'https://block.registry.platforma.bio/releases',
-      id: { organization: 'milaboratory', name: 'enter-numbers', version: '1.1.1' }
+    const block1Id = await prj.addBlock("Block 1", {
+      type: "from-registry-v1",
+      registryUrl: "https://block.registry.platforma.bio/releases",
+      id: { organization: "milaboratory", name: "enter-numbers", version: "1.1.1" },
     });
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
 
-    const block2Id = await prj.addBlock('Block 2', {
-      type: 'dev-v1',
-      folder: '../../blocks-beta/block-beta-sum-numbers'
+    const block2Id = await prj.addBlock("Block 2", {
+      type: "dev-v1",
+      folder: "../../blocks-beta/block-beta-sum-numbers",
     });
 
     const block2State = prj.getBlockState(block2Id);
@@ -116,21 +116,21 @@ test.skip('test JS render options', async () => {
   });
 });
 
-test.skip('test JS render download', async () => {
+test.skip("test JS render download", async () => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    const block1Id = await prj.addBlock('Block 1', {
-      type: 'from-registry-v1',
-      registryUrl: 'https://block.registry.platforma.bio/releases',
-      id: { organization: 'milaboratory', name: 'download-file', version: '1.2.0' }
+    const block1Id = await prj.addBlock("Block 1", {
+      type: "from-registry-v1",
+      registryUrl: "https://block.registry.platforma.bio/releases",
+      id: { organization: "milaboratory", name: "download-file", version: "1.2.0" },
     });
 
     await prj.setBlockArgs(block1Id, {
       storageId: env.libraryStorage,
-      filePath: 'answer_to_the_ultimate_question.txt'
+      filePath: "answer_to_the_ultimate_question.txt",
     });
 
     await prj.runBlock(block1Id);
@@ -139,11 +139,11 @@ test.skip('test JS render download', async () => {
     await blockState.awaitStableValue();
     const stateSnapshot = await blockState.getValue();
     console.dir(stateSnapshot, { depth: 5 });
-    expect((stateSnapshot.outputs!['contentAsString1'] as any).value.length).toBeGreaterThan(5);
+    expect((stateSnapshot.outputs!["contentAsString1"] as any).value.length).toBeGreaterThan(5);
   });
 });
 
-test.skip('basic quickjs code', async () => {
+test.skip("basic quickjs code", async () => {
   const qJs = await getQuickJS();
 
   const start = Date.now();
@@ -156,16 +156,18 @@ test.skip('basic quickjs code', async () => {
       rt.setMemoryLimit(1024 * 640);
       rt.setMaxStackSize(1024 * 320);
       const vm = scope.manage(rt.newContext({ intrinsics: { TypedArrays: false } }));
-      vm.newFunction('nextId', () => {
+      vm.newFunction("nextId", () => {
         return vm.newNumber(12); // vm.newArrayBuffer(new Uint8Array([1, 2]));
-      }).consume((fn) => vm.setProp(vm.global, 'nextId', fn));
+      }).consume((fn) => vm.setProp(vm.global, "nextId", fn));
 
       const nextId = vm.getString(
         scope.manage(
           vm.unwrapResult(
-            vm.evalCode(`nextId(); nextId(); i = 0; while (1) { i++ } /* Buffer.from(nextId()); */`)
-          )
-        )
+            vm.evalCode(
+              `nextId(); nextId(); i = 0; while (1) { i++ } /* Buffer.from(nextId()); */`,
+            ),
+          ),
+        ),
       );
       console.log(`${nextId}us per iteration`);
     });

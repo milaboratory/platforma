@@ -1,18 +1,18 @@
-import type { TemporalSynchronizedTreeOps } from './types';
+import type { TemporalSynchronizedTreeOps } from "./types";
 import type {
   DownloadBlobToURLDriverOps,
   DownloadDriverOps,
   DownloadUrlDriverOps,
   OpenFileDialogCallback,
   VirtualLocalStorageSpec,
-} from '@milaboratories/pl-drivers';
-import type { UploadDriverOps } from '@milaboratories/pl-drivers';
-import type { LogsStreamDriverOps } from '@milaboratories/pl-drivers';
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
-import type { LocalStorageProjection } from '@milaboratories/pl-drivers';
-import path from 'node:path';
-import { PFrameDriverOpsDefaults, type PFrameDriverOps } from '../pool';
+} from "@milaboratories/pl-drivers";
+import type { UploadDriverOps } from "@milaboratories/pl-drivers";
+import type { LogsStreamDriverOps } from "@milaboratories/pl-drivers";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
+import type { LocalStorageProjection } from "@milaboratories/pl-drivers";
+import path from "node:path";
+import { PFrameDriverOpsDefaults, type PFrameDriverOps } from "../pool";
 
 /** Paths part of {@link DriverKitOps}. */
 export type DriverKitOpsPaths = {
@@ -134,13 +134,13 @@ export type DriverKitOps = DriverKitOpsPaths & DriverKitOpsSettings;
 /** Some defaults fot MiddleLayerOps. */
 export const DefaultDriverKitOpsSettings: Pick<
   DriverKitOpsSettings,
-  | 'logger'
-  | 'blobDriverOps'
-  | 'frontendDownloadDriverOps'
-  | 'downloadBlobToURLDriverOps'
-  | 'uploadDriverOps'
-  | 'logStreamDriverOps'
-  | 'pFrameDriverOps'
+  | "logger"
+  | "blobDriverOps"
+  | "frontendDownloadDriverOps"
+  | "downloadBlobToURLDriverOps"
+  | "uploadDriverOps"
+  | "logStreamDriverOps"
+  | "pFrameDriverOps"
 > = {
   logger: new ConsoleLoggerAdapter(),
   blobDriverOps: {
@@ -173,25 +173,26 @@ export const DefaultDriverKitOpsSettings: Pick<
 
 export function DefaultDriverKitOpsPaths(
   workDir: string,
-): Pick<DriverKitOpsPaths,
-| 'blobDownloadPath'
-| 'blobDownloadRangesCachePath'
-| 'downloadBlobToURLPath'
-| 'pframesSpillPath'> {
+): Pick<
+  DriverKitOpsPaths,
+  "blobDownloadPath" | "blobDownloadRangesCachePath" | "downloadBlobToURLPath" | "pframesSpillPath"
+> {
   return {
-    blobDownloadPath: path.join(workDir, 'download'),
-    blobDownloadRangesCachePath: path.join(workDir, 'downloadRangesCache'),
-    downloadBlobToURLPath: path.join(workDir, 'downloadToURL'),
-    pframesSpillPath: path.join(workDir, 'pframes'),
+    blobDownloadPath: path.join(workDir, "download"),
+    blobDownloadRangesCachePath: path.join(workDir, "downloadRangesCache"),
+    downloadBlobToURLPath: path.join(workDir, "downloadToURL"),
+    pframesSpillPath: path.join(workDir, "pframes"),
   };
 }
 
 /** Fields with default values are marked as optional here. */
-export type DriverKitOpsConstructor =
-  Omit<DriverKitOpsSettings, keyof typeof DefaultDriverKitOpsSettings>
-  & Partial<typeof DefaultDriverKitOpsSettings>
-  & Omit<DriverKitOpsPaths, keyof ReturnType<typeof DefaultDriverKitOpsPaths>>
-  & Partial<ReturnType<typeof DefaultDriverKitOpsPaths>>;
+export type DriverKitOpsConstructor = Omit<
+  DriverKitOpsSettings,
+  keyof typeof DefaultDriverKitOpsSettings
+> &
+  Partial<typeof DefaultDriverKitOpsSettings> &
+  Omit<DriverKitOpsPaths, keyof ReturnType<typeof DefaultDriverKitOpsPaths>> &
+  Partial<ReturnType<typeof DefaultDriverKitOpsPaths>>;
 
 export type MiddleLayerOpsPaths = DriverKitOpsPaths & {
   /** Common root where to put frontend code. */
@@ -234,11 +235,11 @@ export type MiddleLayerOps = MiddleLayerOpsSettings & MiddleLayerOpsPaths;
 export const DefaultMiddleLayerOpsSettings: Pick<
   MiddleLayerOps,
   | keyof typeof DefaultDriverKitOpsSettings
-  | 'defaultTreeOptions'
-  | 'projectRefreshInterval'
-  | 'stagingRenderingRate'
-  | 'devBlockUpdateRecheckInterval'
-  | 'debugOps'
+  | "defaultTreeOptions"
+  | "projectRefreshInterval"
+  | "stagingRenderingRate"
+  | "devBlockUpdateRecheckInterval"
+  | "debugOps"
 > = {
   ...DefaultDriverKitOpsSettings,
   defaultTreeOptions: {
@@ -257,12 +258,12 @@ export const DefaultMiddleLayerOpsSettings: Pick<
 export function DefaultMiddleLayerOpsPaths(
   workDir: string,
 ): Pick<
-    MiddleLayerOpsPaths,
-  keyof ReturnType<typeof DefaultDriverKitOpsPaths> | 'frontendDownloadPath'
-  > {
+  MiddleLayerOpsPaths,
+  keyof ReturnType<typeof DefaultDriverKitOpsPaths> | "frontendDownloadPath"
+> {
   return {
     ...DefaultDriverKitOpsPaths(workDir),
-    frontendDownloadPath: path.join(workDir, 'frontend'),
+    frontendDownloadPath: path.join(workDir, "frontend"),
   };
 }
 
@@ -270,6 +271,6 @@ export type MiddleLayerOpsConstructor = Omit<
   MiddleLayerOpsSettings,
   keyof typeof DefaultMiddleLayerOpsSettings
 > &
-Partial<typeof DefaultMiddleLayerOpsSettings> &
-Omit<MiddleLayerOpsPaths, keyof Awaited<ReturnType<typeof DefaultMiddleLayerOpsPaths>>> &
-Partial<Awaited<ReturnType<typeof DefaultMiddleLayerOpsPaths>>>;
+  Partial<typeof DefaultMiddleLayerOpsSettings> &
+  Omit<MiddleLayerOpsPaths, keyof Awaited<ReturnType<typeof DefaultMiddleLayerOpsPaths>>> &
+  Partial<Awaited<ReturnType<typeof DefaultMiddleLayerOpsPaths>>>;

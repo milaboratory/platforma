@@ -2,9 +2,13 @@
   "name": "@milaboratories/pl-error-like",
   "version": "1.12.5",
   "description": "Platforma SDK Model",
-  "types": "./dist/index.d.ts",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,22 +24,18 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "dependencies": {
-    "zod": "catalog:",
     "canonicalize": "catalog:",
-    "json-stringify-safe": "catalog:"
+    "json-stringify-safe": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/json-stringify-safe": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -3,11 +3,10 @@
   "version": "1.53.11",
   "type": "module",
   "main": "dist/index.js",
-  "styles": "dist/index.js",
   "exports": {
     ".": {
-      "sources": "./src/index.ts",
       "types": "./dist/index.d.ts",
+      "sources": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./styles": "./dist/index.js"
@@ -22,42 +21,44 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
-    "@milaboratories/ptabler-expression-js": "workspace:*",
-    "@types/node": "catalog:",
-    "@types/semver": "catalog:",
-    "@types/d3-format": "catalog:",
     "@milaboratories/biowasm-tools": "workspace:*",
+    "@milaboratories/ptabler-expression-js": "workspace:*",
     "@milaboratories/uikit": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
+    "@types/d3-format": "catalog:",
+    "@types/node": "catalog:",
+    "@types/semver": "catalog:",
+    "@vueuse/core": "catalog:",
+    "@vueuse/integrations": "catalog:",
+    "@zip.js/zip.js": "catalog:",
     "ag-grid-enterprise": "catalog:",
     "ag-grid-vue3": "catalog:",
     "canonicalize": "catalog:",
+    "d3-format": "catalog:",
+    "es-toolkit": "catalog:",
     "fast-json-patch": "catalog:",
     "lru-cache": "catalog:",
     "vue": "catalog:",
-    "@vueuse/core": "catalog:",
-    "@vueuse/integrations": "catalog:",
-    "d3-format": "catalog:",
-    "zod": "catalog:",
-    "@zip.js/zip.js": "catalog:",
-    "es-toolkit": "catalog:"
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@milaboratories/ts-configs": "workspace:*",
+    "@faker-js/faker": "catalog:",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "happy-dom": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@vitejs/plugin-vue": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "@vue/test-utils": "catalog:",
+    "fast-json-patch": "catalog:",
+    "happy-dom": "catalog:",
     "rollup-plugin-sourcemaps2": "catalog:",
     "sass": "catalog:",
     "semver": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
-    "@vue/test-utils": "catalog:",
-    "yarpm": "catalog:",
-    "@faker-js/faker": "catalog:"
-  }
+    "yarpm": "catalog:"
+  },
+  "styles": "dist/index.js"
 }

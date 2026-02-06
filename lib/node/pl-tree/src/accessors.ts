@@ -1,32 +1,29 @@
-import type { PlTreeResource, PlTreeState } from './state';
+import type { PlTreeResource, PlTreeState } from "./state";
 import type {
   AccessorProvider,
   ComputableCtx,
   ComputableHooks,
   UsageGuard,
-} from '@milaboratories/computable';
-import type {
-  ResourceId,
-  ResourceType,
-  OptionalResourceId } from '@milaboratories/pl-client';
+} from "@milaboratories/computable";
+import type { ResourceId, ResourceType, OptionalResourceId } from "@milaboratories/pl-client";
 import {
   resourceIdToString,
   resourceTypesEqual,
   resourceTypeToString,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   NullResourceId,
-} from '@milaboratories/pl-client';
-import type { ValueAndError } from './value_and_error';
-import { mapValueAndError } from './value_and_error';
+} from "@milaboratories/pl-client";
+import type { ValueAndError } from "./value_and_error";
+import { mapValueAndError } from "./value_and_error";
 import type {
   CommonFieldTraverseOps,
   FieldTraversalStep,
   GetFieldStep,
   ResourceTraversalOps,
-} from './traversal_ops';
-import type { ValueOrError } from './value_or_error';
-import { parsePlError } from '@milaboratories/pl-errors';
-import { notEmpty } from '@milaboratories/ts-helpers';
+} from "./traversal_ops";
+import type { ValueOrError } from "./value_or_error";
+import { parsePlError } from "@milaboratories/pl-errors";
+import { notEmpty } from "@milaboratories/ts-helpers";
 /** Error encountered during traversal in field or resource. */
 export class PlError extends Error {
   constructor(message: string) {
@@ -46,31 +43,31 @@ export type TreeAccessorInstanceData = {
 
 export function isPlTreeEntry(obj: unknown): obj is PlTreeEntry {
   return (
-    typeof obj === 'object'
-    && obj !== null
-    && (obj as any)['__pl_tree_type_marker__'] === 'PlTreeEntry'
+    typeof obj === "object" &&
+    obj !== null &&
+    (obj as any)["__pl_tree_type_marker__"] === "PlTreeEntry"
   );
 }
 
 export function isPlTreeEntryAccessor(obj: unknown): obj is PlTreeEntryAccessor {
   return (
-    typeof obj === 'object'
-    && obj !== null
-    && (obj as any)['__pl_tree_type_marker__'] === 'PlTreeEntryAccessor'
+    typeof obj === "object" &&
+    obj !== null &&
+    (obj as any)["__pl_tree_type_marker__"] === "PlTreeEntryAccessor"
   );
 }
 
 export function isPlTreeNodeAccessor(obj: unknown): obj is PlTreeNodeAccessor {
   return (
-    typeof obj === 'object'
-    && obj !== null
-    && (obj as any)['__pl_tree_type_marker__'] === 'PlTreeNodeAccessor'
+    typeof obj === "object" &&
+    obj !== null &&
+    (obj as any)["__pl_tree_type_marker__"] === "PlTreeNodeAccessor"
   );
 }
 
 /** Main entry point for using PlTree in reactive setting */
 export class PlTreeEntry implements AccessorProvider<PlTreeEntryAccessor> {
-  private readonly __pl_tree_type_marker__ = 'PlTreeEntry';
+  private readonly __pl_tree_type_marker__ = "PlTreeEntry";
 
   constructor(
     private readonly accessorData: TreeAccessorData,
@@ -114,8 +111,8 @@ function getResourceFromTree(
   }
 
   if (
-    ops.assertResourceType !== undefined
-    && (Array.isArray(ops.assertResourceType)
+    ops.assertResourceType !== undefined &&
+    (Array.isArray(ops.assertResourceType)
       ? ops.assertResourceType.findIndex((rt) => resourceTypesEqual(rt, acc.resourceType)) === -1
       : !resourceTypesEqual(ops.assertResourceType, acc.resourceType))
   )
@@ -128,7 +125,7 @@ function getResourceFromTree(
 }
 
 export class PlTreeEntryAccessor {
-  private readonly __pl_tree_type_marker__ = 'PlTreeEntryAccessor';
+  private readonly __pl_tree_type_marker__ = "PlTreeEntryAccessor";
 
   constructor(
     private readonly accessorData: TreeAccessorData,
@@ -174,7 +171,7 @@ export function treeEntryToResourceInfo(res: PlTreeEntry | ResourceInfo, ctx: Co
  * Important: never store instances of this class, always get fresh instance from {@link PlTreeState} accessor.
  * */
 export class PlTreeNodeAccessor {
-  private readonly __pl_tree_type_marker__ = 'PlTreeNodeAccessor';
+  private readonly __pl_tree_type_marker__ = "PlTreeNodeAccessor";
 
   constructor(
     private readonly accessorData: TreeAccessorData,
@@ -208,7 +205,7 @@ export class PlTreeNodeAccessor {
 
   public traverse(
     ...steps: [
-      Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
+      Omit<FieldTraversalStep, "errorIfFieldNotSet"> & {
         errorIfFieldNotSet: true;
       },
     ]
@@ -220,7 +217,7 @@ export class PlTreeNodeAccessor {
 
   public traverseOrError(
     ...steps: [
-      Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
+      Omit<FieldTraversalStep, "errorIfFieldNotSet"> & {
         errorIfFieldNotSet: true;
       },
     ]
@@ -253,8 +250,8 @@ export class PlTreeNodeAccessor {
     let current: PlTreeNodeAccessor = this;
 
     for (const _step of steps) {
-      const step: FieldTraversalStep
-        = typeof _step === 'string'
+      const step: FieldTraversalStep =
+        typeof _step === "string"
           ? {
               ...commonOptions,
               field: _step,
@@ -275,7 +272,9 @@ export class PlTreeNodeAccessor {
           // FIXME: in next tickets we'll allow Errors to be thrown.
           error: parsePlError(
             notEmpty(next.error.getDataAsString()),
-            current.id, current.resourceType, step.field,
+            current.id,
+            current.resourceType,
+            step.field,
           ),
         };
 
@@ -283,10 +282,12 @@ export class PlTreeNodeAccessor {
         if (step.errorIfFieldNotSet)
           return {
             ok: false,
-            error: new Error(`field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`),
+            error: new Error(
+              `field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`,
+            ),
           };
         // existing but unpopulated field is unstable because it must be resolved at some point
-        this.onUnstableLambda('unpopulated_field:' + step.field);
+        this.onUnstableLambda("unpopulated_field:" + step.field);
         return undefined;
       }
 
@@ -301,13 +302,13 @@ export class PlTreeNodeAccessor {
 
   public getField(
     _step:
-      | (Omit<GetFieldStep, 'errorIfFieldNotFound'> & { errorIfFieldNotFound: true })
-      | (Omit<GetFieldStep, 'errorIfFieldNotSet'> & { errorIfFieldNotSet: true })
+      | (Omit<GetFieldStep, "errorIfFieldNotFound"> & { errorIfFieldNotFound: true })
+      | (Omit<GetFieldStep, "errorIfFieldNotSet"> & { errorIfFieldNotSet: true }),
   ): ValueAndError<PlTreeNodeAccessor>;
   public getField(_step: GetFieldStep | string): ValueAndError<PlTreeNodeAccessor> | undefined;
   public getField(_step: GetFieldStep | string): ValueAndError<PlTreeNodeAccessor> | undefined {
     this.instanceData.guard();
-    const step: GetFieldStep = typeof _step === 'string' ? { field: _step } : _step;
+    const step: GetFieldStep = typeof _step === "string" ? { field: _step } : _step;
 
     const ve = this.resource.getField(this.instanceData.ctx.watcher, step, this.onUnstableLambda);
 
@@ -319,21 +320,21 @@ export class PlTreeNodeAccessor {
   public getInputsLocked(): boolean {
     this.instanceData.guard();
     const result = this.resource.getInputsLocked(this.instanceData.ctx.watcher);
-    if (!result) this.instanceData.ctx.markUnstable('inputs_unlocked:' + this.resourceType.name);
+    if (!result) this.instanceData.ctx.markUnstable("inputs_unlocked:" + this.resourceType.name);
     return result;
   }
 
   public getOutputsLocked(): boolean {
     this.instanceData.guard();
     const result = this.resource.getOutputsLocked(this.instanceData.ctx.watcher);
-    if (!result) this.instanceData.ctx.markUnstable('outputs_unlocked:' + this.resourceType.name);
+    if (!result) this.instanceData.ctx.markUnstable("outputs_unlocked:" + this.resourceType.name);
     return result;
   }
 
   public getIsReadyOrError(): boolean {
     this.instanceData.guard();
     const result = this.resource.getIsReadyOrError(this.instanceData.ctx.watcher);
-    if (!result) this.instanceData.ctx.markUnstable('not_ready:' + this.resourceType.name);
+    if (!result) this.instanceData.ctx.markUnstable("not_ready:" + this.resourceType.name);
     return result;
   }
 
@@ -384,7 +385,7 @@ export class PlTreeNodeAccessor {
     this.instanceData.guard();
     const result = this.resource.getKeyValue(this.instanceData.ctx.watcher, key);
     if (result === undefined && unstableIfNotFound)
-      this.instanceData.ctx.markUnstable('key_not_found_b:' + key);
+      this.instanceData.ctx.markUnstable("key_not_found_b:" + key);
     return result;
   }
 
@@ -397,7 +398,7 @@ export class PlTreeNodeAccessor {
     this.instanceData.guard();
     const result = this.resource.getKeyValueString(this.instanceData.ctx.watcher, key);
     if (result === undefined && unstableIfNotFound)
-      this.instanceData.ctx.markUnstable('key_not_found_s:' + key);
+      this.instanceData.ctx.markUnstable("key_not_found_s:" + key);
     return result;
   }
 
@@ -407,7 +408,7 @@ export class PlTreeNodeAccessor {
   ): T | undefined {
     const result = this.resource.getKeyValueAsJson<T>(this.instanceData.ctx.watcher, key);
     if (result === undefined) {
-      if (unstableIfNotFound) this.instanceData.ctx.markUnstable('key_not_found_j:' + key);
+      if (unstableIfNotFound) this.instanceData.ctx.markUnstable("key_not_found_j:" + key);
       return undefined;
     }
     return result;

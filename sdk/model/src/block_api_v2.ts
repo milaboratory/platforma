@@ -6,8 +6,8 @@ import type {
   ValueWithUTagAndAuthor,
   AuthorMarker,
   ResultOrError,
-} from '@milaboratories/pl-model-common';
-import type { Operation } from 'fast-json-patch';
+} from "@milaboratories/pl-model-common";
+import type { Operation } from "fast-json-patch";
 
 /** Defines methods to read and write current block data. */
 export interface BlockApiV2<
@@ -55,7 +55,11 @@ export interface BlockApiV2<
    * function under the hood may delay actual persistence of the supplied
    * values.
    * */
-  setBlockArgsAndUiState(args: Args, state: UiState, author?: AuthorMarker): Promise<ResultOrError<void>>;
+  setBlockArgsAndUiState(
+    args: Args,
+    state: UiState,
+    author?: AuthorMarker,
+  ): Promise<ResultOrError<void>>;
 
   /**
    * Sets block navigation state.

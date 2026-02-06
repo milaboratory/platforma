@@ -1,8 +1,8 @@
 {
   "name": "@milaboratories/milaboratories.monetization-test.workflow",
   "version": "1.1.60",
-  "type": "module",
   "description": "Block Workflow",
+  "type": "module",
   "scripts": {
     "build": "rm -rf dist && pl-tengo check && pl-tengo build",
     "format": "/usr/bin/env emacs --script ./format.el",

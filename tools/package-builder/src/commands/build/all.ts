@@ -1,14 +1,14 @@
-import { Command } from '@oclif/core';
-import * as cmdOpts from '../../core/cmd-opts';
-import * as util from '../../core/util';
-import { Core } from '../../core/core';
-import * as envs from '../../core/envs';
+import { Command } from "@oclif/core";
+import * as cmdOpts from "../../core/cmd-opts";
+import * as util from "../../core/util";
+import { Core } from "../../core/core";
+import * as envs from "../../core/envs";
 
 export default class BuildAll extends Command {
-  static override description
-    = 'Build all targets (entrypoint descriptors, binary pacakges and so on)';
+  static override description =
+    "Build all targets (entrypoint descriptors, binary pacakges and so on)";
 
-  static override examples = ['<%= config.bin %> <%= command.id %>'];
+  static override examples = ["<%= config.bin %> <%= command.id %>"];
 
   static override flags = {
     ...cmdOpts.GlobalFlags,
@@ -30,55 +30,59 @@ export default class BuildAll extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(BuildAll);
-    const logger = util.createLogger(flags['log-level']);
+    const logger = util.createLogger(flags["log-level"]);
 
     try {
-      const core = new Core(logger, { packageRoot: flags['package-root'] });
+      const core = new Core(logger, { packageRoot: flags["package-root"] });
 
       core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName);
       core.pkgInfo.version = flags.version;
       core.targetPlatform = flags.platform as util.PlatformType;
-      core.allPlatforms = flags['all-platforms'];
-      core.fullDirHash = flags['full-dir-hash'];
+      core.allPlatforms = flags["all-platforms"];
+      core.fullDirHash = flags["full-dir-hash"];
 
-      const buildDocker = cmdOpts.shouldDoAction(envs.isCI(), flags['docker-build'], flags['docker-no-build']);
+      const buildDocker = cmdOpts.shouldDoAction(
+        envs.isCI(),
+        flags["docker-build"],
+        flags["docker-no-build"],
+      );
 
       if (buildDocker) {
         core.buildDockerImages({
-          ids: flags['package-id'],
-          registry: flags['docker-registry'],
+          ids: flags["package-id"],
+          registry: flags["docker-registry"],
           strictPlatformMatching: envs.isCI(),
         });
       }
 
       await core.buildSoftwareArchives({
-        ids: flags['package-id'],
+        ids: flags["package-id"],
         forceBuild: flags.force,
 
         archivePath: flags.archive,
-        contentRoot: flags['content-root'],
-        skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
+        contentRoot: flags["content-root"],
+        skipIfEmpty: flags["package-id"] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
 
         // Automated builds settings
-        condaBuild: cmdOpts.shouldDoAction(true, flags['conda-build'], flags['conda-no-build']),
+        condaBuild: cmdOpts.shouldDoAction(true, flags["conda-build"], flags["conda-no-build"]),
       });
 
       core.buildSwJsonFiles({
-        packageIds: flags['package-id'] ? flags['package-id'] : undefined,
+        packageIds: flags["package-id"] ? flags["package-id"] : undefined,
       });
 
       const autopush = cmdOpts.shouldDoAction(
         envs.isCI() && !core.pkgInfo.isPrivate, // do not push docker images of private packages
-        flags['docker-autopush'],
-        flags['docker-no-autopush'],
+        flags["docker-autopush"],
+        flags["docker-no-autopush"],
       );
       if (buildDocker && autopush) {
         // TODO: as we do not create content-addressable archives for binary packages, we should not upload them
         //       for each build to not spoil release process with dev archives cached by CDN.
         //       once we support content-addressable archives, we can publish everything here (not just docker).
         core.publishDockerImages({
-          ids: flags['package-id'],
-          pushTo: flags['docker-push-to'],
+          ids: flags["package-id"],
+          pushTo: flags["docker-push-to"],
           strictPlatformMatching: envs.isCI(),
         });
       }

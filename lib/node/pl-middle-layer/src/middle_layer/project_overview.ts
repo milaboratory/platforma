@@ -1,9 +1,7 @@
-import type { PlTreeEntry } from '@milaboratories/pl-tree';
-import type { ComputableStableDefined } from '@milaboratories/computable';
-import { Computable } from '@milaboratories/computable';
-import type {
-  ProjectRenderingState,
-  ProjectStructure } from '../model/project_model';
+import type { PlTreeEntry } from "@milaboratories/pl-tree";
+import type { ComputableStableDefined } from "@milaboratories/computable";
+import { Computable } from "@milaboratories/computable";
+import type { ProjectRenderingState, ProjectStructure } from "../model/project_model";
 import {
   BlockRenderingStateKey,
   ProjectCreatedTimestamp,
@@ -12,26 +10,26 @@ import {
   ProjectMetaKey,
   ProjectStructureAuthorKey,
   ProjectStructureKey,
-} from '../model/project_model';
-import { notEmpty } from '@milaboratories/ts-helpers';
-import { allBlocks, productionGraph } from '../model/project_model_util';
-import type { MiddleLayerEnvironment } from './middle_layer';
+} from "../model/project_model";
+import { notEmpty } from "@milaboratories/ts-helpers";
+import { allBlocks, productionGraph } from "../model/project_model_util";
+import type { MiddleLayerEnvironment } from "./middle_layer";
 import type {
   AuthorMarker,
   BlockCalculationStatus,
   BlockSettings,
   ProjectMeta,
   ProjectOverview,
-} from '@milaboratories/pl-model-middle-layer';
-import { constructBlockContext, constructBlockContextArgsOnly } from './block_ctx';
-import { ifNotUndef } from '../cfg_render/util';
-import { type BlockSection } from '@platforma-sdk/model';
-import { extractCodeWithInfo, wrapCallback } from '@platforma-sdk/model';
-import { computableFromCfgOrRF } from './render';
-import type { NavigationStates } from './navigation_states';
-import { getBlockPackInfo } from './util';
-import { resourceIdToString, type ResourceId } from '@milaboratories/pl-client';
-import * as R from 'remeda';
+} from "@milaboratories/pl-model-middle-layer";
+import { constructBlockContext, constructBlockContextArgsOnly } from "./block_ctx";
+import { ifNotUndef } from "../cfg_render/util";
+import { type BlockSection } from "@platforma-sdk/model";
+import { extractCodeWithInfo, wrapCallback } from "@platforma-sdk/model";
+import { computableFromCfgOrRF } from "./render";
+import type { NavigationStates } from "./navigation_states";
+import { getBlockPackInfo } from "./util";
+import { resourceIdToString, type ResourceId } from "@milaboratories/pl-client";
+import * as R from "remeda";
 
 type BlockInfo = {
   argsRid?: ResourceId;
@@ -54,10 +52,13 @@ type ProdState = {
   arguments: Record<string, unknown>;
 };
 
-function argsEquals(a: Record<string, unknown> | undefined, b: Record<string, unknown> | undefined): boolean {
+function argsEquals(
+  a: Record<string, unknown> | undefined,
+  b: Record<string, unknown> | undefined,
+): boolean {
   if (a === b) return true;
   if (a === undefined || b === undefined) return false;
-  const clean = R.omitBy<Record<string, unknown>>((_, key) => key.startsWith('__'));
+  const clean = R.omitBy<Record<string, unknown>>((_, key) => key.startsWith("__"));
   return R.isDeepEqual(clean(a), clean(b));
 }
 
@@ -83,8 +84,8 @@ export function projectOverview(
       const infos = new Map<string, BlockInfo>();
       for (const { id } of allBlocks(structure)) {
         const cInputs = prj.traverse({
-          field: projectFieldName(id, 'currentArgs'),
-          assertFieldType: 'Dynamic',
+          field: projectFieldName(id, "currentArgs"),
+          assertFieldType: "Dynamic",
           stableIfNotFound: true,
         });
         const currentArguments = cInputs?.getDataAsJson<Record<string, unknown>>();
@@ -92,38 +93,38 @@ export function projectOverview(
         let prod: ProdState | undefined = undefined;
 
         const rInputs = prj.traverse({
-          field: projectFieldName(id, 'prodArgs'),
-          assertFieldType: 'Dynamic',
+          field: projectFieldName(id, "prodArgs"),
+          assertFieldType: "Dynamic",
           stableIfNotFound: true,
         });
         if (rInputs !== undefined) {
           const prodArgs = rInputs.getDataAsJson() as Record<string, unknown>;
           const result = prj.getField({
-            field: projectFieldName(id, 'prodOutput'),
-            assertFieldType: 'Dynamic',
+            field: projectFieldName(id, "prodOutput"),
+            assertFieldType: "Dynamic",
             errorIfFieldNotFound: true,
           });
           const ctx = prj.getField({
-            field: projectFieldName(id, 'prodUiCtx'),
-            assertFieldType: 'Dynamic',
+            field: projectFieldName(id, "prodUiCtx"),
+            assertFieldType: "Dynamic",
             errorIfFieldNotFound: true,
           });
           prod = {
             arguments: prodArgs,
             stale: !argsEquals(currentArguments, prodArgs),
             outputError:
-              result.error !== undefined
-              || ctx.error !== undefined
-              || result.value?.getError() !== undefined
-              || ctx.value?.getError() !== undefined,
+              result.error !== undefined ||
+              ctx.error !== undefined ||
+              result.value?.getError() !== undefined ||
+              ctx.value?.getError() !== undefined,
             outputsError:
               result.error?.getDataAsString() ?? result.value?.getError()?.getDataAsString(),
             exportsError: ctx.error?.getDataAsString() ?? ctx.value?.getError()?.getDataAsString(),
             finished:
-              ((result.value !== undefined && result.value.getIsReadyOrError())
-                || (result.error !== undefined && result.error.getIsReadyOrError()))
-              && ((ctx.value !== undefined && ctx.value.getIsReadyOrError())
-                || (ctx.error !== undefined && ctx.error.getIsReadyOrError())),
+              ((result.value !== undefined && result.value.getIsReadyOrError()) ||
+                (result.error !== undefined && result.error.getIsReadyOrError())) &&
+              ((ctx.value !== undefined && ctx.value.getIsReadyOrError()) ||
+                (ctx.error !== undefined && ctx.error.getIsReadyOrError())),
           };
         }
 
@@ -138,10 +139,10 @@ export function projectOverview(
           args,
           enrichmentTargets: bInfo.argsRid
             ? env.projectHelper.getEnrichmentTargets(
-              () => bpInfo.cfg,
-              () => args,
-              { argsRid: bInfo.argsRid, blockPackRid: bpInfo.bpResourceId },
-            )
+                () => bpInfo.cfg,
+                () => args,
+                { argsRid: bInfo.argsRid, blockPackRid: bpInfo.bpResourceId },
+              )
             : undefined,
         };
       });
@@ -151,16 +152,25 @@ export function projectOverview(
       const blocks = [...allBlocks(structure)].map(({ id, label: defaultLabel, renderingMode }) => {
         const info = notEmpty(infos.get(id));
         const gNode = notEmpty(currentGraph.nodes.get(id));
-        let calculationStatus: BlockCalculationStatus = 'NotCalculated';
+        let calculationStatus: BlockCalculationStatus = "NotCalculated";
         if (info.prod !== undefined) {
-          if (limbo.has(id)) calculationStatus = 'Limbo';
-          else calculationStatus = info.prod.finished ? 'Done' : 'Running';
+          if (limbo.has(id)) calculationStatus = "Limbo";
+          else calculationStatus = info.prod.finished ? "Done" : "Running";
         }
 
         const bp = getBlockPackInfo(prj, id);
 
-        const { sections, title, subtitle, tags, inputsValid, sdkVersion, featureFlags, isIncompatibleWithRuntime }
-          = ifNotUndef(bp, ({ bpId, cfg }) => {
+        const {
+          sections,
+          title,
+          subtitle,
+          tags,
+          inputsValid,
+          sdkVersion,
+          featureFlags,
+          isIncompatibleWithRuntime,
+        } =
+          ifNotUndef(bp, ({ bpId, cfg }) => {
             if (!env.runtimeCapabilities.checkCompatibility(cfg.featureFlags)) {
               return {
                 isIncompatibleWithRuntime: true,
@@ -179,84 +189,65 @@ export function projectOverview(
             }
             const codeWithInfo = codeWithInfoOrError.value;
             return {
-              sections: computableFromCfgOrRF(
-                env,
-                blockCtx,
-                cfg.sections,
-                codeWithInfo,
-                bpId,
-              ).wrap({
-                recover: (cause) => {
-                  env.logger.error(new Error('Error in block model sections', { cause }));
-                  return [];
+              sections: computableFromCfgOrRF(env, blockCtx, cfg.sections, codeWithInfo, bpId).wrap(
+                {
+                  recover: (cause) => {
+                    env.logger.error(new Error("Error in block model sections", { cause }));
+                    return [];
+                  },
                 },
-              }) as ComputableStableDefined<BlockSection[]>,
+              ) as ComputableStableDefined<BlockSection[]>,
               title: ifNotUndef(
                 cfg.title,
                 (title) =>
-                  computableFromCfgOrRF(
-                    env,
-                    blockCtxArgsOnly,
-                    title,
-                    codeWithInfo,
-                    bpId,
-                  ).wrap({
+                  computableFromCfgOrRF(env, blockCtxArgsOnly, title, codeWithInfo, bpId).wrap({
                     recover: (cause) => {
-                      env.logger.error(new Error('Error in block model title', { cause }));
-                      return 'Invalid title';
+                      env.logger.error(new Error("Error in block model title", { cause }));
+                      return "Invalid title";
                     },
                   }) as ComputableStableDefined<string>,
               ),
               subtitle: ifNotUndef(
                 cfg.subtitle,
                 (subtitle) =>
-                  computableFromCfgOrRF(
-                    env,
-                    blockCtxArgsOnly,
-                    subtitle,
-                    codeWithInfo,
-                    bpId,
-                  ).wrap({
+                  computableFromCfgOrRF(env, blockCtxArgsOnly, subtitle, codeWithInfo, bpId).wrap({
                     recover: (cause) => {
-                      env.logger.error(new Error('Error in block model subtitle', { cause }));
-                      return 'Invalid subtitle';
+                      env.logger.error(new Error("Error in block model subtitle", { cause }));
+                      return "Invalid subtitle";
                     },
                   }) as ComputableStableDefined<string>,
               ),
               tags: ifNotUndef(
                 cfg.tags,
                 (tags) =>
-                  computableFromCfgOrRF(
-                    env,
-                    blockCtx,
-                    tags,
-                    codeWithInfo,
-                    bpId,
-                  ).wrap({
+                  computableFromCfgOrRF(env, blockCtx, tags, codeWithInfo, bpId).wrap({
                     recover: (cause) => {
-                      env.logger.error(new Error('Error in block model tags', { cause }));
+                      env.logger.error(new Error("Error in block model tags", { cause }));
                       return [];
                     },
                   }) as ComputableStableDefined<string[]>,
               ),
               // inputsValid: for modelAPIVersion 2, it's true if currentArgs exists (args derivation succeeded)
               // For older blocks, use the inputsValid callback from config
-              inputsValid: cfg.modelAPIVersion === 2
-                ? info.currentArguments !== undefined
-                : cfg.inputsValid
-                  ? computableFromCfgOrRF(
-                    env,
-                    blockCtxArgsOnly,
-                    cfg.inputsValid,
-                    codeWithInfo,
-                    bpId,
-                  ).wrap({
-                    recover: (cause) => {
-                      env.logger.error(new Error('Error in block model inputsValid', { cause }));
-                      return false;
-                    },
-                  }) as ComputableStableDefined<boolean>
-                  : undefined,
+              inputsValid:
+                cfg.modelAPIVersion === 2
+                  ? info.currentArguments !== undefined
+                  : cfg.inputsValid
+                    ? (computableFromCfgOrRF(
+                        env,
+                        blockCtxArgsOnly,
+                        cfg.inputsValid,
+                        codeWithInfo,
+                        bpId,
+                      ).wrap({
+                        recover: (cause) => {
+                          env.logger.error(
+                            new Error("Error in block model inputsValid", { cause }),
+                          );
+                          return false;
+                        },
+                      }) as ComputableStableDefined<boolean>)
+                    : undefined,
               sdkVersion: codeWithInfo?.sdkVersion,
               featureFlags: codeWithInfo?.featureFlags ?? {},
               isIncompatibleWithRuntime: false,
@@ -265,8 +256,8 @@ export function projectOverview(
 
         const settings = prj
           .traverse({
-            field: projectFieldName(id, 'blockSettings'),
-            assertFieldType: 'Dynamic',
+            field: projectFieldName(id, "blockSettings"),
+            assertFieldType: "Dynamic",
             errorIfFieldNotSet: true,
           })
           .getDataAsJson() as BlockSettings;
@@ -277,8 +268,8 @@ export function projectOverview(
             return undefined;
           }
           const storageNode = prj.traverse({
-            field: projectFieldName(id, 'blockStorage'),
-            assertFieldType: 'Dynamic',
+            field: projectFieldName(id, "blockStorage"),
+            assertFieldType: "Dynamic",
             stableIfNotFound: true,
           });
           const rawStorageJson = storageNode?.getDataAsString();
@@ -297,10 +288,10 @@ export function projectOverview(
           subtitle,
           tags,
           renderingMode,
-          stale: info.prod?.stale !== false || calculationStatus === 'Limbo',
+          stale: info.prod?.stale !== false || calculationStatus === "Limbo",
           missingReference: gNode.missingReferences,
-          upstreams: [...currentGraph.traverseIdsExcludingRoots('upstream', id)],
-          downstreams: [...currentGraph.traverseIdsExcludingRoots('downstream', id)],
+          upstreams: [...currentGraph.traverseIdsExcludingRoots("upstream", id)],
+          downstreams: [...currentGraph.traverseIdsExcludingRoots("downstream", id)],
           calculationStatus,
           outputErrors: info.prod?.outputError === true,
           outputsError: info.prod?.outputsError,
@@ -337,11 +328,11 @@ export function projectOverview(
             if (!b.inputsValid) cantRun.add(b.id);
             if (b.stale) staleBlocks.add(b.id);
             const stale = b.stale || b.upstreams.findIndex((u) => staleBlocks.has(u)) !== -1;
-            const canRun
-              = (stale || b.outputErrors)
-              && Boolean(b.inputsValid)
-              && !b.missingReference
-              && b.upstreams.findIndex((u) => cantRun.has(u)) === -1;
+            const canRun =
+              (stale || b.outputErrors) &&
+              Boolean(b.inputsValid) &&
+              !b.missingReference &&
+              b.upstreams.findIndex((u) => cantRun.has(u)) === -1;
             const bb = {
               ...b,
               canRun,
@@ -349,7 +340,7 @@ export function projectOverview(
               updateSuggestions: b.updates?.suggestions ?? [],
               updatedBlockPack: b.updates?.mainSuggestion,
             };
-            delete bb['updates'];
+            delete bb["updates"];
             return bb;
           }),
         };

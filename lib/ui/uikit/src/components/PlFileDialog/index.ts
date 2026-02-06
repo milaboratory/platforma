@@ -1,1 +1,1 @@
-export { default as PlFileDialog } from './PlFileDialog.vue';
+export { default as PlFileDialog } from "./PlFileDialog.vue";

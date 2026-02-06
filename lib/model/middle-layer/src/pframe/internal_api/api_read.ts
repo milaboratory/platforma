@@ -1,5 +1,8 @@
-import type { FindColumnsRequest, FindColumnsResponse } from './find_columns';
-import type { DeleteColumnFromColumnsRequest, DeleteColumnFromColumnsResponse } from './delete_column';
+import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
+import type {
+  DeleteColumnFromColumnsRequest,
+  DeleteColumnFromColumnsResponse,
+} from "./delete_column";
 import type {
   PColumnInfo,
   PColumnSpec,
@@ -9,10 +12,10 @@ import type {
   QueryData,
   AxisId,
   PColumnIdAndSpec,
-} from '@milaboratories/pl-model-common';
-import type { CreateTableRequestV4 } from './create_table';
-import type { PTableV8 } from './table';
-import type { PTableId } from './common';
+} from "@milaboratories/pl-model-common";
+import type { CreateTableRequestV4 } from "./create_table";
+import type { PTableV8 } from "./table";
+import type { PTableId } from "./common";
 
 /** Read interface exposed by PFrames library */
 export interface PFrameReadAPIV11 {
@@ -55,6 +58,6 @@ export interface PFrameReadAPIV11 {
     request: UniqueValuesRequest,
     ops?: {
       signal?: AbortSignal;
-    }
+    },
   ): Promise<UniqueValuesResponse>;
 }

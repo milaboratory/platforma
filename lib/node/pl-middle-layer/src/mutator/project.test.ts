@@ -1,79 +1,90 @@
-import { field, poll, TestHelpers, toGlobalResourceId } from '@milaboratories/pl-client';
-import { getQuickJS } from 'quickjs-emscripten';
-import { expect, test } from 'vitest';
-import { outputRef } from '../model/args';
-import { ProjectHelper } from '../model/project_helper';
+import { field, poll, TestHelpers, toGlobalResourceId } from "@milaboratories/pl-client";
+import { getQuickJS } from "quickjs-emscripten";
+import { expect, test } from "vitest";
+import { outputRef } from "../model/args";
+import { ProjectHelper } from "../model/project_helper";
 import {
   BlockRenderingStateKey,
   projectFieldName,
-  ProjectRenderingState
-} from '../model/project_model';
+  ProjectRenderingState,
+} from "../model/project_model";
 import {
   BPSpecEnterV041NotPrepared,
   BPSpecSumV042NotPrepared,
-  TestBPPreparer
-} from '../test/block_packs';
-import { createProject, ProjectMutator } from './project';
+  TestBPPreparer,
+} from "../test/block_packs";
+import { createProject, ProjectMutator } from "./project";
 
-test('simple test #1', async () => {
+test("simple test #1", async () => {
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
-    const prj = await pl.withWriteTx('CreatingProject', async (tx) => {
+    const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
-      tx.createField(field(tx.clientRoot, 'prj'), 'Dynamic', prjRef);
+      tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
       await tx.commit();
       return await toGlobalResourceId(prjRef);
     });
 
-    await pl.withWriteTx('AddBlock1', async (tx) => {
+    await pl.withWriteTx("AddBlock1", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
-        { id: 'block1', label: 'Block1', renderingMode: 'Heavy' },
+        { id: "block1", label: "Block1", renderingMode: "Heavy" },
         {
-          storageMode: 'legacy',
+          storageMode: "legacy",
           legacyState: JSON.stringify({ args: { numbers: [1, 2, 3] } }),
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
-        }
+          blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared),
+        },
       );
       mut.save();
       await tx.commit();
     });
 
-    await pl.withWriteTx('AddBlock2', async (tx) => {
+    await pl.withWriteTx("AddBlock2", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
-        { id: 'block2', label: 'Block2', renderingMode: 'Heavy' },
+        { id: "block2", label: "Block2", renderingMode: "Heavy" },
         {
-          storageMode: 'legacy',
+          storageMode: "legacy",
           legacyState: JSON.stringify({ args: { numbers: [3, 4, 5] } }),
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
-        }
+          blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared),
+        },
       );
-      mut.renderProduction(['block1', 'block2']);
+      mut.renderProduction(["block1", "block2"]);
       mut.save();
       await tx.commit();
     });
 
-    await pl.withWriteTx('AddBlock3', async (tx) => {
+    await pl.withWriteTx("AddBlock3", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
-        { id: 'block3', label: 'Block3', renderingMode: 'Heavy' },
+        { id: "block3", label: "Block3", renderingMode: "Heavy" },
         {
-          storageMode: 'legacy',
+          storageMode: "legacy",
           legacyState: JSON.stringify({
-            args: { sources: [outputRef('block1', 'column'), outputRef('block2', 'column')] },
-            uiState: {"some":2}
+            args: { sources: [outputRef("block1", "column"), outputRef("block2", "column")] },
+            uiState: { some: 2 },
           }),
-          blockPack: await TestBPPreparer.prepare(BPSpecSumV042NotPrepared)
-        }
+          blockPack: await TestBPPreparer.prepare(BPSpecSumV042NotPrepared),
+        },
       );
-      const rendered = mut.renderProduction(['block3'], true);
-      expect([...rendered]).toEqual(['block3']);
+      const rendered = mut.renderProduction(["block3"], true);
+      expect([...rendered]).toEqual(["block3"]);
       // setStates requires complete unified state (not partial updates)
       mut.setStates([
-        { modelAPIVersion: 1, blockId: 'block2', state: { args: { numbers: [3, 4, 5] }, uiState: {"some":1} } },
-        { modelAPIVersion: 1, blockId: 'block3', state: { args: { sources: [outputRef('block1', 'column'), outputRef('block2', 'column')] }, uiState: {"some":2} } }
+        {
+          modelAPIVersion: 1,
+          blockId: "block2",
+          state: { args: { numbers: [3, 4, 5] }, uiState: { some: 1 } },
+        },
+        {
+          modelAPIVersion: 1,
+          blockId: "block3",
+          state: {
+            args: { sources: [outputRef("block1", "column"), outputRef("block2", "column")] },
+            uiState: { some: 2 },
+          },
+        },
       ]);
       mut.doRefresh();
       mut.save();
@@ -83,57 +94,59 @@ test('simple test #1', async () => {
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
       const outputs = await prjR
-        .get(projectFieldName('block3', 'prodOutput'))
+        .get(projectFieldName("block3", "prodOutput"))
         .then((r) => r.final());
       const all = await outputs.getAllFinal();
-      expect(new Set(Object.keys(all))).toEqual(new Set(['sum', 'dependsOnBlocks']));
+      expect(new Set(Object.keys(all))).toEqual(new Set(["sum", "dependsOnBlocks"]));
     });
 
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
       const outputs = await prjR
-        .get(projectFieldName('block3', 'stagingOutput'))
+        .get(projectFieldName("block3", "stagingOutput"))
         .then((r) => r.final());
       const all = await outputs.getAllFinal();
-      expect(new Set(Object.keys(all))).toEqual(new Set(['opts', 'dependsOnBlocks']));
+      expect(new Set(Object.keys(all))).toEqual(new Set(["opts", "dependsOnBlocks"]));
     });
 
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
-      const blockStorageB2 = await prjR
-        .get(projectFieldName('block2', 'blockStorage'));
-      expect(Buffer.from(blockStorageB2.data.data!).toString()).toEqual('{"args":{"numbers":[3,4,5]},"uiState":{"some":1}}');
+      const blockStorageB2 = await prjR.get(projectFieldName("block2", "blockStorage"));
+      expect(Buffer.from(blockStorageB2.data.data!).toString()).toEqual(
+        '{"args":{"numbers":[3,4,5]},"uiState":{"some":1}}',
+      );
 
-      const blockStorageB3 = await prjR
-        .get(projectFieldName('block3', 'blockStorage'));
+      const blockStorageB3 = await prjR.get(projectFieldName("block3", "blockStorage"));
       expect(JSON.parse(Buffer.from(blockStorageB3.data.data!).toString()).uiState).toStrictEqual({
-        some: 2
+        some: 2,
       });
     });
 
-    await pl.withWriteTx('DeleteBlock2', async (tx) => {
+    await pl.withWriteTx("DeleteBlock2", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
-      mut.deleteBlock('block2');
+      mut.deleteBlock("block2");
       mut.save();
       await tx.commit();
     });
 
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
-      const blockStorage = prjR.data.fields.find((f) => f.name === projectFieldName('block2', 'blockStorage'));
+      const blockStorage = prjR.data.fields.find(
+        (f) => f.name === projectFieldName("block2", "blockStorage"),
+      );
       expect(blockStorage).toBeUndefined();
     });
 
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
       expect(prjR.data.fields.map((f) => f.name)).not.toContain(
-        projectFieldName('block3', 'stagingOutput')
+        projectFieldName("block3", "stagingOutput"),
       );
       const renderingState = await prjR.getKValueObj<ProjectRenderingState>(BlockRenderingStateKey);
-      expect(renderingState.blocksInLimbo).toContain('block3');
+      expect(renderingState.blocksInLimbo).toContain("block3");
     });
 
-    await pl.withWriteTx('Refresh', async (tx) => {
+    await pl.withWriteTx("Refresh", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.doRefresh();
       mut.save();
@@ -143,17 +156,17 @@ test('simple test #1', async () => {
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
       const outputs = await prjR
-        .get(projectFieldName('block3', 'stagingOutput'))
+        .get(projectFieldName("block3", "stagingOutput"))
         .then((r) => r.final());
       const all = await outputs.getAllFinal();
-      expect(new Set(Object.keys(all))).toEqual(new Set(['opts', 'dependsOnBlocks']));
+      expect(new Set(Object.keys(all))).toEqual(new Set(["opts", "dependsOnBlocks"]));
       const renderingState = await prjR.getKValueObj<ProjectRenderingState>(BlockRenderingStateKey);
-      expect(renderingState.blocksInLimbo).toContain('block3');
+      expect(renderingState.blocksInLimbo).toContain("block3");
     });
 
-    await pl.withWriteTx('RenderProduction', async (tx) => {
+    await pl.withWriteTx("RenderProduction", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
-      mut.renderProduction(['block1', 'block3']);
+      mut.renderProduction(["block1", "block3"]);
       mut.doRefresh();
       mut.save();
       await tx.commit();
@@ -163,49 +176,52 @@ test('simple test #1', async () => {
       const prjR = await tx.get(prj);
       // there should be an error here telling that one of the upstream blocks not found
       const renderingState = await prjR.getKValueObj<ProjectRenderingState>(BlockRenderingStateKey);
-      expect(renderingState.blocksInLimbo).not.toContain('block3');
+      expect(renderingState.blocksInLimbo).not.toContain("block3");
     });
   });
 });
 
-test('simple test #2 with bp migration', async () => {
+test("simple test #2 with bp migration", async () => {
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
-    const prj = await pl.withWriteTx('CreatingProject', async (tx) => {
+    const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
-      tx.createField(field(tx.clientRoot, 'prj'), 'Dynamic', prjRef);
+      tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
       await tx.commit();
       return await toGlobalResourceId(prjRef);
     });
 
-    await pl.withWriteTx('AddBlock1', async (tx) => {
+    await pl.withWriteTx("AddBlock1", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
-        { id: 'block1', label: 'Block1', renderingMode: 'Heavy' },
+        { id: "block1", label: "Block1", renderingMode: "Heavy" },
         {
-          storageMode: 'legacy',
+          storageMode: "legacy",
           legacyState: JSON.stringify({ args: { numbers: [1, 2, 3] } }),
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
-        }
+          blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared),
+        },
       );
       mut.addBlock(
-        { id: 'block2', label: 'Block2', renderingMode: 'Heavy' },
+        { id: "block2", label: "Block2", renderingMode: "Heavy" },
         {
-          storageMode: 'legacy',
+          storageMode: "legacy",
           legacyState: JSON.stringify({ args: { numbers: [3, 4, 5] } }),
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
-        }
+          blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared),
+        },
       );
       mut.addBlock(
-        { id: 'block3', label: 'Block3', renderingMode: 'Heavy' },
+        { id: "block3", label: "Block3", renderingMode: "Heavy" },
         {
-          storageMode: 'legacy',
-          legacyState: JSON.stringify({ args: { sources: [outputRef('block1', 'column'), outputRef('block2', 'column')] }, uiState: {"some":2} }),
-          blockPack: await TestBPPreparer.prepare(BPSpecSumV042NotPrepared)
-        }
+          storageMode: "legacy",
+          legacyState: JSON.stringify({
+            args: { sources: [outputRef("block1", "column"), outputRef("block2", "column")] },
+            uiState: { some: 2 },
+          }),
+          blockPack: await TestBPPreparer.prepare(BPSpecSumV042NotPrepared),
+        },
       );
-      mut.renderProduction(['block2', 'block3'], true);
+      mut.renderProduction(["block2", "block3"], true);
       mut.doRefresh();
       mut.save();
       await tx.commit();
@@ -214,27 +230,27 @@ test('simple test #2 with bp migration', async () => {
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
       const outputs = await prjR
-        .get(projectFieldName('block3', 'prodOutput'))
+        .get(projectFieldName("block3", "prodOutput"))
         .then((r) => r.final());
       const all = await outputs.getAllFinal();
-      expect(new Set(Object.keys(all))).toEqual(new Set(['sum', 'dependsOnBlocks']));
-      const v = await outputs.get('sum');
+      expect(new Set(Object.keys(all))).toEqual(new Set(["sum", "dependsOnBlocks"]));
+      const v = await outputs.get("sum");
       console.log(Buffer.from(v.data.data!).toString());
     });
 
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
       const outputs = await prjR
-        .get(projectFieldName('block3', 'stagingOutput'))
+        .get(projectFieldName("block3", "stagingOutput"))
         .then((r) => r.final());
       const all = await outputs.getAllFinal();
-      expect(new Set(Object.keys(all))).toEqual(new Set(['opts', 'dependsOnBlocks']));
+      expect(new Set(Object.keys(all))).toEqual(new Set(["opts", "dependsOnBlocks"]));
     });
 
-    await pl.withWriteTx('MigrateBlock2', async (tx) => {
+    await pl.withWriteTx("MigrateBlock2", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       // TODO change to dev
-      mut.migrateBlockPack('block2', await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared));
+      mut.migrateBlockPack("block2", await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared));
       mut.save();
       await tx.commit();
     });
@@ -242,13 +258,13 @@ test('simple test #2 with bp migration', async () => {
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
       expect(prjR.data.fields.map((f) => f.name)).not.toContain(
-        projectFieldName('block3', 'stagingOutput')
+        projectFieldName("block3", "stagingOutput"),
       );
       const renderingState = await prjR.getKValueObj<ProjectRenderingState>(BlockRenderingStateKey);
-      expect(renderingState.blocksInLimbo).toContain('block3');
+      expect(renderingState.blocksInLimbo).toContain("block3");
     });
 
-    await pl.withWriteTx('Refresh', async (tx) => {
+    await pl.withWriteTx("Refresh", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.doRefresh();
       mut.save();
@@ -258,10 +274,10 @@ test('simple test #2 with bp migration', async () => {
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
       expect(prjR.data.fields.map((f) => f.name)).toContain(
-        projectFieldName('block3', 'stagingOutput')
+        projectFieldName("block3", "stagingOutput"),
       );
       const renderingState = await prjR.getKValueObj<ProjectRenderingState>(BlockRenderingStateKey);
-      expect(renderingState.blocksInLimbo).toContain('block3');
+      expect(renderingState.blocksInLimbo).toContain("block3");
     });
   });
 });

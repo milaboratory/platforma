@@ -6,14 +6,14 @@ import type {
   UpdateSuggestions,
   SingleBlockPackOverview,
   BlockPackOverviewNoRegistryId,
-} from '@milaboratories/pl-model-middle-layer';
+} from "@milaboratories/pl-model-middle-layer";
 import {
   blockPackIdNoVersionEquals,
   BlockPackManifest,
   AnyChannel,
-} from '@milaboratories/pl-model-middle-layer';
-import type { FolderReader } from '../../io';
-import canonicalize from 'canonicalize';
+} from "@milaboratories/pl-model-middle-layer";
+import type { FolderReader } from "../../io";
+import canonicalize from "canonicalize";
 import {
   GlobalOverviewFileName,
   GlobalOverviewReg,
@@ -21,12 +21,12 @@ import {
   ManifestFileName,
   ManifestSuffix,
   packageContentPrefixInsideV2,
-} from './schema_public';
-import { BlockComponentsAbsoluteUrl, BlockPackMetaEmbedBytes } from '../model';
-import { LRUCache } from 'lru-cache';
-import * as semver from 'semver';
-import { calculateSha256 } from '../../util';
-import { retry, Retry2TimesWithDelay } from '@milaboratories/ts-helpers';
+} from "./schema_public";
+import { BlockComponentsAbsoluteUrl, BlockPackMetaEmbedBytes } from "../model";
+import { LRUCache } from "lru-cache";
+import * as semver from "semver";
+import { calculateSha256 } from "../../util";
+import { retry, Retry2TimesWithDelay } from "@milaboratories/ts-helpers";
 
 export type RegistryV2ReaderOps = {
   /** Number of milliseconds to cache retrieved block list for */
@@ -42,8 +42,8 @@ const DefaultRegistryV2ReaderOps: RegistryV2ReaderOps = {
 
 /** @param availableVersions must be reverse sorted (from highest version to lowest) */
 export function inferUpdateSuggestions(currentVersion: string, availableVersions: string[]) {
-  const nextMinor = semver.inc(currentVersion, 'minor')!;
-  const nextMajor = semver.inc(currentVersion, 'major')!;
+  const nextMinor = semver.inc(currentVersion, "minor")!;
+  const nextMajor = semver.inc(currentVersion, "major")!;
 
   // first found = the highest (given the search criteria)
 
@@ -55,9 +55,9 @@ export function inferUpdateSuggestions(currentVersion: string, availableVersions
   const minor = availableVersions.find((v) => semver.gte(v, nextMinor) && semver.lt(v, nextMajor));
   const major = availableVersions.find((v) => semver.gte(v, nextMajor));
 
-  if (patch) suggestions.push({ type: 'patch', update: patch });
-  if (minor) suggestions.push({ type: 'minor', update: minor });
-  if (major) suggestions.push({ type: 'major', update: major });
+  if (patch) suggestions.push({ type: "patch", update: patch });
+  if (minor) suggestions.push({ type: "minor", update: minor });
+  if (major) suggestions.push({ type: "major", update: major });
 
   return suggestions;
 }
@@ -87,11 +87,11 @@ export class RegistryV2Reader {
     max: 500,
     fetchMethod: async (_key, _staleValue, options) =>
       await retry(async () => {
-        const contentReader
-          = options.context.relativeTo !== undefined
+        const contentReader =
+          options.context.relativeTo !== undefined
             ? this.v2RootFolderReader
-              .relativeReader(packageContentPrefixInsideV2(options.context.relativeTo))
-              .getContentReader()
+                .relativeReader(packageContentPrefixInsideV2(options.context.relativeTo))
+                .getContentReader()
             : this.v2RootFolderReader.getContentReader();
         return await BlockPackMetaEmbedBytes(contentReader).parseAsync(options.context.meta);
       }, Retry2TimesWithDelay),
@@ -114,8 +114,8 @@ export class RegistryV2Reader {
 
   public async listBlockPacks(): Promise<BlockPackOverviewNoRegistryId[]> {
     if (
-      this.listCache !== undefined
-      && Date.now() - this.listCacheTimestamp <= this.ops.cacheBlockListFor
+      this.listCache !== undefined &&
+      Date.now() - this.listCacheTimestamp <= this.ops.cacheBlockListFor
     )
       return this.listCache;
     try {
@@ -142,7 +142,7 @@ export class RegistryV2Reader {
                   ),
                   featureFlags: data.description.featureFlags,
                   spec: {
-                    type: 'from-registry-v2',
+                    type: "from-registry-v2",
                     id: data.description.id,
                     registryUrl: this.registryReader.rootUrl.toString(),
                     channel,
@@ -152,7 +152,9 @@ export class RegistryV2Reader {
             );
             return {
               id: p.id,
-              latestByChannel: Object.fromEntries(byChannelEntries) as BlockPackOverviewNoRegistryId['latestByChannel'],
+              latestByChannel: Object.fromEntries(
+                byChannelEntries,
+              ) as BlockPackOverviewNoRegistryId["latestByChannel"],
               allVersions: p.allVersionsWithChannels,
             } satisfies BlockPackOverviewNoRegistryId;
           }),
@@ -165,8 +167,8 @@ export class RegistryV2Reader {
       }, Retry2TimesWithDelay);
     } catch (e: unknown) {
       if (
-        this.listCache !== undefined
-        && Date.now() - this.listCacheTimestamp <= this.ops.keepStaleBlockListFor
+        this.listCache !== undefined &&
+        Date.now() - this.listCacheTimestamp <= this.ops.keepStaleBlockListFor
       )
         return this.listCache;
       throw e;
@@ -221,7 +223,7 @@ export class RegistryV2Reader {
           overview.description.meta,
         ),
         spec: {
-          type: 'from-registry-v2',
+          type: "from-registry-v2",
           id,
           registryUrl: this.registryReader.rootUrl.toString(),
           channel,

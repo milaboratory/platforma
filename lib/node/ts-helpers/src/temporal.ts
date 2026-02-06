@@ -1,10 +1,10 @@
-import * as tp from 'node:timers/promises';
-import type { MiLogger } from './log';
+import * as tp from "node:timers/promises";
+import type { MiLogger } from "./log";
 
 export class Aborted extends Error {
   constructor(ops?: { cause?: unknown; msg?: string }) {
-    super(ops?.msg ?? 'aborted', { cause: ops?.cause });
-    this.name = 'AbortError';
+    super(ops?.msg ?? "aborted", { cause: ops?.cause });
+    this.name = "AbortError";
   }
 }
 
@@ -58,7 +58,7 @@ export function jitter({ ms, factor }: JitterOpts): number {
 }
 
 export type ExponentialBackoffRetryOptions = {
-  type: 'exponentialBackoff';
+  type: "exponentialBackoff";
   maxAttempts: number;
   /** Delay after first failed attempt, in ms. */
   initialDelay: number;
@@ -71,7 +71,7 @@ export type ExponentialBackoffRetryOptions = {
 };
 
 export type LinearBackoffRetryOptions = {
-  type: 'linearBackoff';
+  type: "linearBackoff";
   maxAttempts: number;
   /** Delay after first failed attempt (in milliseconds) */
   initialDelay: number;
@@ -108,8 +108,8 @@ export function createRetryState(options: RetryOptions): RetryState {
 export function tryNextRetryState(previous: RetryState): RetryState | undefined {
   if (previous.attemptsLeft <= 0) return undefined;
 
-  let delayDelta
-    = previous.options.type == 'linearBackoff'
+  let delayDelta =
+    previous.options.type == "linearBackoff"
       ? previous.options.backoffStep
       : previous.nextDelay * (previous.options.backoffMultiplier - 1);
   delayDelta += delayDelta * previous.options.jitter * 2 * (Math.random() - 0.5);
@@ -127,15 +127,15 @@ export function nextRetryStateOrError(previous: RetryState): RetryState {
   const next = tryNextRetryState(previous);
   if (next === undefined)
     throw new Error(
-      `max number of attempts reached (${previous.options.maxAttempts}): `
-      + `total time = ${msToHumanReadable(Date.now() - previous.startTimestamp)}, `
-      + `total delay = ${msToHumanReadable(previous.totalDelay)}`,
+      `max number of attempts reached (${previous.options.maxAttempts}): ` +
+        `total time = ${msToHumanReadable(Date.now() - previous.startTimestamp)}, ` +
+        `total delay = ${msToHumanReadable(previous.totalDelay)}`,
     );
   return next;
 }
 
 export type ExponentialWithMaxBackoffDelayRetryOptions = {
-  type: 'exponentialWithMaxDelayBackoff';
+  type: "exponentialWithMaxDelayBackoff";
   /** Delay after first failed attempt, in ms. */
   initialDelay: number;
 
@@ -150,7 +150,7 @@ export type ExponentialWithMaxBackoffDelayRetryOptions = {
 };
 
 export const Retry2Times: RetryOptions = {
-  type: 'exponentialBackoff',
+  type: "exponentialBackoff",
   maxAttempts: 2,
   initialDelay: 1,
   backoffMultiplier: 2,
@@ -158,7 +158,7 @@ export const Retry2Times: RetryOptions = {
 };
 
 export const Retry2TimesWithDelay: RetryOptions = {
-  type: 'exponentialBackoff',
+  type: "exponentialBackoff",
   maxAttempts: 2,
   initialDelay: 300,
   backoffMultiplier: 2,
@@ -166,7 +166,7 @@ export const Retry2TimesWithDelay: RetryOptions = {
 };
 
 export const Retry3Times: RetryOptions = {
-  type: 'exponentialBackoff',
+  type: "exponentialBackoff",
   maxAttempts: 3,
   initialDelay: 1,
   backoffMultiplier: 2,
@@ -174,7 +174,7 @@ export const Retry3Times: RetryOptions = {
 };
 
 export const Retry3TimesWithDelay: RetryOptions = {
-  type: 'exponentialBackoff',
+  type: "exponentialBackoff",
   maxAttempts: 3,
   initialDelay: 200,
   backoffMultiplier: 2,

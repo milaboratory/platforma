@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { reactive } from 'vue';
-import { PlTextField, PlMaskIcon16 } from '@platforma-sdk/ui-vue';
+import { reactive } from "vue";
+import { PlTextField, PlMaskIcon16 } from "@platforma-sdk/ui-vue";
 
 const data = reactive({
-  model: 'Input text',
-  label: 'Input label',
+  model: "Input text",
+  label: "Input label",
 });
 
 function onClick() {
-  alert('Some external action');
+  alert("Some external action");
 }
 </script>
 

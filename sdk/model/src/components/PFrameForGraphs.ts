@@ -6,19 +6,20 @@ import type {
   PColumnSpec,
   PFrameHandle,
   PObjectId,
-} from '@milaboratories/pl-model-common';
+} from "@milaboratories/pl-model-common";
 import {
   Annotation,
   canonicalizeJson,
   getAxisId,
-  getColumnIdAndSpec, LinkerMap,
+  getColumnIdAndSpec,
+  LinkerMap,
   matchAxisId,
   readAnnotation,
   readAnnotationJson,
   stringifyJson,
-} from '@milaboratories/pl-model-common';
-import type { PColumnDataUniversal, RenderCtxBase } from '../render';
-import { getAllRelatedColumns, getRelatedColumns } from '../pframe_utils/columns';
+} from "@milaboratories/pl-model-common";
+import type { PColumnDataUniversal, RenderCtxBase } from "../render";
+import { getAllRelatedColumns, getRelatedColumns } from "../pframe_utils/columns";
 
 /** Create id for column copy with added keys in axes domains */
 const colId = (id: PObjectId, domains: (Record<string, string> | undefined)[]) => {
@@ -70,17 +71,22 @@ export function getAvailableWithLinkersAxes(
     (linkerKeyId, sourceAxisId) => matchAxisId(sourceAxisId, linkerKeyId),
   );
 
-  return new Map(availableAxes.map((axisSpec) => {
-    const id = getAxisId(axisSpec);
-    return [canonicalizeJson(id), axisSpec];
-  }));
+  return new Map(
+    availableAxes.map((axisSpec) => {
+      const id = getAxisId(axisSpec);
+      return [canonicalizeJson(id), axisSpec];
+    }),
+  );
 }
 /** Add columns with fully compatible axes created from partial compatible ones */
-export function enrichCompatible<T extends Omit<PColumn<PColumnDataUniversal>, 'data'>>(blockAxes: AxesVault, columns: T[]): T[] {
+export function enrichCompatible<T extends Omit<PColumn<PColumnDataUniversal>, "data">>(
+  blockAxes: AxesVault,
+  columns: T[],
+): T[] {
   return columns.flatMap((column) => getAdditionalColumnsForColumn(blockAxes, column));
 }
 
-function getAdditionalColumnsForColumn<T extends Omit<PColumn<PColumnDataUniversal>, 'data'>>(
+function getAdditionalColumnsForColumn<T extends Omit<PColumn<PColumnDataUniversal>, "data">>(
   blockAxes: AxesVault,
   column: T,
 ): T[] {
@@ -118,10 +124,10 @@ function getAdditionalColumnsForColumn<T extends Omit<PColumn<PColumnDataUnivers
           allAddedDomainValues.add(item);
         }
       });
-      return ({
+      return {
         ...axisId,
         annotations: column.spec.axesSpec[idx].annotations,
-      });
+      };
     });
     return addedSet;
   });
@@ -132,21 +138,25 @@ function getAdditionalColumnsForColumn<T extends Omit<PColumn<PColumnDataUnivers
   });
 
   const additionalColumns = secondaryIdsVariants.map((idsList, idx) => {
-    const id = colId(column.id, idsList.map((id) => id.domain));
+    const id = colId(
+      column.id,
+      idsList.map((id) => id.domain),
+    );
 
-    const label = readAnnotation(column.spec, Annotation.Label) ?? '';
-    const labelDomainPart = ([...addedByVariantsDomainValues[idx]])
+    const label = readAnnotation(column.spec, Annotation.Label) ?? "";
+    const labelDomainPart = [...addedByVariantsDomainValues[idx]]
       .filter((str) => addedNotToAllVariantsDomainValues.has(str))
       .sort()
       .map((v) => JSON.parse(v)?.[1]) // use in labels only domain values, but sort them by key to save the same order in all column variants
-      .join(' / ');
+      .join(" / ");
 
     const annotations: Annotation = {
       ...column.spec.annotations,
       [Annotation.Graph.IsVirtual]: stringifyJson(true),
     };
     if (label || labelDomainPart) {
-      annotations[Annotation.Label] = label && labelDomainPart ? label + ' / ' + labelDomainPart : label + labelDomainPart;
+      annotations[Annotation.Label] =
+        label && labelDomainPart ? label + " / " + labelDomainPart : label + labelDomainPart;
     }
 
     return {
@@ -182,11 +192,14 @@ export function createPFrameForGraphs<A, U>(
   ctx: RenderCtxBase<A, U>,
   blockColumns?: PColumn<PColumnDataUniversal>[],
 ): PFrameHandle | undefined {
-  const suitableSpec = (spec: PColumnSpec) => !isHiddenFromUIColumn(spec) && !isHiddenFromGraphColumn(spec);
+  const suitableSpec = (spec: PColumnSpec) =>
+    !isHiddenFromUIColumn(spec) && !isHiddenFromGraphColumn(spec);
   // if current block doesn't produce own columns then use all columns from result pool
   if (!blockColumns) {
     return ctx.createPFrame(getAllRelatedColumns(ctx, suitableSpec));
-  };
+  }
 
-  return ctx.createPFrame(getRelatedColumns(ctx, { columns: blockColumns, predicate: suitableSpec }));
+  return ctx.createPFrame(
+    getRelatedColumns(ctx, { columns: blockColumns, predicate: suitableSpec }),
+  );
 }

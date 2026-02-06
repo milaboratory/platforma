@@ -1,22 +1,27 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/no-base-to-string */
-import type { ConnectConfig, ClientChannel, SFTPWrapper } from 'ssh2';
-import ssh, { Client } from 'ssh2';
-import net from 'node:net';
-import dns from 'node:dns';
-import fs from 'node:fs';
-import { readFile } from 'node:fs/promises';
-import upath from 'upath';
-import { RetryablePromise, retry, type MiLogger, Retry3TimesWithDelay } from '@milaboratories/ts-helpers';
-import { randomBytes } from 'node:crypto';
-import { SFTPUploadError, SFTPError } from './ssh_errors';
+import type { ConnectConfig, ClientChannel, SFTPWrapper } from "ssh2";
+import ssh, { Client } from "ssh2";
+import net from "node:net";
+import dns from "node:dns";
+import fs from "node:fs";
+import { readFile } from "node:fs/promises";
+import upath from "upath";
+import {
+  RetryablePromise,
+  retry,
+  type MiLogger,
+  Retry3TimesWithDelay,
+} from "@milaboratories/ts-helpers";
+import { randomBytes } from "node:crypto";
+import { SFTPUploadError, SFTPError } from "./ssh_errors";
 
 const defaultConfig: ConnectConfig = {
   keepaliveInterval: 60000,
   keepaliveCountMax: 10,
 };
 
-export type SshAuthMethods = 'publickey' | 'password';
+export type SshAuthMethods = "publickey" | "password";
 export type SshAuthMethodsResult = SshAuthMethods[];
 export type SshDirContent = {
   files: string[];
@@ -69,7 +74,12 @@ export class SshClient {
    */
   public async connect(config: ConnectConfig) {
     this.config = config;
-    return await connect(this.client, config, () => {}, () => {});
+    return await connect(
+      this.client,
+      config,
+      () => {},
+      () => {},
+    );
   }
 
   /**
@@ -84,20 +94,27 @@ export class SshClient {
           return reject(new Error(`ssh.exec: ${command}: ${err}`));
         }
 
-        let stdout = '';
-        let stderr = '';
+        let stdout = "";
+        let stderr = "";
 
-        stream.on('close', (code: number) => {
-          if (code === 0) {
-            resolve({ stdout, stderr });
-          } else {
-            reject(new Error(`Command ${command} exited with code ${code}, stdout: ${stdout}, stderr: ${stderr}`));
-          }
-        }).on('data', (data: ArrayBuffer) => {
-          stdout += data.toString();
-        }).stderr.on('data', (data: ArrayBuffer) => {
-          stderr += data.toString();
-        });
+        stream
+          .on("close", (code: number) => {
+            if (code === 0) {
+              resolve({ stdout, stderr });
+            } else {
+              reject(
+                new Error(
+                  `Command ${command} exited with code ${code}, stdout: ${stdout}, stderr: ${stderr}`,
+                ),
+              );
+            }
+          })
+          .on("data", (data: ArrayBuffer) => {
+            stdout += data.toString();
+          })
+          .stderr.on("data", (data: ArrayBuffer) => {
+            stderr += data.toString();
+          });
       });
     });
   }
@@ -110,18 +127,18 @@ export class SshClient {
    */
   public static async getAuthTypes(host: string, port: number): Promise<SshAuthMethodsResult> {
     return new Promise((resolve) => {
-      let stdout = '';
+      let stdout = "";
       const conn = new Client();
 
-      conn.on('ready', () => {
+      conn.on("ready", () => {
         conn.end();
         const types = this.extractAuthMethods(stdout);
-        resolve(types.length === 0 ? ['publickey', 'password'] : types as SshAuthMethodsResult);
+        resolve(types.length === 0 ? ["publickey", "password"] : (types as SshAuthMethodsResult));
       });
 
-      conn.on('error', () => {
+      conn.on("error", () => {
         conn.end();
-        resolve(['publickey', 'password']);
+        resolve(["publickey", "password"]);
       });
 
       conn.connect({
@@ -142,7 +159,7 @@ export class SshClient {
    */
   private static extractAuthMethods(log: string): string[] {
     const match = log.match(/Inbound: Received USERAUTH_FAILURE \((.+)\)/);
-    return match && match[1] ? match[1].split(',').map((method) => method.trim()) : [];
+    return match && match[1] ? match[1].split(",").map((method) => method.trim()) : [];
   }
 
   /**
@@ -152,8 +169,11 @@ export class SshClient {
    * @param config - Optional connection configuration for the SSH client.
    * @returns { server: net.Server } A promise resolving with the created server instance.
    */
-  public async forwardPort(ports: { remotePort: number; localPort: number; localHost?: string }, config?: ConnectConfig): Promise<{ server: net.Server }> {
-    const log = `ssh.forward:${ports.localPort}:${ports.remotePort}.id_${randomBytes(1).toString('hex')}`;
+  public async forwardPort(
+    ports: { remotePort: number; localPort: number; localHost?: string },
+    config?: ConnectConfig,
+  ): Promise<{ server: net.Server }> {
+    const log = `ssh.forward:${ports.localPort}:${ports.remotePort}.id_${randomBytes(1).toString("hex")}`;
     config = config ?? this.config;
 
     // we make this thing persistent so that if the connection
@@ -163,18 +183,18 @@ export class SshClient {
       return new Promise<Client>((resolve, reject) => {
         const client = new Client();
 
-        client.on('ready', () => {
+        client.on("ready", () => {
           this.logger.info(`${log}.client.ready`);
           resolve(client);
         });
 
-        client.on('error', (err) => {
+        client.on("error", (err) => {
           this.logger.info(`${log}.client.error: ${err}`);
           p.reset();
           reject(err);
         });
 
-        client.on('close', () => {
+        client.on("close", () => {
           this.logger.info(`${log}.client.closed`);
           p.reset();
         });
@@ -187,7 +207,7 @@ export class SshClient {
 
     return new Promise((resolve, reject) => {
       const server = net.createServer({ pauseOnConnect: true }, async (localSocket) => {
-        const sockLog = `${log}.sock_${randomBytes(1).toString('hex')}`;
+        const sockLog = `${log}.sock_${randomBytes(1).toString("hex")}`;
         // this.logger.info(`${sockLog}.localSocket: start connection`);
         let conn: Client;
         try {
@@ -208,7 +228,14 @@ export class SshClient {
 
         let stream: ClientChannel;
         try {
-          stream = await forwardOut(this.logger, conn, '127.0.0.1', 0, '127.0.0.1', ports.remotePort);
+          stream = await forwardOut(
+            this.logger,
+            conn,
+            "127.0.0.1",
+            0,
+            "127.0.0.1",
+            ports.remotePort,
+          );
         } catch (e: unknown) {
           this.logger.error(`${sockLog}.forwardOut.err: ${e}`);
           localSocket.end();
@@ -220,35 +247,35 @@ export class SshClient {
         localSocket.resume();
         // this.logger.info(`${sockLog}.forwardOut: connected`);
 
-        stream.on('error', (err: unknown) => {
+        stream.on("error", (err: unknown) => {
           this.logger.error(`${sockLog}.stream.error: ${err}`);
           localSocket.end();
           stream.end();
         });
-        stream.on('close', () => {
+        stream.on("close", () => {
           // this.logger.info(`${sockLog}.stream.close: closed`);
           localSocket.end();
           stream.end();
         });
-        localSocket.on('close', () => {
+        localSocket.on("close", () => {
           this.logger.info(`${sockLog}.localSocket: closed`);
           localSocket.end();
           stream.end();
         });
       });
 
-      server.listen(ports.localPort, '127.0.0.1', () => {
+      server.listen(ports.localPort, "127.0.0.1", () => {
         this.logger.info(`${log}.server: started listening`);
         this.forwardedServers.push(server);
         resolve({ server });
       });
 
-      server.on('error', (err) => {
+      server.on("error", (err) => {
         server.close();
         reject(new Error(`${log}.server: error: ${JSON.stringify(err)}`));
       });
 
-      server.on('close', () => {
+      server.on("close", () => {
         this.logger.info(`${log}.server: closed ${JSON.stringify(ports)}`);
         this.forwardedServers = this.forwardedServers.filter((s) => s !== server);
       });
@@ -256,12 +283,14 @@ export class SshClient {
   }
 
   public closeForwardedPorts(): void {
-    this.logger.info('[SSH] Closing all forwarded ports...');
+    this.logger.info("[SSH] Closing all forwarded ports...");
     this.forwardedServers.forEach((server) => {
       const rawAddress = server.address();
-      if (rawAddress && typeof rawAddress !== 'string') {
+      if (rawAddress && typeof rawAddress !== "string") {
         const address: net.AddressInfo = rawAddress;
-        this.logger.info(`[SSH] Closing port forward for server ${address.address}:${address.port}`);
+        this.logger.info(
+          `[SSH] Closing port forward for server ${address.address}:${address.port}`,
+        );
       }
 
       server.close();
@@ -270,10 +299,10 @@ export class SshClient {
   }
 
   /**
-  * Checks if a specified host is available by performing a DNS lookup.
-  * @param hostname - The hostname or IP address to check.
-  * @returns A promise resolving with `true` if the host is reachable, otherwise `false`.
-  */
+   * Checks if a specified host is available by performing a DNS lookup.
+   * @param hostname - The hostname or IP address to check.
+   * @returns A promise resolving with `true` if the host is reachable, otherwise `false`.
+   */
   public static async checkHostAvailability(hostname: string): Promise<boolean> {
     return new Promise((resolve) => {
       dns.lookup(hostname, (err) => {
@@ -296,7 +325,7 @@ export class SshClient {
         }
         return resolve(false);
       } catch (err: unknown) {
-        console.log('Error parsing privateKey');
+        console.log("Error parsing privateKey");
         reject(new Error(`ssh.isPassphraseRequiredForKey: err ${err}`));
       }
     });
@@ -348,13 +377,21 @@ export class SshClient {
     });
   }
 
-  public async writeFileOnTheServer(remotePath: string, data: string | Buffer, mode: number = 0o660) {
+  public async writeFileOnTheServer(
+    remotePath: string,
+    data: string | Buffer,
+    mode: number = 0o660,
+  ) {
     return this.withSftp(async (sftp) => {
       return this.writeFile(sftp, remotePath, data, mode);
     });
   }
 
-  public async getForderStructure(sftp: SFTPWrapper, remotePath: string, data: SshDirContent = { files: [], directories: [] }): Promise<SshDirContent> {
+  public async getForderStructure(
+    sftp: SFTPWrapper,
+    remotePath: string,
+    data: SshDirContent = { files: [], directories: [] },
+  ): Promise<SshDirContent> {
     return new Promise((resolve, reject) => {
       sftp.readdir(remotePath, async (err, items) => {
         if (err) {
@@ -381,13 +418,13 @@ export class SshClient {
 
   public rmdir(sftp: SFTPWrapper, path: string) {
     return new Promise((resolve, reject) => {
-      sftp.rmdir(path, (err) => err ? reject(err) : resolve(true));
+      sftp.rmdir(path, (err) => (err ? reject(err) : resolve(true)));
     });
   }
 
   public unlink(sftp: SFTPWrapper, path: string) {
     return new Promise((resolve, reject) => {
-      sftp.unlink(path, (err) => err ? reject(err) : resolve(true));
+      sftp.unlink(path, (err) => (err ? reject(err) : resolve(true)));
     });
   }
 
@@ -415,7 +452,7 @@ export class SshClient {
         return true;
       } catch (e: unknown) {
         this.logger.error(e);
-        const message = e instanceof Error ? e.message : '';
+        const message = e instanceof Error ? e.message : "";
         throw new Error(`ssh.deleteFolder: path: ${path}, message: ${message}`);
       }
     });
@@ -463,7 +500,9 @@ export class SshClient {
     });
   }
 
-  async checkPathExists(remotePath: string): Promise<{ exists: boolean; isFile: boolean; isDirectory: boolean }> {
+  async checkPathExists(
+    remotePath: string,
+  ): Promise<{ exists: boolean; isFile: boolean; isDirectory: boolean }> {
     return this.withSftp(async (sftp) => {
       return new Promise((resolve, reject) => {
         sftp.stat(remotePath, (err, stats) => {
@@ -483,7 +522,12 @@ export class SshClient {
     });
   }
 
-  private async writeFile(sftp: SFTPWrapper, remotePath: string, data: string | Buffer, mode: number = 0o660): Promise<boolean> {
+  private async writeFile(
+    sftp: SFTPWrapper,
+    remotePath: string,
+    data: string | Buffer,
+    mode: number = 0o660,
+  ): Promise<boolean> {
     return new Promise((resolve, reject) => {
       sftp.writeFile(remotePath, data, { mode }, (err) => {
         if (err) {
@@ -494,7 +538,12 @@ export class SshClient {
     });
   }
 
-  public uploadFileUsingExistingSftp(sftp: SFTPWrapper, localPath: string, remotePath: string, mode: number = 0o660) {
+  public uploadFileUsingExistingSftp(
+    sftp: SFTPWrapper,
+    localPath: string,
+    remotePath: string,
+    mode: number = 0o660,
+  ) {
     return new Promise((resolve, reject) => {
       void readFile(localPath).then(async (result: Buffer) => {
         return this.writeFile(sftp, remotePath, result, mode)
@@ -510,11 +559,20 @@ export class SshClient {
     });
   }
 
-  private async __uploadDirectory(sftp: SFTPWrapper, localDir: string, remoteDir: string, mode: number = 0o660): Promise<void> {
+  private async __uploadDirectory(
+    sftp: SFTPWrapper,
+    localDir: string,
+    remoteDir: string,
+    mode: number = 0o660,
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       fs.readdir(localDir, async (err, files) => {
         if (err) {
-          return reject(new Error(`ssh.__uploadDir: err ${err}, localDir: ${localDir}, remoteDir: ${remoteDir}`));
+          return reject(
+            new Error(
+              `ssh.__uploadDir: err ${err}, localDir: ${localDir}, remoteDir: ${remoteDir}`,
+            ),
+          );
         }
 
         try {
@@ -546,7 +604,11 @@ export class SshClient {
    * @param remoteDir - The path to the remote directory on the server.
    * @returns A promise that resolves when the directory and its contents are uploaded.
    */
-  public async uploadDirectory(localDir: string, remoteDir: string, mode: number = 0o660): Promise<void> {
+  public async uploadDirectory(
+    localDir: string,
+    remoteDir: string,
+    mode: number = 0o660,
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       void this.withSftp(async (sftp: SFTPWrapper) => {
         try {
@@ -567,8 +629,8 @@ export class SshClient {
    */
   private __createRemoteDirectory(sftp: SFTPWrapper, remotePath: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      const directories = remotePath.split('/');
-      let currentPath = '';
+      const directories = remotePath.split("/");
+      let currentPath = "";
 
       const createNext = (index: number) => {
         if (index >= directories.length) {
@@ -581,7 +643,9 @@ export class SshClient {
           if (err) {
             sftp.mkdir(currentPath, (err) => {
               if (err) {
-                return reject(new Error(`ssh.__createRemDir: err ${err}, remotePath: ${remotePath}`));
+                return reject(
+                  new Error(`ssh.__createRemDir: err ${err}, remotePath: ${remotePath}`),
+                );
               }
               createNext(index + 1);
             });
@@ -603,8 +667,8 @@ export class SshClient {
    */
   public ensureRemoteDirCreated(remotePath: string, mode: number = 0o755): Promise<void> {
     return this.withSftp(async (sftp) => {
-      const directories = remotePath.split('/');
-      let currentPath = '';
+      const directories = remotePath.split("/");
+      let currentPath = "";
 
       for (const directory of directories) {
         currentPath += `${directory}/`;
@@ -616,7 +680,9 @@ export class SshClient {
 
               sftp.mkdir(currentPath, { mode }, (err) => {
                 if (err) {
-                  return reject(new Error(`ssh.createRemoteDir: err ${err}, remotePath: ${remotePath}`));
+                  return reject(
+                    new Error(`ssh.createRemoteDir: err ${err}, remotePath: ${remotePath}`),
+                  );
                 }
                 resolve();
               });
@@ -641,7 +707,11 @@ export class SshClient {
       return new Promise((resolve, reject) => {
         sftp.fastGet(remotePath, localPath, (err) => {
           if (err) {
-            return reject(new Error(`ssh.downloadFile: err ${err}, remotePath: ${remotePath}, localPath: ${localPath}`));
+            return reject(
+              new Error(
+                `ssh.downloadFile: err ${err}, remotePath: ${remotePath}, localPath: ${localPath}`,
+              ),
+            );
           }
           resolve(true);
         });
@@ -667,16 +737,16 @@ async function connect(
   onClose: () => void,
 ): Promise<Client> {
   return new Promise((resolve, reject) => {
-    client.on('ready', () => {
+    client.on("ready", () => {
       resolve(client);
     });
 
-    client.on('error', (err: unknown) => {
+    client.on("error", (err: unknown) => {
       onError(err);
       reject(new Error(`ssh.connect: ${err}`));
     });
 
-    client.on('close', () => {
+    client.on("close", () => {
       onClose();
     });
 
@@ -691,7 +761,14 @@ async function connect(
   });
 }
 
-async function forwardOut(logger: MiLogger, conn: Client, localHost: string, localPort: number, remoteHost: string, remotePort: number): Promise<ClientChannel> {
+async function forwardOut(
+  logger: MiLogger,
+  conn: Client,
+  localHost: string,
+  localPort: number,
+  remoteHost: string,
+  remotePort: number,
+): Promise<ClientChannel> {
   return new Promise((resolve, reject) => {
     conn.forwardOut(localHost, localPort, remoteHost, remotePort, (err, stream) => {
       if (err) {

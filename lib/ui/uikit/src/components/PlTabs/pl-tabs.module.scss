@@ -2,7 +2,7 @@
 
 .component {
   --pl-tabs-height: 40px;
-  --pl-tabs-item-border-color: var(--border-color-div-grey); 
+  --pl-tabs-item-border-color: var(--border-color-div-grey);
   --pl-tabs-item-border-width: 0 0 2px 0;
   --pl-tabs-item-text-color: var(--txt-03);
   --pl-tabs-item-max-width: 400px;
@@ -48,7 +48,7 @@
     }
 
     &::after {
-      content: '';
+      content: "";
       position: absolute;
       top: 0;
       left: 0;

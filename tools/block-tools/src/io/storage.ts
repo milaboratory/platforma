@@ -1,7 +1,7 @@
-import pathPosix from 'node:path/posix';
-import path from 'node:path';
-import { paginateListObjectsV2, S3 } from '@aws-sdk/client-s3';
-import * as fs from 'node:fs';
+import pathPosix from "node:path/posix";
+import path from "node:path";
+import { paginateListObjectsV2, S3 } from "@aws-sdk/client-s3";
+import * as fs from "node:fs";
 
 export interface RegistryStorage {
   putFile(file: string, buffer: Buffer): Promise<void>;
@@ -31,7 +31,7 @@ export class S3Storage implements RegistryStorage {
         ).Body!.transformToByteArray(),
       );
     } catch (e: unknown) {
-      if (e instanceof Error && e.name === 'NoSuchKey') return undefined;
+      if (e instanceof Error && e.name === "NoSuchKey") return undefined;
       else throw e;
     }
   }
@@ -70,7 +70,9 @@ export class S3Storage implements RegistryStorage {
       },
     });
     if (results.Errors !== undefined && results.Errors.length > 0)
-      throw new Error(`Errors encountered while deleting files: ${results.Errors.map((e) => e.Message ?? e.Code ?? 'Unknown error').join('\n')}`);
+      throw new Error(
+        `Errors encountered while deleting files: ${results.Errors.map((e) => e.Message ?? e.Code ?? "Unknown error").join("\n")}`,
+      );
   }
 }
 
@@ -83,7 +85,7 @@ export class FSStorage implements RegistryStorage {
   }
 
   private toAbsolutePath(localPath: string): string {
-    if (pathPosix.isAbsolute(localPath)) throw new Error('absolute path');
+    if (pathPosix.isAbsolute(localPath)) throw new Error("absolute path");
     return path.resolve(this.root, localPath.split(pathPosix.sep).join(path.sep));
   }
 
@@ -91,7 +93,7 @@ export class FSStorage implements RegistryStorage {
     try {
       return await fs.promises.readFile(this.toAbsolutePath(address));
     } catch (err: unknown) {
-      if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return undefined;
+      if (err instanceof Error && "code" in err && err.code === "ENOENT") return undefined;
       else throw err;
     }
   }
@@ -102,10 +104,13 @@ export class FSStorage implements RegistryStorage {
       return (await fs.promises.readdir(listRoot, { recursive: true, withFileTypes: true }))
         .filter((e) => e.isFile())
         .map((e) =>
-          path.relative(listRoot, path.resolve(e.parentPath, e.name)).split(path.sep).join(pathPosix.sep),
+          path
+            .relative(listRoot, path.resolve(e.parentPath, e.name))
+            .split(path.sep)
+            .join(pathPosix.sep),
         );
     } catch (err: unknown) {
-      if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return [];
+      if (err instanceof Error && "code" in err && err.code === "ENOENT") return [];
       else throw err;
     }
   }
@@ -123,18 +128,18 @@ export class FSStorage implements RegistryStorage {
 }
 
 export function storageByUrl(address: string): RegistryStorage {
-  const url = new URL(address, `file:${path.resolve('.').split(path.sep).join(pathPosix.sep)}/`);
+  const url = new URL(address, `file:${path.resolve(".").split(path.sep).join(pathPosix.sep)}/`);
   switch (url.protocol) {
-    case 'file:': {
+    case "file:": {
       const root = path.resolve(url.pathname);
       return new FSStorage(root);
     }
-    case 's3:': {
+    case "s3:": {
       const options: NonNullable<ConstructorParameters<typeof S3>[0]> = {};
-      const region = url.searchParams.get('region');
+      const region = url.searchParams.get("region");
       if (region) options.region = region;
       const bucket = url.hostname;
-      return new S3Storage(new S3(options), bucket, url.pathname.replace(/^\//, ''));
+      return new S3Storage(new S3(options), bucket, url.pathname.replace(/^\//, ""));
     }
     default:
       throw new Error(`Unknown protocol: ${url.protocol}`);

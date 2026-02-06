@@ -32,7 +32,7 @@
   --btn-active-select: rgba(99, 224, 36, 0.24);
   --btn-switcher: linear-gradient(180deg, #a1e59c 0%, #d0f5b0 100%);
 
-  --btn-accent-positive-500: #ECFBE5;
+  --btn-accent-positive-500: #ecfbe5;
   //disable
   --dis-00: #ffffff;
   --dis-01: light-dark(#cfd1db, #3d3d42);
@@ -41,7 +41,7 @@
   --bg-base-light: #f7f8fa;
   --bg-elevated-01: #ffffff;
   --bg-elevated-02: #e1e3eb;
-  --bg-error: #FFF5F5;
+  --bg-error: #fff5f5;
   //filled
   --filled-V-BG: #d0f0c0;
   --filled-D-BG: #ffcecc;
@@ -64,7 +64,7 @@
   --gradient-red: linear-gradient(0deg, #ffd5cc 0%, #ff9494 100%);
   --gradient-violet: linear-gradient(180deg, #bca3ff 0%, #e5e5ff 100%);
   --TT-gradient-violet: linear-gradient(180deg, #bca3ff 0%, #e5e5ff 100%);
-  --gradient-light-lime: linear-gradient(180deg, #EBFFEB 0%, transparent 100%);
+  --gradient-light-lime: linear-gradient(180deg, #ebffeb 0%, transparent 100%);
   //box shadow
   --shadow-l: 0px 8px 16px -4px rgba(15, 36, 77, 0.16), 0px 12px 32px -4px rgba(15, 36, 77, 0.16);
   // Layout
@@ -86,18 +86,18 @@
   --scrollbar-width: 6px;
 }
 
-[data-theme='dark'] {
+[data-theme="dark"] {
   --txt-00: #ffffff;
-  --txt-01: #FFFFFF;
+  --txt-01: #ffffff;
   --txt-02: #adaeb8;
   --txt-03: #60616b;
-  --txt-mask: #3D3D42;
+  --txt-mask: #3d3d42;
   --txt-focus: #87e087;
   --txt-error: #ff5c5c;
   --txt-link: #9470ff;
   //icon
   --ic-00: #ffffff;
-  --ic-01: #FFFFFF;
+  --ic-01: #ffffff;
   --ic-02: #60616b;
   --ic-accent: #87e087;
   //border
@@ -121,13 +121,13 @@
   --btn-switcher: #5e5e70;
   //disable
   --dis-00: #65656b;
-  --dis-01: #3D3D42;
+  --dis-01: #3d3d42;
   //background
   --bg-base-dark: #0d0d0f;
   --bg-base-light: #0d0d0f;
   --bg-elevated-01: #1b1b1f;
   --bg-elevated-02: #2d2d33;
-  --bg-error: #FFF5F5;
+  --bg-error: #fff5f5;
   //filled
   --filled-V-BG: rgba(66, 184, 66, 0.4);
   --filled-D-BG: rgba(229, 83, 229, 0.4);
@@ -149,5 +149,4 @@
   --gradient-rose: linear-gradient(0deg, #478063 0%, #2e4652 45.93%, #24223d 91.63%);
   --gradient-red: linear-gradient(0deg, #478063 0%, #2e4652 45.93%, #24223d 91.63%);
   --gradient-violet: linear-gradient(0deg, #478063 0%, #2e4652 45.93%, #24223d 91.63%);
-
 }

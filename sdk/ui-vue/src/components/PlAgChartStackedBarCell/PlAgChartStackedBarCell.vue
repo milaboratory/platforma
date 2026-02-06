@@ -1,12 +1,8 @@
 <script setup lang="ts">
-import type { ICellRendererParams } from 'ag-grid-enterprise';
-import type {
-  PlChartStackedBarSettings,
-} from '@milaboratories/uikit';
-import {
-  PlChartStackedBarCompact,
-} from '@milaboratories/uikit';
-import { computed } from 'vue';
+import type { ICellRendererParams } from "ag-grid-enterprise";
+import type { PlChartStackedBarSettings } from "@milaboratories/uikit";
+import { PlChartStackedBarCompact } from "@milaboratories/uikit";
+import { computed } from "vue";
 
 const props = defineProps<{
   params: ICellRendererParams<unknown, PlChartStackedBarSettings | undefined>;

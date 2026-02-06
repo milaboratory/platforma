@@ -1,5 +1,5 @@
-import type { Cfg } from '@platforma-sdk/model';
-import { traverseCfg } from './traverse';
+import type { Cfg } from "@platforma-sdk/model";
+import { traverseCfg } from "./traverse";
 
 export function mapRecord<T1, T2, Key extends string>(
   obj: Record<Key, T1>,
@@ -16,7 +16,7 @@ export function ifNotUndef<T, R>(value: T | undefined, cb: (value: T) => R): R |
 
 function isActiveCfg(cfg: Cfg): boolean {
   switch (cfg.type) {
-    case 'GetImportProgress':
+    case "GetImportProgress":
       return true;
     default:
       return false;

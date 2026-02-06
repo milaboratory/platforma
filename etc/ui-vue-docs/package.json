@@ -1,7 +1,7 @@
 {
   "name": "@milaboratories/ui-vue-docs",
-  "private": true,
   "version": "0.2.122",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vitepress dev",
@@ -11,15 +11,6 @@
     "docs:test": "echo 'Hola!'",
     "fmt": "ts-builder format"
   },
-  "devDependencies": {
-    "sass": "catalog:",
-    "vitepress": "catalog:",
-    "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/ts-builder": "workspace:*",
-    "vite": "catalog:",
-    "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
-  },
   "dependencies": {
     "@faker-js/faker": "catalog:",
     "@milaboratories/helpers": "workspace:*",
@@ -28,5 +19,14 @@
     "@platforma-sdk/ui-vue": "workspace:*",
     "highlight.js": "catalog:",
     "vue": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "sass": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitepress": "catalog:"
   }
 }

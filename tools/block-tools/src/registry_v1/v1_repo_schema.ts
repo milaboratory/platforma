@@ -4,7 +4,7 @@ export interface FullBlockPackageName {
   version: string;
 }
 
-const MainPrefix = 'v1/';
+const MainPrefix = "v1/";
 
 export function packageContentPrefix(bp: FullBlockPackageName): string {
   return `${MainPrefix}${bp.organization}/${bp.package}/${bp.version}`;
@@ -14,7 +14,7 @@ export function payloadFilePath(bp: FullBlockPackageName, file: string): string 
   return `${MainPrefix}${bp.organization}/${bp.package}/${bp.version}/${file}`;
 }
 
-export type BlockPackageNameWithoutVersion = Pick<FullBlockPackageName, 'organization' | 'package'>;
+export type BlockPackageNameWithoutVersion = Pick<FullBlockPackageName, "organization" | "package">;
 
 export function packageOverviewPath(bp: BlockPackageNameWithoutVersion): string {
   return `${MainPrefix}${bp.organization}/${bp.package}/overview.json`;
@@ -22,7 +22,7 @@ export function packageOverviewPath(bp: BlockPackageNameWithoutVersion): string 
 
 export const GlobalOverviewPath = `${MainPrefix}overview.json`;
 
-export const MetaFile = 'meta.json';
+export const MetaFile = "meta.json";
 
 export interface PackageOverviewEntry {
   version: string;

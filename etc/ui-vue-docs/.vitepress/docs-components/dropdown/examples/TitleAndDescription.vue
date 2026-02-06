@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { PlDropdown } from '@platforma-sdk/ui-vue';
-import { faker } from '@faker-js/faker';
+import { ref } from "vue";
+import { PlDropdown } from "@platforma-sdk/ui-vue";
+import { faker } from "@faker-js/faker";
 
 const options = [
   {
-    text: 'Item text 1',
+    text: "Item text 1",
     description: faker.lorem.paragraph(),
     value: { prop: 1 },
   },
   {
-    text: 'Item text 2',
+    text: "Item text 2",
     description: faker.lorem.paragraph(),
     value: { prop: 2 },
   },
   {
-    text: 'Item text 3',
+    text: "Item text 3",
     description: faker.lorem.paragraph(),
     value: { prop: 3 },
   },
   {
-    text: 'Item text 4',
+    text: "Item text 4",
     description: faker.lorem.paragraph(),
     value: { prop: 4 },
   },

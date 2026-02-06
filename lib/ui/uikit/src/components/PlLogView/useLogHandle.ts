@@ -1,6 +1,6 @@
-import { reactive, type Reactive, ref, watch } from 'vue';
-import { useTimeoutPoll, whenever } from '@vueuse/core';
-import { getRawPlatformaInstance, type AnyLogHandle, type Platforma } from '@platforma-sdk/model';
+import { reactive, type Reactive, ref, watch } from "vue";
+import { useTimeoutPoll, whenever } from "@vueuse/core";
+import { getRawPlatformaInstance, type AnyLogHandle, type Platforma } from "@platforma-sdk/model";
 
 type LogState = {
   logHandle: AnyLogHandle;
@@ -10,15 +10,20 @@ type LogState = {
   error: unknown;
 };
 
-const ProgressPrefixDefault = '[==PROGRESS==]'; // @TODO ?
+const ProgressPrefixDefault = "[==PROGRESS==]"; // @TODO ?
 
 // from here https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions#escaping
 function escapeRegExp(str: string) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export function useLogHandle(
-  props: Reactive<{ logHandle: AnyLogHandle | undefined; maxRetries?: number; mockPlatforma?: Platforma; progressPrefix?: string }>,
+  props: Reactive<{
+    logHandle: AnyLogHandle | undefined;
+    maxRetries?: number;
+    mockPlatforma?: Platforma;
+    progressPrefix?: string;
+  }>,
 ) {
   const logState = ref<LogState>();
 
@@ -35,12 +40,16 @@ export function useLogHandle(
     const platforma = props.mockPlatforma ?? getRawPlatformaInstance();
 
     if (!platforma) {
-      console.warn('Platforma API is not available');
+      console.warn("Platforma API is not available");
       return;
     }
 
     while (true) {
-      const result = await platforma.logDriver.readText(currentLogState.logHandle, 100, currentLogState.lastOffset);
+      const result = await platforma.logDriver.readText(
+        currentLogState.logHandle,
+        100,
+        currentLogState.lastOffset,
+      );
 
       currentLogState.error = undefined;
 
@@ -54,7 +63,9 @@ export function useLogHandle(
 
       const progressPrefix = props.progressPrefix ?? ProgressPrefixDefault;
 
-      const newLines = new TextDecoder().decode(result.data).replace(new RegExp(`${escapeRegExp(progressPrefix)}`, 'g'), '');
+      const newLines = new TextDecoder()
+        .decode(result.data)
+        .replace(new RegExp(`${escapeRegExp(progressPrefix)}`, "g"), "");
 
       // We simply change it in a mutable way: if logHandle has been changed, it points to the new object
       currentLogState = Object.assign(currentLogState, {
@@ -74,13 +85,16 @@ export function useLogHandle(
         if (data.errorCount > (props.maxRetries ?? 3)) {
           logState.value.error = err;
         } else {
-          console.warn('skip error:', err, 'retry...');
+          console.warn("skip error:", err, "retry...");
         }
       }
     });
 
   // Only trigger after last fetch is done
-  const timeoutPoll = useTimeoutPoll(fetchAndCatch, 1500, { immediate: false, immediateCallback: true });
+  const timeoutPoll = useTimeoutPoll(fetchAndCatch, 1500, {
+    immediate: false,
+    immediateCallback: true,
+  });
 
   whenever(
     () => logState?.value?.finished,
@@ -94,7 +108,13 @@ export function useLogHandle(
         logState.value = undefined;
         timeoutPoll.pause();
       } else if (lh !== logState.value?.logHandle) {
-        logState.value = { logHandle: lh, lastOffset: 0, lines: '', finished: false, error: undefined };
+        logState.value = {
+          logHandle: lh,
+          lastOffset: 0,
+          lines: "",
+          finished: false,
+          error: undefined,
+        };
         data.errorCount = 0;
         timeoutPoll.resume();
       }

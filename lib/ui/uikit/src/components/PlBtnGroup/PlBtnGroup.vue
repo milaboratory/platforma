@@ -3,17 +3,17 @@
  * A component for selecting one value from a list of options
  */
 export default {
-  name: 'PlBtnGroup',
+  name: "PlBtnGroup",
 };
 </script>
 
 <script lang="ts" setup generic="M = unknown">
-import './pl-btn-group.scss';
-import { computed, useSlots } from 'vue';
-import { PlTooltip } from '../PlTooltip';
-import InnerBorder from '../../utils/InnerBorder.vue';
-import type { SimpleOption } from '../../types';
-import { getErrorMessage } from '../../helpers/error.ts';
+import "./pl-btn-group.scss";
+import { computed, useSlots } from "vue";
+import { PlTooltip } from "../PlTooltip";
+import InnerBorder from "../../utils/InnerBorder.vue";
+import type { SimpleOption } from "../../types";
+import { getErrorMessage } from "../../helpers/error.ts";
 
 const slots = useSlots();
 
@@ -21,10 +21,10 @@ const emit = defineEmits<{
   /**
    * Emitted when the model value is updated.
    */
-  (e: 'update:modelValue', value: M): void;
+  (e: "update:modelValue", value: M): void;
 }>();
 
-const emitModel = (v: M) => emit('update:modelValue', v);
+const emitModel = (v: M) => emit("update:modelValue", v);
 
 const props = defineProps<{
   /**
@@ -59,7 +59,7 @@ const props = defineProps<{
 
 const normalizedOptions = computed(() =>
   props.options.map((it) => ({
-    label: 'label' in it ? it.label : it.text,
+    label: "label" in it ? it.label : it.text,
     value: it.value,
   })),
 );

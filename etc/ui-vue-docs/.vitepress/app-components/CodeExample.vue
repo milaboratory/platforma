@@ -5,12 +5,12 @@
       <div class="d-flex align-center text-subtitle-s">
         <slot name="name" />
       </div>
-      <div class="flex-grow-1"/>
+      <div class="flex-grow-1" />
       <div class="code-example__icon cursor-pointer">
-        <div :class="modeIcons" class="icon-24" @click="darkMode = !darkMode"/>
+        <div :class="modeIcons" class="icon-24" @click="darkMode = !darkMode" />
       </div>
       <div class="code-example__icon cursor-pointer">
-        <div class="icon-24 icon-code" @click="showExampleCode = !showExampleCode"/>
+        <div class="icon-24 icon-code" @click="showExampleCode = !showExampleCode" />
       </div>
     </div>
 
@@ -27,7 +27,7 @@
         :class="showExampleCode ? 'border-top-default' : ''"
         :style="{
           maxHeight: showExampleCode ? '800vh' : 0,
-          padding: showExampleCode ? '12px' : 0
+          padding: showExampleCode ? '12px' : 0,
         }"
       >
         <div class="code-example__copy-code cursor-pointer" @click="copyCode">
@@ -40,24 +40,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import hljs from 'highlight.js';
-import javascript from 'highlight.js/lib/languages/javascript';
-import xml from 'highlight.js/lib/languages/xml';
-hljs.registerLanguage('xml', xml);
-hljs.registerLanguage('javascript', javascript);
+import { computed, ref } from "vue";
+import hljs from "highlight.js";
+import javascript from "highlight.js/lib/languages/javascript";
+import xml from "highlight.js/lib/languages/xml";
+hljs.registerLanguage("xml", xml);
+hljs.registerLanguage("javascript", javascript);
 
 const props = defineProps<{ code: string; hideHeader?: boolean }>();
 
 const highlightedCode = hljs.highlight(props.code, {
-  language: 'xml',
+  language: "xml",
 }).value;
 
 const darkMode = ref(false);
 const copy = ref(false);
 const showExampleCode = ref(true);
-const modeIcons = computed(() => (darkMode.value ? 'icon-light-mode' : 'icon-dark-mode'));
-const copyIcon = computed(() => (copy.value ? 'mask-clipboard-copied' : 'mask-clipboard'));
+const modeIcons = computed(() => (darkMode.value ? "icon-light-mode" : "icon-dark-mode"));
+const copyIcon = computed(() => (copy.value ? "mask-clipboard-copied" : "mask-clipboard"));
 
 function copyCode() {
   if (navigator.clipboard) {

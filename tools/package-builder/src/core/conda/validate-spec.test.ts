@@ -1,17 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as os from 'node:os';
-import * as fsp from 'node:fs/promises';
-import { validateCondaSpec } from './validate-spec';
-import * as util from '../util';
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as os from "node:os";
+import * as fsp from "node:fs/promises";
+import { validateCondaSpec } from "./validate-spec";
+import * as util from "../util";
 
-describe('validateCondaSpec', () => {
+describe("validateCondaSpec", () => {
   let tempDir: string;
   const mockLogger = util.createLogger();
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'validate-conda-spec-test'));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "validate-conda-spec-test"));
   });
 
   afterEach(() => {
@@ -19,7 +19,7 @@ describe('validateCondaSpec', () => {
   });
 
   const createSpec = async (content: string): Promise<string> => {
-    const specPath = path.join(tempDir, 'spec.yaml');
+    const specPath = path.join(tempDir, "spec.yaml");
     await fsp.writeFile(specPath, content);
     return specPath;
   };
@@ -34,8 +34,8 @@ describe('validateCondaSpec', () => {
     expect(() => validateCondaSpec(mockLogger, specPath)).toThrow(errorPattern);
   };
 
-  describe('allowed channels', () => {
-    it('should accept single allowed channel', async () => {
+  describe("allowed channels", () => {
+    it("should accept single allowed channel", async () => {
       await expectValid(`
 channels:
   - bioconda
@@ -44,7 +44,7 @@ dependencies:
 `);
     });
 
-    it('should accept multiple allowed channels', async () => {
+    it("should accept multiple allowed channels", async () => {
       await expectValid(`
 channels:
   - bioconda
@@ -54,11 +54,11 @@ dependencies: []
     });
   });
 
-  describe('forbidden channels', () => {
+  describe("forbidden channels", () => {
     const forbiddenChannels = [
-      { name: 'main', variations: ['main', 'MAIN'] },
-      { name: 'r', variations: ['r', 'R'] },
-      { name: 'msys2', variations: ['msys2', 'Msys2'] },
+      { name: "main", variations: ["main", "MAIN"] },
+      { name: "r", variations: ["r", "R"] },
+      { name: "msys2", variations: ["msys2", "Msys2"] },
     ];
 
     forbiddenChannels.forEach(({ name, variations }) => {
@@ -78,8 +78,8 @@ dependencies: []
     });
   });
 
-  describe('allowed dependencies', () => {
-    it('should accept simple package names', async () => {
+  describe("allowed dependencies", () => {
+    it("should accept simple package names", async () => {
       await expectValid(`
 channels:
   - conda-forge
@@ -89,7 +89,7 @@ dependencies:
 `);
     });
 
-    it('should accept packages with allowed channel prefix', async () => {
+    it("should accept packages with allowed channel prefix", async () => {
       await expectValid(`
 channels:
   - bioconda
@@ -100,14 +100,14 @@ dependencies:
     });
   });
 
-  describe('forbidden dependencies prefixes (case insensitive)', () => {
+  describe("forbidden dependencies prefixes (case insensitive)", () => {
     const forbiddenPrefixes = [
-      { prefix: 'main', package: 'python' },
-      { prefix: 'MAIN', package: 'stats' },
-      { prefix: 'r', package: 'some-package' },
-      { prefix: 'R', package: 'some-package' },
-      { prefix: 'msys2', package: 'git' },
-      { prefix: 'Msys2', package: 'git' },
+      { prefix: "main", package: "python" },
+      { prefix: "MAIN", package: "stats" },
+      { prefix: "r", package: "some-package" },
+      { prefix: "R", package: "some-package" },
+      { prefix: "msys2", package: "git" },
+      { prefix: "Msys2", package: "git" },
     ];
 
     forbiddenPrefixes.forEach(({ prefix, package: pkg }) => {
@@ -125,8 +125,8 @@ dependencies:
     });
   });
 
-  describe('mixed scenarios', () => {
-    it('should accept allowed channels with allowed dependencies', async () => {
+  describe("mixed scenarios", () => {
+    it("should accept allowed channels with allowed dependencies", async () => {
       await expectValid(`
 channels:
   - bioconda
@@ -138,7 +138,7 @@ dependencies:
 `);
     });
 
-    it('should reject when both channels and dependencies have violations', async () => {
+    it("should reject when both channels and dependencies have violations", async () => {
       const content = `
 channels:
   - main
@@ -154,7 +154,7 @@ dependencies:
       );
     });
 
-    it('should reject multiple violations', async () => {
+    it("should reject multiple violations", async () => {
       await expectInvalid(
         `
 channels:
@@ -171,8 +171,8 @@ dependencies:
     });
   });
 
-  describe('edge cases', () => {
-    it('should handle empty channels list', async () => {
+  describe("edge cases", () => {
+    it("should handle empty channels list", async () => {
       await expectValid(`
 channels: []
 dependencies:
@@ -180,7 +180,7 @@ dependencies:
 `);
     });
 
-    it('should handle empty dependencies list', async () => {
+    it("should handle empty dependencies list", async () => {
       await expectValid(`
 channels:
   - conda-forge
@@ -188,18 +188,18 @@ dependencies: []
 `);
     });
 
-    it('should handle specs without dependencies section', async () => {
+    it("should handle specs without dependencies section", async () => {
       await expectValid(`
 channels:
   - conda-forge
 `);
     });
 
-    it('should throw error for non-existent file', () => {
-      expect(() => validateCondaSpec(mockLogger, '/non-existent/path.yaml')).toThrow();
+    it("should throw error for non-existent file", () => {
+      expect(() => validateCondaSpec(mockLogger, "/non-existent/path.yaml")).toThrow();
     });
 
-    it('should handle dependencies with version constraints', async () => {
+    it("should handle dependencies with version constraints", async () => {
       await expectValid(`
 channels:
   - conda-forge

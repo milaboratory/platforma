@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { PL_PLACEHOLDER_TEXTS, PlPlaceholder } from '@milaboratories/uikit';
-import type { PlPlaceholderProps } from '@milaboratories/uikit';
-import { ref } from 'vue';
-import style from './pl-ag-overlay-loading.module.scss';
-import type { PlAgOverlayLoadingParams } from './types';
+import { PL_PLACEHOLDER_TEXTS, PlPlaceholder } from "@milaboratories/uikit";
+import type { PlPlaceholderProps } from "@milaboratories/uikit";
+import { ref } from "vue";
+import style from "./pl-ag-overlay-loading.module.scss";
+import type { PlAgOverlayLoadingParams } from "./types";
 
 // @TODO move this component from this folder
 
@@ -21,9 +21,9 @@ defineExpose({
 });
 
 function normalizePlaceholderText(
-  text: string | Pick<PlPlaceholderProps, 'title' | 'subtitle'>,
-): Pick<PlPlaceholderProps, 'title' | 'subtitle'> {
-  if (typeof text === 'string') return { title: text };
+  text: string | Pick<PlPlaceholderProps, "title" | "subtitle">,
+): Pick<PlPlaceholderProps, "title" | "subtitle"> {
+  if (typeof text === "string") return { title: text };
   return text;
 }
 </script>
@@ -32,16 +32,18 @@ function normalizePlaceholderText(
   <div :class="style.container">
     <div v-if="params.variant === 'not-ready'" :class="style.notReadyWrapper">
       <div :class="style.iconCatInBag" />
-      <h3 :class="style.text">{{ params.notReadyText || 'Data is not computed' }}</h3>
+      <h3 :class="style.text">{{ params.notReadyText || "Data is not computed" }}</h3>
     </div>
     <PlPlaceholder
       v-else
-      v-bind="normalizePlaceholderText(
-        {
-          loading: params.loadingText ?? PL_PLACEHOLDER_TEXTS.LOADING,
-          running: params.runningText ?? PL_PLACEHOLDER_TEXTS.RUNNING,
-        }[params.variant],
-      )"
+      v-bind="
+        normalizePlaceholderText(
+          {
+            loading: params.loadingText ?? PL_PLACEHOLDER_TEXTS.LOADING,
+            running: params.runningText ?? PL_PLACEHOLDER_TEXTS.RUNNING,
+          }[params.variant],
+        )
+      "
       variant="table"
     />
   </div>

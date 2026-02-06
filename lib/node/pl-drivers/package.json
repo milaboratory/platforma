@@ -1,13 +1,14 @@
 {
   "name": "@milaboratories/pl-drivers",
   "version": "1.11.45",
-  "engines": {
-    "node": ">=22"
-  },
   "description": "Drivers and a low-level clients for log streaming, downloading and uploading files from and to pl",
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
   "type": "module",
-  "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -23,41 +24,40 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
-  "files": [
-    "dist/**/*",
-    "src/**/*"
-  ],
   "dependencies": {
     "@grpc/grpc-js": "catalog:",
-    "@milaboratories/ts-helpers": "workspace:*",
-    "@milaboratories/helpers": "workspace:*",
     "@milaboratories/computable": "workspace:*",
+    "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pl-client": "workspace:*",
-    "@milaboratories/pl-tree": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
+    "@milaboratories/pl-tree": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
     "@protobuf-ts/grpc-transport": "catalog:",
     "@protobuf-ts/plugin": "catalog:",
     "@protobuf-ts/runtime": "catalog:",
     "@protobuf-ts/runtime-rpc": "catalog:",
     "decompress": "catalog:",
     "denque": "catalog:",
-    "tar-fs": "catalog:",
     "openapi-fetch": "catalog:",
+    "tar-fs": "catalog:",
     "undici": "catalog:",
     "upath": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/decompress": "catalog:",
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/test-helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/test-helpers": "workspace:*",
-    "openapi-typescript": "catalog:",
+    "@types/decompress": "catalog:",
     "@types/node": "catalog:",
     "@types/tar-fs": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "openapi-typescript": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

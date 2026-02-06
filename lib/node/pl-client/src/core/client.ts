@@ -1,28 +1,31 @@
-import type { AuthOps, PlClientConfig, PlConnectionStatusListener, wireProtocol } from './config';
-import type { PlCallOps } from './ll_client';
-import { LLPlClient } from './ll_client';
-import type { AnyResourceRef } from './transaction';
-import { PlTransaction, toGlobalResourceId, TxCommitConflict } from './transaction';
-import { createHash } from 'node:crypto';
-import type { OptionalResourceId, ResourceId } from './types';
-import { ensureResourceIdNotNull, isNullResourceId, NullResourceId } from './types';
-import { ClientRoot } from '../helpers/pl';
-import type { MiLogger, RetryOptions } from '@milaboratories/ts-helpers';
-import { assertNever, createRetryState, nextRetryStateOrError } from '@milaboratories/ts-helpers';
-import type { PlDriver, PlDriverDefinition } from './driver';
-import type { MaintenanceAPI_Ping_Response, MaintenanceAPI_License_Response } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
-import { MaintenanceAPI_Ping_Response_Compression } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
-import * as tp from 'node:timers/promises';
-import type { Dispatcher } from 'undici';
-import { LRUCache } from 'lru-cache';
-import type { ResourceDataCacheRecord } from './cache';
-import type { FinalResourceDataPredicate } from './final';
-import { DefaultFinalResourceDataPredicate } from './final';
-import type { AllTxStat, TxStat } from './stat';
-import { addStat, initialTxStat } from './stat';
-import type { WireConnection } from './wire';
-import { advisoryLock } from './advisory_locks';
-import { plAddressToConfig } from './config';
+import type { AuthOps, PlClientConfig, PlConnectionStatusListener, wireProtocol } from "./config";
+import type { PlCallOps } from "./ll_client";
+import { LLPlClient } from "./ll_client";
+import type { AnyResourceRef } from "./transaction";
+import { PlTransaction, toGlobalResourceId, TxCommitConflict } from "./transaction";
+import { createHash } from "node:crypto";
+import type { OptionalResourceId, ResourceId } from "./types";
+import { ensureResourceIdNotNull, isNullResourceId, NullResourceId } from "./types";
+import { ClientRoot } from "../helpers/pl";
+import type { MiLogger, RetryOptions } from "@milaboratories/ts-helpers";
+import { assertNever, createRetryState, nextRetryStateOrError } from "@milaboratories/ts-helpers";
+import type { PlDriver, PlDriverDefinition } from "./driver";
+import type {
+  MaintenanceAPI_Ping_Response,
+  MaintenanceAPI_License_Response,
+} from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
+import { MaintenanceAPI_Ping_Response_Compression } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
+import * as tp from "node:timers/promises";
+import type { Dispatcher } from "undici";
+import { LRUCache } from "lru-cache";
+import type { ResourceDataCacheRecord } from "./cache";
+import type { FinalResourceDataPredicate } from "./final";
+import { DefaultFinalResourceDataPredicate } from "./final";
+import type { AllTxStat, TxStat } from "./stat";
+import { addStat, initialTxStat } from "./stat";
+import type { WireConnection } from "./wire";
+import { advisoryLock } from "./advisory_locks";
+import { plAddressToConfig } from "./config";
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -35,7 +38,7 @@ const defaultTxOps = {
   sync: false,
 };
 
-const AnonymousClientRoot = 'AnonymousRoot';
+const AnonymousClientRoot = "AnonymousRoot";
 
 function alternativeRootFieldName(alternativeRoot: string): string {
   return `alternative_root_${alternativeRoot}`;
@@ -55,12 +58,15 @@ export class PlClient {
   /** Last resort measure to solve complicated race conditions in pl. */
   private readonly defaultRetryOptions: RetryOptions;
 
-  private readonly buildLLPlClient: (shouldUseGzip: boolean, wireProtocol?: wireProtocol) => Promise<LLPlClient>;
+  private readonly buildLLPlClient: (
+    shouldUseGzip: boolean,
+    wireProtocol?: wireProtocol,
+  ) => Promise<LLPlClient>;
   private _ll?: LLPlClient;
 
   private get ll(): LLPlClient {
     if (this._ll === undefined) {
-      throw new Error('LLPlClient not initialized');
+      throw new Error("LLPlClient not initialized");
     }
     return this._ll;
   }
@@ -93,9 +99,13 @@ export class PlClient {
       logger?: MiLogger;
     } = {},
   ) {
-    const conf = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
+    const conf =
+      typeof configOrAddress === "string" ? plAddressToConfig(configOrAddress) : configOrAddress;
 
-    this.buildLLPlClient = async (shouldUseGzip: boolean, wireProtocol?: wireProtocol): Promise<LLPlClient> => {
+    this.buildLLPlClient = async (
+      shouldUseGzip: boolean,
+      wireProtocol?: wireProtocol,
+    ): Promise<LLPlClient> => {
       if (wireProtocol) conf.wireProtocol = wireProtocol;
       return await LLPlClient.build(conf, { auth, ...ops, shouldUseGzip });
     };
@@ -108,18 +118,18 @@ export class PlClient {
       sizeCalculation: (v) => (v.basicData.data?.length ?? 0) + 64,
     });
     switch (conf.retryBackoffAlgorithm) {
-      case 'exponential':
+      case "exponential":
         this.defaultRetryOptions = {
-          type: 'exponentialBackoff',
+          type: "exponentialBackoff",
           initialDelay: conf.retryInitialDelay,
           maxAttempts: conf.retryMaxAttempts,
           backoffMultiplier: conf.retryExponentialBackoffMultiplier,
           jitter: conf.retryJitter,
         };
         break;
-      case 'linear':
+      case "linear":
         this.defaultRetryOptions = {
-          type: 'linearBackoff',
+          type: "linearBackoff",
           initialDelay: conf.retryInitialDelay,
           maxAttempts: conf.retryMaxAttempts,
           backoffStep: conf.retryLinearBackoffStep,
@@ -180,7 +190,7 @@ export class PlClient {
   }
 
   private checkInitialized() {
-    if (!this.initialized) throw new Error('Client not initialized');
+    if (!this.initialized) throw new Error("Client not initialized");
   }
 
   public get clientRoot(): ResourceId {
@@ -195,7 +205,7 @@ export class PlClient {
 
   /** Currently implements custom logic to emulate future behaviour with single root. */
   private async init() {
-    if (this.initialized) throw new Error('Already initialized');
+    if (this.initialized) throw new Error("Already initialized");
 
     // Initial client is created without gzip to perform server ping and detect optimal wire protocol.
     // LLPlClient.build() internally calls detectOptimalWireProtocol() which starts with default 'grpc',
@@ -208,8 +218,8 @@ export class PlClient {
 
     // calculating reproducible root name from the username
     const user = this._ll.authUser;
-    const mainRootName
-       = user === null ? AnonymousClientRoot : createHash('sha256').update(user).digest('hex');
+    const mainRootName =
+      user === null ? AnonymousClientRoot : createHash("sha256").update(user).digest("hex");
 
     this._serverInfo = await this.ping();
     if (this._serverInfo.compression === MaintenanceAPI_Ping_Response_Compression.GZIP) {
@@ -217,7 +227,7 @@ export class PlClient {
       this._ll = await this.buildLLPlClient(true, wireProtocol);
     }
 
-    this._clientRoot = await this._withTx('initialization', true, NullResourceId, async (tx) => {
+    this._clientRoot = await this._withTx("initialization", true, NullResourceId, async (tx) => {
       let mainRoot: AnyResourceRef;
 
       if (await tx.checkResourceNameExists(mainRootName))
@@ -238,7 +248,7 @@ export class PlClient {
 
         const altRoot = tx.createEphemeral(ClientRoot);
         tx.lock(altRoot);
-        tx.createField(aFId, 'Dynamic');
+        tx.createField(aFId, "Dynamic");
         tx.setField(aFId, altRoot);
         await tx.commit();
 
@@ -251,8 +261,8 @@ export class PlClient {
   public async deleteAlternativeRoot(alternativeRootName: string): Promise<boolean> {
     this.checkInitialized();
     if (this.ll.conf.alternativeRoot !== undefined)
-      throw new Error('Initialized with alternative root.');
-    return await this.withWriteTx('delete-alternative-root', async (tx) => {
+      throw new Error("Initialized with alternative root.");
+    return await this.withWriteTx("delete-alternative-root", async (tx) => {
       const fId = {
         resourceId: tx.clientRoot,
         fieldName: alternativeRootFieldName(alternativeRootName),
@@ -307,7 +317,7 @@ export class PlClient {
             // collecting stat
             this._txConflictStat = addStat(this._txConflictStat, tx.stat);
           } else {
-          // collecting stat
+            // collecting stat
             this._txErrorStat = addStat(this._txErrorStat, tx.stat);
             throw e;
           }
@@ -325,8 +335,7 @@ export class PlClient {
 
         if (ok) {
           // syncing on transaction if requested
-          if (ops?.sync === undefined ? this.forceSync : ops?.sync)
-            await this.ll.txSync(txId);
+          if (ops?.sync === undefined ? this.forceSync : ops?.sync) await this.ll.txSync(txId);
 
           // introducing artificial delay, if requested
           if (writable && this.txDelay > 0)

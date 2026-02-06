@@ -1,14 +1,14 @@
 <script lang="ts" setup>
-import Layout from '../Layout.vue';
-import Heap from './Heap.vue';
-import { useTheme, ThemeSwitcher } from '@milaboratories/uikit';
+import Layout from "../Layout.vue";
+import Heap from "./Heap.vue";
+import { useTheme, ThemeSwitcher } from "@milaboratories/uikit";
 
 const [theme] = useTheme((theme) => {
-  console.log('changed', theme);
+  console.log("changed", theme);
 });
 
 useTheme((theme) => {
-  console.log('second', theme);
+  console.log("second", theme);
 });
 </script>
 
@@ -35,7 +35,7 @@ useTheme((theme) => {
 
   --bg-color: #fff;
 
-  &[data-theme='dark'] {
+  &[data-theme="dark"] {
     --bg-color: #1b1b1f;
   }
 

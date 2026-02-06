@@ -19,15 +19,14 @@ const VERY_LONG_OPTIONS_ARRAY = Array.from({ length: 100000 }, (_, idx) => ({
 async function requestOptions(str: string): Promise<ListOption<string>[]> {
   await delay(1000);
   return Promise.resolve(
-    VERY_LONG_OPTIONS_ARRAY.filter(
-      (el) => el.value.includes(str) || el.label.includes(str)
-    ).slice(0, 100)
+    VERY_LONG_OPTIONS_ARRAY.filter((el) => el.value.includes(str) || el.label.includes(str)).slice(
+      0,
+      100,
+    ),
   );
 }
 
-async function requestOptionsError(
-  _str: string
-): Promise<ListOption<string>[]> {
+async function requestOptionsError(_str: string): Promise<ListOption<string>[]> {
   throw new Error("test error");
 }
 </script>

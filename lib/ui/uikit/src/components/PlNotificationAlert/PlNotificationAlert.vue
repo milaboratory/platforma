@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { PlBtnGhost } from '../PlBtnGhost';
-import './pl-notification-alert.scss';
+import { PlBtnGhost } from "../PlBtnGhost";
+import "./pl-notification-alert.scss";
 
 const props = withDefaults(
   defineProps<{
-    type?: 'success' | 'error' | 'warning' | 'neutral';
+    type?: "success" | "error" | "warning" | "neutral";
     width?: string;
     closable?: boolean;
   }>(),
-  { type: 'neutral', width: '256px' },
+  { type: "neutral", width: "256px" },
 );
 
 const model = defineModel({ type: Boolean, default: true });
@@ -21,7 +21,12 @@ function closeAlert() {
 </script>
 
 <template>
-  <div v-if="model" :class="type" :style="{ width: `${width}` }" class="pl-notification-alert d-flex flex-column gap-16">
+  <div
+    v-if="model"
+    :class="type"
+    :style="{ width: `${width}` }"
+    class="pl-notification-alert d-flex flex-column gap-16"
+  >
     <div class="pl-notification-alert__wrapper d-flex text-s">
       <div class="pl-notification-alert__content flex-grow-1">
         <slot />

@@ -5,9 +5,9 @@
     "@platforma-open/milaboratories.runenv-python-3": "catalog:"
   },
   "block-software": {
-      "entrypoints": {
-        "test-docker": {
-          "binary": {
+    "entrypoints": {
+      "test-docker": {
+        "binary": {
           "artifact": {
             "type": "python",
             "registry": "platforma-open",
@@ -18,19 +18,22 @@
             },
             "root": "./python-example"
           },
-            "cmd": ["aaaa"]
+          "cmd": [
+            "aaaa"
+          ]
+        },
+        "docker": {
+          "artifact": {
+            "type": "docker",
+            "dockerfile": "Dockerfile",
+            "context": "docker-context"
           },
-          "docker": {
-            "artifact": {
-              "type": "docker",
-              "dockerfile": "Dockerfile",
-              "context": "docker-context"
-            },
-            "cmd": ["echo", "hello"]
-          }
+          "cmd": [
+            "echo",
+            "hello"
+          ]
         }
       }
+    }
   }
-
-
 }

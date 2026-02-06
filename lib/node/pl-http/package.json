@@ -2,10 +2,14 @@
   "name": "@milaboratories/pl-http",
   "version": "1.2.0",
   "description": "Common HTTP client settings for Platforma.bio libraries",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "type": "module",
-  "types": "./dist/index.d.ts",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -21,10 +25,6 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "dependencies": {
     "https-proxy-agent": "catalog:",
     "undici": "catalog:"
@@ -32,11 +32,11 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
-    "@types/node": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/http-proxy": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

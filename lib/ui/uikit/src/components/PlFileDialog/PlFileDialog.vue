@@ -1,18 +1,18 @@
 <script lang="ts" setup>
-import style from './pl-file-dialog.module.scss';
-import { computed, ref, useTemplateRef } from 'vue';
-import { notEmpty } from '@milaboratories/helpers';
-import type { ImportedFiles, SimpleOption } from '../../types';
-import { PlDialogModal } from '../PlDialogModal';
-import { PlBtnPrimary } from '../PlBtnPrimary';
-import { PlBtnGhost } from '../PlBtnGhost';
-import { PlBtnGroup } from '../PlBtnGroup';
-import Remote from './Remote.vue';
-import Local from './Local.vue';
+import style from "./pl-file-dialog.module.scss";
+import { computed, ref, useTemplateRef } from "vue";
+import { notEmpty } from "@milaboratories/helpers";
+import type { ImportedFiles, SimpleOption } from "../../types";
+import { PlDialogModal } from "../PlDialogModal";
+import { PlBtnPrimary } from "../PlBtnPrimary";
+import { PlBtnGhost } from "../PlBtnGhost";
+import { PlBtnGroup } from "../PlBtnGroup";
+import Remote from "./Remote.vue";
+import Local from "./Local.vue";
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void;
-  (e: 'import:files', value: ImportedFiles): void;
+  (e: "update:modelValue", value: boolean): void;
+  (e: "import:files", value: ImportedFiles): void;
 }>();
 
 const props = withDefaults(
@@ -59,34 +59,36 @@ const props = withDefaults(
   },
 );
 
-const mode = ref<'local' | 'remote'>('local');
+const mode = ref<"local" | "remote">("local");
 
-const defaultTitle = computed(() => (props.multi ? 'Select Files to Import' : 'Select File to Import'));
+const defaultTitle = computed(() =>
+  props.multi ? "Select Files to Import" : "Select File to Import",
+);
 
 const modeOptions = [
   {
-    label: 'My Computer',
-    value: 'local',
+    label: "My Computer",
+    value: "local",
   },
   {
-    label: 'Remote',
-    value: 'remote',
+    label: "Remote",
+    value: "remote",
   },
 ] satisfies SimpleOption[];
 
-const closeModal = () => emit('update:modelValue', false);
+const closeModal = () => emit("update:modelValue", false);
 
-const remoteRef = useTemplateRef('remote');
+const remoteRef = useTemplateRef("remote");
 
 const submit = () => {
   if (remoteRef.value?.isReady) {
-    emit('import:files', notEmpty(remoteRef.value?.getFilesToImport()));
+    emit("import:files", notEmpty(remoteRef.value?.getFilesToImport()));
     closeModal();
   }
 };
 
 const importFiles = (importedFiles: ImportedFiles) => {
-  emit('import:files', importedFiles);
+  emit("import:files", importedFiles);
   closeModal();
 };
 </script>
@@ -110,7 +112,9 @@ const importFiles = (importedFiles: ImportedFiles) => {
     <Remote v-if="mode === 'remote'" ref="remote" v-bind="$props" :submit="submit" />
     <Local v-if="mode === 'local'" :import-files="importFiles" v-bind="$props" />
     <template v-if="mode === 'remote'" #actions>
-      <PlBtnPrimary style="min-width: 160px" :disabled="!remoteRef?.isReady" @click.stop="submit">Import</PlBtnPrimary>
+      <PlBtnPrimary style="min-width: 160px" :disabled="!remoteRef?.isReady" @click.stop="submit"
+        >Import</PlBtnPrimary
+      >
       <PlBtnGhost :justify-center="false" @click.stop="closeModal">Cancel</PlBtnGhost>
     </template>
   </PlDialogModal>

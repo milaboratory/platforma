@@ -1,4 +1,4 @@
-import { test } from 'vitest';
+import { test } from "vitest";
 
 // type TestType1 = string;
 // type TestType2 = string | number | { a: number };
@@ -17,7 +17,7 @@ import { test } from 'vitest';
 //   return t2;
 // }
 
-test('simple test', () => {
+test("simple test", () => {
   // const t2 = '';
   // const t2a = withRichType(t2, RichType1);
   // const t2c = something(t2a);

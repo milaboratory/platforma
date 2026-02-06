@@ -1,14 +1,11 @@
-import type {
-  ComputableCtx,
-  ComputableStableDefined,
-  Watcher,
-} from '@milaboratories/computable';
+import type { ComputableCtx, ComputableStableDefined, Watcher } from "@milaboratories/computable";
+import { ChangeSource, Computable } from "@milaboratories/computable";
+import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
 import {
-  ChangeSource,
-  Computable,
-} from '@milaboratories/computable';
-import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
-import { isNotFoundError, resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
+  isNotFoundError,
+  resourceIdToString,
+  stringifyWithResourceId,
+} from "@milaboratories/pl-client";
 import type {
   AnyLogHandle,
   BlobDriver,
@@ -20,49 +17,45 @@ import type {
   RemoteBlobHandle,
   RemoteBlobHandleAndSize,
   StreamingApiResponse,
-} from '@milaboratories/pl-model-common';
-import { type RangeBytes, validateRangeBytes } from '@milaboratories/pl-model-common';
-import type {
-  PlTreeEntry,
-  ResourceInfo,
-  ResourceSnapshot
-} from '@milaboratories/pl-tree';
+} from "@milaboratories/pl-model-common";
+import { type RangeBytes, validateRangeBytes } from "@milaboratories/pl-model-common";
+import type { PlTreeEntry, ResourceInfo, ResourceSnapshot } from "@milaboratories/pl-tree";
 import {
   isPlTreeEntry,
   makeResourceSnapshot,
   treeEntryToResourceInfo,
-} from '@milaboratories/pl-tree';
-import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
-import { CallersCounter, mapGet, TaskProcessor } from '@milaboratories/ts-helpers';
-import Denque from 'denque';
-import * as fs from 'fs';
-import { randomUUID } from 'node:crypto';
-import * as fsp from 'node:fs/promises';
-import * as os from 'node:os';
-import * as path from 'node:path';
-import * as readline from 'node:readline/promises';
-import { buffer } from 'node:stream/consumers';
-import type { ClientDownload } from '../../clients/download';
-import type { ClientLogs } from '../../clients/logs';
-import { withFileContent } from '../helpers/read_file';
+} from "@milaboratories/pl-tree";
+import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
+import { CallersCounter, mapGet, TaskProcessor } from "@milaboratories/ts-helpers";
+import Denque from "denque";
+import * as fs from "fs";
+import { randomUUID } from "node:crypto";
+import * as fsp from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
+import * as readline from "node:readline/promises";
+import { buffer } from "node:stream/consumers";
+import type { ClientDownload } from "../../clients/download";
+import type { ClientLogs } from "../../clients/logs";
+import { withFileContent } from "../helpers/read_file";
 import {
   isLocalBlobHandle,
   newLocalHandle,
   parseLocalHandle,
-} from '../helpers/download_local_handle';
+} from "../helpers/download_local_handle";
 import {
   isRemoteBlobHandle,
   newRemoteHandle,
   parseRemoteHandle,
-} from '../helpers/download_remote_handle';
-import { Updater, WrongResourceTypeError } from '../helpers/helpers';
-import { getResourceInfoFromLogHandle, newLogHandle } from '../helpers/logs_handle';
-import { getSize, OnDemandBlobResourceSnapshot } from '../types';
-import { blobKey, pathToKey } from './blob_key';
-import { DownloadBlobTask, nonRecoverableError } from './download_blob_task';
-import { FilesCache } from '../helpers/files_cache';
-import { SparseCache, SparseCacheFsFile, SparseCacheFsRanges } from './sparse_cache/cache';
-import { isOffByOneError } from '../../helpers/download_errors';
+} from "../helpers/download_remote_handle";
+import { Updater, WrongResourceTypeError } from "../helpers/helpers";
+import { getResourceInfoFromLogHandle, newLogHandle } from "../helpers/logs_handle";
+import { getSize, OnDemandBlobResourceSnapshot } from "../types";
+import { blobKey, pathToKey } from "./blob_key";
+import { DownloadBlobTask, nonRecoverableError } from "./download_blob_task";
+import { FilesCache } from "../helpers/files_cache";
+import { SparseCache, SparseCacheFsFile, SparseCacheFsRanges } from "./sparse_cache/cache";
+import { isOffByOneError } from "../../helpers/download_errors";
 
 export type DownloadDriverOps = {
   /**
@@ -121,7 +114,12 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
 
     const fsRanges = new SparseCacheFsRanges(this.logger, this.rangesCacheDir);
     const fsStorage = new SparseCacheFsFile(this.logger, this.rangesCacheDir);
-    this.rangesCache = new SparseCache(this.logger, this.ops.rangesCacheMaxSizeBytes, fsRanges, fsStorage);
+    this.rangesCache = new SparseCache(
+      this.logger,
+      this.ops.rangesCacheMaxSizeBytes,
+      fsRanges,
+      fsStorage,
+    );
 
     this.downloadQueue = new TaskProcessor(this.logger, ops.nConcurrentDownloads);
 
@@ -137,7 +135,15 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
     signer: Signer,
     ops: DownloadDriverOps,
   ): Promise<DownloadDriver> {
-    const driver = new DownloadDriver(logger, clientDownload, clientLogs, saveDir, rangesCacheDir, signer, ops);
+    const driver = new DownloadDriver(
+      logger,
+      clientDownload,
+      clientLogs,
+      saveDir,
+      rangesCacheDir,
+      signer,
+      ops,
+    );
     await driver.rangesCache.reset();
 
     return driver;
@@ -166,7 +172,7 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
 
     const result = this.getDownloadedBlobNoCtx(ctx.watcher, rInfo as ResourceSnapshot, callerId);
     if (result == undefined) {
-      ctx.markUnstable('download blob is still undefined');
+      ctx.markUnstable("download blob is still undefined");
     }
 
     return result;
@@ -177,7 +183,7 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
     rInfo: ResourceSnapshot,
     callerId: string,
   ): LocalBlobHandleAndSize | undefined {
-    validateDownloadableResourceType('getDownloadedBlob', rInfo.type);
+    validateDownloadableResourceType("getDownloadedBlob", rInfo.type);
 
     // We don't need to request files with wider limits,
     // PFrame's engine does it disk-optimally by itself.
@@ -195,10 +201,7 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
     throw result.result.error;
   }
 
-  private getOrSetNewTask(
-    rInfo: ResourceSnapshot,
-    callerId: string,
-  ): DownloadBlobTask {
+  private getOrSetNewTask(rInfo: ResourceSnapshot, callerId: string): DownloadBlobTask {
     const key = blobKey(rInfo.id);
 
     const inMemoryTask = this.keyToDownload.get(key);
@@ -274,7 +277,7 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
     info: OnDemandBlobResourceSnapshot,
     callerId: string,
   ): RemoteBlobHandleAndSize {
-    validateDownloadableResourceType('getOnDemandBlob', info.type);
+    validateDownloadableResourceType("getOnDemandBlob", info.type);
 
     let blob = this.keyToOnDemand.get(blobKey(info.id));
 
@@ -309,8 +312,8 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
     optionsOrRange?: GetContentOptions | RangeBytes,
   ): Promise<Uint8Array> {
     let options: GetContentOptions = {};
-    if (typeof optionsOrRange === 'object' && optionsOrRange !== null) {
-      if ('range' in optionsOrRange) {
+    if (typeof optionsOrRange === "object" && optionsOrRange !== null) {
+      if ("range" in optionsOrRange) {
         options = optionsOrRange;
       } else {
         const range = optionsOrRange as RangeBytes;
@@ -319,17 +322,18 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
       }
     }
 
-    const request = () => this.withContent(handle, {
-      ...options,
-      handler: async (content) => {
-        const chunks: Uint8Array[] = [];
-        for await (const chunk of content) {
-          options.signal?.throwIfAborted();
-          chunks.push(chunk);
-        }
-        return Buffer.concat(chunks);
-      }
-    });
+    const request = () =>
+      this.withContent(handle, {
+        ...options,
+        handler: async (content) => {
+          const chunks: Uint8Array[] = [];
+          for await (const chunk of content) {
+            options.signal?.throwIfAborted();
+            chunks.push(chunk);
+          }
+          return Buffer.concat(chunks);
+        },
+      });
 
     try {
       return await request();
@@ -379,11 +383,11 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
             });
 
           return await handlerPromise;
-        }
+        },
       );
     }
 
-    throw new Error('Malformed remote handle');
+    throw new Error("Malformed remote handle");
   }
 
   /**
@@ -398,23 +402,21 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
       validateRangeBytes(range, `getComputableContent`);
     }
 
-    return Computable.make((ctx) =>
-      this.getDownloadedBlob(res, ctx), {
-      postprocessValue: (v) => v ? this.getContent(v.handle, { range }) : undefined
-    }
-    ).withStableType()
+    return Computable.make((ctx) => this.getDownloadedBlob(res, ctx), {
+      postprocessValue: (v) => (v ? this.getContent(v.handle, { range }) : undefined),
+    }).withStableType();
   }
 
   /** Returns all logs and schedules a job that reads remain logs.
    * Notifies when a new portion of the log appeared. */
   public getLastLogs(
     res: ResourceInfo | PlTreeEntry,
-    lines: number
+    lines: number,
   ): Computable<string | undefined>;
   public getLastLogs(
     res: ResourceInfo | PlTreeEntry,
     lines: number,
-    ctx: ComputableCtx
+    ctx: ComputableCtx,
   ): Computable<string | undefined>;
   public getLastLogs(
     res: ResourceInfo | PlTreeEntry,
@@ -429,7 +431,7 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
 
     const result = this.getLastLogsNoCtx(ctx.watcher, r as ResourceSnapshot, lines, callerId);
     if (result == undefined)
-      ctx.markUnstable('either a file was not downloaded or logs was not read');
+      ctx.markUnstable("either a file was not downloaded or logs was not read");
 
     return result;
   }
@@ -440,7 +442,7 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
     lines: number,
     callerId: string,
   ): string | undefined {
-    validateDownloadableResourceType('getLastLogs', rInfo.type);
+    validateDownloadableResourceType("getLastLogs", rInfo.type);
     const blob = this.getDownloadedBlobNoCtx(w, rInfo, callerId);
     if (blob == undefined) return undefined;
 
@@ -464,12 +466,12 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
    * Notifies when a new line appeared or EOF reached. */
   public getProgressLog(
     res: ResourceInfo | PlTreeEntry,
-    patternToSearch: string
+    patternToSearch: string,
   ): Computable<string | undefined>;
   public getProgressLog(
     res: ResourceInfo | PlTreeEntry,
     patternToSearch: string,
-    ctx: ComputableCtx
+    ctx: ComputableCtx,
   ): string | undefined;
   public getProgressLog(
     res: ResourceInfo | PlTreeEntry,
@@ -490,7 +492,7 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
       callerId,
     );
     if (result === undefined)
-      ctx.markUnstable('either a file was not downloaded or a progress log was not read');
+      ctx.markUnstable("either a file was not downloaded or a progress log was not read");
 
     return result;
   }
@@ -501,7 +503,7 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
     patternToSearch: string,
     callerId: string,
   ): string | undefined {
-    validateDownloadableResourceType('getProgressLog', rInfo.type);
+    validateDownloadableResourceType("getProgressLog", rInfo.type);
 
     const blob = this.getDownloadedBlobNoCtx(w, rInfo, callerId);
     if (blob == undefined) return undefined;
@@ -538,7 +540,7 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
   }
 
   private getLogHandleNoCtx(rInfo: ResourceSnapshot): AnyLogHandle {
-    validateDownloadableResourceType('getLogHandle', rInfo.type);
+    validateDownloadableResourceType("getLogHandle", rInfo.type);
     return newLogHandle(false, rInfo);
   }
 
@@ -603,8 +605,8 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
 
           this.removeTask(
             mapGet(this.keyToDownload, pathToKey(cachedFile.path)),
-            `the task ${stringifyWithResourceId(cachedFile)} was removed`
-            + `from cache along with ${stringifyWithResourceId(toDelete.map((d) => d.path))}`,
+            `the task ${stringifyWithResourceId(cachedFile)} was removed` +
+              `from cache along with ${stringifyWithResourceId(toDelete.map((d) => d.path))}`,
           );
         }),
       );
@@ -711,7 +713,7 @@ class LastLinesGetter {
     } catch (e: any) {
       if (isNotFoundError(e)) {
         // No resource
-        this.log = '';
+        this.log = "";
         this.error = e;
         this.change.markChanged(`log update for ${this.path} failed, resource not found`);
         return;
@@ -724,7 +726,11 @@ class LastLinesGetter {
 
 /** Gets last lines from a file by reading the file from the top and keeping
  * last N lines in a window queue. */
-async function getLastLines(fPath: string, nLines: number, patternToSearch?: string): Promise<string> {
+async function getLastLines(
+  fPath: string,
+  nLines: number,
+  patternToSearch?: string,
+): Promise<string> {
   let inStream: fs.ReadStream | undefined;
   let rl: readline.Interface | undefined;
 
@@ -752,7 +758,7 @@ async function getLastLines(fPath: string, nLines: number, patternToSearch?: str
         rl.close();
       }
     } catch (cleanupError) {
-      console.error('Error closing readline interface:', cleanupError);
+      console.error("Error closing readline interface:", cleanupError);
     }
 
     try {
@@ -760,15 +766,15 @@ async function getLastLines(fPath: string, nLines: number, patternToSearch?: str
         inStream.destroy();
       }
     } catch (cleanupError) {
-      console.error('Error destroying read stream:', cleanupError);
+      console.error("Error destroying read stream:", cleanupError);
     }
   }
 }
 
 function validateDownloadableResourceType(methodName: string, rType: ResourceType) {
-  if (!rType.name.startsWith('Blob/')) {
+  if (!rType.name.startsWith("Blob/")) {
     let message = `${methodName}: wrong resource type: ${rType.name}, expected: a resource of type that starts with 'Blob/'.`;
-    if (rType.name == 'Blob')
+    if (rType.name == "Blob")
       message += ` If it's called from workflow, should a file be exported with 'file.exportFile' function?`;
 
     throw new WrongResourceTypeError(message);

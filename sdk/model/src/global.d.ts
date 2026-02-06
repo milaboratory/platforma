@@ -1,4 +1,4 @@
-import type { Platforma, PlatformaApiVersion } from './platforma';
+import type { Platforma, PlatformaApiVersion } from "./platforma";
 
 declare global {
   /** Global factory method returning platforma instance */

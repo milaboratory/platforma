@@ -12,16 +12,16 @@
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-download-file.model": "workspace:*",
-    "vue": "catalog:",
-    "@vueuse/core": "catalog:",
+    "@platforma-sdk/model": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:*",
-    "@platforma-sdk/model": "workspace:*"
+    "@vueuse/core": "catalog:",
+    "vue": "catalog:"
   },
   "devDependencies": {
+    "@faker-js/faker": "catalog:",
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@faker-js/faker": "catalog:",
     "typescript": "catalog:",
     "zod": "catalog:"
   }

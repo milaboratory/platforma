@@ -6,7 +6,5 @@ files:
   the-file-1.txt: file1.txt
   the-file-2.txt: file2.txt
 meta:
-  description:
-    Test package
-  changelog:
-    Some new things
+  description: Test package
+  changelog: Some new things

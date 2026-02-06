@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import type { ICellRendererParams, RowDoubleClickedEvent } from 'ag-grid-enterprise';
-import type { MaskIconName16 } from '@milaboratories/uikit';
-import { PlMaskIcon16 } from '@milaboratories/uikit';
-import './pl-ag-text-and-button-cell.scss';
+import type { ICellRendererParams, RowDoubleClickedEvent } from "ag-grid-enterprise";
+import type { MaskIconName16 } from "@milaboratories/uikit";
+import { PlMaskIcon16 } from "@milaboratories/uikit";
+import "./pl-ag-text-and-button-cell.scss";
 
 const props = defineProps<{
   params: ICellRendererParams & {
@@ -41,7 +41,7 @@ function triggerRowDoubleClick() {
       api: gridApi,
       rowIndex: props.params.node.rowIndex,
       context: gridApi,
-      type: 'rowDoubleClicked',
+      type: "rowDoubleClicked",
       node: props.params.node,
       data: props.params.data,
       event: null,
@@ -58,9 +58,12 @@ function triggerRowDoubleClick() {
     <div class="pl-ag-grid-open-cell__value">
       {{ params.value }}
     </div>
-    <div class="pl-ag-grid-open-cell__activator text-caps11 align-center" @click.stop="triggerRowDoubleClick">
+    <div
+      class="pl-ag-grid-open-cell__activator text-caps11 align-center"
+      @click.stop="triggerRowDoubleClick"
+    >
       <PlMaskIcon16 :name="params.icon ?? 'maximize'" />
-      {{ params.btnLabel ?? 'Open' }}
+      {{ params.btnLabel ?? "Open" }}
     </div>
   </div>
 </template>

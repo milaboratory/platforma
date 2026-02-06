@@ -1,14 +1,17 @@
-import type { Ref } from 'vue';
-import { ref } from 'vue';
-import { useEventListener } from './useEventListener';
-import type { MaybeRef } from '../types';
+import type { Ref } from "vue";
+import { ref } from "vue";
+import { useEventListener } from "./useEventListener";
+import type { MaybeRef } from "../types";
 
 export interface UseElementHoverOptions {
   delayEnter?: number;
   delayLeave?: number;
 }
 
-export function useHover(el: MaybeRef<EventTarget | undefined>, options: UseElementHoverOptions = {}): Ref<boolean> {
+export function useHover(
+  el: MaybeRef<EventTarget | undefined>,
+  options: UseElementHoverOptions = {},
+): Ref<boolean> {
   const { delayEnter = 0, delayLeave = 0 } = options;
 
   const isHovered = ref(false);
@@ -28,8 +31,8 @@ export function useHover(el: MaybeRef<EventTarget | undefined>, options: UseElem
 
   if (!window) return isHovered;
 
-  useEventListener(el, 'mouseenter', () => toggle(true));
-  useEventListener(el, 'mouseleave', () => toggle(false));
+  useEventListener(el, "mouseenter", () => toggle(true));
+  useEventListener(el, "mouseleave", () => toggle(false));
 
   return isHovered;
 }

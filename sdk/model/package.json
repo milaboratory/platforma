@@ -2,13 +2,18 @@
   "name": "@platforma-sdk/model",
   "version": "1.53.11",
   "description": "Platforma.bio SDK / Block Model",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*",
+    "README.md"
+  ],
   "type": "module",
-  "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "sources": "./src/index.ts",
       "types": "./dist/index.d.ts",
+      "sources": "./src/index.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
@@ -21,28 +26,23 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*",
-    "README.md"
-  ],
   "dependencies": {
-    "@milaboratories/ptabler-expression-js": "workspace:*",
-    "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/pl-error-like": "workspace:*",
-    "fast-json-patch": "catalog:",
-    "utility-types": "catalog:",
+    "@milaboratories/pl-model-common": "workspace:*",
+    "@milaboratories/ptabler-expression-js": "workspace:*",
     "canonicalize": "catalog:",
     "es-toolkit": "catalog:",
+    "fast-json-patch": "catalog:",
+    "utility-types": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -1,18 +1,26 @@
-import type { BlockApiV1 } from './block_api_v1';
-import type { BlockApiV2 } from './block_api_v2';
-import type { BlockApiV3 } from './block_api_v3';
-import type { BlockOutputsBase, BlockStateV3, DriverKit, OutputWithStatus } from '@milaboratories/pl-model-common';
-import type { SdkInfo } from './sdk_info';
-import type { BlockStatePatch } from './block_state_patch';
+import type { BlockApiV1 } from "./block_api_v1";
+import type { BlockApiV2 } from "./block_api_v2";
+import type { BlockApiV3 } from "./block_api_v3";
+import type {
+  BlockOutputsBase,
+  BlockStateV3,
+  DriverKit,
+  OutputWithStatus,
+} from "@milaboratories/pl-model-common";
+import type { SdkInfo } from "./sdk_info";
+import type { BlockStatePatch } from "./block_state_patch";
 
 /** Defines all methods to interact with the platform environment from within a block UI. @deprecated */
 export interface PlatformaV1<
   Args = unknown,
-  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<string, OutputWithStatus<unknown>>,
+  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<
+    string,
+    OutputWithStatus<unknown>
+  >,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
-> extends BlockApiV1<Args, Outputs, UiState, Href>,
-  DriverKit {
+>
+  extends BlockApiV1<Args, Outputs, UiState, Href>, DriverKit {
   /** Information about SDK version current platforma environment was compiled with. */
   readonly sdkInfo: SdkInfo;
   readonly apiVersion?: 1;
@@ -21,11 +29,14 @@ export interface PlatformaV1<
 /** V2 version based on effective json patches pulling API */
 export interface PlatformaV2<
   Args = unknown,
-  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<string, OutputWithStatus<unknown>>,
+  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<
+    string,
+    OutputWithStatus<unknown>
+  >,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
-> extends BlockApiV2<Args, Outputs, UiState, Href>,
-  DriverKit {
+>
+  extends BlockApiV2<Args, Outputs, UiState, Href>, DriverKit {
   /** Information about SDK version current platforma environment was compiled with. */
   readonly sdkInfo: SdkInfo;
   readonly apiVersion: 2;
@@ -33,11 +44,14 @@ export interface PlatformaV2<
 
 export interface PlatformaV3<
   Args = unknown,
-  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<string, OutputWithStatus<unknown>>,
+  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<
+    string,
+    OutputWithStatus<unknown>
+  >,
   Data = unknown,
   Href extends `/${string}` = `/${string}`,
-> extends BlockApiV3<Args, Outputs, Data, Href>,
-  DriverKit {
+>
+  extends BlockApiV3<Args, Outputs, Data, Href>, DriverKit {
   /** Information about SDK version current platforma environment was compiled with. */
   readonly sdkInfo: SdkInfo;
   readonly apiVersion: 3;
@@ -45,22 +59,31 @@ export interface PlatformaV3<
 
 export type Platforma<
   Args = unknown,
-  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<string, OutputWithStatus<unknown>>,
+  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<
+    string,
+    OutputWithStatus<unknown>
+  >,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
-> = PlatformaV1<Args, Outputs, UiState, Href> | PlatformaV2<Args, Outputs, UiState, Href> | PlatformaV3<Args, Outputs, UiState, Href>;
+> =
+  | PlatformaV1<Args, Outputs, UiState, Href>
+  | PlatformaV2<Args, Outputs, UiState, Href>
+  | PlatformaV3<Args, Outputs, UiState, Href>;
 
 export type PlatformaExtended<Pl extends Platforma = Platforma> = Pl & {
   blockModelInfo: BlockModelInfo;
 };
 
 export type BlockModelInfo = {
-  outputs: Record<string, {
-    withStatus: boolean;
-  }>;
+  outputs: Record<
+    string,
+    {
+      withStatus: boolean;
+    }
+  >;
 };
 
-export type PlatformaApiVersion = Platforma['apiVersion'];
+export type PlatformaApiVersion = Platforma["apiVersion"];
 
 export type InferArgsType<Pl extends Platforma> = Pl extends Platforma<infer Args> ? Args : never;
 

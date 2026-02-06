@@ -1,1 +1,1 @@
-export { default as PlSplash } from './PlSplash.vue';
+export { default as PlSplash } from "./PlSplash.vue";

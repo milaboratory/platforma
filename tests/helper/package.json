@@ -1,7 +1,7 @@
 {
   "name": "@milaboratories/helper-tests",
-  "private": true,
   "version": "1.1.14",
+  "private": true,
   "description": "",
   "type": "module",
   "scripts": {
@@ -10,17 +10,17 @@
   },
   "dependencies": {
     "@milaboratories/helpers": "workspace:*",
-    "@milaboratories/sequences": "workspace:*",
-    "@milaboratories/node-streams": "workspace:*"
+    "@milaboratories/node-streams": "workspace:*",
+    "@milaboratories/sequences": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "vitest": "catalog:",
     "canonicalize": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

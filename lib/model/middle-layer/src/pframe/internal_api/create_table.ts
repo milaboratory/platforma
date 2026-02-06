@@ -1,44 +1,49 @@
-import type { ConstantAxisFilter } from './common';
-import type { JsonDataInfo, PColumnSpec, PObjectId, PTableRecordFilter } from '@milaboratories/pl-model-common';
+import type { ConstantAxisFilter } from "./common";
+import type {
+  JsonDataInfo,
+  PColumnSpec,
+  PObjectId,
+  PTableRecordFilter,
+} from "@milaboratories/pl-model-common";
 
 export interface ColumnJoinEntry {
-  type: 'column';
+  type: "column";
   columnId: PObjectId;
 }
 
 export interface SlicedColumnJoinEntry {
-  readonly type: 'slicedColumn';
+  readonly type: "slicedColumn";
   readonly columnId: PObjectId;
   readonly newId: PObjectId;
   readonly axisFilters: ConstantAxisFilter[];
 }
 
 export interface ArtificialColumnJoinEntry {
-  readonly type: 'artificialColumn';
+  readonly type: "artificialColumn";
   readonly columnId: PObjectId;
   readonly newId: PObjectId;
   readonly axesIndices: number[];
 }
 
 export interface InlineColumnJoinEntry {
-  readonly type: 'inlineColumn';
+  readonly type: "inlineColumn";
   readonly newId: PObjectId;
   readonly spec: PColumnSpec;
   readonly dataInfo: JsonDataInfo;
 }
 
 export interface InnerJoinV4 {
-  type: 'inner';
+  type: "inner";
   entries: JoinEntryV4[];
 }
 
 export interface FullJoinV4 {
-  type: 'full';
+  type: "full";
   entries: JoinEntryV4[];
 }
 
 export interface OuterJoinV4 {
-  type: 'outer';
+  type: "outer";
   primary: JoinEntryV4;
   secondary: JoinEntryV4[];
 }

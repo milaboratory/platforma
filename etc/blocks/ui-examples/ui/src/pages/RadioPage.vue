@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { faker } from '@faker-js/faker';
-import { PlBlockPage, PlRadio, PlRadioGroup, PlRow, randomString } from '@platforma-sdk/ui-vue';
-import { ref } from 'vue';
+import { faker } from "@faker-js/faker";
+import { PlBlockPage, PlRadio, PlRadioGroup, PlRow, randomString } from "@platforma-sdk/ui-vue";
+import { ref } from "vue";
 
 function generateOption() {
   const id = randomString(8);
@@ -27,7 +27,7 @@ const groupValue = ref<Option>();
 const groupWithOptionsValue = ref<Option>(options[1].value);
 
 function prettifyValue<T>(value: T) {
-  return value ? JSON.stringify(value, null, 2) : '<unset>';
+  return value ? JSON.stringify(value, null, 2) : "<unset>";
 }
 </script>
 
@@ -46,7 +46,8 @@ function prettifyValue<T>(value: T) {
         >
           {{ option.label }}
         </PlRadio>
-        <output>Current value:
+        <output
+          >Current value:
           <pre>{{ prettifyValue(standaloneValue) }}</pre>
         </output>
       </div>
@@ -66,7 +67,8 @@ function prettifyValue<T>(value: T) {
             {{ option.label }}
           </PlRadio>
         </PlRadioGroup>
-        <output>Current value:
+        <output
+          >Current value:
           <pre>{{ prettifyValue(groupValue) }}</pre>
         </output>
       </div>
@@ -74,13 +76,11 @@ function prettifyValue<T>(value: T) {
     <PlRow>
       <div :class="$style.container">
         <h1>Grouped, with <code :style="{ fontSize: 'inherit' }">options</code> prop</h1>
-        <PlRadioGroup
-          v-model="groupWithOptionsValue"
-          :options="options"
-        >
+        <PlRadioGroup v-model="groupWithOptionsValue" :options="options">
           <template #label>Group Label</template>
         </PlRadioGroup>
-        <output>Current value:
+        <output
+          >Current value:
           <pre>{{ prettifyValue(groupWithOptionsValue) }}</pre>
         </output>
       </div>
@@ -89,17 +89,17 @@ function prettifyValue<T>(value: T) {
 </template>
 
 <style module>
-  .container {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    h1 {
-      font-size: 2rem;
-      line-height: 1.5;
-      margin-block-end: 16px;
-    }
-    output {
-      margin-block-start: 12px;
-    }
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  h1 {
+    font-size: 2rem;
+    line-height: 1.5;
+    margin-block-end: 16px;
   }
+  output {
+    margin-block-start: 12px;
+  }
+}
 </style>

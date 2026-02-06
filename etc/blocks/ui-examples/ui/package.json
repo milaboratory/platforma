@@ -11,17 +11,17 @@
   },
   "dependencies": {
     "@milaboratories/milaboratories.ui-examples.model": "workspace:*",
-    "vue": "catalog:",
-    "@platforma-sdk/model": "workspace:*"
+    "@platforma-sdk/model": "workspace:*",
+    "vue": "catalog:"
   },
   "devDependencies": {
+    "@faker-js/faker": "catalog:",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/uikit": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:*",
-    "@faker-js/faker": "catalog:",
     "ag-grid-enterprise": "catalog:",
     "ag-grid-vue3": "catalog:",
     "typescript": "catalog:",

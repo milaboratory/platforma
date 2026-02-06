@@ -3,19 +3,19 @@ import {
   RegistryV2Reader,
   folderReaderByUrl,
   storageByUrl,
-} from '@platforma-sdk/block-tools';
+} from "@platforma-sdk/block-tools";
 import {
   AnyChannel,
   BlockPackManifest,
   overrideManifestVersion,
   StableChannel,
-} from '@milaboratories/pl-model-middle-layer';
-import fsp from 'fs/promises';
-import { regTest } from './test_utils';
-import path from 'path';
-import { createRequire } from 'node:module';
-import { test } from 'vitest';
-import * as tp from 'timers/promises';
+} from "@milaboratories/pl-model-middle-layer";
+import fsp from "fs/promises";
+import { regTest } from "./test_utils";
+import path from "path";
+import { createRequire } from "node:module";
+import { test } from "vitest";
+import * as tp from "timers/promises";
 
 // To overcome broken native ESM resolution mechanism:
 //     TypeError: __vite_ssr_import_meta__.resolve is not a function
@@ -24,28 +24,27 @@ import * as tp from 'timers/promises';
 const require = createRequire(import.meta.url);
 
 function bumpVersion(ver: string): string {
-  let sepIdx = ver.lastIndexOf('.');
+  let sepIdx = ver.lastIndexOf(".");
   if (sepIdx === -1) throw new Error(`Malformed version: ${ver}`);
   sepIdx++; // to includes '.'
   return `${ver.substring(0, sepIdx)}${Number(ver.substring(sepIdx)) + 1}`;
 }
 
-test('test bump version', ({ expect }) => {
-  expect(bumpVersion('1.2.3')).toEqual('1.2.4');
-  expect(bumpVersion('1.2.10')).toEqual('1.2.11');
-  expect(bumpVersion('1.1.9')).toEqual('1.1.10');
+test("test bump version", ({ expect }) => {
+  expect(bumpVersion("1.2.3")).toEqual("1.2.4");
+  expect(bumpVersion("1.2.10")).toEqual("1.2.11");
+  expect(bumpVersion("1.1.9")).toEqual("1.1.10");
 });
 
-regTest('simple repo test', async ({ expect, tmpFolder }) => {
+regTest("simple repo test", async ({ expect, tmpFolder }) => {
   const registryUrl = `file:${tmpFolder}`;
 
   // Publishing
 
-  const manifestPath = require.resolve(
-    '@milaboratories/milaboratories.test-enter-numbers/block-pack/manifest.json',
-  );
+  const manifestPath =
+    require.resolve("@milaboratories/milaboratories.test-enter-numbers/block-pack/manifest.json");
   const manifest1 = BlockPackManifest.parse(
-    JSON.parse(await fsp.readFile(manifestPath, { encoding: 'utf-8' })),
+    JSON.parse(await fsp.readFile(manifestPath, { encoding: "utf-8" })),
   );
   const manifestRoot = path.dirname(manifestPath);
   const storage = storageByUrl(registryUrl);
@@ -77,11 +76,11 @@ regTest('simple repo test', async ({ expect, tmpFolder }) => {
   });
   const overview1 = await registryReader.listBlockPacks();
   expect(overview1).length.greaterThanOrEqual(1);
-  const ten1 = overview1.find((o) => o.id.name === 'test-enter-numbers');
+  const ten1 = overview1.find((o) => o.id.name === "test-enter-numbers");
   expect(ten1).toBeDefined();
   const dAny1 = ten1!.latestByChannel[AnyChannel]!;
-  expect(dAny1.meta.logo?.mimeType).toStrictEqual('image/png');
-  expect(dAny1.meta.organization.logo?.mimeType).toStrictEqual('image/png');
+  expect(dAny1.meta.logo?.mimeType).toStrictEqual("image/png");
+  expect(dAny1.meta.organization.logo?.mimeType).toStrictEqual("image/png");
   const components = await registryReader.getComponents(dAny1.id);
   expect(await fsp.stat(new URL(components.workflow.main.url).pathname)).toBeDefined();
   expect(await fsp.stat(new URL(components.model.url).pathname)).toBeDefined();
@@ -106,7 +105,7 @@ regTest('simple repo test', async ({ expect, tmpFolder }) => {
 
   const overview2 = await registryReader.listBlockPacks();
   expect(overview2).length.greaterThanOrEqual(1);
-  const ten2 = overview2.find((o) => o.id.name === 'test-enter-numbers');
+  const ten2 = overview2.find((o) => o.id.name === "test-enter-numbers");
   expect(ten2).toBeDefined();
 
   const vc21 = ten2!.allVersions.find((v) => v.version === version1);

@@ -1,31 +1,50 @@
 <script setup lang="ts">
-import './pl-progress-cell.scss';
-import { computed } from 'vue';
-import { PlMaskIcon24 } from '../PlMaskIcon24';
-import type { PlProgressCellProps } from './types';
-import { getErrorMessage } from '../../helpers/error.ts';
+import "./pl-progress-cell.scss";
+import { computed } from "vue";
+import { PlMaskIcon24 } from "../PlMaskIcon24";
+import type { PlProgressCellProps } from "./types";
+import { getErrorMessage } from "../../helpers/error.ts";
 
 const props = withDefaults(defineProps<PlProgressCellProps>(), {
-  stage: 'not_started',
-  step: '', // main text (left)
-  progressString: '', // appended text on the right side (right)
+  stage: "not_started",
+  step: "", // main text (left)
+  progressString: "", // appended text on the right side (right)
   progress: undefined,
   error: undefined,
 });
 
-const canShowWhiteBg = computed(() => props.stage !== 'not_started');
+const canShowWhiteBg = computed(() => props.stage !== "not_started");
 
-const currentProgress = computed(() => props.stage === 'done' ? 100 : Math.min(100, props.progress || 0));
+const currentProgress = computed(() =>
+  props.stage === "done" ? 100 : Math.min(100, props.progress || 0),
+);
 
-const canShowInfinityLoader = computed(() => props.progress === undefined && props.stage !== 'done' && props.stage !== 'not_started' && !props.error);
+const canShowInfinityLoader = computed(
+  () =>
+    props.progress === undefined &&
+    props.stage !== "done" &&
+    props.stage !== "not_started" &&
+    !props.error,
+);
 </script>
 
 <template>
-  <div :class="{'progress-cell':true, 'progress-cell__white-bg': canShowWhiteBg, error, 'not-started': props.stage === 'not_started' }">
+  <div
+    :class="{
+      'progress-cell': true,
+      'progress-cell__white-bg': canShowWhiteBg,
+      error,
+      'not-started': props.stage === 'not_started',
+    }"
+  >
     <div v-if="canShowInfinityLoader" class="progress-cell__infinity-loader">
-      <div class="progress-cell__infinity-gradient"/>
+      <div class="progress-cell__infinity-gradient" />
     </div>
-    <div v-if="!canShowInfinityLoader && !error" class="progress-cell__indicator" :style="{ width: currentProgress + '%' }"/>
+    <div
+      v-if="!canShowInfinityLoader && !error"
+      class="progress-cell__indicator"
+      :style="{ width: currentProgress + '%' }"
+    />
     <div class="progress-cell__body">
       <div class="progress-cell__stage text-s">
         {{ error ? getErrorMessage(error) : step }}
