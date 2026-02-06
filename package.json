@@ -47,10 +47,6 @@
   },
   "//": {
     "@platforma-open/milaboratories.software-ptabler": "file:/Users/dbolotin/mi/core/ptabler/software/package.tgz",
-    "overrides": {},
-    "eslint": "catalog:",
-    "@eslint/js": "catalog:",
-    "@types/eslint__js": "catalog:",
-    "typescript-eslint": "catalog:"
+    "overrides": {}
   }
 }

@@ -145,7 +145,6 @@ catalog:
   "@platforma-sdk/tengo-builder": 2.4.2
   "@platforma-sdk/package-builder": 3.10.7
   "@platforma-sdk/block-tools": 2.6.27
-  "@platforma-sdk/eslint-config": 1.2.0
   "@platforma-sdk/test": 1.48.8
   "@milaboratories/helpers": 1.12.1
 
@@ -154,7 +153,6 @@ catalog:
   "typescript": ~5.6.3
   "turbo": ^2.6.3
   "vitest": ^4.0.7
-  "eslint": ^9.25.1
   "@changesets/cli": ^2.29.8
 
   # Block-specific dependencies as needed

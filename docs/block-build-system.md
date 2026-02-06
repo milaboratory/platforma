@@ -77,8 +77,8 @@ my-block/
 {
   "build": "ts-builder build --target block-model && block-tools build-model",
   "watch": "ts-builder build --target block-model --watch",
-  "type-check": "ts-builder types --target block-model",
-  "lint": "ts-builder lint",
+  "check": "ts-builder check --target block-model",
+  "fmt": "ts-builder fmt",
   "test": "vitest"
 }
 ```
@@ -90,8 +90,8 @@ my-block/
   "dev": "ts-builder serve --target block-ui",
   "build": "ts-builder build --target block-ui",
   "watch": "ts-builder build --target block-ui --watch",
-  "type-check": "ts-builder types --target block-ui",
-  "lint": "ts-builder lint"
+  "check": "ts-builder check --target block-ui",
+  "fmt": "ts-builder fmt"
 }
 ```
 
@@ -100,8 +100,8 @@ my-block/
 ```json
 {
   "test": "vitest",
-  "type-check": "ts-builder types --target block-test",
-  "lint": "ts-builder lint"
+  "check": "ts-builder check --target block-test",
+  "fmt": "ts-builder fmt"
 }
 ```
 
@@ -113,8 +113,8 @@ Note: `block-test` target does **not** support `build` command—it's type-check
 {
   "build": "rm -rf dist && pl-tengo check && pl-tengo build",
   "test": "vitest",
-  "type-check": "ts-builder types --target block-test",
-  "lint": "ts-builder lint"
+  "check": "ts-builder check --target block-test",
+  "fmt": "ts-builder fmt"
 }
 ```
 
