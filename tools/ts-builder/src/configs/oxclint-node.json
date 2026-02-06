@@ -1,4 +1,0 @@
-{
-  "extends": ["./oxclint-base.json"],
-  "plugins": ["node"]
-}

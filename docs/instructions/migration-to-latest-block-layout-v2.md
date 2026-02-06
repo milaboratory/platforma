@@ -988,7 +988,7 @@ All commands should complete without errors.
 - [ ] `package.json` `fmt` uses `ts-builder format`
 - [ ] `package.json` has no `tsup`, `vite`, `eslint`, `@platforma-sdk/eslint-config` dependencies
 - [ ] `tsconfig.json` extends `@milaboratories/ts-configs/block/model`
-- [ ] `.oxlintrc.json` exists with `oxclint-block-model.json` preset
+- [ ] `.oxlintrc.json` exists with `oxlint-block-model.json` preset
 - [ ] `.oxfmtrc.json` exists with `oxfmt.json` preset
 - [ ] `vitest.config.mts` exists
 - [ ] `vite.config.mts` is DELETED
@@ -1004,7 +1004,7 @@ All commands should complete without errors.
 - [ ] `package.json` `lint` uses `ts-builder lint`
 - [ ] `package.json` `fmt` uses `ts-builder format`
 - [ ] `tsconfig.json` extends `@milaboratories/ts-configs/block/ui`
-- [ ] `.oxlintrc.json` exists with `oxclint-block-ui.json` preset
+- [ ] `.oxlintrc.json` exists with `oxlint-block-ui.json` preset
 - [ ] `.oxfmtrc.json` exists with `oxfmt.json` preset
 - [ ] `vitest.config.mts` exists
 - [ ] `vite.config.ts` is DELETED
@@ -1020,7 +1020,7 @@ All commands should complete without errors.
 - [ ] `package.json` `fmt` uses `ts-builder format`
 - [ ] `package.json` type-check uses `--target block-test`
 - [ ] `tsconfig.json` extends `@milaboratories/ts-configs/block/test`
-- [ ] `.oxlintrc.json` exists with `oxclint-test.json` preset
+- [ ] `.oxlintrc.json` exists with `oxlint-test.json` preset
 - [ ] `.oxfmtrc.json` exists with `oxfmt.json` preset
 - [ ] `vitest.config.mts` exists
 - [ ] Root `index.js` is DELETED (only dist/index.js should exist)
@@ -1035,7 +1035,7 @@ All commands should complete without errors.
 - [ ] `package.json` `fmt` uses `ts-builder format`
 - [ ] `package.json` type-check uses `ts-builder types --target block-test`
 - [ ] `tsconfig.json` extends `@milaboratories/ts-configs/block/test`
-- [ ] `.oxlintrc.json` exists with `oxclint-test.json` preset
+- [ ] `.oxlintrc.json` exists with `oxlint-test.json` preset
 - [ ] `.oxfmtrc.json` exists with `oxfmt.json` preset
 - [ ] `vitest.config.mts` exists
 - [ ] `eslint.config.mjs` is DELETED

@@ -1,5 +1,5 @@
 {
   "extends": [
-    "node_modules/@milaboratories/ts-builder/dist/configs/oxclint-test.json"
+    "node_modules/@milaboratories/ts-builder/dist/configs/oxlint-test.json"
   ]
 }

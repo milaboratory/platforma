@@ -1,3 +1,3 @@
 {
-  "extends": ["node_modules/@milaboratories/ts-builder/dist/configs/oxclint-block-ui.json"]
+  "extends": ["node_modules/@milaboratories/ts-builder/dist/configs/oxlint-block-ui.json"]
 }

@@ -36,11 +36,11 @@ Clean, memorable paths that match block structure:
 
 Explicit targets that match block concepts:
 
-| Target | Purpose | Type Checker |
-|--------|---------|--------------|
-| `block-model` | Block model (ES + UMD bundle) | `tsc` |
-| `block-ui` | Block UI (Vue + browser) | `vue-tsc` |
-| `block-test` | Type-check only (no build) | `tsc` |
+| Target        | Purpose                       | Type Checker |
+| ------------- | ----------------------------- | ------------ |
+| `block-model` | Block model (ES + UMD bundle) | `tsc`        |
+| `block-ui`    | Block UI (Vue + browser)      | `vue-tsc`    |
+| `block-test`  | Type-check only (no build)    | `tsc`        |
 
 ## Block Structure Reference
 
@@ -50,22 +50,22 @@ A standard block has four parts:
 my-block/
 ├── model/          # TypeScript model
 │   ├── tsconfig.json      → extends block/model
-│   ├── .oxclintrc.json    → uses model
+│   ├── .oxlintrc.json    → uses model
 │   └── package.json       → --target block-model
 │
 ├── ui/             # Vue-based UI
 │   ├── tsconfig.json      → extends block/ui
-│   ├── .oxclintrc.json    → uses ui
+│   ├── .oxlintrc.json    → uses ui
 │   └── package.json       → --target block-ui
 │
 ├── workflow/       # Tengo templates (+ optional TS tests)
 │   ├── tsconfig.json      → extends block/test (for TS tests)
-│   ├── .oxclintrc.json    → uses workflow
+│   ├── .oxlintrc.json    → uses workflow
 │   └── package.json       → pl-tengo build, --target block-test for type-check
 │
 └── test/           # Block integration tests
     ├── tsconfig.json      → extends block/test
-│   ├── .oxclintrc.json    → uses test
+│   ├── .oxlintrc.json    → uses test
     └── package.json       → --target block-test (type-check only)
 ```
 
