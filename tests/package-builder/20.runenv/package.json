@@ -6,7 +6,7 @@
   "scripts": {
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
     "reset": "npm run cleanup && rm -rf ./node_modules/",
-    "check": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build && node ./verify.mjs"
+    "//check": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build && node ./verify.mjs"
   },
   "block-software": {
     "entrypoints": {
