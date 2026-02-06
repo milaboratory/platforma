@@ -62,7 +62,7 @@ export function isHiddenFromUIColumn(column: PColumnSpec): boolean {
 export type AxesVault = Map<CanonicalizedJson<AxisId>, AxisSpecNormalized>;
 
 export function getAvailableWithLinkersAxes(
-  linkerColumns: (PColumn<PColumnDataUniversal>)[],
+  linkerColumns: PColumn<PColumnDataUniversal>[],
   blockAxes: AxesVault,
 ): AxesVault {
   const linkerMap = LinkerMap.fromColumns(linkerColumns.map(getColumnIdAndSpec));

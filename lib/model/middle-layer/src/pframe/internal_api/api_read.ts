@@ -45,13 +45,16 @@ export interface PFrameReadAPIV11 {
   createTable(tableId: PTableId, request: CreateTableRequestV4): PTableV8;
 
   /** Creates table from data query and returns an object to access it */
-  createTableByDataQuery(tableId: PTableId, request: {
-    tableSpec: {
-      axes: AxisId[];
-      columns: PColumnIdAndSpec[];
-    };
-    dataQuery: QueryData;
-  }): PTableV8;
+  createTableByDataQuery(
+    tableId: PTableId,
+    request: {
+      tableSpec: {
+        axes: AxisId[];
+        columns: PColumnIdAndSpec[];
+      };
+      dataQuery: QueryData;
+    },
+  ): PTableV8;
 
   /** Calculate set of unique values for a specific axis for the filtered set of records */
   getUniqueValues(
