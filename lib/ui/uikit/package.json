@@ -57,7 +57,6 @@
     "jsdom": "catalog:",
     "svgo": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "yarpm": "catalog:"
+    "vitest": "catalog:"
   }
 }

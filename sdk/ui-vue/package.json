@@ -57,8 +57,7 @@
     "semver": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "yarpm": "catalog:"
+    "vitest": "catalog:"
   },
   "styles": "dist/index.js"
 }
