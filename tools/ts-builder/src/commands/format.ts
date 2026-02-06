@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { runLint as runLinter } from "./linter";
-import { runFormat as runFormatter } from "./formater";
+import { runFormat as runFormatter } from "./formatter";
 
 export const formatCommand = new Command("format")
   .description("Run lint fix and format fix")

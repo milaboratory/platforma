@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { getGlobalOptions } from "./utils/index";
 import { runTypeCheck } from "./types";
 import { runLint as runLinter } from "./linter";
-import { runFormat as runFormatter } from "./formater";
+import { runFormat as runFormatter } from "./formatter";
 
 export const checkCommand = new Command("check")
   .description("Run type-check, lint, and format check")

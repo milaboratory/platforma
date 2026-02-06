@@ -58,7 +58,7 @@ export async function runFormat(paths: string[], options: FormatOptions = {}): P
   );
 }
 
-export const formaterCommand = new Command("formater")
+export const formatterCommand = new Command("formatter")
   .description("Format the project using oxfmt (one of --check or --fix is required)")
   .option("--check", "Check files")
   .option("--fix", "Format files")
