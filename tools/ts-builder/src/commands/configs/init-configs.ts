@@ -13,7 +13,7 @@ import {
   type TargetType,
 } from '../utils/index';
 
-export const initCommand = new Command('init')
+export const initConfigsCommand = new Command('init-configs')
   .description('Initialize all config files for the target (tsconfig, build, lint, fmt)')
   .option('--target <target>', 'Target type (node|browser|browser-lib|block-model|block-ui|block-test)')
   .action(async (options: CommandOptions, command) => {
