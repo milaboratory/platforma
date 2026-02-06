@@ -16,7 +16,7 @@
     "./postinstall.js"
   ],
   "scripts": {
-    "build": "oclif-index && ts-builder build --target node",
+    "build": "oclif-index && ts-builder format && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "check": "ts-builder check --target node",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",

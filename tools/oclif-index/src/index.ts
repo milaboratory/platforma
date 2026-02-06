@@ -81,13 +81,13 @@ export default class OclifIndex extends Command {
 
       if (cmdInfo.isDefaultExport) {
         imports.push({
-          importLine: `import ${importName} from '${relativeImport}';`,
-          indexLine: `'${cmdKey}': ${importName}`,
+          importLine: `import ${importName} from "${relativeImport}";`,
+          indexLine: `"${cmdKey}": ${importName}`,
         });
       } else {
         imports.push({
-          importLine: `import { ${cmdInfo.className} as ${importName} } from '${relativeImport}';`,
-          indexLine: `'${cmdKey}': ${importName}`,
+          importLine: `import { ${cmdInfo.className} as ${importName} } from "${relativeImport}";`,
+          indexLine: `"${cmdKey}": ${importName}`,
         });
       }
     }

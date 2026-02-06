@@ -4,8 +4,6 @@
   "private": true,
   "description": "Tests for block registry reader",
   "scripts": {
-    "build": "ts-builder build --target node",
-    "watch": "ts-builder build --target node --watch",
     "check": "ts-builder check --target node",
     "test": "vitest run --coverage",
     "fmt": "ts-builder format"
