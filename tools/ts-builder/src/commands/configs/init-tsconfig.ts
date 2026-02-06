@@ -5,7 +5,7 @@ import {
   getTarget,
   type CommandOptions,
   type TargetType,
-} from './utils/index';
+} from '../utils/index';
 
 export const initTsconfigCommand = new Command('init-tsconfig')
   .description('Initialize tsconfig.json')

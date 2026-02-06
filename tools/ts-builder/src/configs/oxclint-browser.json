@@ -1,0 +1,4 @@
+{
+  "extends": ["./oxclint-base.json"],
+  "plugins": ["vue"]
+}

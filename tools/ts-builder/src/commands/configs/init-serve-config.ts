@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { createServeConfig } from './utils/index';
+import { createServeConfig } from '../utils/index';
 
 export const initServeConfigCommand = new Command('init-serve-config')
   .description('Initialize serve config')

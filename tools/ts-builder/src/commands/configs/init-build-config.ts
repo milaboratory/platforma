@@ -5,7 +5,7 @@ import {
   getTarget,
   type CommandOptions,
   type TargetType,
-} from './utils/index';
+} from '../utils/index';
 
 export const initBuildConfigCommand = new Command('init-build-config')
   .description('Initialize build config')

@@ -139,3 +139,74 @@ export function createServeConfig(): void {
 
   console.log(`Created ${targetFile}`);
 }
+
+// Oxlint config types
+export type OxlintConfigType = 'block-model' | 'block-ui' | 'block-test' | 'test' | 'node' | 'browser';
+
+const OXLINT_CONFIG_MAP: Record<OxlintConfigType, string> = {
+  'block-model': 'oxclint-block-model.json',
+  'block-ui': 'oxclint-block-ui.json',
+  'block-test': 'oxclint-block-test.json',
+  'test': 'oxclint-test.json',
+  'node': 'oxclint-node.json',
+  'browser': 'oxclint-browser.json',
+};
+
+// Map target types to oxlint config types
+const TARGET_TO_OXLINT_MAP: Record<TargetType, OxlintConfigType> = {
+  'node': 'node',
+  'browser': 'browser',
+  'browser-lib': 'browser',
+  'block-model': 'block-model',
+  'block-ui': 'block-ui',
+  'block-test': 'block-test',
+};
+
+export function getOxlintConfigForTarget(target: TargetType): OxlintConfigType {
+  return TARGET_TO_OXLINT_MAP[target];
+}
+
+export function createLintConfig(configType: OxlintConfigType): void {
+  const targetFile = './.oxlintrc.json';
+
+  if (existsSync(targetFile)) {
+    console.warn('.oxlintrc.json already exists. Skipping...');
+    return;
+  }
+
+  const configFilename = OXLINT_CONFIG_MAP[configType];
+  if (!configFilename) {
+    throw new Error(`Unknown oxlint config type: ${configType}`);
+  }
+
+  const configPath = getConfigPath(configFilename);
+
+  if (!existsSync(configPath)) {
+    throw new Error(`Config template not found: ${configPath}`);
+  }
+
+  const templateContent = readFileSync(configPath, 'utf-8');
+  writeFileSync(targetFile, templateContent);
+
+  console.log(`Created ${targetFile} with ${configType} preset`);
+}
+
+export function createFmtConfig(): void {
+  const targetFile = './.oxfmtrc.json';
+
+  if (existsSync(targetFile)) {
+    console.warn('.oxfmtrc.json already exists. Skipping...');
+    return;
+  }
+
+  const configPath = getConfigPath('oxfmt.json');
+
+  if (!existsSync(configPath)) {
+    throw new Error(`Config template not found: ${configPath}`);
+  }
+
+  const templateContent = readFileSync(configPath, 'utf-8');
+  writeFileSync(targetFile, templateContent);
+
+  console.log(`Created ${targetFile}`);
+}

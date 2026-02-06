@@ -1,4 +1,3 @@
 {
-  "extends": ["./oxclint-base.json"],
-  "plugins": ["vue"]
+  "extends": ["./oxclint-browser.json"]
 }
