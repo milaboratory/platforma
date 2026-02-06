@@ -8,18 +8,32 @@ import type {
   PlRef,
   ResultCollection,
   ResultPoolEntry,
-  ValueOrError,
-} from "@platforma-sdk/model";
-import { executePSpecPredicate, mapValueInVOE } from "@platforma-sdk/model";
-import { notEmpty } from "@milaboratories/ts-helpers";
-import { outputRef } from "../model/args";
-import type { Block, ProjectStructure } from "../model/project_model";
-import { ProjectStructureKey, projectFieldName } from "../model/project_model";
-import { allBlocks, stagingGraph } from "../model/project_model_util";
-import type { Optional } from "utility-types";
-import { deriveGlobalPObjectId } from "./data";
-import type { RawPObjectCollection, RawPObjectEntry } from "./p_object_collection";
-import { parseRawPObjectCollection } from "./p_object_collection";
+  ValueOrError
+} from '@platforma-sdk/model';
+import {
+  executePSpecPredicate,
+  mapValueInVOE,
+} from '@platforma-sdk/model';
+import { notEmpty } from '@milaboratories/ts-helpers';
+import { outputRef } from '../model/args';
+import type {
+  Block,
+  ProjectStructure
+} from '../model/project_model';
+import {
+  ProjectStructureKey,
+  projectFieldName,
+} from '../model/project_model';
+import { allBlocks, stagingGraph } from '../model/project_model_util';
+import type { Optional } from 'utility-types';
+import { deriveGlobalPObjectId } from './data';
+import type {
+  RawPObjectCollection,
+  RawPObjectEntry
+} from './p_object_collection';
+import {
+  parseRawPObjectCollection,
+} from './p_object_collection';
 
 /** All exported results are addressed  */
 export type ResultKey = Pick<PlRef, "blockId" | "name">;

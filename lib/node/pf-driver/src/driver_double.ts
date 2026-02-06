@@ -125,6 +125,7 @@ export type InternalPFrameDriverDouble = AbstractInternalPFrameDriver<
   PFrameInternal.DataInfo<FileName> | PColumnValues
 >;
 
+// It's mock for testing purposes, not a real test!
 export async function createPFrameDriverDouble({
   dataFolder = tmpdir() as FolderPath,
   logger = () => {},

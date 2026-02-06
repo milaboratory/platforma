@@ -8,13 +8,13 @@ import {
   type JsonSerializable,
   type PColumnValue,
   type PObjectId,
-} from "@platforma-sdk/model";
-import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import { RefCountPoolBase, type PoolEntry } from "@milaboratories/ts-helpers";
-import { logPFrames } from "./logging";
-import type { PFramePool } from "./pframe_pool";
-import { stableKeyFromFullPTableDef, type FullPTableDef } from "./ptable_shared";
-import type { PTableDefPool } from "./ptable_def_pool";
+} from '@platforma-sdk/model';
+import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
+import { RefCountPoolBase, type PoolEntry } from '@milaboratories/ts-helpers';
+import { logPFrames } from './logging';
+import type { PFramePool } from './pframe_pool';
+import { FullPTableDefV1, FullPTableDefV2, stableKeyFromFullPTableDef, type FullPTableDef } from './ptable_shared';
+import type { PTableDefPool } from './ptable_def_pool';
 
 export class PTableHolder implements Disposable {
   private readonly abortController = new AbortController();
@@ -72,53 +72,81 @@ export class PTablePool<TreeEntry extends JsonSerializable> extends RefCountPool
       );
     }
 
-    const handle = params.pFrameHandle;
-    const { pFramePromise, disposeSignal } = this.pFrames.getByKey(handle);
+    switch (params.type) {
+      case 'v1':
+        return this.createNewResourceV1(params, key);
+      case 'v2':
+        return this.createNewResourceV2(params, key);
+      default:
+        // @ts-expect-error `params.type` is a string, but we want to make sure all cases are handled
+        throw new PFrameDriverError(`Unsupported FullPTableDef type: ${params.type}`);
+    }
+  }
+
+  protected createNewResourceV1(params: FullPTableDefV1, key: PTableHandle): PTableHolder {
+    const { def, pFrameHandle } = params;
+    const { pFramePromise, disposeSignal } = this.pFrames.getByKey(pFrameHandle);
 
     const defDisposeSignal = this.pTableDefs.tryGetByKey(key)?.disposeSignal;
     const combinedSignal = AbortSignal.any([disposeSignal, defDisposeSignal].filter((s) => !!s));
 
     // 3. Sort
-    if (params.def.sorting.length > 0) {
+    if (def.sorting.length > 0) {
       const predecessor = this.acquire({
         ...params,
         def: {
-          ...params.def,
+          ...def,
           sorting: [],
         },
       });
       const {
         resource: { pTablePromise },
       } = predecessor;
-      const sortedTable = pTablePromise.then((pTable) => pTable.sort(key, params.def.sorting));
-      return new PTableHolder(handle, combinedSignal, sortedTable, predecessor);
+      const sortedTable = pTablePromise.then((pTable) => pTable.sort(key, def.sorting));
+      return new PTableHolder(pFrameHandle, combinedSignal, sortedTable, predecessor);
     }
 
     // 2. Filter (except the case with artificial columns where cartesian creates too many rows)
-    if (!hasArtificialColumns(params.def.src) && params.def.filters.length > 0) {
+    if (!hasArtificialColumns(def.src) && def.filters.length > 0) {
       const predecessor = this.acquire({
         ...params,
         def: {
-          ...params.def,
+          ...def,
           filters: [],
         },
       });
       const {
         resource: { pTablePromise },
       } = predecessor;
-      const filteredTable = pTablePromise.then((pTable) => pTable.filter(key, params.def.filters));
-      return new PTableHolder(handle, combinedSignal, filteredTable, predecessor);
+      const filteredTable = pTablePromise.then((pTable) => pTable.filter(key, def.filters));
+      return new PTableHolder(pFrameHandle, combinedSignal, filteredTable, predecessor);
     }
 
     // 1. Join
-    const table = pFramePromise.then((pFrame) =>
-      pFrame.createTable(key, {
-        src: joinEntryToInternal(params.def.src),
-        // `params.def.filters` would be non-empty only when join has artificial columns
-        filters: [...params.def.partitionFilters, ...params.def.filters],
-      }),
-    );
-    return new PTableHolder(handle, combinedSignal, table);
+    const table = pFramePromise.then((pFrame) => pFrame.createTable(key, {
+      src: joinEntryToInternal(def.src),
+      // `def.filters` would be non-empty only when join has artificial columns
+      filters: [...def.partitionFilters, ...def.filters],
+    }));
+    return new PTableHolder(pFrameHandle, combinedSignal, table);
+  }
+
+  protected createNewResourceV2(params: FullPTableDefV2, key: PTableHandle): PTableHolder {
+    if (logPFrames()) {
+      this.logger('info',
+        `PTable creation (pTableHandle = ${key}): `
+        + `${JSON.stringify(params, bigintReplacer)}`,
+      );
+    }
+
+    const { pFrameHandle } = params;
+    const { pFramePromise, disposeSignal } = this.pFrames.getByKey(pFrameHandle);
+
+    const defDisposeSignal = this.pTableDefs.tryGetByKey(key)?.disposeSignal;
+    const combinedSignal = AbortSignal.any([disposeSignal, defDisposeSignal].filter((s) => !!s));
+
+    const table = pFramePromise.then((pFrame) => pFrame.createTableByDataQuery(key, params.request));
+    return new PTableHolder(pFrameHandle, combinedSignal, table);
   }
 
   public getByKey(key: PTableHandle): PTableHolder {

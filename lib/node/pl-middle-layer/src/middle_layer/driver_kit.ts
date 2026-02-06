@@ -1,5 +1,7 @@
 import type { PlClient } from "@milaboratories/pl-client";
-import type { InternalLsDriver } from "@milaboratories/pl-drivers";
+import type {
+  InternalLsDriver,
+} from "@milaboratories/pl-drivers";
 import {
   createDownloadClient,
   createLogsClient,

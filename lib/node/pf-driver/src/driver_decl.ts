@@ -1,7 +1,9 @@
 import type {
+  AxisId,
   CalculateTableDataRequest,
   CalculateTableDataResponse,
   PColumn,
+  PColumnIdAndSpec,
   PFrameDef,
   PFrameDriver,
   PFrameHandle,
@@ -10,6 +12,7 @@ import type {
   PTableHandle,
   PTableShape,
   PTableVector,
+  QueryData,
   TableRange,
   UniqueValuesRequest,
   UniqueValuesResponse,
@@ -38,6 +41,18 @@ export interface AbstractInternalPFrameDriver<PColumnData> extends PFrameDriver,
 
   /** Create a new PTable */
   createPTable(def: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle>;
+
+  /** Create a new PTable from a data query */
+  createTableByDataQuery(
+    def: PFrameDef<PColumn<PColumnData>>,
+    request: {
+      tableSpec: {
+        axes: AxisId[];
+        columns: PColumnIdAndSpec[];
+      };
+      dataQuery: QueryData;
+    }
+  ): PoolEntry<PTableHandle>;
 
   /** Calculates data for the table and returns complete data representation of it */
   calculateTableData(

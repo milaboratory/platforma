@@ -2,7 +2,8 @@ import { PFrameDriverError, type PTableHandle } from "@platforma-sdk/model";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { RefCountPoolBase } from "@milaboratories/ts-helpers";
 import { logPFrames } from "./logging";
-import { stableKeyFromFullPTableDef, type FullPTableDef } from "./ptable_shared";
+import type { FullPTableDef } from './ptable_shared';
+import { stableKeyFromFullPTableDef } from "./ptable_shared";
 
 export class PTableDefHolder implements Disposable {
   private readonly abortController = new AbortController();
