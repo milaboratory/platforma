@@ -20,7 +20,7 @@
     "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "lint": "ts-builder lint",
-    "fmt": "ts-builder format --check"
+    "fmt": "ts-builder format"
   },
   "bin": {
     "block-tools": "./bin/run.js"
