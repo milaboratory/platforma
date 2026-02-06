@@ -22,7 +22,9 @@
     "check": "turbo run check",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "prepare": "husky"
+    "prepare": "husky",
+    "ci:build": "pnpm --filter \"@milaboratories/ts-builder...\" run build && pnpm run build",
+    "ci:build:dev": "pnpm --filter \"@milaboratories/ts-builder...\" run build && pnpm run build:dev"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
