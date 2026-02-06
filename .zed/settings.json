@@ -39,6 +39,36 @@
     }
   },
   "languages": {
+    "CSS": {
+      "language_servers": ["oxfmt"],
+      "formatter": [{ "language_server": { "name": "oxfmt" } }],
+      "format_on_save": "on"
+    },
+    "SCSS": {
+      "language_servers": ["oxfmt"],
+      "formatter": [{ "language_server": { "name": "oxfmt" } }],
+      "format_on_save": "on"
+    },
+    "HTML": {
+      "language_servers": ["oxfmt"],
+      "formatter": [{ "language_server": { "name": "oxfmt" } }],
+      "format_on_save": "on"
+    },
+    "YAML": {
+      "language_servers": ["oxfmt"],
+      "formatter": [{ "language_server": { "name": "oxfmt" } }],
+      "format_on_save": "on"
+    },
+    "Markdown": {
+      "language_servers": ["oxfmt"],
+      "formatter": [{ "language_server": { "name": "oxfmt" } }],
+      "format_on_save": "on"
+    },
+    "JSON": {
+      "language_servers": ["oxfmt"],
+      "formatter": [{ "language_server": { "name": "oxfmt" } }],
+      "format_on_save": "on"
+    },
     "JavaScript": {
       "language_servers": ["oxlint", "oxfmt"],
       "formatter": [
