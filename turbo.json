@@ -3,10 +3,13 @@
   "globalDependencies": ["tsconfig.json"],
   "tasks": {
     "fmt": {
-      "outputs": []
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", ".oxfmtrc.json", ".oxlintrc.json"]
     },
     "check": {
-      "outputs": []
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", ".oxfmtrc.json", ".oxlintrc.json"],
+      "dependsOn": ["^build"]
     },
     "build": {
       "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"],
