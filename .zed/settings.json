@@ -40,13 +40,19 @@
   },
   "languages": {
     "JavaScript": {
-      "language_servers": ["oxlint"],
-      "formatter": [{ "code_action": "source.fixAll.oxc" }],
+      "language_servers": ["oxlint", "oxfmt"],
+      "formatter": [
+        { "language_server": { "name": "oxfmt" } },
+        { "code_action": "source.fixAll.oxc" }
+      ],
       "format_on_save": "on"
     },
     "TypeScript": {
-      "language_servers": ["typescript-language-server", "oxlint"],
-      "formatter": [{ "code_action": "source.fixAll.oxc" }],
+      "language_servers": ["typescript-language-server", "oxlint", "oxfmt"],
+      "formatter": [
+        { "language_server": { "name": "oxfmt" } },
+        { "code_action": "source.fixAll.oxc" }
+      ],
       "format_on_save": "on"
     }
   }
