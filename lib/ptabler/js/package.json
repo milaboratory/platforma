@@ -18,10 +18,9 @@
   ],
   "scripts": {
     "build": "ts-builder build --target node",
+    "check": "ts-builder check --target node",
     "test": "vitest run --coverage",
     "test:ui": "vitest --ui",
-    "type-check": "ts-builder types --target node",
-    "lint": "ts-builder lint",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },

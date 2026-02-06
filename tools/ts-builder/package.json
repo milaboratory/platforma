@@ -19,8 +19,7 @@
     "build": "rollup -c",
     "watch": "rollup -c --watch",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "oxlint",
-    "type-check": "tsc --noEmit",
+    "check": "tsc --noEmit && oxlint && oxfmt --check",
     "fmt": "oxfmt"
   },
   "dependencies": {

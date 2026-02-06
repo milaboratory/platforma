@@ -14,10 +14,8 @@
     }
   },
   "scripts": {
-    "type-check": "pl-tengo check",
     "build": "rm -rf dist && pl-tengo build",
     "test": "vitest run --coverage",
-    "lint": "ts-builder lint",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
     "vscode-tags": "cd ../../ && bash ./sdk/workflow-tengo/create_tags.sh .tags false",

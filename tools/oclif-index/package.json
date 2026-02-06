@@ -8,8 +8,8 @@
   "module": "./dist/index.js",
   "scripts": {
     "build": "ts-builder build --target node",
-    "type-check": "ts-builder types --target node",
     "watch": "ts-builder build --target node --watch",
+    "check": "ts-builder check --target node",
     "fmt": "ts-builder format"
   },
   "bin": {

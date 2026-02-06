@@ -16,12 +16,3 @@ export const checkCommand = new Command("check")
 
     console.log("All checks passed!");
   });
-
-export const formatCommand = new Command("format")
-  .description("Run lint fix and format fix")
-  .action(async () => {
-    await runLinter([], { fix: true });
-    await runFormatter([], { fix: true });
-
-    console.log("All fixes applied!");
-  });

@@ -3,11 +3,10 @@
   "version": "5.2.41",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "scripts": {
-    "type-check": "ts-builder types --target node",
     "build": "oclif-index && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
+    "check": "ts-builder check --target node",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "ts-builder lint",
     "fmt": "ts-builder format"
   },
   "bin": {

@@ -14,8 +14,7 @@
   },
   "scripts": {
     "build": "ts-builder build --target node",
-    "type-check": "ts-builder types --target node",
-    "lint": "ts-builder lint",
+    "check": "ts-builder check --target node",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },

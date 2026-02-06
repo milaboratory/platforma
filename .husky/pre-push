@@ -1,2 +1,2 @@
-pnpm fmt:check
-pnpm lint
+pnpm check
+

@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { version } from "../package.json" with { type: "json" };
 import { buildCommand } from "./commands/build";
-import { checkCommand, formatCommand } from "./commands/check";
+import { checkCommand } from "./commands/check";
 import { formaterCommand } from "./commands/formater";
 import { initConfigsCommand } from "./commands/configs/init-configs";
 import { initBuildConfigCommand } from "./commands/configs/init-build-config";
@@ -12,6 +12,7 @@ import { initTsconfigCommand } from "./commands/configs/init-tsconfig";
 import { linterCommand } from "./commands/linter";
 import { serveCommand } from "./commands/serve";
 import { typesCommand } from "./commands/types";
+import { formatCommand } from "./commands/format";
 
 const program = new Command();
 
@@ -31,11 +32,11 @@ program
 
 program.addCommand(buildCommand);
 program.addCommand(serveCommand);
+program.addCommand(checkCommand);
+program.addCommand(formatCommand);
 program.addCommand(typesCommand);
 program.addCommand(linterCommand);
 program.addCommand(formaterCommand);
-program.addCommand(checkCommand);
-program.addCommand(formatCommand);
 program.addCommand(initConfigsCommand);
 program.addCommand(initTsconfigCommand);
 program.addCommand(initBuildConfigCommand);

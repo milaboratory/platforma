@@ -13,10 +13,9 @@
     }
   },
   "scripts": {
-    "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
-    "lint": "ts-builder lint",
+    "check": "ts-builder check --target node",
     "test": "vitest run --coverage",
     "fmt": "ts-builder format"
   },

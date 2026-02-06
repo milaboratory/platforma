@@ -6,7 +6,6 @@
   "scripts": {
     "build": "rm -rf dist && pl-tengo check && pl-tengo build",
     "format": "/usr/bin/env emacs --script ./format.el",
-    "lint": "ts-builder lint",
     "test": "vitest run --coverage",
     "fmt": "ts-builder format"
   },

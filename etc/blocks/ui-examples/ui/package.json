@@ -5,9 +5,8 @@
   "scripts": {
     "dev": "ts-builder serve --target block-ui --use-sources",
     "watch": "ts-builder build --target block-ui --watch",
+    "check": "ts-builder check --target block-ui",
     "build": "ts-builder build --target block-ui",
-    "type-check": "ts-builder types --target block-ui",
-    "lint": "ts-builder lint",
     "fmt": "ts-builder format"
   },
   "dependencies": {

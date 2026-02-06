@@ -9,7 +9,6 @@
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "docs:test": "echo 'Hola!'",
-    "lint": "ts-builder lint",
     "fmt": "ts-builder format"
   },
   "devDependencies": {

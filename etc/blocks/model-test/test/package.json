@@ -5,8 +5,7 @@
   "description": "Block tests",
   "scripts": {
     "test": "vitest",
-    "lint": "ts-builder lint",
-    "type-check": "ts-builder types --target block-test",
+    "check": "ts-builder check --target block-test",
     "fmt": "ts-builder format"
   },
   "files": [],

@@ -13,13 +13,12 @@
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
     "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts",
     "build": "vite build",
     "readme": "oclif readme",
     "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "ts-builder lint",
+    "check": "ts-builder check --target node",
     "fmt": "ts-builder format"
   },
   "bin": {
