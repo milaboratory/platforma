@@ -44,9 +44,12 @@ export const formatCommand = new Command('format')
       oxfmtArgs.push('--config', configPath);
     }
 
+    oxfmtArgs.push('--ignorePatterns', 'node_modules/**');
+
     if (paths && paths.length > 0) {
       oxfmtArgs.push(...paths);
     }
+
 
     console.log(options.check ? 'Checking formatting...' : 'Formatting project...');
 
