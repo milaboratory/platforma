@@ -5,7 +5,7 @@
     "description": "Simple static artifacts for tests (assets and software)",
     "scripts": {
         "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
-        "check": "pnpm run cleanup && pl-pkg build"
+        "test:check": "pnpm run cleanup && pl-pkg build"
     },
     "block-software": {
         "entrypoints": {

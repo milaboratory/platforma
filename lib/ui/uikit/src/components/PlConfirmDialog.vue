@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { PlBtnPrimary } from './PlBtnPrimary';
-import { PlBtnSecondary } from './PlBtnSecondary';
-import { PlDialogModal } from './PlDialogModal';
+import { PlBtnPrimary } from "./PlBtnPrimary";
+import { PlBtnSecondary } from "./PlBtnSecondary";
+import { PlDialogModal } from "./PlDialogModal";
 
 const props = withDefaults(
   defineProps<{
@@ -12,7 +12,8 @@ const props = withDefaults(
     cancelLabel: string;
     onConfirm?: () => void;
     onCancel?: () => void;
-  }>(), {
+  }>(),
+  {
     opened: true,
     onCancel: undefined,
     onConfirm: undefined,
@@ -25,12 +26,12 @@ const emits = defineEmits<{
 }>();
 
 const handleConfirm = () => {
-  emits('confirm');
+  emits("confirm");
   props.onConfirm?.();
 };
 
 const handleCancel = () => {
-  emits('cancel');
+  emits("cancel");
   props.onCancel?.();
 };
 </script>

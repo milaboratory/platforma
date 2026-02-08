@@ -1,10 +1,10 @@
-import os from 'node:os';
-import fs from 'node:fs';
-import path from 'node:path';
-import * as pkg from './package';
-import * as util from './util';
-import type { SpawnOptions } from 'node:child_process';
-import type * as types from './templates/types';
+import os from "node:os";
+import fs from "node:fs";
+import path from "node:path";
+import * as pkg from "./package";
+import * as util from "./util";
+import type { SpawnOptions } from "node:child_process";
+import type * as types from "./templates/types";
 
 export type runInfo = {
   configPath?: string;
@@ -35,15 +35,17 @@ export type commmonInstanceInfo = {
 };
 
 export type dockerInstanceInfo = commmonInstanceInfo & {
-  type: 'docker';
+  type: "docker";
 };
 export type processInstanceInfo = commmonInstanceInfo & {
-  type: 'process';
+  type: "process";
   pid?: number;
 };
 
 export type instanceInfo = dockerInstanceInfo | processInstanceInfo;
-export type jsonInstanceInfo = Omit<dockerInstanceInfo, 'name' | 'isActive'> | Omit<processInstanceInfo, 'name' | 'isActive'>;
+export type jsonInstanceInfo =
+  | Omit<dockerInstanceInfo, "name" | "isActive">
+  | Omit<processInstanceInfo, "name" | "isActive">;
 
 export function reset() {
   fs.rmSync(State.getStateInstance().filePath);
@@ -57,16 +59,16 @@ class State {
   private static instance: State;
 
   private state: state = {
-    currentInstance: '',
+    currentInstance: "",
   };
 
   public readonly filePath: string;
   private readonly dirPath: string;
 
   constructor(stateDir?: string) {
-    stateDir = stateDir ?? path.resolve(os.homedir(), '.config', 'pl-bootstrap');
+    stateDir = stateDir ?? path.resolve(os.homedir(), ".config", "pl-bootstrap");
 
-    const stateFile = path.join(stateDir, 'state.json');
+    const stateFile = path.join(stateDir, "state.json");
 
     this.dirPath = stateDir;
     this.filePath = stateFile;
@@ -94,14 +96,14 @@ class State {
 
   public instanceDir(name?: string, ...p: string[]): string {
     if (name) {
-      return this.path('data', name, ...p);
+      return this.path("data", name, ...p);
     }
 
-    return this.path('data');
+    return this.path("data");
   }
 
   public binaries(...p: string[]): string {
-    return this.path('binaries', ...p);
+    return this.path("binaries", ...p);
   }
 
   private writeState() {
@@ -119,11 +121,11 @@ class State {
   }
 
   instanceExists(name: string): boolean {
-    return fs.existsSync(this.instanceDir(name, 'instance.json'));
+    return fs.existsSync(this.instanceDir(name, "instance.json"));
   }
 
   public getInstanceInfo(name: string): instanceInfo {
-    const instanceInfoFile = this.instanceDir(name, 'instance.json');
+    const instanceInfoFile = this.instanceDir(name, "instance.json");
     if (!fs.existsSync(instanceInfoFile)) {
       throw new Error(`platforma backend instance '${name}' does not exist or is corrupted`);
     }
@@ -140,7 +142,7 @@ class State {
       fs.mkdirSync(this.instanceDir(instanceName), { recursive: true });
     }
 
-    const instanceInfoFile = this.instanceDir(instanceName, 'instance.json');
+    const instanceInfoFile = this.instanceDir(instanceName, "instance.json");
     let oldInfo: object = {};
 
     if (fs.existsSync(instanceInfoFile)) {
@@ -153,15 +155,15 @@ class State {
   public isInstanceActive(instance: instanceInfo): boolean {
     const iType = instance.type;
     switch (iType) {
-      case 'docker': {
+      case "docker": {
         const i = util.getDockerComposeInfo(`pl-${instance.name}`);
         if (!i) {
           return false;
         }
-        return i.Status.trim().startsWith('running');
+        return i.Status.trim().startsWith("running");
       }
 
-      case 'process': {
+      case "process": {
         if (!instance.pid) {
           return false;
         }
@@ -170,7 +172,7 @@ class State {
 
       default:
         util.assertNever(iType);
-        throw new Error('cli logic error: unknown service type, cannot check its state');
+        throw new Error("cli logic error: unknown service type, cannot check its state");
     }
   }
 
@@ -218,7 +220,11 @@ class State {
 
 function isValidPID(pid: number): boolean {
   const processName = util.getProcessName(pid);
-  return processName === 'platforma' || processName.endsWith('/platforma') || processName.endsWith('\\platforma');
+  return (
+    processName === "platforma" ||
+    processName.endsWith("/platforma") ||
+    processName.endsWith("\\platforma")
+  );
 }
 
 export default State.getStateInstance();

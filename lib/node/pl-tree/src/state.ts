@@ -8,22 +8,23 @@ import type {
   ResourceData,
   ResourceId,
   ResourceKind,
-  ResourceType } from '@milaboratories/pl-client';
+  ResourceType,
+} from "@milaboratories/pl-client";
 import {
   isNotNullResourceId,
   isNullResourceId,
   NullResourceId,
   resourceIdToString,
   stringifyWithResourceId,
-} from '@milaboratories/pl-client';
-import type { Watcher } from '@milaboratories/computable';
-import { ChangeSource, KeyedChangeSource } from '@milaboratories/computable';
-import { PlTreeEntry } from './accessors';
-import type { ValueAndError } from './value_and_error';
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import { cachedDecode, cachedDeserialize, notEmpty } from '@milaboratories/ts-helpers';
-import type { FieldTraversalStep, GetFieldStep } from './traversal_ops';
-import type { FinalResourceDataPredicate } from '@milaboratories/pl-client';
+} from "@milaboratories/pl-client";
+import type { Watcher } from "@milaboratories/computable";
+import { ChangeSource, KeyedChangeSource } from "@milaboratories/computable";
+import { PlTreeEntry } from "./accessors";
+import type { ValueAndError } from "./value_and_error";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import { cachedDecode, cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
+import type { FieldTraversalStep, GetFieldStep } from "./traversal_ops";
+import type { FinalResourceDataPredicate } from "@milaboratories/pl-client";
 
 export type ExtendedResourceData = ResourceData & {
   kv: KeyValue[];
@@ -158,21 +159,21 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   public getField(
     watcher: Watcher,
     _step:
-      | (Omit<GetFieldStep, 'errorIfFieldNotFound'> & { errorIfFieldNotFound: true })
-      | (Omit<GetFieldStep, 'errorIfFieldNotSet'> & { errorIfFieldNotSet: true }),
-    onUnstable: (marker: string) => void
+      | (Omit<GetFieldStep, "errorIfFieldNotFound"> & { errorIfFieldNotFound: true })
+      | (Omit<GetFieldStep, "errorIfFieldNotSet"> & { errorIfFieldNotSet: true }),
+    onUnstable: (marker: string) => void,
   ): ValueAndError<ResourceId>;
   public getField(
     watcher: Watcher,
     _step: string | GetFieldStep,
-    onUnstable: (marker: string) => void
+    onUnstable: (marker: string) => void,
   ): ValueAndError<ResourceId> | undefined;
   public getField(
     watcher: Watcher,
     _step: string | GetFieldStep,
     onUnstable: (marker: string) => void = () => {},
   ): ValueAndError<ResourceId> | undefined {
-    const step: FieldTraversalStep = typeof _step === 'string' ? { field: _step } : _step;
+    const step: FieldTraversalStep = typeof _step === "string" ? { field: _step } : _step;
 
     const field = this.fieldsMap.get(step.field);
     if (field === undefined) {
@@ -182,7 +183,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
         );
 
       if (!this.inputsLocked) this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
-      else if (step.assertFieldType === 'Service' || step.assertFieldType === 'Input') {
+      else if (step.assertFieldType === "Service" || step.assertFieldType === "Input") {
         if (step.allowPermanentAbsence)
           // stable absence of field
           return undefined;
@@ -190,7 +191,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
       }
 
       if (!this.outputsLocked) this.outputFieldListChanged?.attachWatcher(watcher);
-      else if (step.assertFieldType === 'Output') {
+      else if (step.assertFieldType === "Output") {
         if (step.allowPermanentAbsence)
           // stable absence of field
           return undefined;
@@ -198,7 +199,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
       }
 
       this.dynamicFieldListChanged?.attachWatcher(watcher);
-      if (!this._finalState && !step.stableIfNotFound) onUnstable('field_not_found:' + step.field);
+      if (!this._finalState && !step.stableIfNotFound) onUnstable("field_not_found:" + step.field);
 
       return undefined;
     } else {
@@ -214,7 +215,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
         // this method returns value and error of the field, thus those values are considered to be accessed;
         // any existing but not resolved field here is considered to be unstable, in the sense it is
         // considered to acquire some resolved value eventually
-        onUnstable('field_not_resolved:' + step.field);
+        onUnstable("field_not_resolved:" + step.field);
       field.change.attachWatcher(watcher);
       return ret;
     }
@@ -236,9 +237,9 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
   public get isReadyOrError(): boolean {
     return (
-      this.error !== NullResourceId
-      || this.resourceReady
-      || this.originalResourceId !== NullResourceId
+      this.error !== NullResourceId ||
+      this.resourceReady ||
+      this.originalResourceId !== NullResourceId
     );
   }
 
@@ -267,7 +268,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   public listInputFields(watcher: Watcher): string[] {
     const ret: string[] = [];
     this.fieldsMap.forEach((field, name) => {
-      if (field.type === 'Input' || field.type === 'Service') ret.push(name);
+      if (field.type === "Input" || field.type === "Service") ret.push(name);
     });
     if (!this.inputsLocked) this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
 
@@ -277,7 +278,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   public listOutputFields(watcher: Watcher): string[] {
     const ret: string[] = [];
     this.fieldsMap.forEach((field, name) => {
-      if (field.type === 'Output') ret.push(name);
+      if (field.type === "Output") ret.push(name);
     });
     if (!this.outputsLocked) this.outputFieldListChanged?.attachWatcher(watcher);
 
@@ -287,7 +288,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   public listDynamicFields(watcher: Watcher): string[] {
     const ret: string[] = [];
     this.fieldsMap.forEach((field, name) => {
-      if (field.type !== 'Input' && field.type !== 'Output') ret.push(name);
+      if (field.type !== "Input" && field.type !== "Output") ret.push(name);
     });
     this.dynamicFieldListChanged?.attachWatcher(watcher);
 
@@ -325,7 +326,9 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
   verifyReadyState() {
     if (this.resourceReady && !this.inputsLocked)
-      throw new Error(`ready without input or output lock: ${stringifyWithResourceId(this.basicState)}`);
+      throw new Error(
+        `ready without input or output lock: ${stringifyWithResourceId(this.basicState)}`,
+      );
   }
 
   get basicState(): BasicResourceData {
@@ -356,7 +359,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     if (this._finalState) return;
 
     this._finalState = true;
-    notEmpty(this.finalChanged).markChanged('marked final');
+    notEmpty(this.finalChanged).markChanged("marked final");
     this.finalChanged = undefined;
     this.resourceStateChange = undefined;
     this.dynamicFieldListChanged = undefined;
@@ -369,16 +372,16 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
   /** Used for invalidation */
   markAllChanged() {
-    this.fieldsMap.forEach((field) => field.change.markChanged('marked all changed'));
-    this.finalChanged?.markChanged('marked all changed');
-    this.resourceStateChange?.markChanged('marked all changed');
-    this.lockedChange?.markChanged('marked all changed');
-    this.inputAndServiceFieldListChanged?.markChanged('marked all changed');
-    this.outputFieldListChanged?.markChanged('marked all changed');
-    this.dynamicFieldListChanged?.markChanged('marked all changed');
+    this.fieldsMap.forEach((field) => field.change.markChanged("marked all changed"));
+    this.finalChanged?.markChanged("marked all changed");
+    this.resourceStateChange?.markChanged("marked all changed");
+    this.lockedChange?.markChanged("marked all changed");
+    this.inputAndServiceFieldListChanged?.markChanged("marked all changed");
+    this.outputFieldListChanged?.markChanged("marked all changed");
+    this.dynamicFieldListChanged?.markChanged("marked all changed");
     // this.kvChangedGlobal?.markChanged('marked all changed');
-    this.kvChangedPerKey?.markAllChanged('marked all changed');
-    this.resourceRemoved.markChanged('marked all changed');
+    this.kvChangedPerKey?.markAllChanged("marked all changed");
+    this.resourceRemoved.markChanged("marked all changed");
   }
 }
 
@@ -402,7 +405,7 @@ export class PlTreeState {
   }
 
   private checkValid() {
-    if (!this._isValid) throw new Error(this.invalidationMessage ?? 'tree is in invalid state');
+    if (!this._isValid) throw new Error(this.invalidationMessage ?? "tree is in invalid state");
   }
 
   public get(watcher: Watcher, rid: ResourceId): PlTreeResource {
@@ -445,7 +448,7 @@ export class PlTreeState {
         // updating existing resource
 
         if (resource.finalState)
-          unexpectedTransitionError('resource state can\t be updated after it is marked as final');
+          unexpectedTransitionError("resource state can\t be updated after it is marked as final");
 
         let changed = false;
         // updating resource version, even if it was not changed
@@ -454,20 +457,24 @@ export class PlTreeState {
         // duplicate / original
         if (resource.originalResourceId !== rd.originalResourceId) {
           if (resource.originalResourceId !== NullResourceId)
-            unexpectedTransitionError('originalResourceId can\'t change after it is set');
+            unexpectedTransitionError("originalResourceId can't change after it is set");
           resource.originalResourceId = rd.originalResourceId;
           // duplicate status of the resource counts as ready for the external observer
-          notEmpty(resource.resourceStateChange).markChanged(`originalResourceId changed for ${resourceIdToString(resource.id)}`);
+          notEmpty(resource.resourceStateChange).markChanged(
+            `originalResourceId changed for ${resourceIdToString(resource.id)}`,
+          );
           changed = true;
         }
 
         // error
         if (resource.error !== rd.error) {
           if (isNotNullResourceId(resource.error))
-            unexpectedTransitionError('resource can\'t change attached error after it is set');
+            unexpectedTransitionError("resource can't change attached error after it is set");
           resource.error = rd.error;
           incrementRefs.push(resource.error as ResourceId);
-          notEmpty(resource.resourceStateChange).markChanged(`error changed for ${resourceIdToString(resource.id)}`);
+          notEmpty(resource.resourceStateChange).markChanged(
+            `error changed for ${resourceIdToString(resource.id)}`,
+          );
           changed = true;
         }
 
@@ -490,20 +497,26 @@ export class PlTreeState {
             if (isNotNullResourceId(fd.value)) incrementRefs.push(fd.value);
             if (isNotNullResourceId(fd.error)) incrementRefs.push(fd.error);
 
-            if (fd.type === 'Input' || fd.type === 'Service') {
+            if (fd.type === "Input" || fd.type === "Service") {
               if (resource.inputsLocked)
                 unexpectedTransitionError(
                   `adding ${fd.type} (${fd.name}) field while inputs locked`,
                 );
-              notEmpty(resource.inputAndServiceFieldListChanged).markChanged(`new ${fd.type} field ${fd.name} added to ${resourceIdToString(resource.id)}`);
-            } else if (fd.type === 'Output') {
+              notEmpty(resource.inputAndServiceFieldListChanged).markChanged(
+                `new ${fd.type} field ${fd.name} added to ${resourceIdToString(resource.id)}`,
+              );
+            } else if (fd.type === "Output") {
               if (resource.outputsLocked)
                 unexpectedTransitionError(
                   `adding ${fd.type} (${fd.name}) field while outputs locked`,
                 );
-              notEmpty(resource.outputFieldListChanged).markChanged(`new ${fd.type} field ${fd.name} added to ${resourceIdToString(resource.id)}`);
+              notEmpty(resource.outputFieldListChanged).markChanged(
+                `new ${fd.type} field ${fd.name} added to ${resourceIdToString(resource.id)}`,
+              );
             } else {
-              notEmpty(resource.dynamicFieldListChanged).markChanged(`new ${fd.type} field ${fd.name} added to ${resourceIdToString(resource.id)}`);
+              notEmpty(resource.dynamicFieldListChanged).markChanged(
+                `new ${fd.type} field ${fd.name} added to ${resourceIdToString(resource.id)}`,
+              );
             }
 
             resource.fieldsMap.set(fd.name, field);
@@ -514,25 +527,33 @@ export class PlTreeState {
 
             // in principle this transition is possible, see assertions below
             if (field.type !== fd.type) {
-              if (field.type !== 'Dynamic')
+              if (field.type !== "Dynamic")
                 unexpectedTransitionError(`field changed type ${field.type} -> ${fd.type}`);
-              notEmpty(resource.dynamicFieldListChanged).markChanged(`field ${fd.name} changed type from Dynamic to ${fd.type} in ${resourceIdToString(resource.id)}`);
-              if (field.type === 'Input' || field.type === 'Service') {
+              notEmpty(resource.dynamicFieldListChanged).markChanged(
+                `field ${fd.name} changed type from Dynamic to ${fd.type} in ${resourceIdToString(resource.id)}`,
+              );
+              if (field.type === "Input" || field.type === "Service") {
                 if (resource.inputsLocked)
                   unexpectedTransitionError(
                     `adding input field "${fd.name}", while corresponding list is locked`,
                   );
-                notEmpty(resource.inputAndServiceFieldListChanged).markChanged(`field ${fd.name} changed to type ${fd.type} in ${resourceIdToString(resource.id)}`);
+                notEmpty(resource.inputAndServiceFieldListChanged).markChanged(
+                  `field ${fd.name} changed to type ${fd.type} in ${resourceIdToString(resource.id)}`,
+                );
               }
-              if (field.type === 'Output') {
+              if (field.type === "Output") {
                 if (resource.outputsLocked)
                   unexpectedTransitionError(
                     `adding output field "${fd.name}", while corresponding list is locked`,
                   );
-                notEmpty(resource.outputFieldListChanged).markChanged(`field ${fd.name} changed to type ${fd.type} in ${resourceIdToString(resource.id)}`);
+                notEmpty(resource.outputFieldListChanged).markChanged(
+                  `field ${fd.name} changed to type ${fd.type} in ${resourceIdToString(resource.id)}`,
+                );
               }
               field.type = fd.type;
-              field.change.markChanged(`field ${fd.name} type changed to ${fd.type} in ${resourceIdToString(resource.id)}`);
+              field.change.markChanged(
+                `field ${fd.name} type changed to ${fd.type} in ${resourceIdToString(resource.id)}`,
+              );
               changed = true;
             }
 
@@ -541,7 +562,9 @@ export class PlTreeState {
               if (isNotNullResourceId(field.value)) decrementRefs.push(field.value);
               field.value = fd.value;
               if (isNotNullResourceId(fd.value)) incrementRefs.push(fd.value);
-              field.change.markChanged(`field ${fd.name} value changed in ${resourceIdToString(resource.id)}`);
+              field.change.markChanged(
+                `field ${fd.name} value changed in ${resourceIdToString(resource.id)}`,
+              );
               changed = true;
             }
 
@@ -550,21 +573,27 @@ export class PlTreeState {
               if (isNotNullResourceId(field.error)) decrementRefs.push(field.error);
               field.error = fd.error;
               if (isNotNullResourceId(fd.error)) incrementRefs.push(fd.error);
-              field.change.markChanged(`field ${fd.name} error changed in ${resourceIdToString(resource.id)}`);
+              field.change.markChanged(
+                `field ${fd.name} error changed in ${resourceIdToString(resource.id)}`,
+              );
               changed = true;
             }
 
             // field status
             if (field.status !== fd.status) {
               field.status = fd.status;
-              field.change.markChanged(`field ${fd.name} status changed to ${fd.status} in ${resourceIdToString(resource.id)}`);
+              field.change.markChanged(
+                `field ${fd.name} status changed to ${fd.status} in ${resourceIdToString(resource.id)}`,
+              );
               changed = true;
             }
 
             // field valueIsFinal flag
             if (field.valueIsFinal !== fd.valueIsFinal) {
               field.valueIsFinal = fd.valueIsFinal;
-              field.change.markChanged(`field ${fd.name} valueIsFinal changed to ${fd.valueIsFinal} in ${resourceIdToString(resource.id)}`);
+              field.change.markChanged(
+                `field ${fd.name} valueIsFinal changed to ${fd.valueIsFinal} in ${resourceIdToString(resource.id)}`,
+              );
               changed = true;
             }
 
@@ -575,32 +604,40 @@ export class PlTreeState {
         // detecting removed fields
         resource.fieldsMap.forEach((field, fieldName, fields) => {
           if (field.resourceVersion !== resource!.version) {
-            if (field.type === 'Input' || field.type === 'Service' || field.type === 'Output')
+            if (field.type === "Input" || field.type === "Service" || field.type === "Output")
               unexpectedTransitionError(`removal of ${field.type} field ${fieldName}`);
-            field.change.markChanged(`dynamic field ${fieldName} removed from ${resourceIdToString(resource!.id)}`);
+            field.change.markChanged(
+              `dynamic field ${fieldName} removed from ${resourceIdToString(resource!.id)}`,
+            );
             fields.delete(fieldName);
 
             if (isNotNullResourceId(field.value)) decrementRefs.push(field.value);
             if (isNotNullResourceId(field.error)) decrementRefs.push(field.error);
 
-            notEmpty(resource!.dynamicFieldListChanged).markChanged(`dynamic field ${fieldName} removed from ${resourceIdToString(resource!.id)}`);
+            notEmpty(resource!.dynamicFieldListChanged).markChanged(
+              `dynamic field ${fieldName} removed from ${resourceIdToString(resource!.id)}`,
+            );
           }
         });
 
         // inputsLocked
         if (resource.inputsLocked !== rd.inputsLocked) {
-          if (resource.inputsLocked) unexpectedTransitionError('inputs unlocking is not permitted');
+          if (resource.inputsLocked) unexpectedTransitionError("inputs unlocking is not permitted");
           resource.inputsLocked = rd.inputsLocked;
-          notEmpty(resource.lockedChange).markChanged(`inputs locked for ${resourceIdToString(resource.id)}`);
+          notEmpty(resource.lockedChange).markChanged(
+            `inputs locked for ${resourceIdToString(resource.id)}`,
+          );
           changed = true;
         }
 
         // outputsLocked
         if (resource.outputsLocked !== rd.outputsLocked) {
           if (resource.outputsLocked)
-            unexpectedTransitionError('outputs unlocking is not permitted');
+            unexpectedTransitionError("outputs unlocking is not permitted");
           resource.outputsLocked = rd.outputsLocked;
-          notEmpty(resource.lockedChange).markChanged(`outputs locked for ${resourceIdToString(resource.id)}`);
+          notEmpty(resource.lockedChange).markChanged(
+            `outputs locked for ${resourceIdToString(resource.id)}`,
+          );
           changed = true;
         }
 
@@ -613,7 +650,9 @@ export class PlTreeState {
             unexpectedTransitionError(
               `resource can't lose it's ready or error state (ready state before ${readyStateBefore})`,
             );
-          notEmpty(resource.resourceStateChange).markChanged(`ready flag changed to ${rd.resourceReady} for ${resourceIdToString(resource.id)}`);
+          notEmpty(resource.resourceStateChange).markChanged(
+            `ready flag changed to ${rd.resourceReady} for ${resourceIdToString(resource.id)}`,
+          );
           changed = true;
         }
 
@@ -622,10 +661,16 @@ export class PlTreeState {
           const current = resource.kv.get(kv.key);
           if (current === undefined) {
             resource.kv.set(kv.key, kv.value);
-            notEmpty(resource.kvChangedPerKey).markChanged(kv.key, `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`);
+            notEmpty(resource.kvChangedPerKey).markChanged(
+              kv.key,
+              `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`,
+            );
           } else if (Buffer.compare(current, kv.value) !== 0) {
             resource.kv.set(kv.key, kv.value);
-            notEmpty(resource.kvChangedPerKey).markChanged(kv.key, `kv changed for ${resourceIdToString(resource.id)}: ${kv.key}`);
+            notEmpty(resource.kvChangedPerKey).markChanged(
+              kv.key,
+              `kv changed for ${resourceIdToString(resource.id)}: ${kv.key}`,
+            );
           }
         }
 
@@ -637,7 +682,10 @@ export class PlTreeState {
           resource.kv.forEach((_value, key, map) => {
             if (!newStateKeys.has(key)) {
               map.delete(key);
-              notEmpty(resource!.kvChangedPerKey).markChanged(key, `kv deleted for ${resourceIdToString(resource!.id)}: ${key}`);
+              notEmpty(resource!.kvChangedPerKey).markChanged(
+                key,
+                `kv deleted for ${resourceIdToString(resource!.id)}: ${key}`,
+              );
             }
           });
         }
@@ -708,10 +756,14 @@ export class PlTreeState {
           res.fieldsMap.forEach((field) => {
             if (isNotNullResourceId(field.value)) nextRefs.push(field.value);
             if (isNotNullResourceId(field.error)) nextRefs.push(field.error);
-            field.change.markChanged(`field ${field.name} removed during garbage collection of ${resourceIdToString(res.id)}`);
+            field.change.markChanged(
+              `field ${field.name} removed during garbage collection of ${resourceIdToString(res.id)}`,
+            );
           });
           if (isNotNullResourceId(res.error)) nextRefs.push(res.error);
-          res.resourceRemoved.markChanged(`resource removed during garbage collection: ${resourceIdToString(res.id)}`);
+          res.resourceRemoved.markChanged(
+            `resource removed during garbage collection: ${resourceIdToString(res.id)}`,
+          );
           this.resources.delete(rid);
         }
       }

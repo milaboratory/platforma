@@ -1,24 +1,24 @@
-import { test, expect } from 'vitest';
-import { field, TestHelpers } from '@milaboratories/pl-client';
-import { TestStructuralResourceType1 } from './test_utils';
-import { Computable } from '@milaboratories/computable';
-import { SynchronizedTreeState } from './synchronized_tree';
-import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
-import tp from 'timers/promises';
+import { test, expect } from "vitest";
+import { field, TestHelpers } from "@milaboratories/pl-client";
+import { TestStructuralResourceType1 } from "./test_utils";
+import { Computable } from "@milaboratories/computable";
+import { SynchronizedTreeState } from "./synchronized_tree";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
+import tp from "timers/promises";
 
-test('simple synchronized tree test', async () => {
+test("simple synchronized tree test", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
     const r1 = await pl.withWriteTx(
-      'CreatingStructure1',
+      "CreatingStructure1",
       async (tx) => {
         const rr1 = tx.createStruct(TestStructuralResourceType1);
-        const ff1 = field(tx.clientRoot, 'f1');
-        tx.createField(ff1, 'Dynamic');
+        const ff1 = field(tx.clientRoot, "f1");
+        tx.createField(ff1, "Dynamic");
         tx.setField(ff1, rr1);
         await tx.commit();
         return await rr1.globalId;
       },
-      { sync: true }
+      { sync: true },
     );
 
     const treeState = await SynchronizedTreeState.init(
@@ -27,33 +27,33 @@ test('simple synchronized tree test', async () => {
       {
         stopPollingDelay: 10,
         pollingInterval: 10,
-        logStat: 'cumulative'
+        logStat: "cumulative",
       },
-      new ConsoleLoggerAdapter(require('console'))
+      new ConsoleLoggerAdapter(require("console")),
     );
 
     const theComputable = Computable.make((c) =>
-      c.accessor(treeState.entry()).node().traverse('a', 'b')?.getDataAsString()
+      c.accessor(treeState.entry()).node().traverse("a", "b")?.getDataAsString(),
     );
 
     await theComputable.refreshState();
 
     expect(await theComputable.getValueOrError()).toMatchObject({
       stable: false,
-      value: undefined
+      value: undefined,
     });
 
     const r2 = await pl.withWriteTx(
-      'CreatingStructure2',
+      "CreatingStructure2",
       async (tx) => {
         const rr2 = tx.createStruct(TestStructuralResourceType1);
-        const ff2 = field(r1, 'a');
-        tx.createField(ff2, 'Input');
+        const ff2 = field(r1, "a");
+        tx.createField(ff2, "Input");
         tx.setField(ff2, rr2);
         await tx.commit();
         return await rr2.globalId;
       },
-      { sync: true }
+      { sync: true },
     );
     await tp.setTimeout(10);
 
@@ -62,20 +62,20 @@ test('simple synchronized tree test', async () => {
     expect(theComputable.isChanged()).toBe(true);
     expect(await theComputable.getValueOrError()).toMatchObject({
       stable: false,
-      value: undefined
+      value: undefined,
     });
 
-    const r3 = await pl.withWriteTx(
-      'CreatingStructure3',
+    await pl.withWriteTx(
+      "CreatingStructure3",
       async (tx) => {
-        const rr3 = tx.createValue(TestStructuralResourceType1, 'hi!');
-        const ff3 = field(r2, 'b');
-        tx.createField(ff3, 'Input');
+        const rr3 = tx.createValue(TestStructuralResourceType1, "hi!");
+        const ff3 = field(r2, "b");
+        tx.createField(ff3, "Input");
         tx.setField(ff3, rr3);
         await tx.commit();
         return await rr3.globalId;
       },
-      { sync: true }
+      { sync: true },
     );
     await tp.setTimeout(10);
 
@@ -84,17 +84,17 @@ test('simple synchronized tree test', async () => {
     expect(theComputable.isChanged()).toBe(true);
     expect(await theComputable.getValueOrError()).toMatchObject({
       stable: true,
-      value: 'hi!'
+      value: "hi!",
     });
 
     await pl.withWriteTx(
-      'CreatingStructure3',
+      "CreatingStructure3",
       async (tx) => {
         tx.lock(r1);
         tx.lock(r2);
         await tx.commit();
       },
-      { sync: true }
+      { sync: true },
     );
     await tp.setTimeout(10);
 
@@ -103,26 +103,26 @@ test('simple synchronized tree test', async () => {
     expect(theComputable.isChanged()).toBe(true);
     expect(await theComputable.getValueOrError()).toMatchObject({
       stable: true,
-      value: 'hi!'
+      value: "hi!",
     });
 
     await treeState.awaitSyncLoopTermination();
   });
 });
 
-test('synchronized tree test with KV', async () => {
+test("synchronized tree test with KV", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
     const r1 = await pl.withWriteTx(
-      'CreatingStructure1',
+      "CreatingStructure1",
       async (tx) => {
         const rr1 = tx.createStruct(TestStructuralResourceType1);
-        const ff1 = field(tx.clientRoot, 'f1');
-        tx.createField(ff1, 'Dynamic');
+        const ff1 = field(tx.clientRoot, "f1");
+        tx.createField(ff1, "Dynamic");
         tx.setField(ff1, rr1);
         await tx.commit();
         return await rr1.globalId;
       },
-      { sync: true }
+      { sync: true },
     );
 
     const treeState = await SynchronizedTreeState.init(
@@ -131,33 +131,33 @@ test('synchronized tree test with KV', async () => {
       {
         stopPollingDelay: 10,
         pollingInterval: 10,
-        logStat: 'cumulative'
+        logStat: "cumulative",
       },
-      new ConsoleLoggerAdapter(require('console'))
+      new ConsoleLoggerAdapter(require("console")),
     );
 
     const theComputable = Computable.make((c) =>
-      c.accessor(treeState.entry()).node().traverse('a')?.getKeyValueAsString('b', true)
+      c.accessor(treeState.entry()).node().traverse("a")?.getKeyValueAsString("b", true),
     );
 
     await theComputable.refreshState();
 
     expect(await theComputable.getValueOrError()).toMatchObject({
       stable: false,
-      value: undefined
+      value: undefined,
     });
 
     const r2 = await pl.withWriteTx(
-      'CreatingStructure2',
+      "CreatingStructure2",
       async (tx) => {
         const rr2 = tx.createStruct(TestStructuralResourceType1);
-        const ff2 = field(r1, 'a');
-        tx.createField(ff2, 'Input');
+        const ff2 = field(r1, "a");
+        tx.createField(ff2, "Input");
         tx.setField(ff2, rr2);
         await tx.commit();
         return await rr2.globalId;
       },
-      { sync: true }
+      { sync: true },
     );
     await tp.setTimeout(10);
 
@@ -166,11 +166,11 @@ test('synchronized tree test with KV', async () => {
     expect(theComputable.isChanged()).toBe(true);
     expect(await theComputable.getValueOrError()).toMatchObject({
       stable: false,
-      value: undefined
+      value: undefined,
     });
 
-    await pl.withWriteTx('AssignKeyValue', async (tx) => {
-      tx.setKValue(r2, 'b', 'hi!');
+    await pl.withWriteTx("AssignKeyValue", async (tx) => {
+      tx.setKValue(r2, "b", "hi!");
       await tx.commit();
     });
     await tp.setTimeout(10);
@@ -180,26 +180,26 @@ test('synchronized tree test with KV', async () => {
     expect(theComputable.isChanged()).toBe(true);
     expect(await theComputable.getValueOrError()).toMatchObject({
       stable: true,
-      value: 'hi!'
+      value: "hi!",
     });
 
     await treeState.awaitSyncLoopTermination();
   });
 });
 
-test('termination test', async () => {
+test("termination test", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
     const r1 = await pl.withWriteTx(
-      'CreatingStructure1',
+      "CreatingStructure1",
       async (tx) => {
         const rr1 = tx.createStruct(TestStructuralResourceType1);
-        const ff1 = field(tx.clientRoot, 'f1');
-        tx.createField(ff1, 'Dynamic');
+        const ff1 = field(tx.clientRoot, "f1");
+        tx.createField(ff1, "Dynamic");
         tx.setField(ff1, rr1);
         await tx.commit();
         return await rr1.globalId;
       },
-      { sync: true }
+      { sync: true },
     );
     await tp.setTimeout(10);
 
@@ -209,29 +209,29 @@ test('termination test', async () => {
       {
         stopPollingDelay: 10,
         pollingInterval: 10,
-        logStat: 'cumulative'
+        logStat: "cumulative",
       },
-      new ConsoleLoggerAdapter(require('console'))
+      new ConsoleLoggerAdapter(require("console")),
     );
 
     const entry = treeState.entry();
     const theComputable = Computable.make((c) =>
-      c.accessor(entry).node().traverse('a')?.getKeyValueAsString('b', true)
+      c.accessor(entry).node().traverse("a")?.getKeyValueAsString("b", true),
     );
 
     await theComputable.refreshState();
 
     expect(await theComputable.getValueOrError()).toMatchObject({
       stable: false,
-      value: undefined
+      value: undefined,
     });
 
     await treeState.terminate();
 
     const resultAfterTermination = await theComputable.getValueOrError();
     expect(resultAfterTermination).toMatchObject({
-      type: 'error'
+      type: "error",
     });
-    expect((resultAfterTermination as any).errors[0].message).toMatch('terminated');
+    expect((resultAfterTermination as any).errors[0].message).toMatch("terminated");
   });
 });

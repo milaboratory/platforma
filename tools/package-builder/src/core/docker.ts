@@ -1,38 +1,42 @@
-import { spawnSync } from 'node:child_process';
-import * as defaults from '../defaults';
-import type * as artifacts from './schemas/artifacts';
-import * as util from './util';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as os from 'node:os';
+import { spawnSync } from "node:child_process";
+import * as defaults from "../defaults";
+import type * as artifacts from "./schemas/artifacts";
+import * as util from "./util";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as os from "node:os";
 
 /**
  * To allow entrypoint keep both docker and binary package at the same time, we create virtual entrypoint with ':docker' suffix,
  * as entrypoints could not keep two different artifacts at the same time.
  */
 export function entrypointName(name: string): string {
-  return name + ':docker';
+  return name + ":docker";
 }
 
 export function isVirtualDockerEntrypointName(name: string): boolean {
-  return name.endsWith(':docker');
+  return name.endsWith(":docker");
 }
 
 export function entrypointNameToOrigin(name: string): string {
   if (!isVirtualDockerEntrypointName(name)) {
     return name;
   }
-  return name.substring(0, name.length - ':docker'.length);
+  return name.substring(0, name.length - ":docker".length);
 }
 
 export function getImageHash(tag: string): string {
-  const result = spawnSync('docker', ['image', 'ls', '--filter=reference=' + tag, '--format={{.ID}}'], {
-    stdio: 'pipe',
-    env: {
-      ...process.env, // PATH variable from parent process affects execution
-      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+  const result = spawnSync(
+    "docker",
+    ["image", "ls", "--filter=reference=" + tag, "--format={{.ID}}"],
+    {
+      stdio: "pipe",
+      env: {
+        ...process.env, // PATH variable from parent process affects execution
+        HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+      },
     },
-  });
+  );
 
   if (result.error) {
     throw result.error;
@@ -42,21 +46,27 @@ export function getImageHash(tag: string): string {
   }
 
   const output = result.stdout.toString().trim();
-  if (output.split('\n').length > 1) {
-    throw util.CLIError(`package-builder internal logic error: more than one image found by exact tag match: ${output}`);
+  if (output.split("\n").length > 1) {
+    throw util.CLIError(
+      `package-builder internal logic error: more than one image found by exact tag match: ${output}`,
+    );
   }
 
   return output;
 }
 
 export function getImageEntrypoint(tag: string): string[] {
-  const result = spawnSync('docker', ['image', 'inspect', tag, '--format', '{{ .Config.Entrypoint | json }}'], {
-    stdio: 'pipe',
-    env: {
-      ...process.env, // PATH variable from parent process affects execution
-      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+  const result = spawnSync(
+    "docker",
+    ["image", "inspect", tag, "--format", "{{ .Config.Entrypoint | json }}"],
+    {
+      stdio: "pipe",
+      env: {
+        ...process.env, // PATH variable from parent process affects execution
+        HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+      },
     },
-  });
+  );
 
   if (result.error) {
     throw result.error;
@@ -70,12 +80,12 @@ export function getImageEntrypoint(tag: string): string[] {
 }
 
 export function localImageExists(tag: string): boolean {
-  return getImageHash(tag) !== '';
+  return getImageHash(tag) !== "";
 }
 
 export function remoteImageExists(tag: string): boolean {
-  const result = spawnSync('docker', ['manifest', 'inspect', tag], {
-    stdio: 'pipe',
+  const result = spawnSync("docker", ["manifest", "inspect", tag], {
+    stdio: "pipe",
     env: {
       ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
@@ -89,19 +99,37 @@ export function remoteImageExists(tag: string): boolean {
   return true;
 }
 
-export function build(context: string, dockerfile: string, tag: string, softwarePackage: string, softwareVersion: string | undefined) {
-  const result = spawnSync('docker', [
-    'build', '-t', tag, context, '-f', dockerfile,
-    '--label', 'com.milaboratories.package-builder.software=true',
-    '--label', 'com.milaboratories.package-builder.software.package=' + softwarePackage,
-    '--label', 'com.milaboratories.package-builder.software.version=' + softwareVersion,
-  ], {
-    stdio: 'inherit',
-    env: {
-      ...process.env, // PATH variable from parent process affects execution
-      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+export function build(
+  context: string,
+  dockerfile: string,
+  tag: string,
+  softwarePackage: string,
+  softwareVersion: string | undefined,
+) {
+  const result = spawnSync(
+    "docker",
+    [
+      "build",
+      "-t",
+      tag,
+      context,
+      "-f",
+      dockerfile,
+      "--label",
+      "com.milaboratories.package-builder.software=true",
+      "--label",
+      "com.milaboratories.package-builder.software.package=" + softwarePackage,
+      "--label",
+      "com.milaboratories.package-builder.software.version=" + softwareVersion,
+    ],
+    {
+      stdio: "inherit",
+      env: {
+        ...process.env, // PATH variable from parent process affects execution
+        HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+      },
     },
-  });
+  );
   if (result.error) {
     throw result.error;
   }
@@ -111,8 +139,8 @@ export function build(context: string, dockerfile: string, tag: string, software
 }
 
 export function push(tag: string) {
-  const result = spawnSync('docker', ['push', tag], {
-    stdio: 'inherit',
+  const result = spawnSync("docker", ["push", tag], {
+    stdio: "inherit",
     env: {
       ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
@@ -127,8 +155,8 @@ export function push(tag: string) {
 }
 
 export function addTag(imageIdOrTag: string, newTag: string) {
-  const result = spawnSync('docker', ['image', 'tag', imageIdOrTag, newTag], {
-    stdio: 'inherit',
+  const result = spawnSync("docker", ["image", "tag", imageIdOrTag, newTag], {
+    stdio: "inherit",
     env: {
       ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
@@ -143,8 +171,8 @@ export function addTag(imageIdOrTag: string, newTag: string) {
 }
 
 export function removeTag(imageTag: string) {
-  const result = spawnSync('docker', ['image', 'rm', imageTag], {
-    stdio: 'inherit',
+  const result = spawnSync("docker", ["image", "rm", imageTag], {
+    stdio: "inherit",
     env: {
       ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
@@ -165,7 +193,11 @@ export function removeTag(imageTag: string) {
  * @param registry: custom registry and repository to use for this image
  * @returns full image tag in format: <registry>/repository:<artifactName>.<imageID>
  */
-export function generateRemoteTagName(artifactName: string, imageID: string, registry?: string): string {
+export function generateRemoteTagName(
+  artifactName: string,
+  imageID: string,
+  registry?: string,
+): string {
   return dockerTag(artifactName, imageID, registry);
 }
 
@@ -180,7 +212,7 @@ export function generateLocalTagName(packageRoot: string, artifact: artifacts.do
   const context = contextAbsPath(packageRoot, artifact);
   const hash = contentHash(context, dockerfile);
 
-  return dockerTag('local-image', hash);
+  return dockerTag("local-image", hash);
 }
 
 /**
@@ -190,7 +222,7 @@ export function generateLocalTagName(packageRoot: string, artifact: artifacts.do
  * @returns absolute path to autogenerated Dockerfile
  */
 export function dockerfileAutogenPath(packageRoot: string, artifactID: string): string {
-  return path.resolve(packageRoot, 'dist', 'docker', `Dockerfile-${artifactID}`);
+  return path.resolve(packageRoot, "dist", "docker", `Dockerfile-${artifactID}`);
 }
 
 /**
@@ -200,7 +232,7 @@ export function dockerfileAutogenPath(packageRoot: string, artifactID: string): 
  * @returns absolute path to Dockerfile
  */
 function dockerfileAbsPath(packageRoot: string, artifact: artifacts.dockerType): string {
-  return path.resolve(packageRoot, artifact.dockerfile ?? 'Dockerfile');
+  return path.resolve(packageRoot, artifact.dockerfile ?? "Dockerfile");
 }
 
 /**
@@ -210,10 +242,12 @@ function dockerfileAbsPath(packageRoot: string, artifact: artifacts.dockerType):
  * @returns absolute path to docker build context directory
  */
 function contextAbsPath(packageRoot: string, artifact: artifacts.dockerType): string {
-  if (artifact.context === './' || artifact.context === '.') {
-    throw util.CLIError(`Invalid Docker context: "${artifact.context}". Context cannot be "./" or "." - use absolute path or relative path without "./" prefix`);
+  if (artifact.context === "./" || artifact.context === ".") {
+    throw util.CLIError(
+      `Invalid Docker context: "${artifact.context}". Context cannot be "./" or "." - use absolute path or relative path without "./" prefix`,
+    );
   }
-  return path.resolve(packageRoot, artifact.context ?? '.');
+  return path.resolve(packageRoot, artifact.context ?? ".");
 }
 
 /**
@@ -235,13 +269,13 @@ function contentHash(contextFullPath: string, dockerfileFullPath: string): strin
   }
 
   const contextHash = util.hashDirMetaSync(contextFullPath);
-  const dockerfileContent = fs.readFileSync(dockerfileFullPath, 'utf8');
+  const dockerfileContent = fs.readFileSync(dockerfileFullPath, "utf8");
   contextHash.update(dockerfileContent);
 
-  return contextHash.digest('hex').slice(0, 12);
+  return contextHash.digest("hex").slice(0, 12);
 }
 
 function dockerTag(packageName: string, contentHash: string, registry?: string): string {
   const dockerRegistry = registry ?? defaults.DOCKER_REGISTRY;
-  return `${dockerRegistry}:${packageName.replaceAll('/', '.')}.${contentHash}`;
+  return `${dockerRegistry}:${packageName.replaceAll("/", ".")}.${contentHash}`;
 }

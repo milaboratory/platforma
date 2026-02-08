@@ -1,1 +1,1 @@
-export { default as PlAlert } from './PlAlert.vue';
+export { default as PlAlert } from "./PlAlert.vue";

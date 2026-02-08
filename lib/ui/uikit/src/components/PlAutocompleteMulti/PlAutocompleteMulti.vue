@@ -33,41 +33,40 @@
  * }
  */
 export default {
-  name: 'PlAutocompleteMulti',
+  name: "PlAutocompleteMulti",
 };
 
 export interface OptionsSearch<T> {
-  (s: string, type: 'label'): Promise<Readonly<ListOptionBase<T>[]>>;
-  (s: T[], type: 'value'): Promise<Readonly<ListOptionBase<T>[]>>;
+  (s: string, type: "label"): Promise<Readonly<ListOptionBase<T>[]>>;
+  (s: T[], type: "value"): Promise<Readonly<ListOptionBase<T>[]>>;
 }
-
 </script>
 
 <script lang="ts" setup generic="M extends string | number = string">
-import './pl-autocomplete-multi.scss';
+import "./pl-autocomplete-multi.scss";
 
-import type { ListOptionBase } from '@platforma-sdk/model';
-import canonicalize from 'canonicalize';
-import { computed, reactive, ref, toRef, unref, useSlots, useTemplateRef, watch } from 'vue';
-import { useWatchFetch } from '../../composition/useWatchFetch.ts';
-import { getErrorMessage } from '../../helpers/error.ts';
-import { deepEqual, deepIncludes } from '../../helpers/objects';
-import DoubleContour from '../../utils/DoubleContour.vue';
-import DropdownOverlay from '../../utils/DropdownOverlay/DropdownOverlay.vue';
-import { useLabelNotch } from '../../utils/useLabelNotch';
-import DropdownListItem from '../DropdownListItem.vue';
-import { PlChip } from '../PlChip';
-import { PlMaskIcon24 } from '../PlMaskIcon24';
-import { PlTooltip } from '../PlTooltip';
+import type { ListOptionBase } from "@platforma-sdk/model";
+import canonicalize from "canonicalize";
+import { computed, reactive, ref, toRef, unref, useSlots, useTemplateRef, watch } from "vue";
+import { useWatchFetch } from "../../composition/useWatchFetch.ts";
+import { getErrorMessage } from "../../helpers/error.ts";
+import { deepEqual, deepIncludes } from "../../helpers/objects";
+import DoubleContour from "../../utils/DoubleContour.vue";
+import DropdownOverlay from "../../utils/DropdownOverlay/DropdownOverlay.vue";
+import { useLabelNotch } from "../../utils/useLabelNotch";
+import DropdownListItem from "../DropdownListItem.vue";
+import { PlChip } from "../PlChip";
+import { PlMaskIcon24 } from "../PlMaskIcon24";
+import { PlTooltip } from "../PlTooltip";
 
-import SvgRequired from '../../assets/images/required.svg?raw';
-import { PlSvg } from '../PlSvg';
+import SvgRequired from "../../assets/images/required.svg?raw";
+import { PlSvg } from "../PlSvg";
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', v: M[]): void;
+  (e: "update:modelValue", v: M[]): void;
 }>();
 
-const emitModel = (v: M[]) => emit('update:modelValue', v);
+const emitModel = (v: M[]) => emit("update:modelValue", v);
 
 const slots = useSlots();
 
@@ -124,18 +123,27 @@ const props = withDefaults(
     /**
      * Makes some of corners not rounded
      * */
-    groupPosition?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
+    groupPosition?:
+      | "top"
+      | "bottom"
+      | "left"
+      | "right"
+      | "top-left"
+      | "top-right"
+      | "bottom-left"
+      | "bottom-right"
+      | "middle";
   }>(),
   {
     modelValue: () => [],
     label: undefined,
     helper: undefined,
     error: undefined,
-    placeholder: '...',
+    placeholder: "...",
     required: false,
     disabled: false,
     debounce: 300,
-    emptyOptionsText: 'Nothing found',
+    emptyOptionsText: "Nothing found",
     sourceId: undefined,
     groupPosition: undefined,
   },
@@ -144,20 +152,24 @@ const props = withDefaults(
 const rootRef = ref<HTMLElement | undefined>();
 const inputRef = ref<HTMLInputElement | undefined>();
 
-const overlay = useTemplateRef('overlay');
+const overlay = useTemplateRef("overlay");
 
 const data = reactive({
-  search: '',
+  search: "",
   activeOption: -1,
   open: false,
   optionsHeight: 0,
 });
 
-watch(() => data.open, (v) => {
-  if (!v) {
-    data.search = '';
-  }
-}, { flush: 'sync' });
+watch(
+  () => data.open,
+  (v) => {
+    if (!v) {
+      data.search = "";
+    }
+  },
+  { flush: "sync" },
+);
 
 const selectedValuesRef = computed(() => (Array.isArray(props.modelValue) ? props.modelValue : []));
 
@@ -166,23 +178,31 @@ const placeholderRef = computed(() => {
     return props.placeholder;
   }
 
-  return props.modelValue.length > 0 ? '' : props.placeholder;
+  return props.modelValue.length > 0 ? "" : props.placeholder;
 });
 
-const debounce = toRef(props, 'debounce');
+const debounce = toRef(props, "debounce");
 
-const searchOptionsRef = useWatchFetch(() => [data.search, data.open, props.sourceId] as const, async ([search, _open]) => {
-  return props.optionsSearch(search, 'label');
-}, {
-  filterWatchResult: ([_search, open]) => open,
-  debounce,
-});
+const searchOptionsRef = useWatchFetch(
+  () => [data.search, data.open, props.sourceId] as const,
+  async ([search, _open]) => {
+    return props.optionsSearch(search, "label");
+  },
+  {
+    filterWatchResult: ([_search, open]) => open,
+    debounce,
+  },
+);
 
-const modelOptionsRef = useWatchFetch(() => [props.modelValue, props.sourceId] as const, async ([v]) => {
-  return props.optionsSearch(v, 'value');
-}, {
-  debounce,
-});
+const modelOptionsRef = useWatchFetch(
+  () => [props.modelValue, props.sourceId] as const,
+  async ([v]) => {
+    return props.optionsSearch(v, "value");
+  },
+  {
+    debounce,
+  },
+);
 
 const allOptionsRef = computed(() => {
   const modelOptions = modelOptionsRef.value ?? [];
@@ -208,9 +228,9 @@ const allOptionsRef = computed(() => {
 });
 
 const selectedOptionsRef = computed(() => {
-  return selectedValuesRef.value.map((v) =>
-    allOptionsRef.value.find((opt) => deepEqual(opt.value, v))).filter((v) => v !== undefined,
-  );
+  return selectedValuesRef.value
+    .map((v) => allOptionsRef.value.find((opt) => deepEqual(opt.value, v)))
+    .filter((v) => v !== undefined);
 });
 
 const filteredOptionsRef = computed(() => {
@@ -234,7 +254,7 @@ const isDisabled = computed(() => {
   return props.disabled;
 });
 
-const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
+const tabindex = computed(() => (isDisabled.value ? undefined : "0"));
 
 const updateActiveOption = () => {
   data.activeOption = 0;
@@ -244,16 +264,17 @@ const selectOption = (v: M) => {
   const values = unref(selectedValuesRef);
   emitModel(deepIncludes(values, v) ? values.filter((it) => !deepEqual(it, v)) : [...values, v]);
   if (props.resetSearchOnSelect) {
-    data.search = '';
+    data.search = "";
   }
   inputRef.value?.focus();
 };
 
-const unselectOption = (d: M) => emitModel(unref(selectedValuesRef).filter((v) => !deepEqual(v, d)));
+const unselectOption = (d: M) =>
+  emitModel(unref(selectedValuesRef).filter((v) => !deepEqual(v, d)));
 
 const setFocusOnInput = () => inputRef.value?.focus();
 
-const toggleOpen = () => data.open = !data.open;
+const toggleOpen = () => (data.open = !data.open);
 
 const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
@@ -267,13 +288,13 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
   const { open, activeOption } = data;
 
   if (!open) {
-    if (e.code === 'Enter') {
+    if (e.code === "Enter") {
       data.open = true;
     }
     return;
   }
 
-  if (e.code === 'Escape') {
+  if (e.code === "Escape") {
     data.open = false;
     inputRef.value?.focus();
   }
@@ -286,15 +307,15 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
     return;
   }
 
-  if (['ArrowDown', 'ArrowUp', 'Enter'].includes(e.code)) {
+  if (["ArrowDown", "ArrowUp", "Enter"].includes(e.code)) {
     e.preventDefault();
   }
 
-  if (e.code === 'Enter') {
+  if (e.code === "Enter") {
     selectOption(filteredOptions[activeOption].value);
   }
 
-  const d = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
+  const d = e.code === "ArrowDown" ? 1 : e.code === "ArrowUp" ? -1 : 0;
 
   data.activeOption = Math.abs(activeOption + d + length) % length;
 
@@ -327,7 +348,7 @@ const computedError = computed(() => {
   }
 
   if (props.modelValue.length && selectedOptionsRef.value.length !== props.modelValue.length) {
-    return 'The selected values are not one of the options';
+    return "The selected values are not one of the options";
   }
 
   return undefined;
@@ -358,7 +379,14 @@ const computedError = computed(() => {
             @focus="data.open = true"
           />
           <div v-if="!data.open" class="chips-container">
-            <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop="data.open = true" @close="unselectOption(opt.value)">
+            <PlChip
+              v-for="(opt, i) in selectedOptionsRef"
+              :key="i"
+              closeable
+              small
+              @click.stop="data.open = true"
+              @close="unselectOption(opt.value)"
+            >
               {{ opt.label || opt.value }}
             </PlChip>
           </div>
@@ -411,7 +439,9 @@ const computedError = computed(() => {
             use-checkbox
             @click.stop="selectOption(item.value)"
           />
-          <div v-if="!filteredOptionsRef.length && !isOptionsLoading" class="nothing-found">{{ emptyOptionsText }}</div>
+          <div v-if="!filteredOptionsRef.length && !isOptionsLoading" class="nothing-found">
+            {{ emptyOptionsText }}
+          </div>
         </DropdownOverlay>
         <DoubleContour class="pl-autocomplete-multi__contour" :group-position="groupPosition" />
       </div>

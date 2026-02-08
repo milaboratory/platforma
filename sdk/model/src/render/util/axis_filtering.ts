@@ -9,8 +9,8 @@ import type {
   BinaryPartitionedDataInfoEntries,
   ParquetPartitionedDataInfoEntries,
   PartitionedDataInfoEntries,
-} from '@milaboratories/pl-model-common';
-import type { AxisFilterByIdx } from '@milaboratories/pl-model-common';
+} from "@milaboratories/pl-model-common";
+import type { AxisFilterByIdx } from "@milaboratories/pl-model-common";
 
 /**
  * Filters DataInfoEntries using axis filters, removing specified axes from keys and
@@ -50,20 +50,22 @@ export function filterDataInfoEntries<Blob>(
   // Check for invalid filter axes
   const { type } = dataInfoEntries;
   switch (type) {
-    case 'Json': {
+    case "Json": {
       const { keyLength } = dataInfoEntries;
       for (const [axisIdx] of axisFilters)
         if (axisIdx >= keyLength)
           throw new Error(`Can't filter on non-data axis ${axisIdx}. Must be >= ${keyLength}`);
       break;
     }
-    case 'JsonPartitioned':
-    case 'BinaryPartitioned':
-    case 'ParquetPartitioned': {
+    case "JsonPartitioned":
+    case "BinaryPartitioned":
+    case "ParquetPartitioned": {
       const { partitionKeyLength } = dataInfoEntries;
       for (const [axisIdx] of axisFilters)
         if (axisIdx >= partitionKeyLength)
-          throw new Error(`Can't filter on non-partitioned axis ${axisIdx}. Must be >= ${partitionKeyLength}`);
+          throw new Error(
+            `Can't filter on non-partitioned axis ${axisIdx}. Must be >= ${partitionKeyLength}`,
+          );
       break;
     }
     default:
@@ -72,9 +74,7 @@ export function filterDataInfoEntries<Blob>(
   }
 
   const keyMatchesFilters = (key: PColumnKey): boolean => {
-    for (const [axisIdx, axisValue] of sortedFilters)
-      if (key[axisIdx] !== axisValue)
-        return false;
+    for (const [axisIdx, axisValue] of sortedFilters) if (key[axisIdx] !== axisValue) return false;
     return true;
   };
 
@@ -82,52 +82,67 @@ export function filterDataInfoEntries<Blob>(
     const newKey = [...key];
 
     // Remove axes in descending order to maintain correct indices
-    for (const [axisIdx] of sortedFilters)
-      newKey.splice(axisIdx, 1);
+    for (const [axisIdx] of sortedFilters) newKey.splice(axisIdx, 1);
 
     return newKey;
   };
 
   switch (dataInfoEntries.type) {
-    case 'Json': return {
-      type: 'Json',
-      keyLength: dataInfoEntries.keyLength - axisFilters.length,
-      data: dataInfoEntries.data
-        .filter((entry) => keyMatchesFilters(entry.key))
-        .map((entry) => ({
-          key: removeFilteredAxes(entry.key),
-          value: entry.value,
-        } satisfies PColumnDataEntry<PColumnValue>)),
-    };
-    case 'JsonPartitioned': return {
-      type: 'JsonPartitioned',
-      partitionKeyLength: dataInfoEntries.partitionKeyLength - axisFilters.length,
-      parts: dataInfoEntries.parts
-        .filter((entry) => keyMatchesFilters(entry.key))
-        .map((entry) => ({
-          key: removeFilteredAxes(entry.key),
-          value: entry.value,
-        } satisfies PColumnDataEntry<Blob>)),
-    };
-    case 'BinaryPartitioned': return {
-      type: 'BinaryPartitioned',
-      partitionKeyLength: dataInfoEntries.partitionKeyLength - axisFilters.length,
-      parts: dataInfoEntries.parts
-        .filter((entry) => keyMatchesFilters(entry.key))
-        .map((entry) => ({
-          key: removeFilteredAxes(entry.key),
-          value: entry.value,
-        } satisfies PColumnDataEntry<BinaryChunk<Blob>>)),
-    };
-    case 'ParquetPartitioned': return {
-      type: 'ParquetPartitioned',
-      partitionKeyLength: dataInfoEntries.partitionKeyLength - axisFilters.length,
-      parts: dataInfoEntries.parts
-        .filter((entry) => keyMatchesFilters(entry.key))
-        .map((entry) => ({
-          key: removeFilteredAxes(entry.key),
-          value: entry.value,
-        } satisfies PColumnDataEntry<Blob>)),
-    };
+    case "Json":
+      return {
+        type: "Json",
+        keyLength: dataInfoEntries.keyLength - axisFilters.length,
+        data: dataInfoEntries.data
+          .filter((entry) => keyMatchesFilters(entry.key))
+          .map(
+            (entry) =>
+              ({
+                key: removeFilteredAxes(entry.key),
+                value: entry.value,
+              }) satisfies PColumnDataEntry<PColumnValue>,
+          ),
+      };
+    case "JsonPartitioned":
+      return {
+        type: "JsonPartitioned",
+        partitionKeyLength: dataInfoEntries.partitionKeyLength - axisFilters.length,
+        parts: dataInfoEntries.parts
+          .filter((entry) => keyMatchesFilters(entry.key))
+          .map(
+            (entry) =>
+              ({
+                key: removeFilteredAxes(entry.key),
+                value: entry.value,
+              }) satisfies PColumnDataEntry<Blob>,
+          ),
+      };
+    case "BinaryPartitioned":
+      return {
+        type: "BinaryPartitioned",
+        partitionKeyLength: dataInfoEntries.partitionKeyLength - axisFilters.length,
+        parts: dataInfoEntries.parts
+          .filter((entry) => keyMatchesFilters(entry.key))
+          .map(
+            (entry) =>
+              ({
+                key: removeFilteredAxes(entry.key),
+                value: entry.value,
+              }) satisfies PColumnDataEntry<BinaryChunk<Blob>>,
+          ),
+      };
+    case "ParquetPartitioned":
+      return {
+        type: "ParquetPartitioned",
+        partitionKeyLength: dataInfoEntries.partitionKeyLength - axisFilters.length,
+        parts: dataInfoEntries.parts
+          .filter((entry) => keyMatchesFilters(entry.key))
+          .map(
+            (entry) =>
+              ({
+                key: removeFilteredAxes(entry.key),
+                value: entry.value,
+              }) satisfies PColumnDataEntry<Blob>,
+          ),
+      };
   }
 }

@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { call } from '@milaboratories/helpers';
-import type { ValueType } from './types';
-import { computed, reactive, ref, unref } from 'vue';
+import { call } from "@milaboratories/helpers";
+import type { ValueType } from "./types";
+import { computed, reactive, ref, unref } from "vue";
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(["update:modelValue"]);
 
 const props = defineProps<{
   modelValue: unknown;
@@ -24,18 +24,18 @@ const onInput = (ev: Event) => {
 
   // @todo temp, replace to parse functions
   const value = call(() => {
-    if (valueType === 'integer') {
+    if (valueType === "integer") {
       return parseInt(inputValue, 10);
     }
 
-    if (valueType === 'float') {
+    if (valueType === "float") {
       return Number(inputValue);
     }
 
     return inputValue;
   });
 
-  emit('update:modelValue', value);
+  emit("update:modelValue", value);
 
   data.edit = false;
 };
@@ -46,7 +46,7 @@ const onClick = (ev: MouseEvent) => {
   if (!ev.metaKey && props.editable) {
     data.edit = true;
     requestAnimationFrame(() => {
-      baseRef.value?.querySelector('input')?.focus();
+      baseRef.value?.querySelector("input")?.focus();
     });
   }
 };

@@ -1,20 +1,20 @@
 <script lang="ts">
 /** Simple tooltip on mouseover */
 export default {
-  name: 'PlTooltip',
+  name: "PlTooltip",
 };
 </script>
 
 <script lang="ts" setup>
-import './pl-tooltip.scss';
-import { computed, onUnmounted, reactive, ref, toRef, watch } from 'vue';
-import { useTooltipPosition } from './useTooltipPosition';
-import * as utils from '../../helpers/utils';
-import { useClickOutside } from '../../composition/useClickOutside';
-import Beak from './Beak.vue';
-import { tMap } from './global';
+import "./pl-tooltip.scss";
+import { computed, onUnmounted, reactive, ref, toRef, watch } from "vue";
+import { useTooltipPosition } from "./useTooltipPosition";
+import * as utils from "../../helpers/utils";
+import { useClickOutside } from "../../composition/useClickOutside";
+import Beak from "./Beak.vue";
+import { tMap } from "./global";
 
-const emit = defineEmits(['tooltip:close']);
+const emit = defineEmits(["tooltip:close"]);
 
 const tKey = Symbol();
 
@@ -31,7 +31,7 @@ const props = withDefaults(
     /**
      * Tooltip position
      */
-    position?: 'top-left' | 'left' | 'right' | 'top' | 'southwest';
+    position?: "top-left" | "left" | "right" | "top" | "southwest";
     /**
      * external prop to hide tooltips
      */
@@ -43,7 +43,7 @@ const props = withDefaults(
     /**
      * base html element for tooltip
      */
-    element?: 'div' | 'span' | 'a' | 'p' | 'h1' | 'h2' | 'h3';
+    element?: "div" | "span" | "a" | "p" | "h1" | "h2" | "h3";
     /**
      * Max width (css value) of the tooltip container (default is 300px)
      */
@@ -53,9 +53,9 @@ const props = withDefaults(
     openDelay: 100,
     closeDelay: 1000,
     gap: 8,
-    position: 'top',
-    element: 'div',
-    maxWidth: '300px',
+    position: "top",
+    element: "div",
+    maxWidth: "300px",
   },
 );
 
@@ -80,7 +80,7 @@ watch(
 
 let clearTimeout = () => {};
 
-const dispatchAdjust = utils.throttle(() => window.dispatchEvent(new CustomEvent('adjust')), 1000);
+const dispatchAdjust = utils.throttle(() => window.dispatchEvent(new CustomEvent("adjust")), 1000);
 
 const showTooltip = () => {
   data.open = true;
@@ -94,7 +94,7 @@ const showTooltip = () => {
 
 const closeTooltip = () => {
   data.open = false;
-  emit('tooltip:close');
+  emit("tooltip:close");
 };
 
 const onOver = async () => {
@@ -141,7 +141,7 @@ const style = useTooltipPosition(rootRef, toRef(props));
 useClickOutside([rootRef, tooltip], () => closeTooltip());
 
 const tooltipStyle = computed(() => ({
-  '--pl-tooltip-max-width': props.maxWidth,
+  "--pl-tooltip-max-width": props.maxWidth,
 }));
 
 onUnmounted(() => {
@@ -150,12 +150,26 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <component :is="element" v-bind="$attrs" ref="rootRef" @click="onOver" @mouseover="onOver" @mouseleave="onLeave">
+  <component
+    :is="element"
+    v-bind="$attrs"
+    ref="rootRef"
+    @click="onOver"
+    @mouseover="onOver"
+    @mouseleave="onLeave"
+  >
     <slot />
     <Teleport v-if="$slots['tooltip'] && data.open" to="body">
       <Transition name="tooltip-transition">
         <div v-if="data.tooltipOpen" class="pl-tooltip__container" :style="style" @click.stop>
-          <div ref="tooltip" class="pl-tooltip" :style="tooltipStyle" :class="position" @mouseover="onOver" @mouseleave="onLeave">
+          <div
+            ref="tooltip"
+            class="pl-tooltip"
+            :style="tooltipStyle"
+            :class="position"
+            @mouseover="onOver"
+            @mouseleave="onLeave"
+          >
             <!-- should be one line -->
             <div><slot name="tooltip" /></div>
             <Beak />

@@ -1,1 +1,1 @@
-export { default as PlSpacer } from './PlSpacer.vue';
+export { default as PlSpacer } from "./PlSpacer.vue";

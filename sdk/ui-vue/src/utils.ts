@@ -1,9 +1,9 @@
-import type { ErrorLike, OutputWithStatus } from '@platforma-sdk/model';
-import type { OptionalResult } from './types';
-import type { ZodError } from 'zod';
+import type { ErrorLike, OutputWithStatus } from "@platforma-sdk/model";
+import type { OptionalResult } from "./types";
+import type { ZodError } from "zod";
 
 export class UnresolvedError extends Error {
-  name = 'UnresolvedError';
+  name = "UnresolvedError";
 }
 
 const ensureArray = <T>(value: T | T[]): T[] => {
@@ -12,21 +12,23 @@ const ensureArray = <T>(value: T | T[]): T[] => {
 
 // @TODO use AggregateError
 export class MultiError extends Error {
-  name = 'MultiError';
+  name = "MultiError";
 
   public readonly fullMessage: string;
 
   constructor(public readonly errors: (ErrorLike | string)[]) {
     errors = ensureArray(errors);
-    super(errors.map((e) => typeof e == 'string' ? e : e.message).join('\n'));
-    this.fullMessage = errors.map((e) => {
-      if (typeof e == 'string') {
-        return e;
-      } else if (e.type == 'PlError' && 'fullMessage' in e) {
-        return e.fullMessage;
-      }
-      return e.message;
-    }).join('\n');
+    super(errors.map((e) => (typeof e == "string" ? e : e.message)).join("\n"));
+    this.fullMessage = errors
+      .map((e) => {
+        if (typeof e == "string") {
+          return e;
+        } else if (e.type == "PlError" && "fullMessage" in e) {
+          return e.fullMessage;
+        }
+        return e.message;
+      })
+      .join("\n");
   }
 }
 
@@ -76,13 +78,13 @@ export const ensureError = (cause: unknown) => {
 };
 
 export const isZodError = (err: Error): err is ZodError => {
-  return err.name === 'ZodError';
+  return err.name === "ZodError";
 };
 
 export const formatZodError = (err: ZodError) => {
   const { formErrors, fieldErrors } = err.flatten();
   const _fieldErrors = Object.entries(fieldErrors).map(([field, errors]) => {
-    return field + ':' + errors?.join(',');
+    return field + ":" + errors?.join(",");
   });
-  return formErrors.concat(_fieldErrors).join('; ');
+  return formErrors.concat(_fieldErrors).join("; ");
 };

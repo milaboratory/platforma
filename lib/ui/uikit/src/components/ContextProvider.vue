@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { type InjectionKey, computed, provide } from 'vue';
+import { type InjectionKey, computed, provide } from "vue";
 
 const props = defineProps<{
   context: object;

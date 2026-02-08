@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import Layout from '../Layout.vue';
-import { DataTable } from '@milaboratories/uikit';
-import { reactive } from 'vue';
+import Layout from "../Layout.vue";
+import { DataTable } from "@milaboratories/uikit";
+import { reactive } from "vue";
 
 const DataTableComponent = DataTable.Component;
 
@@ -15,38 +15,38 @@ const data = reactive<{ rows: DataRecord[]; columns: DataTable.Types.ColumnSpec<
   rows: [
     {
       id: 1,
-      name: 'Ivan',
+      name: "Ivan",
       age: 100,
     },
     {
       id: 2,
-      name: 'Petr',
+      name: "Petr",
       age: 300,
     },
     {
       id: 3,
-      name: 'Michael',
+      name: "Michael",
       age: 300,
     },
   ],
   columns: [
     {
-      id: 'id',
-      label: 'ID',
+      id: "id",
+      label: "ID",
       width: 60,
-      valueType: 'integer',
+      valueType: "integer",
     },
     {
-      id: 'name',
-      label: 'Name',
+      id: "name",
+      label: "Name",
       width: 120,
-      valueType: 'string',
+      valueType: "string",
     },
     {
-      id: 'age',
-      label: 'Age',
+      id: "age",
+      label: "Age",
       width: 120,
-      valueType: 'integer',
+      valueType: "integer",
     },
   ],
 });
@@ -58,7 +58,7 @@ const settings = DataTable.useRawData<DataRecord>(data.rows, {
   resolveRowHeight: () => 40,
   onSelectedRows: [
     {
-      label: 'Delete',
+      label: "Delete",
       cb: async (rows) => {
         data.rows = data.rows.filter((row) => !rows.some((r) => r.primaryKey === String(row.id)));
       },
@@ -66,7 +66,7 @@ const settings = DataTable.useRawData<DataRecord>(data.rows, {
   ],
   onSelectedColumns: [
     {
-      label: 'Delete',
+      label: "Delete",
       cb: async (columns) => {
         data.columns = data.columns.filter((col) => !columns.some((c) => c.id === col.id));
       },
@@ -87,7 +87,10 @@ const settings = DataTable.useRawData<DataRecord>(data.rows, {
     <div v-if="false" style="display: flex">
       <pre>{{ settings }}</pre>
     </div>
-    <div style="display: flex; flex-direction: column; max-height: 800px; padding-top: 60px" class="mb-6">
+    <div
+      style="display: flex; flex-direction: column; max-height: 800px; padding-top: 60px"
+      class="mb-6"
+    >
       <DataTableComponent style="flex: 1" :settings="settings" />
     </div>
   </Layout>

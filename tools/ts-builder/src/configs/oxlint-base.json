@@ -1,0 +1,7 @@
+{
+  "plugins": ["oxc", "typescript", "unicorn"],
+  "rules": {
+    "unicorn/no-useless-fallback-in-spread": "off"
+  },
+  "ignorePatterns": ["dist"]
+}

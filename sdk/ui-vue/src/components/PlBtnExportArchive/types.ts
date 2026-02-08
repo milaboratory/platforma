@@ -1,4 +1,4 @@
-import type { ImportFileHandle, RemoteBlobHandleAndSize } from '@platforma-sdk/model';
+import type { ImportFileHandle, RemoteBlobHandleAndSize } from "@platforma-sdk/model";
 
 export type FileExportEntry = {
   importHandle: ImportFileHandle;
@@ -10,7 +10,7 @@ export type ExportItem = {
   fileName: string;
   current: number;
   size: number;
-  status: 'pending' | 'in-progress' | 'completed' | 'error';
+  status: "pending" | "in-progress" | "completed" | "error";
   error?: unknown;
 };
 

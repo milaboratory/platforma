@@ -1,4 +1,4 @@
-import { isErrorLike, tryDo } from '@milaboratories/helpers';
+import { isErrorLike, tryDo } from "@milaboratories/helpers";
 
 // order of errors is important, we will show first
 export function getErrorMessage(...errors: unknown[]): undefined | string {
@@ -10,7 +10,7 @@ export function getErrorMessage(...errors: unknown[]): undefined | string {
 }
 
 function extractMessage(error: unknown): undefined | string {
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     return error;
   }
 
@@ -19,7 +19,10 @@ function extractMessage(error: unknown): undefined | string {
   }
 
   if (error != null) {
-    const unknownString = tryDo(() => JSON.stringify(error, null, 4), () => String(error));
+    const unknownString = tryDo(
+      () => JSON.stringify(error, null, 4),
+      () => String(error),
+    );
     return `Unknown error message:\n${unknownString}`;
   }
 

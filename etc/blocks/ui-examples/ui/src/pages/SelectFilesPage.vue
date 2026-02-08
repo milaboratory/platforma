@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ImportFileHandle } from '@platforma-sdk/model';
-import type { ImportedFiles } from '@platforma-sdk/ui-vue';
+import type { ImportFileHandle } from "@platforma-sdk/model";
+import type { ImportedFiles } from "@platforma-sdk/ui-vue";
 import {
   PlBlockPage,
   PlContainer,
@@ -9,8 +9,8 @@ import {
   PlCheckbox,
   PlBtnPrimary,
   PlFileDialog,
-} from '@platforma-sdk/ui-vue';
-import { reactive } from 'vue';
+} from "@platforma-sdk/ui-vue";
+import { reactive } from "vue";
 
 const data = reactive({
   fileHandle: undefined as ImportFileHandle | undefined,
@@ -23,7 +23,7 @@ const onImport = (imported: ImportedFiles) => {
   data.fileList = imported.files;
 };
 
-const extensions = ['.png', '.jpg', '.fastq.gz', '.fastq.gz'];
+const extensions = [".png", ".jpg", ".fastq.gz", ".fastq.gz"];
 
 const updateHandle = (v: ImportFileHandle | undefined, i: number) => {
   if (v) {

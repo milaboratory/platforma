@@ -1,16 +1,16 @@
-import path from 'node:path';
+import path from "node:path";
 
-import { Command } from '@oclif/core';
-import Core from '../../core';
-import * as cmdOpts from '../../cmd-opts';
-import * as util from '../../util';
-import type * as types from '../../templates/types';
-import state from '../../state';
+import { Command } from "@oclif/core";
+import Core from "../../core";
+import * as cmdOpts from "../../cmd-opts";
+import * as util from "../../util";
+import type * as types from "../../templates/types";
+import state from "../../state";
 
 export default class Docker extends Command {
-  static override description = 'Run platforma backend service with \'FS\' primary storage type';
+  static override description = "Run platforma backend service with 'FS' primary storage type";
 
-  static override examples = ['<%= config.bin %> <%= command.id %>'];
+  static override examples = ["<%= config.bin %> <%= command.id %>"];
 
   static override flags = {
     ...cmdOpts.GlobalFlags,
@@ -33,20 +33,20 @@ export default class Docker extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(Docker);
 
-    const logger = util.createLogger(flags['log-level']);
+    const logger = util.createLogger(flags["log-level"]);
     const core = new Core(logger);
     core.mergeLicenseEnvs(flags);
 
-    const instanceName = 'docker';
+    const instanceName = "docker";
 
-    const authEnabled = flags['auth-enabled'];
+    const authEnabled = flags["auth-enabled"];
     const authOptions: types.authOptions | undefined = authEnabled
       ? {
           enabled: authEnabled,
-          drivers: core.initAuthDriversList(flags, '.'),
+          drivers: core.initAuthDriversList(flags, "."),
         }
       : undefined;
-    const storage = flags.storage ? path.join('.', flags.storage) : state.instanceDir(instanceName);
+    const storage = flags.storage ? path.join(".", flags.storage) : state.instanceDir(instanceName);
 
     const mounts: { hostPath: string; containerPath?: string }[] = [];
     for (const p of flags.mount ?? []) {
@@ -56,9 +56,9 @@ export default class Docker extends Command {
     const platformOverride = flags.arch ? `linux/${flags.arch}` : undefined;
 
     const instance = core.createDocker(instanceName, storage, {
-      primaryStorageURL: flags['storage-primary'],
-      workStoragePath: flags['storage-work'],
-      libraryStorageURL: flags['storage-library'],
+      primaryStorageURL: flags["storage-primary"],
+      workStoragePath: flags["storage-work"],
+      libraryStorageURL: flags["storage-library"],
 
       image: flags.image,
       version: flags.version,
@@ -66,19 +66,19 @@ export default class Docker extends Command {
       platformOverride: platformOverride,
       customMounts: mounts,
 
-      license: flags['license'],
-      licenseFile: flags['license-file'],
+      license: flags["license"],
+      licenseFile: flags["license-file"],
 
       auth: authOptions,
 
-      grpcAddr: flags['grpc-listen'],
-      grpcPort: flags['grpc-port'],
+      grpcAddr: flags["grpc-listen"],
+      grpcPort: flags["grpc-port"],
 
-      monitoringAddr: flags['monitoring-listen'],
-      monitoringPort: flags['monitoring-port'],
+      monitoringAddr: flags["monitoring-listen"],
+      monitoringPort: flags["monitoring-port"],
 
-      debugAddr: flags['debug-listen'],
-      debugPort: flags['debug-port'],
+      debugAddr: flags["debug-listen"],
+      debugPort: flags["debug-port"],
     });
 
     core.switchInstance(instance);

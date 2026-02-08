@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { PlAlert, PlBlockPage, PlTextField } from '@platforma-sdk/ui-vue';
-import { reactive } from 'vue';
+import { PlAlert, PlBlockPage, PlTextField } from "@platforma-sdk/ui-vue";
+import { reactive } from "vue";
 
 const data = reactive({
-  text: 'lorem ipsum',
-  optionalText: 'optional' as string | undefined,
+  text: "lorem ipsum",
+  optionalText: "optional" as string | undefined,
   num: 0,
   optionalNum: 0 as number | undefined,
 });
@@ -14,7 +14,7 @@ const $ = {
     const parsed = Number(v);
 
     if (!Number.isFinite(parsed)) {
-      throw Error('Not a number');
+      throw Error("Not a number");
     }
 
     return parsed;

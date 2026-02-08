@@ -1,21 +1,31 @@
-import { Transform, Writable } from 'node:stream';
-import * as zlib from 'node:zlib';
-import * as tar from 'tar-fs';
-import path from 'path';
-import fs from 'fs';
-import * as fsp from 'fs/promises';
-import { isDownloadNetworkError400 } from '../../helpers/download_errors';
-import type { Watcher } from '@milaboratories/computable';
-import { ChangeSource } from '@milaboratories/computable';
-import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
-import { CallersCounter, createPathAtomically, ensureDirExists, fileExists, notEmpty } from '@milaboratories/ts-helpers';
-import type { DownloadableBlobSnapshot } from './snapshot';
-import { UnknownStorageError, WrongLocalFileUrl, type ClientDownload } from '../../clients/download';
-import type { ArchiveFormat, FolderURL } from '@milaboratories/pl-model-common';
-import { newFolderURL } from '../urls/url';
-import decompress from 'decompress';
-import { assertNever } from '@protobuf-ts/runtime';
-import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
+import { Transform, Writable } from "node:stream";
+import * as zlib from "node:zlib";
+import * as tar from "tar-fs";
+import path from "path";
+import fs from "fs";
+import * as fsp from "fs/promises";
+import { isDownloadNetworkError400 } from "../../helpers/download_errors";
+import type { Watcher } from "@milaboratories/computable";
+import { ChangeSource } from "@milaboratories/computable";
+import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
+import {
+  CallersCounter,
+  createPathAtomically,
+  ensureDirExists,
+  fileExists,
+  notEmpty,
+} from "@milaboratories/ts-helpers";
+import type { DownloadableBlobSnapshot } from "./snapshot";
+import {
+  UnknownStorageError,
+  WrongLocalFileUrl,
+  type ClientDownload,
+} from "../../clients/download";
+import type { ArchiveFormat, FolderURL } from "@milaboratories/pl-model-common";
+import { newFolderURL } from "../urls/url";
+import decompress from "decompress";
+import { assertNever } from "@protobuf-ts/runtime";
+import { resourceIdToString, stringifyWithResourceId } from "@milaboratories/pl-client";
 
 export type URLResult = {
   url?: FolderURL;
@@ -65,15 +75,21 @@ export class DownloadAndUnarchiveTask {
     try {
       const size = await this.downloadAndDecompress(this.signalCtl.signal);
       this.setDone(size);
-      this.change.markChanged(`download and decompress for ${resourceIdToString(this.rInfo.id)} finished`);
+      this.change.markChanged(
+        `download and decompress for ${resourceIdToString(this.rInfo.id)} finished`,
+      );
 
       this.logger.info(`blob to URL task is done: ${stringifyWithResourceId(this.info())}`);
     } catch (e: any) {
-      this.logger.warn(`a error was produced: ${e} for blob to URL task: ${stringifyWithResourceId(this.info())}`);
+      this.logger.warn(
+        `a error was produced: ${e} for blob to URL task: ${stringifyWithResourceId(this.info())}`,
+      );
 
       if (nonRecoverableError(e)) {
         this.setError(e);
-        this.change.markChanged(`download and decompress for ${resourceIdToString(this.rInfo.id)} failed`);
+        this.change.markChanged(
+          `download and decompress for ${resourceIdToString(this.rInfo.id)} failed`,
+        );
         // Just in case we were half-way extracting an archive.
         await rmRFDir(this.path);
         return;
@@ -96,8 +112,8 @@ export class DownloadAndUnarchiveTask {
     }
 
     const size = await this.clientDownload.withBlobContent(
-      this.rInfo, 
-      {}, 
+      this.rInfo,
+      {},
       { signal },
       async (content, size) => {
         this.state!.downloaded = true;
@@ -107,24 +123,22 @@ export class DownloadAndUnarchiveTask {
           this.state!.archiveFormat = this.format;
 
           switch (this.format) {
-            case 'tar':
+            case "tar":
               await fsp.mkdir(fPath); // throws if a directory already exists.
               const simpleUntar = Writable.toWeb(tar.extract(fPath));
               await content.pipeTo(simpleUntar, { signal });
               return;
 
-            case 'tgz':
+            case "tgz":
               await fsp.mkdir(fPath); // throws if a directory already exists.
               const gunzip = Transform.toWeb(zlib.createGunzip());
               const untar = Writable.toWeb(tar.extract(fPath));
 
-              await content
-                .pipeThrough(gunzip, { signal })
-                .pipeTo(untar, { signal });
+              await content.pipeThrough(gunzip, { signal }).pipeTo(untar, { signal });
               return;
 
-            case 'zip':
-              this.state!.zipPath = this.path + '.zip';
+            case "zip":
+              this.state!.zipPath = this.path + ".zip";
 
               const f = Writable.toWeb(fs.createWriteStream(this.state!.zipPath));
               await content.pipeTo(f, { signal });
@@ -135,7 +149,7 @@ export class DownloadAndUnarchiveTask {
               // The workaround is from
               // https://github.com/kevva/decompress/issues/46#issuecomment-525048104
               await decompress(this.state!.zipPath, fPath, {
-                filter: file => !file.path.endsWith('/'),
+                filter: (file) => !file.path.endsWith("/"),
               });
               this.state!.zipDecompressed = true;
 
@@ -151,7 +165,7 @@ export class DownloadAndUnarchiveTask {
 
         this.state!.pathCreated = true;
         return size;
-      }
+      },
     );
 
     return size;
@@ -218,20 +232,20 @@ type DownloadCtx = {
 
 /** Throws when a downloading aborts. */
 class URLAborted extends Error {
-  name = 'URLAborted';
+  name = "URLAborted";
 }
 
 export function nonRecoverableError(e: any) {
   return (
-    e instanceof URLAborted
-    || isDownloadNetworkError400(e)
-    || e instanceof UnknownStorageError
-    || e instanceof WrongLocalFileUrl
+    e instanceof URLAborted ||
+    isDownloadNetworkError400(e) ||
+    e instanceof UnknownStorageError ||
+    e instanceof WrongLocalFileUrl ||
     // file that we downloads from was moved or deleted.
-    || e?.code == 'ENOENT'
+    e?.code == "ENOENT" ||
     // A resource was deleted.
-    || (e.name == 'RpcError' && (e.code == 'NOT_FOUND' || e.code == 'ABORTED'))
+    (e.name == "RpcError" && (e.code == "NOT_FOUND" || e.code == "ABORTED")) ||
     // wrong archive format
-    || (String(e).includes('incorrect header check'))
+    String(e).includes("incorrect header check")
   );
 }

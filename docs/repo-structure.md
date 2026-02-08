@@ -5,7 +5,6 @@
   - `@platforma-sdk/bootstrap` = `tools/pl-bootstrap`
   - `@platforma-sdk/tengo-builder` = `tools/tengo-builder`
   - `@platforma-sdk/package-builder` = `tools/package-builder`
-  - `@milaboratories/eslint-config` = `tools/eslint-config`
   - `@milaboratories/oclif-index` = `tools/oclif-index`
   - `@milaboratories/ts-configs` = `tools/ts-configs`
   - `@milaboratories/build-configs` = `tools/build-configs`
@@ -68,7 +67,6 @@
   - `@platforma-sdk/ui-vue` = `sdk/ui-vue`
   - `@platforma-sdk/test` = `sdk/test`
   - `@platforma-sdk/workflow-tengo` = `sdk/workflow-tengo`
-  - `@platforma-sdk/eslint-config` = `sdk/eslint-config`
   - `@milaboratories/uikit` = `lib/ui/uikit`
   - `@milaboratories/sequences` = `lib/util/sequences`
   - `@milaboratories/helpers` = `lib/util/helpers`

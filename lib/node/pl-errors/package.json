@@ -2,9 +2,13 @@
   "name": "@milaboratories/pl-errors",
   "version": "1.1.58",
   "description": "Parsing errors from Pl backend",
-  "types": "./dist/index.d.ts",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,31 +17,28 @@
     }
   },
   "scripts": {
-    "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "build:watch": "ts-builder build --target node --watch",
-    "lint": "eslint .",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "dependencies": {
-    "zod": "catalog:",
     "@milaboratories/pl-client": "workspace:*",
-    "@milaboratories/ts-helpers": "workspace:*"
+    "@milaboratories/ts-helpers": "workspace:*",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@milaboratories/pl-error-like": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/pl-error-like": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
-    "@milaboratories/eslint-config": "workspace:*",
-    "@milaboratories/ts-configs": "workspace:*"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

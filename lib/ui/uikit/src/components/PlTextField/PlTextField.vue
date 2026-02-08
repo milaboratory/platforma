@@ -3,23 +3,23 @@
  * Component for one-line string data manipulation
  */
 export default {
-  name: 'PlTextField',
+  name: "PlTextField",
 };
 </script>
 
 <script lang="ts" setup generic="M, E = string, C = E">
-import type { Equal } from '@milaboratories/helpers';
-import { computed, reactive, ref, useSlots } from 'vue';
-import SvgRequired from '../../assets/images/required.svg?raw';
-import { getErrorMessage } from '../../helpers/error.ts';
-import DoubleContour from '../../utils/DoubleContour.vue';
-import { useLabelNotch } from '../../utils/useLabelNotch';
-import { useValidation } from '../../utils/useValidation';
-import { PlIcon16 } from '../PlIcon16';
-import { PlIcon24 } from '../PlIcon24';
-import { PlSvg } from '../PlSvg';
-import { PlTooltip } from '../PlTooltip';
-import './pl-text-field.scss';
+import type { Equal } from "@milaboratories/helpers";
+import { computed, reactive, ref, useSlots } from "vue";
+import SvgRequired from "../../assets/images/required.svg?raw";
+import { getErrorMessage } from "../../helpers/error.ts";
+import DoubleContour from "../../utils/DoubleContour.vue";
+import { useLabelNotch } from "../../utils/useLabelNotch";
+import { useValidation } from "../../utils/useValidation";
+import { PlIcon16 } from "../PlIcon16";
+import { PlIcon24 } from "../PlIcon24";
+import { PlSvg } from "../PlSvg";
+import { PlTooltip } from "../PlTooltip";
+import "./pl-text-field.scss";
 
 const slots = useSlots();
 
@@ -82,11 +82,20 @@ const props = defineProps<{
   /**
    * The string specifies whether the field should be a password or not, value could be "password" or undefined.
    */
-  type?: 'password';
+  type?: "password";
   /**
    * Makes some of corners not rounded
    * */
-  groupPosition?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
+  groupPosition?:
+    | "top"
+    | "bottom"
+    | "left"
+    | "right"
+    | "top-left"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-right"
+    | "middle";
 }>();
 
 const rootRef = ref<HTMLInputElement | undefined>(undefined);
@@ -104,7 +113,7 @@ const valueRef = computed<string>({
     if (data.cached) {
       return data.cached.value;
     }
-    return model.value === undefined || model.value === null ? '' : String(model.value);
+    return model.value === undefined || model.value === null ? "" : String(model.value);
   },
   set(value) {
     data.cached = undefined;
@@ -125,19 +134,19 @@ const valueRef = computed<string>({
 });
 
 const fieldType = computed(() => {
-  if (props.type && props.type === 'password') {
-    return showPassword.value ? 'text' : props.type;
+  if (props.type && props.type === "password") {
+    return showPassword.value ? "text" : props.type;
   } else {
-    return 'text';
+    return "text";
   }
 });
 
-const passwordIcon = computed(() => (showPassword.value ? 'view-show' : 'view-hide'));
+const passwordIcon = computed(() => (showPassword.value ? "view-show" : "view-hide"));
 
 const clear = () => {
   if (props.clearable) {
     data.cached = undefined;
-    model.value = props.clearable === true ? ('' as Model) : (props.clearable() as Model);
+    model.value = props.clearable === true ? ("" as Model) : (props.clearable() as Model);
   }
 };
 
@@ -145,10 +154,10 @@ const validationData = useValidation(valueRef, props.rules || []);
 
 const isEmpty = computed(() => {
   if (props.clearable) {
-    return props.clearable === true ? model.value === '' : model.value === props.clearable();
+    return props.clearable === true ? model.value === "" : model.value === props.clearable();
   }
 
-  return model.value === '';
+  return model.value === "";
 });
 
 const nonEmpty = computed(() => !isEmpty.value);
@@ -170,7 +179,9 @@ const displayErrors = computed(() => {
 
 const hasErrors = computed(() => displayErrors.value.length > 0);
 
-const canShowClearable = computed(() => props.clearable && nonEmpty.value && props.type !== 'password' && !props.disabled);
+const canShowClearable = computed(
+  () => props.clearable && nonEmpty.value && props.type !== "password" && !props.disabled,
+);
 
 const togglePasswordVisibility = () => (showPassword.value = !showPassword.value);
 
@@ -217,14 +228,24 @@ useLabelNotch(rootRef);
         @focusout="onFocusOut"
       />
       <div class="pl-text-field__append" @click="setFocusOnInput">
-        <PlIcon16 v-if="canShowClearable" class="pl-text-field__clearable" name="delete-clear" @click.stop="clear" />
-        <PlIcon24 v-if="type === 'password'" :name="passwordIcon" style="cursor: pointer" @click.stop="togglePasswordVisibility" />
+        <PlIcon16
+          v-if="canShowClearable"
+          class="pl-text-field__clearable"
+          name="delete-clear"
+          @click.stop="clear"
+        />
+        <PlIcon24
+          v-if="type === 'password'"
+          :name="passwordIcon"
+          style="cursor: pointer"
+          @click.stop="togglePasswordVisibility"
+        />
         <slot name="append" />
       </div>
       <DoubleContour class="pl-text-field__contour" :group-position="groupPosition" />
     </div>
     <div v-if="hasErrors" class="pl-text-field__error">
-      {{ displayErrors.join(' ') }}
+      {{ displayErrors.join(" ") }}
     </div>
     <div v-else-if="helper" class="pl-text-field__helper">{{ helper }}</div>
   </div>

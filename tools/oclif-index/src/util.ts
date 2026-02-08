@@ -1,21 +1,21 @@
-import fs from 'fs';
-import path from 'path';
-import * as winston from 'winston';
-import * as process from 'process';
+import fs from "fs";
+import path from "path";
+import * as winston from "winston";
+import * as process from "process";
 
-export function createLogger(level: string = 'debug'): winston.Logger {
+export function createLogger(level: string = "debug"): winston.Logger {
   return winston.createLogger({
     level: level,
     format: winston.format.printf(({ level, message }) => {
-      const indent = ' '.repeat(level.length + 2); // For ': ' after the level
-      if (typeof message !== 'string') {
+      const indent = " ".repeat(level.length + 2); // For ': ' after the level
+      if (typeof message !== "string") {
         const messageJson = JSON.stringify(message);
         throw Error(`logger message ${messageJson} is not a string`);
       }
       const indentedMessage = message
-        .split('\n')
+        .split("\n")
         .map((line: string, index: number) => (index === 0 ? line : indent + line))
-        .join('\n');
+        .join("\n");
 
       const colorize = (l: string) => winston.format.colorize().colorize(l, l);
 
@@ -23,10 +23,10 @@ export function createLogger(level: string = 'debug'): winston.Logger {
     }),
     transports: [
       new winston.transports.Console({
-        stderrLevels: ['error', 'warn', 'info', 'debug'],
-        handleExceptions: true
-      })
-    ]
+        stderrLevels: ["error", "warn", "info", "debug"],
+        handleExceptions: true,
+      }),
+    ],
   });
 }
 
@@ -36,7 +36,7 @@ export function findPackageRoot(logger: winston.Logger, startPath?: string): str
   }
 
   logger.debug(`Detecting package root...`);
-  const pkgRoot = searchPathUp(startPath, startPath, 'package.json');
+  const pkgRoot = searchPathUp(startPath, startPath, "package.json");
   logger.debug(`  package root found at '${pkgRoot}'`);
 
   return pkgRoot;
@@ -50,9 +50,9 @@ function searchPathUp(startPath: string, pathToCheck: string, itemToCheck: strin
   }
 
   const parentDir = path.dirname(pathToCheck);
-  if (parentDir === pathToCheck || pathToCheck === '') {
+  if (parentDir === pathToCheck || pathToCheck === "") {
     throw new Error(
-      `failed to find '${itemToCheck}' file in any of parent directories starting from '${startPath}'`
+      `failed to find '${itemToCheck}' file in any of parent directories starting from '${startPath}'`,
     );
   }
 
@@ -61,7 +61,7 @@ function searchPathUp(startPath: string, pathToCheck: string, itemToCheck: strin
 
 export function parseOclifConfig(packageJson: any) {
   if (!packageJson.oclif || !packageJson.oclif.commands) {
-    throw new Error('Invalid oclif configuration in package.json');
+    throw new Error("Invalid oclif configuration in package.json");
   }
   return packageJson.oclif.commands;
 }
@@ -75,14 +75,14 @@ export function getCommandInfo(filePath: string): {
   className: string;
   isDefaultExport: boolean;
 } {
-  const fileContent = fs.readFileSync(filePath, 'utf-8');
+  const fileContent = fs.readFileSync(filePath, "utf-8");
   const commandNamePattern =
     /export\s+(default\s+)?class\s+(\w+)\s+extends\s+(oclif|core\.)?Command\s*{?/;
   const match = fileContent.match(commandNamePattern);
   if (match) {
     return {
       className: match[2],
-      isDefaultExport: !!match[1]
+      isDefaultExport: !!match[1],
     };
   }
 
@@ -92,12 +92,12 @@ export function getCommandInfo(filePath: string): {
   if (matchDirective) {
     return {
       className: matchDirective.groups!.className,
-      isDefaultExport: true
+      isDefaultExport: true,
     };
   }
 
   return {
-    className: '',
-    isDefaultExport: false
+    className: "",
+    isDefaultExport: false,
   };
 }

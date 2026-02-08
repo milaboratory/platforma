@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed } from "vue";
 
 const props = defineProps<{
-  type: 'unique_launches' | 'volume_limit';
+  type: "unique_launches" | "volume_limit";
   label: string;
   used: number;
   toSpend: number;
@@ -45,21 +45,21 @@ const availablePercentage = computed(() => {
   if (total.value === null) return 100;
   if (total.value === 0) return 100;
   if (exceeded.value) return 0;
-  return clampPercentage(props.available / total.value * 100);
+  return clampPercentage((props.available / total.value) * 100);
 });
 
 const computedLabel = computed(() => {
-  if (props.type === 'unique_launches') return 'Runs Limits';
-  if (props.type === 'volume_limit') return 'Volume Limits';
+  if (props.type === "unique_launches") return "Runs Limits";
+  if (props.type === "volume_limit") return "Volume Limits";
   return props.label;
 });
 
 const toGB = (v: number) => {
-  return (v / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+  return (v / 1024 / 1024 / 1024).toFixed(2) + " GB";
 };
 
 const formatUnit = (v: number) => {
-  if (props.type === 'volume_limit') return toGB(v);
+  if (props.type === "volume_limit") return toGB(v);
   return v;
 };
 
@@ -76,28 +76,45 @@ const showBar = (n: number) => {
         <div>
           Available:
           <div style="flex: 1" />
-          <span v-if="availableNow !== null"><strong>{{ formatUnit(availableNow) }}</strong> / {{ formatUnit(available! + toSpend + used) }}</span>
+          <span v-if="availableNow !== null"
+            ><strong>{{ formatUnit(availableNow) }}</strong> /
+            {{ formatUnit(available! + toSpend + used) }}</span
+          >
           <span v-else>Unlimited</span>
         </div>
         <div :class="[$style.afterRun, { [$style.exceeded]: exceeded }]">
           <span v-if="exceeded">Too many files selected</span>
           <span style="flex: 1" />
           <span>After run:</span>
-          <span v-if="available !== null">{{ formatUnit(available) }} / {{ formatUnit(available + toSpend + used) }}</span>
+          <span v-if="available !== null"
+            >{{ formatUnit(available) }} / {{ formatUnit(available + toSpend + used) }}</span
+          >
         </div>
         <div :class="[$style.progressBar, { [$style.exceeded]: exceeded }]">
-          <span v-if="showBar(availablePercentage)" :class="$style.progressBarAvailable" :style="{ width: `${availablePercentage.toFixed(2)}%` }" />
-          <span v-if="showBar(toSpendPercentage)" :class="$style.progressBarToSpend" :style="{ width: `${toSpendPercentage.toFixed(2)}%` }" />
-          <span v-if="showBar(usedPercentage)" :class="$style.progressBarUsed" :style="{ width: `${usedPercentage.toFixed(2)}%` }" />
+          <span
+            v-if="showBar(availablePercentage)"
+            :class="$style.progressBarAvailable"
+            :style="{ width: `${availablePercentage.toFixed(2)}%` }"
+          />
+          <span
+            v-if="showBar(toSpendPercentage)"
+            :class="$style.progressBarToSpend"
+            :style="{ width: `${toSpendPercentage.toFixed(2)}%` }"
+          />
+          <span
+            v-if="showBar(usedPercentage)"
+            :class="$style.progressBarUsed"
+            :style="{ width: `${usedPercentage.toFixed(2)}%` }"
+          />
         </div>
       </div>
       <div :class="$style.legends">
         <div :class="$style.toSpendLegend">
-          <span/>
+          <span />
           To spend: {{ formatUnit(toSpend) }}
         </div>
         <div :class="$style.usedLegend">
-          <span/>
+          <span />
           Used: {{ formatUnit(used) }}
         </div>
       </div>
@@ -143,7 +160,7 @@ const showBar = (n: number) => {
     display: flex;
     align-items: flex-start;
   }
-  >div:first-child {
+  > div:first-child {
     gap: 8px;
     strong {
       font-size: 28px;
@@ -172,7 +189,7 @@ const showBar = (n: number) => {
 .progressBar {
   width: 100%;
   height: 12px;
-  background-color: #E0E0E0;
+  background-color: #e0e0e0;
   display: flex;
   align-items: center;
   border: 1px solid var(--border-color-default);
@@ -187,15 +204,15 @@ const showBar = (n: number) => {
 }
 
 .progressBarAvailable {
-  background: linear-gradient(270deg, #A1E59C 0%, #D0F5B0 98.81%);
+  background: linear-gradient(270deg, #a1e59c 0%, #d0f5b0 98.81%);
 }
 
 .progressBarUsed {
-  background-color: #FFCECC;
+  background-color: #ffcecc;
 }
 
 .progressBarToSpend {
-  background-color: #FAF5AA;
+  background-color: #faf5aa;
 }
 
 .legends {
@@ -217,7 +234,7 @@ const showBar = (n: number) => {
   align-items: center;
   gap: 8px;
   span {
-    background: #FFCECC;
+    background: #ffcecc;
   }
 }
 
@@ -226,7 +243,7 @@ const showBar = (n: number) => {
   align-items: center;
   gap: 8px;
   span {
-    background: #FAF5AA;
+    background: #faf5aa;
   }
 }
 </style>

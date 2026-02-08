@@ -1,7 +1,7 @@
 /** Uses KV for uiState compared to V2 */
-export const SchemaVersionV1 = '1';
+export const SchemaVersionV1 = "1";
 
-export const BlockFrontendStateKeyPrefixV1 = 'BlockFrontendState/';
+export const BlockFrontendStateKeyPrefixV1 = "BlockFrontendState/";
 export const BlockFrontendStateKeyPatternV1 = /^BlockFrontendState\/(?<blockid>.*)$/;
 
 export function blockFrontendStateKeyV1(blockId: string): string {
@@ -12,5 +12,5 @@ export function blockFrontendStateKeyV1(blockId: string): string {
 export function parseBlockFrontendStateKeyV1(key: string): string | undefined {
   const match = key.match(BlockFrontendStateKeyPatternV1);
   if (match === null) return undefined;
-  return match.groups!['blockid'];
+  return match.groups!["blockid"];
 }

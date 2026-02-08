@@ -1,9 +1,13 @@
 {
   "name": "@milaboratories/sequences",
   "version": "1.1.6",
-  "types": "./dist/index.d.ts",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -12,20 +16,19 @@
     }
   },
   "scripts": {
-    "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "eslint ."
+    "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@milaboratories/ts-configs": "workspace:*",
+    "typescript": "catalog:"
   }
 }

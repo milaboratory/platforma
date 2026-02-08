@@ -1,7 +1,7 @@
 <script lang="ts">
 /** Fills flex remaining space */
 export default {
-  name: 'PlSpacer',
+  name: "PlSpacer",
 };
 </script>
 

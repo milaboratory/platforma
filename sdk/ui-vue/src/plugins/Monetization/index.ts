@@ -1,5 +1,3 @@
-import MonetizationSidebar from './MonetizationSidebar.vue';
+import MonetizationSidebar from "./MonetizationSidebar.vue";
 
-export {
-  MonetizationSidebar,
-};
+export { MonetizationSidebar };

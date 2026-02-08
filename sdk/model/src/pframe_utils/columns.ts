@@ -1,24 +1,38 @@
-import type { PColumn, PColumnSpec, PColumnLazy, PFrameDef } from '@milaboratories/pl-model-common';
-import { getNormalizedAxesList, getAxisId, canonicalizeJson, isLinkerColumn, matchAxisId, isLabelColumn } from '@milaboratories/pl-model-common';
-import type { AxesVault } from '../components';
-import { enrichCompatible, getAvailableWithLinkersAxes } from '../components';
-import type { RenderCtxBase, PColumnDataUniversal } from '../render';
-import { PColumnCollection } from '../render';
+import type { PColumn, PColumnSpec, PColumnLazy, PFrameDef } from "@milaboratories/pl-model-common";
+import {
+  getNormalizedAxesList,
+  getAxisId,
+  canonicalizeJson,
+  isLinkerColumn,
+  matchAxisId,
+  isLabelColumn,
+} from "@milaboratories/pl-model-common";
+import type { AxesVault } from "../components";
+import { enrichCompatible, getAvailableWithLinkersAxes } from "../components";
+import type { RenderCtxBase, PColumnDataUniversal } from "../render";
+import { PColumnCollection } from "../render";
 
 export function getAllRelatedColumns<A, U>(
-  ctx: RenderCtxBase<A, U>, predicate: (spec: PColumnSpec) => boolean,
+  ctx: RenderCtxBase<A, U>,
+  predicate: (spec: PColumnSpec) => boolean,
 ): PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>> {
   // if current block doesn't produce own columns then use all columns from result pool
   const columns = new PColumnCollection();
   columns.addColumnProvider(ctx.resultPool);
-  const allColumns = columns.getColumns(predicate, { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
+  const allColumns =
+    columns.getColumns(predicate, {
+      dontWaitAllData: true,
+      overrideLabelAnnotation: false,
+    }) ?? [];
 
-  const allAxes: AxesVault = new Map(allColumns
-    .flatMap((column) => getNormalizedAxesList(column.spec.axesSpec))
-    .map((axisSpec) => {
-      const axisId = getAxisId(axisSpec);
-      return [canonicalizeJson(axisId), axisSpec];
-    }));
+  const allAxes: AxesVault = new Map(
+    allColumns
+      .flatMap((column) => getNormalizedAxesList(column.spec.axesSpec))
+      .map((axisSpec) => {
+        const axisId = getAxisId(axisSpec);
+        return [canonicalizeJson(axisId), axisSpec];
+      }),
+  );
 
   // additional columns are duplicates with extra fields in domains for compatibility if there are ones with partial match
   const extendedColumns = enrichCompatible(allAxes, allColumns);
@@ -26,10 +40,16 @@ export function getAllRelatedColumns<A, U>(
   return extendedColumns;
 }
 
-export function getRelatedColumns<A, U>(ctx: RenderCtxBase<A, U>, { columns: rootColumns, predicate }: {
-  columns: PColumn<PColumnDataUniversal>[];
-  predicate: (spec: PColumnSpec) => boolean;
-}): PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>> {
+export function getRelatedColumns<A, U>(
+  ctx: RenderCtxBase<A, U>,
+  {
+    columns: rootColumns,
+    predicate,
+  }: {
+    columns: PColumn<PColumnDataUniversal>[];
+    predicate: (spec: PColumnSpec) => boolean;
+  },
+): PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>> {
   // if current block has its own columns then take from result pool only compatible with them
   const columns = new PColumnCollection();
   columns.addColumnProvider(ctx.resultPool);
@@ -48,7 +68,10 @@ export function getRelatedColumns<A, U>(ctx: RenderCtxBase<A, U>, { columns: roo
   }
 
   // all linker columns always go to pFrame - even it's impossible to use some of them they all are hidden
-  const linkerColumns = columns.getColumns((spec) => predicate(spec) && isLinkerColumn(spec), { dontWaitAllData: true }) ?? [];
+  const linkerColumns =
+    columns.getColumns((spec) => predicate(spec) && isLinkerColumn(spec), {
+      dontWaitAllData: true,
+    }) ?? [];
   const availableWithLinkersAxes = getAvailableWithLinkersAxes(linkerColumns, blockAxes);
 
   // all possible axes from connected linkers
@@ -59,10 +82,19 @@ export function getRelatedColumns<A, U>(ctx: RenderCtxBase<A, U>, { columns: roo
 
   const blockAxesArr = Array.from(blockAxes.values());
   // all compatible with block columns but without label columns
-  let compatibleWithoutLabels = (columns.getColumns((spec) => predicate(spec) && spec.axesSpec.some((axisSpec) => {
-    const axisId = getAxisId(axisSpec);
-    return blockAxesArr.some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
-  }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
+  let compatibleWithoutLabels = (
+    columns.getColumns(
+      (spec) =>
+        predicate(spec) &&
+        spec.axesSpec.some((axisSpec) => {
+          const axisId = getAxisId(axisSpec);
+          return blockAxesArr.some((selectorAxisSpec) =>
+            matchAxisId(getAxisId(selectorAxisSpec), axisId),
+          );
+        }),
+      { dontWaitAllData: true, overrideLabelAnnotation: false },
+    ) ?? []
+  ).filter((column) => !isLabelColumn(column.spec));
 
   // extend axes set for label columns request
   for (const c of compatibleWithoutLabels) {
@@ -74,16 +106,34 @@ export function getRelatedColumns<A, U>(ctx: RenderCtxBase<A, U>, { columns: roo
 
   const allAxesArr = Array.from(allAxes.values());
   // extend allowed columns - add columns thad doesn't have axes from block, but have all axes in 'allAxes' list (that means all axes from linkers or from 'hanging' of other selected columns)
-  compatibleWithoutLabels = (columns.getColumns((spec) => predicate(spec) && spec.axesSpec.every((axisSpec) => {
-    const axisId = getAxisId(axisSpec);
-    return allAxesArr.some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
-  }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
+  compatibleWithoutLabels = (
+    columns.getColumns(
+      (spec) =>
+        predicate(spec) &&
+        spec.axesSpec.every((axisSpec) => {
+          const axisId = getAxisId(axisSpec);
+          return allAxesArr.some((selectorAxisSpec) =>
+            matchAxisId(getAxisId(selectorAxisSpec), axisId),
+          );
+        }),
+      { dontWaitAllData: true, overrideLabelAnnotation: false },
+    ) ?? []
+  ).filter((column) => !isLabelColumn(column.spec));
 
   // label columns must be compatible with full set of axes - block axes and axes from compatible columns from result pool
-  const compatibleLabels = (columns.getColumns((spec) => predicate(spec) && spec.axesSpec.some((axisSpec) => {
-    const axisId = getAxisId(axisSpec);
-    return allAxesArr.some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
-  }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => isLabelColumn(column.spec));
+  const compatibleLabels = (
+    columns.getColumns(
+      (spec) =>
+        predicate(spec) &&
+        spec.axesSpec.some((axisSpec) => {
+          const axisId = getAxisId(axisSpec);
+          return allAxesArr.some((selectorAxisSpec) =>
+            matchAxisId(getAxisId(selectorAxisSpec), axisId),
+          );
+        }),
+      { dontWaitAllData: true, overrideLabelAnnotation: false },
+    ) ?? []
+  ).filter((column) => isLabelColumn(column.spec));
 
   const compatible = [...compatibleWithoutLabels, ...compatibleLabels];
 

@@ -1,13 +1,6 @@
-import type {
-  InferHrefType,
-  InferOutputsType } from '@platforma-sdk/model';
-import {
-  Annotation,
-  BlockModel,
-  PlRef,
-  readAnnotation,
-} from '@platforma-sdk/model';
-import { z } from 'zod';
+import type { InferHrefType, InferOutputsType } from "@platforma-sdk/model";
+import { Annotation, BlockModel, PlRef, readAnnotation } from "@platforma-sdk/model";
+import { z } from "zod";
 
 export const BlockArgs = z.object({
   sources: z.array(PlRef).optional(),
@@ -15,18 +8,18 @@ export const BlockArgs = z.object({
 
 export type BlockArgs = z.infer<typeof BlockArgs>;
 
-export const platforma = BlockModel.create('Heavy')
+export const platforma = BlockModel.create("Heavy")
 
   .withArgs<BlockArgs>({
     sources: undefined,
   })
 
-  .output('opts', (ctx) =>
+  .output("opts", (ctx) =>
     ctx.resultPool
       .getSpecs()
       .entries.filter((spec) => {
         if (spec.obj.annotations === undefined) return false;
-        return readAnnotation(spec.obj, Annotation.Label) == 'Numbers';
+        return readAnnotation(spec.obj, Annotation.Label) == "Numbers";
       })
       .map((opt, i) => ({
         label: `numbers_${i}`,
@@ -34,12 +27,12 @@ export const platforma = BlockModel.create('Heavy')
       })),
   )
 
-  .output('optsWithEnrichments', (ctx) =>
+  .output("optsWithEnrichments", (ctx) =>
     ctx.resultPool
       .getSpecs()
       .entries.filter((spec) => {
         if (spec.obj.annotations === undefined) return false;
-        return readAnnotation(spec.obj, Annotation.Label) == 'Numbers';
+        return readAnnotation(spec.obj, Annotation.Label) == "Numbers";
       })
       .map((opt, i) => ({
         label: `numbers_${i}`,
@@ -47,20 +40,18 @@ export const platforma = BlockModel.create('Heavy')
       })),
   )
 
-  .output('sum', (ctx) => ctx.outputs?.resolve('sum')?.getDataAsJson<number>())
+  .output("sum", (ctx) => ctx.outputs?.resolve("sum")?.getDataAsJson<number>())
 
-  .output('uiState', (ctx) => ctx.uiState)
+  .output("uiState", (ctx) => ctx.uiState)
 
   .argsValid((ctx) => ctx.args.sources !== undefined && ctx.args.sources.length > 0)
 
   .enriches((args) =>
-    (args.sources !== undefined && args.sources.length > 0)
-      ? [args.sources[0]]
-      : [],
+    args.sources !== undefined && args.sources.length > 0 ? [args.sources[0]] : [],
   )
 
   .sections((_ctx) => {
-    return [{ type: 'link', href: '/', label: 'Main' }];
+    return [{ type: "link", href: "/", label: "Main" }];
   })
 
   .done(2); // ui api version 2

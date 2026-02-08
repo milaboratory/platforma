@@ -1,14 +1,24 @@
 <script setup lang="ts">
-import { PlBlockPage, PlBtnPrimary, PlBtnSecondary, PlCheckbox, PlChip, PlContainer, PlRow, PlSpacer, PlTextField } from '@platforma-sdk/ui-vue';
-import { computed, reactive, useTemplateRef } from 'vue';
-import { useApp } from './app';
-import JsonView from './JsonView.vue';
-import { containsValue } from './utils';
+import {
+  PlBlockPage,
+  PlBtnPrimary,
+  PlBtnSecondary,
+  PlCheckbox,
+  PlChip,
+  PlContainer,
+  PlRow,
+  PlSpacer,
+  PlTextField,
+} from "@platforma-sdk/ui-vue";
+import { computed, reactive, useTemplateRef } from "vue";
+import { useApp } from "./app";
+import JsonView from "./JsonView.vue";
+import { containsValue } from "./utils";
 
 const app = useApp();
 
 const data = reactive({
-  search: '',
+  search: "",
   withKeys: false,
   caseSensitive: true,
 });
@@ -27,22 +37,24 @@ const filtered = computed(() => {
   const { entries, isComplete } = allSpecs;
 
   return {
-    entries: search ? entries.filter((it: unknown) => containsValue(it, { search, withKeys, caseSensitive })) : entries,
+    entries: search
+      ? entries.filter((it: unknown) => containsValue(it, { search, withKeys, caseSensitive }))
+      : entries,
     isComplete,
   };
 });
 
-const editor = useTemplateRef('editor');
+const editor = useTemplateRef("editor");
 </script>
 
 <template>
   <PlBlockPage>
-    <template #title>
-      Pool explorer
-    </template>
+    <template #title> Pool explorer </template>
     <template #append>
       <PlBtnPrimary size="small" :disabled="!editor" @click="editor?.fold()">Fold</PlBtnPrimary>
-      <PlBtnSecondary size="small" :disabled="!editor" @click="editor?.unfold()">Unfold</PlBtnSecondary>
+      <PlBtnSecondary size="small" :disabled="!editor" @click="editor?.unfold()"
+        >Unfold</PlBtnSecondary
+      >
     </template>
     <PlRow align-center>
       <PlContainer width="400px">

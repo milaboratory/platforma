@@ -1,6 +1,6 @@
-import { SyncSequence } from './sync';
-import { AsyncSequence } from './async';
-export { Emitter } from './tools';
+import { SyncSequence } from "./sync";
+import { AsyncSequence } from "./async";
+export { Emitter } from "./tools";
 
 export function sequence<T>(it: Iterable<T>): SyncSequence<T>;
 export function sequence<T>(it: AsyncIterable<T>): AsyncSequence<T>;
@@ -13,5 +13,5 @@ export function sequence<T>(it: Iterable<T> | AsyncIterable<T>) {
     return new AsyncSequence(it);
   }
 
-  throw Error('sequence argument should be iterable');
+  throw Error("sequence argument should be iterable");
 }

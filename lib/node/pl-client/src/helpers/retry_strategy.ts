@@ -64,9 +64,7 @@ export class RetryStrategy {
   }
 
   private notifyMaxAttemptsReached(): void {
-    const error = new Error(
-      `Max retry attempts (${this.config.maxAttempts}) reached`,
-    );
+    const error = new Error(`Max retry attempts (${this.config.maxAttempts}) reached`);
     this.callbacks.onMaxAttemptsReached(error);
   }
 }
@@ -117,7 +115,7 @@ class ExponentialBackoff {
     if (delay === 0 || this.jitter === 0) {
       return delay;
     }
-    const delayFactor = 1 - (this.jitter / 2) + Math.random() * this.jitter;
+    const delayFactor = 1 - this.jitter / 2 + Math.random() * this.jitter;
     return delay * delayFactor;
   }
 }

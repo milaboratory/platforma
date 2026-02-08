@@ -1,35 +1,60 @@
-import type { AxisId, AxisSpec, CanonicalizedJson, FilterSpec, FilterSpecLeaf, PColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
-import type { SUPPORTED_FILTER_TYPES } from './constants';
+import type {
+  AxisId,
+  AxisSpec,
+  CanonicalizedJson,
+  FilterSpec,
+  FilterSpecLeaf,
+  PColumnSpec,
+  SUniversalPColumnId,
+} from "@platforma-sdk/model";
+import type { SUPPORTED_FILTER_TYPES } from "./constants";
 
-export type Operand = 'or' | 'and';
+export type Operand = "or" | "and";
 
 export type PlAdvancedFilterColumnId = SUniversalPColumnId | CanonicalizedJson<AxisId>;
 
-export type FilterLeafContent = Extract<FilterSpecLeaf<PlAdvancedFilterColumnId>, { type: SupportedFilterTypes }>;
+export type FilterLeafContent = Extract<
+  FilterSpecLeaf<PlAdvancedFilterColumnId>,
+  { type: SupportedFilterTypes }
+>;
 export type CommonFilter = FilterSpec<FilterLeafContent, { id: number; isExpanded?: boolean }>;
-export type FilterLeaf = Exclude<CommonFilter, { type: Operand | 'not' }>;
-export type NodeFilter = Extract<CommonFilter, { type: Operand | 'not' }>;
-export type RootFilter = Omit<Extract<NodeFilter, { type: Operand }>, 'filters'> & { filters: NodeFilter[] };
+export type FilterLeaf = Exclude<CommonFilter, { type: Operand | "not" }>;
+export type NodeFilter = Extract<CommonFilter, { type: Operand | "not" }>;
+export type RootFilter = Omit<Extract<NodeFilter, { type: Operand }>, "filters"> & {
+  filters: NodeFilter[];
+};
 
 // Not supported: less(/greater)ThanColumn, less(/greater)ThanColumnOrEqual
 // or, and, not - in groups
-export type SupportedFilterTypes = typeof SUPPORTED_FILTER_TYPES[number];
+export type SupportedFilterTypes = (typeof SUPPORTED_FILTER_TYPES)[number];
 
 type RequireFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 type OptionalFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
-type NumericalWithOptionalN = 'topN' | 'bottomN';
-type NumericalWithOptionalX = 'lessThan' | 'lessThanOrEqual' | 'greaterThan' | 'greaterThanOrEqual' | 'equal' | 'notEqual';
-type StringWithOptionalValue = 'patternEquals' | 'patternNotEquals';
+type NumericalWithOptionalN = "topN" | "bottomN";
+type NumericalWithOptionalX =
+  | "lessThan"
+  | "lessThanOrEqual"
+  | "greaterThan"
+  | "greaterThanOrEqual"
+  | "equal"
+  | "notEqual";
+type StringWithOptionalValue = "patternEquals" | "patternNotEquals";
 // types from ui with some changed by optionality fields
-type EditedTypes = 'patternFuzzyContainSubsequence' | NumericalWithOptionalX | StringWithOptionalValue | NumericalWithOptionalN;
+type EditedTypes =
+  | "patternFuzzyContainSubsequence"
+  | NumericalWithOptionalX
+  | StringWithOptionalValue
+  | NumericalWithOptionalN;
 export type EditableFilter =
   | Exclude<FilterLeafContent, { type: EditedTypes }>
-  | RequireFields<Extract<FilterLeafContent, { type: 'patternFuzzyContainSubsequence' }>, 'maxEdits' | 'substitutionsOnly'>
-  | OptionalFields<Extract<FilterLeafContent, { type: NumericalWithOptionalN }>, 'n'>
-  | OptionalFields<Extract<FilterLeafContent, { type: NumericalWithOptionalX }>, 'x'>
-  | OptionalFields<Extract<FilterLeafContent, { type: StringWithOptionalValue }>, 'value'>
-;
+  | RequireFields<
+      Extract<FilterLeafContent, { type: "patternFuzzyContainSubsequence" }>,
+      "maxEdits" | "substitutionsOnly"
+    >
+  | OptionalFields<Extract<FilterLeafContent, { type: NumericalWithOptionalN }>, "n">
+  | OptionalFields<Extract<FilterLeafContent, { type: NumericalWithOptionalX }>, "x">
+  | OptionalFields<Extract<FilterLeafContent, { type: StringWithOptionalValue }>, "value">;
 
 export type FixedAxisInfo = {
   idx: number;
@@ -41,6 +66,6 @@ export type SourceOptionInfo = {
   label: string;
   spec: PColumnSpec | AxisSpec;
   error?: boolean;
-  alphabet?: 'nucleotide' | 'aminoacid' | string;
+  alphabet?: "nucleotide" | "aminoacid" | string;
   axesToBeFixed?: FixedAxisInfo[];
 };

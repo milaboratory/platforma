@@ -20,7 +20,7 @@ jobs:
       app-name-slug: 'platforma-sdk'
       gha-runner-label: 'dev-pl-sdk'
       node-version: '22.x'
-      build-script-name: 'build'
+      build-script-name: 'ci:build'
       test: true
       test-coverage: true
       test-coverage-reports: '**/coverage/lcov.info'

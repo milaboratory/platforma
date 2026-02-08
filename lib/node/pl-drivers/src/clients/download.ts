@@ -1,23 +1,28 @@
 /* eslint-disable n/no-unsupported-features/node-builtins */
-import type { WireClientProvider, WireClientProviderFactory } from '@milaboratories/pl-client';
-import { addRTypeToMetadata, stringifyWithResourceId, RestAPI, createRTypeRoutingHeader } from '@milaboratories/pl-client';
-import type { ResourceInfo } from '@milaboratories/pl-tree';
-import { PerfTimer } from '@milaboratories/helpers';
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import { ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
-import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import * as fs from 'node:fs';
-import * as fsp from 'node:fs/promises';
-import * as path from 'node:path';
-import { Readable } from 'node:stream';
-import type { Dispatcher } from 'undici';
-import type { LocalStorageProjection } from '../drivers/types';
-import { type ContentHandler, RemoteFileDownloader } from '../helpers/download';
-import { validateAbsolute } from '../helpers/validate';
-import type { DownloadAPI_GetDownloadURL_Response } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
-import { DownloadClient } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client';
-import type { DownloadApiPaths, DownloadRestClientType } from '../proto-rest';
-import { type GetContentOptions } from '@milaboratories/pl-model-common';
+import type { WireClientProvider, WireClientProviderFactory } from "@milaboratories/pl-client";
+import {
+  addRTypeToMetadata,
+  stringifyWithResourceId,
+  RestAPI,
+  createRTypeRoutingHeader,
+} from "@milaboratories/pl-client";
+import type { ResourceInfo } from "@milaboratories/pl-tree";
+import { PerfTimer } from "@milaboratories/helpers";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import { ConcurrencyLimitingExecutor } from "@milaboratories/ts-helpers";
+import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
+import * as fs from "node:fs";
+import * as fsp from "node:fs/promises";
+import * as path from "node:path";
+import { Readable } from "node:stream";
+import type { Dispatcher } from "undici";
+import type { LocalStorageProjection } from "../drivers/types";
+import { type ContentHandler, RemoteFileDownloader } from "../helpers/download";
+import { validateAbsolute } from "../helpers/validate";
+import type { DownloadAPI_GetDownloadURL_Response } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol";
+import { DownloadClient } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client";
+import type { DownloadApiPaths, DownloadRestClientType } from "../proto-rest";
+import { type GetContentOptions } from "@milaboratories/pl-model-common";
 
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
@@ -39,7 +44,7 @@ export class ClientDownload {
     localProjections: LocalStorageProjection[],
   ) {
     this.wire = wireClientProviderFactory.createWireClientProvider((wireConn) => {
-      if (wireConn.type === 'grpc') {
+      if (wireConn.type === "grpc") {
         return new DownloadClient(wireConn.Transport);
       } else {
         return RestAPI.createClient<DownloadApiPaths>({
@@ -72,9 +77,9 @@ export class ClientDownload {
 
     const remoteHeaders = Object.fromEntries(headers.map(({ name, value }) => [name, value]));
     this.logger.info(
-      `blob ${stringifyWithResourceId(info)} download started, `
-      + `url: ${downloadUrl}, `
-      + `range: ${JSON.stringify(ops.range ?? null)}`,
+      `blob ${stringifyWithResourceId(info)} download started, ` +
+        `url: ${downloadUrl}, ` +
+        `range: ${JSON.stringify(ops.range ?? null)}`,
     );
 
     const timer = PerfTimer.start();
@@ -83,8 +88,7 @@ export class ClientDownload {
       : await this.remoteFileDownloader.withContent(downloadUrl, remoteHeaders, ops, handler);
 
     this.logger.info(
-      `blob ${stringifyWithResourceId(info)} download finished, `
-      + `took: ${timer.elapsed()}`,
+      `blob ${stringifyWithResourceId(info)} download finished, ` + `took: ${timer.elapsed()}`,
     );
     return result;
   }
@@ -139,20 +143,22 @@ export class ClientDownload {
         addRTypeToMetadata(type, withAbort),
       ).response;
     } else {
-      return (await client.POST('/v1/get-download-url', {
-        body: {
-          resourceId: id.toString(),
-          isInternalUse: false,
-        },
-        headers: { ...createRTypeRoutingHeader(type) },
-      })).data!;
+      return (
+        await client.POST("/v1/get-download-url", {
+          body: {
+            resourceId: id.toString(),
+            isInternalUse: false,
+          },
+          headers: { ...createRTypeRoutingHeader(type) },
+        })
+      ).data!;
     }
   }
 }
 
 export function parseLocalUrl(url: string) {
   const parsed = new URL(url);
-  if (parsed.pathname == '')
+  if (parsed.pathname == "")
     throw new WrongLocalFileUrl(`url for local filepath ${url} does not match url scheme`);
 
   return {
@@ -169,31 +175,31 @@ export function getFullPath(
   const root = localStorageIdsToRoot.get(storageId);
   if (root === undefined) throw new UnknownStorageError(`Unknown storage location: ${storageId}`);
 
-  if (root === '') return relativePath;
+  if (root === "") return relativePath;
 
   return path.join(root, relativePath);
 }
 
-const storageProtocol = 'storage://';
+const storageProtocol = "storage://";
 function isLocal(url: string) {
   return url.startsWith(storageProtocol);
 }
 
 /** Throws when a local URL have invalid scheme. */
 export class WrongLocalFileUrl extends Error {
-  name = 'WrongLocalFileUrl';
+  name = "WrongLocalFileUrl";
 }
 
 /** Happens when a storage for a local file can't be found.  */
 export class UnknownStorageError extends Error {
-  name = 'UnknownStorageError';
+  name = "UnknownStorageError";
 }
 
 export function newLocalStorageIdsToRoot(projections: LocalStorageProjection[]) {
   const idToRoot: Map<string, string> = new Map();
   for (const lp of projections) {
     // Empty string means no prefix, i.e. any file on this machine can be got from the storage.
-    if (lp.localPath !== '') {
+    if (lp.localPath !== "") {
       validateAbsolute(lp.localPath);
     }
     idToRoot.set(lp.storageId, lp.localPath);

@@ -1,5 +1,5 @@
-import type { InferComponentProps } from '../types';
-import { computed, type Component, type ComputedRef } from 'vue';
+import type { InferComponentProps } from "../types";
+import { computed, type Component, type ComputedRef } from "vue";
 
 /**
  * A utility function that creates a reactive computed property
@@ -31,6 +31,8 @@ import { computed, type Component, type ComputedRef } from 'vue';
  * console.log(propValue.value); // Outputs: 'example'
  * ```
  */
-export function useComponentProp<C extends Component, P extends keyof InferComponentProps<C>>(cb: () => InferComponentProps<C>[P]): ComputedRef<InferComponentProps<C>[P]> {
+export function useComponentProp<C extends Component, P extends keyof InferComponentProps<C>>(
+  cb: () => InferComponentProps<C>[P],
+): ComputedRef<InferComponentProps<C>[P]> {
   return computed(cb);
 }

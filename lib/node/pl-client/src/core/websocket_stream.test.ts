@@ -1,8 +1,8 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   TxAPI_ClientMessage as ClientMessageType,
   TxAPI_ServerMessage as ServerMessageType,
-} from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
+} from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 
 // Mock WebSocket - must be hoisted for vi.mock
 const MockWebSocket = vi.hoisted(() => {
@@ -13,7 +13,7 @@ const MockWebSocket = vi.hoisted(() => {
     static CLOSED = 3;
 
     readyState = 0;
-    binaryType = 'blob';
+    binaryType = "blob";
 
     private listeners: Map<string, Set<Function>> = new Map();
 
@@ -48,36 +48,36 @@ const MockWebSocket = vi.hoisted(() => {
     send = vi.fn();
     close = vi.fn(() => {
       this.readyState = MockWS.CLOSED;
-      this.emit('close');
+      this.emit("close");
     });
 
     simulateOpen() {
       this.readyState = MockWS.OPEN;
-      this.emit('open');
+      this.emit("open");
     }
 
     simulateMessage(data: ArrayBuffer) {
-      this.emit('message', { data });
+      this.emit("message", { data });
     }
 
     simulateError(error: Error) {
-      this.emit('error', error);
+      this.emit("error", error);
     }
 
     simulateClose() {
       this.readyState = MockWS.CLOSED;
-      this.emit('close');
+      this.emit("close");
     }
   }
   return MockWS;
 });
 
-vi.mock('undici', () => ({
+vi.mock("undici", () => ({
   WebSocket: MockWebSocket,
 }));
 
-import { WebSocketBiDiStream } from './websocket_stream';
-import type { RetryConfig } from '../helpers/retry_strategy';
+import { WebSocketBiDiStream } from "./websocket_stream";
+import type { RetryConfig } from "../helpers/retry_strategy";
 
 type MockWS = InstanceType<typeof MockWebSocket>;
 
@@ -90,7 +90,7 @@ interface StreamContext {
 function createStream(token?: string, retryConfig?: Partial<RetryConfig>): StreamContext {
   const controller = new AbortController();
   const stream = new WebSocketBiDiStream(
-    'ws://localhost:8080',
+    "ws://localhost:8080",
     (message: ClientMessageType) => ClientMessageType.toBinary(message),
     (data) => ServerMessageType.fromBinary(data),
     {
@@ -111,7 +111,10 @@ async function openConnection(ws: MockWS): Promise<void> {
 function createServerMessageBuffer(): ArrayBuffer {
   const message = ServerMessageType.create({});
   const binary = ServerMessageType.toBinary(message);
-  return binary.buffer.slice(binary.byteOffset, binary.byteOffset + binary.byteLength) as ArrayBuffer;
+  return binary.buffer.slice(
+    binary.byteOffset,
+    binary.byteOffset + binary.byteLength,
+  ) as ArrayBuffer;
 }
 
 function createClientMessage(): ClientMessageType {
@@ -130,7 +133,7 @@ async function collectMessages(
   return messages;
 }
 
-describe('WebSocketBiDiStream', () => {
+describe("WebSocketBiDiStream", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     MockWebSocket.reset();
@@ -140,21 +143,19 @@ describe('WebSocketBiDiStream', () => {
     vi.useRealTimers();
   });
 
-  describe('constructor', () => {
-    test('should pass JWT token in authorization header', () => {
-      createStream('test-token');
+  describe("constructor", () => {
+    test("should pass JWT token in authorization header", () => {
+      createStream("test-token");
 
-      expect(MockWebSocket.instances[0].options?.headers?.authorization).toBe(
-        'Bearer test-token',
-      );
+      expect(MockWebSocket.instances[0].options?.headers?.authorization).toBe("Bearer test-token");
     });
 
-    test('should not create WebSocket if already aborted', () => {
+    test("should not create WebSocket if already aborted", () => {
       const controller = new AbortController();
       controller.abort();
 
       new WebSocketBiDiStream(
-        'ws://localhost:8080', 
+        "ws://localhost:8080",
         (message: ClientMessageType) => ClientMessageType.toBinary(message),
         (data) => ServerMessageType.fromBinary(data),
         {
@@ -166,8 +167,8 @@ describe('WebSocketBiDiStream', () => {
     });
   });
 
-  describe('send messages', () => {
-    test('should queue message and send when connected', async () => {
+  describe("send messages", () => {
+    test("should queue message and send when connected", async () => {
       const { stream, ws } = createStream();
 
       const sendPromise = stream.requests.send(createClientMessage());
@@ -179,31 +180,31 @@ describe('WebSocketBiDiStream', () => {
       expect(ws.send).toHaveBeenCalledTimes(1);
     });
 
-    test('should throw error when sending after complete', async () => {
+    test("should throw error when sending after complete", async () => {
       const { stream, ws } = createStream();
 
       await openConnection(ws);
       await stream.requests.complete();
 
       await expect(stream.requests.send(createClientMessage())).rejects.toThrow(
-        'Cannot send: stream already completed',
+        "Cannot send: stream already completed",
       );
     });
 
-    test('should throw error when sending after abort', async () => {
+    test("should throw error when sending after abort", async () => {
       const { stream, ws, controller } = createStream();
 
       await openConnection(ws);
       controller.abort();
 
       await expect(stream.requests.send(createClientMessage())).rejects.toThrow(
-        'Cannot send: stream aborted',
+        "Cannot send: stream aborted",
       );
     });
   });
 
-  describe('receive messages', () => {
-    test('should receive messages via async iterator', async () => {
+  describe("receive messages", () => {
+    test("should receive messages via async iterator", async () => {
       const { stream, ws } = createStream();
 
       await openConnection(ws);
@@ -218,7 +219,7 @@ describe('WebSocketBiDiStream', () => {
       expect(messages).toHaveLength(2);
     });
 
-    test('should buffer messages when no consumer', async () => {
+    test("should buffer messages when no consumer", async () => {
       const { stream, ws } = createStream();
 
       await openConnection(ws);
@@ -231,7 +232,7 @@ describe('WebSocketBiDiStream', () => {
       expect(messages).toHaveLength(2);
     });
 
-    test('should end iterator when stream completes', async () => {
+    test("should end iterator when stream completes", async () => {
       const { stream, ws } = createStream();
 
       await openConnection(ws);
@@ -251,8 +252,8 @@ describe('WebSocketBiDiStream', () => {
     });
   });
 
-  describe('complete', () => {
-    test('should close WebSocket after complete', async () => {
+  describe("complete", () => {
+    test("should close WebSocket after complete", async () => {
       const { stream, ws } = createStream();
 
       await openConnection(ws);
@@ -261,7 +262,7 @@ describe('WebSocketBiDiStream', () => {
       expect(ws.close).toHaveBeenCalled();
     });
 
-    test('should be idempotent', async () => {
+    test("should be idempotent", async () => {
       const { stream, ws } = createStream();
 
       await openConnection(ws);
@@ -272,7 +273,7 @@ describe('WebSocketBiDiStream', () => {
       expect(ws.close).toHaveBeenCalledTimes(1);
     });
 
-    test('should drain send queue before closing', async () => {
+    test("should drain send queue before closing", async () => {
       const { stream, ws } = createStream();
 
       const sendPromise1 = stream.requests.send(createClientMessage());
@@ -289,8 +290,8 @@ describe('WebSocketBiDiStream', () => {
     });
   });
 
-  describe('abort signal', () => {
-    test('should close stream when aborted', async () => {
+  describe("abort signal", () => {
+    test("should close stream when aborted", async () => {
       const { ws, controller } = createStream();
 
       await openConnection(ws);
@@ -299,7 +300,7 @@ describe('WebSocketBiDiStream', () => {
       expect(ws.close).toHaveBeenCalled();
     });
 
-    test('should reject pending sends when aborted', async () => {
+    test("should reject pending sends when aborted", async () => {
       const { stream, controller } = createStream();
 
       const sendPromise = stream.requests.send(createClientMessage());
@@ -311,7 +312,7 @@ describe('WebSocketBiDiStream', () => {
       await expect(sendPromise).rejects.toThrow();
     });
 
-    test('should end response iterator when aborted', async () => {
+    test("should end response iterator when aborted", async () => {
       const { stream, ws, controller } = createStream();
 
       await openConnection(ws);
@@ -336,38 +337,38 @@ describe('WebSocketBiDiStream', () => {
     });
   });
 
-  describe('reconnection', () => {
+  describe("reconnection", () => {
     const retryConfig: Partial<RetryConfig> = {
       initialDelay: 50,
       maxDelay: 100,
       maxAttempts: 5,
     };
 
-    test('should not attempt reconnection on unexpected close', async () => {
+    test("should not attempt reconnection on unexpected close", async () => {
       const { ws } = createStream(undefined, retryConfig);
 
       await openConnection(ws);
 
       ws.readyState = MockWebSocket.CLOSED;
-      ws.emit('close');
+      ws.emit("close");
       await vi.advanceTimersByTimeAsync(150);
 
       expect(MockWebSocket.instances.length).toBe(1);
     });
 
-    test('should stop reconnecting after max attempts', async () => {
+    test("should stop reconnecting after max attempts", async () => {
       createStream(undefined, { maxAttempts: 3, initialDelay: 10, maxDelay: 100 });
 
       for (let i = 0; i < 5; i++) {
         const ws = MockWebSocket.instances[MockWebSocket.instances.length - 1];
-        ws.simulateError(new Error('Connection failed'));
+        ws.simulateError(new Error("Connection failed"));
         await vi.advanceTimersByTimeAsync(200);
       }
 
       expect(MockWebSocket.instances.length).toBeLessThanOrEqual(4);
     });
 
-    test('should not reconnect after complete', async () => {
+    test("should not reconnect after complete", async () => {
       const { stream, ws } = createStream();
 
       await openConnection(ws);
@@ -378,8 +379,8 @@ describe('WebSocketBiDiStream', () => {
     });
   });
 
-  describe('error handling', () => {
-    test('should reject response iterator on parse error', async () => {
+  describe("error handling", () => {
+    test("should reject response iterator on parse error", async () => {
       const { stream, ws } = createStream();
 
       await openConnection(ws);
@@ -397,7 +398,7 @@ describe('WebSocketBiDiStream', () => {
       await expect(nextPromise).rejects.toThrow();
     });
 
-    test('should throw on unsupported message format', async () => {
+    test("should throw on unsupported message format", async () => {
       const { stream, ws } = createStream();
 
       await openConnection(ws);
@@ -407,17 +408,16 @@ describe('WebSocketBiDiStream', () => {
           for await (const _ of stream.responses) {
             // Should not reach here
           }
-          return 'completed';
+          return "completed";
         } catch (e) {
           return e;
         }
       })();
 
-      ws.emit('message', { data: 'not a buffer' });
+      ws.emit("message", { data: "not a buffer" });
 
       const result = await iteratorPromise;
       expect(result).toBeInstanceOf(Error);
     });
   });
-
 });

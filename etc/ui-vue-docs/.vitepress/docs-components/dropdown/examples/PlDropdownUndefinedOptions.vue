@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
-import { PlDropdown, PlCheckbox, PlDropdownRef, PlBtnPrimary } from '@platforma-sdk/ui-vue';
+import { reactive, ref } from "vue";
+import { PlDropdown, PlCheckbox, PlDropdownRef, PlBtnPrimary } from "@platforma-sdk/ui-vue";
 
 // It can be static or reactive, depending on your goals.
 // Note that if the parameter value is not primitive, deep equality is used to determine the selected parameter.
@@ -12,8 +12,8 @@ const data = reactive({
   model: 1 as number | undefined,
   refModel: {
     __isRef: true as const,
-    blockId: '2',
-    name: 'Ref to block 2',
+    blockId: "2",
+    name: "Ref to block 2",
   },
   required: false,
   disabled: false,
@@ -30,26 +30,26 @@ function loadItems() {
   loadingBtn.value = true;
   setTimeout(() => {
     data.options = [
-      { text: 'Item text 1', value: 1 },
-      { text: 'Item text 2', value: 2 },
-      { text: 'Item text 3', value: 3 },
-      { text: 'Item text 4', value: 4 },
+      { text: "Item text 1", value: 1 },
+      { text: "Item text 2", value: 2 },
+      { text: "Item text 3", value: 3 },
+      { text: "Item text 4", value: 4 },
     ];
     data.optionsForRef = [
       {
-        label: 'Ref 1',
+        label: "Ref 1",
         ref: {
           __isRef: true as const,
-          blockId: '1',
-          name: 'Ref to block 1',
+          blockId: "1",
+          name: "Ref to block 1",
         },
       },
       {
-        label: 'Ref 2',
+        label: "Ref 2",
         ref: {
           __isRef: true as const,
-          blockId: '2',
-          name: 'Ref to block 2',
+          blockId: "2",
+          name: "Ref to block 2",
         },
       },
     ];
@@ -65,15 +65,25 @@ function loadItems() {
 
 <template>
   <PlDropdown
-    v-model="data.model" :options="data.options" label="Dropdown Label" placeholder="Select an option"
-    :clearable="data.clearable" :required="data.required" :disabled="data.disabled"
+    v-model="data.model"
+    :options="data.options"
+    label="Dropdown Label"
+    placeholder="Select an option"
+    :clearable="data.clearable"
+    :required="data.required"
+    :disabled="data.disabled"
     :error="data.showError ? 'An error example' : undefined"
     :helper="data.showHelper ? 'A helper example' : undefined"
   />
 
   <PlDropdownRef
-    v-model="data.refModel" :options="data.optionsForRef" label="Dropdown Label"
-    placeholder="Select an option" :clearable="data.clearable" :required="data.required" :disabled="data.disabled"
+    v-model="data.refModel"
+    :options="data.optionsForRef"
+    label="Dropdown Label"
+    placeholder="Select an option"
+    :clearable="data.clearable"
+    :required="data.required"
+    :disabled="data.disabled"
     :error="data.showError ? 'An error example' : undefined"
     :helper="data.showHelper ? 'A helper example' : undefined"
   />

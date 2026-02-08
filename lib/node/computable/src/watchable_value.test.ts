@@ -1,8 +1,8 @@
-import { test, expect } from 'vitest';
-import { WatchableValue } from './watchable_value';
-import { Computable } from './computable/computable';
+import { test, expect } from "vitest";
+import { WatchableValue } from "./watchable_value";
+import { Computable } from "./computable/computable";
 
-test('simple observable', async () => {
+test("simple observable", async () => {
   const obs1 = new WatchableValue(1);
   const obs2 = new WatchableValue(2);
 
@@ -23,7 +23,7 @@ test('simple observable', async () => {
   obs1.setValue(2);
   expect(c.isChanged()).toEqual(true);
   const fullValue = await c.getValueOrError();
-  if (fullValue.type !== 'ok') {
+  if (fullValue.type !== "ok") {
     throw new Error('getValueOrError did not return "ok" status');
   }
   expect(fullValue.value).toEqual(2);
@@ -31,5 +31,5 @@ test('simple observable', async () => {
   obs2.setValue(1);
   expect(c.isChanged()).toEqual(false);
   expect(c.isChanged(fullValue.uTag)).toEqual(false);
-  expect(c.isChanged('someTag')).toEqual(true);
+  expect(c.isChanged("someTag")).toEqual(true);
 });

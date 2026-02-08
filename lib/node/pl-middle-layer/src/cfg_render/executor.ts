@@ -4,17 +4,17 @@ import type {
   ExecutionEnvironment,
   Operation,
   Subroutine,
-} from './operation';
-import Denque from 'denque';
-import { assertNever, notEmpty } from '@milaboratories/ts-helpers';
-import type { ComputableCtx, ComputableRenderingOps } from '@milaboratories/computable';
-import { Computable } from '@milaboratories/computable';
-import type { Cfg } from '@platforma-sdk/model';
-import { renderCfg, resOp } from './renderer';
-import canonicalize from 'canonicalize';
-import type { BlockContextAny } from '../middle_layer/block_ctx';
-import type { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
-import { NonKeyCtxFields, toCfgContext } from '../middle_layer/block_ctx_unsafe';
+} from "./operation";
+import Denque from "denque";
+import { assertNever, notEmpty } from "@milaboratories/ts-helpers";
+import type { ComputableCtx, ComputableRenderingOps } from "@milaboratories/computable";
+import { Computable } from "@milaboratories/computable";
+import type { Cfg } from "@platforma-sdk/model";
+import { renderCfg, resOp } from "./renderer";
+import canonicalize from "canonicalize";
+import type { BlockContextAny } from "../middle_layer/block_ctx";
+import type { MiddleLayerDriverKit } from "../middle_layer/driver_kit";
+import { NonKeyCtxFields, toCfgContext } from "../middle_layer/block_ctx_unsafe";
 
 /** Addresses pending subroutines inside the stack */
 type SubroutineKey = symbol;
@@ -31,7 +31,7 @@ type Destination = {
 /** Special address of operation, see below. */
 const ReturnOpKey: unique symbol = Symbol();
 /** The same, but for the argument part of destination, see below. */
-const ReturnArgKey = 'return';
+const ReturnArgKey = "return";
 
 /** Special destination, telling the executor that corresponding result should
  * be exposed as a final result, and execution terminate at this point. */
@@ -108,7 +108,7 @@ function execute(
     }
 
     const pending = notEmpty(stack.pendingSubroutines.get(destination.op));
-    if (destination.arg in pending.args) throw new Error('argument already set');
+    if (destination.arg in pending.args) throw new Error("argument already set");
     pending.args[destination.arg] = result;
     pending.argCounter--;
     if (pending.argCounter === 0) {
@@ -131,11 +131,11 @@ function execute(
     const op = operationQueue.shift()!;
     const action = op.operation(env);
     switch (action.type) {
-      case 'ReturnResult':
+      case "ReturnResult":
         if (!deliverResult(op.destination, action.result)) break mainLoop; // this terminates execution
         break; // switch
 
-      case 'ScheduleSubroutine':
+      case "ScheduleSubroutine":
         {
           const newOpKey = Symbol();
 
@@ -143,7 +143,7 @@ function execute(
           const initialArgCounter = argRequests.length;
 
           if (initialArgCounter === 0)
-          // if no pending arguments
+            // if no pending arguments
             operationQueue.push({
               destination: op.destination,
               operation: action.subroutine({}),
@@ -165,9 +165,9 @@ function execute(
         }
         break;
 
-      case 'ScheduleComputable':
+      case "ScheduleComputable":
         if (!allowComputables)
-          throw new Error('asynchronous operations are forbidden in this context');
+          throw new Error("asynchronous operations are forbidden in this context");
         computables.push({
           destination: op.destination,
           computable: action.computable,
@@ -202,9 +202,9 @@ export function computableFromCfgUnsafe(
   cfg: Cfg,
   ops: Partial<ComputableRenderingOps> = {},
 ): Computable<unknown> {
-  const key
-    = `${ctx.blockId}#`
-    + canonicalize({
+  const key =
+    `${ctx.blockId}#` +
+    canonicalize({
       ctx: Object.fromEntries(
         Object.entries(ctx).filter(([k]) => NonKeyCtxFields.indexOf(k) === -1),
       ),
@@ -234,7 +234,7 @@ export function computableFromCfgUnsafe(
           const postEnv: ExecutionEnvironment = {
             drivers,
             get cCtx(): ComputableCtx {
-              throw new Error('asynchronous operations are forbidden in this context');
+              throw new Error("asynchronous operations are forbidden in this context");
             },
           };
 
@@ -248,8 +248,8 @@ export function computableFromCfgUnsafe(
             pendingSubroutines: copyOfPendingSubrotines,
           };
           execute(postEnv, copiedStack, resolvedOps, false);
-          if (!('result' in copiedStack))
-            throw new Error('illegal cfg rendering stack state, no result');
+          if (!("result" in copiedStack))
+            throw new Error("illegal cfg rendering stack state, no result");
           return copiedStack.result;
         },
       };

@@ -1,12 +1,6 @@
 <script setup lang="ts">
-import {
-  PlRow,
-  PlContainer,
-  PlCheckbox,
-  PlNumberField,
-  PlBlockPage,
-} from '@platforma-sdk/ui-vue';
-import { reactive } from 'vue';
+import { PlRow, PlContainer, PlCheckbox, PlNumberField, PlBlockPage } from "@platforma-sdk/ui-vue";
+import { reactive } from "vue";
 
 const data = reactive({
   useIncrementButtons: true,
@@ -21,7 +15,9 @@ const data = reactive({
     <pre>number: {{ data.number }} {{ typeof data.number }}</pre>
     <PlRow>
       <PlCheckbox v-model="data.useIncrementButtons">Use increment buttons</PlCheckbox>
-      <PlCheckbox v-model="data.updateOnEnterOrClickOutside">Update on enter or click outside</PlCheckbox>
+      <PlCheckbox v-model="data.updateOnEnterOrClickOutside"
+        >Update on enter or click outside</PlCheckbox
+      >
       <button @click="data.number += 1">Increment number</button>
       <button @click="data.number -= 1">Decrement number</button>
       <button @click="data.number = NaN">Set NaN</button>
@@ -50,7 +46,7 @@ const data = reactive({
           v-model="data.number"
           :max-value="100"
           label="PlNumberField (max: 100 and validate is even)"
-          :validate="v => v % 2 === 0 ? undefined : 'Value must be even'"
+          :validate="(v) => (v % 2 === 0 ? undefined : 'Value must be even')"
           :update-on-enter-or-click-outside="data.updateOnEnterOrClickOutside"
           :use-increment-buttons="data.useIncrementButtons"
         />

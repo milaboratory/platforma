@@ -1,1 +1,1 @@
-export { default as PlChartHistogram } from './PlChartHistogram.vue';
+export { default as PlChartHistogram } from "./PlChartHistogram.vue";

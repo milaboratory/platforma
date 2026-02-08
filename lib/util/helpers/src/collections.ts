@@ -1,4 +1,4 @@
-import type { GroupBy } from './types';
+import type { GroupBy } from "./types";
 
 export function arrayDiff<T>(arr1: T[], arr2: T[]): T[] {
   return arr1.filter((x) => !arr2.includes(x));
@@ -57,7 +57,10 @@ export function deleteIndices<T>(arr: T[], indices: number[]): T[] {
   return arr.filter((v, i) => !indices.includes(i));
 }
 
-export function aggregateBy<It extends Record<string, unknown>, K extends keyof It>(items: It[], groupKey: K) {
+export function aggregateBy<It extends Record<string, unknown>, K extends keyof It>(
+  items: It[],
+  groupKey: K,
+) {
   const map = items.reduce((m, it) => {
     const groupValue = it[groupKey] as string;
 
@@ -67,9 +70,11 @@ export function aggregateBy<It extends Record<string, unknown>, K extends keyof 
 
     const r = m.get(groupValue) as Record<string, unknown[]>;
 
-    Object.keys(it).filter((k) => k !== groupKey).forEach((k) => {
-      r[k] = addUnique(r[k] || [], it[k]);
-    });
+    Object.keys(it)
+      .filter((k) => k !== groupKey)
+      .forEach((k) => {
+        r[k] = addUnique(r[k] || [], it[k]);
+      });
 
     return m;
   }, new Map<string, Record<string, unknown>>());
@@ -86,7 +91,7 @@ export function predicateUnique<V, I, A extends V[]>(value: V, index: I, array: 
   return array.indexOf(value) === index;
 }
 
-export function *iterateByPairs<T>(iterable: Iterable<T>): Generator<[T, T]> {
+export function* iterateByPairs<T>(iterable: Iterable<T>): Generator<[T, T]> {
   const acc: T[] = [];
   for (const it of iterable) {
     acc.push(it);

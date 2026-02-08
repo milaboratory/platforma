@@ -1,18 +1,19 @@
-import path from 'node:path';
+import path from "node:path";
 
-import { Command } from '@oclif/core';
-import type { createLocalS3Options } from '../../../core';
-import Core from '../../../core';
-import * as cmdOpts from '../../../cmd-opts';
-import * as platforma from '../../../platforma';
-import * as util from '../../../util';
-import state from '../../../state';
-import * as os from 'node:os';
+import { Command } from "@oclif/core";
+import type { createLocalS3Options } from "../../../core";
+import Core from "../../../core";
+import * as cmdOpts from "../../../cmd-opts";
+import * as platforma from "../../../platforma";
+import * as util from "../../../util";
+import state from "../../../state";
+import * as os from "node:os";
 
 export default class S3 extends Command {
-  static override description = 'Run Platforma Backend service as local process on current host (no docker container)';
+  static override description =
+    "Run Platforma Backend service as local process on current host (no docker container)";
 
-  static override examples = ['<%= config.bin %> <%= command.id %>'];
+  static override examples = ["<%= config.bin %> <%= command.id %>"];
 
   static override flags = {
     ...cmdOpts.GlobalFlags,
@@ -40,50 +41,52 @@ export default class S3 extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(S3);
 
-    const logger = util.createLogger(flags['log-level']);
+    const logger = util.createLogger(flags["log-level"]);
     const core = new Core(logger);
     core.mergeLicenseEnvs(flags);
 
-    const instanceName = 'local-s3';
+    const instanceName = "local-s3";
 
-    const workdir = flags['pl-workdir'] ?? '.';
-    const storage = flags.storage ? path.join(workdir, flags.storage) : state.instanceDir(instanceName);
-    const logFile = flags['pl-log-file'] ? path.join(workdir, flags['pl-log-file']) : undefined;
+    const workdir = flags["pl-workdir"] ?? ".";
+    const storage = flags.storage
+      ? path.join(workdir, flags.storage)
+      : state.instanceDir(instanceName);
+    const logFile = flags["pl-log-file"] ? path.join(workdir, flags["pl-log-file"]) : undefined;
 
     const authDrivers = core.initAuthDriversList(flags, workdir);
-    const authEnabled = flags['auth-enabled'] ?? authDrivers !== undefined;
+    const authEnabled = flags["auth-enabled"] ?? authDrivers !== undefined;
 
-    let listenGrpc: string = '127.0.0.1:6345';
-    if (flags['grpc-listen']) listenGrpc = flags['grpc-listen'];
-    else if (flags['grpc-port']) listenGrpc = `127.0.0.1:${flags['grpc-port']}`;
+    let listenGrpc: string = "127.0.0.1:6345";
+    if (flags["grpc-listen"]) listenGrpc = flags["grpc-listen"];
+    else if (flags["grpc-port"]) listenGrpc = `127.0.0.1:${flags["grpc-port"]}`;
 
-    let listenMon: string = '127.0.0.1:9090';
-    if (flags['monitoring-listen']) listenMon = flags['monitoring-listen'];
-    else if (flags['monitoring-port']) listenMon = `127.0.0.1:${flags['monitoring-port']}`;
+    let listenMon: string = "127.0.0.1:9090";
+    if (flags["monitoring-listen"]) listenMon = flags["monitoring-listen"];
+    else if (flags["monitoring-port"]) listenMon = `127.0.0.1:${flags["monitoring-port"]}`;
 
-    let listenDbg: string = '127.0.0.1:9091';
-    if (flags['debug-listen']) listenDbg = flags['debug-listen'];
-    else if (flags['debug-port']) listenDbg = `127.0.0.1:${flags['debug-port']}`;
+    let listenDbg: string = "127.0.0.1:9091";
+    if (flags["debug-listen"]) listenDbg = flags["debug-listen"];
+    else if (flags["debug-port"]) listenDbg = `127.0.0.1:${flags["debug-port"]}`;
 
     const startOptions: createLocalS3Options = {
-      sourcesPath: flags['pl-sources'],
-      binaryPath: flags['pl-binary'],
+      sourcesPath: flags["pl-sources"],
+      binaryPath: flags["pl-binary"],
 
       version: flags.version,
       configPath: flags.config,
-      workdir: flags['pl-workdir'],
+      workdir: flags["pl-workdir"],
 
-      primaryURL: flags['storage-primary'],
-      libraryURL: flags['storage-library'],
+      primaryURL: flags["storage-primary"],
+      libraryURL: flags["storage-library"],
 
-      minioPort: flags['s3-port'],
-      minioConsolePort: flags['s3-console-port'],
+      minioPort: flags["s3-port"],
+      minioConsolePort: flags["s3-console-port"],
 
       configOptions: {
         grpc: { listen: listenGrpc },
         monitoring: { listen: listenMon },
         debug: { listen: listenDbg },
-        license: { value: flags['license'], file: flags['license-file'] },
+        license: { value: flags["license"], file: flags["license-file"] },
         log: { path: logFile },
         localRoot: storage,
         core: {
@@ -95,7 +98,7 @@ export default class S3 extends Command {
         numCpu: Math.max(os.cpus().length - 2, 1),
 
         storages: {
-          work: { type: 'FS', rootPath: flags['storage-work'] },
+          work: { type: "FS", rootPath: flags["storage-work"] },
         },
       },
     };
@@ -118,10 +121,12 @@ export default class S3 extends Command {
 
           const results: Promise<void>[] = [];
           for (const child of children) {
-            results.push(new Promise((resolve, reject) => {
-              child.on('close', resolve);
-              child.on('error', reject);
-            }));
+            results.push(
+              new Promise((resolve, reject) => {
+                child.on("close", resolve);
+                child.on("error", reject);
+              }),
+            );
           }
 
           return Promise.all(results);

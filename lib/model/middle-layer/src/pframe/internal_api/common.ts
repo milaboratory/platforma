@@ -1,13 +1,11 @@
 import type {
-  AxisSpec, PFrameHandle,
+  AxisSpec,
+  PFrameHandle,
   PTableHandle,
   SingleAxisSelector,
-} from '@milaboratories/pl-model-common';
+} from "@milaboratories/pl-model-common";
 
-export type Logger = (
-  level: 'info' | 'warn' | 'error',
-  message: string
-) => void;
+export type Logger = (level: "info" | "warn" | "error", message: string) => void;
 
 export type PFrameId = PFrameHandle;
 
@@ -24,7 +22,7 @@ export interface ColumnAxesWithQualifications {
 }
 
 export type ConstantAxisFilter = {
-  type: 'constant';
+  type: "constant";
   axisIndex: number;
   constant: string | number;
 };

@@ -1,5 +1,5 @@
-import type { GridApi, IRowNode } from 'ag-grid-enterprise';
-import { Deferred } from '@milaboratories/helpers';
+import type { GridApi, IRowNode } from "ag-grid-enterprise";
+import { Deferred } from "@milaboratories/helpers";
 
 class DeferredTracked<T> extends Deferred<T> {
   #resolved = false;
@@ -38,7 +38,10 @@ export class DeferredCircular<T> {
   }
 }
 
-export function ensureNodeVisible<TData>(api: GridApi<TData>, selector: (row: IRowNode<TData>) => boolean): boolean {
+export function ensureNodeVisible<TData>(
+  api: GridApi<TData>,
+  selector: (row: IRowNode<TData>) => boolean,
+): boolean {
   let rowIndex: number | null = null;
   const nodeSelector = (row: IRowNode<TData>): boolean => {
     if (selector(row)) {
@@ -47,7 +50,7 @@ export function ensureNodeVisible<TData>(api: GridApi<TData>, selector: (row: IR
     }
     return false;
   };
-  api.ensureNodeVisible(nodeSelector, 'middle');
+  api.ensureNodeVisible(nodeSelector, "middle");
   if (rowIndex) {
     const columns = api.getAllDisplayedColumns();
     if (columns.length > 0) {
@@ -56,4 +59,4 @@ export function ensureNodeVisible<TData>(api: GridApi<TData>, selector: (row: IR
     }
   }
   return rowIndex !== null;
-};
+}

@@ -1,9 +1,7 @@
-import type { TypedConfig } from '../config';
-import type { ConfigRenderLambda } from './lambdas';
+import type { TypedConfig } from "../config";
+import type { ConfigRenderLambda } from "./lambdas";
 
-export function isConfigLambda(
-  cfgOrFh: TypedConfigOrConfigLambda,
-): cfgOrFh is ConfigRenderLambda {
+export function isConfigLambda(cfgOrFh: TypedConfigOrConfigLambda): cfgOrFh is ConfigRenderLambda {
   return (cfgOrFh as any).__renderLambda === true;
 }
 

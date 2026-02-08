@@ -1,3 +1,3 @@
-import { createRollupNodeConfig } from '@milaboratories/build-configs';
+import { createRollupNodeConfig } from "@milaboratories/build-configs";
 
 export default createRollupNodeConfig();

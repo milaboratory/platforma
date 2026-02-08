@@ -1,5 +1,5 @@
-import { deepClone, delay, uniqueId } from '@milaboratories/helpers';
-import type { Mutable } from '@milaboratories/helpers';
+import { deepClone, delay, uniqueId } from "@milaboratories/helpers";
+import type { Mutable } from "@milaboratories/helpers";
 import type {
   NavigationState,
   BlockOutputsBase,
@@ -7,16 +7,16 @@ import type {
   PlatformaV3,
   ValueWithUTag,
   AuthorMarker,
-} from '@platforma-sdk/model';
-import { hasAbortError, unwrapResult, deriveDataFromStorage } from '@platforma-sdk/model';
-import type { Ref } from 'vue';
-import { reactive, computed, ref } from 'vue';
-import type { OutputValues, OutputErrors, AppSettings } from '../types';
-import { parseQuery } from '../urls';
-import { MultiError } from '../utils';
-import { applyPatch } from 'fast-json-patch';
-import { UpdateSerializer } from './UpdateSerializer';
-import { watchIgnorable } from '@vueuse/core';
+} from "@platforma-sdk/model";
+import { hasAbortError, unwrapResult, deriveDataFromStorage } from "@platforma-sdk/model";
+import type { Ref } from "vue";
+import { reactive, computed, ref } from "vue";
+import type { OutputValues, OutputErrors, AppSettings } from "../types";
+import { parseQuery } from "../urls";
+import { MultiError } from "../utils";
+import { applyPatch } from "fast-json-patch";
+import { UpdateSerializer } from "./UpdateSerializer";
+import { watchIgnorable } from "@vueuse/core";
 
 export const patchPoolingDelay = 150;
 
@@ -59,12 +59,22 @@ export function createAppV3<
 ) {
   const debug = (msg: string, ...rest: unknown[]) => {
     if (settings.debug) {
-      console.log(`%c>>> %c${msg}`, 'color: orange; font-weight: bold', 'color: orange', ...rest.map((r) => stringifyForDebug(r)));
+      console.log(
+        `%c>>> %c${msg}`,
+        "color: orange; font-weight: bold",
+        "color: orange",
+        ...rest.map((r) => stringifyForDebug(r)),
+      );
     }
   };
 
   const error = (msg: string, ...rest: unknown[]) => {
-    console.error(`%c>>> %c${msg}`, 'color: red; font-weight: bold', 'color: red', ...rest.map((r) => stringifyForDebug(r)));
+    console.error(
+      `%c>>> %c${msg}`,
+      "color: red; font-weight: bold",
+      "color: red",
+      ...rest.map((r) => stringifyForDebug(r)),
+    );
   };
 
   const data = {
@@ -77,7 +87,7 @@ export function createAppV3<
 
   const nextAuthorMarker = () => {
     data.author = createNextAuthorMarker(data.author);
-    debug('nextAuthorMarker', data.author);
+    debug("nextAuthorMarker", data.author);
     return data.author;
   };
 
@@ -103,7 +113,7 @@ export function createAppV3<
   }>;
 
   const updateData = async (value: Data) => {
-    return platforma.mutateStorage({ operation: 'update-data', value }, nextAuthorMarker());
+    return platforma.mutateStorage({ operation: "update-data", value }, nextAuthorMarker());
   };
 
   const setNavigationState = async (state: NavigationState<Href>) => {
@@ -111,18 +121,25 @@ export function createAppV3<
   };
 
   const outputs = computed<OutputValues<Outputs>>(() => {
-    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined]);
+    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(
+      ([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined],
+    );
     return Object.fromEntries(entries);
   });
 
   const outputErrors = computed<OutputErrors<Outputs>>(() => {
-    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr && vOrErr.ok === false ? new MultiError(vOrErr.errors) : undefined]);
+    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(
+      ([k, vOrErr]) => [
+        k,
+        vOrErr && vOrErr.ok === false ? new MultiError(vOrErr.errors) : undefined,
+      ],
+    );
     return Object.fromEntries(entries);
   });
 
   const appModel = reactive({
     apiVersion: 3,
-    error: '',
+    error: "",
     model: {
       data: deepClone(deriveDataFromStorage<Data>(snapshot.value.blockStorage)) as Data,
       outputs,
@@ -141,36 +158,37 @@ export function createAppV3<
     () => appModel.model,
     (_newData) => {
       const newData = deepClone(_newData);
-      debug('setDataQueue appModel.model, data', newData.data);
+      debug("setDataQueue appModel.model, data", newData.data);
       setDataQueue.run(() => updateData(newData.data).then(unwrapResult));
     },
     { deep: true },
   );
 
-  const updateAppModel = (newData: {
-    data: Data;
-  }) => {
-    debug('updateAppModel', newData);
+  const updateAppModel = (newData: { data: Data }) => {
+    debug("updateAppModel", newData);
     appModel.model.data = deepClone(newData.data) as Data;
   };
 
   (async () => {
-    window.addEventListener('beforeunload', () => {
+    window.addEventListener("beforeunload", () => {
       closedRef.value = true;
-      platforma.dispose().then(unwrapResult).catch((err) => {
-        error('error in dispose', err);
-      });
+      platforma
+        .dispose()
+        .then(unwrapResult)
+        .catch((err) => {
+          error("error in dispose", err);
+        });
     });
 
     while (!closedRef.value) {
       try {
         const patches = await platforma.getPatches(uTagRef.value).then(unwrapResult);
 
-        debug('patches.length', patches.value.length);
-        debug('uTagRef.value', uTagRef.value);
-        debug('patches.uTag', patches.uTag);
-        debug('patches.author', patches.author);
-        debug('data.author', data.author);
+        debug("patches.length", patches.value.length);
+        debug("uTagRef.value", uTagRef.value);
+        debug("patches.uTag", patches.uTag);
+        debug("patches.author", patches.author);
+        debug("data.author", data.author);
 
         uTagRef.value = patches.uTag;
 
@@ -183,7 +201,7 @@ export function createAppV3<
 
         // Immutable behavior, apply external changes to the snapshot
         if (isAuthorChanged || data.isExternalSnapshot) {
-          debug('got external changes, applying them to the snapshot', patches.value);
+          debug("got external changes, applying them to the snapshot", patches.value);
           ignoreUpdates(() => {
             snapshot.value = applyPatch(snapshot.value, patches.value, false, false).newDocument;
             updateAppModel({ data: deriveDataFromStorage<Data>(snapshot.value.blockStorage) });
@@ -191,7 +209,7 @@ export function createAppV3<
           });
         } else {
           // Mutable behavior
-          debug('outputs changed', patches.value);
+          debug("outputs changed", patches.value);
           ignoreUpdates(() => {
             snapshot.value = applyPatch(snapshot.value, patches.value).newDocument;
           });
@@ -200,10 +218,10 @@ export function createAppV3<
         await new Promise((resolve) => setTimeout(resolve, patchPoolingDelay));
       } catch (err) {
         if (hasAbortError(err)) {
-          debug('patches loop aborted');
+          debug("patches loop aborted");
           closedRef.value = true;
         } else {
-          error('error in patches loop', err);
+          error("error in patches loop", err);
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
@@ -211,7 +229,8 @@ export function createAppV3<
   })();
 
   const cloneData = () => deepClone(appModel.model.data) as Data;
-  const cloneNavigationState = () => deepClone(snapshot.value.navigationState) as Mutable<NavigationState<Href>>;
+  const cloneNavigationState = () =>
+    deepClone(snapshot.value.navigationState) as Mutable<NavigationState<Href>>;
 
   const methods = {
     cloneData,
@@ -225,7 +244,7 @@ export function createAppV3<
      */
     updateData(cb: (data: Data) => Data): Promise<boolean> {
       const newData = cb(cloneData());
-      debug('updateData', newData);
+      debug("updateData", newData);
       appModel.model.data = newData;
       return setDataQueue.run(() => updateData(newData).then(unwrapResult));
     },
@@ -251,7 +270,9 @@ export function createAppV3<
     snapshot,
     queryParams: computed(() => parseQuery<Href>(snapshot.value.navigationState.href as Href)),
     href: computed(() => snapshot.value.navigationState.href),
-    hasErrors: computed(() => Object.values(snapshot.value.outputs as Partial<Readonly<Outputs>>).some((v) => !v?.ok)),
+    hasErrors: computed(() =>
+      Object.values(snapshot.value.outputs as Partial<Readonly<Outputs>>).some((v) => !v?.ok),
+    ),
   };
 
   const app = reactive(Object.assign(appModel, methods, getters));

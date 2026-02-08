@@ -1,17 +1,17 @@
 <script lang="ts" setup>
-import './assets/style.scss';
-import { computed, reactive, ref, unref, onMounted, nextTick, watchPostEffect } from 'vue';
-import TdCell from './TdCell.vue';
-import type { Settings, Data } from './types';
-import { useResize } from './useResize';
-import { utils, strings } from '@milaboratories/helpers';
-import AddColumnBtn from './AddColumnBtn.vue';
-import TableIcon from './assets/TableIcon.vue';
-import ThCell from './ThCell.vue';
-import TRow from './TRow.vue';
-import { compareRecords } from './domain';
-import { throttle } from '../../helpers/utils';
-import { useEventListener } from '../../index';
+import "./assets/style.scss";
+import { computed, reactive, ref, unref, onMounted, nextTick, watchPostEffect } from "vue";
+import TdCell from "./TdCell.vue";
+import type { Settings, Data } from "./types";
+import { useResize } from "./useResize";
+import { utils, strings } from "@milaboratories/helpers";
+import AddColumnBtn from "./AddColumnBtn.vue";
+import TableIcon from "./assets/TableIcon.vue";
+import ThCell from "./ThCell.vue";
+import TRow from "./TRow.vue";
+import { compareRecords } from "./domain";
+import { throttle } from "../../helpers/utils";
+import { useEventListener } from "../../index";
 
 const minRowHeight = 40;
 
@@ -19,7 +19,7 @@ const { tapIf, tap } = utils;
 
 const { uniqueId } = strings;
 
-defineEmits(['click:cell', 'delete:row', 'delete:column', 'change:sort', 'update:value']);
+defineEmits(["click:cell", "delete:row", "delete:column", "change:sort", "update:value"]);
 
 const props = defineProps<{
   settings: Settings;
@@ -46,7 +46,7 @@ const updateBodyHeight = () => {
 
 const columnsRef = computed(() => {
   if (props.settings.autoLastColumn) {
-    return [...props.settings.columns, { name: uniqueId(), text: '_' }];
+    return [...props.settings.columns, { name: uniqueId(), text: "_" }];
   }
 
   return props.settings.columns;
@@ -60,27 +60,27 @@ const gridTemplateColumns = computed(() => {
     .map((col, index) => {
       if (index == columns.length - 1) {
         if (hasMeta) {
-          return 'minmax(100px, 1fr)';
+          return "minmax(100px, 1fr)";
         }
 
-        return col.width ?? 'minmax(100px, 1fr)';
+        return col.width ?? "minmax(100px, 1fr)";
       }
       if (columnsMeta[index]) {
-        return columnsMeta[index].width + 'px';
+        return columnsMeta[index].width + "px";
       }
-      return col.width ?? '140px';
+      return col.width ?? "140px";
     })
-    .join(' ');
+    .join(" ");
 });
 
 const noDataStyle = computed(() => ({
-  gridColumn: '1 / ' + unref(columnsRef).length + 1,
+  gridColumn: "1 / " + unref(columnsRef).length + 1,
 }));
 
 const classes = computed(() => {
   return unref(columnsRef).reduce(
     (r, col) => {
-      r[col.name] = col.justify ? 'justify-' + col.justify : '';
+      r[col.name] = col.justify ? "justify-" + col.justify : "";
       return r;
     },
     {} as Record<string, string>,
@@ -102,7 +102,7 @@ const rows = computed(() => {
         }
         return acc;
       },
-      {} as Record<string, 'DESC' | 'ASC'>,
+      {} as Record<string, "DESC" | "ASC">,
     );
 
     if (Object.keys(sorts).length) {
@@ -115,7 +115,7 @@ const rows = computed(() => {
   let offset = 0;
 
   return rows.map((row, rowIndex) => {
-    const height = tap(row['__height'] ? Number(row['__height']) : minRowHeight, (n) => {
+    const height = tap(row["__height"] ? Number(row["__height"]) : minRowHeight, (n) => {
       return !Number.isFinite(n) || n < minRowHeight ? minRowHeight : n;
     });
 
@@ -125,13 +125,15 @@ const rows = computed(() => {
         colName,
         rowIndex,
         value: row[colName],
-        class: classes.value[colName] + (rowIndex === data.rowIndex ? ' hovered' : ''),
+        class: classes.value[colName] + (rowIndex === data.rowIndex ? " hovered" : ""),
         slot: col.slot,
         editable: col.editable,
       };
     });
 
-    const visible = bodyHeight ? scrollTop < offset + height + safeGap && offset < bodyHeight + scrollTop + safeGap : false;
+    const visible = bodyHeight
+      ? scrollTop < offset + height + safeGap && offset < bodyHeight + scrollTop + safeGap
+      : false;
 
     offset += height + 1;
 
@@ -169,12 +171,12 @@ function onExpand(colName: string) {
     const length = utils.call(() => {
       const value = row[colName];
 
-      if (value && typeof value === 'object' && 'segments' in value) {
-        const segments = value['segments'] as { sequence: string }[];
-        return segments.map((s) => s.sequence).join('').length;
+      if (value && typeof value === "object" && "segments" in value) {
+        const segments = value["segments"] as { sequence: string }[];
+        return segments.map((s) => s.sequence).join("").length;
       }
 
-      return String(value ?? '').length;
+      return String(value ?? "").length;
     });
     const w = 9.52 * length;
     return w > width ? w : width;
@@ -191,7 +193,7 @@ watchPostEffect(() => {
   nextTick(updateBodyHeight);
 });
 
-useEventListener(window, 'resize', () => nextTick(updateBodyHeight));
+useEventListener(window, "resize", () => nextTick(updateBodyHeight));
 </script>
 
 <template>
@@ -216,7 +218,14 @@ useEventListener(window, 'resize', () => nextTick(updateBodyHeight));
           <div>No Data To Show</div>
         </div>
       </div>
-      <TRow v-for="(row, i) in rows" :key="i" :visible="row.visible" :height="row.height" :index="i" :style="{ gridTemplateColumns }">
+      <TRow
+        v-for="(row, i) in rows"
+        :key="i"
+        :visible="row.visible"
+        :height="row.height"
+        :index="i"
+        :style="{ gridTemplateColumns }"
+      >
         <TdCell
           v-for="(cell, k) in row.cells"
           :key="k"

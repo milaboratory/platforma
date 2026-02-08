@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import Layout from '../Layout.vue';
-import Split from '../Split.vue';
+import Layout from "../Layout.vue";
+import Split from "../Split.vue";
 
 const classes: string[] = [
-  'text-h1',
-  'text-h2',
-  'text-h3',
-  'text-subtitle-m',
-  'text-subtitle-s',
-  'text-m',
-  'text-m-btn',
-  'text-m-link',
-  'text-s ',
-  'text-s-btn',
-  'text-s-link',
-  'text-mono-m',
-  'text-mono-s',
-  'text-caps13',
-  'text-caps11',
-  'text-description',
+  "text-h1",
+  "text-h2",
+  "text-h3",
+  "text-subtitle-m",
+  "text-subtitle-s",
+  "text-m",
+  "text-m-btn",
+  "text-m-link",
+  "text-s ",
+  "text-s-btn",
+  "text-s-link",
+  "text-mono-m",
+  "text-mono-s",
+  "text-caps13",
+  "text-caps11",
+  "text-description",
 ];
 
-const text = 'Lorem Ipsum is simply dummy text of the printing and typesetting industry.';
+const text = "Lorem Ipsum is simply dummy text of the printing and typesetting industry.";
 </script>
 
 <template>
@@ -52,7 +52,7 @@ const text = 'Lorem Ipsum is simply dummy text of the printing and typesetting i
     display: inline-block;
     border-radius: 6px;
     background-color: var(--color-ic-link);
-    font-family: 'Spline Sans Mono';
+    font-family: "Spline Sans Mono";
   }
 }
 </style>

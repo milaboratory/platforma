@@ -1,0 +1,4 @@
+{
+  "extends": ["./oxlint-base.json"],
+  "plugins": ["oxc", "typescript", "unicorn", "vue"]
+}

@@ -1,7 +1,7 @@
-import { expect, test } from 'vitest';
-import { deepPatch } from '@milaboratories/helpers';
+import { expect, test } from "vitest";
+import { deepPatch } from "@milaboratories/helpers";
 
-test('Deep patch', async () => {
+test("Deep patch", async () => {
   type Test = {
     num: number;
     arr: number[];
@@ -15,9 +15,9 @@ test('Deep patch', async () => {
 
   expect(size(target)).toBe(2);
 
-  deepPatch<Test>(target, { num: 1, arr: [], s: 'I' });
+  deepPatch<Test>(target, { num: 1, arr: [], s: "I" });
 
-  expect(target).toStrictEqual({ num: 1, arr: [], s: 'I' });
+  expect(target).toStrictEqual({ num: 1, arr: [], s: "I" });
 
   expect(size(target)).toBe(3);
 

@@ -6,24 +6,26 @@ import {
   ValueType,
   type PTableColumnSpec,
   type PTableValue,
-} from '@platforma-sdk/model';
-import type { ValueFormatterFunc } from 'ag-grid-enterprise';
-import type { PTableHidden } from './common';
-import { isPTableHidden } from './common';
-import * as d3 from 'd3-format';
-import type { PlAgDataTableV2Row } from '../types';
+} from "@platforma-sdk/model";
+import type { ValueFormatterFunc } from "ag-grid-enterprise";
+import type { PTableHidden } from "./common";
+import { isPTableHidden } from "./common";
+import * as d3 from "d3-format";
+import type { PlAgDataTableV2Row } from "../types";
 
-export function formatSpecialValues(value: PTableValue | PTableHidden | undefined): string | undefined {
+export function formatSpecialValues(
+  value: PTableValue | PTableHidden | undefined,
+): string | undefined {
   if (value === undefined) {
-    return 'undefined';
+    return "undefined";
   } else if (isPTableHidden(value)) {
-    return 'loading...';
+    return "loading...";
   } else if (isPTableAbsent(value) || value === PTableNA) {
-    return '';
+    return "";
   } else {
     return undefined;
   }
-};
+}
 
 export type ColumnRenderingSpec = {
   valueFormatter: ValueFormatterFunc<PlAgDataTableV2Row, PTableValue | PTableHidden>;
@@ -31,7 +33,7 @@ export type ColumnRenderingSpec = {
 };
 
 export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingSpec {
-  const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
+  const valueType = spec.type === "axis" ? spec.spec.type : spec.spec.valueType;
   let renderSpec: ColumnRenderingSpec;
   switch (valueType) {
     case ValueType.Int:

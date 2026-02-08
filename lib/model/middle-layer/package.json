@@ -2,9 +2,13 @@
   "name": "@milaboratories/pl-model-middle-layer",
   "version": "1.11.4",
   "description": "Common model between middle layer and non-block UI code",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "type": "module",
-  "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,30 +17,27 @@
     }
   },
   "scripts": {
-    "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
-    "lint": "eslint .",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "dependencies": {
     "@milaboratories/pl-model-common": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
     "remeda": "catalog:",
-    "zod": "catalog:",
-    "utility-types": "catalog:"
+    "utility-types": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "@platforma-sdk/eslint-config": "workspace:*",
-    "eslint": "catalog:",
-    "typescript": "catalog:",
     "@milaboratories/ts-configs": "workspace:*",
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
   }
 }

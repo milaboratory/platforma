@@ -17,6 +17,6 @@
     "yaml": "catalog:"
   },
   "devDependencies": {
-    "@milaboratories/eslint-config": "workspace:*"
+
   }
 }

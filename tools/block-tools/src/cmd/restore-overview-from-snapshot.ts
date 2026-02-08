@@ -1,29 +1,29 @@
-import { Command, Flags } from '@oclif/core';
-import { BlockRegistryV2 } from '../v2/registry/registry';
-import { storageByUrl } from '../io/storage';
-import { OclifLoggerAdapter } from '@milaboratories/ts-helpers-oclif';
+import { Command, Flags } from "@oclif/core";
+import { BlockRegistryV2 } from "../v2/registry/registry";
+import { storageByUrl } from "../io/storage";
+import { OclifLoggerAdapter } from "@milaboratories/ts-helpers-oclif";
 
 export default class RestoreOverviewFromSnapshot extends Command {
-  static description = 'Restore global overview from a snapshot';
+  static description = "Restore global overview from a snapshot";
 
   static flags = {
-    'registry': Flags.string({
-      char: 'r',
-      summary: 'full address of the registry',
-      helpValue: '<address>',
-      env: 'PL_REGISTRY',
+    registry: Flags.string({
+      char: "r",
+      summary: "full address of the registry",
+      helpValue: "<address>",
+      env: "PL_REGISTRY",
       required: true,
     }),
 
-    'snapshot': Flags.string({
-      char: 's',
-      summary: 'snapshot timestamp ID to restore from',
-      helpValue: '<timestamp>',
+    snapshot: Flags.string({
+      char: "s",
+      summary: "snapshot timestamp ID to restore from",
+      helpValue: "<timestamp>",
       required: true,
     }),
 
-    'skip-confirmation': Flags.boolean({
-      summary: 'skip confirmation prompt (use with caution)',
+    "skip-confirmation": Flags.boolean({
+      summary: "skip confirmation prompt (use with caution)",
       default: false,
     }),
   };
@@ -38,14 +38,16 @@ export default class RestoreOverviewFromSnapshot extends Command {
     const targetSnapshot = snapshots.find((s) => s.timestamp === flags.snapshot);
 
     if (!targetSnapshot) {
-      this.error(`Snapshot '${flags.snapshot}' not found. Available snapshots:\n${
-        snapshots.map((s) => `  - ${s.timestamp}`).join('\n') || '  (none)'
-      }`);
+      this.error(
+        `Snapshot '${flags.snapshot}' not found. Available snapshots:\n${
+          snapshots.map((s) => `  - ${s.timestamp}`).join("\n") || "  (none)"
+        }`,
+      );
     }
 
     // Confirmation prompt (unless skipped)
-    if (!flags['skip-confirmation']) {
-      const readline = await import('node:readline');
+    if (!flags["skip-confirmation"]) {
+      const readline = await import("node:readline");
       const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
@@ -53,16 +55,16 @@ export default class RestoreOverviewFromSnapshot extends Command {
 
       const answer = await new Promise<string>((resolve) => {
         rl.question(
-          `⚠️  This will overwrite the current global overview with snapshot '${flags.snapshot}'.\n`
-          + `Are you sure you want to continue? (y/N): `,
+          `⚠️  This will overwrite the current global overview with snapshot '${flags.snapshot}'.\n` +
+            `Are you sure you want to continue? (y/N): `,
           resolve,
         );
       });
 
       rl.close();
 
-      if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
-        this.log('Restore cancelled.');
+      if (answer.toLowerCase() !== "y" && answer.toLowerCase() !== "yes") {
+        this.log("Restore cancelled.");
         return;
       }
     }

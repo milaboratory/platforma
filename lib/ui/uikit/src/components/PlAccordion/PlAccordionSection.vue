@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { uniqueId } from '@milaboratories/helpers';
-import { PlMaskIcon16 } from '../PlMaskIcon16';
-import { PlSectionSeparator } from '../PlSectionSeparator';
-import ExpandTransition from './ExpandTransition.vue';
-import type { Ref } from 'vue';
-import { computed, inject, toRef } from 'vue';
+import { uniqueId } from "@milaboratories/helpers";
+import { PlMaskIcon16 } from "../PlMaskIcon16";
+import { PlSectionSeparator } from "../PlSectionSeparator";
+import ExpandTransition from "./ExpandTransition.vue";
+import type { Ref } from "vue";
+import { computed, inject, toRef } from "vue";
 
-const $m = inject<Ref<string>>('pl-accordion-model', () => toRef(''), true);
+const $m = inject<Ref<string>>("pl-accordion-model", () => toRef(""), true);
 
 const $p = inject<
   Ref<{
     multiple?: boolean;
   }>
->('pl-accordion-props', () => toRef({ multiple: false }), true);
+>("pl-accordion-props", () => toRef({ multiple: false }), true);
 
 const model = defineModel<boolean>();
 
@@ -32,7 +32,7 @@ const open = computed({
     if (isMulti.value) {
       model.value = on;
     } else if ($m) {
-      $m.value = $m.value === id ? '' : id;
+      $m.value = $m.value === id ? "" : id;
     }
   },
 });

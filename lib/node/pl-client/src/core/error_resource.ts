@@ -1,10 +1,10 @@
-import type { ResourceType } from './types';
+import type { ResourceType } from "./types";
 
 export type ErrorResourceData = {
   message: string;
 };
 
 export const ErrorResourceType: ResourceType = {
-  name: 'json/resourceError',
-  version: '1',
+  name: "json/resourceError",
+  version: "1",
 };

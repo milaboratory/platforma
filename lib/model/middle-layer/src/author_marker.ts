@@ -1,4 +1,4 @@
-import type { AuthorMarker } from '@milaboratories/pl-model-common';
+import type { AuthorMarker } from "@milaboratories/pl-model-common";
 
 /** Structure to help resolve conflicts if multiple participants writes to
  * the same state */

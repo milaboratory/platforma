@@ -1,5 +1,5 @@
-import type { SpawnOptions } from 'node:child_process';
-import { spawn } from 'node:child_process';
+import type { SpawnOptions } from "node:child_process";
+import { spawn } from "node:child_process";
 
 export interface SpawnAsyncResult {
   stdout: string;
@@ -7,21 +7,25 @@ export interface SpawnAsyncResult {
 }
 
 /** An async version of `spawn` that returns the stdout and stderr of the process. */
-export function spawnAsync(cmd: string, args: string[], opts: SpawnOptions): Promise<SpawnAsyncResult> {
+export function spawnAsync(
+  cmd: string,
+  args: string[],
+  opts: SpawnOptions,
+): Promise<SpawnAsyncResult> {
   return new Promise((resolve, reject) => {
     const childProcess = spawn(cmd, args, opts);
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
 
-    childProcess.stdout?.on('data', (data) => {
+    childProcess.stdout?.on("data", (data) => {
       stdout += data.toString();
     });
 
-    childProcess.stderr?.on('data', (data) => {
+    childProcess.stderr?.on("data", (data) => {
       stderr += data.toString();
     });
 
-    childProcess.on('exit', (code) => {
+    childProcess.on("exit", (code) => {
       if (code === 0) {
         resolve({ stdout, stderr });
       } else {
@@ -29,7 +33,7 @@ export function spawnAsync(cmd: string, args: string[], opts: SpawnOptions): Pro
       }
     });
 
-    childProcess.on('error', (err) => {
+    childProcess.on("error", (err) => {
       reject(err);
     });
   });

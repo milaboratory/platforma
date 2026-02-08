@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { PlIcon16 } from '../PlIcon16';
-import { PlIcon24 } from '../PlIcon24';
-import { computed, ref } from 'vue';
+import { PlIcon16 } from "../PlIcon16";
+import { PlIcon24 } from "../PlIcon24";
+import { computed, ref } from "vue";
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(["update:modelValue"]);
 
 const props = defineProps<{
   modelValue?: string;
@@ -17,23 +17,35 @@ const input = ref<HTMLInputElement | undefined>();
 
 const value = computed({
   get() {
-    return props.modelValue ?? '';
+    return props.modelValue ?? "";
   },
   set(v) {
-    emit('update:modelValue', v);
+    emit("update:modelValue", v);
   },
 });
 
 const nonEmpty = computed(() => !!props.modelValue);
 
-const clear = () => emit('update:modelValue', '');
+const clear = () => emit("update:modelValue", "");
 </script>
 
 <template>
   <div ref="root" class="pl-search-field" :class="[$style.component]">
     <PlIcon24 name="search" />
-    <input ref="input" v-model="value" :disabled="disabled" type="text" :placeholder="placeholder || 'Find...'" spellcheck="false" />
-    <PlIcon16 v-if="clearable && nonEmpty" :class="$style.clear" name="delete-clear" @click.stop="clear" />
+    <input
+      ref="input"
+      v-model="value"
+      :disabled="disabled"
+      type="text"
+      :placeholder="placeholder || 'Find...'"
+      spellcheck="false"
+    />
+    <PlIcon16
+      v-if="clearable && nonEmpty"
+      :class="$style.clear"
+      name="delete-clear"
+      @click.stop="clear"
+    />
   </div>
 </template>
 

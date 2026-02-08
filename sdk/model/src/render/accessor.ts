@@ -9,15 +9,12 @@ import type {
   ArchiveFormat,
   ProgressLogWithInfo,
   RangeBytes,
-} from '@milaboratories/pl-model-common';
-import {
-  isPColumn,
-  mapPObjectData,
-} from '@milaboratories/pl-model-common';
-import { getCfgRenderCtx } from '../internal';
-import { FutureRef } from './future';
-import type { AccessorHandle } from './internal';
-import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
+} from "@milaboratories/pl-model-common";
+import { isPColumn, mapPObjectData } from "@milaboratories/pl-model-common";
+import { getCfgRenderCtx } from "../internal";
+import { FutureRef } from "./future";
+import type { AccessorHandle } from "./internal";
+import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
 
 export function ifDef<T, R>(value: T | undefined, cb: (value: T) => R): R | undefined {
   return value === undefined ? undefined : cb(value);
@@ -28,7 +25,7 @@ type FieldMapOps = {
    * Type of fields to iterate over.
    * (default 'Input')
    * */
-  readonly fieldType?: 'Input' | 'Output' | 'Dynamic';
+  readonly fieldType?: "Input" | "Output" | "Dynamic";
   /**
    * If not locked, `undefined` value will be returned. Do nothing if mapping `Dynamic` fields.
    * (default true)
@@ -51,7 +48,7 @@ export class TreeNodeAccessor {
   /** Shortcut for {@link resolveInput} */
   public resolve(
     ...steps: [
-      Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
+      Omit<FieldTraversalStep, "errorIfFieldNotSet"> & {
         errorIfFieldNotAssigned: true;
       },
     ]
@@ -62,8 +59,8 @@ export class TreeNodeAccessor {
     const transformedSteps = steps.map(
       (s) =>
         ({
-          assertFieldType: 'Input',
-          ...(typeof s === 'string' ? { field: s } : s),
+          assertFieldType: "Input",
+          ...(typeof s === "string" ? { field: s } : s),
         }) satisfies FieldTraversalStep,
     );
     return this.resolveWithCommon({}, ...transformedSteps);
@@ -72,7 +69,7 @@ export class TreeNodeAccessor {
   /** If field type assertion is not specified for the step, default is Output. */
   public resolveOutput(
     ...steps: [
-      Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
+      Omit<FieldTraversalStep, "errorIfFieldNotSet"> & {
         errorIfFieldNotAssigned: true;
       },
     ]
@@ -83,8 +80,8 @@ export class TreeNodeAccessor {
     const transformedSteps = steps.map(
       (s) =>
         ({
-          assertFieldType: 'Output',
-          ...(typeof s === 'string' ? { field: s } : s),
+          assertFieldType: "Output",
+          ...(typeof s === "string" ? { field: s } : s),
         }) satisfies FieldTraversalStep,
     );
     return this.resolveWithCommon({}, ...transformedSteps);
@@ -93,7 +90,7 @@ export class TreeNodeAccessor {
   /** If field type assertion is not specified for the step, default is Input. */
   public resolveInput(
     ...steps: [
-      Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
+      Omit<FieldTraversalStep, "errorIfFieldNotSet"> & {
         errorIfFieldNotAssigned: true;
       },
     ]
@@ -104,8 +101,8 @@ export class TreeNodeAccessor {
     const transformedSteps = steps.map(
       (s) =>
         ({
-          assertFieldType: 'Input',
-          ...(typeof s === 'string' ? { field: s } : s),
+          assertFieldType: "Input",
+          ...(typeof s === "string" ? { field: s } : s),
         }) satisfies FieldTraversalStep,
     );
     return this.resolveWithCommon({}, ...transformedSteps);
@@ -113,7 +110,7 @@ export class TreeNodeAccessor {
 
   public resolveAny(
     ...steps: [
-      Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
+      Omit<FieldTraversalStep, "errorIfFieldNotSet"> & {
         errorIfFieldNotAssigned: true;
       },
     ]
@@ -129,7 +126,7 @@ export class TreeNodeAccessor {
   ): TreeNodeAccessor | undefined {
     const resolvePath = [
       ...this.resolvePath,
-      ...steps.map((step) => typeof step === 'string' ? step : step.field),
+      ...steps.map((step) => (typeof step === "string" ? step : step.field)),
     ];
     return ifDef(
       getCfgRenderCtx().resolveWithCommon(this.handle, commonOptions, ...steps),
@@ -158,7 +155,7 @@ export class TreeNodeAccessor {
   }
 
   public getError(): TreeNodeAccessor | undefined {
-    const resolvePath = [...this.resolvePath, 'error'];
+    const resolvePath = [...this.resolvePath, "error"];
     return ifDef(
       getCfgRenderCtx().getError(this.handle),
       (accsessor) => new TreeNodeAccessor(accsessor, resolvePath),
@@ -187,7 +184,7 @@ export class TreeNodeAccessor {
 
   public getKeyValueAsJson<T>(key: string): T {
     const content = this.getKeyValueAsString(key);
-    if (content == undefined) throw new Error('Resource has no content.');
+    if (content == undefined) throw new Error("Resource has no content.");
     return JSON.parse(content);
   }
 
@@ -201,7 +198,7 @@ export class TreeNodeAccessor {
 
   public getDataAsJson<T>(): T {
     const content = this.getDataAsString();
-    if (content == undefined) throw new Error('Resource has no content.');
+    if (content == undefined) throw new Error("Resource has no content.");
     return JSON.parse(content);
   }
 
@@ -210,7 +207,7 @@ export class TreeNodeAccessor {
    */
   public getPColumns(
     errorOnUnknownField: boolean = false,
-    prefix: string = '',
+    prefix: string = "",
   ): PColumn<TreeNodeAccessor>[] | undefined {
     const result = this.parsePObjectCollection(errorOnUnknownField, prefix);
     if (result === undefined) return undefined;
@@ -228,7 +225,7 @@ export class TreeNodeAccessor {
    */
   public parsePObjectCollection(
     errorOnUnknownField: boolean = false,
-    prefix: string = '',
+    prefix: string = "",
   ): Record<string, PObject<TreeNodeAccessor>> | undefined {
     const pObjects = getCfgRenderCtx().parsePObjectCollection(
       this.handle,
@@ -320,7 +317,9 @@ export class TreeNodeAccessor {
     return new FutureRef(getCfgRenderCtx().getProgressLog(this.handle, patternToSearch));
   }
 
-  public getProgressLogWithInfo(patternToSearch: string): FutureRef<ProgressLogWithInfo | undefined> {
+  public getProgressLogWithInfo(
+    patternToSearch: string,
+  ): FutureRef<ProgressLogWithInfo | undefined> {
     return new FutureRef(getCfgRenderCtx().getProgressLogWithInfo(this.handle, patternToSearch));
   }
 
@@ -328,20 +327,20 @@ export class TreeNodeAccessor {
     return new FutureRef(getCfgRenderCtx().getLogHandle(this.handle));
   }
 
-  public allFieldsResolved(fieldType: 'Input' | 'Output' = 'Input'): boolean {
+  public allFieldsResolved(fieldType: "Input" | "Output" = "Input"): boolean {
     switch (fieldType) {
-      case 'Input':
+      case "Input":
         return (
-          this.getInputsLocked()
-          && this.listInputFields().every(
-            (field) => this.resolve({ field, assertFieldType: 'Input' }) !== undefined,
+          this.getInputsLocked() &&
+          this.listInputFields().every(
+            (field) => this.resolve({ field, assertFieldType: "Input" }) !== undefined,
           )
         );
-      case 'Output':
+      case "Output":
         return (
-          this.getOutputsLocked()
-          && this.listOutputFields().every(
-            (field) => this.resolve({ field, assertFieldType: 'Output' }) !== undefined,
+          this.getOutputsLocked() &&
+          this.listOutputFields().every(
+            (field) => this.resolve({ field, assertFieldType: "Output" }) !== undefined,
           )
         );
     }
@@ -349,31 +348,31 @@ export class TreeNodeAccessor {
 
   public mapFields<T>(
     _mapping: (name: string, value: TreeNodeAccessor) => T,
-    _ops: FieldMapOps & { skipUnresolved: true }
+    _ops: FieldMapOps & { skipUnresolved: true },
   ): T[] | undefined;
   public mapFields<T>(
     _mapping: (name: string, value: TreeNodeAccessor | undefined) => T,
-    _ops?: FieldMapOps
+    _ops?: FieldMapOps,
   ): T[] | undefined;
   public mapFields<T>(
     _mapping: (name: string, value: TreeNodeAccessor) => T,
     _ops?: FieldMapOps,
   ): T[] | undefined {
     const { fieldType, requireLocked, skipUnresolved } = {
-      fieldType: 'Input' as const,
+      fieldType: "Input" as const,
       requireLocked: true,
       skipUnresolved: false,
       ..._ops,
     };
     const mapping = _mapping as (name: string, value: TreeNodeAccessor | undefined) => T;
     if (requireLocked) {
-      if (fieldType === 'Input' && !this.getInputsLocked()) return undefined;
-      if (fieldType === 'Output' && !this.getOutputsLocked()) return undefined;
+      if (fieldType === "Input" && !this.getInputsLocked()) return undefined;
+      if (fieldType === "Output" && !this.getOutputsLocked()) return undefined;
     }
-    const fieldList
-      = fieldType === 'Input'
+    const fieldList =
+      fieldType === "Input"
         ? this.listInputFields()
-        : fieldType === 'Output'
+        : fieldType === "Output"
           ? this.listOutputFields()
           : this.listDynamicFields();
     let fieldEntries = fieldList.map(

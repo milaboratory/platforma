@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import ComponentProps from '@app-components/ComponentProps.vue';
-import AppCodeBlock from '@app-components/AppCodeBlock.vue';
-import CodeExample from '@app-components/CodeExample.vue';
-import { BtnGroupBasic, BtnGroupBasicRaw, BtnGroupLabel, BtnGroupLabelRaw } from './examples';
-import componentProps from './props';
-import AppDocCodeContainer from '@app-components/AppDocCodeContainer.vue';
+import ComponentProps from "@app-components/ComponentProps.vue";
+import AppCodeBlock from "@app-components/AppCodeBlock.vue";
+import CodeExample from "@app-components/CodeExample.vue";
+import { BtnGroupBasic, BtnGroupBasicRaw, BtnGroupLabel, BtnGroupLabelRaw } from "./examples";
+import componentProps from "./props";
+import AppDocCodeContainer from "@app-components/AppDocCodeContainer.vue";
 </script>
 
 <template>

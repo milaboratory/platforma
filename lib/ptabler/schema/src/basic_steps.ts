@@ -1,4 +1,4 @@
-import type { Expression, SelectorExpression } from './expressions';
+import type { Expression, SelectorExpression } from "./expressions";
 
 /**
  * Defines a step that adds one or more new columns to an existing table in the tablespace.
@@ -9,7 +9,7 @@ export interface AddColumnsStep {
    * The type identifier for this step.
    * Must be 'add_columns'.
    */
-  type: 'add_columns';
+  type: "add_columns";
 
   /**
    * The name of the target DataFrame in the tablespace to which columns will be added.
@@ -32,7 +32,7 @@ export interface FilterStep {
    * The type identifier for this step.
    * Must be 'filter'.
    */
-  type: 'filter';
+  type: "filter";
 
   /**
    * The name of the input table in the tablespace from which rows will be filtered.
@@ -64,7 +64,7 @@ export interface SelectStep {
    * The type identifier for this step.
    * Must be 'select'.
    */
-  type: 'select';
+  type: "select";
 
   /**
    * The name of the input table in the tablespace from which columns will be selected.
@@ -88,14 +88,14 @@ export interface SelectStep {
 /**
  * Determines which of the duplicate rows are kept.
  */
-export type UniqueKeepStrategy = 'any' | 'none' | 'first' | 'last';
+export type UniqueKeepStrategy = "any" | "none" | "first" | "last";
 
 export interface UniqueStep {
   /**
    * The type identifier for this step.
    * Must be 'unique'.
    */
-  type: 'unique';
+  type: "unique";
 
   /**
    * The name of the input table in the tablespace from which unique rows will be selected.
@@ -142,7 +142,7 @@ export interface WithColumnsStep {
    * The type identifier for this step.
    * Must be 'with_columns'.
    */
-  type: 'with_columns';
+  type: "with_columns";
 
   /**
    * The name of the input table in the tablespace to which columns will be added.
@@ -175,7 +175,7 @@ export interface WithoutColumnsStep {
    * The type identifier for this step.
    * Must be 'without_columns'.
    */
-  type: 'without_columns';
+  type: "without_columns";
 
   /**
    * The name of the input table in the tablespace from which columns will be excluded.
@@ -204,7 +204,7 @@ export interface LimitStep {
    * The type identifier for this step.
    * Must be 'limit'.
    */
-  type: 'limit';
+  type: "limit";
 
   /**
    * The name of the input table in the tablespace from which rows will be limited.

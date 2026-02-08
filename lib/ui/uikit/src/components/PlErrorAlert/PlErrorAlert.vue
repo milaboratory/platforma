@@ -1,12 +1,12 @@
 <script lang="ts">
 export default {
-  name: 'PlErrorAlert',
+  name: "PlErrorAlert",
 };
 </script>
 
 <script lang="ts" setup>
-import { PlClipboard } from '../PlClipboard';
-import { PlMaskIcon16 } from '../PlMaskIcon16';
+import { PlClipboard } from "../PlClipboard";
+import { PlMaskIcon16 } from "../PlMaskIcon16";
 
 const props = withDefaults(
   defineProps<{
@@ -18,14 +18,14 @@ const props = withDefaults(
   {
     title: undefined,
     message: undefined,
-    maxHeight: '300px',
+    maxHeight: "300px",
     copyMessage: undefined,
   },
 );
 
 function onCopy() {
   const value = props.copyMessage ?? props.message;
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     navigator.clipboard.writeText(value);
   }
 }

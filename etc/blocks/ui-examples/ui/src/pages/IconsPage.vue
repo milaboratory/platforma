@@ -9,17 +9,17 @@ import {
   PlSvg,
   PlTooltip,
   PlMaskIcon24,
-} from '@platforma-sdk/ui-vue';
-import { computed, ref } from 'vue';
+} from "@platforma-sdk/ui-vue";
+import { computed, ref } from "vue";
 
-const iconFilter = ref('');
+const iconFilter = ref("");
 const iconSizeRaw = ref();
 const iconSize = computed(() =>
   iconSizeRaw.value == null ? undefined : iconSizeRaw.value == 0 ? undefined : iconSizeRaw.value,
 );
-const iconColor1 = ref('');
-const iconColor2 = ref('');
-const iconStroke = ref('');
+const iconColor1 = ref("");
+const iconColor2 = ref("");
+const iconStroke = ref("");
 
 const filteredIcons16 = computed(() => icons16.filter((v) => v.includes(iconFilter.value)));
 const filteredIcons24 = computed(() => icons24.filter((v) => v.includes(iconFilter.value)));
@@ -30,7 +30,7 @@ const filteredIcons24 = computed(() => icons24.filter((v) => v.includes(iconFilt
     <template #title>Icons/Masks page</template>
 
     <h4>Icons</h4>
-    <div style="--icon-color: red;">
+    <div style="--icon-color: red">
       <PlMaskIcon24 name="clipboard" />
     </div>
     <input v-model="iconFilter" :class="$style.input" placeholder="icon filter" />

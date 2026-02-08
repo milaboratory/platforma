@@ -1,24 +1,24 @@
 <script lang="ts" setup>
-import { useEventListener } from '../../composition/useEventListener';
-import type { ImportedFiles } from '../../types';
-import { between, notEmpty, tapIf } from '@milaboratories/helpers';
-import { getRawPlatformaInstance, type StorageHandle } from '@platforma-sdk/model';
-import { computed, onMounted, reactive, toRef, watch } from 'vue';
-import { PlDropdown } from '../PlDropdown';
-import { PlIcon16 } from '../PlIcon16';
-import Shortcuts from './Shortcuts.vue';
-import { PlMaskIcon16 } from '../PlMaskIcon16';
-import { PlSearchField } from '../PlSearchField';
-import style from './pl-file-dialog.module.scss';
-import { defaultData, useVisibleItems, vTextOverflown } from './remote';
-import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from './utils';
+import { useEventListener } from "../../composition/useEventListener";
+import type { ImportedFiles } from "../../types";
+import { between, notEmpty, tapIf } from "@milaboratories/helpers";
+import { getRawPlatformaInstance, type StorageHandle } from "@platforma-sdk/model";
+import { computed, onMounted, reactive, toRef, watch } from "vue";
+import { PlDropdown } from "../PlDropdown";
+import { PlIcon16 } from "../PlIcon16";
+import Shortcuts from "./Shortcuts.vue";
+import { PlMaskIcon16 } from "../PlMaskIcon16";
+import { PlSearchField } from "../PlSearchField";
+import style from "./pl-file-dialog.module.scss";
+import { defaultData, useVisibleItems, vTextOverflown } from "./remote";
+import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from "./utils";
 
 // note that on a Mac, a click combined with the control key is intercepted by the operating system and used to open a context menu, so ctrlKey is not detectable on click events.
 const isCtrlOrMeta = (ev: KeyboardEvent | MouseEvent) => ev.ctrlKey || ev.metaKey;
 
 defineEmits<{
-  (e: 'update:modelValue', value: boolean): void;
-  (e: 'import:files', value: ImportedFiles): void;
+  (e: "update:modelValue", value: boolean): void;
+  (e: "import:files", value: ImportedFiles): void;
 }>();
 
 const props = withDefaults(
@@ -40,8 +40,8 @@ const props = withDefaults(
 const data = reactive(defaultData());
 
 const resetData = () => {
-  data.search = '';
-  data.error = '';
+  data.search = "";
+  data.error = "";
   data.lastSelected = undefined;
 };
 
@@ -68,8 +68,8 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
 
   data.currentLoadingPath = dirPath;
 
-  getRawPlatformaInstance().lsDriver
-    .listFiles(storageHandle, dirPath)
+  getRawPlatformaInstance()
+    .lsDriver.listFiles(storageHandle, dirPath)
     .then((res) => {
       if (dirPath !== data.dirPath) {
         return;
@@ -79,9 +79,11 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
         .entries.map((item) => ({
           path: item.fullPath,
           name: item.name,
-          isDir: item.type === 'dir',
-          canBeSelected: item.type === 'file' && (!extensions.value || extensions.value.some((ext) => item.fullPath.endsWith(ext))),
-          handle: item.type === 'file' ? item.handle : undefined,
+          isDir: item.type === "dir",
+          canBeSelected:
+            item.type === "file" &&
+            (!extensions.value || extensions.value.some((ext) => item.fullPath.endsWith(ext))),
+          handle: item.type === "file" ? item.handle : undefined,
           selected: false,
         }))
         .sort((a, b) => {
@@ -110,7 +112,9 @@ const load = () => {
 
 const breadcrumbs = computed(() => getFilePathBreadcrumbs(data.dirPath));
 
-const selectedFiles = computed(() => data.items.filter((f) => f.canBeSelected && f.selected && !f.isDir));
+const selectedFiles = computed(() =>
+  data.items.filter((f) => f.canBeSelected && f.selected && !f.isDir),
+);
 
 const isReady = computed(() => selectedFiles.value.length > 0 && data.storageEntry?.handle);
 
@@ -187,14 +191,16 @@ const loadAvailableStorages = () => {
   resetData();
   deselectAll();
   if (!getRawPlatformaInstance()) {
-    console.warn('platforma API is not found');
+    console.warn("platforma API is not found");
     return;
   }
-  getRawPlatformaInstance().lsDriver
-    .getStorageList()
+  getRawPlatformaInstance()
+    .lsDriver.getStorageList()
     .then((storageEntries) => {
       // local storage is always returned by the ML, so we need to remove it from remote dialog manually
-      storageEntries = storageEntries.filter((it) => it.name !== 'local' && !it.name.startsWith('local_disk_'));
+      storageEntries = storageEntries.filter(
+        (it) => it.name !== "local" && !it.name.startsWith("local_disk_"),
+      );
 
       data.storageOptions = storageEntries.map((it) => ({
         text: it.name,
@@ -211,10 +217,10 @@ const loadAvailableStorages = () => {
 };
 
 watch(
-  toRef(data, 'storageEntry'),
+  toRef(data, "storageEntry"),
   (entry) => {
     resetData();
-    data.dirPath = entry?.initialFullPath ?? '';
+    data.dirPath = entry?.initialFullPath ?? "";
   },
   { immediate: true },
 );
@@ -235,7 +241,7 @@ watch(
   { immediate: true },
 );
 
-useEventListener(document, 'keydown', (ev: KeyboardEvent) => {
+useEventListener(document, "keydown", (ev: KeyboardEvent) => {
   if (!props.modelValue) {
     return;
   }
@@ -246,17 +252,17 @@ useEventListener(document, 'keydown', (ev: KeyboardEvent) => {
 
   const ctrlOrMetaKey = isCtrlOrMeta(ev);
 
-  if (ctrlOrMetaKey && ev.code === 'KeyA') {
+  if (ctrlOrMetaKey && ev.code === "KeyA") {
     ev.preventDefault();
     selectAll();
   }
 
-  if (ctrlOrMetaKey && ev.shiftKey && ev.code === 'Period') {
+  if (ctrlOrMetaKey && ev.shiftKey && ev.code === "Period") {
     ev.preventDefault();
     data.showHiddenItems = !data.showHiddenItems;
   }
 
-  if (ev.code === 'Enter') {
+  if (ev.code === "Enter") {
     props.submit();
   }
 });
@@ -273,7 +279,11 @@ onMounted(loadAvailableStorages);
   <div :class="style.remote" @click.stop="deselectAll">
     <div :class="style.search">
       <div>
-        <PlDropdown v-model="data.storageEntry" label="Select storage" :options="data.storageOptions" />
+        <PlDropdown
+          v-model="data.storageEntry"
+          label="Select storage"
+          :options="data.storageOptions"
+        />
       </div>
       <div>
         <PlSearchField v-model="data.search" label="Search in folder" clearable />

@@ -7,7 +7,7 @@ function toDataView(data: Data) {
   if (data instanceof ArrayBuffer) return new DataView(data);
 
   throw new TypeError(
-    'Expected `data` to be an ArrayBuffer, Buffer, Int8Array, Uint8Array or Uint8ClampedArray',
+    "Expected `data` to be an ArrayBuffer, Buffer, Int8Array, Uint8Array or Uint8ClampedArray",
   );
 }
 
@@ -16,34 +16,34 @@ interface Options {
   padding?: boolean;
 }
 
-const RFC4648 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-const RFC4648_HEX = '0123456789ABCDEFGHIJKLMNOPQRSTUV';
-const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+const RFC4648 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+const RFC4648_HEX = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
+const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 export function base32Encode(
   data: Data,
-  variant: 'RFC3548' | 'RFC4648' | 'RFC4648-HEX' | 'Crockford',
+  variant: "RFC3548" | "RFC4648" | "RFC4648-HEX" | "Crockford",
   options?: Options,
 ) {
   options = options || {};
   let alphabet, defaultPadding;
 
   switch (variant) {
-    case 'RFC3548':
-    case 'RFC4648':
+    case "RFC3548":
+    case "RFC4648":
       alphabet = RFC4648;
       defaultPadding = true;
       break;
-    case 'RFC4648-HEX':
+    case "RFC4648-HEX":
       alphabet = RFC4648_HEX;
       defaultPadding = true;
       break;
-    case 'Crockford':
+    case "Crockford":
       alphabet = CROCKFORD;
       defaultPadding = false;
       break;
     default:
-      throw new Error('Unknown base32 variant: ' + String(variant));
+      throw new Error("Unknown base32 variant: " + String(variant));
   }
 
   const padding = options.padding !== undefined ? options.padding : defaultPadding;
@@ -51,7 +51,7 @@ export function base32Encode(
 
   let bits = 0;
   let value = 0;
-  let output = '';
+  let output = "";
 
   for (let i = 0; i < view.byteLength; i++) {
     value = (value << 8) | view.getUint8(i);
@@ -67,7 +67,7 @@ export function base32Encode(
 
   if (padding)
     while (output.length % 8 !== 0) {
-      output += '=';
+      output += "=";
     }
 
   return output;

@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { reactive } from 'vue';
-import { PlCheckbox, PlDropdownMulti } from '@platforma-sdk/ui-vue';
+import { reactive } from "vue";
+import { PlCheckbox, PlDropdownMulti } from "@platforma-sdk/ui-vue";
 
 const options = [
-  { text: 'Item text 1', value: 1 },
-  { text: 'Item text 2', value: 2 },
-  { text: 'Item text 3', value: 3 },
-  { text: 'Item text 4', value: 4 },
+  { text: "Item text 1", value: 1 },
+  { text: "Item text 2", value: 2 },
+  { text: "Item text 3", value: 3 },
+  { text: "Item text 4", value: 4 },
 ];
 
 const data = reactive({

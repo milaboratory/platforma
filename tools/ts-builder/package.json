@@ -1,36 +1,38 @@
 {
-    "name": "@milaboratories/ts-builder",
-    "version": "1.2.4",
-    "description": "TS build tool for the milaboratories packages",
-    "type": "module",
-    "main": "./dist/index.js",
-    "module": "./dist/index.js",
-    "bin": {
-        "ts-builder": "./bin/ts-builder.js"
-    },
-    "scripts": {
-        "build": "rollup -c",
-        "watch": "rollup -c --watch",
-        "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-        "lint": "eslint .",
-        "type-check": "tsc --noEmit"
-    },
-    "dependencies": {
-        "@milaboratories/build-configs": "workspace:*",
-        "@milaboratories/ts-configs": "workspace:*",
-        "commander": "^12.0.0",
-        "rollup": "catalog:",
-        "rollup-plugin-copy": "^3.5.0",
-        "typescript": "catalog:",
-        "vue-tsc": "catalog:",
-        "vite": "catalog:"
-    },
-    "devDependencies": {
-        "@milaboratories/eslint-config": "workspace:*",
-        "eslint": "catalog:"
-    },
-    "files": [
-        "dist",
-        "bin"
-    ]
+  "name": "@milaboratories/ts-builder",
+  "version": "1.2.4",
+  "description": "TS build tool for the milaboratories packages",
+  "bin": {
+    "ts-builder": "./bin/ts-builder.js"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "exports": {
+    "./configs/*": "./dist/configs/*"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c --watch",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "check": "oxlint && oxfmt --check && tsc --noEmit",
+    "fmt": "oxlint --fix && oxfmt"
+  },
+  "dependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "commander": "^12.0.0",
+    "oxfmt": "^0.28.0",
+    "oxlint": "^0.16.0",
+    "rollup": "catalog:",
+    "rollup-plugin-copy": "^3.5.0",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vue-tsc": "catalog:"
+  },
+  "devDependencies": {}
 }

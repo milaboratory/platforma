@@ -1,13 +1,26 @@
-import { deepClone, isJsonEqual, tap } from '@milaboratories/helpers';
-import type { Mutable } from '@milaboratories/helpers';
-import type { NavigationState, BlockOutputsBase, BlockState, PlatformaV1, PlatformaExtended } from '@platforma-sdk/model';
-import { reactive, nextTick, computed, watch } from 'vue';
-import type { StateModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors, AppSettings } from '../types';
-import { createModel } from '../createModel';
-import { createAppModel } from './createAppModel';
-import { parseQuery } from '../urls';
-import { ensureOutputHasStableFlag, MultiError, unwrapOutput } from '../utils';
-import { useDebounceFn } from '@vueuse/core';
+import { deepClone, isJsonEqual, tap } from "@milaboratories/helpers";
+import type { Mutable } from "@milaboratories/helpers";
+import type {
+  NavigationState,
+  BlockOutputsBase,
+  BlockState,
+  PlatformaV1,
+  PlatformaExtended,
+} from "@platforma-sdk/model";
+import { reactive, nextTick, computed, watch } from "vue";
+import type {
+  StateModelOptions,
+  UnwrapOutputs,
+  OptionalResult,
+  OutputValues,
+  OutputErrors,
+  AppSettings,
+} from "../types";
+import { createModel } from "../createModel";
+import { createAppModel } from "./createAppModel";
+import { parseQuery } from "../urls";
+import { ensureOutputHasStableFlag, MultiError, unwrapOutput } from "../utils";
+import { useDebounceFn } from "@vueuse/core";
 /**
  * Creates an application instance with reactive state management, outputs, and methods for state updates and navigation.
  *
@@ -39,7 +52,7 @@ export function createAppV1<
 
   const log = (msg: string, ...rest: unknown[]) => {
     if (settings.debug) {
-      console.log(`%c>>> %c${msg}`, 'color: orange; font-weight: bold', 'color: orange', ...rest);
+      console.log(`%c>>> %c${msg}`, "color: orange; font-weight: bold", "color: orange", ...rest);
     }
   };
 
@@ -60,55 +73,75 @@ export function createAppV1<
 
   const debounceSpan = settings.debounceSpan ?? 200;
 
-  const maxWait = tap(settings.debounceMaxWait ?? 0, (v) => v < 20_000 ? 20_000 : v < debounceSpan ? debounceSpan * 100 : v);
+  const maxWait = tap(settings.debounceMaxWait ?? 0, (v) =>
+    v < 20_000 ? 20_000 : v < debounceSpan ? debounceSpan * 100 : v,
+  );
 
-  const setBlockArgs = useDebounceFn((args: Args) => {
-    if (!isJsonEqual(args, snapshot.args)) {
-      platforma.setBlockArgs(args);
-    }
-  }, debounceSpan, { maxWait });
-
-  const setBlockUiState = useDebounceFn((ui: UiState) => {
-    if (!isJsonEqual(ui, snapshot.ui)) {
-      platforma.setBlockUiState(ui);
-    }
-  }, debounceSpan, { maxWait });
-
-  const setBlockArgsAndUiState = useDebounceFn((args: Args, ui: UiState) => {
-    if (!isJsonEqual(args, snapshot.args) || !isJsonEqual(ui, snapshot.ui)) {
-      platforma.setBlockArgsAndUiState(args, ui);
-    }
-  }, debounceSpan, { maxWait });
-
-  (platforma as unknown as PlatformaV1<Args, Outputs, UiState, Href>).onStateUpdates(async (updates) => {
-    updates.forEach((patch) => {
-      if (patch.key === 'args' && !isJsonEqual(snapshot.args, patch.value)) {
-        snapshot.args = Object.freeze(patch.value);
-        log('args patch', snapshot.args);
+  const setBlockArgs = useDebounceFn(
+    (args: Args) => {
+      if (!isJsonEqual(args, snapshot.args)) {
+        platforma.setBlockArgs(args);
       }
+    },
+    debounceSpan,
+    { maxWait },
+  );
 
-      if (patch.key === 'ui' && !isJsonEqual(snapshot.ui, patch.value)) {
-        snapshot.ui = Object.freeze(patch.value);
-        log('ui patch', snapshot.ui);
+  const setBlockUiState = useDebounceFn(
+    (ui: UiState) => {
+      if (!isJsonEqual(ui, snapshot.ui)) {
+        platforma.setBlockUiState(ui);
       }
+    },
+    debounceSpan,
+    { maxWait },
+  );
 
-      if (patch.key === 'outputs' && !isJsonEqual(snapshot.outputs, patch.value)) {
-        snapshot.outputs = Object.freeze(patch.value);
-        log('outputs patch', snapshot.outputs);
+  const setBlockArgsAndUiState = useDebounceFn(
+    (args: Args, ui: UiState) => {
+      if (!isJsonEqual(args, snapshot.args) || !isJsonEqual(ui, snapshot.ui)) {
+        platforma.setBlockArgsAndUiState(args, ui);
       }
+    },
+    debounceSpan,
+    { maxWait },
+  );
 
-      if (patch.key === 'navigationState' && !isJsonEqual(snapshot.navigationState, patch.value)) {
-        snapshot.navigationState = Object.freeze(patch.value);
-        log('navigationState patch', snapshot.navigationState);
-      }
-    });
+  (platforma as unknown as PlatformaV1<Args, Outputs, UiState, Href>).onStateUpdates(
+    async (updates) => {
+      updates.forEach((patch) => {
+        if (patch.key === "args" && !isJsonEqual(snapshot.args, patch.value)) {
+          snapshot.args = Object.freeze(patch.value);
+          log("args patch", snapshot.args);
+        }
 
-    await nextTick();
-  });
+        if (patch.key === "ui" && !isJsonEqual(snapshot.ui, patch.value)) {
+          snapshot.ui = Object.freeze(patch.value);
+          log("ui patch", snapshot.ui);
+        }
+
+        if (patch.key === "outputs" && !isJsonEqual(snapshot.outputs, patch.value)) {
+          snapshot.outputs = Object.freeze(patch.value);
+          log("outputs patch", snapshot.outputs);
+        }
+
+        if (
+          patch.key === "navigationState" &&
+          !isJsonEqual(snapshot.navigationState, patch.value)
+        ) {
+          snapshot.navigationState = Object.freeze(patch.value);
+          log("navigationState patch", snapshot.navigationState);
+        }
+      });
+
+      await nextTick();
+    },
+  );
 
   const cloneArgs = () => deepClone(snapshot.args) as Args;
   const cloneUiState = () => deepClone(snapshot.ui) as UiState;
-  const cloneNavigationState = () => deepClone(snapshot.navigationState) as Mutable<NavigationState<Href>>;
+  const cloneNavigationState = () =>
+    deepClone(snapshot.navigationState) as Mutable<NavigationState<Href>>;
 
   const methods = {
     createArgsModel<T = Args>(options: StateModelOptions<Args, T> = {}) {
@@ -130,7 +163,10 @@ export function createAppV1<
     /**
      * defaultUiState is temporarily here, remove it after implementing initialUiState
      */
-    createUiModel<T = UiState>(options: StateModelOptions<UiState, T> = {}, defaultUiState: () => UiState) {
+    createUiModel<T = UiState>(
+      options: StateModelOptions<UiState, T> = {},
+      defaultUiState: () => UiState,
+    ) {
       return createModel<T, UiState>({
         get() {
           if (options.transform) {
@@ -237,16 +273,24 @@ export function createAppV1<
   };
 
   const outputs = computed<OutputValues<Outputs>>(() => {
-    const entries = Object.entries(snapshot.outputs)
-      .map(([k, outputWithStatus]) => platforma.blockModelInfo.outputs[k].withStatus
+    const entries = Object.entries(snapshot.outputs).map(([k, outputWithStatus]) =>
+      platforma.blockModelInfo.outputs[k].withStatus
         ? [k, ensureOutputHasStableFlag(outputWithStatus)]
-        : [k, outputWithStatus.ok && outputWithStatus.value !== undefined ? outputWithStatus.value : undefined],
-      );
+        : [
+            k,
+            outputWithStatus.ok && outputWithStatus.value !== undefined
+              ? outputWithStatus.value
+              : undefined,
+          ],
+    );
     return Object.fromEntries(entries);
   });
 
   const outputErrors = computed<OutputErrors<Outputs>>(() => {
-    const entries = Object.entries(snapshot.outputs).map(([k, vOrErr]) => [k, vOrErr && vOrErr.ok === false ? new MultiError(vOrErr.errors) : undefined]);
+    const entries = Object.entries(snapshot.outputs).map(([k, vOrErr]) => [
+      k,
+      vOrErr && vOrErr.ok === false ? new MultiError(vOrErr.errors) : undefined,
+    ]);
     return Object.fromEntries(entries);
   });
 

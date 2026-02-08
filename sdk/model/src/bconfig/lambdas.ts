@@ -1,6 +1,6 @@
-import type { ConfigResult, PlResourceEntry, TypedConfig } from '../config';
-import type { OutputWithStatus } from '@milaboratories/pl-model-common';
-import type { TypedConfigOrConfigLambda } from './types';
+import type { ConfigResult, PlResourceEntry, TypedConfig } from "../config";
+import type { OutputWithStatus } from "@milaboratories/pl-model-common";
+import type { TypedConfigOrConfigLambda } from "./types";
 
 export type StdCtxArgsOnly<Args, Data = undefined> = {
   readonly $blockId: string;
@@ -69,16 +69,14 @@ export type InferOutputsFromConfigs<
   OutputsCfg extends Record<string, TypedConfigOrConfigLambda>,
   UiState,
 > = {
-  [Key in keyof OutputsCfg]:
-    & OutputWithStatus<InferOutputType<OutputsCfg[Key], Args, UiState>>
-    & { __unwrap: (OutputsCfg[Key] extends { withStatus: true } ? false : true) };
+  [Key in keyof OutputsCfg]: OutputWithStatus<InferOutputType<OutputsCfg[Key], Args, UiState>> & {
+    __unwrap: OutputsCfg[Key] extends { withStatus: true } ? false : true;
+  };
 };
 
 /** Maps lambda-only outputs configuration to inferred output types (for V3 blocks) */
-export type InferOutputsFromLambdas<
-  OutputsCfg extends Record<string, ConfigRenderLambda>,
-> = {
-  [Key in keyof OutputsCfg]:
-    & OutputWithStatus<ExtractFunctionHandleReturn<OutputsCfg[Key]>>
-    & { __unwrap: (OutputsCfg[Key] extends { withStatus: true } ? false : true) };
+export type InferOutputsFromLambdas<OutputsCfg extends Record<string, ConfigRenderLambda>> = {
+  [Key in keyof OutputsCfg]: OutputWithStatus<ExtractFunctionHandleReturn<OutputsCfg[Key]>> & {
+    __unwrap: OutputsCfg[Key] extends { withStatus: true } ? false : true;
+  };
 };

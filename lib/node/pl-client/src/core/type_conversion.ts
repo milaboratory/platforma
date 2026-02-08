@@ -1,11 +1,12 @@
 import type {
   Field,
-  Resource } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api_types';
+  Resource,
+} from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api_types";
 import {
   Field_ValueStatus,
   Resource_Kind,
-} from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api_types';
-import { FieldType as GrpcFieldType } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/base_types';
+} from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api_types";
+import { FieldType as GrpcFieldType } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/base_types";
 import type {
   FieldData,
   FieldStatus,
@@ -14,14 +15,12 @@ import type {
   ResourceData,
   ResourceId,
   ResourceKind,
-} from './types';
-import {
-  NullResourceId,
-} from './types';
-import { assertNever, notEmpty } from '@milaboratories/ts-helpers';
-import { throwPlNotFoundError } from './errors';
+} from "./types";
+import { NullResourceId } from "./types";
+import { assertNever, notEmpty } from "@milaboratories/ts-helpers";
+import { throwPlNotFoundError } from "./errors";
 
-const ResourceErrorField = 'resourceError';
+const ResourceErrorField = "resourceError";
 
 function resourceIsDeleted(proto: Resource): boolean {
   return proto.deletedTime !== undefined && proto.deletedTime.seconds !== 0n;
@@ -29,7 +28,7 @@ function resourceIsDeleted(proto: Resource): boolean {
 
 /** Throws "native" pl not found error, if resource is marked as deleted. */
 export function protoToResource(proto: Resource): ResourceData {
-  if (resourceIsDeleted(proto)) throwPlNotFoundError('resource deleted');
+  if (resourceIsDeleted(proto)) throwPlNotFoundError("resource deleted");
   return {
     id: proto.id as ResourceId,
     originalResourceId: proto.originalResourceId as OptionalResourceId,
@@ -48,12 +47,12 @@ export function protoToResource(proto: Resource): ResourceData {
 function protoToResourceKind(proto: Resource_Kind): ResourceKind {
   switch (proto) {
     case Resource_Kind.STRUCTURAL:
-      return 'Structural';
+      return "Structural";
     case Resource_Kind.VALUE:
-      return 'Value';
+      return "Value";
   }
 
-  throw new Error('invalid ResourceKind: ' + proto);
+  throw new Error("invalid ResourceKind: " + proto);
 }
 
 function protoToError(proto: Resource): OptionalResourceId {
@@ -75,48 +74,48 @@ export function protoToField(proto: Field): FieldData {
 function protoToFieldType(proto: GrpcFieldType): FieldType {
   switch (proto) {
     case GrpcFieldType.INPUT:
-      return 'Input';
+      return "Input";
     case GrpcFieldType.OUTPUT:
-      return 'Output';
+      return "Output";
     case GrpcFieldType.SERVICE:
-      return 'Service';
+      return "Service";
     case GrpcFieldType.ONE_TIME_WRITABLE:
-      return 'OTW';
+      return "OTW";
     case GrpcFieldType.DYNAMIC:
-      return 'Dynamic';
+      return "Dynamic";
     case GrpcFieldType.MULTIPLE_TIMES_WRITABLE:
-      return 'MTW';
+      return "MTW";
     default:
-      throw new Error('invalid FieldType: ' + proto);
+      throw new Error("invalid FieldType: " + proto);
   }
 }
 
 function protoToFieldStatus(proto: Field_ValueStatus): FieldStatus {
   switch (proto) {
     case Field_ValueStatus.EMPTY:
-      return 'Empty';
+      return "Empty";
     case Field_ValueStatus.ASSIGNED:
-      return 'Assigned';
+      return "Assigned";
     case Field_ValueStatus.RESOLVED:
-      return 'Resolved';
+      return "Resolved";
     default:
-      throw new Error('invalid FieldStatus: ' + proto);
+      throw new Error("invalid FieldStatus: " + proto);
   }
 }
 
 export function fieldTypeToProto(type: FieldType): GrpcFieldType {
   switch (type) {
-    case 'Input':
+    case "Input":
       return GrpcFieldType.INPUT;
-    case 'Output':
+    case "Output":
       return GrpcFieldType.OUTPUT;
-    case 'Dynamic':
+    case "Dynamic":
       return GrpcFieldType.DYNAMIC;
-    case 'Service':
+    case "Service":
       return GrpcFieldType.SERVICE;
-    case 'MTW':
+    case "MTW":
       return GrpcFieldType.MULTIPLE_TIMES_WRITABLE;
-    case 'OTW':
+    case "OTW":
       return GrpcFieldType.ONE_TIME_WRITABLE;
     default:
       return assertNever(type);

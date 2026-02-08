@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { reactive } from 'vue';
-import {
-  PlCheckboxGroup,
-  PlToggleSwitch,
-} from '@platforma-sdk/ui-vue';
+import { reactive } from "vue";
+import { PlCheckboxGroup, PlToggleSwitch } from "@platforma-sdk/ui-vue";
 
 const data = reactive({
   model: [] as number[],
@@ -12,19 +9,19 @@ const data = reactive({
 
 const options = [
   {
-    text: 'Option 1',
+    text: "Option 1",
     value: 1,
   },
   {
-    text: 'Option 2',
+    text: "Option 2",
     value: 2,
   },
   {
-    text: 'Option 3',
+    text: "Option 3",
     value: 3,
   },
   {
-    text: 'Option 4',
+    text: "Option 4",
     value: 4,
   },
 ];
@@ -33,20 +30,13 @@ const options = [
 <template>
   <div class="checkbox-group-basic">
     <div class="mb-10">
-      <PlToggleSwitch
-        v-model="data.disabled"
-        label="Disable checkbox group"
-      />
+      <PlToggleSwitch v-model="data.disabled" label="Disable checkbox group" />
     </div>
     <p>
       <strong>data.model:</strong>
       {{ data.model }}
     </p>
-    <PlCheckboxGroup
-      v-model="data.model"
-      :options="options"
-      :disabled="data.disabled"
-    />
+    <PlCheckboxGroup v-model="data.model" :options="options" :disabled="data.disabled" />
   </div>
 </template>
 

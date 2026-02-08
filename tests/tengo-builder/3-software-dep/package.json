@@ -5,7 +5,7 @@
   "description": "The software dependency test",
   "scripts": {
     "cleanup": "rm -rf ./dist/",
-    "check": "rm -rf dist && pl-tengo build"
+    "test:check": "rm -rf dist && pl-tengo build"
   },
   "license": "UNLICENSED",
   "devDependencies": {

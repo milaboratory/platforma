@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import CodeExample from '@app-components/CodeExample.vue';
-import { Errors, ErrorsRaw } from './examples';
+import CodeExample from "@app-components/CodeExample.vue";
+import { Errors, ErrorsRaw } from "./examples";
 </script>
 
 <template>

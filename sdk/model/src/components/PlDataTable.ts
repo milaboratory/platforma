@@ -17,7 +17,7 @@ import type {
   PTableRecordFilter,
   PTableRecordSingleValueFilterV2,
   PTableSorting,
-} from '@milaboratories/pl-model-common';
+} from "@milaboratories/pl-model-common";
 import {
   Annotation,
   canonicalizeJson,
@@ -29,20 +29,16 @@ import {
   PColumnName,
   readAnnotation,
   uniqueBy,
-} from '@milaboratories/pl-model-common';
+} from "@milaboratories/pl-model-common";
 import type {
   AxisLabelProvider,
   ColumnProvider,
   PColumnDataUniversal,
   RenderCtxBase,
   TreeNodeAccessor,
-} from '../render';
-import {
-  allPColumnsReady,
-  deriveLabels,
-  PColumnCollection,
-} from '../render';
-import { identity } from 'es-toolkit';
+} from "../render";
+import { allPColumnsReady, deriveLabels, PColumnCollection } from "../render";
+import { identity } from "es-toolkit";
 
 export type PlTableColumnId = {
   /** Original column spec */
@@ -66,7 +62,7 @@ export type PlDataTableGridStateCore = {
       /** Column Id to apply the sort to. */
       colId: PlTableColumnIdJson;
       /** Sort direction */
-      sort: 'asc' | 'desc';
+      sort: "asc" | "desc";
     }[];
   };
   /** Includes column visibility */
@@ -98,32 +94,7 @@ export type PlDataTableSheetState = {
 export type PlDataTableStateV2 =
   // Old versions of the state
   | {
-    // no version
-    gridState: {
-      columnOrder?: {
-        orderedColIds: CanonicalizedJson<PTableColumnSpec>[];
-      };
-      sort?: {
-        sortModel: {
-          colId: CanonicalizedJson<PTableColumnSpec>;
-          sort: 'asc' | 'desc';
-        }[];
-      };
-      columnVisibility?: {
-        hiddenColIds: CanonicalizedJson<PTableColumnSpec>[];
-      };
-      sourceId?: string;
-      sheets?: Record<CanonicalizedJson<AxisId>, string | number>;
-    };
-    pTableParams?: {
-      sorting?: PTableSorting[];
-      filters?: PTableRecordFilter[];
-    };
-  }
-  | {
-    version: 2;
-    stateCache: {
-      sourceId: string;
+      // no version
       gridState: {
         columnOrder?: {
           orderedColIds: CanonicalizedJson<PTableColumnSpec>[];
@@ -131,44 +102,69 @@ export type PlDataTableStateV2 =
         sort?: {
           sortModel: {
             colId: CanonicalizedJson<PTableColumnSpec>;
-            sort: 'asc' | 'desc';
+            sort: "asc" | "desc";
           }[];
         };
         columnVisibility?: {
           hiddenColIds: CanonicalizedJson<PTableColumnSpec>[];
         };
+        sourceId?: string;
+        sheets?: Record<CanonicalizedJson<AxisId>, string | number>;
       };
-      sheetsState: PlDataTableSheetState[];
-    }[];
-    pTableParams: {
-      hiddenColIds: PObjectId[] | null;
-      filters: PTableRecordFilter[];
-      sorting: PTableSorting[];
-    };
-  }
+      pTableParams?: {
+        sorting?: PTableSorting[];
+        filters?: PTableRecordFilter[];
+      };
+    }
   | {
-    version: 3;
-    stateCache: {
-      sourceId: string;
-      gridState: {
-        columnOrder?: {
-          orderedColIds: CanonicalizedJson<PTableColumnSpec>[];
+      version: 2;
+      stateCache: {
+        sourceId: string;
+        gridState: {
+          columnOrder?: {
+            orderedColIds: CanonicalizedJson<PTableColumnSpec>[];
+          };
+          sort?: {
+            sortModel: {
+              colId: CanonicalizedJson<PTableColumnSpec>;
+              sort: "asc" | "desc";
+            }[];
+          };
+          columnVisibility?: {
+            hiddenColIds: CanonicalizedJson<PTableColumnSpec>[];
+          };
         };
-        sort?: {
-          sortModel: {
-            colId: CanonicalizedJson<PTableColumnSpec>;
-            sort: 'asc' | 'desc';
-          }[];
-        };
-        columnVisibility?: {
-          hiddenColIds: CanonicalizedJson<PTableColumnSpec>[];
-        };
+        sheetsState: PlDataTableSheetState[];
+      }[];
+      pTableParams: {
+        hiddenColIds: PObjectId[] | null;
+        filters: PTableRecordFilter[];
+        sorting: PTableSorting[];
       };
-      sheetsState: PlDataTableSheetState[];
-      filtersState: PlDataTableFilterState[];
-    }[];
-    pTableParams: PTableParamsV2;
-  }
+    }
+  | {
+      version: 3;
+      stateCache: {
+        sourceId: string;
+        gridState: {
+          columnOrder?: {
+            orderedColIds: CanonicalizedJson<PTableColumnSpec>[];
+          };
+          sort?: {
+            sortModel: {
+              colId: CanonicalizedJson<PTableColumnSpec>;
+              sort: "asc" | "desc";
+            }[];
+          };
+          columnVisibility?: {
+            hiddenColIds: CanonicalizedJson<PTableColumnSpec>[];
+          };
+        };
+        sheetsState: PlDataTableSheetState[];
+        filtersState: PlDataTableFilterState[];
+      }[];
+      pTableParams: PTableParamsV2;
+    }
   // Normalized state
   | PlDataTableStateV2Normalized;
 
@@ -185,19 +181,19 @@ export type PlDataTableStateV2CacheEntry = {
 
 export type PTableParamsV2 =
   | {
-    sourceId: null;
-    hiddenColIds: null;
-    partitionFilters: [];
-    filters: [];
-    sorting: [];
-  }
+      sourceId: null;
+      hiddenColIds: null;
+      partitionFilters: [];
+      filters: [];
+      sorting: [];
+    }
   | {
-    sourceId: string;
-    hiddenColIds: PObjectId[] | null;
-    partitionFilters: PTableRecordFilter[];
-    filters: PTableRecordFilter[];
-    sorting: PTableSorting[];
-  };
+      sourceId: string;
+      hiddenColIds: PObjectId[] | null;
+      partitionFilters: PTableRecordFilter[];
+      filters: PTableRecordFilter[];
+      sorting: PTableSorting[];
+    };
 
 export type PlDataTableStateV2Normalized = {
   /** Version for upgrades */
@@ -228,13 +224,15 @@ export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
 }
 
 /** Upgrade PlDataTableStateV2 to the latest version */
-export function upgradePlDataTableStateV2(state: PlDataTableStateV2 | undefined): PlDataTableStateV2Normalized {
+export function upgradePlDataTableStateV2(
+  state: PlDataTableStateV2 | undefined,
+): PlDataTableStateV2Normalized {
   // Block just added, had no state, model started earlier than the UI
   if (!state) {
     return createPlDataTableStateV2();
   }
   // v1 -> v2
-  if (!('version' in state)) {
+  if (!("version" in state)) {
     // Non upgradeable as sourceId calculation algorithm has changed, resetting state to default
     state = createPlDataTableStateV2();
   }
@@ -269,13 +267,13 @@ export type PlDataTableFilterState = {
 /** PlTableFilters filter entry */
 export type PlTableFilterIsNotNA = {
   /** Predicate type */
-  type: 'isNotNA';
+  type: "isNotNA";
 };
 
 /** PlTableFilters filter entry */
 export type PlTableFilterIsNA = {
   /** Predicate type */
-  type: 'isNA';
+  type: "isNA";
 };
 
 /** PlTableFilters filter entries applicable to both string and number values */
@@ -284,7 +282,7 @@ export type PlTableFilterCommon = PlTableFilterIsNotNA | PlTableFilterIsNA;
 /** PlTableFilters numeric filter entry */
 export type PlTableFilterNumberEquals = {
   /** Predicate type */
-  type: 'number_equals';
+  type: "number_equals";
   /** Reference value */
   reference: number;
 };
@@ -292,7 +290,7 @@ export type PlTableFilterNumberEquals = {
 /** PlTableFilters numeric filter entry */
 export type PlTableFilterNumberNotEquals = {
   /** Predicate type */
-  type: 'number_notEquals';
+  type: "number_notEquals";
   /** Reference value */
   reference: number;
 };
@@ -300,7 +298,7 @@ export type PlTableFilterNumberNotEquals = {
 /** PlTableFilters numeric filter entry */
 export type PlTableFilterNumberGreaterThan = {
   /** Predicate type */
-  type: 'number_greaterThan';
+  type: "number_greaterThan";
   /** Reference value */
   reference: number;
 };
@@ -308,7 +306,7 @@ export type PlTableFilterNumberGreaterThan = {
 /** PlTableFilters numeric filter entry */
 export type PlTableFilterNumberGreaterThanOrEqualTo = {
   /** Predicate type */
-  type: 'number_greaterThanOrEqualTo';
+  type: "number_greaterThanOrEqualTo";
   /** Reference value */
   reference: number;
 };
@@ -316,7 +314,7 @@ export type PlTableFilterNumberGreaterThanOrEqualTo = {
 /** PlTableFilters numeric filter entry */
 export type PlTableFilterNumberLessThan = {
   /** Predicate type */
-  type: 'number_lessThan';
+  type: "number_lessThan";
   /** Reference value */
   reference: number;
 };
@@ -324,7 +322,7 @@ export type PlTableFilterNumberLessThan = {
 /** PlTableFilters numeric filter entry */
 export type PlTableFilterNumberLessThanOrEqualTo = {
   /** Predicate type */
-  type: 'number_lessThanOrEqualTo';
+  type: "number_lessThanOrEqualTo";
   /** Reference value */
   reference: number;
 };
@@ -332,7 +330,7 @@ export type PlTableFilterNumberLessThanOrEqualTo = {
 /** PlTableFilters numeric filter entry */
 export type PlTableFilterNumberBetween = {
   /** Predicate type */
-  type: 'number_between';
+  type: "number_between";
   /** Reference value for the lower bound */
   lowerBound: number;
   /** Defines whether values equal to lower bound reference value should be matched */
@@ -354,12 +352,12 @@ export type PlTableFilterNumber =
   | PlTableFilterNumberLessThanOrEqualTo
   | PlTableFilterNumberBetween;
 /** All types of PlTableFilters numeric filter entries */
-export type PlTableFilterNumberType = PlTableFilterNumber['type'];
+export type PlTableFilterNumberType = PlTableFilterNumber["type"];
 
 /** PlTableFilters string filter entry */
 export type PlTableFilterStringEquals = {
   /** Predicate type */
-  type: 'string_equals';
+  type: "string_equals";
   /** Reference value */
   reference: string;
 };
@@ -367,7 +365,7 @@ export type PlTableFilterStringEquals = {
 /** PlTableFilters string filter entry */
 export type PlTableFilterStringNotEquals = {
   /** Predicate type */
-  type: 'string_notEquals';
+  type: "string_notEquals";
   /** Reference value */
   reference: string;
 };
@@ -375,7 +373,7 @@ export type PlTableFilterStringNotEquals = {
 /** PlTableFilters string filter entry */
 export type PlTableFilterStringContains = {
   /** Predicate type */
-  type: 'string_contains';
+  type: "string_contains";
   /** Reference value */
   reference: string;
 };
@@ -383,7 +381,7 @@ export type PlTableFilterStringContains = {
 /** PlTableFilters string filter entry */
 export type PlTableFilterStringDoesNotContain = {
   /** Predicate type */
-  type: 'string_doesNotContain';
+  type: "string_doesNotContain";
   /** Reference value */
   reference: string;
 };
@@ -391,7 +389,7 @@ export type PlTableFilterStringDoesNotContain = {
 /** PlTableFilters string filter entry */
 export type PlTableFilterStringMatches = {
   /** Predicate type */
-  type: 'string_matches';
+  type: "string_matches";
   /** Reference value */
   reference: string;
 };
@@ -399,7 +397,7 @@ export type PlTableFilterStringMatches = {
 /** PlTableFilters string filter entry */
 export type PlTableFilterStringDoesNotMatch = {
   /** Predicate type */
-  type: 'string_doesNotMatch';
+  type: "string_doesNotMatch";
   /** Reference value */
   reference: string;
 };
@@ -407,7 +405,7 @@ export type PlTableFilterStringDoesNotMatch = {
 /** PlTableFilters string filter entry */
 export type PlTableFilterStringContainsFuzzyMatch = {
   /** Predicate type */
-  type: 'string_containsFuzzyMatch';
+  type: "string_containsFuzzyMatch";
   /** Reference value */
   reference: string;
   /**
@@ -442,12 +440,12 @@ export type PlTableFilterString =
   | PlTableFilterStringDoesNotMatch
   | PlTableFilterStringContainsFuzzyMatch;
 /** All types of PlTableFilters string filter entries */
-export type PlTableFilterStringType = PlTableFilterString['type'];
+export type PlTableFilterStringType = PlTableFilterString["type"];
 
 /** All PlTableFilters filter entries */
 export type PlTableFilter = PlTableFilterNumber | PlTableFilterString;
 /** All types of PlTableFilters filter entries */
-export type PlTableFilterType = PlTableFilter['type'];
+export type PlTableFilterType = PlTableFilter["type"];
 
 export type CreatePlDataTableOps = {
   /** Filters for columns and non-partitioned axes */
@@ -474,7 +472,7 @@ export type CreatePlDataTableOps = {
    *
    * Default: 'full'
    */
-  coreJoinType?: 'inner' | 'full';
+  coreJoinType?: "inner" | "full";
 };
 
 /** Get all label columns from the result pool */
@@ -484,10 +482,13 @@ export function getAllLabelColumns(
   return new PColumnCollection()
     .addAxisLabelProvider(resultPool)
     .addColumnProvider(resultPool)
-    .getColumns({
-      name: PColumnName.Label,
-      axes: [{}], // exactly one axis
-    }, { dontWaitAllData: true, overrideLabelAnnotation: false });
+    .getColumns(
+      {
+        name: PColumnName.Label,
+        axes: [{}], // exactly one axis
+      },
+      { dontWaitAllData: true, overrideLabelAnnotation: false },
+    );
 }
 
 /** Get label columns matching the provided columns from the result pool */
@@ -569,11 +570,11 @@ export function getMatchingLabelColumns(
 function createPTableDef(params: {
   columns: PColumn<PColumnDataUniversal>[];
   labelColumns: PColumn<PColumnDataUniversal>[];
-  coreJoinType: 'inner' | 'full';
+  coreJoinType: "inner" | "full";
   partitionFilters: PTableRecordSingleValueFilterV2[];
   filters: PTableRecordSingleValueFilterV2[];
   sorting: PTableSorting[];
-  coreColumnPredicate?: ((spec: PColumnIdAndSpec) => boolean);
+  coreColumnPredicate?: (spec: PColumnIdAndSpec) => boolean;
 }): PTableDef<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>> {
   let coreColumns = params.columns;
   const secondaryColumns: typeof params.columns = [];
@@ -589,12 +590,12 @@ function createPTableDef(params: {
 
   return {
     src: {
-      type: 'outer',
+      type: "outer",
       primary: {
         type: params.coreJoinType,
-        entries: coreColumns.map((c) => ({ type: 'column', column: c })),
+        entries: coreColumns.map((c) => ({ type: "column", column: c })),
       },
-      secondary: secondaryColumns.map((c) => ({ type: 'column', column: c })),
+      secondary: secondaryColumns.map((c) => ({ type: "column", column: c })),
     },
     partitionFilters: params.partitionFilters,
     filters: params.filters,
@@ -614,12 +615,12 @@ export type PlDataTableModel = {
 
 /** Check if column should be omitted from the table */
 export function isColumnHidden(spec: { annotations?: Annotation }): boolean {
-  return readAnnotation(spec, Annotation.Table.Visibility) === 'hidden';
+  return readAnnotation(spec, Annotation.Table.Visibility) === "hidden";
 }
 
 /** Check if column is hidden by default */
 export function isColumnOptional(spec: { annotations?: Annotation }): boolean {
-  return readAnnotation(spec, Annotation.Table.Visibility) === 'optional';
+  return readAnnotation(spec, Annotation.Table.Visibility) === "optional";
 }
 
 /**
@@ -644,18 +645,20 @@ export function createPlDataTableV2<A, U>(
   if (!allLabelColumns) return undefined;
 
   let fullLabelColumns = getMatchingLabelColumns(columns.map(getColumnIdAndSpec), allLabelColumns);
-  fullLabelColumns = deriveLabels(fullLabelColumns, identity, { includeNativeLabel: true }).map((v) => {
-    return {
-      ...v.value,
-      spec: {
-        ...v.value.spec,
-        annotations: {
-          ...v.value.spec.annotations,
-          [Annotation.Label]: v.label,
+  fullLabelColumns = deriveLabels(fullLabelColumns, identity, { includeNativeLabel: true }).map(
+    (v) => {
+      return {
+        ...v.value,
+        spec: {
+          ...v.value.spec,
+          annotations: {
+            ...v.value.spec.annotations,
+            [Annotation.Label]: v.label,
+          },
         },
-      },
-    };
-  });
+      };
+    },
+  );
 
   const fullColumns = [...columns, ...fullLabelColumns];
 
@@ -664,38 +667,41 @@ export function createPlDataTableV2<A, U>(
     (a) => canonicalizeJson<AxisId>(a),
   );
   const fullColumnsIds: PTableColumnId[] = [
-    ...fullColumnsAxes.map((a) => ({ type: 'axis', id: a } satisfies PTableColumnIdAxis)),
-    ...fullColumns.map((c) => ({ type: 'column', id: c.id } satisfies PTableColumnIdColumn)),
+    ...fullColumnsAxes.map((a) => ({ type: "axis", id: a }) satisfies PTableColumnIdAxis),
+    ...fullColumns.map((c) => ({ type: "column", id: c.id }) satisfies PTableColumnIdColumn),
   ];
   const fullColumnsIdsSet = new Set(fullColumnsIds.map((c) => canonicalizeJson<PTableColumnId>(c)));
-  const isValidColumnId = (id: PTableColumnId): boolean => fullColumnsIdsSet.has(canonicalizeJson<PTableColumnId>(id));
+  const isValidColumnId = (id: PTableColumnId): boolean =>
+    fullColumnsIdsSet.has(canonicalizeJson<PTableColumnId>(id));
 
-  const coreJoinType = ops?.coreJoinType ?? 'full';
-  const partitionFilters: PTableRecordSingleValueFilterV2[]
-    = tableStateNormalized.pTableParams.partitionFilters
-      .filter((f) => {
-        const valid = isValidColumnId(f.column);
-        if (!valid) ctx.logWarn(`Partition filter ${JSON.stringify(f)} does not match provided columns, skipping`);
-        return valid;
-      });
-  const filters: PTableRecordSingleValueFilterV2[]
-    = uniqueBy(
-      [...tableStateNormalized.pTableParams.filters, ...(ops?.filters ?? [])],
-      (f) => canonicalizeJson<PTableColumnId>(f.column),
-    ).filter((f) => {
+  const coreJoinType = ops?.coreJoinType ?? "full";
+  const partitionFilters: PTableRecordSingleValueFilterV2[] =
+    tableStateNormalized.pTableParams.partitionFilters.filter((f) => {
       const valid = isValidColumnId(f.column);
-      if (!valid) ctx.logWarn(`Filter ${JSON.stringify(f)} does not match provided columns, skipping`);
+      if (!valid)
+        ctx.logWarn(
+          `Partition filter ${JSON.stringify(f)} does not match provided columns, skipping`,
+        );
       return valid;
     });
-  const sorting: PTableSorting[]
-    = uniqueBy(
-      [...tableStateNormalized.pTableParams.sorting, ...(ops?.sorting ?? [])],
-      (s) => canonicalizeJson<PTableColumnId>(s.column),
-    ).filter((s) => {
-      const valid = isValidColumnId(s.column);
-      if (!valid) ctx.logWarn(`Sorting ${JSON.stringify(s)} does not match provided columns, skipping`);
-      return valid;
-    });
+  const filters: PTableRecordSingleValueFilterV2[] = uniqueBy(
+    [...tableStateNormalized.pTableParams.filters, ...(ops?.filters ?? [])],
+    (f) => canonicalizeJson<PTableColumnId>(f.column),
+  ).filter((f) => {
+    const valid = isValidColumnId(f.column);
+    if (!valid)
+      ctx.logWarn(`Filter ${JSON.stringify(f)} does not match provided columns, skipping`);
+    return valid;
+  });
+  const sorting: PTableSorting[] = uniqueBy(
+    [...tableStateNormalized.pTableParams.sorting, ...(ops?.sorting ?? [])],
+    (s) => canonicalizeJson<PTableColumnId>(s.column),
+  ).filter((s) => {
+    const valid = isValidColumnId(s.column);
+    if (!valid)
+      ctx.logWarn(`Sorting ${JSON.stringify(s)} does not match provided columns, skipping`);
+    return valid;
+  });
 
   const fullDef = createPTableDef({
     columns,
@@ -709,37 +715,44 @@ export function createPlDataTableV2<A, U>(
   const fullHandle = ctx.createPTable(fullDef);
   if (!fullHandle) return undefined;
 
-  const hiddenColumns = new Set<PObjectId>(((): PObjectId[] => {
-    // Inner join works as a filter - all columns must be present
-    if (coreJoinType === 'inner') return [];
+  const hiddenColumns = new Set<PObjectId>(
+    ((): PObjectId[] => {
+      // Inner join works as a filter - all columns must be present
+      if (coreJoinType === "inner") return [];
 
-    const hiddenColIds = tableStateNormalized.pTableParams.hiddenColIds;
-    if (hiddenColIds) return hiddenColIds;
+      const hiddenColIds = tableStateNormalized.pTableParams.hiddenColIds;
+      if (hiddenColIds) return hiddenColIds;
 
-    return columns
-      .filter((c) => isColumnOptional(c.spec))
-      .map((c) => c.id);
-  })());
+      return columns.filter((c) => isColumnOptional(c.spec)).map((c) => c.id);
+    })(),
+  );
 
   // Preserve linker columns
-  columns
-    .filter((c) => isLinkerColumn(c.spec))
-    .forEach((c) => hiddenColumns.delete(c.id));
+  columns.filter((c) => isLinkerColumn(c.spec)).forEach((c) => hiddenColumns.delete(c.id));
 
   // Preserve core columns as they change the shape of join.
   const coreColumnPredicate = ops?.coreColumnPredicate;
   if (coreColumnPredicate) {
-    const coreColumns = columns.flatMap((c) => coreColumnPredicate(getColumnIdAndSpec(c)) ? [c.id] : []);
+    const coreColumns = columns.flatMap((c) =>
+      coreColumnPredicate(getColumnIdAndSpec(c)) ? [c.id] : [],
+    );
     coreColumns.forEach((c) => hiddenColumns.delete(c));
   }
 
   // Filters decrease the number of result rows, sorting changes the order of result rows
-  [...partitionFilters.map((f) => f.column), ...filters.map((f) => f.column), ...sorting.map((s) => s.column)]
-    .filter((c): c is PTableColumnIdColumn => c.type === 'column')
+  [
+    ...partitionFilters.map((f) => f.column),
+    ...filters.map((f) => f.column),
+    ...sorting.map((s) => s.column),
+  ]
+    .filter((c): c is PTableColumnIdColumn => c.type === "column")
     .forEach((c) => hiddenColumns.delete(c.id));
 
   const visibleColumns = columns.filter((c) => !hiddenColumns.has(c.id));
-  const visibleLabelColumns = getMatchingLabelColumns(visibleColumns.map(getColumnIdAndSpec), allLabelColumns);
+  const visibleLabelColumns = getMatchingLabelColumns(
+    visibleColumns.map(getColumnIdAndSpec),
+    allLabelColumns,
+  );
 
   // if at least one column is not yet computed, we can't show the table
   if (!allPColumnsReady([...visibleColumns, ...visibleLabelColumns])) return undefined;

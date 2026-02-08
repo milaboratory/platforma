@@ -2,25 +2,7 @@
   "name": "@platforma-sdk/block-tools",
   "version": "2.6.44",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
-  "types": "./dist/lib.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "exports": {
-    ".": {
-      "types": "./dist/lib.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
-    }
-  },
-  "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts",
-    "build": "vite build",
-    "readme": "oclif readme",
-    "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "eslint ."
-  },
+  "license": "UNLICENSED",
   "bin": {
     "block-tools": "./bin/run.js"
   },
@@ -30,37 +12,57 @@
     "./src/**/*",
     "./README.md"
   ],
-  "license": "UNLICENSED",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/lib.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts",
+    "build": "vite build",
+    "readme": "oclif readme",
+    "test": "vitest run --coverage",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "fmt": "ts-builder format"
+  },
   "dependencies": {
-    "@platforma-sdk/blocks-deps-updater": "workspace:*",
     "@aws-sdk/client-s3": "catalog:",
-    "@milaboratories/resolve-helper": "workspace:*",
     "@milaboratories/pl-http": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/pl-model-middle-layer": "workspace:*",
+    "@milaboratories/resolve-helper": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
     "@milaboratories/ts-helpers-oclif": "workspace:*",
-    "remeda": "catalog:",
     "@oclif/core": "catalog:",
+    "@platforma-sdk/blocks-deps-updater": "workspace:*",
     "canonicalize": "catalog:",
     "lru-cache": "catalog:",
-    "undici": "catalog:",
     "mime-types": "catalog:",
+    "remeda": "catalog:",
     "tar": "catalog:",
+    "undici": "catalog:",
     "yaml": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@rollup/plugin-node-resolve": "catalog:",
     "@types/mime-types": "catalog:",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
     "oclif": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "semver": "catalog:",
@@ -72,9 +74,9 @@
   "oclif": {
     "bin": "block-tools",
     "commands": {
+      "identifier": "COMMANDS",
       "strategy": "explicit",
-      "target": "./dist/cli.js",
-      "identifier": "COMMANDS"
+      "target": "./dist/cli.js"
     },
     "dirname": "block-tools",
     "topicSeparator": " "

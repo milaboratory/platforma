@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import Layout from '../Layout.vue';
-import Split from '../Split.vue';
-import { faker } from '@faker-js/faker';
-import { range, toList } from '@milaboratories/helpers';
-import { PlCheckbox, PlAlert } from '@milaboratories/uikit';
-import { reactive } from 'vue';
+import Layout from "../Layout.vue";
+import Split from "../Split.vue";
+import { faker } from "@faker-js/faker";
+import { range, toList } from "@milaboratories/helpers";
+import { PlCheckbox, PlAlert } from "@milaboratories/uikit";
+import { reactive } from "vue";
 
 const data = reactive({
   modelValue: true,
@@ -18,14 +18,14 @@ const paragraph = faker.lorem.paragraph();
 const paragraphs = toList(range(0, 25)).map(() => faker.lorem.paragraph());
 
 const json = {
-  label: 'Some json',
+  label: "Some json",
   users: [
     {
-      name: 'Ivan',
+      name: "Ivan",
       age: 12,
     },
     {
-      name: 'Petr',
+      name: "Petr",
       age: 132,
     },
   ],

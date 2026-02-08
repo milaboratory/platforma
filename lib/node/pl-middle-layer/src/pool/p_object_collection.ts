@@ -1,9 +1,9 @@
-import { type PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import type { PObject, PObjectSpec, ValueOrError } from '@platforma-sdk/model';
-import { notEmpty } from '@milaboratories/ts-helpers';
-import assert from 'node:assert';
-import type { Writable } from 'utility-types';
-import { deriveLegacyPObjectId, deriveLocalPObjectId } from './data';
+import { type PlTreeNodeAccessor } from "@milaboratories/pl-tree";
+import type { PObject, PObjectSpec, ValueOrError } from "@platforma-sdk/model";
+import { notEmpty } from "@milaboratories/ts-helpers";
+import assert from "node:assert";
+import type { Writable } from "utility-types";
+import { deriveLegacyPObjectId, deriveLocalPObjectId } from "./data";
 
 /** Represents specific staging or prod ctx data */
 export interface RawPObjectCollection {
@@ -37,7 +37,7 @@ export function parseRawPObjectCollection(
   node: PlTreeNodeAccessor,
   errorOnUnknownField: boolean = true,
   ignoreFieldErrors: boolean = false,
-  prefix: string = '',
+  prefix: string = "",
 ): RawPObjectCollection {
   const entryPattern = /^(?<name>.*)\.(?<type>spec|data)$/;
   const results = new Map<string, Writable<RawPObjectEntry>>();
@@ -55,7 +55,7 @@ export function parseRawPObjectCollection(
     }
     name = name.slice(prefix.length);
 
-    const type = notEmpty(match.groups?.type) as 'spec' | 'data';
+    const type = notEmpty(match.groups?.type) as "spec" | "data";
     let result = results.get(name);
     if (result === undefined) {
       result = {};
@@ -63,7 +63,7 @@ export function parseRawPObjectCollection(
     }
 
     switch (type) {
-      case 'spec':
+      case "spec":
         result.spec = node
           .traverse({
             field: fieldName,
@@ -72,7 +72,7 @@ export function parseRawPObjectCollection(
           })
           ?.getDataAsJson();
         break;
-      case 'data':
+      case "data":
         result.hasData = true;
         result.data = () =>
           node.traverseOrError({
@@ -96,10 +96,10 @@ export function parseRawPObjectCollection(
 export function parseFinalPObjectCollection(
   node: PlTreeNodeAccessor,
   errorOnUnknownField: boolean = true,
-  prefix: string = '',
+  prefix: string = "",
   resolvePath: string[],
 ): Record<string, PObject<PlTreeNodeAccessor>> {
-  if (!node.getIsReadyOrError()) throw new Error('resource is not ready');
+  if (!node.getIsReadyOrError()) throw new Error("resource is not ready");
   const rawCollection = parseRawPObjectCollection(node, errorOnUnknownField, false, prefix);
   assert(rawCollection.locked);
   const collection: Record<string, PObject<PlTreeNodeAccessor>> = {};
@@ -111,9 +111,10 @@ export function parseFinalPObjectCollection(
     if (data === undefined) throw new Error(`no data for key ${outputName}`);
     if (!data.ok) throw data.error;
     collection[outputName] = {
-      id: resolvePath.length === 0
-        ? deriveLegacyPObjectId(result.spec, data.value) // for old blocks opened in new desktop
-        : deriveLocalPObjectId(resolvePath, outputName),
+      id:
+        resolvePath.length === 0
+          ? deriveLegacyPObjectId(result.spec, data.value) // for old blocks opened in new desktop
+          : deriveLocalPObjectId(resolvePath, outputName),
       spec: result.spec,
       data: data.value,
     };

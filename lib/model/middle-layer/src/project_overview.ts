@@ -1,12 +1,19 @@
-import type { ProjectMeta } from './project';
-import type { BlockPackSpec } from './block_registry/block_pack_spec';
-import type { BlockCodeFeatureFlags, BlockRenderingMode, BlockSection, NavigationState, AuthorMarker, StringifiedJson } from '@milaboratories/pl-model-common';
-import type { StorageDebugView } from '@platforma-sdk/model';
-import type { UpdateSuggestions } from './update_info';
-import type { BlockSettings } from './block_settings';
+import type { ProjectMeta } from "./project";
+import type { BlockPackSpec } from "./block_registry/block_pack_spec";
+import type {
+  BlockCodeFeatureFlags,
+  BlockRenderingMode,
+  BlockSection,
+  NavigationState,
+  AuthorMarker,
+  StringifiedJson,
+} from "@milaboratories/pl-model-common";
+import type { StorageDebugView } from "@platforma-sdk/model";
+import type { UpdateSuggestions } from "./update_info";
+import type { BlockSettings } from "./block_settings";
 
 /** Generalized block status, to be used in block item "styling". */
-export type BlockCalculationStatus = 'NotCalculated' | 'Running' | 'Done' | 'Limbo';
+export type BlockCalculationStatus = "NotCalculated" | "Running" | "Done" | "Limbo";
 
 /** Overview of the whole project state, required to render a left panel. */
 export type ProjectOverview = {

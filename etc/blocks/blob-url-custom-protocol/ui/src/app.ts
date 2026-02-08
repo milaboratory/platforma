@@ -1,8 +1,8 @@
-import type { Equal, Expect } from '@milaboratories/helpers';
-import { platforma } from '@milaboratories/milaboratories.test-blob-url-custom-protocol.model';
-import { defineApp } from '@platforma-sdk/ui-vue';
-import { computed, reactive } from 'vue';
-import MainPage from './MainPage.vue';
+import type { Equal, Expect } from "@milaboratories/helpers";
+import { platforma } from "@milaboratories/milaboratories.test-blob-url-custom-protocol.model";
+import { defineApp } from "@platforma-sdk/ui-vue";
+import { computed, reactive } from "vue";
+import MainPage from "./MainPage.vue";
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -16,7 +16,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     data,
     argsAsJson,
     routes: {
-      '/': () => MainPage,
+      "/": () => MainPage,
     },
   };
 });
@@ -24,8 +24,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
 type App = ReturnType<typeof sdkPlugin.useApp>;
 
 type __cases = [
-  Expect<Equal<App['data'], { counter: number }>>,
-  Expect<Equal<App['argsAsJson'], string>>,
+  Expect<Equal<App["data"], { counter: number }>>,
+  Expect<Equal<App["argsAsJson"], string>>,
 ];
 
 export const useApp = sdkPlugin.useApp;

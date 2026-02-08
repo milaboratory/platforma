@@ -1,8 +1,8 @@
 // TODO BroadActiveHandleDescriptor must be removed
 
-import type { BlockCodeFeatureFlags } from '../flags';
-import type { BlockCodeWithInfo, Code } from './code';
-import type { BlockRenderingMode } from './types';
+import type { BlockCodeFeatureFlags } from "../flags";
+import type { BlockCodeWithInfo, Code } from "./code";
+import type { BlockRenderingMode } from "./types";
 
 /**
  * Descriptor for a state migration function.
@@ -23,7 +23,10 @@ export type BlockConfigV4Generic<
   _Data extends Record<string, unknown> = Record<string, unknown>,
   BroadActiveHandleDescriptor = unknown,
   NarrowActiveHandleDescriptor extends BroadActiveHandleDescriptor = BroadActiveHandleDescriptor,
-  Outputs extends Record<string, BroadActiveHandleDescriptor> = Record<string, BroadActiveHandleDescriptor>,
+  Outputs extends Record<string, BroadActiveHandleDescriptor> = Record<
+    string,
+    BroadActiveHandleDescriptor
+  >,
 > = {
   /** Discriminator to identify config version */
   readonly configVersion: 4;
@@ -93,7 +96,10 @@ export type BlockConfigV3Generic<
   UiState = unknown,
   BroadActiveHandleDescriptor = unknown,
   NarrowActiveHandleDescriptor extends BroadActiveHandleDescriptor = BroadActiveHandleDescriptor,
-  Outputs extends Record<string, BroadActiveHandleDescriptor> = Record<string, BroadActiveHandleDescriptor>,
+  Outputs extends Record<string, BroadActiveHandleDescriptor> = Record<
+    string,
+    BroadActiveHandleDescriptor
+  >,
 > = {
   /** Discriminator to identify config version */
   readonly configVersion: 3;
@@ -151,7 +157,7 @@ export type BlockConfigV3Generic<
 export type BlockConfigGeneric = BlockConfigV3Generic | BlockConfigV4Generic;
 
 export function extractCodeWithInfo(cfg: BlockConfigGeneric): BlockCodeWithInfo {
-  if (cfg.code === undefined) throw new Error('extractCodeWithInfo: No code bundle');
+  if (cfg.code === undefined) throw new Error("extractCodeWithInfo: No code bundle");
   return {
     code: cfg.code,
     sdkVersion: cfg.sdkVersion,

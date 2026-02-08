@@ -153,7 +153,6 @@
   Added new `StructFieldExpression` to enable accessing fields within nested data structures like JSON objects. This feature is essential for working with complex data formats where nested structures are common.
 
   Key features:
-
   - Extract single fields from struct objects using `struct.field()` functionality
   - Support for deeply nested field access through expression chaining
   - Graceful handling of missing fields and struct objects

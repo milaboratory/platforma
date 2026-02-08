@@ -1,47 +1,47 @@
-import { isNullResourceId, poll, TestHelpers, toGlobalResourceId } from '@milaboratories/pl-client';
-import { defaultHttpDispatcher } from '@milaboratories/pl-http';
-import { HmacSha256Signer } from '@milaboratories/ts-helpers';
-import path from 'node:path';
-import { expect, test } from 'vitest';
-import { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
-import { BlockPackSpecAny } from '../../model';
-import { BlockPackPreparer, createBlockPack } from './block_pack';
+import { isNullResourceId, poll, TestHelpers, toGlobalResourceId } from "@milaboratories/pl-client";
+import { defaultHttpDispatcher } from "@milaboratories/pl-http";
+import { HmacSha256Signer } from "@milaboratories/ts-helpers";
+import path from "node:path";
+import { expect, test } from "vitest";
+import { V2RegistryProvider } from "../../block_registry/registry-v2-provider";
+import { BlockPackSpecAny } from "../../model";
+import { BlockPackPreparer, createBlockPack } from "./block_pack";
 
 const preparation = new BlockPackPreparer(
   new V2RegistryProvider(defaultHttpDispatcher()),
-  new HmacSha256Signer(HmacSha256Signer.generateSecret())
+  new HmacSha256Signer(HmacSha256Signer.generateSecret()),
 );
 
 test.each([
   {
     spec: {
-      type: 'from-registry-v1',
-      registryUrl: 'https://block.registry.platforma.bio/releases',
+      type: "from-registry-v1",
+      registryUrl: "https://block.registry.platforma.bio/releases",
       id: {
-        organization: 'milaboratory',
-        name: 'enter-numbers',
-        version: '0.4.1'
-      }
-    } as BlockPackSpecAny
+        organization: "milaboratory",
+        name: "enter-numbers",
+        version: "0.4.1",
+      },
+    } as BlockPackSpecAny,
   },
   {
     spec: {
-      type: 'dev-v1',
-      folder: path.resolve('integration', 'block-beta-sum-numbers')
-    } as BlockPackSpecAny
-  }
-])('test load template from $spec.type', async ({ spec }) => {
+      type: "dev-v1",
+      folder: path.resolve("integration", "block-beta-sum-numbers"),
+    } as BlockPackSpecAny,
+  },
+])("test load template from $spec.type", async ({ spec }) => {
   const config = await preparation.getBlockConfigContainer(spec);
   expect(config).toBeDefined();
-  expect(config.renderingMode).toEqual('Heavy');
+  expect(config.renderingMode).toEqual("Heavy");
 
   const specPrepared = await preparation.prepare(spec);
 
   await TestHelpers.withTempRoot(async (pl) => {
-    const f0 = { resourceId: pl.clientRoot, fieldName: 'test0' };
+    const f0 = { resourceId: pl.clientRoot, fieldName: "test0" };
 
-    const bp = await pl.withWriteTx('test', async (tx) => {
-      tx.createField(f0, 'Dynamic');
+    const bp = await pl.withWriteTx("test", async (tx) => {
+      tx.createField(f0, "Dynamic");
       const bp = createBlockPack(tx, specPrepared);
       tx.setField(f0, bp);
       await tx.commit();

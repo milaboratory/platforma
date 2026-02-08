@@ -1,4 +1,4 @@
-import { EventEmitter } from 'node:events';
+import { EventEmitter } from "node:events";
 
 /** Minimalistic logger facade */
 export interface MiLogger {
@@ -27,20 +27,19 @@ export class ConsoleLoggerAdapter implements MiLogger {
   }
 }
 
-export type MiLoggerLevel = 'info' | 'warn' | 'error';
+export type MiLoggerLevel = "info" | "warn" | "error";
 
 export type MiLoggerLogEvent = {
   level: MiLoggerLevel;
   message: string;
 };
 
-export type BlockEventDispatcherEvent =
-  | {
-    type: 'log';
-    blockId: string;
-    level: MiLoggerLevel;
-    message: string;
-  };
+export type BlockEventDispatcherEvent = {
+  type: "log";
+  blockId: string;
+  level: MiLoggerLevel;
+  message: string;
+};
 
 export class BlockEventDispatcher extends EventEmitter<{
   [key: string]: [BlockEventDispatcherEvent];
@@ -54,18 +53,21 @@ export class BlockEventDispatcher extends EventEmitter<{
   }
 
   public logInfo(blockId: string, message: string): void {
-    this.emit(this.eventKey(blockId), { type: 'log', blockId, level: 'info', message });
+    this.emit(this.eventKey(blockId), { type: "log", blockId, level: "info", message });
   }
 
   public logWarn(blockId: string, message: string): void {
-    this.emit(this.eventKey(blockId), { type: 'log', blockId, level: 'warn', message });
+    this.emit(this.eventKey(blockId), { type: "log", blockId, level: "warn", message });
   }
 
   public logError(blockId: string, message: string): void {
-    this.emit(this.eventKey(blockId), { type: 'log', blockId, level: 'error', message });
+    this.emit(this.eventKey(blockId), { type: "log", blockId, level: "error", message });
   }
 
-  public onBlockEvent(blockId: string, callback: (event: BlockEventDispatcherEvent) => void): () => void {
+  public onBlockEvent(
+    blockId: string,
+    callback: (event: BlockEventDispatcherEvent) => void,
+  ): () => void {
     this.on(this.eventKey(blockId), callback);
     return () => this.off(this.eventKey(blockId), callback);
   }

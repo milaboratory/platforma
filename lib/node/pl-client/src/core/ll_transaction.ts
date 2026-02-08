@@ -1,52 +1,52 @@
 import type {
   TxAPI_ClientMessage,
   TxAPI_ServerMessage,
-} from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
-import type { BiDiStream } from './abstract_stream';
-import Denque from 'denque';
-import type { Status } from '../proto-grpc/github.com/googleapis/googleapis/google/rpc/status';
+} from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
+import type { BiDiStream } from "./abstract_stream";
+import Denque from "denque";
+import type { Status } from "../proto-grpc/github.com/googleapis/googleapis/google/rpc/status";
 import {
   PlErrorCodeNotFound,
   RecoverablePlError,
   rethrowMeaningfulError,
   UnrecoverablePlError,
-} from './errors';
-import { StatefulPromise } from './StatefulPromise';
+} from "./errors";
+import { StatefulPromise } from "./StatefulPromise";
 
-export type ClientMessageRequest = TxAPI_ClientMessage['request'];
+export type ClientMessageRequest = TxAPI_ClientMessage["request"];
 
-export type ServerMessageResponse = TxAPI_ServerMessage['response'];
+export type ServerMessageResponse = TxAPI_ServerMessage["response"];
 
 type TxStream = BiDiStream<TxAPI_ClientMessage, TxAPI_ServerMessage>;
 
-export type OneOfKind<T extends { oneofKind: unknown }, Kind extends T['oneofKind']> = Extract<
+export type OneOfKind<T extends { oneofKind: unknown }, Kind extends T["oneofKind"]> = Extract<
   T,
   { oneofKind: Kind }
 >;
 
-interface SingleResponseHandler<Kind extends ServerMessageResponse['oneofKind']> {
+interface SingleResponseHandler<Kind extends ServerMessageResponse["oneofKind"]> {
   kind: Kind;
   expectMultiResponse: false;
   resolve: (v: OneOfKind<ServerMessageResponse, Kind>) => void;
   reject: (e: Error) => void;
 }
 
-interface MultiResponseHandler<Kind extends ServerMessageResponse['oneofKind']> {
+interface MultiResponseHandler<Kind extends ServerMessageResponse["oneofKind"]> {
   kind: Kind;
   expectMultiResponse: true;
   resolve: (v: OneOfKind<ServerMessageResponse, Kind>[]) => void;
   reject: (e: Error) => void;
 }
 
-type AnySingleResponseHandler = SingleResponseHandler<ServerMessageResponse['oneofKind']>;
+type AnySingleResponseHandler = SingleResponseHandler<ServerMessageResponse["oneofKind"]>;
 
-type AnyMultiResponseHandler = MultiResponseHandler<ServerMessageResponse['oneofKind']>;
+type AnyMultiResponseHandler = MultiResponseHandler<ServerMessageResponse["oneofKind"]>;
 
 type AnyResponseHandler =
-  | SingleResponseHandler<ServerMessageResponse['oneofKind']>
-  | MultiResponseHandler<ServerMessageResponse['oneofKind']>;
+  | SingleResponseHandler<ServerMessageResponse["oneofKind"]>
+  | MultiResponseHandler<ServerMessageResponse["oneofKind"]>;
 
-function createResponseHandler<Kind extends ServerMessageResponse['oneofKind']>(
+function createResponseHandler<Kind extends ServerMessageResponse["oneofKind"]>(
   kind: Kind,
   expectMultiResponse: boolean,
   resolve:
@@ -62,9 +62,9 @@ function isRecoverable(status: Status): boolean {
 }
 
 export class RethrowError extends Error {
-  name = 'RethrowError';
+  name = "RethrowError";
   constructor(public readonly rethrowLambda: () => never) {
-    super('Rethrow error, you should never see this one.');
+    super("Rethrow error, you should never see this one.");
   }
 }
 
@@ -166,7 +166,7 @@ export class LLPlTransaction {
 
             if (message.multiMessage !== undefined && !message.multiMessage.isLast) {
               this.assignErrorFactoryIfNotSet(() => {
-                throw new Error('Unexpected message sequence.');
+                throw new Error("Unexpected message sequence.");
               });
               break;
             }
@@ -185,8 +185,8 @@ export class LLPlTransaction {
         }
 
         if (
-          currentHandler.kind !== message.response.oneofKind
-          && message?.multiMessage?.isEmpty !== true
+          currentHandler.kind !== message.response.oneofKind &&
+          message?.multiMessage?.isEmpty !== true
         ) {
           const errorMessage = `inconsistent request response types: ${currentHandler.kind} !== ${message.response.oneofKind}`;
 
@@ -266,7 +266,7 @@ export class LLPlTransaction {
       const handler = this.responseHandlerQueue.shift();
       if (!handler) break;
       if (this.errorFactory) handler.reject(new RethrowError(this.errorFactory));
-      else handler.reject(new Error('no reply'));
+      else handler.reject(new Error("no reply"));
     }
 
     // closing outgoing stream
@@ -292,29 +292,31 @@ export class LLPlTransaction {
     if (processingResult !== null) processingResult();
   }
 
-  public async send<Kind extends ClientMessageRequest['oneofKind']>(
+  public async send<Kind extends ClientMessageRequest["oneofKind"]>(
     r: OneOfKind<ClientMessageRequest, Kind>,
-    expectMultiResponse: false
+    expectMultiResponse: false,
   ): Promise<OneOfKind<ServerMessageResponse, Kind>>;
-  public async send<Kind extends ClientMessageRequest['oneofKind']>(
+  public async send<Kind extends ClientMessageRequest["oneofKind"]>(
     r: OneOfKind<ClientMessageRequest, Kind>,
-    expectMultiResponse: true
+    expectMultiResponse: true,
   ): Promise<OneOfKind<ServerMessageResponse, Kind>[]>;
   /** Generate proper client message and send it to the server, and returns a promise of future response. */
-  public async send<Kind extends ClientMessageRequest['oneofKind']>(
+  public async send<Kind extends ClientMessageRequest["oneofKind"]>(
     r: OneOfKind<ClientMessageRequest, Kind>,
     expectMultiResponse: boolean,
   ): Promise<OneOfKind<ServerMessageResponse, Kind> | OneOfKind<ServerMessageResponse, Kind>[]> {
     if (this.errorFactory) return Promise.reject(new RethrowError(this.errorFactory));
 
-    if (this.closed) return Promise.reject(new Error('Transaction already closed'));
+    if (this.closed) return Promise.reject(new Error("Transaction already closed"));
 
     // Note: Promise synchronously executes a callback passed to a constructor
-    const result = StatefulPromise.fromDeferredReject(new Promise<OneOfKind<ServerMessageResponse, Kind>>((resolve, reject) => {
-      this.responseHandlerQueue.push(
-        createResponseHandler(r.oneofKind, expectMultiResponse, resolve, reject),
-      );
-    }));
+    const result = StatefulPromise.fromDeferredReject(
+      new Promise<OneOfKind<ServerMessageResponse, Kind>>((resolve, reject) => {
+        this.responseHandlerQueue.push(
+          createResponseHandler(r.oneofKind, expectMultiResponse, resolve, reject),
+        );
+      }),
+    );
 
     // Awaiting message dispatch to catch any associated errors.
     // There is no hurry, we are not going to receive a response until message is sent.
@@ -327,7 +329,7 @@ export class LLPlTransaction {
       return await result;
     } catch (e: any) {
       if (e instanceof RethrowError) e.rethrowLambda();
-      throw new Error('Error while waiting for response', { cause: e });
+      throw new Error("Error while waiting for response", { cause: e });
     }
   }
 
@@ -342,6 +344,6 @@ export class LLPlTransaction {
 
   private isTerminalResponse(message: TxAPI_ServerMessage): boolean {
     const kind = message.response.oneofKind;
-    return kind === 'txCommit' || kind === 'txDiscard';
+    return kind === "txCommit" || kind === "txDiscard";
   }
 }

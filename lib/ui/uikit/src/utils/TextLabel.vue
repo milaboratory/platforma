@@ -35,7 +35,7 @@
 .label::after {
   display: block;
   flex: 1;
-  content: '';
+  content: "";
   height: 1px;
   background-color: var(--border-color-div-grey);
   width: 100%;

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/require-await */
-import { parseTemplate } from '@milaboratories/pl-model-backend';
+import { parseTemplate } from "@milaboratories/pl-model-backend";
 
 /**
  * Add there all heavy synchronous operations that can be moved to the worker thread.

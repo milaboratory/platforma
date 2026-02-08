@@ -1,6 +1,6 @@
-import fs from 'node:fs';
-import yaml from 'yaml';
-import type winston from 'winston';
+import fs from "node:fs";
+import yaml from "yaml";
+import type winston from "winston";
 
 export interface CondaSpec {
   channels?: string[];
@@ -15,7 +15,7 @@ export interface CondaSpec {
  * These channels (main, r, msys2, defaults, anaconda) should be avoided in favor of
  * community-maintained channels like conda-forge to avoid licensing restrictions
  */
-const FORBIDDEN_CHANNELS = ['main', 'r', 'msys2', 'defaults', 'anaconda'];
+const FORBIDDEN_CHANNELS = ["main", "r", "msys2", "defaults", "anaconda"];
 
 /**
  * Validates a conda spec file to ensure it doesn't use forbidden channels
@@ -30,10 +30,10 @@ export function validateCondaSpec(logger: winston.Logger, specPath: string): voi
     throw new Error(`Conda spec file not found: ${specPath}`);
   }
 
-  const specContent = fs.readFileSync(specPath, 'utf-8');
+  const specContent = fs.readFileSync(specPath, "utf-8");
   const spec = yaml.parse(specContent) as CondaSpec;
 
-  if (!spec || typeof spec !== 'object') {
+  if (!spec || typeof spec !== "object") {
     throw new Error(`Invalid conda spec file format: ${specPath}`);
   }
 
@@ -54,9 +54,7 @@ export function validateCondaSpec(logger: winston.Logger, specPath: string): voi
   }
 
   if (errors.length > 0) {
-    throw new Error(
-      `Conda spec file contains forbidden Anaconda channels:\n${errors.join('\n')}`,
-    );
+    throw new Error(`Conda spec file contains forbidden Anaconda channels:\n${errors.join("\n")}`);
   }
 
   logger.debug(`Conda spec file validation passed: ${specPath}`);
@@ -90,13 +88,13 @@ function validateDependencies(dependencies: (string | Record<string, unknown>)[]
 
   for (const dep of dependencies) {
     // Skip non-string dependencies (they might be pip dependencies, etc.)
-    if (typeof dep !== 'string') {
+    if (typeof dep !== "string") {
       continue;
     }
 
     // Check if dependency uses channel prefix (format: channel::package)
-    if (dep.includes('::')) {
-      const [channel, ..._packageParts] = dep.split('::');
+    if (dep.includes("::")) {
+      const [channel, ..._packageParts] = dep.split("::");
       const channelLower = channel.toLowerCase().trim();
 
       if (FORBIDDEN_CHANNELS.includes(channelLower)) {

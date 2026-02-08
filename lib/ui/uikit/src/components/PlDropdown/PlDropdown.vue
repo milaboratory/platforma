@@ -3,35 +3,35 @@
  * A component for selecting one value from a list of options
  */
 export default {
-  name: 'PlDropdown',
+  name: "PlDropdown",
 };
 </script>
 
 <script lang="ts" setup generic="M = unknown">
-import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from 'vue';
-import SvgRequired from '../../assets/images/required.svg?raw';
-import { getErrorMessage } from '../../helpers/error.ts';
-import { tap } from '../../helpers/functions';
-import { deepEqual } from '../../helpers/objects';
-import { normalizeListOptions } from '../../helpers/utils';
-import type { ListOption, ListOptionNormalized, MaskIconName16, MaskIconName24 } from '../../types';
-import DoubleContour from '../../utils/DoubleContour.vue';
-import { useLabelNotch } from '../../utils/useLabelNotch';
-import LongText from '../LongText.vue';
-import { PlIcon16 } from '../PlIcon16';
-import { PlIcon24 } from '../PlIcon24';
-import { PlSvg } from '../PlSvg';
-import { PlTooltip } from '../PlTooltip';
-import OptionList from './OptionList.vue';
-import './pl-dropdown.scss';
-import type { LOption } from './types';
-import { useGroupBy } from './useGroupBy';
+import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from "vue";
+import SvgRequired from "../../assets/images/required.svg?raw";
+import { getErrorMessage } from "../../helpers/error.ts";
+import { tap } from "../../helpers/functions";
+import { deepEqual } from "../../helpers/objects";
+import { normalizeListOptions } from "../../helpers/utils";
+import type { ListOption, ListOptionNormalized, MaskIconName16, MaskIconName24 } from "../../types";
+import DoubleContour from "../../utils/DoubleContour.vue";
+import { useLabelNotch } from "../../utils/useLabelNotch";
+import LongText from "../LongText.vue";
+import { PlIcon16 } from "../PlIcon16";
+import { PlIcon24 } from "../PlIcon24";
+import { PlSvg } from "../PlSvg";
+import { PlTooltip } from "../PlTooltip";
+import OptionList from "./OptionList.vue";
+import "./pl-dropdown.scss";
+import type { LOption } from "./types";
+import { useGroupBy } from "./useGroupBy";
 
 const emit = defineEmits<{
   /**
    * Emitted when the model value is updated.
    */
-  (e: 'update:modelValue', value: M | undefined): void;
+  (e: "update:modelValue", value: M | undefined): void;
 }>();
 
 const props = withDefaults(
@@ -91,25 +91,34 @@ const props = withDefaults(
     /**
      * Option list item size
      */
-    optionSize?: 'small' | 'medium';
+    optionSize?: "small" | "medium";
     /**
      * Makes some of corners not rounded
      * */
-    groupPosition?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
+    groupPosition?:
+      | "top"
+      | "bottom"
+      | "left"
+      | "right"
+      | "top-left"
+      | "top-right"
+      | "bottom-left"
+      | "bottom-right"
+      | "middle";
   }>(),
   {
-    label: '',
+    label: "",
     helper: undefined,
     loadingOptionsHelper: undefined,
     error: undefined,
     showErrorMessage: true,
-    placeholder: '...',
+    placeholder: "...",
     clearable: false,
     required: false,
     disabled: false,
     arrowIcon: undefined,
     arrowIconLarge: undefined,
-    optionSize: 'small',
+    optionSize: "small",
     options: undefined,
     groupPosition: undefined,
   },
@@ -118,10 +127,10 @@ const props = withDefaults(
 const rootRef = ref<HTMLElement | undefined>();
 const input = ref<HTMLInputElement | undefined>();
 
-const optionListRef = useTemplateRef<InstanceType<typeof OptionList>>('optionListRef');
+const optionListRef = useTemplateRef<InstanceType<typeof OptionList>>("optionListRef");
 
 const data = reactive({
-  search: '',
+  search: "",
   activeIndex: -1,
   open: false,
   optionsHeight: 0,
@@ -169,7 +178,7 @@ const computedError = computed(() => {
   }
 
   if (props.modelValue !== undefined && selectedIndex.value === -1) {
-    return 'The selected value is not one of the options';
+    return "The selected value is not one of the options";
   }
 
   return undefined;
@@ -194,7 +203,7 @@ const textValue = computed(() => {
 
 const computedPlaceholder = computed(() => {
   if (!data.open && props.modelValue !== undefined) {
-    return '';
+    return "";
   }
 
   return props.modelValue ? String(textValue.value) : props.placeholder;
@@ -219,7 +228,7 @@ const filteredRef = computed(() => {
         return true;
       }
 
-      if (typeof o.value === 'string') {
+      if (typeof o.value === "string") {
         return o.value.toLowerCase().includes(search);
       }
 
@@ -230,13 +239,13 @@ const filteredRef = computed(() => {
   return options;
 });
 
-const { orderedRef, groupsRef, restRef } = useGroupBy(filteredRef, 'group');
+const { orderedRef, groupsRef, restRef } = useGroupBy(filteredRef, "group");
 
-const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
+const tabindex = computed(() => (isDisabled.value ? undefined : "0"));
 
 const selectOption = (v: M | undefined) => {
-  emit('update:modelValue', v);
-  data.search = '';
+  emit("update:modelValue", v);
+  data.search = "";
   data.open = false;
   rootRef?.value?.focus();
 };
@@ -245,14 +254,14 @@ const selectOptionWrapper = (v: unknown) => {
   selectOption(v as M | undefined);
 };
 
-const clear = () => emit('update:modelValue', undefined);
+const clear = () => emit("update:modelValue", undefined);
 
 const setFocusOnInput = () => input.value?.focus();
 
 const toggleOpen = () => {
   data.open = !data.open;
   if (!data.open) {
-    data.search = '';
+    data.search = "";
   }
 };
 
@@ -261,14 +270,17 @@ const onInputFocus = () => (data.open = true);
 const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
 
-  if (!rootRef.value?.contains(relatedTarget) && !optionListRef.value?.listRef?.contains(relatedTarget)) {
-    data.search = '';
+  if (
+    !rootRef.value?.contains(relatedTarget) &&
+    !optionListRef.value?.listRef?.contains(relatedTarget)
+  ) {
+    data.search = "";
     data.open = false;
   }
 };
 
 const handleKeydown = (e: { code: string; preventDefault(): void }) => {
-  if (!['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.code)) {
+  if (!["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(e.code)) {
     return;
   } else {
     e.preventDefault();
@@ -277,13 +289,13 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
   const { open, activeIndex } = data;
 
   if (!open) {
-    if (e.code === 'Enter') {
+    if (e.code === "Enter") {
       data.open = true;
     }
     return;
   }
 
-  if (e.code === 'Escape') {
+  if (e.code === "Escape") {
     data.open = false;
     rootRef.value?.focus();
   }
@@ -296,13 +308,13 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
     return;
   }
 
-  if (e.code === 'Enter') {
+  if (e.code === "Enter") {
     selectOption(ordered.find((it) => it.index === activeIndex)?.value);
   }
 
   const localIndex = ordered.findIndex((it) => it.index === activeIndex) ?? -1;
 
-  const delta = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
+  const delta = e.code === "ArrowDown" ? 1 : e.code === "ArrowUp" ? -1 : 0;
 
   const newIndex = Math.abs(localIndex + delta + length) % length;
 
@@ -315,7 +327,7 @@ watch(() => props.modelValue, updateActive, { immediate: true });
 
 watch(
   () => data.open,
-  (open) => (open ? input.value?.focus() : ''),
+  (open) => (open ? input.value?.focus() : ""),
 );
 
 watchPostEffect(() => {
@@ -358,7 +370,12 @@ watchPostEffect(() => {
 
           <div class="pl-dropdown__controls">
             <PlIcon24 v-if="showLoadingSpinner" name="loading" />
-            <PlIcon16 v-if="clearable && hasValue" class="clear" name="delete-clear" @click.stop="clear" />
+            <PlIcon16
+              v-if="clearable && hasValue"
+              class="clear"
+              name="delete-clear"
+              @click.stop="clear"
+            />
             <slot name="append" />
             <div class="pl-dropdown__arrow-wrapper" @click.stop="toggleOpen">
               <PlIcon24 v-if="arrowIconLarge" :name="arrowIconLarge" class="arrow-icon" />
@@ -389,7 +406,9 @@ watchPostEffect(() => {
       </div>
     </div>
     <div v-if="computedError" class="pl-dropdown__error">{{ computedError }}</div>
-    <div v-else-if="showLoadingSpinner && loadingOptionsHelper" class="pl-dropdown__helper">{{ loadingOptionsHelper }}</div>
+    <div v-else-if="showLoadingSpinner && loadingOptionsHelper" class="pl-dropdown__helper">
+      {{ loadingOptionsHelper }}
+    </div>
     <div v-else-if="helper" class="pl-dropdown__helper">{{ helper }}</div>
   </div>
 </template>

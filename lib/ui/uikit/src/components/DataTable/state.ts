@@ -1,13 +1,24 @@
-import { computed, provide, reactive, watch } from 'vue';
-import type { TableProps, TableData, DataWindow, PrimaryKey, Row, ColumnSpecSettings, DataSource } from './types';
-import { deepClone, deepEqual } from '@milaboratories/helpers';
-import { stateKey } from './keys';
-import { clamp, delay, resolveAwaited, tap } from '@milaboratories/helpers';
-import { useTableColumns } from './composition/useTableColumns';
-import { useTableRows } from './composition/useTableRows';
-import { GAP, WINDOW_DELTA } from './constants';
+import { computed, provide, reactive, watch } from "vue";
+import type {
+  TableProps,
+  TableData,
+  DataWindow,
+  PrimaryKey,
+  Row,
+  ColumnSpecSettings,
+  DataSource,
+} from "./types";
+import { deepClone, deepEqual } from "@milaboratories/helpers";
+import { stateKey } from "./keys";
+import { clamp, delay, resolveAwaited, tap } from "@milaboratories/helpers";
+import { useTableColumns } from "./composition/useTableColumns";
+import { useTableRows } from "./composition/useTableRows";
+import { GAP, WINDOW_DELTA } from "./constants";
 
-const loadRows = async (dataWindow: { scrollTop: number; bodyHeight: number }, dataSource: DataSource) => {
+const loadRows = async (
+  dataWindow: { scrollTop: number; bodyHeight: number },
+  dataSource: DataSource,
+) => {
   const { scrollTop, bodyHeight } = dataWindow;
 
   await delay(0);
@@ -60,8 +71,12 @@ export function createState(props: TableProps) {
     return data.columns.reduce((acc, col) => acc + col.width + GAP, 0);
   });
 
-  const maxScrollTop = computed(() => tap(state.data.dataHeight - state.data.bodyHeight, (v) => (v > 0 ? v : 0)));
-  const maxScrollLeft = computed(() => tap(columnsWidth.value - state.data.bodyWidth, (v) => (v > 0 ? v : 0)));
+  const maxScrollTop = computed(() =>
+    tap(state.data.dataHeight - state.data.bodyHeight, (v) => (v > 0 ? v : 0)),
+  );
+  const maxScrollLeft = computed(() =>
+    tap(columnsWidth.value - state.data.bodyWidth, (v) => (v > 0 ? v : 0)),
+  );
 
   const dataDimensions = computed<DataWindow & { current?: DataWindow }>(() => {
     return {
@@ -143,18 +158,23 @@ export function createState(props: TableProps) {
     (n, _o) => {
       const current = n.current;
 
-      const needToLoad = !current || n.scrollTop < current.scrollTop || n.scrollTop + n.bodyHeight > current.bodyHeight + current.scrollTop;
+      const needToLoad =
+        !current ||
+        n.scrollTop < current.scrollTop ||
+        n.scrollTop + n.bodyHeight > current.bodyHeight + current.scrollTop;
 
       if (needToLoad) {
         data.currentWindow = {
           scrollTop: n.scrollTop - WINDOW_DELTA,
           bodyHeight: n.bodyHeight + WINDOW_DELTA * 2,
         };
-        loadRows(deepClone(data.currentWindow), settings.value.dataSource).then(({ rows, dataWindow }) => {
-          if (deepEqual(data.currentWindow, dataWindow)) {
-            data.rows = rows;
-          }
-        });
+        loadRows(deepClone(data.currentWindow), settings.value.dataSource).then(
+          ({ rows, dataWindow }) => {
+            if (deepEqual(data.currentWindow, dataWindow)) {
+              data.rows = rows;
+            }
+          },
+        );
       }
     },
     { deep: true, immediate: true },

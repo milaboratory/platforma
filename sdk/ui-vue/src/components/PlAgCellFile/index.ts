@@ -1,1 +1,1 @@
-export { default as PlAgCellFile } from './PlAgCellFile.vue';
+export { default as PlAgCellFile } from "./PlAgCellFile.vue";

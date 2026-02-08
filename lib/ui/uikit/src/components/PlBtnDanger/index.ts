@@ -1,1 +1,1 @@
-export { default as PlBtnDanger } from './PlBtnDanger.vue';
+export { default as PlBtnDanger } from "./PlBtnDanger.vue";

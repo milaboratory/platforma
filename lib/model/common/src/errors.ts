@@ -2,18 +2,18 @@
  * Just for convenience, usually it is an Error with name 'AbortError'
  */
 export class AbortError extends Error {
-  name = 'AbortError';
+  name = "AbortError";
 }
 
 /**
  * Throw this to show a message without stack trace in UI
  */
 export class UiError extends Error {
-  name = 'UiError';
+  name = "UiError";
 }
 
-export function isAbortError(error: unknown): error is Error & { name: 'AbortError' } {
-  return error instanceof Error && error.name === 'AbortError';
+export function isAbortError(error: unknown): error is Error & { name: "AbortError" } {
+  return error instanceof Error && error.name === "AbortError";
 }
 
 export function hasAbortError(error: unknown): boolean {
@@ -21,35 +21,35 @@ export function hasAbortError(error: unknown): boolean {
     return false;
   }
 
-  return error.name === 'AbortError' || hasAbortError(error.cause);
+  return error.name === "AbortError" || hasAbortError(error.cause);
 }
 
 export function isAggregateError(error: unknown): error is AggregateError {
-  return error instanceof Error && error.name === 'AggregateError';
+  return error instanceof Error && error.name === "AggregateError";
 }
 
 export class PFrameError extends Error {
-  name = 'PFrameError';
+  name = "PFrameError";
 }
 
 export function isPFrameError(error: unknown): error is PFrameError {
-  return error instanceof Error && error.name === 'PFrameError';
+  return error instanceof Error && error.name === "PFrameError";
 }
 
 export class PFrameDriverError extends PFrameError {
-  name = 'PFrameError.Driver';
+  name = "PFrameError.Driver";
 }
 
 export function isPFrameDriverError(error: unknown): error is PFrameDriverError {
-  return error instanceof Error && error.name === 'PFrameError.Driver';
+  return error instanceof Error && error.name === "PFrameError.Driver";
 }
 
 function stringifyValue(value: unknown): string {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     return `String value was thrown: ${value}`;
   }
 
-  if (value && typeof value === 'object') {
+  if (value && typeof value === "object") {
     try {
       return `Plain object was thrown: ${JSON.stringify(value)}`;
     } catch (jsonError) {
@@ -82,7 +82,7 @@ export function deserializeError(obj: SerializedError): Error {
   const cause = obj.cause ? deserializeError(obj.cause) : undefined;
 
   const error = new Error(obj.message, cause !== undefined ? { cause } : undefined);
-  error.name = obj.name || 'Error';
+  error.name = obj.name || "Error";
   error.stack = obj.stack;
 
   return error;
@@ -100,12 +100,14 @@ export function serializeError(e: unknown): SerializedError {
   };
 }
 
-export type ResultOrError<S, F = Error> = {
-  value: S;
-  error?: undefined;
-} | {
-  error: F;
-};
+export type ResultOrError<S, F = Error> =
+  | {
+      value: S;
+      error?: undefined;
+    }
+  | {
+      error: F;
+    };
 
 export function unwrapResult<T>(result: ResultOrError<T, Error | SerializedError>): T {
   if (result.error) {
@@ -151,7 +153,9 @@ export function wrapAndSerialize<T>(callback: () => T): ResultOrError<T, Seriali
   return serializeResult(result);
 }
 
-export async function wrapAndSerializeAsync<T>(callback: () => Promise<T>): Promise<ResultOrError<T, SerializedError>> {
+export async function wrapAndSerializeAsync<T>(
+  callback: () => Promise<T>,
+): Promise<ResultOrError<T, SerializedError>> {
   const result = await wrapAsyncCallback(callback);
   return serializeResult(result);
 }

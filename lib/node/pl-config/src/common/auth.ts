@@ -1,6 +1,6 @@
-import fs from 'node:fs/promises';
-import upath from 'upath';
-import type { PlAuthDriver } from './types';
+import fs from "node:fs/promises";
+import upath from "upath";
+import type { PlAuthDriver } from "./types";
 
 /** A line in a users.htpasswd config */
 export interface HtpasswdLine {
@@ -27,23 +27,23 @@ export async function createLocalHtpasswdFile(dir: string, config: HtpasswdConfi
 
 export function newHtpasswdFile(dir: string, config: HtpasswdConfig): Htpasswd {
   return {
-    filePath: upath.join(dir, 'users.htpasswd'),
+    filePath: upath.join(dir, "users.htpasswd"),
     content: stringifyHtpasswdConfig(config),
   };
 }
 
 export function stringifyHtpasswdConfig(lines: HtpasswdConfig): string {
-  return lines.map((line) => `${line.user}:${line.password}`).join('\n');
+  return lines.map((line) => `${line.user}:${line.password}`).join("\n");
 }
 
 export function getDefaultAuthMethods(htpasswdAuth: string, jwtKey: string): PlAuthDriver[] {
   return [
     {
-      driver: 'jwt',
+      driver: "jwt",
       key: jwtKey,
     },
     {
-      driver: 'htpasswd',
+      driver: "htpasswd",
       path: htpasswdAuth,
     },
   ];

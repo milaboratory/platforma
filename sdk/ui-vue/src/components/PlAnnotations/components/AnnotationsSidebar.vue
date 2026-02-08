@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import $commonStyle from './style.module.css';
+import $commonStyle from "./style.module.css";
 
-import { randomInt } from '@milaboratories/helpers';
+import { randomInt } from "@milaboratories/helpers";
 import {
   PlBtnGhost,
   PlBtnSecondary,
@@ -9,32 +9,32 @@ import {
   PlElementList,
   PlSidebarItem,
   PlTextField,
-} from '@milaboratories/uikit';
-import type { Annotation } from '../types';
-import { validateTitle } from '../utils';
-import { isEmpty } from 'es-toolkit/compat';
+} from "@milaboratories/uikit";
+import type { Annotation } from "../types";
+import { validateTitle } from "../utils";
+import { isEmpty } from "es-toolkit/compat";
 
 // Models
-const annotation = defineModel<Annotation>('annotation', { required: true });
-const selectedStepId = defineModel<undefined | number>('selectedStepId');
+const annotation = defineModel<Annotation>("annotation", { required: true });
+const selectedStepId = defineModel<undefined | number>("selectedStepId");
 // Emits
 const emits = defineEmits<{
-  (e: 'delete-schema'): void;
+  (e: "delete-schema"): void;
 }>();
 // Actions
 function handleAddStep() {
   const id = randomInt();
   annotation.value.steps.push({
     id,
-    label: '',
+    label: "",
     filter: {
       id: randomInt(),
-      type: 'and',
+      type: "and",
       filters: [],
     },
   });
   selectedStepId.value = id;
-};
+}
 </script>
 
 <template>
@@ -52,7 +52,9 @@ function handleAddStep() {
     </template>
     <template v-if="annotation" #body-content>
       <div :class="[$style.root, { [$commonStyle.disabled]: annotation.title.length === 0 }]">
-        <span :class="$style.tip">Above annotations override the ones below. Rearrange them by dragging.</span>
+        <span :class="$style.tip"
+          >Above annotations override the ones below. Rearrange them by dragging.</span
+        >
 
         <PlElementList
           v-model:items="annotation.steps"
@@ -60,19 +62,20 @@ function handleAddStep() {
           :is-active="(item) => item.id === selectedStepId"
           :item-class="$style.stepItem"
           :class="$style.steps"
-          @item-click="(item) => selectedStepId = item.id"
+          @item-click="(item) => (selectedStepId = item.id)"
         >
           <template #item-title="{ item }">
             {{ item.label }}
           </template>
         </PlElementList>
 
-        <PlBtnSecondary icon="add" @click="handleAddStep">
-          Add label
-        </PlBtnSecondary>
+        <PlBtnSecondary icon="add" @click="handleAddStep"> Add label </PlBtnSecondary>
 
         <PlTextField
-          :class="[$style.defaultValue, { [$style.emptyDefaultValue]: isEmpty(annotation.defaultValue) }]"
+          :class="[
+            $style.defaultValue,
+            { [$style.emptyDefaultValue]: isEmpty(annotation.defaultValue) },
+          ]"
           :model-value="annotation.defaultValue ?? ''"
           label="Label remaining with"
           placeholder="No label"
@@ -97,7 +100,7 @@ function handleAddStep() {
 </template>
 
 <style lang="scss" module>
-@use '@milaboratories/uikit/styles/variables' as *;
+@use "@milaboratories/uikit/styles/variables" as *;
 
 .root {
   display: flex;

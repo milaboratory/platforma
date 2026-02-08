@@ -1,1 +1,1 @@
-export { default as PlBtnPrimary } from './PlBtnPrimary.vue';
+export { default as PlBtnPrimary } from "./PlBtnPrimary.vue";

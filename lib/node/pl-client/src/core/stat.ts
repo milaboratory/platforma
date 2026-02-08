@@ -34,7 +34,7 @@ export type TxStat = {
   kvGetBytes: number;
 };
 
-export type TxStatWithoutTime = Omit<TxStat, 'timeMs'>;
+export type TxStatWithoutTime = Omit<TxStat, "timeMs">;
 
 export function initialTxStatWithoutTime(): TxStatWithoutTime {
   return {

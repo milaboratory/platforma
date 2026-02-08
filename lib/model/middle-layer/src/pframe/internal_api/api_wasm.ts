@@ -10,15 +10,12 @@ import type {
   QueryData,
   QuerySpec,
   SingleAxisSelector,
-} from '@milaboratories/pl-model-common';
+} from "@milaboratories/pl-model-common";
 import type {
   DeleteColumnFromColumnsRequest,
   DeleteColumnFromColumnsResponse,
-} from './delete_column';
-import type {
-  FindColumnsRequest,
-  FindColumnsResponse,
-} from './find_columns';
+} from "./delete_column";
+import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
 
 export interface PFrameWasmAPI {
   /**
@@ -41,7 +38,7 @@ export interface PFrameWasmAPI {
    * Finds the index of an axis matching the given selector.
    */
   findAxis(spec: AxesSpec, selector: SingleAxisSelector): number;
-};
+}
 
 /**
  * A PFrame represents a collection of columns that can be queried and joined.
@@ -50,16 +47,12 @@ export interface PFrameWasm extends Disposable {
   /**
    * Deletes columns from a columns specification.
    */
-  deleteColumns(
-    request: DeleteColumnFromColumnsRequest
-  ): DeleteColumnFromColumnsResponse;
+  deleteColumns(request: DeleteColumnFromColumnsRequest): DeleteColumnFromColumnsResponse;
 
   /**
    * Finds columns in the PFrame matching the given filter criteria.
    */
-  findColumns(
-    request: FindColumnsRequest
-  ): FindColumnsResponse;
+  findColumns(request: FindColumnsRequest): FindColumnsResponse;
   /**
    * Evaluates a query specification against this PFrame.
    *
@@ -67,9 +60,7 @@ export interface PFrameWasm extends Disposable {
    * etc.) and returns the resulting table specification along with the data
    * layer query representation.
    */
-  evaluateQuery(
-    request: QuerySpec
-  ): EvaluateQueryResponse;
+  evaluateQuery(request: QuerySpec): EvaluateQueryResponse;
 
   /**
    * Rewrites a legacy query format (V4) to the current QuerySpec format.
@@ -78,9 +69,7 @@ export interface PFrameWasm extends Disposable {
    * and sorting into the new unified QuerySpec format with proper filter and
    * sort query nodes.
    */
-  rewriteLegacyQuery(
-    request: LegacyQuery
-  ): QuerySpec;
+  rewriteLegacyQuery(request: LegacyQuery): QuerySpec;
 }
 
 /**

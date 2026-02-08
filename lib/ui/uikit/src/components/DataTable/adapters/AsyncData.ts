@@ -1,7 +1,7 @@
-import type * as Types from '../types';
-import type { DataRow, Row } from '../types';
-import { GAP } from '../constants';
-import { clamp } from '@milaboratories/helpers';
+import type * as Types from "../types";
+import type { DataRow, Row } from "../types";
+import { GAP } from "../constants";
+import { clamp } from "@milaboratories/helpers";
 
 export class AsyncData<D extends DataRow> implements Types.DataSource {
   constructor(

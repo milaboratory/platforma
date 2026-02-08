@@ -24,7 +24,7 @@ span.ripple {
   position: relative;
 
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
@@ -44,18 +44,19 @@ span.ripple {
 
   --offset-left-x: calc(var(--label-offset-left-x) + var(--contour-offset));
 
-  clip-path:
-    polygon(0 0,
-      var(--offset-left-x) 0,
-      var(--offset-left-x) 12px,
-      var(--label-offset-right-x) 12px,
-      var(--label-offset-right-x) 0,
-      100% 0,
-      100% 100%,
-      0 100%,
-      0 0);
+  clip-path: polygon(
+    0 0,
+    var(--offset-left-x) 0,
+    var(--offset-left-x) 12px,
+    var(--label-offset-right-x) 12px,
+    var(--label-offset-right-x) 0,
+    100% 0,
+    100% 100%,
+    0 100%,
+    0 0
+  );
 
-  >div {
+  > div {
     position: absolute;
     top: var(--contour-offset);
     left: var(--contour-offset);
@@ -111,22 +112,21 @@ a.btn-link {
   }
 }
 
-
 .info {
   display: block;
   margin: 0 4px;
-  @include icon(url('./images/16_info.svg'), 16px);
+  @include icon(url("./images/16_info.svg"), 16px);
 
   [data-theme="dark"] & {
-    @include icon(url('./images/16_info-dark.svg'), 16px);
+    @include icon(url("./images/16_info-dark.svg"), 16px);
   }
 }
 
 .checkmark {
-  @include icon(url('./images/16_checkmark.svg'), 16px);
+  @include icon(url("./images/16_checkmark.svg"), 16px);
 
   [data-theme="dark"] & {
-    @include icon(url('./images/16_checkmark-dark.svg'), 16px);
+    @include icon(url("./images/16_checkmark-dark.svg"), 16px);
   }
 }
 

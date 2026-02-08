@@ -1,18 +1,16 @@
-import type { CompileMode, TypedArtifactName } from './package';
-import { artifactKey } from './package';
-import { assertNever } from './util';
+import type { CompileMode, TypedArtifactName } from "./package";
+import { artifactKey } from "./package";
+import { assertNever } from "./util";
 
 export class ArtifactMap<T> {
   private readonly map = new Map<string, T>();
 
-  constructor(private readonly nameExtractor: (obj: T) => TypedArtifactName) {
-  }
+  constructor(private readonly nameExtractor: (obj: T) => TypedArtifactName) {}
 
   add(obj: T, replace: boolean = true): T | undefined {
     const key = artifactKey(this.nameExtractor(obj));
     const ret = this.map.get(key);
-    if (ret && !replace)
-      return ret;
+    if (ret && !replace) return ret;
     this.map.set(key, obj);
     return ret;
   }
@@ -51,7 +49,7 @@ export class ArtifactStore<T> {
 
   add(mode: CompileMode, obj: T, replace: boolean = true): T | undefined {
     switch (mode) {
-      case 'dist':
+      case "dist":
         return this.dist.add(obj, replace);
 
       default:
@@ -61,7 +59,7 @@ export class ArtifactStore<T> {
 
   get(mode: CompileMode, name: TypedArtifactName): T | undefined {
     switch (mode) {
-      case 'dist':
+      case "dist":
         return this.dist.get(name);
 
       default:

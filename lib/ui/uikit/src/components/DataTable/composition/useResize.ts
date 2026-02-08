@@ -1,22 +1,22 @@
-import type { Ref } from 'vue';
-import { watchEffect, unref } from 'vue';
-import type { ResizeTh } from '../types';
-import { useColumn } from './useColumn';
-import { MIN_COLUMN_WIDTH, RESIZE_GAP } from '../constants';
-import { useMouse } from '../../../composition/useMouse';
-import { useHover } from '../../../composition/useHover';
-import { tapIf, clamp } from '@milaboratories/helpers';
-import { identity } from '@milaboratories/helpers';
-import type { State } from '../state';
+import type { Ref } from "vue";
+import { watchEffect, unref } from "vue";
+import type { ResizeTh } from "../types";
+import { useColumn } from "./useColumn";
+import { MIN_COLUMN_WIDTH, RESIZE_GAP } from "../constants";
+import { useMouse } from "../../../composition/useMouse";
+import { useHover } from "../../../composition/useHover";
+import { tapIf, clamp } from "@milaboratories/helpers";
+import { identity } from "@milaboratories/helpers";
+import type { State } from "../state";
 
 type MaybeRef<T> = T | Ref<T>;
 
 export function getColumnPositions(tableRef: MaybeRef<HTMLElement | undefined>) {
-  const ths = tapIf(unref(tableRef)?.querySelectorAll('.th-cell'), (l) => [...l]) ?? [];
+  const ths = tapIf(unref(tableRef)?.querySelectorAll(".th-cell"), (l) => [...l]) ?? [];
   return ths
     .map((th) => {
       const { width, x } = th.getBoundingClientRect();
-      const colId = th.getAttribute('data-col-id')!;
+      const colId = th.getAttribute("data-col-id")!;
       return identity<ResizeTh>({
         colId,
         width,
@@ -45,7 +45,7 @@ export function useResize(state: State, tableRef: Ref<HTMLElement | undefined>) 
     () => {
       data.resize = false;
       data.resizeTh = undefined;
-      document.body.style.cursor = '';
+      document.body.style.cursor = "";
     },
   );
 
@@ -61,7 +61,7 @@ export function useResize(state: State, tableRef: Ref<HTMLElement | undefined>) 
 
   watchEffect(() => {
     if (!isHovered.value) {
-      document.body.style.cursor = '';
+      document.body.style.cursor = "";
       return;
     }
 
@@ -74,11 +74,11 @@ export function useResize(state: State, tableRef: Ref<HTMLElement | undefined>) 
     });
 
     if (th) {
-      document.body.style.cursor = 'col-resize';
+      document.body.style.cursor = "col-resize";
       data.resizeTh = th;
     } else {
       data.resizeTh = undefined;
-      document.body.style.cursor = '';
+      document.body.style.cursor = "";
     }
   });
 

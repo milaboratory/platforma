@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import './pl-dropdown-line.scss';
-import type { StyleValue } from 'vue';
-import { computed, nextTick, reactive, ref, toRef, watch } from 'vue';
-import { deepEqual } from '../../helpers/objects';
-import { useClickOutside } from '../../composition/useClickOutside';
-import { useFilteredList } from '../../composition/useFilteredList';
-import ResizableInput from './ResizableInput.vue';
-import { tapIf, tap } from '../../helpers/functions';
-import { scrollIntoView } from '../../helpers/dom';
-import DropdownListItem from '../DropdownListItem.vue';
-import TabItem from '../TabItem.vue';
-import type { ListOption } from '../../types';
-import { normalizeListOptions } from '../../helpers/utils';
-import { useElementPosition } from '../../composition/usePosition';
+import "./pl-dropdown-line.scss";
+import type { StyleValue } from "vue";
+import { computed, nextTick, reactive, ref, toRef, watch } from "vue";
+import { deepEqual } from "../../helpers/objects";
+import { useClickOutside } from "../../composition/useClickOutside";
+import { useFilteredList } from "../../composition/useFilteredList";
+import ResizableInput from "./ResizableInput.vue";
+import { tapIf, tap } from "../../helpers/functions";
+import { scrollIntoView } from "../../helpers/dom";
+import DropdownListItem from "../DropdownListItem.vue";
+import TabItem from "../TabItem.vue";
+import type { ListOption } from "../../types";
+import { normalizeListOptions } from "../../helpers/utils";
+import { useElementPosition } from "../../composition/usePosition";
 
-const emit = defineEmits(['update:modelValue']); // at the top always
+const emit = defineEmits(["update:modelValue"]); // at the top always
 
 const props = withDefaults(
   defineProps<{
@@ -23,14 +23,14 @@ const props = withDefaults(
     prefix?: string;
     options: ListOption[]; // @todo extend with size field
     placeholder?: string;
-    mode?: 'list' | 'tabs';
+    mode?: "list" | "tabs";
     tabsContainerStyles?: StyleValue;
     clearable?: boolean;
   }>(),
   {
-    mode: 'list',
-    placeholder: 'Select..',
-    prefix: '',
+    mode: "list",
+    placeholder: "Select..",
+    prefix: "",
     tabsContainerStyles: undefined,
     clearable: false,
   },
@@ -49,19 +49,21 @@ const list = ref<HTMLElement>();
 const classes = computed(() => {
   const classesResult = [];
   if (data.isOpen) {
-    classesResult.push('open');
+    classesResult.push("open");
   }
   if (props.disabled) {
-    classesResult.push('disabled');
+    classesResult.push("disabled");
   }
-  return classesResult.join(' ');
+  return classesResult.join(" ");
 });
 
-const searchPhrase = ref<string>('');
+const searchPhrase = ref<string>("");
 
-const options = useFilteredList(toRef(props, 'options'), searchPhrase);
+const options = useFilteredList(toRef(props, "options"), searchPhrase);
 
-const canShowClearBtn = computed<boolean>(() => !!(props.clearable && data.isOpen && props.modelValue && modelText.value));
+const canShowClearBtn = computed<boolean>(
+  () => !!(props.clearable && data.isOpen && props.modelValue && modelText.value),
+);
 
 const modelText = computed<string>(() => {
   if (props.modelValue !== undefined) {
@@ -71,7 +73,7 @@ const modelText = computed<string>(() => {
       return item.label;
     }
   }
-  return '';
+  return "";
 });
 
 const inputModel = ref(modelText.value);
@@ -87,11 +89,11 @@ const placeholderVal = computed(() => {
     }
   }
 
-  return modelText.value || '...';
+  return modelText.value || "...";
 });
 
 useClickOutside(container, () => {
-  if (props.mode === 'list') {
+  if (props.mode === "list") {
     data.isOpen = false;
   }
 });
@@ -102,7 +104,7 @@ watch(
     if (modelText.value !== val) {
       searchPhrase.value = val;
     } else {
-      searchPhrase.value = '';
+      searchPhrase.value = "";
     }
   },
 );
@@ -111,7 +113,7 @@ watch(
   () => data.isOpen,
   (value: boolean) => {
     if (value && container.value) {
-      container.value.querySelector('input')?.focus();
+      container.value.querySelector("input")?.focus();
       nextTick(() => scrollIntoActive());
     }
   },
@@ -139,7 +141,7 @@ function updateSelected() {
 }
 
 function resetSearchPhrase() {
-  searchPhrase.value = '';
+  searchPhrase.value = "";
 }
 
 function toggleList(): void {
@@ -153,14 +155,14 @@ function toggleList(): void {
 }
 
 function closePopupIfNeeded() {
-  if (props.mode === 'list') {
+  if (props.mode === "list") {
     data.isOpen = false;
   }
 }
 
 function selectItem(item?: ListOption): void {
   if (item) {
-    emit('update:modelValue', item.value);
+    emit("update:modelValue", item.value);
     closePopupIfNeeded();
     resetSearchPhrase();
   }
@@ -174,7 +176,7 @@ const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
 
   if (!container.value?.contains(relatedTarget) && !list.value?.contains(relatedTarget)) {
-    searchPhrase.value = '';
+    searchPhrase.value = "";
     data.isOpen = false;
   }
 };
@@ -182,7 +184,7 @@ const onFocusOut = (event: FocusEvent) => {
 function handleKeydown(e: { code: string; preventDefault(): void }) {
   const { activeOption } = data;
 
-  if (!data.isOpen && e.code === 'Enter') {
+  if (!data.isOpen && e.code === "Enter") {
     data.isOpen = true;
     return;
   }
@@ -193,15 +195,15 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
     return;
   }
 
-  if (['ArrowDown', 'ArrowUp', 'Enter'].includes(e.code)) {
+  if (["ArrowDown", "ArrowUp", "Enter"].includes(e.code)) {
     e.preventDefault();
   }
 
-  if (e.code === 'Enter') {
+  if (e.code === "Enter") {
     selectItem(options.value[activeOption]);
   }
 
-  const d = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
+  const d = e.code === "ArrowDown" ? 1 : e.code === "ArrowUp" ? -1 : 0;
 
   data.activeOption = Math.abs(activeOption + d + length) % length;
 
@@ -213,29 +215,29 @@ function scrollIntoActive() {
   if (!$list) {
     return;
   }
-  tapIf($list.querySelector('.hovered-item'), (el: Element) => {
-    if (props.mode === 'list') {
+  tapIf($list.querySelector(".hovered-item"), (el: Element) => {
+    if (props.mode === "list") {
       scrollIntoView($list, el as HTMLElement);
     } else {
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }
   });
 }
 
 function clearModel() {
-  emit('update:modelValue', undefined);
+  emit("update:modelValue", undefined);
 }
 
 const optionsStyle = reactive({
-  top: '0px',
-  left: '0px',
+  top: "0px",
+  left: "0px",
 });
 
 watch(list, (el) => {
   if (el) {
     const rect = el.getBoundingClientRect();
     data.optionsHeight = rect.height;
-    window.dispatchEvent(new CustomEvent('adjust'));
+    window.dispatchEvent(new CustomEvent("adjust"));
   }
 });
 
@@ -245,12 +247,12 @@ useElementPosition(container, (pos) => {
   const downTopOffset = pos.top + pos.height + gap;
 
   if (downTopOffset + data.optionsHeight > pos.clientHeight) {
-    optionsStyle.top = pos.top - data.optionsHeight - gap + 'px';
+    optionsStyle.top = pos.top - data.optionsHeight - gap + "px";
   } else {
-    optionsStyle.top = downTopOffset + 'px';
+    optionsStyle.top = downTopOffset + "px";
   }
 
-  optionsStyle.left = pos.left + 'px';
+  optionsStyle.left = pos.left + "px";
 });
 </script>
 
@@ -266,7 +268,12 @@ useElementPosition(container, (pos) => {
   >
     <div class="pl-line-dropdown__prefix">{{ props?.prefix }}</div>
 
-    <ResizableInput v-model="inputModel" :placeholder="placeholderVal" :disabled="props.disabled" class="pl-line-dropdown__input" />
+    <ResizableInput
+      v-model="inputModel"
+      :placeholder="placeholderVal"
+      :disabled="props.disabled"
+      class="pl-line-dropdown__input"
+    />
 
     <div class="pl-line-dropdown__icon-wrapper">
       <div v-show="!canShowClearBtn" class="pl-line-dropdown__icon" />
@@ -303,7 +310,9 @@ useElementPosition(container, (pos) => {
         </template>
 
         <div v-if="options.length === 0" class="pl-line-dropdown__no-item">
-          <div class="pl-line-dropdown__no-item-title text-s">Didn't find anything that matched</div>
+          <div class="pl-line-dropdown__no-item-title text-s">
+            Didn't find anything that matched
+          </div>
         </div>
       </div>
       <div
@@ -316,12 +325,25 @@ useElementPosition(container, (pos) => {
         @click.stop
       >
         <template v-for="(item, index) in options" :key="index">
-          <slot name="item" :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)">
-            <TabItem :option="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)" />
+          <slot
+            name="item"
+            :item="item"
+            :is-selected="isItemSelected(item)"
+            :is-hovered="data.activeOption == index"
+            @click.stop="selectItem(item)"
+          >
+            <TabItem
+              :option="item"
+              :is-selected="isItemSelected(item)"
+              :is-hovered="data.activeOption == index"
+              @click.stop="selectItem(item)"
+            />
           </slot>
         </template>
         <div v-if="options.length === 0" class="pl-line-dropdown__no-item">
-          <div class="pl-line-dropdown__no-item-title text-s">Didn't find anything that matched</div>
+          <div class="pl-line-dropdown__no-item-title text-s">
+            Didn't find anything that matched
+          </div>
         </div>
       </div>
     </Teleport>

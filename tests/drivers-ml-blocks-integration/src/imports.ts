@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash } from "node:crypto";
 
 // Helper function to create random buffer
 export const createRandomBuffer = (size: number): Buffer => {
@@ -11,13 +11,13 @@ export const createRandomBuffer = (size: number): Buffer => {
 
 // Helper function to compute hash incrementally for large buffers
 export const computeHashIncremental = (buffer: Buffer): string => {
-  const hasher = createHash('sha256');
+  const hasher = createHash("sha256");
   const chunkSize = 64 * 1024 * 1024; // 64 MB chunks
   for (let offset = 0; offset < buffer.length; offset += chunkSize) {
     const end = Math.min(offset + chunkSize, buffer.length);
     hasher.update(buffer.subarray(offset, end));
   }
-  return hasher.digest('hex');
+  return hasher.digest("hex");
 };
 
 // Helper function to compare buffers in chunks
@@ -55,9 +55,6 @@ export function shuffleInPlace<T>(array: T[]): void {
     currentIndex--;
 
     // And swap it with the current element.
-    [array[currentIndex], array[randomIndex]] = [
-      array[randomIndex],
-      array[currentIndex],
-    ];
+    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
   }
 }

@@ -1,25 +1,22 @@
-import type { Watcher } from '@milaboratories/computable';
-import { ChangeSource } from '@milaboratories/computable';
-import type { LocalBlobHandle, LocalBlobHandleAndSize } from '@milaboratories/pl-model-common';
-import type { ResourceSnapshot } from '@milaboratories/pl-tree';
-import type {
-  ValueOrError,
-  MiLogger,
-} from '@milaboratories/ts-helpers';
+import type { Watcher } from "@milaboratories/computable";
+import { ChangeSource } from "@milaboratories/computable";
+import type { LocalBlobHandle, LocalBlobHandleAndSize } from "@milaboratories/pl-model-common";
+import type { ResourceSnapshot } from "@milaboratories/pl-tree";
+import type { ValueOrError, MiLogger } from "@milaboratories/ts-helpers";
 import {
   ensureDirExists,
   fileExists,
   createPathAtomically,
   CallersCounter,
-} from '@milaboratories/ts-helpers';
-import fs from 'node:fs';
-import * as fsp from 'node:fs/promises';
-import * as path from 'node:path';
-import { Writable } from 'node:stream';
-import type { ClientDownload } from '../../clients/download';
-import { UnknownStorageError, WrongLocalFileUrl } from '../../clients/download';
-import { isDownloadNetworkError400 } from '../../helpers/download_errors';
-import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
+} from "@milaboratories/ts-helpers";
+import fs from "node:fs";
+import * as fsp from "node:fs/promises";
+import * as path from "node:path";
+import { Writable } from "node:stream";
+import type { ClientDownload } from "../../clients/download";
+import { UnknownStorageError, WrongLocalFileUrl } from "../../clients/download";
+import { isDownloadNetworkError400 } from "../../helpers/download_errors";
+import { resourceIdToString, stringifyWithResourceId } from "@milaboratories/pl-client";
 
 /** Downloads a blob and holds callers and watchers for the blob. */
 export class DownloadBlobTask {
@@ -62,9 +59,9 @@ export class DownloadBlobTask {
       this.change.markChanged(`blob ${resourceIdToString(this.rInfo.id)} download finished`);
     } catch (e: any) {
       this.logger.error(
-        `blob ${stringifyWithResourceId(this.rInfo)} download failed, `
-        + `state: ${JSON.stringify(this.state)}, `
-        + `error: ${JSON.stringify(e)}`,
+        `blob ${stringifyWithResourceId(this.rInfo)} download failed, ` +
+          `state: ${JSON.stringify(this.state)}, ` +
+          `error: ${JSON.stringify(e)}`,
       );
       if (nonRecoverableError(e)) {
         this.setError(e);
@@ -91,8 +88,8 @@ export class DownloadBlobTask {
     if (alreadyExists) {
       this.state.fileExists = true;
       this.logger.info(
-        `blob ${stringifyWithResourceId(this.rInfo)} was already downloaded, `
-        + `path: ${this.state.filePath}`,
+        `blob ${stringifyWithResourceId(this.rInfo)} was already downloaded, ` +
+          `path: ${this.state.filePath}`,
       );
       const stat = await fsp.stat(this.state.filePath);
       this.signalCtl.signal.throwIfAborted();
@@ -110,14 +107,14 @@ export class DownloadBlobTask {
         this.state.downloaded = true;
 
         await createPathAtomically(this.logger, this.state.filePath!, async (fPath: string) => {
-          const f = Writable.toWeb(fs.createWriteStream(fPath, { flags: 'wx' }));
+          const f = Writable.toWeb(fs.createWriteStream(fPath, { flags: "wx" }));
           await content.pipeTo(f, { signal: this.signalCtl.signal });
           this.state.tempWritten = true;
         });
 
         this.state.done = true;
         return size;
-      }
+      },
     );
 
     return fileSize;
@@ -130,9 +127,9 @@ export class DownloadBlobTask {
   public getBlob():
     | { done: false }
     | {
-      done: true;
-      result: ValueOrError<LocalBlobHandleAndSize>;
-    } {
+        done: true;
+        result: ValueOrError<LocalBlobHandleAndSize>;
+      } {
     if (!this.done) return { done: false };
 
     return {
@@ -154,21 +151,21 @@ export class DownloadBlobTask {
 
 export function nonRecoverableError(e: any) {
   return (
-    e instanceof DownloadAborted
-    || isDownloadNetworkError400(e)
-    || e instanceof UnknownStorageError
-    || e instanceof WrongLocalFileUrl
+    e instanceof DownloadAborted ||
+    isDownloadNetworkError400(e) ||
+    e instanceof UnknownStorageError ||
+    e instanceof WrongLocalFileUrl ||
     // file that we downloads from was moved or deleted.
-    || e?.code == 'ENOENT'
+    e?.code == "ENOENT" ||
     // A resource was deleted.
-    || (e.name == 'RpcError' && (e.code == 'NOT_FOUND' || e.code == 'ABORTED'))
+    (e.name == "RpcError" && (e.code == "NOT_FOUND" || e.code == "ABORTED"))
   );
 }
 
 /** The downloading task was aborted by a signal.
  * It may happen when the computable is done, for example. */
 class DownloadAborted extends Error {
-  name = 'DownloadAborted';
+  name = "DownloadAborted";
 }
 
 export function getDownloadedBlobResponse(
@@ -181,7 +178,7 @@ export function getDownloadedBlobResponse(
   }
 
   if (!handle) {
-    return { ok: false, error: new Error('No file or handle provided') };
+    return { ok: false, error: new Error("No file or handle provided") };
   }
 
   return {
@@ -201,4 +198,4 @@ type DownloadState = {
   downloaded?: boolean;
   tempWritten?: boolean;
   done?: boolean;
-}
+};

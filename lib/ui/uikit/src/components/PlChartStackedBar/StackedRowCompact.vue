@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { computed } from 'vue';
-import type { PlChartStackedBarSegment } from './types';
+import { computed } from "vue";
+import type { PlChartStackedBarSegment } from "./types";
 
 const props = defineProps<{
   value: PlChartStackedBarSegment[];
@@ -8,8 +8,8 @@ const props = defineProps<{
 }>();
 
 const style = computed(() => ({
-  height: props.height ?? '100%',
-  minHeight: '24px',
+  height: props.height ?? "100%",
+  minHeight: "24px",
 }));
 
 const parts = computed(() => {
@@ -29,9 +29,7 @@ const parts = computed(() => {
 </script>
 
 <template>
-  <div
-    :class="[$style.component]" :style="style"
-  >
+  <div :class="[$style.component]" :style="style">
     <div :class="$style.container">
       <div v-if="!parts.length" :class="$style.notReady">Not ready</div>
       <div
@@ -40,7 +38,7 @@ const parts = computed(() => {
         :title.prop="p.description ?? p.label"
         :style="{
           width: `${p.fraction}%`,
-          backgroundColor: p.color
+          backgroundColor: p.color,
         }"
       />
     </div>

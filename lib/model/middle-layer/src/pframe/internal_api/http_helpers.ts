@@ -1,13 +1,13 @@
-import type { Readable } from 'node:stream';
-import type { RequestListener } from 'node:http';
-import type { Branded, Base64Encoded } from '@milaboratories/pl-model-common';
-import type { Logger } from './common';
+import type { Readable } from "node:stream";
+import type { RequestListener } from "node:http";
+import type { Branded, Base64Encoded } from "@milaboratories/pl-model-common";
+import type { Logger } from "./common";
 
 /** Parquet file extension */
-export const ParquetExtension = '.parquet' as const;
+export const ParquetExtension = ".parquet" as const;
 
 /** Parquet file name */
-export type ParquetFileName = Branded<`${string}.parquet`, 'PFrameInternal.ParquetFileName'>;
+export type ParquetFileName = Branded<`${string}.parquet`, "PFrameInternal.ParquetFileName">;
 
 export type FileRange = {
   /** Start byte position (inclusive) */
@@ -19,7 +19,7 @@ export type FileRange = {
 /** HTTP range as of RFC 9110 <https://datatracker.ietf.org/doc/html/rfc9110#name-range> */
 export type HttpRange =
   | {
-    /**
+      /**
        * Get file content in the specified byte range
        *
        * @example
@@ -28,14 +28,14 @@ export type HttpRange =
        * Range: bytes=0-1023
        * ```
        */
-    type: 'bounded';
-    /** Start byte position (inclusive) */
-    start: number;
-    /** End byte position (inclusive) */
-    end: number;
-  }
+      type: "bounded";
+      /** Start byte position (inclusive) */
+      start: number;
+      /** End byte position (inclusive) */
+      end: number;
+    }
   | {
-    /**
+      /**
        * Get byte range starting from the specified offset
        *
        * @example
@@ -44,12 +44,12 @@ export type HttpRange =
        * Range: bytes=1024-
        * ```
        */
-    type: 'offset';
-    /** Start byte position (inclusive) */
-    offset: number;
-  }
+      type: "offset";
+      /** Start byte position (inclusive) */
+      offset: number;
+    }
   | {
-    /**
+      /**
        * Get byte range starting from the specified suffix
        *
        * @example
@@ -58,43 +58,43 @@ export type HttpRange =
        * Range: bytes=-1024
        * ```
        */
-    type: 'suffix';
-    /** End byte position (inclusive) */
-    suffix: number;
-  };
+      type: "suffix";
+      /** End byte position (inclusive) */
+      suffix: number;
+    };
 
 /** HTTP method passed to object store */
-export type HttpMethod = 'GET' | 'HEAD';
+export type HttpMethod = "GET" | "HEAD";
 
 /** HTTP response from object store */
 export type ObjectStoreResponse =
   | {
-    /**
+      /**
        * Will be translated to 500 Internal Server Error by the handler
        * or 408 Request Timeout if the request was aborted
        */
-    type: 'InternalError';
-  }
+      type: "InternalError";
+    }
   | {
-    /** Will be translated to 404 Not Found by the handler */
-    type: 'NotFound';
-  }
+      /** Will be translated to 404 Not Found by the handler */
+      type: "NotFound";
+    }
   | {
-    /** Will be translated to 416 Range Not Satisfiable by the handler */
-    type: 'RangeNotSatisfiable';
-    /** Total file size in bytes */
-    size: number;
-  }
+      /** Will be translated to 416 Range Not Satisfiable by the handler */
+      type: "RangeNotSatisfiable";
+      /** Total file size in bytes */
+      size: number;
+    }
   | {
-    /** Will be translated to 200 OK or 206 Partial Content by the handler */
-    type: 'Ok';
-    /** Total file size in bytes */
-    size: number;
-    /** File range translated from HTTP range */
-    range: FileRange;
-    /** Stream of file content, undefined for HEAD requests */
-    data?: Readable;
-  };
+      /** Will be translated to 200 OK or 206 Partial Content by the handler */
+      type: "Ok";
+      /** Total file size in bytes */
+      size: number;
+      /** File range translated from HTTP range */
+      range: FileRange;
+      /** Stream of file content, undefined for HEAD requests */
+      data?: Readable;
+    };
 
 /** Common options for object store creation */
 export interface ObjectStoreOptions {
@@ -121,7 +121,7 @@ export interface ObjectStore {
       range?: HttpRange;
       signal: AbortSignal;
       callback: (response: ObjectStoreResponse) => Promise<void>;
-    }
+    },
   ): void;
 }
 
@@ -137,13 +137,13 @@ export abstract class BaseObjectStore implements ObjectStore {
   protected translate(fileSize: number, range?: HttpRange): FileRange | null {
     if (!range) return { start: 0, end: fileSize - 1 };
     switch (range.type) {
-      case 'bounded':
+      case "bounded":
         if (range.end >= fileSize) return null;
         return { start: range.start, end: range.end };
-      case 'offset':
+      case "offset":
         if (range.offset >= fileSize) return null;
         return { start: range.offset, end: fileSize - 1 };
-      case 'suffix':
+      case "suffix":
         if (range.suffix > fileSize) return null;
         return { start: fileSize - range.suffix, end: fileSize - 1 };
     }
@@ -161,12 +161,12 @@ export abstract class BaseObjectStore implements ObjectStore {
       range?: HttpRange;
       signal: AbortSignal;
       callback: (response: ObjectStoreResponse) => Promise<void>;
-    }
+    },
   ): Promise<void>;
 }
 
 /** Object store base URL in format accepted by Apache DataFusion and DuckDB */
-export type ObjectStoreUrl = Branded<string, 'PFrameInternal.ObjectStoreUrl'>;
+export type ObjectStoreUrl = Branded<string, "PFrameInternal.ObjectStoreUrl">;
 
 /** HTTP(S) request handler creation options */
 export type RequestHandlerOptions = {
@@ -195,7 +195,7 @@ export type HttpServerOptions = {
  * request.setHeader('Authorization', `Bearer ${authToken}`);
  * ```
  */
-export type HttpAuthorizationToken = Branded<string, 'PFrameInternal.HttpAuthorizationToken'>;
+export type HttpAuthorizationToken = Branded<string, "PFrameInternal.HttpAuthorizationToken">;
 
 /**
  * TLS certificate in PEM format
@@ -209,7 +209,7 @@ export type HttpAuthorizationToken = Branded<string, 'PFrameInternal.HttpAuthori
  * -----END CERTIFICATE-----
  * ```
  */
-export type PemCertificate = Branded<string, 'PFrameInternal.PemCertificate'>;
+export type PemCertificate = Branded<string, "PFrameInternal.PemCertificate">;
 
 /** HTTP(S) server connection settings, {@link HttpHelpers.createHttpServer} */
 export type HttpServerInfo = {

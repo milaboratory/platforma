@@ -1,6 +1,6 @@
-import { randomRangeInt, range, times, toList } from '@milaboratories/helpers';
-import { faker } from '@faker-js/faker';
-import type { ImportFileHandleUpload, ListFilesResult, LsEntry } from '@platforma-sdk/model';
+import { randomRangeInt, range, times, toList } from "@milaboratories/helpers";
+import { faker } from "@faker-js/faker";
+import type { ImportFileHandleUpload, ListFilesResult, LsEntry } from "@platforma-sdk/model";
 
 export const capitalizeFirstLetter = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
@@ -11,12 +11,12 @@ const d = new Map<string, LsEntry[]>();
 export const getLsFilesResult = (path: string): ListFilesResult => {
   const length = randomRangeInt(1, 1000);
 
-  if (path.endsWith('11')) {
-    throw Error('Some error ' + faker.lorem.paragraph() + faker.lorem.paragraph());
+  if (path.endsWith("11")) {
+    throw Error("Some error " + faker.lorem.paragraph() + faker.lorem.paragraph());
   }
 
   if (!d.has(path)) {
-    const dirPath = path === '/' ? '' : path;
+    const dirPath = path === "/" ? "" : path;
 
     d.set(
       path,
@@ -24,34 +24,34 @@ export const getLsFilesResult = (path: string): ListFilesResult => {
         if (i < 10) {
           let name = faker.word.noun();
           if (Math.random() < 0.2) {
-            name = '.' + name;
+            name = "." + name;
           }
           return {
-            type: 'dir',
+            type: "dir",
             name,
-            fullPath: dirPath + '/' + name,
+            fullPath: dirPath + "/" + name,
           };
         }
 
-        const name
-          = times(randomRangeInt(1, 40), () => {
+        const name =
+          times(randomRangeInt(1, 40), () => {
             if (Math.random() < 0.2) {
               return capitalizeFirstLetter(faker.word.noun());
             }
 
             return faker.word.noun();
-          }).join(' ') + faker.system.commonFileName();
+          }).join(" ") + faker.system.commonFileName();
 
         const handle = `upload://upload/${encodeURIComponent(
           JSON.stringify({
-            localPath: dirPath + '/' + name,
+            localPath: dirPath + "/" + name,
           }),
         )}` as ImportFileHandleUpload;
 
         return {
-          type: 'file',
+          type: "file",
           name,
-          fullPath: dirPath + '/' + name,
+          fullPath: dirPath + "/" + name,
           handle,
         };
       }),
@@ -59,7 +59,7 @@ export const getLsFilesResult = (path: string): ListFilesResult => {
   }
 
   return {
-    parent: '/',
+    parent: "/",
     entries: d.get(path)!,
   };
 };

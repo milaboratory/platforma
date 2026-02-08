@@ -1,8 +1,8 @@
 export type MlDebugFlags = {
-  logTreeStats?: 'cumulative' | 'per-request';
+  logTreeStats?: "cumulative" | "per-request";
   logProjectMutationStat: boolean;
   dumpInitialTreeState: boolean;
-  logOutputStatus?: 'any' | 'unstable-only';
+  logOutputStatus?: "any" | "unstable-only";
   logOutputRecalculations?: boolean;
 };
 
@@ -15,8 +15,10 @@ export function getDebugFlags() {
     logOutputRecalculations: process.env.MI_LOG_OUTPUT_RECALCULATIONS !== undefined,
   };
   if (process.env.MI_LOG_OUTPUT_STATUS)
-    flags.logOutputStatus = process.env.MI_LOG_OUTPUT_STATUS === 'unstable-only' ? 'unstable-only' : 'any';
+    flags.logOutputStatus =
+      process.env.MI_LOG_OUTPUT_STATUS === "unstable-only" ? "unstable-only" : "any";
   if (process.env.MI_LOG_TREE_STAT)
-    flags.logTreeStats = process.env.MI_LOG_TREE_STAT === 'cumulative' ? 'cumulative' : 'per-request';
+    flags.logTreeStats =
+      process.env.MI_LOG_TREE_STAT === "cumulative" ? "cumulative" : "per-request";
   return flags;
 }

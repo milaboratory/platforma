@@ -1,1 +1,1 @@
-export { default as PlAgRowNumCheckbox } from './PlAgRowNumCheckbox.vue';
+export { default as PlAgRowNumCheckbox } from "./PlAgRowNumCheckbox.vue";

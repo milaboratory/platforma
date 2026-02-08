@@ -6,7 +6,7 @@ const slots = defineSlots<{
 
 <template>
   <div :class="$style.root">
-    <template v-for="name in Object.keys(slots) as `item-${number}`[]" :key="name" >
+    <template v-for="name in Object.keys(slots) as `item-${number}`[]" :key="name">
       <div :class="$style.item">
         <slot :name="name" />
       </div>
@@ -15,7 +15,7 @@ const slots = defineSlots<{
 </template>
 
 <style lang="scss" module>
-@use '../../assets/variables.scss';
+@use "../../assets/variables.scss";
 
 .root {
   position: relative;

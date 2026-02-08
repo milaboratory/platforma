@@ -1,23 +1,23 @@
 <script lang="ts" setup>
-import Layout from '../Layout.vue';
-import type { Component } from 'vue';
-import { reactive, h } from 'vue';
-import TestForm from './TestForm.vue';
+import Layout from "../Layout.vue";
+import type { Component } from "vue";
+import { reactive, h } from "vue";
+import TestForm from "./TestForm.vue";
 
 const MyComponent: Component = {
-  props: ['modelValue'],
-  emits: ['update:modelValue'],
+  props: ["modelValue"],
+  emits: ["update:modelValue"],
   setup(props, { emit }) {
     return () =>
       h(TestForm, {
-        'modelValue': props.modelValue,
-        'onUpdate:modelValue': (value) => emit('update:modelValue', value),
+        modelValue: props.modelValue,
+        "onUpdate:modelValue": (value) => emit("update:modelValue", value),
       });
   },
 };
 
 const test = reactive({
-  user: { name: 'Ivan' },
+  user: { name: "Ivan" },
 });
 </script>
 

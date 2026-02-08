@@ -1,9 +1,9 @@
-import { getDefaultAuthMethods } from './auth';
-import type { License } from './license';
-import { licenseEnvsForMixcr, licenseForConfig } from './license';
-import type { Endpoints } from './ports';
-import type { StoragesSettings } from './storages';
-import type { PlConfig, PlControllerPackageLoaderSettings } from './types';
+import { getDefaultAuthMethods } from "./auth";
+import type { License } from "./license";
+import { licenseEnvsForMixcr, licenseForConfig } from "./license";
+import type { Endpoints } from "./ports";
+import type { StoragesSettings } from "./storages";
+import type { PlConfig, PlControllerPackageLoaderSettings } from "./types";
 
 export function newDefaultPlConfig(
   ports: Endpoints,
@@ -13,14 +13,14 @@ export function newDefaultPlConfig(
   packageLoaderConfig: PlControllerPackageLoaderSettings,
   storages: StoragesSettings,
 ): PlConfig {
-  const dbPath = 'db';
-  const logPath = 'platforma.log';
+  const dbPath = "db";
+  const logPath = "platforma.log";
 
   return {
     license: licenseForConfig(license),
     logging: {
-      level: 'info',
-      destinations: [{ type: 'file', path: logPath }],
+      level: "info",
+      destinations: [{ type: "file", path: logPath }],
     },
     monitoring: {
       enabled: true,
@@ -49,15 +49,15 @@ export function newDefaultPlConfig(
     controllers: {
       common: {
         timeouts: {
-          stop: '10s',
+          stop: "10s",
         },
       },
       workflows: {},
       packageLoader: packageLoaderConfig,
       runner: {
-        type: 'local',
+        type: "local",
         storageRoot: storages.runner,
-        workdirCacheOnFailure: '1h',
+        workdirCacheOnFailure: "1h",
         secrets: [{ map: licenseEnvsForMixcr(license) }],
       },
       data: {

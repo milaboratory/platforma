@@ -1,1 +1,1 @@
-export { default as PlElementList } from './PlElementList.vue';
+export { default as PlElementList } from "./PlElementList.vue";

@@ -3,12 +3,12 @@
  * Component for manipulating a boolean value
  */
 export default {
-  name: 'PlToggleSwitch',
+  name: "PlToggleSwitch",
 };
 </script>
 
 <script lang="ts" setup>
-import './pl-toggle-switch.scss';
+import "./pl-toggle-switch.scss";
 
 defineEmits<{
   /**
@@ -16,7 +16,7 @@ defineEmits<{
    *
    * @param value - The new boolean value of the model
    */
-  (e: 'update:modelValue', value: boolean): void;
+  (e: "update:modelValue", value: boolean): void;
 }>();
 
 defineProps<{

@@ -7,12 +7,12 @@
       <template v-for="(item, name) in data" :key="name">
         <span class="component-props__props-name text-mono-m"> {{ name }}: </span>
         <span class="component-props__props-value">
-          {{ item['type'] }}
+          {{ item["type"] }}
         </span>
         <span class="component-props__props-description">
-          {{ item['description'] }}
+          {{ item["description"] }}
         </span>
-        <div class="line"/>
+        <div class="line" />
       </template>
     </div>
 
@@ -28,7 +28,7 @@
           <span class="component-props__event-description text-mono-m">
             {{ item }}
           </span>
-          <div class="line"/>
+          <div class="line" />
         </template>
       </div>
     </div>
@@ -44,7 +44,7 @@
           <span class="component-props__event-description text-mono-m">
             {{ item }}
           </span>
-          <div class="line"/>
+          <div class="line" />
         </template>
       </div>
     </div>

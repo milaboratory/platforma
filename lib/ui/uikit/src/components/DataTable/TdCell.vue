@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import { tapIf } from '@milaboratories/helpers';
-import { showContextMenu } from '../contextMenu';
-import type { ContextOption } from '../contextMenu/types';
-import { injectState } from './keys';
-import type { Row, TableCell } from './types';
-import { computed, ref } from 'vue';
-import BaseCellComponent from './BaseCellComponent.vue';
+import { tapIf } from "@milaboratories/helpers";
+import { showContextMenu } from "../contextMenu";
+import type { ContextOption } from "../contextMenu/types";
+import { injectState } from "./keys";
+import type { Row, TableCell } from "./types";
+import { computed, ref } from "vue";
+import BaseCellComponent from "./BaseCellComponent.vue";
 
 const props = defineProps<{
   cell: TableCell;
@@ -32,7 +32,7 @@ const onClick = (ev: MouseEvent) => {
 };
 
 const onContextMenu = (ev: MouseEvent, row: Row) => {
-  if (ev.type === 'contextmenu') {
+  if (ev.type === "contextmenu") {
     ev.preventDefault();
   } else {
     return;
@@ -49,14 +49,14 @@ const onContextMenu = (ev: MouseEvent, row: Row) => {
   if (onSelectedRows && onSelectedRows.length) {
     if (isSelected) {
       options.push({
-        text: 'Deselect row',
+        text: "Deselect row",
         cb() {
           state.data.selectedRows.delete(props.cell.row.primaryKey);
         },
       });
     } else {
       options.push({
-        text: 'Select row',
+        text: "Select row",
         cb() {
           state.selectRow(props.cell.row.primaryKey);
         },
@@ -66,14 +66,14 @@ const onContextMenu = (ev: MouseEvent, row: Row) => {
 
   if (onSelectedColumns && onSelectedColumns.length) {
     options.push({
-      text: 'Select column',
+      text: "Select column",
       cb() {
         state.selectColumn(props.cell.column.id);
       },
     });
 
     options.push({
-      text: 'Unselect column',
+      text: "Unselect column",
       cb() {
         state.unselectColumn(props.cell.column.id);
       },
@@ -89,7 +89,9 @@ const onContextMenu = (ev: MouseEvent, row: Row) => {
 
 const cellRef = ref<HTMLElement>();
 
-const CustomComponent = computed(() => (props.cell.column.component ? props.cell.column.component() : undefined));
+const CustomComponent = computed(() =>
+  props.cell.column.component ? props.cell.column.component() : undefined,
+);
 </script>
 
 <template>
@@ -102,7 +104,18 @@ const CustomComponent = computed(() => (props.cell.column.component ? props.cell
     @contextmenu="(ev) => onContextMenu(ev, cell.row)"
   >
     <div v-if="cell.control" class="control-cell">{{ cell.row.index }}</div>
-    <component :is="CustomComponent" v-else-if="CustomComponent" :model-value="cell.value" @update:model-value="onInput" />
-    <BaseCellComponent v-else :model-value="cell.value" :value-type="valueTypeRef" :editable="cell.column.editable" @update:model-value="onInput" />
+    <component
+      :is="CustomComponent"
+      v-else-if="CustomComponent"
+      :model-value="cell.value"
+      @update:model-value="onInput"
+    />
+    <BaseCellComponent
+      v-else
+      :model-value="cell.value"
+      :value-type="valueTypeRef"
+      :editable="cell.column.editable"
+      @update:model-value="onInput"
+    />
   </div>
 </template>

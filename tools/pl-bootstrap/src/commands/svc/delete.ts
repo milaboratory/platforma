@@ -1,18 +1,18 @@
-import { Command, Args, Flags } from '@oclif/core';
-import Core from '../../core';
-import * as cmdOpts from '../../cmd-opts';
-import * as util from '../../util';
+import { Command, Args, Flags } from "@oclif/core";
+import Core from "../../core";
+import * as cmdOpts from "../../cmd-opts";
+import * as util from "../../util";
 
 export default class Delete extends Command {
-  static override description = 'List available instances';
+  static override description = "List available instances";
 
-  static override examples = ['<%= config.bin %> <%= command.id %>'];
+  static override examples = ["<%= config.bin %> <%= command.id %>"];
 
   static override flags = {
     ...cmdOpts.GlobalFlags,
 
     all: Flags.boolean({
-      description: 'remove all known instances',
+      description: "remove all known instances",
       required: false,
     }),
   };
@@ -24,7 +24,7 @@ export default class Delete extends Command {
   public async run(): Promise<void> {
     const { flags, args } = await this.parse(Delete);
 
-    const logger = util.createLogger(flags['log-level']);
+    const logger = util.createLogger(flags["log-level"]);
     const core = new Core(logger);
 
     const name = args.name;

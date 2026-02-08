@@ -10,7 +10,8 @@ import type {
   ResourceData,
   ResourceId,
   ResourceType,
-  FutureFieldType } from './types';
+  FutureFieldType,
+} from "./types";
 import {
   createLocalResourceId,
   ensureResourceIdNotNull,
@@ -18,28 +19,33 @@ import {
   isLocalResourceId,
   extractBasicResourceData,
   isNullResourceId,
-} from './types';
+} from "./types";
 import type {
   ClientMessageRequest,
   LLPlTransaction,
   OneOfKind,
   ServerMessageResponse,
-} from './ll_transaction';
-import { TxAPI_Open_Request_WritableTx } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
-import type { NonUndefined } from 'utility-types';
-import { toBytes } from '../util/util';
-import { fieldTypeToProto, protoToField, protoToResource } from './type_conversion';
-import { canonicalJsonBytes, canonicalJsonGzBytes, deepFreeze, notEmpty } from '@milaboratories/ts-helpers';
-import { isNotFoundError } from './errors';
-import type { FinalResourceDataPredicate } from './final';
-import type { LRUCache } from 'lru-cache';
-import type { ResourceDataCacheRecord } from './cache';
-import type { TxStat } from './stat';
-import { initialTxStatWithoutTime } from './stat';
-import type { ErrorResourceData } from './error_resource';
-import { ErrorResourceType } from './error_resource';
-import { JsonGzObject, JsonObject } from '../helpers/pl';
-import { PromiseTracker } from './PromiseTracker';
+} from "./ll_transaction";
+import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
+import type { NonUndefined } from "utility-types";
+import { toBytes } from "../util/util";
+import { fieldTypeToProto, protoToField, protoToResource } from "./type_conversion";
+import {
+  canonicalJsonBytes,
+  canonicalJsonGzBytes,
+  deepFreeze,
+  notEmpty,
+} from "@milaboratories/ts-helpers";
+import { isNotFoundError } from "./errors";
+import type { FinalResourceDataPredicate } from "./final";
+import type { LRUCache } from "lru-cache";
+import type { ResourceDataCacheRecord } from "./cache";
+import type { TxStat } from "./stat";
+import { initialTxStatWithoutTime } from "./stat";
+import type { ErrorResourceData } from "./error_resource";
+import { ErrorResourceType } from "./error_resource";
+import { JsonGzObject, JsonObject } from "../helpers/pl";
+import { PromiseTracker } from "./PromiseTracker";
 
 /** Reference to resource, used only within transaction */
 export interface ResourceRef {
@@ -81,17 +87,17 @@ export type AnyFieldRef = _FieldId<AnyResourceRef>; // FieldRef | FieldId
 export type AnyRef = AnyResourceRef | AnyFieldRef;
 
 export function isField(ref: AnyRef): ref is AnyFieldRef {
-  return ref.hasOwnProperty('resourceId') && ref.hasOwnProperty('fieldName');
+  return ref.hasOwnProperty("resourceId") && ref.hasOwnProperty("fieldName");
 }
 
 export function isResource(ref: AnyRef): ref is AnyResourceRef {
   return (
-    typeof ref === 'bigint' || (ref.hasOwnProperty('globalId') && ref.hasOwnProperty('localId'))
+    typeof ref === "bigint" || (ref.hasOwnProperty("globalId") && ref.hasOwnProperty("localId"))
   );
 }
 
 export function isResourceId(ref: AnyRef): ref is ResourceId {
-  return typeof ref === 'bigint' && !isLocalResourceId(ref) && !isNullResourceId(ref);
+  return typeof ref === "bigint" && !isLocalResourceId(ref) && !isNullResourceId(ref);
 }
 
 export function isFieldRef(ref: AnyFieldRef): ref is FieldRef {
@@ -99,7 +105,7 @@ export function isFieldRef(ref: AnyFieldRef): ref is FieldRef {
 }
 
 export function isResourceRef(ref: AnyResourceRef): ref is ResourceRef {
-  return ref.hasOwnProperty('globalId') && ref.hasOwnProperty('localId');
+  return ref.hasOwnProperty("globalId") && ref.hasOwnProperty("localId");
 }
 
 export function toFieldId(ref: AnyFieldRef): AnyFieldId {
@@ -129,7 +135,7 @@ export function field(resourceId: AnyResourceRef, fieldName: string): AnyFieldRe
 
 /** If transaction commit failed due to write conflicts */
 export class TxCommitConflict extends Error {
-  name = 'TxCommitConflict';
+  name = "TxCommitConflict";
 }
 
 async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefined> {
@@ -149,10 +155,7 @@ function tracked<T extends (this: PlTransaction, ...a: any[]) => Promise<any>>(
   value: T,
   _context: ClassMethodDecoratorContext,
 ) {
-  return function (
-    this: PlTransaction,
-    ...args: Parameters<T>
-  ): ReturnType<T> {
+  return function (this: PlTransaction, ...args: Parameters<T>): ReturnType<T> {
     return this.track(value.apply(this, args)) as ReturnType<T>;
   } as unknown as T;
 }
@@ -204,7 +207,7 @@ export class PlTransaction {
     // initiating transaction
     this.globalTxId = this.sendSingleAndParse(
       {
-        oneofKind: 'txOpen',
+        oneofKind: "txOpen",
         txOpen: {
           name,
           enableFormattedErrors,
@@ -241,7 +244,7 @@ export class PlTransaction {
     await this.pending.awaitAll();
   }
 
-  private sendSingleAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
+  private sendSingleAndParse<Kind extends NonUndefined<ClientMessageRequest["oneofKind"]>, T>(
     r: OneOfKind<ClientMessageRequest, Kind>,
     parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => T,
   ): Promise<T> {
@@ -257,7 +260,7 @@ export class PlTransaction {
     });
   }
 
-  private sendMultiAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
+  private sendMultiAndParse<Kind extends NonUndefined<ClientMessageRequest["oneofKind"]>, T>(
     r: OneOfKind<ClientMessageRequest, Kind>,
     parser: (resp: OneOfKind<ServerMessageResponse, Kind>[]) => T,
   ): Promise<T> {
@@ -273,21 +276,21 @@ export class PlTransaction {
     });
   }
 
-  private async sendVoidSync<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>>(
+  private async sendVoidSync<Kind extends NonUndefined<ClientMessageRequest["oneofKind"]>>(
     r: OneOfKind<ClientMessageRequest, Kind>,
   ): Promise<void> {
     await this.ll.send(r, false);
   }
 
   /** Requests sent with this method should never produce recoverable errors */
-  private sendVoidAsync<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>>(
+  private sendVoidAsync<Kind extends NonUndefined<ClientMessageRequest["oneofKind"]>>(
     r: OneOfKind<ClientMessageRequest, Kind>,
   ): void {
     void this.track(this.sendVoidSync(r));
   }
 
   private checkTxOpen() {
-    if (this._completed) throw new Error('Transaction already closed');
+    if (this._completed) throw new Error("Transaction already closed");
   }
 
   public get completed() {
@@ -309,10 +312,9 @@ export class PlTransaction {
       await completeResult;
       await this.ll.await();
     } else {
-      const commitResponse = this.track(this.sendSingleAndParse(
-        { oneofKind: 'txCommit', txCommit: {} },
-        (r) => r.txCommit.success,
-      ));
+      const commitResponse = this.track(
+        this.sendSingleAndParse({ oneofKind: "txCommit", txCommit: {} }, (r) => r.txCommit.success),
+      );
 
       // send closing frame right after commit to save some time on round-trips
       const completeResult = this.track(this.ll.complete());
@@ -336,7 +338,7 @@ export class PlTransaction {
     // tx will accept no requests after this one
     this._completed = true;
 
-    const discardResponse = this.sendVoidSync({ oneofKind: 'txDiscard', txDiscard: {} });
+    const discardResponse = this.sendVoidSync({ oneofKind: "txDiscard", txDiscard: {} });
     void this.track(discardResponse);
     // send closing frame right after commit to save some time on round-trips
     const completeResult = this.track(this.ll.complete());
@@ -371,7 +373,7 @@ export class PlTransaction {
 
     const globalId = this.sendSingleAndParse(
       {
-        oneofKind: 'resourceCreateSingleton',
+        oneofKind: "resourceCreateSingleton",
         resourceCreateSingleton: {
           type,
           id: localId,
@@ -395,7 +397,7 @@ export class PlTransaction {
   ): Promise<BasicResourceData | ResourceData> {
     return this.sendSingleAndParse(
       {
-        oneofKind: 'resourceGetSingleton',
+        oneofKind: "resourceGetSingleton",
         resourceGetSingleton: {
           data: Buffer.from(name),
           loadFields,
@@ -405,7 +407,7 @@ export class PlTransaction {
     );
   }
 
-  private createResource<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>>(
+  private createResource<Kind extends NonUndefined<ClientMessageRequest["oneofKind"]>>(
     root: boolean,
     req: (localId: LocalResourceId) => OneOfKind<ClientMessageRequest, Kind>,
     parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => bigint,
@@ -423,7 +425,7 @@ export class PlTransaction {
     this._stat.rootsCreated++;
     return this.createResource(
       true,
-      (localId) => ({ oneofKind: 'resourceCreateRoot', resourceCreateRoot: { type, id: localId } }),
+      (localId) => ({ oneofKind: "resourceCreateRoot", resourceCreateRoot: { type, id: localId } }),
       (r) => r.resourceCreateRoot.resourceId,
     );
   }
@@ -434,11 +436,12 @@ export class PlTransaction {
     return this.createResource(
       false,
       (localId) => ({
-        oneofKind: 'resourceCreateStruct',
+        oneofKind: "resourceCreateStruct",
         resourceCreateStruct: {
           type,
           id: localId,
-          data: data === undefined ? undefined : typeof data === 'string' ? Buffer.from(data) : data,
+          data:
+            data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
         },
       }),
       (r) => r.resourceCreateStruct.resourceId,
@@ -451,11 +454,12 @@ export class PlTransaction {
     return this.createResource(
       false,
       (localId) => ({
-        oneofKind: 'resourceCreateEphemeral',
+        oneofKind: "resourceCreateEphemeral",
         resourceCreateEphemeral: {
           type,
           id: localId,
-          data: data === undefined ? undefined : typeof data === 'string' ? Buffer.from(data) : data,
+          data:
+            data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
         },
       }),
       (r) => r.resourceCreateEphemeral.resourceId,
@@ -472,11 +476,11 @@ export class PlTransaction {
     return this.createResource(
       false,
       (localId) => ({
-        oneofKind: 'resourceCreateValue',
+        oneofKind: "resourceCreateValue",
         resourceCreateValue: {
           type,
           id: localId,
-          data: typeof data === 'string' ? Buffer.from(data) : data,
+          data: typeof data === "string" ? Buffer.from(data) : data,
           errorIfExists,
         },
       }),
@@ -495,41 +499,44 @@ export class PlTransaction {
   }
 
   public createError(message: string): ResourceRef {
-    return this.createValue(ErrorResourceType, JSON.stringify({ message } satisfies ErrorResourceData));
+    return this.createValue(
+      ErrorResourceType,
+      JSON.stringify({ message } satisfies ErrorResourceData),
+    );
   }
 
   public setResourceName(name: string, rId: AnyResourceRef): void {
     this.sendVoidAsync({
-      oneofKind: 'resourceNameSet',
+      oneofKind: "resourceNameSet",
       resourceNameSet: { resourceId: toResourceId(rId), name },
     });
   }
 
   public deleteResourceName(name: string): void {
-    this.sendVoidAsync({ oneofKind: 'resourceNameDelete', resourceNameDelete: { name } });
+    this.sendVoidAsync({ oneofKind: "resourceNameDelete", resourceNameDelete: { name } });
   }
 
   public getResourceByName(name: string): Promise<ResourceId> {
     return this.sendSingleAndParse(
-      { oneofKind: 'resourceNameGet', resourceNameGet: { name } },
+      { oneofKind: "resourceNameGet", resourceNameGet: { name } },
       (r) => ensureResourceIdNotNull(r.resourceNameGet.resourceId as OptionalResourceId),
     );
   }
 
   public checkResourceNameExists(name: string): Promise<boolean> {
     return this.sendSingleAndParse(
-      { oneofKind: 'resourceNameExists', resourceNameExists: { name } },
+      { oneofKind: "resourceNameExists", resourceNameExists: { name } },
       (r) => r.resourceNameExists.exists,
     );
   }
 
   public removeResource(rId: ResourceId): void {
-    this.sendVoidAsync({ oneofKind: 'resourceRemove', resourceRemove: { id: rId } });
+    this.sendVoidAsync({ oneofKind: "resourceRemove", resourceRemove: { id: rId } });
   }
 
   public resourceExists(rId: ResourceId): Promise<boolean> {
     return this.sendSingleAndParse(
-      { oneofKind: 'resourceExists', resourceExists: { resourceId: rId } },
+      { oneofKind: "resourceExists", resourceExists: { resourceId: rId } },
       (r) => r.resourceExists.exists,
     );
   }
@@ -541,25 +548,25 @@ export class PlTransaction {
   /** This method may return stale resource state from cache if resource was removed */
   public async getResourceData(
     rId: AnyResourceRef,
-    loadFields: boolean
+    loadFields: boolean,
   ): Promise<BasicResourceData | ResourceData>;
   /** This method may return stale resource state from cache if ignoreCache == false if resource was removed */
   public async getResourceData(
     rId: AnyResourceRef,
     loadFields: true,
-    ignoreCache: boolean
+    ignoreCache: boolean,
   ): Promise<ResourceData>;
   /** This method may return stale resource state from cache if ignoreCache == false if resource was removed */
   public async getResourceData(
     rId: AnyResourceRef,
     loadFields: false,
-    ignoreCache: boolean
+    ignoreCache: boolean,
   ): Promise<BasicResourceData>;
   /** This method may return stale resource state from cache if ignoreCache == false if resource was removed */
   public async getResourceData(
     rId: AnyResourceRef,
     loadFields: boolean,
-    ignoreCache: boolean
+    ignoreCache: boolean,
   ): Promise<BasicResourceData | ResourceData>;
   @tracked
   public async getResourceData(
@@ -586,7 +593,7 @@ export class PlTransaction {
 
     const result = await this.sendSingleAndParse(
       {
-        oneofKind: 'resourceGet',
+        oneofKind: "resourceGet",
         resourceGet: { resourceId: toResourceId(rId), loadFields: loadFields },
       },
       (r) => protoToResource(notEmpty(r.resourceGet.resource)),
@@ -630,15 +637,15 @@ export class PlTransaction {
 
   public async getResourceDataIfExists(
     rId: AnyResourceRef,
-    loadFields: true
+    loadFields: true,
   ): Promise<ResourceData | undefined>;
   public async getResourceDataIfExists(
     rId: AnyResourceRef,
-    loadFields: false
+    loadFields: false,
   ): Promise<BasicResourceData | undefined>;
   public async getResourceDataIfExists(
     rId: AnyResourceRef,
-    loadFields: boolean
+    loadFields: boolean,
   ): Promise<BasicResourceData | ResourceData | undefined>;
   @tracked
   public async getResourceDataIfExists(
@@ -668,7 +675,7 @@ export class PlTransaction {
   public lockInputs(rId: AnyResourceRef): void {
     this._stat.inputsLocked++;
     this.sendVoidAsync({
-      oneofKind: 'resourceLockInputs',
+      oneofKind: "resourceLockInputs",
       resourceLockInputs: { resourceId: toResourceId(rId) },
     });
   }
@@ -680,7 +687,7 @@ export class PlTransaction {
   public lockOutputs(rId: AnyResourceRef): void {
     this._stat.outputsLocked++;
     this.sendVoidAsync({
-      oneofKind: 'resourceLockOutputs',
+      oneofKind: "resourceLockOutputs",
       resourceLockOutputs: { resourceId: toResourceId(rId) },
     });
   }
@@ -692,7 +699,7 @@ export class PlTransaction {
 
   public setResourceError(rId: AnyResourceRef, ref: AnyResourceRef): void {
     this.sendVoidAsync({
-      oneofKind: 'resourceSetError',
+      oneofKind: "resourceSetError",
       resourceSetError: { resourceId: toResourceId(rId), errorResourceId: toResourceId(ref) },
     });
   }
@@ -704,7 +711,7 @@ export class PlTransaction {
   public createField(fId: AnyFieldRef, fieldType: FieldType, value?: AnyRef): void {
     this._stat.fieldsCreated++;
     this.sendVoidAsync({
-      oneofKind: 'fieldCreate',
+      oneofKind: "fieldCreate",
       fieldCreate: { type: fieldTypeToProto(fieldType), id: toFieldId(fId) },
     });
     if (value !== undefined) this.setField(fId, value);
@@ -713,7 +720,7 @@ export class PlTransaction {
   public fieldExists(fId: AnyFieldRef): Promise<boolean> {
     return this.sendSingleAndParse(
       {
-        oneofKind: 'fieldExists',
+        oneofKind: "fieldExists",
         fieldExists: { field: toFieldId(fId) },
       },
       (r) => r.fieldExists.exists,
@@ -724,18 +731,18 @@ export class PlTransaction {
     this._stat.fieldsSet++;
     if (isResource(ref))
       this.sendVoidAsync({
-        oneofKind: 'fieldSet',
+        oneofKind: "fieldSet",
         fieldSet: {
           field: toFieldId(fId),
           value: {
             resourceId: toResourceId(ref),
-            fieldName: '', // default value, read as undefined
+            fieldName: "", // default value, read as undefined
           },
         },
       });
     else
       this.sendVoidAsync({
-        oneofKind: 'fieldSet',
+        oneofKind: "fieldSet",
         fieldSet: {
           field: toFieldId(fId),
           value: toFieldId(ref),
@@ -746,7 +753,7 @@ export class PlTransaction {
   public setFieldError(fId: AnyFieldRef, ref: AnyResourceRef): void {
     this._stat.fieldsSet++;
     this.sendVoidAsync({
-      oneofKind: 'fieldSetError',
+      oneofKind: "fieldSetError",
       fieldSetError: { field: toFieldId(fId), errResourceId: toResourceId(ref) },
     });
   }
@@ -754,7 +761,7 @@ export class PlTransaction {
   public getField(fId: AnyFieldRef): Promise<FieldData> {
     this._stat.fieldsGet++;
     return this.sendSingleAndParse(
-      { oneofKind: 'fieldGet', fieldGet: { field: toFieldId(fId) } },
+      { oneofKind: "fieldGet", fieldGet: { field: toFieldId(fId) } },
       (r) => protoToField(notEmpty(r.fieldGet.field)),
     );
   }
@@ -765,11 +772,11 @@ export class PlTransaction {
   }
 
   public resetField(fId: AnyFieldRef): void {
-    this.sendVoidAsync({ oneofKind: 'fieldReset', fieldReset: { field: toFieldId(fId) } });
+    this.sendVoidAsync({ oneofKind: "fieldReset", fieldReset: { field: toFieldId(fId) } });
   }
 
   public removeField(fId: AnyFieldRef): void {
-    this.sendVoidAsync({ oneofKind: 'fieldRemove', fieldRemove: { field: toFieldId(fId) } });
+    this.sendVoidAsync({ oneofKind: "fieldRemove", fieldRemove: { field: toFieldId(fId) } });
   }
 
   //
@@ -780,8 +787,8 @@ export class PlTransaction {
   public async listKeyValues(rId: AnyResourceRef): Promise<KeyValue[]> {
     const result = await this.sendMultiAndParse(
       {
-        oneofKind: 'resourceKeyValueList',
-        resourceKeyValueList: { resourceId: toResourceId(rId), startFrom: '', limit: 0 },
+        oneofKind: "resourceKeyValueList",
+        resourceKeyValueList: { resourceId: toResourceId(rId), startFrom: "", limit: 0 },
       },
       (r) => r.map((e) => e.resourceKeyValueList.record!),
     );
@@ -817,7 +824,7 @@ export class PlTransaction {
     this._stat.kvSetRequests++;
     this._stat.kvSetBytes++;
     this.sendVoidAsync({
-      oneofKind: 'resourceKeyValueSet',
+      oneofKind: "resourceKeyValueSet",
       resourceKeyValueSet: {
         resourceId: toResourceId(rId),
         key,
@@ -828,7 +835,7 @@ export class PlTransaction {
 
   public deleteKValue(rId: AnyResourceRef, key: string): void {
     this.sendVoidAsync({
-      oneofKind: 'resourceKeyValueDelete',
+      oneofKind: "resourceKeyValueDelete",
       resourceKeyValueDelete: {
         resourceId: toResourceId(rId),
         key,
@@ -840,7 +847,7 @@ export class PlTransaction {
   public async getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
     const result = await this.sendSingleAndParse(
       {
-        oneofKind: 'resourceKeyValueGet',
+        oneofKind: "resourceKeyValueGet",
         resourceKeyValueGet: { resourceId: toResourceId(rId), key },
       },
       (r) => r.resourceKeyValueGet.value,
@@ -869,7 +876,7 @@ export class PlTransaction {
   ): Promise<Uint8Array | undefined> {
     const result = await this.sendSingleAndParse(
       {
-        oneofKind: 'resourceKeyValueGetIfExists',
+        oneofKind: "resourceKeyValueGetIfExists",
         resourceKeyValueGetIfExists: { resourceId: toResourceId(rId), key },
       },
       (r) =>
@@ -910,9 +917,9 @@ export class PlTransaction {
   /** Resolves existing or create first level resource from */
   public getFutureFieldValue(rId: AnyRef, fieldName: string, fieldType: FutureFieldType): FieldRef {
     const data = Buffer.from(JSON.stringify({ fieldName, fieldType }));
-    const getFieldResource = this.createEphemeral({ name: 'json/getField', version: '1' }, data);
-    this.setField({ resourceId: getFieldResource, fieldName: 'resource' }, rId);
-    return { resourceId: getFieldResource, fieldName: 'result' };
+    const getFieldResource = this.createEphemeral({ name: "json/getField", version: "1" }, data);
+    this.setField({ resourceId: getFieldResource, fieldName: "resource" }, rId);
+    return { resourceId: getFieldResource, fieldName: "result" };
   }
 
   //

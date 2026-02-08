@@ -1,4 +1,4 @@
-import { expect } from 'vitest';
+import { expect } from "vitest";
 
 export function testCredentials() {
   expect(process.env.PL_ADDRESS).not.toBeUndefined();

@@ -1,14 +1,14 @@
-import type { Ref } from 'vue';
-import { computed } from 'vue';
+import type { Ref } from "vue";
+import { computed } from "vue";
 
 function groupBy<T, K extends keyof T>(
   list: T[],
   groupBy: K,
 ): {
-    grouped: Map<NonNullable<T[K]>, T[]>;
-    rest: T[];
-    ordered: T[];
-  } {
+  grouped: Map<NonNullable<T[K]>, T[]>;
+  rest: T[];
+  ordered: T[];
+} {
   const grouped: Map<NonNullable<T[K]>, T[]> = new Map();
 
   if (!list) {
@@ -43,10 +43,7 @@ function groupBy<T, K extends keyof T>(
   };
 }
 
-export function useGroupBy<T, K extends keyof T>(
-  list: Ref<T[]>,
-  byKey: K,
-) {
+export function useGroupBy<T, K extends keyof T>(list: Ref<T[]>, byKey: K) {
   const result = computed(() => groupBy(list.value, byKey));
 
   const orderedRef = computed(() => result.value.ordered);

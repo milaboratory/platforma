@@ -1,23 +1,22 @@
-import type { PruningFunction } from '@milaboratories/pl-tree';
-import { SynchronizedTreeState } from '@milaboratories/pl-tree';
-import type { PlClient, ResourceId, ResourceType } from '@milaboratories/pl-client';
-import { resourceTypesEqual } from '@milaboratories/pl-client';
-import type { TreeAndComputableU } from './types';
-import type { WatchableValue } from '@milaboratories/computable';
-import { Computable } from '@milaboratories/computable';
-import type {
-  ProjectListEntry } from '../model/project_model';
+import type { PruningFunction } from "@milaboratories/pl-tree";
+import { SynchronizedTreeState } from "@milaboratories/pl-tree";
+import type { PlClient, ResourceId, ResourceType } from "@milaboratories/pl-client";
+import { resourceTypesEqual } from "@milaboratories/pl-client";
+import type { TreeAndComputableU } from "./types";
+import type { WatchableValue } from "@milaboratories/computable";
+import { Computable } from "@milaboratories/computable";
+import type { ProjectListEntry } from "../model/project_model";
 import {
   ProjectCreatedTimestamp,
   ProjectLastModifiedTimestamp,
   ProjectMetaKey,
-} from '../model/project_model';
-import type { MiddleLayerEnvironment } from './middle_layer';
-import { notEmpty } from '@milaboratories/ts-helpers';
-import type { ProjectMeta } from '@milaboratories/pl-model-middle-layer';
+} from "../model/project_model";
+import type { MiddleLayerEnvironment } from "./middle_layer";
+import { notEmpty } from "@milaboratories/ts-helpers";
+import type { ProjectMeta } from "@milaboratories/pl-model-middle-layer";
 
-export const ProjectsField = 'projects';
-export const ProjectsResourceType: ResourceType = { name: 'Projects', version: '1' };
+export const ProjectsField = "projects";
+export const ProjectsResourceType: ResourceType = { name: "Projects", version: "1" };
 
 export const ProjectsListTreePruningFunction: PruningFunction = (resource) => {
   if (!resourceTypesEqual(resource.type, ProjectsResourceType)) return [];

@@ -1,18 +1,18 @@
-import { Pl } from '@milaboratories/pl-middle-layer';
-import { tplTest } from '@platforma-sdk/test';
+import { Pl } from "@milaboratories/pl-middle-layer";
+import { tplTest } from "@platforma-sdk/test";
 
-tplTest.concurrent('run-fake-java', async ({ helper, expect }) => {
-  const customTestText = 'hello from fake java';
+tplTest.concurrent("run-fake-java", async ({ helper, expect }) => {
+  const customTestText = "hello from fake java";
 
-  const result = await helper.renderTemplate(false, 'exec.run.fake_java', ['main'], (tx) => ({
+  const result = await helper.renderTemplate(false, "exec.run.fake_java", ["main"], (tx) => ({
     text: tx.createValue(Pl.JsonObject, JSON.stringify(customTestText)),
   }));
-  const mainResult = result.computeOutput('main', (a) => a?.getDataAsString());
+  const mainResult = result.computeOutput("main", (a) => a?.getDataAsString());
 
   const output = await mainResult.awaitStableValue();
   expect(output).toBeDefined();
 
-  const lines = output!.split('\n');
+  const lines = output!.split("\n");
 
   expect(lines).length(7, `original output:\n${output}`);
   expect(lines[0].trim()).toBe('cmd = "java"');
@@ -24,23 +24,18 @@ tplTest.concurrent('run-fake-java', async ({ helper, expect }) => {
   expect(lines[4].trim()).toBe(`arg[3] = "${customTestText}"`);
 });
 
-tplTest.concurrent('run-fake-python', async ({ helper, expect }) => {
-  const customTestText = 'hello from fake python';
+tplTest.concurrent("run-fake-python", async ({ helper, expect }) => {
+  const customTestText = "hello from fake python";
 
-  const result = await helper.renderTemplate(
-    false,
-    'exec.run.fake_python',
-    ['main'],
-    (tx) => ({
-      text: tx.createValue(Pl.JsonObject, JSON.stringify(customTestText)),
-    }),
-  );
-  const mainResult = result.computeOutput('main', (a) => a?.getDataAsString());
+  const result = await helper.renderTemplate(false, "exec.run.fake_python", ["main"], (tx) => ({
+    text: tx.createValue(Pl.JsonObject, JSON.stringify(customTestText)),
+  }));
+  const mainResult = result.computeOutput("main", (a) => a?.getDataAsString());
 
   const output = await mainResult.awaitStableValue();
   expect(output).toBeDefined();
 
-  const lines = output!.split('\n');
+  const lines = output!.split("\n");
 
   expect(lines).length(7, `original output:\n${output}`);
   expect(lines[0].trim()).toBe('cmd = "python"');

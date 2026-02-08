@@ -1,21 +1,21 @@
-import fs from 'node:fs';
-import fsp from 'node:fs/promises';
-import upath from 'upath';
-import type { Dispatcher } from 'undici';
-import { request } from 'undici';
-import { Writable, Readable } from 'node:stream';
-import { text } from 'node:stream/consumers';
-import * as tar from 'tar';
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import { assertNever, fileExists } from '@milaboratories/ts-helpers';
-import decompress from 'decompress';
-import type { ArchType, OSType } from './os_and_arch';
-import { newOs, newArch } from './os_and_arch';
+import fs from "node:fs";
+import fsp from "node:fs/promises";
+import upath from "upath";
+import type { Dispatcher } from "undici";
+import { request } from "undici";
+import { Writable, Readable } from "node:stream";
+import { text } from "node:stream/consumers";
+import * as tar from "tar";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import { assertNever, fileExists } from "@milaboratories/ts-helpers";
+import decompress from "decompress";
+import type { ArchType, OSType } from "./os_and_arch";
+import { newOs, newArch } from "./os_and_arch";
 
-const cdn = 'https://cdn.platforma.bio/software';
+const cdn = "https://cdn.platforma.bio/software";
 // We'll download things from Global Access if downloading from CDN has failed
 // (it might be that it's blocked from the company's network.)
-const gaCdn = 'https://cdn-ga.pl-open.science/software';
+const gaCdn = "https://cdn-ga.pl-open.science/software";
 
 export type DownloadBinaryResult = {
   archiveUrl: string;
@@ -27,24 +27,30 @@ export type DownloadBinaryResult = {
   baseName: string;
 };
 
-export async function downloadBinaryNoExtract(
-  { logger, baseDir, softwareName, tgzName, arch, platform, dispatcher }: {
-    logger: MiLogger;
-    baseDir: string;
-    softwareName: string;
-    tgzName: string;
-    arch: string;
-    platform: string;
-    dispatcher?: Dispatcher;
-  },
-): Promise<DownloadBinaryResult> {
+export async function downloadBinaryNoExtract({
+  logger,
+  baseDir,
+  softwareName,
+  tgzName,
+  arch,
+  platform,
+  dispatcher,
+}: {
+  logger: MiLogger;
+  baseDir: string;
+  softwareName: string;
+  tgzName: string;
+  arch: string;
+  platform: string;
+  dispatcher?: Dispatcher;
+}): Promise<DownloadBinaryResult> {
   const opts = getPathsForDownload(softwareName, tgzName, baseDir, newArch(arch), newOs(platform));
   const { archiveUrl, alternativeArchiveGAUrl, archivePath } = opts;
 
   try {
     await downloadArchive({ logger, archiveUrl, archivePath, dispatcher });
     opts.wasDownloadedFrom = archiveUrl;
-  } catch (_e) {
+  } catch {
     await downloadArchive({ logger, archiveUrl: alternativeArchiveGAUrl, archivePath, dispatcher });
     opts.wasDownloadedFrom = alternativeArchiveGAUrl;
   }
@@ -52,24 +58,36 @@ export async function downloadBinaryNoExtract(
   return opts;
 }
 
-export async function downloadBinary(
-  { logger, baseDir, softwareName, archiveName, arch, platform, dispatcher }: {
-    logger: MiLogger;
-    baseDir: string;
-    softwareName: string;
-    archiveName: string;
-    arch: string;
-    platform: string;
-    dispatcher?: Dispatcher;
-  },
-): Promise<DownloadBinaryResult> {
-  const opts = getPathsForDownload(softwareName, archiveName, baseDir, newArch(arch), newOs(platform));
+export async function downloadBinary({
+  logger,
+  baseDir,
+  softwareName,
+  archiveName,
+  arch,
+  platform,
+  dispatcher,
+}: {
+  logger: MiLogger;
+  baseDir: string;
+  softwareName: string;
+  archiveName: string;
+  arch: string;
+  platform: string;
+  dispatcher?: Dispatcher;
+}): Promise<DownloadBinaryResult> {
+  const opts = getPathsForDownload(
+    softwareName,
+    archiveName,
+    baseDir,
+    newArch(arch),
+    newOs(platform),
+  );
   const { archiveUrl, alternativeArchiveGAUrl, archivePath, archiveType, targetFolder } = opts;
 
   try {
     await downloadArchive({ logger, archiveUrl, archivePath, dispatcher });
     opts.wasDownloadedFrom = archiveUrl;
-  } catch (_e) {
+  } catch {
     await downloadArchive({ logger, archiveUrl: alternativeArchiveGAUrl, archivePath, dispatcher });
     opts.wasDownloadedFrom = alternativeArchiveGAUrl;
   }
@@ -119,14 +137,17 @@ export type DownloadInfo = {
   newExisted?: boolean;
 };
 
-export async function downloadArchive(
-  { logger, archiveUrl, archivePath, dispatcher }: {
-    logger: MiLogger;
-    archiveUrl: string;
-    archivePath: string;
-    dispatcher?: Dispatcher;
-  },
-): Promise<DownloadInfo> {
+export async function downloadArchive({
+  logger,
+  archiveUrl,
+  archivePath,
+  dispatcher,
+}: {
+  logger: MiLogger;
+  archiveUrl: string;
+  archivePath: string;
+  dispatcher?: Dispatcher;
+}): Promise<DownloadInfo> {
   const state: DownloadInfo = {};
   state.archivePath = archivePath;
 
@@ -153,7 +174,7 @@ export async function downloadArchive(
     }
 
     // to prevent incomplete downloads we first write in a temp file
-    state.tmpPath = archivePath + '.tmp';
+    state.tmpPath = archivePath + ".tmp";
     // eslint-disable-next-line n/no-unsupported-features/node-builtins
     await Readable.toWeb(body).pipeTo(Writable.toWeb(fs.createWriteStream(state.tmpPath)));
     state.wroteTmp = true;
@@ -173,7 +194,7 @@ export async function downloadArchive(
 }
 
 /** Used to prevent mid-way interrupted unarchived folders to be used */
-const MarkerFileName = '.ok';
+const MarkerFileName = ".ok";
 
 export async function extractArchive(
   logger: MiLogger,
@@ -181,7 +202,7 @@ export async function extractArchive(
   archiveType: ArchiveType,
   dstFolder: string,
 ) {
-  logger.info('extracting archive...');
+  logger.info("extracting archive...");
   logger.info(`  archive path: '${archivePath}'`);
   logger.info(`  target dir: '${dstFolder}'`);
 
@@ -211,7 +232,7 @@ export async function extractArchive(
   );
 
   switch (archiveType) {
-    case 'tgz':
+    case "tgz":
       await tar.x({
         file: archivePath,
         cwd: dstFolder,
@@ -219,7 +240,7 @@ export async function extractArchive(
       });
       break;
 
-    case 'zip':
+    case "zip":
       await decompress(archivePath, dstFolder);
       break;
 
@@ -228,15 +249,15 @@ export async function extractArchive(
   }
 
   // writing marker file, to be able in the future detect that we completely unarchived the tar file
-  await fsp.writeFile(markerFilePath, 'ok');
+  await fsp.writeFile(markerFilePath, "ok");
 
   logger.info(`  ... unpack done.`);
 }
 
-export type ArchiveType = 'tgz' | 'zip';
+export type ArchiveType = "tgz" | "zip";
 
 const osToArchiveType: Record<OSType, ArchiveType> = {
-  linux: 'tgz',
-  macos: 'tgz',
-  windows: 'zip',
+  linux: "tgz",
+  macos: "tgz",
+  windows: "zip",
 };

@@ -1,8 +1,8 @@
-import type { Watcher } from '../watcher';
-import { ChangeSource } from '../change_source';
-import type { AccessorProvider, UsageGuard } from './accessor_provider';
-import { randomUUID } from 'node:crypto';
-import type { ComputableCtx } from './kernel';
+import type { Watcher } from "../watcher";
+import { ChangeSource } from "../change_source";
+import type { AccessorProvider, UsageGuard } from "./accessor_provider";
+import { randomUUID } from "node:crypto";
+import type { ComputableCtx } from "./kernel";
 
 export interface PersistentFakeTreeNode extends AccessorProvider<FakeTreeAccessor> {
   readonly uuid: string;
@@ -22,7 +22,7 @@ export class FakeTreeAccessor {
 
   private access() {
     this.guard();
-    if (!this.isLocked()) this.ctx.markUnstable('not_locked');
+    if (!this.isLocked()) this.ctx.markUnstable("not_locked");
   }
 
   listChildren(): string[] {
@@ -84,7 +84,7 @@ interface FakeTreeNodeWriter {
 class FakeTreeBranch implements FakeTreeNodeWriter, FakeTreeNodeReader {
   public readonly uuid = randomUUID();
   private readonly children: Record<string, FakeTreeBranch> = {};
-  private value: string = '';
+  private value: string = "";
   private locked: boolean = false;
 
   /** Tracks changes in the list of children */
@@ -98,7 +98,7 @@ class FakeTreeBranch implements FakeTreeNodeWriter, FakeTreeNodeReader {
 
   deleteChild(key: string): void {
     if (!(key in this.children)) return;
-    if (this.locked) throw new Error('Can\'t change field list after locked.');
+    if (this.locked) throw new Error("Can't change field list after locked.");
     const child = this.children[key];
     delete this.children[key];
     child.nodeDeleteChange.markChanged();
@@ -108,7 +108,7 @@ class FakeTreeBranch implements FakeTreeNodeWriter, FakeTreeNodeReader {
   getOrCreateChild(key: string): FakeTreeNodeWriter {
     let child = this.children[key];
     if (child) return child;
-    if (this.locked) throw new Error('Can\'t change field list after locked.');
+    if (this.locked) throw new Error("Can't change field list after locked.");
     child = new FakeTreeBranch();
     this.children[key] = child;
     this.childrenListChange.markChanged();
@@ -116,7 +116,7 @@ class FakeTreeBranch implements FakeTreeNodeWriter, FakeTreeNodeReader {
   }
 
   setValue(value: string): void {
-    if (this.locked) throw new Error('Can\'t set value after locked.');
+    if (this.locked) throw new Error("Can't set value after locked.");
     this.value = value;
     this.valueChange.markChanged();
   }

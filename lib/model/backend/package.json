@@ -1,11 +1,15 @@
 {
   "name": "@milaboratories/pl-model-backend",
   "version": "1.1.43",
-  "type": "module",
   "description": "Backend model for Platforma.bio",
-  "types": "./dist/index.d.ts",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
+  "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,27 +18,25 @@
     }
   },
   "scripts": {
-    "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
-    "lint": "eslint .",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "dependencies": {
-    "zod": "catalog:",
+    "@milaboratories/pl-client": "workspace:*",
     "canonicalize": "catalog:",
-    "@milaboratories/pl-client": "workspace:*"
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
-    "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "typescript": "catalog:"
   }
 }
