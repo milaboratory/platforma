@@ -43,7 +43,6 @@
     "long": "catalog:",
     "lru-cache": "catalog:",
     "openapi-fetch": "catalog:",
-    "tslib": "catalog:",
     "undici": "catalog:",
     "utility-types": "catalog:",
     "yaml": "catalog:"
