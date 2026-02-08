@@ -1,1 +1,1 @@
-export { default as FormComponentsPage } from './FormComponentsPage.vue';
+export { default as FormComponentsPage } from "./FormComponentsPage.vue";

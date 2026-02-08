@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { PlBtnPrimary, PlNotificationAlert, PlSpacer } from '@milaboratories/uikit';
-import { ref } from 'vue';
+import { PlBtnPrimary, PlNotificationAlert, PlSpacer } from "@milaboratories/uikit";
+import { ref } from "vue";
 const model = ref(true);
 </script>
 

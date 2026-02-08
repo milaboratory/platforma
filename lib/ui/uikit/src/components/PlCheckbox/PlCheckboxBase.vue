@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import './pl-checkbox-base.scss';
+import "./pl-checkbox-base.scss";
 
-defineEmits(['update:modelValue']);
+defineEmits(["update:modelValue"]);
 
 const props = defineProps<{
   modelValue: boolean;
@@ -15,9 +15,7 @@ const props = defineProps<{
     tabindex="0"
     class="pl-checkbox-base"
     :class="{
-      ...(props.indeterminate
-        ? { indeterminate: true }
-        : { checked: props.modelValue }),
+      ...(props.indeterminate ? { indeterminate: true } : { checked: props.modelValue }),
       disabled,
     }"
     @click="$emit('update:modelValue', !modelValue)"

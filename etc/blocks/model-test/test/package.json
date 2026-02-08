@@ -1,15 +1,18 @@
 {
   "name": "@milaboratories/milaboratories.test-block-model.test",
-  "private": true,
   "version": "1.0.0",
+  "private": true,
   "description": "Block tests",
+  "keywords": [],
+  "files": [],
   "scripts": {
     "test": "vitest",
-    "lint": "eslint .",
-    "type-check": "ts-builder types --target block-test"
+    "check": "ts-builder check --target block-test",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target block-test",
+    "fmt": "ts-builder format"
   },
-  "files": [],
-  "keywords": [],
   "dependencies": {
     "@milaboratories/milaboratories.test-block-model.model": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
@@ -18,9 +21,7 @@
   "devDependencies": {
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@platforma-sdk/eslint-config": "workspace:*",
     "@platforma-sdk/test": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
-import { useDraggable } from '@milaboratories/uikit';
+import { ref } from "vue";
+import { useDraggable } from "@milaboratories/uikit";
 
 const squareRef = ref();
 

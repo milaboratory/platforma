@@ -1,42 +1,45 @@
-import { Command } from 'commander';
+import { Command } from "commander";
 import {
   executeCommand,
   getConfigInfo,
   getGlobalOptions,
   getValidatedConfigPath,
+  requireTarget,
   resolveVite,
   validateTargetForBrowser,
-} from './utils/index';
+} from "./utils/index";
 
-export const serveCommand = new Command('serve')
-  .description('Start development server')
-  .option('-p, --port <port>', 'Port number')
-  .option('--host <host>', 'Host address')
+export const serveCommand = new Command("serve")
+  .description("Start development server")
+  .option("-p, --port <port>", "Port number")
+  .option("--host <host>", "Host address")
   .action(async (options, command) => {
     const globalOpts = getGlobalOptions(command);
-    const target = globalOpts.target;
+    const target = requireTarget(globalOpts);
     const customServeConfig = globalOpts.serveConfig;
     const useSources = globalOpts.useSources;
 
     validateTargetForBrowser(target);
 
-    console.log(`Starting dev server for ${target} project${useSources ? ' with sources condition' : ''}...`);
+    console.log(
+      `Starting dev server for ${target} project${useSources ? " with sources condition" : ""}...`,
+    );
 
     try {
       const viteCommand = resolveVite();
-      const viteArgs = ['dev'];
+      const viteArgs = ["dev"];
       const configInfo = getConfigInfo(target);
       const configPath = getValidatedConfigPath(customServeConfig, configInfo!.filename);
 
-      viteArgs.push('--config', configPath);
+      viteArgs.push("--config", configPath);
 
-      if (options.port) viteArgs.push('--port', options.port);
-      if (options.host) viteArgs.push('--host', options.host);
+      if (options.port) viteArgs.push("--port", options.port);
+      if (options.host) viteArgs.push("--host", options.host);
 
-      const env = useSources ? { USE_SOURCES: '1' } : undefined;
+      const env = useSources ? { USE_SOURCES: "1" } : undefined;
       await executeCommand(viteCommand, viteArgs, env);
     } catch (error) {
-      console.error('Failed to start dev server:', error);
+      console.error("Failed to start dev server:", error);
       process.exit(1);
     }
   });

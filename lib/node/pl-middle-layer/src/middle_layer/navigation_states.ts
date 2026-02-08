@@ -1,7 +1,7 @@
-import type { ComputableCtx } from '@milaboratories/computable';
-import { ChangeSource, Computable } from '@milaboratories/computable';
-import type { NavigationState } from '@platforma-sdk/model';
-import { DefaultNavigationState } from '@platforma-sdk/model';
+import type { ComputableCtx } from "@milaboratories/computable";
+import { ChangeSource, Computable } from "@milaboratories/computable";
+import type { NavigationState } from "@platforma-sdk/model";
+import { DefaultNavigationState } from "@platforma-sdk/model";
 
 type NavigationStateEntry = {
   state: NavigationState;
@@ -18,7 +18,7 @@ export class NavigationStates {
       return;
     }
     entry.state = { ...state };
-    entry.change.markChanged('navigation state changed');
+    entry.change.markChanged("navigation state changed");
   }
 
   private readState(ctx: ComputableCtx, blockId: string): NavigationState {
@@ -44,7 +44,7 @@ export class NavigationStates {
     const entry = this.states.get(blockId);
     if (entry !== undefined) {
       this.states.delete(blockId);
-      entry.change.markChanged('block deleted');
+      entry.change.markChanged("block deleted");
     }
   }
 }

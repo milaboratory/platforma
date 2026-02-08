@@ -1,5 +1,5 @@
-import { folderReaderByUrl, RegistryV2Reader } from '@platforma-sdk/block-tools';
-import type { Dispatcher } from 'undici';
+import { folderReaderByUrl, RegistryV2Reader } from "@platforma-sdk/block-tools";
+import type { Dispatcher } from "undici";
 
 export class V2RegistryProvider {
   private readonly registries = new Map<string, RegistryV2Reader>();

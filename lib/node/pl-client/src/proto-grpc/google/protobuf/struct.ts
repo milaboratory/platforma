@@ -178,7 +178,7 @@ class Struct$Type extends MessageType<Struct> {
     /**
      * Encode `Struct` to JSON object.
      */
-    internalJsonWrite(message: Struct, options: JsonWriteOptions): JsonValue {
+    internalJsonWrite(message: Struct, _options: JsonWriteOptions): JsonValue {
         let json: JsonObject = {};
         for (let [k, v] of Object.entries(message.fields)) {
             json[k] = Value.toJson(v);

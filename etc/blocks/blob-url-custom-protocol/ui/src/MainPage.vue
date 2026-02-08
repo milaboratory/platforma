@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { PlAlert, PlBlockPage, PlFileInput } from '@platforma-sdk/ui-vue';
-import { useApp } from './app';
+import { PlAlert, PlBlockPage, PlFileInput } from "@platforma-sdk/ui-vue";
+import { useApp } from "./app";
 
 const app = useApp();
-
 </script>
 
 <template>
@@ -39,7 +38,17 @@ const app = useApp();
       {{ app.model.outputErrors }}
     </PlAlert>
 
-    <iframe title="Frame tgz Example" width="600" height="600" :src="app.model.outputs.tgz_content" />
-    <iframe title="Frame zip Example" width="600" height="600" :src="app.model.outputs.zip_content" />
+    <iframe
+      title="Frame tgz Example"
+      width="600"
+      height="600"
+      :src="app.model.outputs.tgz_content"
+    />
+    <iframe
+      title="Frame zip Example"
+      width="600"
+      height="600"
+      :src="app.model.outputs.zip_content"
+    />
   </PlBlockPage>
 </template>

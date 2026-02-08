@@ -1,23 +1,24 @@
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import type { TargetType } from './config-manager';
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import type { TargetType } from "./config-manager";
 
-const rootDir = resolve(dirname(fileURLToPath(new URL('.', import.meta.url))), '../..');
+const rootDir = resolve(dirname(fileURLToPath(new URL(".", import.meta.url))), "../..");
 
 /**
  * Resolves the path to an executable in the ts-builder's node_modules/.bin directory
  * This ensures that ts-builder is self-contained and can work outside of monorepo
  */
 export function resolveExecutable(executableName: string, packageName: string): string {
-  const req = createRequire(join(rootDir, 'package.json'));
+  const req = createRequire(join(rootDir, "package.json"));
   const pkgJsonPath = req.resolve(`${packageName}/package.json`);
-  const meta = JSON.parse(readFileSync(pkgJsonPath, 'utf8'));
+  const meta = JSON.parse(readFileSync(pkgJsonPath, "utf8"));
   const binField = meta.bin;
-  const rel = typeof binField === 'string'
-    ? binField
-    : binField?.[executableName] ?? Object.values(binField ?? {})[0];
+  const rel =
+    typeof binField === "string"
+      ? binField
+      : (binField?.[executableName] ?? Object.values(binField ?? {})[0]);
 
   if (!rel) throw new Error(`Cannot find "bin" for ${executableName}(${packageName})`);
 
@@ -28,9 +29,9 @@ export function resolveExecutable(executableName: string, packageName: string): 
  * Resolves the appropriate type checker executable based on target
  */
 export function resolveTypeChecker(target: TargetType): string {
-  const useVueTsc = target === 'browser' || target === 'browser-lib' || target === 'block-ui';
-  const commandName = useVueTsc ? 'vue-tsc' : 'tsc';
-  const packageName = useVueTsc ? 'vue-tsc' : 'typescript';
+  const useVueTsc = target === "browser" || target === "browser-lib" || target === "block-ui";
+  const commandName = useVueTsc ? "vue-tsc" : "tsc";
+  const packageName = useVueTsc ? "vue-tsc" : "typescript";
   return resolveExecutable(commandName, packageName);
 }
 
@@ -38,12 +39,26 @@ export function resolveTypeChecker(target: TargetType): string {
  * Resolves vite executable
  */
 export function resolveVite(): string {
-  return resolveExecutable('vite', 'vite');
+  return resolveExecutable("vite", "vite");
 }
 
 /**
  * Resolves rollup executable
  */
 export function resolveRollup(): string {
-  return resolveExecutable('rollup', 'rollup');
+  return resolveExecutable("rollup", "rollup");
+}
+
+/**
+ * Resolves oxlint executable
+ */
+export function resolveOxlint(): string {
+  return resolveExecutable("oxlint", "oxlint");
+}
+
+/**
+ * Resolves oxfmt executable
+ */
+export function resolveOxfmt(): string {
+  return resolveExecutable("oxfmt", "oxfmt");
 }

@@ -1,8 +1,8 @@
-import type winston from 'winston';
-import { getPackageInfo, newCompiler, compile, parseSources } from '../compiler/main';
-import type { ArtifactType } from '../compiler/package';
-import { typedArtifactNameToString } from '../compiler/package';
-import type { TemplateDataV3 } from '@milaboratories/pl-model-backend';
+import type winston from "winston";
+import { getPackageInfo, newCompiler, compile, parseSources } from "../compiler/main";
+import type { ArtifactType } from "../compiler/package";
+import { typedArtifactNameToString } from "../compiler/package";
+import type { TemplateDataV3 } from "@milaboratories/pl-model-backend";
 
 export function dumpArtifacts(
   logger: winston.Logger,
@@ -11,9 +11,9 @@ export function dumpArtifacts(
 ): void {
   const packageInfo = getPackageInfo(process.cwd(), logger);
 
-  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
+  const sources = parseSources(logger, packageInfo, "dist", "src", "");
 
-  const compiler = newCompiler(logger, packageInfo, 'dist');
+  const compiler = newCompiler(logger, packageInfo, "dist");
 
   // group output by type:
   //  - all libs
@@ -24,97 +24,79 @@ export function dumpArtifacts(
 
   // Libs
 
-  if (!aType || aType === 'library') {
+  if (!aType || aType === "library") {
     for (const lib of compiler.allLibs()) {
-      logger.debug(
-        `Dumping to pl-tester: ${typedArtifactNameToString(lib.fullName)}`,
-      );
-      stream.write(JSON.stringify(lib) + '\n');
+      logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(lib.fullName)}`);
+      stream.write(JSON.stringify(lib) + "\n");
     }
 
     for (const src of sources) {
-      if (src.fullName.type === 'library') {
-        logger.debug(
-          `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`,
-        );
-        stream.write(JSON.stringify(src) + '\n');
+      if (src.fullName.type === "library") {
+        logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`);
+        stream.write(JSON.stringify(src) + "\n");
       }
     }
   }
 
   // Templates
 
-  if (!aType || aType === 'template') {
+  if (!aType || aType === "template") {
     for (const tpl of compiler.allTemplates()) {
-      logger.debug(
-        `Dumping to pl-tester: ${typedArtifactNameToString(tpl.fullName)}`,
-      );
-      stream.write(JSON.stringify(tpl) + '\n');
+      logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(tpl.fullName)}`);
+      stream.write(JSON.stringify(tpl) + "\n");
     }
 
     for (const src of sources) {
-      if (src.fullName.type === 'template') {
+      if (src.fullName.type === "template") {
         logger.debug(
-          `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${
-            src.srcName
-          }`,
+          `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${src.srcName}`,
         );
-        stream.write(JSON.stringify(src) + '\n');
+        stream.write(JSON.stringify(src) + "\n");
       }
     }
   }
 
   // Software
 
-  if (!aType || aType === 'software') {
+  if (!aType || aType === "software") {
     for (const sw of compiler.allSoftware()) {
-      logger.debug(
-        `Dumping to pl-tester: ${typedArtifactNameToString(sw.fullName)}`,
-      );
-      stream.write(JSON.stringify(sw) + '\n');
+      logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(sw.fullName)}`);
+      stream.write(JSON.stringify(sw) + "\n");
     }
 
     for (const src of sources) {
-      if (src.fullName.type === 'software') {
-        logger.debug(
-          `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`,
-        );
-        stream.write(JSON.stringify(src) + '\n');
+      if (src.fullName.type === "software") {
+        logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`);
+        stream.write(JSON.stringify(src) + "\n");
       }
     }
   }
 
   // Assets
 
-  if (!aType || aType === 'asset') {
+  if (!aType || aType === "asset") {
     for (const asset of compiler.allAssets()) {
-      logger.debug(
-        `Dumping to pl-tester: ${typedArtifactNameToString(asset.fullName)}`,
-      );
-      stream.write(JSON.stringify(asset) + '\n');
+      logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(asset.fullName)}`);
+      stream.write(JSON.stringify(asset) + "\n");
     }
 
     for (const src of sources) {
-      if (src.fullName.type === 'asset') {
-        logger.debug(
-          `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`,
-        );
-        stream.write(JSON.stringify(src) + '\n');
+      if (src.fullName.type === "asset") {
+        logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`);
+        stream.write(JSON.stringify(src) + "\n");
       }
     }
   }
 
   // Tests
 
-  if (!aType || aType === 'test') {
+  if (!aType || aType === "test") {
     for (const src of sources) {
-      if (src.fullName.type === 'test') {
+      if (src.fullName.type === "test") {
         logger.debug(
-          `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${
-            src.srcName
-          }`,
+          `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${src.srcName}`,
         );
-        stream.write(JSON.stringify(src) + '\n');
+        stream.write(JSON.stringify(src) + "\n");
       }
     }
   }
@@ -127,54 +109,51 @@ export function dumpLibs(
 ): void {
   const packageInfo = getPackageInfo(process.cwd(), logger);
 
-  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
+  const sources = parseSources(logger, packageInfo, "dist", "src", "");
 
   if (!recursive) {
     for (const src of sources) {
-      if (src.fullName.type === 'library') {
-        stream.write(JSON.stringify(src) + '\n');
+      if (src.fullName.type === "library") {
+        stream.write(JSON.stringify(src) + "\n");
       }
     }
 
     return;
   }
 
-  const compiler = newCompiler(logger, packageInfo, 'dist');
+  const compiler = newCompiler(logger, packageInfo, "dist");
   for (const src of sources) {
-    if (src.fullName.type === 'library') {
+    if (src.fullName.type === "library") {
       compiler.addLib(src);
     }
   }
 
   for (const lib of compiler.allLibs()) {
-    stream.write(JSON.stringify(lib) + '\n');
+    stream.write(JSON.stringify(lib) + "\n");
   }
 }
 
-export function dumpSoftware(
-  logger: winston.Logger,
-  stream: NodeJS.WritableStream,
-): void {
+export function dumpSoftware(logger: winston.Logger, stream: NodeJS.WritableStream): void {
   const packageInfo = getPackageInfo(process.cwd(), logger);
-  const compiled = compile(logger, packageInfo, 'dist');
+  const compiled = compile(logger, packageInfo, "dist");
 
   const hashes = new Set<string>();
   const sourceMap = new Map<string, string>();
   for (const tpl of compiled.templates) {
     Object.entries(tpl.data.hashToSource).forEach(([hash, src]) => sourceMap.set(hash, src));
-    getTemplateSoftware(stream, tpl.data.template).forEach((hash) => hashes.add(hash));
+    getTemplateSoftware(tpl.data.template).forEach((hash) => hashes.add(hash));
   }
 
   for (const hash of hashes) {
     const src = sourceMap.get(hash);
     if (src) {
-      if (Object.hasOwn(JSON.parse(src) as object, 'asset')) {
+      if (Object.hasOwn(JSON.parse(src) as object, "asset")) {
         // Skip assets. They are kept in templates software because of backward compatibility with backend.
         continue;
       }
       stream.write(src);
-      if (!src.endsWith('\n')) {
-        stream.write('\n');
+      if (!src.endsWith("\n")) {
+        stream.write("\n");
       }
     } else {
       throw new Error(`Source not found for hash: ${hash}`);
@@ -182,13 +161,13 @@ export function dumpSoftware(
   }
 }
 
-function getTemplateSoftware(stream: NodeJS.WritableStream, tpl: TemplateDataV3): Set<string> {
+function getTemplateSoftware(tpl: TemplateDataV3): Set<string> {
   const hashes = new Set<string>();
   for (const sw of Object.values(tpl.software)) {
     hashes.add(sw.sourceHash);
   }
   for (const subTpl of Object.values(tpl.templates)) {
-    getTemplateSoftware(stream, subTpl).forEach((hash) => hashes.add(hash));
+    getTemplateSoftware(subTpl).forEach((hash) => hashes.add(hash));
   }
 
   return new Set(hashes);

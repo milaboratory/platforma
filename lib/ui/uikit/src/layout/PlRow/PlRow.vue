@@ -1,12 +1,12 @@
 <script lang="ts">
 /** Horizontal Flex flow container */
 export default {
-  name: 'PlRow',
+  name: "PlRow",
 };
 </script>
 
 <script lang="ts" setup>
-import './pl-row.scss';
+import "./pl-row.scss";
 
 defineProps<{
   wrap?: boolean;

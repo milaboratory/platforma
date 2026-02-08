@@ -1,1 +1,1 @@
-export { default as PlRow } from './PlRow.vue';
+export { default as PlRow } from "./PlRow.vue";

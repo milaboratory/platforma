@@ -1,5 +1,5 @@
-import type { ColumnFilter } from './column_filter';
-import type { AxisId, PColumnIdAndSpec } from './spec/spec';
+import type { ColumnFilter } from "./column_filter";
+import type { AxisId, PColumnIdAndSpec } from "./spec/spec";
 
 /**
  * Request to search among existing columns in the PFrame. Two filtering

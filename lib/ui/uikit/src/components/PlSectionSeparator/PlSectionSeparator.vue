@@ -49,7 +49,7 @@ defineProps<{
 
 .content::after {
   flex: 1;
-  content: '';
+  content: "";
   height: 1px;
   background-color: var(--pl-separador-divider-color);
   margin-left: 4px;

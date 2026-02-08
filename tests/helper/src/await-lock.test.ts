@@ -1,15 +1,15 @@
-import { expect, test } from 'vitest';
-import { utils } from '@milaboratories/helpers';
-import { functions } from '@milaboratories/helpers';
+import { expect, test } from "vitest";
+import { utils } from "@milaboratories/helpers";
+import { functions } from "@milaboratories/helpers";
 
-test('Await lock', async () => {
+test("Await lock", async () => {
   const lock = new functions.AwaitLock();
 
   let isRunning = false;
 
   async function call() {
     if (isRunning) {
-      throw Error('concurrent');
+      throw Error("concurrent");
     }
     isRunning = true;
     await utils.delay(10);
@@ -33,7 +33,7 @@ test('Await lock', async () => {
 
   const repeats = 100;
 
-  await expect(all(repeats, call)).rejects.toThrow('concurrent');
+  await expect(all(repeats, call)).rejects.toThrow("concurrent");
 
   isRunning = false;
 

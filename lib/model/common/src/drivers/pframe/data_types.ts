@@ -1,5 +1,5 @@
-import type { Branded } from '../../branding';
-import { ValueType } from './spec/spec';
+import type { Branded } from "../../branding";
+import { ValueType } from "./spec/spec";
 
 export type PVectorDataInt = Int32Array;
 export type PVectorDataLong = BigInt64Array;
@@ -7,14 +7,19 @@ export type PVectorDataFloat = Float32Array;
 export type PVectorDataDouble = Float64Array;
 export type PVectorDataString = (null | string)[];
 export type PVectorDataBytes = (null | Uint8Array)[];
-export type PVectorDataTyped<DataType extends ValueType> =
-  DataType extends typeof ValueType.Int ? PVectorDataInt :
-    DataType extends typeof ValueType.Long ? PVectorDataLong :
-      DataType extends typeof ValueType.Float ? PVectorDataFloat :
-        DataType extends typeof ValueType.Double ? PVectorDataDouble :
-          DataType extends typeof ValueType.String ? PVectorDataString :
-            DataType extends typeof ValueType.Bytes ? PVectorDataBytes :
-              never;
+export type PVectorDataTyped<DataType extends ValueType> = DataType extends typeof ValueType.Int
+  ? PVectorDataInt
+  : DataType extends typeof ValueType.Long
+    ? PVectorDataLong
+    : DataType extends typeof ValueType.Float
+      ? PVectorDataFloat
+      : DataType extends typeof ValueType.Double
+        ? PVectorDataDouble
+        : DataType extends typeof ValueType.String
+          ? PVectorDataString
+          : DataType extends typeof ValueType.Bytes
+            ? PVectorDataBytes
+            : never;
 export type PVectorData = PVectorDataTyped<ValueType>;
 
 export type PTableVectorTyped<DataType extends ValueType> = {
@@ -64,9 +69,9 @@ function isValueNA(vector: PTableVector, row: number): boolean {
     case ValueType.Long:
       return (value as PVectorDataLong[number]) === -9007199254740991n;
     case ValueType.Float:
-      return Number.isNaN((value as PVectorDataFloat[number]));
+      return Number.isNaN(value as PVectorDataFloat[number]);
     case ValueType.Double:
-      return Number.isNaN((value as PVectorDataDouble[number]));
+      return Number.isNaN(value as PVectorDataDouble[number]);
     case ValueType.String:
       return (value as PVectorDataString[number]) === null;
     case ValueType.Bytes:
@@ -76,12 +81,12 @@ function isValueNA(vector: PTableVector, row: number): boolean {
   }
 }
 
-export const PTableAbsent = { type: 'absent' } as const;
+export const PTableAbsent = { type: "absent" } as const;
 export type PTableAbsent = typeof PTableAbsent;
 
 /** Type guard for absent value */
 export function isPTableAbsent(value: unknown): value is PTableAbsent {
-  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'absent';
+  return typeof value === "object" && value !== null && "type" in value && value.type === "absent";
 }
 
 export const PTableNA = null;
@@ -100,13 +105,21 @@ export type PTableValueFloat = number;
 export type PTableValueDouble = number;
 export type PTableValueString = string;
 export type PTableValueData<DataType extends ValueTypeSupported> =
-  DataType extends typeof ValueType.Int ? PTableValueInt :
-    DataType extends typeof ValueType.Long ? PTableValueLong :
-      DataType extends typeof ValueType.Float ? PTableValueFloat :
-        DataType extends typeof ValueType.Double ? PTableValueDouble :
-          DataType extends typeof ValueType.String ? PTableValueString :
-            never;
-export type PTableValueDataBranded<DataType extends ValueTypeSupported> = Branded<PTableValueData<DataType>, DataType>;
+  DataType extends typeof ValueType.Int
+    ? PTableValueInt
+    : DataType extends typeof ValueType.Long
+      ? PTableValueLong
+      : DataType extends typeof ValueType.Float
+        ? PTableValueFloat
+        : DataType extends typeof ValueType.Double
+          ? PTableValueDouble
+          : DataType extends typeof ValueType.String
+            ? PTableValueString
+            : never;
+export type PTableValueDataBranded<DataType extends ValueTypeSupported> = Branded<
+  PTableValueData<DataType>,
+  DataType
+>;
 export type PTableValue<
   Absent = PTableAbsent,
   NA = PTableNA,
@@ -156,10 +169,15 @@ function pTableValueImpl<
 ) {
   const valueType = column.type;
   if (valueType === ValueType.Bytes) {
-    throw Error('Bytes not yet supported');
+    throw Error("Bytes not yet supported");
   }
 
-  if (options && 'dataType' in options && options.dataType !== undefined && options.dataType !== valueType) {
+  if (
+    options &&
+    "dataType" in options &&
+    options.dataType !== undefined &&
+    options.dataType !== valueType
+  ) {
     throw Error(`expected column of type ${options.dataType}, got ${valueType}`);
   }
 
@@ -196,14 +214,14 @@ export function pTableValue<FillAbsent, DataType extends ValueType>(
   row: number,
   options: {
     absent: FillAbsent;
-  }
+  },
 ): DataType extends ValueTypeSupported ? PTableValue<FillAbsent, PTableNA, DataType> : never;
 export function pTableValue<FillNA, DataType extends ValueType>(
   column: PTableVectorTyped<DataType>,
   row: number,
   options: {
     na: FillNA;
-  }
+  },
 ): DataType extends ValueTypeSupported ? PTableValue<PTableAbsent, FillNA, DataType> : never;
 export function pTableValue<FillNA, FillAbsent, DataType extends ValueType>(
   column: PTableVectorTyped<DataType>,
@@ -211,7 +229,7 @@ export function pTableValue<FillNA, FillAbsent, DataType extends ValueType>(
   options: {
     absent: FillAbsent;
     na: FillNA;
-  }
+  },
 ): DataType extends ValueTypeSupported ? PTableValue<FillAbsent, FillNA, DataType> : never;
 export function pTableValue<FillAbsent, DataType extends ValueTypeSupported>(
   column: PTableVectorTyped<ValueType>,
@@ -219,7 +237,7 @@ export function pTableValue<FillAbsent, DataType extends ValueTypeSupported>(
   options: {
     absent: FillAbsent;
     dataType: DataType;
-  }
+  },
 ): PTableValue<FillAbsent, PTableNA>;
 export function pTableValue<FillNA, DataType extends ValueTypeSupported>(
   column: PTableVectorTyped<ValueType>,
@@ -227,7 +245,7 @@ export function pTableValue<FillNA, DataType extends ValueTypeSupported>(
   options: {
     na: FillNA;
     dataType: DataType;
-  }
+  },
 ): PTableValue<PTableAbsent, FillNA, DataType>;
 export function pTableValue<FillNA, FillAbsent, DataType extends ValueTypeSupported>(
   column: PTableVectorTyped<ValueType>,
@@ -236,7 +254,7 @@ export function pTableValue<FillNA, FillAbsent, DataType extends ValueTypeSuppor
     absent: FillAbsent;
     na: FillNA;
     dataType: DataType;
-  }
+  },
 ): PTableValue<FillAbsent, FillNA, DataType>;
 export function pTableValue<
   FillAbsent = PTableAbsent,
@@ -257,20 +275,22 @@ export function pTableValue<
 export function pTableValueBranded<DataType extends ValueType>(
   column: PTableVectorTyped<DataType>,
   row: number,
-): DataType extends ValueTypeSupported ? PTableValueBranded<PTableAbsent, PTableNA, DataType> : never;
+): DataType extends ValueTypeSupported
+  ? PTableValueBranded<PTableAbsent, PTableNA, DataType>
+  : never;
 export function pTableValueBranded<FillAbsent, DataType extends ValueType>(
   column: PTableVectorTyped<DataType>,
   row: number,
   options: {
     absent: FillAbsent;
-  }
+  },
 ): DataType extends ValueTypeSupported ? PTableValueBranded<FillAbsent, PTableNA, DataType> : never;
 export function pTableValueBranded<FillNA, DataType extends ValueType>(
   column: PTableVectorTyped<DataType>,
   row: number,
   options: {
     na: FillNA;
-  }
+  },
 ): DataType extends ValueTypeSupported ? PTableValueBranded<PTableAbsent, FillNA, DataType> : never;
 export function pTableValueBranded<FillNA, FillAbsent, DataType extends ValueType>(
   column: PTableVectorTyped<DataType>,
@@ -278,7 +298,7 @@ export function pTableValueBranded<FillNA, FillAbsent, DataType extends ValueTyp
   options: {
     absent: FillAbsent;
     na: FillNA;
-  }
+  },
 ): DataType extends ValueTypeSupported ? PTableValueBranded<FillAbsent, FillNA, DataType> : never;
 export function pTableValueBranded<FillAbsent, DataType extends ValueTypeSupported>(
   column: PTableVectorTyped<ValueType>,
@@ -286,7 +306,7 @@ export function pTableValueBranded<FillAbsent, DataType extends ValueTypeSupport
   options: {
     absent: FillAbsent;
     dataType: DataType;
-  }
+  },
 ): PTableValueBranded<FillAbsent, PTableNA>;
 export function pTableValueBranded<FillNA, DataType extends ValueTypeSupported>(
   column: PTableVectorTyped<ValueType>,
@@ -294,7 +314,7 @@ export function pTableValueBranded<FillNA, DataType extends ValueTypeSupported>(
   options: {
     na: FillNA;
     dataType: DataType;
-  }
+  },
 ): PTableValueBranded<PTableAbsent, FillNA, DataType>;
 export function pTableValueBranded<FillNA, FillAbsent, DataType extends ValueTypeSupported>(
   column: PTableVectorTyped<ValueType>,
@@ -303,7 +323,7 @@ export function pTableValueBranded<FillNA, FillAbsent, DataType extends ValueTyp
     absent: FillAbsent;
     na: FillNA;
     dataType: DataType;
-  }
+  },
 ): PTableValueBranded<FillAbsent, FillNA, DataType>;
 export function pTableValueBranded<
   FillAbsent = PTableAbsent,

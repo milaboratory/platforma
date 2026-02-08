@@ -17,7 +17,7 @@
 
  */
 
-export type CompileMode = 'dist';
+export type CompileMode = "dist";
 
 export type CompilerOption = {
   /** Option name, like 'hash_override' */
@@ -27,7 +27,7 @@ export type CompilerOption = {
   args: string[];
 };
 
-export type ArtifactType = 'library' | 'template' | 'test' | 'software' | 'asset';
+export type ArtifactType = "library" | "template" | "test" | "software" | "asset";
 
 /** Artifact Name including package version */
 export interface FullArtifactName {
@@ -44,13 +44,13 @@ export interface FullArtifactName {
   version: string;
 }
 
-export type FullArtifactNameWithoutType = Omit<FullArtifactName, 'type'>;
+export type FullArtifactNameWithoutType = Omit<FullArtifactName, "type">;
 
-export type TypedArtifactName = Pick<FullArtifactName, 'type' | 'pkg' | 'id'>;
+export type TypedArtifactName = Pick<FullArtifactName, "type" | "pkg" | "id">;
 
-export type PackageName = Pick<FullArtifactName, 'pkg' | 'version'>;
+export type PackageName = Pick<FullArtifactName, "pkg" | "version">;
 
-export type ArtifactName = Pick<FullArtifactName, 'pkg' | 'id'>;
+export type ArtifactName = Pick<FullArtifactName, "pkg" | "id">;
 
 export function artifactKey(name: TypedArtifactName): string {
   return `${name.type}||${name.pkg}||${name.id}`;
@@ -72,11 +72,13 @@ export function typedArtifactNamesEquals(
   return name1.type == name2.type && name1.pkg == name2.pkg && name1.id == name2.id;
 }
 
-export function fullNameEquals(
-  name1: FullArtifactName,
-  name2: FullArtifactName,
-): boolean {
-  return name1.type == name2.type && name1.pkg == name2.pkg && name1.id == name2.id && name1.version == name2.version;
+export function fullNameEquals(name1: FullArtifactName, name2: FullArtifactName): boolean {
+  return (
+    name1.type == name2.type &&
+    name1.pkg == name2.pkg &&
+    name1.id == name2.id &&
+    name1.version == name2.version
+  );
 }
 
 /** used to format artefact name while generating output files */
@@ -99,7 +101,7 @@ export function parseArtefactNameAndVersion(nameAndVersion: {
 }): FullArtifactNameWithoutType {
   const match = nameAndVersion.name.match(/^(?<pkg>[^:]*):(?<id>[^:]*)$/);
   if (!match) throw new Error(`malformed artifact name: ${nameAndVersion.name}`);
-  return { pkg: match.groups!['pkg'], id: match.groups!['id'], version: nameAndVersion.version };
+  return { pkg: match.groups!["pkg"], id: match.groups!["id"], version: nameAndVersion.version };
 }
 
 export function fullNameWithoutTypeToString(name: FullArtifactNameWithoutType): string {

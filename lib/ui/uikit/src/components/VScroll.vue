@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { computed, ref, unref } from 'vue';
-import { useEventListener } from '../composition/useEventListener';
-import { eventListener } from '../helpers/dom';
+import { computed, ref, unref } from "vue";
+import { useEventListener } from "../composition/useEventListener";
+import { eventListener } from "../helpers/dom";
 
-const emit = defineEmits(['update:scrollTop']);
+const emit = defineEmits(["update:scrollTop"]);
 
 const props = defineProps<{
   scrollTop: number;
@@ -22,26 +22,26 @@ const visibleRef = computed(() => {
 const scrollbarStyle = computed(() => {
   const ratio = unref(ratioRef);
   return {
-    top: props.scrollTop * ratio + 'px',
-    height: Math.floor(props.clientHeight * ratio) + 'px',
+    top: props.scrollTop * ratio + "px",
+    height: Math.floor(props.clientHeight * ratio) + "px",
   };
 });
 
-useEventListener(scrollRef, 'pointerdown', (down: PointerEvent) => {
+useEventListener(scrollRef, "pointerdown", (down: PointerEvent) => {
   const s = {
     clientY: down.clientY,
   };
 
   const update = (e: MouseEvent) => {
     const dy = (e.clientY - s.clientY) / ratioRef.value;
-    emit('update:scrollTop', props.scrollTop + dy);
+    emit("update:scrollTop", props.scrollTop + dy);
     s.clientY = e.clientY;
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const removePointerMove = eventListener(document as any, 'mousemove', update);
+  const removePointerMove = eventListener(document as any, "mousemove", update);
 
-  ['mouseup', 'pointercancel'].forEach((eventType) => {
+  ["mouseup", "pointercancel"].forEach((eventType) => {
     document.addEventListener(eventType, removePointerMove, { once: true });
   });
 });

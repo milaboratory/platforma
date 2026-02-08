@@ -1,44 +1,50 @@
-import { z } from 'zod';
+import { z } from "zod";
 import {
   BlockPackId,
   BlockPackIdNoVersion,
   BlockPackMetaEmbeddedBytes,
   FeatureFlags,
   SemVer,
-} from '../block_meta';
-import type { BlockPackFromRegistryV2 } from './block_pack_spec';
-import { BlockPackSpec } from './block_pack_spec';
-import { RegistryEntry } from './registry_spec';
+} from "../block_meta";
+import type { BlockPackFromRegistryV2 } from "./block_pack_spec";
+import { BlockPackSpec } from "./block_pack_spec";
+import { RegistryEntry } from "./registry_spec";
 
 /**
  * Latest information about specific block pack. Contain information about latest version of the package.
  * */
-export const BlockPackOverviewLegacy = z.object({
-  registryId: z.string(),
-  id: BlockPackId,
-  meta: BlockPackMetaEmbeddedBytes,
-  spec: BlockPackSpec,
-  otherVersions: z.array(SemVer),
-}).passthrough();
+export const BlockPackOverviewLegacy = z
+  .object({
+    registryId: z.string(),
+    id: BlockPackId,
+    meta: BlockPackMetaEmbeddedBytes,
+    spec: BlockPackSpec,
+    otherVersions: z.array(SemVer),
+  })
+  .passthrough();
 export type BlockPackOverviewLegacy = z.infer<typeof BlockPackOverviewLegacy>;
 
-export const AnyChannel = 'any';
-export const StableChannel = 'stable';
+export const AnyChannel = "any";
+export const StableChannel = "stable";
 
-export const VersionWithChannels = z.object({
-  version: SemVer,
-  channels: z.array(z.string()),
-}).passthrough();
+export const VersionWithChannels = z
+  .object({
+    version: SemVer,
+    channels: z.array(z.string()),
+  })
+  .passthrough();
 
 /**
  * Information about specific block pack version.
  * */
-export const SingleBlockPackOverview = z.object({
-  id: BlockPackId,
-  meta: BlockPackMetaEmbeddedBytes,
-  featureFlags: FeatureFlags.optional(),
-  spec: BlockPackSpec,
-}).passthrough();
+export const SingleBlockPackOverview = z
+  .object({
+    id: BlockPackId,
+    meta: BlockPackMetaEmbeddedBytes,
+    featureFlags: FeatureFlags.optional(),
+    spec: BlockPackSpec,
+  })
+  .passthrough();
 export type SingleBlockPackOverview = z.infer<typeof SingleBlockPackOverview>;
 
 /**
@@ -53,11 +59,13 @@ export const BlockPackOverviewRaw = z.object({
 export const BlockPackOverview = BlockPackOverviewRaw.passthrough();
 export type BlockPackOverview = z.infer<typeof BlockPackOverview>;
 
-export const BlockPackOverviewNoRegistryId = BlockPackOverviewRaw.omit({ registryId: true }).passthrough();
+export const BlockPackOverviewNoRegistryId = BlockPackOverviewRaw.omit({
+  registryId: true,
+}).passthrough();
 export type BlockPackOverviewNoRegistryId = z.infer<typeof BlockPackOverviewNoRegistryId>;
 
 export const RegistryStatus = RegistryEntry.extend({
-  status: z.union([z.literal('online'), z.literal('offline')]),
+  status: z.union([z.literal("online"), z.literal("offline")]),
 });
 export type RegistryStatus = z.infer<typeof RegistryStatus>;
 

@@ -1,1 +1,1 @@
-export { default as PlSvg } from './PlSvg.vue';
+export { default as PlSvg } from "./PlSvg.vue";

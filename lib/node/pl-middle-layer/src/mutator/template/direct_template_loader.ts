@@ -1,50 +1,44 @@
-import type { AnyRef, AnyResourceRef, PlTransaction } from '@milaboratories/pl-client';
-import { assertNever } from '@milaboratories/ts-helpers';
-import type { ExplicitTemplate, PreparedTemplate } from '../../model/template_spec';
-import type { Hash } from 'node:crypto';
-import { createHash } from 'node:crypto';
+import type { AnyRef, AnyResourceRef, PlTransaction } from "@milaboratories/pl-client";
+import { assertNever } from "@milaboratories/ts-helpers";
+import type { ExplicitTemplate, PreparedTemplate } from "../../model/template_spec";
+import type { Hash } from "node:crypto";
+import { createHash } from "node:crypto";
 import type {
   TemplateData,
   TemplateLibData,
   TemplateSoftwareData,
-} from '@milaboratories/pl-model-backend';
+} from "@milaboratories/pl-model-backend";
 import {
   PlTemplateLibV1,
   PlTemplateSoftwareV1,
   PlTemplateV1,
   PlTemplateOverrideV1,
   parseTemplate,
-} from '@milaboratories/pl-model-backend';
-import { createTemplateV3Tree } from './direct_template_loader_v3';
+} from "@milaboratories/pl-model-backend";
+import { createTemplateV3Tree } from "./direct_template_loader_v3";
 
-export function loadTemplateFromExplicitDirect(
-  tx: PlTransaction,
-  spec: ExplicitTemplate,
-): AnyRef {
+export function loadTemplateFromExplicitDirect(tx: PlTransaction, spec: ExplicitTemplate): AnyRef {
   const templateInfo = parseTemplate(spec.content);
 
   const templateFormat = templateInfo.type;
   switch (templateFormat) {
-    case 'pl.tengo-template.v2':
+    case "pl.tengo-template.v2":
       return createTemplateV2Tree(tx, templateInfo);
-    case 'pl.tengo-template.v3':
+    case "pl.tengo-template.v3":
       return createTemplateV3Tree(tx, templateInfo);
     default:
       assertNever(templateFormat);
   }
 }
 
-export function loadTemplateFromPrepared(
-  tx: PlTransaction,
-  spec: PreparedTemplate,
-): AnyRef {
+export function loadTemplateFromPrepared(tx: PlTransaction, spec: PreparedTemplate): AnyRef {
   const templateData = spec.data;
 
   const templateFormat = templateData.type;
   switch (templateFormat) {
-    case 'pl.tengo-template.v2':
+    case "pl.tengo-template.v2":
       return createTemplateV2Tree(tx, templateData);
-    case 'pl.tengo-template.v3':
+    case "pl.tengo-template.v3":
       return createTemplateV3Tree(tx, templateData);
     default:
       assertNever(templateFormat);
@@ -98,7 +92,7 @@ const TemplateRenderer: Renderer<TemplateData> = {
     hash
       .update(PlTemplateV1.type.name)
       .update(PlTemplateV1.type.version)
-      .update(resource.hashOverride ?? 'no-override')
+      .update(resource.hashOverride ?? "no-override")
       .update(resource.name)
       .update(resource.version)
       .update(resource.src);
@@ -109,19 +103,19 @@ const TemplateRenderer: Renderer<TemplateData> = {
     };
 
     for (const [libId, lib] of srt(Object.entries(resource.libs ?? {}))) {
-      hash.update('lib:' + libId);
+      hash.update("lib:" + libId);
       LibRenderer.hash(lib, hash);
     }
     for (const [swId, sw] of srt(Object.entries(resource.software ?? {}))) {
-      hash.update('soft:' + swId);
+      hash.update("soft:" + swId);
       SoftwareInfoRenderer.hash(sw, hash);
     }
     for (const [swId, sw] of srt(Object.entries(resource.assets ?? {}))) {
-      hash.update('asset:' + swId);
+      hash.update("asset:" + swId);
       SoftwareInfoRenderer.hash(sw, hash);
     }
     for (const [tplId, tpl] of srt(Object.entries(resource.templates ?? {}))) {
-      hash.update('tpl:' + tplId);
+      hash.update("tpl:" + tplId);
       this.hash(tpl, hash);
     }
   },
@@ -133,26 +127,26 @@ const TemplateRenderer: Renderer<TemplateData> = {
     // Render libraries
     for (const [libId, lib] of Object.entries(resource.libs ?? {})) {
       const fld = PlTemplateV1.libField(tplRef, libId);
-      tx.createField(fld, 'Input');
+      tx.createField(fld, "Input");
       tx.setField(fld, _creator(lib, LibRenderer));
     }
 
     // Render software and assets
     for (const [swId, sw] of Object.entries(resource.software ?? {})) {
       const fld = PlTemplateV1.swField(tplRef, swId);
-      tx.createField(fld, 'Input');
+      tx.createField(fld, "Input");
       tx.setField(fld, _creator(sw, SoftwareInfoRenderer));
     }
     for (const [swId, sw] of Object.entries(resource.assets ?? {})) {
       const fld = PlTemplateV1.swField(tplRef, swId);
-      tx.createField(fld, 'Input');
+      tx.createField(fld, "Input");
       tx.setField(fld, _creator(sw, SoftwareInfoRenderer));
     }
 
     // Render dependency templates
     for (const [depTplId, depTpl] of Object.entries(resource.templates ?? {})) {
       const fld = PlTemplateV1.tplField(tplRef, depTplId);
-      tx.createField(fld, 'Input');
+      tx.createField(fld, "Input");
       tx.setField(fld, _creator(depTpl, TemplateRenderer));
     }
 
@@ -166,7 +160,7 @@ const TemplateRenderer: Renderer<TemplateData> = {
       JSON.stringify(PlTemplateOverrideV1.fromV2Data(resource)),
     );
     const fld = PlTemplateOverrideV1.tplField(overrideRef);
-    tx.createField(fld, 'Service');
+    tx.createField(fld, "Service");
     tx.setField(fld, tplRef);
     tx.lock(overrideRef);
     return overrideRef;
@@ -177,10 +171,10 @@ function createTemplateV2Tree(tx: PlTransaction, tplData: TemplateData): AnyRef 
   const resourceCache = new Map<string, AnyResourceRef>();
 
   const createResource = <T>(resource: T, renderer: Renderer<T>): AnyResourceRef => {
-    const hasher: Hash = createHash('sha256');
+    const hasher: Hash = createHash("sha256");
     renderer.hash(resource, hasher);
 
-    const rKey = hasher.digest('hex');
+    const rKey = hasher.digest("hex");
 
     if (!resourceCache.has(rKey)) {
       const rId = renderer.render(resource, tx, createResource);

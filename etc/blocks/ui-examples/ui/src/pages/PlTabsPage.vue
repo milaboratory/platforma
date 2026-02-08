@@ -6,26 +6,26 @@ import {
   PlRow,
   PlTabs,
   PlTextField,
-} from '@platforma-sdk/ui-vue';
-import { reactive } from 'vue';
+} from "@platforma-sdk/ui-vue";
+import { reactive } from "vue";
 
 const data = reactive({
-  currentTab: 'one',
+  currentTab: "one",
   topLine: false,
   disabled: false,
-  maxTabWidth: '200px',
+  maxTabWidth: "200px",
 });
 
 const tabOptions = [
-  { label: 'Tab Label', value: 'one' },
-  { label: 'Tab Label', value: 'two' },
-  { label: 'Tab Label', value: 'three' },
-  { label: 'Tab Label', value: 'four' },
-  { label: 'Disabled option', value: 'five', disabled: true },
+  { label: "Tab Label", value: "one" },
+  { label: "Tab Label", value: "two" },
+  { label: "Tab Label", value: "three" },
+  { label: "Tab Label", value: "four" },
+  { label: "Disabled option", value: "five", disabled: true },
   {
-    label: 'Max width 200px for this specific option',
-    value: 'five',
-    maxWidth: '200px',
+    label: "Max width 200px for this specific option",
+    value: "five",
+    maxWidth: "200px",
   },
 ];
 </script>

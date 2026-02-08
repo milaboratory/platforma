@@ -1,9 +1,9 @@
-import type { SynchronizedTreeOps, SynchronizedTreeState } from '@milaboratories/pl-tree';
-import type { Computable } from '@milaboratories/computable';
+import type { SynchronizedTreeOps, SynchronizedTreeState } from "@milaboratories/pl-tree";
+import type { Computable } from "@milaboratories/computable";
 
 export type TemporalSynchronizedTreeOps = Pick<
   SynchronizedTreeOps,
-  'pollingInterval' | 'stopPollingDelay' | 'logStat' | 'initialTreeLoadingTimeout'
+  "pollingInterval" | "stopPollingDelay" | "logStat" | "initialTreeLoadingTimeout"
 >;
 
 export interface TreeAndComputable<T, ST extends T = T> {

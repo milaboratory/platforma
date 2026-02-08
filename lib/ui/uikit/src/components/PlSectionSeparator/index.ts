@@ -1,1 +1,1 @@
-export { default as PlSectionSeparator } from './PlSectionSeparator.vue';
+export { default as PlSectionSeparator } from "./PlSectionSeparator.vue";

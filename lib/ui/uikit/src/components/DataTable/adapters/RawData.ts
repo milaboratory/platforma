@@ -1,8 +1,8 @@
-import type * as Types from '../types';
-import type { DataRow, ResolvePrimaryKey, Row, ResolveRowHeight } from '../types';
-import { GAP } from '../constants';
-import { sliceBy } from '../domain';
-import { notEmpty } from '@milaboratories/helpers';
+import type * as Types from "../types";
+import type { DataRow, ResolvePrimaryKey, Row, ResolveRowHeight } from "../types";
+import { GAP } from "../constants";
+import { sliceBy } from "../domain";
+import { notEmpty } from "@milaboratories/helpers";
 
 const rowsStore = new WeakMap<WeakKey, Row[]>();
 

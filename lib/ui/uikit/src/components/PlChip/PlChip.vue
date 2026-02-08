@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import './pl-chip.scss';
-import { onMounted, ref } from 'vue';
-import { PlTooltip } from '../PlTooltip';
+import "./pl-chip.scss";
+import { onMounted, ref } from "vue";
+import { PlTooltip } from "../PlTooltip";
 
-defineEmits(['close']);
+defineEmits(["close"]);
 
 defineProps<{
   closeable?: boolean;
@@ -29,7 +29,13 @@ onMounted(() => {
       <div class="pl-chip__text">
         <slot />
       </div>
-      <div v-if="closeable" tabindex="0" class="pl-chip__close" @keydown.enter="$emit('close')" @click.stop="$emit('close')">
+      <div
+        v-if="closeable"
+        tabindex="0"
+        class="pl-chip__close"
+        @keydown.enter="$emit('close')"
+        @click.stop="$emit('close')"
+      >
         <div class="pl-chip__close--icon" />
       </div>
     </div>

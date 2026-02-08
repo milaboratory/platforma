@@ -1,4 +1,4 @@
-import type { AnchoredPColumnId } from './selectors';
+import type { AnchoredPColumnId } from "./selectors";
 
 /** Value of an axis filter */
 export type AxisFilterValue = number | string;
@@ -37,5 +37,5 @@ export type FilteredPColumnId = FilteredPColumn<AnchoredPColumnId, AxisFilterByI
  * @returns True if the value is a FilteredPColumn, false otherwise
  */
 export function isFilteredPColumn(id: unknown): id is FilteredPColumn {
-  return typeof id === 'object' && id !== null && 'source' in id && 'axisFilters' in id;
+  return typeof id === "object" && id !== null && "source" in id && "axisFilters" in id;
 }

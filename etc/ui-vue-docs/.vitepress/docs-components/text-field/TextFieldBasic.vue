@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import AppCodeBlock from '@app-components/AppCodeBlock.vue';
-import CodeExample from '@app-components/CodeExample.vue';
-import ComponentProps from '@app-components/ComponentProps.vue';
-import { BasicRaw, Basic, ClearableRaw, Clearable } from './examples';
-import componentProps from './props';
+import AppCodeBlock from "@app-components/AppCodeBlock.vue";
+import CodeExample from "@app-components/CodeExample.vue";
+import ComponentProps from "@app-components/ComponentProps.vue";
+import { BasicRaw, Basic, ClearableRaw, Clearable } from "./examples";
+import componentProps from "./props";
 </script>
 
 <template>

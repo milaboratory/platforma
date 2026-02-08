@@ -152,10 +152,9 @@ packages:
 catalog:
   # Build
   "typescript": ~5.6.3
-  "tslib": ~2.7.0
   "tsconfig-paths": ^4.2.0
   "tsup": ~8.3.5
-  "vite": ^6.3.5
+  "vite": ^6.4.1
   "rollup": ^4.45.1
   "@rollup/plugin-node-resolve": ^16.0.1
   "@rollup/plugin-typescript": ^12.1.4
@@ -166,9 +165,8 @@ catalog:
   "rollup-plugin-sourcemaps2": ^0.5.2
   "vite-plugin-dts": ^4.5.3
   "vite-plugin-css-injected-by-js": ^3.5.2
-  "tsc-alias": ^1.8.11
-  "yarpm": ^1.2.0
   "ts-node": ^10.9.2
+  "@zed-industries/vscode-langservers-extracted": ^4.10.7
 
   # Build util / linters
 
@@ -178,13 +176,6 @@ catalog:
 
   "@changesets/cli": ^2.29.5
 
-  "eslint": ^9.25.1
-  "@eslint/js": ^9.16.0
-  "typescript-eslint": ^8.17.0
-  "eslint-plugin-vue": "^9.26.0"
-  "@stylistic/eslint-plugin": ^2.11.0
-  "eslint-plugin-import": ^2.31.0
-  "eslint-plugin-n": ^17.12.0
   "globals": ^15.13.0
 
   "oclif": ^4.16.2
@@ -309,7 +300,6 @@ catalog:
   "@types/readline-sync": ^1.4.8
   "@types/http-proxy": ^1.17.16
   "@types/node": ~24.5.2
-  "@types/eslint__js": ^8.42.3
   "@types/semver": ^7.7.0
   "@types/mime-types": ^2.1.4
   "@types/tar-fs": ^2.0.4

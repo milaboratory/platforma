@@ -6,22 +6,23 @@
   "scripts": {
     "dev": "ts-builder serve --target block-ui",
     "watch": "ts-builder build --target block-ui --watch",
+    "check": "ts-builder check --target block-ui",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target block-ui",
     "build": "ts-builder build --target block-ui",
-    "type-check": "ts-builder types --target block-ui",
-    "lint": "eslint ."
+    "fmt": "ts-builder format"
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-enter-numbers-v3.model": "workspace:*",
-    "vue": "catalog:",
-    "@platforma-sdk/ui-vue": "workspace:*"
+    "@platforma-sdk/ui-vue": "workspace:*",
+    "vue": "catalog:"
   },
   "devDependencies": {
-    "@platforma-sdk/eslint-config": "workspace:*",
+    "@faker-js/faker": "catalog:",
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@faker-js/faker": "catalog:",
-    "eslint": "catalog:",
     "typescript": "catalog:",
     "zod": "catalog:"
   }

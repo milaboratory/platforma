@@ -1,53 +1,52 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 import {
-  DataModel,
   DataModelBuilder,
   defaultRecover,
   defineDataVersions,
   makeDataVersioned,
-} from './block_migrations';
+} from "./block_migrations";
 
-describe('defineDataVersions', () => {
-  it('throws on duplicate version values', () => {
+describe("defineDataVersions", () => {
+  it("throws on duplicate version values", () => {
     expect(() =>
       defineDataVersions({
-        V1: 'v1',
-        V2: 'v1', // duplicate!
+        V1: "v1",
+        V2: "v1", // duplicate!
       }),
-    ).toThrow('Duplicate version values: v1');
+    ).toThrow("Duplicate version values: v1");
   });
 
-  it('throws on empty version values', () => {
+  it("throws on empty version values", () => {
     expect(() =>
       defineDataVersions({
-        V1: 'v1',
-        V2: '', // empty!
+        V1: "v1",
+        V2: "", // empty!
       }),
-    ).toThrow('Version values must be non-empty strings (empty: V2)');
+    ).toThrow("Version values must be non-empty strings (empty: V2)");
   });
 
-  it('allows unique version values', () => {
+  it("allows unique version values", () => {
     const versions = defineDataVersions({
-      V1: 'v1',
-      V2: 'v2',
+      V1: "v1",
+      V2: "v2",
     });
-    expect(versions.V1).toBe('v1');
-    expect(versions.V2).toBe('v2');
+    expect(versions.V1).toBe("v1");
+    expect(versions.V2).toBe("v2");
   });
 });
 
-describe('makeDataVersioned', () => {
-  it('creates correct DataVersioned shape', () => {
-    const versioned = makeDataVersioned('v1', { count: 42 });
-    expect(versioned).toStrictEqual({ version: 'v1', data: { count: 42 } });
+describe("makeDataVersioned", () => {
+  it("creates correct DataVersioned shape", () => {
+    const versioned = makeDataVersioned("v1", { count: 42 });
+    expect(versioned).toStrictEqual({ version: "v1", data: { count: 42 } });
   });
 });
 
-describe('DataModel migrations', () => {
-  it('resets to initial data on unknown version', () => {
+describe("DataModel migrations", () => {
+  it("resets to initial data on unknown version", () => {
     const Version = defineDataVersions({
-      V1: 'v1',
-      V2: 'v2',
+      V1: "v1",
+      V2: "v2",
     });
 
     type VersionedData = {
@@ -57,19 +56,19 @@ describe('DataModel migrations', () => {
 
     const dataModel = new DataModelBuilder<VersionedData>()
       .from(Version.V1)
-      .migrate(Version.V2, (v1) => ({ ...v1, label: '' }))
-      .init(() => ({ count: 0, label: '' }));
+      .migrate(Version.V2, (v1) => ({ ...v1, label: "" }))
+      .init(() => ({ count: 0, label: "" }));
 
-    const result = dataModel.migrate(makeDataVersioned('legacy', { count: 42 }));
-    expect(result.version).toBe('v2');
-    expect(result.data).toStrictEqual({ count: 0, label: '' });
+    const result = dataModel.migrate(makeDataVersioned("legacy", { count: 42 }));
+    expect(result.version).toBe("v2");
+    expect(result.data).toStrictEqual({ count: 0, label: "" });
     expect(result.warning).toBe(`Unknown version 'legacy'`);
   });
 
-  it('uses recover() for unknown versions', () => {
+  it("uses recover() for unknown versions", () => {
     const Version = defineDataVersions({
-      V1: 'v1',
-      V2: 'v2',
+      V1: "v1",
+      V2: "v2",
     });
 
     type VersionedData = {
@@ -79,25 +78,25 @@ describe('DataModel migrations', () => {
 
     const dataModel = new DataModelBuilder<VersionedData>()
       .from(Version.V1)
-      .migrate(Version.V2, (v1) => ({ ...v1, label: '' }))
+      .migrate(Version.V2, (v1) => ({ ...v1, label: "" }))
       .recover((version, data) => {
-        if (version === 'legacy' && typeof data === 'object' && data !== null && 'count' in data) {
-          return { count: (data as { count: number }).count, label: 'recovered' };
+        if (version === "legacy" && typeof data === "object" && data !== null && "count" in data) {
+          return { count: (data as { count: number }).count, label: "recovered" };
         }
         return defaultRecover(version, data);
       })
-      .init(() => ({ count: 0, label: '' }));
+      .init(() => ({ count: 0, label: "" }));
 
-    const result = dataModel.migrate(makeDataVersioned('legacy', { count: 7 }));
-    expect(result.version).toBe('v2');
-    expect(result.data).toStrictEqual({ count: 7, label: 'recovered' });
+    const result = dataModel.migrate(makeDataVersioned("legacy", { count: 7 }));
+    expect(result.version).toBe("v2");
+    expect(result.data).toStrictEqual({ count: 7, label: "recovered" });
     expect(result.warning).toBeUndefined();
   });
 
-  it('allows recover() to delegate to defaultRecover', () => {
+  it("allows recover() to delegate to defaultRecover", () => {
     const Version = defineDataVersions({
-      V1: 'v1',
-      V2: 'v2',
+      V1: "v1",
+      V2: "v2",
     });
 
     type VersionedData = {
@@ -107,20 +106,20 @@ describe('DataModel migrations', () => {
 
     const dataModel = new DataModelBuilder<VersionedData>()
       .from(Version.V1)
-      .migrate(Version.V2, (v1) => ({ ...v1, label: '' }))
+      .migrate(Version.V2, (v1) => ({ ...v1, label: "" }))
       .recover((version, data) => defaultRecover(version, data))
-      .init(() => ({ count: 0, label: '' }));
+      .init(() => ({ count: 0, label: "" }));
 
-    const result = dataModel.migrate(makeDataVersioned('legacy', { count: 7 }));
-    expect(result.version).toBe('v2');
-    expect(result.data).toStrictEqual({ count: 0, label: '' });
+    const result = dataModel.migrate(makeDataVersioned("legacy", { count: 7 }));
+    expect(result.version).toBe("v2");
+    expect(result.data).toStrictEqual({ count: 0, label: "" });
     expect(result.warning).toBe(`Unknown version 'legacy'`);
   });
 
-  it('returns initial data on migration failure', () => {
+  it("returns initial data on migration failure", () => {
     const Version = defineDataVersions({
-      V1: 'v1',
-      V2: 'v2',
+      V1: "v1",
+      V2: "v2",
     });
 
     type VersionedData = {
@@ -132,23 +131,23 @@ describe('DataModel migrations', () => {
       .from(Version.V1)
       .migrate(Version.V2, (v1) => {
         if (v1.numbers.includes(666)) {
-          throw new Error('Forbidden number');
+          throw new Error("Forbidden number");
         }
-        return { ...v1, label: 'ok' };
+        return { ...v1, label: "ok" };
       })
-      .init(() => ({ numbers: [], label: '' }));
+      .init(() => ({ numbers: [], label: "" }));
 
-    const result = dataModel.migrate(makeDataVersioned('v1', { numbers: [666] }));
-    expect(result.version).toBe('v2');
-    expect(result.data).toStrictEqual({ numbers: [], label: '' });
+    const result = dataModel.migrate(makeDataVersioned("v1", { numbers: [666] }));
+    expect(result.version).toBe("v2");
+    expect(result.data).toStrictEqual({ numbers: [], label: "" });
     expect(result.warning).toBe(`Migration v1→v2 failed: Forbidden number`);
   });
 });
 
 function _compileTimeTypeChecks() {
   const Version = defineDataVersions({
-    V1: 'v1',
-    V2: 'v2',
+    V1: "v1",
+    V2: "v2",
   });
 
   type VersionedData = {
@@ -159,24 +158,24 @@ function _compileTimeTypeChecks() {
   // Valid: complete migration chain
   new DataModelBuilder<VersionedData>()
     .from(Version.V1)
-    .migrate(Version.V2, (v1) => ({ ...v1, label: '' }))
-    .init(() => ({ count: 0, label: '' }));
+    .migrate(Version.V2, (v1) => ({ ...v1, label: "" }))
+    .init(() => ({ count: 0, label: "" }));
 
   // Valid: with recover()
   new DataModelBuilder<VersionedData>()
     .from(Version.V1)
-    .migrate(Version.V2, (v1) => ({ ...v1, label: '' }))
+    .migrate(Version.V2, (v1) => ({ ...v1, label: "" }))
     .recover((version, data) => defaultRecover(version, data))
-    .init(() => ({ count: 0, label: '' }));
+    .init(() => ({ count: 0, label: "" }));
 
   new DataModelBuilder<VersionedData>()
     // @ts-expect-error invalid initial version key
-    .from('v3');
+    .from("v3");
 
   new DataModelBuilder<VersionedData>()
     .from(Version.V1)
     // @ts-expect-error invalid migration target key
-    .migrate('v3', (v1) => ({ ...v1, label: '' }));
+    .migrate("v3", (v1) => ({ ...v1, label: "" }));
 
   new DataModelBuilder<VersionedData>()
     .from(Version.V1)
@@ -193,7 +192,7 @@ function _compileTimeTypeChecks() {
 
   new DataModelBuilder<VersionedData>()
     .from(Version.V1)
-    .migrate(Version.V2, (v1) => ({ ...v1, label: '' }))
+    .migrate(Version.V2, (v1) => ({ ...v1, label: "" }))
     .recover((version, data) => defaultRecover(version, data))
     // @ts-expect-error recover() returns builder without recover() method - cannot call twice (only init() available)
     .recover((version, data) => defaultRecover(version, data));
@@ -202,5 +201,5 @@ function _compileTimeTypeChecks() {
     .from(Version.V1)
     .recover((version, data) => defaultRecover(version, data))
     // @ts-expect-error recover() returns builder without migrate() method (only init() available)
-    .migrate(Version.V2, (v1) => ({ ...v1, label: '' }));
+    .migrate(Version.V2, (v1) => ({ ...v1, label: "" }));
 }

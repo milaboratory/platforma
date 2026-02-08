@@ -1,31 +1,25 @@
-import type {
-  MiddleLayer,
-} from '@milaboratories/pl-middle-layer';
-import * as fsp from 'node:fs/promises';
-import path from 'node:path';
-import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import { SynchronizedTreeState } from '@milaboratories/pl-tree';
-import { Computable } from '@milaboratories/computable';
-import type { ResourceType } from '@milaboratories/pl-client';
-import { ensureError } from '@milaboratories/pl-middle-layer';
+import type { MiddleLayer } from "@milaboratories/pl-middle-layer";
+import * as fsp from "node:fs/promises";
+import path from "node:path";
+import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
+import { SynchronizedTreeState } from "@milaboratories/pl-tree";
+import { Computable } from "@milaboratories/computable";
+import type { ResourceType } from "@milaboratories/pl-client";
+import { ensureError } from "@milaboratories/pl-middle-layer";
 import type {
   ProjectField,
   PlRef,
   Project,
   BlockStateInternalV3,
-} from '@milaboratories/pl-middle-layer';
-import { z } from 'zod';
-import type { BlockDumpUnified } from './unified-state-schema';
+} from "@milaboratories/pl-middle-layer";
+import { z } from "zod";
+import type { BlockDumpUnified } from "./unified-state-schema";
 
 /** Simple types that should not be recursively expanded */
-const SIMPLE_TYPES = new Set([
-  'json/object',
-  'Null',
-  'BinaryValue',
-]);
+const SIMPLE_TYPES = new Set(["json/object", "Null", "BinaryValue"]);
 
 /** Types that are known to be blobs (just show metadata) */
-const BLOB_TYPES_PREFIX = ['Blob'];
+const BLOB_TYPES_PREFIX = ["Blob"];
 
 export type DumpedNode = {
   type: ResourceType;
@@ -119,7 +113,7 @@ export function dumpNodeRecursive(
       try {
         const childNode = node.traverse({
           field,
-          assertFieldType: 'Input',
+          assertFieldType: "Input",
           stableIfNotFound: true,
           ignoreError: true,
         });
@@ -127,7 +121,7 @@ export function dumpNodeRecursive(
           result.inputs[field] = dumpNodeRecursive(childNode, maxDepth, currentDepth + 1);
         }
       } catch (e) {
-        result.inputs[field] = { type: { name: 'Error', version: '1' }, error: String(e) };
+        result.inputs[field] = { type: { name: "Error", version: "1" }, error: String(e) };
       }
     }
   }
@@ -138,7 +132,7 @@ export function dumpNodeRecursive(
       try {
         const childNode = node.traverse({
           field,
-          assertFieldType: 'Output',
+          assertFieldType: "Output",
           stableIfNotFound: true,
           ignoreError: true,
         });
@@ -146,7 +140,7 @@ export function dumpNodeRecursive(
           result.outputs[field] = dumpNodeRecursive(childNode, maxDepth, currentDepth + 1);
         }
       } catch (e) {
-        result.outputs[field] = { type: { name: 'Error', version: '1' }, error: String(e) };
+        result.outputs[field] = { type: { name: "Error", version: "1" }, error: String(e) };
       }
     }
   }
@@ -157,7 +151,7 @@ export function dumpNodeRecursive(
       try {
         const childNode = node.traverse({
           field,
-          assertFieldType: 'Dynamic',
+          assertFieldType: "Dynamic",
           stableIfNotFound: true,
           ignoreError: true,
         });
@@ -165,7 +159,7 @@ export function dumpNodeRecursive(
           result.dynamics[field] = dumpNodeRecursive(childNode, maxDepth, currentDepth + 1);
         }
       } catch (e) {
-        result.dynamics[field] = { type: { name: 'Error', version: '1' }, error: String(e) };
+        result.dynamics[field] = { type: { name: "Error", version: "1" }, error: String(e) };
       }
     }
   }
@@ -173,7 +167,7 @@ export function dumpNodeRecursive(
   return result;
 }
 
-export function projectFieldName(blockId: string, fieldName: ProjectField['fieldName']): string {
+export function projectFieldName(blockId: string, fieldName: ProjectField["fieldName"]): string {
   return `${blockId}-${fieldName}`;
 }
 
@@ -186,12 +180,12 @@ export async function awaitBlockDone(prj: Project, blockId: string, timeout: num
     const blockOverview = overviewSnapshot.blocks.find((b) => b.id == blockId);
     if (blockOverview === undefined) throw new Error(`Blocks not found: ${blockId}`);
     if (blockOverview.outputErrors) return;
-    if (blockOverview.calculationStatus === 'Done') return;
+    if (blockOverview.calculationStatus === "Done") return;
     try {
       await overview.awaitChange(abortSignal);
     } catch (e: any) {
       console.dir(await state.getValue(), { depth: 5 });
-      throw new Error('Aborted.', { cause: e });
+      throw new Error("Aborted.", { cause: e });
     }
   }
 }
@@ -203,33 +197,35 @@ export async function awaitComputableChangeAndLog<V = unknown>(
 ): Promise<void> {
   while (true) {
     await c.awaitChange(abortSignal);
-    const result = await c.getValue() as V;
+    const result = (await c.getValue()) as V;
     onNext(result);
   }
 }
 
-export type ProjectDump = {
-  project: { field: string; value: string | undefined }[];
-  blocks: BlockDumpUnified[] | undefined;
-} | undefined;
+export type ProjectDump =
+  | {
+      project: { field: string; value: string | undefined }[];
+      blocks: BlockDumpUnified[] | undefined;
+    }
+  | undefined;
 
-const fieldsToTraverse: (ProjectField['fieldName'])[] = [
-  'blockSettings',
-  'blockStorage',
-  'prodArgs',
-  'currentArgs',
-  'prodCtx',
-  'prodUiCtx',
-  'prodOutput',
-  'prodCtxPrevious',
-  'prodUiCtxPrevious',
-  'prodOutputPrevious',
-  'stagingCtx',
-  'stagingUiCtx',
-  'stagingOutput',
-  'stagingCtxPrevious',
-  'stagingUiCtxPrevious',
-  'stagingOutputPrevious',
+const fieldsToTraverse: ProjectField["fieldName"][] = [
+  "blockSettings",
+  "blockStorage",
+  "prodArgs",
+  "currentArgs",
+  "prodCtx",
+  "prodUiCtx",
+  "prodOutput",
+  "prodCtxPrevious",
+  "prodUiCtxPrevious",
+  "prodOutputPrevious",
+  "stagingCtx",
+  "stagingUiCtx",
+  "stagingOutput",
+  "stagingCtxPrevious",
+  "stagingUiCtxPrevious",
+  "stagingOutputPrevious",
 ];
 
 export async function createProjectWatcher<Dump>(
@@ -245,8 +241,8 @@ export async function createProjectWatcher<Dump>(
   let dumpSequence = 0;
 
   // Create dumps folder inside the work folder (or default to relative path from this file)
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const baseFolder = options?.workFolder ?? path.resolve(import.meta.dirname, '..', 'work');
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const baseFolder = options?.workFolder ?? path.resolve(import.meta.dirname, "..", "work");
   const dumpsPath = path.resolve(baseFolder, `dumps-${timestamp}`);
   await fsp.mkdir(dumpsPath, { recursive: true });
   console.log(`Dumps will be written to: ${dumpsPath}`);
@@ -278,7 +274,9 @@ export async function createProjectWatcher<Dump>(
     const project = fields.map((field) => {
       return {
         field,
-        value: node.traverse({ field, stableIfNotFound: true, ignoreError: true })?.getDataAsString(),
+        value: node
+          .traverse({ field, stableIfNotFound: true, ignoreError: true })
+          ?.getDataAsString(),
       };
     });
 
@@ -292,7 +290,7 @@ export async function createProjectWatcher<Dump>(
           });
           return [fieldName, fieldNode ? dumpNodeRecursive(fieldNode) : undefined];
         }),
-      ) as Omit<BlockDumpUnified, 'blockId'>;
+      ) as Omit<BlockDumpUnified, "blockId">;
 
       return {
         blockId,
@@ -308,10 +306,10 @@ export async function createProjectWatcher<Dump>(
 
   // Replacer to filter out large code content and other verbose fields
   const sanitizeForDump = (key: string, value: unknown): unknown => {
-    if (key === 'content' && typeof value === 'string' && value.length > 200) {
+    if (key === "content" && typeof value === "string" && value.length > 200) {
       // Check if it looks like JS code
-      if (value.includes('function') || value.includes('exports')) {
-        return '<model js code>';
+      if (value.includes("function") || value.includes("exports")) {
+        return "<model js code>";
       }
       return `<string, ${value.length} chars>`;
     }
@@ -319,31 +317,35 @@ export async function createProjectWatcher<Dump>(
   };
 
   const writeDump = async (result: unknown) => {
-    const seq = String(dumpSequence++).padStart(4, '0');
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const seq = String(dumpSequence++).padStart(4, "0");
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const filename = `dump-${seq}-${timestamp}.json`;
     const filepath = path.join(dumpsPath, filename);
     await fsp.writeFile(filepath, JSON.stringify(result, sanitizeForDump, 2));
     // console.log(`Dump written: ${filename}`);
   };
 
-  const end = awaitComputableChangeAndLog<ProjectDump | undefined>(blocksComputable, (result) => {
-    writeDump(result).catch(console.error);
-    state.dump = result;
-    if (result !== undefined) {
-      // Validate the block dump if a validator is provided
-      if (options?.validator) {
-        const parseResult = options.validator.safeParse(result.blocks);
-        if (!parseResult.success) {
-          console.error(parseResult.error.message);
-          // throw new Error(
-          //   `Block dump validation failed: ${parseResult.error.message}`,
-          //   { cause: parseResult.error }
-          // );
+  const end = awaitComputableChangeAndLog<ProjectDump | undefined>(
+    blocksComputable,
+    (result) => {
+      writeDump(result).catch(console.error);
+      state.dump = result;
+      if (result !== undefined) {
+        // Validate the block dump if a validator is provided
+        if (options?.validator) {
+          const parseResult = options.validator.safeParse(result.blocks);
+          if (!parseResult.success) {
+            console.error(parseResult.error.message);
+            // throw new Error(
+            //   `Block dump validation failed: ${parseResult.error.message}`,
+            //   { cause: parseResult.error }
+            // );
+          }
         }
       }
-    }
-  }, abortController.signal);
+    },
+    abortController.signal,
+  );
 
   return {
     dumpsPath,
@@ -358,8 +360,8 @@ export async function createProjectWatcher<Dump>(
       try {
         await end;
       } catch (e: unknown) {
-        if (ensureError(e).name === 'AbortError') {
-          console.log('AbortError caught, aborting');
+        if (ensureError(e).name === "AbortError") {
+          console.log("AbortError caught, aborting");
           return;
         }
         throw e;
@@ -376,7 +378,11 @@ export function outputRef(blockId: string, name: string, requireEnrichments?: tr
  * Awaits until block state becomes stable (staging outputs are ready).
  * This waits for all outputs to resolve, including those that depend on staging/prerun.
  */
-export async function awaitBlockStateStable(prj: Project, blockId: string, timeout: number = 5000): Promise<BlockStateInternalV3> {
+export async function awaitBlockStateStable(
+  prj: Project,
+  blockId: string,
+  timeout: number = 5000,
+): Promise<BlockStateInternalV3> {
   const abortSignal = AbortSignal.timeout(timeout);
   const blockState = prj.getBlockState(blockId);
   await blockState.awaitStableValue(abortSignal);

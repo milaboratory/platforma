@@ -1,6 +1,6 @@
-import { test } from 'vitest';
-import { checkNetwork } from './network_check';
-import { testCredentials } from './test_utils';
+import { test } from "vitest";
+import { checkNetwork } from "./network_check";
+import { testCredentials } from "./test_utils";
 
 // it's too long, enable only when you need to see the report.
 // Cases to test:
@@ -9,7 +9,7 @@ import { testCredentials } from './test_utils';
 // - locally
 // - stop minio and retest locally
 // - on demo server
-test.skip('should return network connectivity report for a platform endpoint set in PL_ADDRESS env', async () => {
+test.skip("should return network connectivity report for a platform endpoint set in PL_ADDRESS env", async () => {
   const { plEndpoint, plUser, plPassword } = testCredentials();
 
   const report = await checkNetwork(plEndpoint, plUser, plPassword);

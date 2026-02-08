@@ -1,15 +1,19 @@
-import type { SpawnOptions, SpawnSyncReturns, ChildProcess } from 'node:child_process';
-import { spawnSync, spawn } from 'node:child_process';
-import type { instanceCommand } from './state';
-import state from './state';
-import type winston from 'winston';
+import type { SpawnOptions, SpawnSyncReturns, ChildProcess } from "node:child_process";
+import { spawnSync, spawn } from "node:child_process";
+import type { instanceCommand } from "./state";
+import state from "./state";
+import type winston from "winston";
 
 type runResult = {
   executed: SpawnSyncReturns<Buffer>[];
   spawned: ChildProcess[];
 };
 
-export function runCommands(logger: winston.Logger, cmds: instanceCommand[], options?: SpawnOptions): runResult {
+export function runCommands(
+  logger: winston.Logger,
+  cmds: instanceCommand[],
+  options?: SpawnOptions,
+): runResult {
   const buffers: SpawnSyncReturns<Buffer>[] = [];
   const children: ChildProcess[] = [];
   for (const cmd of cmds) {
@@ -33,7 +37,7 @@ export function runCommands(logger: winston.Logger, cmds: instanceCommand[], opt
         break;
       }
     }
-  };
+  }
 
   return {
     executed: buffers,
@@ -45,19 +49,24 @@ export function rerunLast(logger: winston.Logger, options: SpawnOptions): runRes
   const instance = state.currentInstance;
 
   if (!instance) {
-    throw new Error('no previous run info found: this is the first run after package installation');
+    throw new Error("no previous run info found: this is the first run after package installation");
   }
 
   return runCommands(logger, instance.upCommands, options);
 }
 
-export function run(logger: winston.Logger, cmd: string, args: readonly string[], options: SpawnOptions): ChildProcess {
+export function run(
+  logger: winston.Logger,
+  cmd: string,
+  args: readonly string[],
+  options: SpawnOptions,
+): ChildProcess {
   logger.debug(
     `Running:\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd?.toString()}`,
   );
 
   options.env = { ...process.env, ...options.env };
-  logger.debug('  spawning child process');
+  logger.debug("  spawning child process");
   const child = spawn(cmd, args, options);
   let exitAfterChild: boolean = false;
 
@@ -65,15 +74,15 @@ export function run(logger: winston.Logger, cmd: string, args: readonly string[]
   // Ensure Ctrl+C causes right finalization order: first stop child process, then stop the parent.
   //
   const sigintHandler = () => {
-    child.kill('SIGINT');
+    child.kill("SIGINT");
     exitAfterChild = true;
   };
 
-  logger.debug('  setting up signal handler');
-  process.on('SIGINT', sigintHandler);
+  logger.debug("  setting up signal handler");
+  process.on("SIGINT", sigintHandler);
 
-  child.on('close', (code) => {
-    process.removeListener('SIGINT', sigintHandler);
+  child.on("close", (code) => {
+    process.removeListener("SIGINT", sigintHandler);
     if (exitAfterChild) {
       process.exit(code);
     }

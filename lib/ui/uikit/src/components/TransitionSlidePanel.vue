@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 function onAfterEnter() {
-  window.dispatchEvent(new CustomEvent('adjust'));
+  window.dispatchEvent(new CustomEvent("adjust"));
 }
 
 function onAfterLeave() {
-  window.dispatchEvent(new CustomEvent('adjust'));
+  window.dispatchEvent(new CustomEvent("adjust"));
 }
 </script>
 

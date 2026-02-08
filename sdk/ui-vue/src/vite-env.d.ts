@@ -9,7 +9,7 @@
 
 type Mount = File | { name: string; data: Blob | string };
 
-declare module '@biowasm/aioli' {
+declare module "@biowasm/aioli" {
   class Aioli {
     constructor(tools: string[]);
     mount(mounts: Mount | Mount[]): Promise<void>;

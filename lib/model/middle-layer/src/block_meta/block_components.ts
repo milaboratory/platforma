@@ -1,11 +1,11 @@
-import { z } from 'zod';
-import { ContentRelativeBinary } from './content_types';
-import { mapRemoteToAbsolute } from './content_conversion';
+import { z } from "zod";
+import { ContentRelativeBinary } from "./content_types";
+import { mapRemoteToAbsolute } from "./content_conversion";
 
 export function WorkflowV1<const Content extends z.ZodTypeAny>(contentType: Content) {
   return z.object({
-    type: z.literal('workflow-v1'),
-    main: contentType.describe('Main workflow'),
+    type: z.literal("workflow-v1"),
+    main: contentType.describe("Main workflow"),
   });
 }
 
@@ -14,12 +14,12 @@ export function Workflow<const Content extends z.ZodTypeAny>(contentType: Conten
     // string is converted to v1 workflow
     contentType
       .transform((value: z.infer<typeof contentType>) => ({
-        type: 'workflow-v1' as const,
+        type: "workflow-v1" as const,
         main: value,
       }))
       .pipe(WorkflowV1(contentType)),
     // structured objects are decoded as union with type descriptor
-    z.discriminatedUnion('type', [WorkflowV1(contentType)]),
+    z.discriminatedUnion("type", [WorkflowV1(contentType)]),
   ]);
 }
 

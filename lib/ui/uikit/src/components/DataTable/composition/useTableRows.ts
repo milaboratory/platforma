@@ -1,13 +1,13 @@
-import type { ComputedRef } from 'vue';
-import { computed } from 'vue';
-import type { TableCell, TableColumn, TableData, TableRow } from '../types';
-import { identity } from '@milaboratories/helpers';
+import type { ComputedRef } from "vue";
+import { computed } from "vue";
+import type { TableCell, TableColumn, TableData, TableRow } from "../types";
+import { identity } from "@milaboratories/helpers";
 
 export function useTableRows(data: TableData, tableColumns: ComputedRef<TableColumn[]>) {
   const classesRef = computed(() =>
     tableColumns.value.reduce(
       (r, col) => {
-        r[col.id] = col.justify ? 'justify-' + col.justify : '';
+        r[col.id] = col.justify ? "justify-" + col.justify : "";
         return r;
       },
       {} as Record<string | symbol, string>,

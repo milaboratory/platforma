@@ -4,352 +4,352 @@
  */
 
 export interface paths {
-    "/v1/upload/finalize": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * @description Finalize informs Controller that the upload process is done.
-         *      Returns an error, if the total size of all uploaded chunks is not equal to
-         *      size of the upload given in Init.
-         */
-        post: operations["Upload_Finalize"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/v1/upload/finalize": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/upload/get-part-url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * @description GetPartURL provides URL for uploading chunk of the data.
-         *      Clients are expected to put their data directly to the given location.
-         */
-        post: operations["Upload_GetPartURL"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * @description Finalize informs Controller that the upload process is done.
+     *      Returns an error, if the total size of all uploaded chunks is not equal to
+     *      size of the upload given in Init.
+     */
+    post: operations["Upload_Finalize"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/upload/get-part-url": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/upload/init": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Init upload, making controller to do all required preparation steps. */
-        post: operations["Upload_Init"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * @description GetPartURL provides URL for uploading chunk of the data.
+     *      Clients are expected to put their data directly to the given location.
+     */
+    post: operations["Upload_GetPartURL"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/upload/init": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/upload/update-progress": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description UpdateProgress of the upload, so other clients can see how it is going. */
-        post: operations["Upload_UpdateProgress"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** @description Init upload, making controller to do all required preparation steps. */
+    post: operations["Upload_Init"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/upload/update-progress": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    /** @description UpdateProgress of the upload, so other clients can see how it is going. */
+    post: operations["Upload_UpdateProgress"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        Finalize_Request: {
-            resourceId: string;
-        };
-        Finalize_Response: Record<string, never>;
-        GetPartURL_HTTPHeader: {
-            name: string;
-            value: string;
-        };
-        GetPartURL_Request: {
-            /** @description Id of upload resource */
-            resourceId: string;
-            /**
-             * @description Part to be uploaded. It is responsibility of the Client to watch after already uploaded parts:
-             *      - client can request an URL for the same part twice (request -> request) without errors;
-             *      - client can request an URL for alrady uploaded part (request -> upload -> request) without errors.
-             *
-             *      Parts enumeration starts from 1.
-             */
-            partNumber: string;
-            /**
-             * @description Size of the part uploaded by client earlier. Allows controller to count upload progress
-             *      based on client's input.
-             *      Client is free to never sent this value (send zeroes in each request).
-             */
-            uploadedPartSize: string;
-            /**
-             * @description Do we need to presign URL for internal use.
-             *      Controllers could use this if they are trying to download something from internal network.
-             *      For backward compatibility, by default pl backend will presign external urls.
-             */
-            isInternalUse: boolean;
-            /**
-             * @description Checksum is not used for now, but it is here for case
-             *      where signing checksum header is required.
-             */
-            partChecksum: string;
-        };
-        GetPartURL_Response: {
-            /** @description URL for chunk upload */
-            uploadUrl: string;
-            /** @description HTTP method to use for chunk upload, say 'PUT' or 'POST'. */
-            method: string;
-            /**
-             * @description List of headers with their values, MANDATORY to be sent by the client for the upload.
-             *      The destination service (the one, that will handle upload request for specific part)
-             *      may reject the request if it would not keep the given headers.
-             */
-            headers: components["schemas"]["GetPartURL_HTTPHeader"][];
-            /**
-             * @description The number of the _first_ byte in the chunk.
-             *      Absolute position from the start of the file ( file.seek(<chunk_start>, SEEK_START) ).
-             *      The client is expected to send [<chunk_start>; <chunk_end>) range.
-             */
-            chunkStart: string;
-            /**
-             * @description The number of the byte _after_ the last to be sent in the chunk.
-             *      Absolute position from the start of the file.
-             *      The client is expected to send [<chunk_start>; <chunk_end>) range.
-             */
-            chunkEnd: string;
-        };
-        /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
-        GoogleProtobufAny: {
-            /** @description The type of the serialized message. */
-            "@type": string;
-        } & {
-            [key: string]: unknown;
-        };
-        Init_Request: {
-            /** @description Id of upload resource */
-            resourceId: string;
-        };
-        Init_Response: {
-            /**
-             * @description Number of parts in this upload.
-             *      For parallel upload support, client can generate any number of part upload URLs
-             *      at the moment and upload them in parallel.
-             *      <parts_count> keeps the number of chunks supported by this upload.
-             *      The parts count is calculated from the planned size of the upload, controller
-             *      configuration and underlying storage restrictions.
-             */
-            partsCount: string;
-            partSize: string;
-            /**
-             * Format: enum
-             * @description Checksum algorithm to use for the part upload.
-             */
-            checksumAlgorithm: number;
-            /** @description Header name to use for the checksum. */
-            checksumHeader: string;
-            /**
-             * @description List of IDs of parts that were already uploaded by client.
-             *      Helps client to recover upload and skip already done parts
-             *      after being interrupted in the middle of the upload
-             *      (say, because of the restart).
-             *      Parts enumeration starts from 1.
-             */
-            uploadedParts: string[];
-        };
-        /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
-        Status: {
-            /**
-             * Format: int32
-             * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
-             */
-            code: number;
-            /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
-            message: string;
-            /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
-            details: components["schemas"]["GoogleProtobufAny"][];
-        };
-        UpdateProgress_Request: {
-            /** @description Id of upload resource */
-            resourceId: string;
-            /**
-             * @description Amount of bytes, uploaded since the earlier call to UpdateProgress.
-             *      This value is just blindly added to the 'bytes_processed' of progress report,
-             *      so other clients can see the upload progress.
-             *      If client uploads the data in several streams (several chunks in parallel), it
-             *      can safely send progress updates individually for each of the streams, just counting
-             *      bytes uploaded by particular stream.
-             *
-             *      Negative value can be used to report about upload retry: when upload was interrupted,
-             *      part of the uploaded data is lost and require re-upload.
-             */
-            bytesProcessed: string;
-        };
-        UpdateProgress_Response: Record<string, never>;
+  schemas: {
+    Finalize_Request: {
+      resourceId: string;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    Finalize_Response: Record<string, never>;
+    GetPartURL_HTTPHeader: {
+      name: string;
+      value: string;
+    };
+    GetPartURL_Request: {
+      /** @description Id of upload resource */
+      resourceId: string;
+      /**
+       * @description Part to be uploaded. It is responsibility of the Client to watch after already uploaded parts:
+       *      - client can request an URL for the same part twice (request -> request) without errors;
+       *      - client can request an URL for alrady uploaded part (request -> upload -> request) without errors.
+       *
+       *      Parts enumeration starts from 1.
+       */
+      partNumber: string;
+      /**
+       * @description Size of the part uploaded by client earlier. Allows controller to count upload progress
+       *      based on client's input.
+       *      Client is free to never sent this value (send zeroes in each request).
+       */
+      uploadedPartSize: string;
+      /**
+       * @description Do we need to presign URL for internal use.
+       *      Controllers could use this if they are trying to download something from internal network.
+       *      For backward compatibility, by default pl backend will presign external urls.
+       */
+      isInternalUse: boolean;
+      /**
+       * @description Checksum is not used for now, but it is here for case
+       *      where signing checksum header is required.
+       */
+      partChecksum: string;
+    };
+    GetPartURL_Response: {
+      /** @description URL for chunk upload */
+      uploadUrl: string;
+      /** @description HTTP method to use for chunk upload, say 'PUT' or 'POST'. */
+      method: string;
+      /**
+       * @description List of headers with their values, MANDATORY to be sent by the client for the upload.
+       *      The destination service (the one, that will handle upload request for specific part)
+       *      may reject the request if it would not keep the given headers.
+       */
+      headers: components["schemas"]["GetPartURL_HTTPHeader"][];
+      /**
+       * @description The number of the _first_ byte in the chunk.
+       *      Absolute position from the start of the file ( file.seek(<chunk_start>, SEEK_START) ).
+       *      The client is expected to send [<chunk_start>; <chunk_end>) range.
+       */
+      chunkStart: string;
+      /**
+       * @description The number of the byte _after_ the last to be sent in the chunk.
+       *      Absolute position from the start of the file.
+       *      The client is expected to send [<chunk_start>; <chunk_end>) range.
+       */
+      chunkEnd: string;
+    };
+    /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
+    GoogleProtobufAny: {
+      /** @description The type of the serialized message. */
+      "@type": string;
+    } & {
+      [key: string]: unknown;
+    };
+    Init_Request: {
+      /** @description Id of upload resource */
+      resourceId: string;
+    };
+    Init_Response: {
+      /**
+       * @description Number of parts in this upload.
+       *      For parallel upload support, client can generate any number of part upload URLs
+       *      at the moment and upload them in parallel.
+       *      <parts_count> keeps the number of chunks supported by this upload.
+       *      The parts count is calculated from the planned size of the upload, controller
+       *      configuration and underlying storage restrictions.
+       */
+      partsCount: string;
+      partSize: string;
+      /**
+       * Format: enum
+       * @description Checksum algorithm to use for the part upload.
+       */
+      checksumAlgorithm: number;
+      /** @description Header name to use for the checksum. */
+      checksumHeader: string;
+      /**
+       * @description List of IDs of parts that were already uploaded by client.
+       *      Helps client to recover upload and skip already done parts
+       *      after being interrupted in the middle of the upload
+       *      (say, because of the restart).
+       *      Parts enumeration starts from 1.
+       */
+      uploadedParts: string[];
+    };
+    /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
+    Status: {
+      /**
+       * Format: int32
+       * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+       */
+      code: number;
+      /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
+      message: string;
+      /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
+      details: components["schemas"]["GoogleProtobufAny"][];
+    };
+    UpdateProgress_Request: {
+      /** @description Id of upload resource */
+      resourceId: string;
+      /**
+       * @description Amount of bytes, uploaded since the earlier call to UpdateProgress.
+       *      This value is just blindly added to the 'bytes_processed' of progress report,
+       *      so other clients can see the upload progress.
+       *      If client uploads the data in several streams (several chunks in parallel), it
+       *      can safely send progress updates individually for each of the streams, just counting
+       *      bytes uploaded by particular stream.
+       *
+       *      Negative value can be used to report about upload retry: when upload was interrupted,
+       *      part of the uploaded data is lost and require re-upload.
+       */
+      bytesProcessed: string;
+    };
+    UpdateProgress_Response: Record<string, never>;
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    Upload_Finalize: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Finalize_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Finalize_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  Upload_Finalize: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    Upload_GetPartURL: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GetPartURL_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetPartURL_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Finalize_Request"];
+      };
     };
-    Upload_Init: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Init_Request"];
-            };
+        content: {
+          "application/json": components["schemas"]["Finalize_Response"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Init_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
     };
-    Upload_UpdateProgress: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateProgress_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UpdateProgress_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  };
+  Upload_GetPartURL: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GetPartURL_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GetPartURL_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Upload_Init: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Init_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Init_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Upload_UpdateProgress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateProgress_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UpdateProgress_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
 }

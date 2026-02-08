@@ -3,32 +3,41 @@
  * A component for selecting multiple values from a list of options
  */
 export default {
-  name: 'PlDropdownMulti',
+  name: "PlDropdownMulti",
 };
 </script>
 
 <script lang="ts" setup generic="M = unknown">
-import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
-import SvgRequired from '../../assets/images/required.svg?raw';
-import { getErrorMessage } from '../../helpers/error.ts';
-import { deepEqual, deepIncludes } from '../../helpers/objects';
-import { normalizeListOptions } from '../../helpers/utils';
-import type { ListOption } from '../../types';
-import DoubleContour from '../../utils/DoubleContour.vue';
-import DropdownOverlay from '../../utils/DropdownOverlay/DropdownOverlay.vue';
-import { useLabelNotch } from '../../utils/useLabelNotch';
-import DropdownListItem from '../DropdownListItem.vue';
-import { PlChip } from '../PlChip';
-import { PlIcon24 } from '../PlIcon24';
-import { PlSvg } from '../PlSvg';
-import { PlTooltip } from '../PlTooltip';
-import './pl-dropdown-multi.scss';
+import {
+  computed,
+  reactive,
+  ref,
+  unref,
+  useSlots,
+  useTemplateRef,
+  watch,
+  watchPostEffect,
+} from "vue";
+import SvgRequired from "../../assets/images/required.svg?raw";
+import { getErrorMessage } from "../../helpers/error.ts";
+import { deepEqual, deepIncludes } from "../../helpers/objects";
+import { normalizeListOptions } from "../../helpers/utils";
+import type { ListOption } from "../../types";
+import DoubleContour from "../../utils/DoubleContour.vue";
+import DropdownOverlay from "../../utils/DropdownOverlay/DropdownOverlay.vue";
+import { useLabelNotch } from "../../utils/useLabelNotch";
+import DropdownListItem from "../DropdownListItem.vue";
+import { PlChip } from "../PlChip";
+import { PlIcon24 } from "../PlIcon24";
+import { PlSvg } from "../PlSvg";
+import { PlTooltip } from "../PlTooltip";
+import "./pl-dropdown-multi.scss";
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', v: M[]): void;
+  (e: "update:modelValue", v: M[]): void;
 }>();
 
-const emitModel = (v: M[]) => emit('update:modelValue', v);
+const emitModel = (v: M[]) => emit("update:modelValue", v);
 
 const slots = useSlots();
 
@@ -69,14 +78,23 @@ const props = withDefaults(
     /**
      * Makes some of corners not rounded
      * */
-    groupPosition?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
+    groupPosition?:
+      | "top"
+      | "bottom"
+      | "left"
+      | "right"
+      | "top-left"
+      | "top-right"
+      | "bottom-left"
+      | "bottom-right"
+      | "middle";
   }>(),
   {
     modelValue: () => [],
     label: undefined,
     helper: undefined,
     error: undefined,
-    placeholder: '...',
+    placeholder: "...",
     required: false,
     disabled: false,
     options: undefined,
@@ -87,10 +105,10 @@ const props = withDefaults(
 const rootRef = ref<HTMLElement | undefined>();
 const input = ref<HTMLInputElement | undefined>();
 
-const overlay = useTemplateRef('overlay');
+const overlay = useTemplateRef("overlay");
 
 const data = reactive({
-  search: '',
+  search: "",
   activeOption: -1,
   open: false,
   optionsHeight: 0,
@@ -103,13 +121,15 @@ const placeholderRef = computed(() => {
     return props.placeholder;
   }
 
-  return props.modelValue.length > 0 ? '' : props.placeholder;
+  return props.modelValue.length > 0 ? "" : props.placeholder;
 });
 
 const normalizedOptionsRef = computed(() => normalizeListOptions(props.options ?? []));
 
 const selectedOptionsRef = computed(() => {
-  return selectedValuesRef.value.map((v) => normalizedOptionsRef.value.find((opt) => deepEqual(opt.value, v))).filter((v) => v !== undefined);
+  return selectedValuesRef.value
+    .map((v) => normalizedOptionsRef.value.find((opt) => deepEqual(opt.value, v)))
+    .filter((v) => v !== undefined);
 });
 
 const filteredOptionsRef = computed(() => {
@@ -120,18 +140,18 @@ const filteredOptionsRef = computed(() => {
   return (
     data.search
       ? options.filter((opt) => {
-        const search = data.search.toLowerCase();
+          const search = data.search.toLowerCase();
 
-        if (opt.label.toLowerCase().includes(search)) {
-          return true;
-        }
+          if (opt.label.toLowerCase().includes(search)) {
+            return true;
+          }
 
-        if (typeof opt.value === 'string') {
-          return opt.value.toLowerCase().includes(search);
-        }
+          if (typeof opt.value === "string") {
+            return opt.value.toLowerCase().includes(search);
+          }
 
-        return opt.value === data.search;
-      })
+          return opt.value === data.search;
+        })
       : [...options]
   ).map((opt) => ({
     ...opt,
@@ -155,7 +175,7 @@ const isDisabled = computed(() => {
   return props.disabled;
 });
 
-const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
+const tabindex = computed(() => (isDisabled.value ? undefined : "0"));
 
 const updateActiveOption = () => {
   data.activeOption = 0;
@@ -164,18 +184,19 @@ const updateActiveOption = () => {
 const selectOption = (v: M) => {
   const values = unref(selectedValuesRef);
   emitModel(deepIncludes(values, v) ? values.filter((it) => !deepEqual(it, v)) : [...values, v]);
-  data.search = '';
+  data.search = "";
   rootRef?.value?.focus();
 };
 
-const unselectOption = (d: M) => emitModel(unref(selectedValuesRef).filter((v) => !deepEqual(v, d)));
+const unselectOption = (d: M) =>
+  emitModel(unref(selectedValuesRef).filter((v) => !deepEqual(v, d)));
 
 const setFocusOnInput = () => input.value?.focus();
 
 const toggleModel = () => {
   data.open = !data.open;
   if (!data.open) {
-    data.search = '';
+    data.search = "";
   }
 };
 
@@ -183,7 +204,7 @@ const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
 
   if (!rootRef.value?.contains(relatedTarget) && !overlay.value?.listRef?.contains(relatedTarget)) {
-    data.search = '';
+    data.search = "";
     data.open = false;
   }
 };
@@ -192,13 +213,13 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
   const { open, activeOption } = data;
 
   if (!open) {
-    if (e.code === 'Enter') {
+    if (e.code === "Enter") {
       data.open = true;
     }
     return;
   }
 
-  if (e.code === 'Escape') {
+  if (e.code === "Escape") {
     data.open = false;
     rootRef.value?.focus();
   }
@@ -211,15 +232,15 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
     return;
   }
 
-  if (['ArrowDown', 'ArrowUp', 'Enter'].includes(e.code)) {
+  if (["ArrowDown", "ArrowUp", "Enter"].includes(e.code)) {
     e.preventDefault();
   }
 
-  if (e.code === 'Enter') {
+  if (e.code === "Enter") {
     selectOption(filteredOptions[activeOption].value);
   }
 
-  const d = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
+  const d = e.code === "ArrowDown" ? 1 : e.code === "ArrowUp" ? -1 : 0;
 
   data.activeOption = Math.abs(activeOption + d + length) % length;
 
@@ -268,7 +289,14 @@ watchPostEffect(() => {
             @focus="data.open = true"
           />
           <div v-if="!data.open" class="chips-container">
-            <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop="data.open = true" @close="unselectOption(opt.value)">
+            <PlChip
+              v-for="(opt, i) in selectedOptionsRef"
+              :key="i"
+              closeable
+              small
+              @click.stop="data.open = true"
+              @close="unselectOption(opt.value)"
+            >
               {{ opt.label || opt.value }}
             </PlChip>
           </div>
@@ -300,7 +328,13 @@ watchPostEffect(() => {
           @focusout="onFocusOut"
         >
           <div class="pl-dropdown-multi__open-chips-container">
-            <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @close="unselectOption(opt.value)">
+            <PlChip
+              v-for="(opt, i) in selectedOptionsRef"
+              :key="i"
+              closeable
+              small
+              @close="unselectOption(opt.value)"
+            >
               {{ opt.label || opt.value }}
             </PlChip>
           </div>

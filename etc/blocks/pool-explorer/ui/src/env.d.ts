@@ -1,4 +1,4 @@
-declare module 'monaco-editor/esm/vs/language/json/json.worker?worker' {
+declare module "monaco-editor/esm/vs/language/json/json.worker?worker" {
   const workerConstructor: {
     new (): Worker;
   };

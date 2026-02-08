@@ -19,21 +19,21 @@ export type PlLoggingSettings = {
   destinations: PlLoggingDestination[];
 };
 
-export type PlLogLevel = 'debug' | 'info' | 'error' | 'warn';
+export type PlLogLevel = "debug" | "info" | "error" | "warn";
 
 export type PlLoggingDestinationFile = {
-  type: 'file';
+  type: "file";
   path: string;
 };
 
 export type PlLoggingDestinationDir = {
-  type: 'dir';
+  type: "dir";
   path: string;
 };
 
 export type PlLoggingDestinationStream = {
-  type: 'stream';
-  name: 'stdout' | 'stderr';
+  type: "stream";
+  name: "stdout" | "stderr";
 };
 
 export type PlLoggingDestination =
@@ -70,24 +70,21 @@ export type PlDbSettings = {
   path: string;
 };
 
-export type PlAuthDriver =
-  | PlAuthDriverLdap
-  | PlAuthDriverJwt
-  | PlAuthDriverHtpasswd;
+export type PlAuthDriver = PlAuthDriverLdap | PlAuthDriverJwt | PlAuthDriverHtpasswd;
 
 export type PlAuthDriverLdap = {
-  driver: 'ldap';
+  driver: "ldap";
   serverUrl: string; // 'ldaps://ldap.example.com:1111'
   defaultDN: string; // 'cn=%u,ou=users,ou=users,dc=example,dc=com'
 };
 
 export type PlAuthDriverJwt = {
-  driver: 'jwt';
+  driver: "jwt";
   key: string;
 };
 
 export type PlAuthDriverHtpasswd = {
-  driver: 'htpasswd';
+  driver: "htpasswd";
   path: string;
 };
 
@@ -101,21 +98,21 @@ export type PlGrpcSettings = {
 
 export type PlTlsSettings =
   | {
-    enabled: false;
-  }
+      enabled: false;
+    }
   | {
-    enabled: true;
-    clientAuthMode: PlTlsAuthMode;
-    certFile: string;
-    keyFile: string;
-  };
+      enabled: true;
+      clientAuthMode: PlTlsAuthMode;
+      certFile: string;
+      keyFile: string;
+    };
 
 export type PlTlsAuthMode =
-  | 'NoAuth'
-  | 'RequestAnyCert'
-  | 'RequireAnyCert'
-  | 'RequestValidCert'
-  | 'RequireValidCert';
+  | "NoAuth"
+  | "RequestAnyCert"
+  | "RequireAnyCert"
+  | "RequestValidCert"
+  | "RequireValidCert";
 
 export type PlControllersSettings = {
   common?: PlControllerCommonSettings;
@@ -143,13 +140,11 @@ export type PlControllerDataMainSettings = {
 };
 
 export type PlControllerDataMainStoragesSettings = {
-  mode: 'primary' | 'active' | 'passive';
+  mode: "primary" | "active" | "passive";
   downloadable: boolean;
 };
 
-export type PlControllerDataStoragesSettings =
-  | PlS3StorageSettings
-  | PlFsStorageSettings;
+export type PlControllerDataStoragesSettings = PlS3StorageSettings | PlFsStorageSettings;
 
 export type PlStorageID = { id: string };
 
@@ -157,13 +152,12 @@ export type PlCommonStorageSettings = {
   indexCachePeriod: string;
 };
 
-export type PlS3StorageSettings =
-  & PlStorageID
-  & PlS3StorageType
-  & PlCommonStorageSettings
-  & PlS3StorageTypeSettings;
+export type PlS3StorageSettings = PlStorageID &
+  PlS3StorageType &
+  PlCommonStorageSettings &
+  PlS3StorageTypeSettings;
 
-export type PlS3StorageType = { type: 'S3' };
+export type PlS3StorageType = { type: "S3" };
 export type PlS3StorageTypeSettings = {
   endpoint: string;
   presignEndpoint: string;
@@ -178,13 +172,12 @@ export type PlS3StorageTypeSettings = {
   uploadKeyPrefix: string;
 };
 
-export type PlFsStorageSettings =
-  & PlStorageID
-  & PlFsStorageType
-  & PlCommonStorageSettings
-  & PlFsStorageTypeSettings;
+export type PlFsStorageSettings = PlStorageID &
+  PlFsStorageType &
+  PlCommonStorageSettings &
+  PlFsStorageTypeSettings;
 
-type PlFsStorageType = { type: 'FS' };
+type PlFsStorageType = { type: "FS" };
 
 type PlFsStorageTypeSettings = {
   rootPath: string;
@@ -195,7 +188,7 @@ type PlFsStorageTypeSettings = {
 export type PlControllerRunnerSettings = PlControllerRunnerSettingsLocal;
 
 export type PlControllerRunnerSettingsLocal = {
-  type: 'local';
+  type: "local";
   secrets: PlControllerRunnerSecretsSettings[];
 
   storageRoot: string;
@@ -239,13 +232,13 @@ export type PlControllerPackageLoaderRegistry = {
 
 export type PlControllerPackageLoaderEndpoint =
   | {
-    type: 'local';
-    path: string;
-  }
+      type: "local";
+      path: string;
+    }
   | {
-    type: 'url';
-    url: string;
-  };
+      type: "url";
+      url: string;
+    };
 
 //  TODO: The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`, use better type
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type

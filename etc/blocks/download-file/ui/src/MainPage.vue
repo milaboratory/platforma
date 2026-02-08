@@ -1,20 +1,18 @@
 <script setup lang="ts">
-import { PlAlert, PlBlockPage, PlFileInput } from '@platforma-sdk/ui-vue';
-import { useApp } from './app';
-import { computed } from 'vue';
-import { computedAsync } from '@vueuse/core';
-import { getRawPlatformaInstance } from '@platforma-sdk/model';
+import { PlAlert, PlBlockPage, PlFileInput } from "@platforma-sdk/ui-vue";
+import { useApp } from "./app";
+import { computed } from "vue";
+import { computedAsync } from "@vueuse/core";
+import { getRawPlatformaInstance } from "@platforma-sdk/model";
 
 const app = useApp();
 
 const progress = computed(() => {
   const handle = app.snapshot.outputs.handle;
 
-  if (!handle)
-    return undefined;
+  if (!handle) return undefined;
 
-  if (!handle.ok)
-    return undefined;
+  if (!handle.ok) return undefined;
 
   return handle.value;
 });
@@ -68,9 +66,10 @@ const onDemandRangeContent = computedAsync(async () => {
     return undefined;
   }
 
-  const content = await getRawPlatformaInstance().blobDriver.getContent(
-    handle.value.handle, { from: 1, to: 2 },
-  );
+  const content = await getRawPlatformaInstance().blobDriver.getContent(handle.value.handle, {
+    from: 1,
+    to: 2,
+  });
   if (!content) {
     return undefined;
   }
@@ -90,21 +89,25 @@ const onDemandRangeContent1 = computedAsync(async () => {
     return undefined;
   }
 
-  const content = await getRawPlatformaInstance().blobDriver.getContent(
-    handle.value.handle, { from: 1, to: 2 },
-  );
+  const content = await getRawPlatformaInstance().blobDriver.getContent(handle.value.handle, {
+    from: 1,
+    to: 2,
+  });
   if (!content) {
     return undefined;
   }
 
   return new TextDecoder().decode(content);
 });
-
 </script>
 
 <template>
   <PlBlockPage style="max-width: 100%">
-    <PlFileInput v-model="app.model.args.inputHandle" label="Select file to import" :progress="progress" />
+    <PlFileInput
+      v-model="app.model.args.inputHandle"
+      label="Select file to import"
+      :progress="progress"
+    />
 
     <PlAlert type="success">
       File content:

@@ -12,12 +12,12 @@ const props = defineProps<{
           {{ key }}
         </div>
         <div class="props-description-container__type text-mono-s">
-          {{ value['type'] }}
+          {{ value["type"] }}
         </div>
       </div>
 
       <div class="text-mono-m props-description-container__description">
-        {{ value['description'] }}
+        {{ value["description"] }}
       </div>
     </div>
   </div>
@@ -46,7 +46,7 @@ const props = defineProps<{
   }
 
   &__title {
-    font-family: 'Spline Sans Mono';
+    font-family: "Spline Sans Mono";
     font-size: 16px;
     background-color: var(--color-ic-link);
     display: inline-block;

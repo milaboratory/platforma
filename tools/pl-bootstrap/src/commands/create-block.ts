@@ -1,12 +1,12 @@
-import { Command } from '@oclif/core';
-import * as cmdOpts from '../cmd-opts';
-import * as util from '../util';
-import * as block from '../block';
+import { Command } from "@oclif/core";
+import * as cmdOpts from "../cmd-opts";
+import * as util from "../util";
+import * as block from "../block";
 
 export default class CreateBlock extends Command {
-  static override description = 'Helps to create a new block by downloading a block\'s template.';
+  static override description = "Helps to create a new block by downloading a block's template.";
 
-  static override examples = ['<%= name %>'];
+  static override examples = ["<%= name %>"];
 
   static override flags = {
     ...cmdOpts.GlobalFlags,
@@ -14,7 +14,7 @@ export default class CreateBlock extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(CreateBlock);
-    const logger = util.createLogger(flags['log-level']);
+    const logger = util.createLogger(flags["log-level"]);
 
     await block.createBlock(logger);
   }

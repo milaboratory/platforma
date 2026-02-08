@@ -13,12 +13,12 @@ import type {
   PTableKey,
   PTableValue,
   OutputWithStatus,
-} from '@platforma-sdk/model';
-import type { PTableHidden } from './sources/common';
-import type { ComputedRef, MaybeRefOrGetter } from 'vue';
-import { computed, toValue } from 'vue';
-import canonicalize from 'canonicalize';
-import { deepClone } from '@milaboratories/helpers';
+} from "@platforma-sdk/model";
+import type { PTableHidden } from "./sources/common";
+import type { ComputedRef, MaybeRefOrGetter } from "vue";
+import { computed, toValue } from "vue";
+import canonicalize from "canonicalize";
+import { deepClone } from "@milaboratories/helpers";
 
 export type PlDataTableFilterConfig = {
   options?: PlTableFilterType[];
@@ -28,98 +28,101 @@ export type PlDataTableFilterConfig = {
 export type PlDataTableSettingsV2Base =
   | { sourceId: null; pending: boolean }
   | {
-    /** Unique source id for state caching */
-    sourceId: string;
-    /** Sheets that we want to show in our table */
-    sheets: PlDataTableSheet[];
-    /** Result of `createPlDataTableV2` */
-    model: PlDataTableModel | undefined;
-  };
+      /** Unique source id for state caching */
+      sourceId: string;
+      /** Sheets that we want to show in our table */
+      sheets: PlDataTableSheet[];
+      /** Result of `createPlDataTableV2` */
+      model: PlDataTableModel | undefined;
+    };
 
 /** Data table V2 settings */
 export type PlDataTableSettingsV2 = PlDataTableSettingsV2Base & {
   /** Callback configuring filters for the table */
-  filtersConfig: (info: {
-    sourceId: string;
-    column: PTableColumnSpec;
-  }) => PlDataTableFilterConfig;
+  filtersConfig: (info: { sourceId: string; column: PTableColumnSpec }) => PlDataTableFilterConfig;
 };
 
 type OptionsBasic = {
   /** Block output created by `createPlDataTableV2` */
   model: MaybeRefOrGetter<OutputWithStatus<PlDataTableModel | undefined>>;
   /**
-    * Sheets for partitioned data sources.
-    * Do not set if data source is never partitioned.
-    */
+   * Sheets for partitioned data sources.
+   * Do not set if data source is never partitioned.
+   */
   sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
 };
 
 type OptionsSimple = OptionsBasic & {
   /**
-    * Callback configuring filters for the table.
-    * If not provided, filtering will be disabled.
-    */
-  filtersConfig?: (info: {
-    column: PTableColumnSpec;
-  }) => PlDataTableFilterConfig;
+   * Callback configuring filters for the table.
+   * If not provided, filtering will be disabled.
+   */
+  filtersConfig?: (info: { column: PTableColumnSpec }) => PlDataTableFilterConfig;
 };
 
 type OptionsAdvanced<T> = OptionsBasic & {
   /**
-    * Block property (such as inputAnchor) used to produce the data source.
-    * Mandatory for cases when the table can change without block run.
-    * Skip when the table is changed only after block run.
-    * Ask developers for help if you don't know what to set here.
-    */
+   * Block property (such as inputAnchor) used to produce the data source.
+   * Mandatory for cases when the table can change without block run.
+   * Skip when the table is changed only after block run.
+   * Ask developers for help if you don't know what to set here.
+   */
   sourceId: MaybeRefOrGetter<T | undefined>;
   /**
-    * Callback configuring filters for the table.
-    * If not provided, filtering will be disabled.
-    * Parameter `sourceId` should be compared using `isJsonEqual` from `@milaboratories/helpers`.
-    */
+   * Callback configuring filters for the table.
+   * If not provided, filtering will be disabled.
+   * Parameter `sourceId` should be compared using `isJsonEqual` from `@milaboratories/helpers`.
+   */
   filtersConfig?: (info: {
     sourceId: JsonCompatible<T>;
     column: PTableColumnSpec;
   }) => PlDataTableFilterConfig;
 };
 
-export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T>): ComputedRef<PlDataTableSettingsV2>;
-export function usePlDataTableSettingsV2(options: OptionsSimple): ComputedRef<PlDataTableSettingsV2>;
-export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | OptionsSimple): ComputedRef<PlDataTableSettingsV2> {
+export function usePlDataTableSettingsV2<T>(
+  options: OptionsAdvanced<T>,
+): ComputedRef<PlDataTableSettingsV2>;
+export function usePlDataTableSettingsV2(
+  options: OptionsSimple,
+): ComputedRef<PlDataTableSettingsV2>;
+export function usePlDataTableSettingsV2<T>(
+  options: OptionsAdvanced<T> | OptionsSimple,
+): ComputedRef<PlDataTableSettingsV2> {
   const fc = options.filtersConfig;
-  const filtersConfigValue = typeof fc === 'function'
-    ? (ops: {
-        sourceId: string;
-        column: PTableColumnSpec;
-      }) => {
-        try {
-          return fc({
-            sourceId: JSON.parse(ops.sourceId) as JsonCompatible<T>,
-            column: ops.column,
-          });
-        } catch (e) {
-          console.error(`filtersConfig failed for sourceId: ${ops.sourceId}, column: ${JSON.stringify(ops.column)} - using default config`, e);
-          return {};
+  const filtersConfigValue =
+    typeof fc === "function"
+      ? (ops: { sourceId: string; column: PTableColumnSpec }) => {
+          try {
+            return fc({
+              sourceId: JSON.parse(ops.sourceId) as JsonCompatible<T>,
+              column: ops.column,
+            });
+          } catch (e) {
+            console.error(
+              `filtersConfig failed for sourceId: ${ops.sourceId}, column: ${JSON.stringify(ops.column)} - using default config`,
+              e,
+            );
+            return {};
+          }
         }
-      }
-    : () => ({});
+      : () => ({});
   return computed(() => {
     const model = deepClone(toValue(options.model));
     let settingsBase: PlDataTableSettingsV2Base;
     if (!model.ok) {
       settingsBase = { sourceId: null, pending: false };
-    } else if ('sourceId' in options) {
+    } else if ("sourceId" in options) {
       const sourceIdValue = deepClone(toValue(options.sourceId));
       if (options.sheets) {
         const sheetsValue = deepClone(toValue(options.sheets));
-        settingsBase = sourceIdValue && sheetsValue
-          ? {
-              sourceId: canonicalize(sourceIdValue)!,
-              sheets: sheetsValue,
-              model: model.value,
-            }
-          : { sourceId: null, pending: !model.stable };
+        settingsBase =
+          sourceIdValue && sheetsValue
+            ? {
+                sourceId: canonicalize(sourceIdValue)!,
+                sheets: sheetsValue,
+                model: model.value,
+              }
+            : { sourceId: null, pending: !model.stable };
       } else {
         settingsBase = sourceIdValue
           ? {
@@ -134,7 +137,7 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
         const sheetsValue = deepClone(toValue(options.sheets));
         settingsBase = sheetsValue
           ? {
-              sourceId: canonicalize('static')!,
+              sourceId: canonicalize("static")!,
               sheets: sheetsValue,
               model: model.value,
             }
@@ -142,7 +145,7 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
       } else {
         settingsBase = model.value
           ? {
-              sourceId: canonicalize('static')!,
+              sourceId: canonicalize("static")!,
               sheets: [],
               model: model.value,
             }
@@ -154,7 +157,7 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
       filtersConfig: filtersConfigValue,
     };
   });
-};
+}
 
 /** PlTableFilters restriction entry */
 export type PlTableFiltersRestriction = {
@@ -214,21 +217,25 @@ export type PlAgOverlayLoadingParams = {
   /**
    * Required flag, that shows catInBag icon with message if `true`, shows PlSplash component if `false`.
    */
-  variant: 'not-ready' | 'running' | 'loading';
+  variant: "not-ready" | "running" | "loading";
   /**
    * Prop to override default "Loading data..." text and the subtitles
    */
-  loadingText?: string | {
-    title: string;
-    subtitle: string | string[];
-  };
+  loadingText?:
+    | string
+    | {
+        title: string;
+        subtitle: string | string[];
+      };
   /**
    * Prop to override default "Running analysis..." text and the subtitles
    */
-  runningText?: string | {
-    title: string;
-    subtitle: string | string[];
-  };
+  runningText?:
+    | string
+    | {
+        title: string;
+        subtitle: string | string[];
+      };
   /**
    * Prop to override default "Data is not computed" text (So why props name is notReady? Good question)
    */

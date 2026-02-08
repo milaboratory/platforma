@@ -1,26 +1,26 @@
-import { Command, Flags } from '@oclif/core';
-import path from 'node:path';
-import fs from 'node:fs';
-import { loadPackDescriptionRaw } from '../v2';
-import { BlockPackMetaDescription, BlockPackMetaEmbedAbsoluteBase64 } from '../v2/model/block_meta';
+import { Command, Flags } from "@oclif/core";
+import path from "node:path";
+import fs from "node:fs";
+import { loadPackDescriptionRaw } from "../v2";
+import { BlockPackMetaDescription, BlockPackMetaEmbedAbsoluteBase64 } from "../v2/model/block_meta";
 
 export default class BuildMeta extends Command {
-  static override description
-    = 'Extracts meta information from blocks package.json and outputs meta.json with embedded binary '
-    + 'and textual information linked from the meta section.';
+  static override description =
+    "Extracts meta information from blocks package.json and outputs meta.json with embedded binary " +
+    "and textual information linked from the meta section.";
 
   static flags = {
     modulePath: Flags.string({
-      char: 'i',
-      summary: 'input module path',
-      helpValue: '<path>',
-      default: '.',
+      char: "i",
+      summary: "input module path",
+      helpValue: "<path>",
+      default: ".",
     }),
 
     destination: Flags.string({
-      char: 'o',
-      summary: 'output meta.json file',
-      helpValue: '<path>',
+      char: "o",
+      summary: "output meta.json file",
+      helpValue: "<path>",
       required: true,
     }),
   };

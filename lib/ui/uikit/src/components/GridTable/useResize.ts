@@ -1,12 +1,12 @@
-import type { Ref } from 'vue';
-import { watchEffect } from 'vue';
-import type { Data } from './types';
-import { useColumn } from './useColumn';
-import { getColumnPositions } from './getColumnPositions';
-import { MIN_COLUMN_WIDTH, RESIZE_GAP } from './constants';
-import { useMouse } from '../../composition/useMouse';
-import { useHover } from '../../composition/useHover';
-import { utils } from '@milaboratories/helpers';
+import type { Ref } from "vue";
+import { watchEffect } from "vue";
+import type { Data } from "./types";
+import { useColumn } from "./useColumn";
+import { getColumnPositions } from "./getColumnPositions";
+import { MIN_COLUMN_WIDTH, RESIZE_GAP } from "./constants";
+import { useMouse } from "../../composition/useMouse";
+import { useHover } from "../../composition/useHover";
+import { utils } from "@milaboratories/helpers";
 
 const { tapIf, clamp } = utils;
 export function useResize(data: Data, tableRef: Ref<HTMLElement | undefined>) {
@@ -24,7 +24,7 @@ export function useResize(data: Data, tableRef: Ref<HTMLElement | undefined>) {
     () => {
       data.resize = false;
       data.resizeTh = undefined;
-      document.body.style.cursor = '';
+      document.body.style.cursor = "";
     },
   );
 
@@ -40,7 +40,7 @@ export function useResize(data: Data, tableRef: Ref<HTMLElement | undefined>) {
 
   watchEffect(() => {
     if (!isHovered.value) {
-      document.body.style.cursor = '';
+      document.body.style.cursor = "";
       return;
     }
 
@@ -53,11 +53,11 @@ export function useResize(data: Data, tableRef: Ref<HTMLElement | undefined>) {
     });
 
     if (th) {
-      document.body.style.cursor = 'col-resize';
+      document.body.style.cursor = "col-resize";
       data.resizeTh = th;
     } else {
       data.resizeTh = undefined;
-      document.body.style.cursor = '';
+      document.body.style.cursor = "";
     }
   });
 

@@ -1,18 +1,18 @@
-import { z } from 'zod';
+import { z } from "zod";
 import {
   ContentExplicitBase64,
   ContentExplicitBytes,
   DescriptionContentBinary,
   DescriptionContentText,
-} from './content_types';
+} from "./content_types";
 
 export const BlockPlatform = z.enum([
-  'windows-x64',
-  'windows-aarch64',
-  'macosx-x64',
-  'macosx-aarch64',
-  'linux-x64',
-  'linux-aarch64',
+  "windows-x64",
+  "windows-aarch64",
+  "macosx-x64",
+  "macosx-aarch64",
+  "linux-x64",
+  "linux-aarch64",
 ]);
 export type BlockPlatform = z.infer<typeof BlockPlatform>;
 
@@ -30,11 +30,13 @@ export function BlockPackMeta<
     docs: z.string().url().optional(),
     support: z.union([z.string().url(), z.string().email()]).optional(),
     tags: z.array(z.string()).optional(),
-    organization: z.object({
-      name: z.string(),
-      url: z.string().url(),
-      logo: binary.optional(),
-    }).passthrough(),
+    organization: z
+      .object({
+        name: z.string(),
+        url: z.string().url(),
+        logo: binary.optional(),
+      })
+      .passthrough(),
     /**
      * The order of blocks on the "marketplace" (higher values push block higher to the top of the list).
      * `undefined` value or absent field is treated exactly the same as number `0`.
@@ -62,14 +64,8 @@ export const BlockPackMetaDescriptionRaw = BlockPackMeta(
 );
 export type BlockPackMetaDescriptionRaw = z.infer<typeof BlockPackMetaDescriptionRaw>;
 
-export const BlockPackMetaEmbeddedBase64 = BlockPackMeta(
-  z.string(),
-  ContentExplicitBase64,
-);
+export const BlockPackMetaEmbeddedBase64 = BlockPackMeta(z.string(), ContentExplicitBase64);
 export type BlockPackMetaEmbeddedBase64 = z.infer<typeof BlockPackMetaEmbeddedBase64>;
 
-export const BlockPackMetaEmbeddedBytes = BlockPackMeta(
-  z.string(),
-  ContentExplicitBytes,
-);
+export const BlockPackMetaEmbeddedBytes = BlockPackMeta(z.string(), ContentExplicitBytes);
 export type BlockPackMetaEmbeddedBytes = z.infer<typeof BlockPackMetaEmbeddedBytes>;

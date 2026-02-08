@@ -1,8 +1,4 @@
-import {
-  canonicalizeJson,
-  parseJson,
-  type CanonicalizedJson,
-} from '../../json';
+import { canonicalizeJson, parseJson, type CanonicalizedJson } from "../../json";
 import {
   Annotation,
   readAnnotationJson,
@@ -14,7 +10,7 @@ import {
   getNormalizedAxesList,
   getArrayFromAxisTree,
   getAxesTree,
-} from './spec/spec';
+} from "./spec/spec";
 
 type LinkerKey = CanonicalizedJson<AxisId[]>;
 export type CompositeLinkerMap = Map<
@@ -46,7 +42,9 @@ export class LinkerMap implements LinkersData {
 
   static fromColumns(columns: PColumnIdAndSpec[]) {
     const result: CompositeLinkerMap = new Map();
-    for (const linker of columns.filter((l) => !!readAnnotationJson(l.spec, Annotation.IsLinkerColumn))) {
+    for (const linker of columns.filter(
+      (l) => !!readAnnotationJson(l.spec, Annotation.IsLinkerColumn),
+    )) {
       const groups = LinkerMap.getAxesGroups(getNormalizedAxesList(linker.spec.axesSpec)); // split input axes into groups by parent links from annotation
 
       if (groups.length !== 2) {
@@ -63,12 +61,16 @@ export class LinkerMap implements LinkersData {
       //  \_ B _ D
       // and
       // E - B - D
-      const leftKeyVariants: [LinkerKey, AxisSpecNormalized[]][] = LinkerMap.getAxesRoots(left).map((axis) => {
-        const axes = getArrayFromAxisTree(getAxesTree(axis));
-        const key = canonicalizeJson(axes.map(getAxisId));
-        return [key, axes];
-      });
-      const rightKeyVariants: [LinkerKey, AxisSpecNormalized[]][] = LinkerMap.getAxesRoots(right).map((axis) => {
+      const leftKeyVariants: [LinkerKey, AxisSpecNormalized[]][] = LinkerMap.getAxesRoots(left).map(
+        (axis) => {
+          const axes = getArrayFromAxisTree(getAxesTree(axis));
+          const key = canonicalizeJson(axes.map(getAxisId));
+          return [key, axes];
+        },
+      );
+      const rightKeyVariants: [LinkerKey, AxisSpecNormalized[]][] = LinkerMap.getAxesRoots(
+        right,
+      ).map((axis) => {
         const axes = getArrayFromAxisTree(getAxesTree(axis));
         const key = canonicalizeJson(axes.map(getAxisId));
         return [key, axes];
@@ -157,7 +159,7 @@ export class LinkerMap implements LinkersData {
     to: AxisSpecNormalized[];
     throwWhenNoLinkExists?: boolean;
   }): PColumnIdAndSpec[] {
-  // start keys - all possible keys in linker map using sourceAxes (for example, all axes of block's columns or all axes of columns in data-inputs)
+    // start keys - all possible keys in linker map using sourceAxes (for example, all axes of block's columns or all axes of columns in data-inputs)
     const startKeys: LinkerKey[] = sourceAxes.map(LinkerMap.getLinkerKeyFromAxisSpec);
 
     return Array.from(
@@ -167,8 +169,13 @@ export class LinkerMap implements LinkersData {
           .flatMap((targetKey) => {
             const linkers = startKeys
               .map((startKey) => this.searchLinkerPath(startKey, targetKey))
-              .reduce((shortestPath, path) => (shortestPath.length && shortestPath.length < path.length) || !path.length ? shortestPath : path,
-                [] as PColumnIdAndSpec[])
+              .reduce(
+                (shortestPath, path) =>
+                  (shortestPath.length && shortestPath.length < path.length) || !path.length
+                    ? shortestPath
+                    : path,
+                [] as PColumnIdAndSpec[],
+              )
               .map((linker) => [linker.columnId, linker] as const);
             if (!linkers.length && throwWhenNoLinkExists) {
               throw Error(`Unable to find linker column for ${targetKey}`);
@@ -183,7 +190,8 @@ export class LinkerMap implements LinkersData {
   getAxesListFromKeysList(keys: LinkerKey[]): AxisSpecNormalized[] {
     return Array.from(
       new Map(
-        keys.flatMap((key) => this.data.get(key)?.keyAxesSpec ?? [])
+        keys
+          .flatMap((key) => this.data.get(key)?.keyAxesSpec ?? [])
           .map((axis) => [canonicalizeJson(getAxisId(axis)), axis]),
       ).values(),
     );
@@ -205,7 +213,12 @@ export class LinkerMap implements LinkersData {
             const targetKey = targetKeys[idx];
             return !startKeys.some((startKey) => this.searchLinkerPath(startKey, targetKey).length);
           })
-          .flatMap((axis) => getArrayFromAxisTree(getAxesTree(axis)).map((axis) => [canonicalizeJson(getAxisId(axis)), axis])),
+          .flatMap((axis) =>
+            getArrayFromAxisTree(getAxesTree(axis)).map((axis) => [
+              canonicalizeJson(getAxisId(axis)),
+              axis,
+            ]),
+          ),
       ).values(),
     );
     return axes;
@@ -219,11 +232,13 @@ export class LinkerMap implements LinkersData {
     let startKeys: CanonicalizedJson<AxisId[]>[] = [];
 
     if (matchAxisIdFn) {
-      const sourceAxisIdsGrouped: AxisId[][] = sourceAxes.map((axis) => getArrayFromAxisTree(getAxesTree(axis)).map(getAxisId));
+      const sourceAxisIdsGrouped: AxisId[][] = sourceAxes.map((axis) =>
+        getArrayFromAxisTree(getAxesTree(axis)).map(getAxisId),
+      );
       for (const sourceAxisIdsGroup of sourceAxisIdsGrouped) {
-        const matched = this.keyAxesIds.find(
-          (keyIds: AxisId[]) => keyIds.every(
-            (linkerKeyAxisId) => sourceAxisIdsGroup.find((sourceAxisId) => matchAxisIdFn(linkerKeyAxisId, sourceAxisId)),
+        const matched = this.keyAxesIds.find((keyIds: AxisId[]) =>
+          keyIds.every((linkerKeyAxisId) =>
+            sourceAxisIdsGroup.find((sourceAxisId) => matchAxisIdFn(linkerKeyAxisId, sourceAxisId)),
           ),
         );
         if (matched) {
@@ -242,7 +257,10 @@ export class LinkerMap implements LinkersData {
     sourceAxes: AxisSpec[],
     matchAxisIdFn?: (axisIdOfLinker: AxisId, axisIdOfSource: AxisId) => boolean,
   ): AxisSpecNormalized[] {
-    return this.getReachableByLinkersAxesFromAxesNormalized(getNormalizedAxesList(sourceAxes), matchAxisIdFn);
+    return this.getReachableByLinkersAxesFromAxesNormalized(
+      getNormalizedAxesList(sourceAxes),
+      matchAxisIdFn,
+    );
   }
 
   static getLinkerKeyFromAxisSpec(axis: AxisSpecNormalized): LinkerKey {
@@ -253,24 +271,30 @@ export class LinkerMap implements LinkersData {
      There are no order inside every group. */
   static getAxesGroups(axesSpec: AxisSpecNormalized[]): AxisSpecNormalized[][] {
     switch (axesSpec.length) {
-      case 0: return [];
-      case 1: return [[axesSpec[0]]];
-      default: break;
+      case 0:
+        return [];
+      case 1:
+        return [[axesSpec[0]]];
+      default:
+        break;
     }
 
     const axisKeys = axesSpec.map((spec) => canonicalizeJson(getAxisId(spec)));
     const axisParentsIdxs = axesSpec.map(
-      (spec) => new Set(
-        spec.parentAxesSpec
-          .map((spec) => canonicalizeJson(getAxisId(spec)))
-          .map((el) => {
-            const idx = axisKeys.indexOf(el);
-            if (idx === -1) {
-              throw new Error(`malformed axesSpec: ${JSON.stringify(axesSpec)}, unable to locate parent ${el}`);
-            }
-            return idx;
-          }),
-      ),
+      (spec) =>
+        new Set(
+          spec.parentAxesSpec
+            .map((spec) => canonicalizeJson(getAxisId(spec)))
+            .map((el) => {
+              const idx = axisKeys.indexOf(el);
+              if (idx === -1) {
+                throw new Error(
+                  `malformed axesSpec: ${JSON.stringify(axesSpec)}, unable to locate parent ${el}`,
+                );
+              }
+              return idx;
+            }),
+        ),
     );
 
     const allIdxs = [...axesSpec.keys()];
@@ -304,14 +328,16 @@ export class LinkerMap implements LinkersData {
 
       groups.push([...currentGroup]);
       nextFreeEl = allIdxs.find((idx) => !usedIdxs.has(idx));
-    };
+    }
 
     return groups.map((group) => group.map((idx) => axesSpec[idx]));
   }
 
   /** Get all axes that are not parents of any other axis */
   static getAxesRoots(axes: AxisSpecNormalized[]): AxisSpecNormalized[] {
-    const parentsSet = new Set(axes.flatMap((axis) => axis.parentAxesSpec).map((spec) => canonicalizeJson(getAxisId(spec))));
+    const parentsSet = new Set(
+      axes.flatMap((axis) => axis.parentAxesSpec).map((spec) => canonicalizeJson(getAxisId(spec))),
+    );
     return axes.filter((axis) => !parentsSet.has(canonicalizeJson(getAxisId(axis))));
   }
 }

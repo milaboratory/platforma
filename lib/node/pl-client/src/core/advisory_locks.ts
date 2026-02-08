@@ -18,7 +18,7 @@ class AwaitLock {
    */
   release(): boolean {
     if (!this.acquired) {
-      throw new Error('Cannot release an unacquired lock');
+      throw new Error("Cannot release an unacquired lock");
     }
 
     if (this.resolvers.length) {

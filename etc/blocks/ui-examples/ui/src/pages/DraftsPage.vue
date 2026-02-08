@@ -10,23 +10,27 @@ import {
   PlEditableTitle,
   PlRow,
   PlTextField,
-} from '@platforma-sdk/ui-vue';
-import { computed, reactive, ref } from 'vue';
+} from "@platforma-sdk/ui-vue";
+import { computed, reactive, ref } from "vue";
 
 const data = reactive({
   title: "Title example",
   importHandles: [] as unknown[],
   value: 1,
-  options: [{
-    label: 'Test Label',
-    value: 1,
-  }, {
-    label: 'Test label 2',
-    value: 2,
-  }, {
-    label: 'Test label 3',
-    value: 3,
-  }],
+  options: [
+    {
+      label: "Test Label",
+      value: 1,
+    },
+    {
+      label: "Test label 2",
+      value: 2,
+    },
+    {
+      label: "Test label 3",
+      value: 3,
+    },
+  ],
 });
 
 const onDrop = (ev: DragEvent) => {
@@ -47,7 +51,7 @@ const currentLabel = computed({
   set(v) {
     const opt = data.options.find((o) => o.value === data.value);
     if (opt) {
-      opt.label = v ?? '';
+      opt.label = v ?? "";
     }
   },
 });
@@ -56,11 +60,11 @@ const loading = ref(false);
 
 const onClickSettings = () => {
   loading.value = true;
-  setTimeout(() => loading.value = false, 2000);
+  setTimeout(() => (loading.value = false), 2000);
 };
 
 const triggerError = () => {
-  Color.fromString('invalid color');
+  Color.fromString("invalid color");
 };
 </script>
 
@@ -89,10 +93,18 @@ const triggerError = () => {
       </PlContainer>
     </PlRow>
     <PlRow> <PlCloseModalBtn /> </PlRow>
-    <PlRow> <PlTextField v-model="currentLabel" label="Change title" :clearable="() => undefined" /> </PlRow>
+    <PlRow>
+      <PlTextField v-model="currentLabel" label="Change title" :clearable="() => undefined" />
+    </PlRow>
     <PlRow>
       <PlDropdownLine v-model="data.value" clearable :label="data.title" :options="data.options" />
-      <PlDropdownLine v-model="data.value" prefix="Option:" clearable :label="data.title" :options="data.options" />
+      <PlDropdownLine
+        v-model="data.value"
+        prefix="Option:"
+        clearable
+        :label="data.title"
+        :options="data.options"
+      />
     </PlRow>
     <PlRow>
       <PlBtnPrimary @click="triggerError">Trigger ui vue error</PlBtnPrimary>

@@ -1,10 +1,16 @@
-import type { PlClient, PlTransaction, ResourceId } from '@milaboratories/pl-client';
-import type { ProjectField, ProjectStructure } from '../model/project_model';
-import { projectFieldName, ProjectStructureKey, SchemaVersionCurrent, SchemaVersionKey, SchemaVersionV2 } from '../model/project_model';
-import { BlockFrontendStateKeyPrefixV1, SchemaVersionV1 } from '../model/project_model_v1';
-import { field, isNullResourceId } from '@milaboratories/pl-client';
-import { cachedDeserialize } from '@milaboratories/ts-helpers';
-import { allBlocks } from '../model/project_model_util';
+import type { PlClient, PlTransaction, ResourceId } from "@milaboratories/pl-client";
+import type { ProjectField, ProjectStructure } from "../model/project_model";
+import {
+  projectFieldName,
+  ProjectStructureKey,
+  SchemaVersionCurrent,
+  SchemaVersionKey,
+  SchemaVersionV2,
+} from "../model/project_model";
+import { BlockFrontendStateKeyPrefixV1, SchemaVersionV1 } from "../model/project_model_v1";
+import { field, isNullResourceId } from "@milaboratories/pl-client";
+import { cachedDeserialize } from "@milaboratories/ts-helpers";
+import { allBlocks } from "../model/project_model_util";
 
 /**
  * Migrates the project to the latest schema version.
@@ -13,7 +19,7 @@ import { allBlocks } from '../model/project_model_util';
  * @param rid - The resource id of the project.
  */
 export async function applyProjectMigrations(pl: PlClient, rid: ResourceId) {
-  await pl.withWriteTx('ProjectMigration', async (tx) => {
+  await pl.withWriteTx("ProjectMigration", async (tx) => {
     let schemaVersion = await tx.getKValueJson<string>(rid, SchemaVersionKey);
     if (schemaVersion === SchemaVersionCurrent) return;
 
@@ -55,8 +61,8 @@ async function migrateV1ToV2(tx: PlTransaction, rid: ResourceId) {
     const uiState = kvMap.get(kvKey);
     const valueJson = uiState ? cachedDeserialize(uiState) : {};
     const uiStateR = tx.createJsonGzValue(valueJson);
-    const uiStateF = field(rid, projectFieldName(block.id, 'blockStorage'));
-    tx.createField(uiStateF, 'Dynamic', uiStateR);
+    const uiStateF = field(rid, projectFieldName(block.id, "blockStorage"));
+    tx.createField(uiStateF, "Dynamic", uiStateR);
     tx.deleteKValue(rid, kvKey);
   }
 }
@@ -94,8 +100,8 @@ async function migrateV2ToV3(tx: PlTransaction, rid: ResourceId) {
 
   for (const block of allBlocks(structure)) {
     // Read existing field values
-    const uiStateFieldName = projectFieldName(block.id, 'uiState' as ProjectField['fieldName']);
-    const currentArgsFieldName = projectFieldName(block.id, 'currentArgs');
+    const uiStateFieldName = projectFieldName(block.id, "uiState" as ProjectField["fieldName"]);
+    const currentArgsFieldName = projectFieldName(block.id, "currentArgs");
 
     const uiStateRid = fieldMap.get(uiStateFieldName);
     const currentArgsRid = fieldMap.get(currentArgsFieldName);
@@ -116,11 +122,11 @@ async function migrateV2ToV3(tx: PlTransaction, rid: ResourceId) {
       uiState,
     };
 
-    const blockStorageFieldName = projectFieldName(block.id, 'blockStorage');
+    const blockStorageFieldName = projectFieldName(block.id, "blockStorage");
 
     // Write new unified blockStorage field (overwrite existing)
     const stateR = tx.createJsonGzValue(unifiedState);
     const stateF = field(rid, blockStorageFieldName);
-    tx.createField(stateF, 'Dynamic', stateR);
+    tx.createField(stateF, "Dynamic", stateR);
   }
 }

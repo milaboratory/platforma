@@ -1,5 +1,5 @@
-import type { Expression } from '@milaboratories/ptabler-expression-js';
-import type { FilterSpec } from '../filters';
+import type { Expression } from "@milaboratories/ptabler-expression-js";
+import type { FilterSpec } from "../filters";
 
 export type AnnotationSpec<T extends ExpressionSpec = ExpressionSpec> = {
   title: string;
@@ -7,7 +7,7 @@ export type AnnotationSpec<T extends ExpressionSpec = ExpressionSpec> = {
 };
 
 export type ExpressionSpec<T extends Expression = Expression> = {
-  type: 'alias';
+  type: "alias";
   name: string;
   value: T;
 }; // | OtherExpressionSpecTypesInFuture;
@@ -17,7 +17,7 @@ export type AnnotationSpecUi<T extends FilterSpecUi = FilterSpecUi> = {
   steps: T[];
 };
 
-export type FilterSpecUi<T extends FilterSpec = Extract<FilterSpec, { type: 'and' | 'or' }>> = {
+export type FilterSpecUi<T extends FilterSpec = Extract<FilterSpec, { type: "and" | "or" }>> = {
   label: string;
   filter: T;
 };

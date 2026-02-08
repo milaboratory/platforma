@@ -1,20 +1,20 @@
-export const PackageVersion: string = '1.2.3';
-export const PackageNameNoAt: string = 'the-software';
-export const PackageName: string = '@' + PackageNameNoAt;
+export const PackageVersion: string = "1.2.3";
+export const PackageNameNoAt: string = "the-software";
+export const PackageName: string = "@" + PackageNameNoAt;
 
-export const BinaryRegistry: string = 'some-binary-registry';
-export const BinaryRegistryURL: string = 'http://example.com/registry';
-export const BinaryCustomName1: string = 'custom-package-name-1';
-export const BinaryCustomVersion: string = '4.4.4';
+export const BinaryRegistry: string = "some-binary-registry";
+export const BinaryRegistryURL: string = "http://example.com/registry";
+export const BinaryCustomName1: string = "custom-package-name-1";
+export const BinaryCustomVersion: string = "4.4.4";
 
-export const EPNameAsset: string = 'pAsset';
-export const EPNameBinary: string = 'binary-package';
-export const EPNameCustomName: string = 'custom-name';
-export const EPNameJavaEnvironment: string = 'java-environment';
-export const EPNamePythonEnvironment: string = 'python-environment';
-export const EPNameREnvironment: string = 'R-environment';
-export const EPNameJava: string = 'java-package';
-export const EPNameDocker: string = 'docker-test-entrypoint';
+export const EPNameAsset: string = "pAsset";
+export const EPNameBinary: string = "binary-package";
+export const EPNameCustomName: string = "custom-name";
+export const EPNameJavaEnvironment: string = "java-environment";
+export const EPNamePythonEnvironment: string = "python-environment";
+export const EPNameREnvironment: string = "R-environment";
+export const EPNameJava: string = "java-package";
+export const EPNameDocker: string = "docker-test-entrypoint";
 
 const merge = (data: string, patch: Record<string, unknown>): string => {
   const v = JSON.parse(data) as Record<string, unknown>;
@@ -52,12 +52,12 @@ export const CondaArtifact = `{
   }
 }`;
 
-export const CondaArtifactWithType = merge(CondaArtifact, { type: 'conda' });
+export const CondaArtifactWithType = merge(CondaArtifact, { type: "conda" });
 export const CondaArtifactWithSpec = merge(CondaArtifactWithType, {
-  spec: './some-specification.yaml',
+  spec: "./some-specification.yaml",
 });
 export const CondaArtifactWithMicromambaVersion = merge(CondaArtifactWithSpec, {
-  'micromamba-version': '2.3.2-0',
+  "micromamba-version": "2.3.2-0",
 });
 
 export const PythonArtifact = `{
@@ -120,15 +120,19 @@ export const JavaEnvironmentArtifact = `{
   "binDir": "."
 }`;
 
-export const JavaEnvironmentArtifactWithType = merge(JavaEnvironmentArtifact, { type: 'environment' });
+export const JavaEnvironmentArtifactWithType = merge(JavaEnvironmentArtifact, {
+  type: "environment",
+});
 
 export const DockerArtifact = `{
   "context": "./src"
 }`;
 
-export const DockerArtifactWithType = merge(DockerArtifact, { type: 'docker' });
-export const DockerArtifactWithPkg = merge(DockerArtifactWithType, { pkg: '/app' });
-export const DockerArtifactWithDockerfile = merge(DockerArtifactWithType, { dockerfile: 'Dockerfile' });
+export const DockerArtifactWithType = merge(DockerArtifact, { type: "docker" });
+export const DockerArtifactWithPkg = merge(DockerArtifactWithType, { pkg: "/app" });
+export const DockerArtifactWithDockerfile = merge(DockerArtifactWithType, {
+  dockerfile: "Dockerfile",
+});
 
 export const DockerAsset = `{
   "tag": "some-docker-tag",
@@ -136,7 +140,7 @@ export const DockerAsset = `{
   "cmd": ["Hello, world!"]
 }`;
 
-export const EPNameLimitedPlatformsBinary = 'multi-root-bin';
+export const EPNameLimitedPlatformsBinary = "multi-root-bin";
 
 // This binary artifact intentionally has only part of roots, meaning
 // software is not available for some platforms.

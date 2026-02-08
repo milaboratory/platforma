@@ -1,17 +1,12 @@
-import type { ComputableCtx } from '@milaboratories/computable';
-import type { PlTreeEntry } from '@milaboratories/pl-tree';
-import { cachedDecode, notEmpty } from '@milaboratories/ts-helpers';
-import type { Optional } from 'utility-types';
-import type {
-  Block,
-  ProjectStructure } from '../model/project_model';
-import {
-  ProjectStructureKey,
-  projectFieldName,
-} from '../model/project_model';
-import { allBlocks } from '../model/project_model_util';
-import { ResultPool } from '../pool/result_pool';
-import { deriveDataFromStorage } from '@platforma-sdk/model';
+import type { ComputableCtx } from "@milaboratories/computable";
+import type { PlTreeEntry } from "@milaboratories/pl-tree";
+import { cachedDecode, notEmpty } from "@milaboratories/ts-helpers";
+import type { Optional } from "utility-types";
+import type { Block, ProjectStructure } from "../model/project_model";
+import { ProjectStructureKey, projectFieldName } from "../model/project_model";
+import { allBlocks } from "../model/project_model_util";
+import { ResultPool } from "../pool/result_pool";
+import { deriveDataFromStorage } from "@platforma-sdk/model";
 
 export type BlockContextArgsOnly = {
   readonly blockId: string;
@@ -29,7 +24,7 @@ export type BlockContextFull = BlockContextArgsOnly & {
   readonly getResultsPool: (cCtx: ComputableCtx) => ResultPool;
 };
 
-export type BlockContextAny = Optional<BlockContextFull, 'prod' | 'staging' | 'getResultsPool'>;
+export type BlockContextAny = Optional<BlockContextFull, "prod" | "staging" | "getResultsPool">;
 
 export function constructBlockContextArgsOnly(
   projectEntry: PlTreeEntry,
@@ -40,7 +35,7 @@ export function constructBlockContextArgsOnly(
       .accessor(projectEntry)
       .node()
       .traverse({
-        field: projectFieldName(blockId, 'currentArgs'),
+        field: projectFieldName(blockId, "currentArgs"),
         stableIfNotFound: true,
       })
       ?.getData();
@@ -51,7 +46,7 @@ export function constructBlockContextArgsOnly(
       .accessor(projectEntry)
       .node()
       .traverse({
-        field: projectFieldName(blockId, 'prodArgs'),
+        field: projectFieldName(blockId, "prodArgs"),
         stableIfNotFound: true,
       })
       ?.getData();
@@ -62,7 +57,7 @@ export function constructBlockContextArgsOnly(
       .accessor(projectEntry)
       .node()
       .traverse({
-        field: projectFieldName(blockId, 'blockStorage'),
+        field: projectFieldName(blockId, "blockStorage"),
         stableIfNotFound: true,
       })
       ?.getData();
@@ -76,7 +71,7 @@ export function constructBlockContextArgsOnly(
       const parsed = JSON.parse(rawJson);
       return JSON.stringify(deriveDataFromStorage(parsed));
     } catch (err) {
-      console.error('Error deriving data from storage', err);
+      console.error("Error deriving data from storage", err);
       return undefined;
     }
   };
@@ -86,7 +81,7 @@ export function constructBlockContextArgsOnly(
       .accessor(projectEntry)
       .node()
       .traverse({
-        field: projectFieldName(blockId, 'blockStorage'),
+        field: projectFieldName(blockId, "blockStorage"),
         stableIfNotFound: true,
       })
       ?.getData();
@@ -98,7 +93,7 @@ export function constructBlockContextArgsOnly(
       .accessor(projectEntry)
       .node()
       .traverse({
-        field: projectFieldName(blockId, 'currentPrerunArgs'),
+        field: projectFieldName(blockId, "currentPrerunArgs"),
         stableIfNotFound: true,
       })
       ?.getData();
@@ -132,7 +127,7 @@ export function constructBlockContext(
         .accessor(projectEntry)
         .node({ ignoreError: true })
         .traverse({
-          field: projectFieldName(blockId, 'prodOutput'),
+          field: projectFieldName(blockId, "prodOutput"),
           stableIfNotFound: true,
           ignoreError: true,
         })
@@ -141,20 +136,21 @@ export function constructBlockContext(
     staging: (cCtx: ComputableCtx) => {
       // Check if staging is expected (currentPrerunArgs is set)
       // For blocks with failed args derivation, staging will never be rendered
-      const hasPrerunArgs = cCtx
-        .accessor(projectEntry)
-        .node({ ignoreError: true })
-        .traverse({
-          field: projectFieldName(blockId, 'currentPrerunArgs'),
-          stableIfNotFound: true,
-          ignoreError: true,
-        }) !== undefined;
+      const hasPrerunArgs =
+        cCtx
+          .accessor(projectEntry)
+          .node({ ignoreError: true })
+          .traverse({
+            field: projectFieldName(blockId, "currentPrerunArgs"),
+            stableIfNotFound: true,
+            ignoreError: true,
+          }) !== undefined;
 
       const result = cCtx
         .accessor(projectEntry)
         .node({ ignoreError: true })
         .traverse({
-          field: projectFieldName(blockId, 'stagingOutput'),
+          field: projectFieldName(blockId, "stagingOutput"),
           // Only mark stable if staging is NOT expected (no prerunArgs)
           stableIfNotFound: !hasPrerunArgs,
           ignoreError: true,

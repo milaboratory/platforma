@@ -16,7 +16,7 @@ export function* sliceIterable<T>(it: Iterable<T>, from: number, to: number) {
   let i = 0;
   for (const v of it) {
     if (i >= to) {
-      console.log('break');
+      console.log("break");
       break;
     }
     if (i >= from) {

@@ -1,26 +1,25 @@
 {
   "name": "@milaboratories/block-repo-tests",
+  "version": "1.1.0",
   "private": true,
   "description": "Tests for block registry reader",
-  "version": "1.1.0",
   "scripts": {
-    "lint": "eslint .",
-    "test": "vitest run --coverage"
-  },
-  "//": {
-    "build": "rm -rf ./the-reg && block-tools publish -m ./node_modules/@milaboratories/milaboratories.test-enter-numbers/block-pack/manifest.json -r file:./the-reg"
+    "test": "vitest run --coverage",
+    "fmt": "ts-builder format"
   },
   "devDependencies": {
-    "remeda": "catalog:",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/milaboratories.test-enter-numbers": "workspace:*",
     "@milaboratories/pl-model-middle-layer": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
     "@platforma-sdk/block-tools": "workspace:*",
-    "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
-    "@milaboratories/eslint-config": "workspace:*",
     "@types/node": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@vitest/coverage-istanbul": "catalog:",
+    "remeda": "catalog:",
+    "vitest": "catalog:"
+  },
+  "//": {
+    "build": "rm -rf ./the-reg && block-tools publish -m ./node_modules/@milaboratories/milaboratories.test-enter-numbers/block-pack/manifest.json -r file:./the-reg"
   }
 }

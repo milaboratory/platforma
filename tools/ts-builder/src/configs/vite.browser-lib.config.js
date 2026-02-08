@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
-import { createViteLibConfig } from '@milaboratories/build-configs';
+import { defineConfig } from "vite";
+import { createViteLibConfig } from "@milaboratories/build-configs";
 
 export default defineConfig(createViteLibConfig);

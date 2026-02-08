@@ -4,13 +4,13 @@
 // After generating new clients from openapi specifications, add client types here.
 //
 
-import type { Client } from 'openapi-fetch';
+import type { Client } from "openapi-fetch";
 
-import type { paths as DownloadApiPaths } from './downloadapi';
-import type { paths as UploadApiPaths } from './uploadapi';
-import type { paths as LsApiPaths } from './lsapi';
-import type { paths as ProgressApiPaths } from './progressapi';
-import type { paths as StreamingApiPaths } from './streamingapi';
+import type { paths as DownloadApiPaths } from "./downloadapi";
+import type { paths as UploadApiPaths } from "./uploadapi";
+import type { paths as LsApiPaths } from "./lsapi";
+import type { paths as ProgressApiPaths } from "./progressapi";
+import type { paths as StreamingApiPaths } from "./streamingapi";
 
 export { DownloadApiPaths };
 export type DownloadRestClientType = Client<DownloadApiPaths>;

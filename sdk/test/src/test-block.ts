@@ -1,16 +1,14 @@
-import path from 'node:path';
-import * as fsp from 'node:fs/promises';
+import path from "node:path";
+import * as fsp from "node:fs/promises";
 import type {
   InferBlockState,
   LocalImportFileHandle,
   Platforma,
   Project,
-} from '@milaboratories/pl-middle-layer';
-import {
-  MiddleLayer,
-} from '@milaboratories/pl-middle-layer';
-import { plTest } from './test-pl';
-import { awaitStableState } from './util';
+} from "@milaboratories/pl-middle-layer";
+import { MiddleLayer } from "@milaboratories/pl-middle-layer";
+import { plTest } from "./test-pl";
+import { awaitStableState } from "./util";
 
 export type AwaitBlockDoneOps = {
   timeout?: number | AbortSignal;
@@ -22,22 +20,17 @@ export type AwaitBlockDoneNormalized = {
   ignoreBlockError: boolean;
 };
 
-function normalizeABDOpts(
-  timeoutOrOps?: number | AwaitBlockDoneOps,
-): AwaitBlockDoneNormalized {
+function normalizeABDOpts(timeoutOrOps?: number | AwaitBlockDoneOps): AwaitBlockDoneNormalized {
   let ops: AwaitBlockDoneOps = {};
   if (timeoutOrOps !== undefined) {
-    if (
-      typeof timeoutOrOps === 'object'
-      && !(timeoutOrOps instanceof AbortSignal)
-    )
+    if (typeof timeoutOrOps === "object" && !(timeoutOrOps instanceof AbortSignal))
       ops = { ...ops, ...timeoutOrOps };
     else ops.timeout = timeoutOrOps;
   }
-  const abortSignal
-    = typeof ops.timeout === 'undefined'
+  const abortSignal =
+    typeof ops.timeout === "undefined"
       ? AbortSignal.timeout(DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT)
-      : typeof ops.timeout === 'number'
+      : typeof ops.timeout === "number"
         ? AbortSignal.timeout(ops.timeout)
         : ops.timeout;
   return {
@@ -59,19 +52,17 @@ async function awaitBlockDone(
   while (true) {
     const overviewSnapshot = (await overview.getValue())!;
     const blockOverview = overviewSnapshot.blocks.find((b) => b.id == blockId);
-    if (blockOverview === undefined)
-      throw new Error(`Blocks not found: ${blockId}`);
+    if (blockOverview === undefined) throw new Error(`Blocks not found: ${blockId}`);
     if (blockOverview.outputErrors) {
       if (ops.ignoreBlockError) return;
       else {
         let errorMessage = blockOverview.outputsError;
-        if (errorMessage === undefined)
-          errorMessage = blockOverview.exportsError;
-        throw new Error('Block error: ' + (errorMessage ?? 'no message'));
+        if (errorMessage === undefined) errorMessage = blockOverview.exportsError;
+        throw new Error("Block error: " + (errorMessage ?? "no message"));
       }
     }
-    if (blockOverview.calculationStatus === 'Done') return;
-    if (blockOverview.calculationStatus !== 'Running')
+    if (blockOverview.calculationStatus === "Done") return;
+    if (blockOverview.calculationStatus !== "Running")
       throw new Error(
         `Unexpected block status, block not calculating anything at the moment: ${blockOverview.calculationStatus}`,
       );
@@ -80,19 +71,16 @@ async function awaitBlockDone(
     } catch (e: any) {
       console.dir(blockOverview, { depth: 5 });
       console.dir(await state.getValue(), { depth: 5 });
-      throw new Error('Aborted while awaiting block done.', { cause: e });
+      throw new Error("Aborted while awaiting block done.", { cause: e });
     }
   }
 }
 
 export interface RawHelpers {
-  awaitBlockDone(
-    blockId: string,
-    timeoutOrOps?: number | AwaitBlockDoneOps
-  ): Promise<void>;
+  awaitBlockDone(blockId: string, timeoutOrOps?: number | AwaitBlockDoneOps): Promise<void>;
   awaitBlockDoneAndGetStableBlockState<Pl extends Platforma>(
     blockId: string,
-    timeoutOrOps?: number | AwaitBlockDoneOps
+    timeoutOrOps?: number | AwaitBlockDoneOps,
   ): Promise<InferBlockState<Pl>>;
   getLocalFileHandle(localPath: string): Promise<LocalImportFileHandle>;
 }
@@ -103,8 +91,8 @@ export const blockTest = plTest.extend<{
   helpers: RawHelpers;
 }>({
   ml: async ({ pl, tmpFolder }, use) => {
-    const frontendFolder = path.join(tmpFolder, 'frontend');
-    const downloadFolder = path.join(tmpFolder, 'download');
+    const frontendFolder = path.join(tmpFolder, "frontend");
+    const downloadFolder = path.join(tmpFolder, "download");
     await fsp.mkdir(frontendFolder, { recursive: true });
     await fsp.mkdir(downloadFolder, { recursive: true });
 
@@ -114,12 +102,12 @@ export const blockTest = plTest.extend<{
       localSecret: MiddleLayer.generateLocalSecret(),
       localProjections: [], // TODO must be different with local pl
       openFileDialogCallback: () => {
-        throw new Error('Not implemented.');
+        throw new Error("Not implemented.");
       },
     });
-    ml.addRuntimeCapability('requiresUIAPIVersion', 1);
-    ml.addRuntimeCapability('requiresUIAPIVersion', 2);
-    ml.addRuntimeCapability('requiresUIAPIVersion', 3);
+    ml.addRuntimeCapability("requiresUIAPIVersion", 1);
+    ml.addRuntimeCapability("requiresUIAPIVersion", 2);
+    ml.addRuntimeCapability("requiresUIAPIVersion", 3);
 
     try {
       await use(ml);
@@ -128,10 +116,7 @@ export const blockTest = plTest.extend<{
     }
   },
   rawPrj: async ({ ml }, use) => {
-    const pRid1 = await ml.createProject(
-      { label: 'Test Project' },
-      'test_project',
-    );
+    const pRid1 = await ml.createProject({ label: "Test Project" }, "test_project");
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
     try {
@@ -157,9 +142,7 @@ export const blockTest = plTest.extend<{
         )) as InferBlockState<Pl>;
       },
       async getLocalFileHandle(localPath) {
-        return await ml.internalDriverKit.lsDriver.getLocalFileHandle(
-          path.resolve(localPath),
-        );
+        return await ml.internalDriverKit.lsDriver.getLocalFileHandle(path.resolve(localPath));
       },
     });
   },

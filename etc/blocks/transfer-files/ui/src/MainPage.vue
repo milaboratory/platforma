@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { RemoteBlobHandleAndSize } from '@platforma-sdk/model';
-import { getFileNameFromHandle, type ImportFileHandle } from '@platforma-sdk/model';
-import type { ImportedFiles } from '@platforma-sdk/ui-vue';
-import { PlBtnExportArchive } from '@platforma-sdk/ui-vue';
+import type { RemoteBlobHandleAndSize } from "@platforma-sdk/model";
+import { getFileNameFromHandle, type ImportFileHandle } from "@platforma-sdk/model";
+import type { ImportedFiles } from "@platforma-sdk/ui-vue";
+import { PlBtnExportArchive } from "@platforma-sdk/ui-vue";
 import {
   PlBlockPage,
   PlContainer,
@@ -12,9 +12,9 @@ import {
   PlBtnPrimary,
   PlFileDialog,
   PlAlert,
-} from '@platforma-sdk/ui-vue';
-import { computed, reactive } from 'vue';
-import { useApp } from './app';
+} from "@platforma-sdk/ui-vue";
+import { computed, reactive } from "vue";
+import { useApp } from "./app";
 
 const app = useApp();
 
@@ -24,7 +24,9 @@ const data = reactive({
 });
 
 const fileExports = computed(() => {
-  return Object.entries(app.model.outputs.fileExports as Record<ImportFileHandle, RemoteBlobHandleAndSize | undefined>).map(([importHandle, blobHandle]) => ({
+  return Object.entries(
+    app.model.outputs.fileExports as Record<ImportFileHandle, RemoteBlobHandleAndSize | undefined>,
+  ).map(([importHandle, blobHandle]) => ({
     importHandle: importHandle as ImportFileHandle,
     blobHandle: blobHandle as RemoteBlobHandleAndSize,
     fileName: getFileNameFromHandle(importHandle as ImportFileHandle),
@@ -83,18 +85,16 @@ const handlesAndProgress = computed(() => {
     </PlRow>
     <PlRow>
       <PlContainer width="400px">
-        <PlBtnPrimary @click="data.isMultiDialogOpen = true">
-          Open multiple files
-        </PlBtnPrimary>
+        <PlBtnPrimary @click="data.isMultiDialogOpen = true"> Open multiple files </PlBtnPrimary>
         <template v-for="({ handle, progress }, i) of handlesAndProgress" :key="i">
-          <PlFileInput :model-value="handle" :progress="progress" @update:model-value="(v) => updateHandle(v, i)" />
+          <PlFileInput
+            :model-value="handle"
+            :progress="progress"
+            @update:model-value="(v) => updateHandle(v, i)"
+          />
         </template>
       </PlContainer>
     </PlRow>
   </PlBlockPage>
-  <PlFileDialog
-    v-model="data.isMultiDialogOpen"
-    multi
-    @import:files="onImport"
-  />
+  <PlFileDialog v-model="data.isMultiDialogOpen" multi @import:files="onImport" />
 </template>

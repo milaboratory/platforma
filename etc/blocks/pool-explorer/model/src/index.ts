@@ -5,7 +5,7 @@ import {
   defineDataVersions,
   type InferHrefType,
   type InferOutputsType,
-} from '@platforma-sdk/model';
+} from "@platforma-sdk/model";
 
 export type BlockData = {
   titleArgs: string;
@@ -19,21 +19,21 @@ type VersionedData = { [Version.V1]: BlockData };
 
 const dataModel = new DataModelBuilder<VersionedData>()
   .from(Version.V1)
-  .init(() => ({ titleArgs: 'The title' }));
+  .init(() => ({ titleArgs: "The title" }));
 
-export const platforma = BlockModelV3.create({ dataModel, renderingMode: 'Heavy' })
+export const platforma = BlockModelV3.create({ dataModel, renderingMode: "Heavy" })
 
   .args<BlockArgs>((data) => {
     return { titleArgs: data.titleArgs };
   })
 
-  .output('allSpecs', (ctx) => ctx.resultPool.getSpecs())
+  .output("allSpecs", (ctx) => ctx.resultPool.getSpecs())
 
   .sections((_ctx) => {
-    return [{ type: 'link', href: '/', label: 'Main' }];
+    return [{ type: "link", href: "/", label: "Main" }];
   })
 
-  .title((_ctx) => 'Pool explorer')
+  .title((_ctx) => "Pool explorer")
 
   .done();
 

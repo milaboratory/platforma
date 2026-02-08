@@ -3,14 +3,14 @@
  * Danger button
  */
 export default {
-  name: 'PlBtnDanger',
+  name: "PlBtnDanger",
 };
 </script>
 
 <script lang="ts" setup>
-import './pl-btn-danger.scss';
-import type { MaskIconName16, Size } from '../../types';
-import BtnBase from '../../base/BtnBase.vue';
+import "./pl-btn-danger.scss";
+import type { MaskIconName16, Size } from "../../types";
+import BtnBase from "../../base/BtnBase.vue";
 
 const props = defineProps<{
   /**

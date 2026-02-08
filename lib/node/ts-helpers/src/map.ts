@@ -1,4 +1,4 @@
-import { notEmpty } from '.';
+import { notEmpty } from ".";
 
 export function mapGet<K, V>(m: Map<K, V>, k: K) {
   return notEmpty(m.get(k));

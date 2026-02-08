@@ -1,5 +1,5 @@
-import upath from 'upath';
-import * as fsp from 'node:fs/promises';
+import upath from "upath";
+import * as fsp from "node:fs/promises";
 
 export class FSKVStorage {
   private constructor(private readonly root: string) {}
@@ -10,11 +10,11 @@ export class FSKVStorage {
   ): Promise<string> {
     const fullPath = upath.join(this.root, key);
     try {
-      return await fsp.readFile(fullPath, { encoding: 'utf8' });
+      return await fsp.readFile(fullPath, { encoding: "utf8" });
     } catch (err) {
-      if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
+      if (err instanceof Error && "code" in err && err.code === "ENOENT") {
         const value = await generator();
-        const tmp = fullPath + '.tmp';
+        const tmp = fullPath + ".tmp";
         await fsp.writeFile(tmp, value);
         await fsp.rename(tmp, fullPath);
         return value;

@@ -1,8 +1,8 @@
 <!-- eslint-disable vue/no-undef-components -->
 <script lang="ts" setup>
-import { state } from '../state';
-import ToggleMenu from './ToggleMenu.vue';
-import { routes } from '../router';
+import { state } from "../state";
+import ToggleMenu from "./ToggleMenu.vue";
+import { routes } from "../router";
 
 const appVersion = APP_VERSION;
 </script>

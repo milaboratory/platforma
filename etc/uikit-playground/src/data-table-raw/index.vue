@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import Layout from '../Layout.vue';
-import { faker } from '@faker-js/faker';
-import { randomRangeInt } from '@milaboratories/helpers';
-import { DataTable } from '@milaboratories/uikit';
-import { computed, onMounted, reactive } from 'vue';
-import UserForm from './UserForm.vue';
+import Layout from "../Layout.vue";
+import { faker } from "@faker-js/faker";
+import { randomRangeInt } from "@milaboratories/helpers";
+import { DataTable } from "@milaboratories/uikit";
+import { computed, onMounted, reactive } from "vue";
+import UserForm from "./UserForm.vue";
 
 const MyTable = DataTable.Component;
 
@@ -20,10 +20,10 @@ const data = reactive<{ rows: DataRecord[]; modal: boolean }>({
   rows: [
     {
       id: 1,
-      name: 'Ivan',
+      name: "Ivan",
       size: 100,
       user: {
-        name: 'Ivan',
+        name: "Ivan",
       },
     },
   ],
@@ -45,32 +45,32 @@ const rowsRef = computed(() => data.rows);
 const settings = DataTable.useRawData(rowsRef, {
   columns: [
     {
-      id: 'id',
-      label: 'ID',
+      id: "id",
+      label: "ID",
       width: 60,
-      valueType: 'integer',
+      valueType: "integer",
       editable: true,
     },
     {
-      id: 'name',
-      label: 'Name',
+      id: "name",
+      label: "Name",
       width: 120,
-      valueType: 'string',
+      valueType: "string",
       editable: true,
     },
     {
-      id: 'user',
-      label: 'User',
+      id: "user",
+      label: "User",
       width: 420,
-      valueType: 'unknown',
+      valueType: "unknown",
       component: () => UserForm,
       editable: true,
     },
     {
-      id: 'size',
-      label: 'Size',
+      id: "size",
+      label: "Size",
       width: 120,
-      valueType: 'integer',
+      valueType: "integer",
       editable: true,
     },
   ],
@@ -83,7 +83,7 @@ const settings = DataTable.useRawData(rowsRef, {
   },
   onSelectedRows: [
     {
-      label: 'Delete',
+      label: "Delete",
       cb: async (rows) => {
         data.rows = data.rows.filter((row) => !rows.some((r) => r.primaryKey === String(row.id)));
       },
@@ -91,7 +91,7 @@ const settings = DataTable.useRawData(rowsRef, {
   ],
   onUpdatedRow(r) {
     const row = data.rows.find((row) => String(row.id) === r.primaryKey);
-    console.log('dataRow', r.dataRow);
+    console.log("dataRow", r.dataRow);
     if (row) {
       Object.assign(row, r.dataRow);
     }
@@ -115,7 +115,10 @@ onMounted(() => {
       <span>last id: {{ data.rows.length }}</span>
       <span>last record: {{ data.rows[data.rows.length - 1] }}</span>
     </div>
-    <div style="display: flex; flex-direction: column; max-height: 800px; padding-top: 60px" class="mb-6">
+    <div
+      style="display: flex; flex-direction: column; max-height: 800px; padding-top: 60px"
+      class="mb-6"
+    >
       <MyTable :settings="settings" style="flex: 1" />
     </div>
     <pre>{{ data.rows }}</pre>

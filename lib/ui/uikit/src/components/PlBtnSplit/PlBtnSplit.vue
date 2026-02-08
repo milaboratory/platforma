@@ -1,13 +1,13 @@
 <script setup lang="ts" generic="M = unknown">
-import { deepEqual } from '@milaboratories/helpers';
-import { computed, reactive, ref, unref, watch } from 'vue';
-import { useElementPosition } from '../../composition/usePosition';
-import { normalizeListOptions } from '../../helpers/utils';
-import type { ListOption } from '../../types';
-import DropdownListItem from '../DropdownListItem.vue';
-import { PlIcon16 } from '../PlIcon16';
+import { deepEqual } from "@milaboratories/helpers";
+import { computed, reactive, ref, unref, watch } from "vue";
+import { useElementPosition } from "../../composition/usePosition";
+import { normalizeListOptions } from "../../helpers/utils";
+import type { ListOption } from "../../types";
+import DropdownListItem from "../DropdownListItem.vue";
+import { PlIcon16 } from "../PlIcon16";
 
-import './pl-btn-split.scss';
+import "./pl-btn-split.scss";
 
 const props = defineProps<{
   /**
@@ -26,7 +26,7 @@ const props = defineProps<{
   loading?: boolean;
 }>();
 
-const emits = defineEmits(['click']);
+const emits = defineEmits(["click"]);
 
 const model = defineModel<M>({ required: true });
 
@@ -46,9 +46,9 @@ defineExpose({
 });
 
 const optionsStyle = reactive({
-  top: '0px',
-  left: '0px',
-  width: '0px',
+  top: "0px",
+  left: "0px",
+  width: "0px",
 });
 
 watch(
@@ -57,13 +57,13 @@ watch(
     if (el) {
       const rect = el.getBoundingClientRect();
       data.optionsHeight = rect.height;
-      window.dispatchEvent(new CustomEvent('adjust'));
+      window.dispatchEvent(new CustomEvent("adjust"));
     }
   },
   { immediate: true },
 );
 
-const iconName = computed(() => (data.open ? 'chevron-up' : 'chevron-down'));
+const iconName = computed(() => (data.open ? "chevron-up" : "chevron-down"));
 
 const selectedIndex = computed(() => {
   return (props.options ?? []).findIndex((o) => deepEqual(o.value, model.value));
@@ -80,7 +80,11 @@ const items = computed(() =>
 
 const isLoadingOptions = computed(() => props.loading || props.options === undefined);
 
-const actionName = computed(() => items.value.find((o) => deepEqual(o.value, model.value))?.label ?? (props.options === undefined ? '...' : ''));
+const actionName = computed(
+  () =>
+    items.value.find((o) => deepEqual(o.value, model.value))?.label ??
+    (props.options === undefined ? "..." : ""),
+);
 
 useElementPosition(root, (pos) => {
   const focusWidth = 3;
@@ -88,13 +92,13 @@ useElementPosition(root, (pos) => {
   const downTopOffset = pos.top + pos.height + focusWidth;
 
   if (downTopOffset + data.optionsHeight > pos.clientHeight) {
-    optionsStyle.top = pos.top - data.optionsHeight - focusWidth + 'px';
+    optionsStyle.top = pos.top - data.optionsHeight - focusWidth + "px";
   } else {
-    optionsStyle.top = downTopOffset + 'px';
+    optionsStyle.top = downTopOffset + "px";
   }
 
-  optionsStyle.left = pos.left + 'px';
-  optionsStyle.width = pos.width + 'px';
+  optionsStyle.left = pos.left + "px";
+  optionsStyle.width = pos.width + "px";
 });
 
 const selectOption = (v: M | undefined) => {
@@ -104,17 +108,22 @@ const selectOption = (v: M | undefined) => {
 };
 
 function emitEnter() {
-  emits('click');
+  emits("click");
 }
 
-const handleKeydown = (e: { code: string; preventDefault(): void; stopPropagation(): void; target: EventTarget | null }) => {
-  if (!['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.code)) {
+const handleKeydown = (e: {
+  code: string;
+  preventDefault(): void;
+  stopPropagation(): void;
+  target: EventTarget | null;
+}) => {
+  if (!["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(e.code)) {
     return;
   } else {
     e.preventDefault();
   }
 
-  if (e.target === buttonAction.value && e.code === 'Enter') {
+  if (e.target === buttonAction.value && e.code === "Enter") {
     emitEnter();
     return;
   }
@@ -122,13 +131,13 @@ const handleKeydown = (e: { code: string; preventDefault(): void; stopPropagatio
   const { open, activeIndex } = data;
 
   if (!open && e.target === menuActivator.value) {
-    if (e.code === 'Enter') {
+    if (e.code === "Enter") {
       data.open = true;
     }
     return;
   }
 
-  if (e.code === 'Escape') {
+  if (e.code === "Escape") {
     data.open = false;
     root.value?.focus();
   }
@@ -141,13 +150,13 @@ const handleKeydown = (e: { code: string; preventDefault(): void; stopPropagatio
     return;
   }
 
-  if (e.code === 'Enter') {
+  if (e.code === "Enter") {
     selectOption(filtered.find((it) => it.index === activeIndex)?.value);
   }
 
   const localIndex = filtered.findIndex((it) => it.index === activeIndex) ?? -1;
 
-  const delta = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
+  const delta = e.code === "ArrowDown" ? 1 : e.code === "ArrowUp" ? -1 : 0;
 
   const newIndex = Math.abs(localIndex + delta + length) % length;
 
@@ -179,7 +188,12 @@ const onFocusOut = (event: FocusEvent) => {
     >
       {{ actionName }}
     </div>
-    <div ref="menuActivator" class="pl-btn-split__icon-container d-flex align-center justify-center" tabindex="0" @click="data.open = !data.open">
+    <div
+      ref="menuActivator"
+      class="pl-btn-split__icon-container d-flex align-center justify-center"
+      tabindex="0"
+      @click="data.open = !data.open"
+    >
       <PlIcon16 v-if="isLoadingOptions" name="loading" />
       <PlIcon16 v-else :name="iconName" class="pl-btn-split__icon" />
     </div>

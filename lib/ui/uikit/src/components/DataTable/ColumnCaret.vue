@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { computed } from 'vue';
-import type { ColumnSpecSettings } from './types';
-import { injectState } from './keys';
+import { computed } from "vue";
+import type { ColumnSpecSettings } from "./types";
+import { injectState } from "./keys";
 
 const state = injectState();
 

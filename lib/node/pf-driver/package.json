@@ -2,13 +2,16 @@
   "name": "@milaboratories/pf-driver",
   "version": "1.0.39",
   "description": "PFrameDriver implementation abstracted from Middle Layer",
-  "engines": {
-    "node": ">=22.19.0"
-  },
+  "keywords": [],
+  "license": "UNLICENSED",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "type": "module",
-  "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -17,38 +20,35 @@
     }
   },
   "scripts": {
-    "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
-    "lint": "eslint .",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
-  },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
-  "keywords": [],
-  "license": "UNLICENSED",
-  "devDependencies": {
-    "eslint": "catalog:",
-    "@milaboratories/eslint-config": "workspace:*",
-    "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/ts-builder": "workspace:*",
-    "tsconfig-paths": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*",
-    "typescript": "catalog:",
-    "tslib": "catalog:",
-    "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
-    "@types/node": "catalog:"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
   "dependencies": {
     "@milaboratories/pframes-rs-node": "catalog:",
-    "@milaboratories/ts-helpers": "workspace:*",
     "@milaboratories/pl-model-middle-layer": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
-    "lru-cache": "catalog:",
-    "es-toolkit": "catalog:"
+    "es-toolkit": "catalog:",
+    "lru-cache": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "tsconfig-paths": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.19.0"
   }
 }

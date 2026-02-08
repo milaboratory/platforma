@@ -1,29 +1,22 @@
-import * as utils from './utils';
-import * as strings from './strings';
-import * as objects from './objects';
-import * as collections from './collections';
-import * as functions from './functions';
-import { prettyBytes } from './prettyBytes';
+import * as utils from "./utils";
+import * as strings from "./strings";
+import * as objects from "./objects";
+import * as collections from "./collections";
+import * as functions from "./functions";
+import { prettyBytes } from "./prettyBytes";
 
-export * from './utils';
-export * from './strings';
-export * from './objects';
-export * from './collections';
-export * from './functions';
-export * from './types';
-export * from './regexp';
-export * from './error';
-export * from './hash';
-export * from './random';
-export * from './uniqId';
-export * from './perfTimer';
-export * from './parse';
+export * from "./utils";
+export * from "./strings";
+export * from "./objects";
+export * from "./collections";
+export * from "./functions";
+export * from "./types";
+export * from "./regexp";
+export * from "./error";
+export * from "./hash";
+export * from "./random";
+export * from "./uniqId";
+export * from "./perfTimer";
+export * from "./parse";
 
-export {
-  utils,
-  strings,
-  objects,
-  collections,
-  functions,
-  prettyBytes,
-};
+export { utils, strings, objects, collections, functions, prettyBytes };

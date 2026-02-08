@@ -32,9 +32,9 @@ import {
   isBlockStorage,
   normalizeBlockStorage,
   updateStorageData,
-} from './block_storage';
-import { stringifyJson, type StringifiedJson } from '@milaboratories/pl-model-common';
-import { tryGetCfgRenderCtx, tryRegisterCallback } from './internal';
+} from "./block_storage";
+import { stringifyJson, type StringifiedJson } from "@milaboratories/pl-model-common";
+import { tryGetCfgRenderCtx, tryRegisterCallback } from "./internal";
 
 /**
  * Result of storage normalization
@@ -65,7 +65,7 @@ function normalizeStorage(rawStorage: unknown): NormalizeStorageResult {
 
   // Parse JSON string if needed
   let parsed = rawStorage;
-  if (typeof rawStorage === 'string') {
+  if (typeof rawStorage === "string") {
     try {
       parsed = JSON.parse(rawStorage);
     } catch {
@@ -115,11 +115,11 @@ function applyStorageUpdate(currentStorageJson: string, payload: MutateStoragePa
  * Legacy format has { args, uiState? } at top level without the BlockStorage discriminator.
  */
 function isLegacyModelV1ApiFormat(data: unknown): data is { args?: unknown } {
-  if (data === null || typeof data !== 'object') return false;
+  if (data === null || typeof data !== "object") return false;
   if (isBlockStorage(data)) return false;
 
   const obj = data as Record<string, unknown>;
-  return 'args' in obj;
+  return "args" in obj;
 }
 
 // =============================================================================
@@ -127,9 +127,12 @@ function isLegacyModelV1ApiFormat(data: unknown): data is { args?: unknown } {
 // =============================================================================
 
 // Register apply update callback (requires existing storage)
-tryRegisterCallback('__pl_storage_applyUpdate', (currentStorageJson: string, payload: MutateStoragePayload) => {
-  return applyStorageUpdate(currentStorageJson, payload);
-});
+tryRegisterCallback(
+  "__pl_storage_applyUpdate",
+  (currentStorageJson: string, payload: MutateStoragePayload) => {
+    return applyStorageUpdate(currentStorageJson, payload);
+  },
+);
 
 /**
  * Gets storage debug view from raw storage data.
@@ -148,7 +151,7 @@ function getStorageDebugView(rawStorage: unknown): StringifiedJson<StorageDebugV
 }
 
 // Register debug view callback
-tryRegisterCallback('__pl_storage_debugView', (rawStorage: unknown) => {
+tryRegisterCallback("__pl_storage_debugView", (rawStorage: unknown) => {
   return getStorageDebugView(rawStorage);
 });
 
@@ -189,7 +192,7 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
   // Get the callback registry context
   const ctx = tryGetCfgRenderCtx();
   if (ctx === undefined) {
-    return { error: 'Not in config rendering context' };
+    return { error: "Not in config rendering context" };
   }
 
   // Normalize storage to get current data and version
@@ -206,9 +209,11 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
   };
 
   // Get the migrate callback (registered by DataModel.registerCallbacks())
-  const migrateCallback = ctx.callbackRegistry['__pl_data_upgrade'] as ((v: { version: string; data: unknown }) => DataMigrationResult) | undefined;
-  if (typeof migrateCallback !== 'function') {
-    return { error: '__pl_data_upgrade callback not found (DataModel not registered)' };
+  const migrateCallback = ctx.callbackRegistry["__pl_data_upgrade"] as
+    | ((v: { version: string; data: unknown }) => DataMigrationResult)
+    | undefined;
+  if (typeof migrateCallback !== "function") {
+    return { error: "__pl_data_upgrade callback not found (DataModel not registered)" };
   }
 
   // Call the migrator's migrate function
@@ -221,11 +226,12 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
   }
 
   // Build info message
-  const info = result.version === currentVersion
-    ? `No migration needed (${currentVersion})`
-    : result.warning
-      ? `Reset to initial data (${result.version})`
-      : `Migrated ${currentVersion}→${result.version}`;
+  const info =
+    result.version === currentVersion
+      ? `No migration needed (${currentVersion})`
+      : result.warning
+        ? `Reset to initial data (${result.version})`
+        : `Migrated ${currentVersion}→${result.version}`;
 
   return {
     newStorageJson: createStorageJson(result.data, result.version),
@@ -235,7 +241,7 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
 }
 
 // Register migrate callback
-tryRegisterCallback('__pl_storage_migrate', (currentStorageJson: string | undefined) => {
+tryRegisterCallback("__pl_storage_migrate", (currentStorageJson: string | undefined) => {
   return migrateStorage(currentStorageJson);
 });
 
@@ -247,9 +253,7 @@ tryRegisterCallback('__pl_storage_migrate', (currentStorageJson: string | undefi
  * Result of args derivation from storage.
  * Returned by __pl_args_derive and __pl_prerunArgs_derive callbacks.
  */
-export type ArgsDeriveResult =
-  | { error: string }
-  | { error?: undefined; value: unknown };
+export type ArgsDeriveResult = { error: string } | { error?: undefined; value: unknown };
 
 /**
  * Derives args from storage using the registered 'args' callback.
@@ -261,16 +265,16 @@ export type ArgsDeriveResult =
 function deriveArgsFromStorage(storageJson: string): ArgsDeriveResult {
   const ctx = tryGetCfgRenderCtx();
   if (ctx === undefined) {
-    return { error: 'Not in config rendering context' };
+    return { error: "Not in config rendering context" };
   }
 
   // Extract data from storage
   const { data } = normalizeStorage(storageJson);
 
   // Get the args callback (registered by BlockModelV3.args())
-  const argsCallback = ctx.callbackRegistry['args'] as ((data: unknown) => unknown) | undefined;
-  if (typeof argsCallback !== 'function') {
-    return { error: 'args callback not found' };
+  const argsCallback = ctx.callbackRegistry["args"] as ((data: unknown) => unknown) | undefined;
+  if (typeof argsCallback !== "function") {
+    return { error: "args callback not found" };
   }
 
   // Call the args callback with extracted data
@@ -284,7 +288,7 @@ function deriveArgsFromStorage(storageJson: string): ArgsDeriveResult {
 }
 
 // Register args derivation callback
-tryRegisterCallback('__pl_args_derive', (storageJson: string) => {
+tryRegisterCallback("__pl_args_derive", (storageJson: string) => {
   return deriveArgsFromStorage(storageJson);
 });
 
@@ -298,15 +302,17 @@ tryRegisterCallback('__pl_args_derive', (storageJson: string) => {
 function derivePrerunArgsFromStorage(storageJson: string): ArgsDeriveResult {
   const ctx = tryGetCfgRenderCtx();
   if (ctx === undefined) {
-    return { error: 'Not in config rendering context' };
+    return { error: "Not in config rendering context" };
   }
 
   // Extract data from storage
   const { data } = normalizeStorage(storageJson);
 
   // Try prerunArgs callback first
-  const prerunArgsCallback = ctx.callbackRegistry['prerunArgs'] as ((data: unknown) => unknown) | undefined;
-  if (typeof prerunArgsCallback === 'function') {
+  const prerunArgsCallback = ctx.callbackRegistry["prerunArgs"] as
+    | ((data: unknown) => unknown)
+    | undefined;
+  if (typeof prerunArgsCallback === "function") {
     try {
       const result = prerunArgsCallback(data);
       return { value: result };
@@ -317,9 +323,9 @@ function derivePrerunArgsFromStorage(storageJson: string): ArgsDeriveResult {
   }
 
   // Fall back to args callback
-  const argsCallback = ctx.callbackRegistry['args'] as ((data: unknown) => unknown) | undefined;
-  if (typeof argsCallback !== 'function') {
-    return { error: 'args callback not found (fallback from missing prerunArgs)' };
+  const argsCallback = ctx.callbackRegistry["args"] as ((data: unknown) => unknown) | undefined;
+  if (typeof argsCallback !== "function") {
+    return { error: "args callback not found (fallback from missing prerunArgs)" };
   }
 
   try {
@@ -332,7 +338,7 @@ function derivePrerunArgsFromStorage(storageJson: string): ArgsDeriveResult {
 }
 
 // Register prerunArgs derivation callback
-tryRegisterCallback('__pl_prerunArgs_derive', (storageJson: string) => {
+tryRegisterCallback("__pl_prerunArgs_derive", (storageJson: string) => {
   return derivePrerunArgsFromStorage(storageJson);
 });
 

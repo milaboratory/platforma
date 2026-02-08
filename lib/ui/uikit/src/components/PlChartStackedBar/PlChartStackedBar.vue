@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { computed } from 'vue';
-import StackedRow from './StackedRow.vue';
-import Legends from './Legends.vue';
-import type { PlChartStackedBarSettings } from './types';
+import { computed } from "vue";
+import StackedRow from "./StackedRow.vue";
+import Legends from "./Legends.vue";
+import type { PlChartStackedBarSettings } from "./types";
 
 const props = defineProps<{
   settings: PlChartStackedBarSettings;
@@ -14,17 +14,23 @@ const data = computed(() => {
   return props.settings.data ?? [];
 });
 
-const legends = computed(() => data.value.map((p) => ({
-  color: p.color,
-  text: p.label,
-})));
+const legends = computed(() =>
+  data.value.map((p) => ({
+    color: p.color,
+    text: p.label,
+  })),
+);
 </script>
 
 <template>
   <div :class="$style.component">
     <div v-if="settings.title" :class="$style.title">{{ settings.title }}</div>
-    <StackedRow :value="data"/>
-    <Legends v-if="showLegends && legends.length" :legends="legends" :max-in-column="settings.maxLegendsInColumn" />
+    <StackedRow :value="data" />
+    <Legends
+      v-if="showLegends && legends.length"
+      :legends="legends"
+      :max-in-column="settings.maxLegendsInColumn"
+    />
   </div>
 </template>
 

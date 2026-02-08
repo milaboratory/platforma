@@ -1,7 +1,7 @@
-import type { ProxySettings } from '@milaboratories/pl-http';
-import type { ExponentialBackoffRetryOptions } from '@milaboratories/ts-helpers';
+import type { ProxySettings } from "@milaboratories/pl-http";
+import type { ExponentialBackoffRetryOptions } from "@milaboratories/ts-helpers";
 
-export const SUPPORTED_WIRE_PROTOCOLS = ['grpc', 'rest'] as const;
+export const SUPPORTED_WIRE_PROTOCOLS = ["grpc", "rest"] as const;
 export type wireProtocol = (typeof SUPPORTED_WIRE_PROTOCOLS)[number];
 
 /** Base configuration structure for PL client */
@@ -69,7 +69,7 @@ export interface PlClientConfig {
    * What type of backoff strategy to use in transaction retries
    * (pl uses optimistic transaction model with regular retries in write transactions)
    */
-  retryBackoffAlgorithm: 'exponential' | 'linear';
+  retryBackoffAlgorithm: "exponential" | "linear";
 
   /** Maximal number of attempts in */
   retryMaxAttempts: number;
@@ -95,7 +95,7 @@ export const DEFAULT_AUTH_MAX_REFRESH = 12 * 24 * 60 * 60;
 
 export const DEFAULT_MAX_CACHE_BYTES = 128_000_000; // 128 Mb
 
-export const DEFAULT_RETRY_BACKOFF_ALGORITHM = 'exponential';
+export const DEFAULT_RETRY_BACKOFF_ALGORITHM = "exponential";
 export const DEFAULT_RETRY_MAX_ATTEMPTS = 21; // 1st attempt + 20 retries
 export const DEFAULT_RETRY_INITIAL_DELAY = 20; // 20 ms * <jitter> of sleep after first failure
 export const DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER = 1.5; // + 50% on each round
@@ -103,7 +103,7 @@ export const DEFAULT_RETRY_LINEAR_BACKOFF_STEP = 50; // + 50 ms
 export const DEFAULT_RETRY_JITTER = 0.3; // 30%
 
 export const DefaultRetryOptions: ExponentialBackoffRetryOptions = {
-  type: 'exponentialBackoff',
+  type: "exponentialBackoff",
   maxAttempts: DEFAULT_RETRY_MAX_ATTEMPTS,
   initialDelay: DEFAULT_RETRY_INITIAL_DELAY,
   backoffMultiplier: DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER,
@@ -113,12 +113,12 @@ export const DefaultRetryOptions: ExponentialBackoffRetryOptions = {
 type PlConfigOverrides = Partial<
   Pick<
     PlClientConfig,
-    | 'ssl'
-    | 'defaultRequestTimeout'
-    | 'defaultROTransactionTimeout'
-    | 'defaultRWTransactionTimeout'
-    | 'httpProxy'
-    | 'grpcProxy'
+    | "ssl"
+    | "defaultRequestTimeout"
+    | "defaultROTransactionTimeout"
+    | "defaultRWTransactionTimeout"
+    | "httpProxy"
+    | "grpcProxy"
   >
 >;
 
@@ -135,7 +135,7 @@ export function plAddressToConfig(
   address: string,
   overrides: PlConfigOverrides = {},
 ): PlClientConfig {
-  if (address.indexOf('://') === -1)
+  if (address.indexOf("://") === -1)
     // non-url address
     return {
       hostAndPort: address,
@@ -163,24 +163,24 @@ export function plAddressToConfig(
   const url = new URL(address);
 
   if (
-    url.protocol !== 'https:'
-    && url.protocol !== 'http:'
-    && url.protocol !== 'grpc:'
-    && url.protocol !== 'tls:'
+    url.protocol !== "https:" &&
+    url.protocol !== "http:" &&
+    url.protocol !== "grpc:" &&
+    url.protocol !== "tls:"
   )
     throw new Error(`Unexpected URL schema: ${url.protocol}`);
 
-  if (url.pathname !== '/' && url.pathname !== '')
+  if (url.pathname !== "/" && url.pathname !== "")
     throw new Error(`Unexpected URL path: ${url.pathname}`);
 
   let port = url.port;
   if (!port) {
     switch (url.protocol) {
-      case 'http:':
-        port = '80';
+      case "http:":
+        port = "80";
         break;
-      case 'https:':
-        port = '443';
+      case "https:":
+        port = "443";
         break;
       default:
         throw new Error(`Port must be specified explicitly for ${url.protocol} protocol.`);
@@ -189,45 +189,45 @@ export function plAddressToConfig(
 
   return {
     hostAndPort: `${url.hostname}:${port}`,
-    alternativeRoot: url.searchParams.get('alternative-root') ?? undefined,
-    ssl: url.protocol === 'https:' || url.protocol === 'tls:',
+    alternativeRoot: url.searchParams.get("alternative-root") ?? undefined,
+    ssl: url.protocol === "https:" || url.protocol === "tls:",
 
-    wireProtocol: url.searchParams.get('wire-protocol') as wireProtocol ?? undefined,
+    wireProtocol: (url.searchParams.get("wire-protocol") as wireProtocol) ?? undefined,
 
     defaultRequestTimeout:
-      parseInt(url.searchParams.get('request-timeout')) ?? DEFAULT_REQUEST_TIMEOUT,
+      parseInt(url.searchParams.get("request-timeout")) ?? DEFAULT_REQUEST_TIMEOUT,
     defaultROTransactionTimeout:
-      parseInt(url.searchParams.get('ro-tx-timeout'))
-      ?? parseInt(url.searchParams.get('tx-timeout'))
-      ?? DEFAULT_RO_TX_TIMEOUT,
+      parseInt(url.searchParams.get("ro-tx-timeout")) ??
+      parseInt(url.searchParams.get("tx-timeout")) ??
+      DEFAULT_RO_TX_TIMEOUT,
     defaultRWTransactionTimeout:
-      parseInt(url.searchParams.get('rw-tx-timeout'))
-      ?? parseInt(url.searchParams.get('tx-timeout'))
-      ?? DEFAULT_RW_TX_TIMEOUT,
+      parseInt(url.searchParams.get("rw-tx-timeout")) ??
+      parseInt(url.searchParams.get("tx-timeout")) ??
+      DEFAULT_RW_TX_TIMEOUT,
     authTTLSeconds: DEFAULT_TOKEN_TTL_SECONDS,
     authMaxRefreshSeconds: DEFAULT_AUTH_MAX_REFRESH,
-    grpcProxy: url.searchParams.get('grpc-proxy') ?? undefined,
-    httpProxy: url.searchParams.get('http-proxy') ?? undefined,
-    user: url.username === '' ? undefined : url.username,
-    password: url.password === '' ? undefined : url.password,
-    txDelay: parseInt(url.searchParams.get('tx-delay')) ?? 0,
-    forceSync: Boolean(url.searchParams.get('force-sync')),
+    grpcProxy: url.searchParams.get("grpc-proxy") ?? undefined,
+    httpProxy: url.searchParams.get("http-proxy") ?? undefined,
+    user: url.username === "" ? undefined : url.username,
+    password: url.password === "" ? undefined : url.password,
+    txDelay: parseInt(url.searchParams.get("tx-delay")) ?? 0,
+    forceSync: Boolean(url.searchParams.get("force-sync")),
 
-    maxCacheBytes: parseInt(url.searchParams.get('max-cache-bytes')) ?? DEFAULT_MAX_CACHE_BYTES,
+    maxCacheBytes: parseInt(url.searchParams.get("max-cache-bytes")) ?? DEFAULT_MAX_CACHE_BYTES,
 
-    retryBackoffAlgorithm: (url.searchParams.get('retry-backoff-algorithm')
-      ?? DEFAULT_RETRY_BACKOFF_ALGORITHM) as any,
+    retryBackoffAlgorithm: (url.searchParams.get("retry-backoff-algorithm") ??
+      DEFAULT_RETRY_BACKOFF_ALGORITHM) as any,
     retryMaxAttempts:
-      parseInt(url.searchParams.get('retry-max-attempts')) ?? DEFAULT_RETRY_MAX_ATTEMPTS,
+      parseInt(url.searchParams.get("retry-max-attempts")) ?? DEFAULT_RETRY_MAX_ATTEMPTS,
     retryInitialDelay:
-      parseInt(url.searchParams.get('retry-initial-delay')) ?? DEFAULT_RETRY_INITIAL_DELAY,
+      parseInt(url.searchParams.get("retry-initial-delay")) ?? DEFAULT_RETRY_INITIAL_DELAY,
     retryExponentialBackoffMultiplier:
-      parseInt(url.searchParams.get('retry-exp-backoff-multiplier'))
-      ?? DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER,
+      parseInt(url.searchParams.get("retry-exp-backoff-multiplier")) ??
+      DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER,
     retryLinearBackoffStep:
-      parseInt(url.searchParams.get('retry-linear-backoff-step'))
-      ?? DEFAULT_RETRY_LINEAR_BACKOFF_STEP,
-    retryJitter: parseInt(url.searchParams.get('retry-backoff-jitter')) ?? DEFAULT_RETRY_JITTER,
+      parseInt(url.searchParams.get("retry-linear-backoff-step")) ??
+      DEFAULT_RETRY_LINEAR_BACKOFF_STEP,
+    retryJitter: parseInt(url.searchParams.get("retry-backoff-jitter")) ?? DEFAULT_RETRY_JITTER,
 
     ...overrides,
   };
@@ -257,7 +257,7 @@ export interface AuthOps {
 }
 
 /** Connection status. */
-export type PlConnectionStatus = 'OK' | 'Disconnected' | 'Unauthenticated';
+export type PlConnectionStatus = "OK" | "Disconnected" | "Unauthenticated";
 
 /** Listener that will be called each time connection status changes. */
 export type PlConnectionStatusListener = (status: PlConnectionStatus) => void;

@@ -1,7 +1,7 @@
 <script generic="T extends unknown = unknown" lang="ts" setup>
-import { computed } from 'vue';
-import { PlIcon16 } from '../PlIcon16';
-import { PlIcon24 } from '../PlIcon24';
+import { computed } from "vue";
+import { PlIcon16 } from "../PlIcon16";
+import { PlIcon24 } from "../PlIcon24";
 
 const props = defineProps<{
   item: T;
@@ -29,16 +29,16 @@ const slots = defineSlots<{
   after?: (props: { item: T; index: number }) => unknown;
   before?: (props: { item: T; index: number }) => unknown;
 }>();
-const hasContentSlot = computed(() => slots['content'] !== undefined);
-const hasAfterSlot = computed(() => slots['after'] !== undefined);
-const hasBeforeSlot = computed(() => slots['before'] !== undefined);
+const hasContentSlot = computed(() => slots["content"] !== undefined);
+const hasAfterSlot = computed(() => slots["after"] !== undefined);
+const hasBeforeSlot = computed(() => slots["before"] !== undefined);
 
 const emit = defineEmits<{
-  (e: 'click', item: MouseEvent): void;
-  (e: 'expand', item: T, index: number): void;
-  (e: 'toggle', item: T, index: number): void;
-  (e: 'pin', item: T, index: number): void;
-  (e: 'remove', item: T, index: number): void;
+  (e: "click", item: MouseEvent): void;
+  (e: "expand", item: T, index: number): void;
+  (e: "toggle", item: T, index: number): void;
+  (e: "pin", item: T, index: number): void;
+  (e: "remove", item: T, index: number): void;
 }>();
 </script>
 
@@ -48,27 +48,39 @@ const emit = defineEmits<{
       <slot name="before" :item="props.item" :index="props.index" />
     </div>
     <div
-      :class="[$style.root, $attrs.class, {
-        [$style.active]: props.isActive,
-        [$style.pinned]: props.isPinned,
-        [$style.opened]: props.isExpanded,
-        [$style.disabled]: props.isToggled,
-      }]"
+      :class="[
+        $style.root,
+        $attrs.class,
+        {
+          [$style.active]: props.isActive,
+          [$style.pinned]: props.isPinned,
+          [$style.opened]: props.isExpanded,
+          [$style.disabled]: props.isToggled,
+        },
+      ]"
     >
       <div
-        :class="[$style.head, titleClass, {
-          [$style.clickable]: hasContentSlot,
-        }]"
+        :class="[
+          $style.head,
+          titleClass,
+          {
+            [$style.clickable]: hasContentSlot,
+          },
+        ]"
         @click="isExpandable && emit('expand', props.item, props.index)"
       >
         <div
           v-if="props.showDragHandle"
-          :class="[$style.action, $style.draggable, { [$style.disable]: !props.isDraggable } ]"
+          :class="[$style.action, $style.draggable, { [$style.disable]: !props.isDraggable }]"
           :data-draggable="props.isDraggable"
         >
           <PlIcon16 name="drag-dots" />
         </div>
-        <PlIcon16 v-if="isExpandable" :class="[$style.contentChevron, { [$style.opened]: props.isExpanded }]" name="chevron-down" />
+        <PlIcon16
+          v-if="isExpandable"
+          :class="[$style.contentChevron, { [$style.opened]: props.isExpanded }]"
+          name="chevron-down"
+        />
 
         <div :class="$style.title">
           <slot name="title" :item="props.item" :index="props.index" />
@@ -84,10 +96,14 @@ const emit = defineEmits<{
           </div>
           <div
             v-if="props.isPinnable"
-            :class="[$style.action, $style.clickable, {
-              [$style.disable]: !props.isPinnable,
-              [$style.activated]: props.isPinned,
-            }]"
+            :class="[
+              $style.action,
+              $style.clickable,
+              {
+                [$style.disable]: !props.isPinnable,
+                [$style.activated]: props.isPinned,
+              },
+            ]"
             @click.stop="emit('pin', props.item, props.index)"
           >
             <PlIcon24 name="pin" size="16" />
@@ -115,7 +131,7 @@ const emit = defineEmits<{
 </template>
 
 <style module>
-@use '../../assets/variables.scss' as *;
+@use "../../assets/variables.scss" as *;
 
 .root {
   --background: rgba(255, 255, 255, 0.8);
@@ -128,7 +144,7 @@ const emit = defineEmits<{
   &:global(.sortable-chosen) {
     --head-background: var(--gradient-light-lime);
     --border-color: var(--border-color-focus);
-    --box-shadow: var(--box-shadow-active)
+    --box-shadow: var(--box-shadow-active);
   }
 }
 .root {
@@ -139,7 +155,7 @@ const emit = defineEmits<{
   border: 1px solid var(--border-color);
   background-color: var(--background);
   transition: box-shadow 0.15s;
-  box-shadow: var(--box-shadow);;
+  box-shadow: var(--box-shadow);
   overflow: hidden;
 
   &:hover {

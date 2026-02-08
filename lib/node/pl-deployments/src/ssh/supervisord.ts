@@ -1,26 +1,20 @@
 /** Provides helper functions to work with supervisord */
 
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import * as plpath from './pl_paths';
-import type { SshClient, SshExecResult } from './ssh';
-import { randomBytes } from 'node:crypto';
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import * as plpath from "./pl_paths";
+import type { SshClient, SshExecResult } from "./ssh";
+import { randomBytes } from "node:crypto";
 
-export async function supervisorCtlStart(
-  sshClient: SshClient,
-  remoteHome: string, arch: string,
-) {
-  const result = await supervisorExec(sshClient, remoteHome, arch, '--daemon');
+export async function supervisorCtlStart(sshClient: SshClient, remoteHome: string, arch: string) {
+  const result = await supervisorExec(sshClient, remoteHome, arch, "--daemon");
 
   if (result.stderr) {
     throw new Error(`Can not run ssh Platforma ${result.stderr}`);
   }
 }
 
-export async function supervisorStop(
-  sshClient: SshClient,
-  remoteHome: string, arch: string,
-) {
-  const result = await supervisorExec(sshClient, remoteHome, arch, 'ctl shutdown');
+export async function supervisorStop(sshClient: SshClient, remoteHome: string, arch: string) {
+  const result = await supervisorExec(sshClient, remoteHome, arch, "ctl shutdown");
 
   if (result.stderr) {
     throw new Error(`Can not stop ssh Platforma ${result.stderr}`);
@@ -51,23 +45,26 @@ export function isSupervisordRunning(status: SupervisorStatus) {
 export async function supervisorStatus(
   logger: MiLogger,
   sshClient: SshClient,
-  remoteHome: string, arch: string,
+  remoteHome: string,
+  arch: string,
 ): Promise<SupervisorStatus> {
   let result: SshExecResult;
   try {
-    result = await supervisorExec(sshClient, remoteHome, arch, 'ctl status');
+    result = await supervisorExec(sshClient, remoteHome, arch, "ctl status");
   } catch (e: unknown) {
     return { execError: String(e) };
   }
 
   if (result.stderr) {
-    logger.info(`supervisord ctl status: stderr occurred: ${result.stderr}, stdout: ${result.stdout}`);
+    logger.info(
+      `supervisord ctl status: stderr occurred: ${result.stderr}, stdout: ${result.stdout}`,
+    );
 
     return { rawResult: result };
   }
 
-  const platforma = isProgramRunning(result.stdout, 'platforma');
-  const minio = isProgramRunning(result.stdout, 'minio');
+  const platforma = isProgramRunning(result.stdout, "platforma");
+  const minio = isProgramRunning(result.stdout, "minio");
   const status: SupervisorStatus = {
     rawResult: result,
     platforma,
@@ -75,11 +72,11 @@ export async function supervisorStatus(
   };
 
   if (!status.minio) {
-    logger.warn('Minio is not running on the server');
+    logger.warn("Minio is not running on the server");
   }
 
   if (!status.platforma) {
-    logger.warn('Platforma is not running on the server');
+    logger.warn("Platforma is not running on the server");
   }
 
   return status;
@@ -94,7 +91,7 @@ export function generateSupervisordConfig(
   platformaConfigPath: string,
   plPath: string,
 ) {
-  const password = randomBytes(16).toString('hex');
+  const password = randomBytes(16).toString("hex");
   const freePort = supervisorRemotePort;
 
   return `
@@ -137,8 +134,10 @@ export function generateSupervisordConfigWithMinio(
   minioPath: string,
   plPath: string,
 ) {
-  const minioEnvStr = Object.entries(minioEnvs).map(([key, value]) => `${key}="${value}"`).join(',');
-  const password = randomBytes(16).toString('hex');
+  const minioEnvStr = Object.entries(minioEnvs)
+    .map(([key, value]) => `${key}="${value}"`)
+    .join(",");
+  const password = randomBytes(16).toString("hex");
   const freePort = supervisorRemotePort;
 
   return `
@@ -175,7 +174,8 @@ autorestart=true
 
 export async function supervisorExec(
   sshClient: SshClient,
-  remoteHome: string, arch: string,
+  remoteHome: string,
+  arch: string,
   command: string,
 ) {
   const supervisorCmd = plpath.supervisorBin(remoteHome, arch);
@@ -187,13 +187,13 @@ export async function supervisorExec(
 
 function isProgramRunning(output: string, programName: string) {
   // eslint-disable-next-line no-control-regex
-  const stripAnsi = (str: string) => str.replace(/\x1B\[[0-9;]*m/g, '');
+  const stripAnsi = (str: string) => str.replace(/\x1B\[[0-9;]*m/g, "");
 
   const cleanedOutput = stripAnsi(output);
 
-  return cleanedOutput.split('\n').some((line) => {
+  return cleanedOutput.split("\n").some((line) => {
     const [name, status] = line.trim().split(/\s{2,}/); // Split string by 2 spaces.
 
-    return name === programName && status === 'Running';
+    return name === programName && status === "Running";
   });
 }

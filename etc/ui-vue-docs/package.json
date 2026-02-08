@@ -1,7 +1,7 @@
 {
   "name": "@milaboratories/ui-vue-docs",
-  "private": true,
   "version": "0.2.122",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vitepress dev",
@@ -9,16 +9,7 @@
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "docs:test": "echo 'Hola!'",
-    "lint": "eslint ."
-  },
-  "devDependencies": {
-    "sass": "catalog:",
-    "vitepress": "catalog:",
-    "@milaboratories/eslint-config": "workspace:*",
-    "@milaboratories/build-configs": "workspace:*",
-    "vite": "catalog:",
-    "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "fmt": "ts-builder format"
   },
   "dependencies": {
     "@faker-js/faker": "catalog:",
@@ -28,5 +19,14 @@
     "@platforma-sdk/ui-vue": "workspace:*",
     "highlight.js": "catalog:",
     "vue": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "sass": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitepress": "catalog:"
   }
 }

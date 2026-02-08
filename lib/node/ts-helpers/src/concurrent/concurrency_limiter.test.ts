@@ -1,9 +1,9 @@
-import { test, expect } from 'vitest';
-import { ConcurrencyLimitingExecutor } from './concurrency_limiter';
-import * as tp from 'timers/promises';
+import { test, expect } from "vitest";
+import { ConcurrencyLimitingExecutor } from "./concurrency_limiter";
+import * as tp from "timers/promises";
 
 test.each([{ limit: 1 }, { limit: 2 }, { limit: 4 }])(
-  'simple concurrency limiter test normal (limit=$limit)',
+  "simple concurrency limiter test normal (limit=$limit)",
   async ({ limit }) => {
     let runningTasks = 0;
     const e = new ConcurrencyLimitingExecutor(limit);
@@ -21,16 +21,16 @@ test.each([{ limit: 1 }, { limit: 2 }, { limit: 4 }])(
           } finally {
             runningTasks--;
           }
-        })
+        }),
       );
     }
     const results = await Promise.all(taskResults);
     expect(results).toStrictEqual(expected);
-  }
+  },
 );
 
 test.each([{ limit: 1 }, { limit: 2 }, { limit: 4 }])(
-  'simple concurrency limiter test fake async (limit=$limit)',
+  "simple concurrency limiter test fake async (limit=$limit)",
   async ({ limit }) => {
     let runningTasks = 0;
     const e = new ConcurrencyLimitingExecutor(limit);
@@ -48,16 +48,16 @@ test.each([{ limit: 1 }, { limit: 2 }, { limit: 4 }])(
           } finally {
             runningTasks--;
           }
-        })
+        }),
       );
     }
     const results = await Promise.all(taskResults);
     expect(results).toStrictEqual(expected);
-  }
+  },
 );
 
 test.each([{ limit: 1 }, { limit: 2 }, { limit: 4 }])(
-  'simple concurrency limiter test with errors (limit=$limit)',
+  "simple concurrency limiter test with errors (limit=$limit)",
   async ({ limit }) => {
     let runningTasks = 0;
     const e = new ConcurrencyLimitingExecutor(limit);
@@ -69,23 +69,23 @@ test.each([{ limit: 1 }, { limit: 2 }, { limit: 4 }])(
           try {
             runningTasks++;
             expect(runningTasks).toBeLessThanOrEqual(limit);
-            if (a % 7 === 0) throw new Error('');
+            if (a % 7 === 0) throw new Error("");
             return a;
           } finally {
             runningTasks--;
           }
-        })
+        }),
       );
     }
 
     for (let i = 0; i < 1000; ++i)
       if (i % 7 === 0) await expect(async () => await taskResults[i]).rejects.toThrow();
       else expect(await taskResults[i]).toStrictEqual(i);
-  }
+  },
 );
 
 test.each([{ limit: 1 }, { limit: 2 }, { limit: 4 }])(
-  'simple concurrency limiter test with async (limit=$limit)',
+  "simple concurrency limiter test with async (limit=$limit)",
   async ({ limit }) => {
     let runningTasks = 0;
     const e = new ConcurrencyLimitingExecutor(limit);
@@ -104,7 +104,7 @@ test.each([{ limit: 1 }, { limit: 2 }, { limit: 4 }])(
             } finally {
               runningTasks--;
             }
-          })
+          }),
         );
       else
         taskResults.push(
@@ -116,7 +116,7 @@ test.each([{ limit: 1 }, { limit: 2 }, { limit: 4 }])(
                   runningTasks++;
                   if (a % 5 === 0) await tp.setTimeout(1);
                   expect(runningTasks).toBeLessThanOrEqual(limit);
-                  if (a % 7 === 0) throw new Error('');
+                  if (a % 7 === 0) throw new Error("");
                   if (a % 11 === 0) await tp.setTimeout(1);
                   return a;
                 } finally {
@@ -128,10 +128,10 @@ test.each([{ limit: 1 }, { limit: 2 }, { limit: 4 }])(
             } catch {
               return 0;
             }
-          })()
+          })(),
         );
     }
 
     for (let i = 0; i < 3000; ++i) expect(await taskResults[i]).toStrictEqual(i % 14 === 0 ? 0 : i);
-  }
+  },
 );

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import CodeExample from '@app-components/CodeExample.vue';
-import { Basic, BasicRaw } from './examples';
+import CodeExample from "@app-components/CodeExample.vue";
+import { Basic, BasicRaw } from "./examples";
 
-import AppDocCodeContainer from '@app-components/AppDocCodeContainer.vue';
+import AppDocCodeContainer from "@app-components/AppDocCodeContainer.vue";
 </script>
 
 <template>

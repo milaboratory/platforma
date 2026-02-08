@@ -1,7 +1,7 @@
-import { when } from '@milaboratories/ptabler-expression-js';
-import type { FilterSpec } from '../filters';
-import { convertFilterUiToExpressionImpl } from '../filters/converter';
-import type { ExpressionSpec, FilterSpecUi } from './types';
+import { when } from "@milaboratories/ptabler-expression-js";
+import type { FilterSpec } from "../filters";
+import { convertFilterUiToExpressionImpl } from "../filters/converter";
+import type { ExpressionSpec, FilterSpecUi } from "./types";
 
 function filterPredicate(item: FilterSpec): boolean {
   // No need to convert empty steps
@@ -9,15 +9,15 @@ function filterPredicate(item: FilterSpec): boolean {
     return false;
   }
 
-  if (item.type === 'or') {
+  if (item.type === "or") {
     return item.filters.length > 0;
   }
 
-  if (item.type === 'and') {
+  if (item.type === "and") {
     return item.filters.length > 0;
   }
 
-  if (item.type === 'not') {
+  if (item.type === "not") {
     return filterPredicate(item.filter);
   }
 
@@ -26,10 +26,8 @@ function filterPredicate(item: FilterSpec): boolean {
 }
 
 function filterEmptyPeaces(item: FilterSpec): FilterSpec {
-  if (item.type === 'or' || item.type === 'and') {
-    const filtered = item.filters
-      .map(filterEmptyPeaces)
-      .filter(filterPredicate);
+  if (item.type === "or" || item.type === "and") {
+    const filtered = item.filters.map(filterEmptyPeaces).filter(filterPredicate);
     return {
       ...item,
       filters: filtered,
@@ -39,15 +37,21 @@ function filterEmptyPeaces(item: FilterSpec): FilterSpec {
   return item;
 }
 
-export function convertFilterSpecsToExpressionSpecs(annotationsUI: FilterSpecUi[]): ExpressionSpec[] {
+export function convertFilterSpecsToExpressionSpecs(
+  annotationsUI: FilterSpecUi[],
+): ExpressionSpec[] {
   const validAnnotationsUI = annotationsUI.map((step) => ({
     label: step.label,
     filter: filterEmptyPeaces(step.filter),
   }));
-  return validAnnotationsUI
-    .map((step): ExpressionSpec => ({
-      type: 'alias',
+  return validAnnotationsUI.map(
+    (step): ExpressionSpec => ({
+      type: "alias",
       name: step.label.trim(),
-      value: when(convertFilterUiToExpressionImpl(step.filter)).then(true).otherwise(false).toJSON(),
-    }));
+      value: when(convertFilterUiToExpressionImpl(step.filter))
+        .then(true)
+        .otherwise(false)
+        .toJSON(),
+    }),
+  );
 }

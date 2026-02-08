@@ -1,1 +1,1 @@
-export { default as StackedBarPage } from './StackedBarPage.vue';
+export { default as StackedBarPage } from "./StackedBarPage.vue";

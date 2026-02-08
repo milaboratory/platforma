@@ -1,10 +1,18 @@
-import canonicalize from 'canonicalize';
-import type { AxisFilter, AxisFilterValue } from './filtered_column';
-import type { SUniversalPColumnId, UniversalPColumnId } from './ids';
-import { stringifyColumnId } from './ids';
-import type { AAxisSelector, AnchorAxisRef, AnchorAxisRefByIdx, AnchoredPColumnId, AnchoredPColumnSelector, AxisSelector, PColumnSelector } from './selectors';
-import type { AxisId, PColumnSpec } from './spec';
-import { getAxisId, matchAxisId } from './spec';
+import canonicalize from "canonicalize";
+import type { AxisFilter, AxisFilterValue } from "./filtered_column";
+import type { SUniversalPColumnId, UniversalPColumnId } from "./ids";
+import { stringifyColumnId } from "./ids";
+import type {
+  AAxisSelector,
+  AnchorAxisRef,
+  AnchorAxisRefByIdx,
+  AnchoredPColumnId,
+  AnchoredPColumnSelector,
+  AxisSelector,
+  PColumnSelector,
+} from "./selectors";
+import type { AxisId, PColumnSpec } from "./spec";
+import { getAxisId, matchAxisId } from "./spec";
 
 //
 // Helper functions
@@ -89,15 +97,12 @@ export class AnchoredIdDeriver {
 
     let skipDomains: Set<string> | undefined = undefined;
     if (spec.domain !== undefined) {
-      outer:
-      for (const domainPack of this.domainPacks) {
+      outer: for (const domainPack of this.domainPacks) {
         const dAnchor: string[][] = [];
         for (const domainKey of domainPack) {
           const dValue = spec.domain[domainKey];
-          if (dValue !== undefined)
-            dAnchor.push([domainKey, dValue]);
-          else
-            break outer;
+          if (dValue !== undefined) dAnchor.push([domainKey, dValue]);
+          else break outer;
         }
         const domainAnchor = this.domainPackToAnchor.get(JSON.stringify(dAnchor));
         if (domainAnchor !== undefined) {
@@ -109,8 +114,7 @@ export class AnchoredIdDeriver {
     }
 
     for (const [dKey, dValue] of Object.entries(spec.domain ?? {})) {
-      if (skipDomains !== undefined && skipDomains.has(dKey))
-        continue;
+      if (skipDomains !== undefined && skipDomains.has(dKey)) continue;
       const key = domainKey(dKey, dValue);
       const anchorId = this.domains.get(key);
       result.domain ??= {};
@@ -136,16 +140,20 @@ export class AnchoredIdDeriver {
       const [axisIdOrIndex, value] = filter;
 
       // If it's already a numeric index, validate it
-      if (typeof axisIdOrIndex === 'number') {
+      if (typeof axisIdOrIndex === "number") {
         if (axisIdOrIndex < 0 || axisIdOrIndex >= spec.axesSpec.length) {
-          throw new Error(`Axis index ${axisIdOrIndex} is out of bounds (0-${spec.axesSpec.length - 1})`);
+          throw new Error(
+            `Axis index ${axisIdOrIndex} is out of bounds (0-${spec.axesSpec.length - 1})`,
+          );
         }
         resolvedFilters.push([axisIdOrIndex, value]);
       } else {
         // If it's a string (axis name), resolve it to an index
         const axisIndex = spec.axesSpec.findIndex((axis) => axis.name === axisIdOrIndex);
         if (axisIndex === -1) {
-          throw new Error(`Axis with name "${axisIdOrIndex}" not found in the column specification`);
+          throw new Error(
+            `Axis with name "${axisIdOrIndex}" not found in the column specification`,
+          );
         }
         resolvedFilters.push([axisIndex, value]);
       }
@@ -191,14 +199,17 @@ export type ResolveAnchorsOptions = {
  * @param options - Options for resolving anchors
  * @returns A non-anchored column matcher with all references resolved to actual values
  */
-export function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: AnchoredPColumnSelector, options?: ResolveAnchorsOptions): PColumnSelector {
+export function resolveAnchors(
+  anchors: Record<string, PColumnSpec>,
+  matcher: AnchoredPColumnSelector,
+  options?: ResolveAnchorsOptions,
+): PColumnSelector {
   const result = { ...matcher };
   const ignoreMissingDomains = options?.ignoreMissingDomains ?? false;
 
   if (result.domainAnchor !== undefined) {
     const anchorSpec = anchors[result.domainAnchor];
-    if (!anchorSpec)
-      throw new Error(`Anchor "${result.domainAnchor}" not found`);
+    if (!anchorSpec) throw new Error(`Anchor "${result.domainAnchor}" not found`);
 
     const anchorDomains = anchorSpec.domain || {};
     result.domain = { ...anchorDomains, ...result.domain };
@@ -208,7 +219,7 @@ export function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: An
   if (result.domain) {
     const resolvedDomain: Record<string, string> = {};
     for (const [key, value] of Object.entries(result.domain)) {
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         resolvedDomain[key] = value;
       } else {
         // It's an AnchorDomainRef
@@ -228,8 +239,7 @@ export function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: An
     result.domain = resolvedDomain;
   }
 
-  if (result.axes)
-    result.axes = result.axes.map((axis) => resolveAxisReference(anchors, axis));
+  if (result.axes) result.axes = result.axes.map((axis) => resolveAxisReference(anchors, axis));
 
   return result as PColumnSelector;
 }
@@ -237,22 +247,23 @@ export function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: An
 /**
  * Resolves an anchored axis reference to a concrete AxisId
  */
-function resolveAxisReference(anchors: Record<string, PColumnSpec>, axisRef: AAxisSelector): AxisSelector {
-  if (!isAnchorAxisRef(axisRef))
-    return axisRef;
+function resolveAxisReference(
+  anchors: Record<string, PColumnSpec>,
+  axisRef: AAxisSelector,
+): AxisSelector {
+  if (!isAnchorAxisRef(axisRef)) return axisRef;
 
   // It's an anchored reference
   const anchorId = axisRef.anchor;
   const anchorSpec = anchors[anchorId];
-  if (!anchorSpec)
-    throw new Error(`Anchor "${anchorId}" not found for axis reference`);
+  if (!anchorSpec) throw new Error(`Anchor "${anchorId}" not found for axis reference`);
 
-  if ('idx' in axisRef) {
+  if ("idx" in axisRef) {
     // AnchorAxisRefByIdx
     if (axisRef.idx < 0 || axisRef.idx >= anchorSpec.axesSpec.length)
       throw new Error(`Axis index ${axisRef.idx} out of bounds for anchor "${anchorId}"`);
     return anchorSpec.axesSpec[axisRef.idx];
-  } else if ('name' in axisRef) {
+  } else if ("name" in axisRef) {
     // AnchorAxisRefByName
     const matches = anchorSpec.axesSpec.filter((axis) => axis.name === axisRef.name);
     if (matches.length > 1)
@@ -260,7 +271,7 @@ function resolveAxisReference(anchors: Record<string, PColumnSpec>, axisRef: AAx
     if (matches.length === 0)
       throw new Error(`Axis with name "${axisRef.name}" not found in anchor "${anchorId}"`);
     return matches[0];
-  } else if ('id' in axisRef) {
+  } else if ("id" in axisRef) {
     // AnchorAxisRefByMatcher
     const matches = anchorSpec.axesSpec.filter((axis) => matchAxisId(axisRef.id, getAxisId(axis)));
     if (matches.length > 1)
@@ -277,5 +288,5 @@ function resolveAxisReference(anchors: Record<string, PColumnSpec>, axisRef: AAx
  * Type guard to check if a value is an anchored axis reference
  */
 function isAnchorAxisRef(value: AAxisSelector): value is AnchorAxisRef {
-  return typeof value === 'object' && 'anchor' in value;
+  return typeof value === "object" && "anchor" in value;
 }

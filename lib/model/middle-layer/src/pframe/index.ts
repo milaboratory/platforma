@@ -1,1 +1,1 @@
-export * as PFrameInternal from './internal_api';
+export * as PFrameInternal from "./internal_api";

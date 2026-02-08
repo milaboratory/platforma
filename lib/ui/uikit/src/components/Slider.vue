@@ -1,16 +1,16 @@
 <script lang="ts" setup>
-import { computed, reactive, ref, unref, useSlots, watch } from 'vue';
-import { useMouseCapture } from '../composition/useMouseCapture';
-import { tapIf } from '../helpers/functions';
-import { clamp } from '../helpers/math';
-import { PlTooltip } from './PlTooltip';
-import type { SliderMode } from '../types';
-import { useSliderBreakpoints } from '../composition/useSliderBreakpoints';
-import { getErrorMessage } from '../helpers/error.ts';
+import { computed, reactive, ref, unref, useSlots, watch } from "vue";
+import { useMouseCapture } from "../composition/useMouseCapture";
+import { tapIf } from "../helpers/functions";
+import { clamp } from "../helpers/math";
+import { PlTooltip } from "./PlTooltip";
+import type { SliderMode } from "../types";
+import { useSliderBreakpoints } from "../composition/useSliderBreakpoints";
+import { getErrorMessage } from "../helpers/error.ts";
 
 const slots = useSlots();
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(["update:modelValue"]);
 
 const props = withDefaults(
   defineProps<{
@@ -32,8 +32,8 @@ const props = withDefaults(
     error: undefined,
     min: 0,
     step: 1,
-    mode: 'text',
-    measure: '',
+    mode: "text",
+    measure: "",
     breakpoints: false,
     disabled: false,
   },
@@ -55,7 +55,7 @@ const error = computed(() => {
   const v = props.modelValue;
 
   if (!Number.isFinite(v)) {
-    return 'Not a number';
+    return "Not a number";
   }
 
   if (v < props.min) {
@@ -78,7 +78,7 @@ const position = computed(() => {
 });
 
 const progressStyle = computed(() => ({
-  right: Math.ceil((1 - position.value) * 100) + '%',
+  right: Math.ceil((1 - position.value) * 100) + "%",
 }));
 
 const thumbStyle = computed(() => {
@@ -110,17 +110,19 @@ useMouseCapture(thumbRef, (ev) => {
 
     data.deltaValue = (dx / rect.width) * range.value;
 
-    realtimeVal.value = round(clamp((props.modelValue ?? 0) + data.deltaValue, props.min, props.max));
+    realtimeVal.value = round(
+      clamp((props.modelValue ?? 0) + data.deltaValue, props.min, props.max),
+    );
 
     if (ev.stop) {
-      emit('update:modelValue', round(localValue.value));
+      emit("update:modelValue", round(localValue.value));
       data.deltaValue = 0;
     }
   });
 });
 
 function setModelValue(value: number) {
-  emit('update:modelValue', round(value));
+  emit("update:modelValue", round(value));
 }
 
 function updateModelValue(event: Event) {
@@ -128,12 +130,16 @@ function updateModelValue(event: Event) {
 }
 
 function handleKeyPress(e: { code: string; preventDefault(): void }) {
-  if (['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Enter'].includes(e.code)) {
+  if (["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft", "Enter"].includes(e.code)) {
     e.preventDefault();
   }
 
-  const nextStep
-    = e.code === 'ArrowUp' || e.code === 'ArrowRight' ? props.step * 1 : e.code === 'ArrowDown' || e.code === 'ArrowLeft' ? props.step * -1 : 0;
+  const nextStep =
+    e.code === "ArrowUp" || e.code === "ArrowRight"
+      ? props.step * 1
+      : e.code === "ArrowDown" || e.code === "ArrowLeft"
+        ? props.step * -1
+        : 0;
 
   setModelValue(props.modelValue + nextStep);
 }
@@ -152,7 +158,9 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
               </template>
             </PlTooltip>
           </label>
-          <div v-if="props.mode === 'text'" class="ui-slider__value-static text-s">{{ realtimeVal }}{{ measure }}</div>
+          <div v-if="props.mode === 'text'" class="ui-slider__value-static text-s">
+            {{ realtimeVal }}{{ measure }}
+          </div>
         </div>
         <div class="ui-slider__base">
           <div class="ui-slider__container">
@@ -162,9 +170,20 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
           </div>
           <div class="ui-slider__container ui-slider__container-thumb">
             <template v-if="props.breakpoints">
-              <div v-for="(item, index) in breakpointsRef" :key="index" :style="{ right: `${item}%` }" class="ui-slider__thumb-step"/>
+              <div
+                v-for="(item, index) in breakpointsRef"
+                :key="index"
+                :style="{ right: `${item}%` }"
+                class="ui-slider__thumb-step"
+              />
             </template>
-            <div ref="thumbRef" tabindex="0" class="ui-slider__thumb ui-slider__thumb-active" :style="thumbStyle" @keydown="handleKeyPress">
+            <div
+              ref="thumbRef"
+              tabindex="0"
+              class="ui-slider__thumb ui-slider__thumb-active"
+              :style="thumbStyle"
+              @keydown="handleKeyPress"
+            >
               <div class="ui-slider__thumb-focused-contour" />
             </div>
           </div>
@@ -172,7 +191,12 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
       </div>
 
       <div class="ui-slider__input-wrapper d-flex">
-        <input v-if="props.mode === 'input'" :value="realtimeVal" class="ui-slider__value text-s" @change="updateModelValue($event)" />
+        <input
+          v-if="props.mode === 'input'"
+          :value="realtimeVal"
+          class="ui-slider__value text-s"
+          @change="updateModelValue($event)"
+        />
       </div>
     </div>
     <!-- <div v-if="props.helper" class="ui-slider__helper">

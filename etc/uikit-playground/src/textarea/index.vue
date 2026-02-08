@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { reactive } from 'vue';
-import { PlTextArea } from '@milaboratories/uikit';
-import Layout from '../Layout.vue';
-import Split from '../Split.vue';
-import { times } from '@milaboratories/helpers';
-import { faker } from '@faker-js/faker';
+import { reactive } from "vue";
+import { PlTextArea } from "@milaboratories/uikit";
+import Layout from "../Layout.vue";
+import Split from "../Split.vue";
+import { times } from "@milaboratories/helpers";
+import { faker } from "@faker-js/faker";
 
 const data = reactive({
-  text: 'Some text' as string,
-  text2: '',
-  lorem: times(10, () => faker.lorem.paragraph()).join('\n'),
+  text: "Some text" as string,
+  text2: "",
+  lorem: times(10, () => faker.lorem.paragraph()).join("\n"),
 });
 
-const error = times(4, () => faker.lorem.paragraph()).join('\n');
+const error = times(4, () => faker.lorem.paragraph()).join("\n");
 
 // const onClick = () => alert('Some action');
 </script>

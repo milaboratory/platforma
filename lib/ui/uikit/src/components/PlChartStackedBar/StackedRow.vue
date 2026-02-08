@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { computed } from 'vue';
-import type { PlChartStackedBarSegment } from './types';
+import { computed } from "vue";
+import type { PlChartStackedBarSegment } from "./types";
 
 const props = defineProps<{
   value: PlChartStackedBarSegment[];
@@ -8,8 +8,8 @@ const props = defineProps<{
 }>();
 
 const style = computed(() => ({
-  height: props.height ?? '100%',
-  minHeight: '82px',
+  height: props.height ?? "100%",
+  minHeight: "82px",
 }));
 
 const parts = computed(() => {
@@ -31,16 +31,14 @@ const trackTransforms = [-40, -50, -50, -50, -80];
 </script>
 
 <template>
-  <div
-    :class="[$style.component]" :style="style"
-  >
+  <div :class="[$style.component]" :style="style">
     <div :class="$style.track">
       <div
         v-for="(v, i) in [0, 25, 50, 75, 100]"
         :key="i"
         :style="{
           left: `${v}%`,
-          '--transform': `translateX(${trackTransforms[i]}%)`
+          '--transform': `translateX(${trackTransforms[i]}%)`,
         }"
         :data-content="`${v}%`"
       />
@@ -53,7 +51,7 @@ const trackTransforms = [-40, -50, -50, -50, -80];
         :title.prop="p.description ?? p.label"
         :style="{
           width: `${p.fraction}%`,
-          backgroundColor: p.color
+          backgroundColor: p.color,
         }"
       />
     </div>

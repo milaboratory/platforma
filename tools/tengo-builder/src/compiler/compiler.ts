@@ -1,21 +1,19 @@
-import type { ArtifactSource } from './source';
-import type { TemplateWithSource } from './template';
-import { newTemplateWithSource } from './template';
-import type {
-  TypedArtifactName, FullArtifactName,
-  CompileMode,
-} from './package';
+import type { ArtifactSource } from "./source";
+import type { TemplateWithSource } from "./template";
+import { newTemplateWithSource } from "./template";
+import type { TypedArtifactName, FullArtifactName, CompileMode } from "./package";
 import {
   fullNameToString,
   typedArtifactNameToString,
   artifactNameToString,
-  formatArtefactNameAndVersion, typedArtifactNamesEquals,
+  formatArtefactNameAndVersion,
+  typedArtifactNamesEquals,
   fullNameEquals,
-} from './package';
-import { ArtifactStore } from './artifactset';
-import { assertNever } from './util';
-import { applyLibraryCompilerOptions, applyTemplateCompilerOptions } from './compileroptions';
-import type { CompiledTemplateV3 } from '@milaboratories/pl-model-backend';
+} from "./package";
+import { ArtifactStore } from "./artifactset";
+import { assertNever } from "./util";
+import { applyLibraryCompilerOptions, applyTemplateCompilerOptions } from "./compileroptions";
+import type { CompiledTemplateV3 } from "@milaboratories/pl-model-backend";
 
 /** A compilation result. */
 export interface TemplatesAndLibs {
@@ -31,9 +29,7 @@ export class TengoTemplateCompiler {
   private readonly assets = new ArtifactStore<ArtifactSource>((src) => src.fullName);
   private readonly templates = new ArtifactStore<TemplateWithSource>((tpl) => tpl.fullName);
 
-  constructor(
-    private readonly compileMode: CompileMode,
-  ) { }
+  constructor(private readonly compileMode: CompileMode) {}
 
   /** Recursively add dependencies to the template. */
   private populateTemplateDataFromDependencies(
@@ -44,13 +40,14 @@ export class TengoTemplateCompiler {
   ) {
     for (const dep of deps) {
       switch (dep.type) {
-        case 'library': {
+        case "library": {
           const lib = this.getLibOrError(dep);
 
           const recursionStart = trace.indexOf(artifactNameToString(dep));
           if (recursionStart >= 0) {
-            const errorMessage = `library import recursion detected: `
-              + `${trace.slice(recursionStart).join(' -> ')} -> ${artifactNameToString(dep)}`;
+            const errorMessage =
+              `library import recursion detected: ` +
+              `${trace.slice(recursionStart).join(" -> ")} -> ${artifactNameToString(dep)}`;
             throw new Error(errorMessage);
           }
 
@@ -64,11 +61,14 @@ export class TengoTemplateCompiler {
           data.hashToSource[tplLib.sourceHash] = lib.src;
 
           // populate with transient library dependencies
-          this.populateTemplateDataFromDependencies(fullName, data, lib.dependencies, [...trace, artifactNameToString(dep)]);
+          this.populateTemplateDataFromDependencies(fullName, data, lib.dependencies, [
+            ...trace,
+            artifactNameToString(dep),
+          ]);
 
           break;
         }
-        case 'software': {
+        case "software": {
           const software = this.getSoftwareOrError(dep);
           data.template.software[artifactNameToString(dep)] = {
             ...formatArtefactNameAndVersion(software.fullName),
@@ -78,7 +78,7 @@ export class TengoTemplateCompiler {
 
           break;
         }
-        case 'asset': {
+        case "asset": {
           const asset = this.getAssetOrError(dep);
           // Yes, we temporarily put assets into 'software' section of template, so controller can
           // handle it the right way without updates
@@ -89,7 +89,7 @@ export class TengoTemplateCompiler {
           data.hashToSource[asset.sourceHash] = asset.src;
           break;
         }
-        case 'template': {
+        case "template": {
           if (typedArtifactNamesEquals(fullName, dep))
             // skipping self reference
             continue;
@@ -105,10 +105,10 @@ export class TengoTemplateCompiler {
 
           break;
         }
-        case 'test':
+        case "test":
           throw new Error(
-            `dependencies tree error: tests should never be part of template: `
-            + `${typedArtifactNameToString(dep)} is dependency of ${artifactNameToString(fullName)}`,
+            `dependencies tree error: tests should never be part of template: ` +
+              `${typedArtifactNameToString(dep)} is dependency of ${artifactNameToString(fullName)}`,
           );
         default:
           assertNever(dep.type);
@@ -118,12 +118,11 @@ export class TengoTemplateCompiler {
 
   /** This method assumes that all dependencies are already added to the compiler's context */
   private compileAndAddTemplate(tplSrc: ArtifactSource): CompiledTemplateV3 {
-    if (tplSrc.fullName.type !== 'template')
-      throw new Error('unexpected source type');
+    if (tplSrc.fullName.type !== "template") throw new Error("unexpected source type");
 
     // creating template with unpopulated dependencies
     const tplData: CompiledTemplateV3 = {
-      type: 'pl.tengo-template.v3',
+      type: "pl.tengo-template.v3",
       hashToSource: {
         [tplSrc.sourceHash]: tplSrc.src,
       },
@@ -158,26 +157,29 @@ export class TengoTemplateCompiler {
   }
 
   getLib(name: TypedArtifactName): ArtifactSource | undefined {
-    if (name.type !== 'library')
+    if (name.type !== "library")
       throw new Error(`illegal artifact type: got ${name.type} instead of 'library`);
     return this.libs.get(this.compileMode, name);
   }
 
   getLibOrError(name: TypedArtifactName): ArtifactSource {
     const lib = this.getLib(name);
-    if (!lib)
-      throw new Error(`library not found: ${artifactNameToString(name)}`);
+    if (!lib) throw new Error(`library not found: ${artifactNameToString(name)}`);
     return lib;
   }
 
   checkLibs() {
     this.libs.forEach(this.compileMode, (lib) => {
       for (const dep of lib.dependencies) {
-        if (dep.type === 'test')
-          throw new Error(`test should never be dependency of production code: ${typedArtifactNameToString(dep)} test is dependency of ${fullNameToString(lib.fullName)}`);
+        if (dep.type === "test")
+          throw new Error(
+            `test should never be dependency of production code: ${typedArtifactNameToString(dep)} test is dependency of ${fullNameToString(lib.fullName)}`,
+          );
 
         if (!this.getArtefact(dep))
-          throw new Error(`unresolved dependency ${typedArtifactNameToString(dep)} for ${fullNameToString(lib.fullName)}`);
+          throw new Error(
+            `unresolved dependency ${typedArtifactNameToString(dep)} for ${fullNameToString(lib.fullName)}`,
+          );
       }
     });
   }
@@ -195,7 +197,7 @@ export class TengoTemplateCompiler {
   }
 
   getSoftware(name: TypedArtifactName): ArtifactSource | undefined {
-    if (name.type !== 'software')
+    if (name.type !== "software")
       throw new Error(`illegal artifact type: got ${name.type} instead of 'software`);
 
     return this.software.get(this.compileMode, name);
@@ -203,8 +205,7 @@ export class TengoTemplateCompiler {
 
   getSoftwareOrError(name: TypedArtifactName): ArtifactSource {
     const software = this.getSoftware(name);
-    if (!software)
-      throw new Error(`software info not found: ${artifactNameToString(name)}`);
+    if (!software) throw new Error(`software info not found: ${artifactNameToString(name)}`);
     return software;
   }
 
@@ -221,7 +222,7 @@ export class TengoTemplateCompiler {
   }
 
   getAsset(name: TypedArtifactName): ArtifactSource | undefined {
-    if (name.type !== 'asset')
+    if (name.type !== "asset")
       throw new Error(`illegal artifact type: got ${name.type} instead of 'asset`);
 
     return this.assets.get(this.compileMode, name);
@@ -229,8 +230,7 @@ export class TengoTemplateCompiler {
 
   getAssetOrError(name: TypedArtifactName): ArtifactSource {
     const asset = this.getAsset(name);
-    if (!asset)
-      throw new Error(`asset info not found: ${artifactNameToString(name)}`);
+    if (!asset) throw new Error(`asset info not found: ${artifactNameToString(name)}`);
     return asset;
   }
 
@@ -247,29 +247,28 @@ export class TengoTemplateCompiler {
   }
 
   getTemplate(name: TypedArtifactName): TemplateWithSource | undefined {
-    if (name.type !== 'template')
+    if (name.type !== "template")
       throw new Error(`illegal artifact type: got ${name.type} instead of 'template`);
     return this.templates.get(this.compileMode, name);
   }
 
   getTemplateOrError(name: TypedArtifactName): TemplateWithSource {
     const tpl = this.getTemplate(name);
-    if (!tpl)
-      throw new Error(`template not found: ${artifactNameToString(name)}`);
+    if (!tpl) throw new Error(`template not found: ${artifactNameToString(name)}`);
     return tpl;
   }
 
   getArtefact(name: TypedArtifactName): ArtifactSource | TemplateWithSource | undefined {
     switch (name.type) {
-      case 'template':
+      case "template":
         return this.getTemplate(name);
-      case 'library':
+      case "library":
         return this.getLib(name);
-      case 'software':
+      case "software":
         return this.getSoftware(name);
-      case 'asset':
+      case "asset":
         return this.getAsset(name);
-      case 'test':
+      case "test":
         // Tests are ignored by the complier. They should never be compiled into templates or libs and
         // should never be a dependency.
         return undefined;
@@ -289,15 +288,15 @@ export class TengoTemplateCompiler {
     let current: ArtifactSource[] = [];
 
     for (const src of sources) {
-      if (src.fullName.type === 'library') {
+      if (src.fullName.type === "library") {
         // add libraries 'as-is' to be able to resolve them as dependencies
         this.addLib(src);
         result.libs.push(src);
-      } else if (src.fullName.type === 'software') {
+      } else if (src.fullName.type === "software") {
         // add software 'as-is' to be able to resolve them as dependencies
         this.addSoftware(src);
         result.software.push(src);
-      } else if (src.fullName.type === 'asset') {
+      } else if (src.fullName.type === "asset") {
         // add assets 'as-is' to be able to resolve them as dependencies
         this.addAsset(src);
         result.assets.push(src);
@@ -317,10 +316,11 @@ export class TengoTemplateCompiler {
         //
         // This is equivalent to topological sorting of input sources.
         //
-        const unsatisfied = src.dependencies.filter((dep) =>
-          !this.getArtefact(dep)
-          // allow self reference for templates
-          && !(src.fullName.type === 'template' && typedArtifactNamesEquals(src.fullName, dep)),
+        const unsatisfied = src.dependencies.filter(
+          (dep) =>
+            !this.getArtefact(dep) &&
+            // allow self reference for templates
+            !(src.fullName.type === "template" && typedArtifactNamesEquals(src.fullName, dep)),
         );
         if (unsatisfied.length > 0) {
           let errorMessage = `Unsatisfied dependencies in ${fullNameToString(src.fullName)}:\n`;
@@ -334,22 +334,22 @@ export class TengoTemplateCompiler {
 
         // type specific processing
         switch (src.fullName.type) {
-          case 'library':
+          case "library":
             // libraries are added as is
             this.addLib(src);
             result.libs.push(src);
             break;
-          case 'software':
+          case "software":
             // software dependencies are added as is
             this.addSoftware(src);
             result.software.push(src);
             break;
-          case 'asset':
+          case "asset":
             // software dependencies are added as is
             this.addAsset(src);
             result.assets.push(src);
             break;
-          case 'template':
+          case "template":
             // templates are compiled and then added
             try {
               const tpl = this.compileAndAddTemplate(src);
@@ -364,7 +364,7 @@ export class TengoTemplateCompiler {
               unprocessed.push({ src, err: Error(errorMessage) }); // one or more dependencies are not resolvable yet
             }
             break;
-          case 'test':
+          case "test":
             // Ignore tests: they never should be part of compiled code or be a dependency.
             break;
           default:
@@ -375,7 +375,7 @@ export class TengoTemplateCompiler {
       // checking that we successfully added at least one source,
       // if not all the source files in unprocessed array have unmet dependencies
       if (current.length === unprocessed.length) {
-        let errorMessage = '';
+        let errorMessage = "";
 
         for (const u of unprocessed) {
           errorMessage += `\n${u.err.message}`;

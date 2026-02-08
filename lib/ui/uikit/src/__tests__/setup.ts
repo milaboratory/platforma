@@ -1,2 +1,2 @@
-import ResizeObserver from 'resize-observer-polyfill';
+import ResizeObserver from "resize-observer-polyfill";
 globalThis.ResizeObserver = ResizeObserver;

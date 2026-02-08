@@ -1,4 +1,4 @@
-import Denque from 'denque';
+import Denque from "denque";
 
 /** Unbound async queue */
 export class ConcurrencyLimitingExecutor {

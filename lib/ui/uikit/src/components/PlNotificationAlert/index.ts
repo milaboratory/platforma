@@ -1,1 +1,1 @@
-export { default as PlNotificationAlert } from './PlNotificationAlert.vue';
+export { default as PlNotificationAlert } from "./PlNotificationAlert.vue";

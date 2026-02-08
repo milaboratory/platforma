@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PlTooltip } from '../PlTooltip';
+import { PlTooltip } from "../PlTooltip";
 </script>
 
 <template>
@@ -8,7 +8,7 @@ import { PlTooltip } from '../PlTooltip';
       <span :class="$style.title">Shortcuts</span>
 
       <div :class="[$style.row, $style.head]">
-        <div/>
+        <div />
         <div>MacOS</div>
         <div>Windows/Linux</div>
       </div>
@@ -70,7 +70,7 @@ import { PlTooltip } from '../PlTooltip';
 
 .head:before {
   position: absolute;
-  content: '';
+  content: "";
   background-color: #231842;
   width: 12px;
   left: -12px;
@@ -79,7 +79,7 @@ import { PlTooltip } from '../PlTooltip';
 
 .head:after {
   position: absolute;
-  content: '';
+  content: "";
   background-color: #231842;
   width: 12px;
   right: -12px;

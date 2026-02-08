@@ -1,31 +1,30 @@
 {
   "name": "@milaboratories/uikit-playground",
-  "private": true,
   "version": "0.1.49",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint .",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "fmt": "ts-builder format"
   },
   "dependencies": {
     "@milaboratories/uikit": "workspace:*"
   },
   "devDependencies": {
-    "@milaboratories/ts-configs": "workspace:*",
+    "@faker-js/faker": "catalog:",
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:*",
+    "@milaboratories/helpers": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@vitejs/plugin-vue": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
     "vue": "catalog:",
-    "@vitejs/plugin-vue": "catalog:",
-    "@milaboratories/helpers": "workspace:*",
-    "@faker-js/faker": "catalog:",
     "vue-router": "4"
   }
 }

@@ -1,6 +1,6 @@
 /** Throws when a driver gets a resource with a wrong resource type. */
 export class WrongResourceTypeError extends Error {
-  name = 'WrongResourceTypeError';
+  name = "WrongResourceTypeError";
 }
 
 /** Updater incorporates a pattern when someone wants to run a callback

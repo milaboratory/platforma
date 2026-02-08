@@ -1,1 +1,1 @@
-export { default as PlAgChartStackedBarCell } from './PlAgChartStackedBarCell.vue';
+export { default as PlAgChartStackedBarCell } from "./PlAgChartStackedBarCell.vue";

@@ -1,6 +1,6 @@
-import { deepFreeze } from './obj';
-import { gunzipSync, gzipSync } from 'node:zlib';
-import canonicalize from 'canonicalize';
+import { deepFreeze } from "./obj";
+import { gunzipSync, gzipSync } from "node:zlib";
+import canonicalize from "canonicalize";
 
 const deserializationCache = new WeakMap<Uint8Array, unknown>();
 const decodingCache = new WeakMap<Uint8Array, string>();
@@ -129,8 +129,7 @@ export function cachedDeserialize<T = unknown>(data: Uint8Array): T {
 
   const result = JSON.parse(text);
   deepFreeze(result);
-  if (data.byteLength >= CachedMinCachingSize)
-    deserializationCache.set(data, result);
+  if (data.byteLength >= CachedMinCachingSize) deserializationCache.set(data, result);
   numberOfDeserializations++;
   deserializedBytes += data.byteLength;
   return result;
@@ -149,9 +148,7 @@ export function cachedDeserialize<T = unknown>(data: Uint8Array): T {
 export function canonicalJsonBytes(data: unknown): Uint8Array {
   const canonicalJson = canonicalize(data);
   if (canonicalJson === undefined)
-    throw new Error(
-      `The data cannot be converted to canonical JSON. ${data as any}`,
-    );
+    throw new Error(`The data cannot be converted to canonical JSON. ${data as any}`);
   return Buffer.from(canonicalJson);
 }
 

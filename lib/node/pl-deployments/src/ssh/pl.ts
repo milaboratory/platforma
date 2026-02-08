@@ -1,34 +1,46 @@
-import type * as ssh from 'ssh2';
-import { SshClient } from './ssh';
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import { sleep, notEmpty } from '@milaboratories/ts-helpers';
-import type { DownloadBinaryResult } from '../common/pl_binary_download';
-import { downloadBinaryNoExtract } from '../common/pl_binary_download';
-import upath from 'upath';
-import * as plpath from './pl_paths';
-import { getDefaultPlVersion } from '../common/pl_version';
-import type { ProxySettings } from '@milaboratories/pl-http';
-import { defaultHttpDispatcher } from '@milaboratories/pl-http';
-import type { Dispatcher } from 'undici';
+import type * as ssh from "ssh2";
+import { SshClient } from "./ssh";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import { sleep, notEmpty } from "@milaboratories/ts-helpers";
+import type { DownloadBinaryResult } from "../common/pl_binary_download";
+import { downloadBinaryNoExtract } from "../common/pl_binary_download";
+import upath from "upath";
+import * as plpath from "./pl_paths";
+import { getDefaultPlVersion } from "../common/pl_version";
+import type { ProxySettings } from "@milaboratories/pl-http";
+import { defaultHttpDispatcher } from "@milaboratories/pl-http";
+import type { Dispatcher } from "undici";
 
-import net from 'node:net';
-import type { PlConfig, PlLicenseMode, SshPlConfigGenerationResult } from '@milaboratories/pl-config';
-import { getFreePort, generateSshPlConfigs } from '@milaboratories/pl-config';
-import type { SupervisorStatus } from './supervisord';
-import { supervisorStatus, supervisorStop as supervisorCtlShutdown, generateSupervisordConfigWithMinio, supervisorCtlStart, isSupervisordRunning, generateSupervisordConfig, isAllAlive } from './supervisord';
-import type { ConnectionInfo, SshPlPorts } from './connection_info';
-import { newConnectionInfo, parseConnectionInfo, stringifyConnectionInfo } from './connection_info';
-import type { PlBinarySourceDownload } from '../common/pl_binary';
+import net from "node:net";
+import type {
+  PlConfig,
+  PlLicenseMode,
+  SshPlConfigGenerationResult,
+} from "@milaboratories/pl-config";
+import { getFreePort, generateSshPlConfigs } from "@milaboratories/pl-config";
+import type { SupervisorStatus } from "./supervisord";
+import {
+  supervisorStatus,
+  supervisorStop as supervisorCtlShutdown,
+  generateSupervisordConfigWithMinio,
+  supervisorCtlStart,
+  isSupervisordRunning,
+  generateSupervisordConfig,
+  isAllAlive,
+} from "./supervisord";
+import type { ConnectionInfo, SshPlPorts } from "./connection_info";
+import { newConnectionInfo, parseConnectionInfo, stringifyConnectionInfo } from "./connection_info";
+import type { PlBinarySourceDownload } from "../common/pl_binary";
 
 const minRequiredGlibcVersion = 2.28;
 
 export class SshPl {
-  private initState: PlatformaInitState = { step: 'init' };
+  private initState: PlatformaInitState = { step: "init" };
   constructor(
     public readonly logger: MiLogger,
     public readonly sshClient: SshClient,
     private readonly username: string,
-  ) { }
+  ) {}
 
   public info() {
     return {
@@ -59,7 +71,7 @@ export class SshPl {
   }
 
   /** Starts all the services on the server.
-    * Idempotent semantic: we could call it several times. */
+   * Idempotent semantic: we could call it several times. */
   public async start(shouldUseMinio: boolean) {
     const arch = await this.getArch();
     const remoteHome = await this.getUserHomeDirectory();
@@ -74,7 +86,7 @@ export class SshPl {
     } catch (e: unknown) {
       let msg = `SshPl.start: ${e}`;
 
-      let logs = '';
+      let logs = "";
       try {
         logs = await this.sshClient.readFile(plpath.platformaCliLogs(remoteHome));
         msg += `, platforma cli logs: ${logs}`;
@@ -88,7 +100,7 @@ export class SshPl {
   }
 
   /** Stops all the services on the server.
-    * Idempotent semantic: we could call it several times. */
+   * Idempotent semantic: we could call it several times. */
   public async stop() {
     const arch = await this.getArch();
     const remoteHome = await this.getUserHomeDirectory();
@@ -122,7 +134,9 @@ export class SshPl {
     this.logger.info(`pl.reset: Stop Platforma on the server`);
     await this.stop();
 
-    this.logger.info(`pl.reset: Deleting Platforma workDir ${plpath.workDir(remoteHome)} on the server`);
+    this.logger.info(
+      `pl.reset: Deleting Platforma workDir ${plpath.workDir(remoteHome)} on the server`,
+    );
     await this.sshClient.deleteFolder(plpath.workDir(remoteHome));
   }
 
@@ -130,7 +144,7 @@ export class SshPl {
    * generates all the configs, creates necessary dirs,
    * and finally starts all the services. */
   public async platformaInit(options: SshPlConfig): Promise<ConnectionInfo> {
-    const state: PlatformaInitState = { localWorkdir: options.localWorkdir, step: 'init' };
+    const state: PlatformaInitState = { localWorkdir: options.localWorkdir, step: "init" };
 
     const { onProgress } = options;
 
@@ -147,13 +161,13 @@ export class SshPl {
 
       const needRestartPlatforma = await this.doStepReadExistedConfig(state, ops, onProgress);
       if (!needRestartPlatforma) {
-        await onProgress?.('Platforma is already running. Skipping initialization.');
+        await onProgress?.("Platforma is already running. Skipping initialization.");
         return state.existedSettings!;
       }
       await this.doStepStopExistedPlatforma(state, onProgress);
       await this.doStepCheckDbLock(state, onProgress);
 
-      await onProgress?.('Installation platforma...');
+      await onProgress?.("Installation platforma...");
 
       await this.doStepDownloadBinaries(state, onProgress, ops);
       await this.doStepFetchPorts(state);
@@ -172,36 +186,49 @@ export class SshPl {
     }
   }
 
-  private async doStepStopExistedPlatforma(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
-    state.step = 'stopExistedPlatforma';
+  private async doStepStopExistedPlatforma(
+    state: PlatformaInitState,
+    onProgress: ((...args: any) => Promise<any>) | undefined,
+  ) {
+    state.step = "stopExistedPlatforma";
     if (!isAllAlive(state.alive!, state.shouldUseMinio ?? false)) {
       return;
     }
 
-    await onProgress?.('Stopping services...');
+    await onProgress?.("Stopping services...");
     await this.stop();
   }
 
   private removeSensitiveData(state: PlatformaInitState): PlatformaInitState {
     const stateCopy = { ...state };
-    stateCopy.generatedConfig = { ...stateCopy.generatedConfig, filesToCreate: { skipped: 'sanitized' } } as SshPlConfigGenerationResult;
+    stateCopy.generatedConfig = {
+      ...stateCopy.generatedConfig,
+      filesToCreate: { skipped: "sanitized" },
+    } as SshPlConfigGenerationResult;
     return stateCopy;
   }
 
-  private async doStepStartPlatforma(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
-    state.step = 'startPlatforma';
-    await onProgress?.('Starting Platforma on the server...');
+  private async doStepStartPlatforma(
+    state: PlatformaInitState,
+    onProgress: ((...args: any) => Promise<any>) | undefined,
+  ) {
+    state.step = "startPlatforma";
+    await onProgress?.("Starting Platforma on the server...");
     await this.start(state.shouldUseMinio ?? false);
     state.started = true;
     this.initState = state;
 
-    await onProgress?.('Platforma has been started successfully.');
+    await onProgress?.("Platforma has been started successfully.");
   }
 
-  private async doStepSaveNewConnectionInfo(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined, ops: SshPlConfig) {
-    state.step = 'saveNewConnectionInfo';
+  private async doStepSaveNewConnectionInfo(
+    state: PlatformaInitState,
+    onProgress: ((...args: any) => Promise<any>) | undefined,
+    ops: SshPlConfig,
+  ) {
+    state.step = "saveNewConnectionInfo";
     const config = state.generatedConfig!;
-    await onProgress?.('Saving connection information...');
+    await onProgress?.("Saving connection information...");
     state.connectionInfo = newConnectionInfo(
       config.plUser,
       config.plPassword,
@@ -214,7 +241,7 @@ export class SshPl {
       plpath.connectionInfo(state.remoteHome!),
       stringifyConnectionInfo(state.connectionInfo),
     );
-    await onProgress?.('Connection information saved.');
+    await onProgress?.("Connection information saved.");
   }
 
   private async doStepCheckDbLock(
@@ -232,14 +259,14 @@ export class SshPl {
       }
     };
 
-    state.step = 'checkDbLock';
-    await onProgress?.('Checking for DB lock...');
+    state.step = "checkDbLock";
+    await onProgress?.("Checking for DB lock...");
 
     const lockFilePath = plpath.platformaDbLock(state.remoteHome!);
     const lockFileExists = await this.sshClient.checkFileExists(lockFilePath);
 
     if (!lockFileExists) {
-      await onProgress?.('No DB lock found. Proceeding...');
+      await onProgress?.("No DB lock found. Proceeding...");
       return;
     }
 
@@ -247,7 +274,9 @@ export class SshPl {
     const lockProcessInfo = await this.findLockHolder(lockFilePath);
 
     if (!lockProcessInfo) {
-      this.logger.warn('Lock file exists but no process is holding it. Removing stale lock file...');
+      this.logger.warn(
+        "Lock file exists but no process is holding it. Removing stale lock file...",
+      );
       await removeLockFile(lockFilePath);
       return;
     }
@@ -257,17 +286,19 @@ export class SshPl {
     );
 
     if (lockProcessInfo.user !== this.username) {
-      const msg
-        = `DB lock is held by process ${lockProcessInfo.pid} `
-        + `owned by user '${lockProcessInfo.user}', but current user is '${this.username}'. `
-        + 'Cannot kill process owned by different user.';
+      const msg =
+        `DB lock is held by process ${lockProcessInfo.pid} ` +
+        `owned by user '${lockProcessInfo.user}', but current user is '${this.username}'. ` +
+        "Cannot kill process owned by different user.";
       this.logger.error(msg);
       throw new Error(msg);
     }
 
-    this.logger.info(`Process ${lockProcessInfo.pid} belongs to current user ${this.username}. Killing it...`);
+    this.logger.info(
+      `Process ${lockProcessInfo.pid} belongs to current user ${this.username}. Killing it...`,
+    );
     await this.killRemoteProcess(lockProcessInfo.pid);
-    this.logger.info('Process holding DB lock has been terminated.');
+    this.logger.info("Process holding DB lock has been terminated.");
 
     // Verify lock file is gone or can be removed
     const lockStillExists = await this.sshClient.checkFileExists(lockFilePath);
@@ -276,9 +307,12 @@ export class SshPl {
     }
   }
 
-  private async doStepConfigureSupervisord(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
-    await onProgress?.('Writing supervisord configuration...');
-    state.step = 'configureSupervisord';
+  private async doStepConfigureSupervisord(
+    state: PlatformaInitState,
+    onProgress: ((...args: any) => Promise<any>) | undefined,
+  ) {
+    await onProgress?.("Writing supervisord configuration...");
+    state.step = "configureSupervisord";
 
     const config = state.generatedConfig!;
 
@@ -302,17 +336,25 @@ export class SshPl {
       );
     }
 
-    const writeResult = await this.sshClient.writeFileOnTheServer(plpath.supervisorConf(state.remoteHome!), supervisorConfig);
+    const writeResult = await this.sshClient.writeFileOnTheServer(
+      plpath.supervisorConf(state.remoteHome!),
+      supervisorConfig,
+    );
     if (!writeResult) {
-      throw new Error(`Can not write supervisord config on the server ${plpath.workDir(state.remoteHome!)}`);
+      throw new Error(
+        `Can not write supervisord config on the server ${plpath.workDir(state.remoteHome!)}`,
+      );
     }
-    await onProgress?.('Supervisord configuration written.');
+    await onProgress?.("Supervisord configuration written.");
   }
 
-  private async doStepCreateFoldersAndSaveFiles(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
-    state.step = 'createFoldersAndSaveFiles';
+  private async doStepCreateFoldersAndSaveFiles(
+    state: PlatformaInitState,
+    onProgress: ((...args: any) => Promise<any>) | undefined,
+  ) {
+    state.step = "createFoldersAndSaveFiles";
     const config = state.generatedConfig!;
-    await onProgress?.('Generating folder structure...');
+    await onProgress?.("Generating folder structure...");
     for (const [filePath, content] of Object.entries(config.filesToCreate)) {
       await this.sshClient.writeFileOnTheServer(filePath, content);
       this.logger.info(`Created file ${filePath}`);
@@ -322,18 +364,22 @@ export class SshPl {
       await this.sshClient.ensureRemoteDirCreated(dir);
       this.logger.info(`Created directory ${dir}`);
     }
-    await onProgress?.('Folder structure created.');
+    await onProgress?.("Folder structure created.");
   }
 
-  private async doStepGenerateNewConfig(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined, ops: SshPlConfig) {
-    state.step = 'generateNewConfig';
+  private async doStepGenerateNewConfig(
+    state: PlatformaInitState,
+    onProgress: ((...args: any) => Promise<any>) | undefined,
+    ops: SshPlConfig,
+  ) {
+    state.step = "generateNewConfig";
 
-    await onProgress?.('Generating new config...');
+    await onProgress?.("Generating new config...");
     const config = await generateSshPlConfigs({
       logger: this.logger,
       workingDir: plpath.workDir(state.remoteHome!),
       portsMode: {
-        type: 'customWithMinio',
+        type: "customWithMinio",
         ports: {
           debug: state.ports!.debug.remote,
           grpc: state.ports!.grpc.remote,
@@ -353,53 +399,71 @@ export class SshPl {
       useMinio: state.shouldUseMinio ?? false,
     });
     state.generatedConfig = { ...config };
-    await onProgress?.('New config generated');
+    await onProgress?.("New config generated");
   }
 
   private async doStepFetchPorts(state: PlatformaInitState) {
-    state.step = 'fetchPorts';
+    state.step = "fetchPorts";
     state.ports = await this.fetchPorts(state.remoteHome!, state.arch!);
 
-    if (!state.ports.debug.remote
-      || !state.ports.grpc.remote
-      || !state.ports.minioPort.remote
-      || !state.ports.minioConsolePort.remote
-      || !state.ports.monitoring.remote
-      || !state.ports.http?.remote) {
+    if (
+      !state.ports.debug.remote ||
+      !state.ports.grpc.remote ||
+      !state.ports.minioPort.remote ||
+      !state.ports.minioConsolePort.remote ||
+      !state.ports.monitoring.remote ||
+      !state.ports.http?.remote
+    ) {
       throw new Error(`SshPl.platformaInit: remote ports are not defined`);
     }
   }
 
-  private async doStepDownloadBinaries(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined, ops: SshPlConfig) {
-    state.step = 'downloadBinaries';
-    await onProgress?.('Downloading and uploading required binaries...');
+  private async doStepDownloadBinaries(
+    state: PlatformaInitState,
+    onProgress: ((...args: any) => Promise<any>) | undefined,
+    ops: SshPlConfig,
+  ) {
+    state.step = "downloadBinaries";
+    await onProgress?.("Downloading and uploading required binaries...");
 
     const glibcVersion = await getGlibcVersion(this.logger, this.sshClient);
     if (glibcVersion < minRequiredGlibcVersion)
-      throw new Error(`glibc version ${glibcVersion} is too old. Version ${minRequiredGlibcVersion} or higher is required for Platforma.`);
+      throw new Error(
+        `glibc version ${glibcVersion} is too old. Version ${minRequiredGlibcVersion} or higher is required for Platforma.`,
+      );
 
     const downloadRes = await this.downloadBinariesAndUploadToTheServer(
-      ops.localWorkdir, ops.plBinary!, state.remoteHome!, state.arch!, state.shouldUseMinio ?? false,
+      ops.localWorkdir,
+      ops.plBinary!,
+      state.remoteHome!,
+      state.arch!,
+      state.shouldUseMinio ?? false,
       ops.proxy,
     );
-    await onProgress?.('All required binaries have been downloaded and uploaded.');
+    await onProgress?.("All required binaries have been downloaded and uploaded.");
 
     state.binPaths = { ...downloadRes, history: undefined };
     state.downloadedBinaries = downloadRes.history;
   }
 
-  private async doStepDetectArch(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
-    state.step = 'detectArch';
-    await onProgress?.('Detecting server architecture...');
+  private async doStepDetectArch(
+    state: PlatformaInitState,
+    onProgress: ((...args: any) => Promise<any>) | undefined,
+  ) {
+    state.step = "detectArch";
+    await onProgress?.("Detecting server architecture...");
     state.arch = await this.getArch();
-    await onProgress?.('Server architecture detected.');
+    await onProgress?.("Server architecture detected.");
   }
 
-  private async doStepDetectHome(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
-    state.step = 'detectHome';
-    await onProgress?.('Fetching user home directory...');
+  private async doStepDetectHome(
+    state: PlatformaInitState,
+    onProgress: ((...args: any) => Promise<any>) | undefined,
+  ) {
+    state.step = "detectHome";
+    await onProgress?.("Fetching user home directory...");
     state.remoteHome = await this.getUserHomeDirectory();
-    await onProgress?.('User home directory retrieved.');
+    await onProgress?.("User home directory retrieved.");
   }
 
   private async doStepReadExistedConfig(
@@ -407,15 +471,15 @@ export class SshPl {
     ops: SshPlConfig,
     onProgress: ((...args: any) => Promise<any>) | undefined,
   ): Promise<boolean> {
-    state.step = 'checkAlive';
-    await onProgress?.('Checking platform status...');
+    state.step = "checkAlive";
+    await onProgress?.("Checking platform status...");
     state.alive = await this.isAlive();
 
     if (!state.alive?.platforma) {
       return true;
     }
 
-    await onProgress?.('All required services are running.');
+    await onProgress?.("All required services are running.");
 
     state.existedSettings = await this.readExistedConfig(state.remoteHome!);
     if (!state.existedSettings) {
@@ -435,11 +499,11 @@ export class SshPl {
     }
 
     if (!state.needRestart) {
-      await onProgress?.('Server setup completed.');
+      await onProgress?.("Server setup completed.");
       return false;
     }
 
-    await onProgress?.('Stopping services...');
+    await onProgress?.("Stopping services...");
     await this.stop();
 
     return true;
@@ -457,15 +521,21 @@ export class SshPl {
     const dispatcher = defaultHttpDispatcher(proxy);
     try {
       const pl = await this.downloadAndUntar(
-        localWorkdir, remoteHome, arch,
-        'pl', `pl-${plBinary.version}`,
+        localWorkdir,
+        remoteHome,
+        arch,
+        "pl",
+        `pl-${plBinary.version}`,
         dispatcher,
       );
       state.push(pl);
 
       const supervisor = await this.downloadAndUntar(
-        localWorkdir, remoteHome, arch,
-        'supervisord', plpath.supervisordDirName,
+        localWorkdir,
+        remoteHome,
+        arch,
+        "supervisord",
+        plpath.supervisordDirName,
         dispatcher,
       );
       state.push(supervisor);
@@ -473,8 +543,11 @@ export class SshPl {
       const minioPath = plpath.minioBin(remoteHome, arch.arch);
       if (shouldUseMinio) {
         const minio = await this.downloadAndUntar(
-          localWorkdir, remoteHome, arch,
-          'minio', plpath.minioDirName,
+          localWorkdir,
+          remoteHome,
+          arch,
+          "minio",
+          plpath.minioDirName,
           dispatcher,
         );
         state.push(minio);
@@ -506,7 +579,7 @@ export class SshPl {
       // Example:
       // COMMAND     PID    USER   FD   TYPE DEVICE SIZE/OFF     NODE NAME
       // platforma 11628 rfiskov   10u   REG   1,16        0 66670038 ./LOCK
-      const lines = output.split('\n');
+      const lines = output.split("\n");
       if (lines.length <= 1) {
         return null;
       }
@@ -593,11 +666,11 @@ export class SshPl {
   }
 
   /** We have to extract pl in the remote server,
-  * because Windows doesn't support symlinks
-  * that are found in Linux pl binaries tgz archive.
-  * For this reason, we extract all to the remote server.
-  * It requires `tar` to be installed on the server
-  * (it's not installed for Rocky Linux for example). */
+   * because Windows doesn't support symlinks
+   * that are found in Linux pl binaries tgz archive.
+   * For this reason, we extract all to the remote server.
+   * It requires `tar` to be installed on the server
+   * (it's not installed for Rocky Linux for example). */
   public async downloadAndUntar(
     localWorkdir: string,
     remoteHome: string,
@@ -636,16 +709,18 @@ export class SshPl {
 
     state.localArchivePath = upath.resolve(state.downloadResult.archivePath);
     state.remoteDir = upath.join(state.binBasePath, state.downloadResult.baseName);
-    state.remoteArchivePath = state.remoteDir + '.tgz';
+    state.remoteArchivePath = state.remoteDir + ".tgz";
 
     await this.sshClient.ensureRemoteDirCreated(state.remoteDir);
     await this.sshClient.uploadFile(state.localArchivePath, state.remoteArchivePath);
     state.uploadDone = true;
 
     try {
-      await this.sshClient.exec('hash tar');
-    } catch (_) {
-      throw new Error(`tar is not installed on the server. Please install it before running Platforma.`);
+      await this.sshClient.exec("hash tar");
+    } catch {
+      throw new Error(
+        `tar is not installed on the server. Please install it before running Platforma.`,
+      );
     }
 
     // TODO: Create a proper archive to avoid xattr warnings
@@ -654,7 +729,9 @@ export class SshPl {
     );
 
     if (untarResult.stderr)
-      throw new Error(`downloadAndUntar: untar: stderr occurred: ${untarResult.stderr}, stdout: ${untarResult.stdout}`);
+      throw new Error(
+        `downloadAndUntar: untar: stderr occurred: ${untarResult.stderr}, stdout: ${untarResult.stdout}`,
+      );
 
     state.untarDone = true;
 
@@ -666,16 +743,23 @@ export class SshPl {
     const checkPathMinio = plpath.minioDir(remoteHome, arch.arch);
     const checkPathPlatforma = plpath.platformaBin(remoteHome, arch.arch);
 
-    if (!await this.sshClient.checkFileExists(checkPathPlatforma)
-      || !await this.sshClient.checkFileExists(checkPathMinio)
-      || !await this.sshClient.checkFileExists(checkPathSupervisor)) {
+    if (
+      !(await this.sshClient.checkFileExists(checkPathPlatforma)) ||
+      !(await this.sshClient.checkFileExists(checkPathMinio)) ||
+      !(await this.sshClient.checkFileExists(checkPathSupervisor))
+    ) {
       return true;
     }
 
     return false;
   }
 
-  public async checkIsAliveWithInterval(shouldUseMinio: boolean, interval: number = 1000, count = 15, shouldStart = true): Promise<void> {
+  public async checkIsAliveWithInterval(
+    shouldUseMinio: boolean,
+    interval: number = 1000,
+    count = 15,
+    shouldStart = true,
+  ): Promise<void> {
     const maxMs = count * interval;
 
     let total = 0;
@@ -684,7 +768,9 @@ export class SshPl {
       await sleep(interval);
       total += interval;
       if (total > maxMs) {
-        throw new Error(`isAliveWithInterval: The process did not ${shouldStart ? 'started' : 'stopped'} after ${maxMs} ms. Live status: ${JSON.stringify(alive)}`);
+        throw new Error(
+          `isAliveWithInterval: The process did not ${shouldStart ? "started" : "stopped"} after ${maxMs} ms. Live status: ${JSON.stringify(alive)}`,
+        );
       }
       alive = await this.isAlive();
     }
@@ -741,18 +827,19 @@ export class SshPl {
 
     const { stdout, stderr } = await this.sshClient.exec(`${freePortBin}`);
     if (stderr) {
-      throw new Error(`getFreePortForPlatformaOnServer: stderr is not empty: ${stderr}, stdout: ${stdout}`);
+      throw new Error(
+        `getFreePortForPlatformaOnServer: stderr is not empty: ${stderr}, stdout: ${stdout}`,
+      );
     }
 
     return +stdout;
   }
 
   public async getArch(): Promise<Arch> {
-    const { stdout, stderr } = await this.sshClient.exec('uname -s && uname -m');
-    if (stderr)
-      throw new Error(`getArch: stderr is not empty: ${stderr}, stdout: ${stdout}`);
+    const { stdout, stderr } = await this.sshClient.exec("uname -s && uname -m");
+    if (stderr) throw new Error(`getArch: stderr is not empty: ${stderr}, stdout: ${stdout}`);
 
-    const arr = stdout.split('\n');
+    const arr = stdout.split("\n");
 
     return {
       platform: arr[0],
@@ -761,11 +848,13 @@ export class SshPl {
   }
 
   public async getUserHomeDirectory() {
-    const { stdout, stderr } = await this.sshClient.exec('echo $HOME');
+    const { stdout, stderr } = await this.sshClient.exec("echo $HOME");
 
     if (stderr) {
       const home = `/home/${this.username}`;
-      console.warn(`getUserHomeDirectory: stderr is not empty: ${stderr}, stdout: ${stdout}, will get a default home: ${home}`);
+      console.warn(
+        `getUserHomeDirectory: stderr is not empty: ${stderr}, stdout: ${stdout}, will get a default home: ${home}`,
+      );
 
       return home;
     }
@@ -789,14 +878,10 @@ export type SshPlConfig = {
 
 export type LockProcessInfo = { pid: number; user: string };
 
-const defaultSshPlConfig: Pick<
-  SshPlConfig,
-  | 'useGlobalAccess'
-  | 'plBinary'
-> = {
+const defaultSshPlConfig: Pick<SshPlConfig, "useGlobalAccess" | "plBinary"> = {
   useGlobalAccess: false,
   plBinary: {
-    type: 'Download',
+    type: "Download",
     version: getDefaultPlVersion(),
   },
 };
@@ -821,19 +906,19 @@ type DownloadAndUntarState = {
 };
 
 type PlatformaInitStep =
-  'init'
-  | 'detectArch'
-  | 'detectHome'
-  | 'checkAlive'
-  | 'stopExistedPlatforma'
-  | 'checkDbLock'
-  | 'downloadBinaries'
-  | 'fetchPorts'
-  | 'generateNewConfig'
-  | 'createFoldersAndSaveFiles'
-  | 'configureSupervisord'
-  | 'saveNewConnectionInfo'
-  | 'startPlatforma';
+  | "init"
+  | "detectArch"
+  | "detectHome"
+  | "checkAlive"
+  | "stopExistedPlatforma"
+  | "checkDbLock"
+  | "downloadBinaries"
+  | "fetchPorts"
+  | "generateNewConfig"
+  | "createFoldersAndSaveFiles"
+  | "configureSupervisord"
+  | "saveNewConnectionInfo"
+  | "startPlatforma";
 
 type PlatformaInitState = {
   step: PlatformaInitStep;
@@ -858,9 +943,9 @@ type PlatformaInitState = {
  * @returns The glibc version as a number
  * @throws Error if version cannot be determined
  */
-async function getGlibcVersion(logger: MiLogger, sshClient: SshClient): Promise <number> {
+async function getGlibcVersion(logger: MiLogger, sshClient: SshClient): Promise<number> {
   try {
-    const { stdout, stderr } = await sshClient.exec('ldd --version | head -n 1');
+    const { stdout, stderr } = await sshClient.exec("ldd --version | head -n 1");
     if (stderr) {
       throw new Error(`Failed to check glibc version: ${stderr}`);
     }

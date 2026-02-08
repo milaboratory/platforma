@@ -5,11 +5,11 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { useEventListener } from '../../composition/useEventListener';
-import './pl-dialog-modal.scss';
-import { computed, ref } from 'vue';
-import PlCloseModalBtn from '../../utils/PlCloseModalBtn.vue';
-import type { Size } from '../../types';
+import { useEventListener } from "../../composition/useEventListener";
+import "./pl-dialog-modal.scss";
+import { computed, ref } from "vue";
+import PlCloseModalBtn from "../../utils/PlCloseModalBtn.vue";
+import type { Size } from "../../types";
 
 const slots = defineSlots<{
   title?: () => unknown;
@@ -17,7 +17,7 @@ const slots = defineSlots<{
   actions?: () => unknown;
 }>();
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(["update:modelValue"]);
 
 const props = withDefaults(
   defineProps<{
@@ -67,10 +67,10 @@ const props = withDefaults(
     size?: Size | undefined;
   }>(),
   {
-    width: '448px',
-    minHeight: 'auto',
-    maxHeight: 'auto',
-    height: 'auto',
+    width: "448px",
+    minHeight: "auto",
+    maxHeight: "auto",
+    height: "auto",
     closable: true,
     noContentGutters: false,
     actionsHasTopBorder: true,
@@ -83,30 +83,30 @@ const modal = ref<HTMLElement>();
 const style = computed(() => {
   const { width, height, minHeight, maxHeight, size } = props;
 
-  if (size === 'small') {
+  if (size === "small") {
     return {
-      width: '448px',
-      height: '440px',
-      minHeight: 'auto',
-      maxHeight: 'auto',
+      width: "448px",
+      height: "440px",
+      minHeight: "auto",
+      maxHeight: "auto",
     };
   }
 
-  if (size === 'medium') {
+  if (size === "medium") {
     return {
-      width: '720px',
-      height: '720px',
-      minHeight: 'auto',
-      maxHeight: 'auto',
+      width: "720px",
+      height: "720px",
+      minHeight: "auto",
+      maxHeight: "auto",
     };
   }
 
-  if (size === 'large') {
+  if (size === "large") {
     return {
-      width: '1080px',
-      height: '880px',
-      minHeight: 'auto',
-      maxHeight: 'auto',
+      width: "1080px",
+      height: "880px",
+      minHeight: "auto",
+      maxHeight: "auto",
     };
   }
 
@@ -114,14 +114,19 @@ const style = computed(() => {
 });
 
 function onClickShadow(ev: Event) {
-  if (modal.value && props.closeOnOutsideClick && document.contains(ev.target as Node) && !modal.value.contains(ev.target as Node)) {
-    emit('update:modelValue', false);
+  if (
+    modal.value &&
+    props.closeOnOutsideClick &&
+    document.contains(ev.target as Node) &&
+    !modal.value.contains(ev.target as Node)
+  ) {
+    emit("update:modelValue", false);
   }
 }
 
-useEventListener(document.body, 'keyup', (ev) => {
-  if (props.modelValue && ev.code === 'Escape') {
-    emit('update:modelValue', false);
+useEventListener(document.body, "keyup", (ev) => {
+  if (props.modelValue && ev.code === "Escape") {
+    emit("update:modelValue", false);
   }
 });
 </script>
@@ -137,14 +142,28 @@ useEventListener(document.body, 'keyup', (ev) => {
           :class="{ 'has-title': slots.title, 'has-content': slots.default }"
           :style="style"
         >
-          <PlCloseModalBtn v-if="closable" class="close-modal-btn" @click.stop="emit('update:modelValue', false)" />
+          <PlCloseModalBtn
+            v-if="closable"
+            class="close-modal-btn"
+            @click.stop="emit('update:modelValue', false)"
+          />
           <div v-if="slots.title" class="pl-dialog-modal__title">
             <slot name="title" />
           </div>
-          <div class="pl-dialog-modal__content" :class="{ 'no-content-gutters': noContentGutters, 'no-top-content-gutter': noTopContentGutter }">
+          <div
+            class="pl-dialog-modal__content"
+            :class="{
+              'no-content-gutters': noContentGutters,
+              'no-top-content-gutter': noTopContentGutter,
+            }"
+          >
             <slot />
           </div>
-          <div v-if="slots.actions" class="pl-dialog-modal__actions" :class="{ 'has-top-border': actionsHasTopBorder }">
+          <div
+            v-if="slots.actions"
+            class="pl-dialog-modal__actions"
+            :class="{ 'has-top-border': actionsHasTopBorder }"
+          >
             <slot name="actions" />
           </div>
         </div>

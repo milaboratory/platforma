@@ -1,12 +1,21 @@
 <script setup lang="ts">
-import { PlBlockPage, PlBtnAccent, PlBtnGhost, PlBtnPrimary, PlBtnSecondary, PlBtnSplit } from '@platforma-sdk/ui-vue';
-import { reactive, ref } from 'vue';
+import {
+  PlBlockPage,
+  PlBtnAccent,
+  PlBtnGhost,
+  PlBtnPrimary,
+  PlBtnSecondary,
+  PlBtnSplit,
+} from "@platforma-sdk/ui-vue";
+import { reactive, ref } from "vue";
 
-const model = ref('value-1');
+const model = ref("value-1");
 const counter = ref(0);
-const options = Array(5).fill(0).map((v, i) => ({ label: `Item${i}`, value: `value-${i}` }));
+const options = Array(5)
+  .fill(0)
+  .map((v, i) => ({ label: `Item${i}`, value: `value-${i}` }));
 const data = reactive({
-  size: 'medium' as const,
+  size: "medium" as const,
   round: false,
   reverse: false,
   loading: false,
@@ -69,7 +78,7 @@ function clickHandler() {
         Btn ghost
       </PlBtnGhost>
 
-      <PlBtnSplit v-model="model" :options="options" @click="clickHandler"/>
+      <PlBtnSplit v-model="model" :options="options" @click="clickHandler" />
     </div>
   </PlBlockPage>
 </template>

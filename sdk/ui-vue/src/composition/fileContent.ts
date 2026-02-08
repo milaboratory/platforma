@@ -1,12 +1,12 @@
-import type { BlobHandleAndSize } from '@platforma-sdk/model';
-import { getRawPlatformaInstance } from '@platforma-sdk/model';
-import { LRUCache } from 'lru-cache';
-import type { ComputedRef, ShallowRef, EffectScope } from 'vue';
-import { computed, shallowRef, getCurrentScope, onScopeDispose, effectScope } from 'vue';
-import type { ZodSchema, SafeParseReturnType } from 'zod';
-import { Fetcher } from '@milaboratories/helpers';
+import type { BlobHandleAndSize } from "@platforma-sdk/model";
+import { getRawPlatformaInstance } from "@platforma-sdk/model";
+import { LRUCache } from "lru-cache";
+import type { ComputedRef, ShallowRef, EffectScope } from "vue";
+import { computed, shallowRef, getCurrentScope, onScopeDispose, effectScope } from "vue";
+import type { ZodSchema, SafeParseReturnType } from "zod";
+import { Fetcher } from "@milaboratories/helpers";
 
-type FileHandle = BlobHandleAndSize['handle'];
+type FileHandle = BlobHandleAndSize["handle"];
 
 export type ReactiveFileContentOps = {
   /** Maximum size in bytes of file content to cache */
@@ -65,12 +65,17 @@ export class ReactiveFileContent {
   private ns = new Map<string, Set<FileHandle>>();
   private currentKey: string | undefined;
 
-  private constructor(private currentScope: EffectScope, _ops?: Partial<ReactiveFileContentOps>) {
-    const ops: ReactiveFileContentOps = { ...DefaultReactiveFileContentOps, ...(_ops ?? {}) };
-    this.fileDataCache = ops.lruCache ?? new LRUCache<FileHandle, FileContentData>({
-      maxSize: ops.cacheSize,
-      sizeCalculation: (value) => value.bytes.length,
-    });
+  private constructor(
+    private currentScope: EffectScope,
+    _ops?: Partial<ReactiveFileContentOps>,
+  ) {
+    const ops: ReactiveFileContentOps = { ...DefaultReactiveFileContentOps, ..._ops };
+    this.fileDataCache =
+      ops.lruCache ??
+      new LRUCache<FileHandle, FileContentData>({
+        maxSize: ops.cacheSize,
+        sizeCalculation: (value) => value.bytes.length,
+      });
     this.fetcher = ops.fetcher ?? new Fetcher<FileHandle, FileContentData>();
   }
 
@@ -97,7 +102,11 @@ export class ReactiveFileContent {
 
   private async doFetch(handle: FileHandle) {
     if (!this.fileDataCache.has(handle)) {
-      const fileContentData = await this.fetcher.fetch(handle, async () => new FileContentData(await getRawPlatformaInstance().blobDriver.getContent(handle)));
+      const fileContentData = await this.fetcher.fetch(
+        handle,
+        async () =>
+          new FileContentData(await getRawPlatformaInstance().blobDriver.getContent(handle)),
+      );
       this.fileDataCache.set(handle, fileContentData);
     }
 
@@ -141,7 +150,7 @@ export class ReactiveFileContent {
     const refsMap = this.getRefsMap();
 
     if (!refsMap) {
-      throw new Error('ReactiveFileContent must be used within a Vue component or effect scope.');
+      throw new Error("ReactiveFileContent must be used within a Vue component or effect scope.");
     }
 
     this.withHandle(handle);
@@ -181,37 +190,59 @@ export class ReactiveFileContent {
   }
 
   public getContentBytes(handle: FileHandle): ComputedRef<Uint8Array | undefined>;
-  public getContentBytes(handle: FileHandle | undefined): ComputedRef<Uint8Array | undefined> | undefined;
-  public getContentBytes(handle: FileHandle | undefined): ComputedRef<Uint8Array | undefined> | undefined {
+  public getContentBytes(
+    handle: FileHandle | undefined,
+  ): ComputedRef<Uint8Array | undefined> | undefined;
+  public getContentBytes(
+    handle: FileHandle | undefined,
+  ): ComputedRef<Uint8Array | undefined> | undefined {
     if (handle === undefined) return undefined;
     const dataRef = this.getDataRef(handle);
     return computed(() => dataRef.value?.bytes);
   }
 
   public getContentString(handle: FileHandle): ComputedRef<string | undefined>;
-  public getContentString(handle: FileHandle | undefined): ComputedRef<string | undefined> | undefined;
-  public getContentString(handle: FileHandle | undefined): ComputedRef<string | undefined> | undefined {
+  public getContentString(
+    handle: FileHandle | undefined,
+  ): ComputedRef<string | undefined> | undefined;
+  public getContentString(
+    handle: FileHandle | undefined,
+  ): ComputedRef<string | undefined> | undefined {
     if (handle === undefined) return undefined;
     const dataRef = this.getDataRef(handle);
     return computed(() => dataRef.value?.str);
   }
 
   public getContentJson<T>(handle: FileHandle, schema: ZodSchema<T>): ComputedRef<T | undefined>;
-  public getContentJson<T>(handle: FileHandle | undefined, schema: ZodSchema<T>): ComputedRef<T | undefined> | undefined;
+  public getContentJson<T>(
+    handle: FileHandle | undefined,
+    schema: ZodSchema<T>,
+  ): ComputedRef<T | undefined> | undefined;
   public getContentJson<T = unknown>(handle: FileHandle): ComputedRef<T | undefined>;
-  public getContentJson<T = unknown>(handle: FileHandle | undefined): ComputedRef<T | undefined> | undefined;
-  public getContentJson<T>(handle: FileHandle | undefined, schema?: ZodSchema<T>): ComputedRef<T | undefined> | undefined;
-  public getContentJson<T>(handle: FileHandle | undefined, schema?: ZodSchema<T>): ComputedRef<T | undefined> | undefined {
+  public getContentJson<T = unknown>(
+    handle: FileHandle | undefined,
+  ): ComputedRef<T | undefined> | undefined;
+  public getContentJson<T>(
+    handle: FileHandle | undefined,
+    schema?: ZodSchema<T>,
+  ): ComputedRef<T | undefined> | undefined;
+  public getContentJson<T>(
+    handle: FileHandle | undefined,
+    schema?: ZodSchema<T>,
+  ): ComputedRef<T | undefined> | undefined {
     if (handle === undefined) return undefined;
     const dataRef = this.getDataRef(handle);
-    return computed(() => (schema === undefined ? dataRef.value?.rawJson : dataRef.value?.validatedJson(schema)) as T);
+    return computed(
+      () =>
+        (schema === undefined ? dataRef.value?.rawJson : dataRef.value?.validatedJson(schema)) as T,
+    );
   }
 
   private static initScope(_scope: EffectScope | undefined) {
     let scope = getCurrentScope() ?? _scope;
 
     if (!scope) {
-      console.warn('Current scope not found, using new detached scope...');
+      console.warn("Current scope not found, using new detached scope...");
       scope = effectScope(true);
     }
 
@@ -268,6 +299,10 @@ export class ReactiveFileContent {
   public static useGlobal(_ops?: Partial<ReactiveFileContentOps>, _scope?: EffectScope) {
     const scope = this.initScope(_scope);
 
-    return new ReactiveFileContent(scope, { ..._ops, lruCache: globalCache, fetcher: globalFetcher });
+    return new ReactiveFileContent(scope, {
+      ..._ops,
+      lruCache: globalCache,
+      fetcher: globalFetcher,
+    });
   }
 }

@@ -1,22 +1,24 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const PlRef = z
   .object({
     __isRef: z
       .literal(true)
-      .describe('Crucial marker for the block dependency tree reconstruction'),
-    blockId: z.string()
-      .describe('Upstream block id'),
-    name: z.string()
-      .describe('Name of the output provided to the upstream block\'s output context'),
-    requireEnrichments: z.literal(true).optional()
-      .describe('True if current block that stores this reference in its args, may need enrichments '
-        + 'for the references value originating from the blocks in between current and referenced block'),
+      .describe("Crucial marker for the block dependency tree reconstruction"),
+    blockId: z.string().describe("Upstream block id"),
+    name: z.string().describe("Name of the output provided to the upstream block's output context"),
+    requireEnrichments: z
+      .literal(true)
+      .optional()
+      .describe(
+        "True if current block that stores this reference in its args, may need enrichments " +
+          "for the references value originating from the blocks in between current and referenced block",
+      ),
   })
   .describe(
-    'Universal reference type, allowing to set block connections. It is crucial that '
-    + '{@link __isRef} is present and equal to true, internal logic relies on this marker '
-    + 'to build block dependency trees.',
+    "Universal reference type, allowing to set block connections. It is crucial that " +
+      "{@link __isRef} is present and equal to true, internal logic relies on this marker " +
+      "to build block dependency trees.",
   )
   .readonly();
 export type PlRef = z.infer<typeof PlRef>;
@@ -31,12 +33,12 @@ export type Ref = PlRef;
  */
 export function isPlRef(value: unknown): value is PlRef {
   return (
-    typeof value === 'object'
-    && value !== null
-    && '__isRef' in value
-    && (value as { __isRef: unknown }).__isRef === true
-    && 'blockId' in value
-    && 'name' in value
+    typeof value === "object" &&
+    value !== null &&
+    "__isRef" in value &&
+    (value as { __isRef: unknown }).__isRef === true &&
+    "blockId" in value &&
+    "name" in value
   );
 }
 
@@ -97,5 +99,9 @@ export function withEnrichments(ref: PlRef, requireEnrichments: boolean = true):
 
 /** Compare two PlRefs and returns true if they are qual */
 export function plRefsEqual(ref1: PlRef, ref2: PlRef, ignoreEnrichments: boolean = false) {
-  return ref1.blockId === ref2.blockId && ref1.name === ref2.name && (ignoreEnrichments || ref1.requireEnrichments === ref2.requireEnrichments);
+  return (
+    ref1.blockId === ref2.blockId &&
+    ref1.name === ref2.name &&
+    (ignoreEnrichments || ref1.requireEnrichments === ref2.requireEnrichments)
+  );
 }

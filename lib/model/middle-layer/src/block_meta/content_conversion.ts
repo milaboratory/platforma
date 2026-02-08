@@ -3,15 +3,15 @@ import type {
   ContentAnyLocal,
   ContentExplicitOrRelative,
   ContentRelative,
-} from './content_types';
+} from "./content_types";
 
 export function mapRemoteToAbsolute(
   rootUrl: string,
 ): <T extends ContentAnyLocal>(value: T) => Exclude<T, ContentRelative> | ContentAbsoluteUrl {
-  const rootWithSlash = rootUrl.endsWith('/') ? rootUrl : `${rootUrl}/`;
+  const rootWithSlash = rootUrl.endsWith("/") ? rootUrl : `${rootUrl}/`;
   return <T extends ContentAnyLocal>(value: T) =>
-    value.type === 'relative'
-      ? { type: 'absolute-url', url: rootWithSlash + value.path }
+    value.type === "relative"
+      ? { type: "absolute-url", url: rootWithSlash + value.path }
       : (value as Exclude<T, ContentRelative>);
 }
 
@@ -25,9 +25,9 @@ export function mapRemoteToAbsolute(
 export function addPrefixToRelative(
   prefix: string,
 ): <T extends ContentExplicitOrRelative>(value: T) => T {
-  const prefixWithSlash = prefix.endsWith('/') ? prefix : `${prefix}/`;
+  const prefixWithSlash = prefix.endsWith("/") ? prefix : `${prefix}/`;
   return <T extends ContentExplicitOrRelative>(value: T) =>
-    (value.type === 'relative'
-      ? { type: 'relative', path: prefixWithSlash + value.path }
+    (value.type === "relative"
+      ? { type: "relative", path: prefixWithSlash + value.path }
       : value) as T;
 }

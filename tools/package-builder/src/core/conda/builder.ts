@@ -1,13 +1,13 @@
-import fs from 'node:fs';
-import fsp from 'node:fs/promises';
-import path from 'node:path';
-import { spawnSync, type SpawnSyncOptions } from 'node:child_process';
-import * as undici from 'undici';
-import type winston from 'winston';
+import fs from "node:fs";
+import fsp from "node:fs/promises";
+import path from "node:path";
+import { spawnSync, type SpawnSyncOptions } from "node:child_process";
+import * as undici from "undici";
+import type winston from "winston";
 
-import * as util from '../util';
+import * as util from "../util";
 
-const defaultEnvironmentName = 'default';
+const defaultEnvironmentName = "default";
 
 export interface BuilderOptions {
   mambaRootPrefix: string; // root directory for all conda data
@@ -53,15 +53,15 @@ export class micromamba {
   constructor(
     private readonly logger: winston.Logger,
     private readonly rootPrefix: string,
-    private readonly binaryVersion: string = 'latest',
-    private readonly binaryPath: string = '',
+    private readonly binaryVersion: string = "latest",
+    private readonly binaryPath: string = "",
   ) {
     if (!binaryPath) {
-      this.binaryPath = path.join(rootPrefix, 'micromamba');
+      this.binaryPath = path.join(rootPrefix, "micromamba");
     }
 
-    if (util.currentOS() === 'windows' && !this.binaryPath.endsWith('.exe')) {
-      this.binaryPath += '.exe';
+    if (util.currentOS() === "windows" && !this.binaryPath.endsWith(".exe")) {
+      this.binaryPath += ".exe";
     }
   }
 
@@ -69,10 +69,14 @@ export class micromamba {
     if (fs.existsSync(this.binaryPath)) {
       try {
         await fsp.access(this.binaryPath, fs.constants.X_OK);
-        this.logger.debug(`micromamba binary '${this.binaryPath}' exists and executable. Download was skipped`);
+        this.logger.debug(
+          `micromamba binary '${this.binaryPath}' exists and executable. Download was skipped`,
+        );
         return;
       } catch {
-        this.logger.debug(`file exists but is not executable: ${this.binaryPath}. Fixing permissions`);
+        this.logger.debug(
+          `file exists but is not executable: ${this.binaryPath}. Fixing permissions`,
+        );
         await fsp.chmod(this.binaryPath, 0o755);
       }
     }
@@ -85,57 +89,70 @@ export class micromamba {
   }
 
   public getVersion(): string {
-    return this.execSync(['--version'])!;
+    return this.execSync(["--version"])!;
   }
 
   public createEnvironment(opts: EnvCreateOptions): void {
     const { environmentName, environmentPrefix, specFile } = opts;
-    this.logger.debug(`Creating conda environment '${environmentName ?? environmentPrefix ?? defaultEnvironmentName}'...`);
+    this.logger.debug(
+      `Creating conda environment '${environmentName ?? environmentPrefix ?? defaultEnvironmentName}'...`,
+    );
 
-    const args = ['env', 'create', '--file', specFile, '--yes'];
+    const args = ["env", "create", "--file", specFile, "--yes"];
     if (environmentPrefix) {
-      args.push('--prefix', environmentPrefix);
+      args.push("--prefix", environmentPrefix);
     } else if (environmentName) {
-      args.push('--name', environmentName);
+      args.push("--name", environmentName);
     } else {
-      args.push('--name', defaultEnvironmentName);
+      args.push("--name", defaultEnvironmentName);
     }
 
     this.execSync(args, {
-      stdio: 'inherit',
+      stdio: "inherit",
     });
   }
 
-  public exportEnvironment(opts: { environmentName?: string; environmentPrefix?: string; json?: boolean }): string;
-  public exportEnvironment(opts: { environmentName?: string; environmentPrefix?: string; json?: boolean; outputFile: string }): void;
+  public exportEnvironment(opts: {
+    environmentName?: string;
+    environmentPrefix?: string;
+    json?: boolean;
+  }): string;
+  public exportEnvironment(opts: {
+    environmentName?: string;
+    environmentPrefix?: string;
+    json?: boolean;
+    outputFile: string;
+  }): void;
   public exportEnvironment(opts: EnvExportOptions): void | string {
     const { environmentName, environmentPrefix, json, outputFile } = opts;
-    this.logger.debug(`Exporting conda environment '${environmentName ?? environmentPrefix ?? defaultEnvironmentName}'...`);
+    this.logger.debug(
+      `Exporting conda environment '${environmentName ?? environmentPrefix ?? defaultEnvironmentName}'...`,
+    );
 
-    const file = outputFile ? fs.openSync(outputFile, 'w') : 'pipe';
+    const file = outputFile ? fs.openSync(outputFile, "w") : "pipe";
 
-    const args = ['env', 'export'];
+    const args = ["env", "export"];
     if (environmentPrefix) {
-      args.push('--prefix', environmentPrefix);
+      args.push("--prefix", environmentPrefix);
     } else if (environmentName) {
-      args.push('--name', environmentName);
+      args.push("--name", environmentName);
     } else {
-      args.push('--name', defaultEnvironmentName);
+      args.push("--name", defaultEnvironmentName);
     }
     if (json) {
-      args.push('--json');
+      args.push("--json");
     }
 
     try {
       const envInfo = this.execSync(args, {
-        stdio: ['inherit', file, 'inherit'],
+        stdio: ["inherit", file, "inherit"],
       });
 
       if (!outputFile) {
         return envInfo;
       }
     } catch (error) {
-      if (file !== 'pipe') {
+      if (file !== "pipe") {
         fs.closeSync(file);
       }
       if (outputFile) {
@@ -144,7 +161,7 @@ export class micromamba {
       throw error;
     }
 
-    if (file !== 'pipe') {
+    if (file !== "pipe") {
       fs.closeSync(file);
     }
   }
@@ -153,19 +170,24 @@ export class micromamba {
     const { environmentName, environmentPrefix } = opts;
 
     if (environmentPrefix) {
-      this.logger.debug(`Deleting conda environment '${environmentName ?? environmentPrefix ?? defaultEnvironmentName}'...`);
+      this.logger.debug(
+        `Deleting conda environment '${environmentName ?? environmentPrefix ?? defaultEnvironmentName}'...`,
+      );
       fs.rmSync(environmentPrefix, { recursive: true });
       return;
     }
 
     const result = this.exportEnvironment({ environmentName, environmentPrefix, json: true });
-    const envInfo = JSON.parse(result ?? '{}') as Record<string, unknown>;
+    const envInfo = JSON.parse(result ?? "{}") as Record<string, unknown>;
 
     if (envInfo.prefix) {
-      this.logger.debug(`Deleting conda environment '${environmentName ?? environmentPrefix ?? defaultEnvironmentName}'...`);
+      this.logger.debug(
+        `Deleting conda environment '${environmentName ?? environmentPrefix ?? defaultEnvironmentName}'...`,
+      );
       fs.rmSync(envInfo.prefix as string, { recursive: true });
     } else {
-      const errMsg = 'Failed to delete environment: cannot get environment location from micromamba tool';
+      const errMsg =
+        "Failed to delete environment: cannot get environment location from micromamba tool";
       this.logger.error(errMsg);
       throw new Error(errMsg);
     }
@@ -173,16 +195,16 @@ export class micromamba {
 
   // FIXME: IMHO better to have async exec with promises. I just am not skilled enough to implement it fast. :(
   private execSync(args: string[], opts?: SpawnSyncOptions): string | void {
-    this.logger.debug(`Executing micromamba: ${this.binaryPath} ${args.join(' ')}`);
+    this.logger.debug(`Executing micromamba: ${this.binaryPath} ${args.join(" ")}`);
 
     const result = spawnSync(this.binaryPath, args, {
-      encoding: 'utf8',
-      stdio: 'pipe',
+      encoding: "utf8",
+      stdio: "pipe",
       ...opts,
       env: {
         ...process.env,
         MAMBA_ROOT_PREFIX: this.rootPrefix,
-        CONDA_PKGS_DIRS: path.join(this.rootPrefix, 'pkgs'),
+        CONDA_PKGS_DIRS: path.join(this.rootPrefix, "pkgs"),
         ...opts?.env,
       },
     });
@@ -192,7 +214,7 @@ export class micromamba {
     }
 
     if (result.status !== 0) {
-      const errMsg = `micromamba command failed with status ${result.status}: ${result.stderr?.toString().trim() ?? 'no piped stderr'}`;
+      const errMsg = `micromamba command failed with status ${result.status}: ${result.stderr?.toString().trim() ?? "no piped stderr"}`;
       this.logger.error(errMsg);
       throw new Error(errMsg);
     }
@@ -206,7 +228,7 @@ export class micromamba {
 }
 
 export function micromambaDownloadUrl(version: string, platform: util.PlatformType): string {
-  return (version === 'latest')
+  return version === "latest"
     ? `https://github.com/mamba-org/micromamba-releases/releases/latest/download/${micromambaAssetName(platform)}`
     : `https://github.com/mamba-org/micromamba-releases/releases/download/${version}/${micromambaAssetName(platform)}`;
 }
@@ -218,7 +240,7 @@ export async function downloadMicromamba(
   logger: winston.Logger,
   options: MicromambaDownloadOptions,
 ): Promise<string> {
-  const { version = 'latest', platform, outputPath } = options;
+  const { version = "latest", platform, outputPath } = options;
 
   const targetPlatform = platform ?? util.currentPlatform();
   const binaryPath = outputPath;
@@ -245,34 +267,34 @@ export async function downloadMicromamba(
 function micromambaAssetName(platform: util.PlatformType): string {
   const { os, arch } = util.splitPlatform(platform);
   switch (os) {
-    case 'linux': {
+    case "linux": {
       switch (arch) {
-        case 'x64':
-          return 'micromamba-linux-64';
-        case 'aarch64':
-          return 'micromamba-linux-aarch64';
+        case "x64":
+          return "micromamba-linux-64";
+        case "aarch64":
+          return "micromamba-linux-aarch64";
         default:
           util.assertNever(arch);
       }
       break;
     }
-    case 'macosx': {
+    case "macosx": {
       switch (arch) {
-        case 'x64':
-          return 'micromamba-osx-64';
-        case 'aarch64':
-          return 'micromamba-osx-arm64';
+        case "x64":
+          return "micromamba-osx-64";
+        case "aarch64":
+          return "micromamba-osx-arm64";
         default:
           util.assertNever(arch);
       }
       break;
     }
-    case 'windows': {
+    case "windows": {
       switch (arch) {
-        case 'x64':
-          return 'micromamba-win-64';
-        case 'aarch64':
-          throw new Error('Micromamba does not support ARM64 on Windows');
+        case "x64":
+          return "micromamba-win-64";
+        case "aarch64":
+          throw new Error("Micromamba does not support ARM64 on Windows");
         default:
           util.assertNever(arch);
       }
@@ -281,13 +303,17 @@ function micromambaAssetName(platform: util.PlatformType): string {
     default:
       util.assertNever(os);
   }
-  throw new Error('calm down linter, this code is unreachable');
+  throw new Error("calm down linter, this code is unreachable");
 }
 
 /**
  * Downloads a file from URL to local path
  */
-async function downloadFile(logger: winston.Logger, url: string, outputPath: string): Promise<void> {
+async function downloadFile(
+  logger: winston.Logger,
+  url: string,
+  outputPath: string,
+): Promise<void> {
   type responseInfo = {
     statusCode: number;
     body: NodeJS.ReadableStream;
@@ -300,17 +326,17 @@ async function downloadFile(logger: winston.Logger, url: string, outputPath: str
 
   let redirCount = 0;
   let attempt = 0;
-  for (; attempt <= maxAttempts;) {
+  for (; attempt <= maxAttempts; ) {
     attempt++;
 
     logger.debug(`Trying to download: ${url}`);
     try {
       const requestResult = await undici.request(url, {
-        method: 'GET',
+        method: "GET",
       });
       response = {
         statusCode: requestResult.statusCode,
-        location: requestResult.headers['location']?.toString() ?? '',
+        location: requestResult.headers["location"]?.toString() ?? "",
         body: requestResult.body,
       };
     } catch (error) {
@@ -345,12 +371,12 @@ async function downloadFile(logger: winston.Logger, url: string, outputPath: str
   response!.body.pipe(fileStream);
 
   return new Promise((resolve, reject) => {
-    fileStream.on('finish', () => {
+    fileStream.on("finish", () => {
       fileStream.close();
       resolve();
     });
 
-    fileStream.on('error', (err) => {
+    fileStream.on("error", (err) => {
       fs.unlink(outputPath, () => {}); // Delete the file on error
       reject(err);
     });

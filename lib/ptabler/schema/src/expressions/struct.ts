@@ -1,5 +1,5 @@
-import type { DataType } from '../common';
-import type { Expression } from './base';
+import type { DataType } from "../common";
+import type { Expression } from "./base";
 
 /**
  * Represents a struct field access operation.
@@ -14,7 +14,7 @@ import type { Expression } from './base';
  */
 export interface StructFieldExpression {
   /** The type of operation, always 'struct_field'. */
-  type: 'struct_field';
+  type: "struct_field";
   /** The struct expression to extract fields from. */
   struct: Expression;
   /**

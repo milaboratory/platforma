@@ -6,8 +6,8 @@ import type {
   PTableSorting,
   PTableVector,
   TableRange,
-} from '@milaboratories/pl-model-common';
-import type { PTableId } from './common';
+} from "@milaboratories/pl-model-common";
+import type { PTableId } from "./common";
 
 /**
  * Table view returned as a result of create table operation.
@@ -34,17 +34,13 @@ export interface PTableV8 extends Disposable {
    * Get PTable disk footprint in bytes
    * Warning: This call materializes the join.
    */
-  getFootprint(ops?: {
-    signal?: AbortSignal;
-  }): Promise<number>;
+  getFootprint(ops?: { signal?: AbortSignal }): Promise<number>;
 
   /**
    * Unified table shape
    * Warning: This call materializes the join.
    */
-  getShape(ops?: {
-    signal?: AbortSignal;
-  }): Promise<PTableShape>;
+  getShape(ops?: { signal?: AbortSignal }): Promise<PTableShape>;
 
   /**
    * Retrieve the data from the table. To retrieve only data required, it can be

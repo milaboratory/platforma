@@ -1,20 +1,15 @@
-import type { PlTreeEntry, PlTreeEntryAccessor } from '@milaboratories/pl-tree';
-import type { MiddleLayerEnvironment } from './middle_layer';
-import type { ComputableStableDefined } from '@milaboratories/computable';
-import { Computable } from '@milaboratories/computable';
-import { Pl, resourceTypesEqual } from '@milaboratories/pl-client';
-import type {
-  FrontendFromFolderData,
-  FrontendFromUrlData } from '../model';
-import {
-  FrontendFromFolderResourceType,
-  FrontendFromUrlResourceType,
-} from '../model';
-import type { UrlResult } from '@milaboratories/pl-drivers';
-import { projectFieldName } from '../model/project_model';
-import { BlockPackFrontendField } from '../mutator/block-pack/block_pack';
-import { getBlockPackInfo } from './util';
-import type { FrontendData } from '../model/frontend';
+import type { PlTreeEntry, PlTreeEntryAccessor } from "@milaboratories/pl-tree";
+import type { MiddleLayerEnvironment } from "./middle_layer";
+import type { ComputableStableDefined } from "@milaboratories/computable";
+import { Computable } from "@milaboratories/computable";
+import { Pl, resourceTypesEqual } from "@milaboratories/pl-client";
+import type { FrontendFromFolderData, FrontendFromUrlData } from "../model";
+import { FrontendFromFolderResourceType, FrontendFromUrlResourceType } from "../model";
+import type { UrlResult } from "@milaboratories/pl-drivers";
+import { projectFieldName } from "../model/project_model";
+import { BlockPackFrontendField } from "../mutator/block-pack/block_pack";
+import { getBlockPackInfo } from "./util";
+import type { FrontendData } from "../model/frontend";
 
 function kernel(
   frontendRes: PlTreeEntryAccessor,
@@ -51,7 +46,7 @@ function frontendUrlComputable(
     {
       postprocessValue: (v) => {
         if (v === undefined) return undefined;
-        if (typeof v === 'string') return v;
+        if (typeof v === "string") return v;
         if (v.error !== undefined) throw new Error(v.error);
         return v.url;
       },
@@ -71,11 +66,11 @@ export function frontendData(
       const frontendEntry = prj
         .traverse(
           {
-            field: projectFieldName(id, 'blockPack'),
-            assertFieldType: 'Dynamic',
+            field: projectFieldName(id, "blockPack"),
+            assertFieldType: "Dynamic",
           },
-          { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true },
-          { field: BlockPackFrontendField, assertFieldType: 'Input' },
+          { field: Pl.HolderRefField, assertFieldType: "Input", errorIfFieldNotFound: true },
+          { field: BlockPackFrontendField, assertFieldType: "Input" },
         )
         ?.persist();
       return {
@@ -83,6 +78,6 @@ export function frontendData(
         sdkVersion: bp?.cfg.sdkVersion,
       };
     },
-    { mode: 'StableOnlyLive' },
+    { mode: "StableOnlyLive" },
   ) as ComputableStableDefined<FrontendData>;
 }

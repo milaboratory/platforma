@@ -1,9 +1,9 @@
-import type { AnyBin, BinLike } from './types';
-import type { Bin } from 'd3-array';
+import type { AnyBin, BinLike } from "./types";
+import type { Bin } from "d3-array";
 
 export function normalizeBins(bins: (Bin<number, number> | AnyBin)[]): BinLike[] {
   return bins.map((it) => {
-    if ('from' in it) {
+    if ("from" in it) {
       return {
         x0: it.from,
         x1: it.to,

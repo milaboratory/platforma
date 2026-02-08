@@ -1,5 +1,5 @@
-import type { Watcher } from './watcher';
-import { Aborted } from '@milaboratories/ts-helpers';
+import type { Watcher } from "./watcher";
+import { Aborted } from "@milaboratories/ts-helpers";
 
 /**
  * Global registry to pin watchers that have pending awaitChange() promises.
@@ -45,8 +45,8 @@ export class HierarchicalWatcher implements Watcher {
   }
 
   private setParent(parent: HierarchicalWatcher) {
-    if (this.changed) throw new Error('parent can\'t be set to changed watcher');
-    if (this.parent !== undefined) throw new Error('parent can be set only if it wasn\'t reset');
+    if (this.changed) throw new Error("parent can't be set to changed watcher");
+    if (this.parent !== undefined) throw new Error("parent can be set only if it wasn't reset");
     this.parent = parent;
   }
 
@@ -113,7 +113,7 @@ export class HierarchicalWatcher implements Watcher {
 
         const resolveCb = () => {
           // removing our promise from abort signal listener
-          abortSignal.removeEventListener('abort', abortCb);
+          abortSignal.removeEventListener("abort", abortCb);
           // Unpin watcher from global registry
           activePendingWatchers.delete(callId);
           // resolving the promise to send the change signal
@@ -121,7 +121,7 @@ export class HierarchicalWatcher implements Watcher {
         };
 
         // listening if abort event happens before watcher was marked as changed
-        abortSignal.addEventListener('abort', abortCb);
+        abortSignal.addEventListener("abort", abortCb);
 
         // adding callback to be called once the watcher is marked as changed
         callbacks.set(callId, resolveCb);

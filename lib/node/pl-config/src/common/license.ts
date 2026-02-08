@@ -1,18 +1,18 @@
-import upath from 'upath';
-import os from 'node:os';
-import { assertNever, fileExists } from '@milaboratories/ts-helpers';
-import type { PlLicenseSettings } from './types';
-import * as fs from 'node:fs/promises';
+import upath from "upath";
+import os from "node:os";
+import { assertNever, fileExists } from "@milaboratories/ts-helpers";
+import type { PlLicenseSettings } from "./types";
+import * as fs from "node:fs/promises";
 
 /** How to get a license. */
 export type PlLicenseMode = PlLicenseEnv | PlLicensePlain;
 
 export type PlLicenseEnv = {
-  readonly type: 'env';
+  readonly type: "env";
 };
 
 export type PlLicensePlain = {
-  readonly type: 'plain';
+  readonly type: "plain";
   readonly value: string;
 };
 
@@ -20,21 +20,21 @@ export type PlLicensePlain = {
 export type License = LicenseValue | LicenseFile;
 
 export type LicenseValue = {
-  readonly type: 'value';
+  readonly type: "value";
   readonly value: string;
 };
 
 export type LicenseFile = {
-  readonly type: 'file';
+  readonly type: "file";
   readonly file: string;
 };
 
 export async function getLicense(opts: PlLicenseMode) {
   const t = opts.type;
   switch (t) {
-    case 'plain':
-      return { type: 'value', value: opts.value } satisfies LicenseValue;
-    case 'env':
+    case "plain":
+      return { type: "value", value: opts.value } satisfies LicenseValue;
+    case "env":
       return await getLicenseFromEnv();
     default:
       assertNever(t);
@@ -45,9 +45,9 @@ export async function getLicense(opts: PlLicenseMode) {
 export async function getLicenseValue(opts: PlLicenseMode): Promise<LicenseValue> {
   const license = await getLicense(opts);
 
-  if (license.type == 'file') {
+  if (license.type == "file") {
     const value = await fs.readFile(license.file);
-    return { type: 'value', value: value.toString().trim() };
+    return { type: "value", value: value.toString().trim() };
   }
 
   return license;
@@ -56,36 +56,36 @@ export async function getLicenseValue(opts: PlLicenseMode): Promise<LicenseValue
 /** Gets MI_LICENSE, PL_LICENSE envs or reads a file stored in a homedir or is pointed by envs. */
 export async function getLicenseFromEnv(): Promise<License> {
   let license = undefined;
-  if ((process.env.MI_LICENSE ?? '') != '') license = process.env.MI_LICENSE;
-  else if ((process.env.PL_LICENSE ?? '') != '') license = process.env.PL_LICENSE;
+  if ((process.env.MI_LICENSE ?? "") != "") license = process.env.MI_LICENSE;
+  else if ((process.env.PL_LICENSE ?? "") != "") license = process.env.PL_LICENSE;
   if (license !== undefined)
     return {
-      type: 'value',
+      type: "value",
       value: license,
     };
 
   let licenseFile = undefined;
-  if ((process.env.MI_LICENSE_FILE ?? '') != '') licenseFile = process.env.MI_LICENSE_FILE;
-  else if ((process.env.PL_LICENSE_FILE ?? '') != '') licenseFile = process.env.PL_LICENSE_FILE;
-  else if (await fileExists(upath.resolve(os.homedir(), '.pl.license')))
-    licenseFile = upath.resolve(os.homedir(), '.pl.license');
+  if ((process.env.MI_LICENSE_FILE ?? "") != "") licenseFile = process.env.MI_LICENSE_FILE;
+  else if ((process.env.PL_LICENSE_FILE ?? "") != "") licenseFile = process.env.PL_LICENSE_FILE;
+  else if (await fileExists(upath.resolve(os.homedir(), ".pl.license")))
+    licenseFile = upath.resolve(os.homedir(), ".pl.license");
 
   if (licenseFile !== undefined)
     return {
-      type: 'file',
+      type: "file",
       file: licenseFile,
     };
 
-  throw new Error('no license in envs');
+  throw new Error("no license in envs");
 }
 
 /** Compiles a license secret for MiXCR software. */
 export function licenseEnvsForMixcr(license: License): Record<string, string> {
   const t = license.type;
   switch (t) {
-    case 'value':
+    case "value":
       return { MI_LICENSE: license.value };
-    case 'file':
+    case "file":
       return { MI_LICENSE_FILE: license.file };
     default:
       assertNever(t);
@@ -96,10 +96,10 @@ export function licenseEnvsForMixcr(license: License): Record<string, string> {
 export function licenseForConfig(license: License): PlLicenseSettings {
   const t = license.type;
   switch (t) {
-    case 'value':
-      return { value: license.value, file: '' };
-    case 'file':
-      return { value: '', file: license.file };
+    case "value":
+      return { value: license.value, file: "" };
+    case "file":
+      return { value: "", file: license.file };
     default:
       assertNever(t);
   }

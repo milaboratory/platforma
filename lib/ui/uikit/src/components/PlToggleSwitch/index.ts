@@ -1,1 +1,1 @@
-export { default as PlToggleSwitch } from './PlToggleSwitch.vue';
+export { default as PlToggleSwitch } from "./PlToggleSwitch.vue";

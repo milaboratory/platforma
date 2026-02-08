@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { PlBlockPage, PlElementList } from '@platforma-sdk/ui-vue';
-import { ref, toRaw, watch } from 'vue';
-import { randomRangeInt, range } from '@milaboratories/helpers';
+import { PlBlockPage, PlElementList } from "@platforma-sdk/ui-vue";
+import { ref, toRaw, watch } from "vue";
+import { randomRangeInt, range } from "@milaboratories/helpers";
 
 type Item = {
   id: number;
@@ -18,13 +18,14 @@ type Item = {
   toggable: boolean;
   toggled: boolean;
 };
-const description = 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum';
+const description =
+  "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum";
 
 function generateList(): Item[] {
   return [...range(1, 10)].map((i) => {
-    return ({
+    return {
       id: i,
-      label: `Item ${i};` + (Math.random() > 0.8 ? description : ''),
+      label: `Item ${i};` + (Math.random() > 0.8 ? description : ""),
       description: description.substring(0, randomRangeInt(100, description.length)),
 
       active: i % 2 === 0,
@@ -36,7 +37,7 @@ function generateList(): Item[] {
       pinned: false,
       toggable: true,
       toggled: false,
-    });
+    };
   });
 }
 
@@ -46,14 +47,18 @@ const updateDescription = (item: Item) => {
   item.description = description.substring(0, randomRangeInt(100, description.length));
 };
 
-watch(list, () => {
-  console.log('list changed', toRaw(list.value));
-}, { deep: true });
+watch(
+  list,
+  () => {
+    console.log("list changed", toRaw(list.value));
+  },
+  { deep: true },
+);
 
 const isActiveItem = (item: Item) => item.active;
 const isDraggableItem = (item: Item) => item.draggable;
 const onSortItems = (from: number, to: number) => {
-  console.log('onSort', from, to);
+  console.log("onSort", from, to);
   if (enabledManualControl.value) {
     const array = list.value;
     const element = array.splice(from, 1)[0];
@@ -101,7 +106,6 @@ const handleReset = () => {
 const handleShuffle = () => {
   list.value = [...list.value].sort(() => Math.random() - 0.5);
 };
-
 </script>
 
 <template>
@@ -113,36 +117,36 @@ const handleShuffle = () => {
         <button :class="$style.button" @click="handleReset">Reset</button>
         <button :class="$style.button" @click="handleShuffle">Shuffle</button>
         <button :class="$style.button" @click="enabledSorting = !enabledSorting">
-          {{ enabledSorting ? 'Enabled' : 'Disabled' }} sorting
+          {{ enabledSorting ? "Enabled" : "Disabled" }} sorting
         </button>
         <button :class="$style.button" @click="enabledDragging = !enabledDragging">
-          {{ enabledDragging ? 'Enabled' : 'Disabled' }} dragging
+          {{ enabledDragging ? "Enabled" : "Disabled" }} dragging
         </button>
         <button :class="$style.button" @click="enabledExpanding = !enabledExpanding">
-          {{ enabledExpanding ? 'Enabled' : 'Disabled' }} expanding
+          {{ enabledExpanding ? "Enabled" : "Disabled" }} expanding
         </button>
         <button :class="$style.button" @click="enabledRemoving = !enabledRemoving">
-          {{ enabledRemoving ? 'Enabled' : 'Disabled' }} removing
+          {{ enabledRemoving ? "Enabled" : "Disabled" }} removing
         </button>
         <button :class="$style.button" @click="enabledPinning = !enabledPinning">
-          {{ enabledPinning ? 'Enabled' : 'Disabled' }} pinning
+          {{ enabledPinning ? "Enabled" : "Disabled" }} pinning
         </button>
         <button :class="$style.button" @click="enabledToggling = !enabledToggling">
-          {{ enabledToggling ? 'Enabled' : 'Disabled' }} toggling
+          {{ enabledToggling ? "Enabled" : "Disabled" }} toggling
         </button>
         <button :class="$style.button" @click="enabledManualControl = !enabledManualControl">
-          {{ enabledManualControl ? 'Enabled' : 'Disabled' }} manual control
+          {{ enabledManualControl ? "Enabled" : "Disabled" }} manual control
         </button>
       </div>
     </template>
     <div v-if="enabledDebug">
       <h4>Reference</h4>
       <div>
-        <div v-for="(item) in list" :key="getKey(item)">
+        <div v-for="item in list" :key="getKey(item)">
           {{ item.id }}
-          {{ item.pinned ? 'pinned' : '' }}
-          {{ item.toggled ? 'toggled' : '' }}
-          {{ item.expanded ? 'expanded' : '' }}
+          {{ item.pinned ? "pinned" : "" }}
+          {{ item.toggled ? "toggled" : "" }}
+          {{ item.expanded ? "expanded" : "" }}
         </div>
       </div>
     </div>
@@ -151,7 +155,6 @@ const handleShuffle = () => {
     <PlElementList
       v-model:items="list"
       :get-item-key="getKey"
-
       :is-active="isActiveItem"
       :is-draggable="isDraggableItem"
       :on-sort="onSortItems"
@@ -166,7 +169,6 @@ const handleShuffle = () => {
       :is-pinnable="isPinnableItem"
       :is-pinned="isPinnedItem"
       :on-pin="onPinItem"
-
       :disableDragging="!enabledDragging"
       :disableRemoving="!enabledRemoving"
       :disableToggling="!enabledToggling"

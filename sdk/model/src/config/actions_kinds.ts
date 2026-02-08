@@ -1,19 +1,19 @@
-import type { ConfAction, ActionResult, InferVarTypeSafe, PlResourceEntry } from './type_engine';
-import type { And, IsA, SyncConfAction } from './type_util';
+import type { ConfAction, ActionResult, InferVarTypeSafe, PlResourceEntry } from "./type_engine";
+import type { And, IsA, SyncConfAction } from "./type_util";
 import type {
   LocalBlobHandleAndSize,
   RemoteBlobHandleAndSize,
   ImportProgress,
   FolderURL,
-} from '@milaboratories/pl-model-common';
-import type { AnyLogHandle } from '@milaboratories/pl-model-common';
+} from "@milaboratories/pl-model-common";
+import type { AnyLogHandle } from "@milaboratories/pl-model-common";
 
 //
 // Context
 //
 
 export interface ActGetFromCtx<V extends string> extends ConfAction {
-  new: (x: this['ctx']) => InferVarTypeSafe<typeof x, V>;
+  new: (x: this["ctx"]) => InferVarTypeSafe<typeof x, V>;
   isSync: true;
 }
 
@@ -22,7 +22,7 @@ export interface ActGetFromCtx<V extends string> extends ConfAction {
 //
 
 export interface ActIsolate<Nested extends ConfAction> extends ConfAction {
-  new: (x: this['ctx']) => ActionResult<Nested, typeof x>;
+  new: (x: this["ctx"]) => ActionResult<Nested, typeof x>;
   isSync: false;
 }
 
@@ -36,14 +36,14 @@ export interface ActGetImmediate<T> extends ConfAction {
 }
 
 export interface ActMakeObject<T extends Record<string, ConfAction>> extends ConfAction {
-  new: (x: this['ctx']) => {
+  new: (x: this["ctx"]) => {
     [Key in keyof T]: ActionResult<T[Key], typeof x>;
   };
   isSync: IsA<T, Record<string, SyncConfAction>>;
 }
 
 export interface ActMakeArray<T extends ConfAction[]> extends ConfAction {
-  new: (x: this['ctx']) => {
+  new: (x: this["ctx"]) => {
     [Key in keyof T]: ActionResult<T[Key], typeof x>;
   };
   isSync: IsA<T, SyncConfAction[]>;
@@ -53,10 +53,12 @@ export interface ActMakeArray<T extends ConfAction[]> extends ConfAction {
 // Json Transformers
 //
 
-export interface ActGetField<Source extends ConfAction, Field extends ConfAction>
-  extends ConfAction {
+export interface ActGetField<
+  Source extends ConfAction,
+  Field extends ConfAction,
+> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => InferVarTypeSafe<ActionResult<Source, typeof x>, ActionResult<Field, typeof x>>;
   isSync: true;
 }
@@ -67,7 +69,7 @@ export interface ActMapRecordValues<
   ItVar extends string,
 > extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends Record<string, infer V>
     ? Record<string, ActionResult<Mapping, typeof x & { [K in ItVar]: V }>>
     : unknown;
@@ -80,7 +82,7 @@ export interface ActMapArrayValues<
   ItVar extends string,
 > extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends (infer V)[]
     ? ActionResult<Mapping, typeof x & { [K in ItVar]: V }>[]
     : unknown;
@@ -88,7 +90,7 @@ export interface ActMapArrayValues<
 }
 
 export interface ActFlatten<Sources extends ConfAction> extends ConfAction {
-  new: (x: this['ctx']) => ActionResult<Sources, typeof x> extends (infer V)[][] ? V[] : unknown;
+  new: (x: this["ctx"]) => ActionResult<Sources, typeof x> extends (infer V)[][] ? V[] : unknown;
   isSync: IsA<Sources, SyncConfAction[]>;
 }
 
@@ -98,19 +100,19 @@ export interface ActFlatten<Sources extends ConfAction> extends ConfAction {
 
 export interface ActIsEmpty<Source extends ConfAction> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends unknown[] | string | undefined ? boolean : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 
 export interface ActNot<Source extends ConfAction> extends ConfAction {
-  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends boolean ? boolean : unknown;
+  new: (x: this["ctx"]) => ActionResult<Source, typeof x> extends boolean ? boolean : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 
 export interface ActAnd<Source1 extends ConfAction, Source2 extends ConfAction> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source1, typeof x> extends boolean
     ? ActionResult<Source2, typeof x> extends boolean
       ? boolean
@@ -121,7 +123,7 @@ export interface ActAnd<Source1 extends ConfAction, Source2 extends ConfAction> 
 
 export interface ActOr<Source1 extends ConfAction, Source2 extends ConfAction> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source1, typeof x> extends boolean
     ? ActionResult<Source2, typeof x> extends boolean
       ? boolean
@@ -134,10 +136,12 @@ export interface ActOr<Source1 extends ConfAction, Source2 extends ConfAction> e
 // Resource
 //
 
-export interface ActGetResourceField<Source extends ConfAction, Field extends ConfAction>
-  extends ConfAction {
+export interface ActGetResourceField<
+  Source extends ConfAction,
+  Field extends ConfAction,
+> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends PlResourceEntry
     ? ActionResult<Field, typeof x> extends string
       ? PlResourceEntry
@@ -152,7 +156,7 @@ export interface ActMapResourceFields<
   ItVar extends string,
 > extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends PlResourceEntry
     ? Record<string, ActionResult<Mapping, typeof x & { [K in ItVar]: PlResourceEntry }>>
     : unknown;
@@ -164,7 +168,7 @@ export interface ActMapResourceFields<
 //
 
 export interface ActGetResourceValueAsJson<Source extends ConfAction, T> extends ConfAction {
-  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry ? T : unknown;
+  new: (x: this["ctx"]) => ActionResult<Source, typeof x> extends PlResourceEntry ? T : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 
@@ -174,33 +178,33 @@ export interface ActGetResourceValueAsJson<Source extends ConfAction, T> extends
 
 export interface ActGetBlobContent<Source extends ConfAction> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends PlResourceEntry ? Uint8Array : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 
 export interface ActGetBlobContentAsString<Source extends ConfAction> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends PlResourceEntry ? string : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 
 export interface ActGetBlobContentAsJson<Source extends ConfAction, T> extends ConfAction {
-  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry ? T : unknown;
+  new: (x: this["ctx"]) => ActionResult<Source, typeof x> extends PlResourceEntry ? T : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 
 export interface ActGetDownloadedBlobContent<Source extends ConfAction> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends PlResourceEntry ? LocalBlobHandleAndSize : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 
 export interface ActGetOnDemandBlobContent<Source extends ConfAction> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends PlResourceEntry ? RemoteBlobHandleAndSize : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
@@ -211,7 +215,7 @@ export interface ActGetOnDemandBlobContent<Source extends ConfAction> extends Co
 
 export interface ActExtractArchiveAndGetURL<Source extends ConfAction> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends PlResourceEntry ? FolderURL : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
@@ -222,7 +226,7 @@ export interface ActExtractArchiveAndGetURL<Source extends ConfAction> extends C
 
 export interface ActImportProgress<Source extends ConfAction> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends PlResourceEntry ? ImportProgress : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
@@ -233,28 +237,28 @@ export interface ActImportProgress<Source extends ConfAction> extends ConfAction
 
 export interface ActGetLastLogs<Source extends ConfAction> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends PlResourceEntry ? string : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 
 export interface ActGetProgressLog<Source extends ConfAction> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends PlResourceEntry ? string : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 
 export interface ActGetProgressLogWithInfo<Source extends ConfAction> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends PlResourceEntry ? string : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 
 export interface ActGetLogHandle<Source extends ConfAction> extends ConfAction {
   new: (
-    x: this['ctx']
+    x: this["ctx"],
   ) => ActionResult<Source, typeof x> extends PlResourceEntry ? AnyLogHandle : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }

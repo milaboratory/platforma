@@ -1,12 +1,12 @@
-import { Command, Flags } from '@oclif/core';
-import fs from 'node:fs';
-import path from 'node:path';
+import { Command, Flags } from "@oclif/core";
+import fs from "node:fs";
+import path from "node:path";
 
 async function getFileContent(path: string) {
   try {
-    return await fs.promises.readFile(path, 'utf8');
+    return await fs.promises.readFile(path, "utf8");
   } catch (error: unknown) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return undefined;
     }
     throw error;
@@ -14,29 +14,29 @@ async function getFileContent(path: string) {
 }
 
 export default class BuildModel extends Command {
-  static override description
-    = 'Extracts and outputs block model JSON from pre-built block model module';
+  static override description =
+    "Extracts and outputs block model JSON from pre-built block model module";
 
   static flags = {
     modulePath: Flags.string({
-      char: 'i',
-      summary: 'input module path',
-      helpValue: '<path>',
-      default: '.',
+      char: "i",
+      summary: "input module path",
+      helpValue: "<path>",
+      default: ".",
     }),
 
     sourceBundle: Flags.string({
-      char: 'b',
-      summary: 'bundled model code to embed into the model for callback-based rendering to work',
-      helpValue: '<path>',
-      default: './dist/bundle.js',
+      char: "b",
+      summary: "bundled model code to embed into the model for callback-based rendering to work",
+      helpValue: "<path>",
+      default: "./dist/bundle.js",
     }),
 
     destination: Flags.string({
-      char: 'o',
-      summary: 'output model file',
-      helpValue: '<path>',
-      default: './dist/model.json',
+      char: "o",
+      summary: "output model file",
+      helpValue: "<path>",
+      default: "./dist/model.json",
     }),
   };
 
@@ -55,21 +55,18 @@ export default class BuildModel extends Command {
 
     if (!config)
       throw new Error(
-        'Malformed "model" object, check it is created with "BlockModel" '
-        + 'and ".done()" is executed as the call in the chain.',
+        'Malformed "model" object, check it is created with "BlockModel" ' +
+          'and ".done()" is executed as the call in the chain.',
       );
 
-    if (
-      !('outputs' in config)
-      || !('sections' in config)
-    )
+    if (!("outputs" in config) || !("sections" in config))
       throw new Error('"config" has unexpected structure');
 
     const code = await getFileContent(flags.sourceBundle);
     if (code !== undefined) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       config.code = {
-        type: 'plain',
+        type: "plain",
         content: code,
       };
     }

@@ -1,4 +1,4 @@
-import type { Expression } from './base';
+import type { Expression } from "./base";
 
 /**
  * Represents a regex matching operation using ECMAScript regular expressions.
@@ -7,7 +7,7 @@ import type { Expression } from './base';
  */
 export interface MatchesEcmaRegexExpression {
   /** The type of operation, always 'matches_ecma_regex'. */
-  type: 'matches_ecma_regex';
+  type: "matches_ecma_regex";
   /** The string expression whose value will be compared. */
   value: Expression;
   /** The ECMAScript regular expression to match against. */
@@ -21,7 +21,7 @@ export interface MatchesEcmaRegexExpression {
  */
 export interface ContainsFuzzyMatchExpression {
   /** The type of operation, always 'contains_fuzzy_match'. */
-  type: 'contains_fuzzy_match';
+  type: "contains_fuzzy_match";
   /** The string expression whose value will be compared. */
   value: Expression;
   /** The string reference to compare against. */
@@ -48,7 +48,7 @@ export interface ContainsFuzzyMatchExpression {
  */
 export interface ReplaceEcmaRegexExpression {
   /** The type of operation, always 'replace_ecma_regex'. */
-  type: 'replace_ecma_regex';
+  type: "replace_ecma_regex";
   /** The string expression whose value will be replaced. */
   value: Expression;
   /**
@@ -106,7 +106,7 @@ export interface ReplaceEcmaRegexExpression {
  */
 export interface ExtractEcmaRegexExpression {
   /** The type of operation, always 'extract_ecma_regex'. */
-  type: 'extract_ecma_regex';
+  type: "extract_ecma_regex";
   /** The string expression whose value will be extracted. */
   value: Expression;
   /**

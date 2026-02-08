@@ -1,10 +1,19 @@
 <script lang="ts" setup>
-import Layout from '../Layout.vue';
-import { PlBlockPage, PlBtnGroup, PlDropdown, PlRow, PlTextField, PlGrid, PlContainer, PlBtnGhost } from '@milaboratories/uikit';
-import { reactive } from 'vue';
+import Layout from "../Layout.vue";
+import {
+  PlBlockPage,
+  PlBtnGroup,
+  PlDropdown,
+  PlRow,
+  PlTextField,
+  PlGrid,
+  PlContainer,
+  PlBtnGhost,
+} from "@milaboratories/uikit";
+import { reactive } from "vue";
 
 const data = reactive({
-  str: '',
+  str: "",
   tab: 1,
 });
 </script>

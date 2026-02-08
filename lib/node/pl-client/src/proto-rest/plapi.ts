@@ -4,1485 +4,1485 @@
  */
 
 export interface paths {
-    "/v1/auth/jwt-token": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_GetJWTToken"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/v1/auth/jwt-token": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/auth/methods": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Authentication */
-        get: operations["Platform_AuthMethods"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Platform_GetJWTToken"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/auth/methods": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/controller/aliases-and-urls": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_WriteControllerAliasesAndUrls"];
-        delete: operations["Platform_RemoveControllerAliasesAndUrls"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** @description Authentication */
+    get: operations["Platform_AuthMethods"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/controller/aliases-and-urls": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/controller/attach-subscription": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_ControllerAttachSubscription"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Platform_WriteControllerAliasesAndUrls"];
+    delete: operations["Platform_RemoveControllerAliasesAndUrls"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/controller/attach-subscription": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/controller/create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_ControllerCreate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Platform_ControllerAttachSubscription"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/controller/create": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/controller/deregister": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_ControllerDeregister"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Platform_ControllerCreate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/controller/deregister": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/controller/exists": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_ControllerExists"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Platform_ControllerDeregister"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/controller/exists": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/controller/features": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_ControllerSetFeatures"];
-        delete: operations["Platform_ControllerClearFeatures"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Platform_ControllerExists"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/controller/features": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/controller/get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_ControllerGet"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Platform_ControllerSetFeatures"];
+    delete: operations["Platform_ControllerClearFeatures"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/controller/get": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/controller/notifications": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_GetControllerNotifications"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Platform_ControllerGet"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/controller/notifications": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/controller/register": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Controllers */
-        post: operations["Platform_ControllerRegister"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Platform_GetControllerNotifications"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/controller/register": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/controller/update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_ControllerUpdate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** @description Controllers */
+    post: operations["Platform_ControllerRegister"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/controller/update": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/controller/url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_GetControllerUrl"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Platform_ControllerUpdate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/controller/url": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/license": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["Platform_License"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Platform_GetControllerUrl"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/license": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/locks/lease": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put: operations["Platform_UpdateLease"];
-        /** @description Locks */
-        post: operations["Platform_LeaseResource"];
-        delete: operations["Platform_ReleaseLease"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["Platform_License"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/locks/lease": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/notifications/get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_NotificationsGet"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put: operations["Platform_UpdateLease"];
+    /** @description Locks */
+    post: operations["Platform_LeaseResource"];
+    delete: operations["Platform_ReleaseLease"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/notifications/get": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/ping": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Various service requests */
-        get: operations["Platform_Ping"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Platform_NotificationsGet"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/ping": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/resource-types": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Other stuff */
-        get: operations["Platform_ListResourceTypes"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** @description Various service requests */
+    get: operations["Platform_Ping"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/resource-types": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/subscription/attach-filter": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Subscriptions */
-        post: operations["Platform_SubscriptionAttachFilter"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** @description Other stuff */
+    get: operations["Platform_ListResourceTypes"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/subscription/attach-filter": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/subscription/detach-filter": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_SubscriptionDetachFilter"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** @description Subscriptions */
+    post: operations["Platform_SubscriptionAttachFilter"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/subscription/detach-filter": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/tx-sync": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Platform_TxSync"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["Platform_SubscriptionDetachFilter"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/tx-sync": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    post: operations["Platform_TxSync"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        AttachFilter_Request: {
-            subscriptionId: string;
-            filterName: string;
-            filterId: string;
-        };
-        AttachFilter_Response: Record<string, never>;
-        AttachSubscription_Request: {
-            controllerId: string;
-            subscriptionId: string;
-        };
-        AttachSubscription_Response: Record<string, never>;
-        ClearFeatures_Request: {
-            controllerType: string;
-        };
-        ClearFeatures_Response: Record<string, never>;
-        Create_Request: {
-            /** Format: enum */
-            type: number;
-            /** @description field ID is always combination of parent resource ID and field name */
-            id: components["schemas"]["FieldRef"];
-        };
-        Create_Response: {
-            globalId: components["schemas"]["FieldRef"];
-        };
-        Deregister_Request: {
-            controllerType: string;
-        };
-        Deregister_Response: Record<string, never>;
-        DetachFilter_Request: {
-            subscriptionId: string;
-            filterName: string;
-        };
-        DetachFilter_Response: Record<string, never>;
-        Exists_Request: {
-            resourceId: string;
-        };
-        Exists_Response: {
-            exists: boolean;
-        };
-        Field: {
-            /** @description field ID is always combination of parent resource ID and field name */
-            id: components["schemas"]["FieldRef"];
-            /** Format: enum */
-            type: number;
-            features: components["schemas"]["Resource_Features"];
-            /**
-             * @description _resolved_ value of field or _assigned_ if the field was assigned to a resource.
-             *      If field refers to another field, it will get
-             *      value only when this chain of references ends up with direct resource
-             *      reference. At that moment all fields in the chain will get their values
-             *      resolved and will start to refer to the same resource directly.
-             */
-            value: string;
-            /**
-             * Format: enum
-             * @description If the value was empty, assigned or finally resolved.
-             */
-            valueStatus: number;
-            /** @description If the value is in its final state (ready, duplicate or error) */
-            valueIsFinal: boolean;
-            /**
-             * @description Resource error resource id if any.
-             *      Is intended to report problems _from_ platform to client.
-             */
-            error: string;
-        };
-        FieldRef: {
-            resourceId: string;
-            fieldName: string;
-        };
-        FieldSchema: {
-            /** Format: enum */
-            type: number;
-            name: string;
-        };
-        GetJWTToken_Request: {
-            expiration: string;
-        };
-        GetJWTToken_Response: {
-            token: string;
-        };
-        GetNotifications_Request: {
-            controllerType: string;
-            /** Format: uint32 */
-            maxNotifications: number;
-        };
-        GetNotifications_Response: {
-            notifications: components["schemas"]["Notification"][];
-        };
-        GetUrl_Request: {
-            controllerAlias: string;
-            resourceId: string;
-        };
-        GetUrl_Response: {
-            controllerUrl: string;
-        };
-        Get_Request: {
-            resourceId: string;
-            loadFields: boolean;
-        };
-        Get_Response: {
-            resource: components["schemas"]["Resource"];
-        };
-        /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
-        GoogleProtobufAny: {
-            /** @description The type of the serialized message. */
-            "@type": string;
-        } & {
-            [key: string]: unknown;
-        };
-        License_Response: {
-            /** Format: int32 */
-            status: number;
-            isOk: boolean;
-            /**
-             * Format: bytes
-             * @description Raw response body as it was received from the license server.
-             */
-            responseBody: string;
-        };
-        ListMethods_MethodInfo: {
-            type: string;
-            name: string;
-            info: {
-                [key: string]: string;
-            };
-        };
-        ListMethods_Response: {
-            methods: components["schemas"]["ListMethods_MethodInfo"][];
-        };
-        ListResourceTypes_Response: {
-            types: components["schemas"]["ResourceType"][];
-        };
-        Notification: {
-            subscriptionId: string;
-            eventId: string;
-            resourceId: string;
-            resourceType: components["schemas"]["ResourceType"];
-            events: components["schemas"]["Notification_Events"];
-            fieldChanges: {
-                [key: string]: components["schemas"]["Notification_FieldChange"];
-            };
-            payload: components["schemas"]["NotificationFilter_Payload"];
-            filterName: string;
-            txSpan: components["schemas"]["SpanInfo"];
-        };
-        NotificationFilter: {
-            resourceType: components["schemas"]["ResourceType"];
-            resourceId: string;
-            eventFilter: components["schemas"]["NotificationFilter_EventFilter"];
-            payload: components["schemas"]["NotificationFilter_Payload"];
-        };
-        NotificationFilter_EventFilter: {
-            all: boolean;
-            resourceCreated: boolean;
-            resourceDeleted: boolean;
-            resourceReady: boolean;
-            resourceDuplicate: boolean;
-            resourceError: boolean;
-            /** @description Field events */
-            inputsLocked: boolean;
-            outputsLocked: boolean;
-            fieldCreated: boolean;
-            fieldGotError: boolean;
-            inputSet: boolean;
-            allInputsSet: boolean;
-            outputSet: boolean;
-            allOutputsSet: boolean;
-            genericOtwSet: boolean;
-            dynamicChanged: boolean;
-        };
-        NotificationFilter_Payload: {
-            values: {
-                [key: string]: string;
-            };
-        };
-        Notification_Events: {
-            resourceCreated: boolean;
-            resourceDeleted: boolean;
-            resourceReady: boolean;
-            resourceDuplicate: boolean;
-            resourceError: boolean;
-            inputsLocked: boolean;
-            outputsLocked: boolean;
-            fieldCreated: boolean;
-            fieldGotError: boolean;
-            inputSet: boolean;
-            allInputsSet: boolean;
-            outputSet: boolean;
-            allOutputsSet: boolean;
-            genericOtwSet: boolean;
-            dynamicChanged: boolean;
-        };
-        Notification_FieldChange: {
-            old: components["schemas"]["Field"];
-            new: components["schemas"]["Field"];
-        };
-        Ping_Response: {
-            coreVersion: string;
-            coreFullVersion: string;
-            serverInfo: string;
-            /** Format: enum */
-            compression: number;
-            /**
-             * @description instanceID is a unique ID that changes when we reset DB state.
-             *      If we reset a state and a database, but the address of the backend is still the same,
-             *      without instanceID we are not sure if it's the same state or not,
-             *      and UI can't detect it and clear its state (e.g. caches of drivers).
-             */
-            instanceId: string;
-            platform: string;
-            os: string;
-            arch: string;
-        };
-        Register_Request: {
-            controllerType: string;
-            filters: {
-                [key: string]: components["schemas"]["NotificationFilter"];
-            };
-            resourceSchemas: components["schemas"]["ResourceSchema"][];
-        };
-        Register_Response: {
-            controllerId: string;
-            subscriptionId: string;
-        };
-        Release_Request: {
-            resourceId: string;
-            /** Format: bytes */
-            leaseId: string;
-        };
-        Release_Response: Record<string, never>;
-        RemoveAliasesAndUrls_Request: {
-            controllerType: string;
-        };
-        RemoveAliasesAndUrls_Response: Record<string, never>;
-        Resource: {
-            id: string;
-            /** Format: bytes */
-            canonicalId: string;
-            /** Format: enum */
-            kind: number;
-            type: components["schemas"]["ResourceType"];
-            /** Format: bytes */
-            data: string;
-            features: components["schemas"]["Resource_Features"];
-            fields: components["schemas"]["Field"][];
-            /** @description Resource has at least one field with error */
-            hasErrors: boolean;
-            inputsLocked: boolean;
-            outputsLocked: boolean;
-            resourceReady: boolean;
-            isFinal: boolean;
-            originalResourceId: string;
-            parentResourceId: string;
-            /** Format: date-time */
-            createdTime: string;
-            /** Format: date-time */
-            deletedTime: string;
-        };
-        ResourceAPIFeature: {
-            controllerType: string;
-            featureName: string;
-            resourceType: components["schemas"]["ResourceType"];
-            endpoint: string;
-        };
-        ResourceSchema: {
-            type: components["schemas"]["ResourceType"];
-            fields: components["schemas"]["FieldSchema"][];
-        };
-        ResourceType: {
-            name: string;
-            version: string;
-        };
-        Resource_Features: {
-            ephemeral: boolean;
-        };
-        SetFeatures_Request: {
-            features: components["schemas"]["ResourceAPIFeature"][];
-        };
-        SetFeatures_Response: Record<string, never>;
-        SpanInfo: {
-            path: string;
-            carrier: {
-                [key: string]: string;
-            };
-        };
-        /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
-        Status: {
-            /**
-             * Format: int32
-             * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
-             */
-            code: number;
-            /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
-            message: string;
-            /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
-            details: components["schemas"]["GoogleProtobufAny"][];
-        };
-        Sync_Request: {
-            txId: string;
-        };
-        Sync_Response: Record<string, never>;
-        Update_Request: {
-            controllerType: string;
-            filters: {
-                [key: string]: components["schemas"]["NotificationFilter"];
-            };
-            resourceSchemas: components["schemas"]["ResourceSchema"][];
-        };
-        Update_Response: Record<string, never>;
-        WriteAliasesAndUrls_Request: {
-            controllerType: string;
-            aliasesToUrls: {
-                [key: string]: string;
-            };
-        };
-        WriteAliasesAndUrls_Response: Record<string, never>;
+  schemas: {
+    AttachFilter_Request: {
+      subscriptionId: string;
+      filterName: string;
+      filterId: string;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    AttachFilter_Response: Record<string, never>;
+    AttachSubscription_Request: {
+      controllerId: string;
+      subscriptionId: string;
+    };
+    AttachSubscription_Response: Record<string, never>;
+    ClearFeatures_Request: {
+      controllerType: string;
+    };
+    ClearFeatures_Response: Record<string, never>;
+    Create_Request: {
+      /** Format: enum */
+      type: number;
+      /** @description field ID is always combination of parent resource ID and field name */
+      id: components["schemas"]["FieldRef"];
+    };
+    Create_Response: {
+      globalId: components["schemas"]["FieldRef"];
+    };
+    Deregister_Request: {
+      controllerType: string;
+    };
+    Deregister_Response: Record<string, never>;
+    DetachFilter_Request: {
+      subscriptionId: string;
+      filterName: string;
+    };
+    DetachFilter_Response: Record<string, never>;
+    Exists_Request: {
+      resourceId: string;
+    };
+    Exists_Response: {
+      exists: boolean;
+    };
+    Field: {
+      /** @description field ID is always combination of parent resource ID and field name */
+      id: components["schemas"]["FieldRef"];
+      /** Format: enum */
+      type: number;
+      features: components["schemas"]["Resource_Features"];
+      /**
+       * @description _resolved_ value of field or _assigned_ if the field was assigned to a resource.
+       *      If field refers to another field, it will get
+       *      value only when this chain of references ends up with direct resource
+       *      reference. At that moment all fields in the chain will get their values
+       *      resolved and will start to refer to the same resource directly.
+       */
+      value: string;
+      /**
+       * Format: enum
+       * @description If the value was empty, assigned or finally resolved.
+       */
+      valueStatus: number;
+      /** @description If the value is in its final state (ready, duplicate or error) */
+      valueIsFinal: boolean;
+      /**
+       * @description Resource error resource id if any.
+       *      Is intended to report problems _from_ platform to client.
+       */
+      error: string;
+    };
+    FieldRef: {
+      resourceId: string;
+      fieldName: string;
+    };
+    FieldSchema: {
+      /** Format: enum */
+      type: number;
+      name: string;
+    };
+    GetJWTToken_Request: {
+      expiration: string;
+    };
+    GetJWTToken_Response: {
+      token: string;
+    };
+    GetNotifications_Request: {
+      controllerType: string;
+      /** Format: uint32 */
+      maxNotifications: number;
+    };
+    GetNotifications_Response: {
+      notifications: components["schemas"]["Notification"][];
+    };
+    GetUrl_Request: {
+      controllerAlias: string;
+      resourceId: string;
+    };
+    GetUrl_Response: {
+      controllerUrl: string;
+    };
+    Get_Request: {
+      resourceId: string;
+      loadFields: boolean;
+    };
+    Get_Response: {
+      resource: components["schemas"]["Resource"];
+    };
+    /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
+    GoogleProtobufAny: {
+      /** @description The type of the serialized message. */
+      "@type": string;
+    } & {
+      [key: string]: unknown;
+    };
+    License_Response: {
+      /** Format: int32 */
+      status: number;
+      isOk: boolean;
+      /**
+       * Format: bytes
+       * @description Raw response body as it was received from the license server.
+       */
+      responseBody: string;
+    };
+    ListMethods_MethodInfo: {
+      type: string;
+      name: string;
+      info: {
+        [key: string]: string;
+      };
+    };
+    ListMethods_Response: {
+      methods: components["schemas"]["ListMethods_MethodInfo"][];
+    };
+    ListResourceTypes_Response: {
+      types: components["schemas"]["ResourceType"][];
+    };
+    Notification: {
+      subscriptionId: string;
+      eventId: string;
+      resourceId: string;
+      resourceType: components["schemas"]["ResourceType"];
+      events: components["schemas"]["Notification_Events"];
+      fieldChanges: {
+        [key: string]: components["schemas"]["Notification_FieldChange"];
+      };
+      payload: components["schemas"]["NotificationFilter_Payload"];
+      filterName: string;
+      txSpan: components["schemas"]["SpanInfo"];
+    };
+    NotificationFilter: {
+      resourceType: components["schemas"]["ResourceType"];
+      resourceId: string;
+      eventFilter: components["schemas"]["NotificationFilter_EventFilter"];
+      payload: components["schemas"]["NotificationFilter_Payload"];
+    };
+    NotificationFilter_EventFilter: {
+      all: boolean;
+      resourceCreated: boolean;
+      resourceDeleted: boolean;
+      resourceReady: boolean;
+      resourceDuplicate: boolean;
+      resourceError: boolean;
+      /** @description Field events */
+      inputsLocked: boolean;
+      outputsLocked: boolean;
+      fieldCreated: boolean;
+      fieldGotError: boolean;
+      inputSet: boolean;
+      allInputsSet: boolean;
+      outputSet: boolean;
+      allOutputsSet: boolean;
+      genericOtwSet: boolean;
+      dynamicChanged: boolean;
+    };
+    NotificationFilter_Payload: {
+      values: {
+        [key: string]: string;
+      };
+    };
+    Notification_Events: {
+      resourceCreated: boolean;
+      resourceDeleted: boolean;
+      resourceReady: boolean;
+      resourceDuplicate: boolean;
+      resourceError: boolean;
+      inputsLocked: boolean;
+      outputsLocked: boolean;
+      fieldCreated: boolean;
+      fieldGotError: boolean;
+      inputSet: boolean;
+      allInputsSet: boolean;
+      outputSet: boolean;
+      allOutputsSet: boolean;
+      genericOtwSet: boolean;
+      dynamicChanged: boolean;
+    };
+    Notification_FieldChange: {
+      old: components["schemas"]["Field"];
+      new: components["schemas"]["Field"];
+    };
+    Ping_Response: {
+      coreVersion: string;
+      coreFullVersion: string;
+      serverInfo: string;
+      /** Format: enum */
+      compression: number;
+      /**
+       * @description instanceID is a unique ID that changes when we reset DB state.
+       *      If we reset a state and a database, but the address of the backend is still the same,
+       *      without instanceID we are not sure if it's the same state or not,
+       *      and UI can't detect it and clear its state (e.g. caches of drivers).
+       */
+      instanceId: string;
+      platform: string;
+      os: string;
+      arch: string;
+    };
+    Register_Request: {
+      controllerType: string;
+      filters: {
+        [key: string]: components["schemas"]["NotificationFilter"];
+      };
+      resourceSchemas: components["schemas"]["ResourceSchema"][];
+    };
+    Register_Response: {
+      controllerId: string;
+      subscriptionId: string;
+    };
+    Release_Request: {
+      resourceId: string;
+      /** Format: bytes */
+      leaseId: string;
+    };
+    Release_Response: Record<string, never>;
+    RemoveAliasesAndUrls_Request: {
+      controllerType: string;
+    };
+    RemoveAliasesAndUrls_Response: Record<string, never>;
+    Resource: {
+      id: string;
+      /** Format: bytes */
+      canonicalId: string;
+      /** Format: enum */
+      kind: number;
+      type: components["schemas"]["ResourceType"];
+      /** Format: bytes */
+      data: string;
+      features: components["schemas"]["Resource_Features"];
+      fields: components["schemas"]["Field"][];
+      /** @description Resource has at least one field with error */
+      hasErrors: boolean;
+      inputsLocked: boolean;
+      outputsLocked: boolean;
+      resourceReady: boolean;
+      isFinal: boolean;
+      originalResourceId: string;
+      parentResourceId: string;
+      /** Format: date-time */
+      createdTime: string;
+      /** Format: date-time */
+      deletedTime: string;
+    };
+    ResourceAPIFeature: {
+      controllerType: string;
+      featureName: string;
+      resourceType: components["schemas"]["ResourceType"];
+      endpoint: string;
+    };
+    ResourceSchema: {
+      type: components["schemas"]["ResourceType"];
+      fields: components["schemas"]["FieldSchema"][];
+    };
+    ResourceType: {
+      name: string;
+      version: string;
+    };
+    Resource_Features: {
+      ephemeral: boolean;
+    };
+    SetFeatures_Request: {
+      features: components["schemas"]["ResourceAPIFeature"][];
+    };
+    SetFeatures_Response: Record<string, never>;
+    SpanInfo: {
+      path: string;
+      carrier: {
+        [key: string]: string;
+      };
+    };
+    /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
+    Status: {
+      /**
+       * Format: int32
+       * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+       */
+      code: number;
+      /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
+      message: string;
+      /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
+      details: components["schemas"]["GoogleProtobufAny"][];
+    };
+    Sync_Request: {
+      txId: string;
+    };
+    Sync_Response: Record<string, never>;
+    Update_Request: {
+      controllerType: string;
+      filters: {
+        [key: string]: components["schemas"]["NotificationFilter"];
+      };
+      resourceSchemas: components["schemas"]["ResourceSchema"][];
+    };
+    Update_Response: Record<string, never>;
+    WriteAliasesAndUrls_Request: {
+      controllerType: string;
+      aliasesToUrls: {
+        [key: string]: string;
+      };
+    };
+    WriteAliasesAndUrls_Response: Record<string, never>;
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    Platform_GetJWTToken: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GetJWTToken_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetJWTToken_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  Platform_GetJWTToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    Platform_AuthMethods: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListMethods_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GetJWTToken_Request"];
+      };
     };
-    Platform_WriteControllerAliasesAndUrls: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WriteAliasesAndUrls_Request"];
-            };
+        content: {
+          "application/json": components["schemas"]["GetJWTToken_Response"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WriteAliasesAndUrls_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
     };
-    Platform_RemoveControllerAliasesAndUrls: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RemoveAliasesAndUrls_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RemoveAliasesAndUrls_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  };
+  Platform_AuthMethods: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    Platform_ControllerAttachSubscription: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AttachSubscription_Request"];
-            };
+        content: {
+          "application/json": components["schemas"]["ListMethods_Response"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AttachSubscription_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
     };
-    Platform_ControllerCreate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Create_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Create_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  };
+  Platform_WriteControllerAliasesAndUrls: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    Platform_ControllerDeregister: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Deregister_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Deregister_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WriteAliasesAndUrls_Request"];
+      };
     };
-    Platform_ControllerExists: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Exists_Request"];
-            };
+        content: {
+          "application/json": components["schemas"]["WriteAliasesAndUrls_Response"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Exists_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
     };
-    Platform_ControllerSetFeatures: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SetFeatures_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SetFeatures_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  };
+  Platform_RemoveControllerAliasesAndUrls: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    Platform_ControllerClearFeatures: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ClearFeatures_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ClearFeatures_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RemoveAliasesAndUrls_Request"];
+      };
     };
-    Platform_ControllerGet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Get_Request"];
-            };
+        content: {
+          "application/json": components["schemas"]["RemoveAliasesAndUrls_Response"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Get_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
     };
-    Platform_GetControllerNotifications: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GetNotifications_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetNotifications_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  };
+  Platform_ControllerAttachSubscription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    Platform_ControllerRegister: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Register_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Register_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AttachSubscription_Request"];
+      };
     };
-    Platform_ControllerUpdate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Update_Request"];
-            };
+        content: {
+          "application/json": components["schemas"]["AttachSubscription_Response"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Update_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
     };
-    Platform_GetControllerUrl: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GetUrl_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetUrl_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  };
+  Platform_ControllerCreate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    Platform_License: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["License_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Create_Request"];
+      };
     };
-    Platform_UpdateLease: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Update_Request"];
-            };
+        content: {
+          "application/json": components["schemas"]["Create_Response"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Update_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
     };
-    Platform_LeaseResource: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Create_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Create_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  };
+  Platform_ControllerDeregister: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    Platform_ReleaseLease: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Release_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Release_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Deregister_Request"];
+      };
     };
-    Platform_NotificationsGet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Get_Request"];
-            };
+        content: {
+          "application/json": components["schemas"]["Deregister_Response"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Get_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
     };
-    Platform_Ping: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ping_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  };
+  Platform_ControllerExists: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    Platform_ListResourceTypes: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListResourceTypes_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Exists_Request"];
+      };
     };
-    Platform_SubscriptionAttachFilter: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AttachFilter_Request"];
-            };
+        content: {
+          "application/json": components["schemas"]["Exists_Response"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AttachFilter_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
     };
-    Platform_SubscriptionDetachFilter: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DetachFilter_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DetachFilter_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  };
+  Platform_ControllerSetFeatures: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    Platform_TxSync: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Sync_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Sync_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetFeatures_Request"];
+      };
     };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SetFeatures_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_ControllerClearFeatures: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ClearFeatures_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClearFeatures_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_ControllerGet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Get_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Get_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_GetControllerNotifications: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GetNotifications_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GetNotifications_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_ControllerRegister: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Register_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Register_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_ControllerUpdate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Update_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Update_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_GetControllerUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GetUrl_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GetUrl_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_License: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["License_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_UpdateLease: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Update_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Update_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_LeaseResource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Create_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Create_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_ReleaseLease: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Release_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Release_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_NotificationsGet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Get_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Get_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_Ping: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ping_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_ListResourceTypes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ListResourceTypes_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_SubscriptionAttachFilter: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AttachFilter_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AttachFilter_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_SubscriptionDetachFilter: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DetachFilter_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DetachFilter_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_TxSync: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Sync_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Sync_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
 }

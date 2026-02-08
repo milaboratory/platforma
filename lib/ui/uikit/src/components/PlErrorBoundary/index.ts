@@ -1,1 +1,1 @@
-export { default as PlErrorBoundary } from './PlErrorBoundary.vue';
+export { default as PlErrorBoundary } from "./PlErrorBoundary.vue";

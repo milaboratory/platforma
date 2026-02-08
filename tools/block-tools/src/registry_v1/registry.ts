@@ -1,35 +1,36 @@
-import type { RegistryStorage } from '../io/storage';
-import { randomUUID } from 'node:crypto';
-import * as semver from 'semver';
+import type { RegistryStorage } from "../io/storage";
+import { randomUUID } from "node:crypto";
+import * as semver from "semver";
 import type {
   BlockPackageNameWithoutVersion,
   FullBlockPackageName,
   GlobalOverview,
-  PackageOverview } from './v1_repo_schema';
+  PackageOverview,
+} from "./v1_repo_schema";
 import {
   GlobalOverviewPath,
   MetaFile,
   packageOverviewPath,
   payloadFilePath,
-} from './v1_repo_schema';
-import type { MiLogger } from '@milaboratories/ts-helpers';
+} from "./v1_repo_schema";
+import type { MiLogger } from "@milaboratories/ts-helpers";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function fullNameToPath(name: FullBlockPackageName): string {
   return `${name.organization}/${name.package}/${name.version}`;
 }
 
-const VersionUpdatesPrefix = '_updates_v1/per_package_version/';
+const VersionUpdatesPrefix = "_updates_v1/per_package_version/";
 
 function packageUpdatePath(bp: FullBlockPackageName, seed: string): string {
   return `${VersionUpdatesPrefix}${bp.organization}/${bp.package}/${bp.version}/${seed}`;
 }
 
-const PackageUpdatePattern
-  = /(?<packageKeyWithoutVersion>(?<organization>[^/]+)\/(?<pkg>[^/]+))\/(?<version>[^/]+)\/(?<seed>[^/]+)$/;
+const PackageUpdatePattern =
+  /(?<packageKeyWithoutVersion>(?<organization>[^/]+)\/(?<pkg>[^/]+))\/(?<version>[^/]+)\/(?<seed>[^/]+)$/;
 
-const GlobalUpdateSeedInFile = '_updates_v1/_global_update_in';
-const GlobalUpdateSeedOutFile = '_updates_v1/_global_update_out';
+const GlobalUpdateSeedInFile = "_updates_v1/_global_update_in";
+const GlobalUpdateSeedOutFile = "_updates_v1/_global_update_out";
 
 /*
   Note on convergence guarantee.
@@ -87,13 +88,13 @@ export class BlockRegistry {
   }
 
   private async updateRegistry(): Promise<void> {
-    this.logger?.info('Initiating registry refresh...');
+    this.logger?.info("Initiating registry refresh...");
 
     // reading update requests
     const packagesToUpdate = new Map<string, PackageUpdateInfo>();
     const seedPaths: string[] = [];
     const rawSeedPaths = await this.storage.listFiles(VersionUpdatesPrefix);
-    this.logger?.info('Packages to be updated:');
+    this.logger?.info("Packages to be updated:");
     for (const seedPath of rawSeedPaths) {
       const match = seedPath.match(PackageUpdatePattern);
       if (!match) continue;
@@ -114,8 +115,8 @@ export class BlockRegistry {
 
     // loading global overview
     const overviewContent = await this.storage.getFile(GlobalOverviewPath);
-    let overview: GlobalOverview
-      = overviewContent === undefined
+    let overview: GlobalOverview =
+      overviewContent === undefined
         ? []
         : (JSON.parse(overviewContent.toString()) as GlobalOverview);
     this.logger?.info(`Global overview loaded, ${overview.length} records`);
@@ -125,8 +126,8 @@ export class BlockRegistry {
       // reading existing overview
       const overviewFile = packageOverviewPath(packageInfo.package);
       const pOverviewContent = await this.storage.getFile(overviewFile);
-      let packageOverview
-        = pOverviewContent === undefined
+      let packageOverview =
+        pOverviewContent === undefined
           ? []
           : (JSON.parse(pOverviewContent.toString()) as PackageOverview);
       this.logger?.info(
@@ -149,7 +150,10 @@ export class BlockRegistry {
           ),
         );
         if (!metaContent) continue;
-        packageOverview.push({ version, meta: JSON.parse(metaContent.toString()) as Record<string, unknown> });
+        packageOverview.push({
+          version,
+          meta: JSON.parse(metaContent.toString()) as Record<string, unknown>,
+        });
       }
 
       // sorting entries according to version
@@ -162,8 +166,8 @@ export class BlockRegistry {
       // patching corresponding entry in overview
       overview = overview.filter(
         (e) =>
-          e.organization !== packageInfo.package.organization
-          || e.package !== packageInfo.package.package,
+          e.organization !== packageInfo.package.organization ||
+          e.package !== packageInfo.package.package,
       );
       overview.push({
         organization: packageInfo.package.organization,
@@ -191,10 +195,10 @@ export class BlockRegistry {
     const currentUpdatedSeed = await this.storage.getFile(GlobalUpdateSeedOutFile);
     if (!force && updateRequestSeed === undefined && currentUpdatedSeed === undefined) return;
     if (
-      !force
-      && updateRequestSeed !== undefined
-      && currentUpdatedSeed !== undefined
-      && updateRequestSeed.equals(currentUpdatedSeed)
+      !force &&
+      updateRequestSeed !== undefined &&
+      currentUpdatedSeed !== undefined &&
+      updateRequestSeed.equals(currentUpdatedSeed)
     )
       return;
 
@@ -240,7 +244,7 @@ export class BlockRegistryPackConstructor {
   }
 
   async finish() {
-    if (!this.metaAdded) throw new Error('meta not added');
+    if (!this.metaAdded) throw new Error("meta not added");
     await this.storage.putFile(packageUpdatePath(this.name, this.seed), Buffer.of(0));
     await this.storage.putFile(GlobalUpdateSeedInFile, Buffer.from(this.seed));
   }

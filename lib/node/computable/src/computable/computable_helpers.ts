@@ -1,13 +1,13 @@
-import type { AccessorProvider, TrackedAccessorProvider, UsageGuard } from './accessor_provider';
+import type { AccessorProvider, TrackedAccessorProvider, UsageGuard } from "./accessor_provider";
 import type {
   CellRenderingOps,
   ComputableCtx,
   IntermediateRenderingResult,
   PostprocessInfo,
   UnwrapComputables,
-} from './kernel';
-import { Computable } from './computable';
-import type { Watcher } from '../watcher';
+} from "./kernel";
+import { Computable } from "./computable";
+import type { Watcher } from "../watcher";
 
 let ephKeyCounter = 1;
 
@@ -16,14 +16,14 @@ function nextEphemeralKey(): string {
 }
 
 const DefaultRenderingOps: CellRenderingOps = {
-  mode: 'Live',
+  mode: "Live",
   resetValueOnError: true,
   postprocessTimeout: 5000,
 };
 
 function noopPostprocessValue<IR>(): (
-value: UnwrapComputables<IR>,
-info: PostprocessInfo
+  value: UnwrapComputables<IR>,
+  info: PostprocessInfo,
 ) => Promise<UnwrapComputables<IR>> {
   // eslint-disable-next-line @typescript-eslint/require-await
   return async (v) => v;
@@ -36,7 +36,7 @@ interface ComputableRenderingOps extends CellRenderingOps {
 function toTrackedAccessProvider<A>(
   ap: TrackedAccessorProvider<A> | AccessorProvider<A>,
 ): TrackedAccessorProvider<A> {
-  if ('createInstance' in ap) return ap;
+  if ("createInstance" in ap) return ap;
   else {
     return {
       createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): A {
@@ -85,7 +85,7 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
         ir,
         postprocessValue: (postprocessValue ?? noopPostprocessValue<IR>()) as (
           value: unknown,
-          info: PostprocessInfo
+          info: PostprocessInfo,
         ) => Promise<T> | T,
       };
     },
@@ -142,7 +142,7 @@ export function rawComputable<IR>(
         ir: result,
         postprocessValue: noopPostprocessValue<IR>() as (
           value: unknown,
-          info: PostprocessInfo
+          info: PostprocessInfo,
         ) => Promise<UnwrapComputables<IR>> | UnwrapComputables<IR>,
       };
     },
@@ -169,7 +169,10 @@ export function rawComputableWithPostprocess<IR, T>(
       const result = cb(ctx.watcher, ctx);
       return {
         ir: result,
-        postprocessValue: postprocessValue as (value: unknown, info: PostprocessInfo) => Promise<T> | T,
+        postprocessValue: postprocessValue as (
+          value: unknown,
+          info: PostprocessInfo,
+        ) => Promise<T> | T,
       };
     },
   });

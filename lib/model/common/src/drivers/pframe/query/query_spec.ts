@@ -1,4 +1,4 @@
-import type { PObjectId } from '../../../pool';
+import type { PObjectId } from "../../../pool";
 import type {
   ExprAxisRef,
   ExprColumnRef,
@@ -13,7 +13,8 @@ import type {
   ExprStringRegex,
   ExprNumericUnary,
   QueryAxisSelector,
-  QueryColumn, QuerySparseToDenseColumn,
+  QueryColumn,
+  QuerySparseToDenseColumn,
   QueryFilter,
   QueryInlineColumn,
   QueryJoinEntry,
@@ -22,8 +23,8 @@ import type {
   QuerySort,
   QuerySymmetricJoin,
   InferBooleanExpressionUnion,
-} from './query_common';
-import type { Domain, PColumnIdAndSpec, PColumnSpec, SingleAxisSelector } from '../spec';
+} from "./query_common";
+import type { Domain, PColumnIdAndSpec, PColumnSpec, SingleAxisSelector } from "../spec";
 
 /**
  * Column identifier with specification.
@@ -108,11 +109,18 @@ export type ExprAxisRefSpec = ExprAxisRef<SingleAxisSelector>;
 export type ExprColumnRefSpec = ExprColumnRef<PObjectId>;
 
 export type QueryExpressionSpec =
-  | ExprColumnRefSpec | ExprAxisRefSpec | ExprConstant
-  | ExprNumericBinary<QueryExpressionSpec> | ExprNumericUnary<QueryExpressionSpec>
-  | ExprStringEquals<QueryExpressionSpec> | ExprStringContains<QueryExpressionSpec>
-  | ExprStringRegex<QueryExpressionSpec> | ExprStringContainsFuzzy<QueryExpressionSpec>
-  | ExprLogicalUnary<QueryExpressionSpec> | ExprLogicalVariadic<QueryExpressionSpec>
-  | ExprIsIn<QueryExpressionSpec, string> | ExprIsIn<QueryExpressionSpec, number>;
+  | ExprColumnRefSpec
+  | ExprAxisRefSpec
+  | ExprConstant
+  | ExprNumericBinary<QueryExpressionSpec>
+  | ExprNumericUnary<QueryExpressionSpec>
+  | ExprStringEquals<QueryExpressionSpec>
+  | ExprStringContains<QueryExpressionSpec>
+  | ExprStringRegex<QueryExpressionSpec>
+  | ExprStringContainsFuzzy<QueryExpressionSpec>
+  | ExprLogicalUnary<QueryExpressionSpec>
+  | ExprLogicalVariadic<QueryExpressionSpec>
+  | ExprIsIn<QueryExpressionSpec, string>
+  | ExprIsIn<QueryExpressionSpec, number>;
 
 export type QueryBooleanExpressionSpec = InferBooleanExpressionUnion<QueryExpressionSpec>;

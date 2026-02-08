@@ -31,11 +31,11 @@
     justify-content: center;
     align-items: center;
     border-left: 1px solid var(--color-div-grey);
-    background-color: #F7F8FA;
+    background-color: #f7f8fa;
     cursor: pointer;
     z-index: 1;
 
-    >div {
+    > div {
       background-color: var(--color-text);
       @include mask(url(./16_add.svg), 16px);
     }
@@ -53,7 +53,7 @@
     padding-right: 8px;
 
     .cell {
-      background-color: #F7F8FA;
+      background-color: #f7f8fa;
       font-weight: 600;
       font-size: 14px;
       user-select: none;
@@ -134,7 +134,7 @@
     }
 
     &__no-data {
-      background-color: #F7F8FA;
+      background-color: #f7f8fa;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -147,7 +147,7 @@
       line-height: 32px;
       letter-spacing: -0.56px;
 
-      >div {
+      > div {
         display: flex;
         flex-direction: column;
         gap: 4px;

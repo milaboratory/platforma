@@ -1,20 +1,19 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { SshClient } from '../ssh';
-import { SFTPError } from '../ssh_errors';
-import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
-import type { SFTPWrapper } from 'ssh2';
-import { writeFile, unlink } from 'node:fs/promises';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+import { SshClient } from "../ssh";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
+import type { SFTPWrapper } from "ssh2";
+import { writeFile, unlink } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
-describe('mocked SSHClient', () => {
+describe("mocked SSHClient", () => {
   let testFilePath: string;
   let remoteFilePath: string;
 
   beforeEach(async () => {
     // Create a temporary test file
     testFilePath = join(tmpdir(), `test-upload-${Date.now()}.txt`);
-    await writeFile(testFilePath, 'test content');
+    await writeFile(testFilePath, "test content");
     remoteFilePath = `/tmp/test-upload-${Date.now()}.txt`;
   });
 
@@ -27,29 +26,31 @@ describe('mocked SSHClient', () => {
     }
   });
 
-  test('should retry upload in case of a failure', async () => {
+  test("should retry upload in case of a failure", async () => {
     const logger = new ConsoleLoggerAdapter();
-    
+
     // Track upload attempts
     let uploadAttempt = 0;
-    
+
     // Create a mock SFTP wrapper
     const mockSftp = {
-      fastPut: vi.fn((localPath: string, remotePath: string, callback: (err: Error | null) => void) => {
-        uploadAttempt++;
-        
-        if (uploadAttempt === 1) {
-          // First attempt: return 'Failure' error (generic failure that triggers retry)
-          const failureError = new Error('Failure');
-          callback(failureError);
-        } else if (uploadAttempt === 2) {
-          // Second attempt: accept upload (callback succeeds, but file is dropped/not saved per requirements)
-          // The test expects successful upload, so we simulate success
-          callback(null);
-        } else {
-          callback(new Error('Unexpected error, too many attempts'));
-        }
-      }),
+      fastPut: vi.fn(
+        (localPath: string, remotePath: string, callback: (err: Error | null) => void) => {
+          uploadAttempt++;
+
+          if (uploadAttempt === 1) {
+            // First attempt: return 'Failure' error (generic failure that triggers retry)
+            const failureError = new Error("Failure");
+            callback(failureError);
+          } else if (uploadAttempt === 2) {
+            // Second attempt: accept upload (callback succeeds, but file is dropped/not saved per requirements)
+            // The test expects successful upload, so we simulate success
+            callback(null);
+          } else {
+            callback(new Error("Unexpected error, too many attempts"));
+          }
+        },
+      ),
       end: vi.fn(),
     } as unknown as SFTPWrapper;
 
@@ -67,11 +68,21 @@ describe('mocked SSHClient', () => {
 
     // The upload should succeed on the second attempt
     const result = await sshClient.uploadFile(testFilePath, remoteFilePath);
-    
+
     expect(result).toBe(true);
     expect(uploadAttempt).toBe(2); // Should succeed on 2nd attempt
     expect(mockSftp.fastPut).toHaveBeenCalledTimes(2);
-    expect(mockSftp.fastPut).toHaveBeenNthCalledWith(1, testFilePath, remoteFilePath, expect.any(Function));
-    expect(mockSftp.fastPut).toHaveBeenNthCalledWith(2, testFilePath, remoteFilePath, expect.any(Function));
+    expect(mockSftp.fastPut).toHaveBeenNthCalledWith(
+      1,
+      testFilePath,
+      remoteFilePath,
+      expect.any(Function),
+    );
+    expect(mockSftp.fastPut).toHaveBeenNthCalledWith(
+      2,
+      testFilePath,
+      remoteFilePath,
+      expect.any(Function),
+    );
   });
 });

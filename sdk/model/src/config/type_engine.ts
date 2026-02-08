@@ -1,5 +1,5 @@
-import type { ActGetImmediate } from './actions_kinds';
-import type { Cfg } from './model';
+import type { ActGetImmediate } from "./actions_kinds";
+import type { Cfg } from "./model";
 
 // Higher kind types pattern taken from here: https://code.lol/post/programming/higher-kinded-types/
 
@@ -17,7 +17,7 @@ export interface ConfAction {
 export type ActionResult<A extends ConfAction, Ctx> = ReturnType<
   (A & {
     readonly ctx: Ctx;
-  })['new']
+  })["new"]
 >;
 
 // Branding pattern taken from here: https://egghead.io/blog/using-branded-types-in-typescript

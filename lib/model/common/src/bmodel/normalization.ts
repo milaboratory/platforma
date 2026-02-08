@@ -1,15 +1,11 @@
-import type { BlockConfigGeneric } from './block_config';
-import type { BlockConfigContainer } from './container';
+import type { BlockConfigGeneric } from "./block_config";
+import type { BlockConfigContainer } from "./container";
 
 function upgradeCfgOrLambda(data: unknown): unknown;
-function upgradeCfgOrLambda(
-  data: unknown | undefined
-): unknown | undefined;
-function upgradeCfgOrLambda(
-  data: unknown | undefined,
-): unknown | undefined {
+function upgradeCfgOrLambda(data: unknown | undefined): unknown | undefined;
+function upgradeCfgOrLambda(data: unknown | undefined): unknown | undefined {
   if (data === undefined) return undefined;
-  if (typeof data === 'string') return { __renderLambda: true, handle: data, retentive: false };
+  if (typeof data === "string") return { __renderLambda: true, handle: data, retentive: false };
   return data;
 }
 
@@ -22,7 +18,19 @@ function upgradeCfgOrLambda(
 export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGeneric {
   if (cfg.v4 !== undefined) {
     // version 4 (BlockModelV3) - inputsValid is derived from args() success/failure
-    const { args, prerunArgs, initialData, outputs, renderingMode, sdkVersion, featureFlags, sections, title, enrichmentTargets, migrations } = cfg.v4;
+    const {
+      args,
+      prerunArgs,
+      initialData,
+      outputs,
+      renderingMode,
+      sdkVersion,
+      featureFlags,
+      sections,
+      title,
+      enrichmentTargets,
+      migrations,
+    } = cfg.v4;
     const { code } = cfg;
     return {
       configVersion: 4,
@@ -79,15 +87,15 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
     const { sdkVersion, renderingMode, outputs, inputsValid, sections, initialArgs, code } = cfg;
     const fields = Object.keys(cfg);
     if (
-      sdkVersion === undefined
-      || renderingMode === undefined
-      || outputs === undefined
-      || inputsValid === undefined
-      || sections === undefined
-      || initialArgs === undefined
+      sdkVersion === undefined ||
+      renderingMode === undefined ||
+      outputs === undefined ||
+      inputsValid === undefined ||
+      sections === undefined ||
+      initialArgs === undefined
     )
       throw new Error(
-        `Malformed config v2. SDK version ${sdkVersion}; Fields = ${fields.join(', ')}`,
+        `Malformed config v2. SDK version ${sdkVersion}; Fields = ${fields.join(", ")}`,
       );
     return {
       configVersion: 3,
@@ -108,19 +116,19 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
     const { sdkVersion, canRun, renderingMode, outputs, sections, initialArgs, code } = cfg;
     const fields = Object.keys(cfg);
     if (
-      renderingMode === undefined
-      || outputs === undefined
-      || canRun === undefined
-      || sections === undefined
-      || initialArgs === undefined
+      renderingMode === undefined ||
+      outputs === undefined ||
+      canRun === undefined ||
+      sections === undefined ||
+      initialArgs === undefined
     )
       throw new Error(
-        `Malformed config v1. SDK version ${sdkVersion}; Fields = ${fields.join(', ')}`,
+        `Malformed config v1. SDK version ${sdkVersion}; Fields = ${fields.join(", ")}`,
       );
     return {
       configVersion: 3,
       modelAPIVersion: 1,
-      sdkVersion: sdkVersion ?? 'unknown',
+      sdkVersion: sdkVersion ?? "unknown",
       renderingMode,
       initialArgs,
       outputs: Object.fromEntries(
@@ -135,7 +143,7 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
     const { sdkVersion } = cfg;
     const fields = Object.keys(cfg);
     throw new Error(
-      `Config format not supported: SDK = ${sdkVersion}; Fields = ${fields.join(', ')}`,
+      `Config format not supported: SDK = ${sdkVersion}; Fields = ${fields.join(", ")}`,
     );
   }
 }

@@ -1,5 +1,5 @@
-import type { JitterOpts } from './temporal';
-import { jitter, sleep } from './temporal';
+import type { JitterOpts } from "./temporal";
+import { jitter, sleep } from "./temporal";
 
 export async function withRetries(
   nAttempts: number,
@@ -24,6 +24,6 @@ export async function withRetries(
   }
 
   throw new Error(
-    'withRetries failed after ' + nAttempts + ' attempts. Last error: ' + JSON.stringify(lastError),
+    "withRetries failed after " + nAttempts + " attempts. Last error: " + JSON.stringify(lastError),
   );
 }

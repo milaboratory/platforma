@@ -1,4 +1,4 @@
-import { delay } from '@milaboratories/helpers';
+import { delay } from "@milaboratories/helpers";
 import type {
   AuthorMarker,
   BlockOutputsBase,
@@ -16,10 +16,10 @@ import type {
   StorageHandle,
   ValueWithUTag,
   ValueWithUTagAndAuthor,
-} from '@platforma-sdk/model';
-import type { Operation } from 'fast-json-patch';
-import type { BlockMock } from './BlockMock';
-import { getLsFilesResult } from './utils';
+} from "@platforma-sdk/model";
+import type { Operation } from "fast-json-patch";
+import type { BlockMock } from "./BlockMock";
+import { getLsFilesResult } from "./utils";
 
 export function createMockApi<
   Args,
@@ -30,15 +30,19 @@ export function createMockApi<
   return {
     apiVersion: 2,
     sdkInfo: {
-      sdkVersion: 'dev',
+      sdkVersion: "dev",
     },
     async dispose(): Promise<ResultOrError<void>> {
       return block.dispose();
     },
-    loadBlockState: async function (): Promise<ResultOrError<ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>>> {
+    loadBlockState: async function (): Promise<
+      ResultOrError<ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>>
+    > {
       return block.loadBlockState();
     },
-    getPatches: async function (uTag: string): Promise<ResultOrError<ValueWithUTagAndAuthor<Operation[]>>> {
+    getPatches: async function (
+      uTag: string,
+    ): Promise<ResultOrError<ValueWithUTagAndAuthor<Operation[]>>> {
       return block.getPatches(uTag);
     },
     async setBlockArgs(value: Args, author?: AuthorMarker): Promise<ResultOrError<void>> {
@@ -47,7 +51,11 @@ export function createMockApi<
     async setBlockUiState(value: UiState, author?: AuthorMarker): Promise<ResultOrError<void>> {
       return block.setBlockUiState(value, author);
     },
-    async setBlockArgsAndUiState(args: Args, uiState: UiState, author?: AuthorMarker): Promise<ResultOrError<void>> {
+    async setBlockArgsAndUiState(
+      args: Args,
+      uiState: UiState,
+      author?: AuthorMarker,
+    ): Promise<ResultOrError<void>> {
       return block.setBlockArgsAndUiState(args, uiState, author);
     },
     async setNavigationState(navigationState: NavigationState<Href>): Promise<ResultOrError<void>> {
@@ -62,9 +70,9 @@ export function createMockApi<
       async getStorageList() {
         return [
           {
-            name: 'local',
-            handle: 'local://test',
-            initialFullPath: '/',
+            name: "local",
+            handle: "local://test",
+            initialFullPath: "/",
             isInitialPathHome: false,
           },
         ];
@@ -86,7 +94,7 @@ export function createMockApi<
         return {};
       },
       async fileToImportHandle(_file: FileLike): Promise<ImportFileHandle> {
-        return '' as ImportFileHandle;
+        return "" as ImportFileHandle;
       },
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

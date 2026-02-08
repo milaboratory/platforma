@@ -1,23 +1,20 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import { withTimeout } from '@milaboratories/ts-helpers';
-import * as console from 'node:console';
-import { setImmediate } from 'node:timers';
-import type { Writable } from 'utility-types';
-import { HierarchicalWatcher } from '../hierarchical_watcher';
-import type { Watcher } from '../watcher';
-import type { AccessorProvider, UsageGuard } from './accessor_provider';
-import { AccessorLeakException } from './accessor_provider';
-import type { ComputableHooks } from './computable_hooks';
+import { withTimeout } from "@milaboratories/ts-helpers";
+import * as console from "node:console";
+import { setImmediate } from "node:timers";
+import type { Writable } from "utility-types";
+import { HierarchicalWatcher } from "../hierarchical_watcher";
+import type { Watcher } from "../watcher";
+import type { AccessorProvider, UsageGuard } from "./accessor_provider";
+import { AccessorLeakException } from "./accessor_provider";
+import type { ComputableHooks } from "./computable_hooks";
 import type {
   CellRenderingOps,
   ComputableCtx,
   ComputableKernel,
   IntermediateRenderingResult,
-} from './kernel';
-import {
-  containComputables,
-  tryExtractComputableKernel,
-} from './kernel';
+} from "./kernel";
+import { containComputables, tryExtractComputableKernel } from "./kernel";
 
 interface ExecutionError {
   error: unknown;
@@ -26,7 +23,7 @@ interface ExecutionError {
 function isExecutionError(
   r: IntermediateRenderingResult<unknown, unknown> | ExecutionError,
 ): r is ExecutionError {
-  return 'error' in r;
+  return "error" in r;
 }
 
 /** To prevent leaking of other fields */
@@ -53,7 +50,7 @@ class CellComputableContext implements ComputableCtx {
   public changeSourceMarker?: string;
 
   private checkForLeak() {
-    if (this._watcher === undefined) throw new Error('Computable context leak.');
+    if (this._watcher === undefined) throw new Error("Computable context leak.");
   }
 
   markUnstable(marker?: string): void {
@@ -174,7 +171,7 @@ class CellComputableContext implements ComputableCtx {
         try {
           od();
         } catch (err: unknown) {
-          console.error('Error in computable onDestroy', err);
+          console.error("Error in computable onDestroy", err);
         }
     this.previousOnDestroy = undefined;
     this.changeSourceMarker = undefined;
@@ -188,7 +185,7 @@ class CellComputableContext implements ComputableCtx {
         try {
           od();
         } catch (err: unknown) {
-          console.error('Error in computable onDestroy', err);
+          console.error("Error in computable onDestroy", err);
         }
     this.currentOnDestroy = undefined;
   }
@@ -267,7 +264,7 @@ export interface CellState<T> {
   value?: unknown;
 }
 
-type IncompleteCellState<T> = Pick<CellState<T>, 'selfState' | 'childrenStates'>;
+type IncompleteCellState<T> = Pick<CellState<T>, "selfState" | "childrenStates">;
 
 type Children = Map<string | symbol, ComputableKernel<unknown>>;
 
@@ -279,7 +276,7 @@ function addChildren(node: unknown, children: Children) {
 
   const type = typeof node;
   switch (type) {
-    case 'object':
+    case "object":
       if (node === null) return;
 
       const kernel = tryExtractComputableKernel(node);
@@ -311,7 +308,7 @@ function calculateNodeValue(node: unknown, childStates: ChildrenStates): any {
 
   const type = typeof node;
   switch (type) {
-    case 'object':
+    case "object":
       const kernel = tryExtractComputableKernel(node);
       if (kernel !== undefined) return childStates.get(kernel.key)!.state.value;
 
@@ -348,9 +345,9 @@ async function fillCellValue<T>(state: Writable<CellState<T>>, previousValue?: T
   // assert !('value' in state)
   const ops = state.selfState.kernel.ops;
 
-  let value = ops.mode === 'StableOnlyRetentive' ? previousValue : undefined;
+  let value = ops.mode === "StableOnlyRetentive" ? previousValue : undefined;
   if (!isExecutionError(state.selfState.iResult)) {
-    if (state.stable || ops.mode === 'Live') {
+    if (state.stable || ops.mode === "Live") {
       // check that there are errors for nested computed instances
       if (state.allErrors.length === 0) {
         try {
@@ -580,14 +577,18 @@ export async function createCellState<T>(core: ComputableKernel<T>): Promise<Cel
 /** First (sync) stage of rendering pipeline */
 export function updateCellStateWithoutValue<T>(cell: CellState<T>): CellState<T> {
   // checking the chaining rule
-  if (!cell.isLatest) throw new Error('Can\'t update state, that was already updated.');
+  if (!cell.isLatest) throw new Error("Can't update state, that was already updated.");
 
   // checking any changes were registered for the
   if (!cell.watcher.isChanged) return cell;
 
   // update self state, if necessary
   const selfState = cell.selfState.selfWatcher.isChanged
-    ? renderSelfState(cell.selfState.kernel, cell.selfState.ctx, cell.selfState.selfWatcher.changeSourceMarker)
+    ? renderSelfState(
+        cell.selfState.kernel,
+        cell.selfState.ctx,
+        cell.selfState.selfWatcher.changeSourceMarker,
+      )
     : cell.selfState;
 
   // recalculating children states

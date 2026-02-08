@@ -1,1 +1,1 @@
-export { default as HistogramPage } from './HistogramPage.vue';
+export { default as HistogramPage } from "./HistogramPage.vue";

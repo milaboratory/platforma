@@ -11,8 +11,8 @@ import type {
   TableRange,
   UniqueValuesRequest,
   UniqueValuesResponse,
-} from '@milaboratories/pl-model-common';
-import { patchInSetFilters } from './render/util/pframe_upgraders';
+} from "@milaboratories/pl-model-common";
+import { patchInSetFilters } from "./render/util/pframe_upgraders";
 
 export class PFrameImpl implements PFrame {
   constructor(private readonly handle: PFrameHandle) {}
@@ -48,7 +48,7 @@ export class PFrameImpl implements PFrame {
 
   private getPlatforma() {
     if (platforma === undefined) {
-      throw new Error('Platforma instance is not available in the current context.');
+      throw new Error("Platforma instance is not available in the current context.");
     }
     return platforma;
   }

@@ -2,12 +2,13 @@
   "name": "@milaboratories/pl-tree",
   "version": "1.8.34",
   "description": "Reactive pl tree state",
-  "engines": {
-    "node": ">=22.19.0"
-  },
-  "types": "./dist/index.d.ts",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -16,22 +17,21 @@
     }
   },
   "scripts": {
-    "type-check": "ts-builder types --target node",
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
-    "lint": "eslint .",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "dependencies": {
     "@milaboratories/computable": "workspace:*",
     "@milaboratories/pl-client": "workspace:*",
-    "@milaboratories/pl-errors": "workspace:*",
     "@milaboratories/pl-error-like": "workspace:*",
+    "@milaboratories/pl-errors": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
     "denque": "catalog:",
     "utility-types": "catalog:",
@@ -40,12 +40,13 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "vitest": "catalog:",
-    "eslint": "catalog:",
-    "@milaboratories/eslint-config": "workspace:*",
-    "@milaboratories/ts-configs": "workspace:*"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.19.0"
   }
 }

@@ -51,7 +51,6 @@ component_management:
         - lib/model/**/*
         - lib/node/**/*
         - lib/util/**/*
-        - sdk/eslint-config/**/*
         - sdk/model/**/*
         - sdk/test/**/*
         - tests/block-repo/**/*

@@ -1,19 +1,18 @@
-import type { Branded } from '../branding';
-import { z } from 'zod';
+import type { Branded } from "../branding";
+import { z } from "zod";
 
 /** Handle of locally downloaded blob. This handle is issued only after the
  * blob's content is downloaded locally, and ready for quick access. */
-export type LocalBlobHandle = Branded<string, 'LocalBlobHandle'>;
+export type LocalBlobHandle = Branded<string, "LocalBlobHandle">;
 
 /** Handle of remote blob. This handle is issued as soon as the data becomes
  * available on the remote server. */
-export type RemoteBlobHandle = Branded<string, 'RemoteBlobHandle'>;
+export type RemoteBlobHandle = Branded<string, "RemoteBlobHandle">;
 
 /** Being configured inside the output structure provides information about
  * blob's content and means to retrieve it when needed. */
 export interface BlobHandleAndSize<
-  H extends LocalBlobHandle | RemoteBlobHandle = | LocalBlobHandle
-  | RemoteBlobHandle,
+  H extends LocalBlobHandle | RemoteBlobHandle = LocalBlobHandle | RemoteBlobHandle,
 > {
   /** Handle to retrieve block content using {@link BlobDriver.getContent()} */
   readonly handle: H;
@@ -38,7 +37,7 @@ export function newRangeBytesOpt(from?: number, to?: number): RangeBytes | undef
   }
 
   const range = { from, to };
-  validateRangeBytes(range, 'newRangeBytesOpt');
+  validateRangeBytes(range, "newRangeBytesOpt");
 
   return range;
 }
@@ -76,8 +75,5 @@ export interface BlobDriver {
    * Depending on the handle type, content will be served from locally downloaded file,
    * or directly from remote platforma storage.
    */
-  getContent(
-    handle: LocalBlobHandle | RemoteBlobHandle,
-    range?: RangeBytes,
-  ): Promise<Uint8Array>;
+  getContent(handle: LocalBlobHandle | RemoteBlobHandle, range?: RangeBytes): Promise<Uint8Array>;
 }

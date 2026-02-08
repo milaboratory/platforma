@@ -1,5 +1,5 @@
-import type { SpawnOptions } from 'node:child_process';
-import type { PlBinarySource } from '../common/pl_binary';
+import type { SpawnOptions } from "node:child_process";
+import type { PlBinarySource } from "../common/pl_binary";
 
 /** Options to start a local pl-core. */
 export type LocalPlOptions = {
@@ -24,11 +24,11 @@ export type LocalPlRestart = LocalPlRestartSilent | LocalPlRestartHook;
 
 /** Do nothing if the error happened or a process exited. */
 export type LocalPlRestartSilent = {
-  type: 'silent';
+  type: "silent";
 };
 
 /** Run a hook if the error happened or a process exited. */
 export type LocalPlRestartHook = {
-  type: 'hook';
+  type: "hook";
   hook(pl: any): void;
 };

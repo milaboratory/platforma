@@ -1,5 +1,5 @@
-import type { Component } from 'vue';
-import type { Branded, Equal, Expect, Values } from '@milaboratories/helpers';
+import type { Component } from "vue";
+import type { Branded, Equal, Expect, Values } from "@milaboratories/helpers";
 
 type TypeMap = {
   integer: number;
@@ -42,7 +42,7 @@ export type TableData = {
 
 export type DataRow = Record<string, unknown>;
 
-export type PrimaryKey = Branded<string, 'PrimaryKey'>;
+export type PrimaryKey = Branded<string, "PrimaryKey">;
 
 export type ResolvePrimaryKey<D extends DataRow = DataRow> = (dataRow: D, index: number) => string;
 
@@ -75,9 +75,9 @@ export type ColumnSpecSettings<ID = string, _Value = unknown> = {
   label: string;
   id: ID;
   width: number;
-  justify?: 'center' | 'start';
+  justify?: "center" | "start";
   sort?: {
-    direction: 'DESC' | 'ASC' | undefined;
+    direction: "DESC" | "ASC" | undefined;
   };
   component?: () => Component;
   editable?: boolean;
@@ -171,11 +171,11 @@ export type RawTableSettings<D extends DataRow = DataRow> = Readonly<{
 
 type _cell = TableCell<{ age: number; name: string; payload: unknown }>;
 
-type _age = Extract<_cell, { id: 'age' }>;
+type _age = Extract<_cell, { id: "age" }>;
 
 type _cases = [
-  Expect<Equal<number, Extract<_cell, { id: 'age' }>['value']>>,
-  Expect<Equal<string, Extract<_cell, { id: 'name' }>['value']>>,
-  Expect<Equal<unknown, Extract<_cell, { id: 'payload' }>['value']>>,
-  Expect<Equal<_age['column']['id'], 'age'>>,
+  Expect<Equal<number, Extract<_cell, { id: "age" }>["value"]>>,
+  Expect<Equal<string, Extract<_cell, { id: "name" }>["value"]>>,
+  Expect<Equal<unknown, Extract<_cell, { id: "payload" }>["value"]>>,
+  Expect<Equal<_age["column"]["id"], "age">>,
 ];

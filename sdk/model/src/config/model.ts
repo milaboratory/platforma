@@ -1,4 +1,4 @@
-import type { ArchiveFormat, RangeBytes } from '@milaboratories/pl-model-common';
+import type { ArchiveFormat, RangeBytes } from "@milaboratories/pl-model-common";
 
 export type Cfg =
   | CfgGetFromCtx
@@ -36,7 +36,7 @@ export type Cfg =
 /** Forces wrapped config to be rendered asynchronously, using its own
  * rendering cell */
 export type CfgIsolate = {
-  type: 'Isolate';
+  type: "Isolate";
   cfg: Cfg;
 };
 
@@ -45,7 +45,7 @@ export type CfgIsolate = {
 //
 
 export type CfgGetFromCtx = {
-  type: 'GetFromCtx';
+  type: "GetFromCtx";
   variable: string;
 };
 
@@ -54,44 +54,44 @@ export type CfgGetFromCtx = {
 //
 
 export type CfgImmediate = {
-  type: 'Immediate';
+  type: "Immediate";
   // TODO: could we use `unknown` here?
 
   value: any;
 };
 
 export type CfgGetJsonField = {
-  type: 'GetJsonField';
+  type: "GetJsonField";
   source: Cfg;
   field: Cfg;
 };
 
 export type CfgMakeObject = {
-  type: 'MakeObject';
+  type: "MakeObject";
   template: Record<string, Cfg>;
 };
 
 export type CfgMakeArray = {
-  type: 'MakeArray';
+  type: "MakeArray";
   template: Cfg[];
 };
 
 export type CfgMapRecordValues = {
-  type: 'MapRecordValues';
+  type: "MapRecordValues";
   source: Cfg;
   itVar: string;
   mapping: Cfg;
 };
 
 export type CfgMapArrayValues = {
-  type: 'MapArrayValues';
+  type: "MapArrayValues";
   source: Cfg;
   itVar: string;
   mapping: Cfg;
 };
 
 export type CfgFlatten = {
-  type: 'Flatten';
+  type: "Flatten";
   source: Cfg;
 };
 
@@ -100,23 +100,23 @@ export type CfgFlatten = {
 //
 
 export type CfgIsEmpty = {
-  type: 'IsEmpty';
+  type: "IsEmpty";
   arg: Cfg;
 };
 
 export type CfgNot = {
-  type: 'Not';
+  type: "Not";
   operand: Cfg;
 };
 
 export type CfgAnd = {
-  type: 'And';
+  type: "And";
   operand1: Cfg;
   operand2: Cfg;
 };
 
 export type CfgOr = {
-  type: 'Or';
+  type: "Or";
   operand1: Cfg;
   operand2: Cfg;
 };
@@ -126,20 +126,20 @@ export type CfgOr = {
 //
 
 export type CfgMapResourceFields = {
-  type: 'MapResourceFields';
+  type: "MapResourceFields";
   source: Cfg;
   itVar: string;
   mapping: Cfg;
 };
 
 export type CfgGetResourceField = {
-  type: 'GetResourceField';
+  type: "GetResourceField";
   source: Cfg;
   field: Cfg;
 };
 
 export type CfgResourceValueAsJson = {
-  type: 'GetResourceValueAsJson';
+  type: "GetResourceValueAsJson";
   source: Cfg;
 };
 
@@ -148,30 +148,30 @@ export type CfgResourceValueAsJson = {
 //
 
 export type CfgBlobContent = {
-  type: 'GetBlobContent';
+  type: "GetBlobContent";
   range: RangeBytes | undefined;
   source: Cfg;
 };
 
 export type CfgBlobContentAsString = {
-  type: 'GetBlobContentAsString';
+  type: "GetBlobContentAsString";
   range: RangeBytes | undefined;
   source: Cfg;
 };
 
 export type CfgBlobContentAsJson = {
-  type: 'GetBlobContentAsJson';
+  type: "GetBlobContentAsJson";
   range: RangeBytes | undefined;
   source: Cfg;
 };
 
 export type CfgDownloadedBlobContent = {
-  type: 'GetDownloadedBlobContent';
+  type: "GetDownloadedBlobContent";
   source: Cfg;
 };
 
 export type CfgOnDemandBlobContent = {
-  type: 'GetOnDemandBlobContent';
+  type: "GetOnDemandBlobContent";
   source: Cfg;
 };
 
@@ -180,7 +180,7 @@ export type CfgOnDemandBlobContent = {
 //
 
 export type CfgExtractArchiveAndGetURL = {
-  type: 'ExtractArchiveAndGetURL';
+  type: "ExtractArchiveAndGetURL";
   format: ArchiveFormat;
   source: Cfg;
 };
@@ -190,7 +190,7 @@ export type CfgExtractArchiveAndGetURL = {
 //
 
 export type CfgImportProgress = {
-  type: 'GetImportProgress';
+  type: "GetImportProgress";
   source: Cfg;
 };
 
@@ -199,24 +199,24 @@ export type CfgImportProgress = {
 //
 
 export type CfgLastLogs = {
-  type: 'GetLastLogs';
+  type: "GetLastLogs";
   source: Cfg;
   lines: number;
 };
 
 export type CfgProgressLog = {
-  type: 'GetProgressLog';
+  type: "GetProgressLog";
   source: Cfg;
   patternToSearch: string;
 };
 
 export type CfgProgressLogWithInfo = {
-  type: 'GetProgressLogWithInfo';
+  type: "GetProgressLogWithInfo";
   source: Cfg;
   patternToSearch: string;
 };
 
 export type CfgLogHandle = {
-  type: 'GetLogHandle';
+  type: "GetLogHandle";
   source: Cfg;
 };

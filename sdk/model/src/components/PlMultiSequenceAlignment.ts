@@ -5,7 +5,7 @@ import type {
   PColumnValues,
   PObjectId,
   PTableColumnId,
-} from '@milaboratories/pl-model-common';
+} from "@milaboratories/pl-model-common";
 import {
   Annotation,
   isPTableAbsent,
@@ -13,12 +13,10 @@ import {
   stringifyJson,
   uniquePlId,
   ValueType,
-} from '@milaboratories/pl-model-common';
-import type { PlSelectionModel } from './PlSelectionModel';
+} from "@milaboratories/pl-model-common";
+import type { PlSelectionModel } from "./PlSelectionModel";
 
-export type PColumnPredicate = (column: PColumnIdAndSpec) =>
-  | boolean
-  | { default: boolean };
+export type PColumnPredicate = (column: PColumnIdAndSpec) => boolean | { default: boolean };
 
 export interface PlMultiSequenceAlignmentSettings {
   sequenceColumnIds?: PObjectId[];
@@ -32,26 +30,21 @@ export interface PlMultiSequenceAlignmentSettings {
   };
 }
 
-export type PlMultiSequenceAlignmentWidget =
-  | 'consensus'
-  | 'seqLogo'
-  | 'tree'
-  | 'legend';
+export type PlMultiSequenceAlignmentWidget = "consensus" | "seqLogo" | "tree" | "legend";
 
-export interface PlMultiSequenceAlignmentModel
-  extends Partial<PlMultiSequenceAlignmentSettings> {
+export interface PlMultiSequenceAlignmentModel extends Partial<PlMultiSequenceAlignmentSettings> {
   version?: number;
 }
 
 export type PlMultiSequenceAlignmentColorSchemeOption =
-  | { type: 'no-color' }
-  | { type: 'chemical-properties' }
-  | { type: 'markup'; columnIds: PObjectId[] };
+  | { type: "no-color" }
+  | { type: "chemical-properties" }
+  | { type: "markup"; columnIds: PObjectId[] };
 
 export function createRowSelectionColumn({
   selection,
   columnId = uniquePlId() as string as PObjectId,
-  label = 'Selection marker',
+  label = "Selection marker",
   domain,
 }: {
   selection: PlSelectionModel | undefined;
@@ -71,7 +64,7 @@ export function createRowSelectionColumn({
   return {
     id: columnId,
     spec: {
-      kind: 'PColumn',
+      kind: "PColumn",
       valueType: ValueType.Int,
       name: PColumnName.Table.RowSelection,
       axesSpec: selection.axesSpec,

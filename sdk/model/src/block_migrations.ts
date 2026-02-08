@@ -1,5 +1,5 @@
-import { tryRegisterCallback } from './internal';
-import { createBlockStorage } from './block_storage';
+import { tryRegisterCallback } from "./internal";
+import { createBlockStorage } from "./block_storage";
 
 export type DataVersionKey = string;
 export type DataVersionMap = Record<string, unknown>;
@@ -29,14 +29,14 @@ export type DataRecoverFn<T> = (version: DataVersionKey, data: unknown) => T;
 export function defineDataVersions<const T extends Record<string, string>>(versions: T): T {
   const values = Object.values(versions) as (string & keyof T)[];
   const keys = Object.keys(versions) as (keyof T)[];
-  const emptyKeys = keys.filter((key) => versions[key] === '');
+  const emptyKeys = keys.filter((key) => versions[key] === "");
   if (emptyKeys.length > 0) {
-    throw new Error(`Version values must be non-empty strings (empty: ${emptyKeys.join(', ')})`);
+    throw new Error(`Version values must be non-empty strings (empty: ${emptyKeys.join(", ")})`);
   }
   const unique = new Set(values);
   if (unique.size !== values.length) {
     const duplicates = values.filter((v, i) => values.indexOf(v) !== i);
-    throw new Error(`Duplicate version values: ${[...new Set(duplicates)].join(', ')}`);
+    throw new Error(`Duplicate version values: ${[...new Set(duplicates)].join(", ")}`);
   }
   return versions;
 }
@@ -59,14 +59,14 @@ export type DataMigrationResult<T> = DataVersioned<T> & {
 
 /** Thrown by recover() to signal unrecoverable data. */
 export class DataUnrecoverableError extends Error {
-  name = 'DataUnrecoverableError';
+  name = "DataUnrecoverableError";
   constructor(dataVersion: DataVersionKey) {
     super(`Unknown version '${dataVersion}'`);
   }
 }
 
 export function isDataUnrecoverableError(error: unknown): error is DataUnrecoverableError {
-  return error instanceof Error && error.name === 'DataUnrecoverableError';
+  return error instanceof Error && error.name === "DataUnrecoverableError";
 }
 
 type MigrationStep = {
@@ -92,7 +92,7 @@ export const defaultRecover: DataRecoverFn<never> = (version, _data) => {
 };
 
 /** Symbol for internal builder creation method */
-const FROM_BUILDER = Symbol('fromBuilder');
+const FROM_BUILDER = Symbol("fromBuilder");
 
 /** Internal state passed from builder to DataModel */
 type BuilderState<S> = {
@@ -338,10 +338,10 @@ export class DataModelBuilder<VersionedData extends DataVersionMap> {
   from<InitialVersion extends keyof VersionedData & string>(
     initialVersion: InitialVersion,
   ): DataModelMigrationChain<
-      VersionedData,
-      InitialVersion,
-      Exclude<keyof VersionedData & string, InitialVersion>
-    > {
+    VersionedData,
+    InitialVersion,
+    Exclude<keyof VersionedData & string, InitialVersion>
+  > {
     return new DataModelMigrationChain<
       VersionedData,
       InitialVersion,
@@ -409,7 +409,7 @@ export class DataModel<State> {
     recoverFn?: DataRecoverFn<State>;
   }) {
     if (versionChain.length === 0) {
-      throw new Error('DataModel requires at least one version key');
+      throw new Error("DataModel requires at least one version key");
     }
     this.versionChain = versionChain;
     this.steps = steps;
@@ -517,11 +517,11 @@ export class DataModel<State> {
    * @internal
    */
   registerCallbacks(): void {
-    tryRegisterCallback('__pl_data_initial', () => this.initialDataFn());
-    tryRegisterCallback('__pl_data_upgrade', (versioned: DataVersioned<unknown>) =>
+    tryRegisterCallback("__pl_data_initial", () => this.initialDataFn());
+    tryRegisterCallback("__pl_data_upgrade", (versioned: DataVersioned<unknown>) =>
       this.migrate(versioned),
     );
-    tryRegisterCallback('__pl_storage_initial', () => {
+    tryRegisterCallback("__pl_storage_initial", () => {
       const { version, data } = this.getDefaultData();
       const storage = createBlockStorage(data, version);
       return JSON.stringify(storage);

@@ -1,8 +1,12 @@
-import { expect, test } from 'vitest';
-import { Computable } from '@milaboratories/computable';
-import { DefaultFinalResourceDataPredicate, NullResourceId, ResourceId } from '@milaboratories/pl-client';
-import { isPlTreeEntry, isPlTreeEntryAccessor, isPlTreeNodeAccessor } from './accessors';
-import { PlTreeState } from './state';
+import { expect, test } from "vitest";
+import { Computable } from "@milaboratories/computable";
+import {
+  DefaultFinalResourceDataPredicate,
+  NullResourceId,
+  ResourceId,
+} from "@milaboratories/pl-client";
+import { isPlTreeEntry, isPlTreeEntryAccessor, isPlTreeNodeAccessor } from "./accessors";
+import { PlTreeState } from "./state";
 import {
   dField,
   iField,
@@ -11,15 +15,14 @@ import {
   TestDynamicRootState1,
   TestErrorResourceState2,
   TestStructuralResourceState1,
-  TestValueResourceState1
-} from './test_utils';
-
+  TestValueResourceState1,
+} from "./test_utils";
 
 function rid(id: bigint): ResourceId {
   return id as ResourceId;
 }
 
-test('simple tree test 1', async () => {
+test("simple tree test 1", async () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
   const entry = tree.entry();
   expect(isPlTreeEntry(entry)).toStrictEqual(true);
@@ -28,7 +31,7 @@ test('simple tree test 1', async () => {
     expect(isPlTreeEntryAccessor(eAcc)).toStrictEqual(true);
     const nAcc = eAcc.node();
     expect(isPlTreeNodeAccessor(nAcc)).toStrictEqual(true);
-    return nAcc.traverse('a', 'b')?.getDataAsString();
+    return nAcc.traverse("a", "b")?.getDataAsString();
   });
 
   expect(c1.isChanged()).toBeTruthy();
@@ -40,39 +43,39 @@ test('simple tree test 1', async () => {
   expect(await c1.getValue()).toBeUndefined();
   expect(c1.isChanged()).toBeFalsy();
 
-  tree.updateFromResourceData([{ ...TestDynamicRootState1, fields: [dField('b')] }]);
+  tree.updateFromResourceData([{ ...TestDynamicRootState1, fields: [dField("b")] }]);
   expect(c1.isChanged()).toBeTruthy();
   expect(await c1.getValue()).toBeUndefined();
   expect(c1.isChanged()).toBeFalsy();
 
-  tree.updateFromResourceData([{ ...TestDynamicRootState1, fields: [dField('b'), dField('a')] }]);
+  tree.updateFromResourceData([{ ...TestDynamicRootState1, fields: [dField("b"), dField("a")] }]);
   expect(c1.isChanged()).toBeTruthy();
   expect(await c1.getValue()).toBeUndefined();
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField('b'), dField('a', rid(rid(1n)))] },
-    { ...TestStructuralResourceState1, id: rid(rid(1n)), fields: [iField('b', rid(rid(2n)))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(rid(1n)))] },
+    { ...TestStructuralResourceState1, id: rid(rid(1n)), fields: [iField("b", rid(rid(2n)))] },
     {
       ...TestValueResourceState1,
       id: rid(rid(2n)),
-      data: new TextEncoder().encode('Test1')
-    }
+      data: new TextEncoder().encode("Test1"),
+    },
   ]);
   expect(c1.isChanged()).toBeTruthy();
-  expect(await c1.getValue()).toStrictEqual('Test1');
+  expect(await c1.getValue()).toStrictEqual("Test1");
   expect(c1.isChanged()).toBeFalsy();
 
-  tree.updateFromResourceData([{ ...TestDynamicRootState1, fields: [dField('a')] }]);
+  tree.updateFromResourceData([{ ...TestDynamicRootState1, fields: [dField("a")] }]);
   expect(c1.isChanged()).toBeTruthy();
   expect(await c1.getValue()).toBeUndefined();
   expect(c1.isChanged()).toBeFalsy();
 });
 
-test('simple tree kv test', async () => {
+test("simple tree kv test", async () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
   const c1 = Computable.make((c) =>
-    c.accessor(tree.entry()).node().traverse('a', 'b')?.getKeyValueAsString('thekey')
+    c.accessor(tree.entry()).node().traverse("a", "b")?.getKeyValueAsString("thekey"),
   );
 
   expect(JSON.stringify(tree.entry())).toMatch(/^"\[ENTRY:/);
@@ -82,13 +85,13 @@ test('simple tree kv test', async () => {
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField('b'), dField('a', rid(rid(1n)))] },
-    { ...TestStructuralResourceState1, id: rid(rid(1n)), fields: [iField('b', rid(rid(2n)))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(rid(1n)))] },
+    { ...TestStructuralResourceState1, id: rid(rid(1n)), fields: [iField("b", rid(rid(2n)))] },
     {
       ...TestValueResourceState1,
       id: rid(rid(2n)),
-      data: new TextEncoder().encode('Test1')
-    }
+      data: new TextEncoder().encode("Test1"),
+    },
   ]);
 
   expect(c1.isChanged()).toBeTruthy();
@@ -99,22 +102,22 @@ test('simple tree kv test', async () => {
     {
       ...TestValueResourceState1,
       id: rid(rid(2n)),
-      data: new TextEncoder().encode('Test1'),
-      kv: [{ key: 'thekey', value: Buffer.from('thevalue') }]
-    }
+      data: new TextEncoder().encode("Test1"),
+      kv: [{ key: "thekey", value: Buffer.from("thevalue") }],
+    },
   ]);
 
   expect(c1.isChanged()).toBeTruthy();
-  expect(await c1.getValue()).toEqual('thevalue');
+  expect(await c1.getValue()).toEqual("thevalue");
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
     {
       ...TestValueResourceState1,
       id: rid(rid(2n)),
-      data: new TextEncoder().encode('Test1'),
-      kv: []
-    }
+      data: new TextEncoder().encode("Test1"),
+      kv: [],
+    },
   ]);
 
   expect(c1.isChanged()).toBeTruthy();
@@ -122,17 +125,17 @@ test('simple tree kv test', async () => {
   expect(c1.isChanged()).toBeFalsy();
 });
 
-test('partial tree update', async () => {
+test("partial tree update", async () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
   const c1 = Computable.make((c) =>
     c
       .accessor(tree.entry())
       .node()
       .traverse(
-        { field: 'a', assertFieldType: 'Dynamic' },
-        { field: 'b', assertFieldType: 'Dynamic' }
+        { field: "a", assertFieldType: "Dynamic" },
+        { field: "b", assertFieldType: "Dynamic" },
       )
-      ?.getDataAsString()
+      ?.getDataAsString(),
   );
 
   expect(c1.isChanged()).toBeTruthy();
@@ -140,16 +143,16 @@ test('partial tree update', async () => {
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField('b'), dField('a', rid(1n))] },
-    { ...TestStructuralResourceState1, id: rid(1n), fields: [dField('b', rid(2n))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(1n))] },
+    { ...TestStructuralResourceState1, id: rid(1n), fields: [dField("b", rid(2n))] },
     {
       ...TestValueResourceState1,
       id: rid(2n),
-      data: new TextEncoder().encode('Test1')
-    }
+      data: new TextEncoder().encode("Test1"),
+    },
   ]);
   expect(c1.isChanged()).toBeTruthy();
-  expect(await c1.getValue()).toStrictEqual('Test1');
+  expect(await c1.getValue()).toStrictEqual("Test1");
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([{ ...TestStructuralResourceState1, id: rid(1n), fields: [] }]);
@@ -158,10 +161,10 @@ test('partial tree update', async () => {
   expect(c1.isChanged()).toBeFalsy();
 });
 
-test('resource error', async () => {
+test("resource error", async () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
   const c1 = Computable.make((c) =>
-    c.accessor(tree.entry()).node().traverse('a', 'b')?.getKeyValueAsString('thekey')
+    c.accessor(tree.entry()).node().traverse("a", "b")?.getKeyValueAsString("thekey"),
   );
 
   expect(c1.isChanged()).toBeTruthy();
@@ -174,17 +177,17 @@ test('resource error', async () => {
       ...TestErrorResourceState2,
       id: rid(7n),
       data: Buffer.from('"error"'),
-      fields: []
-    }
+      fields: [],
+    },
   ]);
 
-  expect((await c1.getValueOrError()).type).toEqual('error');
+  expect((await c1.getValueOrError()).type).toEqual("error");
 });
 
-test('field error', async () => {
+test("field error", async () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
   const c1 = Computable.make((c) =>
-    c.accessor(tree.entry()).node().traverse('b', 'a')?.getKeyValueAsString('thekey')
+    c.accessor(tree.entry()).node().traverse("b", "a")?.getKeyValueAsString("thekey"),
   );
 
   expect(c1.isChanged()).toBeTruthy();
@@ -194,53 +197,53 @@ test('field error', async () => {
   tree.updateFromResourceData([
     {
       ...TestDynamicRootState1,
-      fields: [dField('b', NullResourceId, rid(7n))]
+      fields: [dField("b", NullResourceId, rid(7n))],
     },
     {
       ...TestErrorResourceState2,
       id: rid(7n),
       data: Buffer.from('"error"'),
-      fields: []
-    }
+      fields: [],
+    },
   ]);
 
-  expect((await c1.getValueOrError()).type).toEqual('error');
+  expect((await c1.getValueOrError()).type).toEqual("error");
 });
 
-test('exception - deletion of input field', () => {
+test("exception - deletion of input field", () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField('b'), dField('a', rid(1n))] },
-    { ...TestStructuralResourceState1, id: rid(1n), fields: [iField('b', rid(2n))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(1n))] },
+    { ...TestStructuralResourceState1, id: rid(1n), fields: [iField("b", rid(2n))] },
     {
       ...TestValueResourceState1,
       id: rid(2n),
-      data: new TextEncoder().encode('Test1')
-    }
+      data: new TextEncoder().encode("Test1"),
+    },
   ]);
 
   expect(() =>
-    tree.updateFromResourceData([{ ...TestStructuralResourceState1, id: rid(1n), fields: [] }])
+    tree.updateFromResourceData([{ ...TestStructuralResourceState1, id: rid(1n), fields: [] }]),
   ).toThrow(/removal of Input field/);
 });
 
-test('exception - addition of input field', () => {
+test("exception - addition of input field", () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField('b'), dField('a', rid(1n))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(1n))] },
     {
       ...TestStructuralResourceState1,
       id: rid(1n),
-      fields: [iField('b', rid(2n))],
-      ...ResourceReady
+      fields: [iField("b", rid(2n))],
+      ...ResourceReady,
     },
     {
       ...TestValueResourceState1,
       id: rid(2n),
-      data: new TextEncoder().encode('Test1')
-    }
+      data: new TextEncoder().encode("Test1"),
+    },
   ]);
 
   expect(() =>
@@ -248,71 +251,71 @@ test('exception - addition of input field', () => {
       {
         ...TestStructuralResourceState1,
         id: rid(1n),
-        fields: [iField('b', rid(2n)), iField('df')],
-        ...ResourceReady
-      }
-    ])
+        fields: [iField("b", rid(2n)), iField("df")],
+        ...ResourceReady,
+      },
+    ]),
   ).toThrow(/adding Input/);
 });
 
-test('exception - ready without locks 1', () => {
+test("exception - ready without locks 1", () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
 
   expect(() =>
     tree.updateFromResourceData([
       {
         ...TestDynamicRootState1,
-        fields: [dField('b'), dField('a', rid(1n))]
+        fields: [dField("b"), dField("a", rid(1n))],
       },
       {
         ...TestStructuralResourceState1,
         id: rid(1n),
-        fields: [iField('b', rid(2n))],
-        resourceReady: true
+        fields: [iField("b", rid(2n))],
+        resourceReady: true,
       },
       {
         ...TestValueResourceState1,
         id: rid(2n),
-        data: new TextEncoder().encode('Test1')
-      }
-    ])
+        data: new TextEncoder().encode("Test1"),
+      },
+    ]),
   ).toThrow(/ready without input or output lock/);
 });
 
-test('exception - ready without locks 2', () => {
+test("exception - ready without locks 2", () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField('b'), dField('a', rid(1n))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(1n))] },
     {
       ...TestStructuralResourceState1,
       id: rid(1n),
-      fields: [iField('b', rid(2n))]
+      fields: [iField("b", rid(2n))],
     },
     {
       ...TestValueResourceState1,
       id: rid(2n),
-      data: new TextEncoder().encode('Test1')
-    }
+      data: new TextEncoder().encode("Test1"),
+    },
   ]);
 
   expect(() =>
     tree.updateFromResourceData([
       {
         ...TestDynamicRootState1,
-        fields: [dField('b'), dField('a', rid(1n))]
+        fields: [dField("b"), dField("a", rid(1n))],
       },
       {
         ...TestStructuralResourceState1,
         id: rid(1n),
-        fields: [iField('b', rid(2n))],
-        resourceReady: true
+        fields: [iField("b", rid(2n))],
+        resourceReady: true,
       },
       {
         ...TestValueResourceState1,
         id: rid(2n),
-        data: new TextEncoder().encode('Test1')
-      }
-    ])
+        data: new TextEncoder().encode("Test1"),
+      },
+    ]),
   ).toThrow(/ready without input or output lock/);
 });

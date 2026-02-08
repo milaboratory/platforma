@@ -1,10 +1,16 @@
-import type { ResultOrError, BlockConfig, PlRef, ConfigRenderLambda, StorageDebugView } from '@platforma-sdk/model';
-import type { StringifiedJson } from '@milaboratories/pl-model-common';
-import { extractCodeWithInfo, ensureError } from '@platforma-sdk/model';
-import { LRUCache } from 'lru-cache';
-import type { QuickJSWASMModule } from 'quickjs-emscripten';
-import { executeSingleLambda } from '../js_render';
-import type { ResourceId } from '@milaboratories/pl-client';
+import type {
+  ResultOrError,
+  BlockConfig,
+  PlRef,
+  ConfigRenderLambda,
+  StorageDebugView,
+} from "@platforma-sdk/model";
+import type { StringifiedJson } from "@milaboratories/pl-model-common";
+import { extractCodeWithInfo, ensureError } from "@platforma-sdk/model";
+import { LRUCache } from "lru-cache";
+import type { QuickJSWASMModule } from "quickjs-emscripten";
+import { executeSingleLambda } from "../js_render";
+import type { ResourceId } from "@milaboratories/pl-client";
 
 type EnrichmentTargetsRequest = {
   blockConfig: () => BlockConfig;
@@ -28,24 +34,41 @@ export type MigrationResult =
 
 // Internal lambda handles for storage operations (registered by SDK's block_storage_vm.ts)
 // All callbacks are prefixed with `__pl_` to indicate internal SDK use
-const STORAGE_APPLY_UPDATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_applyUpdate' };
-const STORAGE_DEBUG_VIEW_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_debugView' };
-const STORAGE_MIGRATE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_migrate' };
-const ARGS_DERIVE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_args_derive' };
-const PRERUN_ARGS_DERIVE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_prerunArgs_derive' };
+const STORAGE_APPLY_UPDATE_HANDLE: ConfigRenderLambda = {
+  __renderLambda: true,
+  handle: "__pl_storage_applyUpdate",
+};
+const STORAGE_DEBUG_VIEW_HANDLE: ConfigRenderLambda = {
+  __renderLambda: true,
+  handle: "__pl_storage_debugView",
+};
+const STORAGE_MIGRATE_HANDLE: ConfigRenderLambda = {
+  __renderLambda: true,
+  handle: "__pl_storage_migrate",
+};
+const ARGS_DERIVE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: "__pl_args_derive" };
+const PRERUN_ARGS_DERIVE_HANDLE: ConfigRenderLambda = {
+  __renderLambda: true,
+  handle: "__pl_prerunArgs_derive",
+};
 // Registered by DataModel.registerCallbacks()
-const INITIAL_STORAGE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: '__pl_storage_initial' };
+const INITIAL_STORAGE_HANDLE: ConfigRenderLambda = {
+  __renderLambda: true,
+  handle: "__pl_storage_initial",
+};
 
 /**
  * Result of args derivation from storage.
  * Returned by __pl_args_derive and __pl_prerunArgs_derive VM callbacks.
  */
-type ArgsDeriveResult =
-  | { error: string }
-  | { error?: undefined; value: unknown };
+type ArgsDeriveResult = { error: string } | { error?: undefined; value: unknown };
 
 export class ProjectHelper {
-  private readonly enrichmentTargetsCache = new LRUCache<string, EnrichmentTargetsValue, EnrichmentTargetsRequest>({
+  private readonly enrichmentTargetsCache = new LRUCache<
+    string,
+    EnrichmentTargetsValue,
+    EnrichmentTargetsRequest
+  >({
     max: 256,
     memoMethod: (_key, _value, { context }) => {
       return { value: this.calculateEnrichmentTargets(context) };
@@ -69,9 +92,14 @@ export class ProjectHelper {
    * @param storageJson Storage as JSON string
    * @returns The derived args object, or error if derivation fails
    */
-  public deriveArgsFromStorage(blockConfig: BlockConfig, storageJson: string): ResultOrError<unknown> {
+  public deriveArgsFromStorage(
+    blockConfig: BlockConfig,
+    storageJson: string,
+  ): ResultOrError<unknown> {
     if (blockConfig.modelAPIVersion !== 2) {
-      return { error: new Error('deriveArgsFromStorage is only supported for model API version 2') };
+      return {
+        error: new Error("deriveArgsFromStorage is only supported for model API version 2"),
+      };
     }
 
     try {
@@ -87,7 +115,7 @@ export class ProjectHelper {
       }
       return { value: result.value };
     } catch (e) {
-      return { error: new Error('Args derivation from storage failed', { cause: ensureError(e) }) };
+      return { error: new Error("Args derivation from storage failed", { cause: ensureError(e) }) };
     }
   }
 
@@ -101,7 +129,7 @@ export class ProjectHelper {
    */
   public derivePrerunArgsFromStorage(blockConfig: BlockConfig, storageJson: string): unknown {
     if (blockConfig.modelAPIVersion !== 2) {
-      throw new Error('derivePrerunArgsFromStorage is only supported for model API version 2');
+      throw new Error("derivePrerunArgsFromStorage is only supported for model API version 2");
     }
 
     try {
@@ -127,14 +155,22 @@ export class ProjectHelper {
     const blockConfig = req.blockConfig();
     if (blockConfig.enrichmentTargets === undefined) return undefined;
     const args = req.args();
-    const result = executeSingleLambda(this.quickJs, blockConfig.enrichmentTargets, extractCodeWithInfo(blockConfig), args) as PlRef[];
+    const result = executeSingleLambda(
+      this.quickJs,
+      blockConfig.enrichmentTargets,
+      extractCodeWithInfo(blockConfig),
+      args,
+    ) as PlRef[];
     return result;
   }
 
-  public getEnrichmentTargets(blockConfig: () => BlockConfig, args: () => unknown, key?: { argsRid: ResourceId; blockPackRid: ResourceId }): PlRef[] | undefined {
+  public getEnrichmentTargets(
+    blockConfig: () => BlockConfig,
+    args: () => unknown,
+    key?: { argsRid: ResourceId; blockPackRid: ResourceId },
+  ): PlRef[] | undefined {
     const req = { blockConfig, args };
-    if (key === undefined)
-      return this.calculateEnrichmentTargets(req);
+    if (key === undefined) return this.calculateEnrichmentTargets(req);
     const cacheKey = `${key.argsRid}:${key.blockPackRid}`;
     return this.enrichmentTargetsCache.memo(cacheKey, { context: req }).value;
   }
@@ -162,7 +198,7 @@ export class ProjectHelper {
       ) as string;
       return result;
     } catch (e) {
-      console.error('[ProjectHelper.getInitialStorageInVM] Initial storage creation failed:', e);
+      console.error("[ProjectHelper.getInitialStorageInVM] Initial storage creation failed:", e);
       throw new Error(`Block initial storage creation failed: ${e}`);
     }
   }
@@ -180,7 +216,11 @@ export class ProjectHelper {
    * @returns Updated storage as JSON string
    * @throws Error if storage update fails
    */
-  public applyStorageUpdateInVM(blockConfig: BlockConfig, currentStorageJson: string, payload: { operation: string; value: unknown }): string {
+  public applyStorageUpdateInVM(
+    blockConfig: BlockConfig,
+    currentStorageJson: string,
+    payload: { operation: string; value: unknown },
+  ): string {
     try {
       const result = executeSingleLambda(
         this.quickJs,
@@ -191,7 +231,7 @@ export class ProjectHelper {
       ) as string;
       return result;
     } catch (e) {
-      console.error('[ProjectHelper.applyStorageUpdateInVM] Storage update failed:', e);
+      console.error("[ProjectHelper.applyStorageUpdateInVM] Storage update failed:", e);
       throw new Error(`Block storage update failed: ${e}`);
     }
   }
@@ -204,7 +244,10 @@ export class ProjectHelper {
    * @param rawStorageJson Raw storage as JSON string (or undefined)
    * @returns Storage debug view as JSON string (e.g., '{"dataVersion": "v1"}')
    */
-  public getStorageDebugViewInVM(blockConfig: BlockConfig, rawStorageJson: string | undefined): StringifiedJson<StorageDebugView> | undefined {
+  public getStorageDebugViewInVM(
+    blockConfig: BlockConfig,
+    rawStorageJson: string | undefined,
+  ): StringifiedJson<StorageDebugView> | undefined {
     try {
       const result = executeSingleLambda(
         this.quickJs,
@@ -214,7 +257,7 @@ export class ProjectHelper {
       ) as StringifiedJson<StorageDebugView>;
       return result;
     } catch (e) {
-      console.error('[ProjectHelper.getStorageDebugViewInVM] Get storage debug view failed:', e);
+      console.error("[ProjectHelper.getStorageDebugViewInVM] Get storage debug view failed:", e);
       return undefined;
     }
   }
@@ -238,7 +281,10 @@ export class ProjectHelper {
    * @param currentStorageJson Current storage as JSON string (or undefined)
    * @returns MigrationResult with new storage or skip/error info
    */
-  public migrateStorageInVM(blockConfig: BlockConfig, currentStorageJson: string | undefined): MigrationResult {
+  public migrateStorageInVM(
+    blockConfig: BlockConfig,
+    currentStorageJson: string | undefined,
+  ): MigrationResult {
     try {
       const result = executeSingleLambda(
         this.quickJs,
@@ -248,7 +294,7 @@ export class ProjectHelper {
       ) as MigrationResult;
       return result;
     } catch (e) {
-      console.error('[ProjectHelper.migrateStorageInVM] Migration failed:', e);
+      console.error("[ProjectHelper.migrateStorageInVM] Migration failed:", e);
       return { error: `VM execution failed: ${e}` };
     }
   }

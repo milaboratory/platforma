@@ -1,1 +1,1 @@
-export { default as PlTooltip } from './PlTooltip.vue';
+export { default as PlTooltip } from "./PlTooltip.vue";

@@ -4,7 +4,7 @@ import type {
   PTableColumnSpecColumn,
   PTableValue,
   PTableValueAxis,
-} from '@platforma-sdk/model';
+} from "@platforma-sdk/model";
 import {
   canonicalizeJson,
   getAxisId,
@@ -27,7 +27,7 @@ import {
   Annotation,
   ValueType,
   readAnnotationJson,
-} from '@platforma-sdk/model';
+} from "@platforma-sdk/model";
 import type {
   CellStyle,
   ColDef,
@@ -36,35 +36,33 @@ import type {
   IServerSideDatasource,
   IServerSideGetRowsParams,
   ManagedGridOptions,
-} from 'ag-grid-enterprise';
-import type { PlAgHeaderComponentParams, PlAgHeaderComponentType } from '../../PlAgColumnHeader';
-import { PlAgColumnHeader } from '../../PlAgColumnHeader';
-import { PlAgTextAndButtonCell } from '../../PlAgTextAndButtonCell';
-import type { PlAgDataTableV2Row, PlTableRowId } from '../types';
-import {
-  PTableHidden,
-} from './common';
-import { defaultMainMenuItems } from './menu-items';
-import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
-import { getColumnRenderingSpec } from './value-rendering';
-import type { Ref } from 'vue';
-import { isJsonEqual } from '@milaboratories/helpers';
-import type { DeferredCircular } from './focus-row';
+} from "ag-grid-enterprise";
+import type { PlAgHeaderComponentParams, PlAgHeaderComponentType } from "../../PlAgColumnHeader";
+import { PlAgColumnHeader } from "../../PlAgColumnHeader";
+import { PlAgTextAndButtonCell } from "../../PlAgTextAndButtonCell";
+import type { PlAgDataTableV2Row, PlTableRowId } from "../types";
+import { PTableHidden } from "./common";
+import { defaultMainMenuItems } from "./menu-items";
+import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from "./row-number";
+import { getColumnRenderingSpec } from "./value-rendering";
+import type { Ref } from "vue";
+import { isJsonEqual } from "@milaboratories/helpers";
+import type { DeferredCircular } from "./focus-row";
 
 export function isLabelColumn(column: PTableColumnSpec): column is PTableColumnSpecColumn {
-  return column.type === 'column' && isLabelColumnSpec(column.spec);
+  return column.type === "column" && isLabelColumnSpec(column.spec);
 }
 
 export function getPTableColumnId(spec: PTableColumnSpec): PTableColumnId {
   switch (spec.type) {
-    case 'axis':
+    case "axis":
       return {
-        type: 'axis',
+        type: "axis",
         id: getAxisId(spec.spec),
       };
-    case 'column':
+    case "column":
       return {
-        type: 'column',
+        type: "column",
         id: spec.id,
       };
   }
@@ -79,19 +77,17 @@ function columns2rows(
 ): PlAgDataTableV2Row[] {
   const rowData: PlAgDataTableV2Row[] = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
-    const axesKey: PTableValueAxis[] = axes
-      .map((iAxis) => {
-        const value = pTableValue(columns[resultMapping[iAxis]], iRow);
-        if (!isPTableValueAxis(value))
-          throw new Error(`axis value is not a PTableValueAxis: ${JSON.stringify(value)}`);
-        return value;
-      });
+    const axesKey: PTableValueAxis[] = axes.map((iAxis) => {
+      const value = pTableValue(columns[resultMapping[iAxis]], iRow);
+      if (!isPTableValueAxis(value))
+        throw new Error(`axis value is not a PTableValueAxis: ${JSON.stringify(value)}`);
+      return value;
+    });
     const id = canonicalizeJson<PlTableRowId>(axesKey);
     const row: PlAgDataTableV2Row = { id, axesKey };
     fields.forEach((field, iCol) => {
-      row[field.toString() as `${number}`] = resultMapping[iCol] === -1
-        ? PTableHidden
-        : pTableValue(columns[resultMapping[iCol]], iRow);
+      row[field.toString() as `${number}`] =
+        resultMapping[iCol] === -1 ? PTableHidden : pTableValue(columns[resultMapping[iCol]], iRow);
     });
     rowData.push(row);
   }
@@ -115,9 +111,13 @@ export async function calculateGridOptions({
   dataRenderedTracker: DeferredCircular<GridApi<PlAgDataTableV2Row>>;
   hiddenColIds?: PlTableColumnIdJson[];
   cellButtonAxisParams?: PlAgCellButtonAxisParams;
-}): Promise<Pick<ManagedGridOptions<PlAgDataTableV2Row>, 'columnDefs' | 'serverSideDatasource'> & { axesSpec: AxesSpec }> {
+}): Promise<
+  Pick<ManagedGridOptions<PlAgDataTableV2Row>, "columnDefs" | "serverSideDatasource"> & {
+    axesSpec: AxesSpec;
+  }
+> {
   const stateGeneration = generation.value;
-  const stateChangedError = new Error('table state generation changed');
+  const stateChangedError = new Error("table state generation changed");
 
   // get specs of the full table
   const specs = await pfDriver.getSpec(model.fullTableHandle);
@@ -129,14 +129,13 @@ export async function calculateGridOptions({
   if (stateGeneration !== generation.value) throw stateChangedError;
 
   // create index mapping from full specs to visible subset (hidden columns would have -1)
-  const specId = (spec: PTableColumnSpec) => canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
-  const dataSpecsMap = new Map(
-    dataSpecs.entries().map(([i, spec]) => [specId(spec), i]),
-  );
+  const specId = (spec: PTableColumnSpec) =>
+    canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
+  const dataSpecsMap = new Map(dataSpecs.entries().map(([i, spec]) => [specId(spec), i]));
   const specsToDataSpecsMapping = new Map(
     specs.entries().map(([i, spec]) => {
       const dataSpecIdx = dataSpecsMap.get(specId(spec)) ?? -1;
-      if (dataSpecIdx === -1 && spec.type === 'axis')
+      if (dataSpecIdx === -1 && spec.type === "axis")
         throw new Error(`axis ${JSON.stringify(spec.spec)} not present in join result`);
       return [i, dataSpecIdx];
     }),
@@ -160,29 +159,29 @@ export async function calculateGridOptions({
   };
 
   // filter out partitioned axes, label columns and hidden columns
-  let indices = specs.entries()
-    .filter(
-      ([i, spec]) => {
-        switch (spec.type) {
-          case 'axis': return !isPartitionedAxis(spec.id);
-          case 'column':
-            if (isLabelColumnSpec(spec.spec)) {
-              const labeledAxisId = getAxisId(spec.spec.axesSpec[0]);
-              if (!isPartitionedAxis(labeledAxisId)) {
-                setLabelColumnIndex(labeledAxisId, i);
-              }
-              return false;
+  let indices = specs
+    .entries()
+    .filter(([i, spec]) => {
+      switch (spec.type) {
+        case "axis":
+          return !isPartitionedAxis(spec.id);
+        case "column":
+          if (isLabelColumnSpec(spec.spec)) {
+            const labeledAxisId = getAxisId(spec.spec.axesSpec[0]);
+            if (!isPartitionedAxis(labeledAxisId)) {
+              setLabelColumnIndex(labeledAxisId, i);
             }
-            return !isColumnHidden(spec.spec);
-        }
-      },
-    )
+            return false;
+          }
+          return !isColumnHidden(spec.spec);
+      }
+    })
     .map(([i]) => i)
     .toArray();
 
   // order columns by priority
   indices.sort((a, b) => {
-    if (specs[a].type !== specs[b].type) return specs[a].type === 'axis' ? -1 : 1;
+    if (specs[a].type !== specs[b].type) return specs[a].type === "axis" ? -1 : 1;
 
     const aPriority = readAnnotationJson(specs[a].spec, Annotation.Table.OrderPriority);
     const bPriority = readAnnotationJson(specs[b].spec, Annotation.Table.OrderPriority);
@@ -197,7 +196,7 @@ export async function calculateGridOptions({
   // replace axes with label columns
   indices = indices.map((i) => {
     const spec = specs[i];
-    if (spec.type === 'axis') {
+    if (spec.type === "axis") {
       const labelColumnIdx = getLabelColumnIndex(spec.id);
       if (labelColumnIdx !== -1) {
         return labelColumnIdx;
@@ -207,12 +206,19 @@ export async function calculateGridOptions({
   });
   const columnDefs: ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] = [
     makeRowNumberColDef(),
-    ...fields.map((field, index) => makeColDef(field, specs[field], specs[indices[index]], hiddenColIds, cellButtonAxisParams)),
+    ...fields.map((field, index) =>
+      makeColDef(field, specs[field], specs[indices[index]], hiddenColIds, cellButtonAxisParams),
+    ),
   ];
 
   // mix in indices of skipped axes (axes that were partitioned or replaced with label columns)
-  const axesSpec = specs.values().filter((spec) => spec.type === 'axis').map((spec) => spec.spec).toArray();
-  const axes = axesSpec.keys()
+  const axesSpec = specs
+    .values()
+    .filter((spec) => spec.type === "axis")
+    .map((spec) => spec.spec)
+    .toArray();
+  const axes = axesSpec
+    .keys()
     .map((i) => {
       let r = indices.indexOf(i);
       if (r === -1) {
@@ -243,7 +249,8 @@ export async function calculateGridOptions({
       try {
         if (rowCount === -1) {
           const ptShape = await pfDriver.getShape(pt);
-          if (stateGeneration !== generation.value || params.api.isDestroyed()) return params.fail();
+          if (stateGeneration !== generation.value || params.api.isDestroyed())
+            return params.fail();
           rowCount = ptShape.rows;
         }
 
@@ -251,7 +258,7 @@ export async function calculateGridOptions({
           params.success({ rowData: [], rowCount });
           // Warning: AgGrid cannot show two overlays at once,
           // so first hide loading overlay, then show no rows overlay
-          params.api.setGridOption('loading', false);
+          params.api.setGridOption("loading", false);
           params.api.showNoRowsOverlay();
           return;
         }
@@ -264,28 +271,34 @@ export async function calculateGridOptions({
 
         let length = 0;
         let rowData: PlAgDataTableV2Row[] = [];
-        if (rowCount > 0 && params.request.startRow !== undefined && params.request.endRow !== undefined) {
+        if (
+          rowCount > 0 &&
+          params.request.startRow !== undefined &&
+          params.request.endRow !== undefined
+        ) {
           length = Math.min(rowCount, params.request.endRow) - params.request.startRow;
           if (length > 0) {
             const data = await pfDriver.getData(pt, requestIndices, {
               offset: params.request.startRow,
               length,
             });
-            if (stateGeneration !== generation.value || params.api.isDestroyed()) return params.fail();
+            if (stateGeneration !== generation.value || params.api.isDestroyed())
+              return params.fail();
             rowData = columns2rows(fields, data, axes, resultMapping);
           }
         }
 
         params.success({ rowData, rowCount });
         params.api.autoSizeColumns(
-          params.api.getAllDisplayedColumns()
+          params.api
+            .getAllDisplayedColumns()
             .filter((column) => column.getColId() !== PlAgDataTableRowNumberColId),
         );
-        params.api.setGridOption('loading', false);
+        params.api.setGridOption("loading", false);
         dataRenderedTracker.resolve(params.api);
       } catch (error: unknown) {
         if (stateGeneration !== generation.value || params.api.isDestroyed()) return params.fail();
-        params.api.setGridOption('loading', true);
+        params.api.setGridOption("loading", true);
         params.fail();
         console.trace(error);
       }
@@ -319,12 +332,12 @@ export function makeColDef(
     source: spec,
     labeled: labeledSpec,
   });
-  const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
+  const valueType = spec.type === "axis" ? spec.spec.type : spec.spec.valueType;
   const columnRenderingSpec = getColumnRenderingSpec(spec);
   const cellStyle: CellStyle = {};
   if (columnRenderingSpec.fontFamily) {
-    if (columnRenderingSpec.fontFamily === 'monospace') {
-      cellStyle.fontFamily = 'Spline Sans Mono';
+    if (columnRenderingSpec.fontFamily === "monospace") {
+      cellStyle.fontFamily = "Spline Sans Mono";
       cellStyle.fontWeight = 300;
     } else {
       cellStyle.fontFamily = columnRenderingSpec.fontFamily;
@@ -335,14 +348,16 @@ export function makeColDef(
     mainMenuItems: defaultMainMenuItems,
     context: spec,
     field: `${iCol}`,
-    headerName: readAnnotation(labeledSpec.spec, Annotation.Label)?.trim() ?? `Unlabeled ${spec.type} ${iCol}`,
-    lockPosition: spec.type === 'axis',
+    headerName:
+      readAnnotation(labeledSpec.spec, Annotation.Label)?.trim() ??
+      `Unlabeled ${spec.type} ${iCol}`,
+    lockPosition: spec.type === "axis",
     hide: hiddenColIds?.includes(colId) ?? isColumnOptional(spec.spec),
     valueFormatter: columnRenderingSpec.valueFormatter,
     headerComponent: PlAgColumnHeader,
     cellRendererSelector: cellButtonAxisParams?.showCellButtonForAxisId
       ? (params: ICellRendererParams) => {
-          if (spec.type !== 'axis') return;
+          if (spec.type !== "axis") return;
 
           const axisId = (params.colDef?.context as PTableColumnSpec)?.id as AxisId;
           if (isJsonEqual(axisId, cellButtonAxisParams.showCellButtonForAxisId)) {
@@ -366,10 +381,10 @@ export function makeColDef(
           case ValueType.Long:
           case ValueType.Float:
           case ValueType.Double:
-            return 'Number';
+            return "Number";
           case ValueType.String:
           case ValueType.Bytes:
-            return 'Text';
+            return "Text";
           default:
             throw Error(`unsupported data type: ${valueType}`);
         }
@@ -382,10 +397,10 @@ export function makeColDef(
         case ValueType.Long:
         case ValueType.Float:
         case ValueType.Double:
-          return 'number';
+          return "number";
         case ValueType.String:
         case ValueType.Bytes:
-          return 'text';
+          return "text";
         default:
           throw Error(`unsupported data type: ${valueType}`);
       }

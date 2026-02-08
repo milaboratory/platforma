@@ -1,5 +1,5 @@
 // @DEPRECATED - use sdk/model/src/filters + sdk/model/src/annotations
-import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
+import type { SUniversalPColumnId } from "@milaboratories/pl-model-common";
 //
 // Sequence filter
 //
@@ -10,7 +10,7 @@ import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
  * Can handle both string literals and biological sequences with wildcards.
  */
 export type PatternPredicateEquals = {
-  type: 'equals';
+  type: "equals";
   /** The exact pattern value to match */
   value: string;
 };
@@ -21,7 +21,7 @@ export type PatternPredicateEquals = {
  * Can handle both string literals and biological sequences with wildcards.
  */
 export type PatternPredicateContainSubsequence = {
-  type: 'containSubsequence';
+  type: "containSubsequence";
   /** The subpattern to search for within the target pattern */
   value: string;
 };
@@ -36,7 +36,7 @@ export type PatternPredicate = PatternPredicateEquals | PatternPredicateContainS
  * Works with both biological sequences (with wildcards) and regular strings.
  */
 export type PatternFilter = {
-  type: 'pattern';
+  type: "pattern";
   /** The column identifier to apply the filter to */
   column: SUniversalPColumnId;
   /** The predicate defining the filtering logic */
@@ -59,7 +59,7 @@ export type PatternFilter = {
  * The ranked values can be used in numerical comparison filters.
  */
 export type ValueRank = {
-  transformer: 'rank';
+  transformer: "rank";
   /** The column identifier to apply the ranking to */
   column: SUniversalPColumnId;
   /** If true, sorts highest values first (highest value gets rank 1) */
@@ -77,7 +77,7 @@ export type ValueRank = {
  * The cumulative values can be used in numerical comparison filters.
  */
 export type SortedCumulativeSum = {
-  transformer: 'sortedCumulativeSum';
+  transformer: "sortedCumulativeSum";
   /** The column identifier to apply the cumulative sum to */
   column: SUniversalPColumnId;
   /** If true, sorts values in descending order before calculating the cumulative sum */
@@ -94,7 +94,7 @@ export type SortedCumulativeSum = {
  * Note: The behavior for non-positive input values (<= 0) results in -Infinity.
  */
 export type Log10 = {
-  transformer: 'log10';
+  transformer: "log10";
   /** The column identifier to apply the log10 transformation to */
   column: SUniversalPColumnId;
 };
@@ -125,7 +125,7 @@ export type TransformedColumn = ValueRank | SortedCumulativeSum | Log10;
  * - Use allowEqual=true to include equality in the comparison (<=)
  */
 export type NumericalComparisonFilter = {
-  type: 'numericalComparison';
+  type: "numericalComparison";
   /** The first column to compare (left side of comparison) */
   lhs: SUniversalPColumnId | TransformedColumn | number;
   /** The second column to compare (right side of comparison) */
@@ -141,7 +141,7 @@ export type NumericalComparisonFilter = {
  * This filter is useful for filtering out records where a specific column has no value / clonotype is not present.
  */
 export type IsNA = {
-  type: 'isNA';
+  type: "isNA";
   /** The column identifier to check for NA values */
   column: SUniversalPColumnId;
 };
@@ -155,7 +155,7 @@ export type IsNA = {
  * A record matches if at least one of the contained filters matches.
  */
 export interface OrFilter {
-  type: 'or';
+  type: "or";
   /** Array of filters to combine with OR logic */
   filters: AnnotationFilter[];
 }
@@ -165,7 +165,7 @@ export interface OrFilter {
  * A record matches only if all of the contained filters match.
  */
 export interface AndFilter {
-  type: 'and';
+  type: "and";
   /** Array of filters to combine with AND logic */
   filters: AnnotationFilter[];
 }
@@ -175,7 +175,7 @@ export interface AndFilter {
  * A record matches if it does not match the contained filter.
  */
 export interface NotFilter {
-  type: 'not';
+  type: "not";
   /** The filter to negate */
   filter: AnnotationFilter;
 }
@@ -183,7 +183,13 @@ export interface NotFilter {
 /**
  * Union type for all supported annotation filters.
  */
-export type AnnotationFilter = IsNA | PatternFilter | NumericalComparisonFilter | OrFilter | AndFilter | NotFilter;
+export type AnnotationFilter =
+  | IsNA
+  | PatternFilter
+  | NumericalComparisonFilter
+  | OrFilter
+  | AndFilter
+  | NotFilter;
 
 //
 // Annotation
@@ -211,7 +217,7 @@ export type AnnotationMode =
    * The resulting column will have the following shape:
    *   [clonotype_key] -> label
    */
-  | 'byClonotype'
+  | "byClonotype"
   /**
    * Annotates clonotypes independently within each sample.
    * This allows sample-specific filtering, where a clonotype might be included in one sample
@@ -221,7 +227,7 @@ export type AnnotationMode =
    * The resulting column will have the following shape:
    *   [sample_id, clonotype_key] -> label
    */
-  | 'bySampleAndClonotype';
+  | "bySampleAndClonotype";
 
 /**
  * Represents a complete annotation configuration.

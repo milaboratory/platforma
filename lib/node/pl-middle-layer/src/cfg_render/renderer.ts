@@ -5,18 +5,18 @@ import type {
   CfgMapRecordValues,
   CfgMapResourceFields,
   RangeBytes,
-} from '@platforma-sdk/model';
-import type { ArgumentRequests, Operation, OperationAction, Subroutine } from './operation';
-import type { PlTreeEntry } from '@milaboratories/pl-tree';
-import { mapRecord } from './util';
-import { computableFromCfgUnsafe } from './executor';
-import { assertNever } from '@milaboratories/ts-helpers';
-import type { ComputableCtx } from '@milaboratories/computable';
-import { Computable } from '@milaboratories/computable';
+} from "@platforma-sdk/model";
+import type { ArgumentRequests, Operation, OperationAction, Subroutine } from "./operation";
+import type { PlTreeEntry } from "@milaboratories/pl-tree";
+import { mapRecord } from "./util";
+import { computableFromCfgUnsafe } from "./executor";
+import { assertNever } from "@milaboratories/ts-helpers";
+import type { ComputableCtx } from "@milaboratories/computable";
+import { Computable } from "@milaboratories/computable";
 
 function res(result: unknown): OperationAction {
   return {
-    type: 'ReturnResult',
+    type: "ReturnResult",
     result: result,
   };
 }
@@ -64,13 +64,13 @@ function mapArrayToRecord<T, R>(elements: T[], cb: (e: T) => R): Record<string, 
 
 function SRMapArrayValues1(
   ctx: Record<string, unknown>,
-  ops: Pick<CfgMapArrayValues, 'itVar' | 'mapping'>,
+  ops: Pick<CfgMapArrayValues, "itVar" | "mapping">,
 ): Subroutine {
   return (args) => {
     const source = args.source as unknown[] | undefined;
     if (source === undefined) return resOp(undefined);
     return () => ({
-      type: 'ScheduleSubroutine',
+      type: "ScheduleSubroutine",
       subroutine: SRCollectArrayFromArgs(source.length),
       args: mapArrayToRecord(source, (e) => renderCfg({ ...ctx, [ops.itVar]: e }, ops.mapping)),
     });
@@ -87,7 +87,7 @@ function SRCollectArrayFromArgs(length: number): Subroutine {
 
 function SRMapRecordValues1(
   ctx: Record<string, unknown>,
-  ops: Pick<CfgMapRecordValues, 'itVar' | 'mapping'>,
+  ops: Pick<CfgMapRecordValues, "itVar" | "mapping">,
 ): Subroutine {
   return (args) => {
     const source = args.source as Record<string, unknown> | undefined;
@@ -98,7 +98,7 @@ function SRMapRecordValues1(
       nextArgs[k] = renderCfg(newCtx, ops.mapping);
     }
     return () => ({
-      type: 'ScheduleSubroutine',
+      type: "ScheduleSubroutine",
       subroutine: SRMapRecordValues2,
       args: nextArgs,
     });
@@ -150,7 +150,7 @@ const SRGetJsonField: Subroutine = (args) => {
 
 function SRMapResourceFields1(
   ctx: Record<string, unknown>,
-  ops: Pick<CfgMapResourceFields, 'itVar' | 'mapping'>,
+  ops: Pick<CfgMapResourceFields, "itVar" | "mapping">,
 ): Subroutine {
   return (args) => {
     const source = args.source as PlTreeEntry | undefined;
@@ -170,7 +170,7 @@ function SRMapResourceFields1(
       }
 
       return {
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRMapResourceFields2,
         args: nextArgs,
       };
@@ -188,7 +188,7 @@ const SRGetBlobContent: (range?: RangeBytes) => Subroutine = (range) => (args) =
 
   return ({ drivers }) => {
     return {
-      type: 'ScheduleComputable',
+      type: "ScheduleComputable",
       computable: Computable.make(
         (ctx) => {
           return drivers.blobDriver.getDownloadedBlob(ctx.accessor(source).node().resourceInfo);
@@ -213,14 +213,17 @@ const SRGetBlobContentAsString: (range?: RangeBytes) => Subroutine = (range) => 
     const resourceInfo = cCtx.accessor(source).node().resourceInfo;
 
     return {
-      type: 'ScheduleComputable',
-      computable: Computable.make((ctx) => drivers.blobDriver.getDownloadedBlob(resourceInfo, ctx), {
-        postprocessValue: async (value) => {
-          if (value === undefined) return undefined;
-          const content = await drivers.blobDriver.getContent(value.handle, range);
-          return content.toString();
+      type: "ScheduleComputable",
+      computable: Computable.make(
+        (ctx) => drivers.blobDriver.getDownloadedBlob(resourceInfo, ctx),
+        {
+          postprocessValue: async (value) => {
+            if (value === undefined) return undefined;
+            const content = await drivers.blobDriver.getContent(value.handle, range);
+            return content.toString();
+          },
         },
-      }),
+      ),
     };
   };
 };
@@ -231,7 +234,7 @@ const SRGetBlobContentAsJson: (range?: RangeBytes) => Subroutine = (range) => (a
 
   return ({ drivers }) => {
     return {
-      type: 'ScheduleComputable',
+      type: "ScheduleComputable",
       computable: Computable.make(
         (c) => drivers.blobDriver.getDownloadedBlob(c.accessor(source).node().resourceInfo, c),
         {
@@ -253,7 +256,7 @@ const SRGetDownloadedBlobContent: Subroutine = (args) => {
 
   return (ctx) => {
     return {
-      type: 'ScheduleComputable',
+      type: "ScheduleComputable",
       computable: ctx.drivers.blobDriver.getDownloadedBlob(source),
     };
   };
@@ -265,7 +268,7 @@ const SRGetOnDemandBlobContent: Subroutine = (args) => {
 
   return ({ drivers }) => {
     return {
-      type: 'ScheduleComputable',
+      type: "ScheduleComputable",
       computable: drivers.blobDriver.getOnDemandBlob(source),
     };
   };
@@ -277,7 +280,7 @@ const SRExtractArchiveAndGetURL: (format: ArchiveFormat) => Subroutine = (format
 
   return ({ drivers }) => {
     return {
-      type: 'ScheduleComputable',
+      type: "ScheduleComputable",
       computable: drivers.blobToURLDriver.extractArchiveAndGetURL(source, format),
     };
   };
@@ -289,7 +292,7 @@ const SRGetImportProgress: Subroutine = (args) => {
 
   return ({ drivers }) => {
     return {
-      type: 'ScheduleComputable',
+      type: "ScheduleComputable",
       computable: drivers.uploadDriver.getProgressId(source),
     };
   };
@@ -301,7 +304,7 @@ const SRGetLastLogs: (lines: number) => Subroutine = (lines) => (args) => {
 
   return ({ drivers }) => {
     return {
-      type: 'ScheduleComputable',
+      type: "ScheduleComputable",
       computable: drivers.logDriver.getLastLogs(source, lines),
     };
   };
@@ -313,23 +316,24 @@ const SRGetProgressLog: (patternToSearch: string) => Subroutine = (patternToSear
 
   return ({ drivers }) => {
     return {
-      type: 'ScheduleComputable',
+      type: "ScheduleComputable",
       computable: drivers.logDriver.getProgressLog(source, patternToSearch),
     };
   };
 };
 
-const SRGetProgressLogWithInfo: (patternToSearch: string) => Subroutine = (patternToSearch) => (args) => {
-  const source = args.source as PlTreeEntry | undefined;
-  if (source === undefined) return resOp(undefined);
+const SRGetProgressLogWithInfo: (patternToSearch: string) => Subroutine =
+  (patternToSearch) => (args) => {
+    const source = args.source as PlTreeEntry | undefined;
+    if (source === undefined) return resOp(undefined);
 
-  return ({ drivers }) => {
-    return {
-      type: 'ScheduleComputable',
-      computable: drivers.logDriver.getProgressLogWithInfo(source, patternToSearch),
+    return ({ drivers }) => {
+      return {
+        type: "ScheduleComputable",
+        computable: drivers.logDriver.getProgressLogWithInfo(source, patternToSearch),
+      };
     };
   };
-};
 
 const SRGetLogHandle: Subroutine = (args) => {
   const source = args.source as PlTreeEntry | undefined;
@@ -337,7 +341,7 @@ const SRGetLogHandle: Subroutine = (args) => {
 
   return ({ drivers }) => {
     return {
-      type: 'ScheduleComputable',
+      type: "ScheduleComputable",
       computable: drivers.logDriver.getLogHandle(source),
     };
   };
@@ -346,28 +350,27 @@ const SRGetLogHandle: Subroutine = (args) => {
 /** Renders configuration into executor's Operation */
 export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
   switch (cfg.type) {
-    case 'GetFromCtx':
-    {
+    case "GetFromCtx": {
       const ctxValue = ctx[cfg.variable];
-      if (typeof ctxValue === 'function') {
+      if (typeof ctxValue === "function") {
         return (e) => res((ctxValue as (cCtx: ComputableCtx) => OperationAction)(e.cCtx));
       } else {
         return resOp(ctxValue);
       }
     }
 
-    case 'Isolate':
+    case "Isolate":
       return ({ drivers }) => ({
-        type: 'ScheduleComputable',
+        type: "ScheduleComputable",
         computable: computableFromCfgUnsafe(drivers, ctx, cfg.cfg),
       });
 
-    case 'Immediate':
+    case "Immediate":
       return resOp(cfg.value);
 
-    case 'GetJsonField':
+    case "GetJsonField":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRGetJsonField,
         args: {
           source: renderCfg(ctx, cfg.source),
@@ -375,68 +378,68 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         },
       });
 
-    case 'MapArrayValues':
+    case "MapArrayValues":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRMapArrayValues1(ctx, cfg),
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'MapRecordValues':
+    case "MapRecordValues":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRMapRecordValues1(ctx, cfg),
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'MakeObject':
+    case "MakeObject":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRMakeObject,
         args: mapRecord(cfg.template, (c) => renderCfg(ctx, c)),
       });
 
-    case 'MakeArray':
+    case "MakeArray":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRCollectArrayFromArgs(cfg.template.length),
         args: mapArrayToRecord(cfg.template, (e) => renderCfg(ctx, e)),
       });
 
-    case 'Flatten':
+    case "Flatten":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRFlatten,
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'IsEmpty':
+    case "IsEmpty":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRIsEmpty,
         args: {
           arg: renderCfg(ctx, cfg.arg),
         },
       });
 
-    case 'Not':
+    case "Not":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRNot,
         args: {
           operand: renderCfg(ctx, cfg.operand),
         },
       });
 
-    case 'And':
+    case "And":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRAnd,
         args: {
           operand1: renderCfg(ctx, cfg.operand1),
@@ -444,9 +447,9 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         },
       });
 
-    case 'Or':
+    case "Or":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SROr,
         args: {
           operand1: renderCfg(ctx, cfg.operand1),
@@ -454,18 +457,18 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         },
       });
 
-    case 'MapResourceFields':
+    case "MapResourceFields":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRMapResourceFields1(ctx, cfg),
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'GetResourceField':
+    case "GetResourceField":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRGetResourceField,
         args: {
           source: renderCfg(ctx, cfg.source),
@@ -473,108 +476,108 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         },
       });
 
-    case 'GetResourceValueAsJson':
+    case "GetResourceValueAsJson":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRResourceValueAsJson,
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'GetBlobContent':
+    case "GetBlobContent":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRGetBlobContent(cfg.range),
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'GetBlobContentAsString':
+    case "GetBlobContentAsString":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRGetBlobContentAsString(cfg.range),
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'GetBlobContentAsJson':
+    case "GetBlobContentAsJson":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRGetBlobContentAsJson(cfg.range),
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'GetDownloadedBlobContent':
+    case "GetDownloadedBlobContent":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRGetDownloadedBlobContent,
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'GetOnDemandBlobContent':
+    case "GetOnDemandBlobContent":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRGetOnDemandBlobContent,
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'ExtractArchiveAndGetURL':
+    case "ExtractArchiveAndGetURL":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRExtractArchiveAndGetURL(cfg.format),
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'GetImportProgress':
+    case "GetImportProgress":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRGetImportProgress,
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'GetLastLogs':
+    case "GetLastLogs":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRGetLastLogs(cfg.lines),
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'GetProgressLog':
+    case "GetProgressLog":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRGetProgressLog(cfg.patternToSearch),
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'GetProgressLogWithInfo':
+    case "GetProgressLogWithInfo":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRGetProgressLogWithInfo(cfg.patternToSearch),
         args: {
           source: renderCfg(ctx, cfg.source),
         },
       });
 
-    case 'GetLogHandle':
+    case "GetLogHandle":
       return () => ({
-        type: 'ScheduleSubroutine',
+        type: "ScheduleSubroutine",
         subroutine: SRGetLogHandle,
         args: {
           source: renderCfg(ctx, cfg.source),

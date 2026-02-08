@@ -23,7 +23,7 @@
       --pl-file-dialog-local-border-color: var(--border-color-focus);
     }
 
-    >span {
+    > span {
       font-size: 14px;
       font-weight: 500;
       line-height: 20px;
@@ -53,7 +53,7 @@
       gap: 12px;
       margin: 0 24px;
 
-      >div {
+      > div {
         flex: 1;
       }
     }
@@ -93,7 +93,7 @@
         gap: 12px;
       }
 
-      >div {
+      > div {
         cursor: pointer;
       }
 
@@ -110,7 +110,7 @@
         min-width: 0;
         max-width: 100%;
 
-        >div {
+        > div {
           display: inline-block;
           white-space: nowrap;
           overflow: hidden;
@@ -136,7 +136,7 @@
         margin-top: 40px;
         width: 240px;
         height: 200px;
-        background: url('../../assets/images/no-data-cat.svg');
+        background: url("../../assets/images/no-data-cat.svg");
       }
 
       .message {
@@ -162,7 +162,7 @@
         margin-top: 40px;
         width: 400px;
         height: 200px;
-        background: url('../../assets/images/empty-cat.svg');
+        background: url("../../assets/images/empty-cat.svg");
       }
 
       .message {
@@ -184,10 +184,13 @@
       flex-direction: column;
       @include scrollbar(true);
 
-      >div {
+      > div {
         font-family: var(--font-family-monospace);
         color: var(--txt-01);
-        font-feature-settings: 'ss11' on, 'ss15' on, 'ss17' on;
+        font-feature-settings:
+          "ss11" on,
+          "ss15" on,
+          "ss17" on;
         font-size: 14px;
         font-weight: 400;
         display: flex;
@@ -196,19 +199,19 @@
         gap: 12px;
         padding: 0 12px;
 
-        >span {
+        > span {
           display: inline-block;
           white-space: nowrap;
           overflow: hidden;
         }
 
-        >i {
+        > i {
           min-width: 16px;
         }
 
         i.isFile {
           display: inline-block;
-          background-color: #CFD1DB;
+          background-color: #cfd1db;
         }
 
         &.isDir {

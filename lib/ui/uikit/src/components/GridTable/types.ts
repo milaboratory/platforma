@@ -1,4 +1,4 @@
-import type { ListOption } from '../../types';
+import type { ListOption } from "../../types";
 
 type TypeMap = {
   integer: number;
@@ -13,20 +13,23 @@ export type ColumnSettings = {
   text: string;
   name: string;
   width?: string;
-  justify?: 'center' | 'start';
+  justify?: "center" | "start";
   sort?: {
-    direction: 'DESC' | 'ASC' | undefined;
+    direction: "DESC" | "ASC" | undefined;
   };
   slot?: boolean;
   editable?: boolean;
   valueType?: ValueType;
 };
 
-export type ShowContextOptions = <T extends string = string>(options: ListOption<T>[], onSelect: (op: T) => void) => void;
+export type ShowContextOptions = <T extends string = string>(
+  options: ListOption<T>[],
+  onSelect: (op: T) => void,
+) => void;
 
-export type ColumnEvent = 'delete:column' | 'expand:column';
+export type ColumnEvent = "delete:column" | "expand:column";
 
-export type CellEvent = 'delete:row' | 'update:value';
+export type CellEvent = "delete:row" | "update:value";
 
 export type Settings = {
   columns: ColumnSettings[];
@@ -53,11 +56,11 @@ export type Data = {
   resize: boolean;
   resizeTh:
     | {
-      index: number;
-      width: number;
-      x: number;
-      right: number;
-    }
+        index: number;
+        width: number;
+        x: number;
+        right: number;
+      }
     | undefined;
   bodyHeight: number;
   scrollTop: number;

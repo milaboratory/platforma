@@ -8,23 +8,23 @@
  * - 'Double': maps to 'Float64'
  */
 export type DataType =
-  | 'Int8'
-  | 'Int16'
-  | 'Int32'
-  | 'Int64'
-  | 'UInt8'
-  | 'UInt16'
-  | 'UInt32'
-  | 'UInt64'
-  | 'Float32'
-  | 'Float64'
-  | 'Boolean'
-  | 'String'
-  | 'Date'
-  | 'Datetime'
-  | 'Time'
+  | "Int8"
+  | "Int16"
+  | "Int32"
+  | "Int64"
+  | "UInt8"
+  | "UInt16"
+  | "UInt32"
+  | "UInt64"
+  | "Float32"
+  | "Float64"
+  | "Boolean"
+  | "String"
+  | "Date"
+  | "Datetime"
+  | "Time"
   // Aliases
-  | 'Int'
-  | 'Long'
-  | 'Float'
-  | 'Double';
+  | "Int"
+  | "Long"
+  | "Float"
+  | "Double";

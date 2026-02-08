@@ -1,20 +1,13 @@
-import type {
-  AnyRef,
-  PlTransaction,
-  ResourceRef,
-  ResourceType } from '@milaboratories/pl-client';
-import {
-  field,
-  Pl,
-} from '@milaboratories/pl-client';
-import { randomUUID } from 'node:crypto';
-import { createRenderTemplate } from './render_template';
+import type { AnyRef, PlTransaction, ResourceRef, ResourceType } from "@milaboratories/pl-client";
+import { field, Pl } from "@milaboratories/pl-client";
+import { randomUUID } from "node:crypto";
+import { createRenderTemplate } from "./render_template";
 
-export const BContextEnd: ResourceType = { name: 'BContextEnd', version: '1' };
-export const BContext: ResourceType = { name: 'BContext', version: '1' };
-export const BContextId = 'id';
-export const BContextParent = 'parent';
-export const BContextMultiParentPrefix = 'parent/';
+export const BContextEnd: ResourceType = { name: "BContextEnd", version: "1" };
+export const BContext: ResourceType = { name: "BContext", version: "1" };
+export const BContextId = "id";
+export const BContextParent = "parent";
+export const BContextMultiParentPrefix = "parent/";
 
 // TODO: add implementation for dual context heavy block.
 // export type BlockType =
@@ -35,7 +28,7 @@ export type HeavyBlockOutputs = {
   result: AnyRef;
 };
 
-export const HeavyBlockOutputNames: (keyof HeavyBlockOutputs)[] = ['context', 'result'];
+export const HeavyBlockOutputNames: (keyof HeavyBlockOutputs)[] = ["context", "result"];
 
 export function createRenderHeavyBlock(
   tx: PlTransaction,
@@ -56,7 +49,7 @@ export type LightBlockOutput = {
   result: AnyRef;
 };
 
-export const LightBlockOutputNames: (keyof LightBlockOutput)[] = ['result'];
+export const LightBlockOutputNames: (keyof LightBlockOutput)[] = ["result"];
 
 export function createRenderLightBlock(
   tx: PlTransaction,
@@ -80,11 +73,11 @@ export function createBContextFromUpstreams(tx: PlTransaction, upstreamCtxs: Any
   const ctx = tx.createEphemeral(BContext);
 
   // setting id
-  tx.createField(field(ctx, BContextId), 'Input', Pl.createPlString(tx, randomUUID()));
+  tx.createField(field(ctx, BContextId), "Input", Pl.createPlString(tx, randomUUID()));
 
   // setting parents
   for (let i = 0; i < upstreamCtxs.length; i++)
-    tx.createField(field(ctx, `${BContextMultiParentPrefix}${i}`), 'Input', upstreamCtxs[i]);
+    tx.createField(field(ctx, `${BContextMultiParentPrefix}${i}`), "Input", upstreamCtxs[i]);
 
   tx.lock(ctx);
 

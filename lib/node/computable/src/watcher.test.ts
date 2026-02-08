@@ -1,8 +1,8 @@
-import { test, expect } from 'vitest';
-import { HierarchicalWatcher } from './hierarchical_watcher';
-import { Aborted } from '@milaboratories/ts-helpers';
+import { test, expect } from "vitest";
+import { HierarchicalWatcher } from "./hierarchical_watcher";
+import { Aborted } from "@milaboratories/ts-helpers";
 
-test('create a tree watcher and watch for changes', () => {
+test("create a tree watcher and watch for changes", () => {
   const grandChild1 = new HierarchicalWatcher();
   const child1 = new HierarchicalWatcher([grandChild1]);
   const child2 = new HierarchicalWatcher([]);
@@ -21,7 +21,7 @@ test('create a tree watcher and watch for changes', () => {
   expect(root.isChanged).toBe(true);
 });
 
-test('do something in a tree watcher using a callback', async () => {
+test("do something in a tree watcher using a callback", async () => {
   const grandChild1 = new HierarchicalWatcher([]);
   const child1 = new HierarchicalWatcher([grandChild1]);
   const child2 = new HierarchicalWatcher([]);
@@ -34,7 +34,7 @@ test('do something in a tree watcher using a callback', async () => {
   await signal;
 }, 1000);
 
-test('do something in a tree watcher using a callback and abort signal', async () => {
+test("do something in a tree watcher using a callback and abort signal", async () => {
   const grandChild1 = new HierarchicalWatcher([]);
   const child1 = new HierarchicalWatcher([grandChild1]);
   const child2 = new HierarchicalWatcher([]);

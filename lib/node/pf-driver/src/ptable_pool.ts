@@ -8,13 +8,13 @@ import {
   type JsonSerializable,
   type PColumnValue,
   type PObjectId,
-} from '@platforma-sdk/model';
-import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
-import { RefCountPoolBase, type PoolEntry } from '@milaboratories/ts-helpers';
-import { logPFrames } from './logging';
-import type { PFramePool } from './pframe_pool';
-import { stableKeyFromFullPTableDef, type FullPTableDef } from './ptable_shared';
-import type { PTableDefPool } from './ptable_def_pool';
+} from "@platforma-sdk/model";
+import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
+import { RefCountPoolBase, type PoolEntry } from "@milaboratories/ts-helpers";
+import { logPFrames } from "./logging";
+import type { PFramePool } from "./pframe_pool";
+import { stableKeyFromFullPTableDef, type FullPTableDef } from "./ptable_shared";
+import type { PTableDefPool } from "./ptable_def_pool";
 
 export class PTableHolder implements Disposable {
   private readonly abortController = new AbortController();
@@ -26,7 +26,10 @@ export class PTableHolder implements Disposable {
     public readonly pTablePromise: Promise<PFrameInternal.PTableV8>,
     private readonly predecessor?: PoolEntry<PTableHandle, PTableHolder>,
   ) {
-    this.combinedDisposeSignal = AbortSignal.any([pFrameDisposeSignal, this.abortController.signal]);
+    this.combinedDisposeSignal = AbortSignal.any([
+      pFrameDisposeSignal,
+      this.abortController.signal,
+    ]);
   }
 
   public get disposeSignal(): AbortSignal {
@@ -38,12 +41,17 @@ export class PTableHolder implements Disposable {
     this.predecessor?.unref();
     void this.pTablePromise
       .then((pTable) => pTable.dispose())
-      .catch(() => { /* mute error */ });
+      .catch(() => {
+        /* mute error */
+      });
   }
 }
 
-export class PTablePool<TreeEntry extends JsonSerializable>
-  extends RefCountPoolBase<FullPTableDef, PTableHandle, PTableHolder> {
+export class PTablePool<TreeEntry extends JsonSerializable> extends RefCountPoolBase<
+  FullPTableDef,
+  PTableHandle,
+  PTableHolder
+> {
   constructor(
     private readonly pFrames: PFramePool<TreeEntry>,
     private readonly pTableDefs: PTableDefPool,
@@ -58,9 +66,9 @@ export class PTablePool<TreeEntry extends JsonSerializable>
 
   protected createNewResource(params: FullPTableDef, key: PTableHandle): PTableHolder {
     if (logPFrames()) {
-      this.logger('info',
-        `PTable creation (pTableHandle = ${key}): `
-        + `${JSON.stringify(params, bigintReplacer)}`,
+      this.logger(
+        "info",
+        `PTable creation (pTableHandle = ${key}): ` + `${JSON.stringify(params, bigintReplacer)}`,
       );
     }
 
@@ -79,7 +87,9 @@ export class PTablePool<TreeEntry extends JsonSerializable>
           sorting: [],
         },
       });
-      const { resource: { pTablePromise } } = predecessor;
+      const {
+        resource: { pTablePromise },
+      } = predecessor;
       const sortedTable = pTablePromise.then((pTable) => pTable.sort(key, params.def.sorting));
       return new PTableHolder(handle, combinedSignal, sortedTable, predecessor);
     }
@@ -93,17 +103,21 @@ export class PTablePool<TreeEntry extends JsonSerializable>
           filters: [],
         },
       });
-      const { resource: { pTablePromise } } = predecessor;
+      const {
+        resource: { pTablePromise },
+      } = predecessor;
       const filteredTable = pTablePromise.then((pTable) => pTable.filter(key, params.def.filters));
       return new PTableHolder(handle, combinedSignal, filteredTable, predecessor);
     }
 
     // 1. Join
-    const table = pFramePromise.then((pFrame) => pFrame.createTable(key, {
-      src: joinEntryToInternal(params.def.src),
-      // `params.def.filters` would be non-empty only when join has artificial columns
-      filters: [...params.def.partitionFilters, ...params.def.filters],
-    }));
+    const table = pFramePromise.then((pFrame) =>
+      pFrame.createTable(key, {
+        src: joinEntryToInternal(params.def.src),
+        // `params.def.filters` would be non-empty only when join has artificial columns
+        filters: [...params.def.partitionFilters, ...params.def.filters],
+      }),
+    );
     return new PTableHolder(handle, combinedSignal, table);
   }
 
@@ -120,16 +134,16 @@ export class PTablePool<TreeEntry extends JsonSerializable>
 
 function hasArtificialColumns<T>(entry: JoinEntry<T>): boolean {
   switch (entry.type) {
-    case 'column':
-    case 'slicedColumn':
-    case 'inlineColumn':
+    case "column":
+    case "slicedColumn":
+    case "inlineColumn":
       return false;
-    case 'artificialColumn':
+    case "artificialColumn":
       return true;
-    case 'full':
-    case 'inner':
+    case "full":
+    case "inner":
       return entry.entries.some(hasArtificialColumns);
-    case 'outer':
+    case "outer":
       return hasArtificialColumns(entry.primary) || entry.secondary.some(hasArtificialColumns);
     default:
       assertNever(entry);
@@ -139,48 +153,51 @@ function hasArtificialColumns<T>(entry: JoinEntry<T>): boolean {
 function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEntryV4 {
   const type = entry.type;
   switch (type) {
-    case 'column':
+    case "column":
       return {
-        type: 'column',
+        type: "column",
         columnId: entry.column,
       };
-    case 'slicedColumn':
+    case "slicedColumn":
       return {
-        type: 'slicedColumn',
+        type: "slicedColumn",
         columnId: entry.column,
         newId: entry.newId,
         axisFilters: entry.axisFilters,
       };
-    case 'artificialColumn':
+    case "artificialColumn":
       return {
-        type: 'artificialColumn',
+        type: "artificialColumn",
         columnId: entry.column,
         newId: entry.newId,
         axesIndices: entry.axesIndices,
       };
-    case 'inlineColumn':
+    case "inlineColumn":
       return {
-        type: 'inlineColumn',
+        type: "inlineColumn",
         newId: entry.column.id,
         spec: entry.column.spec,
         dataInfo: {
-          type: 'Json',
+          type: "Json",
           keyLength: entry.column.spec.axesSpec.length,
-          data: entry.column.data.reduce((acc, row) => {
-            acc[JSON.stringify(row.key)] = row.val;
-            return acc;
-          }, {} as Record<string, PColumnValue>),
+          data: entry.column.data.reduce(
+            (acc, row) => {
+              acc[JSON.stringify(row.key)] = row.val;
+              return acc;
+            },
+            {} as Record<string, PColumnValue>,
+          ),
         },
       };
-    case 'inner':
-    case 'full':
+    case "inner":
+    case "full":
       return {
         type: entry.type,
         entries: entry.entries.map((col) => joinEntryToInternal(col)),
       };
-    case 'outer':
+    case "outer":
       return {
-        type: 'outer',
+        type: "outer",
         primary: joinEntryToInternal(entry.primary),
         secondary: entry.secondary.map((col) => joinEntryToInternal(col)),
       };

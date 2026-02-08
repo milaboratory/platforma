@@ -1,6 +1,6 @@
-import type { BlockOutputsBase } from './common_types';
-import type { NavigationState } from './navigation';
-import type { AuthorMarker } from './author_marker';
+import type { BlockOutputsBase } from "./common_types";
+import type { NavigationState } from "./navigation";
+import type { AuthorMarker } from "./author_marker";
 
 /**
  * @template Args    sets type of block arguments passed to the workflow

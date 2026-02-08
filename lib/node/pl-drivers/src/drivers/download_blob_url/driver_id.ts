@@ -1,5 +1,5 @@
-import type { ResourceId } from '@milaboratories/pl-client';
-import type { ArchiveFormat } from '@milaboratories/pl-model-common';
+import type { ResourceId } from "@milaboratories/pl-client";
+import type { ArchiveFormat } from "@milaboratories/pl-model-common";
 
 /** A key in the driver task queue. */
 export type Id = string;

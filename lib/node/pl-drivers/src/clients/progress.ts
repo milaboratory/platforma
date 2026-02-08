@@ -1,13 +1,17 @@
-import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import type { WireClientProvider, WireClientProviderFactory, PlClient } from '@milaboratories/pl-client';
-import { addRTypeToMetadata, createRTypeRoutingHeader, RestAPI } from '@milaboratories/pl-client';
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import { notEmpty } from '@milaboratories/ts-helpers';
-import type { Dispatcher } from 'undici';
-import { ProgressClient } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/progressapi/protocol.client';
-import type { ProgressAPI_Report } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/progressapi/protocol';
-import type { ProgressApiPaths, ProgressRestClientType } from '../proto-rest';
-import type { ResourceInfo } from '@milaboratories/pl-tree';
+import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
+import type {
+  WireClientProvider,
+  WireClientProviderFactory,
+  PlClient,
+} from "@milaboratories/pl-client";
+import { addRTypeToMetadata, createRTypeRoutingHeader, RestAPI } from "@milaboratories/pl-client";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import { notEmpty } from "@milaboratories/ts-helpers";
+import type { Dispatcher } from "undici";
+import { ProgressClient } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/progressapi/protocol.client";
+import type { ProgressAPI_Report } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/progressapi/protocol";
+import type { ProgressApiPaths, ProgressRestClientType } from "../proto-rest";
+import type { ResourceInfo } from "@milaboratories/pl-tree";
 
 export type ProgressStatus = {
   done: boolean;
@@ -29,20 +33,18 @@ export class ClientProgress {
     public readonly client: PlClient,
     public readonly logger: MiLogger,
   ) {
-    this.wire = wireClientProviderFactory.createWireClientProvider(
-      (wire) => {
-        if (wire.type === 'grpc') {
-          return new ProgressClient(wire.Transport);
-        }
+    this.wire = wireClientProviderFactory.createWireClientProvider((wire) => {
+      if (wire.type === "grpc") {
+        return new ProgressClient(wire.Transport);
+      }
 
-        return RestAPI.createClient<ProgressApiPaths>({
-          hostAndPort: wire.Config.hostAndPort,
-          ssl: wire.Config.ssl,
-          dispatcher: wire.Dispatcher,
-          middlewares: wire.Middlewares,
-        });
-      },
-    );
+      return RestAPI.createClient<ProgressApiPaths>({
+        hostAndPort: wire.Config.hostAndPort,
+        ssl: wire.Config.ssl,
+        dispatcher: wire.Dispatcher,
+        middlewares: wire.Middlewares,
+      });
+    });
   }
 
   close() {}
@@ -53,15 +55,17 @@ export class ClientProgress {
 
     let report: ProgressAPI_Report;
     if (client instanceof ProgressClient) {
-      report = notEmpty((await client.getStatus(
-        { resourceId: id },
-        addRTypeToMetadata(type, options),
-      ).response).report);
+      report = notEmpty(
+        (await client.getStatus({ resourceId: id }, addRTypeToMetadata(type, options)).response)
+          .report,
+      );
     } else {
-      const resp = (await client.POST('/v1/get-progress', {
-        body: { resourceId: id.toString() },
-        headers: { ...createRTypeRoutingHeader(type) },
-      })).data!.report;
+      const resp = (
+        await client.POST("/v1/get-progress", {
+          body: { resourceId: id.toString() },
+          headers: { ...createRTypeRoutingHeader(type) },
+        })
+      ).data!.report;
       report = {
         done: resp.done,
         progress: resp.progress,

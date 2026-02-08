@@ -1,4 +1,4 @@
-import type { ExtendedResourceData } from './state';
+import type { ExtendedResourceData } from "./state";
 
 export type ResourceStats = {
   /** Number of resources of this type */

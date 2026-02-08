@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { dockerSchema } from '../core/schemas/artifacts';
+import { describe, it, expect } from "vitest";
+import { dockerSchema } from "../core/schemas/artifacts";
 
-describe('Docker Package Schema Validation', () => {
+describe("Docker Package Schema Validation", () => {
   it('should reject context with "./"', () => {
     const invalidPackage = {
-      type: 'docker' as const,
-      context: './',
-      dockerfile: 'Dockerfile',
+      type: "docker" as const,
+      context: "./",
+      dockerfile: "Dockerfile",
     };
 
     const result = dockerSchema.safeParse(invalidPackage);
@@ -18,9 +18,9 @@ describe('Docker Package Schema Validation', () => {
 
   it('should reject context with "."', () => {
     const invalidPackage = {
-      type: 'docker' as const,
-      context: '.',
-      dockerfile: 'Dockerfile',
+      type: "docker" as const,
+      context: ".",
+      dockerfile: "Dockerfile",
     };
 
     const result = dockerSchema.safeParse(invalidPackage);
@@ -30,22 +30,22 @@ describe('Docker Package Schema Validation', () => {
     }
   });
 
-  it('should accept valid context paths', () => {
+  it("should accept valid context paths", () => {
     const validPackages = [
       {
-        type: 'docker' as const,
-        context: 'docker-context',
-        dockerfile: 'Dockerfile',
+        type: "docker" as const,
+        context: "docker-context",
+        dockerfile: "Dockerfile",
       },
       {
-        type: 'docker' as const,
-        context: '/absolute/path',
-        dockerfile: 'Dockerfile',
+        type: "docker" as const,
+        context: "/absolute/path",
+        dockerfile: "Dockerfile",
       },
       {
-        type: 'docker' as const,
-        context: '../relative/path',
-        dockerfile: 'Dockerfile',
+        type: "docker" as const,
+        context: "../relative/path",
+        dockerfile: "Dockerfile",
       },
     ];
 
@@ -55,10 +55,10 @@ describe('Docker Package Schema Validation', () => {
     }
   });
 
-  it('should accept docker package without optional fields', () => {
+  it("should accept docker package without optional fields", () => {
     const minimalPackage = {
-      type: 'docker' as const,
-      context: 'valid-context',
+      type: "docker" as const,
+      context: "valid-context",
     };
 
     const result = dockerSchema.safeParse(minimalPackage);

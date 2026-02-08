@@ -8,16 +8,16 @@
 //   - Uniform or exponential distributions
 //   - Safe bounds, input sanitation, optional logging
 
-import { parseBool, parseDurationMs, parseInt } from '@milaboratories/helpers';
+import { parseBool, parseDurationMs, parseInt } from "@milaboratories/helpers";
 
 export type JitterSeed = string | number | undefined;
 
 export interface WorkerJitterOptions {
-  enabled?: boolean; /** Master on/off switch (default: true) */
-  minMs?: number; /** Lower bound in ms (default: 0) */
-  maxMs?: number; /** Upper bound in ms (default: 500) */
-  seed?: JitterSeed; /** Determines RNG seed; can be string or number (default: undefined -> non-deterministic fallback) */
-  log?: boolean; /** Log the applied delay to console (default: false) */
+  enabled?: boolean /** Master on/off switch (default: true) */;
+  minMs?: number /** Lower bound in ms (default: 0) */;
+  maxMs?: number /** Upper bound in ms (default: 500) */;
+  seed?: JitterSeed /** Determines RNG seed; can be string or number (default: undefined -> non-deterministic fallback) */;
+  log?: boolean /** Log the applied delay to console (default: false) */;
 }
 
 function normalizeOptions(opts?: WorkerJitterOptions): Required<WorkerJitterOptions> {
@@ -25,7 +25,7 @@ function normalizeOptions(opts?: WorkerJitterOptions): Required<WorkerJitterOpti
   const enabled = o.enabled ?? true;
   const minMs = Math.max(0, parseInt(o.minMs ?? 0, 0));
   const maxMs = Math.max(minMs, parseInt(o.maxMs ?? 500, 500)); // ensure max >= min
-  const seed = (o.seed ?? Date.now());
+  const seed = o.seed ?? Date.now();
   const log = o.log ?? false;
 
   return { enabled, minMs, maxMs, seed, log };
@@ -45,11 +45,11 @@ export function envOptionsFromProcess(env: NodeJS.ProcessEnv = process.env): Wor
 /** Try to derive a per-worker identifier across pools ('threads' and 'forks'). */
 export function deriveWorkerId(): number {
   // 1) Vitest sets this per worker (string like "1", "2", ...)
-  const envId = typeof process !== 'undefined' ? process.env?.VITEST_WORKER_ID : undefined;
+  const envId = typeof process !== "undefined" ? process.env?.VITEST_WORKER_ID : undefined;
   if (envId && /^\d+$/.test(envId)) return Number(envId);
 
   // 2) Forked workers / Node: unique per process
-  if (typeof process !== 'undefined' && typeof process.pid === 'number') return process.pid;
+  if (typeof process !== "undefined" && typeof process.pid === "number") return process.pid;
 
   // 3) Browser build or unknown env
   return 1;
@@ -59,7 +59,7 @@ export function deriveWorkerId(): number {
 function mulberry32(seed: number): () => number {
   let t = seed >>> 0;
   return function () {
-    t = (t + 0x6D2B79F5) >>> 0;
+    t = (t + 0x6d2b79f5) >>> 0;
     let r = Math.imul(t ^ (t >>> 15), 1 | t);
     r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
     return ((r ^ (r >>> 14)) >>> 0) / 4294967296; // [0,1)
@@ -68,25 +68,21 @@ function mulberry32(seed: number): () => number {
 
 /** Combine seed (string/number) with workerId for stable per-worker stream. */
 function makeRng(seed: JitterSeed, workerId: number): () => number {
-  if (seed === undefined || seed === null || seed === '') {
+  if (seed === undefined || seed === null || seed === "") {
     // Fallback to Math.random() - non-deterministic but OK if seed is not required
     return Math.random;
   }
-  const base
-    = typeof seed === 'number'
+  const base =
+    typeof seed === "number"
       ? seed
       : [...String(seed)].reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 0);
 
   // Mix in workerId to avoid all workers picking the same delay
-  const mixed = (base ^ (workerId * 0x9E3779B1)) >>> 0;
+  const mixed = (base ^ (workerId * 0x9e3779b1)) >>> 0;
   return mulberry32(mixed);
 }
 
-function pickDelayMs(
-  rng: () => number,
-  minMs: number,
-  maxMs: number,
-): number {
+function pickDelayMs(rng: () => number, minMs: number, maxMs: number): number {
   if (maxMs <= minMs) return minMs;
 
   const span = maxMs - minMs;
@@ -113,8 +109,8 @@ export async function applyWorkerJitter(options?: WorkerJitterOptions): Promise<
     // Example: [vitest-jitter] workerId=7 delayMs=183 dist=uniform seed=abc
 
     console.log(
-      `[vitest-jitter] workerId=${workerId} delayMs=${delay}`
-      + (cfg.seed !== undefined ? ` seed="${String(cfg.seed)}"` : ''),
+      `[vitest-jitter] workerId=${workerId} delayMs=${delay}` +
+        (cfg.seed !== undefined ? ` seed="${String(cfg.seed)}"` : ""),
     );
   }
 

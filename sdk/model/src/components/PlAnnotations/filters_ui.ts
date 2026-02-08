@@ -1,59 +1,88 @@
 // @DEPRECATED - use sdk/model/src/filters + sdk/model/src/annotations
-import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
-import type { FilterSpecUi } from '../../annotations';
-import type { FilterSpec, FilterSpecLeaf } from '../../filters';
-import type { AnnotationFilter, AnnotationMode, AnnotationScript, IsNA, NotFilter, NumericalComparisonFilter, PatternFilter, PatternPredicate, ValueRank } from './filter';
+import type { SUniversalPColumnId } from "@milaboratories/pl-model-common";
+import type { FilterSpecUi } from "../../annotations";
+import type { FilterSpec, FilterSpecLeaf } from "../../filters";
+import type {
+  AnnotationFilter,
+  AnnotationMode,
+  AnnotationScript,
+  IsNA,
+  NotFilter,
+  NumericalComparisonFilter,
+  PatternFilter,
+  PatternPredicate,
+  ValueRank,
+} from "./filter";
 
-export type FilterUi = FilterSpec<Extract<
-  FilterSpecLeaf,
-  // supported filters
-  { type:
-    | 'lessThan'
-    | 'greaterThan'
-    | 'lessThanOrEqual'
-    | 'greaterThanOrEqual'
-    | 'lessThanColumn'
-    | 'lessThanColumnOrEqual'
-    | 'patternContainSubsequence'
-    | 'patternNotContainSubsequence'
-    | 'patternEquals'
-    | 'patternNotEquals'
-    | 'topN'
-    | 'bottomN'
-    | 'isNA'
-    | 'isNotNA';
-  }
->, { id: number; name?: string; isExpanded?: boolean }>;
+export type FilterUi = FilterSpec<
+  Extract<
+    FilterSpecLeaf,
+    // supported filters
+    {
+      type:
+        | "lessThan"
+        | "greaterThan"
+        | "lessThanOrEqual"
+        | "greaterThanOrEqual"
+        | "lessThanColumn"
+        | "lessThanColumnOrEqual"
+        | "patternContainSubsequence"
+        | "patternNotContainSubsequence"
+        | "patternEquals"
+        | "patternNotEquals"
+        | "topN"
+        | "bottomN"
+        | "isNA"
+        | "isNotNA";
+    }
+  >,
+  { id: number; name?: string; isExpanded?: boolean }
+>;
 
-export type FilterUiType = Exclude<FilterUi, { type: undefined }>['type'];
+export type FilterUiType = Exclude<FilterUi, { type: undefined }>["type"];
 
 export type FilterUiOfType<T extends FilterUiType> = Extract<FilterUi, { type: T }>;
 
 // DEPRECATED - use lib/ui/uikit/src/composition/filters
 export function unreachable(x: never): never {
   // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-  throw new Error('Unexpected object: ' + x);
+  throw new Error("Unexpected object: " + x);
 }
 
-export type TypeToLiteral<T> =
-  [T] extends [FilterUiType] ? 'FilterUiType' :
-      [T] extends [SUniversalPColumnId] ? 'SUniversalPColumnId' :
-          [T] extends [PatternPredicate] ? 'PatternPredicate' :
-              [T] extends [AnnotationFilter[]] ? 'AnnotationFilter[]' :
-                  [T] extends [AnnotationFilter] ? 'AnnotationFilter' :
-                      [T] extends [number] ? 'number' :
-                          [T] extends [number | undefined] ? 'number?' :
-                              [T] extends [string] ? 'string' :
-                                  [T] extends [string | undefined] ? 'string?' :
-                                      [T] extends [boolean] ? 'boolean' :
-                                          [T] extends [boolean | undefined] ? 'boolean?' :
-                                              [T] extends [unknown[]] ? 'unknown[]' :
-                                              // this is special
-                                                T extends number ? 'number' :
-                                                  T extends string ? 'string' :
-                                                    T extends boolean ? 'boolean' :
-                                                      T extends Record<string, unknown> ? 'form' :
-                                                        'unknown';
+export type TypeToLiteral<T> = [T] extends [FilterUiType]
+  ? "FilterUiType"
+  : [T] extends [SUniversalPColumnId]
+    ? "SUniversalPColumnId"
+    : [T] extends [PatternPredicate]
+      ? "PatternPredicate"
+      : [T] extends [AnnotationFilter[]]
+        ? "AnnotationFilter[]"
+        : [T] extends [AnnotationFilter]
+          ? "AnnotationFilter"
+          : [T] extends [number]
+            ? "number"
+            : [T] extends [number | undefined]
+              ? "number?"
+              : [T] extends [string]
+                ? "string"
+                : [T] extends [string | undefined]
+                  ? "string?"
+                  : [T] extends [boolean]
+                    ? "boolean"
+                    : [T] extends [boolean | undefined]
+                      ? "boolean?"
+                      : [T] extends [unknown[]]
+                        ? "unknown[]"
+                        : // this is special
+                          T extends number
+                          ? "number"
+                          : T extends string
+                            ? "string"
+                            : T extends boolean
+                              ? "boolean"
+                              : T extends Record<string, unknown>
+                                ? "form"
+                                : "unknown";
 
 // @TODO: "parse" option
 export type TypeField<V> = {
@@ -62,23 +91,25 @@ export type TypeField<V> = {
   defaultValue: () => V | undefined;
 };
 
-export type TypeFieldRecord<T extends FilterUi> = { [K in keyof T]: TypeField<T[K]>; };
+export type TypeFieldRecord<T extends FilterUi> = { [K in keyof T]: TypeField<T[K]> };
 
 export type TypeForm<T> = {
-  [P in keyof T]: T[P] extends Record<string, unknown> ? {
-    fieldType: 'form';
-    label?: string;
-    form?: T[P] extends Record<string, unknown> ? TypeForm<T[P]> : undefined;
-    defaultValue: () => T[P];
-  } : TypeField<T[P]>;
+  [P in keyof T]: T[P] extends Record<string, unknown>
+    ? {
+        fieldType: "form";
+        label?: string;
+        form?: T[P] extends Record<string, unknown> ? TypeForm<T[P]> : undefined;
+        defaultValue: () => T[P];
+      }
+    : TypeField<T[P]>;
 };
 
 export type FormField =
-  {
-    fieldType: 'form';
-    form?: Record<string, FormField>;
-    defaultValue: () => Record<string, unknown>;
-  }
+  | {
+      fieldType: "form";
+      form?: Record<string, FormField>;
+      defaultValue: () => Record<string, unknown>;
+    }
   | TypeField<FilterUiType>
   | TypeField<string>
   | TypeField<number>
@@ -89,7 +120,9 @@ export type FormField =
 
 export type AnyForm = Record<string, FormField>;
 
-export type AnnotationStepUi = FilterSpecUi<Extract<FilterUi, { type: 'and' | 'or' }>> & { id: number };
+export type AnnotationStepUi = FilterSpecUi<Extract<FilterUi, { type: "and" | "or" }>> & {
+  id: number;
+};
 
 export type AnnotationScriptUi = {
   isCreated?: boolean;
@@ -99,90 +132,90 @@ export type AnnotationScriptUi = {
 };
 
 export function compileFilter(ui: FilterUi): AnnotationFilter {
-  if (ui.type === 'or') {
+  if (ui.type === "or") {
     return {
-      type: 'or' as const,
+      type: "or" as const,
       filters: compileFilters(ui.filters),
     };
   }
 
-  if (ui.type === 'and') {
+  if (ui.type === "and") {
     return {
-      type: 'and' as const,
+      type: "and" as const,
       filters: compileFilters(ui.filters),
     };
   }
 
-  if (ui.type === 'not') {
+  if (ui.type === "not") {
     return {
-      type: 'not' as const,
+      type: "not" as const,
       filter: compileFilter(ui.filter),
     };
   }
 
-  if (ui.type === 'isNA') {
+  if (ui.type === "isNA") {
     return {
-      type: 'isNA' as const,
+      type: "isNA" as const,
       column: ui.column,
     };
   }
 
-  if (ui.type === 'isNotNA') {
-    const isNAFilter: IsNA = { type: 'isNA', column: ui.column };
-    const notFilter: NotFilter = { type: 'not', filter: isNAFilter };
+  if (ui.type === "isNotNA") {
+    const isNAFilter: IsNA = { type: "isNA", column: ui.column };
+    const notFilter: NotFilter = { type: "not", filter: isNAFilter };
     return notFilter;
   }
 
-  if (ui.type === 'patternEquals') {
+  if (ui.type === "patternEquals") {
     return {
-      type: 'pattern' as const,
+      type: "pattern" as const,
       column: ui.column,
       predicate: {
-        type: 'equals' as const,
+        type: "equals" as const,
         value: ui.value,
       },
     };
   }
 
-  if (ui.type === 'patternNotEquals') {
+  if (ui.type === "patternNotEquals") {
     const patternFilter: PatternFilter = {
-      type: 'pattern',
+      type: "pattern",
       column: ui.column,
-      predicate: { type: 'equals', value: ui.value },
+      predicate: { type: "equals", value: ui.value },
     };
-    const notFilter: NotFilter = { type: 'not', filter: patternFilter };
+    const notFilter: NotFilter = { type: "not", filter: patternFilter };
     return notFilter;
   }
 
-  if (ui.type === 'patternContainSubsequence') {
+  if (ui.type === "patternContainSubsequence") {
     return {
-      type: 'pattern' as const,
+      type: "pattern" as const,
       column: ui.column,
       predicate: {
-        type: 'containSubsequence' as const,
+        type: "containSubsequence" as const,
         value: ui.value,
       },
     };
   }
 
-  if (ui.type === 'patternNotContainSubsequence') {
+  if (ui.type === "patternNotContainSubsequence") {
     const patternFilter: PatternFilter = {
-      type: 'pattern',
+      type: "pattern",
       column: ui.column,
-      predicate: { type: 'containSubsequence', value: ui.value },
+      predicate: { type: "containSubsequence", value: ui.value },
     };
-    const notFilter: NotFilter = { type: 'not', filter: patternFilter };
+    const notFilter: NotFilter = { type: "not", filter: patternFilter };
     return notFilter;
   }
 
-  if (ui.type === 'topN') {
+  if (ui.type === "topN") {
     const rankTransform: ValueRank = {
-      transformer: 'rank',
+      transformer: "rank",
       column: ui.column,
       descending: true,
     };
     const comparisonFilter: NumericalComparisonFilter = {
-      type: 'numericalComparison',
+      type: "numericalComparison",
       lhs: rankTransform,
       rhs: ui.n,
       allowEqual: true,
@@ -190,13 +223,13 @@ export function compileFilter(ui: FilterUi): AnnotationFilter {
     return comparisonFilter;
   }
 
-  if (ui.type === 'bottomN') {
+  if (ui.type === "bottomN") {
     const rankTransform: ValueRank = {
-      transformer: 'rank',
+      transformer: "rank",
       column: ui.column,
     };
     const comparisonFilter: NumericalComparisonFilter = {
-      type: 'numericalComparison',
+      type: "numericalComparison",
       lhs: rankTransform,
       rhs: ui.n,
       allowEqual: true,
@@ -204,43 +237,43 @@ export function compileFilter(ui: FilterUi): AnnotationFilter {
     return comparisonFilter;
   }
 
-  if (ui.type === 'lessThan') {
+  if (ui.type === "lessThan") {
     return {
-      type: 'numericalComparison' as const,
+      type: "numericalComparison" as const,
       lhs: ui.column,
       rhs: ui.x,
     };
   }
 
-  if (ui.type === 'greaterThan') {
+  if (ui.type === "greaterThan") {
     return {
-      type: 'numericalComparison' as const,
+      type: "numericalComparison" as const,
       rhs: ui.column,
       lhs: ui.x,
     };
   }
 
-  if (ui.type === 'greaterThanOrEqual') {
+  if (ui.type === "greaterThanOrEqual") {
     return {
-      type: 'numericalComparison' as const,
+      type: "numericalComparison" as const,
       rhs: ui.column,
       lhs: ui.x,
       allowEqual: true,
     };
   }
 
-  if (ui.type === 'lessThanOrEqual') {
+  if (ui.type === "lessThanOrEqual") {
     return {
-      type: 'numericalComparison' as const,
+      type: "numericalComparison" as const,
       lhs: ui.column,
       rhs: ui.x,
       allowEqual: true,
     };
   }
 
-  if (ui.type === 'lessThanColumn') {
+  if (ui.type === "lessThanColumn") {
     return {
-      type: 'numericalComparison' as const,
+      type: "numericalComparison" as const,
       lhs: ui.column,
       rhs: ui.rhs,
       minDiff: ui.minDiff,
@@ -248,9 +281,9 @@ export function compileFilter(ui: FilterUi): AnnotationFilter {
     };
   }
 
-  if (ui.type === 'lessThanColumnOrEqual') {
+  if (ui.type === "lessThanColumnOrEqual") {
     return {
-      type: 'numericalComparison' as const,
+      type: "numericalComparison" as const,
       lhs: ui.column,
       rhs: ui.rhs,
       minDiff: ui.minDiff,
@@ -276,11 +309,11 @@ export function compileAnnotationScript(uiScript: AnnotationScriptUi): Annotatio
           return false;
         }
 
-        if (step.filter.type === 'or') {
+        if (step.filter.type === "or") {
           return step.filter.filters.length > 0;
         }
 
-        if (step.filter.type === 'and') {
+        if (step.filter.type === "and") {
           return step.filter.filters.length > 0;
         }
 

@@ -1,23 +1,24 @@
-import { computed, onMounted, onUnmounted, ref, unref, watch } from 'vue';
-import { mapIterable, toList } from '../helpers/iterators';
-import { useLocalStorage } from './useLocalStorage';
+import { computed, onMounted, onUnmounted, ref, unref, watch } from "vue";
+import { mapIterable, toList } from "../helpers/iterators";
+import { useLocalStorage } from "./useLocalStorage";
 
-type Theme = 'light' | 'dark';
+type Theme = "light" | "dark";
 
 type Callback = (mode: Theme) => void;
 
 const cm = new Set<Callback>();
 
 if (window.matchMedia) {
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    toList(mapIterable(cm.values(), (cb) => cb(e.matches ? 'dark' : 'light')));
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+    toList(mapIterable(cm.values(), (cb) => cb(e.matches ? "dark" : "light")));
   });
 }
 
-const init = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+const init =
+  window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 
 const browserTheme = ref<Theme>(init);
-const savedTheme = useLocalStorage<Theme>('theme');
+const savedTheme = useLocalStorage<Theme>("theme");
 
 export function useTheme(_cb?: Callback) {
   const theme = computed<Theme>(() => {
@@ -30,7 +31,8 @@ export function useTheme(_cb?: Callback) {
   };
 
   function toggleTheme() {
-    savedTheme.value = theme.value === 'light' ? 'dark' : theme.value === 'dark' ? 'light' : 'light';
+    savedTheme.value =
+      theme.value === "light" ? "dark" : theme.value === "dark" ? "light" : "light";
   }
 
   watch(theme, (v) => {

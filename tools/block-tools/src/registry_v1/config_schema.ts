@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { PlRegAddress } from '../common_types';
-import { SemVer } from '@milaboratories/pl-model-middle-layer';
+import { z } from "zod";
+import { PlRegAddress } from "../common_types";
+import { SemVer } from "@milaboratories/pl-model-middle-layer";
 
 export const PlPackageConfigData = z.object({
   organization: z.string(),
@@ -26,5 +26,5 @@ export const PlRegPackageConfigDataShard = PlRegFullPackageConfigData.partial().
 });
 export type PlRegPackageConfigDataShard = z.infer<typeof PlRegPackageConfigDataShard>;
 
-export const PlPackageJsonConfigFile = 'pl.package.json';
-export const PlPackageYamlConfigFile = 'pl.package.yaml';
+export const PlPackageJsonConfigFile = "pl.package.json";
+export const PlPackageYamlConfigFile = "pl.package.yaml";

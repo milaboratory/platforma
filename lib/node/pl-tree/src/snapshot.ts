@@ -1,10 +1,10 @@
-import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
-import type { Optional, Writable } from 'utility-types';
-import type { ZodType, z } from 'zod';
-import type { PlTreeNodeAccessor } from './accessors';
-import { PlTreeEntry, PlTreeEntryAccessor } from './accessors';
-import type { ComputableCtx } from '@milaboratories/computable';
-import { notEmpty } from '@milaboratories/ts-helpers';
+import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
+import type { Optional, Writable } from "utility-types";
+import type { ZodType, z } from "zod";
+import type { PlTreeNodeAccessor } from "./accessors";
+import { PlTreeEntry, PlTreeEntryAccessor } from "./accessors";
+import type { ComputableCtx } from "@milaboratories/computable";
+import { notEmpty } from "@milaboratories/ts-helpers";
 
 /**
  * A DTO that can be generated from a tree node to make a snapshot of specific parts of it's state.
@@ -32,9 +32,9 @@ type ResourceSnapshotGeneric = ResourceSnapshot<
 
 /** Request that we'll pass to getResourceSnapshot function. We infer the type of ResourceSnapshot from this. */
 export type ResourceSnapshotSchema<
-  Data extends ZodType | 'raw' | undefined = undefined,
+  Data extends ZodType | "raw" | undefined = undefined,
   Fields extends Record<string, boolean> | undefined = undefined,
-  KV extends Record<string, ZodType | 'raw'> | undefined = undefined,
+  KV extends Record<string, ZodType | "raw"> | undefined = undefined,
 > = {
   readonly data: Data;
   readonly fields: Fields;
@@ -43,9 +43,9 @@ export type ResourceSnapshotSchema<
 
 /** Creates ResourceSnapshotSchema. It converts an optional schema type to schema type. */
 export function rsSchema<
-  const Data extends ZodType | 'raw' | undefined = undefined,
+  const Data extends ZodType | "raw" | undefined = undefined,
   const Fields extends Record<string, boolean> | undefined = undefined,
-  const KV extends Record<string, ZodType | 'raw'> | undefined = undefined,
+  const KV extends Record<string, ZodType | "raw"> | undefined = undefined,
 >(
   schema: Optional<ResourceSnapshotSchema<Data, Fields, KV>>,
 ): ResourceSnapshotSchema<Data, Fields, KV> {
@@ -54,9 +54,9 @@ export function rsSchema<
 
 /** The most generic type of ResourceSnapshotSchema. */
 type ResourceSnapshotSchemaGeneric = ResourceSnapshotSchema<
-  ZodType | 'raw' | undefined,
+  ZodType | "raw" | undefined,
   Record<string, boolean> | undefined,
-  Record<string, ZodType | 'raw'> | undefined
+  Record<string, ZodType | "raw"> | undefined
 >;
 
 /**
@@ -64,7 +64,7 @@ type ResourceSnapshotSchemaGeneric = ResourceSnapshotSchema<
  * if it's Zod, we'll parse it via zod.
  * Or else we just got undefined in the field.
  */
-type InferDataType<Data extends ZodType | 'raw' | undefined> = Data extends 'raw'
+type InferDataType<Data extends ZodType | "raw" | undefined> = Data extends "raw"
   ? Uint8Array
   : Data extends ZodType
     ? z.infer<Data>
@@ -89,7 +89,7 @@ type InferFieldsType<Fields extends Record<string, boolean> | undefined> = Field
  * If one of values is Zod, we'll get KV and converts it to Zod schema.
  * If the value is 'raw', just returns bytes.
  */
-type InferKVType<KV extends Record<string, ZodType | 'raw'> | undefined> = KV extends undefined
+type InferKVType<KV extends Record<string, ZodType | "raw"> | undefined> = KV extends undefined
   ? undefined
   : {
       [FieldName in keyof KV]: KV[FieldName] extends ZodType ? z.infer<KV[FieldName]> : Uint8Array;
@@ -97,37 +97,37 @@ type InferKVType<KV extends Record<string, ZodType | 'raw'> | undefined> = KV ex
 
 /** Infer ResourceSnapshot from ResourceShapshotSchema, S can be any ResourceSnapshotSchema. */
 export type InferSnapshot<S extends ResourceSnapshotSchemaGeneric> = ResourceSnapshot<
-  InferDataType<S['data']>,
-  InferFieldsType<S['fields']>,
-  InferKVType<S['kv']>
+  InferDataType<S["data"]>,
+  InferFieldsType<S["fields"]>,
+  InferKVType<S["kv"]>
 >;
 
 /** Gets a ResourceSnapshot from PlTreeEntry. */
 export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneric>(
   res: PlTreeEntry,
   schema: Schema,
-  ctx: ComputableCtx
+  ctx: ComputableCtx,
 ): InferSnapshot<Schema>;
 export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneric>(
   res: PlTreeEntryAccessor | PlTreeNodeAccessor,
-  schema: Schema
+  schema: Schema,
 ): InferSnapshot<Schema>;
 export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneric>(
   res: PlTreeEntry | PlTreeEntryAccessor | PlTreeNodeAccessor,
   schema: Schema,
   ctx?: ComputableCtx,
 ): InferSnapshot<Schema> {
-  const node
-    = res instanceof PlTreeEntry
+  const node =
+    res instanceof PlTreeEntry
       ? notEmpty(ctx).accessor(res).node()
       : res instanceof PlTreeEntryAccessor
         ? res.node()
         : res;
   const info = node.resourceInfo;
-  const result: Optional<Writable<ResourceSnapshotGeneric>, 'data' | 'fields' | 'kv'> = { ...info };
+  const result: Optional<Writable<ResourceSnapshotGeneric>, "data" | "fields" | "kv"> = { ...info };
 
   if (schema.data !== undefined) {
-    if (schema.data === 'raw') result.data = node.getData();
+    if (schema.data === "raw") result.data = node.getData();
     else result.data = schema.data.parse(node.getDataAsJson());
   }
 
@@ -151,10 +151,10 @@ export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneri
 
       if (value === undefined) {
         throw new Error(`Key not found ${fieldName}`);
-      } else if (type === 'raw') {
+      } else if (type === "raw") {
         kv[fieldName] = value;
       } else {
-        kv[fieldName] = type.parse(JSON.parse(Buffer.from(value).toString('utf-8')));
+        kv[fieldName] = type.parse(JSON.parse(Buffer.from(value).toString("utf-8")));
       }
     }
     result.kv = kv;

@@ -1,10 +1,6 @@
-import type {
-  InferHrefType,
-  InferOutputsType } from '@platforma-sdk/model';
-import {
-  BlockModel,
-} from '@platforma-sdk/model';
-import { z } from 'zod';
+import type { InferHrefType, InferOutputsType } from "@platforma-sdk/model";
+import { BlockModel } from "@platforma-sdk/model";
+import { z } from "zod";
 
 export const $BlockArgs = z.object({
   numbers: z.array(z.coerce.number()),
@@ -12,35 +8,35 @@ export const $BlockArgs = z.object({
 
 export type BlockArgs = z.infer<typeof $BlockArgs>;
 
-export const platforma = BlockModel.create('Heavy')
+export const platforma = BlockModel.create("Heavy")
 
   .withArgs<BlockArgs>({ numbers: [] })
 
-  .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
+  .output("numbers", (ctx) => ctx.outputs?.resolve("numbers")?.getDataAsJson<number[]>())
 
-  .output('errorIfNumberIs999', (ctx) => {
+  .output("errorIfNumberIs999", (ctx) => {
     if (ctx.args.numbers.length === 1 && ctx.args.numbers[0] === 999) {
-      return ctx.prerun?.resolve('numbers')?.getFileContentAsJson<number[]>();
+      return ctx.prerun?.resolve("numbers")?.getFileContentAsJson<number[]>();
     }
     return ctx.args.numbers;
   })
 
-  .output('activeArgs', (ctx) => ctx.activeArgs)
+  .output("activeArgs", (ctx) => ctx.activeArgs)
 
-  .output('ctx', (ctx) => ctx)
+  .output("ctx", (ctx) => ctx)
 
-  .output('ctx.activeArgs', (ctx) => ctx.activeArgs)
+  .output("ctx.activeArgs", (ctx) => ctx.activeArgs)
 
-  .output('ctx.args', (ctx) => ctx.args)
+  .output("ctx.args", (ctx) => ctx.args)
 
-  .output('ctx.data', (ctx) => ctx.data)
+  .output("ctx.data", (ctx) => ctx.data)
 
-  .output('ctx.uiState', (ctx) => ctx.uiState)
+  .output("ctx.uiState", (ctx) => ctx.uiState)
 
   .argsValid((ctx) => ctx.args.numbers.length > 0)
 
   .sections((_ctx) => {
-    return [{ type: 'link', href: '/', label: 'Main' }];
+    return [{ type: "link", href: "/", label: "Main" }];
   })
 
   .done(2); // ui api version 2

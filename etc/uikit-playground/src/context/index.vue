@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import Layout from '../Layout.vue';
-import TodoList from './TodoList.vue';
-import { reactive } from 'vue';
-import type { TodoState } from './keys';
-import { ContextProvider } from '@milaboratories/uikit';
-import { todoListKey, defaultState } from './keys';
+import Layout from "../Layout.vue";
+import TodoList from "./TodoList.vue";
+import { reactive } from "vue";
+import type { TodoState } from "./keys";
+import { ContextProvider } from "@milaboratories/uikit";
+import { todoListKey, defaultState } from "./keys";
 
 const todoApp1 = reactive<TodoState>(defaultState());
 const todoApp2 = reactive<TodoState>(defaultState());

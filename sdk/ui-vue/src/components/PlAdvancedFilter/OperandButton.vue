@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { Operand } from './types';
+import type { Operand } from "./types";
 
 const props = defineProps<{
   active: Operand;
@@ -7,14 +7,14 @@ const props = defineProps<{
   onSelect: (op: Operand) => void;
 }>();
 
-const OPTIONS: Operand[] = ['and', 'or'];
+const OPTIONS: Operand[] = ["and", "or"];
 </script>
 <template>
   <div v-bind="$attrs" :class="$style.block">
     <div
       v-for="op in OPTIONS"
       :key="op"
-      :class="[$style.operand, {[$style.active]: op === props.active && !props.disabled}]"
+      :class="[$style.operand, { [$style.active]: op === props.active && !props.disabled }]"
       @click="!props.disabled && props.onSelect(op)"
     >
       {{ op }}

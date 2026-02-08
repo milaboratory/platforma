@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { faker } from '@faker-js/faker';
-import { listToOptions } from '@milaboratories/helpers';
-import type { Size } from '@platforma-sdk/ui-vue';
+import { faker } from "@faker-js/faker";
+import { listToOptions } from "@milaboratories/helpers";
+import type { Size } from "@platforma-sdk/ui-vue";
 import {
   PlBlockPage,
   PlTextField,
@@ -21,12 +21,12 @@ import {
   PlAccordionSection,
   PlDropdownMulti,
   PlDropdownLine,
-} from '@platforma-sdk/ui-vue';
-import { computed, reactive } from 'vue';
+} from "@platforma-sdk/ui-vue";
+import { computed, reactive } from "vue";
 
 const dialogData = reactive({
-  text: '',
-  item: '',
+  text: "",
+  item: "",
   items: [],
   dialogModal: false,
   title: true,
@@ -40,21 +40,21 @@ const dialogData = reactive({
 });
 
 const slideData = reactive({
-  text: '',
-  item: '',
+  text: "",
+  item: "",
   slideModal: false,
   title: true,
   actions: true,
   shadow: false,
   closeOnOutsideClick: true,
-  sliderWidth: '368px', // default and min
+  sliderWidth: "368px", // default and min
 });
 
-const modalVariants = ['newProject', 'newProject2', 'deleteDataset', 'deleteDataset2'] as const;
+const modalVariants = ["newProject", "newProject2", "deleteDataset", "deleteDataset2"] as const;
 
 const examples = reactive({
-  projectLabel: '',
-  modal: '' as (typeof modalVariants)[number] | '',
+  projectLabel: "",
+  modal: "" as (typeof modalVariants)[number] | "",
 });
 
 const append = reactive<Record<string, boolean>>({});
@@ -65,26 +65,31 @@ for (const example of modalVariants) {
       return example === examples.modal;
     },
     set(v) {
-      examples.modal = v ? example : '';
+      examples.modal = v ? example : "";
     },
   }) as unknown as boolean;
 }
 
 const lorem = faker.lorem.paragraph(100);
 
-const sizeOptions = [{
-  label: 'Small',
-  value: 'small',
-}, {
-  label: 'Medium',
-  value: 'medium',
-}, {
-  label: 'Large',
-  value: 'large',
-}, {
-  label: 'Unset',
-  value: undefined,
-}];
+const sizeOptions = [
+  {
+    label: "Small",
+    value: "small",
+  },
+  {
+    label: "Medium",
+    value: "medium",
+  },
+  {
+    label: "Large",
+    value: "large",
+  },
+  {
+    label: "Unset",
+    value: undefined,
+  },
+];
 </script>
 
 <template>

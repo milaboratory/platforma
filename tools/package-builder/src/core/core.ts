@@ -1,25 +1,21 @@
-import fs from 'node:fs';
-import fsp from 'node:fs/promises';
-import path from 'node:path';
-import yaml from 'yaml';
-import type winston from 'winston';
+import fs from "node:fs";
+import fsp from "node:fs/promises";
+import path from "node:path";
+import yaml from "yaml";
+import type winston from "winston";
 
-import * as defaults from '../defaults';
-import { PackageInfo } from './package-info';
-import * as artifacts from './schemas/artifacts';
-import type * as entrypoint from './schemas/entrypoints';
-import { micromamba } from './conda/builder';
-import { validateCondaSpec } from './conda/validate-spec';
-import {
-  SwJsonRenderer,
-  readBuiltArtifactInfo,
-  writeBuiltArtifactInfo,
-} from './sw-json-render';
-import * as util from './util';
-import * as archive from './archive';
-import * as storage from './storage';
-import * as docker from './docker';
-import { tmpSpecFile } from './docker-conda';
+import * as defaults from "../defaults";
+import { PackageInfo } from "./package-info";
+import * as artifacts from "./schemas/artifacts";
+import type * as entrypoint from "./schemas/entrypoints";
+import { micromamba } from "./conda/builder";
+import { validateCondaSpec } from "./conda/validate-spec";
+import { SwJsonRenderer, readBuiltArtifactInfo, writeBuiltArtifactInfo } from "./sw-json-render";
+import * as util from "./util";
+import * as archive from "./archive";
+import * as storage from "./storage";
+import * as docker from "./docker";
+import { tmpSpecFile } from "./docker-conda";
 
 export class Core {
   private readonly logger: winston.Logger;
@@ -32,32 +28,47 @@ export class Core {
   public allPlatforms: boolean = false;
   public fullDirHash: boolean;
 
-  constructor(logger: winston.Logger, opts?: {
-    pkgInfo?: PackageInfo;
-    packageRoot?: string;
-  }) {
+  constructor(
+    logger: winston.Logger,
+    opts?: {
+      pkgInfo?: PackageInfo;
+      packageRoot?: string;
+    },
+  ) {
     this.logger = logger;
     this.pkgInfo = opts?.pkgInfo ?? new PackageInfo(logger, { packageRoot: opts?.packageRoot });
 
-    this.buildMode = 'release';
+    this.buildMode = "release";
 
     this.fullDirHash = false;
   }
 
-  public binArchivePath(artifact: artifacts.withId<artifacts.anyArtifactType>, os: util.OSType, arch: util.ArchType): string {
+  public binArchivePath(
+    artifact: artifacts.withId<artifacts.anyArtifactType>,
+    os: util.OSType,
+    arch: util.ArchType,
+  ): string {
     const name = this.pkgInfo.artifactName(artifact);
     const version = this.pkgInfo.artifactVersion(artifact);
-    return archive.getPath(this.archiveOptions(artifact, name, version, os, arch, 'tgz'));
+    return archive.getPath(this.archiveOptions(artifact, name, version, os, arch, "tgz"));
   }
 
-  public assetArchivePath(artifact: artifacts.withId<artifacts.anyArtifactType>, os: util.OSType, arch: util.ArchType): string {
+  public assetArchivePath(
+    artifact: artifacts.withId<artifacts.anyArtifactType>,
+    os: util.OSType,
+    arch: util.ArchType,
+  ): string {
     const name = this.pkgInfo.artifactName(artifact);
     const version = this.pkgInfo.artifactVersion(artifact);
-    return archive.getPath(this.archiveOptions(artifact, name, version, os, arch, 'zip'));
+    return archive.getPath(this.archiveOptions(artifact, name, version, os, arch, "zip"));
   }
 
-  public archivePath(artifact: artifacts.withId<artifacts.anyArtifactType>, os: util.OSType, arch: util.ArchType): string {
-    if (artifact.type === 'asset') {
+  public archivePath(
+    artifact: artifacts.withId<artifacts.anyArtifactType>,
+    os: util.OSType,
+    arch: util.ArchType,
+  ): string {
+    if (artifact.type === "asset") {
       return this.assetArchivePath(artifact, os, arch);
     }
 
@@ -76,12 +87,13 @@ export class Core {
     const pkgs = new Map<string, artifacts.withId<artifacts.anyArtifactType>>();
 
     for (const [_, ep] of this.entrypoints.entries()) {
-      if (ep.type === 'reference') {
+      if (ep.type === "reference") {
         // References have no pacakge definitions inside
         continue;
       }
 
-      const key = ep.artifact.type === 'docker' ? docker.entrypointName(ep.artifact.id) : ep.artifact.id;
+      const key =
+        ep.artifact.type === "docker" ? docker.entrypointName(ep.artifact.id) : ep.artifact.id;
       pkgs.set(key, ep.artifact);
     }
 
@@ -92,7 +104,7 @@ export class Core {
     const result = new Map<string, string[]>();
 
     for (const [epName, ep] of this.entrypoints) {
-      if (ep.type === 'reference') {
+      if (ep.type === "reference") {
         // References have no pacakge definitions inside
         continue;
       }
@@ -108,16 +120,18 @@ export class Core {
   }
 
   public get buildablePackages(): Map<string, artifacts.withId<artifacts.anyArtifactType>> {
-    return new Map(Array.from(this.packages.entries())
-      .filter(([id, _]) => !docker.isVirtualDockerEntrypointName(id)) // do not show virtual docker entrypoints
-      .filter(([, value]) => artifacts.isBuildable(value.type)),
+    return new Map(
+      Array.from(this.packages.entries())
+        .filter(([id, _]) => !docker.isVirtualDockerEntrypointName(id)) // do not show virtual docker entrypoints
+        .filter(([, value]) => artifacts.isBuildable(value.type)),
     );
   }
 
   public get dockerPackages(): Map<string, artifacts.withId<artifacts.anyArtifactType>> {
-    return new Map(Array.from(this.packages.entries())
-      .filter(([id, _]) => docker.isVirtualDockerEntrypointName(id)) // do not show virtual docker entrypoints
-      .filter(([, value]) => value.type === 'docker'),
+    return new Map(
+      Array.from(this.packages.entries())
+        .filter(([id, _]) => docker.isVirtualDockerEntrypointName(id)) // do not show virtual docker entrypoints
+        .filter(([, value]) => value.type === "docker"),
     );
   }
 
@@ -136,21 +150,30 @@ export class Core {
     return false;
   }
 
-  public getArtifact(id: string, type: 'docker'): artifacts.withId<artifacts.dockerType> | undefined;
-  public getArtifact(id: string, type: 'archive'): artifacts.withId<artifacts.anyArtifactType> | undefined;
-  public getArtifact(id: string, type: 'docker' | 'archive'): artifacts.withId<artifacts.anyArtifactType> | undefined {
+  public getArtifact(
+    id: string,
+    type: "docker",
+  ): artifacts.withId<artifacts.dockerType> | undefined;
+  public getArtifact(
+    id: string,
+    type: "archive",
+  ): artifacts.withId<artifacts.anyArtifactType> | undefined;
+  public getArtifact(
+    id: string,
+    type: "docker" | "archive",
+  ): artifacts.withId<artifacts.anyArtifactType> | undefined {
     const artifact = this.packages.get(id);
 
     switch (type) {
-      case 'docker': {
-        if (artifact?.type === 'docker') {
+      case "docker": {
+        if (artifact?.type === "docker") {
           return artifact;
         }
         // Virtual entrypoint with suffix specially for docker artifacts.
         return this.packages.get(docker.entrypointName(id));
       }
-      case 'archive': {
-        if (artifact?.type === 'docker') {
+      case "archive": {
+        if (artifact?.type === "docker") {
           return undefined;
         }
         return artifact;
@@ -201,7 +224,7 @@ export class Core {
     }
 
     for (const [epName, ep] of entrypoints) {
-      if (ep.type === 'reference') {
+      if (ep.type === "reference") {
         const srcPath = this.pkgInfo.resolveReference(epName, ep);
         this.renderer.copySwJson(epName, srcPath);
       }
@@ -222,18 +245,20 @@ export class Core {
     this.logger.info(`Building package archives...`);
 
     const packagesToBuild = options?.ids ?? Array.from(this.buildablePackages.keys());
-    this.logger.debug(`Selected packages:\n  ${packagesToBuild.join('\n  ')}`);
-    this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join('\n  ')}`);
+    this.logger.debug(`Selected packages:\n  ${packagesToBuild.join("\n  ")}`);
+    this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join("\n  ")}`);
 
     if (packagesToBuild.length > 1 && options?.archivePath && !options.forceBuild) {
       this.logger.error(
-        'Attempt to build several packages targeting single package archive. This will simply overwrite the archive several times. If you know what you are doing, add \'--force\' flag',
+        "Attempt to build several packages targeting single package archive. This will simply overwrite the archive several times. If you know what you are doing, add '--force' flag",
       );
-      throw util.CLIError('attempt to build several packages using the same software package archive');
+      throw util.CLIError(
+        "attempt to build several packages using the same software package archive",
+      );
     }
 
     for (const artifactID of packagesToBuild) {
-      const artifact = this.getArtifact(artifactID, 'archive');
+      const artifact = this.getArtifact(artifactID, "archive");
 
       if (!artifact) {
         if (options?.ids) {
@@ -286,21 +311,23 @@ export class Core {
         `  not buildable: artifact '${artifact.id}' archive build is impossible for configuration inside '${util.softwareConfigName}'`,
       );
 
-      throw util.CLIError('not a buildable artifact');
+      throw util.CLIError("not a buildable artifact");
     }
 
-    const contentRoot = options?.contentRoot ?? this.pkgInfo.artifactContentRoot(artifact, platform);
+    const contentRoot =
+      options?.contentRoot ?? this.pkgInfo.artifactContentRoot(artifact, platform);
 
-    if (artifact.type === 'asset') {
+    if (artifact.type === "asset") {
       const archivePath = options?.archivePath ?? this.assetArchivePath(artifact, os, arch);
-      await this.createPackageArchive('assets', artifact, archivePath, contentRoot, os, arch);
+      await this.createPackageArchive("assets", artifact, archivePath, contentRoot, os, arch);
       return;
     }
 
     const artType = artifact.type;
     switch (artType) {
-      case 'conda': {
-        if (options?.condaBuild === undefined || options.condaBuild) { // build by default, skip if explicitly disabled
+      case "conda": {
+        if (options?.condaBuild === undefined || options.condaBuild) {
+          // build by default, skip if explicitly disabled
           await this.buildCondaPackage({ artifact, platform, contentRoot });
         } else {
           this.logger.debug(`Conda environment build was skipped.`);
@@ -309,7 +336,7 @@ export class Core {
       }
     }
 
-    if (this.buildMode === 'dev-local') {
+    if (this.buildMode === "dev-local") {
       this.logger.info(
         `  no need to build software archive in '${this.buildMode}' mode: archive build was skipped`,
       );
@@ -317,24 +344,22 @@ export class Core {
     }
 
     const archivePath = options?.archivePath ?? this.binArchivePath(artifact, os, arch);
-    await this.createPackageArchive('software', artifact, archivePath, contentRoot, os, arch);
+    await this.createPackageArchive("software", artifact, archivePath, contentRoot, os, arch);
   }
 
-  public buildDockerImages(
-    options?: {
-      ids?: string[];
-      registry?: string;
-      strictPlatformMatching?: boolean; // if true, build docker images only on linux OS and only for supported architectures. Used in CI.
-    },
-  ) {
+  public buildDockerImages(options?: {
+    ids?: string[];
+    registry?: string;
+    strictPlatformMatching?: boolean; // if true, build docker images only on linux OS and only for supported architectures. Used in CI.
+  }) {
     this.logger.info(`Building docker images...`);
 
     const packagesToBuild = options?.ids ?? Array.from(this.dockerPackages.keys());
-    this.logger.debug(`Selected packages:\n  ${packagesToBuild.join('\n  ')}`);
-    this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join('\n  ')}`);
+    this.logger.debug(`Selected packages:\n  ${packagesToBuild.join("\n  ")}`);
+    this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join("\n  ")}`);
 
     for (const pkgID of packagesToBuild) {
-      const artifact = this.getArtifact(pkgID, 'docker');
+      const artifact = this.getArtifact(pkgID, "docker");
 
       if (!artifact) {
         if (options?.ids) {
@@ -344,14 +369,15 @@ export class Core {
       }
 
       if (!artifacts.dockerArchitectures.includes(util.currentArch())) {
-        this.logger.log(options?.strictPlatformMatching ? 'debug' : 'warn',
-          `Docker image generation was skipped because host architecture '${util.currentArch()}'`
-          + ` is currently not supported by Platforma Backend docker feature`,
+        this.logger.log(
+          options?.strictPlatformMatching ? "debug" : "warn",
+          `Docker image generation was skipped because host architecture '${util.currentArch()}'` +
+            ` is currently not supported by Platforma Backend docker feature`,
         );
         continue;
       }
 
-      if (options?.strictPlatformMatching && util.currentOS() !== 'linux') {
+      if (options?.strictPlatformMatching && util.currentOS() !== "linux") {
         this.logger.debug(
           `Docker image generation was skipped: not a linux OS and 'strictPlatformMatching' is enabled`,
         );
@@ -368,9 +394,13 @@ export class Core {
   //
   // docker image is uploaded to the registry after build with unique tag that is derived from the actual image content.
   // artifact location files are used to build sw.json entrypoint descriptor with correct artifact address.
-  private buildDockerImage(pkgID: string, artifact: artifacts.withId<artifacts.dockerType>, registry?: string) {
-    const dockerfile = path.resolve(this.pkgInfo.packageRoot, artifact.dockerfile ?? 'Dockerfile');
-    const context = path.resolve(this.pkgInfo.packageRoot, artifact.context ?? '.');
+  private buildDockerImage(
+    pkgID: string,
+    artifact: artifacts.withId<artifacts.dockerType>,
+    registry?: string,
+  ) {
+    const dockerfile = path.resolve(this.pkgInfo.packageRoot, artifact.dockerfile ?? "Dockerfile");
+    const context = path.resolve(this.pkgInfo.packageRoot, artifact.context ?? ".");
     registry = registry ?? artifact.registry;
 
     if (!fs.existsSync(dockerfile)) {
@@ -402,9 +432,9 @@ export class Core {
     docker.addTag(localTag, dstTag);
     // do not remove local tag to make 'local' builds to also work with docker.
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkgID, 'docker', util.currentArch());
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkgID, "docker", util.currentArch());
     writeBuiltArtifactInfo(artInfoPath, {
-      type: 'docker',
+      type: "docker",
       platform: util.currentPlatform(),
       remoteArtifactLocation: dstTag,
       entrypoint: docker.getImageEntrypoint(localTag),
@@ -429,9 +459,9 @@ export class Core {
 
     if (platform !== util.currentPlatform()) {
       this.logger.warn(
-        `Conda package cannot be built cross-platform:\n`
-        + `  current platform is '${util.currentPlatform()}', requested platform is '${platform}'\n`
-        + `Conda environment automatic build was skipped`,
+        `Conda package cannot be built cross-platform:\n` +
+          `  current platform is '${util.currentPlatform()}', requested platform is '${platform}'\n` +
+          `Conda environment automatic build was skipped`,
       );
       return;
     }
@@ -440,8 +470,12 @@ export class Core {
 
     const srcSpecPath = path.resolve(this.pkgInfo.packageRoot, artifact.spec);
     if (!fs.existsSync(srcSpecPath)) {
-      this.logger.error(`Conda environment specification file '${artifact.spec}' not found at '${srcSpecPath}'`);
-      throw util.CLIError(`Cannot build conda environment '${artifact.id}': no specification file.`);
+      this.logger.error(
+        `Conda environment specification file '${artifact.spec}' not found at '${srcSpecPath}'`,
+      );
+      throw util.CLIError(
+        `Cannot build conda environment '${artifact.id}': no specification file.`,
+      );
     }
 
     this.logger.debug(`Validating conda spec file for forbidden channels...`);
@@ -454,13 +488,18 @@ export class Core {
     }
 
     const micromambaRoot = path.join(contentRoot, defaults.CONDA_DATA_LOCATION);
-    const micromambaBin = path.join(contentRoot, 'micromamba');
+    const micromambaBin = path.join(contentRoot, "micromamba");
 
     this.logger.debug(`Creating micromamba root directory: '${micromambaRoot}'`);
     await fsp.mkdir(micromambaRoot, { recursive: true });
 
     this.logger.debug(`Creating micromamba instance...`);
-    const m = new micromamba(this.logger, micromambaRoot, artifact['micromamba-version'], micromambaBin);
+    const m = new micromamba(
+      this.logger,
+      micromambaRoot,
+      artifact["micromamba-version"],
+      micromambaBin,
+    );
 
     const resultSpecPath = path.join(contentRoot, defaults.CONDA_FROZEN_ENV_SPEC_FILE);
 
@@ -473,7 +512,10 @@ export class Core {
 
     this.logger.debug(`Cutting prefix from conda environment file...`);
 
-    const resultSpec = yaml.parse(await fsp.readFile(resultSpecPath, 'utf-8')) as Record<string, unknown>;
+    const resultSpec = yaml.parse(await fsp.readFile(resultSpecPath, "utf-8")) as Record<
+      string,
+      unknown
+    >;
     resultSpec.prefix = undefined; // cut original env location (with path from CI) from the resulting spec file
 
     // Fixup the structure: for empty lists export produces YAML that cannot be then read back on server side for restoration.
@@ -509,7 +551,7 @@ export class Core {
 
     const artInfoPath = this.pkgInfo.artifactInfoLocation(
       artifact.id,
-      'archive',
+      "archive",
       artifacts.isCrossPlatform(artifact.type) ? undefined : util.joinPlatform(os, arch),
     );
 
@@ -541,16 +583,18 @@ export class Core {
     this.logger.info(`Publishing packages...`);
 
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
-    this.logger.debug(`Selected packages:\n  ${packagesToPublish.join('\n  ')}`);
-    this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join('\n  ')}`);
+    this.logger.debug(`Selected packages:\n  ${packagesToPublish.join("\n  ")}`);
+    this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join("\n  ")}`);
 
     const uploads: Promise<void>[] = [];
     for (const pkgID of packagesToPublish) {
-      const pkg = this.getArtifact(pkgID, 'archive');
+      const pkg = this.getArtifact(pkgID, "archive");
 
       if (!pkg) {
         if (options?.ids) {
-          this.logger.warn(`Package '${pkgID}' is not buildable into archive. Cannot publish archive artifact.`);
+          this.logger.warn(
+            `Package '${pkgID}' is not buildable into archive. Cannot publish archive artifact.`,
+          );
         }
         continue;
       }
@@ -582,7 +626,7 @@ export class Core {
       forceReupload?: boolean;
     },
   ) {
-    if (artifact.type === 'docker') {
+    if (artifact.type === "docker") {
       this.publishDockerImage(artifact);
       return;
     }
@@ -590,12 +634,16 @@ export class Core {
     await this.publishArchive(artifact, platform, options);
   }
 
-  private async publishArchive(artifact: artifacts.withId<artifacts.anyArtifactType>, platform: util.PlatformType, options?: {
-    archivePath?: string;
-    storageURL?: string;
-    failExisting?: boolean;
-    forceReupload?: boolean;
-  }) {
+  private async publishArchive(
+    artifact: artifacts.withId<artifacts.anyArtifactType>,
+    platform: util.PlatformType,
+    options?: {
+      archivePath?: string;
+      storageURL?: string;
+      failExisting?: boolean;
+      forceReupload?: boolean;
+    },
+  ) {
     const { os, arch } = util.splitPlatform(platform);
 
     const artifactName = this.pkgInfo.artifactName(artifact);
@@ -604,12 +652,16 @@ export class Core {
 
     const archivePath = options?.archivePath ?? this.archivePath(artifact, os, arch);
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(artifact.id, 'archive', artifacts.isCrossPlatform(artifact.type) ? undefined : util.joinPlatform(os, arch));
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(
+      artifact.id,
+      "archive",
+      artifacts.isCrossPlatform(artifact.type) ? undefined : util.joinPlatform(os, arch),
+    );
     const artInfo = readBuiltArtifactInfo(artInfoPath);
     const dstName = artInfo.uploadPath ?? artInfo.remoteArtifactLocation;
 
     if (!storageURL) {
-      const regNameUpper = registry.name.toUpperCase().replaceAll(/[^A-Z0-9_]/g, '_');
+      const regNameUpper = registry.name.toUpperCase().replaceAll(/[^A-Z0-9_]/g, "_");
       this.logger.error(`no storage URL is set for registry ${registry.name}`);
       throw util.CLIError(
         `'registry.storageURL' of package '${artifact.id}' is empty. Set it as command option, in '${util.softwareConfigName}' file or via environment variable 'PL_REGISTRY_${regNameUpper}_UPLOAD_URL'`,
@@ -663,27 +715,30 @@ export class Core {
     this.logger.info(`Publishing docker images...`);
 
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
-    this.logger.debug(`Selected packages:\n  ${packagesToPublish.join('\n  ')}`);
-    this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join('\n  ')}`);
+    this.logger.debug(`Selected packages:\n  ${packagesToPublish.join("\n  ")}`);
+    this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join("\n  ")}`);
 
     for (const pkgID of packagesToPublish) {
-      const pkg = this.getArtifact(pkgID, 'docker');
+      const pkg = this.getArtifact(pkgID, "docker");
       if (!pkg) {
         if (options?.ids) {
-          this.logger.warn(`Package '${pkgID}' is not buildable into docker image. Cannot publish docker image.`);
+          this.logger.warn(
+            `Package '${pkgID}' is not buildable into docker image. Cannot publish docker image.`,
+          );
         }
         continue;
       }
 
       if (!artifacts.dockerArchitectures.includes(util.currentArch())) {
-        this.logger.log(options?.strictPlatformMatching ? 'debug' : 'warn',
-          `Docker image generation was skipped because host architecture '${util.currentArch()}'`
-          + ` is currently not supported by Platforma Backend docker feature`,
+        this.logger.log(
+          options?.strictPlatformMatching ? "debug" : "warn",
+          `Docker image generation was skipped because host architecture '${util.currentArch()}'` +
+            ` is currently not supported by Platforma Backend docker feature`,
         );
         continue;
       }
 
-      if (options?.strictPlatformMatching && util.currentOS() !== 'linux') {
+      if (options?.strictPlatformMatching && util.currentOS() !== "linux") {
         this.logger.debug(
           `Docker image generation was skipped: not a linux OS and 'strictPlatformMatching' is enabled`,
         );
@@ -694,27 +749,38 @@ export class Core {
     }
   }
 
-  private publishDockerImage(artifact: artifacts.withId<artifacts.anyArtifactType>, pushTo?: string) {
-    if (artifact.type !== 'docker') {
+  private publishDockerImage(
+    artifact: artifacts.withId<artifacts.anyArtifactType>,
+    pushTo?: string,
+  ) {
+    if (artifact.type !== "docker") {
       throw util.CLIError(`package '${artifact.id}' is not a docker package`);
     }
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(artifact.id, 'docker', util.currentArch());
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(
+      artifact.id,
+      "docker",
+      util.currentArch(),
+    );
     const artInfo = readBuiltArtifactInfo(artInfoPath);
     const tag = artInfo.remoteArtifactLocation;
-    const pushTag = pushTo ? `${pushTo}:${tag.split(':').slice(-1)[0]}` : tag;
+    const pushTag = pushTo ? `${pushTo}:${tag.split(":").slice(-1)[0]}` : tag;
 
     // Because of turbo caching, we may face situation when no real docker build was executed on CI agent,
     // but image is already in remote registry. We should not fail in such scenarios, calmly skipping docker push step.
     const remoteImageExists = docker.remoteImageExists(pushTag);
     if (remoteImageExists) {
-      this.logger.info(`Docker image '${tag}' not exists locally but is already in remote registry. Skipping push...`);
+      this.logger.info(
+        `Docker image '${tag}' not exists locally but is already in remote registry. Skipping push...`,
+      );
       return;
     }
 
     const localImageExists = docker.localImageExists(tag);
     if (!localImageExists) {
-      throw util.CLIError(`Docker image '${tag}' not exists locally and is not found in remote registry. Publication failed.`);
+      throw util.CLIError(
+        `Docker image '${tag}' not exists locally and is not found in remote registry. Publication failed.`,
+      );
     }
 
     if (pushTo) {

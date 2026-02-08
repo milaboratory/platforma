@@ -1,8 +1,12 @@
-import { type Ref, onMounted } from 'vue';
-import { useEventListener } from './useEventListener';
-import { requestTick } from '../helpers/utils';
+import { type Ref, onMounted } from "vue";
+import { useEventListener } from "./useEventListener";
+import { requestTick } from "../helpers/utils";
 
-export function useScroll($el: Ref<HTMLElement | undefined>, fadeHeight: number | null = null, fadeWidth: number | null = null) {
+export function useScroll(
+  $el: Ref<HTMLElement | undefined>,
+  fadeHeight: number | null = null,
+  fadeWidth: number | null = null,
+) {
   function getYMask(el: HTMLElement) {
     const { scrollTop, scrollHeight, clientHeight } = el;
 
@@ -14,7 +18,8 @@ export function useScroll($el: Ref<HTMLElement | undefined>, fadeHeight: number 
 
     const scrollBottom = scrollHeight - scrollTop - clientHeight;
     const offsetTop = scrollTop > fadeHeight ? fadeHeight : 0;
-    const offsetBottom = scrollBottom > fadeHeight ? clientHeight - fadeHeight - offsetTop : clientHeight;
+    const offsetBottom =
+      scrollBottom > fadeHeight ? clientHeight - fadeHeight - offsetTop : clientHeight;
 
     return `linear-gradient(
         to bottom,
@@ -36,7 +41,8 @@ export function useScroll($el: Ref<HTMLElement | undefined>, fadeHeight: number 
 
     const scrollRight = scrollWidth - scrollLeft - clientWidth;
     const offsetLeft = scrollLeft > fadeWidth ? fadeWidth : 0;
-    const offsetRight = scrollRight > fadeWidth ? clientWidth - fadeWidth - offsetLeft : clientWidth;
+    const offsetRight =
+      scrollRight > fadeWidth ? clientWidth - fadeWidth - offsetLeft : clientWidth;
 
     return `linear-gradient(
         to right,
@@ -55,17 +61,17 @@ export function useScroll($el: Ref<HTMLElement | undefined>, fadeHeight: number 
     }
 
     const masks = [getYMask(el), getXMask(el)].filter((m) => m !== null);
-    el.style.setProperty('-webkit-mask-image', masks.join(','));
-    el.style.setProperty('mask-image', masks.join(','));
+    el.style.setProperty("-webkit-mask-image", masks.join(","));
+    el.style.setProperty("mask-image", masks.join(","));
     if (masks.length > 1) {
-      el.style.setProperty('-webkit-mask-composite', 'source-in');
-      el.style.setProperty('mask-composite', 'source-in');
+      el.style.setProperty("-webkit-mask-composite", "source-in");
+      el.style.setProperty("mask-composite", "source-in");
     }
   }
 
   const handle = requestTick(update);
 
   onMounted(update);
-  useEventListener(window, 'scroll', handle, true);
-  useEventListener(window, 'resize', handle, true);
+  useEventListener(window, "scroll", handle, true);
+  useEventListener(window, "resize", handle, true);
 }

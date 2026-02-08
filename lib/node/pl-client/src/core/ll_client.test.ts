@@ -1,37 +1,46 @@
-import { LLPlClient } from './ll_client';
-import { getTestConfig, plAddressToTestConfig, getTestLLClient, getTestClientConf } from '../test/test_config';
-import { TxAPI_Open_Request_WritableTx } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
-import { request } from 'undici';
-import * as tp from 'node:timers/promises';
-import { test, expect } from 'vitest';
+import { LLPlClient } from "./ll_client";
+import {
+  getTestConfig,
+  plAddressToTestConfig,
+  getTestLLClient,
+  getTestClientConf,
+} from "../test/test_config";
+import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
+import { request } from "undici";
+import * as tp from "node:timers/promises";
+import { test, expect } from "vitest";
 
-import { UnauthenticatedError } from './errors';
+import { UnauthenticatedError } from "./errors";
 
-test('wire protocol detection', async () => {
+test("wire protocol detection", async () => {
   const { conf, auth } = await getTestClientConf();
-  const expectedWireProtocol = conf.wireProtocol ?? 'grpc';
+  const expectedWireProtocol = conf.wireProtocol ?? "grpc";
   conf.wireProtocol = undefined;
 
   const client = await LLPlClient.build(conf, { auth });
   expect(client.wireProtocol).toBe(expectedWireProtocol);
 });
 
-test('authenticated instance test', async () => {
+test("authenticated instance test", async () => {
   const client = await getTestLLClient();
   const tx = client.createTx(true);
   const response = await tx.send(
     {
-      oneofKind: 'txOpen',
-      txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
+      oneofKind: "txOpen",
+      txOpen: {
+        name: "test",
+        writable: TxAPI_Open_Request_WritableTx.WRITABLE,
+        enableFormattedErrors: false,
+      },
     },
-    false
+    false,
   );
   expect(response.txOpen.tx?.isValid).toBeTruthy();
   await tx.complete();
   await tx.await();
 });
 
-test('unauthenticated status change', async () => {
+test("unauthenticated status change", async () => {
   const cfg = getTestConfig();
   if (cfg.test_password === undefined) {
     console.log("skipping test because target server doesn't support authentication");
@@ -39,17 +48,21 @@ test('unauthenticated status change', async () => {
   }
 
   const client = await LLPlClient.build(plAddressToTestConfig(cfg.address));
-  expect(client.status).toBe('OK');
+  expect(client.status).toBe("OK");
 
   const tx = client.createTx(true);
 
   await expect(async () => {
     await tx.send(
       {
-        oneofKind: 'txOpen',
-        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
+        oneofKind: "txOpen",
+        txOpen: {
+          name: "test",
+          writable: TxAPI_Open_Request_WritableTx.WRITABLE,
+          enableFormattedErrors: false,
+        },
       },
-      false
+      false,
     );
   }).rejects.toThrow(UnauthenticatedError);
 
@@ -59,10 +72,10 @@ test('unauthenticated status change', async () => {
 
   await tp.setImmediate();
 
-  expect(client.status).toEqual('Unauthenticated');
+  expect(client.status).toEqual("Unauthenticated");
 });
 
-test('automatic token update', async () => {
+test("automatic token update", async () => {
   const cfg = getTestConfig();
   if (cfg.test_password === undefined) {
     console.log("skipping test because target server doesn't support authentication");
@@ -78,18 +91,22 @@ test('automatic token update', async () => {
       onUpdate: (auth) => {
         console.log(auth);
         ++numberOfAuthUpdates;
-      }
-    }
+      },
+    },
   });
 
   for (let i = 0; i < 6; i++) {
     const tx = client.createTx(true);
     const response = await tx.send(
       {
-        oneofKind: 'txOpen',
-        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
+        oneofKind: "txOpen",
+        txOpen: {
+          name: "test",
+          writable: TxAPI_Open_Request_WritableTx.WRITABLE,
+          enableFormattedErrors: false,
+        },
       },
-      false
+      false,
     );
     expect(response.txOpen.tx?.isValid).toBeTruthy();
     await tx.complete();
@@ -103,25 +120,25 @@ test('automatic token update', async () => {
   }
 }, 5000);
 
-test('test simple https call', async () => {
+test("test simple https call", async () => {
   const client = await getTestLLClient();
-  const response = await request('https://cdn.milaboratory.com/ping', {
-    dispatcher: client.httpDispatcher
+  const response = await request("https://cdn.milaboratory.com/ping", {
+    dispatcher: client.httpDispatcher,
   });
   const text = await response.body.text();
-  expect(text).toEqual('pong');
+  expect(text).toEqual("pong");
 });
 
-test('test https call via proxy', async () => {
+test("test https call via proxy", async () => {
   const testConfig = getTestConfig();
   if (testConfig.test_proxy === undefined) {
-    console.log('skipped');
+    console.log("skipped");
     return;
   }
   const client = await getTestLLClient({ httpProxy: testConfig.test_proxy });
-  const response = await request('https://cdn.milaboratory.com/ping', {
-    dispatcher: client.httpDispatcher
+  const response = await request("https://cdn.milaboratory.com/ping", {
+    dispatcher: client.httpDispatcher,
   });
   const text = await response.body.text();
-  expect(text).toEqual('pong');
+  expect(text).toEqual("pong");
 });

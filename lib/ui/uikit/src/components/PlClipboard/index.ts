@@ -1,1 +1,1 @@
-export { default as PlClipboard } from './PlClipboard.vue';
+export { default as PlClipboard } from "./PlClipboard.vue";

@@ -1,57 +1,75 @@
-import { getTestLLClient } from '../test/test_config';
-import { TxAPI_Open_Request_WritableTx } from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
-import { createLocalResourceId } from './types';
-import { test, expect } from 'vitest';
+import { getTestLLClient } from "../test/test_config";
+import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
+import { createLocalResourceId } from "./types";
+import { test, expect } from "vitest";
 
-import { isTimeoutOrCancelError } from './errors';
-import { Aborted } from '@milaboratories/ts-helpers';
+import { isTimeoutOrCancelError } from "./errors";
+import { Aborted } from "@milaboratories/ts-helpers";
 
-test('check successful transaction', async () => {
+test("check successful transaction", async () => {
   const client = await getTestLLClient();
   const tx = client.createTx(true);
 
-  const openResp = await tx.send({
-    oneofKind: 'txOpen',
-    txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
-  }, false);
-  const commitResp = await tx.send({
-    oneofKind: 'txCommit',
-    txCommit: {}
-  }, false);
+  const openResp = await tx.send(
+    {
+      oneofKind: "txOpen",
+      txOpen: {
+        name: "test",
+        writable: TxAPI_Open_Request_WritableTx.WRITABLE,
+        enableFormattedErrors: false,
+      },
+    },
+    false,
+  );
+  const commitResp = await tx.send(
+    {
+      oneofKind: "txCommit",
+      txCommit: {},
+    },
+    false,
+  );
 
   expect(openResp.txOpen.tx?.isValid).toBeTruthy();
   expect(commitResp.txCommit.success).toBeTruthy();
   await tx.await();
 });
 
-test('transaction timeout test', async () => {
+test("transaction timeout test", async () => {
   const client = await getTestLLClient();
   const tx = client.createTx(true, { timeout: 500 });
 
   await expect(async () => {
     const response = await tx.send(
       {
-        oneofKind: 'txOpen',
-        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
+        oneofKind: "txOpen",
+        txOpen: {
+          name: "test",
+          writable: TxAPI_Open_Request_WritableTx.WRITABLE,
+          enableFormattedErrors: false,
+        },
       },
-      false
+      false,
     );
     expect(response.txOpen.tx?.isValid).toBeTruthy();
     await tx.await();
   }).rejects.toThrow(Aborted);
 });
 
-test('check timeout error type (passive)', async () => {
+test("check timeout error type (passive)", async () => {
   const client = await getTestLLClient();
   const tx = client.createTx(true, { timeout: 500 });
 
   try {
     const response = await tx.send(
       {
-        oneofKind: 'txOpen',
-        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
+        oneofKind: "txOpen",
+        txOpen: {
+          name: "test",
+          writable: TxAPI_Open_Request_WritableTx.WRITABLE,
+          enableFormattedErrors: false,
+        },
       },
-      false
+      false,
     );
     expect(response.txOpen.tx?.isValid).toBeTruthy();
     await tx.await();
@@ -60,17 +78,21 @@ test('check timeout error type (passive)', async () => {
   }
 });
 
-test('check timeout error type (active)', async () => {
+test("check timeout error type (active)", async () => {
   const client = await getTestLLClient();
   const tx = client.createTx(true, { timeout: 500 });
 
   try {
     const openResponse = await tx.send(
       {
-        oneofKind: 'txOpen',
-        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
+        oneofKind: "txOpen",
+        txOpen: {
+          name: "test",
+          writable: TxAPI_Open_Request_WritableTx.WRITABLE,
+          enableFormattedErrors: false,
+        },
       },
-      false
+      false,
     );
     expect(openResponse.txOpen.tx?.isValid).toBeTruthy();
 
@@ -82,30 +104,30 @@ test('check timeout error type (active)', async () => {
       (Math.random() * 256) & 0xff,
       (Math.random() * 256) & 0xff,
       (Math.random() * 256) & 0xff,
-      (Math.random() * 256) & 0xff
+      (Math.random() * 256) & 0xff,
     ]);
 
     const createResponse = await tx.send(
       {
-        oneofKind: 'resourceCreateValue',
+        oneofKind: "resourceCreateValue",
         resourceCreateValue: {
           id: createLocalResourceId(false, 1, 1),
-          type: { name: 'TestValue', version: '1' },
+          type: { name: "TestValue", version: "1" },
           data: rData,
-          errorIfExists: false
-        }
+          errorIfExists: false,
+        },
       },
-      false
+      false,
     );
     const id = (await createResponse).resourceCreateValue.resourceId;
 
     while (true) {
       const vr = await tx.send(
         {
-          oneofKind: 'resourceGet',
-          resourceGet: { resourceId: id, loadFields: false }
+          oneofKind: "resourceGet",
+          resourceGet: { resourceId: id, loadFields: false },
         },
-        false
+        false,
       );
 
       expect(Buffer.compare(vr.resourceGet.resource!.data, rData)).toBe(0);
@@ -115,17 +137,21 @@ test('check timeout error type (active)', async () => {
   }
 });
 
-test('check is abort error (active)', async () => {
+test("check is abort error (active)", async () => {
   const client = await getTestLLClient();
   const tx = client.createTx(true, { abortSignal: AbortSignal.timeout(100) });
 
   try {
     const openResponse = await tx.send(
       {
-        oneofKind: 'txOpen',
-        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
+        oneofKind: "txOpen",
+        txOpen: {
+          name: "test",
+          writable: TxAPI_Open_Request_WritableTx.WRITABLE,
+          enableFormattedErrors: false,
+        },
       },
-      false
+      false,
     );
     expect(openResponse.txOpen.tx?.isValid).toBeTruthy();
 
@@ -137,30 +163,30 @@ test('check is abort error (active)', async () => {
       Math.random() & 0xff,
       Math.random() & 0xff,
       Math.random() & 0xff,
-      Math.random() & 0xff
+      Math.random() & 0xff,
     ]);
 
     const createResponse = await tx.send(
       {
-        oneofKind: 'resourceCreateValue',
+        oneofKind: "resourceCreateValue",
         resourceCreateValue: {
           id: createLocalResourceId(false, 1, 1),
-          type: { name: 'TestValue', version: '1' },
+          type: { name: "TestValue", version: "1" },
           data: rData,
-          errorIfExists: false
-        }
+          errorIfExists: false,
+        },
       },
-      false
+      false,
     );
     const id = (await createResponse).resourceCreateValue.resourceId;
 
     while (true) {
       const vr = await tx.send(
         {
-          oneofKind: 'resourceGet',
-          resourceGet: { resourceId: id, loadFields: false }
+          oneofKind: "resourceGet",
+          resourceGet: { resourceId: id, loadFields: false },
         },
-        false
+        false,
       );
 
       expect(Buffer.compare(vr.resourceGet.resource!.data, rData)).toBe(0);

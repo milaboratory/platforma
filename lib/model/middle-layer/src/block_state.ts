@@ -1,6 +1,12 @@
-import type { AuthorMarker, BlockOutputsBase, BlockState, NavigationState, StringifiedJson } from '@milaboratories/pl-model-common';
-import type { StorageDebugView } from '@platforma-sdk/model';
-import type { Optional } from 'utility-types';
+import type {
+  AuthorMarker,
+  BlockOutputsBase,
+  BlockState,
+  NavigationState,
+  StringifiedJson,
+} from "@milaboratories/pl-model-common";
+import type { StorageDebugView } from "@platforma-sdk/model";
+import type { Optional } from "utility-types";
 
 // @deprecated TODO v3: keep this name, or rename to BlockStateInternalLegacy?
 export type BlockStateInternal<
@@ -8,7 +14,7 @@ export type BlockStateInternal<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
-> = Optional<Readonly<BlockState<Args, Outputs, UiState, Href>>, 'outputs'>;
+> = Optional<Readonly<BlockState<Args, Outputs, UiState, Href>>, "outputs">;
 
 // TODO: we should move this abstract convert for middle layer to the model
 export type BlockStateInternalV3<

@@ -1,6 +1,6 @@
-import type { WatchSource, WatchOptions, MaybeRef } from 'vue';
-import { reactive, watch, ref, computed, unref } from 'vue';
-import { delay, exclusiveRequest } from '@milaboratories/helpers';
+import type { WatchSource, WatchOptions, MaybeRef } from "vue";
+import { reactive, watch, ref, computed, unref } from "vue";
+import { delay, exclusiveRequest } from "@milaboratories/helpers";
 
 export type FetchResult<V, E = unknown> = {
   loading: boolean;

@@ -1,8 +1,8 @@
-import type { PlClient } from './client';
-import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import type { Dispatcher } from 'undici';
-import type { ResourceType } from './types';
-import type { WireClientProviderFactory } from './wire';
+import type { PlClient } from "./client";
+import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
+import type { Dispatcher } from "undici";
+import type { ResourceType } from "./types";
+import type { WireClientProviderFactory } from "./wire";
 
 /** Drivers must implement this interface */
 export interface PlDriver {
@@ -24,7 +24,7 @@ export interface PlDriverDefinition<Drv extends PlDriver> {
 export function addRTypeToMetadata(rType: ResourceType, options?: RpcOptions) {
   options = options ?? {};
   options.meta = options.meta ?? {};
-  options.meta['resourceType'] = `${rType.name}:${rType.version}`;
+  options.meta["resourceType"] = `${rType.name}:${rType.version}`;
 
   return options;
 }

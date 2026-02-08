@@ -1,7 +1,7 @@
-import path from 'node:path';
-import fsp from 'node:fs/promises';
-import { test } from 'vitest';
-import { randomUUID } from 'node:crypto';
+import path from "node:path";
+import fsp from "node:fs/promises";
+import { test } from "vitest";
+import { randomUUID } from "node:crypto";
 
 export const regTest = test.extend<{
   tmpFolder: string;

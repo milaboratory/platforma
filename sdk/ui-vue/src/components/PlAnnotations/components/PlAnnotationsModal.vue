@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { PlPureSlideModal } from '@milaboratories/uikit';
-import { effect, shallowRef } from 'vue';
+import { PlPureSlideModal } from "@milaboratories/uikit";
+import { effect, shallowRef } from "vue";
 
-import type { Annotation } from '../types';
-import type { Props } from './PlAnnotations.vue';
-import PlAnnotations from './PlAnnotations.vue';
+import type { Annotation } from "../types";
+import type { Props } from "./PlAnnotations.vue";
+import PlAnnotations from "./PlAnnotations.vue";
 
 // Models
-const annotation = defineModel<Annotation>('annotation', { required: true });
-const opened = defineModel<boolean>('opened', { required: true });
+const annotation = defineModel<Annotation>("annotation", { required: true });
+const opened = defineModel<boolean>("opened", { required: true });
 // Props
 const props = defineProps<Props>();
 // State

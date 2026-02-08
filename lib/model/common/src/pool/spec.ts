@@ -1,7 +1,7 @@
-import type { Branded } from '../branding';
-import type { JoinEntry, PColumn, PColumnLazy, PColumnSpec } from '../drivers';
-import { assertNever } from '../util';
-import type { ResultPoolEntry } from './entry';
+import type { Branded } from "../branding";
+import type { JoinEntry, PColumn, PColumnLazy, PColumnSpec } from "../drivers";
+import { assertNever } from "../util";
+import type { ResultPoolEntry } from "./entry";
 
 /** Any object exported into the result pool by the block always have spec attached to it */
 export type PObjectSpec = {
@@ -19,7 +19,7 @@ export type PObjectSpec = {
 };
 
 /** Stable PObject id */
-export type PObjectId = Branded<string, 'PColumnId'>;
+export type PObjectId = Branded<string, "PColumnId">;
 
 /**
  * Full PObject representation.
@@ -38,7 +38,7 @@ export interface PObject<Data> {
 }
 
 export function isPColumnSpec(spec: PObjectSpec): spec is PColumnSpec {
-  return spec.kind === 'PColumn';
+  return spec.kind === "PColumn";
 }
 
 export function isPColumn<T>(obj: PObject<T>): obj is PColumn<T> {
@@ -62,16 +62,19 @@ export function ensurePColumn<T>(obj: PObject<T>): PColumn<T> {
   return obj;
 }
 
-export function mapPObjectData<D1, D2>(pObj: PColumn<D1> | PColumnLazy<D1>, cb: (d: D1) => D2): PColumn<D2>;
+export function mapPObjectData<D1, D2>(
+  pObj: PColumn<D1> | PColumnLazy<D1>,
+  cb: (d: D1) => D2,
+): PColumn<D2>;
 export function mapPObjectData<D1, D2>(pObj: PColumn<D1>, cb: (d: D1) => D2): PColumn<D2>;
 export function mapPObjectData<D1, D2>(
   pObj: PColumn<D1> | undefined,
-  cb: (d: D1) => D2
+  cb: (d: D1) => D2,
 ): PColumn<D2> | undefined;
 export function mapPObjectData<D1, D2>(pObj: PObject<D1>, cb: (d: D1) => D2): PObject<D2>;
 export function mapPObjectData<D1, D2>(
   pObj: PObject<D1> | undefined,
-  cb: (d: D1) => D2
+  cb: (d: D1) => D2,
 ): PObject<D2> | undefined;
 export function mapPObjectData<D1, D2>(
   pObj: PObject<D1> | undefined,
@@ -81,7 +84,7 @@ export function mapPObjectData<D1, D2>(
     ? undefined
     : {
         ...pObj,
-        data: cb(typeof pObj.data === 'function' ? pObj.data() : pObj.data),
+        data: cb(typeof pObj.data === "function" ? pObj.data() : pObj.data),
       };
 }
 
@@ -89,22 +92,22 @@ export function extractAllColumns<D>(entry: JoinEntry<PColumn<D>>): PColumn<D>[]
   const columns = new Map<PObjectId, PColumn<D>>();
   const addAllColumns = (entry: JoinEntry<PColumn<D>>) => {
     switch (entry.type) {
-      case 'column':
+      case "column":
         columns.set(entry.column.id, entry.column);
         return;
-      case 'slicedColumn':
+      case "slicedColumn":
         columns.set(entry.column.id, entry.column);
         return;
-      case 'artificialColumn':
+      case "artificialColumn":
         columns.set(entry.column.id, entry.column);
         return;
-      case 'inlineColumn':
+      case "inlineColumn":
         return;
-      case 'full':
-      case 'inner':
+      case "full":
+      case "inner":
         for (const e of entry.entries) addAllColumns(e);
         return;
-      case 'outer':
+      case "outer":
         addAllColumns(entry.primary);
         for (const e of entry.secondary) addAllColumns(e);
         return;

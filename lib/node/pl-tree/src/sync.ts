@@ -3,13 +3,11 @@ import type {
   OptionalResourceId,
   PlTransaction,
   ResourceId,
-} from '@milaboratories/pl-client';
-import {
-  isNullResourceId,
-} from '@milaboratories/pl-client';
-import Denque from 'denque';
-import type { ExtendedResourceData, PlTreeState } from './state';
-import { msToHumanReadable } from '@milaboratories/ts-helpers';
+} from "@milaboratories/pl-client";
+import { isNullResourceId } from "@milaboratories/pl-client";
+import Denque from "denque";
+import type { ExtendedResourceData, PlTreeState } from "./state";
+import { msToHumanReadable } from "@milaboratories/ts-helpers";
 
 /** Applied to list of fields in resource data. */
 export type PruningFunction = (resource: ExtendedResourceData) => FieldData[];
@@ -157,7 +155,7 @@ export async function loadTreeState(
 
         if (resource === undefined) return undefined;
 
-        if (kv === undefined) throw new Error('Inconsistent replies');
+        if (kv === undefined) throw new Error("Inconsistent replies");
 
         return { ...resource, kv };
       })(),

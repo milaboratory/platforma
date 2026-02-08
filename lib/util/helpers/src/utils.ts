@@ -1,21 +1,22 @@
-import type { AwaitedStruct, Option, Primitive, Result, Unionize } from './types';
+import type { AwaitedStruct, Option, Primitive, Result, Unionize } from "./types";
 
 export function isNil(v: unknown): v is null | undefined | void {
   return v === null || v === undefined;
 }
 
 export function isPrimitive(v: unknown): v is Primitive {
-  return isNil(v)
-    || typeof v === 'string'
-    || typeof v === 'number'
-    || typeof v === 'boolean'
-    || typeof v === 'bigint'
-  ;
+  return (
+    isNil(v) ||
+    typeof v === "string" ||
+    typeof v === "number" ||
+    typeof v === "boolean" ||
+    typeof v === "bigint"
+  );
 }
 
 export function notEmpty<T>(v: T | null | undefined, message?: string): T {
   if (v === null || v === undefined) {
-    throw Error(message ?? 'Empty (null | undefined) value');
+    throw Error(message ?? "Empty (null | undefined) value");
   }
 
   return v;
@@ -23,7 +24,7 @@ export function notEmpty<T>(v: T | null | undefined, message?: string): T {
 
 export function notUndef<T>(v: T | undefined, message?: string): T {
   if (v === undefined) {
-    throw Error(message ?? 'Undefined value');
+    throw Error(message ?? "Undefined value");
   }
 
   return v;
@@ -43,13 +44,13 @@ export function uniqueValues<T>(items: T[]): T[] {
 
 export function checkIfNotEmpty<T>(v: T | null | undefined, message?: string): asserts v is T {
   if (v === undefined || v === null) {
-    throw Error(message ?? 'Empty (null | undefined) value');
+    throw Error(message ?? "Empty (null | undefined) value");
   }
 }
 
 export function checkIfDefined<T>(v: T | undefined, message?: string): asserts v is T {
   if (v === undefined) {
-    throw Error(message ?? 'Undefined value');
+    throw Error(message ?? "Undefined value");
   }
 }
 
@@ -73,11 +74,13 @@ export function async<A extends unknown[]>(gf: (...args: A) => Generator) {
         return Promise.resolve(result.value);
       }
 
-      return Promise.resolve(result.value).then((res) => {
-        return handle(generator.next(res));
-      }).catch((err) => {
-        return handle(generator.throw(err));
-      });
+      return Promise.resolve(result.value)
+        .then((res) => {
+          return handle(generator.next(res));
+        })
+        .catch((err) => {
+          return handle(generator.throw(err));
+        });
     }
 
     try {
@@ -98,11 +101,9 @@ export class Deferred<T> {
     });
   }
 
-  public resolve: (v: T) => void = () => {
-  };
+  public resolve: (v: T) => void = () => {};
 
-  public reject: (err: Error) => void = () => {
-  };
+  public reject: (err: Error) => void = () => {};
 }
 
 export function delay(ms: number) {
@@ -167,10 +168,9 @@ export function times<R>(n: number, cb: (i: number) => R): R[] {
 }
 
 export class Interval {
-  constructor(private _delay: number) {
-  }
+  constructor(private _delay: number) {}
 
-  async* generate(): AsyncGenerator<number> {
+  async *generate(): AsyncGenerator<number> {
     let i = 0;
     while (true) {
       await delay(this._delay);
@@ -178,7 +178,7 @@ export class Interval {
     }
   }
 
-  async* [Symbol.asyncIterator]() {
+  async *[Symbol.asyncIterator]() {
     let i = 0;
     while (true) {
       await delay(this._delay);
@@ -235,8 +235,12 @@ export function flatValue<T>(v: T | T[]): T[] {
   return Array.isArray(v) ? v : [v];
 }
 
-export async function resolveAwaited<O extends Record<string, unknown>>(obj: O): Promise<AwaitedStruct<O>> {
-  return Object.fromEntries(await Promise.all(Object.entries(obj).map(async ([k, v]) => [k, await v]))) as Promise<AwaitedStruct<O>>;
+export async function resolveAwaited<O extends Record<string, unknown>>(
+  obj: O,
+): Promise<AwaitedStruct<O>> {
+  return Object.fromEntries(
+    await Promise.all(Object.entries(obj).map(async ([k, v]) => [k, await v])),
+  ) as Promise<AwaitedStruct<O>>;
 }
 
 export function alike(obj: Record<string, unknown>, to: Record<string, unknown>) {

@@ -1,20 +1,18 @@
-import * as fs from 'node:fs';
-import { LLPlClient } from '../core/ll_client';
-import type { AuthInformation, AuthOps, PlClientConfig } from '../core/config';
-import { plAddressToConfig } from '../core/config';
-import { UnauthenticatedPlClient } from '../core/unauth_client';
-import { PlClient } from '../core/client';
-import { randomUUID } from 'node:crypto';
-import type { OptionalResourceId } from '../core/types';
-import { NullResourceId, resourceIdToString } from '../core/types';
-import { inferAuthRefreshTime } from '../core/auth';
-import * as path from 'node:path';
-import type { TestTcpProxy } from './tcp-proxy';
-import { startTcpProxy } from './tcp-proxy';
+import * as fs from "node:fs";
+import { LLPlClient } from "../core/ll_client";
+import type { AuthInformation, AuthOps, PlClientConfig } from "../core/config";
+import { plAddressToConfig } from "../core/config";
+import { UnauthenticatedPlClient } from "../core/unauth_client";
+import { PlClient } from "../core/client";
+import { randomUUID } from "node:crypto";
+import type { OptionalResourceId } from "../core/types";
+import { NullResourceId, resourceIdToString } from "../core/types";
+import { inferAuthRefreshTime } from "../core/auth";
+import * as path from "node:path";
+import type { TestTcpProxy } from "./tcp-proxy";
+import { startTcpProxy } from "./tcp-proxy";
 
-export {
-  TestTcpProxy,
-};
+export { TestTcpProxy };
 
 export interface TestConfig {
   address: string;
@@ -23,20 +21,20 @@ export interface TestConfig {
   test_password?: string;
 }
 
-const CONFIG_FILE = 'test_config.json';
+const CONFIG_FILE = "test_config.json";
 // const AUTH_DATA_FILE = '.test_auth.json';
 
 let authDataFilePath: string | undefined;
 
 function getFullAuthDataFilePath() {
-  if (authDataFilePath === undefined) authDataFilePath = path.resolve('.test_auth.json');
+  if (authDataFilePath === undefined) authDataFilePath = path.resolve(".test_auth.json");
   return authDataFilePath;
 }
 
 export function getTestConfig(): TestConfig {
   let conf: Partial<TestConfig> = {};
   if (fs.existsSync(CONFIG_FILE))
-    conf = JSON.parse(fs.readFileSync(CONFIG_FILE, { encoding: 'utf-8' })) as TestConfig;
+    conf = JSON.parse(fs.readFileSync(CONFIG_FILE, { encoding: "utf-8" })) as TestConfig;
 
   if (process.env.PL_ADDRESS !== undefined) conf.address = process.env.PL_ADDRESS;
 
@@ -84,7 +82,7 @@ function saveAuthInfoCallback(tConf: TestConfig): (authInformation: AuthInformat
           expiration: inferAuthRefreshTime(authInformation, 24 * 60 * 60),
         } as AuthCache),
       ),
-      'utf8',
+      "utf8",
     );
     fs.renameSync(tmpDst, dst);
   };
@@ -104,16 +102,16 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
   if (fs.existsSync(getFullAuthDataFilePath())) {
     try {
       const cache: AuthCache = JSON.parse(
-        fs.readFileSync(getFullAuthDataFilePath(), { encoding: 'utf-8' }),
+        fs.readFileSync(getFullAuthDataFilePath(), { encoding: "utf-8" }),
       ) as AuthCache; // TODO runtime validation
       if (
-        cache.conf.address === tConf.address
-        && cache.conf.test_user === tConf.test_user
-        && cache.conf.test_password === tConf.test_password
-        && cache.expiration > Date.now()
+        cache.conf.address === tConf.address &&
+        cache.conf.test_user === tConf.test_user &&
+        cache.conf.test_password === tConf.test_password &&
+        cache.expiration > Date.now()
       )
         authInformation = cache.authInformation;
-    } catch (_e) {
+    } catch {
       // removing cache file on any error
       fs.rmSync(getFullAuthDataFilePath());
     }
@@ -165,23 +163,23 @@ export async function getTestClient(
 ) {
   const { conf, auth } = await getTestClientConf();
   if (alternativeRoot !== undefined && conf.alternativeRoot !== undefined)
-    throw new Error('test pl address configured with alternative root');
+    throw new Error("test pl address configured with alternative root");
   return await PlClient.init({ ...conf, ...confOverrides, alternativeRoot }, auth);
 }
 
-export type WithTempRootOptions = {
-  /** If true and PL_ADDRESS is http://localhost or http://127.0.0.1:<port>,
-   * a TCP proxy will be started and PL client will connect through it. */
-  viaTcpProxy: true;
-  /** Artificial latency for proxy (ms). Default 0 */
-  proxyLatencyMs?: number;
-} | {
-  viaTcpProxy?: undefined;
-};
+export type WithTempRootOptions =
+  | {
+      /** If true and PL_ADDRESS is http://localhost or http://127.0.0.1:<port>,
+       * a TCP proxy will be started and PL client will connect through it. */
+      viaTcpProxy: true;
+      /** Artificial latency for proxy (ms). Default 0 */
+      proxyLatencyMs?: number;
+    }
+  | {
+      viaTcpProxy?: undefined;
+    };
 
-export async function withTempRoot<T>(
-  body: (pl: PlClient) => Promise<T>
-): Promise<T | void>;
+export async function withTempRoot<T>(body: (pl: PlClient) => Promise<T>): Promise<T | void>;
 
 export async function withTempRoot<T>(
   body: (pl: PlClient, proxy: Awaited<ReturnType<typeof startTcpProxy>>) => Promise<T>,
@@ -205,18 +203,21 @@ export async function withTempRoot<T>(
     if (options.viaTcpProxy === true && process.env.PL_ADDRESS) {
       try {
         const url = new URL(process.env.PL_ADDRESS);
-        const isHttp = url.protocol === 'http:';
-        const isLocal = url.hostname === '127.0.0.1' || url.hostname === 'localhost';
+        const isHttp = url.protocol === "http:";
+        const isLocal = url.hostname === "127.0.0.1" || url.hostname === "localhost";
         const port = parseInt(url.port);
         if (isHttp && isLocal && Number.isFinite(port)) {
           proxy = await startTcpProxy({ targetPort: port, latency: options.proxyLatencyMs ?? 0 });
           // Override client connection host:port to proxy
           confOverrides = { hostAndPort: `127.0.0.1:${proxy.port}` } as Partial<PlClientConfig>;
         } else {
-          console.warn('*** skipping proxy-based test, PL_ADDRESS is not localhost', process.env.PL_ADDRESS);
+          console.warn(
+            "*** skipping proxy-based test, PL_ADDRESS is not localhost",
+            process.env.PL_ADDRESS,
+          );
           return;
         }
-      } catch (_e) {
+      } catch {
         // ignore proxy setup errors; tests will run against original address
       }
     }
@@ -250,10 +251,14 @@ export async function withTempRoot<T>(
     if (proxy) {
       try {
         await proxy.disconnectAll();
-      } catch (_e) { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       try {
         await new Promise<void>((resolve) => proxy!.server.close(() => resolve()));
-      } catch (_e) { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
   }
 }

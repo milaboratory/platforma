@@ -1,14 +1,14 @@
-import type { PObjectId } from '../../pool';
-import type { AxisId, AxisSpec, PColumnSpec } from './spec/spec';
+import type { PObjectId } from "../../pool";
+import type { AxisId, AxisSpec, PColumnSpec } from "./spec/spec";
 
 export type PTableColumnSpecAxis = {
-  type: 'axis';
+  type: "axis";
   id: AxisId;
   spec: AxisSpec;
 };
 
 export type PTableColumnSpecColumn = {
-  type: 'column';
+  type: "column";
   id: PObjectId;
   spec: PColumnSpec;
 };
@@ -17,12 +17,12 @@ export type PTableColumnSpecColumn = {
 export type PTableColumnSpec = PTableColumnSpecAxis | PTableColumnSpecColumn;
 
 export type PTableColumnIdAxis = {
-  type: 'axis';
+  type: "axis";
   id: AxisId;
 };
 
 export type PTableColumnIdColumn = {
-  type: 'column';
+  type: "column";
   id: PObjectId;
 };
 
@@ -31,14 +31,14 @@ export type PTableColumnId = PTableColumnIdAxis | PTableColumnIdColumn;
 
 export function getPTableColumnId(spec: PTableColumnSpec): PTableColumnId {
   switch (spec.type) {
-    case 'axis':
+    case "axis":
       return {
-        type: 'axis',
+        type: "axis",
         id: spec.id,
       };
-    case 'column':
+    case "column":
       return {
-        type: 'column',
+        type: "column",
         id: spec.id,
       };
   }

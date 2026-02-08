@@ -1,23 +1,19 @@
-import { notEmpty, type MiLogger } from '@milaboratories/ts-helpers';
-import upath from 'upath';
-import yaml from 'yaml';
-import type { Endpoints, PlConfigPorts } from '../common/ports';
-import { getLocalhostEndpoints } from '../common/ports';
-import type { PlConfig } from '../common/types';
-import type {
-  PlLicenseMode,
-} from '../common/license';
-import {
-  getLicense,
-} from '../common/license';
-import { createLocalHtpasswdFile } from '../common/auth';
-import type { StoragesSettings } from '../common/storages';
-import { createDefaultLocalStorages } from '../common/storages';
-import { createDefaultLocalPackageSettings } from '../common/packageloader';
-import { FSKVStorage } from './fs_kv_storage';
-import * as crypto from 'node:crypto';
-import { newDefaultPlConfig } from '../common/config';
-import * as os from 'node:os';
+import { notEmpty, type MiLogger } from "@milaboratories/ts-helpers";
+import upath from "upath";
+import yaml from "yaml";
+import type { Endpoints, PlConfigPorts } from "../common/ports";
+import { getLocalhostEndpoints } from "../common/ports";
+import type { PlConfig } from "../common/types";
+import type { PlLicenseMode } from "../common/license";
+import { getLicense } from "../common/license";
+import { createLocalHtpasswdFile } from "../common/auth";
+import type { StoragesSettings } from "../common/storages";
+import { createDefaultLocalStorages } from "../common/storages";
+import { createDefaultLocalPackageSettings } from "../common/packageloader";
+import { FSKVStorage } from "./fs_kv_storage";
+import * as crypto from "node:crypto";
+import { newDefaultPlConfig } from "../common/config";
+import * as os from "node:os";
 
 export type LocalPlConfigGeneratorOptions = {
   /** Logger for Middle-Layer */
@@ -47,7 +43,10 @@ export type LocalPlConfigGeneratorOptions = {
   plConfigPostprocessing?: (config: PlConfig) => PlConfig;
 };
 
-const DefaultLocalPlConfigGeneratorOptions: Pick<LocalPlConfigGeneratorOptions, 'useGlobalAccess' | 'numCpu'> = {
+const DefaultLocalPlConfigGeneratorOptions: Pick<
+  LocalPlConfigGeneratorOptions,
+  "useGlobalAccess" | "numCpu"
+> = {
   useGlobalAccess: false,
 
   // Backend could consume a lot of CPU power,
@@ -109,11 +108,11 @@ export async function generateLocalPlConfigs(
   const workdir = upath.resolve(opts.workingDir);
 
   // settings that must be persisted between independent generation invocations
-  const kv = await FSKVStorage.init(upath.join(workdir, 'gen'));
+  const kv = await FSKVStorage.init(upath.join(workdir, "gen"));
 
-  const user = 'default-user';
-  const password = await kv.getOrCreate('password', () => crypto.randomBytes(16).toString('hex'));
-  const jwt = await kv.getOrCreate('jwt', () => crypto.randomBytes(32).toString('hex'));
+  const user = "default-user";
+  const password = await kv.getOrCreate("password", () => crypto.randomBytes(16).toString("hex"));
+  const jwt = await kv.getOrCreate("jwt", () => crypto.randomBytes(32).toString("hex"));
 
   const ports = await getLocalhostEndpoints(opts.portsMode);
 
@@ -122,14 +121,7 @@ export async function generateLocalPlConfigs(
   return {
     workingDir: opts.workingDir,
 
-    plConfigContent: await createDefaultPlLocalConfig(
-      opts,
-      ports,
-      user,
-      password,
-      jwt,
-      storages,
-    ),
+    plConfigContent: await createDefaultPlLocalConfig(opts, ports, user, password, jwt, storages),
 
     plAddress: ports.grpc,
     plUser: user,
@@ -155,9 +147,19 @@ async function createDefaultPlLocalConfig(
   const license = await getLicense(opts.licenseMode);
   const htpasswdAuth = await createLocalHtpasswdFile(opts.workingDir, [{ user, password }]);
 
-  const packageLoaderConfig = await createDefaultLocalPackageSettings(opts.workingDir, notEmpty(opts.useGlobalAccess));
+  const packageLoaderConfig = await createDefaultLocalPackageSettings(
+    opts.workingDir,
+    notEmpty(opts.useGlobalAccess),
+  );
 
-  let config = newDefaultPlConfig(ports, license, htpasswdAuth, jwtKey, packageLoaderConfig, storages);
+  let config = newDefaultPlConfig(
+    ports,
+    license,
+    htpasswdAuth,
+    jwtKey,
+    packageLoaderConfig,
+    storages,
+  );
 
   // In local deployment we need to define a number of
   // cpus that are less then the maximum one.

@@ -1,26 +1,36 @@
 <script setup lang="ts">
-import { PlAlert, PlBlockPage, PlTextField, PlBtnPrimary, useWatchFetch } from '@platforma-sdk/ui-vue';
-import { useApp } from './app';
-import { computed } from 'vue';
-import { delay } from '@milaboratories/helpers';
+import {
+  PlAlert,
+  PlBlockPage,
+  PlTextField,
+  PlBtnPrimary,
+  useWatchFetch,
+} from "@platforma-sdk/ui-vue";
+import { useApp } from "./app";
+import { computed } from "vue";
+import { delay } from "@milaboratories/helpers";
 
 const app = useApp();
 
 const numbers = computed({
   get() {
     try {
-      return app.model.data.numbers.join(',');
+      return app.model.data.numbers.join(",");
     } catch (error) {
-      return 'error: ' + error;
+      return "error: " + error;
     }
   },
   set(v) {
-    const numbers = v.split(',').map(Number);
+    const numbers = v.split(",").map(Number);
 
-    app.model.data.numbers = v.split(',').map((v) => v.trim()).filter((v) => v !== '').map(Number);
+    app.model.data.numbers = v
+      .split(",")
+      .map((v) => v.trim())
+      .filter((v) => v !== "")
+      .map(Number);
 
     if (numbers.some((n) => isNaN(n))) {
-      app.setError('Invalid value: contains NaNs +++');
+      app.setError("Invalid value: contains NaNs +++");
     }
   },
 });
@@ -32,9 +42,12 @@ const fetchTestResult = async (n: number) => {
 
 const sumNumbers = (numbers: number[] | undefined) => (numbers ?? []).reduce((x, y) => x + y, 0);
 
-const resultRef = useWatchFetch(() => app.model.outputs.numbers, (numbers) => {
-  return fetchTestResult(sumNumbers(numbers));
-});
+const resultRef = useWatchFetch(
+  () => app.model.outputs.numbers,
+  (numbers) => {
+    return fetchTestResult(sumNumbers(numbers));
+  },
+);
 
 const helperText = computed(() => {
   return `Even numbers count: ${app.model.outputs.numbersCount}`;
@@ -61,7 +74,9 @@ const helperText = computed(() => {
     </fieldset>
     <h4>Result ref</h4>
     <code>{{ resultRef }}</code>
-    <PlAlert label="app.model.outputs" type="info" white-space-pre monospace>{{ JSON.stringify(app.model.outputs, null, 2) }}</PlAlert>
+    <PlAlert label="app.model.outputs" type="info" white-space-pre monospace>{{
+      JSON.stringify(app.model.outputs, null, 2)
+    }}</PlAlert>
     <PlAlert v-if="app.hasErrors" type="error">
       {{ app.model.outputErrors }}
     </PlAlert>

@@ -1,23 +1,18 @@
-import type { ComputableCtx, Watcher } from '@milaboratories/computable';
-import { Computable } from '@milaboratories/computable';
-import type {
-  MiLogger,
-  Signer,
-} from '@milaboratories/ts-helpers';
-import {
-  TaskProcessor,
-} from '@milaboratories/ts-helpers';
-import { createHash, randomUUID } from 'node:crypto';
-import * as path from 'node:path';
-import type { Dispatcher } from 'undici';
-import { RemoteFileDownloader } from '../../helpers/download';
-import { isDownloadNetworkError400 } from '../../helpers/download_errors';
-import { FilesCache } from '../helpers/files_cache';
-import { stringifyWithResourceId } from '@milaboratories/pl-client';
-import type { BlockUIURL, FrontendDriver } from '@milaboratories/pl-model-common';
-import { isBlockUIURL } from '@milaboratories/pl-model-common';
-import { getPathForBlockUIURL } from '../urls/url';
-import { DownloadByUrlTask, rmRFDir, URLAborted } from './task';
+import type { ComputableCtx, Watcher } from "@milaboratories/computable";
+import { Computable } from "@milaboratories/computable";
+import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
+import { TaskProcessor } from "@milaboratories/ts-helpers";
+import { createHash, randomUUID } from "node:crypto";
+import * as path from "node:path";
+import type { Dispatcher } from "undici";
+import { RemoteFileDownloader } from "../../helpers/download";
+import { isDownloadNetworkError400 } from "../../helpers/download_errors";
+import { FilesCache } from "../helpers/files_cache";
+import { stringifyWithResourceId } from "@milaboratories/pl-client";
+import type { BlockUIURL, FrontendDriver } from "@milaboratories/pl-model-common";
+import { isBlockUIURL } from "@milaboratories/pl-model-common";
+import { getPathForBlockUIURL } from "../urls/url";
+import { DownloadByUrlTask, rmRFDir, URLAborted } from "./task";
 
 export interface DownloadUrlSyncReader {
   /** Returns a Computable that (when the time will come)
@@ -85,10 +80,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
   getUrl(url: URL): Computable<UrlResult | undefined>;
 
   /** Returns a computable that returns a custom protocol URL to the downloaded and unarchived path. */
-  getUrl(
-    url: URL,
-    ctx?: ComputableCtx,
-  ): Computable<UrlResult | undefined> | UrlResult | undefined {
+  getUrl(url: URL, ctx?: ComputableCtx): Computable<UrlResult | undefined> | UrlResult | undefined {
     // wrap result as computable, if we were not given an existing computable context
     if (ctx === undefined) return Computable.make((c) => this.getUrl(url, c));
 
@@ -156,8 +148,8 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
 
           this.removeTask(
             task,
-            `the task ${stringifyWithResourceId(task.info())} was removed`
-            + `from cache along with ${stringifyWithResourceId(toDelete.map((t) => t.info()))}`,
+            `the task ${stringifyWithResourceId(task.info())} was removed` +
+              `from cache along with ${stringifyWithResourceId(toDelete.map((t) => t.info()))}`,
           );
         }),
       );
@@ -177,7 +169,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
     this.downloadQueue.stop();
 
     await Promise.all(
-      Array.from(this.urlToDownload.entries()).map(async ([id, task]) => {
+      Array.from(this.urlToDownload.entries()).map(async ([, task]) => {
         await rmRFDir(task.path);
         this.cache.removeCache(task);
 
@@ -210,7 +202,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
   }
 
   private getFilePath(url: URL): string {
-    const sha256 = createHash('sha256').update(url.toString()).digest('hex');
+    const sha256 = createHash("sha256").update(url.toString()).digest("hex");
     return path.join(this.saveDir, sha256);
   }
 }

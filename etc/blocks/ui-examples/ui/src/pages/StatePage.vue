@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { PlBlockPage, PlTextField, PlBtnPrimary, PlRow, PlIcon16 } from '@platforma-sdk/ui-vue';
-import { useApp } from '../app';
-import { onMounted, watch, ref } from 'vue';
-import { isJsonEqual, uniqueId } from '@milaboratories/helpers';
+import { PlBlockPage, PlTextField, PlBtnPrimary, PlRow, PlIcon16 } from "@platforma-sdk/ui-vue";
+import { useApp } from "../app";
+import { onMounted, watch, ref } from "vue";
+import { isJsonEqual, uniqueId } from "@milaboratories/helpers";
 
 const app = useApp();
 
@@ -13,7 +13,7 @@ onMounted(() => {
 });
 
 const addDataset = () => {
-  app.model.ui.datasets.push({ id: uniqueId(), label: 'New' });
+  app.model.ui.datasets.push({ id: uniqueId(), label: "New" });
 };
 
 const removeDataset = (id: string) => {

@@ -1,1 +1,1 @@
-export { default as PlAgCellStatusTag } from './PlAgCellStatusTag.vue';
+export { default as PlAgCellStatusTag } from "./PlAgCellStatusTag.vue";

@@ -7,15 +7,15 @@ type ParseResult = {
 const NUMBER_REGEX = /^[-−–+]?(\d+)?[.,]?(\d+)?$/; // parseFloat works without errors on strings with multiple dots, or letters in value
 
 function isPartial(v: string) {
-  return v === '.' || v === ',' || v === '-';
+  return v === "." || v === "," || v === "-";
 }
 
 function clearNumericValue(v: string) {
   v = v.trim();
-  v = v.replace(',', '.');
-  v = v.replace('−', '-'); // minus, replacing for the case of input the whole copied value
-  v = v.replace('–', '-'); // dash, replacing for the case of input the whole copied value
-  v = v.replace('+', '');
+  v = v.replace(",", ".");
+  v = v.replace("−", "-"); // minus, replacing for the case of input the whole copied value
+  v = v.replace("–", "-"); // dash, replacing for the case of input the whole copied value
+  v = v.replace("+", "");
   return v;
 }
 
@@ -31,12 +31,12 @@ function clearInput(v: string): string {
   }
 
   if (/^-[^0-9.]/.test(v)) {
-    return '-';
+    return "-";
   }
 
   const match = v.match(/^(.*)[.,][^0-9].*$/);
   if (match) {
-    return match[1] + '.';
+    return match[1] + ".";
   }
 
   if (v.match(NUMBER_REGEX)) {
@@ -45,19 +45,22 @@ function clearInput(v: string): string {
 
   const n = stringToNumber(v);
 
-  return isNaN(n) ? '' : String(+n);
+  return isNaN(n) ? "" : String(+n);
 }
 
-export function parseNumber(props: {
-  minValue?: number;
-  maxValue?: number;
-  validate?: (v: number) => string | undefined;
-}, str: string): ParseResult {
+export function parseNumber(
+  props: {
+    minValue?: number;
+    maxValue?: number;
+    validate?: (v: number) => string | undefined;
+  },
+  str: string,
+): ParseResult {
   str = str.trim();
 
   const cleanInput = clearInput(str);
 
-  if (str === '') {
+  if (str === "") {
     return {
       value: undefined,
       cleanInput,
@@ -66,14 +69,14 @@ export function parseNumber(props: {
 
   if (!str.match(NUMBER_REGEX)) {
     return {
-      error: Error('Value is not a number'),
+      error: Error("Value is not a number"),
       cleanInput,
     };
   }
 
   if (isPartial(str)) {
     return {
-      error: Error('Enter a number'),
+      error: Error("Enter a number"),
       cleanInput,
     };
   }
@@ -82,7 +85,7 @@ export function parseNumber(props: {
 
   if (isNaN(value)) {
     return {
-      error: Error('Value is not a number'),
+      error: Error("Value is not a number"),
       cleanInput,
     };
   }

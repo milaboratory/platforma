@@ -1,6 +1,6 @@
-import type { Optional } from 'utility-types';
-import type { Branded } from '../branding';
-import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
+import type { Optional } from "utility-types";
+import type { Branded } from "../branding";
+import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
 import type {
   ArchiveFormat,
   AnyFunction,
@@ -18,16 +18,15 @@ import type {
   ValueOrError,
   DataInfo,
   RangeBytes,
-} from '@milaboratories/pl-model-common';
+} from "@milaboratories/pl-model-common";
 
-export const StagingAccessorName = 'staging';
-export const MainAccessorName = 'main';
+export const StagingAccessorName = "staging";
+export const MainAccessorName = "main";
 
-export type AccessorHandle = Branded<string, 'AccessorHandle'>;
-export type FutureHandle = Branded<string, 'FutureHandle'>;
+export type AccessorHandle = Branded<string, "AccessorHandle">;
+export type FutureHandle = Branded<string, "FutureHandle">;
 
 export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = FutureHandle> {
-
   //
   // Root accessor creation
   //
@@ -128,7 +127,7 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   getDataFromResultPool(): ResultCollection<PObject<AHandle>>;
 
   getDataWithErrorsFromResultPool(): ResultCollection<
-    Optional<PObject<ValueOrError<AHandle, Error>>, 'id'>
+    Optional<PObject<ValueOrError<AHandle, Error>>, "id">
   >;
 
   getSpecsFromResultPool(): ResultCollection<PObjectSpec>;
@@ -200,7 +199,7 @@ export type FutureAwait = {
 };
 
 export function isFutureAwait(obj: unknown): obj is FutureAwait {
-  return typeof obj === 'object' && obj !== null && '__awaited_futures__' in obj;
+  return typeof obj === "object" && obj !== null && "__awaited_futures__" in obj;
 }
 
 function addAllFutureAwaits(set: Set<string>, visited: Set<unknown>, node: unknown) {
@@ -208,7 +207,7 @@ function addAllFutureAwaits(set: Set<string>, visited: Set<unknown>, node: unkno
   visited.add(node);
 
   const type = typeof node;
-  if (type === 'object') {
+  if (type === "object") {
     if (isFutureAwait(node)) node.__awaited_futures__.forEach((a) => set.add(a));
     else if (Array.isArray(node))
       for (const nested of node) addAllFutureAwaits(set, visited, nested);

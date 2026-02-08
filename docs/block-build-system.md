@@ -36,29 +36,11 @@ Clean, memorable paths that match block structure:
 
 Explicit targets that match block concepts:
 
-| Target | Purpose | Type Checker |
-|--------|---------|--------------|
-| `block-model` | Block model (ES + UMD bundle) | `tsc` |
-| `block-ui` | Block UI (Vue + browser) | `vue-tsc` |
-| `block-test` | Type-check only (no build) | `tsc` |
-
-### ESLint Presets
-
-Three presets matching block structure:
-
-```javascript
-// model/eslint.config.mjs
-import { model } from '@platforma-sdk/eslint-config';
-export default [...model];
-
-// ui/eslint.config.mjs
-import { ui } from '@platforma-sdk/eslint-config';
-export default [...ui];
-
-// test/eslint.config.mjs (also workflow when it has TypeScript)
-import { test } from '@platforma-sdk/eslint-config';
-export default [...test];
-```
+| Target        | Purpose                       | Type Checker |
+| ------------- | ----------------------------- | ------------ |
+| `block-model` | Block model (ES + UMD bundle) | `tsc`        |
+| `block-ui`    | Block UI (Vue + browser)      | `vue-tsc`    |
+| `block-test`  | Type-check only (no build)    | `tsc`        |
 
 ## Block Structure Reference
 
@@ -68,22 +50,22 @@ A standard block has four parts:
 my-block/
 ├── model/          # TypeScript model
 │   ├── tsconfig.json      → extends block/model
-│   ├── eslint.config.mjs  → uses model
+│   ├── .oxlintrc.json    → uses model
 │   └── package.json       → --target block-model
 │
 ├── ui/             # Vue-based UI
 │   ├── tsconfig.json      → extends block/ui
-│   ├── eslint.config.mjs  → uses ui
+│   ├── .oxlintrc.json    → uses ui
 │   └── package.json       → --target block-ui
 │
 ├── workflow/       # Tengo templates (+ optional TS tests)
 │   ├── tsconfig.json      → extends block/test (for TS tests)
-│   ├── eslint.config.mjs  → uses test
+│   ├── .oxlintrc.json    → uses workflow
 │   └── package.json       → pl-tengo build, --target block-test for type-check
 │
 └── test/           # Block integration tests
     ├── tsconfig.json      → extends block/test
-    ├── eslint.config.mjs  → uses test
+│   ├── .oxlintrc.json    → uses test
     └── package.json       → --target block-test (type-check only)
 ```
 
@@ -95,8 +77,8 @@ my-block/
 {
   "build": "ts-builder build --target block-model && block-tools build-model",
   "watch": "ts-builder build --target block-model --watch",
-  "type-check": "ts-builder types --target block-model",
-  "lint": "eslint .",
+  "check": "ts-builder check --target block-model",
+  "fmt": "ts-builder fmt",
   "test": "vitest"
 }
 ```
@@ -108,8 +90,8 @@ my-block/
   "dev": "ts-builder serve --target block-ui",
   "build": "ts-builder build --target block-ui",
   "watch": "ts-builder build --target block-ui --watch",
-  "type-check": "ts-builder types --target block-ui",
-  "lint": "eslint ."
+  "check": "ts-builder check --target block-ui",
+  "fmt": "ts-builder fmt"
 }
 ```
 
@@ -118,8 +100,8 @@ my-block/
 ```json
 {
   "test": "vitest",
-  "type-check": "ts-builder types --target block-test",
-  "lint": "eslint ."
+  "check": "ts-builder check --target block-test",
+  "fmt": "ts-builder fmt"
 }
 ```
 
@@ -131,8 +113,8 @@ Note: `block-test` target does **not** support `build` command—it's type-check
 {
   "build": "rm -rf dist && pl-tengo check && pl-tengo build",
   "test": "vitest",
-  "type-check": "ts-builder types --target block-test",
-  "lint": "eslint ."
+  "check": "ts-builder check --target block-test",
+  "fmt": "ts-builder fmt"
 }
 ```
 

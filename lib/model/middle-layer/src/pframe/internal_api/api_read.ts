@@ -1,5 +1,8 @@
-import type { FindColumnsRequest, FindColumnsResponse } from './find_columns';
-import type { DeleteColumnFromColumnsRequest, DeleteColumnFromColumnsResponse } from './delete_column';
+import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
+import type {
+  DeleteColumnFromColumnsRequest,
+  DeleteColumnFromColumnsResponse,
+} from "./delete_column";
 import type {
   PColumnInfo,
   PColumnSpec,
@@ -9,10 +12,10 @@ import type {
   QueryData,
   AxisId,
   PColumnIdAndSpec,
-} from '@milaboratories/pl-model-common';
-import type { CreateTableRequestV4 } from './create_table';
-import type { PTableV8 } from './table';
-import type { PTableId } from './common';
+} from "@milaboratories/pl-model-common";
+import type { CreateTableRequestV4 } from "./create_table";
+import type { PTableV8 } from "./table";
+import type { PTableId } from "./common";
 
 /** Read interface exposed by PFrames library */
 export interface PFrameReadAPIV11 {
@@ -42,19 +45,22 @@ export interface PFrameReadAPIV11 {
   createTable(tableId: PTableId, request: CreateTableRequestV4): PTableV8;
 
   /** Creates table from data query and returns an object to access it */
-  createTableByDataQuery(tableId: PTableId, request: {
-    tableSpec: {
-      axes: AxisId[];
-      columns: PColumnIdAndSpec[];
-    };
-    dataQuery: QueryData;
-  }): PTableV8;
+  createTableByDataQuery(
+    tableId: PTableId,
+    request: {
+      tableSpec: {
+        axes: AxisId[];
+        columns: PColumnIdAndSpec[];
+      };
+      dataQuery: QueryData;
+    },
+  ): PTableV8;
 
   /** Calculate set of unique values for a specific axis for the filtered set of records */
   getUniqueValues(
     request: UniqueValuesRequest,
     ops?: {
       signal?: AbortSignal;
-    }
+    },
   ): Promise<UniqueValuesResponse>;
 }

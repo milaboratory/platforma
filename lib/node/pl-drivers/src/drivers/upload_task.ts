@@ -1,16 +1,20 @@
-import type { Watcher } from '@milaboratories/computable';
-import { ChangeSource } from '@milaboratories/computable';
-import { isTimeoutError, resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
-import type * as sdk from '@milaboratories/pl-model-common';
-import type { AsyncPoolController, MiLogger, Signer } from '@milaboratories/ts-helpers';
-import { asyncPool, CallersCounter } from '@milaboratories/ts-helpers';
-import type { ClientProgress, ProgressStatus } from '../clients/progress';
-import type { ClientUpload } from '../clients/upload';
-import { BadRequestError, MTimeError, NoFileForUploading, UnexpectedEOF } from '../clients/upload';
-import type { ImportResourceSnapshot } from './types';
-import { ImportFileHandleUploadData } from './types';
-import assert from 'node:assert';
-import { ResourceInfo } from '@milaboratories/pl-tree';
+import type { Watcher } from "@milaboratories/computable";
+import { ChangeSource } from "@milaboratories/computable";
+import {
+  isTimeoutError,
+  resourceIdToString,
+  stringifyWithResourceId,
+} from "@milaboratories/pl-client";
+import type * as sdk from "@milaboratories/pl-model-common";
+import type { AsyncPoolController, MiLogger, Signer } from "@milaboratories/ts-helpers";
+import { asyncPool, CallersCounter } from "@milaboratories/ts-helpers";
+import type { ClientProgress, ProgressStatus } from "../clients/progress";
+import type { ClientUpload } from "../clients/upload";
+import { BadRequestError, MTimeError, NoFileForUploading, UnexpectedEOF } from "../clients/upload";
+import type { ImportResourceSnapshot } from "./types";
+import { ImportFileHandleUploadData } from "./types";
+import assert from "node:assert";
+import { ResourceInfo } from "@milaboratories/pl-tree";
 
 /** Holds all info needed to upload a file and a status of uploading
  * and indexing. Also, has a method to update a status of the progress.
@@ -80,10 +84,11 @@ export class UploadTask {
       );
       this.change.markChanged(`blob upload for ${resourceIdToString(this.res.id)} finished`);
     } catch (e: any) {
-
       if (isTerminalUploadError(e)) {
         this.logger.warn(`terminal error while uploading a blob: ${e}`);
-        this.change.markChanged(`blob upload for ${resourceIdToString(this.res.id)} aborted: ${e.code}`);
+        this.change.markChanged(
+          `blob upload for ${resourceIdToString(this.res.id)} aborted: ${e.code}`,
+        );
         this.setDone(true);
 
         return;
@@ -133,7 +138,9 @@ export class UploadTask {
         this.logger.warn(
           `terminal error while updating BlobImport status: ${e}, ${stringifyWithResourceId(this.res)}`,
         );
-        this.change.markChanged(`upload status for ${resourceIdToString(this.res.id)} aborted: ${e.code}`);
+        this.change.markChanged(
+          `upload status for ${resourceIdToString(this.res.id)} aborted: ${e.code}`,
+        );
         this.setDone(true);
         return;
       }
@@ -193,21 +200,21 @@ export async function uploadBlob(
   uploadData: ImportFileHandleUploadData,
   isDoneFn: () => boolean,
   speed: {
-    nPartsWithThisUploadSpeed: number,
-    nPartsToIncreaseUpload: number,
-    currentSpeed: number,
-    maxSpeed: number,
+    nPartsWithThisUploadSpeed: number;
+    nPartsToIncreaseUpload: number;
+    currentSpeed: number;
+    maxSpeed: number;
   },
 ) {
-  assert(isUpload(res), 'the upload operation can be done only for BlobUploads');
+  assert(isUpload(res), "the upload operation can be done only for BlobUploads");
   const timeout = 10000; // 10 sec instead of standard 5 sec, things might be slow with a slow connection.
 
   if (isDoneFn()) return;
   const parts = await clientBlob.initUpload(res, { timeout });
   logger.info(
-    `started to upload blob ${res.id},`
-    + ` parts overall: ${parts.overall}, parts remained: ${parts.toUpload.length},`
-    + ` number of concurrent uploads: ${speed.currentSpeed}`,
+    `started to upload blob ${res.id},` +
+      ` parts overall: ${parts.overall}, parts remained: ${parts.toUpload.length},` +
+      ` number of concurrent uploads: ${speed.currentSpeed}`,
   );
 
   const partUploadFn = (part: bigint) => async (controller: AsyncPoolController) => {
@@ -219,7 +226,7 @@ export async function uploadBlob(
       part,
       parts.checksumAlgorithm,
       parts.checksumHeader,
-      { timeout }
+      { timeout },
     );
     logger.info(`uploaded chunk ${part}/${parts.overall} of resource: ${res.id}`);
 
@@ -289,20 +296,20 @@ function cloneProgress(progress: sdk.ImportProgress): sdk.ImportProgress {
 }
 
 function isImportResourceOutputSet(res: ImportResourceSnapshot) {
-  return 'blob' in res.fields
+  return "blob" in res.fields
     ? res.fields.blob !== undefined
     : res.fields.incarnation !== undefined;
 }
 
 export function isUpload(res: ResourceInfo) {
-  return res.type.name.startsWith('BlobUpload');
+  return res.type.name.startsWith("BlobUpload");
 }
 
 export function isSignMatch(signer: Signer, path: string, signature: string): boolean {
   try {
     signer.verify(path, signature);
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -316,10 +323,10 @@ function protoToStatus(proto: ProgressStatus): sdk.ImportStatus {
 }
 
 /** Special hack: if we didn't even start to upload the blob
-  * to backend because the result was already there,
-  * the backend does show us a status that nothing were uploaded,
-  * but we need to show the client that everything is OK.
-  * Thus, here we set progress to be 1.0 and all bytes are become processed. */
+ * to backend because the result was already there,
+ * the backend does show us a status that nothing were uploaded,
+ * but we need to show the client that everything is OK.
+ * Thus, here we set progress to be 1.0 and all bytes are become processed. */
 function doneProgressIfExisted(alreadyExisted: boolean, status: sdk.ImportStatus) {
   if (alreadyExisted && status.bytesTotal != 0 && status.bytesProcessed == 0) {
     return {
@@ -333,11 +340,11 @@ function doneProgressIfExisted(alreadyExisted: boolean, status: sdk.ImportStatus
 }
 
 export function isTerminalUploadError(e: any) {
-  if (e?.name !== 'RpcError') return false;
+  if (e?.name !== "RpcError") return false;
   switch (e.code) {
-    case 'NOT_FOUND':
-    case 'ABORTED':
-    case 'ALREADY_EXISTS':
+    case "NOT_FOUND":
+    case "ABORTED":
+    case "ALREADY_EXISTS":
       return true;
     default:
       return false;
@@ -345,10 +352,12 @@ export function isTerminalUploadError(e: any) {
 }
 
 export function nonRecoverableError(e: any) {
-  return e instanceof MTimeError ||
+  return (
+    e instanceof MTimeError ||
     e instanceof UnexpectedEOF ||
     e instanceof NoFileForUploading ||
-    e instanceof BadRequestError;
+    e instanceof BadRequestError
+  );
 }
 
 function isHeadersTimeoutError(e: any) {
@@ -359,7 +368,7 @@ function isHeadersTimeoutError(e: any) {
 function increaseConcurrency(logger: MiLogger, current: number, max: number): number {
   const newConcurrency = Math.min(current + 2, max);
   if (newConcurrency != current)
-    logger.info(`uploadTask.increaseConcurrency: increased from ${current} to ${newConcurrency}`)
+    logger.info(`uploadTask.increaseConcurrency: increased from ${current} to ${newConcurrency}`);
 
   return newConcurrency;
 }
@@ -369,7 +378,7 @@ function increaseConcurrency(logger: MiLogger, current: number, max: number): nu
 function decreaseConcurrency(logger: MiLogger, current: number, min: number): number {
   const newConcurrency = Math.max(Math.round(current / 2), min);
   if (newConcurrency != current)
-    logger.info(`uploadTask.decreaseConcurrency: decreased from ${current} to ${newConcurrency}`)
+    logger.info(`uploadTask.decreaseConcurrency: decreased from ${current} to ${newConcurrency}`);
 
   return newConcurrency;
 }

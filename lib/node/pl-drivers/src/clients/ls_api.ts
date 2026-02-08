@@ -1,13 +1,16 @@
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import type { WireClientProvider, WireClientProviderFactory } from '@milaboratories/pl-client';
-import { RestAPI } from '@milaboratories/pl-client';
-import { addRTypeToMetadata, createRTypeRoutingHeader } from '@milaboratories/pl-client';
-import type { LsAPI_List_Response, LsAPI_ListItem } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/lsapi/protocol';
-import { LSClient } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/lsapi/protocol.client';
-import type { LsApiPaths, LsRestClientType } from '../proto-rest';
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
+import type { WireClientProvider, WireClientProviderFactory } from "@milaboratories/pl-client";
+import { RestAPI } from "@milaboratories/pl-client";
+import { addRTypeToMetadata, createRTypeRoutingHeader } from "@milaboratories/pl-client";
+import type {
+  LsAPI_List_Response,
+  LsAPI_ListItem,
+} from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/lsapi/protocol";
+import { LSClient } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/lsapi/protocol.client";
+import type { LsApiPaths, LsRestClientType } from "../proto-rest";
 
-import type { ResourceInfo } from '@milaboratories/pl-tree';
+import type { ResourceInfo } from "@milaboratories/pl-tree";
 
 export class ClientLs {
   private readonly wire: WireClientProvider<LsRestClientType | LSClient>;
@@ -16,20 +19,18 @@ export class ClientLs {
     wireClientProviderFactory: WireClientProviderFactory,
     private readonly logger: MiLogger,
   ) {
-    this.wire = wireClientProviderFactory.createWireClientProvider(
-      (wire) => {
-        if (wire.type === 'grpc') {
-          return new LSClient(wire.Transport);
-        }
+    this.wire = wireClientProviderFactory.createWireClientProvider((wire) => {
+      if (wire.type === "grpc") {
+        return new LSClient(wire.Transport);
+      }
 
-        return RestAPI.createClient<LsApiPaths>({
-          hostAndPort: wire.Config.hostAndPort,
-          ssl: wire.Config.ssl,
-          dispatcher: wire.Dispatcher,
-          middlewares: wire.Middlewares,
-        });
-      },
-    );
+      return RestAPI.createClient<LsApiPaths>({
+        hostAndPort: wire.Config.hostAndPort,
+        ssl: wire.Config.ssl,
+        dispatcher: wire.Dispatcher,
+        middlewares: wire.Middlewares,
+      });
+    });
   }
 
   close() {}
@@ -50,13 +51,15 @@ export class ClientLs {
         addRTypeToMetadata(rInfo.type, options),
       ).response;
     } else {
-      const resp = (await client.POST('/v1/list', {
-        body: {
-          resourceId: rInfo.id.toString(),
-          location: path,
-        },
-        headers: { ...createRTypeRoutingHeader(rInfo.type) },
-      })).data!;
+      const resp = (
+        await client.POST("/v1/list", {
+          body: {
+            resourceId: rInfo.id.toString(),
+            location: path,
+          },
+          headers: { ...createRTypeRoutingHeader(rInfo.type) },
+        })
+      ).data!;
 
       const items: LsAPI_ListItem[] = resp.items.map((item) => ({
         name: item.name,
@@ -87,7 +90,7 @@ function parseTimestamp(timestamp: string): { seconds: bigint; nanos: number } {
   if (fractionalMatch) {
     const fractionalPart = fractionalMatch[1];
     // Pad or truncate to 9 digits (nanoseconds)
-    const padded = fractionalPart.padEnd(9, '0').slice(0, 9);
+    const padded = fractionalPart.padEnd(9, "0").slice(0, 9);
     nanos = parseInt(padded, 10);
   }
 

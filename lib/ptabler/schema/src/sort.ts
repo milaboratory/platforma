@@ -1,4 +1,4 @@
-import type { Expression } from './expressions';
+import type { Expression } from "./expressions";
 
 /**
  * Defines a single sort instruction, specifying the column, sort order,
@@ -31,7 +31,7 @@ export interface SortDirective {
  */
 export interface SortStep {
   /** The type identifier for this step. Must be 'sort'. */
-  type: 'sort';
+  type: "sort";
 
   /** The name of the input table from the tablespace to be sorted. */
   inputTable: string;

@@ -1,5 +1,5 @@
-import type { ResourceType } from '@milaboratories/pl-client';
-import { z } from 'zod';
+import type { ResourceType } from "@milaboratories/pl-client";
+import { z } from "zod";
 
 export type DumpedNode = {
   type: ResourceType;
@@ -87,31 +87,35 @@ export const BlockDumpSchemaUnified = z.object({
 /** Zod schema for array of BlockDump (schema v3 - future) */
 export const BlockDumpArraySchemaUnified = z.array(BlockDumpSchemaUnified);
 
-export type BlockDumpUnified = {
-  blockId: string;
-  currentArgs: DumpedNode;
-  blockSettings: DumpedNode;
-  blockStorage?: DumpedNode;
-  state?: DumpedNode;
-  prodArgs?: DumpedNode;
-  prodUiCtx?: DumpedNode;
-  prodOutput?: DumpedNode;
-  prodCtx?: DumpedNode;
-  prodCtxPrevious?: DumpedNode;
-  prodUiCtxPrevious?: DumpedNode;
-  prodOutputPrevious?: DumpedNode;
-  // Staging fields
-  stagingCtx?: DumpedNode;
-  stagingUiCtx?: DumpedNode;
-  stagingOutput?: DumpedNode;
-  stagingCtxPrevious?: DumpedNode;
-  stagingUiCtxPrevious?: DumpedNode;
-  stagingOutputPrevious?: DumpedNode;
-} | undefined;
+export type BlockDumpUnified =
+  | {
+      blockId: string;
+      currentArgs: DumpedNode;
+      blockSettings: DumpedNode;
+      blockStorage?: DumpedNode;
+      state?: DumpedNode;
+      prodArgs?: DumpedNode;
+      prodUiCtx?: DumpedNode;
+      prodOutput?: DumpedNode;
+      prodCtx?: DumpedNode;
+      prodCtxPrevious?: DumpedNode;
+      prodUiCtxPrevious?: DumpedNode;
+      prodOutputPrevious?: DumpedNode;
+      // Staging fields
+      stagingCtx?: DumpedNode;
+      stagingUiCtx?: DumpedNode;
+      stagingOutput?: DumpedNode;
+      stagingCtxPrevious?: DumpedNode;
+      stagingUiCtxPrevious?: DumpedNode;
+      stagingOutputPrevious?: DumpedNode;
+    }
+  | undefined;
 
-export type ProjectDump = {
-  project: { field: string; value: string | undefined }[];
-  blocks: BlockDumpUnified[] | undefined;
-} | undefined;
+export type ProjectDump =
+  | {
+      project: { field: string; value: string | undefined }[];
+      blocks: BlockDumpUnified[] | undefined;
+    }
+  | undefined;
 
 export type BlockDumpValidatorUnified = z.ZodType<BlockDumpUnified[]>;

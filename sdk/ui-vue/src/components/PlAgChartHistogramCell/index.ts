@@ -1,1 +1,1 @@
-export { default as PlAgChartHistogramCell } from './PlAgChartHistogramCell.vue';
+export { default as PlAgChartHistogramCell } from "./PlAgChartHistogramCell.vue";

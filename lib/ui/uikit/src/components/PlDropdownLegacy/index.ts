@@ -1,1 +1,1 @@
-export { default as PlDropdownLegacy } from './PlDropdownLegacy.vue';
+export { default as PlDropdownLegacy } from "./PlDropdownLegacy.vue";

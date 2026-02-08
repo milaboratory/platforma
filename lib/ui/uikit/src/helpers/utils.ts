@@ -1,5 +1,5 @@
-import type { ListOptionBase } from '@platforma-sdk/model';
-import type { ListOption } from '../types';
+import type { ListOptionBase } from "@platforma-sdk/model";
+import type { ListOption } from "../types";
 
 export function call<R>(f: () => R): R {
   return f();
@@ -38,7 +38,7 @@ export function randomInt(min: number, max: number) {
 }
 
 export function randomString(length: number) {
-  let s = '';
+  let s = "";
   for (let i = 0; i < length; i++) {
     s += String.fromCharCode(randomInt(65, 91));
   }
@@ -58,7 +58,11 @@ export function makeEaseInOut(timing: (t: number) => number) {
   };
 }
 
-export function animate(options: { duration: number; draw: (p: number) => void; timing: (t: number) => number }) {
+export function animate(options: {
+  duration: number;
+  draw: (p: number) => void;
+  timing: (t: number) => number;
+}) {
   const { duration, draw, timing } = options;
   const start = performance.now();
   let stop = false;
@@ -77,7 +81,11 @@ export function animate(options: { duration: number; draw: (p: number) => void; 
   };
 }
 
-export function animateInfinite(options: { getFraction: (dt: number) => number; draw: (p: number) => void; timing: (t: number) => number }) {
+export function animateInfinite(options: {
+  getFraction: (dt: number) => number;
+  draw: (p: number) => void;
+  timing: (t: number) => number;
+}) {
   const { getFraction, draw, timing } = options;
   const start = performance.now();
   let stop = false;
@@ -101,7 +109,11 @@ export function animateInfinite(options: { getFraction: (dt: number) => number; 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyFunction = (...args: any[]) => any;
 
-export function throttle<F extends AnyFunction>(callback: F, ms: number, trailing = true): (...args: Parameters<F>) => void {
+export function throttle<F extends AnyFunction>(
+  callback: F,
+  ms: number,
+  trailing = true,
+): (...args: Parameters<F>) => void {
   let t = 0,
     call: AnyFunction | null;
   return function (this: unknown, ...args: Parameters<F>) {
@@ -123,13 +135,15 @@ export function listToOptions<T>(list: T[] | readonly T[]): ListOption<T>[] {
   return list.map((value) => ({ text: String(value), value }));
 }
 
-export function normalizeListOptions<V = unknown>(options: Readonly<ListOption<V>[]>): Readonly<ListOptionBase<V>[]> {
+export function normalizeListOptions<V = unknown>(
+  options: Readonly<ListOption<V>[]>,
+): Readonly<ListOptionBase<V>[]> {
   if (!Array.isArray(options)) {
-    throw Error('Invalid component options: ' + String(options));
+    throw Error("Invalid component options: " + String(options));
   }
 
   return options.map((it) => ({
-    label: 'label' in it ? it.label : it.text,
+    label: "label" in it ? it.label : it.text,
     value: it.value,
     description: it.description,
     group: it.group,

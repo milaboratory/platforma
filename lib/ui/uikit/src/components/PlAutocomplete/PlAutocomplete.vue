@@ -3,31 +3,35 @@
  * A component for selecting one value from a big list of options using string search request
  */
 export default {
-  name: 'PlAutocomplete',
+  name: "PlAutocomplete",
 };
 </script>
 
-<script lang="ts" setup generic="M extends null | undefined | string | number = null | undefined | string">
-import './pl-autocomplete.scss';
-import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from 'vue';
-import { tap } from '../../helpers/functions';
-import { PlTooltip } from '../PlTooltip';
-import DoubleContour from '../../utils/DoubleContour.vue';
-import { useLabelNotch } from '../../utils/useLabelNotch';
-import type { ListOption, ListOptionNormalized } from '../../types';
-import { deepEqual } from '../../helpers/objects';
-import DropdownListItem from '../DropdownListItem.vue';
-import LongText from '../LongText.vue';
-import { normalizeListOptions } from '../../helpers/utils';
-import { PlIcon16 } from '../PlIcon16';
-import { PlMaskIcon24 } from '../PlMaskIcon24';
-import { DropdownOverlay } from '../../utils/DropdownOverlay';
-import { refDebounced } from '@vueuse/core';
-import { useWatchFetch } from '../../composition/useWatchFetch.ts';
-import { getErrorMessage } from '../../helpers/error.ts';
-import type { ListOptionBase } from '@platforma-sdk/model';
-import { PlSvg } from '../PlSvg';
-import SvgRequired from '../../assets/images/required.svg?raw';
+<script
+  lang="ts"
+  setup
+  generic="M extends null | undefined | string | number = null | undefined | string"
+>
+import "./pl-autocomplete.scss";
+import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from "vue";
+import { tap } from "../../helpers/functions";
+import { PlTooltip } from "../PlTooltip";
+import DoubleContour from "../../utils/DoubleContour.vue";
+import { useLabelNotch } from "../../utils/useLabelNotch";
+import type { ListOption, ListOptionNormalized } from "../../types";
+import { deepEqual } from "../../helpers/objects";
+import DropdownListItem from "../DropdownListItem.vue";
+import LongText from "../LongText.vue";
+import { normalizeListOptions } from "../../helpers/utils";
+import { PlIcon16 } from "../PlIcon16";
+import { PlMaskIcon24 } from "../PlMaskIcon24";
+import { DropdownOverlay } from "../../utils/DropdownOverlay";
+import { refDebounced } from "@vueuse/core";
+import { useWatchFetch } from "../../composition/useWatchFetch.ts";
+import { getErrorMessage } from "../../helpers/error.ts";
+import type { ListOptionBase } from "@platforma-sdk/model";
+import { PlSvg } from "../PlSvg";
+import SvgRequired from "../../assets/images/required.svg?raw";
 
 /**
  * The current selected value.
@@ -39,7 +43,7 @@ const props = withDefaults(
     /**
      * Lambda for requesting of available options for the dropdown by search string.
      */
-    optionsSearch: (string: string, type: 'value' | 'label') => Promise<ListOption<M>[]>;
+    optionsSearch: (string: string, type: "value" | "label") => Promise<ListOption<M>[]>;
     /**
      * The label text for the dropdown field (optional)
      */
@@ -83,7 +87,7 @@ const props = withDefaults(
     /**
      * Option list item size
      */
-    optionSize?: 'small' | 'medium';
+    optionSize?: "small" | "medium";
     /**
      * Formatter for the selected value if its label is absent
      */
@@ -91,21 +95,30 @@ const props = withDefaults(
     /**
      * Makes some of corners not rounded
      * */
-    groupPosition?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
+    groupPosition?:
+      | "top"
+      | "bottom"
+      | "left"
+      | "right"
+      | "top-left"
+      | "top-right"
+      | "bottom-left"
+      | "bottom-right"
+      | "middle";
   }>(),
   {
     modelSearch: undefined,
-    label: '',
+    label: "",
     helper: undefined,
     loadingOptionsHelper: undefined,
     error: undefined,
-    placeholder: '...',
+    placeholder: "...",
     clearable: false,
     required: false,
     disabled: false,
     arrowIcon: undefined,
     arrowIconLarge: undefined,
-    optionSize: 'small',
+    optionSize: "small",
     formatValue: (v: M) => String(v),
     groupPosition: undefined,
   },
@@ -118,7 +131,7 @@ const slots = defineSlots<{
 const rootRef = ref<HTMLElement | undefined>();
 const input = ref<HTMLInputElement | undefined>();
 
-const overlayRef = useTemplateRef('overlay');
+const overlayRef = useTemplateRef("overlay");
 
 const search = ref<string | null>(null);
 const data = reactive({
@@ -166,7 +179,7 @@ const computedError = computed(() => {
   }
 
   if (isLoadingError.value) {
-    return 'Data loading error';
+    return "Data loading error";
   }
 
   return undefined;
@@ -176,14 +189,17 @@ const textValue = computed(() => {
   const modelOption = unref(modelOptionRef);
   const options = unref(renderedOptionsRef);
 
-  const item: ListOptionNormalized | undefined = modelOption ?? options.find((o) => deepEqual(o.value, model.value)) ?? options.find((o) => deepEqual(o.value, model.value));
+  const item: ListOptionNormalized | undefined =
+    modelOption ??
+    options.find((o) => deepEqual(o.value, model.value)) ??
+    options.find((o) => deepEqual(o.value, model.value));
 
-  return item?.label || (model.value ? props.formatValue(model.value) : '');
+  return item?.label || (model.value ? props.formatValue(model.value) : "");
 });
 
 const computedPlaceholder = computed(() => {
   if (!data.open && model.value) {
-    return '';
+    return "";
   }
 
   return model.value ? String(textValue.value) : props.placeholder;
@@ -193,9 +209,9 @@ const hasValue = computed(() => {
   return model.value !== undefined && model.value !== null;
 });
 
-const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
+const tabindex = computed(() => (isDisabled.value ? undefined : "0"));
 
-const selectOption = (v: ListOptionBase<M> & { index: number } | undefined) => {
+const selectOption = (v: (ListOptionBase<M> & { index: number }) | undefined) => {
   model.value = v?.value as M;
   modelOptionRef.value = v;
   search.value = null;
@@ -214,9 +230,12 @@ const toggleOpen = () => {
   data.open = !data.open;
 };
 
-watch(() => data.open, (v) => {
-  search.value = v ? '' : null;
-});
+watch(
+  () => data.open,
+  (v) => {
+    search.value = v ? "" : null;
+  },
+);
 
 const onInputFocus = () => {
   data.open = true;
@@ -225,14 +244,17 @@ const onInputFocus = () => {
 const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
 
-  if (!rootRef.value?.contains(relatedTarget) && !overlayRef.value?.listRef?.contains(relatedTarget)) {
+  if (
+    !rootRef.value?.contains(relatedTarget) &&
+    !overlayRef.value?.listRef?.contains(relatedTarget)
+  ) {
     search.value = null;
     data.open = false;
   }
 };
 
 const handleKeydown = (e: { code: string; preventDefault(): void }) => {
-  if (!['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.code)) {
+  if (!["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(e.code)) {
     return;
   } else {
     e.preventDefault();
@@ -241,14 +263,14 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
   const { open, activeIndex } = data;
 
   if (!open) {
-    if (e.code === 'Enter') {
+    if (e.code === "Enter") {
       data.open = true;
-      search.value = '';
+      search.value = "";
     }
     return;
   }
 
-  if (e.code === 'Escape') {
+  if (e.code === "Escape") {
     data.open = false;
     search.value = null;
     rootRef.value?.focus();
@@ -262,13 +284,13 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
     return;
   }
 
-  if (e.code === 'Enter') {
+  if (e.code === "Enter") {
     selectOption(options.find((it) => it.index === activeIndex));
   }
 
   const localIndex = options.findIndex((it) => it.index === activeIndex) ?? -1;
 
-  const delta = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
+  const delta = e.code === "ArrowDown" ? 1 : e.code === "ArrowUp" ? -1 : 0;
 
   const newIndex = Math.abs(localIndex + delta + length) % length;
 
@@ -281,7 +303,7 @@ watch(() => model.value, updateActive, { immediate: true });
 
 watch(
   () => data.open,
-  (open) => (open ? input.value?.focus() : ''),
+  (open) => (open ? input.value?.focus() : ""),
 );
 
 watchPostEffect(() => {
@@ -295,44 +317,64 @@ watchPostEffect(() => {
 
 const searchDebounced = refDebounced(search, 300, { maxWait: 1000 });
 
-const optionsRequest = useWatchFetch(() => searchDebounced.value, async (v) => {
-  if (v !== null) { // search is null when dropdown is closed;
-    return props.optionsSearch(v, 'label');
-  }
-  return undefined;
-});
-
-const modelOptionRequest = useWatchFetch(() => model.value, async (v) => {
-  if (v != null && !deepEqual(modelOptionRef.value?.value, v)) { // load label for selected value if it was updated from outside the component
-    return (await props.optionsSearch(String(v), 'value'))?.[0];
-  }
-  return modelOptionRef.value;
-});
-
-watch(() => optionsRequest.value, (result) => {
-  if (result) {
-    loadedOptionsRef.value = result;
-    if (search.value !== null) {
-      isLoadingError.value = false;
+const optionsRequest = useWatchFetch(
+  () => searchDebounced.value,
+  async (v) => {
+    if (v !== null) {
+      // search is null when dropdown is closed;
+      return props.optionsSearch(v, "label");
     }
-  }
-});
+    return undefined;
+  },
+);
 
-watch(() => modelOptionRequest.value, (result) => {
-  if (result) {
-    modelOptionRef.value = normalizeListOptions([result])[0];
-  }
-});
+const modelOptionRequest = useWatchFetch(
+  () => model.value,
+  async (v) => {
+    if (v != null && !deepEqual(modelOptionRef.value?.value, v)) {
+      // load label for selected value if it was updated from outside the component
+      return (await props.optionsSearch(String(v), "value"))?.[0];
+    }
+    return modelOptionRef.value;
+  },
+);
 
-watch(() => optionsRequest.error, (err) => {
-  if (err) {
-    isLoadingError.value = Boolean(err);
-  }
-});
+watch(
+  () => optionsRequest.value,
+  (result) => {
+    if (result) {
+      loadedOptionsRef.value = result;
+      if (search.value !== null) {
+        isLoadingError.value = false;
+      }
+    }
+  },
+);
 
-watch(() => optionsRequest.loading || modelOptionRequest.loading, (loading) => {
-  isLoadingOptions.value = loading;
-});
+watch(
+  () => modelOptionRequest.value,
+  (result) => {
+    if (result) {
+      modelOptionRef.value = normalizeListOptions([result])[0];
+    }
+  },
+);
+
+watch(
+  () => optionsRequest.error,
+  (err) => {
+    if (err) {
+      isLoadingError.value = Boolean(err);
+    }
+  },
+);
+
+watch(
+  () => optionsRequest.loading || modelOptionRequest.loading,
+  (loading) => {
+    isLoadingOptions.value = loading;
+  },
+);
 </script>
 
 <template>
@@ -365,10 +407,19 @@ watch(() => optionsRequest.loading || modelOptionRequest.loading, (loading) => {
 
           <div class="pl-autocomplete__controls">
             <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
-            <PlIcon16 v-if="clearable && hasValue" class="clear" name="delete-clear" @click.stop="clear" />
+            <PlIcon16
+              v-if="clearable && hasValue"
+              class="clear"
+              name="delete-clear"
+              @click.stop="clear"
+            />
             <slot name="append" />
             <div class="pl-autocomplete__arrow-wrapper" @click.stop="toggleOpen">
-              <div v-if="arrowIconLarge" class="arrow-icon" :class="[`icon-24 ${arrowIconLarge}`]" />
+              <div
+                v-if="arrowIconLarge"
+                class="arrow-icon"
+                :class="[`icon-24 ${arrowIconLarge}`]"
+              />
               <div v-else-if="arrowIcon" class="arrow-icon" :class="[`icon-16 ${arrowIcon}`]" />
               <div v-else class="arrow-icon arrow-icon-default" />
             </div>
@@ -383,7 +434,14 @@ watch(() => optionsRequest.loading || modelOptionRequest.loading, (loading) => {
             </template>
           </PlTooltip>
         </label>
-        <DropdownOverlay v-if="data.open" ref="overlay" :root="rootRef" class="pl-autocomplete__options" tabindex="-1" :gap="3">
+        <DropdownOverlay
+          v-if="data.open"
+          ref="overlay"
+          :root="rootRef"
+          class="pl-autocomplete__options"
+          tabindex="-1"
+          :gap="3"
+        >
           <DropdownListItem
             v-for="(item, index) in renderedOptionsRef"
             :key="index"
@@ -399,7 +457,9 @@ watch(() => optionsRequest.loading || modelOptionRequest.loading, (loading) => {
       </div>
     </div>
     <div v-if="computedError" class="pl-autocomplete__error">{{ computedError }}</div>
-    <div v-else-if="isLoadingOptions && loadingOptionsHelper" class="pl-autocomplete__helper">{{ loadingOptionsHelper }}</div>
+    <div v-else-if="isLoadingOptions && loadingOptionsHelper" class="pl-autocomplete__helper">
+      {{ loadingOptionsHelper }}
+    </div>
     <div v-else-if="helper" class="pl-autocomplete__helper">{{ helper }}</div>
   </div>
 </template>

@@ -27,7 +27,8 @@
     margin-bottom: 8px;
   }
 
-  ul, li {
+  ul,
+  li {
     margin-left: 6px;
     padding-left: 6px;
   }
@@ -99,7 +100,8 @@
 }
 
 .tooltip-transition {
-  &-enter-active, &-leave-active {
+  &-enter-active,
+  &-leave-active {
     transition: all 0.1s ease-in-out;
   }
 

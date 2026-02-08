@@ -4,24 +4,24 @@ import {
   type Branded,
   type PColumnSpec,
   type PColumnValues,
-} from '@platforma-sdk/model';
-import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
-import { RefCountPoolBase, type PoolEntry } from '@milaboratories/ts-helpers';
-import { HttpHelpers } from '@milaboratories/pframes-rs-node';
-import fs from 'node:fs';
-import path from 'node:path';
-import { tmpdir } from 'node:os';
-import type { AbstractInternalPFrameDriver } from './driver_decl';
+} from "@platforma-sdk/model";
+import { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
+import { RefCountPoolBase, type PoolEntry } from "@milaboratories/ts-helpers";
+import { HttpHelpers } from "@milaboratories/pframes-rs-node";
+import fs from "node:fs";
+import path from "node:path";
+import { tmpdir } from "node:os";
+import type { AbstractInternalPFrameDriver } from "./driver_decl";
 import {
   AbstractPFrameDriver,
   type LocalBlobProvider,
   type RemoteBlobProvider,
-} from './driver_impl';
-import { makeJsonDataInfo } from './data_info_helpers';
+} from "./driver_impl";
+import { makeJsonDataInfo } from "./data_info_helpers";
 
-export type FileName = Branded<string, 'FileName'>;
-export type FilePath = Branded<string, 'FilePath'>;
-export type FolderPath = Branded<string, 'FolderPath'>;
+export type FileName = Branded<string, "FileName">;
+export type FilePath = Branded<string, "FilePath">;
+export type FolderPath = Branded<string, "FolderPath">;
 
 export function makeFolderPath(dataFolder: string): FolderPath {
   if (!fs.statSync(dataFolder, { throwIfNoEntry: false })?.isDirectory()) {
@@ -38,7 +38,8 @@ function makeBlobId(res: FileName): PFrameInternal.PFrameBlobId {
 
 class LocalBlobProviderImpl
   extends RefCountPoolBase<FileName, PFrameInternal.PFrameBlobId, FilePath>
-  implements LocalBlobProvider<FileName> {
+  implements LocalBlobProvider<FileName>
+{
   constructor(private readonly dataFolder: FolderPath) {
     super();
   }
@@ -67,7 +68,9 @@ class LocalBlobProviderImpl
     return resource;
   }
 
-  public makeDataSource(signal: AbortSignal): Omit<PFrameInternal.PFrameDataSourceV2, 'parquetServer'> {
+  public makeDataSource(
+    signal: AbortSignal,
+  ): Omit<PFrameInternal.PFrameDataSourceV2, "parquetServer"> {
     return {
       preloadBlob: async (_blobIds: PFrameInternal.PFrameBlobId[]) => {},
       resolveBlobContent: async (blobId: PFrameInternal.PFrameBlobId) => {
@@ -87,7 +90,7 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<FileName> {
   public static async init(
     dataFolder: FolderPath,
     logger: PFrameInternal.Logger,
-    serverOptions: Omit<PFrameInternal.HttpServerOptions, 'handler'>,
+    serverOptions: Omit<PFrameInternal.HttpServerOptions, "handler">,
   ): Promise<RemoteBlobProviderImpl> {
     const pool = new LocalBlobProviderImpl(dataFolder);
 
@@ -118,8 +121,9 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<FileName> {
   }
 }
 
-export type InternalPFrameDriverDouble =
-  AbstractInternalPFrameDriver<PFrameInternal.DataInfo<FileName> | PColumnValues>;
+export type InternalPFrameDriverDouble = AbstractInternalPFrameDriver<
+  PFrameInternal.DataInfo<FileName> | PColumnValues
+>;
 
 export async function createPFrameDriverDouble({
   dataFolder = tmpdir() as FolderPath,
@@ -134,7 +138,7 @@ export async function createPFrameDriverDouble({
   const resolveDataInfo = (
     spec: PColumnSpec,
     data: PFrameInternal.DataInfo<FileName> | PColumnValues,
-  ) => isDataInfo(data) ? data : makeJsonDataInfo(spec, data);
+  ) => (isDataInfo(data) ? data : makeJsonDataInfo(spec, data));
 
   return new AbstractPFrameDriver({
     logger,

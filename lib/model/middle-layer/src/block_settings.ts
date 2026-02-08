@@ -6,7 +6,7 @@
  *   - `patch` - version of the block is completely locked
  *
  * */
-export type VersionLock = 'major' | 'minor' | 'patch';
+export type VersionLock = "major" | "minor" | "patch";
 
 /**
  * Block settings, persisted on the backend.

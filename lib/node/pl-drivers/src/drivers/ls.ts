@@ -1,6 +1,6 @@
-import type { PlClient, ResourceData, ResourceId } from '@milaboratories/pl-client';
-import { isNotNullResourceId } from '@milaboratories/pl-client';
-import type * as sdk from '@milaboratories/pl-model-common';
+import type { PlClient, ResourceData, ResourceId } from "@milaboratories/pl-client";
+import { isNotNullResourceId } from "@milaboratories/pl-client";
+import type * as sdk from "@milaboratories/pl-model-common";
 import type {
   LocalImportFileHandle,
   LsEntry,
@@ -8,29 +8,27 @@ import type {
   OpenMultipleFilesResponse,
   OpenSingleFileResponse,
   TableRange,
-} from '@milaboratories/pl-model-common';
-import {
-  isImportFileHandleIndex,
-} from '@milaboratories/pl-model-common';
-import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
-import * as fsp from 'node:fs/promises';
-import * as path from 'node:path';
-import { createLsFilesClient } from '../clients/constructors';
-import type { ClientLs } from '../clients/ls_api';
-import { validateAbsolute } from '../helpers/validate';
+} from "@milaboratories/pl-model-common";
+import { isImportFileHandleIndex } from "@milaboratories/pl-model-common";
+import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
+import * as fsp from "node:fs/promises";
+import * as path from "node:path";
+import { createLsFilesClient } from "../clients/constructors";
+import type { ClientLs } from "../clients/ls_api";
+import { validateAbsolute } from "../helpers/validate";
 import {
   createIndexImportHandle,
   createUploadImportHandle,
   parseIndexHandle,
   parseUploadHandle,
-} from './helpers/ls_remote_import_handle';
+} from "./helpers/ls_remote_import_handle";
 import {
   createLocalStorageHandle,
   createRemoteStorageHandle,
   parseStorageHandle,
-} from './helpers/ls_storage_entry';
-import type { LocalStorageProjection, VirtualLocalStorageSpec } from './types';
-import { DefaultVirtualLocalStorages } from './virtual_storages';
+} from "./helpers/ls_storage_entry";
+import type { LocalStorageProjection, VirtualLocalStorageSpec } from "./types";
+import { DefaultVirtualLocalStorages } from "./virtual_storages";
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle
@@ -43,7 +41,10 @@ export interface InternalLsDriver extends sdk.LsDriver {
    * */
   getLocalFileHandle(localPath: string): Promise<sdk.LocalImportFileHandle>;
 
-  listRemoteFilesWithAdditionalInfo(storage: sdk.StorageHandle, fullPath: string): Promise<ListRemoteFilesResultWithAdditionalInfo>;
+  listRemoteFilesWithAdditionalInfo(
+    storage: sdk.StorageHandle,
+    fullPath: string,
+  ): Promise<ListRemoteFilesResultWithAdditionalInfo>;
 }
 
 export type ListRemoteFilesResultWithAdditionalInfo = {
@@ -57,7 +58,7 @@ export type LsEntryWithAdditionalInfo = LsEntry & {
 
 export type OpenFileDialogCallback = (
   multipleFiles: boolean,
-  ops?: OpenDialogOps
+  ops?: OpenDialogOps,
 ) => Promise<undefined | string[]>;
 
 export class LsDriver implements InternalLsDriver {
@@ -81,7 +82,7 @@ export class LsDriver implements InternalLsDriver {
     const localPath = await this.tryResolveLocalFileHandle(file);
 
     if (range) {
-      const fileHandle = await fsp.open(localPath, 'r');
+      const fileHandle = await fsp.open(localPath, "r");
       try {
         const buffer = Buffer.alloc(range.length);
         const { bytesRead } = await fileHandle.read(buffer, 0, range.length, range.offset);
@@ -137,14 +138,14 @@ export class LsDriver implements InternalLsDriver {
       this.signer.verify(
         handleData.localPath,
         handleData.pathSignature,
-        'Failed to validate local file handle signature.',
+        "Failed to validate local file handle signature.",
       );
 
       const localPath = handleData.localPath;
 
       const stat = await fsp.stat(localPath, { bigint: true });
       if (String(stat.mtimeMs / 1000n) !== handleData.modificationTime)
-        throw new Error('File has changed since the handle was created.');
+        throw new Error("File has changed since the handle was created.");
 
       return localPath;
     }
@@ -163,8 +164,8 @@ export class LsDriver implements InternalLsDriver {
         // Just in case:
         //  > path.relative("/a/b", "/a/b/c");
         //    'c'
-        const pathWithinStorage
-          = lp.localPath === '' ? localPath : path.relative(lp.localPath, localPath);
+        const pathWithinStorage =
+          lp.localPath === "" ? localPath : path.relative(lp.localPath, localPath);
         return createIndexImportHandle(
           lp.storageId,
           pathWithinStorage,
@@ -194,7 +195,7 @@ export class LsDriver implements InternalLsDriver {
       ([storageId, resourceId]) => ({
         name: storageId,
         handle: createRemoteStorageHandle(storageId, resourceId),
-        initialFullPath: '', // we don't have any additional information from where to start browsing remote storages
+        initialFullPath: "", // we don't have any additional information from where to start browsing remote storages
         isInitialPathHome: false,
       }),
     );
@@ -203,7 +204,7 @@ export class LsDriver implements InternalLsDriver {
     // but for UI it's enough
     // to have local virtual storage on *nix,
     // and local_disk_${drive} on Windows.
-    const noRoot = otherStorages.filter((it) => it.name !== 'root');
+    const noRoot = otherStorages.filter((it) => it.name !== "root");
 
     return [...virtualStorages, ...noRoot];
   }
@@ -218,7 +219,7 @@ export class LsDriver implements InternalLsDriver {
       const response = await this.lsClient.list(storageData, fullPath);
       return {
         entries: response.items.map((e) => ({
-          type: e.isDir ? 'dir' : 'file',
+          type: e.isDir ? "dir" : "file",
           name: e.name,
           fullPath: e.fullName,
           handle: createIndexImportHandle(storageData.name, e.fullName),
@@ -226,9 +227,9 @@ export class LsDriver implements InternalLsDriver {
       };
     }
 
-    if (path.sep === '/' && fullPath === '') fullPath = '/';
+    if (path.sep === "/" && fullPath === "") fullPath = "/";
 
-    if (storageData.rootPath === '') {
+    if (storageData.rootPath === "") {
       validateAbsolute(fullPath);
     }
     const lsRoot = path.isAbsolute(fullPath) ? fullPath : path.join(storageData.rootPath, fullPath);
@@ -243,7 +244,7 @@ export class LsDriver implements InternalLsDriver {
       const absolutePath = path.join(lsRoot, dirent.name);
 
       entries.push({
-        type: dirent.isFile() ? 'file' : 'dir',
+        type: dirent.isFile() ? "file" : "dir",
         name: dirent.name,
         fullPath: absolutePath,
         handle: await this.getLocalFileHandle(absolutePath),
@@ -266,7 +267,7 @@ export class LsDriver implements InternalLsDriver {
 
     return {
       entries: response.items.map((e) => ({
-        type: e.isDir ? 'dir' : 'file',
+        type: e.isDir ? "dir" : "file",
         name: e.name,
         fullPath: e.fullName,
         handle: createIndexImportHandle(storageData.name, e.fullName),
@@ -275,9 +276,9 @@ export class LsDriver implements InternalLsDriver {
     };
   }
 
-  public async fileToImportHandle(file: sdk.FileLike): Promise<sdk.ImportFileHandle> {
+  public async fileToImportHandle(_file: sdk.FileLike): Promise<sdk.ImportFileHandle> {
     throw new Error(
-      'Not implemented. This method must be implemented and intercepted in desktop preload script.',
+      "Not implemented. This method must be implemented and intercepted in desktop preload script.",
     );
   }
 
@@ -296,7 +297,7 @@ export class LsDriver implements InternalLsDriver {
 
     // validating inputs
     for (const vp of virtualStorages) validateAbsolute(vp.root);
-    for (const lp of localProjections) if (lp.localPath !== '') validateAbsolute(lp.localPath);
+    for (const lp of localProjections) if (lp.localPath !== "") validateAbsolute(lp.localPath);
 
     // creating indexed maps for quick access
     const virtualStoragesMap = new Map(virtualStorages.map((s) => [s.name, s]));
@@ -304,11 +305,11 @@ export class LsDriver implements InternalLsDriver {
 
     // validating there is no intersection
     if (
-      new Set([...virtualStoragesMap.keys(), ...localProjectionsMap.keys()]).size
-        !== virtualStoragesMap.size + localProjectionsMap.size
+      new Set([...virtualStoragesMap.keys(), ...localProjectionsMap.keys()]).size !==
+      virtualStoragesMap.size + localProjectionsMap.size
     )
       throw new Error(
-        'Intersection between local projection storage ids and virtual storages names detected.',
+        "Intersection between local projection storage ids and virtual storages names detected.",
       );
 
     return new LsDriver(
@@ -324,8 +325,8 @@ export class LsDriver implements InternalLsDriver {
 }
 
 async function doGetAvailableStorageIds(client: PlClient): Promise<Record<string, ResourceId>> {
-  return client.withReadTx('GetAvailableStorageIds', async (tx) => {
-    const lsProviderId = await tx.getResourceByName('LSProvider');
+  return client.withReadTx("GetAvailableStorageIds", async (tx) => {
+    const lsProviderId = await tx.getResourceByName("LSProvider");
     const provider = await tx.getResourceData(lsProviderId, true);
 
     return providerToStorageIds(provider);
@@ -335,7 +336,7 @@ async function doGetAvailableStorageIds(client: PlClient): Promise<Record<string
 function providerToStorageIds(provider: ResourceData) {
   return Object.fromEntries(
     provider.fields
-      .filter((f) => f.type == 'Dynamic' && isNotNullResourceId(f.value))
-      .map((f) => [f.name.substring('storage/'.length), f.value as ResourceId]),
+      .filter((f) => f.type == "Dynamic" && isNotNullResourceId(f.value))
+      .map((f) => [f.name.substring("storage/".length), f.value as ResourceId]),
   );
 }

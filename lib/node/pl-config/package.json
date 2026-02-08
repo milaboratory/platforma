@@ -2,24 +2,8 @@
   "name": "@milaboratories/pl-config",
   "version": "1.7.11",
   "description": "MiLaboratories Platforma Backend and Middle Layer config generator",
-  "types": "./dist/index.d.ts",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs",
-      "import": "./dist/index.js"
-    }
-  },
-  "scripts": {
-    "type-check": "ts-builder types --target node",
-    "build": "ts-builder build --target node",
-    "watch": "ts-builder build --target node --watch",
-    "lint": "eslint .",
-    "test": "vitest run --coverage",
-    "do-pack": "rm -rf src/.test && rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
-  },
+  "keywords": [],
+  "license": "UNLICENSED",
   "files": [
     "./dist/**/*",
     "./src/**/*",
@@ -30,25 +14,42 @@
     "assets",
     "postinstall.js"
   ],
-  "keywords": [],
-  "license": "UNLICENSED",
-  "devDependencies": {
-    "eslint": "catalog:",
-    "@milaboratories/eslint-config": "workspace:*",
-    "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/ts-builder": "workspace:*",
-    "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
-    "@types/node": "catalog:",
-    "tsconfig-paths": "catalog:",
-    "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "test": "vitest run --coverage",
+    "do-pack": "rm -rf src/.test && rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
   "dependencies": {
-    "undici": "catalog:",
     "@milaboratories/ts-helpers": "workspace:*",
+    "undici": "catalog:",
+    "upath": "catalog:",
     "yaml": "catalog:",
-    "zod": "catalog:",
-    "upath": "catalog:"
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "tsconfig-paths": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -27,7 +27,7 @@ export interface TemplateAssetData {
 
 export interface TemplateData {
   /** Discriminator for future use */
-  type: 'pl.tengo-template.v2';
+  type: "pl.tengo-template.v2";
 
   /** i.e. @milaboratory/some-package:template */
   name: string;

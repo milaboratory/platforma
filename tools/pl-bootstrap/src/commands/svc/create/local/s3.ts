@@ -1,18 +1,19 @@
-import { Command, Args } from '@oclif/core';
-import path from 'node:path';
-import type { createLocalS3Options } from '../../../../core';
-import Core from '../../../../core';
-import * as cmdOpts from '../../../../cmd-opts';
-import * as util from '../../../../util';
-import state from '../../../../state';
-import * as platforma from '../../../../platforma';
-import * as os from 'node:os';
-import { ArgParser } from '../arg-parser';
+import { Command, Args } from "@oclif/core";
+import path from "node:path";
+import type { createLocalS3Options } from "../../../../core";
+import Core from "../../../../core";
+import * as cmdOpts from "../../../../cmd-opts";
+import * as util from "../../../../util";
+import state from "../../../../state";
+import * as platforma from "../../../../platforma";
+import * as os from "node:os";
+import { ArgParser } from "../arg-parser";
 
 export default class Local extends Command {
-  static override description = 'Run Platforma Backend service as local process on current host (no docker container)';
+  static override description =
+    "Run Platforma Backend service as local process on current host (no docker container)";
 
-  static override examples = ['<%= config.bin %> <%= command.id %>'];
+  static override examples = ["<%= config.bin %> <%= command.id %>"];
 
   static override flags = {
     ...cmdOpts.GlobalFlags,
@@ -49,52 +50,54 @@ export default class Local extends Command {
     // Validate required flags
     const errors = parser.validateRequired(parsed.knownFlags);
     if (errors.length > 0) {
-      throw new Error(`Validation errors:\n${errors.join('\n')}`);
+      throw new Error(`Validation errors:\n${errors.join("\n")}`);
     }
 
     const instanceName = parsed.instanceName;
     const flags = parsed.knownFlags;
     const backendCommands = parsed.unknownFlags;
-    if (flags['log-level']) {
-      backendCommands.push(`--log-level=${flags['log-level']}`);
+    if (flags["log-level"]) {
+      backendCommands.push(`--log-level=${flags["log-level"]}`);
     }
 
-    const logger = util.createLogger(flags['log-level'] || 'info');
+    const logger = util.createLogger(flags["log-level"] || "info");
     const core = new Core(logger);
     core.mergeLicenseEnvs(flags);
 
-    const workdir = flags['pl-workdir'] ?? '.';
-    const storage = flags.storage ? path.join(workdir, flags.storage) : state.instanceDir(instanceName);
-    const logFile = flags['pl-log-file'] ? path.join(workdir, flags['pl-log-file']) : undefined;
+    const workdir = flags["pl-workdir"] ?? ".";
+    const storage = flags.storage
+      ? path.join(workdir, flags.storage)
+      : state.instanceDir(instanceName);
+    const logFile = flags["pl-log-file"] ? path.join(workdir, flags["pl-log-file"]) : undefined;
 
     const authDrivers = core.initAuthDriversList(flags, workdir);
-    const authEnabled = flags['auth-enabled'] ?? authDrivers !== undefined;
+    const authEnabled = flags["auth-enabled"] ?? authDrivers !== undefined;
 
-    let listenGrpc: string = '127.0.0.1:6345';
-    if (flags['grpc-listen']) listenGrpc = flags['grpc-listen'];
-    else if (flags['grpc-port']) listenGrpc = `127.0.0.1:${flags['grpc-port']}`;
+    let listenGrpc: string = "127.0.0.1:6345";
+    if (flags["grpc-listen"]) listenGrpc = flags["grpc-listen"];
+    else if (flags["grpc-port"]) listenGrpc = `127.0.0.1:${flags["grpc-port"]}`;
 
-    let listenMon: string = '127.0.0.1:9090';
-    if (flags['monitoring-listen']) listenMon = flags['monitoring-listen'];
-    else if (flags['monitoring-port']) listenMon = `127.0.0.1:${flags['monitoring-port']}`;
+    let listenMon: string = "127.0.0.1:9090";
+    if (flags["monitoring-listen"]) listenMon = flags["monitoring-listen"];
+    else if (flags["monitoring-port"]) listenMon = `127.0.0.1:${flags["monitoring-port"]}`;
 
-    let listenDbg: string = '127.0.0.1:9091';
-    if (flags['debug-listen']) listenDbg = flags['debug-listen'];
-    else if (flags['debug-port']) listenDbg = `127.0.0.1:${flags['debug-port']}`;
+    let listenDbg: string = "127.0.0.1:9091";
+    if (flags["debug-listen"]) listenDbg = flags["debug-listen"];
+    else if (flags["debug-port"]) listenDbg = `127.0.0.1:${flags["debug-port"]}`;
 
     const createOptions: createLocalS3Options = {
-      sourcesPath: flags['pl-sources'],
-      binaryPath: flags['pl-binary'],
+      sourcesPath: flags["pl-sources"],
+      binaryPath: flags["pl-binary"],
 
       version: flags.version,
       configPath: flags.config,
-      workdir: flags['pl-workdir'],
+      workdir: flags["pl-workdir"],
 
-      primaryURL: flags['storage-primary'],
-      libraryURL: flags['storage-library'],
+      primaryURL: flags["storage-primary"],
+      libraryURL: flags["storage-library"],
 
-      minioPort: flags['s3-port'],
-      minioConsolePort: flags['s3-console-port'],
+      minioPort: flags["s3-port"],
+      minioConsolePort: flags["s3-console-port"],
 
       backendCommands: backendCommands,
 
@@ -102,19 +105,18 @@ export default class Local extends Command {
         grpc: { listen: listenGrpc },
         monitoring: { listen: listenMon },
         debug: { listen: listenDbg },
-        license: { value: flags['license'], file: flags['license-file'] },
+        license: { value: flags["license"], file: flags["license-file"] },
         log: { path: logFile },
         localRoot: storage,
         core: { auth: { enabled: authEnabled, drivers: authDrivers } },
         storages: {
-          work: { type: 'FS', rootPath: flags['storage-work'] },
+          work: { type: "FS", rootPath: flags["storage-work"] },
         },
 
         // Backend could consume a lot of CPU power,
         // we want to keep at least a couple for UI and other apps to work.
         numCpu: Math.max(os.cpus().length - 2, 1),
       },
-
     };
 
     logger.info(`Creating instance configuration, data directory and other stuff...`);
@@ -127,14 +129,16 @@ export default class Local extends Command {
 
     platforma
       .getBinary(logger, { version: flags.version })
-      .then(() => logger.info(`Instance '${instanceName}' was created. To start it run 'svc up' command`))
+      .then(() =>
+        logger.info(`Instance '${instanceName}' was created. To start it run 'svc up' command`),
+      )
       .catch(function (err: Error) {
         logger.error(err.message);
       });
 
     // Log unknown flags that will be passed to backend
     if (backendCommands.length > 0) {
-      logger.info(`Unknown flags will be passed to backend: ${backendCommands.join(' ')}`);
+      logger.info(`Unknown flags will be passed to backend: ${backendCommands.join(" ")}`);
     }
   }
 }

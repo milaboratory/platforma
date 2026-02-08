@@ -1,5 +1,4 @@
-import type {
-  BlockPackId } from '@milaboratories/pl-model-middle-layer';
+import type { BlockPackId } from "@milaboratories/pl-model-middle-layer";
 import {
   AnyChannel,
   BlockComponentsManifest,
@@ -11,19 +10,19 @@ import {
   CreateBlockPackDescriptionSchema,
   Sha256Schema,
   VersionWithChannels,
-} from '@milaboratories/pl-model-middle-layer';
-import { z } from 'zod';
-import type { RelativeContentReader } from '../model';
-import { relativeToExplicitBytes, relativeToExplicitString } from '../model';
+} from "@milaboratories/pl-model-middle-layer";
+import { z } from "zod";
+import type { RelativeContentReader } from "../model";
+import { relativeToExplicitBytes, relativeToExplicitString } from "../model";
 
-export const MainPrefix = 'v2/';
+export const MainPrefix = "v2/";
 
-export const GlobalOverviewFileName = 'overview.json';
-export const GlobalOverviewGzFileName = 'overview.json.gz';
-export const PackageOverviewFileName = 'overview.json';
-export const ManifestFileName = 'manifest.json';
+export const GlobalOverviewFileName = "overview.json";
+export const GlobalOverviewGzFileName = "overview.json.gz";
+export const PackageOverviewFileName = "overview.json";
+export const ManifestFileName = "manifest.json";
 
-export const ChannelsFolder = 'channels';
+export const ChannelsFolder = "channels";
 
 export const ChannelNameRegexp = /^[-a-z0-9]+$/;
 
@@ -35,23 +34,27 @@ export function packageContentPrefix(bp: BlockPackId): string {
   return `${MainPrefix}${packageContentPrefixInsideV2(bp)}`;
 }
 
-export const ManifestSuffix = '/' + ManifestFileName;
+export const ManifestSuffix = "/" + ManifestFileName;
 
 // export function payloadFilePath(bp: BlockPackId, file: string): string {
 //   return `${MainPrefix}${bp.organization}/${bp.name}/${bp.version}/${file}`;
 // }
 
-export const PackageOverviewVersionEntry = z.object({
-  description: BlockPackDescriptionManifest,
-  channels: z.array(z.string()).default(() => []),
-  manifestSha256: Sha256Schema,
-}).passthrough();
+export const PackageOverviewVersionEntry = z
+  .object({
+    description: BlockPackDescriptionManifest,
+    channels: z.array(z.string()).default(() => []),
+    manifestSha256: Sha256Schema,
+  })
+  .passthrough();
 export type PackageOverviewVersionEntry = z.infer<typeof PackageOverviewVersionEntry>;
 
-export const PackageOverview = z.object({
-  schema: z.literal('v2'),
-  versions: z.array(PackageOverviewVersionEntry),
-}).passthrough();
+export const PackageOverview = z
+  .object({
+    schema: z.literal("v2"),
+    versions: z.array(PackageOverviewVersionEntry),
+  })
+  .passthrough();
 export type PackageOverview = z.infer<typeof PackageOverview>;
 
 export function packageOverviewPathInsideV2(bp: BlockPackIdNoVersion): string {
@@ -70,8 +73,8 @@ export function packageChannelPrefix(bp: BlockPackId): string {
   return `${MainPrefix}${packageChannelPrefixInsideV2(bp)}`;
 }
 
-export const PackageManifestPattern
-  = /(?<packageKeyWithoutVersion>(?<organization>[^/]+)\/(?<name>[^/]+))\/(?<version>[^/]+)\/manifest\.json$/;
+export const PackageManifestPattern =
+  /(?<packageKeyWithoutVersion>(?<organization>[^/]+)\/(?<name>[^/]+))\/(?<version>[^/]+)\/manifest\.json$/;
 
 export const GlobalOverviewPath = `${MainPrefix}${GlobalOverviewFileName}`;
 export const GlobalOverviewGzPath = `${MainPrefix}${GlobalOverviewGzFileName}`;
@@ -79,25 +82,29 @@ export const GlobalOverviewGzPath = `${MainPrefix}${GlobalOverviewGzFileName}`;
 export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
   descriptionType: Description,
 ) {
-  const universalSchema = z.object({
-    id: BlockPackIdNoVersion,
-    /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
-    allVersions: z.array(z.string()).optional(),
-    allVersionsWithChannels: z.array(VersionWithChannels).optional(),
-    /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
-    latest: descriptionType,
-    /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
-    latestManifestSha256: Sha256Schema,
-    latestByChannel: z
-      .record(
-        z.string(),
-        z.object({
-          description: descriptionType,
-          manifestSha256: Sha256Schema,
-        }).passthrough(),
-      )
-      .default({}),
-  }).passthrough();
+  const universalSchema = z
+    .object({
+      id: BlockPackIdNoVersion,
+      /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
+      allVersions: z.array(z.string()).optional(),
+      allVersionsWithChannels: z.array(VersionWithChannels).optional(),
+      /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
+      latest: descriptionType,
+      /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
+      latestManifestSha256: Sha256Schema,
+      latestByChannel: z
+        .record(
+          z.string(),
+          z
+            .object({
+              description: descriptionType,
+              manifestSha256: Sha256Schema,
+            })
+            .passthrough(),
+        )
+        .default({}),
+    })
+    .passthrough();
   return (
     universalSchema
       .transform((o) => {
@@ -131,10 +138,12 @@ export type GlobalOverviewEntryReg = z.infer<typeof GlobalOverviewEntryReg>;
 export function GlobalOverview<const Description extends z.ZodTypeAny>(
   descriptionType: Description,
 ) {
-  return z.object({
-    schema: z.literal('v2'),
-    packages: z.array(GlobalOverviewEntry(descriptionType)),
-  }).passthrough();
+  return z
+    .object({
+      schema: z.literal("v2"),
+      packages: z.array(GlobalOverviewEntry(descriptionType)),
+    })
+    .passthrough();
 }
 
 export const GlobalOverviewReg = GlobalOverview(BlockPackDescriptionManifest);

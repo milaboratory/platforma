@@ -1,10 +1,10 @@
-import { z } from 'zod';
-import { BlockComponents } from './block_components';
-import { ContentRelative, ContentRelativeBinary, ContentRelativeText } from './content_types';
-import { CreateBlockPackDescriptionSchema } from './block_description';
-import { BlockPackMeta } from './block_meta';
-import * as R from 'remeda';
-import type { BlockPackId } from './block_id';
+import { z } from "zod";
+import { BlockComponents } from "./block_components";
+import { ContentRelative, ContentRelativeBinary, ContentRelativeText } from "./content_types";
+import { CreateBlockPackDescriptionSchema } from "./block_description";
+import { BlockPackMeta } from "./block_meta";
+import * as R from "remeda";
+import type { BlockPackId } from "./block_id";
 
 export const BlockComponentsManifest = BlockComponents(ContentRelative, ContentRelative);
 export type BlockComponentsManifest = z.infer<typeof BlockComponentsManifest>;
@@ -32,15 +32,17 @@ export const ManifestFileInfo = z.object({
 });
 export type ManifestFileInfo = z.infer<typeof ManifestFileInfo>;
 
-export const BlockPackManifest = z.object({
-  schema: z.literal('v2'),
-  description: BlockPackDescriptionManifest,
-  timestamp: z.number().optional(),
-  files: z.array(ManifestFileInfo),
-}).passthrough();
+export const BlockPackManifest = z
+  .object({
+    schema: z.literal("v2"),
+    description: BlockPackDescriptionManifest,
+    timestamp: z.number().optional(),
+    files: z.array(ManifestFileInfo),
+  })
+  .passthrough();
 export type BlockPackManifest = z.infer<typeof BlockPackManifest>;
 
-export const BlockPackManifestFile = 'manifest.json';
+export const BlockPackManifestFile = "manifest.json";
 
 export function overrideManifestVersion<T extends { description: { id: BlockPackId } }>(
   manifest: T,

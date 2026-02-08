@@ -1,11 +1,11 @@
-import type { Watcher } from '../watcher';
-import type { ComputableCtx } from './kernel';
+import type { Watcher } from "../watcher";
+import type { ComputableCtx } from "./kernel";
 
 /** Signals that accessor was used outside the scope of computable
  * kernel lambda. */
 export class AccessorLeakException extends Error {
   constructor() {
-    super('accessor leak detected');
+    super("accessor leak detected");
   }
 }
 
@@ -54,10 +54,10 @@ export function combineProviders<PP>(
       for (const key in providers) {
         const drv = providers[key];
         if (
-          !!drv
-          && typeof drv === 'object'
-          && 'createInstance' in drv
-          && typeof drv['createInstance'] === 'function'
+          !!drv &&
+          typeof drv === "object" &&
+          "createInstance" in drv &&
+          typeof drv["createInstance"] === "function"
         )
           result[key] = (drv as TrackedAccessorProvider<unknown>).createInstance(
             watcher,

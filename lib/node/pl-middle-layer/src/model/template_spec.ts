@@ -1,23 +1,23 @@
-import type { CompiledTemplateV3, TemplateData } from '@milaboratories/pl-model-backend';
+import type { CompiledTemplateV3, TemplateData } from "@milaboratories/pl-model-backend";
 
 export interface TemplateFromRegistry {
-  readonly type: 'from-registry';
+  readonly type: "from-registry";
   registry: string;
   path: string;
 }
 
 export interface ExplicitTemplate {
-  readonly type: 'explicit';
+  readonly type: "explicit";
   content: Uint8Array;
 }
 
 export interface PreparedTemplate {
-  readonly type: 'prepared';
+  readonly type: "prepared";
   data: TemplateData | CompiledTemplateV3;
 }
 
 export interface TemplateFromFile {
-  readonly type: 'from-file';
+  readonly type: "from-file";
   path: string;
 }
 

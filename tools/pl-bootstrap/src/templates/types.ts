@@ -65,18 +65,18 @@ export type dbOptions = Partial<dbSettings>;
 
 export type authDriver =
   | {
-    driver: 'ldap';
-    serverUrl: string; // 'ldaps://ldap.example.com:1111'
-    defaultDN: string; // 'cn=%u,ou=users,ou=users,dc=example,dc=com'
-  }
+      driver: "ldap";
+      serverUrl: string; // 'ldaps://ldap.example.com:1111'
+      defaultDN: string; // 'cn=%u,ou=users,ou=users,dc=example,dc=com'
+    }
   | {
-    driver: 'jwt';
-    key: string;
-  }
+      driver: "jwt";
+      key: string;
+    }
   | {
-    driver: 'htpasswd';
-    path: string;
-  };
+      driver: "htpasswd";
+      path: string;
+    };
 
 export type grpcSettings = {
   listen: string;
@@ -92,7 +92,12 @@ export type tlsSettings = {
 };
 export type tlsOptions = Partial<tlsSettings>;
 
-export type tlsAuthMode = 'NoAuth' | 'RequestAnyCert' | 'RequireAnyCert' | 'RequestValidCert' | 'RequireValidCert';
+export type tlsAuthMode =
+  | "NoAuth"
+  | "RequestAnyCert"
+  | "RequireAnyCert"
+  | "RequestValidCert"
+  | "RequireValidCert";
 
 export type storagesSettings = {
   primary: storageSettings;
@@ -113,27 +118,32 @@ type commonStorageSettings = {
   indexCachePeriod: string;
 };
 
-export type s3StorageSettings = storageID & s3StorageType & commonStorageSettings & s3StorageTypeSettings;
-export type s3StorageOptions = s3StorageType & Partial<commonStorageSettings> & Partial<s3StorageTypeSettings>;
+export type s3StorageSettings = storageID &
+  s3StorageType &
+  commonStorageSettings &
+  s3StorageTypeSettings;
+export type s3StorageOptions = s3StorageType &
+  Partial<commonStorageSettings> &
+  Partial<s3StorageTypeSettings>;
 export function emptyS3Settings(id: string): s3StorageSettings {
   return {
     id: id,
-    type: 'S3',
-    indexCachePeriod: '0s',
-    endpoint: '',
-    region: '',
-    bucketName: '',
+    type: "S3",
+    indexCachePeriod: "0s",
+    endpoint: "",
+    region: "",
+    bucketName: "",
     createBucket: false,
     forcePathStyle: false,
-    key: '',
-    secret: '',
-    keyPrefix: '',
+    key: "",
+    secret: "",
+    keyPrefix: "",
     accessPrefixes: [],
-    uploadKeyPrefix: '',
+    uploadKeyPrefix: "",
   };
 }
 
-type s3StorageType = { type: 'S3' };
+type s3StorageType = { type: "S3" };
 type s3StorageTypeSettings = {
   endpoint?: string;
   presignEndpoint?: string;
@@ -148,18 +158,23 @@ type s3StorageTypeSettings = {
   uploadKeyPrefix: string;
 };
 
-export type fsStorageSettings = storageID & fsStorageType & commonStorageSettings & fsStorageTypeSettings;
-export type fsStorageOptions = fsStorageType & Partial<commonStorageSettings> & Partial<fsStorageTypeSettings>;
+export type fsStorageSettings = storageID &
+  fsStorageType &
+  commonStorageSettings &
+  fsStorageTypeSettings;
+export type fsStorageOptions = fsStorageType &
+  Partial<commonStorageSettings> &
+  Partial<fsStorageTypeSettings>;
 export function emptyFSSettings(id: string): fsStorageSettings {
   return {
     id: id,
-    type: 'FS',
-    indexCachePeriod: '0s',
-    rootPath: '',
+    type: "FS",
+    indexCachePeriod: "0s",
+    rootPath: "",
   };
 }
 
-type fsStorageType = { type: 'FS' };
+type fsStorageType = { type: "FS" };
 type fsStorageTypeSettings = {
   rootPath: string;
 };

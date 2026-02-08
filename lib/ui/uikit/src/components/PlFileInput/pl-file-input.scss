@@ -51,7 +51,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(90deg, #FFF 0%, #D8FAC8 100%);
+    background: linear-gradient(90deg, #fff 0%, #d8fac8 100%);
     pointer-events: none;
     width: 0;
   }
@@ -214,7 +214,7 @@
 
   &:hover {
     --border-color: var(--border-color-focus);
-    background-color: #D9F8CA;
+    background-color: #d9f8ca;
   }
 
   &:hover .pl-file-input__filename::before {

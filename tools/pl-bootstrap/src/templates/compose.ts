@@ -1,5 +1,5 @@
-import fs from 'node:fs';
-import YAML from 'yaml';
+import fs from "node:fs";
+import YAML from "yaml";
 
 export type VolumeMountOption = {
   hostPath: string;
@@ -15,12 +15,15 @@ export type ServiceOptions = {
 
 type ComposeYamlSpec = {
   name: string;
-  services: Record<string, {
-    platform?: string;
-    environment?: string[];
-    volumes?: string[];
-    command?: string[];
-  }>;
+  services: Record<
+    string,
+    {
+      platform?: string;
+      environment?: string[];
+      volumes?: string[];
+      command?: string[];
+    }
+  >;
 
   volumes?: unknown;
 };
@@ -34,11 +37,13 @@ export function render(
     dropVolumes: boolean;
   },
 ) {
-  const composeSrcData = fs.readFileSync(composeSource, { encoding: 'utf-8' });
+  const composeSrcData = fs.readFileSync(composeSource, { encoding: "utf-8" });
   const compose = YAML.parse(composeSrcData.toString()) as ComposeYamlSpec;
 
   if (!compose.services) {
-    throw new Error(`file '${composeSource}' seems to be not a docker-compose file or has unsupported version`);
+    throw new Error(
+      `file '${composeSource}' seems to be not a docker-compose file or has unsupported version`,
+    );
   }
 
   if (services) {
@@ -55,7 +60,9 @@ export function render(
     const svcSpec = compose.services[svcName];
 
     if (!svcSpec) {
-      throw new Error(`docker compose '${composeSource}' has no declaration of service '${svcName}'`);
+      throw new Error(
+        `docker compose '${composeSource}' has no declaration of service '${svcName}'`,
+      );
     }
 
     if (options.platform) {
@@ -66,9 +73,9 @@ export function render(
       if (!svcSpec.environment) {
         svcSpec.environment = [];
       }
-      for (let envSpecI = 0; envSpecI < (svcSpec?.environment.length ?? 0);) {
+      for (let envSpecI = 0; envSpecI < (svcSpec?.environment.length ?? 0); ) {
         const envSpec: string = svcSpec.environment[envSpecI];
-        const envName = envSpec.split('=')[0];
+        const envName = envSpec.split("=")[0];
         if (options.envs[envName]) {
           // Drop env expression from list as we will replace it later by our custom configuration
           const last = svcSpec.environment.pop();

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { useTransformedModel } from '../../composition/useTransformedModel';
-import style from './pl-editable-title.module.scss';
-import { computed, onMounted, ref } from 'vue';
+import { useTransformedModel } from "../../composition/useTransformedModel";
+import style from "./pl-editable-title.module.scss";
+import { computed, onMounted, ref } from "vue";
 
 const model = defineModel<string>();
 
@@ -45,8 +45,8 @@ const props = withDefaults(
     validate?: (v: string) => unknown;
   }>(),
   {
-    placeholder: 'Title',
-    maxWidth: '80%',
+    placeholder: "Title",
+    maxWidth: "80%",
     prefix: undefined,
     maxLength: 1000,
     minLength: undefined,
@@ -59,8 +59,8 @@ const local = useTransformedModel(model, {
     return false;
   },
   parse: (v): string => {
-    if (typeof v !== 'string') {
-      throw Error('value should be a string');
+    if (typeof v !== "string") {
+      throw Error("value should be a string");
     }
 
     if (props.maxLength && v.length > props.maxLength) {
@@ -71,7 +71,7 @@ const local = useTransformedModel(model, {
       throw Error(`Min title length is ${props.minLength} characters`);
     }
 
-    if (typeof props.validate === 'function') {
+    if (typeof props.validate === "function") {
       props.validate(v);
     }
 
@@ -82,7 +82,7 @@ const local = useTransformedModel(model, {
 const inputRef = ref<HTMLInputElement>();
 
 const computedStyle = computed(() => ({
-  maxWidth: props.maxWidth ?? '80%',
+  maxWidth: props.maxWidth ?? "80%",
 }));
 
 const save = () => {
@@ -95,7 +95,6 @@ onMounted(() => {
     inputRef.value?.focus();
   }
 });
-
 </script>
 
 <template>

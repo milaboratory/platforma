@@ -1,35 +1,35 @@
 .container {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
 }
 
 .text {
-    display: block;
+  display: block;
 }
 
 .checkbox {
-    display: none;
+  display: none;
 }
 
 .allowed-selection:hover .text {
-    display: none;
+  display: none;
 }
 
 .allowed-selection:hover .checkbox {
-    display: block;
+  display: block;
 }
 
 .checkbox.checked {
-    display: block;
+  display: block;
 }
 
 :global(.ag-row-hover) {
-    .checkbox {
-        display: block !important;
-    }
+  .checkbox {
+    display: block !important;
+  }
 
-    .allowed-selection .text {
-        display: none;
-    }
+  .allowed-selection .text {
+    display: none;
+  }
 }

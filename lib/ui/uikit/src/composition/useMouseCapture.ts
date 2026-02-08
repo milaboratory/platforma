@@ -1,6 +1,6 @@
-import type { MaybeRef } from '../types';
-import { unref } from 'vue';
-import { useEventListener } from './useEventListener';
+import type { MaybeRef } from "../types";
+import { unref } from "vue";
+import { useEventListener } from "./useEventListener";
 
 type CustomEvent = {
   x: number;
@@ -16,7 +16,10 @@ type CaptureState = {
   y: number;
 };
 
-export function useMouseCapture<T extends HTMLElement>(elRef: MaybeRef<T | undefined>, cb: (ev: CustomEvent, state: CaptureState) => void) {
+export function useMouseCapture<T extends HTMLElement>(
+  elRef: MaybeRef<T | undefined>,
+  cb: (ev: CustomEvent, state: CaptureState) => void,
+) {
   const state: CaptureState = {
     el: undefined as HTMLElement | undefined,
     x: 0,
@@ -30,7 +33,7 @@ export function useMouseCapture<T extends HTMLElement>(elRef: MaybeRef<T | undef
     dy: ev.y - state.y,
   });
 
-  useEventListener(document, 'mousedown', (ev) => {
+  useEventListener(document, "mousedown", (ev) => {
     if (ev.target === unref(elRef)) {
       // disable selection when moving
       if (ev.stopPropagation) ev.stopPropagation();
@@ -41,7 +44,7 @@ export function useMouseCapture<T extends HTMLElement>(elRef: MaybeRef<T | undef
     }
   });
 
-  useEventListener(document, 'mouseup', (ev) => {
+  useEventListener(document, "mouseup", (ev) => {
     if (!state.el) {
       return;
     }
@@ -57,7 +60,7 @@ export function useMouseCapture<T extends HTMLElement>(elRef: MaybeRef<T | undef
     );
   });
 
-  useEventListener(document, 'mousemove', (ev) => {
+  useEventListener(document, "mousemove", (ev) => {
     if (state.el) {
       cb(createCustom(ev), state);
     }

@@ -1,31 +1,30 @@
 {
   "name": "@milaboratories/config-local-ml-integration",
+  "version": "1.2.117",
   "private": true,
   "description": "Tests for block registry reader",
-  "version": "1.2.117",
   "scripts": {
-    "type-check": "ts-builder types --target node",
-    "build": "ts-builder build --target node",
-    "watch": "ts-builder build --target node --watch",
-    "lint": "eslint .",
-    "test": "vitest run --coverage"
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "test": "vitest run --coverage",
+    "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@milaboratories/ts-helpers": "workspace:*",
     "@milaboratories/pl-client": "workspace:*",
-    "@milaboratories/pl-middle-layer": "workspace:*",
     "@milaboratories/pl-config": "workspace:*",
-    "@milaboratories/pl-deployments": "workspace:*"
+    "@milaboratories/pl-deployments": "workspace:*",
+    "@milaboratories/pl-middle-layer": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
-    "@milaboratories/eslint-config": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@vitest/coverage-istanbul": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

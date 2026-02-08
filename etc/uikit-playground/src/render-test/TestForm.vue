@@ -1,13 +1,13 @@
 <script lang="ts" setup>
-import { PlTextField } from '@milaboratories/uikit';
-import { computed } from 'vue';
+import { PlTextField } from "@milaboratories/uikit";
+import { computed } from "vue";
 
 type Model = {
   name: string;
 };
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: Model): void;
+  (e: "update:modelValue", value: Model): void;
 }>();
 
 const props = defineProps<{
@@ -19,7 +19,7 @@ const nameModel = computed({
     return props.modelValue.name;
   },
   set(name) {
-    emit('update:modelValue', {
+    emit("update:modelValue", {
       ...props.modelValue,
       name,
     });

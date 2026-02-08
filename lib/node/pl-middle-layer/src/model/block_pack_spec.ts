@@ -1,7 +1,7 @@
-import type { ExplicitTemplate, PreparedTemplate } from './template_spec';
-import type { ResourceType } from '@milaboratories/pl-client';
-import type { BlockConfigContainer } from '@platforma-sdk/model';
-import type { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
+import type { ExplicitTemplate, PreparedTemplate } from "./template_spec";
+import type { ResourceType } from "@milaboratories/pl-client";
+import type { BlockConfigContainer } from "@platforma-sdk/model";
+import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 
 export type FrontendSpec = FrontendFromUrl | FrontendFromFolder;
 
@@ -9,12 +9,12 @@ export interface FrontendFromUrlData {
   url: string;
 }
 
-export const FrontendFromUrlResourceType: ResourceType = { name: 'Frontend/FromUrl', version: '1' };
+export const FrontendFromUrlResourceType: ResourceType = { name: "Frontend/FromUrl", version: "1" };
 
 /** Directs user of the block pack to download the contents from the URL
  * outside the pl infrastructure. */
 export interface FrontendFromUrl extends FrontendFromUrlData {
-  type: 'url';
+  type: "url";
 }
 
 export interface FrontendFromFolderData {
@@ -24,21 +24,21 @@ export interface FrontendFromFolderData {
 }
 
 export const FrontendFromFolderResourceType: ResourceType = {
-  name: 'Frontend/FromFolder',
-  version: '1',
+  name: "Frontend/FromFolder",
+  version: "1",
 };
 
 /** Directs user of the block pack to load frontend from specific local
  * folder. Signature allows to confirm that this is the same client who
  * added the resource. */
 export interface FrontendFromFolder extends FrontendFromFolderData {
-  type: 'local';
+  type: "local";
 }
 
 /** Direct instructions to create block-pack from client. Currently, this
  * is the only block-pack spec that can be directly materialized. */
 export interface BlockPackExplicit {
-  type: 'explicit';
+  type: "explicit";
   template: ExplicitTemplate;
   config: BlockConfigContainer;
   frontend: FrontendSpec;
@@ -47,7 +47,7 @@ export interface BlockPackExplicit {
 
 /** Block-pack spec that can be materialized in pl. */
 export type BlockPackSpecPrepared = {
-  type: 'prepared';
+  type: "prepared";
   template: PreparedTemplate;
   config: BlockConfigContainer;
   frontend: FrontendSpec;

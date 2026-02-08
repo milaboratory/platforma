@@ -1,9 +1,9 @@
-import { fileExists } from '@milaboratories/ts-helpers';
-import fs from 'node:fs/promises';
-import upath from 'upath';
+import { fileExists } from "@milaboratories/ts-helpers";
+import fs from "node:fs/promises";
+import upath from "upath";
 
 export function filePid(dir: string) {
-  return upath.join(dir, 'pl_pid');
+  return upath.join(dir, "pl_pid");
 }
 
 export async function readPid(filePath: string): Promise<number | undefined> {

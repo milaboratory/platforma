@@ -1,26 +1,26 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const LocalDevFolder = z.object({
-  type: z.literal('local-dev'),
+  type: z.literal("local-dev"),
   path: z.string(),
 });
 export type LocalDevFolder = z.infer<typeof LocalDevFolder>;
 
 /** @deprecated don't use */
 export const RemoteRegistryV1Spec = z.object({
-  type: z.literal('remote-v1'),
+  type: z.literal("remote-v1"),
   url: z.string().url(),
 });
 /** @deprecated don't use */
 export type RemoteRegistryV1Spec = z.infer<typeof RemoteRegistryV1Spec>;
 
 export const RemoteRegistryV2Spec = z.object({
-  type: z.literal('remote-v2'),
+  type: z.literal("remote-v2"),
   url: z.string().url(),
 });
 export type RemoteRegistryV2Spec = z.infer<typeof RemoteRegistryV2Spec>;
 
-export const RegistrySpec = z.discriminatedUnion('type', [
+export const RegistrySpec = z.discriminatedUnion("type", [
   RemoteRegistryV1Spec,
   RemoteRegistryV2Spec,
   LocalDevFolder,

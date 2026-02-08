@@ -1,5 +1,5 @@
-import type { FutureAwait, FutureHandle } from './internal';
-import { registerFutureAwait } from '../internal';
+import type { FutureAwait, FutureHandle } from "./internal";
+import { registerFutureAwait } from "../internal";
 
 export class FutureRef<T = unknown> {
   private isResolved = false;

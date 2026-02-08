@@ -1,6 +1,6 @@
-import type * as sdk from '@milaboratories/pl-model-common';
-import type { Signer } from '@milaboratories/ts-helpers';
-import { ImportFileHandleIndexData, ImportFileHandleUploadData } from '../types';
+import type * as sdk from "@milaboratories/pl-model-common";
+import type { Signer } from "@milaboratories/ts-helpers";
+import { ImportFileHandleIndexData, ImportFileHandleUploadData } from "../types";
 
 export function createIndexImportHandle(
   storageName: string,

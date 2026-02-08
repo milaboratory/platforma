@@ -1,17 +1,21 @@
-import { expect, test } from 'vitest';
-import { useDebounceFn } from '@vueuse/core';
-import { delay } from '@milaboratories/helpers';
+import { expect, test } from "vitest";
+import { useDebounceFn } from "@vueuse/core";
+import { delay } from "@milaboratories/helpers";
 
-test.skip('useDebounceFn', async () => {
+test.skip("useDebounceFn", async () => {
   const s = {
     r: 0,
   };
 
-  const debouncedFn = useDebounceFn(async (i: number) => {
-    await delay(0);
-    console.log('fn', i);
-    s.r = i;
-  }, 20, { maxWait: 40 });
+  const debouncedFn = useDebounceFn(
+    async (i: number) => {
+      await delay(0);
+      console.log("fn", i);
+      s.r = i;
+    },
+    20,
+    { maxWait: 40 },
+  );
 
   const t1 = performance.now();
   for (let i = 0; i < 10; i++) {
@@ -19,9 +23,9 @@ test.skip('useDebounceFn', async () => {
     debouncedFn(i);
   }
 
-  console.log('calls span', performance.now() - t1);
+  console.log("calls span", performance.now() - t1);
 
   await delay(200);
-  console.log('s.r', s.r);
+  console.log("s.r", s.r);
   expect(s.r).toBe(9);
 });

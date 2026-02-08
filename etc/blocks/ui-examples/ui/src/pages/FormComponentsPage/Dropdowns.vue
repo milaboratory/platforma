@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { undef } from '@milaboratories/helpers';
-import type { ListOption } from '@platforma-sdk/ui-vue';
+import { undef } from "@milaboratories/helpers";
+import type { ListOption } from "@platforma-sdk/ui-vue";
 import {
   PlBtnPrimary,
   PlCheckbox,
@@ -11,8 +11,8 @@ import {
   PlDropdownRef,
   PlIcon16,
   PlRow,
-} from '@platforma-sdk/ui-vue';
-import { computed, reactive, ref } from 'vue';
+} from "@platforma-sdk/ui-vue";
+import { computed, reactive, ref } from "vue";
 
 const data = reactive({
   required: false,
@@ -25,8 +25,8 @@ const data = reactive({
   multiRefSelected: [
     {
       __isRef: true as const,
-      blockId: '1',
-      name: 'Block 1 Ref',
+      blockId: "1",
+      name: "Block 1 Ref",
     },
   ],
   ref: undefined,
@@ -35,77 +35,77 @@ const data = reactive({
 const simpleOptionsBase = ref<ListOption<unknown>[] | undefined>(
   undef([
     {
-      label: 'One',
+      label: "One",
       value: 1,
     },
     {
-      label: 'Two',
+      label: "Two",
       value: 2,
     },
     {
-      label: 'Three',
+      label: "Three",
       value: 3,
     },
     {
-      label: 'Letter C',
-      value: 'C',
+      label: "Letter C",
+      value: "C",
     },
     {
-      label: 'Four (4)',
+      label: "Four (4)",
       value: 4,
     },
     {
-      label: 'Five',
+      label: "Five",
       value: 5,
     },
     {
-      text: 'Letter A',
-      value: 'A',
+      text: "Letter A",
+      value: "A",
     },
     {
-      label: 'Letter B',
-      value: 'B',
+      label: "Letter B",
+      value: "B",
     },
     {
-      label: 'Letter D (no group)',
-      value: 'D',
+      label: "Letter D (no group)",
+      value: "D",
     },
     {
-      label: 'Letter E (no group)',
-      value: 'E',
+      label: "Letter E (no group)",
+      value: "E",
     },
     {
-      label: 'Letter F (no group)',
-      value: 'F',
+      label: "Letter F (no group)",
+      value: "F",
     },
     {
-      label: 'Letter G (group)',
-      value: 'G',
+      label: "Letter G (group)",
+      value: "G",
     },
     {
-      label: 'Letter H (group)',
-      value: 'H',
-      group: 'Group 1',
+      label: "Letter H (group)",
+      value: "H",
+      group: "Group 1",
     },
     {
-      label: 'Letter I (group)',
-      value: 'I',
-      group: 'Group 1',
+      label: "Letter I (group)",
+      value: "I",
+      group: "Group 1",
     },
     {
-      label: 'Letter J (group)',
-      value: 'J',
-      group: 'Group 1',
+      label: "Letter J (group)",
+      value: "J",
+      group: "Group 1",
     },
     {
-      label: 'Letter K (group)',
-      value: 'K',
-      group: 'Group 1',
+      label: "Letter K (group)",
+      value: "K",
+      group: "Group 1",
     },
     {
-      label: 'Letter L (group)',
-      value: 'L',
-      group: 'Group 1',
+      label: "Letter L (group)",
+      value: "L",
+      group: "Group 1",
     },
   ]),
 );
@@ -117,7 +117,7 @@ const simpleOptions = computed(() => {
 
   return simpleOptionsBase.value?.map((option) => ({
     ...option,
-    group: data.withGroups ? (option.value === 'D' ? undefined : typeof option.value) : undefined,
+    group: data.withGroups ? (option.value === "D" ? undefined : typeof option.value) : undefined,
   }));
 });
 
@@ -128,22 +128,22 @@ const refOptions = computed(() => {
 
   return undef([
     {
-      label: 'Block 1 label',
+      label: "Block 1 label",
       ref: {
         __isRef: true as const,
-        blockId: '1',
-        name: 'Block 1',
+        blockId: "1",
+        name: "Block 1",
       },
-      group: data.withGroups ? 'Group 1' : undefined,
+      group: data.withGroups ? "Group 1" : undefined,
     },
     {
-      label: 'Block 2 label',
+      label: "Block 2 label",
       ref: {
         __isRef: true as const,
-        blockId: '2',
-        name: 'Block 2',
+        blockId: "2",
+        name: "Block 2",
       },
-      group: data.withGroups ? 'Group 2' : undefined,
+      group: data.withGroups ? "Group 2" : undefined,
     },
   ]);
 });
@@ -155,19 +155,19 @@ const refOptionsMulti = computed(() => {
 
   return undef([
     {
-      label: 'Block 1 label Ref',
+      label: "Block 1 label Ref",
       ref: {
         __isRef: true as const,
-        blockId: '1',
-        name: 'Block 1 Ref',
+        blockId: "1",
+        name: "Block 1 Ref",
       },
     },
     {
-      label: 'Block 2 label Ref',
+      label: "Block 2 label Ref",
       ref: {
         __isRef: true as const,
-        blockId: '2',
-        name: 'Block 2 Ref',
+        blockId: "2",
+        name: "Block 2 Ref",
       },
     },
   ]);

@@ -1,29 +1,20 @@
-import { PollingComputableHooks } from '@milaboratories/computable';
-import { PlTreeEntry } from './accessors';
+import { PollingComputableHooks } from "@milaboratories/computable";
+import { PlTreeEntry } from "./accessors";
 import type {
   FinalResourceDataPredicate,
   PlClient,
   ResourceId,
   TxOps,
-} from '@milaboratories/pl-client';
-import {
-  isTimeoutOrCancelError,
-} from '@milaboratories/pl-client';
-import type { ExtendedResourceData } from './state';
-import { PlTreeState, TreeStateUpdateError } from './state';
-import type {
-  PruningFunction,
-  TreeLoadingStat,
-} from './sync';
-import {
-  constructTreeLoadingRequest,
-  initialTreeLoadingStat,
-  loadTreeState,
-} from './sync';
-import * as tp from 'node:timers/promises';
-import type { MiLogger } from '@milaboratories/ts-helpers';
+} from "@milaboratories/pl-client";
+import { isTimeoutOrCancelError } from "@milaboratories/pl-client";
+import type { ExtendedResourceData } from "./state";
+import { PlTreeState, TreeStateUpdateError } from "./state";
+import type { PruningFunction, TreeLoadingStat } from "./sync";
+import { constructTreeLoadingRequest, initialTreeLoadingStat, loadTreeState } from "./sync";
+import * as tp from "node:timers/promises";
+import type { MiLogger } from "@milaboratories/ts-helpers";
 
-type StatLoggingMode = 'cumulative' | 'per-request';
+type StatLoggingMode = "cumulative" | "per-request";
 
 export type SynchronizedTreeOps = {
   /** Override final predicate from the PlClient */
@@ -81,19 +72,19 @@ export class SynchronizedTreeState {
 
   /** @deprecated use "entry" instead */
   public accessor(rid: ResourceId = this.root): PlTreeEntry {
-    if (this.terminated) throw new Error('tree synchronization is terminated');
+    if (this.terminated) throw new Error("tree synchronization is terminated");
     return this.entry(rid);
   }
 
   public entry(rid: ResourceId = this.root): PlTreeEntry {
-    if (this.terminated) throw new Error('tree synchronization is terminated');
+    if (this.terminated) throw new Error("tree synchronization is terminated");
     return new PlTreeEntry({ treeProvider: () => this.state, hooks: this.hooks }, rid);
   }
 
   /** Can be used to externally kick off the synchronization polling loop, and
    * await for the first synchronization to happen. */
   public async refreshState(): Promise<void> {
-    if (this.terminated) throw new Error('tree synchronization is terminated');
+    if (this.terminated) throw new Error("tree synchronization is terminated");
     await this.hooks.refreshState();
   }
 
@@ -102,7 +93,7 @@ export class SynchronizedTreeState {
 
   /** Called from computable hooks when external observer asks for state refresh */
   private scheduleOnNextState(resolve: () => void, reject: (err: any) => void): void {
-    if (this.terminated) reject(new Error('tree synchronization is terminated'));
+    if (this.terminated) reject(new Error("tree synchronization is terminated"));
     else {
       this.scheduledOnNextState.push({ resolve, reject });
       if (this.currentLoopDelayInterrupt) {
@@ -131,11 +122,15 @@ export class SynchronizedTreeState {
 
   /** Executed from the main loop, and initialization procedure. */
   private async refresh(stats?: TreeLoadingStat, txOps?: TxOps): Promise<void> {
-    if (this.terminated) throw new Error('tree synchronization is terminated');
+    if (this.terminated) throw new Error("tree synchronization is terminated");
     const request = constructTreeLoadingRequest(this.state, this.pruning);
-    const data = await this.pl.withReadTx('ReadingTree', async (tx) => {
-      return await loadTreeState(tx, request, stats);
-    }, txOps);
+    const data = await this.pl.withReadTx(
+      "ReadingTree",
+      async (tx) => {
+        return await loadTreeState(tx, request, stats);
+      },
+      txOps,
+    );
     this.state.updateFromResourceData(data, true);
   }
 
@@ -162,20 +157,26 @@ export class SynchronizedTreeState {
 
       try {
         // resetting stats if we were asked to collect non-cumulative stats
-        if (this.logStat === 'per-request') stat = initialTreeLoadingStat();
+        if (this.logStat === "per-request") stat = initialTreeLoadingStat();
 
         // actual tree synchronization
         await this.refresh(stat);
 
         // logging stats if we were asked to
-        if (stat && this.logger) this.logger.info(`Tree stat (success, after ${Date.now() - lastUpdate}ms): ${JSON.stringify(stat)}`);
+        if (stat && this.logger)
+          this.logger.info(
+            `Tree stat (success, after ${Date.now() - lastUpdate}ms): ${JSON.stringify(stat)}`,
+          );
         lastUpdate = Date.now();
 
         // notifying that we got new state
         if (toNotify !== undefined) for (const n of toNotify) n.resolve();
       } catch (e: any) {
         // logging stats if we were asked to (even if error occured)
-        if (stat && this.logger) this.logger.info(`Tree stat (error, after ${Date.now() - lastUpdate}ms): ${JSON.stringify(stat)}`);
+        if (stat && this.logger)
+          this.logger.info(
+            `Tree stat (error, after ${Date.now() - lastUpdate}ms): ${JSON.stringify(stat)}`,
+          );
         lastUpdate = Date.now();
 
         // notifying that we failed to refresh the state
@@ -187,7 +188,7 @@ export class SynchronizedTreeState {
           this.logger?.error(e);
 
           // marking everybody who used previous state as changed
-          this.state.invalidateTree('stat update error');
+          this.state.invalidateTree("stat update error");
           // creating new tree
           this.state = new PlTreeState(this.root, this.finalPredicate);
 
@@ -206,10 +207,12 @@ export class SynchronizedTreeState {
       if (this.scheduledOnNextState.length === 0) {
         try {
           this.currentLoopDelayInterrupt = new AbortController();
-          await tp.setTimeout(this.pollingInterval,
-            AbortSignal.any([this.abortController.signal, this.currentLoopDelayInterrupt.signal]));
+          await tp.setTimeout(
+            this.pollingInterval,
+            AbortSignal.any([this.abortController.signal, this.currentLoopDelayInterrupt.signal]),
+          );
         } catch (e: unknown) {
-          if (!isTimeoutOrCancelError(e)) throw new Error('Unexpected error', { cause: e });
+          if (!isTimeoutOrCancelError(e)) throw new Error("Unexpected error", { cause: e });
           break;
         } finally {
           this.currentLoopDelayInterrupt = undefined;
@@ -241,7 +244,7 @@ export class SynchronizedTreeState {
     if (this.currentLoop === undefined) return;
     await this.currentLoop;
 
-    this.state.invalidateTree('synchronization terminated for the tree');
+    this.state.invalidateTree("synchronization terminated for the tree");
   }
 
   /** @deprecated */
@@ -271,7 +274,7 @@ export class SynchronizedTreeState {
       // logging stats if we were asked to (even if error occured)
       if (stat && logger)
         logger.info(
-          `Tree stat (initial load, ${ok ? 'success' : 'failure'}): ${JSON.stringify(stat)}`,
+          `Tree stat (initial load, ${ok ? "success" : "failure"}): ${JSON.stringify(stat)}`,
         );
     }
 

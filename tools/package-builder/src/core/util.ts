@@ -1,15 +1,15 @@
-import * as path from 'node:path';
-import * as os from 'node:os';
-import fs from 'node:fs';
-import type { Hash } from 'node:crypto';
-import { createHash } from 'node:crypto';
-import winston from 'winston';
-import type { z } from 'zod/v4';
-import { Errors as OclifErrors } from '@oclif/core';
-import * as envs from './envs';
+import * as path from "node:path";
+import * as os from "node:os";
+import fs from "node:fs";
+import type { Hash } from "node:crypto";
+import { createHash } from "node:crypto";
+import winston from "winston";
+import type { z } from "zod/v4";
+import { Errors as OclifErrors } from "@oclif/core";
+import * as envs from "./envs";
 
-export const packageJsonName = 'package.json';
-export const softwareConfigName = 'package.json';
+export const packageJsonName = "package.json";
+export const softwareConfigName = "package.json";
 
 export function assertNever(_a: never) {
   throw new Error(`code logic error: assertNever() call for ${JSON.stringify(_a)}`);
@@ -30,7 +30,7 @@ export function trimSuffix(str: string, suffix: string): string {
 }
 
 export function hashDirMetaSync(folder: string, hasher?: Hash): Hash {
-  const hash = hasher ? hasher : createHash('sha256');
+  const hash = hasher ? hasher : createHash("sha256");
   const info = fs.readdirSync(folder, { withFileTypes: true });
 
   for (const item of info) {
@@ -49,19 +49,19 @@ export function hashDirMetaSync(folder: string, hasher?: Hash): Hash {
 }
 
 export function hashDirSync(rootDir: string, hasher?: Hash, subdir?: string): Hash {
-  const hash = hasher ? hasher : createHash('sha256');
-  const folder = path.join(rootDir, subdir ?? '.');
+  const hash = hasher ? hasher : createHash("sha256");
+  const folder = path.join(rootDir, subdir ?? ".");
 
   const info = fs.readdirSync(folder, { withFileTypes: true });
 
   for (const item of info) {
-    const relPath = path.join(subdir ?? '.', item.name);
+    const relPath = path.join(subdir ?? ".", item.name);
     const fullPath = path.join(folder, item.name);
 
     hash.update(relPath);
 
     if (item.isFile()) {
-      const fileDescriptor = fs.openSync(fullPath, 'r');
+      const fileDescriptor = fs.openSync(fullPath, "r");
       const buffer = Buffer.alloc(65536);
       let bytesRead: number;
 
@@ -106,10 +106,10 @@ export function findNodeModules(logger: winston.Logger, startPath?: string): str
     startPath = process.cwd();
   }
   logger.debug(`Detecting 'node_modules' directory...`);
-  const nodeModules = searchPathUp(startPath, startPath, 'node_modules');
+  const nodeModules = searchPathUp(startPath, startPath, "node_modules");
   logger.debug(`  'node_modules' found at '${nodeModules}'`);
 
-  return path.join(nodeModules, 'node_modules');
+  return path.join(nodeModules, "node_modules");
 }
 
 export function findInstalledModule(
@@ -137,7 +137,7 @@ function searchPathUp(startPath: string, pathToCheck: string, itemToCheck: strin
   }
 
   const parentDir = path.dirname(pathToCheck);
-  if (parentDir === pathToCheck || pathToCheck === '') {
+  if (parentDir === pathToCheck || pathToCheck === "") {
     throw CLIError(
       `failed to find '${itemToCheck}' file in any of parent directories starting from '${startPath}'`,
     );
@@ -146,24 +146,24 @@ function searchPathUp(startPath: string, pathToCheck: string, itemToCheck: strin
   return searchPathUp(startPath, parentDir, itemToCheck);
 }
 
-export function createLogger(level: string = 'debug'): winston.Logger {
+export function createLogger(level: string = "debug"): winston.Logger {
   if (envs.isCI() && envs.isRunnerDebug()) {
-    level = 'debug';
+    level = "debug";
   }
 
   return winston.createLogger({
     level: level,
 
     format: winston.format.printf(({ level, message }) => {
-      const indent = ' '.repeat(level.length + 2); // For ': ' after the level
-      if (typeof message !== 'string') {
+      const indent = " ".repeat(level.length + 2); // For ': ' after the level
+      if (typeof message !== "string") {
         const messageJson = JSON.stringify(message);
         throw new Error(`logger message ${messageJson} is not a string`);
       }
       const indentedMessage = message
-        .split('\n')
+        .split("\n")
         .map((line: string, index: number) => (index === 0 ? line : indent + line))
-        .join('\n');
+        .join("\n");
 
       const colorize = (l: string) => winston.format.colorize().colorize(l, l);
 
@@ -172,7 +172,7 @@ export function createLogger(level: string = 'debug'): winston.Logger {
 
     transports: [
       new winston.transports.Console({
-        stderrLevels: ['error', 'warn', 'info', 'debug'],
+        stderrLevels: ["error", "warn", "info", "debug"],
         handleExceptions: true,
       }),
     ],
@@ -188,15 +188,15 @@ export function rSplit(input: string, delimiter: string, limit?: number): string
   return [parts.slice(0, -limit + 1).join(delimiter), ...parts.slice(-limit + 1)];
 }
 
-const replaceDuplicateSlashes = new RegExp('//+', 'g');
+const replaceDuplicateSlashes = new RegExp("//+", "g");
 export function urlJoin(url: string, appendPath: string): string {
-  const u = new URL(url, 'file:/nonexistent-9672674c/');
-  if (u.protocol === 'file:' && u.pathname.startsWith('/nonexistent-9672674c/')) {
+  const u = new URL(url, "file:/nonexistent-9672674c/");
+  if (u.protocol === "file:" && u.pathname.startsWith("/nonexistent-9672674c/")) {
     throw new Error(`string '${url}' is not valid URL`);
   }
 
-  u.pathname = u.pathname + '/' + appendPath;
-  u.pathname = u.pathname.replaceAll(replaceDuplicateSlashes, '/');
+  u.pathname = u.pathname + "/" + appendPath;
+  u.pathname = u.pathname.replaceAll(replaceDuplicateSlashes, "/");
   return u.toString();
 }
 
@@ -226,56 +226,56 @@ export function toInt(input: any): number {
   return input ? 1 : 0;
 }
 
-export const OSes = ['linux', 'macosx', 'windows'] as const;
+export const OSes = ["linux", "macosx", "windows"] as const;
 export type OSType = (typeof OSes)[number];
 
 export function currentOS(): OSType {
   const platform = os.platform();
   switch (platform) {
-    case 'darwin':
-      return 'macosx';
-    case 'linux':
-      return 'linux';
-    case 'win32':
-      return 'windows';
+    case "darwin":
+      return "macosx";
+    case "linux":
+      return "linux";
+    case "win32":
+      return "windows";
     default:
       throw CLIError(
-        `operating system '${platform}' is not currently supported by Platforma ecosystem. The list of OSes supported: `
-        + JSON.stringify(OSes),
+        `operating system '${platform}' is not currently supported by Platforma ecosystem. The list of OSes supported: ` +
+          JSON.stringify(OSes),
       );
   }
 }
 
-export const Arches = ['x64', 'aarch64'] as const;
+export const Arches = ["x64", "aarch64"] as const;
 export type ArchType = (typeof Arches)[number];
 
 export function currentArch(): ArchType {
   const arch = os.arch();
   switch (arch) {
-    case 'arm64':
-      return 'aarch64';
-    case 'x64':
-      return 'x64';
+    case "arm64":
+      return "aarch64";
+    case "x64":
+      return "x64";
     default:
       throw CLIError(
-        `processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: `
-        + JSON.stringify(Arches),
+        `processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: ` +
+          JSON.stringify(Arches),
       );
   }
 }
 
 // Combinartions of OS and architecture, Platforma supports.
 export const AllPlatforms: `${OSType}-${ArchType}`[] = [
-  'linux-x64',
-  'linux-aarch64',
-  'macosx-x64',
-  'macosx-aarch64',
-  'windows-x64',
+  "linux-x64",
+  "linux-aarch64",
+  "macosx-x64",
+  "macosx-aarch64",
+  "windows-x64",
 ] as const;
 export type PlatformType = (typeof AllPlatforms)[number];
 
 export function splitPlatform(platform: PlatformType): { os: OSType; arch: ArchType } {
-  const parts = platform.split('-');
+  const parts = platform.split("-");
 
   return {
     os: parts[0] as OSType,
@@ -295,10 +295,10 @@ export function currentPlatform(): PlatformType {
   return `${currentOS()}-${currentArch()}`;
 }
 
-export const AllSoftwareSources = ['archive', 'docker'] as const; // add 'image', '<whatever>' here when supported
+export const AllSoftwareSources = ["archive", "docker"] as const; // add 'image', '<whatever>' here when supported
 export type SoftwareSource = (typeof AllSoftwareSources)[number];
 
-export type BuildMode = 'dev-local' | 'release';
+export type BuildMode = "dev-local" | "release";
 
 export type artifactID = {
   package: string;
@@ -306,7 +306,7 @@ export type artifactID = {
 };
 
 export function artifactIDFromString(s: string): artifactID {
-  const parts = s.split(':', 2);
+  const parts = s.split(":", 2);
   if (parts.length < 2) {
     throw CLIError(
       `string '${s}' is not an artifact ID (artifact ID format is <packageName>:<artifactName>)`,
@@ -323,50 +323,55 @@ export function artifactIDToString(a: artifactID): string {
 }
 
 export function indentText(txt: string, indent: string | number, skipFirstLine: boolean = false) {
-  indent = typeof indent === 'number' ? ' '.repeat(indent) : indent;
+  indent = typeof indent === "number" ? " ".repeat(indent) : indent;
 
-  return txt.split('\n')
+  return txt
+    .split("\n")
     .map((line, index) => (index === 0 && skipFirstLine ? line : `${indent}${line}`))
-    .join('\n');
+    .join("\n");
 }
 
-export const formatZodIssues = (issues: z.core.$ZodIssue[], i: string = '', p: PropertyKey[] = []): string => {
+export const formatZodIssues = (
+  issues: z.core.$ZodIssue[],
+  i: string = "",
+  p: PropertyKey[] = [],
+): string => {
   const _errors: string[] = [];
 
-  const formatSubpath = (path: PropertyKey[], prefix: string = '') => {
-    let pp = path.join('.');
-    if (pp != '' && p.length > 0) pp = `.${pp}`;
-    if (pp != '') pp = `${prefix}${pp}`;
+  const formatSubpath = (path: PropertyKey[], prefix: string = "") => {
+    let pp = path.join(".");
+    if (pp != "" && p.length > 0) pp = `.${pp}`;
+    if (pp != "") pp = `${prefix}${pp}`;
     return pp;
   };
 
   const addItem = (item: string) => _errors.push(indentText(item, i));
 
   for (const issue of issues) {
-    if (issue.code === 'invalid_union') {
+    if (issue.code === "invalid_union") {
       addItem(`✖ Expected one of several possible values`);
-      const path = formatSubpath(issue.path, '');
+      const path = formatSubpath(issue.path, "");
       addItem(`  → at '${path}':`);
       for (const errGrp of issue.errors) {
         _errors.push(formatZodIssues(errGrp, `${i}    `, [...p, ...issue.path]));
       }
-    } else if (issue.code === 'invalid_element' || issue.code === 'invalid_key') {
-      addItem(`✖ ${issue.code.replaceAll('_', ' ')}:`);
+    } else if (issue.code === "invalid_element" || issue.code === "invalid_key") {
+      addItem(`✖ ${issue.code.replaceAll("_", " ")}:`);
       _errors.push(formatZodIssues(issue.issues, `${i}  `, [...p, ...issue.path]));
-    } else if (issue.code === 'invalid_type') {
-      const path = formatSubpath(issue.path, ' ');
+    } else if (issue.code === "invalid_type") {
+      const path = formatSubpath(issue.path, " ");
       const prefix = `✖ (${issue.expected})${path}: `;
       const msg = indentText(issue.message, Math.min(prefix.length, 20), true);
       addItem(`${prefix}${msg}`);
     } else {
-      const path = formatSubpath(issue.path, ' ');
-      const prefix = `✖ (${issue.code.replaceAll('_', ' ')})${path}: `;
+      const path = formatSubpath(issue.path, " ");
+      const prefix = `✖ (${issue.code.replaceAll("_", " ")})${path}: `;
       const msg = indentText(issue.message, Math.min(prefix.length, 20), true);
       addItem(`${prefix}${msg}`);
     }
   }
 
-  return _errors.join('\n');
+  return _errors.join("\n");
 };
 
 export function CLIError(msg: string | Error): OclifErrors.CLIError {

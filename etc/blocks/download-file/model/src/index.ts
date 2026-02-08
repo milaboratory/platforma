@@ -1,7 +1,4 @@
-import type {
-  ImportFileHandle,
-  InferHrefType,
-  InferOutputsType } from '@platforma-sdk/model';
+import type { ImportFileHandle, InferHrefType, InferOutputsType } from "@platforma-sdk/model";
 import {
   BlockModel,
   getBlobContent,
@@ -13,8 +10,8 @@ import {
   getResourceField,
   getResourceValueAsJson,
   MainOutputs,
-} from '@platforma-sdk/model';
-import { z } from 'zod';
+} from "@platforma-sdk/model";
+import { z } from "zod";
 
 export const ImportFileHandleSchema = z
   .string()
@@ -29,56 +26,59 @@ export const BlockArgs = z.object({
 
 export type BlockArgs = z.infer<typeof BlockArgs>;
 
-export const platforma = BlockModel.create('Heavy')
+export const platforma = BlockModel.create("Heavy")
 
   .withArgs({
     inputHandle: undefined,
   })
 
-  .output('blob', getResourceValueAsJson()(getResourceField(MainOutputs, 'blob')))
+  .output("blob", getResourceValueAsJson()(getResourceField(MainOutputs, "blob")))
 
-  .output('handle', getImportProgress(getResourceField(MainOutputs, 'handle')))
+  .output("handle", getImportProgress(getResourceField(MainOutputs, "handle")))
 
-  .output('content', getBlobContent(getResourceField(MainOutputs, 'downloadable')))
+  .output("content", getBlobContent(getResourceField(MainOutputs, "downloadable")))
 
-  .output('contentAsString', getBlobContentAsString(getResourceField(MainOutputs, 'downloadable')))
+  .output("contentAsString", getBlobContentAsString(getResourceField(MainOutputs, "downloadable")))
 
-  .output('contentAsString1', (ctx) =>
+  .output("contentAsString1", (ctx) =>
     ctx.outputs
-      ?.resolve('downloadable')
+      ?.resolve("downloadable")
       ?.getFileContentAsString()
       .mapDefined((v) => v + v),
   )
 
-  .output('contentAsStringRange', getBlobContentAsString(getResourceField(MainOutputs, 'downloadable'), { from: 1, to: 2 }))
+  .output(
+    "contentAsStringRange",
+    getBlobContentAsString(getResourceField(MainOutputs, "downloadable"), { from: 1, to: 2 }),
+  )
 
-  .output('contentAsStringRange1', (ctx) =>
+  .output("contentAsStringRange1", (ctx) =>
     ctx.outputs
-      ?.resolve('downloadable')
+      ?.resolve("downloadable")
       ?.getFileContentAsString({ from: 1, to: 2 })
-      .mapDefined((v) => v + v))
+      .mapDefined((v) => v + v),
+  )
 
-  .output('contentAsJson', getBlobContentAsJson()(getResourceField(MainOutputs, 'downloadable')))
+  .output("contentAsJson", getBlobContentAsJson()(getResourceField(MainOutputs, "downloadable")))
 
   .output(
-    'downloadedBlobContent',
-    getDownloadedBlobContent(getResourceField(MainOutputs, 'downloadable')),
+    "downloadedBlobContent",
+    getDownloadedBlobContent(getResourceField(MainOutputs, "downloadable")),
   )
 
   .output(
-    'onDemandBlobContent',
-    getOnDemandBlobContent(getResourceField(MainOutputs, 'downloadable')),
+    "onDemandBlobContent",
+    getOnDemandBlobContent(getResourceField(MainOutputs, "downloadable")),
   )
 
-  .output(
-    'onDemandBlobContent1',
-    (ctx) => ctx.outputs?.resolve('downloadable')?.getRemoteFileHandle(),
+  .output("onDemandBlobContent1", (ctx) =>
+    ctx.outputs?.resolve("downloadable")?.getRemoteFileHandle(),
   )
 
-  .output('getFileHandle', (ctx) => ctx.outputs?.resolve('downloadable')?.getFileHandle())
+  .output("getFileHandle", (ctx) => ctx.outputs?.resolve("downloadable")?.getFileHandle())
 
   .sections((_ctx) => {
-    return [{ type: 'link', href: '/', label: 'Main' }];
+    return [{ type: "link", href: "/", label: "Main" }];
   })
 
   .done();

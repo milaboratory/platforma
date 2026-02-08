@@ -1,22 +1,23 @@
-import type { PollPoolOps } from '@milaboratories/computable';
-import { PollComputablePool } from '@milaboratories/computable';
+import type { PollPoolOps } from "@milaboratories/computable";
+import { PollComputablePool } from "@milaboratories/computable";
 import type {
   BlockPackFromRegistryV2,
   BlockPackSpec,
   BlockSettings,
-  UpdateSuggestions } from '@milaboratories/pl-model-middle-layer';
+  UpdateSuggestions,
+} from "@milaboratories/pl-model-middle-layer";
 import {
   AnyChannel,
   blockPackIdToString,
   StableChannel,
-} from '@milaboratories/pl-model-middle-layer';
-import type { Dispatcher } from 'undici';
-import { getDevV1PacketMtime, getDevV2PacketMtime } from './registry';
-import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import type { V2RegistryProvider } from './registry-v2-provider';
-import * as semver from 'semver';
-import canonicalize from 'canonicalize';
+} from "@milaboratories/pl-model-middle-layer";
+import type { Dispatcher } from "undici";
+import { getDevV1PacketMtime, getDevV2PacketMtime } from "./registry";
+import { tryLoadPackDescription } from "@platforma-sdk/block-tools";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import type { V2RegistryProvider } from "./registry-v2-provider";
+import * as semver from "semver";
+import canonicalize from "canonicalize";
 
 export const DefaultBlockUpdateWatcherOps: PollPoolOps = {
   minDelay: 1500,
@@ -27,7 +28,7 @@ export type BlockUpdateWatcherOps = Partial<PollPoolOps> & {
   readonly preferredUpdateChannel?: string;
 };
 
-const NoUpdatesKey = '__no_updates__';
+const NoUpdatesKey = "__no_updates__";
 
 export type CheckForUpdateRequest = {
   currentSpec: BlockPackSpec;
@@ -58,11 +59,11 @@ export class BlockUpdateWatcher extends PollComputablePool<
 
   protected getKey(req: CheckForUpdateRequest): string {
     switch (req.currentSpec.type) {
-      case 'dev-v1':
+      case "dev-v1":
         return `dev_1_${req.currentSpec.folder}_${req.currentSpec.mtime}`;
-      case 'dev-v2':
+      case "dev-v2":
         return `dev_2_${req.currentSpec.folder}_${req.currentSpec.mtime}`;
-      case 'from-registry-v2':
+      case "from-registry-v2":
         return `from_registry_v2_${canonicalize(req)!}`;
       default:
         return NoUpdatesKey;
@@ -73,7 +74,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
     try {
       const cSpec = req.currentSpec;
       switch (cSpec.type) {
-        case 'dev-v1': {
+        case "dev-v1": {
           try {
             const mtime = await getDevV1PacketMtime(cSpec.folder);
             if (mtime === cSpec.mtime) return { suggestions: [] };
@@ -84,7 +85,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
           }
         }
 
-        case 'dev-v2': {
+        case "dev-v2": {
           try {
             const description = await tryLoadPackDescription(cSpec.folder, this.logger);
             if (description === undefined) return { suggestions: [] };
@@ -97,10 +98,10 @@ export class BlockUpdateWatcher extends PollComputablePool<
           }
         }
 
-        case 'from-registry-v2': {
+        case "from-registry-v2": {
           try {
             const { versionLock, skipVersion } = req.settings;
-            if (versionLock === 'patch') return { suggestions: [] };
+            if (versionLock === "patch") return { suggestions: [] };
             const registry = this.registryProvider.getRegistry(cSpec.registryUrl);
             let channel: string | undefined = this.preferredUpdateChannel;
 
@@ -133,11 +134,11 @@ export class BlockUpdateWatcher extends PollComputablePool<
               case undefined:
                 vMainSuggestion = vSuggestions[0].update;
                 break;
-              case 'major':
-                vMainSuggestion = vSuggestions.find((v) => v.type !== 'major')?.update;
+              case "major":
+                vMainSuggestion = vSuggestions.find((v) => v.type !== "major")?.update;
                 break;
-              case 'minor':
-                vMainSuggestion = vSuggestions.find((v) => v.type === 'patch')?.update;
+              case "minor":
+                vMainSuggestion = vSuggestions.find((v) => v.type === "patch")?.update;
                 break;
             }
 

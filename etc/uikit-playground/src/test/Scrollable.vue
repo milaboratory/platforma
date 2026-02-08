@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { generate } from '../imports';
-import { ref } from 'vue';
-import { scrollIntoView } from '@milaboratories/uikit';
+import { generate } from "../imports";
+import { ref } from "vue";
+import { scrollIntoView } from "@milaboratories/uikit";
 
 const scrollable = ref<HTMLElement>();
 
@@ -31,7 +31,7 @@ function onClick(delta: number) {
     return;
   }
 
-  opt.style.border = '1px solid red';
+  opt.style.border = "1px solid red";
 
   scrollIntoView(parent, opt);
 }

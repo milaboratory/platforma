@@ -2,17 +2,16 @@ import type {
   ComputableCtx,
   ComputableStableDefined,
   UnwrapComputables,
-} from '@milaboratories/computable';
-import {
-  Computable,
-} from '@milaboratories/computable';
+} from "@milaboratories/computable";
+import { Computable } from "@milaboratories/computable";
 import type {
   AnyRef,
   MiddleLayerDriverKit,
   PlClient,
   PlTransaction,
   ResourceId,
-  TemplateSpecAny } from '@milaboratories/pl-middle-layer';
+  TemplateSpecAny,
+} from "@milaboratories/pl-middle-layer";
 import {
   createRenderTemplate,
   field,
@@ -22,11 +21,15 @@ import {
   Pl,
   prepareTemplateSpec,
   toGlobalResourceId,
-} from '@milaboratories/pl-middle-layer';
-import type { PlTreeEntry, PlTreeNodeAccessor, SynchronizedTreeState } from '@milaboratories/pl-tree';
-import { randomUUID } from 'node:crypto';
-import path from 'node:path';
-import { plTest } from './test-pl';
+} from "@milaboratories/pl-middle-layer";
+import type {
+  PlTreeEntry,
+  PlTreeNodeAccessor,
+  SynchronizedTreeState,
+} from "@milaboratories/pl-tree";
+import { randomUUID } from "node:crypto";
+import path from "node:path";
+import { plTest } from "./test-pl";
 
 export type WorkflowRenderOps = {
   parent?: ResourceId;
@@ -45,7 +48,7 @@ export class TestRenderResults<O extends string> {
       const outputAccessor = ctx
         .accessor(this.resultEntry)
         .node()
-        .traverse({ field: name, assertFieldType: 'Input' });
+        .traverse({ field: name, assertFieldType: "Input" });
       return cb(outputAccessor, ctx);
     });
   }
@@ -53,8 +56,8 @@ export class TestRenderResults<O extends string> {
 
 export class TestWorkflowResults {
   constructor(
-    public readonly renderResult: TestRenderResults<'context' | 'result'>,
-    public readonly processedExportsResult: TestRenderResults<'result'> | undefined,
+    public readonly renderResult: TestRenderResults<"context" | "result">,
+    public readonly processedExportsResult: TestRenderResults<"result"> | undefined,
     public readonly blockId: string,
   ) {}
 
@@ -62,14 +65,14 @@ export class TestWorkflowResults {
    * Returns context id of this workflow
    * */
   public context(): ComputableStableDefined<ResourceId> {
-    return this.renderResult.computeOutput('context', (cb) => cb?.id).withStableType();
+    return this.renderResult.computeOutput("context", (cb) => cb?.id).withStableType();
   }
 
   /**
    * Returns context id of this workflow
    * */
   public result(): ComputableStableDefined<ResourceId> {
-    return this.renderResult.computeOutput('result', (cb) => cb?.id).withStableType();
+    return this.renderResult.computeOutput("result", (cb) => cb?.id).withStableType();
   }
 
   public export<R>(
@@ -77,12 +80,12 @@ export class TestWorkflowResults {
     cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R,
   ): Computable<UnwrapComputables<R> | undefined> {
     if (this.processedExportsResult !== undefined)
-      return this.processedExportsResult.computeOutput('result', (acc, ctx) => {
-        return cb(acc?.traverse({ field: name, assertFieldType: 'Input' }), ctx);
+      return this.processedExportsResult.computeOutput("result", (acc, ctx) => {
+        return cb(acc?.traverse({ field: name, assertFieldType: "Input" }), ctx);
       });
     else
-      return this.renderResult.computeOutput('context', (acc, ctx) => {
-        return cb(acc?.traverse({ field: `values/${name}`, assertFieldType: 'Input' }), ctx);
+      return this.renderResult.computeOutput("context", (acc, ctx) => {
+        return cb(acc?.traverse({ field: `values/${name}`, assertFieldType: "Input" }), ctx);
       });
   }
 
@@ -90,8 +93,8 @@ export class TestWorkflowResults {
     name: string,
     cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R,
   ): Computable<UnwrapComputables<R> | undefined> {
-    return this.renderResult.computeOutput('result', (acc, ctx) => {
-      return cb(acc?.traverse({ field: name, assertFieldType: 'Input' }), ctx);
+    return this.renderResult.computeOutput("result", (acc, ctx) => {
+      return cb(acc?.traverse({ field: name, assertFieldType: "Input" }), ctx);
     });
   }
 }
@@ -110,20 +113,19 @@ export class TplTestHelpers {
     inputs: (tx: PlTransaction) => Record<string, AnyRef> | Promise<Record<string, AnyRef>>,
   ): Promise<TestRenderResults<O>> {
     const runId = randomUUID();
-    const spec
-      = typeof template === 'string'
+    const spec =
+      typeof template === "string"
         ? await prepareTemplateSpec({
-          type: 'from-file',
-          path: `./dist/tengo/tpl/${template}.plj.gz`,
-        })
+            type: "from-file",
+            path: `./dist/tengo/tpl/${template}.plj.gz`,
+          })
         : await prepareTemplateSpec(template);
-    const { resultMapRid } = await this.pl.withWriteTx('TemplateRender', async (tx) => {
+    const { resultMapRid } = await this.pl.withWriteTx("TemplateRender", async (tx) => {
       const tpl = loadTemplate(tx, spec);
       const renderedInputs = await inputs(tx);
-      const futureOutputs = await createRenderTemplate(
-        tx, tpl, ephemeral, renderedInputs, outputs);
+      const futureOutputs = await createRenderTemplate(tx, tpl, ephemeral, renderedInputs, outputs);
       const resultMap = Pl.createPlMap(tx, futureOutputs, ephemeral);
-      tx.createField(field(this.resultRootRid, runId), 'Dynamic', resultMap);
+      tx.createField(field(this.resultRootRid, runId), "Dynamic", resultMap);
       const resultMapRid = await toGlobalResourceId(resultMap);
       await tx.commit();
       return {
@@ -145,16 +147,16 @@ export class TplTestHelpers {
     ops: WorkflowRenderOps = {},
   ): Promise<TestWorkflowResults> {
     const blockId = ops.blockId ?? randomUUID();
-    const mainResult: TestRenderResults<'result' | 'context'> = await this.renderTemplate(
+    const mainResult: TestRenderResults<"result" | "context"> = await this.renderTemplate(
       true,
       workflow,
-      ['result', 'context'],
+      ["result", "context"],
       (tx) => {
         let ctx = undefined;
         if (ops.parent) {
           ctx = ops.parent;
         } else {
-          ctx = tx.createEphemeral({ name: 'BContextEnd', version: '1' });
+          ctx = tx.createEphemeral({ name: "BContextEnd", version: "1" });
           tx.lock(ctx);
         }
 
@@ -167,10 +169,10 @@ export class TplTestHelpers {
       },
     );
 
-    let exports: TestRenderResults<'result'> | undefined = undefined;
+    let exports: TestRenderResults<"result"> | undefined = undefined;
     if (ops.exportProcessor !== undefined) {
-      exports = await this.renderTemplate(true, ops.exportProcessor, ['result'], (tx) => ({
-        pf: tx.getFutureFieldValue(mainResult.resultEntry.rid, 'context', 'Input'),
+      exports = await this.renderTemplate(true, ops.exportProcessor, ["result"], (tx) => ({
+        pf: tx.getFutureFieldValue(mainResult.resultEntry.rid, "context", "Input"),
       }));
     }
 
@@ -183,10 +185,10 @@ export const tplTest = plTest.extend<{
   driverKit: MiddleLayerDriverKit;
 }>({
   helper: async ({ pl, createTree }, use): Promise<void> => {
-    const resultMap = await pl.withWriteTx('CreatingHelpers', async (tx) => {
+    const resultMap = await pl.withWriteTx("CreatingHelpers", async (tx) => {
       const map = tx.createEphemeral(Pl.EphStdMap);
-      const rootField = field(tx.clientRoot, 'templateTeste');
-      tx.createField(rootField, 'Dynamic', map);
+      const rootField = field(tx.clientRoot, "templateTeste");
+      tx.createField(rootField, "Dynamic", map);
       await tx.commit();
       return await toGlobalResourceId(map);
     });
@@ -194,13 +196,13 @@ export const tplTest = plTest.extend<{
     await use(new TplTestHelpers(pl, resultMap, resultMapTree));
   },
   driverKit: async ({ pl, tmpFolder }, use): Promise<void> => {
-    const frontendDownloadPath = path.join(tmpFolder, 'frontend');
+    const frontendDownloadPath = path.join(tmpFolder, "frontend");
 
     const driverKit = await initDriverKit(pl, tmpFolder, frontendDownloadPath, {
       localSecret: MiddleLayer.generateLocalSecret(),
       localProjections: [], // TODO must be different with local pl
       openFileDialogCallback: () => {
-        throw new Error('Not implemented.');
+        throw new Error("Not implemented.");
       },
     });
 

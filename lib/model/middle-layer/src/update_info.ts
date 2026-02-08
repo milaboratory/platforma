@@ -1,8 +1,8 @@
-import type { BlockPackSpec } from './block_registry';
+import type { BlockPackSpec } from "./block_registry";
 
 /** Communicates possible block update option */
 export type UpdateSuggestion<V = BlockPackSpec> = {
-  type: 'major' | 'minor' | 'patch';
+  type: "major" | "minor" | "patch";
   update: V;
 };
 

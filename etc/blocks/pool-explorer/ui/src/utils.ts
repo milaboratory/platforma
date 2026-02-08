@@ -1,10 +1,13 @@
-import { isPlainObject } from '@milaboratories/helpers';
+import { isPlainObject } from "@milaboratories/helpers";
 
-export function containsValue<T = unknown>(obj: T, options: {
-  search: string;
-  withKeys: boolean;
-  caseSensitive: boolean;
-}): boolean {
+export function containsValue<T = unknown>(
+  obj: T,
+  options: {
+    search: string;
+    withKeys: boolean;
+    caseSensitive: boolean;
+  },
+): boolean {
   const { search, withKeys, caseSensitive } = options;
 
   const matchString = caseSensitive

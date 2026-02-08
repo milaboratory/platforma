@@ -1,5 +1,5 @@
-import { nextTick, onMounted, onUpdated } from 'vue';
-import { PlBlockPageTitleTeleportTarget } from './PlBlockPageTitleTeleportTarget';
+import { nextTick, onMounted, onUpdated } from "vue";
+import { PlBlockPageTitleTeleportTarget } from "./PlBlockPageTitleTeleportTarget";
 
 export function usePlBlockPageTitleTeleportTarget(componentName: string) {
   const check = () => {

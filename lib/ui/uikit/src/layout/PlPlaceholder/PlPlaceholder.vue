@@ -1,26 +1,25 @@
 <script lang="ts">
-import paintWorkletCode from './paint-worklet.js?raw';
+import paintWorkletCode from "./paint-worklet.js?raw";
 
 export interface PlPlaceholderProps {
-  variant?: 'table' | 'graph';
+  variant?: "table" | "graph";
   title?: string;
   subtitle?: string | string[];
 }
 
 // Register paint worklet once at module load (uses blob URL to comply with CSP)
-const workletBlob = new Blob(
-  [paintWorkletCode],
-  { type: 'application/javascript' },
-);
+const workletBlob = new Blob([paintWorkletCode], { type: "application/javascript" });
 const workletUrl = URL.createObjectURL(workletBlob);
-(CSS as unknown as {
-  paintWorklet: { addModule: (url: string) => void };
-}).paintWorklet.addModule(workletUrl);
+(
+  CSS as unknown as {
+    paintWorklet: { addModule: (url: string) => void };
+  }
+).paintWorklet.addModule(workletUrl);
 </script>
 
 <script setup lang="ts">
-import { useCssModule } from 'vue';
-import PlLoaderLogo from '../../components/PlLoaderLogo.vue';
+import { useCssModule } from "vue";
+import PlLoaderLogo from "../../components/PlLoaderLogo.vue";
 
 const props = defineProps<PlPlaceholderProps>();
 
@@ -30,10 +29,13 @@ const styles = useCssModule();
 <template>
   <div :class="styles.root">
     <div
-      :class="[styles.background, {
-        [styles.table]: props.variant === 'table',
-        [styles.graph]: props.variant === 'graph',
-      }]"
+      :class="[
+        styles.background,
+        {
+          [styles.table]: props.variant === 'table',
+          [styles.graph]: props.variant === 'graph',
+        },
+      ]"
     />
     <div :class="styles.content">
       <PlLoaderLogo :size="64" color="var(--color-div-grey)" />
@@ -117,8 +119,7 @@ const styles = useCssModule();
     animation-iteration-count: infinite;
     animation-timing-function: steps(sibling-count(), jump-none);
     visibility: if(
-      style(--pl-placeholder-active-subtitle: sibling-index()): visible;
-      else: hidden;
+      style(--pl-placeholder-active-subtitle: sibling-index()): visible; else: hidden;
     );
   }
 }
@@ -139,7 +140,7 @@ const styles = useCssModule();
 }
 
 @property --pl-placeholder-active-subtitle {
-  syntax: '<number>';
+  syntax: "<number>";
   inherits: false;
   initial-value: 1;
 }

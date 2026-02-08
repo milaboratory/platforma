@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { DefaultTheme } from 'vitepress';
-import { computed } from 'vue';
-import { useActiveLink } from './useActiveLink';
+import type { DefaultTheme } from "vitepress";
+import { computed } from "vue";
+import { useActiveLink } from "./useActiveLink";
 
 const props = defineProps<{
   item: DefaultTheme.SidebarItem;
@@ -21,11 +21,7 @@ const active = computed(() => {
   >
     {{ item.text }}
   </a>
-  <span
-    v-else
-    :class="!rootGroup ? 'pl-sb__link' : undefined"
-    class="pl-sb__item"
-  >
+  <span v-else :class="!rootGroup ? 'pl-sb__link' : undefined" class="pl-sb__item">
     {{ item.text }}
   </span>
 </template>
