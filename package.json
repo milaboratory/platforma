@@ -26,9 +26,9 @@
     "formatter:check": "turbo run formatter:check",
     "linter:check": "turbo run linter:check",
     "types:check": "turbo run types:check",
-    "ci:prepare": "pnpm --filter \"@milaboratories/ts-builder...\" run build && pnpm run formatter:check && pnpm run linter:check",
-    "ci:build": "pnpm run ci:prepare && pnpm run build",
-    "ci:build:dev": "pnpm run ci:prepare && pnpm run build:dev"
+    "ci:prepare": "pnpm --filter \"@milaboratories/ts-builder...\" run build && pnpm run formatter:check --output-logs=errors-only && pnpm run linter:check --output-logs=errors-only",
+    "ci:build": "pnpm run ci:prepare && pnpm run build --output-logs=errors-only",
+    "ci:build:dev": "pnpm run ci:prepare && pnpm run build:dev --output-logs=errors-only"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
