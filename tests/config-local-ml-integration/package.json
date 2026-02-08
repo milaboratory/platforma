@@ -5,6 +5,9 @@
   "description": "Tests for block registry reader",
   "scripts": {
     "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
     "fmt": "ts-builder format"
   },

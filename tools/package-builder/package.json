@@ -18,6 +18,9 @@
     "build": "oclif-index && ts-builder format && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"

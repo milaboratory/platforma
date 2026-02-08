@@ -20,6 +20,9 @@
   "scripts": {
     "build": "ts-builder build --target node",
     "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
     "test": "echo 'No tests for test-helpers package'",
     "watch": "ts-builder build --target node --watch",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",

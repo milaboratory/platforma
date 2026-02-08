@@ -8,7 +8,20 @@
     },
     "check": {
       "outputs": [],
-      "inputs": ["$TURBO_DEFAULT$", ".oxfmtrc.json", ".oxlintrc.json"],
+      "inputs": ["$TURBO_DEFAULT$", ".oxfmtrc.json", ".oxlintrc.json", "tsconfig.json"],
+      "dependsOn": ["^build"]
+    },
+    "formatter:check": {
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", ".oxfmtrc.json"]
+    },
+    "linter:check": {
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", ".oxlintrc.json"]
+    },
+    "types:check": {
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", "tsconfig.json"],
       "dependsOn": ["^build"]
     },
     "build": {
@@ -25,7 +38,7 @@
         "PL_DOCKER_NO_AUTOPUSH"
       ],
       "env": ["PL_PKG_DEV"],
-      "dependsOn": ["^build", "check"]
+      "dependsOn": ["^build", "types:check"]
     },
     "test": {
       "outputs": ["./coverage/**", "test-report.junit.xml"],

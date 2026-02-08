@@ -18,13 +18,17 @@
     "publish-to-local-registry": "turbo run publish-to-local-registry",
     "do-pack": "PL_PKG_DEV=local turbo run do-pack",
     "do-pack:remote": "turbo run do-pack",
-    "fmt": "turbo run fmt",
-    "check": "turbo run check",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "prepare": "husky",
-    "ci:build": "pnpm --filter \"@milaboratories/ts-builder...\" run build && pnpm run build",
-    "ci:build:dev": "pnpm --filter \"@milaboratories/ts-builder...\" run build && pnpm run build:dev"
+    "fmt": "turbo run fmt",
+    "check": "turbo run check",
+    "formatter:check": "turbo run formatter:check",
+    "linter:check": "turbo run linter:check",
+    "types:check": "turbo run types:check",
+    "ci:prepare": "pnpm --filter \"@milaboratories/ts-builder...\" run build && pnpm run formatter:check && pnpm run linter:check",
+    "ci:build": "pnpm run ci:prepare && pnpm run build",
+    "ci:build:dev": "pnpm run ci:prepare && pnpm run build:dev"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",

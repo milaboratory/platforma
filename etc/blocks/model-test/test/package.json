@@ -8,6 +8,9 @@
   "scripts": {
     "test": "vitest",
     "check": "ts-builder check --target block-test",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target block-test",
     "fmt": "ts-builder format"
   },
   "dependencies": {

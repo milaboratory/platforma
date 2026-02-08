@@ -12,11 +12,14 @@
     "./styles": "./dist/index.js"
   },
   "scripts": {
-    "fmt": "ts-builder format",
     "dev": "ts-builder serve --target browser-lib",
     "build": "ts-builder build --target browser-lib",
     "watch": "ts-builder build --target browser-lib --watch",
+    "fmt": "ts-builder format",
     "check": "ts-builder check --target browser-lib",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target browser-lib",
     "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },

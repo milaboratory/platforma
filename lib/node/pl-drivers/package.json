@@ -19,6 +19,9 @@
   "scripts": {
     "build": "ts-builder build --target node",
     "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
     "update-proto": "./sync-proto.sh && ./generate-grpc.sh && ./generate-rest.sh",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",

@@ -9,6 +9,9 @@
   "scripts": {
     "build": "ts-builder build --target block-model && block-tools build-model",
     "check": "ts-builder check --target block-model",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target block-model",
     "fmt": "ts-builder format"
   },
   "dependencies": {
