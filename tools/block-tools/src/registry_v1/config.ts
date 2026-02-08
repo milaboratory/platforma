@@ -1,16 +1,16 @@
-import YAML from 'yaml';
-import { tryLoadFile } from '../util';
+import YAML from "yaml";
+import { tryLoadFile } from "../util";
 import {
   PlPackageJsonConfigFile,
   PlPackageYamlConfigFile,
   PlRegFullPackageConfigData,
   PlRegPackageConfigDataShard,
-} from './config_schema';
-import * as os from 'node:os';
-import { BlockRegistry } from './registry';
-import { storageByUrl } from '../io/storage';
-import type { FullBlockPackageName } from './v1_repo_schema';
-import type { MiLogger } from '@milaboratories/ts-helpers';
+} from "./config_schema";
+import * as os from "node:os";
+import { BlockRegistry } from "./registry";
+import { storageByUrl } from "../io/storage";
+import type { FullBlockPackageName } from "./v1_repo_schema";
+import type { MiLogger } from "@milaboratories/ts-helpers";
 
 function mergeConfigs(
   c1: PlRegPackageConfigDataShard,
@@ -40,8 +40,8 @@ async function tryLoadYamlConfigFromFile(
 async function loadConfigShard(): Promise<PlRegPackageConfigDataShard> {
   let conf = PlRegPackageConfigDataShard.parse({});
 
-  conf = mergeConfigs(conf, await tryLoadJsonConfigFromFile('./.pl.reg.json'));
-  conf = mergeConfigs(conf, await tryLoadYamlConfigFromFile('./.pl.reg.yaml'));
+  conf = mergeConfigs(conf, await tryLoadJsonConfigFromFile("./.pl.reg.json"));
+  conf = mergeConfigs(conf, await tryLoadYamlConfigFromFile("./.pl.reg.yaml"));
   conf = mergeConfigs(conf, await tryLoadJsonConfigFromFile(`${os.homedir()}/.pl.reg.json`));
   conf = mergeConfigs(conf, await tryLoadYamlConfigFromFile(`${os.homedir()}/.pl.reg.yaml`));
   conf = mergeConfigs(conf, await tryLoadJsonConfigFromFile(PlPackageJsonConfigFile));
@@ -66,7 +66,7 @@ export class PlRegPackageConfig {
 
   createRegistry(logger?: MiLogger): BlockRegistry {
     let address = this.conf.registry;
-    if (!address.startsWith('file:') && !address.startsWith('s3:')) {
+    if (!address.startsWith("file:") && !address.startsWith("s3:")) {
       const regByAlias = this.conf.registries[address];
       if (!regByAlias) throw new Error(`Registry with alias "${address}" not found`);
       address = regByAlias;

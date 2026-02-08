@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Component } from 'vue';
-import { computed, h, ref } from 'vue';
+import type { Component } from "vue";
+import { computed, h, ref } from "vue";
 import {
   PlBlockPage,
   PlAgGridColumnManager,
@@ -15,15 +15,15 @@ import {
   animate,
   PlBtnPrimary,
   PlTextField,
-} from '@platforma-sdk/ui-vue';
-import { AgGridVue } from 'ag-grid-vue3';
-import { times } from '@milaboratories/helpers';
-import { faker } from '@faker-js/faker';
-import { stackedSettings } from './stackedSettings';
-import { histogramSettings } from './histogramSettings';
-import { LinkComponent } from './LinkComponent';
-import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
-import { useApp } from '../../app';
+} from "@platforma-sdk/ui-vue";
+import { AgGridVue } from "ag-grid-vue3";
+import { times } from "@milaboratories/helpers";
+import { faker } from "@faker-js/faker";
+import { stackedSettings } from "./stackedSettings";
+import { histogramSettings } from "./histogramSettings";
+import { LinkComponent } from "./LinkComponent";
+import type { ImportFileHandle, ImportProgress } from "@platforma-sdk/model";
+import { useApp } from "../../app";
 
 type FileCell = {
   importFileHandle: ImportFileHandle | undefined;
@@ -46,12 +46,14 @@ const app = useApp();
 function generateData(): Row[] {
   return times(10, (i) => {
     const importFileHandle = app.model.args.handles[i];
-    const importProgress = importFileHandle ? app.model.outputs?.progresses?.[importFileHandle] : undefined;
+    const importProgress = importFileHandle
+      ? app.model.outputs?.progresses?.[importFileHandle]
+      : undefined;
     return {
       id: i,
       label: faker.company.buzzNoun(),
       progress: faker.number.int({ min: 24, max: 100 }),
-      stacked_bar: (i % 2 === 0) ? stackedSettings.value : undefined,
+      stacked_bar: i % 2 === 0 ? stackedSettings.value : undefined,
       date: faker.date.birthdate(),
       file: {
         importFileHandle,
@@ -78,10 +80,9 @@ function showProgress() {
 }
 
 const BlankComponent: Component = {
-  props: ['params'],
+  props: ["params"],
   setup(props) {
-    return () =>
-      h('div', { style: `padding: 0 15px` }, props.params.value);
+    return () => h("div", { style: `padding: 0 15px` }, props.params.value);
   },
 };
 
@@ -89,7 +90,7 @@ const rowNumbers = ref(true);
 
 const loading = ref(false);
 
-const loadingText = ref('Loading...');
+const loadingText = ref("Loading...");
 
 const notReady = ref(false);
 
@@ -102,13 +103,13 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
     .setComponents({
       LinkComponent,
     })
-    .setOption('onRowDoubleClicked', (_e) => {
+    .setOption("onRowDoubleClicked", (_e) => {
       alert('Example "Open" button was clicked');
     })
     .setRowSelection(
       rowSelection.value
         ? {
-            mode: 'multiRow',
+            mode: "multiRow",
             checkboxes: false,
             headerCheckbox: false,
           }
@@ -122,43 +123,43 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
     .setNoRowsText('No rows text (custom, default is "Empty")')
     .columnRowNumbers(rowNumbers.value)
     .column({
-      field: 'id',
-      headerName: 'ID',
+      field: "id",
+      headerName: "ID",
       mainMenuItems: defaultMainMenuItems,
-      headerComponentParams: { type: 'Number' },
+      headerComponentParams: { type: "Number" },
     })
     .column({
-      field: 'label',
-      pinned: 'left',
+      field: "label",
+      pinned: "left",
       lockPinned: true,
       lockPosition: true,
-      headerName: 'Sample label long text for overflow label long text for overflow',
-      headerComponentParams: { type: 'Text' },
+      headerName: "Sample label long text for overflow label long text for overflow",
+      headerComponentParams: { type: "Text" },
       textWithButton: true,
     })
     .column<number | undefined>({
-      field: 'progress',
-      headerName: 'Progress',
+      field: "progress",
+      headerName: "Progress",
       progress(value, cellData) {
         const percent = value ?? 0;
 
         if (cellData.data?.id === 2) {
           return {
-            status: 'not_started',
-            error: 'Test Error',
+            status: "not_started",
+            error: "Test Error",
           };
         }
 
         if (cellData.data?.id === 3) {
           return {
-            status: 'running',
-            text: 'Infinite progress',
+            status: "running",
+            text: "Infinite progress",
           };
         }
 
         if (percent < 10) {
           return {
-            status: 'not_started',
+            status: "not_started",
           };
         }
 
@@ -168,12 +169,12 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
 
         if (percent > 90) {
           return {
-            status: 'done',
+            status: "done",
           };
         }
 
         return {
-          status: 'running',
+          status: "running",
           percent,
           text: `Progress`,
           suffix: `${percent.toFixed(1)}%`,
@@ -185,12 +186,12 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
           params: { value: cellData.value },
         };
       },
-      headerComponentParams: { type: 'Progress' },
+      headerComponentParams: { type: "Progress" },
     })
     .columnFileInput<FileCell>({
-      field: 'file',
-      headerName: 'File input',
-      extensions: ['fastq.gz'],
+      field: "file",
+      headerName: "File input",
+      extensions: ["fastq.gz"],
       setImportFileHandle: (params) => {
         app.model.args.handles[params.data.id] = params.newValue ?? undefined;
       },
@@ -202,16 +203,16 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
       },
     })
     .column({
-      field: 'stacked_bar',
-      headerName: 'StackedBar',
+      field: "stacked_bar",
+      headerName: "StackedBar",
       progress: (value) => {
         if (value) {
           return undefined; // If no progress show main component
         }
 
         return {
-          status: 'running',
-          text: 'Loading data...',
+          status: "running",
+          text: "Loading data...",
         };
       },
       cellRendererSelector: (cellData) => {
@@ -222,12 +223,10 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
       },
     })
     .column({
-      colId: 'histogram',
-      headerName: 'Histogram',
+      colId: "histogram",
+      headerName: "Histogram",
       cellRendererSelector: (cellData) => {
-        const value = (cellData.data?.id ?? 0 % 2 === 0)
-          ? histogramSettings.value
-          : undefined;
+        const value = (cellData.data?.id ?? 0 % 2 === 0) ? histogramSettings.value : undefined;
         return {
           component: PlAgChartHistogramCell,
           params: { value },
@@ -235,22 +234,21 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
       },
     })
     .column({
-      field: 'date',
-      headerName: 'Date',
-      headerComponentParams: { type: 'Date' },
+      field: "date",
+      headerName: "Date",
+      headerComponentParams: { type: "Date" },
     })
     .column({
-      field: 'link',
-      headerName: 'Link',
-      headerComponentParams: { type: 'Text' },
-      cellRenderer: 'LinkComponent',
+      field: "link",
+      headerName: "Link",
+      headerComponentParams: { type: "Text" },
+      cellRenderer: "LinkComponent",
     })
     .column({
-      field: 'time',
-      headerName: 'Duration',
-      headerComponentParams: { type: 'Duration' },
+      field: "time",
+      headerName: "Duration",
+      headerComponentParams: { type: "Duration" },
     });
-  ;
 });
 </script>
 
@@ -272,9 +270,6 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
       <PlTextField v-model="loadingText" label="Loading text" />
     </PlRow>
 
-    <AgGridVue
-      :style="{ height: '100%' }"
-      v-bind="gridOptions"
-    />
+    <AgGridVue :style="{ height: '100%' }" v-bind="gridOptions" />
   </PlBlockPage>
 </template>

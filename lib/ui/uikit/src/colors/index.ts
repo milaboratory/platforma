@@ -1,3 +1,3 @@
-export * from './palette';
-export * from './color';
-export * from './gradient';
+export * from "./palette";
+export * from "./color";
+export * from "./gradient";

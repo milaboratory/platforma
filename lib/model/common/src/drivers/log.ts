@@ -12,7 +12,7 @@ export type ReadyLogHandle = `log+ready://log/${string}`;
 
 /** Type guard to check if log is live, and corresponding porcess is not finished. */
 export function isLiveLog(handle: AnyLogHandle | undefined): handle is LiveLogHandle {
-  return handle !== undefined && handle.startsWith('log+live://log/');
+  return handle !== undefined && handle.startsWith("log+live://log/");
 }
 
 /** Driver to retrieve logs given log handle */
@@ -32,7 +32,7 @@ export interface LogsDriver {
     /** Is substring for line search pattern.
      * This option makes controller to send to the client only lines, that
      * have given substring. */
-    searchStr?: string
+    searchStr?: string,
   ): Promise<StreamingApiResponse>;
 
   readText(
@@ -50,7 +50,7 @@ export interface LogsDriver {
     /** Is substring for line search pattern.
      * This option makes controller to send to the client only lines, that
      * have given substring. */
-    searchStr?: string
+    searchStr?: string,
   ): Promise<StreamingApiResponse>;
 }
 

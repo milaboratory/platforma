@@ -6,31 +6,33 @@
   ],
   "exports": {
     "./kalign": {
-      "import": "./dist/kalign.mjs",
-      "types": "./dist/kalign.d.ts"
+      "types": "./dist/kalign.d.ts",
+      "import": "./dist/kalign.mjs"
     },
     "./rapidnj": {
-      "import": "./dist/rapidnj.mjs",
-      "types": "./dist/rapidnj.d.ts"
+      "types": "./dist/rapidnj.d.ts",
+      "import": "./dist/rapidnj.mjs"
     }
-  },
-  "devDependencies": {
-    "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/ts-builder": "workspace:*",
-    "@milaboratories/ts-configs": "workspace:*",
-    "typescript": "catalog:",
-    "vite-plugin-dts": "catalog:",
-    "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
-    "@milaboratories/eslint-config": "workspace:*"
   },
   "scripts": {
     "dev": "ts-builder serve --target browser-lib --build-config ./build.config.ts",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "build": "ts-builder build --target browser-lib --build-config ./build.config.ts",
+    "check": "ts-builder check --target browser-lib",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target browser-lib",
     "generate-assets": "docker build --output=assets .",
-    "lint": "eslint .",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "fmt": "ts-builder format"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@vitest/coverage-istanbul": "catalog:",
+    "typescript": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:"
   }
 }

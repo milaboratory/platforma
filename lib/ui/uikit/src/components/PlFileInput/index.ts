@@ -1,1 +1,1 @@
-export { default as PlFileInput } from './PlFileInput.vue';
+export { default as PlFileInput } from "./PlFileInput.vue";

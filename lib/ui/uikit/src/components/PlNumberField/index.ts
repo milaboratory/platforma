@@ -1,1 +1,1 @@
-export { default as PlNumberField } from './PlNumberField.vue';
+export { default as PlNumberField } from "./PlNumberField.vue";

@@ -1,1 +1,1 @@
-export { default as PlTextArea } from './PlTextArea.vue';
+export { default as PlTextArea } from "./PlTextArea.vue";

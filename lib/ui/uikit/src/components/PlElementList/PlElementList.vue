@@ -1,13 +1,17 @@
-<script generic="T extends unknown = unknown, K extends number | string = number | string" lang="ts" setup>
-import { isFunction, shallowHash } from '@milaboratories/helpers';
-import { useSortable } from '@vueuse/integrations/useSortable';
-import { type SortableEvent } from 'sortablejs';
-import type { ShallowRef } from 'vue';
-import { computed, shallowRef, watch } from 'vue';
-import PlElementListItem from './PlElementListItem.vue';
-import { moveElements } from './utils.ts';
+<script
+  generic="T extends unknown = unknown, K extends number | string = number | string"
+  lang="ts"
+  setup
+>
+import { isFunction, shallowHash } from "@milaboratories/helpers";
+import { useSortable } from "@vueuse/integrations/useSortable";
+import { type SortableEvent } from "sortablejs";
+import type { ShallowRef } from "vue";
+import { computed, shallowRef, watch } from "vue";
+import PlElementListItem from "./PlElementListItem.vue";
+import { moveElements } from "./utils.ts";
 
-const itemsRef = defineModel<T[]>('items', { required: true });
+const itemsRef = defineModel<T[]>("items", { required: true });
 
 const props = withDefaults(
   defineProps<{
@@ -43,7 +47,8 @@ const props = withDefaults(
     isPinnable?: (item: T, index: number) => boolean;
     isPinned?: (item: T, index: number) => boolean;
     onPin?: (item: T, index: number) => void | boolean;
-  }>(), {
+  }>(),
+  {
     getItemKey: (item: T) => JSON.stringify(item) as K,
 
     itemClass: undefined,
@@ -80,14 +85,14 @@ const props = withDefaults(
 );
 
 const emits = defineEmits<{
-  (e: 'itemClick', item: T): void;
+  (e: "itemClick", item: T): void;
 }>();
 
 const slots = defineSlots<{
-  ['item-title']: (props: { item: T; index: number }) => unknown;
-  ['item-content']?: (props: { item: T; index: number }) => unknown;
-  ['item-before']?: (props: { item: T; index: number }) => unknown;
-  ['item-after']?: (props: { item: T; index: number }) => unknown;
+  ["item-title"]: (props: { item: T; index: number }) => unknown;
+  ["item-content"]?: (props: { item: T; index: number }) => unknown;
+  ["item-before"]?: (props: { item: T; index: number }) => unknown;
+  ["item-after"]?: (props: { item: T; index: number }) => unknown;
 }>();
 
 const dndSortingEnabled = computed((): boolean => {
@@ -97,7 +102,9 @@ const dndSortingEnabled = computed((): boolean => {
 const pinnedItemsRef = computed(() => itemsRef.value.filter(isPinnedItem));
 const hasPinnedItems = computed(() => pinnedItemsRef.value.length > 0);
 
-const unpinnedItemsRef = computed(() => itemsRef.value.filter((item, index) => !isPinnedItem(item, index)));
+const unpinnedItemsRef = computed(() =>
+  itemsRef.value.filter((item, index) => !isPinnedItem(item, index)),
+);
 const hasUnpinnedItems = computed(() => unpinnedItemsRef.value.length > 0);
 
 const domProjectionItemsRef = shallowRef<undefined | T[]>();
@@ -122,7 +129,8 @@ const versionRef = computed<number>((oldVersion) => {
   const domProjectionKeysSet = new Set(domProjectionKeys);
 
   for (let i = 0; i < currentKeys.length; i++) {
-    const hasInconsistentPosition = domProjectionKeysSet.has(currentKeys[i]) && domProjectionKeys[i] !== currentKeys[i];
+    const hasInconsistentPosition =
+      domProjectionKeysSet.has(currentKeys[i]) && domProjectionKeys[i] !== currentKeys[i];
 
     if (hasInconsistentPosition) {
       return shallowHash(...currentKeys);
@@ -133,9 +141,19 @@ const versionRef = computed<number>((oldVersion) => {
 });
 
 createSortable(hasPinnedItems, pinnedContainerRef, pinnedItemsRef, () => 0);
-createSortable(hasUnpinnedItems, unpinnedContainerRef, unpinnedItemsRef, () => pinnedItemsRef.value.length);
+createSortable(
+  hasUnpinnedItems,
+  unpinnedContainerRef,
+  unpinnedItemsRef,
+  () => pinnedItemsRef.value.length,
+);
 
-function createSortable(toggler: ShallowRef<boolean>, elRef: ShallowRef<undefined | HTMLElement>, itemsRef: ShallowRef<T[]>, getOffset: () => number) {
+function createSortable(
+  toggler: ShallowRef<boolean>,
+  elRef: ShallowRef<undefined | HTMLElement>,
+  itemsRef: ShallowRef<T[]>,
+  getOffset: () => number,
+) {
   const sortable = useSortable(elRef, itemsRef, {
     handle: `[data-draggable="true"]`,
     animation: 150,
@@ -145,7 +163,7 @@ function createSortable(toggler: ShallowRef<boolean>, elRef: ShallowRef<undefine
     forceAutoScrollFallback: true,
     onUpdate: (evt: SortableEvent) => {
       if (evt.oldIndex == null || evt.newIndex == null) {
-        throw new Error('Sortable event has no index');
+        throw new Error("Sortable event has no index");
       }
       if (props.onDragEnd?.(evt.oldIndex, evt.newIndex) !== false) {
         moveItems(getOffset() + evt.oldIndex, getOffset() + evt.newIndex, true);
@@ -187,17 +205,19 @@ function isActiveItem(item: T, index: number): boolean {
 
 function isDraggableItem(item: T, index: number): boolean {
   if (props.disableDragging === true) return false;
-  return (props.isDraggable?.(item, index) ?? true);
+  return props.isDraggable?.(item, index) ?? true;
 }
 
 function isRemovableItem(item: T, index: number): boolean {
   if (props.disableRemoving === true) return false;
-  return (props.isRemovable?.(item, index) ?? true);
+  return props.isRemovable?.(item, index) ?? true;
 }
 
 function isToggableItem(item: T, index: number): boolean {
   if (props.disableToggling === true) return false;
-  return (props.isToggable?.(item, index) ?? (isFunction(props.isToggled) || isFunction(props.onToggle)));
+  return (
+    props.isToggable?.(item, index) ?? (isFunction(props.isToggled) || isFunction(props.onToggle))
+  );
 }
 
 function isToggledItem(item: T, index: number): boolean {
@@ -206,7 +226,7 @@ function isToggledItem(item: T, index: number): boolean {
 
 function isPinnableItem(item: T, index: number): boolean {
   if (props.disablePinning === true) return false;
-  return (props.isPinnable?.(item, index) ?? (isFunction(props.isPinned) || isFunction(props.onPin)));
+  return props.isPinnable?.(item, index) ?? (isFunction(props.isPinned) || isFunction(props.onPin));
 }
 
 function isPinnedItem(item: T, index: number): boolean {
@@ -215,7 +235,10 @@ function isPinnedItem(item: T, index: number): boolean {
 
 function isExpandableItem(item: T, index: number): boolean {
   if (props.disableExpanding === true) return false;
-  return (props.isExpandable?.(item, index) ?? (isFunction(props.isExpanded) || isFunction(props.onExpand)));
+  return (
+    props.isExpandable?.(item, index) ??
+    (isFunction(props.isExpanded) || isFunction(props.onExpand))
+  );
 }
 
 function isExpandedItem(item: T, index: number): boolean {
@@ -232,7 +255,7 @@ function handleToggle(item: T, index: number) {
 
 function handlePin(item: T, index: number) {
   if (index === -1) {
-    throw new Error('Pinnable item not found');
+    throw new Error("Pinnable item not found");
   }
 
   const alreadyPinned = pinnedItemsRef.value.includes(item);
@@ -247,9 +270,11 @@ function handleRemove(item: T, index: number) {
   itemsRef.value.splice(index, 1);
 }
 
-function getClassFunction(propsItemClass: string | string[] | ((item: T, index: number) => string | string[]) | undefined): (item: T, index: number) => null | string | string[] {
+function getClassFunction(
+  propsItemClass: string | string[] | ((item: T, index: number) => string | string[]) | undefined,
+): (item: T, index: number) => null | string | string[] {
   return (item: T, index: number): null | string | string[] => {
-    if (typeof propsItemClass === 'function') {
+    if (typeof propsItemClass === "function") {
       return propsItemClass(item, index);
     }
     return propsItemClass ?? null;
@@ -260,20 +285,19 @@ const getItemClassTitle = getClassFunction(props.itemClassTitle);
 const getItemClassContent = getClassFunction(props.itemClassContent);
 const getItemClassBefore = getClassFunction(props.itemClassBefore);
 const getItemClassAfter = getClassFunction(props.itemClassAfter);
-
 </script>
 
 <template>
   <div :class="$style.root">
     <div ref="pinnedContainerRef" :class="$style.list">
       <PlElementListItem
-        v-for="(pinnedItem, pinnedIndex) in pinnedItemsRef" :key="pinnedKeysRef[pinnedIndex]"
+        v-for="(pinnedItem, pinnedIndex) in pinnedItemsRef"
+        :key="pinnedKeysRef[pinnedIndex]"
         :class="[$style.item, getItemClass(pinnedItem, pinnedIndex)]"
         :titleClass="getItemClassTitle(pinnedItem, pinnedIndex)"
         :contentClass="getItemClassContent(pinnedItem, pinnedIndex)"
         :beforeClass="getItemClassBefore(pinnedItem, pinnedIndex)"
         :afterClass="getItemClassAfter(pinnedItem, pinnedIndex)"
-
         :index="pinnedIndex"
         :item="pinnedItem"
         :showDragHandle="dndSortingEnabled"
@@ -286,7 +310,6 @@ const getItemClassAfter = getClassFunction(props.itemClassAfter);
         :isPinned="true"
         :isExpandable="isExpandableItem(pinnedItem, pinnedIndex)"
         :isExpanded="isExpandedItem(pinnedItem, pinnedIndex)"
-
         @click="emits('itemClick', pinnedItem)"
         @remove="handleRemove"
         @toggle="handleToggle"
@@ -309,13 +332,13 @@ const getItemClassAfter = getClassFunction(props.itemClassAfter);
     </div>
     <div v-if="hasUnpinnedItems" ref="unpinnedContainerRef" :class="$style.list">
       <PlElementListItem
-        v-for="(unpinnedItem, unpinnedIndex) in unpinnedItemsRef" :key="unpinnedKeysRef[unpinnedIndex]"
+        v-for="(unpinnedItem, unpinnedIndex) in unpinnedItemsRef"
+        :key="unpinnedKeysRef[unpinnedIndex]"
         :class="[$style.item, getItemClass(unpinnedItem, unpinnedIndex)]"
         :titleClass="getItemClassTitle(unpinnedItem, unpinnedIndex)"
         :contentClass="getItemClassContent(unpinnedItem, unpinnedIndex)"
         :beforeClass="getItemClassBefore(unpinnedItem, unpinnedIndex)"
         :afterClass="getItemClassAfter(unpinnedItem, unpinnedIndex)"
-
         :index="unpinnedIndex + (pinnedItemsRef?.length ?? 0)"
         :item="unpinnedItem"
         :showDragHandle="dndSortingEnabled"
@@ -328,7 +351,6 @@ const getItemClassAfter = getClassFunction(props.itemClassAfter);
         :isPinned="false"
         :isExpandable="isExpandableItem(unpinnedItem, unpinnedIndex)"
         :isExpanded="isExpandedItem(unpinnedItem, unpinnedIndex)"
-
         @click="emits('itemClick', unpinnedItem)"
         @remove="handleRemove"
         @toggle="handleToggle"
@@ -350,7 +372,8 @@ const getItemClassAfter = getClassFunction(props.itemClassAfter);
 </template>
 
 <style module>
-.root, .list {
+.root,
+.list {
   display: flex;
   flex-direction: column;
   gap: 8px;

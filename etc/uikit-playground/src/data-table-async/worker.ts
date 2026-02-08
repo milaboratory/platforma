@@ -1,8 +1,8 @@
-import { faker } from '@faker-js/faker';
-import { range, toList } from '@milaboratories/helpers';
+import { faker } from "@faker-js/faker";
+import { range, toList } from "@milaboratories/helpers";
 
 export type WEvent = {
-  type: 'query';
+  type: "query";
   limit: number;
   offset: number;
 };

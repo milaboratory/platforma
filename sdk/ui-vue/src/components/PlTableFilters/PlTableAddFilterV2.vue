@@ -1,26 +1,16 @@
 <script setup lang="ts">
-import {
-  deepClone,
-} from '@milaboratories/helpers';
+import { deepClone } from "@milaboratories/helpers";
 import {
   PlBtnGhost,
   PlBtnPrimary,
   PlDropdown,
   PlSlideModal,
   type ListOption,
-} from '@milaboratories/uikit';
-import {
-  computed,
-  ref,
-  watch,
-} from 'vue';
-import {
-  type PlDataTableFilterStateInternal,
-} from './types';
-import {
-  getFilterDefault,
-} from './filters_logic';
-import PlTableFilterEntryV2 from './PlTableFilterEntryV2.vue';
+} from "@milaboratories/uikit";
+import { computed, ref, watch } from "vue";
+import { type PlDataTableFilterStateInternal } from "./types";
+import { getFilterDefault } from "./filters_logic";
+import PlTableFilterEntryV2 from "./PlTableFilterEntryV2.vue";
 
 const show = defineModel<boolean>({ required: true });
 const props = defineProps<{
@@ -81,17 +71,10 @@ const applyFilter = () => {
         label="Column"
         placeholder="Choose..."
       />
-      <div
-        v-if="newFilterIdx === undefined"
-        class="text-subtitle-m"
-        style="color: var(--txt-mask)"
-      >
+      <div v-if="newFilterIdx === undefined" class="text-subtitle-m" style="color: var(--txt-mask)">
         Choose a column to view and adjust its options
       </div>
-      <PlTableFilterEntryV2
-        v-if="newFilter"
-        v-model="newFilter"
-      />
+      <PlTableFilterEntryV2 v-if="newFilter" v-model="newFilter" />
     </div>
     <template #actions>
       <PlBtnPrimary :disabled="!newFilter" @click="applyFilter">Add Filter</PlBtnPrimary>

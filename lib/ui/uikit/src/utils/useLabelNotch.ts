@@ -1,8 +1,8 @@
-import { onBeforeUnmount, type Ref } from 'vue';
-import { tap, tapIf } from '../helpers/functions';
-import { onChanged } from '../composition/utils';
-import { call } from '../helpers/utils';
-import { startResizeObserving, stopResizeObserving } from '../global/resizeObserver';
+import { onBeforeUnmount, type Ref } from "vue";
+import { tap, tapIf } from "../helpers/functions";
+import { onChanged } from "../composition/utils";
+import { call } from "../helpers/utils";
+import { startResizeObserving, stopResizeObserving } from "../global/resizeObserver";
 
 const offset = 8; // see --label-offset-left-x css var
 
@@ -11,7 +11,7 @@ const contourOffset = 4; // see --contour-offset css var
 /**
  * Adjust the width of the cutout on the clip path for the notched label (TextField, Dropdown)
  */
-export function useLabelNotch(root: Ref<HTMLElement | undefined>, labelSelector = 'label') {
+export function useLabelNotch(root: Ref<HTMLElement | undefined>, labelSelector = "label") {
   const labels = new Set<Element>();
 
   onChanged(() => {
@@ -26,11 +26,14 @@ export function useLabelNotch(root: Ref<HTMLElement | undefined>, labelSelector 
 
       startResizeObserving(label, () => {
         const rightOffset = call(() => {
-          return label.getBoundingClientRect().width + tap(offset, (n) => (Number.isNaN(n) ? contourOffset : n + contourOffset)); //
+          return (
+            label.getBoundingClientRect().width +
+            tap(offset, (n) => (Number.isNaN(n) ? contourOffset : n + contourOffset))
+          ); //
         });
 
-        if (el.style.getPropertyValue('--label-offset-right-x') !== `${rightOffset}px`) {
-          el.style.setProperty('--label-offset-right-x', `${rightOffset}px`);
+        if (el.style.getPropertyValue("--label-offset-right-x") !== `${rightOffset}px`) {
+          el.style.setProperty("--label-offset-right-x", `${rightOffset}px`);
         }
       });
     });

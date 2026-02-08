@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { DefaultTheme } from 'vitepress';
-import PlSidebarGroup from './PlSidebarGroup.vue';
-import PlSidebarItem from './PlSidebarItem.vue';
+import type { DefaultTheme } from "vitepress";
+import PlSidebarGroup from "./PlSidebarGroup.vue";
+import PlSidebarItem from "./PlSidebarItem.vue";
 
 defineProps<{
   items: DefaultTheme.SidebarItem[];

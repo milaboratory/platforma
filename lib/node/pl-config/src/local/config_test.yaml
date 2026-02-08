@@ -1,22 +1,22 @@
 # a config for tests, the generated config is more or less the same
 # except all paths will (should?) become absolute.
 license:
-  value: 'abc'
-  file: ''
+  value: "abc"
+  file: ""
 
 logging:
-  level: 'info'
+  level: "info"
   destinations:
-    - type: 'file'
-      path: 'platforma.log'
+    - type: "file"
+      path: "platforma.log"
 
 monitoring:
   enabled: true
-  listen: '127.0.0.1:11235'
+  listen: "127.0.0.1:11235"
 
 debug:
   enabled: true
-  listen: '127.0.0.1:11236'
+  listen: "127.0.0.1:11236"
 
 core:
   logging:
@@ -26,23 +26,23 @@ core:
   tls:
     enabled: false
   grpc:
-    listen: '127.0.0.1:11234'
+    listen: "127.0.0.1:11234"
   http:
-    listen: '127.0.0.1:11237'
+    listen: "127.0.0.1:11237"
 
   authEnabled: true
   auth:
     - driver: jwt
       key: jwtkey
     - driver: htpasswd
-      path: 'users.htpasswd'
+      path: "users.htpasswd"
   db:
-    path: 'db'
+    path: "db"
 
 controllers:
   common:
     timeouts:
-      stop: '10s'
+      stop: "10s"
   data:
     main:
       storages:
@@ -59,38 +59,38 @@ controllers:
           downloadable: false
 
     storages:
-      - id: 'root'
-        type: 'FS'
-        indexCachePeriod: '1m'
-        rootPath: ''
+      - id: "root"
+        type: "FS"
+        indexCachePeriod: "1m"
+        rootPath: ""
         allowRemoteAccess: false
-        externalURL: ''
+        externalURL: ""
 
-      - id: 'work'
-        type: 'FS'
-        indexCachePeriod: '1m'
-        rootPath: 'storages/work'
+      - id: "work"
+        type: "FS"
+        indexCachePeriod: "1m"
+        rootPath: "storages/work"
         allowRemoteAccess: false
-        externalURL: ''
+        externalURL: ""
 
-      - id: 'main'
-        type: 'FS'
-        indexCachePeriod: '0m'
-        rootPath: 'storages/main'
+      - id: "main"
+        type: "FS"
+        indexCachePeriod: "0m"
+        rootPath: "storages/main"
         allowRemoteAccess: false
-        externalURL: 'http://127.0.0.1:11237'
+        externalURL: "http://127.0.0.1:11237"
 
   runner:
     type: local
     resources:
       cpu: 5
-    workdirCacheOnFailure: '1h'
-    storageRoot: 'storages/work'
+    workdirCacheOnFailure: "1h"
+    storageRoot: "storages/work"
     secrets:
       - map:
-          MI_LICENSE: 'abc'
+          MI_LICENSE: "abc"
 
   packageLoader:
-    packagesRoot: 'packages'
+    packagesRoot: "packages"
 
   workflows: {}

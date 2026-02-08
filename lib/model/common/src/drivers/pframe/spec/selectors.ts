@@ -1,6 +1,6 @@
-import { isPColumnSpec, type PObjectSpec } from '../../../pool';
-import type { AxisId, AxisValueType, Domain, PColumnSpec, ValueType } from './spec';
-import { getAxisId } from './spec';
+import { isPColumnSpec, type PObjectSpec } from "../../../pool";
+import type { AxisId, AxisValueType, Domain, PColumnSpec, ValueType } from "./spec";
+import { getAxisId } from "./spec";
 
 /**
  * Defines a pattern for matching axes within the PFrame data model.
@@ -94,7 +94,7 @@ export type AAxisSelector = AxisSelector | AnchorAxisRef;
  * Specifies how to handle when multiple columns match the criteria
  * (default is "expectSingle")
  */
-export type AnchoredColumnMatchStrategy = 'expectSingle' | 'expectMultiple' | 'takeFirst';
+export type AnchoredColumnMatchStrategy = "expectSingle" | "expectMultiple" | "takeFirst";
 
 /**
  * Matcher for PColumns in an anchored context
@@ -163,7 +163,7 @@ export interface AnchoredPColumnId extends AnchoredPColumnSelector {
  */
 export function isAnchoredPColumnId(id: unknown): id is AnchoredPColumnId {
   // basic check, can be extended if needed
-  return typeof id === 'object' && id !== null && 'name' in id && 'axes' in id;
+  return typeof id === "object" && id !== null && "name" in id && "axes" in id;
 }
 
 /**
@@ -175,14 +175,12 @@ export function isAnchoredPColumnId(id: unknown): id is AnchoredPColumnId {
  */
 export function matchAxis(selector: AxisSelector, axis: AxisId): boolean {
   // Match name if specified
-  if (selector.name !== undefined && selector.name !== axis.name)
-    return false;
+  if (selector.name !== undefined && selector.name !== axis.name) return false;
 
   // Match type if specified
   if (selector.type !== undefined) {
     if (Array.isArray(selector.type)) {
-      if (!selector.type.includes(axis.type))
-        return false;
+      if (!selector.type.includes(axis.type)) return false;
     } else if (selector.type !== axis.type) {
       return false;
     }
@@ -192,8 +190,7 @@ export function matchAxis(selector: AxisSelector, axis: AxisId): boolean {
   if (selector.domain !== undefined) {
     const axisDomain = axis.domain || {};
     for (const [key, value] of Object.entries(selector.domain))
-      if (axisDomain[key] !== value)
-        return false;
+      if (axisDomain[key] !== value) return false;
   }
 
   return true;
@@ -208,8 +205,7 @@ export function matchAxis(selector: AxisSelector, axis: AxisId): boolean {
  */
 export function matchPColumn(pcolumn: PColumnSpec, selector: PColumnSelector): boolean {
   // Match name if specified
-  if (selector.name !== undefined && pcolumn.name !== selector.name)
-    return false;
+  if (selector.name !== undefined && pcolumn.name !== selector.name) return false;
 
   // Match name pattern if specified
   if (selector.namePattern !== undefined && !new RegExp(selector.namePattern).test(pcolumn.name))
@@ -218,8 +214,7 @@ export function matchPColumn(pcolumn: PColumnSpec, selector: PColumnSelector): b
   // Match type if specified
   if (selector.type !== undefined) {
     if (Array.isArray(selector.type)) {
-      if (!selector.type.includes(pcolumn.valueType))
-        return false;
+      if (!selector.type.includes(pcolumn.valueType)) return false;
     } else if (selector.type !== pcolumn.valueType) {
       return false;
     }
@@ -229,8 +224,7 @@ export function matchPColumn(pcolumn: PColumnSpec, selector: PColumnSelector): b
   if (selector.domain !== undefined) {
     const columnDomain = pcolumn.domain || {};
     for (const [key, value] of Object.entries(selector.domain))
-      if (columnDomain[key] !== value)
-        return false;
+      if (columnDomain[key] !== value) return false;
   }
 
   // Match axes if specified
@@ -240,17 +234,14 @@ export function matchPColumn(pcolumn: PColumnSpec, selector: PColumnSelector): b
     if (selector.partialAxesMatch) {
       // For partial matching, all selector axes must match at least one column axis
       for (const selectorAxis of selector.axes)
-        if (!pcolumnAxes.some((columnAxis) => matchAxis(selectorAxis, columnAxis)))
-          return false;
+        if (!pcolumnAxes.some((columnAxis) => matchAxis(selectorAxis, columnAxis))) return false;
     } else {
       // For exact matching, column must have the same number of axes and all must match
-      if (pcolumnAxes.length !== selector.axes.length)
-        return false;
+      if (pcolumnAxes.length !== selector.axes.length) return false;
 
       // Each selector axis must match a corresponding column axis
       for (let i = 0; i < selector.axes.length; i++)
-        if (!matchAxis(selector.axes[i], pcolumnAxes[i]))
-          return false;
+        if (!matchAxis(selector.axes[i], pcolumnAxes[i])) return false;
     }
   }
 
@@ -258,8 +249,7 @@ export function matchPColumn(pcolumn: PColumnSpec, selector: PColumnSelector): b
   if (selector.annotations !== undefined) {
     const columnAnnotations = pcolumn.annotations || {};
     for (const [key, value] of Object.entries(selector.annotations))
-      if (columnAnnotations[key] !== value)
-        return false;
+      if (columnAnnotations[key] !== value) return false;
   }
 
   // Match annotation patterns if specified
@@ -267,8 +257,7 @@ export function matchPColumn(pcolumn: PColumnSpec, selector: PColumnSelector): b
     const columnAnnotations = pcolumn.annotations || {};
     for (const [key, pattern] of Object.entries(selector.annotationPatterns)) {
       const value = columnAnnotations[key];
-      if (value === undefined || !new RegExp(pattern).test(value))
-        return false;
+      if (value === undefined || !new RegExp(pattern).test(value)) return false;
     }
   }
 
@@ -281,9 +270,11 @@ export function matchPColumn(pcolumn: PColumnSpec, selector: PColumnSelector): b
  *                              or an array of PColumnSelectors, or a single PColumnSelector
  * @returns A function that takes a PColumnSpec and returns a boolean
  */
-export function selectorsToPredicate(predicateOrSelectors: PColumnSelector | PColumnSelector[]): ((spec: PObjectSpec) => boolean) {
+export function selectorsToPredicate(
+  predicateOrSelectors: PColumnSelector | PColumnSelector[],
+): (spec: PObjectSpec) => boolean {
   if (Array.isArray(predicateOrSelectors))
-    return (spec) => predicateOrSelectors.some((selector) => isPColumnSpec(spec) && matchPColumn(spec, selector));
-  else
-    return (spec) => isPColumnSpec(spec) && matchPColumn(spec, predicateOrSelectors);
+    return (spec) =>
+      predicateOrSelectors.some((selector) => isPColumnSpec(spec) && matchPColumn(spec, selector));
+  else return (spec) => isPColumnSpec(spec) && matchPColumn(spec, predicateOrSelectors);
 }

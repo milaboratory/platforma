@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import Layout from '../Layout.vue';
-import { DataTable } from '@milaboratories/uikit';
-import { computed } from 'vue';
-import MyWorker from './worker?worker';
-import type { WEvent, Person } from './worker';
-import { Deferred } from '@milaboratories/helpers';
+import Layout from "../Layout.vue";
+import { DataTable } from "@milaboratories/uikit";
+import { computed } from "vue";
+import MyWorker from "./worker?worker";
+import type { WEvent, Person } from "./worker";
+import { Deferred } from "@milaboratories/helpers";
 
 const DataTableComponent = DataTable.Component;
 
@@ -19,7 +19,7 @@ class Api implements DataTable.Types.ExternalApi<Person> {
 
   query(options: { offset: number; limit: number }): Promise<Person[]> {
     return this.sendMessage({
-      type: 'query',
+      type: "query",
       limit: options.limit,
       offset: options.offset,
     });
@@ -42,27 +42,27 @@ const settings = computed(() => {
   return DataTable.settings({
     columns: [
       {
-        id: 'id',
-        label: 'ID',
-        valueType: 'integer',
+        id: "id",
+        label: "ID",
+        valueType: "integer",
         width: 100,
       },
       {
-        id: 'name',
-        label: 'Name',
-        valueType: 'string',
+        id: "name",
+        label: "Name",
+        valueType: "string",
         width: 300,
       },
       {
-        id: 'bio',
-        label: 'Bio',
-        valueType: 'string',
+        id: "bio",
+        label: "Bio",
+        valueType: "string",
         width: 300,
       },
       {
-        id: 'job',
-        label: 'Job',
-        valueType: 'string',
+        id: "job",
+        label: "Job",
+        valueType: "string",
         width: 300,
       },
     ],
@@ -75,13 +75,13 @@ const settings = computed(() => {
 const test = () => {
   api
     .sendMessage({
-      type: 'query',
+      type: "query",
       limit: 10,
       offset: 10,
     })
     .then((res) => {
       console.log(
-        'got result',
+        "got result",
         res.map((p) => p.id),
       );
     });
@@ -90,7 +90,10 @@ const test = () => {
 
 <template>
   <Layout>
-    <div style="display: flex; background-color: #fff; align-items: center; overflow: scroll" class="p-12 gap-24 mb-6">
+    <div
+      style="display: flex; background-color: #fff; align-items: center; overflow: scroll"
+      class="p-12 gap-24 mb-6"
+    >
       <button @click="test">Post</button>
     </div>
     <div v-if="false" style="display: flex">

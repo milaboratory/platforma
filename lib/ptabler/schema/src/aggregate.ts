@@ -1,11 +1,9 @@
-import type { Expression, AggregationType } from './expressions';
+import type { Expression, AggregationType } from "./expressions";
 
 /**
  * Defines aggregation functions that select a value from one expression based on the min/max of another expression.
  */
-export type ByClauseAggregationType =
-  | 'max_by'
-  | 'min_by';
+export type ByClauseAggregationType = "max_by" | "min_by";
 
 /**
  * Represents a standard aggregation operation like sum, mean, count, etc.
@@ -49,7 +47,7 @@ export interface ByClauseAggregationOperation {
  */
 export interface AggregateStep {
   /** Specifies the type of the step, which is 'aggregate'. */
-  type: 'aggregate';
+  type: "aggregate";
   /** The name of the input table from the tablespace on which to perform aggregation. */
   inputTable: string;
   /** The name to be assigned to the newly created aggregated table in the tablespace. */

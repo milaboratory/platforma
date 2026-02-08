@@ -1,5 +1,5 @@
 import { z } from "zod";
-import * as fs from 'node:fs/promises';
+import * as fs from "node:fs/promises";
 import { RangeBytes } from "@milaboratories/pl-model-common";
 import { createPathAtomically, MiLogger } from "@milaboratories/ts-helpers";
 import { CorruptedRangesError } from "./cache";
@@ -13,7 +13,7 @@ const Ranges = z.object({
 
 export type Ranges = z.infer<typeof Ranges>;
 
-export const rangesFilePostfix = '.ranges.json';
+export const rangesFilePostfix = ".ranges.json";
 
 export function rangesFileName(fPath: string): string {
   return fPath + rangesFilePostfix;
@@ -22,17 +22,16 @@ export function rangesFileName(fPath: string): string {
 export async function readRangesFile(logger: MiLogger, path: string): Promise<Ranges> {
   let ranges: Ranges = { ranges: [] };
   try {
-    const file = await fs.readFile(path, 'utf8');
+    const file = await fs.readFile(path, "utf8");
     ranges = Ranges.parse(JSON.parse(file));
   } catch (e: unknown) {
-
     if (e instanceof SyntaxError || e instanceof z.ZodError) {
       const msg = `readRangesFile: the file ${path} was corrupted: ${e}`;
       logger.error(msg);
       throw new CorruptedRangesError(msg);
     }
 
-    if (!(e instanceof Error && 'code' in e && e.code === 'ENOENT')) {
+    if (!(e instanceof Error && "code" in e && e.code === "ENOENT")) {
       throw e;
     }
 
@@ -47,7 +46,7 @@ export async function readRangesFile(logger: MiLogger, path: string): Promise<Ra
 /** Writes to a temporal file and then renames it atomically. */
 export async function writeRangesFile(logger: MiLogger, path: string, ranges: Ranges) {
   await createPathAtomically(logger, path, async (tempPath: string) => {
-    await fs.writeFile(tempPath, JSON.stringify(ranges, null, 2), { flag: 'wx' });
+    await fs.writeFile(tempPath, JSON.stringify(ranges, null, 2), { flag: "wx" });
   });
 }
 
@@ -90,4 +89,3 @@ export function addRange(s: Ranges, range: RangeBytes) {
 
   return s;
 }
-

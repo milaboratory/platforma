@@ -1,8 +1,8 @@
-import type { Watcher } from '../watcher';
-import type { ComputableHooks } from './computable_hooks';
-import type { AccessorProvider } from './accessor_provider';
-import type { Computable } from './computable';
-import { assertNever } from '@milaboratories/ts-helpers';
+import type { Watcher } from "../watcher";
+import type { ComputableHooks } from "./computable_hooks";
+import type { AccessorProvider } from "./accessor_provider";
+import type { Computable } from "./computable";
+import { assertNever } from "@milaboratories/ts-helpers";
 
 export interface ComputableCtx {
   /** Attaches computable observer to track interactions with resulting computable.
@@ -71,14 +71,14 @@ export interface ComputableCtx {
 
 export type CellRenderingMode =
   /** value will be rendered for any cell state */
-  | 'Live'
+  | "Live"
   /** value will be rendered only when current and all child states reach stable state, any unstable state
    *  will be not rendered, so the value will be  */
-  | 'StableOnlyLive'
+  | "StableOnlyLive"
   /** value will be rendered only when current and all child states reach stable state, during the "unstable" periods
    *  value will retain the latest known rendered value. Unstable errors may reset the value, if corresponding option
    *  is set. */
-  | 'StableOnlyRetentive';
+  | "StableOnlyRetentive";
 
 export interface CellRenderingOps {
   /** See description for {@link CellRenderingMode}. Default value is 'Live'. */
@@ -108,8 +108,7 @@ export interface ComputablePostProcess<IR, T> {
 
 /** Returned by a successful execution of rendering function */
 export interface IntermediateRenderingResult<IR, T>
-  extends Partial<ComputableRecoverAction<T>>,
-  Partial<ComputablePostProcess<IR, T>> {
+  extends Partial<ComputableRecoverAction<T>>, Partial<ComputablePostProcess<IR, T>> {
   /** Rendering result, may be absent if rendering result is marked with error. */
   readonly ir: IR;
 }
@@ -134,9 +133,9 @@ export interface ComputableKernel<T> {
 }
 
 export function tryExtractComputableKernel(v: unknown): ComputableKernel<unknown> | undefined {
-  if (typeof v === 'object' && v !== null) {
-    if ('___kernel___' in v) return v as ComputableKernel<unknown>;
-    if ('___wrapped_kernel___' in v) return v['___wrapped_kernel___'] as ComputableKernel<unknown>;
+  if (typeof v === "object" && v !== null) {
+    if ("___kernel___" in v) return v as ComputableKernel<unknown>;
+    if ("___wrapped_kernel___" in v) return v["___wrapped_kernel___"] as ComputableKernel<unknown>;
   }
   return undefined;
 }
@@ -159,16 +158,16 @@ type NoComputableInside =
 export function containComputables(v: unknown): boolean {
   const type = typeof v;
   switch (type) {
-    case 'function':
-    case 'bigint':
-    case 'number':
-    case 'string':
-    case 'boolean':
-    case 'symbol':
-    case 'undefined':
+    case "function":
+    case "bigint":
+    case "number":
+    case "string":
+    case "boolean":
+    case "symbol":
+    case "undefined":
       return false;
 
-    case 'object':
+    case "object":
       if (v === null) return false;
 
       const kernel = tryExtractComputableKernel(v);
@@ -177,19 +176,19 @@ export function containComputables(v: unknown): boolean {
       } else if (Array.isArray(v)) {
         for (const nested of v) if (containComputables(nested)) return true;
       } else if (
-        v instanceof DataView
-        || v instanceof Date
-        || v instanceof Int8Array
-        || v instanceof Uint8Array
-        || v instanceof Uint8ClampedArray
-        || v instanceof Int16Array
-        || v instanceof Uint16Array
-        || v instanceof Int32Array
-        || v instanceof Uint32Array
-        || v instanceof Float32Array
-        || v instanceof Float64Array
-        || v instanceof BigInt64Array
-        || v instanceof BigUint64Array
+        v instanceof DataView ||
+        v instanceof Date ||
+        v instanceof Int8Array ||
+        v instanceof Uint8Array ||
+        v instanceof Uint8ClampedArray ||
+        v instanceof Int16Array ||
+        v instanceof Uint16Array ||
+        v instanceof Int32Array ||
+        v instanceof Uint32Array ||
+        v instanceof Float32Array ||
+        v instanceof Float64Array ||
+        v instanceof BigInt64Array ||
+        v instanceof BigUint64Array
       ) {
         return false;
       } else {
@@ -211,13 +210,13 @@ export type UnwrapComputables<K> =
     : K extends Computable<infer T>
       ? UnwrapComputables<T>
       : K extends
-      | bigint
-      | boolean
-      | null
-      | number
-      | string
-      | symbol
-      | undefined
-      | NoComputableInside
+            | bigint
+            | boolean
+            | null
+            | number
+            | string
+            | symbol
+            | undefined
+            | NoComputableInside
         ? K
         : { [key in keyof K]: UnwrapComputables<K[key]> };

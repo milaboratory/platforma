@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { undef } from '@milaboratories/helpers';
+import { undef } from "@milaboratories/helpers";
 import {
   PlContainer,
   PlBtnGroup,
@@ -13,38 +13,38 @@ import {
   PlNumberField,
   PlLogView,
   PlTextArea,
-} from '@platforma-sdk/ui-vue';
-import { reactive, ref } from 'vue';
+} from "@platforma-sdk/ui-vue";
+import { reactive, ref } from "vue";
 
 const data = reactive({
-  text: 'some text',
+  text: "some text",
   number: 0,
-  single: 'A',
-  multiple: ['A', 'B'],
+  single: "A",
+  multiple: ["A", "B"],
   importHandles: [] as unknown[],
-  currentTab: 'one',
+  currentTab: "one",
   ref: undefined,
   multiRef: [],
 });
 
-const shortOptions = listToOptions(['A', 'B', 'C', 'D']);
-const options = listToOptions(['A', 'B', 'C', 'D']);
+const shortOptions = listToOptions(["A", "B", "C", "D"]);
+const options = listToOptions(["A", "B", "C", "D"]);
 const refOptions = ref(
   undef([
     {
-      label: 'Block 1 label',
+      label: "Block 1 label",
       ref: {
         __isRef: true as const,
-        blockId: '1',
-        name: 'Block 1',
+        blockId: "1",
+        name: "Block 1",
       },
     },
     {
-      label: 'Block 2 label',
+      label: "Block 2 label",
       ref: {
         __isRef: true as const,
-        blockId: '2',
-        name: 'Block 2',
+        blockId: "2",
+        name: "Block 2",
       },
     },
   ]),
@@ -52,19 +52,19 @@ const refOptions = ref(
 const refOptionsMulti = ref(
   undef([
     {
-      label: 'Block 1 label Ref',
+      label: "Block 1 label Ref",
       ref: {
         __isRef: true as const,
-        blockId: '1',
-        name: 'Block 1 Ref',
+        blockId: "1",
+        name: "Block 1 Ref",
       },
     },
     {
-      label: 'Block 2 label Ref',
+      label: "Block 2 label Ref",
       ref: {
         __isRef: true as const,
-        blockId: '2',
-        name: 'Block 2 Ref',
+        blockId: "2",
+        name: "Block 2 Ref",
       },
     },
   ]),
@@ -73,69 +73,41 @@ const refOptionsMulti = ref(
 
 <template>
   <PlContainer width="400px">
-    <PlBtnGroup
-      v-model="data.single"
-      label="PlBtnGroup"
-      :options="shortOptions"
-    >
-      <template #tooltip>
-        Tooltip content
-      </template>
+    <PlBtnGroup v-model="data.single" label="PlBtnGroup" :options="shortOptions">
+      <template #tooltip> Tooltip content </template>
     </PlBtnGroup>
-    <PlTextField v-model="data.text" label="PlTextField" clearable >
-      <template #tooltip>
-        Tooltip content
-      </template>
+    <PlTextField v-model="data.text" label="PlTextField" clearable>
+      <template #tooltip> Tooltip content </template>
     </PlTextField>
     <PlNumberField v-model="data.number" label="PlNumberField" clearable>
-      <template #tooltip>
-        Tooltip content
-      </template>
+      <template #tooltip> Tooltip content </template>
     </PlNumberField>
-    <PlDropdown v-model="data.single" label="PlDropdown" :options="options" >
-      <template #tooltip>
-        Tooltip content
-      </template>
+    <PlDropdown v-model="data.single" label="PlDropdown" :options="options">
+      <template #tooltip> Tooltip content </template>
     </PlDropdown>
-    <PlDropdownRef
-      v-model="data.ref"
-      label="PlDropdownRef"
-      :options="refOptions"
-    >
-      <template #tooltip>
-        Tooltip content
-      </template>
+    <PlDropdownRef v-model="data.ref" label="PlDropdownRef" :options="refOptions">
+      <template #tooltip> Tooltip content </template>
     </PlDropdownRef>
     <PlDropdownMultiRef
       v-model="data.multiRef"
       :options="refOptionsMulti ?? []"
       label="PlDropdownMultiRef"
     >
-      <template #tooltip>
-        Tooltip content
-      </template>
+      <template #tooltip> Tooltip content </template>
     </PlDropdownMultiRef>
-    <PlDropdownMulti v-model="data.multiple" label="PlDropdownMulti" :options="options" >
-      <template #tooltip>
-        Tooltip content
-      </template>
+    <PlDropdownMulti v-model="data.multiple" label="PlDropdownMulti" :options="options">
+      <template #tooltip> Tooltip content </template>
     </PlDropdownMulti>
-    <PlCheckboxGroup v-model="data.multiple" label="PlCheckboxGroup" :options="options" >
-      <template #tooltip>
-        Tooltip content
-      </template>
+    <PlCheckboxGroup v-model="data.multiple" label="PlCheckboxGroup" :options="options">
+      <template #tooltip> Tooltip content </template>
     </PlCheckboxGroup>
   </PlContainer>
   <PlContainer width="400px" style="margin: 0 24px 0 24px">
     <PlTextArea label="PlTextArea">
-      <template #tooltip>
-        Tooltip content
-      </template>
+      <template #tooltip> Tooltip content </template>
     </PlTextArea>
     <PlLogView label="PlLogView" value="logs content">
-      <template #tooltip>
-        Tooltip content
-      </template>
+      <template #tooltip> Tooltip content </template>
     </PlLogView>
   </PlContainer>
 </template>

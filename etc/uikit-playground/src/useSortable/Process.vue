@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { onMounted, reactive } from 'vue';
-import { animateInfinite } from '@milaboratories/uikit';
+import { onMounted, reactive } from "vue";
+import { animateInfinite } from "@milaboratories/uikit";
 
 const data = reactive({
-  progress: '0%',
+  progress: "0%",
 });
 
 let stopAnimation: undefined | (() => void);
@@ -15,7 +15,7 @@ onMounted(() => {
     },
     timing: (t) => t,
     draw(progress: number) {
-      data.progress = Math.ceil(progress * 100) + '%';
+      data.progress = Math.ceil(progress * 100) + "%";
     },
   });
 });

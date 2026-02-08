@@ -1,1 +1,1 @@
-export { default as PlLoaderCircular } from './PlLoaderCircular.vue';
+export { default as PlLoaderCircular } from "./PlLoaderCircular.vue";

@@ -1,11 +1,11 @@
 <script lang="ts">
 export default {
-  name: 'PlAlert',
+  name: "PlAlert",
 };
 </script>
 
 <script lang="ts" setup>
-import './pl-alert.scss';
+import "./pl-alert.scss";
 
 defineEmits<{
   /**
@@ -13,7 +13,7 @@ defineEmits<{
    *
    * @param value - The new value of the model, generally `false` when the alert is closed.
    */
-  (e: 'update:modelValue', value: boolean): void;
+  (e: "update:modelValue", value: boolean): void;
 }>();
 
 withDefaults(
@@ -28,7 +28,7 @@ withDefaults(
      * The type of alert, which determines the alert's style and icon.
      * Can be one of `'success' | 'info' | 'warn' | 'error'`.
      */
-    type?: 'success' | 'info' | 'warn' | 'error';
+    type?: "success" | "info" | "warn" | "error";
     /**
      * An optional label that appears at the top of the alert.
      */
@@ -68,15 +68,20 @@ withDefaults(
 );
 
 const iconMap = {
-  success: 'success',
-  warn: 'warning',
-  info: 'edit',
-  error: 'error',
+  success: "success",
+  warn: "warning",
+  info: "edit",
+  error: "error",
 };
 </script>
 
 <template>
-  <div v-if="modelValue" class="pl-alert" :style="{ maxHeight }" :class="[{ monospace, whiteSpacePre }, type ? `pl-alert__${type}` : '']">
+  <div
+    v-if="modelValue"
+    class="pl-alert"
+    :style="{ maxHeight }"
+    :class="[{ monospace, whiteSpacePre }, type ? `pl-alert__${type}` : '']"
+  >
     <div v-if="icon && type" class="pl-alert__icon">
       <div :class="`icon-24 icon-${iconMap[type]}`" />
     </div>
@@ -84,6 +89,12 @@ const iconMap = {
       <label v-if="label">{{ label }}</label>
       <div class="pl-alert__main__text"><slot /></div>
     </div>
-    <div v-if="closeable" class="pl-alert__close-btn" aria-label="Close alert" role="button" @click="$emit('update:modelValue', false)" />
+    <div
+      v-if="closeable"
+      class="pl-alert__close-btn"
+      aria-label="Close alert"
+      role="button"
+      @click="$emit('update:modelValue', false)"
+    />
   </div>
 </template>

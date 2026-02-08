@@ -1,6 +1,6 @@
-import { type InjectionKey, type ComputedRef, inject } from 'vue';
-import type { TableSettings } from './types';
-import type { State } from './state';
+import { type InjectionKey, type ComputedRef, inject } from "vue";
+import type { TableSettings } from "./types";
+import type { State } from "./state";
 
 export const settingsKey = Symbol() as InjectionKey<ComputedRef<TableSettings>>;
 

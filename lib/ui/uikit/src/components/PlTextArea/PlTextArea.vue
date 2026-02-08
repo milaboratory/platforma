@@ -1,20 +1,20 @@
 <script lang="ts">
 /** Component for multi-line string data manipulation */
 export default {
-  name: 'PlTextArea',
+  name: "PlTextArea",
 };
 </script>
 
 <script lang="ts" setup>
-import './pl-textarea.scss';
-import { computed, onMounted, ref, useSlots } from 'vue';
-import { PlTooltip } from '../PlTooltip';
-import DoubleContour from '../../utils/DoubleContour.vue';
-import { useLabelNotch } from '../../utils/useLabelNotch';
-import { useValidation } from '../../utils/useValidation';
-import { getErrorMessage } from '../../helpers/error.ts';
-import { PlSvg } from '../PlSvg';
-import SvgRequired from '../../assets/images/required.svg?raw';
+import "./pl-textarea.scss";
+import { computed, onMounted, ref, useSlots } from "vue";
+import { PlTooltip } from "../PlTooltip";
+import DoubleContour from "../../utils/DoubleContour.vue";
+import { useLabelNotch } from "../../utils/useLabelNotch";
+import { useValidation } from "../../utils/useValidation";
+import { getErrorMessage } from "../../helpers/error.ts";
+import { PlSvg } from "../PlSvg";
+import SvgRequired from "../../assets/images/required.svg?raw";
 
 const slots = useSlots();
 
@@ -22,7 +22,7 @@ const emit = defineEmits<{
   /**
    * Emitted when the model value is updated.
    */
-  (e: 'update:modelValue', value: string): void;
+  (e: "update:modelValue", value: string): void;
 }>();
 
 const props = defineProps<{
@@ -81,10 +81,10 @@ const input = ref<HTMLTextAreaElement>();
 
 const value = computed({
   get() {
-    return props.modelValue ?? '';
+    return props.modelValue ?? "";
   },
   set(v) {
-    emit('update:modelValue', v);
+    emit("update:modelValue", v);
   },
 });
 
@@ -114,7 +114,7 @@ const adjustHeight = () => {
   }
   const el = input.value;
   if (el) {
-    el.style.height = 'auto'; // it works, do not delete it
+    el.style.height = "auto"; // it works, do not delete it
     el.style.height = `${el.scrollHeight}px`; // Set height based on scrollHeight
   }
 };
@@ -152,7 +152,7 @@ onMounted(() => {
       <DoubleContour class="ui-text-area__contour" />
     </div>
     <div v-if="hasErrors" class="ui-text-area__error">
-      {{ displayErrors.join(' ') }}
+      {{ displayErrors.join(" ") }}
     </div>
     <div v-else-if="helper" class="ui-text-area__helper">{{ helper }}</div>
   </div>

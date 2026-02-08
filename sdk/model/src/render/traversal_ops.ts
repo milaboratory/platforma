@@ -20,7 +20,7 @@ export type CommonFieldTraverseOps = {
   stableIfNotFound?: true;
 };
 
-export type FieldType = 'Input' | 'Output' | 'Service' | 'OTW' | 'Dynamic' | 'MTW';
+export type FieldType = "Input" | "Output" | "Service" | "OTW" | "Dynamic" | "MTW";
 
 export interface ResourceType {
   readonly name: string;

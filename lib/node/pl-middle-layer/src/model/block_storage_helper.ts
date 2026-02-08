@@ -8,10 +8,7 @@
  * @module block_storage_helper
  */
 
-import type {
-  BlockStorage,
-  BlockStorageHandlers,
-} from '@platforma-sdk/model';
+import type { BlockStorage, BlockStorageHandlers } from "@platforma-sdk/model";
 import {
   BLOCK_STORAGE_KEY,
   BLOCK_STORAGE_SCHEMA_VERSION,
@@ -25,7 +22,7 @@ import {
   setPluginData,
   updateStorageData,
   updateStorageDataVersion,
-} from '@platforma-sdk/model';
+} from "@platforma-sdk/model";
 
 // Re-export types for convenience
 export type { BlockStorage, BlockStorageHandlers };
@@ -59,7 +56,7 @@ export function parseBlockStorage<TState = unknown>(rawData: unknown): BlockStor
   }
 
   // If it's a string, parse it first
-  if (typeof rawData === 'string') {
+  if (typeof rawData === "string") {
     try {
       const parsed = JSON.parse(rawData);
       return normalizeBlockStorage<TState>(parsed);
@@ -98,7 +95,8 @@ export function applyStateUpdate<TState>(
   handlers: BlockStorageHandlers<TState> = defaultBlockStorageHandlers as BlockStorageHandlers<TState>,
 ): BlockStorage<TState> {
   const storage = currentStorage ?? createBlockStorage<TState>({} as TState);
-  const transform = handlers.transformStateForStorage ?? defaultBlockStorageHandlers.transformStateForStorage;
+  const transform =
+    handlers.transformStateForStorage ?? defaultBlockStorageHandlers.transformStateForStorage;
   return transform(storage, newState) as BlockStorage<TState>;
 }
 
@@ -158,13 +156,13 @@ export interface LegacyV1V2State {
  * @returns true if data is in legacy format
  */
 export function isLegacyV1V2Format(rawData: unknown): rawData is LegacyV1V2State {
-  if (rawData === null || typeof rawData !== 'object') return false;
+  if (rawData === null || typeof rawData !== "object") return false;
   // If it has the discriminator, it's BlockStorage format
   if (isBlockStorage(rawData)) return false;
 
   const obj = rawData as Record<string, unknown>;
   // Legacy format has 'args' and/or 'uiState' at top level, no discriminator
-  return ('args' in obj || 'uiState' in obj);
+  return "args" in obj || "uiState" in obj;
 }
 
 /**
@@ -174,7 +172,9 @@ export function isLegacyV1V2Format(rawData: unknown): rawData is LegacyV1V2State
  * @param legacyData - Data in { args, uiState } format
  * @returns BlockStorage with legacy data as state
  */
-export function convertLegacyToBlockStorage(legacyData: LegacyV1V2State): BlockStorage<LegacyV1V2State> {
+export function convertLegacyToBlockStorage(
+  legacyData: LegacyV1V2State,
+): BlockStorage<LegacyV1V2State> {
   return createBlockStorage(legacyData);
 }
 
@@ -194,7 +194,7 @@ export function parseBlockStorageSmart<TState = unknown>(rawData: unknown): Bloc
 
   // If it's a string, parse it first
   let parsed = rawData;
-  if (typeof rawData === 'string') {
+  if (typeof rawData === "string") {
     try {
       parsed = JSON.parse(rawData);
     } catch {

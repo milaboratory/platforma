@@ -13,12 +13,12 @@
 
   > div {
     background-color: var(--theme-switcher-icon-color);
-    @include mask(url('./images/24_dark-mode.svg'), 24px);
+    @include mask(url("./images/24_dark-mode.svg"), 24px);
   }
 
   &.dark {
     > div {
-      @include mask(url('./images/24_light-mode.svg'), 24px);
+      @include mask(url("./images/24_light-mode.svg"), 24px);
     }
 
     &:hover {

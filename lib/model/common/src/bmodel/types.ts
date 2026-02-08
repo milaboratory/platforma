@@ -1,1 +1,1 @@
-export type BlockRenderingMode = 'Light' | 'Heavy' | 'DualContextHeavy';
+export type BlockRenderingMode = "Light" | "Heavy" | "DualContextHeavy";

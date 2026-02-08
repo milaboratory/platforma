@@ -1,22 +1,22 @@
 type MimeType =
-  | 'text/plain'
-  | 'text/html'
-  | 'text/css'
-  | 'text/javascript'
-  | 'text/csv'
-  | 'application/json'
-  | 'application/xml'
-  | 'application/pdf'
-  | 'application/zip'
-  | 'application/octet-stream'
-  | 'image/png'
-  | 'image/jpeg'
-  | 'image/gif'
-  | 'image/svg+xml'
-  | 'audio/mpeg'
-  | 'audio/wav'
-  | 'video/mp4'
-  | 'video/webm'
+  | "text/plain"
+  | "text/html"
+  | "text/css"
+  | "text/javascript"
+  | "text/csv"
+  | "application/json"
+  | "application/xml"
+  | "application/pdf"
+  | "application/zip"
+  | "application/octet-stream"
+  | "image/png"
+  | "image/jpeg"
+  | "image/gif"
+  | "image/svg+xml"
+  | "audio/mpeg"
+  | "audio/wav"
+  | "video/mp4"
+  | "video/webm"
   | (string & {});
 
 type DownloadableContent =
@@ -44,7 +44,7 @@ export const downloadContent = (content: DownloadableContent, filename: string) 
     blob = content;
   } else if (Array.isArray(content) && content.length === 2) {
     const [data, mimeType] = content;
-    if (typeof data === 'string') {
+    if (typeof data === "string") {
       blob = new Blob([data], { type: mimeType });
     } else if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
       blob = new Blob([data], { type: mimeType });
@@ -54,13 +54,15 @@ export const downloadContent = (content: DownloadableContent, filename: string) 
       throw new Error(`Unsupported data type for download. Received data of type ${typeof data}.`);
     }
   } else {
-    throw new Error('Invalid content type. Content must be a Blob, File, or [data, mimeType] tuple.');
+    throw new Error(
+      "Invalid content type. Content must be a Blob, File, or [data, mimeType] tuple.",
+    );
   }
 
   const objectUrl = URL.createObjectURL(blob);
 
   try {
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = objectUrl;
     link.download = filename;
 

@@ -1,8 +1,8 @@
-import type { DataTable } from '@milaboratories/uikit';
-import { arrayFrom, randomRangeInt, randomString, uniqueId } from '@milaboratories/helpers';
-import { computed, reactive } from 'vue';
-import { faker } from '@faker-js/faker';
-import { asConst, renderSequence } from './helpers';
+import type { DataTable } from "@milaboratories/uikit";
+import { arrayFrom, randomRangeInt, randomString, uniqueId } from "@milaboratories/helpers";
+import { computed, reactive } from "vue";
+import { faker } from "@faker-js/faker";
+import { asConst, renderSequence } from "./helpers";
 
 const lorem = (() => {
   let i = 0;
@@ -30,21 +30,21 @@ export function useData() {
 
   const columnsRef = computed(() => {
     const rest = arrayFrom(data.numColumns, (i) => {
-      const valueType = i % 2 === 0 ? 'string' : 'integer';
+      const valueType = i % 2 === 0 ? "string" : "integer";
 
       return {
-        label: i + 2 + ') ' + faker.word.noun(),
+        label: i + 2 + ") " + faker.word.noun(),
         id: uniqueId(),
         valueType,
         width: 200,
         editable: true,
-      } as DataTable.Types.TableSettings['columns'][number];
+      } as DataTable.Types.TableSettings["columns"][number];
     });
 
     return [
       asConst<DataTable.Types.ColumnSpec>({
-        id: 'frozen',
-        label: 'Frozen',
+        id: "frozen",
+        label: "Frozen",
         width: 200,
         frozen: true,
       }),
@@ -57,7 +57,7 @@ export function useData() {
     for await (const id of renderSequence(Number(data.numRows))) {
       const row = Object.fromEntries(
         columnsRef.value.map((col, colIndex) => {
-          if (col.id === 'ID') {
+          if (col.id === "ID") {
             return [col.id, id];
           }
 

@@ -1,40 +1,40 @@
-import TextFieldBasic from './text-field/TextFieldBasic.vue';
+import TextFieldBasic from "./text-field/TextFieldBasic.vue";
 
 // text-area
-import TextAreaBasic from './text-area/TextAreaBasic.vue';
-import TextAreaValidation from './text-area/TextAreaValidation.vue';
+import TextAreaBasic from "./text-area/TextAreaBasic.vue";
+import TextAreaValidation from "./text-area/TextAreaValidation.vue";
 
 // number-field
-import NumberFieldBasic from './number-field/index.vue';
+import NumberFieldBasic from "./number-field/index.vue";
 
 // dropdown
-import PlDropdownBasic from './dropdown/index.vue';
+import PlDropdownBasic from "./dropdown/index.vue";
 
 // dropdown-multi
-import PlDropdownMultiBasic from './dropdown-multi/index.vue';
+import PlDropdownMultiBasic from "./dropdown-multi/index.vue";
 
 // dropdown-line
-import PlDropdownLineBasic from './dropdown-line/index.vue';
+import PlDropdownLineBasic from "./dropdown-line/index.vue";
 
 // checkbox
-import PlCheckboxBasic from './checkbox/index.vue';
+import PlCheckboxBasic from "./checkbox/index.vue";
 
 // checkbox-group
-import PlCheckboxGroupBasic from './checkbox-group/index.vue';
+import PlCheckboxGroupBasic from "./checkbox-group/index.vue";
 
 // toggle-switch
-import PlToggleSwitchBasic from './toggle-switch/index.vue';
+import PlToggleSwitchBasic from "./toggle-switch/index.vue";
 
 // btn-group
-import PlBtnGroupBasic from './btn-group/index.vue';
+import PlBtnGroupBasic from "./btn-group/index.vue";
 
 // file-input
-import PlFileInputBasic from './file-input/index.vue';
+import PlFileInputBasic from "./file-input/index.vue";
 
 // notifications
-import PlNotificationAlertBasic from './notifications/index.vue';
+import PlNotificationAlertBasic from "./notifications/index.vue";
 
-import PlBtnSPlitBasic from './btn-split/index.vue';
+import PlBtnSPlitBasic from "./btn-split/index.vue";
 
 export {
   TextFieldBasic,

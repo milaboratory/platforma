@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { reactive } from 'vue';
-import Layout from '../Layout.vue';
-import Split from '../Split.vue';
-import { PlDropdownMulti } from '@milaboratories/uikit';
-import { generate } from '../imports';
-import { faker } from '@faker-js/faker';
+import { reactive } from "vue";
+import Layout from "../Layout.vue";
+import Split from "../Split.vue";
+import { PlDropdownMulti } from "@milaboratories/uikit";
+import { generate } from "../imports";
+import { faker } from "@faker-js/faker";
 
 const data = reactive({
   value: [],
@@ -28,13 +28,33 @@ const optionsTitleAndDescription = generate(100, (i) => ({
   <Layout>
     <Split name="Multi Dropdown" style="min-height: 600px">
       {{ data.value }}
-      <PlDropdownMulti v-model="data.value" placeholder="Hello" label="Placeholder" :options="optionsTitleAndDescription" />
-      <PlDropdownMulti v-model="data.value" placeholder="Hello" label="Placeholder" :options="options" />
+      <PlDropdownMulti
+        v-model="data.value"
+        placeholder="Hello"
+        label="Placeholder"
+        :options="optionsTitleAndDescription"
+      />
+      <PlDropdownMulti
+        v-model="data.value"
+        placeholder="Hello"
+        label="Placeholder"
+        :options="options"
+      />
       <PlDropdownMulti v-model="data.value" label="Label" required :options="options" />
-      <PlDropdownMulti v-model="data.value" label="Has tooltip and helper" :options="options" helper="Helper text">
+      <PlDropdownMulti
+        v-model="data.value"
+        label="Has tooltip and helper"
+        :options="options"
+        helper="Helper text"
+      >
         <template #tooltip> Tooltip content Second line Third line </template>
       </PlDropdownMulti>
-      <PlDropdownMulti v-model="data.value" label="Has error" :options="options" error="Some error description 1111" />
+      <PlDropdownMulti
+        v-model="data.value"
+        label="Has error"
+        :options="options"
+        error="Some error description 1111"
+      />
       <PlDropdownMulti v-model="data.value" label="Disabled" :disabled="true" :options="options" />
     </Split>
   </Layout>

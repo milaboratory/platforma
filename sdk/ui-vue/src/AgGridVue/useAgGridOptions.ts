@@ -1,19 +1,35 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { ColGroupDef, GridApi, GridOptions, GridReadyEvent, ICellRendererParams, RowSelectionOptions, ValueSetterParams } from 'ag-grid-enterprise';
-import type { Component } from 'vue';
-import { computed, shallowRef, watch } from 'vue';
-import { AgGridTheme } from '../aggrid';
-import { autoSizeRowNumberColumn, makeRowNumberColDef, PlAgOverlayLoading, type PlAgOverlayLoadingParams } from '../components/PlAgDataTable';
-import { PlAgOverlayNoRows } from '../components/PlAgDataTable';
-import { createAgGridColDef, type ColDefExtended } from './createAgGridColDef';
-import { whenever } from '@vueuse/core';
-import { PlAgCellFile } from '../components/PlAgCellFile';
-import { PlAgChartStackedBarCell } from '../components/PlAgChartStackedBarCell';
-import { PlAgChartHistogramCell } from '../components/PlAgChartHistogramCell';
-import type { ImportFileHandle } from '@platforma-sdk/model';
-import type { ImportProgress } from '@platforma-sdk/model';
-import { PlAgCellStatusTag } from '../components/PlAgCellStatusTag';
-interface GridOptionsExtended<TData = any> extends Omit<GridOptions<TData>, 'columnDefs' | 'loadingOverlayComponentParams'> {
+import type {
+  ColGroupDef,
+  GridApi,
+  GridOptions,
+  GridReadyEvent,
+  ICellRendererParams,
+  RowSelectionOptions,
+  ValueSetterParams,
+} from "ag-grid-enterprise";
+import type { Component } from "vue";
+import { computed, shallowRef, watch } from "vue";
+import { AgGridTheme } from "../aggrid";
+import {
+  autoSizeRowNumberColumn,
+  makeRowNumberColDef,
+  PlAgOverlayLoading,
+  type PlAgOverlayLoadingParams,
+} from "../components/PlAgDataTable";
+import { PlAgOverlayNoRows } from "../components/PlAgDataTable";
+import { createAgGridColDef, type ColDefExtended } from "./createAgGridColDef";
+import { whenever } from "@vueuse/core";
+import { PlAgCellFile } from "../components/PlAgCellFile";
+import { PlAgChartStackedBarCell } from "../components/PlAgChartStackedBarCell";
+import { PlAgChartHistogramCell } from "../components/PlAgChartHistogramCell";
+import type { ImportFileHandle } from "@platforma-sdk/model";
+import type { ImportProgress } from "@platforma-sdk/model";
+import { PlAgCellStatusTag } from "../components/PlAgCellStatusTag";
+interface GridOptionsExtended<TData = any> extends Omit<
+  GridOptions<TData>,
+  "columnDefs" | "loadingOverlayComponentParams"
+> {
   /**
    * Array of Column / Column Group definitions.
    */
@@ -153,7 +169,10 @@ class Builder<TData> {
    * @param value - option value
    * @returns this
    */
-  public setOption<K extends keyof GridOptionsExtended<TData>>(key: K, value: GridOptionsExtended<TData>[K]) {
+  public setOption<K extends keyof GridOptionsExtended<TData>>(
+    key: K,
+    value: GridOptionsExtended<TData>[K],
+  ) {
     this.#options[key] = value;
     return this;
   }
@@ -204,7 +223,9 @@ class Builder<TData> {
        *  }
        * }
        */
-      resolveImportProgress?: (cellData: ICellRendererParams<TData, TValue>) => ImportProgress | undefined;
+      resolveImportProgress?: (
+        cellData: ICellRendererParams<TData, TValue>,
+      ) => ImportProgress | undefined;
 
       /**
        * The resolveFileHandle function is an optional input parameter for the component
@@ -218,31 +239,39 @@ class Builder<TData> {
        *  }
        * }
        */
-      resolveImportFileHandle?: (cellData: ICellRendererParams<TData, TValue>) => ImportFileHandle | undefined;
+      resolveImportFileHandle?: (
+        cellData: ICellRendererParams<TData, TValue>,
+      ) => ImportFileHandle | undefined;
 
       setImportFileHandle?: (d: ValueSetterParams<TData, ImportFileHandle | undefined>) => void;
-    }) {
-    return this.column(Object.assign({
-      cellRenderer: 'PlAgCellFile',
-      headerComponentParams: { type: 'File' },
-      cellStyle: { padding: 0 },
-      valueSetter: (d: ValueSetterParams<TData, ImportFileHandle | undefined>) => {
-        def.setImportFileHandle?.(d);
-        return true;
-      },
-      cellRendererSelector: (cellData: ICellRendererParams<TData, TValue>) => {
-        return {
-          component: 'PlAgCellFile',
-          params: {
-            extensions: def.extensions,
-            value: def.resolveImportFileHandle?.(cellData),
-            resolveProgress: () => {
-              return def.resolveImportProgress?.(cellData);
-            },
+    },
+  ) {
+    return this.column(
+      Object.assign(
+        {
+          cellRenderer: "PlAgCellFile",
+          headerComponentParams: { type: "File" },
+          cellStyle: { padding: 0 },
+          valueSetter: (d: ValueSetterParams<TData, ImportFileHandle | undefined>) => {
+            def.setImportFileHandle?.(d);
+            return true;
           },
-        };
-      },
-    }, def));
+          cellRendererSelector: (cellData: ICellRendererParams<TData, TValue>) => {
+            return {
+              component: "PlAgCellFile",
+              params: {
+                extensions: def.extensions,
+                value: def.resolveImportFileHandle?.(cellData),
+                resolveProgress: () => {
+                  return def.resolveImportProgress?.(cellData);
+                },
+              },
+            };
+          },
+        },
+        def,
+      ),
+    );
   }
 
   public build() {
@@ -251,7 +280,9 @@ class Builder<TData> {
 }
 
 // Simple helper to use like column<string> in grid options literal
-type ColumnFunc<TData> = <TValue>(def: ColDefExtended<TData, TValue>) => ColDefExtended<TData, TValue>;
+type ColumnFunc<TData> = <TValue>(
+  def: ColDefExtended<TData, TValue>,
+) => ColDefExtended<TData, TValue>;
 
 /**
  * Returns a set of Ag Grid options along with a reference to the Ag Grid API.
@@ -270,7 +301,10 @@ type ColumnFunc<TData> = <TValue>(def: ColDefExtended<TData, TValue>) => ColDefE
  * ```
  */
 export function useAgGridOptions<TData>(
-  factory: (context: { builder: Builder<TData>; column: ColumnFunc<TData> }) => Builder<TData> | GridOptionsExtended<TData>,
+  factory: (context: {
+    builder: Builder<TData>;
+    column: ColumnFunc<TData>;
+  }) => Builder<TData> | GridOptionsExtended<TData>,
 ) {
   const gridApi = shallowRef<GridApi>();
 
@@ -303,8 +337,10 @@ export function useAgGridOptions<TData>(
       };
     }
 
-    if ('loadingOverlayComponentParams' in options) {
-      console.warn('useAgGridOptions: remove loadingOverlayComponentParams from options, use loading, notReady, loadingText instead');
+    if ("loadingOverlayComponentParams" in options) {
+      console.warn(
+        "useAgGridOptions: remove loadingOverlayComponentParams from options, use loading, notReady, loadingText instead",
+      );
     }
 
     options.loading = options.notReady || options.loading;
@@ -328,41 +364,45 @@ export function useAgGridOptions<TData>(
     return {
       ...options,
       loadingOverlayComponentParams: {
-        variant: options.notReady ? 'not-ready' : 'loading',
+        variant: options.notReady ? "not-ready" : "loading",
         notReadyText: options.notReadyText,
         loadingText: options.loadingText,
       } satisfies PlAgOverlayLoadingParams,
     };
   });
 
-  whenever(() => extOptions.value.rowNumbersColumn, () => {
-    if (gridApi.value) {
-      autoSizeRowNumberColumn(gridApi.value);
-    }
-  });
+  whenever(
+    () => extOptions.value.rowNumbersColumn,
+    () => {
+      if (gridApi.value) {
+        autoSizeRowNumberColumn(gridApi.value);
+      }
+    },
+  );
 
-  watch([
-    () => extOptions.value.notReady,
-    () => extOptions.value.loading,
-  ], ([notReady, loading]) => {
-    const loadingOverlayComponentParams = {
-      variant: notReady ? 'not-ready' : 'loading',
-      // we probably don't need to update the parameters below
-      notReadyText: extOptions.value.notReadyText,
-      loadingText: extOptions.value.loadingText,
-    } satisfies PlAgOverlayLoadingParams;
+  watch(
+    [() => extOptions.value.notReady, () => extOptions.value.loading],
+    ([notReady, loading]) => {
+      const loadingOverlayComponentParams = {
+        variant: notReady ? "not-ready" : "loading",
+        // we probably don't need to update the parameters below
+        notReadyText: extOptions.value.notReadyText,
+        loadingText: extOptions.value.loadingText,
+      } satisfies PlAgOverlayLoadingParams;
 
-    // Hack to apply loadingOverlayComponentParams
-    gridApi.value?.updateGridOptions({
-      loading: !loading,
-      loadingOverlayComponentParams,
-    });
+      // Hack to apply loadingOverlayComponentParams
+      gridApi.value?.updateGridOptions({
+        loading: !loading,
+        loadingOverlayComponentParams,
+      });
 
-    gridApi.value?.updateGridOptions({
-      loading,
-      loadingOverlayComponentParams,
-    });
-  }, { deep: true, immediate: true });
+      gridApi.value?.updateGridOptions({
+        loading,
+        loadingOverlayComponentParams,
+      });
+    },
+    { deep: true, immediate: true },
+  );
 
   return { gridOptions, gridApi };
-};
+}

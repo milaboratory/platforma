@@ -1,3 +1,3 @@
-export { default as PlAgColumnHeader } from './PlAgColumnHeader.vue';
+export { default as PlAgColumnHeader } from "./PlAgColumnHeader.vue";
 
-export * from './types';
+export * from "./types";

@@ -1,20 +1,20 @@
 <script lang="ts" setup>
-import '../assets/block.scss';
-import { computed } from 'vue';
-import { useSdkPlugin } from '../defineApp';
-import NotFound from './NotFound.vue';
-import LoaderPage from './LoaderPage.vue';
-import { PlAppErrorNotificationAlert } from './PlAppErrorNotificationAlert';
-import BlockLoader from './BlockLoader.vue';
-import { MonetizationSidebar } from '../plugins/Monetization';
+import "../assets/block.scss";
+import { computed } from "vue";
+import { useSdkPlugin } from "../defineApp";
+import NotFound from "./NotFound.vue";
+import LoaderPage from "./LoaderPage.vue";
+import { PlAppErrorNotificationAlert } from "./PlAppErrorNotificationAlert";
+import BlockLoader from "./BlockLoader.vue";
+import { MonetizationSidebar } from "../plugins/Monetization";
 
 const sdk = useSdkPlugin();
 
 const parsePathname = (href: `/${string}`) => {
   try {
-    return new URL(href, 'http://dummy').pathname as `/${string}`;
+    return new URL(href, "http://dummy").pathname as `/${string}`;
   } catch (_cause) {
-    console.error('Invalid href', href);
+    console.error("Invalid href", href);
     return undefined;
   }
 };

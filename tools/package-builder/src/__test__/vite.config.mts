@@ -1,7 +1,7 @@
 export default {
   build: {
     rollupOptions: {
-      external: ['package.json'],
+      external: ["package.json"],
     },
   },
 };

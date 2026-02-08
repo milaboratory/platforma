@@ -32,7 +32,7 @@ import type {
   UnaryArithmeticOperator,
   WhenThenOtherwiseExpression,
   WindowExpression,
-} from './types';
+} from "./types";
 
 /**
  * Base abstract class for all expressions
@@ -66,107 +66,107 @@ export abstract class ExpressionImpl {
 
   // Arithmetic operations
   plus(other: ExpressionImpl | number | string): ArithmeticExpressionImpl {
-    return new ArithmeticExpressionImpl('plus', this, coerceToExpression(other));
+    return new ArithmeticExpressionImpl("plus", this, coerceToExpression(other));
   }
 
   minus(other: ExpressionImpl | number | string): ArithmeticExpressionImpl {
-    return new ArithmeticExpressionImpl('minus', this, coerceToExpression(other));
+    return new ArithmeticExpressionImpl("minus", this, coerceToExpression(other));
   }
 
   multiply(other: ExpressionImpl | number | string): ArithmeticExpressionImpl {
-    return new ArithmeticExpressionImpl('multiply', this, coerceToExpression(other));
+    return new ArithmeticExpressionImpl("multiply", this, coerceToExpression(other));
   }
 
   truediv(other: ExpressionImpl | number | string): ArithmeticExpressionImpl {
-    return new ArithmeticExpressionImpl('truediv', this, coerceToExpression(other));
+    return new ArithmeticExpressionImpl("truediv", this, coerceToExpression(other));
   }
 
   floordiv(other: ExpressionImpl | number | string): ArithmeticExpressionImpl {
-    return new ArithmeticExpressionImpl('floordiv', this, coerceToExpression(other));
+    return new ArithmeticExpressionImpl("floordiv", this, coerceToExpression(other));
   }
 
   // Comparison operations
   gt(other: ExpressionImpl | number | string): ComparisonExpressionImpl {
-    return new ComparisonExpressionImpl('gt', this, coerceToExpression(other));
+    return new ComparisonExpressionImpl("gt", this, coerceToExpression(other));
   }
 
   ge(other: ExpressionImpl | number | string): ComparisonExpressionImpl {
-    return new ComparisonExpressionImpl('ge', this, coerceToExpression(other));
+    return new ComparisonExpressionImpl("ge", this, coerceToExpression(other));
   }
 
   eq(other: ExpressionImpl | number | string): ComparisonExpressionImpl {
-    return new ComparisonExpressionImpl('eq', this, coerceToExpression(other));
+    return new ComparisonExpressionImpl("eq", this, coerceToExpression(other));
   }
 
   lt(other: ExpressionImpl | number | string): ComparisonExpressionImpl {
-    return new ComparisonExpressionImpl('lt', this, coerceToExpression(other));
+    return new ComparisonExpressionImpl("lt", this, coerceToExpression(other));
   }
 
   le(other: ExpressionImpl | number | string): ComparisonExpressionImpl {
-    return new ComparisonExpressionImpl('le', this, coerceToExpression(other));
+    return new ComparisonExpressionImpl("le", this, coerceToExpression(other));
   }
 
   neq(other: ExpressionImpl | number | string): ComparisonExpressionImpl {
-    return new ComparisonExpressionImpl('neq', this, coerceToExpression(other));
+    return new ComparisonExpressionImpl("neq", this, coerceToExpression(other));
   }
 
   // Logical operations
   and(...others: ExpressionImpl[]): LogicalExpressionImpl {
-    return new LogicalExpressionImpl('and', [this, ...others]);
+    return new LogicalExpressionImpl("and", [this, ...others]);
   }
 
   or(...others: ExpressionImpl[]): LogicalExpressionImpl {
-    return new LogicalExpressionImpl('or', [this, ...others]);
+    return new LogicalExpressionImpl("or", [this, ...others]);
   }
 
   not(): LogicalExpressionImpl {
-    return new LogicalExpressionImpl('not', [this]);
+    return new LogicalExpressionImpl("not", [this]);
   }
 
   // Unary arithmetic operations
   abs(): UnaryArithmeticExpressionImpl {
-    return new UnaryArithmeticExpressionImpl('abs', this);
+    return new UnaryArithmeticExpressionImpl("abs", this);
   }
 
   sqrt(): UnaryArithmeticExpressionImpl {
-    return new UnaryArithmeticExpressionImpl('sqrt', this);
+    return new UnaryArithmeticExpressionImpl("sqrt", this);
   }
 
   log(): UnaryArithmeticExpressionImpl {
-    return new UnaryArithmeticExpressionImpl('log', this);
+    return new UnaryArithmeticExpressionImpl("log", this);
   }
 
   log10(): UnaryArithmeticExpressionImpl {
-    return new UnaryArithmeticExpressionImpl('log10', this);
+    return new UnaryArithmeticExpressionImpl("log10", this);
   }
 
   log2(): UnaryArithmeticExpressionImpl {
-    return new UnaryArithmeticExpressionImpl('log2', this);
+    return new UnaryArithmeticExpressionImpl("log2", this);
   }
 
   floor(): UnaryArithmeticExpressionImpl {
-    return new UnaryArithmeticExpressionImpl('floor', this);
+    return new UnaryArithmeticExpressionImpl("floor", this);
   }
 
   ceil(): UnaryArithmeticExpressionImpl {
-    return new UnaryArithmeticExpressionImpl('ceil', this);
+    return new UnaryArithmeticExpressionImpl("ceil", this);
   }
 
   round(): UnaryArithmeticExpressionImpl {
-    return new UnaryArithmeticExpressionImpl('round', this);
+    return new UnaryArithmeticExpressionImpl("round", this);
   }
 
   negate(): UnaryArithmeticExpressionImpl {
-    return new UnaryArithmeticExpressionImpl('negate', this);
+    return new UnaryArithmeticExpressionImpl("negate", this);
   }
 
   // Null checks
   isNull(): NullCheckExpressionImpl {
-    return new NullCheckExpressionImpl('is_na', this);
+    return new NullCheckExpressionImpl("is_na", this);
   }
 
   isNotNull(): NullCheckExpressionImpl {
-    return new NullCheckExpressionImpl('is_not_na', this);
+    return new NullCheckExpressionImpl("is_not_na", this);
   }
 
   // Fill null/NaN
@@ -187,20 +187,28 @@ export abstract class ExpressionImpl {
     return new SubstringExpressionImpl(this, start, length);
   }
 
-  strReplace(pattern: string, value: string, options?: Pick<StringReplaceExpression, 'replaceAll' | 'literal'>): StringReplaceExpressionImpl {
+  strReplace(
+    pattern: string,
+    value: string,
+    options?: Pick<StringReplaceExpression, "replaceAll" | "literal">,
+  ): StringReplaceExpressionImpl {
     return new StringReplaceExpressionImpl(this, pattern, value, options);
   }
 
-  strContains(pattern: ExpressionImpl | string, literal?: boolean, strict?: boolean): StringContainsExpressionImpl {
+  strContains(
+    pattern: ExpressionImpl | string,
+    literal?: boolean,
+    strict?: boolean,
+  ): StringContainsExpressionImpl {
     return new StringContainsExpressionImpl(this, coerceToExpression(pattern), literal, strict);
   }
 
   strToUpper(): StringCaseExpressionImpl {
-    return new StringCaseExpressionImpl('to_upper', this);
+    return new StringCaseExpressionImpl("to_upper", this);
   }
 
   strToLower(): StringCaseExpressionImpl {
-    return new StringCaseExpressionImpl('to_lower', this);
+    return new StringCaseExpressionImpl("to_lower", this);
   }
 
   strStartsWith(pattern: ExpressionImpl | string): StringStartsWithExpressionImpl {
@@ -213,31 +221,31 @@ export abstract class ExpressionImpl {
 
   // Aggregation operations
   sum(): AggregationExpressionImpl {
-    return new AggregationExpressionImpl('sum', this);
+    return new AggregationExpressionImpl("sum", this);
   }
 
   mean(): AggregationExpressionImpl {
-    return new AggregationExpressionImpl('mean', this);
+    return new AggregationExpressionImpl("mean", this);
   }
 
   count(): AggregationExpressionImpl {
-    return new AggregationExpressionImpl('count', this);
+    return new AggregationExpressionImpl("count", this);
   }
 
   min(): AggregationExpressionImpl {
-    return new AggregationExpressionImpl('min', this);
+    return new AggregationExpressionImpl("min", this);
   }
 
   max(): AggregationExpressionImpl {
-    return new AggregationExpressionImpl('max', this);
+    return new AggregationExpressionImpl("max", this);
   }
 
   first(): AggregationExpressionImpl {
-    return new AggregationExpressionImpl('first', this);
+    return new AggregationExpressionImpl("first", this);
   }
 
   last(): AggregationExpressionImpl {
-    return new AggregationExpressionImpl('last', this);
+    return new AggregationExpressionImpl("last", this);
   }
 
   cumsum(): CumsumExpressionImpl {
@@ -245,7 +253,11 @@ export abstract class ExpressionImpl {
   }
 
   // Fuzzy operations
-  stringDistance(other: ExpressionImpl | string, metric: StringDistanceMetric, returnSimilarity?: boolean): StringDistanceExpressionImpl {
+  stringDistance(
+    other: ExpressionImpl | string,
+    metric: StringDistanceMetric,
+    returnSimilarity?: boolean,
+  ): StringDistanceExpressionImpl {
     return new StringDistanceExpressionImpl(
       this,
       coerceToExpression(other),
@@ -254,13 +266,12 @@ export abstract class ExpressionImpl {
     );
   }
 
-  fuzzyStringFilter(pattern: ExpressionImpl | string, metric: FuzzyFilterDistanceMetric, bound: number): FuzzyStringFilterExpressionImpl {
-    return new FuzzyStringFilterExpressionImpl(
-      this,
-      coerceToExpression(pattern),
-      metric,
-      bound,
-    );
+  fuzzyStringFilter(
+    pattern: ExpressionImpl | string,
+    metric: FuzzyFilterDistanceMetric,
+    bound: number,
+  ): FuzzyStringFilterExpressionImpl {
+    return new FuzzyStringFilterExpressionImpl(this, coerceToExpression(pattern), metric, bound);
   }
 }
 
@@ -271,7 +282,7 @@ export class ColumnExpressionImpl extends ExpressionImpl {
 
   toJSON(): ColumnReferenceExpression {
     return {
-      type: 'col',
+      type: "col",
       name: this.columnName,
     };
   }
@@ -305,7 +316,10 @@ export function coerceToExpression(value: ExpressionImpl | LiteralValue): Expres
 }
 
 export class MinMaxExpressionImpl extends ExpressionImpl {
-  constructor(private readonly op: MinMaxOperator, private readonly ops: ExpressionImpl[]) {
+  constructor(
+    private readonly op: MinMaxOperator,
+    private readonly ops: ExpressionImpl[],
+  ) {
     super();
   }
 
@@ -317,7 +331,7 @@ export class MinMaxExpressionImpl extends ExpressionImpl {
   }
 
   getAlias(): string {
-    return this._alias || `${this.op}_${this.ops.map((o) => o.getAlias()).join('_')}`;
+    return this._alias || `${this.op}_${this.ops.map((o) => o.getAlias()).join("_")}`;
   }
 
   protected clone(): ExpressionImpl {
@@ -387,16 +401,16 @@ export class ComparisonExpressionImpl extends ExpressionImpl {
 
 export class LogicalExpressionImpl extends ExpressionImpl {
   constructor(
-    private readonly operator: 'and' | 'or' | 'not',
+    private readonly operator: "and" | "or" | "not",
     private readonly operands: ExpressionImpl[],
   ) {
     super();
   }
 
   toJSON(): NotExpression | BooleanLogicExpression {
-    if (this.operator === 'not') {
+    if (this.operator === "not") {
       return {
-        type: 'not',
+        type: "not",
         value: this.operands[0].toJSON(),
       };
     }
@@ -408,7 +422,7 @@ export class LogicalExpressionImpl extends ExpressionImpl {
 
   getAlias(): string {
     if (this._alias) return this._alias;
-    if (this.operator === 'not') {
+    if (this.operator === "not") {
       return `not_${this.operands[0].getAlias()}`;
     }
     return this.operands.map((op) => op.getAlias()).join(`_${this.operator}_`);
@@ -449,7 +463,7 @@ export class UnaryArithmeticExpressionImpl extends ExpressionImpl {
 
 export class NullCheckExpressionImpl extends ExpressionImpl {
   constructor(
-    private readonly operator: 'is_na' | 'is_not_na',
+    private readonly operator: "is_na" | "is_not_na",
     private readonly value: ExpressionImpl,
   ) {
     super();
@@ -482,7 +496,7 @@ export class LiteralExpressionImpl extends ExpressionImpl {
 
   toJSON(): ConstantValueExpression {
     return {
-      type: 'const',
+      type: "const",
       value: this.value,
     };
   }
@@ -509,37 +523,40 @@ export class LiteralExpressionImpl extends ExpressionImpl {
    */
   private generateDefaultAlias(): string {
     if (this.value === null || this.value === undefined) {
-      return 'null';
+      return "null";
     }
-    if (typeof this.value === 'string') {
+    if (typeof this.value === "string") {
       // For string values, truncate if too long and make safe for column names
-      const safe = this.value.replace(/[^a-zA-Z0-9_]/g, '_');
-      return safe.length > 20 ? safe.substring(0, 17) + '...' : safe;
+      const safe = this.value.replace(/[^a-zA-Z0-9_]/g, "_");
+      return safe.length > 20 ? safe.substring(0, 17) + "..." : safe;
     }
-    if (typeof this.value === 'boolean') {
-      return this.value ? 'true' : 'false';
+    if (typeof this.value === "boolean") {
+      return this.value ? "true" : "false";
     }
-    if (typeof this.value === 'number') {
+    if (typeof this.value === "number") {
       return String(this.value);
     }
     if (Array.isArray(this.value)) {
-      return 'array';
+      return "array";
     }
-    if (typeof this.value === 'object') {
-      return 'object';
+    if (typeof this.value === "object") {
+      return "object";
     }
-    return 'literal';
+    return "literal";
   }
 }
 
 export class FillNullExpressionImpl extends ExpressionImpl {
-  constructor(private readonly expr: ExpressionImpl, private readonly fillValue: ExpressionImpl) {
+  constructor(
+    private readonly expr: ExpressionImpl,
+    private readonly fillValue: ExpressionImpl,
+  ) {
     super();
   }
 
   toJSON(): FillNullExpression {
     return {
-      type: 'fill_null',
+      type: "fill_null",
       input: this.expr.toJSON(),
       fillValue: this.fillValue.toJSON(),
     };
@@ -557,13 +574,16 @@ export class FillNullExpressionImpl extends ExpressionImpl {
 }
 
 export class FillNaNExpressionImpl extends ExpressionImpl {
-  constructor(private readonly expr: ExpressionImpl, private readonly fillValue: ExpressionImpl) {
+  constructor(
+    private readonly expr: ExpressionImpl,
+    private readonly fillValue: ExpressionImpl,
+  ) {
     super();
   }
 
   toJSON(): FillNaNExpression {
     return {
-      type: 'fill_nan',
+      type: "fill_nan",
       input: this.expr.toJSON(),
       fillValue: this.fillValue.toJSON(),
     };
@@ -581,20 +601,23 @@ export class FillNaNExpressionImpl extends ExpressionImpl {
 }
 
 export class StringConcatExpressionImpl extends ExpressionImpl {
-  constructor(private readonly operands: ExpressionImpl[], private readonly delimiter: string = '') {
+  constructor(
+    private readonly operands: ExpressionImpl[],
+    private readonly delimiter: string = "",
+  ) {
     super();
   }
 
   toJSON(): StringJoinExpression {
     return {
-      type: 'str_join',
+      type: "str_join",
       operands: this.operands.map((o) => o.toJSON()),
       delimiter: this.delimiter,
     };
   }
 
   getAlias(): string {
-    return this._alias || this.operands.map((o) => o.getAlias()).join('_');
+    return this._alias || this.operands.map((o) => o.getAlias()).join("_");
   }
 
   protected clone(): ExpressionImpl {
@@ -605,16 +628,20 @@ export class StringConcatExpressionImpl extends ExpressionImpl {
 }
 
 export class SubstringExpressionImpl extends ExpressionImpl {
-  constructor(private readonly expr: ExpressionImpl, private readonly start: number, private readonly length?: number) {
+  constructor(
+    private readonly expr: ExpressionImpl,
+    private readonly start: number,
+    private readonly length?: number,
+  ) {
     super();
   }
 
   toJSON(): SubstringExpression {
     return {
-      type: 'substring',
+      type: "substring",
       value: this.expr.toJSON(),
-      start: { type: 'const', value: this.start },
-      length: this.length !== undefined ? { type: 'const', value: this.length } : undefined,
+      start: { type: "const", value: this.start },
+      length: this.length !== undefined ? { type: "const", value: this.length } : undefined,
     };
   }
 
@@ -630,13 +657,18 @@ export class SubstringExpressionImpl extends ExpressionImpl {
 }
 
 export class StringReplaceExpressionImpl extends ExpressionImpl {
-  constructor(private readonly expr: ExpressionImpl, private readonly pattern: string, private readonly value: string, private readonly options?: Pick<StringReplaceExpression, 'replaceAll' | 'literal'>) {
+  constructor(
+    private readonly expr: ExpressionImpl,
+    private readonly pattern: string,
+    private readonly value: string,
+    private readonly options?: Pick<StringReplaceExpression, "replaceAll" | "literal">,
+  ) {
     super();
   }
 
   toJSON(): StringReplaceExpression {
     return {
-      type: 'str_replace',
+      type: "str_replace",
       value: this.expr.toJSON(),
       pattern: this.pattern,
       replacement: this.value,
@@ -650,20 +682,30 @@ export class StringReplaceExpressionImpl extends ExpressionImpl {
   }
 
   protected clone(): ExpressionImpl {
-    const cloned = new StringReplaceExpressionImpl(this.expr, this.pattern, this.value, this.options);
+    const cloned = new StringReplaceExpressionImpl(
+      this.expr,
+      this.pattern,
+      this.value,
+      this.options,
+    );
     cloned._alias = this._alias;
     return cloned;
   }
 }
 
 export class StringContainsExpressionImpl extends ExpressionImpl {
-  constructor(private readonly expr: ExpressionImpl, private readonly pattern: ExpressionImpl, private readonly literal?: boolean, private readonly strict?: boolean) {
+  constructor(
+    private readonly expr: ExpressionImpl,
+    private readonly pattern: ExpressionImpl,
+    private readonly literal?: boolean,
+    private readonly strict?: boolean,
+  ) {
     super();
   }
 
   toJSON(): StringContainsExpression {
     return {
-      type: 'str_contains',
+      type: "str_contains",
       value: this.expr.toJSON(),
       pattern: this.pattern.toJSON(),
       literal: this.literal || false,
@@ -676,14 +718,22 @@ export class StringContainsExpressionImpl extends ExpressionImpl {
   }
 
   protected clone(): ExpressionImpl {
-    const cloned = new StringContainsExpressionImpl(this.expr, this.pattern, this.literal, this.strict);
+    const cloned = new StringContainsExpressionImpl(
+      this.expr,
+      this.pattern,
+      this.literal,
+      this.strict,
+    );
     cloned._alias = this._alias;
     return cloned;
   }
 }
 
 export class StringCaseExpressionImpl extends ExpressionImpl {
-  constructor(private readonly operation: 'to_upper' | 'to_lower', private readonly expr: ExpressionImpl) {
+  constructor(
+    private readonly operation: "to_upper" | "to_lower",
+    private readonly expr: ExpressionImpl,
+  ) {
     super();
   }
 
@@ -706,13 +756,16 @@ export class StringCaseExpressionImpl extends ExpressionImpl {
 }
 
 export class StringStartsWithExpressionImpl extends ExpressionImpl {
-  constructor(private readonly expr: ExpressionImpl, private readonly pattern: ExpressionImpl) {
+  constructor(
+    private readonly expr: ExpressionImpl,
+    private readonly pattern: ExpressionImpl,
+  ) {
     super();
   }
 
   toJSON(): Expression {
     return {
-      type: 'str_starts_with',
+      type: "str_starts_with",
       value: this.expr.toJSON(),
       prefix: this.pattern.toJSON(),
     };
@@ -730,13 +783,16 @@ export class StringStartsWithExpressionImpl extends ExpressionImpl {
 }
 
 export class StringEndsWithExpressionImpl extends ExpressionImpl {
-  constructor(private readonly expr: ExpressionImpl, private readonly pattern: ExpressionImpl) {
+  constructor(
+    private readonly expr: ExpressionImpl,
+    private readonly pattern: ExpressionImpl,
+  ) {
     super();
   }
 
   toJSON(): Expression {
     return {
-      type: 'str_ends_with',
+      type: "str_ends_with",
       value: this.expr.toJSON(),
       suffix: this.pattern.toJSON(),
     };
@@ -754,13 +810,18 @@ export class StringEndsWithExpressionImpl extends ExpressionImpl {
 }
 
 export class CumsumExpressionImpl extends ExpressionImpl {
-  constructor(private readonly value: ExpressionImpl, private readonly additionalOrderBy: ExpressionImpl[] = [], private readonly partitionBy: ExpressionImpl[] = [], private readonly descending?: boolean) {
+  constructor(
+    private readonly value: ExpressionImpl,
+    private readonly additionalOrderBy: ExpressionImpl[] = [],
+    private readonly partitionBy: ExpressionImpl[] = [],
+    private readonly descending?: boolean,
+  ) {
     super();
   }
 
   toJSON(): CumsumExpression {
     return {
-      type: 'cumsum',
+      type: "cumsum",
       value: this.value.toJSON(),
       additionalOrderBy: this.additionalOrderBy.map((expr) => expr.toJSON()),
       partitionBy: this.partitionBy.map((expr) => expr.toJSON()),
@@ -773,28 +834,36 @@ export class CumsumExpressionImpl extends ExpressionImpl {
   }
 
   protected clone(): ExpressionImpl {
-    const cloned = new CumsumExpressionImpl(this.value, this.additionalOrderBy, this.partitionBy, this.descending);
+    const cloned = new CumsumExpressionImpl(
+      this.value,
+      this.additionalOrderBy,
+      this.partitionBy,
+      this.descending,
+    );
     cloned._alias = this._alias;
     return cloned;
   }
 }
 
 export class AggregationExpressionImpl extends ExpressionImpl {
-  constructor(public operation: AggregationType, public expr?: ExpressionImpl) {
+  constructor(
+    public operation: AggregationType,
+    public expr?: ExpressionImpl,
+  ) {
     super();
   }
 
   toJSON(): WindowExpression {
     return {
-      type: 'aggregate',
+      type: "aggregate",
       aggregation: this.operation,
-      value: this.expr?.toJSON() || { type: 'const', value: 1 },
+      value: this.expr?.toJSON() || { type: "const", value: 1 },
       partitionBy: [],
     };
   }
 
   getAlias(): string {
-    return this._alias || `${this.operation}${this.expr ? '_' + this.expr.getAlias() : ''}`;
+    return this._alias || `${this.operation}${this.expr ? "_" + this.expr.getAlias() : ""}`;
   }
 
   protected clone(): ExpressionImpl {
@@ -805,13 +874,17 @@ export class AggregationExpressionImpl extends ExpressionImpl {
 }
 
 export class WindowExpressionImpl extends ExpressionImpl {
-  constructor(private readonly expr: ExpressionImpl, private readonly aggregation: AggregationType, private readonly partitionBy: ExpressionImpl[]) {
+  constructor(
+    private readonly expr: ExpressionImpl,
+    private readonly aggregation: AggregationType,
+    private readonly partitionBy: ExpressionImpl[],
+  ) {
     super();
   }
 
   toJSON(): WindowExpression {
     return {
-      type: 'aggregate',
+      type: "aggregate",
       aggregation: this.aggregation,
       value: this.expr.toJSON(),
       partitionBy: this.partitionBy.map((expr) => expr.toJSON()),
@@ -830,13 +903,18 @@ export class WindowExpressionImpl extends ExpressionImpl {
 }
 
 export class StringDistanceExpressionImpl extends ExpressionImpl {
-  constructor(private readonly string1: ExpressionImpl, private readonly string2: ExpressionImpl, private readonly metric: StringDistanceMetric, private readonly returnSimilarity?: boolean) {
+  constructor(
+    private readonly string1: ExpressionImpl,
+    private readonly string2: ExpressionImpl,
+    private readonly metric: StringDistanceMetric,
+    private readonly returnSimilarity?: boolean,
+  ) {
     super();
   }
 
   toJSON(): StringDistanceExpression {
     return {
-      type: 'string_distance',
+      type: "string_distance",
       metric: this.metric,
       string1: this.string1.toJSON(),
       string2: this.string2.toJSON(),
@@ -849,20 +927,30 @@ export class StringDistanceExpressionImpl extends ExpressionImpl {
   }
 
   protected clone(): ExpressionImpl {
-    const cloned = new StringDistanceExpressionImpl(this.string1, this.string2, this.metric, this.returnSimilarity);
+    const cloned = new StringDistanceExpressionImpl(
+      this.string1,
+      this.string2,
+      this.metric,
+      this.returnSimilarity,
+    );
     cloned._alias = this._alias;
     return cloned;
   }
 }
 
 export class FuzzyStringFilterExpressionImpl extends ExpressionImpl {
-  constructor(private readonly expr: ExpressionImpl, private readonly pattern: ExpressionImpl, private readonly metric: FuzzyFilterDistanceMetric, private readonly bound: number) {
+  constructor(
+    private readonly expr: ExpressionImpl,
+    private readonly pattern: ExpressionImpl,
+    private readonly metric: FuzzyFilterDistanceMetric,
+    private readonly bound: number,
+  ) {
     super();
   }
 
   toJSON(): FuzzyStringFilterExpression {
     return {
-      type: 'fuzzy_string_filter',
+      type: "fuzzy_string_filter",
       metric: this.metric,
       value: this.expr.toJSON(),
       pattern: this.pattern.toJSON(),
@@ -875,7 +963,12 @@ export class FuzzyStringFilterExpressionImpl extends ExpressionImpl {
   }
 
   protected clone(): ExpressionImpl {
-    const cloned = new FuzzyStringFilterExpressionImpl(this.expr, this.pattern, this.metric, this.bound);
+    const cloned = new FuzzyStringFilterExpressionImpl(
+      this.expr,
+      this.pattern,
+      this.metric,
+      this.bound,
+    );
     cloned._alias = this._alias;
     return cloned;
   }
@@ -892,7 +985,7 @@ export class RankExpressionImpl extends ExpressionImpl {
 
   toJSON(): RankExpression {
     return {
-      type: 'rank',
+      type: "rank",
       orderBy: this.orderBy.map((e) => e.toJSON()),
       partitionBy: this.partitionBy.map((e) => e.toJSON()),
       descending: this.descending || undefined,
@@ -900,10 +993,10 @@ export class RankExpressionImpl extends ExpressionImpl {
   }
 
   getAlias(): string {
-    const order = this.orderBy.map((e) => e.getAlias()).join('_');
-    const part = this.partitionBy.map((e) => e.getAlias()).join('_');
-    const dir = this.descending ? 'desc' : 'asc';
-    return this._alias || `rank_${order}${part ? `_over_${part}` : ''}_${dir}`;
+    const order = this.orderBy.map((e) => e.getAlias()).join("_");
+    const part = this.partitionBy.map((e) => e.getAlias()).join("_");
+    const dir = this.descending ? "desc" : "asc";
+    return this._alias || `rank_${order}${part ? `_over_${part}` : ""}_${dir}`;
   }
 
   protected clone(): ExpressionImpl {
@@ -923,7 +1016,7 @@ export class WhenThenOtherwiseExpressionImpl extends ExpressionImpl {
 
   toJSON(): WhenThenOtherwiseExpression {
     return {
-      type: 'when_then_otherwise',
+      type: "when_then_otherwise",
       conditions: this.conditions.map((clause) => ({
         when: clause.when.toJSON(),
         then: clause.then.toJSON(),
@@ -933,7 +1026,7 @@ export class WhenThenOtherwiseExpressionImpl extends ExpressionImpl {
   }
 
   getAlias(): string {
-    return this._alias || 'conditional';
+    return this._alias || "conditional";
   }
 
   protected clone(): ExpressionImpl {

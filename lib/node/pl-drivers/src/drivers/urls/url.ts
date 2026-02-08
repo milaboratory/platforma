@@ -1,6 +1,6 @@
-import type { FolderURL, BlockUIURL } from '@milaboratories/pl-model-common';
-import type { Signer } from '@milaboratories/ts-helpers';
-import path from 'path';
+import type { FolderURL, BlockUIURL } from "@milaboratories/pl-model-common";
+import type { Signer } from "@milaboratories/ts-helpers";
+import path from "path";
 
 /** Creates a new plblob+folder URL. */
 export function newFolderURL(signer: Signer, saveDir: string, fPath: string): FolderURL {
@@ -37,17 +37,21 @@ export function getPathForBlockUIURL(signer: Signer, url: BlockUIURL, rootDir: s
  * @returns an absolute path for the user. */
 function getPath(signer: Signer, url: string, rootDir: string): string {
   const parsed = new URL(url);
-  const [sign, subfolder, _] = parsed.host.split('.');
+  const [sign, subfolder, _] = parsed.host.split(".");
 
-  signer.verify(subfolder, sign, `signature verification failed for url: ${url}, subfolder: ${subfolder}`);
+  signer.verify(
+    subfolder,
+    sign,
+    `signature verification failed for url: ${url}, subfolder: ${subfolder}`,
+  );
 
   // Decoding changes '%20' to ' ' for example.
   const pathname = decodeURIComponent(parsed.pathname.slice(1));
 
   let fPath = parseNestedPathNoEscape(path.join(rootDir, `${subfolder}`), pathname);
 
-  if (parsed.pathname == '' || parsed.pathname == '/') {
-    fPath = path.join(fPath, 'index.html');
+  if (parsed.pathname == "" || parsed.pathname == "/") {
+    fPath = path.join(fPath, "index.html");
   }
 
   return path.resolve(fPath);
@@ -61,7 +65,7 @@ function parseNestedPathNoEscape(baseDir: string, userInputPath: string): string
   const normalizedBase = path.resolve(baseDir);
 
   if (!absolutePath.startsWith(normalizedBase)) {
-    throw new Error('Path validation failed.');
+    throw new Error("Path validation failed.");
   }
 
   return absolutePath;

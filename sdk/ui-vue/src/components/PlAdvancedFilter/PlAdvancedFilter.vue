@@ -1,45 +1,61 @@
 <script lang="ts" setup>
-import { PlBtnSecondary, PlCheckbox, PlElementList } from '@milaboratories/uikit';
-import type { ListOptionBase } from '@platforma-sdk/model';
-import { computed, toRaw } from 'vue';
-import FilterEditor from './FilterEditor.vue';
-import OperandButton from './OperandButton.vue';
-import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, SUPPORTED_FILTER_TYPES } from './constants';
-import type { CommonFilter, EditableFilter, NodeFilter, PlAdvancedFilterColumnId, RootFilter, SourceOptionInfo } from './types';
-import { createNewGroup, getNewId, isValidColumnId } from './utils';
+import { PlBtnSecondary, PlCheckbox, PlElementList } from "@milaboratories/uikit";
+import type { ListOptionBase } from "@platforma-sdk/model";
+import { computed, toRaw } from "vue";
+import FilterEditor from "./FilterEditor.vue";
+import OperandButton from "./OperandButton.vue";
+import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, SUPPORTED_FILTER_TYPES } from "./constants";
+import type {
+  CommonFilter,
+  EditableFilter,
+  NodeFilter,
+  PlAdvancedFilterColumnId,
+  RootFilter,
+  SourceOptionInfo,
+} from "./types";
+import { createNewGroup, getNewId, isValidColumnId } from "./utils";
 
-const model = defineModel<RootFilter>('filters', { required: true });
+const model = defineModel<RootFilter>("filters", { required: true });
 
-const props = withDefaults(defineProps<{
-  /** List of ids of sources (columns, axes) that can be selected in filters */
-  items: SourceOptionInfo[];
-  /** List of supported filter types */
-  supportedFilters?: typeof SUPPORTED_FILTER_TYPES;
-  /** If true - new filter can be added by droppind element into filter group; else new column is added by button click */
-  enableDnd?: boolean;
-  /** If true - "Add group" button is shown below the filter groups */
-  enableAddGroupButton?: boolean;
-  /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
-  getSuggestOptions: (params: { columnId: PlAdvancedFilterColumnId; axisIdx?: number; searchStr: string; searchType: 'value' | 'label' }) =>
-    ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
-}>(), {
-  supportedFilters: () => SUPPORTED_FILTER_TYPES,
-  getSuggestModel: undefined,
+const props = withDefaults(
+  defineProps<{
+    /** List of ids of sources (columns, axes) that can be selected in filters */
+    items: SourceOptionInfo[];
+    /** List of supported filter types */
+    supportedFilters?: typeof SUPPORTED_FILTER_TYPES;
+    /** If true - new filter can be added by droppind element into filter group; else new column is added by button click */
+    enableDnd?: boolean;
+    /** If true - "Add group" button is shown below the filter groups */
+    enableAddGroupButton?: boolean;
+    /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
+    getSuggestOptions: (params: {
+      columnId: PlAdvancedFilterColumnId;
+      axisIdx?: number;
+      searchStr: string;
+      searchType: "value" | "label";
+    }) => ListOptionBase<string | number>[] | Promise<ListOptionBase<string | number>[]>;
+  }>(),
+  {
+    supportedFilters: () => SUPPORTED_FILTER_TYPES,
+    getSuggestModel: undefined,
 
-  enableDnd: false,
-  enableAddGroupButton: false,
-});
+    enableDnd: false,
+    enableAddGroupButton: false,
+  },
+);
 
 const firstColumnId = computed(() => props.items[0]?.id);
-const emptyGroup: NodeFilter[] = [{
-  id: -1,
-  type: 'and',
-  filters: [],
-  isExpanded: true,
-}];
+const emptyGroup: NodeFilter[] = [
+  {
+    id: -1,
+    type: "and",
+    filters: [],
+    isExpanded: true,
+  },
+];
 
 function getRootGroups() {
-  if (model.value.type !== 'or' && model.value.type !== 'and') {
+  if (model.value.type !== "or" && model.value.type !== "and") {
     throw new Error('Invalid model structure, expected root to be "or" or "and" group');
   }
   return model.value.filters;
@@ -48,20 +64,20 @@ function getRootGroups() {
 function getRootGroup(idx: number): NodeFilter {
   const groups = getRootGroups();
   const group = groups[idx];
-  if (group.type !== 'and' && group.type !== 'or' && group.type !== 'not') {
+  if (group.type !== "and" && group.type !== "or" && group.type !== "not") {
     throw new Error('Invalid group structure, expected "and", "or" or "not" group');
   }
   return group;
 }
 
-function getRootGroupContent(idx: number): Exclude<NodeFilter, { type: 'not' }> {
+function getRootGroupContent(idx: number): Exclude<NodeFilter, { type: "not" }> {
   const group = getRootGroup(idx);
 
-  if (group.type !== 'not') {
+  if (group.type !== "not") {
     return group;
   }
 
-  if (group.filter.type !== 'and' && group.filter.type !== 'or') {
+  if (group.filter.type !== "and" && group.filter.type !== "or") {
     throw new Error('Invalid group structure, expected "and" or "or" group inside "not"');
   }
 
@@ -91,28 +107,30 @@ function removeFilterFromGroup(groupIdx: number, filterIdx: number) {
 function inverseRootNode(groupIdx: number) {
   const groups = getRootGroups();
   const group = groups[groupIdx];
-  if (group.type === 'not') {
-    if (group.filter.type !== 'and' && group.filter.type !== 'or') {
+  if (group.type === "not") {
+    if (group.filter.type !== "and" && group.filter.type !== "or") {
       throw new Error('Invalid group structure, expected "and" or "or" group inside "not"');
     }
     groups[groupIdx] = group.filter;
   } else {
     const type = groups[groupIdx].type;
-    if (type !== 'and' && type !== 'or' && type !== 'not') {
+    if (type !== "and" && type !== "or" && type !== "not") {
       throw new Error('Invalid group structure, expected "and", "or" or "not" group');
     }
 
     groups[groupIdx] = {
       id: getNewId(),
       isExpanded: true,
-      type: 'not',
+      type: "not",
       filter: groups[groupIdx],
     };
   }
 }
 
-function getNotContent<T extends CommonFilter>(item: T): Exclude<T, { type: 'not' }> {
-  return item.type === 'not' ? item.filter as Exclude<T, { type: 'not' }> : item as Exclude<T, { type: 'not' }>;
+function getNotContent<T extends CommonFilter>(item: T): Exclude<T, { type: "not" }> {
+  return item.type === "not"
+    ? (item.filter as Exclude<T, { type: "not" }>)
+    : (item as Exclude<T, { type: "not" }>);
 }
 
 function removeGroup(groupIdx: number) {
@@ -127,8 +145,8 @@ function addGroup(selectedSourceId: PlAdvancedFilterColumnId) {
 
 function handleDropToExistingGroup(groupIdx: number, event: DragEvent) {
   const dataTransfer = event.dataTransfer;
-  if (dataTransfer?.getData('text/plain')) {
-    const draggedId = dataTransfer.getData('text/plain');
+  if (dataTransfer?.getData("text/plain")) {
+    const draggedId = dataTransfer.getData("text/plain");
     if (isValidColumnId(draggedId)) {
       addColumnToGroup(groupIdx, draggedId);
     }
@@ -136,8 +154,8 @@ function handleDropToExistingGroup(groupIdx: number, event: DragEvent) {
 }
 function handleDropToNewGroup(event: DragEvent) {
   const dataTransfer = event.dataTransfer;
-  if (dataTransfer?.getData('text/plain')) {
-    const draggedId = dataTransfer.getData('text/plain');
+  if (dataTransfer?.getData("text/plain")) {
+    const draggedId = dataTransfer.getData("text/plain");
     if (isValidColumnId(draggedId)) {
       addGroup(draggedId);
     }
@@ -148,8 +166,8 @@ function dragOver(event: DragEvent) {
 }
 
 function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
-  if (item.type === 'and' || item.type === 'or' || item.type === 'not') {
-    throw new Error('Invalid filter structure, expected leaf filter');
+  if (item.type === "and" || item.type === "or" || item.type === "not") {
+    throw new Error("Invalid filter structure, expected leaf filter");
   }
 
   return item as EditableFilter;
@@ -164,22 +182,21 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
     <PlElementList
       v-model:items="model.filters"
       :get-item-key="(filter) => filter.id"
-
       :item-class="$style.filterGroup"
       :item-class-content="$style.filterGroupContent"
       :item-class-title="$style.filterGroupTitle"
-
       :is-expanded="(filter) => filter.isExpanded === true"
-      :on-expand="(group) => { group.isExpanded = !group.isExpanded}"
-
+      :on-expand="
+        (group) => {
+          group.isExpanded = !group.isExpanded;
+        }
+      "
       :disableDragging="false"
       :disableRemoving="false"
       :disableToggling="true"
       :disablePinning="true"
     >
-      <template #item-title>
-        Filter group
-      </template>
+      <template #item-title> Filter group </template>
       <template #item-content="{ item, index }">
         <div
           :class="$style.groupContent"
@@ -203,9 +220,11 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
               :get-suggest-options="props.getSuggestOptions"
               :enable-dnd="Boolean(props.enableDnd)"
               :is-last="filterIdx === getNotContent(item).filters.length - 1"
-              :on-change-operand="(v) => getNotContent(item).type = v"
+              :on-change-operand="(v) => (getNotContent(item).type = v)"
               :on-delete="() => removeFilterFromGroup(index, filterIdx)"
-              @update:filter="(value) => updateFilter(getNotContent(item).filters, filterIdx, value)"
+              @update:filter="
+                (value) => updateFilter(getNotContent(item).filters, filterIdx, value)
+              "
             />
           </template>
           <div v-if="props.enableDnd" :class="$style.dropzone">
@@ -222,7 +241,7 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
           :class="$style.buttonWrapper"
           :active="model.type"
           :disabled="index === getRootGroups().length - 1"
-          :on-select="(v) => model.type = v"
+          :on-select="(v) => (model.type = v)"
         />
       </template>
     </PlElementList>
@@ -235,9 +254,7 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
       :item-class="$style.filterGroup"
       :item-class-content="$style.filterGroupContent"
       :item-class-title="$style.filterGroupTitle"
-
       :is-expanded="() => true"
-
       :disableDragging="true"
       :disableRemoving="true"
       :disableToggling="true"
@@ -252,56 +269,54 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
           <div>Drop dimensions here</div>
         </div>
         <slot v-else name="add-group-buttons">
-          <PlBtnSecondary icon="add" @click="addGroup(firstColumnId)">
-            Add filter
-          </PlBtnSecondary>
+          <PlBtnSecondary icon="add" @click="addGroup(firstColumnId)"> Add filter </PlBtnSecondary>
         </slot>
       </template>
     </PlElementList>
   </div>
 </template>
 <style module>
-  .filterGroup {
-    background: var(--bg-base-light);
-  }
-  .filterGroup:hover {
-    background: rgba(99, 224, 36, 0.12);
-  }
-  .filterGroupTitle {
-    background: none;
-  }
-  .filterGroupContent {
-    padding: 4px 24px 24px 24px;
-  }
-  .groupContent {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .notCheckbox {
-    margin: 4px 0;
-  }
-  .dropzone {
-    border-radius: 6px;
-    border: 1.5px dashed var(--color-div-grey);
-    color: var(--txt-03);
-    font-family: Manrope;
-    font-size: 14px;
-    font-style: normal;
-    font-weight: 500;
-    height: 40px;
-    cursor: default;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .buttonWrapper {
-    margin-top: 8px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-  }
-  :global(.sortable-chosen) .buttonWrapper {
-    visibility: hidden;
-  }
+.filterGroup {
+  background: var(--bg-base-light);
+}
+.filterGroup:hover {
+  background: rgba(99, 224, 36, 0.12);
+}
+.filterGroupTitle {
+  background: none;
+}
+.filterGroupContent {
+  padding: 4px 24px 24px 24px;
+}
+.groupContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.notCheckbox {
+  margin: 4px 0;
+}
+.dropzone {
+  border-radius: 6px;
+  border: 1.5px dashed var(--color-div-grey);
+  color: var(--txt-03);
+  font-family: Manrope;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  height: 40px;
+  cursor: default;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.buttonWrapper {
+  margin-top: 8px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+}
+:global(.sortable-chosen) .buttonWrapper {
+  visibility: hidden;
+}
 </style>

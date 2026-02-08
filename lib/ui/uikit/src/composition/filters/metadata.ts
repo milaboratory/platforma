@@ -1,128 +1,128 @@
-import type { FilterSpecType, SimplifiedPColumnSpec } from '@platforma-sdk/model';
-import type { FilterSpecMetadataRecord } from './types';
+import type { FilterSpecType, SimplifiedPColumnSpec } from "@platforma-sdk/model";
+import type { FilterSpecMetadataRecord } from "./types";
 
 export const filterUiMetadata = {
   equal: {
-    label: 'Col = X (Equal)',
+    label: "Col = X (Equal)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'equal',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "equal",
       },
       x: {
-        label: 'X',
-        fieldType: 'number',
+        label: "X",
+        fieldType: "number",
         defaultValue: () => 0,
       },
     },
     supportedFor: isNumericValueType,
   },
   notEqual: {
-    label: 'Col ≠ X (Not Equal)',
+    label: "Col ≠ X (Not Equal)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'notEqual',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "notEqual",
       },
       x: {
-        label: 'X',
-        fieldType: 'number',
+        label: "X",
+        fieldType: "number",
         defaultValue: () => 0,
       },
     },
     supportedFor: isNumericValueType,
   },
   lessThan: {
-    label: 'Col < X (Less Than)',
+    label: "Col < X (Less Than)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'lessThan',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "lessThan",
       },
       x: {
-        label: 'X',
-        fieldType: 'number',
+        label: "X",
+        fieldType: "number",
         defaultValue: () => 0,
       },
     },
     supportedFor: isNumericValueType,
   },
   greaterThan: {
-    label: 'Col > X (Greater Than)',
+    label: "Col > X (Greater Than)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'greaterThan',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "greaterThan",
       },
       x: {
-        label: 'X',
-        fieldType: 'number',
+        label: "X",
+        fieldType: "number",
         defaultValue: () => 0,
       },
     },
     supportedFor: isNumericValueType,
   },
   lessThanOrEqual: {
-    label: 'Col ≤ X (Less Than or Equal)',
+    label: "Col ≤ X (Less Than or Equal)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'lessThanOrEqual',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "lessThanOrEqual",
       },
       x: {
-        label: 'X',
-        fieldType: 'number',
+        label: "X",
+        fieldType: "number",
         defaultValue: () => 0,
       },
     },
     supportedFor: isNumericValueType,
   },
   greaterThanOrEqual: {
-    label: 'Col ≥ X (Greater Than or Equal)',
+    label: "Col ≥ X (Greater Than or Equal)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'greaterThanOrEqual',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "greaterThanOrEqual",
       },
       x: {
-        label: 'X',
-        fieldType: 'number',
+        label: "X",
+        fieldType: "number",
         defaultValue: () => 0,
       },
     },
@@ -130,21 +130,21 @@ export const filterUiMetadata = {
   },
   // Columns comparison
   equalToColumn: {
-    label: 'Col₁ = Col₂ (Compare Columns)',
+    label: "Col₁ = Col₂ (Compare Columns)",
     form: {
       column: {
-        label: 'Col₁',
-        fieldType: 'SUniversalPColumnId',
+        label: "Col₁",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'equalToColumn',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "equalToColumn",
       },
       rhs: {
-        label: 'Col₂',
-        fieldType: 'SUniversalPColumnId',
+        label: "Col₂",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
     },
@@ -153,26 +153,26 @@ export const filterUiMetadata = {
     },
   },
   lessThanColumn: {
-    label: 'Col₁ < Col₂ (Compare Columns)',
+    label: "Col₁ < Col₂ (Compare Columns)",
     form: {
       column: {
-        label: 'Col₁',
-        fieldType: 'SUniversalPColumnId',
+        label: "Col₁",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'lessThanColumn',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "lessThanColumn",
       },
       rhs: {
-        label: 'Col₂',
-        fieldType: 'SUniversalPColumnId',
+        label: "Col₂",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       minDiff: {
-        label: 'Margin (positive)',
-        fieldType: 'number?',
+        label: "Margin (positive)",
+        fieldType: "number?",
         defaultValue: () => undefined,
       },
     },
@@ -181,26 +181,26 @@ export const filterUiMetadata = {
     },
   },
   greaterThanColumn: {
-    label: 'Col₁ > Col₂ (Compare Columns)',
+    label: "Col₁ > Col₂ (Compare Columns)",
     form: {
       column: {
-        label: 'Col₁',
-        fieldType: 'SUniversalPColumnId',
+        label: "Col₁",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'greaterThanColumn',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "greaterThanColumn",
       },
       rhs: {
-        label: 'Col₂',
-        fieldType: 'SUniversalPColumnId',
+        label: "Col₂",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       minDiff: {
-        label: 'Margin (positive)',
-        fieldType: 'number?',
+        label: "Margin (positive)",
+        fieldType: "number?",
         defaultValue: () => undefined,
       },
     },
@@ -209,26 +209,26 @@ export const filterUiMetadata = {
     },
   },
   lessThanColumnOrEqual: {
-    label: 'Col₁ ≤ Col₂ (Compare Columns)',
+    label: "Col₁ ≤ Col₂ (Compare Columns)",
     form: {
       column: {
-        label: 'Col₁',
-        fieldType: 'SUniversalPColumnId',
+        label: "Col₁",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'lessThanColumnOrEqual',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "lessThanColumnOrEqual",
       },
       rhs: {
-        label: 'Col₂',
-        fieldType: 'SUniversalPColumnId',
+        label: "Col₂",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       minDiff: {
-        label: 'Margin (positive)',
-        fieldType: 'number?',
+        label: "Margin (positive)",
+        fieldType: "number?",
         defaultValue: () => undefined,
       },
     },
@@ -237,26 +237,26 @@ export const filterUiMetadata = {
     },
   },
   greaterThanColumnOrEqual: {
-    label: 'Col₁ ≥ Col₂ (Compare Columns)',
+    label: "Col₁ ≥ Col₂ (Compare Columns)",
     form: {
       column: {
-        label: 'Col₁',
-        fieldType: 'SUniversalPColumnId',
+        label: "Col₁",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'greaterThanColumnOrEqual',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "greaterThanColumnOrEqual",
       },
       rhs: {
-        label: 'Col₂',
-        fieldType: 'SUniversalPColumnId',
+        label: "Col₂",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       minDiff: {
-        label: 'Margin (positive)',
-        fieldType: 'number?',
+        label: "Margin (positive)",
+        fieldType: "number?",
         defaultValue: () => undefined,
       },
     },
@@ -266,290 +266,290 @@ export const filterUiMetadata = {
   },
   // Ordering filters
   topN: {
-    label: 'Top N',
+    label: "Top N",
     form: {
       column: {
-        label: 'Rank By Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Rank By Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'topN',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "topN",
       },
       n: {
-        label: 'N',
-        fieldType: 'number',
+        label: "N",
+        fieldType: "number",
         defaultValue: () => 10,
       },
     },
     supportedFor: isNumericValueType,
   },
   bottomN: {
-    label: 'Bottom N',
+    label: "Bottom N",
     form: {
       column: {
-        label: 'Rank By Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Rank By Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'bottomN',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "bottomN",
       },
       n: {
-        label: 'N',
-        fieldType: 'number',
+        label: "N",
+        fieldType: "number",
         defaultValue: () => 10,
       },
     },
     supportedFor: isNumericValueType,
   },
   patternContainSubsequence: {
-    label: 'Col ~ Seq (Contain Subsequence)',
+    label: "Col ~ Seq (Contain Subsequence)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'patternContainSubsequence',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "patternContainSubsequence",
       },
       value: {
-        label: 'Seq',
-        fieldType: 'string',
-        defaultValue: () => '',
+        label: "Seq",
+        fieldType: "string",
+        defaultValue: () => "",
       },
     },
     supportedFor: isStringValueType,
   },
   patternNotContainSubsequence: {
-    label: 'Col ≁ Seq (Not Contain Subsequence)',
+    label: "Col ≁ Seq (Not Contain Subsequence)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'patternNotContainSubsequence',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "patternNotContainSubsequence",
       },
       value: {
-        label: 'Seq',
-        fieldType: 'string',
-        defaultValue: () => '',
+        label: "Seq",
+        fieldType: "string",
+        defaultValue: () => "",
       },
     },
     supportedFor: isStringValueType,
   },
   patternEquals: {
-    label: 'Col = Seq (Equals)',
+    label: "Col = Seq (Equals)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'patternEquals',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "patternEquals",
       },
       value: {
-        label: 'Seq',
-        fieldType: 'string',
-        defaultValue: () => '',
+        label: "Seq",
+        fieldType: "string",
+        defaultValue: () => "",
       },
     },
     supportedFor: isStringValueType,
   },
   patternNotEquals: {
-    label: 'Col ≠ Seq (Not Equal)',
+    label: "Col ≠ Seq (Not Equal)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'patternNotEquals',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "patternNotEquals",
       },
       value: {
-        label: 'Seq',
-        fieldType: 'string',
-        defaultValue: () => '',
+        label: "Seq",
+        fieldType: "string",
+        defaultValue: () => "",
       },
     },
     supportedFor: isStringValueType,
   },
   isNA: {
-    label: 'Is NA',
+    label: "Is NA",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'isNA',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "isNA",
       },
     },
     supportedFor: () => true,
   },
   isNotNA: {
-    label: 'Is Not NA',
+    label: "Is Not NA",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'isNotNA',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "isNotNA",
       },
     },
     supportedFor: () => true,
   },
   or: {
-    label: 'Or',
+    label: "Or",
     form: {
       type: {
-        fieldType: 'FilterType',
-        label: 'Predicate',
-        defaultValue: () => 'or',
+        fieldType: "FilterType",
+        label: "Predicate",
+        defaultValue: () => "or",
       },
       filters: {
-        fieldType: 'unknown[]',
-        label: 'Filters',
+        fieldType: "unknown[]",
+        label: "Filters",
         defaultValue: () => [],
       },
     },
     supportedFor: () => false,
   },
   and: {
-    label: 'And',
+    label: "And",
     form: {
       type: {
-        fieldType: 'FilterType',
-        label: 'Predicate',
-        defaultValue: () => 'and',
+        fieldType: "FilterType",
+        label: "Predicate",
+        defaultValue: () => "and",
       },
       filters: {
-        fieldType: 'unknown[]',
-        label: 'Filters',
+        fieldType: "unknown[]",
+        label: "Filters",
         defaultValue: () => [],
       },
     },
     supportedFor: () => false,
   },
   not: {
-    label: 'Not',
+    label: "Not",
     form: {
       type: {
-        fieldType: 'FilterType',
-        label: 'Predicate',
-        defaultValue: () => 'not',
+        fieldType: "FilterType",
+        label: "Predicate",
+        defaultValue: () => "not",
       },
       filter: {
-        fieldType: 'form',
-        label: 'Filter',
+        fieldType: "form",
+        label: "Filter",
         defaultValue: () => undefined,
       },
     },
     supportedFor: () => false,
   },
   patternMatchesRegularExpression: {
-    label: 'Col ~ X (Matches Regular Expression)',
+    label: "Col ~ X (Matches Regular Expression)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'patternMatchesRegularExpression',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "patternMatchesRegularExpression",
       },
       value: {
-        label: 'Seq',
-        fieldType: 'string',
-        defaultValue: () => '',
+        label: "Seq",
+        fieldType: "string",
+        defaultValue: () => "",
       },
     },
     supportedFor: isStringValueType,
   },
   patternFuzzyContainSubsequence: {
-    label: 'Col ~ Seq (Fuzzy Contain Subsequence)',
+    label: "Col ~ Seq (Fuzzy Contain Subsequence)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'patternFuzzyContainSubsequence',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "patternFuzzyContainSubsequence",
       },
       value: {
-        label: 'Set',
-        fieldType: 'string',
-        defaultValue: () => '',
+        label: "Set",
+        fieldType: "string",
+        defaultValue: () => "",
       },
     },
     supportedFor: isStringValueType,
   },
   inSet: {
-    label: 'Col ∈ Set (In Set)',
+    label: "Col ∈ Set (In Set)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'inSet',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "inSet",
       },
       value: {
-        fieldType: 'unknown[]',
-        label: 'Set',
+        fieldType: "unknown[]",
+        label: "Set",
         defaultValue: () => [],
       },
     },
     supportedFor: isStringValueType,
   },
   notInSet: {
-    label: 'Col ∉ Set (Not In Set)',
+    label: "Col ∉ Set (Not In Set)",
     form: {
       column: {
-        label: 'Column',
-        fieldType: 'SUniversalPColumnId',
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
         defaultValue: () => undefined,
       },
       type: {
-        label: 'Predicate',
-        fieldType: 'FilterType',
-        defaultValue: () => 'notInSet',
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "notInSet",
       },
       value: {
-        label: 'Seq',
-        fieldType: 'unknown[]',
+        label: "Seq",
+        fieldType: "unknown[]",
         defaultValue: () => [],
       },
     },
@@ -562,10 +562,12 @@ export function getFilterUiTypeOptions(columnSpec?: SimplifiedPColumnSpec) {
     return [];
   }
 
-  return Object.entries(filterUiMetadata).filter(([_, metadata]) => metadata.supportedFor(columnSpec)).map(([type, metadata]) => ({
-    label: metadata.label,
-    value: type,
-  }));
+  return Object.entries(filterUiMetadata)
+    .filter(([_, metadata]) => metadata.supportedFor(columnSpec))
+    .map(([type, metadata]) => ({
+      label: metadata.label,
+      value: type,
+    }));
 }
 
 export function getFilterUiMetadata(type: FilterSpecType) {
@@ -573,9 +575,14 @@ export function getFilterUiMetadata(type: FilterSpecType) {
 }
 
 function isNumericValueType(spec: SimplifiedPColumnSpec): boolean {
-  return spec.valueType === 'Int' || spec.valueType === 'Long' || spec.valueType === 'Float' || spec.valueType === 'Double';
+  return (
+    spec.valueType === "Int" ||
+    spec.valueType === "Long" ||
+    spec.valueType === "Float" ||
+    spec.valueType === "Double"
+  );
 }
 
 function isStringValueType(spec: SimplifiedPColumnSpec): boolean {
-  return spec.valueType === 'String';
+  return spec.valueType === "String";
 }

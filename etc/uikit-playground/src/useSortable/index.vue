@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { reactive, ref } from 'vue';
-import Layout from '../Layout.vue';
-import { utils } from '@milaboratories/helpers';
-import { PlToggleSwitch, useSortable } from '@milaboratories/uikit';
+import { reactive, ref } from "vue";
+import Layout from "../Layout.vue";
+import { utils } from "@milaboratories/helpers";
+import { PlToggleSwitch, useSortable } from "@milaboratories/uikit";
 
 const data = reactive({
   show: true,
@@ -27,7 +27,7 @@ useSortable(list1Ref, {
 const list2Ref = ref();
 
 useSortable(list2Ref, {
-  handle: 'button',
+  handle: "button",
   onChange(indices) {
     data.items2 = indices.map((idx) => data.items2[idx]);
   },
@@ -40,8 +40,8 @@ useSortable(list2Ref, {
     <div>
       <PlToggleSwitch v-model="data.show" label="Show/hide" />
     </div>
-    <div>items1: {{ data.items1.map((it) => it.id).join(',') }}</div>
-    <div>items2: {{ data.items2.map((it) => it.id).join(',') }}</div>
+    <div>items1: {{ data.items1.map((it) => it.id).join(",") }}</div>
+    <div>items2: {{ data.items2.map((it) => it.id).join(",") }}</div>
     <div v-if="data.show" class="block">
       <div ref="list1Ref" class="test-list">
         <div v-for="(it, i) in data.items1" :key="i" class="test-list__item">{{ it.label }}</div>

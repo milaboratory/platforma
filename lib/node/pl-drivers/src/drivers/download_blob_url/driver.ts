@@ -1,27 +1,28 @@
-import type { ComputableCtx, Watcher } from '@milaboratories/computable';
-import { Computable } from '@milaboratories/computable';
-import type {
-  MiLogger,
-  Signer } from '@milaboratories/ts-helpers';
+import type { ComputableCtx, Watcher } from "@milaboratories/computable";
+import { Computable } from "@milaboratories/computable";
+import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
+import { TaskProcessor } from "@milaboratories/ts-helpers";
+import { randomUUID } from "node:crypto";
+import * as path from "node:path";
+import { FilesCache } from "../helpers/files_cache";
+import type { ResourceId } from "@milaboratories/pl-client";
+import { resourceIdToString, stringifyWithResourceId } from "@milaboratories/pl-client";
 import {
-  TaskProcessor,
-} from '@milaboratories/ts-helpers';
-import { randomUUID } from 'node:crypto';
-import * as path from 'node:path';
-import { FilesCache } from '../helpers/files_cache';
-import type { ResourceId } from '@milaboratories/pl-client';
-import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
-import { type ArchiveFormat, type BlobToURLDriver, type FolderURL, isFolderURL } from '@milaboratories/pl-model-common';
-import type { DownloadableBlobSnapshot } from './snapshot';
-import { makeDownloadableBlobSnapshot } from './snapshot';
-import type { PlTreeEntry } from '@milaboratories/pl-tree';
-import { isPlTreeEntry } from '@milaboratories/pl-tree';
-import { DownloadAndUnarchiveTask, rmRFDir } from './task';
-import type { ClientDownload } from '../../clients/download';
-import { getPathForFolderURL } from '../urls/url';
-import type { Id } from './driver_id';
-import { newId } from './driver_id';
-import { nonRecoverableError } from '../download_blob/download_blob_task';
+  type ArchiveFormat,
+  type BlobToURLDriver,
+  type FolderURL,
+  isFolderURL,
+} from "@milaboratories/pl-model-common";
+import type { DownloadableBlobSnapshot } from "./snapshot";
+import { makeDownloadableBlobSnapshot } from "./snapshot";
+import type { PlTreeEntry } from "@milaboratories/pl-tree";
+import { isPlTreeEntry } from "@milaboratories/pl-tree";
+import { DownloadAndUnarchiveTask, rmRFDir } from "./task";
+import type { ClientDownload } from "../../clients/download";
+import { getPathForFolderURL } from "../urls/url";
+import type { Id } from "./driver_id";
+import { newId } from "./driver_id";
+import { nonRecoverableError } from "../download_blob/download_blob_task";
 
 export type DownloadBlobToURLDriverOps = {
   cacheSoftSizeBytes: number;
@@ -49,7 +50,7 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
     },
   ) {
     this.downloadQueue = new TaskProcessor(this.logger, this.opts.nConcurrentDownloads, {
-      type: 'exponentialWithMaxDelayBackoff',
+      type: "exponentialWithMaxDelayBackoff",
       initialDelay: 10000,
       maxDelay: 30000,
       backoffMultiplier: 1.5,
@@ -113,8 +114,7 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
         `a path to the downloaded archive might be undefined. The current result: ${result}`,
       );
 
-    if (result?.error !== undefined)
-      throw result?.error;
+    if (result?.error !== undefined) throw result?.error;
 
     return result?.url;
   }
@@ -164,8 +164,8 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
 
           this.removeTask(
             task,
-            `the task ${stringifyWithResourceId(task.info())} was removed`
-            + `from cache along with ${stringifyWithResourceId(toDelete.map((t) => t.info()))}`,
+            `the task ${stringifyWithResourceId(task.info())} was removed` +
+              `from cache along with ${stringifyWithResourceId(toDelete.map((t) => t.info()))}`,
           );
         }),
       );
@@ -197,7 +197,12 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
     );
   }
 
-  private setNewTask(w: Watcher, rInfo: DownloadableBlobSnapshot, format: ArchiveFormat, callerId: string) {
+  private setNewTask(
+    w: Watcher,
+    rInfo: DownloadableBlobSnapshot,
+    format: ArchiveFormat,
+    callerId: string,
+  ) {
     const result = new DownloadAndUnarchiveTask(
       this.logger,
       this.signer,

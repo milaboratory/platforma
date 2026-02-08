@@ -1,20 +1,30 @@
-import type { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
-import type { BlockCodeWithInfo, ConfigRenderLambda } from '@platforma-sdk/model';
-import type { ComputableRenderingOps } from '@milaboratories/computable';
-import { Computable } from '@milaboratories/computable';
-import type { QuickJSWASMModule } from 'quickjs-emscripten';
-import { Scope } from 'quickjs-emscripten';
-import type { DeadlineSettings } from './context';
-import { JsExecutionContext } from './context';
-import type { BlockContextAny } from '../middle_layer/block_ctx';
-import { getDebugFlags } from '../debug';
+import type { MiddleLayerEnvironment } from "../middle_layer/middle_layer";
+import type { BlockCodeWithInfo, ConfigRenderLambda } from "@platforma-sdk/model";
+import type { ComputableRenderingOps } from "@milaboratories/computable";
+import { Computable } from "@milaboratories/computable";
+import type { QuickJSWASMModule } from "quickjs-emscripten";
+import { Scope } from "quickjs-emscripten";
+import type { DeadlineSettings } from "./context";
+import { JsExecutionContext } from "./context";
+import type { BlockContextAny } from "../middle_layer/block_ctx";
+import { getDebugFlags } from "../debug";
 
-function logOutputStatus(handle: string, renderedResult: unknown, stable: boolean, recalculationCounter: number, unstableMarker?: string) {
-  if (getDebugFlags().logOutputStatus && (getDebugFlags().logOutputStatus === 'any' || !stable)) {
+function logOutputStatus(
+  handle: string,
+  renderedResult: unknown,
+  stable: boolean,
+  recalculationCounter: number,
+  unstableMarker?: string,
+) {
+  if (getDebugFlags().logOutputStatus && (getDebugFlags().logOutputStatus === "any" || !stable)) {
     if (stable)
-      console.log(`Stable output ${handle} calculated ${renderedResult !== undefined ? 'defined' : 'undefined'}; (#${recalculationCounter})`);
+      console.log(
+        `Stable output ${handle} calculated ${renderedResult !== undefined ? "defined" : "undefined"}; (#${recalculationCounter})`,
+      );
     else
-      console.log(`Unstable output ${handle}; marker = ${unstableMarker}; ${renderedResult !== undefined ? 'defined' : 'undefined'} (#${recalculationCounter})`);
+      console.log(
+        `Unstable output ${handle}; marker = ${unstableMarker}; ${renderedResult !== undefined ? "defined" : "undefined"} (#${recalculationCounter})`,
+      );
   }
 }
 
@@ -77,12 +87,14 @@ export function computableFromRF(
   // adding configKey to reload all outputs on block-pack update
   const key = `${ctx.blockId}#lambda#${configKey}#${fh.handle}`;
   ops = { ...ops, key };
-  if (ops.mode === undefined && fh.retentive === true) ops.mode = 'StableOnlyRetentive';
+  if (ops.mode === undefined && fh.retentive === true) ops.mode = "StableOnlyRetentive";
   return Computable.makeRaw((cCtx) => {
     const { code, featureFlags } = codeWithInfo;
 
     if (getDebugFlags().logOutputRecalculations)
-      console.log(`Block lambda recalculation : ${key} (${cCtx.changeSourceMarker}; ${cCtx.bodyInvocations} invocations)`);
+      console.log(
+        `Block lambda recalculation : ${key} (${cCtx.changeSourceMarker}; ${cCtx.bodyInvocations} invocations)`,
+      );
 
     const scope = new Scope();
     let keepVmAlive = false;
@@ -104,10 +116,15 @@ export function computableFromRF(
         return false;
       });
       const vm = scope.manage(runtime.newContext());
-      const rCtx = new JsExecutionContext(scope, vm,
-        (s) => { deadlineSettings = s; },
+      const rCtx = new JsExecutionContext(
+        scope,
+        vm,
+        (s) => {
+          deadlineSettings = s;
+        },
         featureFlags,
-        { computableCtx: cCtx, blockCtx: ctx, mlEnv: env });
+        { computableCtx: cCtx, blockCtx: ctx, mlEnv: env },
+      );
 
       rCtx.evaluateBundle(code.content);
       const result = rCtx.runCallback(fh.handle);
@@ -118,7 +135,13 @@ export function computableFromRF(
 
       if (Object.keys(toBeResolved).length === 0) {
         const importedResult = rCtx.importObjectUniversal(result);
-        logOutputStatus(fh.handle, importedResult, cCtx.unstableMarker === undefined, -1, cCtx.unstableMarker);
+        logOutputStatus(
+          fh.handle,
+          importedResult,
+          cCtx.unstableMarker === undefined,
+          -1,
+          cCtx.unstableMarker,
+        );
         return { ir: importedResult };
       }
 
@@ -130,7 +153,7 @@ export function computableFromRF(
       return {
         ir: toBeResolved,
         postprocessValue: (resolved: Record<string, unknown>, { unstableMarker, stable }) => {
-        // resolving futures
+          // resolving futures
           for (const [handle, value] of Object.entries(resolved)) rCtx.runCallback(handle, value);
 
           // rendering result
@@ -172,8 +195,12 @@ export function executeSingleLambda(
       return false;
     });
     const vm = scope.manage(runtime.newContext());
-    const rCtx = new JsExecutionContext(scope, vm,
-      (s) => { deadlineSettings = s; },
+    const rCtx = new JsExecutionContext(
+      scope,
+      vm,
+      (s) => {
+        deadlineSettings = s;
+      },
       featureFlags,
     );
 

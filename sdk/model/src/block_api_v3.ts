@@ -6,9 +6,9 @@ import type {
   AuthorMarker,
   ResultOrError,
   BlockStateV3,
-} from '@milaboratories/pl-model-common';
-import type { Operation } from 'fast-json-patch';
-import type { MutateStoragePayload } from './block_storage';
+} from "@milaboratories/pl-model-common";
+import type { Operation } from "fast-json-patch";
+import type { MutateStoragePayload } from "./block_storage";
 
 /** Defines methods to read and write current block data. */
 export interface BlockApiV3<

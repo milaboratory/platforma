@@ -1,9 +1,5 @@
-import type { MiddleLayerEnvironment } from './middle_layer';
-import type {
-  FieldData,
-  OptionalAnyResourceId,
-  ResourceId,
-} from '@milaboratories/pl-client';
+import type { MiddleLayerEnvironment } from "./middle_layer";
+import type { FieldData, OptionalAnyResourceId, ResourceId } from "@milaboratories/pl-client";
 import {
   DefaultRetryOptions,
   ensureResourceIdNotNull,
@@ -12,38 +8,38 @@ import {
   isTimeoutOrCancelError,
   Pl,
   resourceIdToString,
-} from '@milaboratories/pl-client';
-import type { ComputableStableDefined, ComputableValueOrErrors } from '@milaboratories/computable';
-import { Computable } from '@milaboratories/computable';
-import { projectOverview } from './project_overview';
-import type { BlockPackSpecAny } from '../model';
-import { randomUUID } from 'node:crypto';
-import { withProject, withProjectAuthored } from '../mutator/project';
-import type { ExtendedResourceData } from '@milaboratories/pl-tree';
-import { SynchronizedTreeState, treeDumpStats } from '@milaboratories/pl-tree';
-import { setTimeout } from 'node:timers/promises';
-import { frontendData } from './frontend_path';
-import type { NavigationState } from '@milaboratories/pl-model-common';
-import { getBlockParameters, blockOutputs } from './block';
-import type { FrontendData } from '../model/frontend';
-import type { ProjectStructure } from '../model/project_model';
-import { projectFieldName } from '../model/project_model';
-import { cachedDeserialize, notEmpty } from '@milaboratories/ts-helpers';
-import type { BlockPackInfo } from '../model/block_pack';
+} from "@milaboratories/pl-client";
+import type { ComputableStableDefined, ComputableValueOrErrors } from "@milaboratories/computable";
+import { Computable } from "@milaboratories/computable";
+import { projectOverview } from "./project_overview";
+import type { BlockPackSpecAny } from "../model";
+import { randomUUID } from "node:crypto";
+import { withProject, withProjectAuthored } from "../mutator/project";
+import type { ExtendedResourceData } from "@milaboratories/pl-tree";
+import { SynchronizedTreeState, treeDumpStats } from "@milaboratories/pl-tree";
+import { setTimeout } from "node:timers/promises";
+import { frontendData } from "./frontend_path";
+import type { NavigationState } from "@milaboratories/pl-model-common";
+import { getBlockParameters, blockOutputs } from "./block";
+import type { FrontendData } from "../model/frontend";
+import type { ProjectStructure } from "../model/project_model";
+import { projectFieldName } from "../model/project_model";
+import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
+import type { BlockPackInfo } from "../model/block_pack";
 import type {
   ProjectOverview,
   AuthorMarker,
   BlockSettings,
   BlockStateInternalV3,
-} from '@milaboratories/pl-model-middle-layer';
-import { activeConfigs } from './active_cfg';
-import { NavigationStates } from './navigation_states';
-import { extractConfig } from '@platforma-sdk/model';
-import fs from 'node:fs/promises';
-import canonicalize from 'canonicalize';
-import type { ProjectOverviewLight } from './project_overview_light';
-import { projectOverviewLight } from './project_overview_light';
-import { applyProjectMigrations } from '../mutator/migration';
+} from "@milaboratories/pl-model-middle-layer";
+import { activeConfigs } from "./active_cfg";
+import { NavigationStates } from "./navigation_states";
+import { extractConfig } from "@platforma-sdk/model";
+import fs from "node:fs/promises";
+import canonicalize from "canonicalize";
+import type { ProjectOverviewLight } from "./project_overview_light";
+import { projectOverviewLight } from "./project_overview_light";
+import { applyProjectMigrations } from "../mutator/migration";
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternalV3>;
@@ -51,25 +47,23 @@ type BlockStateComputables = {
 
 function stringifyForDump(object: unknown): string {
   return JSON.stringify(object, (key, value) => {
-    if (typeof value === 'bigint')
-      return resourceIdToString(value as OptionalAnyResourceId);
+    if (typeof value === "bigint") return resourceIdToString(value as OptionalAnyResourceId);
     else if (
-      ArrayBuffer.isView(value)
-      || value instanceof Int8Array
-      || value instanceof Uint8Array
-      || value instanceof Uint8ClampedArray
-      || value instanceof Int16Array
-      || value instanceof Uint16Array
-      || value instanceof Int32Array
-      || value instanceof Uint32Array
-      || value instanceof Float32Array
-      || value instanceof Float64Array
-      || value instanceof BigInt64Array
-      || value instanceof BigUint64Array
+      ArrayBuffer.isView(value) ||
+      value instanceof Int8Array ||
+      value instanceof Uint8Array ||
+      value instanceof Uint8ClampedArray ||
+      value instanceof Int16Array ||
+      value instanceof Uint16Array ||
+      value instanceof Int32Array ||
+      value instanceof Uint32Array ||
+      value instanceof Float32Array ||
+      value instanceof Float64Array ||
+      value instanceof BigInt64Array ||
+      value instanceof BigUint64Array
     )
-      return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('base64');
-    else if (Buffer.isBuffer(value))
-      return value.toString('base64');
+      return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString("base64");
+    else if (Buffer.isBuffer(value)) return value.toString("base64");
 
     return value;
   });
@@ -108,26 +102,31 @@ export class Project {
       this.navigationStates,
       env,
     ).withPreCalculatedValueTree();
-    this.overviewLight = projectOverviewLight(projectTree.entry())
-      .withPreCalculatedValueTree();
+    this.overviewLight = projectOverviewLight(projectTree.entry()).withPreCalculatedValueTree();
     this.rid = rid;
     this.refreshLoopResult = this.refreshLoop();
     this.refreshLoopResult.catch((err) => {
-      env.logger.warn(new Error('Error during refresh loop', { cause: err })); // TODO (safe voiding for now)
+      env.logger.warn(new Error("Error during refresh loop", { cause: err })); // TODO (safe voiding for now)
     });
     this.activeConfigs = activeConfigs(projectTree.entry(), env);
   }
 
   get projectLockId(): string {
-    return 'project:' + this.rid.toString();
+    return "project:" + this.rid.toString();
   }
 
   private async refreshLoop(): Promise<void> {
     while (!this.destroyed) {
       try {
-        await withProject(this.env.projectHelper, this.env.pl, this.rid, (prj) => {
-          prj.doRefresh(this.env.ops.stagingRenderingRate);
-        }, { name: 'doRefresh', lockId: this.projectLockId });
+        await withProject(
+          this.env.projectHelper,
+          this.env.pl,
+          this.rid,
+          (prj) => {
+            prj.doRefresh(this.env.ops.stagingRenderingRate);
+          },
+          { name: "doRefresh", lockId: this.projectLockId },
+        );
         await this.activeConfigs.getValue();
         await setTimeout(this.env.ops.projectRefreshInterval, this.abortController.signal);
 
@@ -146,13 +145,13 @@ export class Project {
         // If we're destroyed, exit gracefully regardless of error type
         if (this.destroyed) {
           // Log just in case, to help with debugging if something unexpected happens during shutdown
-          this.env.logger.warn(new Error('Error during refresh loop shutdown', { cause: e }));
+          this.env.logger.warn(new Error("Error during refresh loop shutdown", { cause: e }));
           break;
         }
 
         if (isNotFoundError(e)) {
           console.warn(
-            'project refresh routine terminated, because project was externally deleted',
+            "project refresh routine terminated, because project was externally deleted",
           );
           break;
         } else if (isTimeoutOrCancelError(e)) {
@@ -160,7 +159,7 @@ export class Project {
         } else {
           // TODO: This stops the refresh loop permanently, leaving the project broken.
           // Need to decide how to handle this case.
-          throw new Error('Unexpected exception', { cause: e });
+          throw new Error("Unexpected exception", { cause: e });
         }
       }
     }
@@ -189,29 +188,43 @@ export class Project {
     const blockCfg = extractConfig(blockCfgContainer); // full content of this var should never be persisted
 
     // Build NewBlockSpec based on model API version
-    const newBlockSpec = blockCfg.modelAPIVersion === 2
-      ? { storageMode: 'fromModel' as const, blockPack: preparedBp }
-      : { storageMode: 'legacy' as const, blockPack: preparedBp, legacyState: canonicalize({ args: blockCfg.initialArgs, uiState: blockCfg.initialUiState })! };
+    const newBlockSpec =
+      blockCfg.modelAPIVersion === 2
+        ? { storageMode: "fromModel" as const, blockPack: preparedBp }
+        : {
+            storageMode: "legacy" as const,
+            blockPack: preparedBp,
+            legacyState: canonicalize({
+              args: blockCfg.initialArgs,
+              uiState: blockCfg.initialUiState,
+            })!,
+          };
 
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
-      return mut.addBlock(
-        {
-          id: blockId,
-          label: blockLabel,
-          renderingMode: blockCfg.renderingMode,
-        },
-        newBlockSpec,
-        before,
-      );
-    },
-    {
-      retryOptions: {
-        ...DefaultRetryOptions,
-        backoffMultiplier: DefaultRetryOptions.backoffMultiplier * 1.1,
+    await withProjectAuthored(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      author,
+      (mut) => {
+        return mut.addBlock(
+          {
+            id: blockId,
+            label: blockLabel,
+            renderingMode: blockCfg.renderingMode,
+          },
+          newBlockSpec,
+          before,
+        );
       },
-      name: 'addBlock',
-      lockId: this.projectLockId,
-    });
+      {
+        retryOptions: {
+          ...DefaultRetryOptions,
+          backoffMultiplier: DefaultRetryOptions.backoffMultiplier * 1.1,
+        },
+        name: "addBlock",
+        lockId: this.projectLockId,
+      },
+    );
 
     await this.projectTree.refreshState();
 
@@ -236,9 +249,13 @@ export class Project {
     author: AuthorMarker | undefined = undefined,
     newBlockId: string = randomUUID(),
   ): Promise<string> {
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
-      mut.duplicateBlock(originalBlockId, newBlockId, before),
-    { name: 'duplicateBlock', lockId: this.projectLockId },
+    await withProjectAuthored(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      author,
+      (mut) => mut.duplicateBlock(originalBlockId, newBlockId, before),
+      { name: "duplicateBlock", lockId: this.projectLockId },
     );
     await this.projectTree.refreshState();
 
@@ -256,27 +273,41 @@ export class Project {
     author?: AuthorMarker,
   ): Promise<void> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
-    const blockCfg = extractConfig(await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec));
+    const blockCfg = extractConfig(
+      await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec),
+    );
     // resetState signals to mutator to reset storage
     // For v2+ blocks: mutator gets initial storage directly via getInitialStorageInVM
     // For v1 blocks: we pass the legacy state format
     const resetState = resetArgs
-      ? { state: blockCfg.modelAPIVersion === 2 ? {} : { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState } }
+      ? {
+          state:
+            blockCfg.modelAPIVersion === 2
+              ? {}
+              : { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState },
+        }
       : undefined;
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
-      mut.migrateBlockPack(
-        blockId,
-        preparedBp,
-        resetState,
-      ),
-    { name: 'updateBlockPack', lockId: this.projectLockId },
+    await withProjectAuthored(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      author,
+      (mut) => mut.migrateBlockPack(blockId, preparedBp, resetState),
+      { name: "updateBlockPack", lockId: this.projectLockId },
     );
     await this.projectTree.refreshState();
   }
 
   /** Deletes a block with all associated data. */
   public async deleteBlock(blockId: string, author?: AuthorMarker): Promise<void> {
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => mut.deleteBlock(blockId), { name: 'deleteBlock', lockId: this.projectLockId });
+    await withProjectAuthored(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      author,
+      (mut) => mut.deleteBlock(blockId),
+      { name: "deleteBlock", lockId: this.projectLockId },
+    );
     this.navigationStates.deleteBlock(blockId);
     await this.projectTree.refreshState();
   }
@@ -288,29 +319,36 @@ export class Project {
    * an error will be thrown instead.
    */
   public async reorderBlocks(blocks: string[], author?: AuthorMarker): Promise<void> {
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
-      const currentStructure = mut.structure;
-      if (currentStructure.groups.length !== 1)
-        throw new Error('Unexpected project structure, non-singular block group');
-      const currentGroup = currentStructure.groups[0];
-      if (currentGroup.blocks.length !== blocks.length)
-        throw new Error(`Length mismatch: ${currentGroup.blocks.length} !== ${blocks.length}`);
-      if (new Set<string>(blocks).size !== blocks.length) throw new Error(`Repeated block ids`);
-      const newStructure: ProjectStructure = {
-        groups: [
-          {
-            id: currentGroup.id,
-            label: currentGroup.label,
-            blocks: blocks.map((blockId) => {
-              const block = currentGroup.blocks.find((b) => b.id === blockId);
-              if (block === undefined) throw new Error(`Can't find block: ${blockId}`);
-              return block;
-            }),
-          },
-        ],
-      };
-      mut.updateStructure(newStructure);
-    }, { name: 'reorderBlocks', lockId: this.projectLockId });
+    await withProjectAuthored(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      author,
+      (mut) => {
+        const currentStructure = mut.structure;
+        if (currentStructure.groups.length !== 1)
+          throw new Error("Unexpected project structure, non-singular block group");
+        const currentGroup = currentStructure.groups[0];
+        if (currentGroup.blocks.length !== blocks.length)
+          throw new Error(`Length mismatch: ${currentGroup.blocks.length} !== ${blocks.length}`);
+        if (new Set<string>(blocks).size !== blocks.length) throw new Error(`Repeated block ids`);
+        const newStructure: ProjectStructure = {
+          groups: [
+            {
+              id: currentGroup.id,
+              label: currentGroup.label,
+              blocks: blocks.map((blockId) => {
+                const block = currentGroup.blocks.find((b) => b.id === blockId);
+                if (block === undefined) throw new Error(`Can't find block: ${blockId}`);
+                return block;
+              }),
+            },
+          ],
+        };
+        mut.updateStructure(newStructure);
+      },
+      { name: "reorderBlocks", lockId: this.projectLockId },
+    );
     await this.projectTree.refreshState();
   }
 
@@ -320,7 +358,13 @@ export class Project {
    * stale state.
    * */
   public async runBlock(blockId: string): Promise<void> {
-    await withProject(this.env.projectHelper, this.env.pl, this.rid, (mut) => mut.renderProduction([blockId], true), { name: 'runBlock', lockId: this.projectLockId });
+    await withProject(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      (mut) => mut.renderProduction([blockId], true),
+      { name: "runBlock", lockId: this.projectLockId },
+    );
     await this.projectTree.refreshState();
   }
 
@@ -330,7 +374,13 @@ export class Project {
    * calculated.
    * */
   public async stopBlock(blockId: string): Promise<void> {
-    await withProject(this.env.projectHelper, this.env.pl, this.rid, (mut) => mut.stopProduction(blockId), { name: 'stopBlock', lockId: this.projectLockId });
+    await withProject(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      (mut) => mut.stopProduction(blockId),
+      { name: "stopBlock", lockId: this.projectLockId },
+    );
     await this.projectTree.refreshState();
   }
 
@@ -342,10 +392,17 @@ export class Project {
    * in collaborative editing scenario.
    * */
   public async setBlockArgs(blockId: string, args: unknown, author?: AuthorMarker) {
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
-      const state = mut.mergeBlockState(blockId, { args });
-      mut.setStates([{ modelAPIVersion: 1, blockId, state }]);
-    }, { name: 'setBlockArgs', lockId: this.projectLockId });
+    await withProjectAuthored(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      author,
+      (mut) => {
+        const state = mut.mergeBlockState(blockId, { args });
+        mut.setStates([{ modelAPIVersion: 1, blockId, state }]);
+      },
+      { name: "setBlockArgs", lockId: this.projectLockId },
+    );
     await this.projectTree.refreshState();
   }
 
@@ -357,10 +414,17 @@ export class Project {
    * in collaborative editing scenario.
    * */
   public async setUiState(blockId: string, uiState: unknown, author?: AuthorMarker) {
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
-      const state = mut.mergeBlockState(blockId, { uiState });
-      mut.setStates([{ modelAPIVersion: 1, blockId, state }]);
-    }, { name: 'setUiState', lockId: this.projectLockId });
+    await withProjectAuthored(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      author,
+      (mut) => {
+        const state = mut.mergeBlockState(blockId, { uiState });
+        mut.setStates([{ modelAPIVersion: 1, blockId, state }]);
+      },
+      { name: "setUiState", lockId: this.projectLockId },
+    );
     await this.projectTree.refreshState();
   }
 
@@ -379,9 +443,16 @@ export class Project {
   ) {
     // Normalize to unified state format { args, uiState } for v1/v2 blocks
     const state = { args, uiState };
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
-      mut.setStates([{ modelAPIVersion: 1, blockId, state }]);
-    }, { name: 'setBlockArgsAndUiState', lockId: this.projectLockId });
+    await withProjectAuthored(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      author,
+      (mut) => {
+        mut.setStates([{ modelAPIVersion: 1, blockId, state }]);
+      },
+      { name: "setBlockArgsAndUiState", lockId: this.projectLockId },
+    );
     await this.projectTree.refreshState();
   }
 
@@ -403,18 +474,34 @@ export class Project {
    * @param payload - Storage mutation payload with operation and value
    * @param author - Optional author marker for collaborative editing
    */
-  public async mutateBlockStorage(blockId: string, payload: { operation: string; value: unknown }, author?: AuthorMarker) {
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
-      mut.setStates([{ modelAPIVersion: 2, blockId, payload }]),
-    { name: 'mutateBlockStorage', lockId: this.projectLockId });
+  public async mutateBlockStorage(
+    blockId: string,
+    payload: { operation: string; value: unknown },
+    author?: AuthorMarker,
+  ) {
+    await withProjectAuthored(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      author,
+      (mut) => mut.setStates([{ modelAPIVersion: 2, blockId, payload }]),
+      { name: "mutateBlockStorage", lockId: this.projectLockId },
+    );
     await this.projectTree.refreshState();
   }
 
   /** Update block settings */
   public async setBlockSettings(blockId: string, newValue: BlockSettings) {
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, undefined, (mut) => {
-      mut.setBlockSettings(blockId, newValue);
-    }, { name: 'setBlockSettings' });
+    await withProjectAuthored(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      undefined,
+      (mut) => {
+        mut.setBlockSettings(blockId, newValue);
+      },
+      { name: "setBlockSettings" },
+    );
     await this.projectTree.refreshState();
   }
 
@@ -426,18 +513,25 @@ export class Project {
    * @param rawStorageJson Raw storage as JSON string
    */
   public async setBlockStorageRaw(blockId: string, rawStorageJson: string): Promise<void> {
-    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, undefined, (mut) => {
-      mut.setBlockStorageRaw(blockId, rawStorageJson);
-    }, { name: 'setBlockStorageRaw' });
+    await withProjectAuthored(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      undefined,
+      (mut) => {
+        mut.setBlockStorageRaw(blockId, rawStorageJson);
+      },
+      { name: "setBlockStorageRaw" },
+    );
     await this.projectTree.refreshState();
   }
 
   /** Resets arguments and ui state of the block to initial state */
   public async resetBlockArgsAndUiState(blockId: string, author?: AuthorMarker): Promise<void> {
-    await this.env.pl.withWriteTx('BlockInputsReset', async (tx) => {
+    await this.env.pl.withWriteTx("BlockInputsReset", async (tx) => {
       // reading default arg values from block pack
       const bpHolderRid = ensureResourceIdNotNull(
-        (await tx.getField(field(this.rid, projectFieldName(blockId, 'blockPack')))).value,
+        (await tx.getField(field(this.rid, projectFieldName(blockId, "blockPack")))).value,
       );
       const bpRid = ensureResourceIdNotNull(
         (await tx.getField(field(bpHolderRid, Pl.HolderRefField))).value,
@@ -445,16 +539,23 @@ export class Project {
       const bpData = await tx.getResourceData(bpRid, false);
       const config = extractConfig(cachedDeserialize<BlockPackInfo>(notEmpty(bpData.data)).config);
 
-      await withProjectAuthored(this.env.projectHelper, tx, this.rid, author, (prj) => {
-        if (config.modelAPIVersion === 2) {
-          // V2+: Reset to initial storage via VM
-          prj.resetToInitialStorage(blockId);
-        } else {
-          // V1: Use legacy state format
-          const initialState = { args: config.initialArgs, uiState: config.initialUiState };
-          prj.setStates([{ modelAPIVersion: 1, blockId, state: initialState }]);
-        }
-      }, { name: 'resetBlockArgsAndUiState', lockId: this.projectLockId });
+      await withProjectAuthored(
+        this.env.projectHelper,
+        tx,
+        this.rid,
+        author,
+        (prj) => {
+          if (config.modelAPIVersion === 2) {
+            // V2+: Reset to initial storage via VM
+            prj.resetToInitialStorage(blockId);
+          } else {
+            // V1: Use legacy state format
+            const initialState = { args: config.initialArgs, uiState: config.initialUiState };
+            prj.setStates([{ modelAPIVersion: 1, blockId, state: initialState }]);
+          }
+        },
+        { name: "resetBlockArgsAndUiState", lockId: this.projectLockId },
+      );
       await tx.commit();
     });
     await this.projectTree.refreshState();
@@ -481,9 +582,8 @@ export class Project {
             const sdkVersion = blockOverview?.sdkVersion;
             const storageDebugView = blockOverview?.storageDebugView;
             const toString = sdkVersion && shouldStillUseStringErrors(sdkVersion);
-            const newOutputs = toString && v.outputs !== undefined
-              ? convertErrorsToStrings(v.outputs)
-              : v.outputs;
+            const newOutputs =
+              toString && v.outputs !== undefined ? convertErrorsToStrings(v.outputs) : v.outputs;
 
             return {
               ...v.parameters,
@@ -540,7 +640,9 @@ export class Project {
       await this.refreshLoopResult;
     } catch (e: unknown) {
       // Error was already logged in the constructor's catch handler, but log again for context
-      this.env.logger.warn(new Error('Refresh loop had terminated with error before destroy', { cause: e }));
+      this.env.logger.warn(
+        new Error("Refresh loop had terminated with error before destroy", { cause: e }),
+      );
     }
 
     // terminating the synchronized project tree
@@ -549,7 +651,7 @@ export class Project {
     } catch (e: unknown) {
       // TODO: SynchronizedTreeState.terminate() can throw if mainLoop had an error before termination
       // Log error but continue cleanup - we must clean up remaining resources
-      this.env.logger.warn(new Error('Project tree termination failed', { cause: e }));
+      this.env.logger.warn(new Error("Project tree termination failed", { cause: e }));
     }
 
     // the following will deregister all external resource holders, like
@@ -576,7 +678,7 @@ export class Project {
     await applyProjectMigrations(env.pl, rid);
 
     // Doing a no-op mutation to apply all migration and schema fixes
-    await withProject(env.projectHelper, env.pl, rid, (_) => {}, { name: 'init' });
+    await withProject(env.projectHelper, env.pl, rid, (_) => {}, { name: "init" });
 
     // Loading project tree
     const projectTree = await SynchronizedTreeState.init(
@@ -611,14 +713,13 @@ function projectTreePruning(r: ExtendedResourceData): FieldData[] {
   //     }
   //   )
   // );
-  if (r.type.name.startsWith('StreamWorkdir/'))
-    return [];
+  if (r.type.name.startsWith("StreamWorkdir/")) return [];
   switch (r.type.name) {
-    case 'BlockPackCustom':
-      return r.fields.filter((f) => f.name !== 'template');
-    case 'UserProject':
-      return r.fields.filter((f) => !f.name.startsWith('__serviceTemplate'));
-    case 'Blob':
+    case "BlockPackCustom":
+      return r.fields.filter((f) => f.name !== "template");
+    case "UserProject":
+      return r.fields.filter((f) => !f.name.startsWith("__serviceTemplate"));
+    case "Blob":
       return [];
     default:
       return r.fields;
@@ -629,20 +730,20 @@ function projectTreePruning(r: ExtendedResourceData): FieldData[] {
  * ErrorLike errors to strings like it was.
  * We need it for keeping old blocks and new UI compatibility. */
 function shouldStillUseStringErrors(sdkVersion: string): boolean {
-  return !isVersionGreater(sdkVersion, '1.26.0');
+  return !isVersionGreater(sdkVersion, "1.26.0");
 }
 
 /** Checks if sdk version is greater that a target version. */
 function isVersionGreater(sdkVersion: string, targetVersion: string): boolean {
-  const version = sdkVersion.split('.').map(Number);
-  const target = targetVersion.split('.').map(Number);
+  const version = sdkVersion.split(".").map(Number);
+  const target = targetVersion.split(".").map(Number);
 
   return (
-    version[0] > target[0]
-    || (version[0] === target[0] && version[1] > target[1])
-    || (version[0] === target[0] && version[1] === target[1] && version[2] > target[2])
+    version[0] > target[0] ||
+    (version[0] === target[0] && version[1] > target[1]) ||
+    (version[0] === target[0] && version[1] === target[1] && version[2] > target[2])
   );
-};
+}
 
 /** Converts ErrorLike errors to strings in the outputs like it was in old ML versions. */
 function convertErrorsToStrings(
@@ -658,9 +759,9 @@ function convertErrorsToStrings(
     result[key] = {
       ok: false,
       errors: val.errors.map((e) => {
-        if (typeof e === 'string') {
+        if (typeof e === "string") {
           return e;
-        } else if (e.type == 'PlError' && e.fullMessage !== undefined) {
+        } else if (e.type == "PlError" && e.fullMessage !== undefined) {
           return e.fullMessage;
         }
         return e.message;

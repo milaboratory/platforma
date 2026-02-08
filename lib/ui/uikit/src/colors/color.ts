@@ -1,4 +1,4 @@
-import { categoricalColors, type CategoricalColor } from './palette';
+import { categoricalColors, type CategoricalColor } from "./palette";
 
 /**
  * Represents a color with red, green, blue, and alpha channels.
@@ -10,7 +10,7 @@ import { categoricalColors, type CategoricalColor } from './palette';
  * @param {number} [a=1] - Alpha channel (0-1).
  */
 export function Color(r: number, g: number, b: number, a: number = 1) {
-  return new class {
+  return new (class {
     constructor(
       public readonly r: number,
       public readonly g: number,
@@ -19,10 +19,12 @@ export function Color(r: number, g: number, b: number, a: number = 1) {
     ) {}
 
     get hex() {
-      const hexR = r.toString(16).padStart(2, '0');
-      const hexG = g.toString(16).padStart(2, '0');
-      const hexB = b.toString(16).padStart(2, '0');
-      const hexA = Math.round(a * 255).toString(16).padStart(2, '0'); // Alpha in 2-digit hex
+      const hexR = r.toString(16).padStart(2, "0");
+      const hexG = g.toString(16).padStart(2, "0");
+      const hexB = b.toString(16).padStart(2, "0");
+      const hexA = Math.round(a * 255)
+        .toString(16)
+        .padStart(2, "0"); // Alpha in 2-digit hex
 
       return `#${hexR}${hexG}${hexB}${hexA}`;
     }
@@ -38,15 +40,18 @@ export function Color(r: number, g: number, b: number, a: number = 1) {
     toJSON() {
       return this.hex;
     }
-  }(r, g, b, a);
+  })(r, g, b, a);
 }
 
 export type Color = ReturnType<typeof Color>;
 
 Color.fromHex = (hex: string): Color => {
-  hex = hex.replace('#', '');
+  hex = hex.replace("#", "");
 
-  let r: number, g: number, b: number, a: number = 1;
+  let r: number,
+    g: number,
+    b: number,
+    a: number = 1;
 
   if (hex.length === 6) {
     r = parseInt(hex.slice(0, 2), 16);
@@ -58,7 +63,7 @@ Color.fromHex = (hex: string): Color => {
     b = parseInt(hex.slice(4, 6), 16);
     a = parseInt(hex.slice(6, 8), 16) / 255;
   } else {
-    throw new Error('Invalid HEX color format.');
+    throw new Error("Invalid HEX color format.");
   }
 
   return Color(r, g, b, a);
@@ -68,11 +73,11 @@ Color.fromHex = (hex: string): Color => {
  * Parses a color string (attention: currently supports only HEX, @todo)
  */
 Color.fromString = (str: string) => {
-  if (str.startsWith('#')) {
+  if (str.startsWith("#")) {
     return Color.fromHex(str);
   }
 
-  throw Error('TODO: implement rgb(a), hsl');
+  throw Error("TODO: implement rgb(a), hsl");
 };
 
 Color.categorical = (name: CategoricalColor) => {

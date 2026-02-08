@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ImportFileHandle } from '@platforma-sdk/model';
-import { getFileNameFromHandle } from '@platforma-sdk/model';
-import type { ImportedFiles, ListOption } from '@platforma-sdk/ui-vue';
+import type { ImportFileHandle } from "@platforma-sdk/model";
+import { getFileNameFromHandle } from "@platforma-sdk/model";
+import type { ImportedFiles, ListOption } from "@platforma-sdk/ui-vue";
 import {
   PlDialogModal,
   PlLogView,
@@ -16,14 +16,14 @@ import {
   PlTextField,
   PlDropdown,
   PlContainer,
-} from '@platforma-sdk/ui-vue';
-import { useApp } from '../app';
-import { reactive, ref, watch } from 'vue';
-import { parseToken, verify } from '../tokens';
+} from "@platforma-sdk/ui-vue";
+import { useApp } from "../app";
+import { reactive, ref, watch } from "vue";
+import { parseToken, verify } from "../tokens";
 
 const app = useApp();
 
-const PRODUCT_KEY_PREFIX = 'PRODUCT:';
+const PRODUCT_KEY_PREFIX = "PRODUCT:";
 const PRODUCT_KEY_LENGTH = 48;
 
 function extractProductKey(key: string) {
@@ -32,7 +32,7 @@ function extractProductKey(key: string) {
   }
 
   if (key.length !== PRODUCT_KEY_LENGTH) {
-    throw new Error('Invalid product key');
+    throw new Error("Invalid product key");
   }
 
   return key;
@@ -40,16 +40,16 @@ function extractProductKey(key: string) {
 
 const dropdownOptions: ListOption<string>[] = [
   {
-    text: 'sha256',
-    value: 'sha256',
+    text: "sha256",
+    value: "sha256",
   },
   {
-    text: 'lines (only in .zip files)',
-    value: 'lines',
+    text: "lines (only in .zip files)",
+    value: "lines",
   },
   {
-    text: 'size',
-    value: 'size',
+    text: "size",
+    value: "size",
   },
 ];
 
@@ -72,53 +72,68 @@ const onImport = (imported: ImportedFiles) => {
     handle: h,
     fileName: getFileNameFromHandle(h),
     argName: `arg_${i}`,
-    options: ['size', 'sha256'],
+    options: ["size", "sha256"],
   }));
 };
 
-const verificationResult = ref('');
+const verificationResult = ref("");
 
 const isDialogFileOpen = ref(false);
 
 const isTokenDialogOpen = ref(false);
 
-const tokensResult = ref<string>('');
+const tokensResult = ref<string>("");
 
-watch(() => app.model.outputs.tokens, async (tokens) => {
-  tokensResult.value = (await Promise.all(tokens?.map(async (t) => {
-    if (!t.value) {
-      return 'token is empty';
-    }
+watch(
+  () => app.model.outputs.tokens,
+  async (tokens) => {
+    tokensResult.value =
+      (
+        await Promise.all(
+          tokens?.map(async (t) => {
+            if (!t.value) {
+              return "token is empty";
+            }
 
-    const result = await verify(t.value);
-    return `token: ${t.value}\nresult: ${result}\n${JSON.stringify(parseToken(t.value), null, 2)}\n\n`;
-  }) ?? [])).join('\n') ?? '';
-});
+            const result = await verify(t.value);
+            return `token: ${t.value}\nresult: ${result}\n${JSON.stringify(parseToken(t.value), null, 2)}\n\n`;
+          }) ?? [],
+        )
+      ).join("\n") ?? "";
+  },
+);
 
-const productOptions = [{
-  label: 'Rabbit (no limits)',
-  value: 'PRODUCT:YAGRKKGRBYLCGDLCDVYINUSHYWGYWXWHGIINXYBQBZKMSIRC',
-}, {
-  label: 'Crow (limit 10GB monthly)',
-  value: 'PRODUCT:JLVOZAOIOBZMLCIWQKUYZWLBAEPDHUJPHRHYAOBPDGWPVTJC',
-}, {
-  label: 'Behemoth (1000 runs, 100GB monthly)',
-  value: 'PRODUCT:ZHJBTZESZONNVEFPGWWPDYESVYGXQOOSHYVUBWDXUHSILLDH',
-}, {
-  label: 'Kolibri (100 runs)',
-  value: 'PRODUCT:EBVGZXPBYZLGKQHLFDVCCVFRLKTZZTJSWMNJGXNHVTMKNSPA',
-}];
+const productOptions = [
+  {
+    label: "Rabbit (no limits)",
+    value: "PRODUCT:YAGRKKGRBYLCGDLCDVYINUSHYWGYWXWHGIINXYBQBZKMSIRC",
+  },
+  {
+    label: "Crow (limit 10GB monthly)",
+    value: "PRODUCT:JLVOZAOIOBZMLCIWQKUYZWLBAEPDHUJPHRHYAOBPDGWPVTJC",
+  },
+  {
+    label: "Behemoth (1000 runs, 100GB monthly)",
+    value: "PRODUCT:ZHJBTZESZONNVEFPGWWPDYESVYGXQOOSHYVUBWDXUHSILLDH",
+  },
+  {
+    label: "Kolibri (100 runs)",
+    value: "PRODUCT:EBVGZXPBYZLGKQHLFDVCCVFRLKTZZTJSWMNJGXNHVTMKNSPA",
+  },
+];
 </script>
 
 <template>
   <PlBlockPage>
-    <template #title>
-      Monetization test
-    </template>
+    <template #title> Monetization test </template>
 
     <PlRow>
       <PlContainer width="400px">
-        <PlDropdown v-model="app.model.args.productKey" label="Select product" :options="productOptions" />
+        <PlDropdown
+          v-model="app.model.args.productKey"
+          label="Select product"
+          :options="productOptions"
+        />
         <PlTextField
           v-model="app.model.args.productKey"
           label="or enter product key"
@@ -147,36 +162,31 @@ const productOptions = [{
           @update:model-value="(v: ImportFileHandle | undefined) => updateHandle(v, i)"
         />
         <PlDropdownMulti
-          v-model="app.model.args.inputHandles[i].options" label="Metrics to monetize"
+          v-model="app.model.args.inputHandles[i].options"
+          label="Metrics to monetize"
           :options="dropdownOptions"
         />
       </PlRow>
     </template>
 
     <PlRow>
-      <PlBtnPrimary @click="isTokenDialogOpen = true">
-        Show tokens
-      </PlBtnPrimary>
+      <PlBtnPrimary @click="isTokenDialogOpen = true"> Show tokens </PlBtnPrimary>
     </PlRow>
 
-    <PlAlert v-if="verificationResult" label="token verification"> {{ verificationResult }}</PlAlert>
+    <PlAlert v-if="verificationResult" label="token verification">
+      {{ verificationResult }}</PlAlert
+    >
   </PlBlockPage>
 
   <PlFileDialog v-model="files.isMultiDialogFileOpen" multi @import:files="onImport" />
 
   <PlDialogModal v-model="isDialogFileOpen" size="medium">
-    <template #title>
-      Monetization info
-    </template>
+    <template #title> Monetization info </template>
     <PlLogView :value="JSON.stringify(app.model.outputs['__mnzInfo'], null, 2)" />
   </PlDialogModal>
 
   <PlDialogModal v-model="isTokenDialogOpen" size="medium">
-    <template #title>
-      Tokens
-    </template>
-    <PlLogView
-      :value="tokensResult"
-    />
+    <template #title> Tokens </template>
+    <PlLogView :value="tokensResult" />
   </PlDialogModal>
 </template>

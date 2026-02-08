@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import BaseElement from './BaseElement.vue';
+import BaseElement from "./BaseElement.vue";
 
 const props = defineProps<{
   id: number;

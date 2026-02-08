@@ -15,7 +15,7 @@ Block publication follows a deliberate multi-stage process:
 3. **Update Triggers**: Trigger files are created to signal the need for overview refresh
 4. **Overview Refresh**: Registry overview files are regenerated based on published packages
 
-*Channel assignment via marker files is optional and can happen independently after publication to modify which channels a published version belongs to.*
+_Channel assignment via marker files is optional and can happen independently after publication to modify which channels a published version belongs to._
 
 This architecture provides several critical benefits:
 
@@ -72,6 +72,7 @@ This design guarantees that all changes are eventually processed, even if multip
 ## Data Structures
 
 ### Package Overview
+
 ```typescript
 {
   schema: "v2",
@@ -83,7 +84,8 @@ This design guarantees that all changes are eventually processed, even if multip
 }
 ```
 
-### Global Overview  
+### Global Overview
+
 ```typescript
 {
   schema: "v2",
@@ -101,7 +103,7 @@ This design guarantees that all changes are eventually processed, even if multip
 }
 ```
 
-*Note: Additional metadata fields exist for backward compatibility and internal processing.*
+_Note: Additional metadata fields exist for backward compatibility and internal processing._
 
 ## Command-Line Tools
 
@@ -113,6 +115,7 @@ The registry provides several CLI tools for manipulation:
 - **`block-tools mark-stable`**: Adds/removes packages from the `stable` channel (or custom channels)
 
 ### Environment Integration
+
 - Registry addresses support both S3 (`s3://bucket/path?region=us-east-1`) and local file (`file:///path/to/registry`) protocols
 - Environment variables: `PL_REGISTRY`, `PL_REGISTRY_REFRESH`, `PL_PUBLISH_UNSTABLE`
 - Built-in support for both CI/CD pipelines and local development workflows
@@ -126,7 +129,7 @@ Packages can be assigned to multiple **channels** (e.g., `stable`, `beta`, `expe
 The architecture enables fine-grained security:
 
 - **Publishers**: Need write access only to their organization's folder (e.g., `v2/myorg/`) and update markers
-- **Registry Refresher**: Requires read access to entire bucket and write access to overview files and cleanup operations  
+- **Registry Refresher**: Requires read access to entire bucket and write access to overview files and cleanup operations
 - **Consumers**: Need only read access to overview files and specific package versions
 
 This separation allows publishers to work in restricted environments while maintaining registry integrity through controlled overview updates.

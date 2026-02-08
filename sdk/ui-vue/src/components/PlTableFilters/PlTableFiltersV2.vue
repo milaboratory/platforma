@@ -3,18 +3,9 @@ import {
   type PlDataTableFilterState,
   canonicalizeJson,
   type PTableColumnId,
-} from '@platforma-sdk/model';
-import type {
-  PlDataTableFiltersSettings,
-} from './types';
-import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  toRefs,
-  watch,
-} from 'vue';
+} from "@platforma-sdk/model";
+import type { PlDataTableFiltersSettings } from "./types";
+import { computed, onBeforeUnmount, onMounted, ref, toRefs, watch } from "vue";
 import {
   PlBtnGhost,
   PlSlideModal,
@@ -22,11 +13,11 @@ import {
   PlMaskIcon16,
   PlElementList,
   usePlBlockPageTitleTeleportTarget,
-} from '@milaboratories/uikit';
-import { useFilters } from './filters-state';
-import PlTableAddFilterV2 from './PlTableAddFilterV2.vue';
-import PlTableFilterEntryV2 from './PlTableFilterEntryV2.vue';
-import { isJsonEqual } from '@milaboratories/helpers';
+} from "@milaboratories/uikit";
+import { useFilters } from "./filters-state";
+import PlTableAddFilterV2 from "./PlTableAddFilterV2.vue";
+import PlTableFilterEntryV2 from "./PlTableFilterEntryV2.vue";
+import { isJsonEqual } from "@milaboratories/helpers";
 
 const state = defineModel<PlDataTableFilterState[]>({
   default: [],
@@ -38,13 +29,15 @@ const { settings } = toRefs(props);
 
 const filters = useFilters(settings, state);
 
-const filtersOn = computed<boolean>(() => filters.value.some((s) => s.filter && !s.filter.disabled));
+const filtersOn = computed<boolean>(() =>
+  filters.value.some((s) => s.filter && !s.filter.disabled),
+);
 
 const mounted = ref(false);
 onMounted(() => {
   mounted.value = true;
 });
-const teleportTarget = usePlBlockPageTitleTeleportTarget('PlTableFiltersV2');
+const teleportTarget = usePlBlockPageTitleTeleportTarget("PlTableFiltersV2");
 
 const showManager = ref(false);
 
@@ -55,7 +48,8 @@ onMounted(() => {
   observer = new ResizeObserver(() => {
     const parent = filterManager.value?.parentElement;
     if (!parent) return;
-    scrollIsActive.value = parent.scrollHeight > parent.clientHeight || parent.scrollWidth > parent.clientWidth;
+    scrollIsActive.value =
+      parent.scrollHeight > parent.clientHeight || parent.scrollWidth > parent.clientWidth;
   });
   if (filterManager.value && filterManager.value.parentElement) {
     observer.observe(filterManager.value!.parentElement);
@@ -81,9 +75,12 @@ const canAddFilter = computed<boolean>(() => filters.value.some((s) => !s.filter
 const showAddFilter = ref(false);
 
 const canResetToDefaults = computed<boolean>(() => {
-  return filters.value
-    .some((s) => (!s.defaultFilter && s.filter) || (s.defaultFilter
-      && (s.filter?.disabled === true || !isJsonEqual(s.filter?.value, s.defaultFilter))));
+  return filters.value.some(
+    (s) =>
+      (!s.defaultFilter && s.filter) ||
+      (s.defaultFilter &&
+        (s.filter?.disabled === true || !isJsonEqual(s.filter?.value, s.defaultFilter))),
+  );
 });
 const resetToDefaults = () => {
   filters.value.forEach((s) => {
@@ -115,23 +112,29 @@ const items = computed(() => filters.value.filter((s) => s.filter !== null));
     <div ref="filterManager" :class="$style['filter-manager']">
       <PlElementList
         v-model:items="items"
-        :on-expand="(item) => {
-          if (item.filter) {
-            item.filter.open = !item.filter.open;
+        :on-expand="
+          (item) => {
+            if (item.filter) {
+              item.filter.open = !item.filter.open;
+            }
           }
-        }"
+        "
         :is-expanded="(item) => item.filter?.open ?? false"
-        :on-toggle="(item) => {
-          if (item.filter) {
-            item.filter.disabled = !item.filter.disabled;
+        :on-toggle="
+          (item) => {
+            if (item.filter) {
+              item.filter.disabled = !item.filter.disabled;
+            }
           }
-        }"
+        "
         :is-toggled="(item) => item.filter?.disabled ?? false"
-        :on-remove="(item) => {
-          if (item.filter) {
-            item.filter = null;
+        :on-remove="
+          (item) => {
+            if (item.filter) {
+              item.filter = null;
+            }
           }
-        }"
+        "
         :get-item-key="(item) => canonicalizeJson<PTableColumnId>(item.id)"
         disable-dragging
       >
@@ -143,23 +146,13 @@ const items = computed(() => filters.value.filter((s) => s.filter !== null));
         </template>
       </PlElementList>
 
-      <div
-        v-if="filters.value.length"
-        :class="$style['add-action-wrapper']"
-      >
-        <button
-          :disabled="!canAddFilter"
-          :class="$style['add-btn']"
-          @click="showAddFilter = true"
-        >
+      <div v-if="filters.value.length" :class="$style['add-action-wrapper']">
+        <button :disabled="!canAddFilter" :class="$style['add-btn']" @click="showAddFilter = true">
           <PlMaskIcon16 name="add" />
           <div :class="$style['add-btn-title']">Add Filter</div>
         </button>
 
-        <PlBtnSecondary
-          :disabled="!canResetToDefaults"
-          @click.stop="resetToDefaults"
-        >
+        <PlBtnSecondary :disabled="!canResetToDefaults" @click.stop="resetToDefaults">
           Reset to defaults
         </PlBtnSecondary>
       </div>
@@ -171,110 +164,110 @@ const items = computed(() => filters.value.filter((s) => s.filter !== null));
   <PlTableAddFilterV2
     v-model="showAddFilter"
     :filters="filters.value"
-    :set-filter="(idx, filter) => filters.value[idx] = filter"
+    :set-filter="(idx, filter) => (filters.value[idx] = filter)"
   />
 </template>
 
 <style lang="scss" module>
 .filter-manager {
-    --expand-icon-rotation: rotate(0deg);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+  --expand-icon-rotation: rotate(0deg);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .add-action-wrapper {
-    position: sticky;
-    bottom: -16px;
-    background-color: var(--bg-elevated-01);
-    transition: all .15s ease-in-out;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+  position: sticky;
+  bottom: -16px;
+  background-color: var(--bg-elevated-01);
+  transition: all 0.15s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .add-btn {
-    height: 40px;
-    background-color: var(--bg-elevated-01);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding-left: 12px;
-    padding-right: 12px;
-    border-radius: 6px;
-    border: 1px dashed var(--border-color-div-grey);
-    line-height: 0;
-    cursor: pointer;
-    text-align: left;
+  height: 40px;
+  background-color: var(--bg-elevated-01);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 12px;
+  padding-right: 12px;
+  border-radius: 6px;
+  border: 1px dashed var(--border-color-div-grey);
+  line-height: 0;
+  cursor: pointer;
+  text-align: left;
 }
 
 .add-btn:disabled {
-    --icon-color: var(--dis-01);
-    cursor: auto;
+  --icon-color: var(--dis-01);
+  cursor: auto;
 }
 
 .add-btn:not([disabled]):hover {
-    border-radius: 6px;
-    border: 1px dashed var(--border-color-focus, #49CC49);
-    background: rgba(99, 224, 36, 0.12);
+  border-radius: 6px;
+  border: 1px dashed var(--border-color-focus, #49cc49);
+  background: rgba(99, 224, 36, 0.12);
 }
 
 .add-btn-title {
-    flex-grow: 1;
-    font-weight: 600;
+  flex-grow: 1;
+  font-weight: 600;
 }
 
 .expand-icon {
-    transition: all .15s ease-in-out;
-    transform: var(--expand-icon-rotation);
-    line-height: 0;
-    cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  transform: var(--expand-icon-rotation);
+  line-height: 0;
+  cursor: pointer;
 }
 
 .toggle,
 .delete {
-    line-height: 0;
-    cursor: pointer;
-    display: none;
+  line-height: 0;
+  cursor: pointer;
+  display: none;
 }
 
 .toggle .mask-24,
 .delete .mask-24 {
-    --icon-color: var(--ic-02);
+  --icon-color: var(--ic-02);
 }
 
 .toggle:hover .mask-24 {
-    --icon-color: var(--ic-01);
+  --icon-color: var(--ic-01);
 }
 
 .delete:hover .mask-24 {
-    --icon-color: var(--ic-01);
+  --icon-color: var(--ic-01);
 }
 
 .filter:hover .toggle,
 .filter:hover .delete {
-    display: block;
+  display: block;
 }
 
 .filter {
-    border-radius: 6px;
-    border: 1px solid var(--border-color-div-grey);
-    background-color: var(--bg-base-light);
-    transition: background-color .15s ease-in-out;
-    overflow: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border-color-div-grey);
+  background-color: var(--bg-base-light);
+  transition: background-color 0.15s ease-in-out;
+  overflow: auto;
 }
 
 .filter.disabled .expand-icon,
 .filter.disabled .title {
-    opacity: 0.3;
+  opacity: 0.3;
 }
 
 .filter:hover {
-    background-color: var(--bg-elevated-01);
+  background-color: var(--bg-elevated-01);
 }
 
 .filter:global(.open) {
-    background-color: var(--bg-elevated-01);
-    --expand-icon-rotation: rotate(90deg);
+  background-color: var(--bg-elevated-01);
+  --expand-icon-rotation: rotate(90deg);
 }
 </style>

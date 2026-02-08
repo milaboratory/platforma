@@ -1,1 +1,1 @@
-export { default as PlDialogModal } from './PlDialogModal.vue';
+export { default as PlDialogModal } from "./PlDialogModal.vue";

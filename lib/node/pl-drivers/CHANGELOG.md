@@ -575,7 +575,6 @@
 ### Minor Changes
 
 - 4306ff2: Fix file corruption issue in upload client by preventing connection reuse
-
   - **CRITICAL**: Add `reset: true` to prevent connection reuse and fix data corruption where HTTP/1.1 protocol lines were being included in uploaded file content with backend's built-in S3 implementation
   - Validate existing Content-Length header values match expected chunk size
   - Add assertion to verify read chunk size matches expected content length
@@ -612,7 +611,6 @@
 ### Minor Changes
 
 - ff4a709: **BREAKING**: Refactor download methods to lambda-based pattern for better resource management
-
   - `RemoteFileDownloader.download()` → `withContent<T>()`
   - `ClientDownload.downloadBlob()` → `withBlobContent<T>()`
   - `ClientDownload.readLocalFile()` → `withLocalFileContent<T>()`
@@ -1259,7 +1257,6 @@
 ### Patch Changes
 
 - e06efcd: Pin and standardize dependency versions for network and utility libraries to ensure consistent builds and prevent unexpected behavior from minor version changes. Changes include:
-
   - Pin `@protobuf-ts/*` packages to version 2.9.4 using YAML anchors
   - Pin AWS SDK packages to version 3.750.0
   - Change `undici` from `^7.2.3` to `~7.2.3` (only patch updates)

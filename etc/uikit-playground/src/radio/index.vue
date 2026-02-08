@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import Layout from '../Layout.vue';
-import Split from '../Split.vue';
-import { faker } from '@faker-js/faker';
-import { PlRadio, PlRadioGroup, randomString } from '@milaboratories/uikit';
-import { ref } from 'vue';
+import Layout from "../Layout.vue";
+import Split from "../Split.vue";
+import { faker } from "@faker-js/faker";
+import { PlRadio, PlRadioGroup, randomString } from "@milaboratories/uikit";
+import { ref } from "vue";
 
 function generateOption() {
   const id = randomString(8);
@@ -29,13 +29,13 @@ const groupValue = ref<Option>();
 const groupWithOptionsValue = ref<Option>();
 
 function prettifyValue<T>(value: T) {
-  return value ? JSON.stringify(value, null, 2) : '<unset>';
+  return value ? JSON.stringify(value, null, 2) : "<unset>";
 }
 </script>
 
 <template>
   <Layout>
-    <Split name="Radio" >
+    <Split name="Radio">
       <div :class="$style.container">
         <h1>Standalone</h1>
         <PlRadio
@@ -47,7 +47,8 @@ function prettifyValue<T>(value: T) {
         >
           {{ option.label }}
         </PlRadio>
-        <output>Current value:
+        <output
+          >Current value:
           <pre>{{ prettifyValue(standaloneValue) }}</pre>
         </output>
       </div>
@@ -65,7 +66,8 @@ function prettifyValue<T>(value: T) {
             {{ option.label }}
           </PlRadio>
         </PlRadioGroup>
-        <output>Current value:
+        <output
+          >Current value:
           <pre>{{ prettifyValue(groupValue) }}</pre>
         </output>
       </div>
@@ -74,11 +76,12 @@ function prettifyValue<T>(value: T) {
         <PlRadioGroup
           v-model="groupWithOptionsValue"
           :options="options"
-          :key-extractor="option => option.id"
+          :key-extractor="(option) => option.id"
         >
           <template #label>Group Label</template>
         </PlRadioGroup>
-        <output>Current value:
+        <output
+          >Current value:
           <pre>{{ prettifyValue(groupWithOptionsValue) }}</pre>
         </output>
       </div>
@@ -87,19 +90,19 @@ function prettifyValue<T>(value: T) {
 </template>
 
 <style module>
-  .container {
-    display: flex;
-    flex-direction: column;
-    max-inline-size: max-content;
-    gap: 8px;
-    color: var(--txt-01);
-    h1 {
-      font-size: 2rem;
-      line-height: 1.5;
-      margin-block-end: 16px;
-    }
-    output {
-      margin-block-start: 12px;
-    }
+.container {
+  display: flex;
+  flex-direction: column;
+  max-inline-size: max-content;
+  gap: 8px;
+  color: var(--txt-01);
+  h1 {
+    font-size: 2rem;
+    line-height: 1.5;
+    margin-block-end: 16px;
   }
+  output {
+    margin-block-start: 12px;
+  }
+}
 </style>

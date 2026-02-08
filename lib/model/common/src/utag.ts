@@ -1,4 +1,4 @@
-import type { AuthorMarker } from './author_marker';
+import type { AuthorMarker } from "./author_marker";
 
 /** Value returned for changing states supporting reactive listening for changes */
 export interface ValueWithUTag<V> {

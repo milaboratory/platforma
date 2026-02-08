@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { reactive } from 'vue';
-import Layout from '../Layout.vue';
+import { reactive } from "vue";
+import Layout from "../Layout.vue";
 import {
   icons24,
   PlBtnAccent,
@@ -10,23 +10,23 @@ import {
   PlBtnPrimary,
   PlBtnSecondary,
   type Size,
-} from '@milaboratories/uikit';
-import Split from '../Split.vue';
+} from "@milaboratories/uikit";
+import Split from "../Split.vue";
 
 const props = reactive({
-  size: 'medium' as Size,
+  size: "medium" as Size,
   disabled: false,
   reverse: false,
   loading: false,
   justifyCenter: false,
 });
 
-const sizeOptions = ['small', 'medium', 'large'].map((it) => ({ text: it, value: it }));
+const sizeOptions = ["small", "medium", "large"].map((it) => ({ text: it, value: it }));
 
-const text = 'Click me';
+const text = "Click me";
 
 function onClick() {
-  alert('Click');
+  alert("Click");
 }
 </script>
 

@@ -3,16 +3,12 @@ import {
   parseFinalPObjectCollection,
   type CalculateTableDataResponse,
   type MiddleLayerDriverKit,
-} from '@milaboratories/pl-middle-layer';
-import {
-  awaitStableState,
-  TestWorkflowResults,
-  type TestRenderResults,
-} from '@platforma-sdk/test';
-import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import type { ComputableCtx, UnwrapComputables } from '@milaboratories/computable';
-import { getLongTestTimeout } from '@milaboratories/test-helpers';
-import { assert } from 'vitest';
+} from "@milaboratories/pl-middle-layer";
+import { awaitStableState, TestWorkflowResults, type TestRenderResults } from "@platforma-sdk/test";
+import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
+import type { ComputableCtx, UnwrapComputables } from "@milaboratories/computable";
+import { getLongTestTimeout } from "@milaboratories/test-helpers";
+import { assert } from "vitest";
 
 export const Timeout = getLongTestTimeout(60_000);
 
@@ -22,9 +18,10 @@ async function getOutput<T, O extends string>(
   callback: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => T,
   timeout = Timeout,
 ): Promise<NonNullable<Awaited<UnwrapComputables<T>>>> {
-  const computable = result instanceof TestWorkflowResults
-    ? result.output(outputName, callback)
-    : result.computeOutput(outputName, callback);
+  const computable =
+    result instanceof TestWorkflowResults
+      ? result.output(outputName, callback)
+      : result.computeOutput(outputName, callback);
   const value = await awaitStableState(computable, timeout);
   assert(value);
   return value;
@@ -54,7 +51,7 @@ export async function getTableData<O extends string>(
 ): Promise<CalculateTableDataResponse> {
   const callback = (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
     if (!acc || !acc.getIsReadyOrError()) return undefined;
-    const pObjects = parseFinalPObjectCollection(acc, false, '', [outputName]);
+    const pObjects = parseFinalPObjectCollection(acc, false, "", [outputName]);
     const pColumns = Object.entries(pObjects).map(([, obj]) => {
       if (!isPColumn(obj)) throw new Error(`not a PColumn (kind = ${obj.spec.kind})`);
       return obj;
@@ -66,16 +63,20 @@ export async function getTableData<O extends string>(
   const handle = await getOutput(result, outputName, callback, timeout);
 
   const pColumns = await driverKit.pFrameDriver.listColumns(handle);
-  const pTable = await driverKit.pFrameDriver.calculateTableData(handle, {
-    src: {
-      type: 'full',
-      entries: pColumns.map((col) => ({
-        type: 'column',
-        column: col.columnId,
-      })),
+  const pTable = await driverKit.pFrameDriver.calculateTableData(
+    handle,
+    {
+      src: {
+        type: "full",
+        entries: pColumns.map((col) => ({
+          type: "column",
+          column: col.columnId,
+        })),
+      },
+      filters: [],
+      sorting: [],
     },
-    filters: [],
-    sorting: [],
-  }, undefined);
+    undefined,
+  );
   return pTable;
 }

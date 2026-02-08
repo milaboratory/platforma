@@ -1,4 +1,4 @@
-import type { Watcher } from './watcher';
+import type { Watcher } from "./watcher";
 
 const watcherGCRegistry = new FinalizationRegistry<NodeJS.Timeout>((timerRef) => {
   clearTimeout(timerRef);

@@ -1,9 +1,7 @@
-import type { ComputableCtx } from '@milaboratories/computable';
-import { Computable } from '@milaboratories/computable';
-import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import {
-  checkBlockFlag,
-} from '@platforma-sdk/model';
+import type { ComputableCtx } from "@milaboratories/computable";
+import { Computable } from "@milaboratories/computable";
+import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
+import { checkBlockFlag } from "@platforma-sdk/model";
 import type {
   ArchiveFormat,
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
@@ -24,33 +22,35 @@ import type {
   ValueOrError,
   RangeBytes,
   BlockCodeKnownFeatureFlags,
-
-  JsRenderInternal } from '@platforma-sdk/model';
+  JsRenderInternal,
+} from "@platforma-sdk/model";
 import {
   isDataInfo,
   mapDataInfo,
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE,
-} from '@platforma-sdk/model';
-import { notEmpty } from '@milaboratories/ts-helpers';
-import { randomUUID } from 'node:crypto';
-import type { Optional } from 'utility-types';
-import type { BlockContextAny } from '../middle_layer/block_ctx';
-import type { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
-import type { Block } from '../model/project_model';
-import { parseFinalPObjectCollection } from '../pool/p_object_collection';
-import type { ResultPool } from '../pool/result_pool';
-import type { JsExecutionContext } from './context';
-import type { VmFunctionImplementation } from 'quickjs-emscripten';
-import { Scope, type QuickJSHandle } from 'quickjs-emscripten';
+} from "@platforma-sdk/model";
+import { notEmpty } from "@milaboratories/ts-helpers";
+import { randomUUID } from "node:crypto";
+import type { Optional } from "utility-types";
+import type { BlockContextAny } from "../middle_layer/block_ctx";
+import type { MiddleLayerEnvironment } from "../middle_layer/middle_layer";
+import type { Block } from "../model/project_model";
+import { parseFinalPObjectCollection } from "../pool/p_object_collection";
+import type { ResultPool } from "../pool/result_pool";
+import type { JsExecutionContext } from "./context";
+import type { VmFunctionImplementation } from "quickjs-emscripten";
+import { Scope, type QuickJSHandle } from "quickjs-emscripten";
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {
-  return data !== undefined ? Buffer.from(data).toString('base64') : undefined;
+  return data !== undefined ? Buffer.from(data).toString("base64") : undefined;
 }
 
-export class ComputableContextHelper
-implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
+export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRenderCtxMethods<
+  string,
+  string
+> {
   public readonly computablesToResolve: Record<string, Computable<unknown>> = {};
 
   private computableCtx: ComputableCtx | undefined;
@@ -80,11 +80,11 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
 
   getAccessorHandleByName(name: string): string | undefined {
     if (this.computableCtx === undefined)
-      throw new Error('Accessors can\'t be used in this context');
-    const wellKnownAccessor = (name: string, ctxKey: 'staging' | 'prod'): string | undefined => {
+      throw new Error("Accessors can't be used in this context");
+    const wellKnownAccessor = (name: string, ctxKey: "staging" | "prod"): string | undefined => {
       if (!this.accessors.has(name)) {
         const lambda = this.blockCtx[ctxKey];
-        if (lambda === undefined) throw new Error('Staging context not available');
+        if (lambda === undefined) throw new Error("Staging context not available");
         const entry = lambda(this.computableCtx!);
         if (!entry) this.accessors.set(name, undefined);
         else
@@ -92,8 +92,8 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       }
       return this.accessors.get(name) ? name : undefined;
     };
-    if (name === 'staging') return wellKnownAccessor('staging', 'staging');
-    else if (name === 'main') return wellKnownAccessor('main', 'prod');
+    if (name === "staging") return wellKnownAccessor("staging", "staging");
+    else if (name === "main") return wellKnownAccessor("main", "prod");
     return undefined;
   }
 
@@ -194,13 +194,13 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   public getBlobContentAsString(handle: string, range?: RangeBytes): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
-      'getBlobContentAsString',
+      "getBlobContentAsString",
       Computable.make((ctx) => this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo, ctx), {
         postprocessValue: async (value) => {
           if (value === undefined) return undefined;
-          return Buffer.from(await this.env.driverKit.blobDriver.getContent(value.handle, range)).toString(
-            'utf-8',
-          );
+          return Buffer.from(
+            await this.env.driverKit.blobDriver.getContent(value.handle, range),
+          ).toString("utf-8");
         },
       }),
     );
@@ -209,13 +209,13 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   public getBlobContentAsBase64(handle: string, range?: RangeBytes): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
-      'getBlobContentAsBase64',
+      "getBlobContentAsBase64",
       Computable.make((ctx) => this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo, ctx), {
         postprocessValue: async (value) => {
           if (value === undefined) return undefined;
-          return Buffer.from(await this.env.driverKit.blobDriver.getContent(value.handle, range)).toString(
-            'base64',
-          );
+          return Buffer.from(
+            await this.env.driverKit.blobDriver.getContent(value.handle, range),
+          ).toString("base64");
         },
       }),
     );
@@ -224,7 +224,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   public getDownloadedBlobContentHandle(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
-      'getDownloadedBlobContentHandle',
+      "getDownloadedBlobContentHandle",
       this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo),
     );
   }
@@ -232,7 +232,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   public getOnDemandBlobContentHandle(handle: string): string {
     const resource = this.getAccessor(handle).persist();
     return this.registerComputable(
-      'getOnDemandBlobContentHandle',
+      "getOnDemandBlobContentHandle",
       this.env.driverKit.blobDriver.getOnDemandBlob(resource),
     );
   }
@@ -244,7 +244,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   public extractArchiveAndGetURL(handle: string, format: ArchiveFormat): string {
     const resource = this.getAccessor(handle).persist();
     return this.registerComputable(
-      'extractArchiveAndGetURL',
+      "extractArchiveAndGetURL",
       this.env.driverKit.blobToURLDriver.extractArchiveAndGetURL(resource, format),
     );
   }
@@ -256,7 +256,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   getImportProgress(handle: string): string {
     const resource = this.getAccessor(handle).persist();
     return this.registerComputable(
-      'getImportProgress',
+      "getImportProgress",
       this.env.driverKit.uploadDriver.getProgressId(resource),
     );
   }
@@ -268,7 +268,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   getLastLogs(handle: string, nLines: number): string {
     const resource = this.getAccessor(handle).persist();
     return this.registerComputable(
-      'getLastLogs',
+      "getLastLogs",
       this.env.driverKit.logDriver.getLastLogs(resource, nLines),
     );
   }
@@ -276,7 +276,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   getProgressLog(handle: string, patternToSearch: string): string {
     const resource = this.getAccessor(handle).persist();
     return this.registerComputable(
-      'getProgressLog',
+      "getProgressLog",
       this.env.driverKit.logDriver.getProgressLog(resource, patternToSearch),
     );
   }
@@ -284,7 +284,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   getProgressLogWithInfo(handle: string, patternToSearch: string): string {
     const resource = this.getAccessor(handle).persist();
     return this.registerComputable(
-      'getProgressLogWithInfo',
+      "getProgressLogWithInfo",
       this.env.driverKit.logDriver.getProgressLogWithInfo(resource, patternToSearch),
     );
   }
@@ -292,7 +292,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   getLogHandle(handle: string): string {
     const resource = this.getAccessor(handle).persist();
     return this.registerComputable(
-      'getLogHandle',
+      "getLogHandle",
       this.env.driverKit.logDriver.getLogHandle(resource),
     );
   }
@@ -316,11 +316,11 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
     if (this._resultPool === undefined) {
       if (this.computableCtx === undefined)
         throw new Error(
-          'can\'t use result pool in this context (most porbably called from the future mapper)',
+          "can't use result pool in this context (most porbably called from the future mapper)",
         );
       this._resultPool = notEmpty(
         this.blockCtx.getResultsPool,
-        'getResultsPool',
+        "getResultsPool",
       )(this.computableCtx);
     }
     return this._resultPool;
@@ -344,7 +344,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   }
 
   public getDataWithErrorsFromResultPool(): ResultCollection<
-    Optional<PObject<ValueOrError<string, Error>>, 'id'>
+    Optional<PObject<ValueOrError<string, Error>>, "id">
   > {
     const collection = this.resultPool.getDataWithErrors();
     if (collection.instabilityMarker !== undefined)
@@ -383,10 +383,12 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   // PFrames / PTables
   //
 
-  public createPFrame(def: PFrameDef<PColumn<string | PColumnValues | DataInfo<string>>>): PFrameHandle {
+  public createPFrame(
+    def: PFrameDef<PColumn<string | PColumnValues | DataInfo<string>>>,
+  ): PFrameHandle {
     if (this.computableCtx === undefined)
       throw new Error(
-        'can\'t instantiate PFrames from this context (most porbably called from the future mapper)',
+        "can't instantiate PFrames from this context (most porbably called from the future mapper)",
       );
     const { key, unref } = this.env.driverKit.pFrameDriver.createPFrame(
       def.map((c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
@@ -395,15 +397,15 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
     return key;
   }
 
-  public createPTable(def: PTableDef<PColumn<string | PColumnValues | DataInfo<string>>>): PTableHandle {
+  public createPTable(
+    def: PTableDef<PColumn<string | PColumnValues | DataInfo<string>>>,
+  ): PTableHandle {
     if (this.computableCtx === undefined)
       throw new Error(
-        'can\'t instantiate PTable from this context (most porbably called from the future mapper)',
+        "can't instantiate PTable from this context (most porbably called from the future mapper)",
       );
     const { key, unref } = this.env.driverKit.pFrameDriver.createPTable(
-      mapPTableDef(def, (c) =>
-        mapPObjectData(c, (d) => this.transformInputPData(d)),
-      ),
+      mapPTableDef(def, (c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
     );
     this.computableCtx.addOnDestroy(unref);
     return key;
@@ -415,8 +417,10 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
    * - Maps accessors in DataInfo objects
    * - Passes through other values
    */
-  private transformInputPData(d: string | PColumnValues | DataInfo<string>): PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor> {
-    if (typeof d === 'string') {
+  private transformInputPData(
+    d: string | PColumnValues | DataInfo<string>,
+  ): PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor> {
+    if (typeof d === "string") {
       return this.getAccessor(d);
     } else if (isDataInfo(d)) {
       return mapDataInfo(d, (a) => this.getAccessor(a));
@@ -455,7 +459,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
 
   private getAccessor(handle: string): PlTreeNodeAccessor {
     const accessor = this.accessors.get(handle);
-    if (accessor === undefined) throw new Error('No such accessor');
+    if (accessor === undefined) throw new Error("No such accessor");
     return accessor;
   }
 
@@ -496,48 +500,58 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         };
 
         vm.newFunction(name, withCachedError).consume((fnh) => vm.setProp(configCtx, name, fnh));
-        vm.newFunction(name, fn).consume((fnh) => vm.setProp(configCtx, name + '__internal__', fnh));
+        vm.newFunction(name, fn).consume((fnh) =>
+          vm.setProp(configCtx, name + "__internal__", fnh),
+        );
       };
 
       // Check if this is a v1/v2 block (requiresModelAPIVersion !== 2)
       // For v1/v2 blocks, state is {args, uiState} and we need to inject uiState separately
-      const isLegacyBlock = !checkBlockFlag(this.featureFlags, 'requiresModelAPIVersion', 2);
+      const isLegacyBlock = !checkBlockFlag(this.featureFlags, "requiresModelAPIVersion", 2);
 
       // Helper to extract uiState from legacy state format {args, uiState}
       const extractUiState = (stateJson: string | undefined): string => {
-        if (!stateJson) return '{}';
+        if (!stateJson) return "{}";
         try {
           const parsed = JSON.parse(stateJson);
           return JSON.stringify(parsed?.uiState ?? {});
         } catch {
-          return '{}';
+          return "{}";
         }
       };
 
-      if (checkBlockFlag(this.featureFlags, 'supportsLazyState')) {
+      if (checkBlockFlag(this.featureFlags, "supportsLazyState")) {
         // injecting lazy state functions
-        exportCtxFunction('args', () => {
+        exportCtxFunction("args", () => {
           if (this.computableCtx === undefined)
-            throw new Error(`Add dummy call to ctx.args outside the future lambda. Can't be directly used in this context.`);
+            throw new Error(
+              `Add dummy call to ctx.args outside the future lambda. Can't be directly used in this context.`,
+            );
           const args = this.blockCtx.args(this.computableCtx);
           return args === undefined ? vm.undefined : vm.newString(args);
         });
-        exportCtxFunction('data', () => {
+        exportCtxFunction("data", () => {
           if (this.computableCtx === undefined)
-            throw new Error(`Add dummy call to ctx.state outside the future lambda. Can't be directly used in this context.`);
-          return vm.newString(this.blockCtx.data(this.computableCtx) ?? '{}');
+            throw new Error(
+              `Add dummy call to ctx.state outside the future lambda. Can't be directly used in this context.`,
+            );
+          return vm.newString(this.blockCtx.data(this.computableCtx) ?? "{}");
         });
-        exportCtxFunction('activeArgs', () => {
+        exportCtxFunction("activeArgs", () => {
           if (this.computableCtx === undefined)
-            throw new Error(`Add dummy call to ctx.activeArgs outside the future lambda. Can't be directly used in this context.`);
+            throw new Error(
+              `Add dummy call to ctx.activeArgs outside the future lambda. Can't be directly used in this context.`,
+            );
           const res = this.blockCtx.activeArgs(this.computableCtx);
           return res === undefined ? vm.undefined : vm.newString(res);
         });
         // For v1/v2 blocks, also inject uiState (extracted from state.uiState)
         if (isLegacyBlock) {
-          exportCtxFunction('uiState', () => {
+          exportCtxFunction("uiState", () => {
             if (this.computableCtx === undefined)
-              throw new Error(`Add dummy call to ctx.uiState outside the future lambda. Can't be directly used in this context.`);
+              throw new Error(
+                `Add dummy call to ctx.uiState outside the future lambda. Can't be directly used in this context.`,
+              );
             return vm.newString(extractUiState(this.blockCtx.data(this.computableCtx)));
           });
         }
@@ -546,14 +560,14 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
         const data = this.blockCtx.data(this.computableCtx!);
         if (args !== undefined) {
-          vm.setProp(configCtx, 'args', localScope.manage(vm.newString(args)));
+          vm.setProp(configCtx, "args", localScope.manage(vm.newString(args)));
         }
-        vm.setProp(configCtx, 'data', localScope.manage(vm.newString(data ?? '{}')));
+        vm.setProp(configCtx, "data", localScope.manage(vm.newString(data ?? "{}")));
         if (activeArgs !== undefined)
-          vm.setProp(configCtx, 'activeArgs', localScope.manage(vm.newString(activeArgs)));
+          vm.setProp(configCtx, "activeArgs", localScope.manage(vm.newString(activeArgs)));
         // For v1/v2 blocks, also inject uiState (extracted from state.uiState)
         if (isLegacyBlock) {
-          vm.setProp(configCtx, 'uiState', localScope.manage(vm.newString(extractUiState(data))));
+          vm.setProp(configCtx, "uiState", localScope.manage(vm.newString(extractUiState(data))));
         }
       }
 
@@ -561,7 +575,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       // Methods for injected ctx object
       //
 
-      exportCtxFunction('getAccessorHandleByName', (name) => {
+      exportCtxFunction("getAccessorHandleByName", (name) => {
         return parent.exportSingleValue(
           this.getAccessorHandleByName(vm.getString(name)),
           undefined,
@@ -572,7 +586,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       // Accessors
       //
 
-      exportCtxFunction('resolveWithCommon', (handle, commonOptions, ...steps) => {
+      exportCtxFunction("resolveWithCommon", (handle, commonOptions, ...steps) => {
         return parent.exportSingleValue(
           this.resolveWithCommon(
             vm.getString(handle),
@@ -585,61 +599,61 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         );
       });
 
-      exportCtxFunction('getResourceType', (handle) => {
+      exportCtxFunction("getResourceType", (handle) => {
         return parent.exportObjectViaJson(this.getResourceType(vm.getString(handle)), undefined);
       });
 
-      exportCtxFunction('getInputsLocked', (handle) => {
+      exportCtxFunction("getInputsLocked", (handle) => {
         return parent.exportSingleValue(this.getInputsLocked(vm.getString(handle)), undefined);
       });
 
-      exportCtxFunction('getOutputsLocked', (handle) => {
+      exportCtxFunction("getOutputsLocked", (handle) => {
         return parent.exportSingleValue(this.getOutputsLocked(vm.getString(handle)), undefined);
       });
 
-      exportCtxFunction('getIsReadyOrError', (handle) => {
+      exportCtxFunction("getIsReadyOrError", (handle) => {
         return parent.exportSingleValue(this.getIsReadyOrError(vm.getString(handle)), undefined);
       });
 
-      exportCtxFunction('getIsFinal', (handle) => {
+      exportCtxFunction("getIsFinal", (handle) => {
         return parent.exportSingleValue(this.getIsFinal(vm.getString(handle)), undefined);
       });
 
-      exportCtxFunction('getError', (handle) => {
+      exportCtxFunction("getError", (handle) => {
         return parent.exportSingleValue(this.getError(vm.getString(handle)), undefined);
       });
 
-      exportCtxFunction('listInputFields', (handle) => {
+      exportCtxFunction("listInputFields", (handle) => {
         return parent.exportObjectViaJson(this.listInputFields(vm.getString(handle)), undefined);
       });
 
-      exportCtxFunction('listOutputFields', (handle) => {
+      exportCtxFunction("listOutputFields", (handle) => {
         return parent.exportObjectViaJson(this.listInputFields(vm.getString(handle)), undefined);
       });
 
-      exportCtxFunction('listDynamicFields', (handle) => {
+      exportCtxFunction("listDynamicFields", (handle) => {
         return parent.exportObjectViaJson(this.listInputFields(vm.getString(handle)), undefined);
       });
 
-      exportCtxFunction('getKeyValueBase64', (handle, key) => {
+      exportCtxFunction("getKeyValueBase64", (handle, key) => {
         return parent.exportSingleValue(
           this.getKeyValueBase64(vm.getString(handle), vm.getString(key)),
           undefined,
         );
       });
 
-      exportCtxFunction('getKeyValueAsString', (handle, key) => {
+      exportCtxFunction("getKeyValueAsString", (handle, key) => {
         return parent.exportSingleValue(
           this.getKeyValueAsString(vm.getString(handle), vm.getString(key)),
           undefined,
         );
       });
 
-      exportCtxFunction('getDataBase64', (handle) => {
+      exportCtxFunction("getDataBase64", (handle) => {
         return parent.exportSingleValue(this.getDataBase64(vm.getString(handle)), undefined);
       });
 
-      exportCtxFunction('getDataAsString', (handle) => {
+      exportCtxFunction("getDataAsString", (handle) => {
         return parent.exportSingleValue(this.getDataAsString(vm.getString(handle)), undefined);
       });
 
@@ -648,7 +662,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       //
 
       exportCtxFunction(
-        'parsePObjectCollection',
+        "parsePObjectCollection",
         (handle, errorOnUnknownField, prefix, ...resolveSteps) => {
           return parent.exportObjectUniversal(
             this.parsePObjectCollection(
@@ -666,28 +680,34 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       // Blobs
       //
 
-      exportCtxFunction('getBlobContentAsBase64', (handle, range) => {
+      exportCtxFunction("getBlobContentAsBase64", (handle, range) => {
         return parent.exportSingleValue(
-          this.getBlobContentAsBase64(vm.getString(handle), parent.importObjectUniversal(range) as RangeBytes | undefined),
+          this.getBlobContentAsBase64(
+            vm.getString(handle),
+            parent.importObjectUniversal(range) as RangeBytes | undefined,
+          ),
           undefined,
         );
       });
 
-      exportCtxFunction('getBlobContentAsString', (handle, range) => {
+      exportCtxFunction("getBlobContentAsString", (handle, range) => {
         return parent.exportSingleValue(
-          this.getBlobContentAsString(vm.getString(handle), parent.importObjectUniversal(range) as RangeBytes | undefined),
+          this.getBlobContentAsString(
+            vm.getString(handle),
+            parent.importObjectUniversal(range) as RangeBytes | undefined,
+          ),
           undefined,
         );
       });
 
-      exportCtxFunction('getDownloadedBlobContentHandle', (handle) => {
+      exportCtxFunction("getDownloadedBlobContentHandle", (handle) => {
         return parent.exportSingleValue(
           this.getDownloadedBlobContentHandle(vm.getString(handle)),
           undefined,
         );
       });
 
-      exportCtxFunction('getOnDemandBlobContentHandle', (handle) => {
+      exportCtxFunction("getOnDemandBlobContentHandle", (handle) => {
         return parent.exportSingleValue(
           this.getOnDemandBlobContentHandle(vm.getString(handle)),
           undefined,
@@ -698,17 +718,18 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       // Blobs to URLs
       //
 
-      exportCtxFunction('extractArchiveAndGetURL', (handle, format) => {
+      exportCtxFunction("extractArchiveAndGetURL", (handle, format) => {
         return parent.exportSingleValue(
           this.extractArchiveAndGetURL(vm.getString(handle), vm.getString(format) as ArchiveFormat),
-          undefined);
+          undefined,
+        );
       });
 
       //
       // ImportProgress
       //
 
-      exportCtxFunction('getImportProgress', (handle) => {
+      exportCtxFunction("getImportProgress", (handle) => {
         return parent.exportSingleValue(this.getImportProgress(vm.getString(handle)), undefined);
       });
 
@@ -716,28 +737,28 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       // Logs
       //
 
-      exportCtxFunction('getLastLogs', (handle, nLines) => {
+      exportCtxFunction("getLastLogs", (handle, nLines) => {
         return parent.exportSingleValue(
           this.getLastLogs(vm.getString(handle), vm.getNumber(nLines)),
           undefined,
         );
       });
 
-      exportCtxFunction('getProgressLog', (handle, patternToSearch) => {
+      exportCtxFunction("getProgressLog", (handle, patternToSearch) => {
         return parent.exportSingleValue(
           this.getProgressLog(vm.getString(handle), vm.getString(patternToSearch)),
           undefined,
         );
       });
 
-      exportCtxFunction('getProgressLogWithInfo', (handle, patternToSearch) => {
+      exportCtxFunction("getProgressLogWithInfo", (handle, patternToSearch) => {
         return parent.exportSingleValue(
           this.getProgressLogWithInfo(vm.getString(handle), vm.getString(patternToSearch)),
           undefined,
         );
       });
 
-      exportCtxFunction('getLogHandle', (handle) => {
+      exportCtxFunction("getLogHandle", (handle) => {
         return parent.exportSingleValue(this.getLogHandle(vm.getString(handle)), undefined);
       });
 
@@ -745,7 +766,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       // Blocks
       //
 
-      exportCtxFunction('getBlockLabel', (blockId) => {
+      exportCtxFunction("getBlockLabel", (blockId) => {
         return parent.exportSingleValue(this.getBlockLabel(vm.getString(blockId)), undefined);
       });
 
@@ -753,41 +774,35 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       // Result pool
       //
 
-      exportCtxFunction('getDataFromResultPool', () => {
+      exportCtxFunction("getDataFromResultPool", () => {
         return parent.exportObjectUniversal(this.getDataFromResultPool(), undefined);
       });
 
-      exportCtxFunction('getDataWithErrorsFromResultPool', () => {
+      exportCtxFunction("getDataWithErrorsFromResultPool", () => {
         return parent.exportObjectUniversal(this.getDataWithErrorsFromResultPool(), undefined);
       });
 
-      exportCtxFunction('getSpecsFromResultPool', () => {
+      exportCtxFunction("getSpecsFromResultPool", () => {
         return parent.exportObjectUniversal(this.getSpecsFromResultPool(), undefined);
       });
 
-      exportCtxFunction('calculateOptions', (predicate) => {
+      exportCtxFunction("calculateOptions", (predicate) => {
         return parent.exportObjectUniversal(
           this.calculateOptions(parent.importObjectViaJson(predicate) as PSpecPredicate),
           undefined,
         );
       });
 
-      exportCtxFunction('getSpecFromResultPoolByRef', (blockId, exportName) => {
+      exportCtxFunction("getSpecFromResultPoolByRef", (blockId, exportName) => {
         return parent.exportObjectUniversal(
-          this.getSpecFromResultPoolByRef(
-            vm.getString(blockId),
-            vm.getString(exportName),
-          ),
+          this.getSpecFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
           undefined,
         );
       });
 
-      exportCtxFunction('getDataFromResultPoolByRef', (blockId, exportName) => {
+      exportCtxFunction("getDataFromResultPoolByRef", (blockId, exportName) => {
         return parent.exportObjectUniversal(
-          this.getDataFromResultPoolByRef(
-            vm.getString(blockId),
-            vm.getString(exportName),
-          ),
+          this.getDataFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
           undefined,
         );
       });
@@ -796,14 +811,16 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       // PFrames / PTables
       //
 
-      exportCtxFunction('createPFrame', (def) => {
+      exportCtxFunction("createPFrame", (def) => {
         return parent.exportSingleValue(
-          this.createPFrame(parent.importObjectViaJson(def) as PFrameDef<PColumn<string | PColumnValues>>),
+          this.createPFrame(
+            parent.importObjectViaJson(def) as PFrameDef<PColumn<string | PColumnValues>>,
+          ),
           undefined,
         );
       });
 
-      exportCtxFunction('createPTable', (def) => {
+      exportCtxFunction("createPTable", (def) => {
         return parent.exportSingleValue(
           this.createPTable(
             parent.importObjectViaJson(def) as PTableDef<PColumn<string | PColumnValues>>,
@@ -816,7 +833,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       // Computable
       //
 
-      exportCtxFunction('getCurrentUnstableMarker', () => {
+      exportCtxFunction("getCurrentUnstableMarker", () => {
         return parent.exportSingleValue(this.getCurrentUnstableMarker(), undefined);
       });
 
@@ -824,15 +841,15 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       // Logging
       //
 
-      exportCtxFunction('logInfo', (message) => {
+      exportCtxFunction("logInfo", (message) => {
         this.logInfo(vm.getString(message));
       });
 
-      exportCtxFunction('logWarn', (message) => {
+      exportCtxFunction("logWarn", (message) => {
         this.logWarn(vm.getString(message));
       });
 
-      exportCtxFunction('logError', (message) => {
+      exportCtxFunction("logError", (message) => {
         this.logError(vm.getString(message));
       });
     });

@@ -1,8 +1,8 @@
-import type { OutputWithStatus } from '@milaboratories/pl-model-common';
-import {} from './global';
-import { getPlatformaInstance } from './internal';
-import type { Platforma, PlatformaApiVersion } from './platforma';
-import { PlatformaSDKVersion } from './version';
+import type { OutputWithStatus } from "@milaboratories/pl-model-common";
+import {} from "./global";
+import { getPlatformaInstance } from "./internal";
+import type { Platforma, PlatformaApiVersion } from "./platforma";
+import { PlatformaSDKVersion } from "./version";
 
 export function getPlatformaApiVersion(): PlatformaApiVersion {
   return platformaApiVersion ?? 1; // undefined means 1 for backward compatibility
@@ -10,11 +10,17 @@ export function getPlatformaApiVersion(): PlatformaApiVersion {
 
 export function getRawPlatformaInstance<
   Args = unknown,
-  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<string, OutputWithStatus<unknown>>,
+  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<
+    string,
+    OutputWithStatus<unknown>
+  >,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
 >(): Platforma<Args, Outputs, UiState, Href> {
-  return getPlatformaInstance<Args, Outputs, UiState, Href>({ sdkVersion: PlatformaSDKVersion, apiVersion: platformaApiVersion });
+  return getPlatformaInstance<Args, Outputs, UiState, Href>({
+    sdkVersion: PlatformaSDKVersion,
+    apiVersion: platformaApiVersion,
+  });
 }
 
 /** Returns a global platforma instance or a provided fallback if it's not available. */

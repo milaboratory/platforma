@@ -1,14 +1,16 @@
 <script lang="ts" setup>
-import Layout from '../Layout.vue';
-import { DataTable, PlNumberField, PlBtnSecondary } from '@milaboratories/uikit';
-import { computed, onMounted } from 'vue';
-import { useData } from './useData';
+import Layout from "../Layout.vue";
+import { DataTable, PlNumberField, PlBtnSecondary } from "@milaboratories/uikit";
+import { computed, onMounted } from "vue";
+import { useData } from "./useData";
 
 const DataTableComponent = DataTable.Component;
 
 const { data, columnsRef, generate } = useData();
 
-const lastId = computed(() => (data.rows.length ? data.rows[data.rows.length - 1]['ID'] : undefined));
+const lastId = computed(() =>
+  data.rows.length ? data.rows[data.rows.length - 1]["ID"] : undefined,
+);
 
 const settings = computed(() => {
   return DataTable.rawDataSettings(data.rows, {
@@ -22,13 +24,15 @@ const settings = computed(() => {
     },
     onSelectedRows: [
       {
-        label: 'Delete rows',
+        label: "Delete rows",
         cb: async (selectedRows) => {
-          data.rows = data.rows.filter((_, i) => !selectedRows.some((r) => r.primaryKey === String(i)));
+          data.rows = data.rows.filter(
+            (_, i) => !selectedRows.some((r) => r.primaryKey === String(i)),
+          );
         },
       },
       {
-        label: 'Duplicate rows',
+        label: "Duplicate rows",
         cb: async (selectedRows) => {
           alert('Operation "Duplicate rows" is not implemented' + selectedRows.length);
         },
@@ -36,7 +40,7 @@ const settings = computed(() => {
     ],
     onSelectedColumns: [
       {
-        label: 'Delete columns',
+        label: "Delete columns",
         cb: async (columns) => {
           alert(`Attempt to delete columns: ${JSON.stringify(columns)}`);
         },
@@ -75,7 +79,10 @@ onMounted(onGenerate);
 
 <template>
   <Layout>
-    <div style="display: flex; background-color: #fff; align-items: center; overflow: scroll" class="p-12 gap-24 mb-6">
+    <div
+      style="display: flex; background-color: #fff; align-items: center; overflow: scroll"
+      class="p-12 gap-24 mb-6"
+    >
       <PlNumberField v-model="data.numColumns" label="Num columns" />
       <PlNumberField v-model="data.numRows" label="Num rows" />
       <PlBtnSecondary :loading="data.loading" @click="onGenerate">Generate</PlBtnSecondary>
@@ -88,7 +95,11 @@ onMounted(onGenerate);
     <div v-if="false" style="display: flex">
       <pre>{{ settings }}</pre>
     </div>
-    <div v-if="true" style="display: flex; background-color: #fff; align-items: center; overflow: hidden" class="p-12 gap-24 mb-6">
+    <div
+      v-if="true"
+      style="display: flex; background-color: #fff; align-items: center; overflow: hidden"
+      class="p-12 gap-24 mb-6"
+    >
       {{ data.tableData?.bodyHeight }}
     </div>
     <div style="display: flex; flex-direction: column; max-height: 800px" class="mb-6">

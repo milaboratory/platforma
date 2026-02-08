@@ -1,37 +1,44 @@
-import type { OutputWithStatus } from '@milaboratories/pl-model-common';
-import { } from './global';
-import type { Platforma, PlatformaApiVersion } from './platforma';
-import type { FutureHandle, GlobalCfgRenderCtx } from './render/internal';
-import type { ConfigRenderLambda, ConfigRenderLambdaFlags } from './bconfig';
+import type { OutputWithStatus } from "@milaboratories/pl-model-common";
+import {} from "./global";
+import type { Platforma, PlatformaApiVersion } from "./platforma";
+import type { FutureHandle, GlobalCfgRenderCtx } from "./render/internal";
+import type { ConfigRenderLambda, ConfigRenderLambdaFlags } from "./bconfig";
 
 /** Utility code helping to identify whether the code is running in actual UI environment */
 export function isInUI() {
   return (
-    typeof globalThis.getPlatforma !== 'undefined' || typeof globalThis.platforma !== 'undefined'
+    typeof globalThis.getPlatforma !== "undefined" || typeof globalThis.platforma !== "undefined"
   );
 }
 
 /** Utility code helping to retrieve a platforma instance form the environment */
 export function getPlatformaInstance<
   Args = unknown,
-  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<string, OutputWithStatus<unknown>>,
+  Outputs extends Record<string, OutputWithStatus<unknown>> = Record<
+    string,
+    OutputWithStatus<unknown>
+  >,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
->(config?: { sdkVersion: string; apiVersion: PlatformaApiVersion }): Platforma<Args, Outputs, UiState, Href> {
-  if (config && typeof globalThis.getPlatforma === 'function')
+>(config?: {
+  sdkVersion: string;
+  apiVersion: PlatformaApiVersion;
+}): Platforma<Args, Outputs, UiState, Href> {
+  if (config && typeof globalThis.getPlatforma === "function")
     return globalThis.getPlatforma(config);
-  else if (typeof globalThis.platforma !== 'undefined') return globalThis.platforma as Platforma<Args, Outputs, UiState, Href>;
-  else throw new Error('Can\'t get platforma instance.');
+  else if (typeof globalThis.platforma !== "undefined")
+    return globalThis.platforma as Platforma<Args, Outputs, UiState, Href>;
+  else throw new Error("Can't get platforma instance.");
 }
 
 export function tryGetCfgRenderCtx(): GlobalCfgRenderCtx | undefined {
-  if (typeof globalThis.cfgRenderCtx !== 'undefined') return globalThis.cfgRenderCtx;
+  if (typeof globalThis.cfgRenderCtx !== "undefined") return globalThis.cfgRenderCtx;
   else return undefined;
 }
 
 export function getCfgRenderCtx(): GlobalCfgRenderCtx {
-  if (typeof globalThis.cfgRenderCtx !== 'undefined') return globalThis.cfgRenderCtx;
-  else throw new Error('Not in config rendering context');
+  if (typeof globalThis.cfgRenderCtx !== "undefined") return globalThis.cfgRenderCtx;
+  else throw new Error("Not in config rendering context");
 }
 
 export function tryRegisterCallback(key: string, callback: (...args: any[]) => any): boolean {
@@ -78,9 +85,12 @@ export function createRenderLambda<T = unknown>(opts: CreateLambdaOptions): Conf
 }
 
 /** Registers a callback and returns a ConfigRenderLambda descriptor. */
-export function createAndRegisterRenderLambda<T = unknown>(opts: CreateLambdaOptions & {
-  lambda: (...args: any[]) => any;
-}, replace?: boolean): ConfigRenderLambda<T> {
+export function createAndRegisterRenderLambda<T = unknown>(
+  opts: CreateLambdaOptions & {
+    lambda: (...args: any[]) => any;
+  },
+  replace?: boolean,
+): ConfigRenderLambda<T> {
   const { handle, lambda, ...flags } = opts;
 
   if (replace) {

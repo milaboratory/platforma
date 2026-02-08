@@ -1,1 +1,1 @@
-export { default as PlDropdownMulti } from './PlDropdownMulti.vue';
+export { default as PlDropdownMulti } from "./PlDropdownMulti.vue";

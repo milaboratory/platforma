@@ -1,13 +1,13 @@
-import { field, Pl } from '@milaboratories/pl-middle-layer';
-import type { TestRenderResults } from '@platforma-sdk/test';
-import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import { Templates } from '../../dist';
-import { deepClone } from '@milaboratories/helpers';
-import { getLongTestTimeout } from '@milaboratories/test-helpers';
-import { assert, vi } from 'vitest';
-import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import type { ComputableCtx } from '@milaboratories/computable';
-import dedent from 'dedent';
+import { field, Pl } from "@milaboratories/pl-middle-layer";
+import type { TestRenderResults } from "@platforma-sdk/test";
+import { awaitStableState, tplTest } from "@platforma-sdk/test";
+import { Templates } from "../../dist";
+import { deepClone } from "@milaboratories/helpers";
+import { getLongTestTimeout } from "@milaboratories/test-helpers";
+import { assert, vi } from "vitest";
+import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
+import type { ComputableCtx } from "@milaboratories/computable";
+import dedent from "dedent";
 
 const TIMEOUT = getLongTestTimeout(60_000);
 
@@ -25,8 +25,8 @@ const csvData = dedent`
 
 // map xsv header -> xsv column content
 const csvDataMap = (() => {
-  const lines = csvData.split('\n');
-  const header = lines[0].split(',');
+  const lines = csvData.split("\n");
+  const header = lines[0].split(",");
 
   const cols = new Map<string, string[]>();
   for (const h of header) {
@@ -34,7 +34,7 @@ const csvDataMap = (() => {
   }
 
   for (let iRow = 0; iRow < lines.length - 1; ++iRow) {
-    const line = lines[iRow + 1].split(',');
+    const line = lines[iRow + 1].split(",");
 
     for (let iCol = 0; iCol < header.length; ++iCol) {
       cols.get(header[iCol])?.push(line[iCol]);
@@ -56,45 +56,45 @@ const csvNRows = (() => {
 const baseSpec = {
   axes: [
     {
-      column: 'ax1',
+      column: "ax1",
       spec: {
-        name: 'ax1',
-        type: 'String',
+        name: "ax1",
+        type: "String",
       },
     },
     {
-      column: 'ax2',
+      column: "ax2",
       spec: {
-        name: 'ax2',
-        type: 'String',
+        name: "ax2",
+        type: "String",
       },
     },
     {
-      column: 'ax3',
+      column: "ax3",
       spec: {
-        name: 'ax3',
-        type: 'String',
+        name: "ax3",
+        type: "String",
       },
     },
   ],
   columns: [
     {
-      column: 'col1',
-      id: 'col1',
+      column: "col1",
+      id: "col1",
       spec: {
-        valueType: 'String',
+        valueType: "String",
       },
     },
     {
-      column: 'col2',
-      id: 'col2',
+      column: "col2",
+      id: "col2",
       spec: {
-        valueType: 'String',
+        valueType: "String",
       },
     },
   ],
 
-  storageFormat: 'Binary',
+  storageFormat: "Binary",
 
   partitionKeyLength: 2,
 };
@@ -122,7 +122,7 @@ const expectedPartitionKeys = function (spec: typeof baseSpec) {
 // key name as written in the resource without 'index'/'values' suffix
 function partitionKeyJson(str: string): string {
   // double conversion for assertion
-  return JSON.stringify(JSON.parse(str.replace('.index', '').replace('.values', '')));
+  return JSON.stringify(JSON.parse(str.replace(".index", "").replace(".values", "")));
 }
 
 const keysOf = (fields?: string[]) => [...new Set((fields ?? []).map(partitionKeyJson))].sort();
@@ -142,10 +142,10 @@ const expectedColMeta = (superLen: number, partLen: number, storageFormat: strin
 
 const getColMeta = async (result: TestRenderResults<string>, colName: string, timeout = TIMEOUT) =>
   await awaitStableState(
-    result.computeOutput('pf', (pf: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
-      const r = pf?.traverse(colName + '.data');
+    result.computeOutput("pf", (pf: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
+      const r = pf?.traverse(colName + ".data");
       if (!r || !r.getIsReadyOrError()) {
-        ctx.markUnstable('not_ready');
+        ctx.markUnstable("not_ready");
         return undefined;
       }
       return {
@@ -158,17 +158,17 @@ const getColMeta = async (result: TestRenderResults<string>, colName: string, ti
   );
 
 tplTest.concurrent.for([
-  { partitionKeyLength: 0, storageFormat: 'Binary' },
-  { partitionKeyLength: 1, storageFormat: 'Binary' },
-  { partitionKeyLength: 2, storageFormat: 'Binary' },
-  { partitionKeyLength: 0, storageFormat: 'Json' },
-  { partitionKeyLength: 1, storageFormat: 'Json' },
-  { partitionKeyLength: 2, storageFormat: 'Json' },
-  { partitionKeyLength: 0, storageFormat: 'Parquet' },
-  { partitionKeyLength: 1, storageFormat: 'Parquet' },
-  { partitionKeyLength: 2, storageFormat: 'Parquet' },
+  { partitionKeyLength: 0, storageFormat: "Binary" },
+  { partitionKeyLength: 1, storageFormat: "Binary" },
+  { partitionKeyLength: 2, storageFormat: "Binary" },
+  { partitionKeyLength: 0, storageFormat: "Json" },
+  { partitionKeyLength: 1, storageFormat: "Json" },
+  { partitionKeyLength: 2, storageFormat: "Json" },
+  { partitionKeyLength: 0, storageFormat: "Parquet" },
+  { partitionKeyLength: 1, storageFormat: "Parquet" },
+  { partitionKeyLength: 2, storageFormat: "Parquet" },
 ])(
-  'should read p-frame from csv file for partitionKeyLength = $partitionKeyLength $storageFormat',
+  "should read p-frame from csv file for partitionKeyLength = $partitionKeyLength $storageFormat",
   // This timeout has additional 10 seconds due to very slow performance of Platforma on large transactions,
   // where thousands of fields and resources are created.
   // The test itself is not large, but first test in a batch also loads 'pframes' binary from network.
@@ -181,25 +181,23 @@ tplTest.concurrent.for([
     spec.storageFormat = storageFormat;
     const expectedPKeys = expectedPartitionKeys(spec).sort();
 
-    const result = await helper.renderTemplate(
-      false,
-      'pframes.xsv.import-csv',
-      ['pf'],
-      (tx) => ({
-        csv: tx.createValue(Pl.JsonObject, JSON.stringify(csvData)),
-        spec: tx.createValue(Pl.JsonObject, JSON.stringify(spec)),
-      }),
-    );
+    const result = await helper.renderTemplate(false, "pframes.xsv.import-csv", ["pf"], (tx) => ({
+      csv: tx.createValue(Pl.JsonObject, JSON.stringify(csvData)),
+      spec: tx.createValue(Pl.JsonObject, JSON.stringify(spec)),
+    }));
 
     const cols = (
-      await awaitStableState(result.computeOutput('pf', (pf) => pf?.listInputFields()), TIMEOUT)
+      await awaitStableState(
+        result.computeOutput("pf", (pf) => pf?.listInputFields()),
+        TIMEOUT,
+      )
     )?.sort();
 
-    const expected = ['col1.data', 'col1.spec', 'col2.data', 'col2.spec'].sort();
+    const expected = ["col1.data", "col1.spec", "col2.data", "col2.spec"].sort();
     expect(cols).toStrictEqual(expected);
 
     await Promise.all(
-      ['col1', 'col2'].map(async (colName) => {
+      ["col1", "col2"].map(async (colName) => {
         const col = await getColMeta(result, colName);
         assert(col);
 
@@ -208,12 +206,12 @@ tplTest.concurrent.for([
 
         expect(keysOf(col.fields)).toEqual(expectedPKeys);
 
-        if (storageFormat == 'Json' && partitionKeyLength == 0) {
+        if (storageFormat == "Json" && partitionKeyLength == 0) {
           const dataOpt = await awaitStableState(
-            result.computeOutput('pf', (pf, ctx) => {
-              const r = pf?.traverse(colName + '.data', JSON.stringify([]));
+            result.computeOutput("pf", (pf, ctx) => {
+              const r = pf?.traverse(colName + ".data", JSON.stringify([]));
               if (!r) {
-                ctx.markUnstable('no_partition');
+                ctx.markUnstable("no_partition");
                 return undefined;
               }
               return driverKit.blobDriver.getOnDemandBlob(r.persist(), ctx).handle;
@@ -222,7 +220,7 @@ tplTest.concurrent.for([
           );
 
           const data = JSON.parse(
-            Buffer.from(await driverKit.blobDriver.getContent(dataOpt!)).toString('utf-8'),
+            Buffer.from(await driverKit.blobDriver.getContent(dataOpt!)).toString("utf-8"),
           );
 
           const values = Object.keys(data)
@@ -240,7 +238,7 @@ tplTest.concurrent.for([
 );
 
 function superPartitionKeys(keyLen: number): string[] {
-  const base = ['X', 'Y', 'Z'];
+  const base = ["X", "Y", "Z"];
   const r: string[] = [];
   if (keyLen == 0) {
     r.push(JSON.stringify([]));
@@ -261,60 +259,60 @@ tplTest.concurrent.for([
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 0,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 1,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 2,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 1,
     partitionKeyLength: 0,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 1,
     partitionKeyLength: 1,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 1,
     partitionKeyLength: 2,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 2,
     partitionKeyLength: 0,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 2,
     partitionKeyLength: 1,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 2,
     partitionKeyLength: 2,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
 
-  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: 'Json' },
-  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Json' },
-  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Json' },
-  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
+  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: "Json" },
+  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: "Json" },
+  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: "Json" },
+  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: "Json" },
 
-  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: 'Parquet' },
-  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Parquet' },
-  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Parquet' },
-  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: "Parquet" },
+  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: "Parquet" },
+  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: "Parquet" },
+  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: "Parquet" },
 ])(
-  'should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength partitionKeyLength: $partitionKeyLength $storageFormat',
+  "should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength partitionKeyLength: $partitionKeyLength $storageFormat",
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
     const spec = deepClone(baseSpec);
@@ -325,14 +323,14 @@ tplTest.concurrent.for([
 
     const result = await helper.renderTemplate(
       false,
-      'pframes.xsv.import-csv-map',
-      ['pf'],
+      "pframes.xsv.import-csv-map",
+      ["pf"],
       (tx) => {
         const csv = tx.createValue(Pl.JsonObject, JSON.stringify(csvData));
 
         const map = tx.createStruct(Pl.StdMap);
         for (const supK of supKeys) {
-          tx.createField(field(map, supK), 'Input', csv);
+          tx.createField(field(map, supK), "Input", csv);
         }
         tx.lockInputs(map);
 
@@ -345,12 +343,12 @@ tplTest.concurrent.for([
     );
 
     await Promise.all(
-      ['col1', 'col2'].map(async (colName) => {
+      ["col1", "col2"].map(async (colName) => {
         const col = await awaitStableState(
-          result.computeOutput('pf', (pf, ctx) => {
-            const r = pf?.traverse(colName + '.data');
+          result.computeOutput("pf", (pf, ctx) => {
+            const r = pf?.traverse(colName + ".data");
             if (!r || !r.getIsReadyOrError()) {
-              ctx.markUnstable('not_ready');
+              ctx.markUnstable("not_ready");
               return undefined;
             }
             return {
@@ -363,7 +361,11 @@ tplTest.concurrent.for([
         );
         assert(col);
 
-        const exp = expectedColMeta(superPartitionKeyLength, partitionKeyLength, spec.storageFormat);
+        const exp = expectedColMeta(
+          superPartitionKeyLength,
+          partitionKeyLength,
+          spec.storageFormat,
+        );
         expect(col.type).toEqual(exp.type);
         expect(col.data).toEqual(exp.data);
 
@@ -374,10 +376,10 @@ tplTest.concurrent.for([
           await Promise.all(
             supKeys.map(async (sk) => {
               const inner = await awaitStableState(
-                result.computeOutput('pf', (pf, ctx) => {
-                  const r = pf?.traverse(colName + '.data', sk);
+                result.computeOutput("pf", (pf, ctx) => {
+                  const r = pf?.traverse(colName + ".data", sk);
                   if (!r || !r.getIsReadyOrError()) {
-                    ctx.markUnstable('not_ready');
+                    ctx.markUnstable("not_ready");
                     return undefined;
                   }
                   return {
@@ -394,7 +396,7 @@ tplTest.concurrent.for([
               expect(inner.data).toEqual({ partitionKeyLength: spec.partitionKeyLength });
               expect(keysOf(inner.fields)).toEqual(expectedPKeys);
 
-              if (storageFormat == 'Json') {
+              if (storageFormat == "Json") {
                 // @TODO test data
               }
             }),
@@ -413,60 +415,60 @@ tplTest.concurrent.for([
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 0,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 1,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 2,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 1,
     partitionKeyLength: 0,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 1,
     partitionKeyLength: 1,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 1,
     partitionKeyLength: 2,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 2,
     partitionKeyLength: 0,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 2,
     partitionKeyLength: 1,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
   {
     superPartitionKeyLength: 2,
     partitionKeyLength: 2,
-    storageFormat: 'Binary',
+    storageFormat: "Binary",
   },
 
-  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: 'Json' },
-  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Json' },
-  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Json' },
-  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
+  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: "Json" },
+  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: "Json" },
+  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: "Json" },
+  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: "Json" },
 
-  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: 'Parquet' },
-  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Parquet' },
-  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Parquet' },
-  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Parquet' },
+  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: "Parquet" },
+  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: "Parquet" },
+  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: "Parquet" },
+  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: "Parquet" },
 ])(
-  '[in workflow] should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength partitionKeyLength: $partitionKeyLength $storageFormat',
+  "[in workflow] should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength partitionKeyLength: $partitionKeyLength $storageFormat",
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
     const spec = deepClone(baseSpec);
@@ -477,18 +479,18 @@ tplTest.concurrent.for([
     const csvMap = Object.fromEntries(supKeys.map((supKey) => [supKey, csvData]));
 
     const result = await helper.renderWorkflow(
-      Templates['pframes.xsv.import-csv-map-wf'],
+      Templates["pframes.xsv.import-csv-map-wf"],
       false,
       {
         csvMap: csvMap,
         keyLength: superPartitionKeyLength,
         spec,
       },
-      { exportProcessor: Templates['pframes.export-pframe'] },
+      { exportProcessor: Templates["pframes.export-pframe"] },
     );
 
     await Promise.all(
-      ['col1', 'col2'].map(async (colName) => {
+      ["col1", "col2"].map(async (colName) => {
         const col = await awaitStableState(
           result.export(`${colName}.data`, (r) => {
             if (!r || !r.getIsReadyOrError()) return undefined;
@@ -502,7 +504,11 @@ tplTest.concurrent.for([
         );
         assert(col);
 
-        const exp = expectedColMeta(superPartitionKeyLength, partitionKeyLength, spec.storageFormat);
+        const exp = expectedColMeta(
+          superPartitionKeyLength,
+          partitionKeyLength,
+          spec.storageFormat,
+        );
         expect(col.type).toEqual(exp.type);
         expect(col.data).toEqual(exp.data);
 
@@ -530,7 +536,7 @@ tplTest.concurrent.for([
               expect(inner.data).toEqual({ partitionKeyLength: spec.partitionKeyLength });
               expect(keysOf(inner.fields)).toEqual(expectedPKeys);
 
-              if (storageFormat == 'Json') {
+              if (storageFormat == "Json") {
                 // @TODO test data
               }
             }),

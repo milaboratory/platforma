@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { PlBlockPage, PlFileInput } from '@platforma-sdk/ui-vue';
-import { reactive } from 'vue';
+import { PlBlockPage, PlFileInput } from "@platforma-sdk/ui-vue";
+import { reactive } from "vue";
 
 const props = reactive({
   model: undefined,
 });
-
 </script>
 
 <template>
@@ -14,17 +13,17 @@ const props = reactive({
       <PlFileInput
         v-model="props.model"
         :extensions="['txt']"
-        :progress="{ done: true, isUpload: true, status: { progress: 1, bytesTotal: 1000, bytesProcessed: 1000 }}"
+        :progress="{
+          done: true,
+          isUpload: true,
+          status: { progress: 1, bytesTotal: 1000, bytesProcessed: 1000 },
+        }"
         :label="'Upload file'"
         required
       />
 
       <h2>Errors</h2>
-      <PlFileInput
-        v-model="props.model"
-        :extensions="['txt']"
-        error="Error as string"
-      />
+      <PlFileInput v-model="props.model" :extensions="['txt']" error="Error as string" />
       <PlFileInput
         v-model="props.model"
         :extensions="['txt']"

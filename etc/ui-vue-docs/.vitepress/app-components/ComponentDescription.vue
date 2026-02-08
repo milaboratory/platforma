@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppSubheader from './AppSubheader.vue';
+import AppSubheader from "./AppSubheader.vue";
 </script>
 <template>
   <div class="component-description text-m">

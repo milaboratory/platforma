@@ -1,12 +1,9 @@
-import type { PObjectId } from '../../pool';
-import type { TableRange } from './data_types';
-import type { FindColumnsRequest, FindColumnsResponse } from './find_columns';
-import type { PColumnIdAndSpec, PColumnSpec } from './spec/spec';
-import type {
-  CalculateTableDataRequest,
-  CalculateTableDataResponse,
-} from './table_calculate';
-import type { UniqueValuesRequest, UniqueValuesResponse } from './unique_values';
+import type { PObjectId } from "../../pool";
+import type { TableRange } from "./data_types";
+import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
+import type { PColumnIdAndSpec, PColumnSpec } from "./spec/spec";
+import type { CalculateTableDataRequest, CalculateTableDataResponse } from "./table_calculate";
+import type { UniqueValuesRequest, UniqueValuesResponse } from "./unique_values";
 
 /** Read interface exposed by PFrames library */
 export interface PFrame {

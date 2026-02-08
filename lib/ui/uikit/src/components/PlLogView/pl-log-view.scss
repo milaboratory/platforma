@@ -38,7 +38,7 @@
   }
 
   &.has-error {
-    --log-background: linear-gradient(90deg, #FFEBEB 0%, #FFFFFF 100%);
+    --log-background: linear-gradient(90deg, #ffebeb 0%, #ffffff 100%);
     --border-color-log-view: var(--border-color-error);
   }
 
@@ -61,7 +61,10 @@
     max-width: 100%;
     flex: 1;
     color: var(--txt-01);
-    font-feature-settings: 'ss11' on, 'ss15' on, 'ss17' on;
+    font-feature-settings:
+      "ss11" on,
+      "ss15" on,
+      "ss17" on;
     font-family: var(--font-family-monospace);
     white-space: pre;
     font-size: 14px;
@@ -76,7 +79,10 @@
     max-width: 100%;
     flex: 1;
     color: var(--txt-01);
-    font-feature-settings: 'ss11' on, 'ss15' on, 'ss17' on;
+    font-feature-settings:
+      "ss11" on,
+      "ss15" on,
+      "ss17" on;
     font-family: var(--font-family-monospace);
     white-space: pre;
     font-size: 14px;

@@ -1,8 +1,8 @@
-import type { BlockCodeFeatureFlags } from '../flags';
-import { z } from 'zod';
+import type { BlockCodeFeatureFlags } from "../flags";
+import { z } from "zod";
 
 export const Code = z.object({
-  type: z.literal('plain'),
+  type: z.literal("plain"),
   content: z.string(),
 });
 

@@ -1,16 +1,16 @@
 <script lang="ts">
 /** Root block page component */
 export default {
-  name: 'PlBlockPage',
+  name: "PlBlockPage",
 };
 </script>
 
 <script lang="ts" setup>
-import { computed, useCssModule, useSlots, useTemplateRef, watchEffect } from 'vue';
-import { PlBlockPageTitleTeleportTarget } from './PlBlockPageTitleTeleportTarget';
-import './pl-block-page.scss';
-import { PlIcon24 } from '../../components/PlIcon24';
-import { type PlPlaceholderProps, PL_PLACEHOLDER_TEXTS, PlPlaceholder } from '../PlPlaceholder';
+import { computed, useCssModule, useSlots, useTemplateRef, watchEffect } from "vue";
+import { PlBlockPageTitleTeleportTarget } from "./PlBlockPageTitleTeleportTarget";
+import "./pl-block-page.scss";
+import { PlIcon24 } from "../../components/PlIcon24";
+import { type PlPlaceholderProps, PL_PLACEHOLDER_TEXTS, PlPlaceholder } from "../PlPlaceholder";
 
 const slots = useSlots();
 
@@ -30,22 +30,22 @@ const props = defineProps<{
   /**
    * If defined, a loading overlay is displayed on the page body (over all default slot content)
    */
-  bodyLoading?: PlPlaceholderProps['variant'] | PlPlaceholderProps;
+  bodyLoading?: PlPlaceholderProps["variant"] | PlPlaceholderProps;
 }>();
 
 /** Page subtitle (editable) */
-const subtitle = defineModel<string>('subtitle');
+const subtitle = defineModel<string>("subtitle");
 
 const styles = useCssModule();
 
 const loadingPlaceholder = computed<PlPlaceholderProps | undefined>(() => {
-  if (typeof props.bodyLoading === 'string') {
+  if (typeof props.bodyLoading === "string") {
     return { variant: props.bodyLoading, ...PL_PLACEHOLDER_TEXTS.LOADING };
   }
   return props.bodyLoading;
 });
 
-const teleportTarget = useTemplateRef('teleportTarget');
+const teleportTarget = useTemplateRef("teleportTarget");
 
 watchEffect(() => {
   PlBlockPageTitleTeleportTarget.value = teleportTarget.value;
@@ -62,18 +62,12 @@ watchEffect(() => {
           <slot name="after-title" />
         </div>
         <div class="pl-block-page__title__append">
-          <div
-            ref="teleportTarget"
-            class="pl-block-page__title__append__teleport"
-          />
+          <div ref="teleportTarget" class="pl-block-page__title__append__teleport" />
           <slot name="append" />
         </div>
       </div>
       <div v-if="subtitle !== undefined" :class="styles.subtitle">
-        <input
-          v-model.lazy.trim="subtitle"
-          :placeholder="props.subtitlePlaceholder"
-        />
+        <input v-model.lazy.trim="subtitle" :placeholder="props.subtitlePlaceholder" />
         <PlIcon24 :class="styles.editIcon" name="edit" color="var(--ic-02)" />
       </div>
     </div>
@@ -130,7 +124,8 @@ watchEffect(() => {
     position-area: center inline-end;
     inset-inline-start: 4px;
   }
-  &:hover, &:focus-within {
+  &:hover,
+  &:focus-within {
     .editIcon {
       visibility: visible;
     }

@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { SemVer } from './semver';
+import { z } from "zod";
+import { SemVer } from "./semver";
 
 /** Global identifier of the block */
 export const BlockPackId = z
@@ -23,7 +23,7 @@ export function blockPackIdToString(bp: BlockPackId | undefined): string | undef
 
 export function blockPackIdNoVersionToString(bp: BlockPackIdNoVersion): string;
 export function blockPackIdNoVersionToString(
-  bp: BlockPackIdNoVersion | undefined
+  bp: BlockPackIdNoVersion | undefined,
 ): string | undefined;
 export function blockPackIdNoVersionToString(
   bp: BlockPackIdNoVersion | undefined,

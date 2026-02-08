@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ExportItem } from './types';
-import { prettyBytes } from '@milaboratories/helpers';
+import type { ExportItem } from "./types";
+import { prettyBytes } from "@milaboratories/helpers";
 
 defineProps<{
   item: ExportItem;
@@ -8,9 +8,7 @@ defineProps<{
 </script>
 
 <template>
-  <div
-    :class="$style.item"
-  >
+  <div :class="$style.item">
     <div :class="$style.name">{{ item.fileName }}</div>
     <div v-if="item.status === 'in-progress'" :class="$style.details">
       <span>{{ prettyBytes(item.current, {}) }}</span>
@@ -23,9 +21,7 @@ defineProps<{
     <div v-else-if="item.status === 'error'" :class="$style.error">
       <span>{{ item.error }}</span>
     </div>
-    <div v-else :class="$style.details">
-      Pending
-    </div>
+    <div v-else :class="$style.details">Pending</div>
   </div>
 </template>
 

@@ -1,8 +1,8 @@
-import { PFrameDriverError, type PTableHandle } from '@platforma-sdk/model';
-import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
-import { RefCountPoolBase } from '@milaboratories/ts-helpers';
-import { logPFrames } from './logging';
-import { stableKeyFromFullPTableDef, type FullPTableDef } from './ptable_shared';
+import { PFrameDriverError, type PTableHandle } from "@platforma-sdk/model";
+import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
+import { RefCountPoolBase } from "@milaboratories/ts-helpers";
+import { logPFrames } from "./logging";
+import { stableKeyFromFullPTableDef, type FullPTableDef } from "./ptable_shared";
 
 export class PTableDefHolder implements Disposable {
   private readonly abortController = new AbortController();
@@ -13,7 +13,7 @@ export class PTableDefHolder implements Disposable {
     private readonly logger: PFrameInternal.Logger,
   ) {
     if (logPFrames()) {
-      this.logger('info', `PTable definition saved (pTableHandle = ${this.pTableHandle})`);
+      this.logger("info", `PTable definition saved (pTableHandle = ${this.pTableHandle})`);
     }
   }
 
@@ -24,7 +24,7 @@ export class PTableDefHolder implements Disposable {
   [Symbol.dispose](): void {
     this.abortController.abort();
     if (logPFrames()) {
-      this.logger('info', `PTable definition disposed (pTableHandle = ${this.pTableHandle})`);
+      this.logger("info", `PTable definition disposed (pTableHandle = ${this.pTableHandle})`);
     }
   }
 }

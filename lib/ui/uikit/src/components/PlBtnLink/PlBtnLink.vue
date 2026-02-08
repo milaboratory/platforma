@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import './pl-btn-link.scss';
-import type { MaskIconName16, Size } from '../../types';
-import BtnSecondary from '../PlBtnSecondary/PlBtnSecondary.vue';
-import { ref } from 'vue';
+import "./pl-btn-link.scss";
+import type { MaskIconName16, Size } from "../../types";
+import BtnSecondary from "../PlBtnSecondary/PlBtnSecondary.vue";
+import { ref } from "vue";
 
 const props = defineProps<{
   /**
@@ -35,7 +35,12 @@ const hover = ref(false);
 </script>
 
 <template>
-  <div class="ui-btn-link" :class="{ disabled, loading, hover }" @mouseover="hover = true" @mouseleave="hover = false">
+  <div
+    class="ui-btn-link"
+    :class="{ disabled, loading, hover }"
+    @mouseover="hover = true"
+    @mouseleave="hover = false"
+  >
     <BtnSecondary round :hover="hover" v-bind="props" />
     <slot />
   </div>

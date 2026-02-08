@@ -5,11 +5,10 @@ import {
   sliceIterable,
   mergeIterable,
   throttleIterable,
-} from './iterators/async';
+} from "./iterators/async";
 
 export class AsyncSequence<T> {
-  constructor(private iterable: AsyncIterable<T>) {
-  }
+  constructor(private iterable: AsyncIterable<T>) {}
 
   merge<B>(b: AsyncSequence<B>) {
     return new AsyncSequence(mergeIterable(this.it(), b.it()));
@@ -45,7 +44,7 @@ export class AsyncSequence<T> {
 
   take(n: number) {
     if (n < 1) {
-      throw Error('take param should be greater than 0');
+      throw Error("take param should be greater than 0");
     }
     return this.slice(0, n);
   }

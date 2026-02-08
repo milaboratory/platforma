@@ -1,1 +1,1 @@
-export { default as PlBtnAccent } from './PlBtnAccent.vue';
+export { default as PlBtnAccent } from "./PlBtnAccent.vue";

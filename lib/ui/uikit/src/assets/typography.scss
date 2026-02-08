@@ -67,12 +67,15 @@ des {
 mark {
   padding: 2px 4px;
   border-radius: 4px;
-  background: #D7F5C9;
+  background: #d7f5c9;
   line-height: 20px;
 }
 
 code {
-  font-feature-settings: 'ss11' on, 'ss15' on, 'ss17' on;
+  font-feature-settings:
+    "ss11" on,
+    "ss15" on,
+    "ss17" on;
   font-family: var(--font-family-monospace);
   font-size: 14px;
   font-style: normal;
@@ -111,8 +114,8 @@ blockquote {
 .text-h3 {
   color: var(--txt-01);
   font-feature-settings:
-    'clig' off,
-    'liga' off;
+    "clig" off,
+    "liga" off;
   font-family: RoadRadio;
   font-size: 48px;
   font-style: normal;
@@ -200,10 +203,10 @@ blockquote {
 .text-mono-m {
   color: var(--txt-01);
   font-feature-settings:
-    'ss17' on,
-    'ss15' on,
-    'ss11' on;
-  font-family: 'Spline Sans Mono';
+    "ss17" on,
+    "ss15" on,
+    "ss11" on;
+  font-family: "Spline Sans Mono";
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
@@ -213,10 +216,10 @@ blockquote {
 .text-mono-s {
   color: var(--txt-01);
   font-feature-settings:
-    'ss17' on,
-    'ss15' on,
-    'ss11' on;
-  font-family: 'Spline Sans Mono';
+    "ss17" on,
+    "ss15" on,
+    "ss11" on;
+  font-family: "Spline Sans Mono";
   font-size: 12px;
   font-style: normal;
   font-weight: 400;

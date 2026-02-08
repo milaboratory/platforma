@@ -1,9 +1,9 @@
-import type { Expression } from './base';
+import type { Expression } from "./base";
 
 /** Represents a string join operation on an array of expressions. */
 export interface StringJoinExpression {
   /** The type of operation, always 'str_join'. */
-  type: 'str_join';
+  type: "str_join";
   /** An array of expressions whose string representations will be joined. */
   operands: Expression[];
   /** An optional delimiter string to insert between joined elements. */
@@ -11,12 +11,12 @@ export interface StringJoinExpression {
 }
 
 /** Defines the supported unary string operators. */
-export type UnaryStringOperator = 'to_upper' | 'to_lower';
+export type UnaryStringOperator = "to_upper" | "to_lower";
 
 /** Represents a unary string operation on a single expression. */
 export interface ExtendedUnaryStringExpression {
   /** The type of unary string operation (e.g., 'to_upper', 'to_lower', 'str_len'). */
-  type: UnaryStringOperator | 'str_len';
+  type: UnaryStringOperator | "str_len";
   /** The string expression to operate on. */
   value: Expression;
 }
@@ -34,7 +34,7 @@ export interface ExtendedUnaryStringExpression {
  */
 export interface SubstringExpression {
   /** The type of operation, always 'substring'. */
-  type: 'substring';
+  type: "substring";
   /** The expression whose string value will be used. */
   value: Expression;
   /** The starting position (0-indexed). Should evaluate to a number. */
@@ -60,7 +60,7 @@ export interface SubstringExpression {
  */
 export interface StringReplaceExpression {
   /** The type of operation, always 'str_replace'. */
-  type: 'str_replace';
+  type: "str_replace";
   /** The input string expression to operate on. */
   value: Expression;
   /** The pattern (regex or literal string) to search for. Can be a string literal or an expression evaluating to a string. */
@@ -80,7 +80,7 @@ export interface StringReplaceExpression {
  */
 export interface StringContainsExpression {
   /** The type of operation, always 'str_contains'. */
-  type: 'str_contains';
+  type: "str_contains";
   /** The input string expression to search in. */
   value: Expression;
   /** The pattern to search for. Can be a regex pattern (default) or literal string when literal=true. */
@@ -98,7 +98,7 @@ export interface StringContainsExpression {
  */
 export interface StringStartsWithExpression {
   /** The type of operation, always 'str_starts_with'. */
-  type: 'str_starts_with';
+  type: "str_starts_with";
   /** The input string expression to check. */
   value: Expression;
   /** The prefix to check for (always treated as literal string, no regex support). */
@@ -112,7 +112,7 @@ export interface StringStartsWithExpression {
  */
 export interface StringEndsWithExpression {
   /** The type of operation, always 'str_ends_with'. */
-  type: 'str_ends_with';
+  type: "str_ends_with";
   /** The input string expression to check. */
   value: Expression;
   /** The suffix to check for (always treated as literal string, no regex support). */
@@ -126,7 +126,7 @@ export interface StringEndsWithExpression {
  */
 export interface StringContainsAnyExpression {
   /** The type of operation, always 'str_contains_any'. */
-  type: 'str_contains_any';
+  type: "str_contains_any";
   /** The input string expression to search in. */
   value: Expression;
   /** Array of literal string patterns to search for. Only immediate string values are supported, no expressions or regex patterns. */
@@ -142,7 +142,7 @@ export interface StringContainsAnyExpression {
  */
 export interface StringCountMatchesExpression {
   /** The type of operation, always 'str_count_matches'. */
-  type: 'str_count_matches';
+  type: "str_count_matches";
   /** The input string expression to count matches in. */
   value: Expression;
   /** The pattern to count occurrences of. Can be a regex pattern (default) or literal string when literal=true. */
@@ -158,7 +158,7 @@ export interface StringCountMatchesExpression {
  */
 export interface StringExtractExpression {
   /** The type of operation, always 'str_extract'. */
-  type: 'str_extract';
+  type: "str_extract";
   /** The input string expression to extract from. */
   value: Expression;
   /** The regex pattern to extract. Must be a valid regex pattern - no literal string mode is supported. */

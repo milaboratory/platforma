@@ -1,11 +1,11 @@
 <script setup lang="ts">
 const slots = defineSlots<{
-  'header'?: () => unknown;
-  'header-content'?: () => unknown;
-  'body'?: () => unknown;
-  'body-content'?: () => unknown;
-  'footer'?: () => unknown;
-  'footer-content'?: () => unknown;
+  header?: () => unknown;
+  "header-content"?: () => unknown;
+  body?: () => unknown;
+  "body-content"?: () => unknown;
+  footer?: () => unknown;
+  "footer-content"?: () => unknown;
 }>();
 </script>
 
@@ -30,7 +30,7 @@ const slots = defineSlots<{
 </template>
 
 <style lang="scss" module>
-@use '../../assets/variables.scss';
+@use "../../assets/variables.scss";
 
 .root {
   position: relative;

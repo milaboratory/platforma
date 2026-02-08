@@ -12,7 +12,6 @@
 }
 
 @keyframes shake {
-
   10%,
   90% {
     transform: translate3d(-1px, 0, 0);
@@ -37,17 +36,17 @@
 
 .shake {
   &-enter-active {
-    animation: shake .5s cubic-bezier(.36, .07, .19, .97) both;
+    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
   }
 }
 
 .slide-panel {
   &-enter-active {
-    transition: transform .3s ease-out;
+    transition: transform 0.3s ease-out;
   }
 
   &-leave-active {
-    transition: transform .3s ease-in-out;
+    transition: transform 0.3s ease-in-out;
   }
 
   &-enter-from {
@@ -72,7 +71,8 @@
     overflow: hidden;
   }
 
-  &-enter-from, &-leave-to {
+  &-enter-from,
+  &-leave-to {
     height: 0;
     margin: 0;
     padding: 0;

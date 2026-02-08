@@ -7,17 +7,17 @@ import type {
   ParquetPartitionedDataInfo,
   PColumnSpec,
   PObjectId,
-} from '@milaboratories/pl-model-common';
-import type { HttpServerInfo } from './http_helpers';
+} from "@milaboratories/pl-model-common";
+import type { HttpServerInfo } from "./http_helpers";
 
 /** PColumn spec file extension */
-export const SpecExtension = '.spec' as const;
+export const SpecExtension = ".spec" as const;
 
 /** PColumn data info file extension */
-export const DataInfoExtension = '.datainfo' as const;
+export const DataInfoExtension = ".datainfo" as const;
 
 /** Abstract identifier of a data blob that can be requested from the storage backend */
-export type PFrameBlobId = Branded<string, 'PFrameInternal.PFrameBlobId'>;
+export type PFrameBlobId = Branded<string, "PFrameInternal.PFrameBlobId">;
 
 /** Path of the file containing requested data (blob). This path is returned by
  * {@link BlobPathResolver} as soon as blob materialized in the file system. */
@@ -72,7 +72,7 @@ export interface PFrameFactoryAPIV4 extends Disposable {
     dataInfo: DataInfo<PFrameBlobId>,
     options?: {
       signal?: AbortSignal;
-    }
+    },
   ): Promise<void>;
 
   /** Releases all the data previously added to PFrame using methods above,

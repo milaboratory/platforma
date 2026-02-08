@@ -1,9 +1,9 @@
 /** Handle of logs. This handle should be passed
  * to the driver for retrieving logs. */
 
-import type { ResourceInfo } from '@milaboratories/pl-tree';
-import type * as sdk from '@milaboratories/pl-model-common';
-import { bigintToResourceId } from '@milaboratories/pl-client';
+import type { ResourceInfo } from "@milaboratories/pl-tree";
+import type * as sdk from "@milaboratories/pl-model-common";
+import { bigintToResourceId } from "@milaboratories/pl-client";
 
 export function newLogHandle(live: boolean, rInfo: ResourceInfo): sdk.AnyLogHandle {
   if (live) {
@@ -17,8 +17,8 @@ export function newLogHandle(live: boolean, rInfo: ResourceInfo): sdk.AnyLogHand
  * The resource that represents a log can be deleted,
  * in this case the handle should be refreshed. */
 
-export const liveHandleRegex
-  = /^log\+live:\/\/log\/(?<resourceType>.*)\/(?<resourceVersion>.*)\/(?<resourceId>.*)$/;
+export const liveHandleRegex =
+  /^log\+live:\/\/log\/(?<resourceType>.*)\/(?<resourceVersion>.*)\/(?<resourceId>.*)$/;
 
 export function isLiveLogHandle(handle: string): handle is sdk.LiveLogHandle {
   return liveHandleRegex.test(handle);
@@ -26,8 +26,8 @@ export function isLiveLogHandle(handle: string): handle is sdk.LiveLogHandle {
 
 /** Handle of the ready logs of a program. */
 
-export const readyHandleRegex
-  = /^log\+ready:\/\/log\/(?<resourceType>.*)\/(?<resourceVersion>.*)\/(?<resourceId>.*)$/;
+export const readyHandleRegex =
+  /^log\+ready:\/\/log\/(?<resourceType>.*)\/(?<resourceVersion>.*)\/(?<resourceId>.*)$/;
 
 export function isReadyLogHandle(handle: string): handle is sdk.ReadyLogHandle {
   return readyHandleRegex.test(handle);

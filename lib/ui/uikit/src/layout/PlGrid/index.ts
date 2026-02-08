@@ -1,1 +1,1 @@
-export { default as PlGrid } from './PlGrid.vue';
+export { default as PlGrid } from "./PlGrid.vue";

@@ -6,7 +6,7 @@ import type {
   ResourceData,
   ResourceId,
   TxOps,
-} from '@milaboratories/pl-client';
+} from "@milaboratories/pl-client";
 import {
   ensureResourceIdNotNull,
   field,
@@ -17,13 +17,14 @@ import {
   isResourceRef,
   Pl,
   PlClient,
-} from '@milaboratories/pl-client';
-import { createRenderHeavyBlock, createBContextFromUpstreams } from './template/render_block';
+} from "@milaboratories/pl-client";
+import { createRenderHeavyBlock, createBContextFromUpstreams } from "./template/render_block";
 import type {
   Block,
   ProjectStructure,
   ProjectField,
-  ProjectRenderingState } from '../model/project_model';
+  ProjectRenderingState,
+} from "../model/project_model";
 import {
   BlockRenderingStateKey,
   ProjectStructureKey,
@@ -42,37 +43,33 @@ import {
   ProjectStructureAuthorKey,
   getServiceTemplateField,
   FieldsToDuplicate,
-} from '../model/project_model';
-import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
-import type {
-  BlockGraph,
-  ProductionGraphBlockInfo } from '../model/project_model_util';
-import {
-  allBlocks,
-  graphDiff,
-  productionGraph,
-  stagingGraph,
-} from '../model/project_model_util';
-import type { BlockPackSpecPrepared } from '../model';
+} from "../model/project_model";
+import { BlockPackTemplateField, createBlockPack } from "./block-pack/block_pack";
+import type { BlockGraph, ProductionGraphBlockInfo } from "../model/project_model_util";
+import { allBlocks, graphDiff, productionGraph, stagingGraph } from "../model/project_model_util";
+import type { BlockPackSpecPrepared } from "../model";
 import type {
   AuthorMarker,
   BlockPackSpec,
   BlockSettings,
   ProjectMeta,
-} from '@milaboratories/pl-model-middle-layer';
+} from "@milaboratories/pl-model-middle-layer";
+import { InitialBlockSettings } from "@milaboratories/pl-model-middle-layer";
+import Denque from "denque";
+import { exportContext, getPreparedExportTemplateEnvelope } from "./context_export";
+import { loadTemplate } from "./template/template_loading";
 import {
-  InitialBlockSettings,
-} from '@milaboratories/pl-model-middle-layer';
-import Denque from 'denque';
-import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
-import { loadTemplate } from './template/template_loading';
-import { cachedDeserialize, notEmpty, canonicalJsonBytes, cachedDecode } from '@milaboratories/ts-helpers';
-import type { ProjectHelper } from '../model/project_helper';
-import { extractConfig, UiError, type BlockConfig } from '@platforma-sdk/model';
-import { getDebugFlags } from '../debug';
-import type { BlockPackInfo } from '../model/block_pack';
+  cachedDeserialize,
+  notEmpty,
+  canonicalJsonBytes,
+  cachedDecode,
+} from "@milaboratories/ts-helpers";
+import type { ProjectHelper } from "../model/project_helper";
+import { extractConfig, UiError, type BlockConfig } from "@platforma-sdk/model";
+import { getDebugFlags } from "../debug";
+import type { BlockPackInfo } from "../model/block_pack";
 
-type FieldStatus = 'NotReady' | 'Ready' | 'Error';
+type FieldStatus = "NotReady" | "Ready" | "Error";
 
 interface BlockFieldState {
   modCount: number;
@@ -81,8 +78,8 @@ interface BlockFieldState {
   value?: Uint8Array;
 }
 
-type BlockFieldStates = Partial<Record<ProjectField['fieldName'], BlockFieldState>>;
-type BlockFieldStateValue = Omit<BlockFieldState, 'modCount'>;
+type BlockFieldStates = Partial<Record<ProjectField["fieldName"], BlockFieldState>>;
+type BlockFieldStateValue = Omit<BlockFieldState, "modCount">;
 
 interface BlockInfoState {
   readonly id: string;
@@ -123,26 +120,26 @@ class BlockInfo {
     // state assertions
 
     if ((this.fields.prodOutput === undefined) !== (this.fields.prodCtx === undefined))
-      throw new Error('inconsistent prod fields');
+      throw new Error("inconsistent prod fields");
 
     if ((this.fields.stagingOutput === undefined) !== (this.fields.stagingCtx === undefined))
-      throw new Error('inconsistent stage fields');
+      throw new Error("inconsistent stage fields");
 
     if (
-      (this.fields.prodOutputPrevious === undefined)
-      !== (this.fields.prodCtxPrevious === undefined)
+      (this.fields.prodOutputPrevious === undefined) !==
+      (this.fields.prodCtxPrevious === undefined)
     )
-      throw new Error('inconsistent prod cache fields');
+      throw new Error("inconsistent prod cache fields");
 
     if (
-      (this.fields.stagingOutputPrevious === undefined)
-      !== (this.fields.stagingCtxPrevious === undefined)
+      (this.fields.stagingOutputPrevious === undefined) !==
+      (this.fields.stagingCtxPrevious === undefined)
     )
-      throw new Error('inconsistent stage cache fields');
+      throw new Error("inconsistent stage cache fields");
 
-    if (this.fields.blockPack === undefined) throw new Error('no block pack field');
+    if (this.fields.blockPack === undefined) throw new Error("no block pack field");
 
-    if (this.fields.blockStorage === undefined) throw new Error('no block storage field');
+    if (this.fields.blockStorage === undefined) throw new Error("no block storage field");
   }
 
   private readonly currentArgsC = cached(
@@ -198,7 +195,7 @@ class BlockInfo {
     try {
       return this.blockStorageC();
     } catch (e) {
-      console.error('Error getting blockStorage:', e);
+      console.error("Error getting blockStorage:", e);
       return undefined;
     }
   }
@@ -220,14 +217,14 @@ class BlockInfo {
   }
 
   get productionHasErrors(): boolean {
-    return this.fields.prodUiCtx?.status === 'Error';
+    return this.fields.prodUiCtx?.status === "Error";
   }
 
   private readonly productionStaleC: () => boolean = cached(
     () => `${this.fields.currentArgs!.modCount}_${this.fields.prodArgs?.modCount}`,
     () =>
-      this.fields.prodArgs === undefined
-      || Buffer.compare(this.fields.currentArgs!.value!, this.fields.prodArgs.value!) !== 0,
+      this.fields.prodArgs === undefined ||
+      Buffer.compare(this.fields.currentArgs!.value!, this.fields.prodArgs.value!) !== 0,
   );
 
   get requireProductionRendering(): boolean {
@@ -249,7 +246,7 @@ class BlockInfo {
     return tx.getFutureFieldValue(
       Pl.unwrapHolder(tx, this.fields.blockPack!.ref!),
       BlockPackTemplateField,
-      'Input',
+      "Input",
     );
   }
 }
@@ -260,8 +257,8 @@ class BlockInfo {
  */
 /** Specification for creating a new block. Discriminated union based on `storageMode`. */
 export type NewBlockSpec =
-  | { storageMode: 'fromModel'; blockPack: BlockPackSpecPrepared }
-  | { storageMode: 'legacy'; blockPack: BlockPackSpecPrepared; legacyState: string };
+  | { storageMode: "fromModel"; blockPack: BlockPackSpecPrepared }
+  | { storageMode: "legacy"; blockPack: BlockPackSpecPrepared; legacyState: string };
 
 const NoNewBlocks = (blockId: string) => {
   throw new Error(`No new block info for ${blockId}`);
@@ -272,17 +269,19 @@ const NoNewBlocks = (blockId: string) => {
  * For v3 blocks: state is the block's state
  * For v1/v2 blocks: state should be { args, uiState } format
  */
-export type SetStatesRequest = {
-  blockId: string;
-  /** The unified state to set */
-  state: unknown;
-  modelAPIVersion: 1;
-} | {
-  blockId: string;
-  /** Storage operation payload - middle layer is agnostic to specific operations */
-  payload: { operation: string; value: unknown };
-  modelAPIVersion: 2;
-};
+export type SetStatesRequest =
+  | {
+      blockId: string;
+      /** The unified state to set */
+      state: unknown;
+      modelAPIVersion: 1;
+    }
+  | {
+      blockId: string;
+      /** Storage operation payload - middle layer is agnostic to specific operations */
+      payload: { operation: string; value: unknown };
+      modelAPIVersion: 2;
+    };
 
 export type ClearState = {
   state: unknown;
@@ -312,7 +311,7 @@ export class ProjectMutator {
     private lastModified: number,
     private meta: ProjectMeta,
     private struct: ProjectStructure,
-    private readonly renderingState: Omit<ProjectRenderingState, 'blocksInLimbo'>,
+    private readonly renderingState: Omit<ProjectRenderingState, "blocksInLimbo">,
     private readonly blocksInLimbo: Set<string>,
     private readonly blockInfos: Map<string, BlockInfo>,
     private readonly ctxExportTplHolder: AnyResourceRef,
@@ -323,31 +322,31 @@ export class ProjectMutator {
     // Fixing problems introduced by old code
     this.blockInfos.forEach((blockInfo) => {
       if (
-        blockInfo.fields.prodArgs === undefined
-        || blockInfo.fields.prodOutput === undefined
-        || blockInfo.fields.prodCtx === undefined
+        blockInfo.fields.prodArgs === undefined ||
+        blockInfo.fields.prodOutput === undefined ||
+        blockInfo.fields.prodCtx === undefined
       )
-        this.deleteBlockFields(blockInfo.id, 'prodArgs', 'prodOutput', 'prodCtx');
+        this.deleteBlockFields(blockInfo.id, "prodArgs", "prodOutput", "prodCtx");
     });
 
     // Migration for addition of block settings field
-    let initialBlockSettings: Omit<BlockFieldState, 'modCount'> | undefined;
+    let initialBlockSettings: Omit<BlockFieldState, "modCount"> | undefined;
     this.blockInfos.forEach((blockInfo) => {
       if (blockInfo.fields.blockSettings === undefined) {
         if (initialBlockSettings === undefined)
           initialBlockSettings = this.createJsonFieldValue(InitialBlockSettings);
-        this.setBlockFieldObj(blockInfo.id, 'blockSettings', initialBlockSettings);
+        this.setBlockFieldObj(blockInfo.id, "blockSettings", initialBlockSettings);
       }
     });
   }
 
   get wasModified(): boolean {
     return (
-      this.lastModifiedChanged
-      || this.structureChanged
-      || this.fieldsChanged
-      || this.metaChanged
-      || this.renderingStateChanged
+      this.lastModifiedChanged ||
+      this.structureChanged ||
+      this.fieldsChanged ||
+      this.metaChanged ||
+      this.renderingStateChanged
     );
   }
 
@@ -368,7 +367,10 @@ export class ProjectMutator {
     return this.stagingGraph;
   }
 
-  private getProductionGraphBlockInfo(blockId: string, prod: boolean): ProductionGraphBlockInfo | undefined {
+  private getProductionGraphBlockInfo(
+    blockId: string,
+    prod: boolean,
+  ): ProductionGraphBlockInfo | undefined {
     const bInfo = this.getBlockInfo(blockId);
 
     let argsField: BlockFieldState | undefined;
@@ -393,30 +395,34 @@ export class ProjectMutator {
     if (isResourceId(argsField.ref!) && isResourceId(blockPackField.ref!))
       return {
         args,
-        enrichmentTargets: this.projectHelper.getEnrichmentTargets(() => bInfo.config, () => args,
-          { argsRid: argsField.ref, blockPackRid: blockPackField.ref }),
+        enrichmentTargets: this.projectHelper.getEnrichmentTargets(
+          () => bInfo.config,
+          () => args,
+          { argsRid: argsField.ref, blockPackRid: blockPackField.ref },
+        ),
       };
     else
       return {
         args,
-        enrichmentTargets: this.projectHelper.getEnrichmentTargets(() => bInfo.config, () => args),
+        enrichmentTargets: this.projectHelper.getEnrichmentTargets(
+          () => bInfo.config,
+          () => args,
+        ),
       };
   }
 
   private getPendingProductionGraph(): BlockGraph {
     if (this.pendingProductionGraph === undefined)
-      this.pendingProductionGraph = productionGraph(
-        this.struct,
-        (blockId) => this.getProductionGraphBlockInfo(blockId, false),
+      this.pendingProductionGraph = productionGraph(this.struct, (blockId) =>
+        this.getProductionGraphBlockInfo(blockId, false),
       );
     return this.pendingProductionGraph;
   }
 
   private getActualProductionGraph(): BlockGraph {
     if (this.actualProductionGraph === undefined)
-      this.actualProductionGraph = productionGraph(
-        this.struct,
-        (blockId) => this.getProductionGraphBlockInfo(blockId, true),
+      this.actualProductionGraph = productionGraph(this.struct, (blockId) =>
+        this.getProductionGraphBlockInfo(blockId, true),
       );
     return this.actualProductionGraph;
   }
@@ -432,10 +438,10 @@ export class ProjectMutator {
   }
 
   private createJsonFieldValueByContent(content: string): BlockFieldStateValue {
-    if (content === undefined) throw new Error('content is undefined');
+    if (content === undefined) throw new Error("content is undefined");
     const value = Buffer.from(content);
     const ref = this.tx.createValue(Pl.JsonObject, value);
-    return { ref, value, status: 'Ready' };
+    return { ref, value, status: "Ready" };
   }
 
   private createJsonFieldValue(obj: unknown): BlockFieldStateValue {
@@ -444,7 +450,7 @@ export class ProjectMutator {
 
   private getBlock(blockId: string): Block {
     for (const block of allBlocks(this.struct)) if (block.id === blockId) return block;
-    throw new Error('block not found');
+    throw new Error("block not found");
   }
 
   private setBlockFieldObj(
@@ -454,10 +460,10 @@ export class ProjectMutator {
   ) {
     const fid = field(this.rid, projectFieldName(blockId, fieldName));
 
-    if (state.ref === undefined) throw new Error('Can\'t set value with empty ref');
+    if (state.ref === undefined) throw new Error("Can't set value with empty ref");
 
     if (this.getBlockInfo(blockId).fields[fieldName] === undefined)
-      this.tx.createField(fid, 'Dynamic', state.ref);
+      this.tx.createField(fid, "Dynamic", state.ref);
     else this.tx.setField(fid, state.ref);
 
     this.getBlockInfo(blockId).fields[fieldName] = {
@@ -509,30 +515,30 @@ export class ProjectMutator {
   private resetStaging(blockId: string): void {
     const fields = this.getBlockInfo(blockId).fields;
     if (
-      fields.stagingOutput?.status === 'Ready'
-      && fields.stagingCtx?.status === 'Ready'
-      && fields.stagingUiCtx?.status === 'Ready'
+      fields.stagingOutput?.status === "Ready" &&
+      fields.stagingCtx?.status === "Ready" &&
+      fields.stagingUiCtx?.status === "Ready"
     ) {
-      this.setBlockFieldObj(blockId, 'stagingOutputPrevious', fields.stagingOutput);
-      this.setBlockFieldObj(blockId, 'stagingCtxPrevious', fields.stagingCtx);
-      this.setBlockFieldObj(blockId, 'stagingUiCtxPrevious', fields.stagingUiCtx);
+      this.setBlockFieldObj(blockId, "stagingOutputPrevious", fields.stagingOutput);
+      this.setBlockFieldObj(blockId, "stagingCtxPrevious", fields.stagingCtx);
+      this.setBlockFieldObj(blockId, "stagingUiCtxPrevious", fields.stagingUiCtx);
     }
-    if (this.deleteBlockFields(blockId, 'stagingOutput', 'stagingCtx', 'stagingUiCtx'))
+    if (this.deleteBlockFields(blockId, "stagingOutput", "stagingCtx", "stagingUiCtx"))
       this.resetStagingRefreshTimestamp();
   }
 
   private resetProduction(blockId: string): void {
     const fields = this.getBlockInfo(blockId).fields;
     if (
-      fields.prodOutput?.status === 'Ready'
-      && fields.prodCtx?.status === 'Ready'
-      && fields.prodUiCtx?.status === 'Ready'
+      fields.prodOutput?.status === "Ready" &&
+      fields.prodCtx?.status === "Ready" &&
+      fields.prodUiCtx?.status === "Ready"
     ) {
-      this.setBlockFieldObj(blockId, 'prodOutputPrevious', fields.prodOutput);
-      this.setBlockFieldObj(blockId, 'prodCtxPrevious', fields.prodCtx);
-      this.setBlockFieldObj(blockId, 'prodUiCtxPrevious', fields.prodUiCtx);
+      this.setBlockFieldObj(blockId, "prodOutputPrevious", fields.prodOutput);
+      this.setBlockFieldObj(blockId, "prodCtxPrevious", fields.prodCtx);
+      this.setBlockFieldObj(blockId, "prodUiCtxPrevious", fields.prodUiCtx);
     }
-    this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodUiCtx', 'prodArgs');
+    this.deleteBlockFields(blockId, "prodOutput", "prodCtx", "prodUiCtx", "prodArgs");
   }
 
   /** Running blocks are reset, already computed moved to limbo. Returns if
@@ -542,7 +548,7 @@ export class ProjectMutator {
     const fields = this.getBlockInfo(blockId).fields;
 
     // Check if we can safely move to limbo (both core production fields are ready)
-    if (fields.prodOutput?.status === 'Ready' && fields.prodCtx?.status === 'Ready') {
+    if (fields.prodOutput?.status === "Ready" && fields.prodCtx?.status === "Ready") {
       if (this.blocksInLimbo.has(blockId))
         // we are already in limbo
         return false;
@@ -552,20 +558,20 @@ export class ProjectMutator {
       this.renderingStateChanged = true;
 
       // doing some gc - clean up previous cache fields
-      this.deleteBlockFields(blockId, 'prodOutputPrevious', 'prodCtxPrevious', 'prodUiCtxPrevious');
+      this.deleteBlockFields(blockId, "prodOutputPrevious", "prodCtxPrevious", "prodUiCtxPrevious");
 
       return true;
     } else {
       // reset - clean up any partial/inconsistent production stat
       return this.deleteBlockFields(
         blockId,
-        'prodOutput',
-        'prodCtx',
-        'prodUiCtx',
-        'prodArgs',
-        'prodOutputPrevious',
-        'prodCtxPrevious',
-        'prodUiCtxPrevious',
+        "prodOutput",
+        "prodCtx",
+        "prodUiCtx",
+        "prodArgs",
+        "prodOutputPrevious",
+        "prodCtxPrevious",
+        "prodUiCtxPrevious",
       );
     }
   }
@@ -595,7 +601,11 @@ export class ProjectMutator {
    * @param rawStorageJson Raw storage as JSON string
    */
   public setBlockStorageRaw(blockId: string, rawStorageJson: string): void {
-    this.setBlockFieldObj(blockId, 'blockStorage', this.createJsonFieldValueByContent(rawStorageJson));
+    this.setBlockFieldObj(
+      blockId,
+      "blockStorage",
+      this.createJsonFieldValueByContent(rawStorageJson),
+    );
     this.blocksWithChangedInputs.add(blockId);
     this.updateLastModified();
   }
@@ -613,7 +623,7 @@ export class ProjectMutator {
     const blockConfig = info.config;
 
     if (blockConfig.modelAPIVersion !== 2) {
-      throw new Error('resetToInitialStorage is only supported for model API version 2');
+      throw new Error("resetToInitialStorage is only supported for model API version 2");
     }
 
     // Get initial storage from VM
@@ -621,16 +631,26 @@ export class ProjectMutator {
     this.setBlockStorageRaw(blockId, initialStorageJson);
 
     // Derive args from storage - set or clear currentArgs based on derivation result
-    const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(blockConfig, initialStorageJson);
+    const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
+      blockConfig,
+      initialStorageJson,
+    );
     if (!deriveArgsResult.error) {
-      this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValue(deriveArgsResult.value));
+      this.setBlockFieldObj(
+        blockId,
+        "currentArgs",
+        this.createJsonFieldValue(deriveArgsResult.value),
+      );
       // Derive prerunArgs from storage
-      const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, initialStorageJson);
+      const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
+        blockConfig,
+        initialStorageJson,
+      );
       if (prerunArgs !== undefined) {
-        this.setBlockFieldObj(blockId, 'currentPrerunArgs', this.createJsonFieldValue(prerunArgs));
+        this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
       }
     } else {
-      this.deleteBlockFields(blockId, 'currentArgs');
+      this.deleteBlockFields(blockId, "currentArgs");
     }
   }
 
@@ -646,7 +666,9 @@ export class ProjectMutator {
       // modelAPIVersion === 2 means BlockModelV3 with .args() lambda for deriving args
 
       if (req.modelAPIVersion !== blockConfig.modelAPIVersion) {
-        throw new Error(`Model API version mismatch for block ${req.blockId}: ${req.modelAPIVersion} !== ${blockConfig.modelAPIVersion}`);
+        throw new Error(
+          `Model API version mismatch for block ${req.blockId}: ${req.modelAPIVersion} !== ${blockConfig.modelAPIVersion}`,
+        );
       }
 
       // Derive args from storage using the block's config.args() callback
@@ -666,21 +688,31 @@ export class ProjectMutator {
           req.payload,
         );
 
-        this.setBlockFieldObj(req.blockId, 'blockStorage', this.createJsonFieldValueByContent(updatedStorageJson));
+        this.setBlockFieldObj(
+          req.blockId,
+          "blockStorage",
+          this.createJsonFieldValueByContent(updatedStorageJson),
+        );
 
         // Derive args directly from storage (VM extracts data internally)
-        const derivedArgsResult = this.projectHelper.deriveArgsFromStorage(blockConfig, updatedStorageJson);
+        const derivedArgsResult = this.projectHelper.deriveArgsFromStorage(
+          blockConfig,
+          updatedStorageJson,
+        );
         if (derivedArgsResult.error) {
           args = undefined;
           prerunArgs = undefined;
         } else {
           args = derivedArgsResult.value;
           // Derive prerunArgs from storage, or fall back to args
-          prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, updatedStorageJson);
+          prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
+            blockConfig,
+            updatedStorageJson,
+          );
         }
       } else {
-        this.setBlockFieldObj(req.blockId, 'blockStorage', this.createJsonFieldValue(req.state));
-        if (req.state !== null && typeof req.state === 'object' && 'args' in req.state) {
+        this.setBlockFieldObj(req.blockId, "blockStorage", this.createJsonFieldValue(req.state));
+        if (req.state !== null && typeof req.state === "object" && "args" in req.state) {
           args = (req.state as { args: unknown }).args;
         } else {
           args = req.state;
@@ -693,9 +725,9 @@ export class ProjectMutator {
       if (args !== undefined) {
         const currentArgsData = canonicalJsonBytes(args);
         const argsPartRef = this.tx.createValue(Pl.JsonObject, currentArgsData);
-        this.setBlockField(req.blockId, 'currentArgs', argsPartRef, 'Ready', currentArgsData);
+        this.setBlockField(req.blockId, "currentArgs", argsPartRef, "Ready", currentArgsData);
       } else {
-        this.deleteBlockFields(req.blockId, 'currentArgs');
+        this.deleteBlockFields(req.blockId, "currentArgs");
       }
 
       // Set currentPrerunArgs field and check if it actually changed
@@ -704,11 +736,20 @@ export class ProjectMutator {
         const prerunArgsData = canonicalJsonBytes(prerunArgs);
         const oldPrerunArgsData = info.fields.currentPrerunArgs?.value;
         // Check if prerunArgs actually changed
-        if (oldPrerunArgsData === undefined || Buffer.compare(oldPrerunArgsData, prerunArgsData) !== 0) {
+        if (
+          oldPrerunArgsData === undefined ||
+          Buffer.compare(oldPrerunArgsData, prerunArgsData) !== 0
+        ) {
           prerunArgsChanged = true;
         }
         const prerunArgsRef = this.tx.createValue(Pl.JsonObject, prerunArgsData);
-        this.setBlockField(req.blockId, 'currentPrerunArgs', prerunArgsRef, 'Ready', prerunArgsData);
+        this.setBlockField(
+          req.blockId,
+          "currentPrerunArgs",
+          prerunArgsRef,
+          "Ready",
+          prerunArgsData,
+        );
       } else {
         // prerunArgs is undefined - check if we previously had one
         if (info.fields.currentPrerunArgs !== undefined) {
@@ -730,13 +771,13 @@ export class ProjectMutator {
     }
 
     // resetting staging outputs for all downstream blocks
-    this.getStagingGraph().traverse('downstream', changedArgs, ({ id }) => this.resetStaging(id));
+    this.getStagingGraph().traverse("downstream", changedArgs, ({ id }) => this.resetStaging(id));
 
     if (somethingChanged) this.updateLastModified();
   }
 
   public setBlockSettings(blockId: string, newValue: BlockSettings): void {
-    this.setBlockFieldObj(blockId, 'blockSettings', this.createJsonFieldValue(newValue));
+    this.setBlockFieldObj(blockId, "blockSettings", this.createJsonFieldValue(newValue));
     this.updateLastModified();
   }
 
@@ -744,9 +785,9 @@ export class ProjectMutator {
     const upstreamContexts: AnyRef[] = [];
     upstream.forEach((id) => {
       const info = this.getBlockInfo(id);
-      if (info.fields['prodCtx']?.ref === undefined)
-        throw new Error('One of the upstreams staging is not rendered.');
-      upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields['prodCtx'].ref));
+      if (info.fields["prodCtx"]?.ref === undefined)
+        throw new Error("One of the upstreams staging is not rendered.");
+      upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields["prodCtx"].ref));
     });
     return createBContextFromUpstreams(this.tx, upstreamContexts);
   }
@@ -755,11 +796,11 @@ export class ProjectMutator {
     const upstreamContexts: AnyRef[] = [];
     upstream.forEach((id) => {
       const info = this.getBlockInfo(id);
-      if (info.fields['stagingCtx']?.ref === undefined)
-        throw new Error('One of the upstreams staging is not rendered.');
-      upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields['stagingCtx'].ref));
-      if (info.fields['prodCtx']?.ref !== undefined)
-        upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields['prodCtx'].ref));
+      if (info.fields["stagingCtx"]?.ref === undefined)
+        throw new Error("One of the upstreams staging is not rendered.");
+      upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields["stagingCtx"].ref));
+      if (info.fields["prodCtx"]?.ref !== undefined)
+        upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields["prodCtx"].ref));
     });
     return createBContextFromUpstreams(this.tx, upstreamContexts);
   }
@@ -785,7 +826,7 @@ export class ProjectMutator {
 
     const ctx = this.createStagingCtx(this.getStagingGraph().nodes.get(blockId)!.upstream);
 
-    if (this.getBlock(blockId).renderingMode !== 'Heavy') throw new Error('not supported yet');
+    if (this.getBlock(blockId).renderingMode !== "Heavy") throw new Error("not supported yet");
 
     const tpl = info.getTemplate(this.tx);
 
@@ -800,17 +841,12 @@ export class ProjectMutator {
     // Here we set the staging ctx to the input context of the staging workflow, not the output because exports
     // of one staging context should stay within the same block, and not travel downstream.
     // We may change this decision in the future if wanted to support traveling staging exports downstream.
-    this.setBlockField(
-      blockId,
-      'stagingCtx',
-      Pl.wrapInEphHolder(this.tx, ctx),
-      'NotReady',
-    );
+    this.setBlockField(blockId, "stagingCtx", Pl.wrapInEphHolder(this.tx, ctx), "NotReady");
 
     // Yet the staging UI Ctx is the output context of the staging workflow, because it is used to form the result pool
     // thus creating a certain discrepancy between staging workflow context behavior and desktop's result pool.
-    this.setBlockField(blockId, 'stagingUiCtx', this.exportCtx(results.context), 'NotReady');
-    this.setBlockField(blockId, 'stagingOutput', results.result, 'NotReady');
+    this.setBlockField(blockId, "stagingUiCtx", this.exportCtx(results.context), "NotReady");
+    this.setBlockField(blockId, "stagingOutput", results.result, "NotReady");
   }
 
   private renderProductionFor(blockId: string) {
@@ -825,8 +861,8 @@ export class ProjectMutator {
 
     const ctx = this.createProdCtx(this.getPendingProductionGraph().nodes.get(blockId)!.upstream);
 
-    if (this.getBlock(blockId).renderingMode === 'Light')
-      throw new Error('Can\'t render production for light block.');
+    if (this.getBlock(blockId).renderingMode === "Light")
+      throw new Error("Can't render production for light block.");
 
     const tpl = info.getTemplate(this.tx);
 
@@ -838,15 +874,15 @@ export class ProjectMutator {
     });
     this.setBlockField(
       blockId,
-      'prodCtx',
+      "prodCtx",
       Pl.wrapInEphHolder(this.tx, results.context),
-      'NotReady',
+      "NotReady",
     );
-    this.setBlockField(blockId, 'prodUiCtx', this.exportCtx(results.context), 'NotReady');
-    this.setBlockField(blockId, 'prodOutput', results.result, 'NotReady');
+    this.setBlockField(blockId, "prodUiCtx", this.exportCtx(results.context), "NotReady");
+    this.setBlockField(blockId, "prodOutput", results.result, "NotReady");
 
     // saving inputs for which we rendered the production
-    this.setBlockFieldObj(blockId, 'prodArgs', info.fields.currentArgs);
+    this.setBlockFieldObj(blockId, "prodArgs", info.fields.currentArgs);
 
     // removing block from limbo as we juts rendered fresh production for it
     if (this.blocksInLimbo.delete(blockId)) this.renderingStateChanged = true;
@@ -857,17 +893,22 @@ export class ProjectMutator {
   //
 
   private initializeNewBlock(blockId: string, spec: NewBlockSpec): void {
-    const info = new BlockInfo(blockId, {}, extractConfig(spec.blockPack.config), spec.blockPack.source);
+    const info = new BlockInfo(
+      blockId,
+      {},
+      extractConfig(spec.blockPack.config),
+      spec.blockPack.source,
+    );
     this.blockInfos.set(blockId, info);
 
     // block pack
     const bp = createBlockPack(this.tx, spec.blockPack);
-    this.setBlockField(blockId, 'blockPack', Pl.wrapInHolder(this.tx, bp), 'NotReady');
+    this.setBlockField(blockId, "blockPack", Pl.wrapInHolder(this.tx, bp), "NotReady");
 
     // settings
     this.setBlockFieldObj(
       blockId,
-      'blockSettings',
+      "blockSettings",
       this.createJsonFieldValue(InitialBlockSettings),
     );
 
@@ -877,12 +918,15 @@ export class ProjectMutator {
     let prerunArgs: unknown;
     let storageToWrite: string;
 
-    if (spec.storageMode === 'fromModel') {
+    if (spec.storageMode === "fromModel") {
       // Model API v2+: get initial storage and derive args from it
       storageToWrite = this.projectHelper.getInitialStorageInVM(blockConfig);
 
       // Derive args directly from storage (VM extracts data internally)
-      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(blockConfig, storageToWrite);
+      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
+        blockConfig,
+        storageToWrite,
+      );
       if (deriveArgsResult.error) {
         args = undefined;
         prerunArgs = undefined;
@@ -890,12 +934,12 @@ export class ProjectMutator {
         args = deriveArgsResult.value;
         prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageToWrite);
       }
-    } else if (spec.storageMode === 'legacy') {
+    } else if (spec.storageMode === "legacy") {
       // Model API v1: use legacyState from spec
       const parsedState = JSON.parse(spec.legacyState);
       args = parsedState.args;
       if (args === undefined) {
-        throw new Error('args is undefined in legacyState');
+        throw new Error("args is undefined in legacyState");
       }
       prerunArgs = args;
       storageToWrite = spec.legacyState;
@@ -905,57 +949,59 @@ export class ProjectMutator {
 
     // currentArgs
     if (args !== undefined) {
-      this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValue(args));
+      this.setBlockFieldObj(blockId, "currentArgs", this.createJsonFieldValue(args));
     }
 
     // currentPrerunArgs
     if (prerunArgs !== undefined) {
-      this.setBlockFieldObj(blockId, 'currentPrerunArgs', this.createJsonFieldValue(prerunArgs));
+      this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
     }
 
     // blockStorage
-    this.setBlockFieldObj(blockId, 'blockStorage', this.createJsonFieldValueByContent(storageToWrite));
+    this.setBlockFieldObj(
+      blockId,
+      "blockStorage",
+      this.createJsonFieldValueByContent(storageToWrite),
+    );
 
     // checking structure
     info.check();
   }
 
-  private getFieldNamesToDuplicate(blockId: string): Set<ProjectField['fieldName']> {
+  private getFieldNamesToDuplicate(blockId: string): Set<ProjectField["fieldName"]> {
     const fields = this.getBlockInfo(blockId).fields;
 
-    const diff = <T>(setA: Set<T>, setB: Set<T>): Set<T> => new Set([...setA].filter((x) => !setB.has(x)));
+    const diff = <T>(setA: Set<T>, setB: Set<T>): Set<T> =>
+      new Set([...setA].filter((x) => !setB.has(x)));
 
     // Check if we can safely move to limbo (both core production fields are ready)
-    if (fields.prodOutput?.status === 'Ready' && fields.prodCtx?.status === 'Ready') {
+    if (fields.prodOutput?.status === "Ready" && fields.prodCtx?.status === "Ready") {
       if (this.blocksInLimbo.has(blockId))
         // we are already in limbo
         return FieldsToDuplicate;
 
-      return diff(FieldsToDuplicate, new Set([
-        'prodOutputPrevious',
-        'prodCtxPrevious',
-        'prodUiCtxPrevious',
-      ]));
+      return diff(
+        FieldsToDuplicate,
+        new Set(["prodOutputPrevious", "prodCtxPrevious", "prodUiCtxPrevious"]),
+      );
     } else {
-      return diff(FieldsToDuplicate, new Set([
-        'prodOutput',
-        'prodCtx',
-        'prodUiCtx',
-        'prodArgs',
-        'prodOutputPrevious',
-        'prodCtxPrevious',
-        'prodUiCtxPrevious',
-      ]));
+      return diff(
+        FieldsToDuplicate,
+        new Set([
+          "prodOutput",
+          "prodCtx",
+          "prodUiCtx",
+          "prodArgs",
+          "prodOutputPrevious",
+          "prodCtxPrevious",
+          "prodUiCtxPrevious",
+        ]),
+      );
     }
   }
 
   private initializeBlockDuplicate(blockId: string, originalBlockInfo: BlockInfo) {
-    const info = new BlockInfo(
-      blockId,
-      {},
-      originalBlockInfo.config,
-      originalBlockInfo.source,
-    );
+    const info = new BlockInfo(blockId, {}, originalBlockInfo.config, originalBlockInfo.source);
 
     this.blockInfos.set(blockId, info);
 
@@ -963,7 +1009,11 @@ export class ProjectMutator {
 
     // Copy all fields from original block to new block by sharing references
     for (const [fieldName, fieldState] of Object.entries(originalBlockInfo.fields)) {
-      if (fieldNamesToDuplicate.has(fieldName as ProjectField['fieldName']) && fieldState && fieldState.ref) {
+      if (
+        fieldNamesToDuplicate.has(fieldName as ProjectField["fieldName"]) &&
+        fieldState &&
+        fieldState.ref
+      ) {
         this.setBlockFieldObj(blockId, fieldName as keyof BlockFieldStates, {
           ref: fieldState.ref,
           status: fieldState.status,
@@ -992,7 +1042,7 @@ export class ProjectMutator {
     // removing blocks
     for (const blockId of stagingDiff.onlyInA) {
       const { fields } = this.getBlockInfo(blockId);
-      this.deleteBlockFields(blockId, ...(Object.keys(fields) as ProjectField['fieldName'][]));
+      this.deleteBlockFields(blockId, ...(Object.keys(fields) as ProjectField["fieldName"][]));
       this.blockInfos.delete(blockId);
       if (this.blocksInLimbo.delete(blockId)) this.renderingStateChanged = true;
     }
@@ -1006,23 +1056,22 @@ export class ProjectMutator {
     for (const blockId of stagingDiff.different) this.resetStaging(blockId);
 
     // new actual production graph without new blocks
-    const newActualProductionGraph = productionGraph(
-      newStructure,
-      (blockId) => this.getProductionGraphBlockInfo(blockId, true),
+    const newActualProductionGraph = productionGraph(newStructure, (blockId) =>
+      this.getProductionGraphBlockInfo(blockId, true),
     );
 
     const prodDiff = graphDiff(currentActualProductionGraph, newActualProductionGraph);
 
     // applying changes due to topology change in production to affected nodes and
     // all their downstreams
-    currentActualProductionGraph.traverse('downstream', [...prodDiff.different], (node) => {
+    currentActualProductionGraph.traverse("downstream", [...prodDiff.different], (node) => {
       this.resetOrLimboProduction(node.id);
     });
 
     if (
-      stagingDiff.onlyInB.size > 0
-      || stagingDiff.onlyInA.size > 0
-      || stagingDiff.different.size > 0
+      stagingDiff.onlyInB.size > 0 ||
+      stagingDiff.onlyInA.size > 0 ||
+      stagingDiff.different.size > 0
     )
       this.resetStagingRefreshTimestamp();
 
@@ -1056,7 +1105,7 @@ export class ProjectMutator {
       if (!done) throw new Error(`Can't find element with id: ${before}`);
     }
     this.updateStructure(newStruct, (blockId) => {
-      if (blockId !== block.id) throw new Error('Unexpected');
+      if (blockId !== block.id) throw new Error("Unexpected");
       this.initializeNewBlock(blockId, spec);
     });
   }
@@ -1099,7 +1148,7 @@ export class ProjectMutator {
     }
 
     this.updateStructure(newStruct, (blockId) => {
-      if (blockId !== newBlockId) throw new Error('Unexpected');
+      if (blockId !== newBlockId) throw new Error("Unexpected");
       this.initializeBlockDuplicate(blockId, originalBlockInfo);
     });
   }
@@ -1122,15 +1171,19 @@ export class ProjectMutator {
   // Block-pack migration
   //
 
-  public migrateBlockPack(blockId: string, spec: BlockPackSpecPrepared, newClearState?: ClearState): void {
+  public migrateBlockPack(
+    blockId: string,
+    spec: BlockPackSpecPrepared,
+    newClearState?: ClearState,
+  ): void {
     const info = this.getBlockInfo(blockId);
     const newConfig = extractConfig(spec.config);
 
     this.setBlockField(
       blockId,
-      'blockPack',
+      "blockPack",
       Pl.wrapInHolder(this.tx, createBlockPack(this.tx, spec)),
-      'NotReady',
+      "NotReady",
     );
 
     if (newClearState !== undefined) {
@@ -1143,13 +1196,27 @@ export class ProjectMutator {
         this.setBlockStorageRaw(blockId, initialStorageJson);
 
         // Derive args from storage - only set currentArgs if derivation succeeds
-        const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(newConfig, initialStorageJson);
+        const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
+          newConfig,
+          initialStorageJson,
+        );
         if (!deriveArgsResult.error) {
-          this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValue(deriveArgsResult.value));
+          this.setBlockFieldObj(
+            blockId,
+            "currentArgs",
+            this.createJsonFieldValue(deriveArgsResult.value),
+          );
           // Derive prerunArgs from storage
-          const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(newConfig, initialStorageJson);
+          const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
+            newConfig,
+            initialStorageJson,
+          );
           if (prerunArgs !== undefined) {
-            this.setBlockFieldObj(blockId, 'currentPrerunArgs', this.createJsonFieldValue(prerunArgs));
+            this.setBlockFieldObj(
+              blockId,
+              "currentPrerunArgs",
+              this.createJsonFieldValue(prerunArgs),
+            );
           }
         }
         this.blocksWithChangedInputs.add(blockId);
@@ -1166,26 +1233,33 @@ export class ProjectMutator {
       if (supportsStateMigrations) {
         const currentStorageJson = info.blockStorageJson;
 
-        const migrationResult = this.projectHelper.migrateStorageInVM(newConfig, currentStorageJson);
+        const migrationResult = this.projectHelper.migrateStorageInVM(
+          newConfig,
+          currentStorageJson,
+        );
 
         if (migrationResult.error !== undefined) {
-          console.error(`[migrateBlockPack] Block ${blockId} migration error: ${migrationResult.error}`);
+          console.error(
+            `[migrateBlockPack] Block ${blockId} migration error: ${migrationResult.error}`,
+          );
         } else {
           console.log(`[migrateBlockPack] Block ${blockId}: ${migrationResult.info}`);
           if (migrationResult.warn) {
-            console.warn(`[migrateBlockPack] Block ${blockId} migration warning: ${migrationResult.warn}`);
+            console.warn(
+              `[migrateBlockPack] Block ${blockId} migration warning: ${migrationResult.warn}`,
+            );
           }
           this.setBlockStorageRaw(blockId, migrationResult.newStorageJson);
         }
       }
 
       // resetting staging outputs for all downstream blocks
-      this.getStagingGraph().traverse('downstream', [blockId], ({ id }) => this.resetStaging(id));
+      this.getStagingGraph().traverse("downstream", [blockId], ({ id }) => this.resetStaging(id));
     }
 
     // also reset or limbo all downstream productions
     if (info.productionRendered)
-      this.getActualProductionGraph().traverse('downstream', [blockId], ({ id }) =>
+      this.getActualProductionGraph().traverse("downstream", [blockId], ({ id }) =>
         this.resetOrLimboProduction(id),
       );
 
@@ -1202,16 +1276,17 @@ export class ProjectMutator {
     const prodGraph = this.getPendingProductionGraph();
     if (addUpstreams)
       // adding all upstreams automatically
-      prodGraph.traverse('upstream', blockIds, (node) => {
+      prodGraph.traverse("upstream", blockIds, (node) => {
         blockIdsSet.add(node.id);
       });
-    else // checking that targets contain all upstreams
+    else
+      // checking that targets contain all upstreams
       for (const blockId of blockIdsSet) {
         const node = prodGraph.nodes.get(blockId);
         if (node === undefined) throw new Error(`Can't find block with id: ${blockId}`);
         for (const upstream of node.upstream)
           if (!blockIdsSet.has(upstream))
-            throw new Error('Can\'t render blocks not including all upstreams.');
+            throw new Error("Can't render blocks not including all upstreams.");
       }
 
     // traversing in topological order and rendering target blocks
@@ -1219,8 +1294,8 @@ export class ProjectMutator {
     for (const block of allBlocks(this.structure)) {
       if (!blockIdsSet.has(block.id)) continue;
 
-      let render
-        = this.getBlockInfo(block.id).requireProductionRendering || this.blocksInLimbo.has(block.id);
+      let render =
+        this.getBlockInfo(block.id).requireProductionRendering || this.blocksInLimbo.has(block.id);
 
       if (!render)
         for (const upstream of prodGraph.nodes.get(block.id)!.upstream)
@@ -1238,7 +1313,7 @@ export class ProjectMutator {
     const renderedArray = [...rendered];
 
     // sending to limbo all downstream blocks
-    prodGraph.traverse('downstream', renderedArray, (node) => {
+    prodGraph.traverse("downstream", renderedArray, (node) => {
       if (rendered.has(node.id))
         // don't send to limbo blocks that were just rendered
         return;
@@ -1246,7 +1321,7 @@ export class ProjectMutator {
     });
 
     // resetting staging outputs for all downstream blocks
-    this.getStagingGraph().traverse('downstream', renderedArray, ({ id }) => {
+    this.getStagingGraph().traverse("downstream", renderedArray, ({ id }) => {
       // don't reset staging of the first rendered block
       if (renderedArray[0] !== id) this.resetStaging(id);
     });
@@ -1270,16 +1345,16 @@ export class ProjectMutator {
       const blockId = queue.shift()!;
       const fields = this.getBlockInfo(blockId).fields;
 
-      if (fields.prodOutput?.status === 'Ready' && fields.prodCtx?.status === 'Ready')
+      if (fields.prodOutput?.status === "Ready" && fields.prodCtx?.status === "Ready")
         // skipping finished blocks
         continue;
 
-      if (this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodUiCtx', 'prodArgs')) {
+      if (this.deleteBlockFields(blockId, "prodOutput", "prodCtx", "prodUiCtx", "prodArgs")) {
         // was actually stopped
         stopped.push(blockId);
 
         // will try to stop all its downstreams
-        for (const downstream of activeProdGraph.traverseIdsExcludingRoots('downstream', blockId)) {
+        for (const downstream of activeProdGraph.traverseIdsExcludingRoots("downstream", blockId)) {
           if (queued.has(downstream)) continue;
           queue.push(downstream);
           queued.add(downstream);
@@ -1288,11 +1363,11 @@ export class ProjectMutator {
     }
 
     // blocks under stopped blocks, but having finished production results, goes to limbo
-    for (const blockId of activeProdGraph.traverseIdsExcludingRoots('downstream', ...stopped))
+    for (const blockId of activeProdGraph.traverseIdsExcludingRoots("downstream", ...stopped))
       this.resetOrLimboProduction(blockId);
 
     // reset staging outputs for all downstream blocks
-    this.getStagingGraph().traverse('downstream', stopped, ({ id }) => this.resetStaging(id));
+    this.getStagingGraph().traverse("downstream", stopped, ({ id }) => this.resetStaging(id));
   }
 
   private traverseWithStagingLag(cb: (blockId: string, lag: number) => void) {
@@ -1319,8 +1394,8 @@ export class ProjectMutator {
   /** @param stagingRenderingRate rate in blocks per second */
   private refreshStagings(stagingRenderingRate?: number) {
     const elapsed = Date.now() - this.renderingState.stagingRefreshTimestamp;
-    const lagThreshold
-      = stagingRenderingRate === undefined
+    const lagThreshold =
+      stagingRenderingRate === undefined
         ? undefined
         : 1 + Math.max(0, (elapsed * stagingRenderingRate) / 1000);
     let rendered = 0;
@@ -1357,24 +1432,24 @@ export class ProjectMutator {
     this.refreshStagings(stagingRenderingRate);
     this.blockInfos.forEach((blockInfo) => {
       if (
-        blockInfo.fields.prodCtx?.status === 'Ready'
-        && blockInfo.fields.prodOutput?.status === 'Ready'
+        blockInfo.fields.prodCtx?.status === "Ready" &&
+        blockInfo.fields.prodOutput?.status === "Ready"
       )
         this.deleteBlockFields(
           blockInfo.id,
-          'prodOutputPrevious',
-          'prodCtxPrevious',
-          'prodUiCtxPrevious',
+          "prodOutputPrevious",
+          "prodCtxPrevious",
+          "prodUiCtxPrevious",
         );
       if (
-        blockInfo.fields.stagingCtx?.status === 'Ready'
-        && blockInfo.fields.stagingOutput?.status === 'Ready'
+        blockInfo.fields.stagingCtx?.status === "Ready" &&
+        blockInfo.fields.stagingOutput?.status === "Ready"
       )
         this.deleteBlockFields(
           blockInfo.id,
-          'stagingOutputPrevious',
-          'stagingCtxPrevious',
-          'stagingUiCtxPrevious',
+          "stagingOutputPrevious",
+          "stagingCtxPrevious",
+          "stagingUiCtxPrevious",
         );
     });
   }
@@ -1463,41 +1538,42 @@ export class ProjectMutator {
     // (start of round-trip #2)
     //
 
-    const blockFieldRequests: [BlockInfoState, ProjectField['fieldName'], BlockFieldState, Promise<BasicResourceData | ResourceData>][] = [];
+    const blockFieldRequests: [
+      BlockInfoState,
+      ProjectField["fieldName"],
+      BlockFieldState,
+      Promise<BasicResourceData | ResourceData>,
+    ][] = [];
     blockInfoStates.forEach((info) => {
       const fields = info.fields;
       for (const [fName, state] of Object.entries(fields)) {
         if (state.ref === undefined) continue;
         if (!isResource(state.ref) || isResourceRef(state.ref))
-          throw new Error('unexpected behaviour');
-        const fieldName = fName as ProjectField['fieldName'];
+          throw new Error("unexpected behaviour");
+        const fieldName = fName as ProjectField["fieldName"];
         blockFieldRequests.push([
-          info, fieldName,
-          state, tx.getResourceData(state.ref, fieldName == 'blockPack')]);
+          info,
+          fieldName,
+          state,
+          tx.getResourceData(state.ref, fieldName == "blockPack"),
+        ]);
       }
     });
 
     // loading jsons
-    const [
-      schema,
-      lastModified,
-      meta,
-      structure,
-      { stagingRefreshTimestamp, blocksInLimbo },
-    ] = await Promise.all([
-      schemaP,
-      lastModifiedP,
-      metaP,
-      structureP,
-      renderingStateP,
-    ]);
+    const [schema, lastModified, meta, structure, { stagingRefreshTimestamp, blocksInLimbo }] =
+      await Promise.all([schemaP, lastModifiedP, metaP, structureP, renderingStateP]);
 
     // Checking schema version of the project
     if (schema !== SchemaVersionCurrent) {
       if (Number(schema) < Number(SchemaVersionCurrent))
-        throw new UiError(`Can't perform this action on this project because it has older schema. Try (re)loading the project to update it.`);
+        throw new UiError(
+          `Can't perform this action on this project because it has older schema. Try (re)loading the project to update it.`,
+        );
       else
-        throw new UiError(`Can't perform this action on this project because it has newer schema. Upgrade your desktop app to the latest version.`);
+        throw new UiError(
+          `Can't perform this action on this project because it has newer schema. Upgrade your desktop app to the latest version.`,
+        );
     }
 
     //
@@ -1513,17 +1589,19 @@ export class ProjectMutator {
     for (const [info, fieldName, state, response] of blockFieldRequests) {
       const result = await response;
       state.value = result.data;
-      if (isNotNullResourceId(result.error)) state.status = 'Error';
+      if (isNotNullResourceId(result.error)) state.status = "Error";
       else if (result.resourceReady || isNotNullResourceId(result.originalResourceId))
-        state.status = 'Ready';
-      else state.status = 'NotReady';
+        state.status = "Ready";
+      else state.status = "NotReady";
 
       // For block pack we need to traverse the ref field from the resource data
-      if (fieldName === 'blockPack') {
+      if (fieldName === "blockPack") {
         const refField = (result as ResourceData).fields.find((f) => f.name === Pl.HolderRefField);
-        if (refField === undefined)
-          throw new Error('Block pack ref field is missing');
-        blockPackRequests.push([info, tx.getResourceData(ensureResourceIdNotNull(refField.value), false)]);
+        if (refField === undefined) throw new Error("Block pack ref field is missing");
+        blockPackRequests.push([
+          info,
+          tx.getResourceData(ensureResourceIdNotNull(refField.value), false),
+        ]);
       }
     }
 
@@ -1557,7 +1635,7 @@ export class ProjectMutator {
       ctxExportTplHolder = Pl.wrapInHolder(tx, loadTemplate(tx, ctxExportTplEnvelope.spec));
       tx.createField(
         field(rid, getServiceTemplateField(ctxExportTplEnvelope.hash)),
-        'Dynamic',
+        "Dynamic",
         ctxExportTplHolder,
       );
     }
@@ -1566,8 +1644,9 @@ export class ProjectMutator {
     const blocksInLimboSet = new Set(blocksInLimbo);
 
     const blockInfos = new Map<string, BlockInfo>();
-    blockInfoStates.forEach(({ id, fields, blockConfig, blockPack }) => blockInfos.set(id,
-      new BlockInfo(id, fields, notEmpty(blockConfig), notEmpty(blockPack))));
+    blockInfoStates.forEach(({ id, fields, blockConfig, blockPack }) =>
+      blockInfos.set(id, new BlockInfo(id, fields, notEmpty(blockConfig), notEmpty(blockPack))),
+    );
 
     // check consistency of project state
     const blockInStruct = new Set<string>();
@@ -1607,7 +1686,7 @@ export class ProjectMutator {
 export interface ProjectState {
   schema: string;
   structure: ProjectStructure;
-  renderingState: Omit<ProjectRenderingState, 'blocksInLimbo'>;
+  renderingState: Omit<ProjectRenderingState, "blocksInLimbo">;
   blocksInLimbo: Set<string>;
   blockInfos: Map<string, BlockInfo>;
 }
@@ -1628,7 +1707,7 @@ export async function createProject(
   const ctxExportTplEnvelope = await getPreparedExportTemplateEnvelope();
   tx.createField(
     field(prj, getServiceTemplateField(ctxExportTplEnvelope.hash)),
-    'Dynamic',
+    "Dynamic",
     Pl.wrapInHolder(tx, loadTemplate(tx, ctxExportTplEnvelope.spec)),
   );
   return prj;
@@ -1653,17 +1732,21 @@ export async function withProjectAuthored<T>(
   ops: Partial<TxOps> = {},
 ): Promise<T> {
   if (txOrPl instanceof PlClient) {
-    return await txOrPl.withWriteTx('ProjectAction' + (ops.name ? `: ${ops.name}` : ''), async (tx) => {
-      const mut = await ProjectMutator.load(projectHelper, tx, rid, author);
-      const result = await cb(mut);
-      if (!mut.wasModified)
-        // skipping save and commit altogether if no modifications were actually made
+    return await txOrPl.withWriteTx(
+      "ProjectAction" + (ops.name ? `: ${ops.name}` : ""),
+      async (tx) => {
+        const mut = await ProjectMutator.load(projectHelper, tx, rid, author);
+        const result = await cb(mut);
+        if (!mut.wasModified)
+          // skipping save and commit altogether if no modifications were actually made
+          return result;
+        mut.save();
+        await tx.commit();
+        if (getDebugFlags().logProjectMutationStat) console.log(JSON.stringify(tx.stat));
         return result;
-      mut.save();
-      await tx.commit();
-      if (getDebugFlags().logProjectMutationStat) console.log(JSON.stringify(tx.stat));
-      return result;
-    }, ops);
+      },
+      ops,
+    );
   } else {
     const mut = await ProjectMutator.load(projectHelper, txOrPl, rid, author);
     const result = await cb(mut);

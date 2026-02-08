@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import Layout from '../Layout.vue';
-import Split from '../Split.vue';
-import { LongText } from '@milaboratories/uikit';
+import Layout from "../Layout.vue";
+import Split from "../Split.vue";
+import { LongText } from "@milaboratories/uikit";
 </script>
 
 <template>
   <Layout>
     <Split name="Long text">
       <div :class="$style.container">
-        <LongText class="text-h1"> Long text Lorem ipsum dolor sit amet, consectetur adipisicing elit. </LongText>
+        <LongText class="text-h1">
+          Long text Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+        </LongText>
       </div>
       <div class="container">
         <LongText class="text-h3"> Small text </LongText>

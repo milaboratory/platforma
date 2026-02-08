@@ -4,11 +4,11 @@
 // After generating new clients from openapi specifications, add client types here.
 //
 
-import type { paths as PlApiPaths } from './plapi';
-import { default as createOpenApiClient, type Middleware, type Client } from 'openapi-fetch';
-import { Dispatcher, fetch as undiciFetch } from 'undici';
-import { RESTError, rethrowMeaningfulError } from '../core/errors';
-import { Code } from '../proto-grpc/google/rpc/code';
+import type { paths as PlApiPaths } from "./plapi";
+import { default as createOpenApiClient, type Middleware, type Client } from "openapi-fetch";
+import { Dispatcher, fetch as undiciFetch } from "undici";
+import { RESTError, rethrowMeaningfulError } from "../core/errors";
+import { Code } from "../proto-grpc/google/rpc/code";
 
 export { PlApiPaths };
 export type PlRestClientType = Client<PlApiPaths>;
@@ -18,10 +18,10 @@ export type RestClientConfig = {
   ssl: boolean;
   dispatcher: Dispatcher;
   middlewares: Middleware[];
-}
+};
 
 export function createClient<Paths extends {}>(opts: RestClientConfig): Client<Paths> {
-  const scheme = opts.ssl ? 'https://' : 'http://';
+  const scheme = opts.ssl ? "https://" : "http://";
   const client = createOpenApiClient<Paths>({
     baseUrl: `${scheme}${opts.hostAndPort}`,
     fetch: (input: Request): Promise<Response> => {
@@ -51,14 +51,14 @@ export function createClient<Paths extends {}>(opts: RestClientConfig): Client<P
 }
 
 export type ErrorResponse = {
-  code: Code,
-  message: string,
-  details: any[],
-}
+  code: Code;
+  message: string;
+  details: any[];
+};
 export async function parseResponseError(response: Response): Promise<{
-  error?: ErrorResponse | string,
-  origBody?: string,
-}>{
+  error?: ErrorResponse | string;
+  origBody?: string;
+}> {
   if (response.status < 400) {
     return {};
   }
@@ -67,11 +67,10 @@ export async function parseResponseError(response: Response): Promise<{
   const origBody = error;
   try {
     error = JSON.parse(error) as ErrorResponse;
-  } catch {
-  }
+  } catch {}
   return {
     error: error,
-    origBody
+    origBody,
   };
 }
 
@@ -88,7 +87,7 @@ function errorHandlerMiddleware(): Middleware {
         return new Response(body, { ...resOptions, status: response.status });
       }
 
-      if (typeof respErr.error === 'string') {
+      if (typeof respErr.error === "string") {
         throw new Error(respErr.error);
       }
 

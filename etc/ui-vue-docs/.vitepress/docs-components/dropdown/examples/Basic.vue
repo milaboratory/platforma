@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { reactive } from 'vue';
-import { PlDropdown, PlCheckbox } from '@platforma-sdk/ui-vue';
+import { reactive } from "vue";
+import { PlDropdown, PlCheckbox } from "@platforma-sdk/ui-vue";
 
 // It can be static or reactive, depending on your goals.
 // Note that if the parameter value is not primitive, deep equality is used to determine the selected parameter.
 const options = [
-  { text: 'Item text 1', value: 1 },
-  { text: 'Item text 2', value: 2 },
-  { text: 'Item text 3', value: 3 },
-  { text: 'Item text 4', value: 4 },
+  { text: "Item text 1", value: 1 },
+  { text: "Item text 2", value: 2 },
+  { text: "Item text 3", value: 3 },
+  { text: "Item text 4", value: 4 },
 ];
 
 const data = reactive({

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { provide, toRef } from 'vue';
+import { provide, toRef } from "vue";
 
 const model = defineModel<string>();
 
@@ -10,8 +10,8 @@ const props = defineProps<{
   multiple?: boolean;
 }>();
 
-provide('pl-accordion-model', model);
-provide('pl-accordion-props', toRef(props));
+provide("pl-accordion-model", model);
+provide("pl-accordion-props", toRef(props));
 </script>
 
 <template>

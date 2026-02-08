@@ -1,5 +1,5 @@
-import type { Ref, UnwrapNestedRefs } from 'vue';
-import { reactive, computed, ref } from 'vue';
+import type { Ref, UnwrapNestedRefs } from "vue";
+import { reactive, computed, ref } from "vue";
 
 /**
  * Creates a reactive local model with optional transformation and validation logic.
@@ -33,7 +33,10 @@ import { reactive, computed, ref } from 'vue';
  * });
  */
 
-export function useTransformedModel<T>(model: Ref<T>, options: { update?: (v: T) => boolean; parse?: (v: unknown) => T }) {
+export function useTransformedModel<T>(
+  model: Ref<T>,
+  options: { update?: (v: T) => boolean; parse?: (v: unknown) => T },
+) {
   const cached = ref<T | undefined>();
   const error = ref<string>();
 

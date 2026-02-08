@@ -1,1 +1,1 @@
-export { default as PlCheckboxGroup } from './PlCheckboxGroup.vue';
+export { default as PlCheckboxGroup } from "./PlCheckboxGroup.vue";

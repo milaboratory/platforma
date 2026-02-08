@@ -2,15 +2,8 @@
   "name": "@platforma-sdk/package-builder",
   "version": "3.11.0",
   "description": "MiLaboratories Platforma Package builder",
-  "type": "module",
-  "scripts": {
-    "type-check": "ts-builder types --target node",
-    "build": "oclif-index && ts-builder build --target node",
-    "watch": "ts-builder build --target node --watch",
-    "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "lint": "eslint ."
-  },
+  "keywords": [],
+  "license": "UNLICENSED",
   "bin": {
     "pl-pkg": "./bin/run.mjs"
   },
@@ -20,15 +13,25 @@
     "dist",
     "assets"
   ],
-  "keywords": [],
-  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "build": "oclif-index && ts-builder format && ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "test": "vitest run --coverage",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
+  },
   "dependencies": {
-    "@types/archiver": "^6.0.3",
-    "@types/node": "catalog:",
     "@aws-sdk/client-s3": "catalog:",
     "@aws-sdk/lib-storage": "catalog:",
-    "@oclif/core": "catalog:",
     "@milaboratories/resolve-helper": "workspace:*",
+    "@oclif/core": "catalog:",
+    "@types/archiver": "^6.0.3",
+    "@types/node": "catalog:",
     "archiver": "^7.0.1",
     "canonicalize": "catalog:",
     "tar": "catalog:",
@@ -38,25 +41,23 @@
     "zod": "4.1.12"
   },
   "devDependencies": {
-    "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/ts-builder": "workspace:*",
-    "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:*",
+    "@milaboratories/oclif-index": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
     "@platforma-open/milaboratories.runenv-python-3": "catalog:",
     "@types/archiver": "^6.0.3",
+    "@vitest/coverage-istanbul": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:"
+    "vitest": "catalog:"
   },
   "oclif": {
     "bin": "pl-pkg",
     "commands": {
+      "identifier": "COMMANDS",
       "strategy": "explicit",
-      "target": "./dist/index.js",
-      "identifier": "COMMANDS"
+      "target": "./dist/index.js"
     },
     "dirname": "pl-pkg",
     "topicSeparator": " "

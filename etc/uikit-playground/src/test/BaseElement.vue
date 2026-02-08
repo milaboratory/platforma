@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 const props = defineProps<{
-  type: 'primary' | 'secondary';
+  type: "primary" | "secondary";
   id: number;
   name: string;
 }>();

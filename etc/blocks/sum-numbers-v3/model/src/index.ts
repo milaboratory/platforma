@@ -1,4 +1,4 @@
-import type { InferHrefType, InferOutputsType } from '@platforma-sdk/model';
+import type { InferHrefType, InferOutputsType } from "@platforma-sdk/model";
 import {
   Annotation,
   BlockModelV3,
@@ -7,8 +7,8 @@ import {
   defineDataVersions,
   PlRef,
   readAnnotation,
-} from '@platforma-sdk/model';
-import { z } from 'zod';
+} from "@platforma-sdk/model";
+import { z } from "zod";
 
 export const BlockData = z.object({
   sources: z.array(PlRef).optional(),
@@ -24,11 +24,11 @@ const dataModel = new DataModelBuilder<VersionedData>()
   .from(Version.V1)
   .init(() => ({ sources: undefined }));
 
-export const platforma = BlockModelV3.create({ dataModel, renderingMode: 'Heavy' })
+export const platforma = BlockModelV3.create({ dataModel, renderingMode: "Heavy" })
 
   .args<BlockData>((data) => {
     if (data.sources === undefined || data.sources.length === 0) {
-      throw new Error('Sources are required');
+      throw new Error("Sources are required");
     }
     return { sources: data.sources };
   })
@@ -37,12 +37,12 @@ export const platforma = BlockModelV3.create({ dataModel, renderingMode: 'Heavy'
     return { sources: data.sources ?? [] };
   })
 
-  .output('opts', (ctx) =>
+  .output("opts", (ctx) =>
     ctx.resultPool
       .getSpecs()
       .entries.filter((spec) => {
         if (spec.obj.annotations === undefined) return false;
-        return readAnnotation(spec.obj, Annotation.Label) == 'Numbers';
+        return readAnnotation(spec.obj, Annotation.Label) == "Numbers";
       })
       .map((opt, i) => ({
         label: `numbers_${i}`,
@@ -50,12 +50,12 @@ export const platforma = BlockModelV3.create({ dataModel, renderingMode: 'Heavy'
       })),
   )
 
-  .output('optsWithEnrichments', (ctx) =>
+  .output("optsWithEnrichments", (ctx) =>
     ctx.resultPool
       .getSpecs()
       .entries.filter((spec) => {
         if (spec.obj.annotations === undefined) return false;
-        return readAnnotation(spec.obj, Annotation.Label) == 'Numbers';
+        return readAnnotation(spec.obj, Annotation.Label) == "Numbers";
       })
       .map((opt, i) => ({
         label: `numbers_${i}`,
@@ -63,10 +63,10 @@ export const platforma = BlockModelV3.create({ dataModel, renderingMode: 'Heavy'
       })),
   )
 
-  .output('sum', (ctx) => ctx.outputs?.resolve('sum')?.getDataAsJson<number>())
+  .output("sum", (ctx) => ctx.outputs?.resolve("sum")?.getDataAsJson<number>())
 
-  .output('prerunArgsJson', (ctx) =>
-    ctx.prerun?.resolve('prerunArgsJson')?.getDataAsJson<Record<string, unknown>>(),
+  .output("prerunArgsJson", (ctx) =>
+    ctx.prerun?.resolve("prerunArgsJson")?.getDataAsJson<Record<string, unknown>>(),
   )
 
   .enriches((args) =>
@@ -74,7 +74,7 @@ export const platforma = BlockModelV3.create({ dataModel, renderingMode: 'Heavy'
   )
 
   .sections((_ctx) => {
-    return [{ type: 'link', href: '/', label: 'Main' }];
+    return [{ type: "link", href: "/", label: "Main" }];
   })
 
   .done();

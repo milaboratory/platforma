@@ -13,15 +13,14 @@ import type {
   TableRange,
   UniqueValuesRequest,
   UniqueValuesResponse,
-} from '@platforma-sdk/model';
-import type { PoolEntry } from '@milaboratories/ts-helpers';
+} from "@platforma-sdk/model";
+import type { PoolEntry } from "@milaboratories/ts-helpers";
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle
  * layer and in tests.
  */
-export interface AbstractInternalPFrameDriver<PColumnData>
-  extends PFrameDriver, AsyncDisposable {
+export interface AbstractInternalPFrameDriver<PColumnData> extends PFrameDriver, AsyncDisposable {
   /** Dispose the driver and all its resources. */
   dispose(): Promise<void>;
 
@@ -35,35 +34,28 @@ export interface AbstractInternalPFrameDriver<PColumnData>
   pprofDump(): Promise<Uint8Array>;
 
   /** Create a new PFrame */
-  createPFrame(
-    def: PFrameDef<PColumn<PColumnData>>,
-  ): PoolEntry<PFrameHandle>;
+  createPFrame(def: PFrameDef<PColumn<PColumnData>>): PoolEntry<PFrameHandle>;
 
   /** Create a new PTable */
-  createPTable(
-    def: PTableDef<PColumn<PColumnData>>,
-  ): PoolEntry<PTableHandle>;
+  createPTable(def: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle>;
 
   /** Calculates data for the table and returns complete data representation of it */
   calculateTableData(
     handle: PFrameHandle,
     request: CalculateTableDataRequest<PObjectId>,
     range: TableRange | undefined,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<CalculateTableDataResponse>;
 
   /** Calculate set of unique values for a specific axis for the filtered set of records */
   getUniqueValues(
     handle: PFrameHandle,
     request: UniqueValuesRequest,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<UniqueValuesResponse>;
 
   /** Unified table shape */
-  getShape(
-    handle: PTableHandle,
-    signal?: AbortSignal,
-  ): Promise<PTableShape>;
+  getShape(handle: PTableHandle, signal?: AbortSignal): Promise<PTableShape>;
 
   /**
    * Retrieve the data from the table. To retrieve only data required, it can be

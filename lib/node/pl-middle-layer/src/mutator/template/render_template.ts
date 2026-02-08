@@ -1,14 +1,14 @@
-import type { AnyRef, FieldRef, PlTransaction } from '@milaboratories/pl-client';
-import { field, Pl } from '@milaboratories/pl-client';
-import type { ResourceType } from '@platforma-sdk/model';
+import type { AnyRef, FieldRef, PlTransaction } from "@milaboratories/pl-client";
+import { field, Pl } from "@milaboratories/pl-client";
+import type { ResourceType } from "@platforma-sdk/model";
 
 const EphRenderTemplate: ResourceType = {
-  name: 'EphRenderTemplate',
-  version: '1',
+  name: "EphRenderTemplate",
+  version: "1",
 };
 const RenderTemplate: ResourceType = {
-  name: 'RenderTemplate',
-  version: '1',
+  name: "RenderTemplate",
+  version: "1",
 };
 
 /**
@@ -27,15 +27,15 @@ export function createRenderTemplate<O extends string>(
   inputs: Pl.PlRecord,
   outputNames: O[],
 ): Record<O, FieldRef> {
-  if (outputNames.length === 0) throw new Error('Zero output names provided');
+  if (outputNames.length === 0) throw new Error("Zero output names provided");
   const rId = ephemeral ? tx.createEphemeral(EphRenderTemplate) : tx.createStruct(RenderTemplate);
 
-  const tplField = field(rId, 'template');
-  const inputsField = field(rId, 'inputs');
+  const tplField = field(rId, "template");
+  const inputsField = field(rId, "inputs");
 
-  tx.createField(tplField, 'Input', tpl);
-  tx.createField(inputsField, 'Input', Pl.createPlMap(tx, inputs, ephemeral));
+  tx.createField(tplField, "Input", tpl);
+  tx.createField(inputsField, "Input", Pl.createPlMap(tx, inputs, ephemeral));
   tx.lockInputs(rId);
 
-  return Pl.futureRecord(tx, rId, outputNames, 'Output', 'outputs/');
+  return Pl.futureRecord(tx, rId, outputNames, "Output", "outputs/");
 }

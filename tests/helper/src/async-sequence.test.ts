@@ -1,8 +1,8 @@
-import { test, expect } from 'vitest';
-import { utils } from '@milaboratories/helpers';
-import { sequence } from '@milaboratories/sequences';
+import { test, expect } from "vitest";
+import { utils } from "@milaboratories/helpers";
+import { sequence } from "@milaboratories/sequences";
 
-test('AsyncSequence 1', async () => {
+test("AsyncSequence 1", async () => {
   const values = utils.arrayFrom(10, (i) => i);
 
   async function* gen() {
@@ -27,7 +27,7 @@ test('AsyncSequence 1', async () => {
   expect(results.reduce((x, y) => x + y)).toBe(30);
 }, 10000);
 
-test('AsyncSequence 1', async () => {
+test("AsyncSequence 1", async () => {
   const arr = utils.arrayFrom(1000, (i) => i);
 
   async function* gen(): AsyncIterable<number> {
@@ -44,8 +44,7 @@ test('AsyncSequence 1', async () => {
     .filter((v) => v % 2 === 0)
     .filter((v) => v % 10 === 0)
     .slice(0, 10)
-    .reduce((acc, v) => acc + v, 0)
-  ;
+    .reduce((acc, v) => acc + v, 0);
 
   expect(result).toBe(4050);
 }, 10000);

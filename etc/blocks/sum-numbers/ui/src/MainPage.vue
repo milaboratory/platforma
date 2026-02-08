@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { PlAlert, PlBlockPage, PlDropdownMulti } from '@platforma-sdk/ui-vue';
-import { useApp } from './app';
-import { computed } from 'vue';
+import { PlAlert, PlBlockPage, PlDropdownMulti } from "@platforma-sdk/ui-vue";
+import { useApp } from "./app";
+import { computed } from "vue";
 
 const app = useApp();
 

@@ -1,10 +1,10 @@
-import { test } from 'vitest';
-import { utils } from '@milaboratories/helpers';
-import { sequence } from '@milaboratories/sequences';
+import { test } from "vitest";
+import { utils } from "@milaboratories/helpers";
+import { sequence } from "@milaboratories/sequences";
 
 const { delay, arrayFrom } = utils;
 
-test('Throttle', async () => {
+test("Throttle", async () => {
   const values = arrayFrom(20, (i) => i);
 
   async function* gen() {
@@ -21,10 +21,13 @@ test('Throttle', async () => {
     { leading: false, trailing: true },
     { leading: true, trailing: true },
   ]) {
-    const results = await sequence(gen()).map((v) => v).throttle(20, options).toArray();
-    console.log('options', JSON.stringify(options));
-    console.log(` values (${values.length}):`, values.join(', '));
-    console.log(`results (${results.length}):`, results.join(', '));
+    const results = await sequence(gen())
+      .map((v) => v)
+      .throttle(20, options)
+      .toArray();
+    console.log("options", JSON.stringify(options));
+    console.log(` values (${values.length}):`, values.join(", "));
+    console.log(`results (${results.length}):`, results.join(", "));
     console.log();
   }
 }, 10000);

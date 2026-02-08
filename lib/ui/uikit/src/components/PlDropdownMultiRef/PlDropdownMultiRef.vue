@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import type { ModelRef, RefOption } from '../../types';
-import PlDropdownMulti from '../PlDropdownMulti/PlDropdownMulti.vue';
-import { computed, useSlots } from 'vue';
+import type { ModelRef, RefOption } from "../../types";
+import PlDropdownMulti from "../PlDropdownMulti/PlDropdownMulti.vue";
+import { computed, useSlots } from "vue";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const slots: any = useSlots();
@@ -10,7 +10,7 @@ defineEmits<{
   /**
    * Emitted when the model value is updated.
    */
-  (e: 'update:modelValue', value: ModelRef[] | undefined): void;
+  (e: "update:modelValue", value: ModelRef[] | undefined): void;
 }>();
 
 const props = withDefaults(
@@ -53,7 +53,7 @@ const props = withDefaults(
     label: undefined,
     helper: undefined,
     error: undefined,
-    placeholder: '...',
+    placeholder: "...",
     required: false,
     disabled: false,
     options: undefined,

@@ -1,17 +1,17 @@
-import { RegistryV1 } from '@platforma-sdk/block-tools';
-import path from 'node:path';
-import { tryStat } from './util';
-import { tryResolve } from '@milaboratories/resolve-helper';
+import { RegistryV1 } from "@platforma-sdk/block-tools";
+import path from "node:path";
+import { tryStat } from "./util";
+import { tryResolve } from "@milaboratories/resolve-helper";
 
 export const LegacyDevBlockPackMetaYaml = [RegistryV1.PlPackageYamlConfigFile];
 export const LegacyDevBlockPackMetaJson = [RegistryV1.PlPackageJsonConfigFile];
-export const LegacyDevBlockPackTemplate = ['backend', 'dist', 'tengo', 'tpl', 'main.plj.gz'];
-export const LegacyDevBlockPackConfig = ['config', 'dist', 'config.json'];
-export const LegacyDevBlockPackFrontendFolder = ['frontend', 'dist'];
+export const LegacyDevBlockPackTemplate = ["backend", "dist", "tengo", "tpl", "main.plj.gz"];
+export const LegacyDevBlockPackConfig = ["config", "dist", "config.json"];
+export const LegacyDevBlockPackFrontendFolder = ["frontend", "dist"];
 
-export const CanonicalBlockWorkflowRequest = 'block-workflow/dist/tengo/tpl/main.plj.gz';
-export const CanonicalBlockConfigRequest = 'block-model/dist/config.json';
-export const CanonicalBlockUiRequestPackageJson = 'block-ui/package.json';
+export const CanonicalBlockWorkflowRequest = "block-workflow/dist/tengo/tpl/main.plj.gz";
+export const CanonicalBlockConfigRequest = "block-model/dist/config.json";
+export const CanonicalBlockUiRequestPackageJson = "block-ui/package.json";
 
 export const LegacyDevBlockPackFiles = [
   LegacyDevBlockPackTemplate,
@@ -32,8 +32,8 @@ export type DevPacketPaths = {
 
 export async function isLegacyDevPackage(packageRoot: string): Promise<boolean> {
   return (
-    (await tryStat(path.join(packageRoot, ...LegacyDevBlockPackConfig))) !== undefined
-    || (await tryStat(path.join(packageRoot, ...LegacyDevBlockPackTemplate))) !== undefined
+    (await tryStat(path.join(packageRoot, ...LegacyDevBlockPackConfig))) !== undefined ||
+    (await tryStat(path.join(packageRoot, ...LegacyDevBlockPackTemplate))) !== undefined
   );
 }
 
@@ -45,11 +45,11 @@ function mustResolve(root: string, request: string): string {
 
 export async function resolveDevPacket(
   packageRoot: string,
-  ignoreErrors: true
+  ignoreErrors: true,
 ): Promise<DevPacketPaths | undefined>;
 export async function resolveDevPacket(
   packageRoot: string,
-  ignoreErrors: false
+  ignoreErrors: false,
 ): Promise<DevPacketPaths>;
 export async function resolveDevPacket(
   packageRoot: string,
@@ -69,11 +69,11 @@ export async function resolveDevPacket(
     if (config === undefined) return undefined;
     const uiPackageJson = tryResolve(packageRoot, CanonicalBlockUiRequestPackageJson);
     if (uiPackageJson === undefined) return undefined;
-    return { workflow, config, ui: path.resolve(uiPackageJson, '..', 'dist') };
+    return { workflow, config, ui: path.resolve(uiPackageJson, "..", "dist") };
   } else {
     const workflow = mustResolve(packageRoot, CanonicalBlockConfigRequest);
     const config = mustResolve(packageRoot, CanonicalBlockConfigRequest);
     const uiPackageJson = mustResolve(packageRoot, CanonicalBlockUiRequestPackageJson);
-    return { workflow, config, ui: path.resolve(uiPackageJson, '..', 'dist') };
+    return { workflow, config, ui: path.resolve(uiPackageJson, "..", "dist") };
   }
 }

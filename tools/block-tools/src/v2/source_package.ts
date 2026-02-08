@@ -1,24 +1,22 @@
-import path from 'node:path';
-import { tryLoadFile } from '../util';
-import type { BlockPackDescriptionAbsolute } from './model';
-import { ResolvedBlockPackDescriptionFromPackageJson } from './model';
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import { notEmpty } from '@milaboratories/ts-helpers';
-import fsp from 'node:fs/promises';
-import type {
-  BlockPackDescriptionRaw,
-  BlockPackId } from '@milaboratories/pl-model-middle-layer';
+import path from "node:path";
+import { tryLoadFile } from "../util";
+import type { BlockPackDescriptionAbsolute } from "./model";
+import { ResolvedBlockPackDescriptionFromPackageJson } from "./model";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import { notEmpty } from "@milaboratories/ts-helpers";
+import fsp from "node:fs/promises";
+import type { BlockPackDescriptionRaw, BlockPackId } from "@milaboratories/pl-model-middle-layer";
 import {
   BlockPackDescriptionFromPackageJsonRaw,
   SemVer,
-} from '@milaboratories/pl-model-middle-layer';
+} from "@milaboratories/pl-model-middle-layer";
 
-export const BlockDescriptionPackageJsonField = 'block';
+export const BlockDescriptionPackageJsonField = "block";
 
-const ConventionPackageNamePattern
-  = /(?:@[a-zA-Z0-9-.]+\/)?(?<organization>[a-zA-Z0-9-]+)\.(?<name>[a-zA-Z0-9-]+)/;
+const ConventionPackageNamePattern =
+  /(?:@[a-zA-Z0-9-.]+\/)?(?<organization>[a-zA-Z0-9-]+)\.(?<name>[a-zA-Z0-9-]+)/;
 
-export function parsePackageName(packageName: string): Pick<BlockPackId, 'organization' | 'name'> {
+export function parsePackageName(packageName: string): Pick<BlockPackId, "organization" | "name"> {
   const match = packageName.match(ConventionPackageNamePattern);
   if (!match)
     throw new Error(
@@ -32,10 +30,11 @@ export async function tryLoadPackDescription(
   moduleRoot: string,
   logger?: MiLogger,
 ): Promise<BlockPackDescriptionAbsolute | undefined> {
-  const fullPackageJsonPath = path.resolve(moduleRoot, 'package.json');
+  const fullPackageJsonPath = path.resolve(moduleRoot, "package.json");
   try {
-    const packageJson = await tryLoadFile(fullPackageJsonPath, (buf) =>
-      JSON.parse(buf.toString('utf-8')) as Record<string, unknown>,
+    const packageJson = await tryLoadFile(
+      fullPackageJsonPath,
+      (buf) => JSON.parse(buf.toString("utf-8")) as Record<string, unknown>,
     );
     if (packageJson === undefined) return undefined;
     const descriptionNotParsed = packageJson[BlockDescriptionPackageJsonField];
@@ -44,13 +43,16 @@ export async function tryLoadPackDescription(
       ...BlockPackDescriptionFromPackageJsonRaw.parse(descriptionNotParsed),
       id: {
         ...parsePackageName(
-          notEmpty(packageJson['name'] as string | undefined, `"name" not found in ${fullPackageJsonPath}`),
+          notEmpty(
+            packageJson["name"] as string | undefined,
+            `"name" not found in ${fullPackageJsonPath}`,
+          ),
         ),
-        version: SemVer.parse(packageJson['version']),
+        version: SemVer.parse(packageJson["version"]),
       },
     };
-    const descriptionParsingResult
-      = await ResolvedBlockPackDescriptionFromPackageJson(moduleRoot).safeParseAsync(descriptionRaw);
+    const descriptionParsingResult =
+      await ResolvedBlockPackDescriptionFromPackageJson(moduleRoot).safeParseAsync(descriptionRaw);
     if (descriptionParsingResult.success) return descriptionParsingResult.data;
     logger?.warn(descriptionParsingResult.error);
     return undefined;
@@ -61,8 +63,10 @@ export async function tryLoadPackDescription(
 }
 
 export async function loadPackDescriptionRaw(moduleRoot: string): Promise<BlockPackDescriptionRaw> {
-  const fullPackageJsonPath = path.resolve(moduleRoot, 'package.json');
-  const packageJson = JSON.parse(await fsp.readFile(fullPackageJsonPath, { encoding: 'utf-8' })) as Record<string, unknown>;
+  const fullPackageJsonPath = path.resolve(moduleRoot, "package.json");
+  const packageJson = JSON.parse(
+    await fsp.readFile(fullPackageJsonPath, { encoding: "utf-8" }),
+  ) as Record<string, unknown>;
   const descriptionNotParsed = packageJson[BlockDescriptionPackageJsonField];
   if (descriptionNotParsed === undefined)
     throw new Error(
@@ -72,9 +76,12 @@ export async function loadPackDescriptionRaw(moduleRoot: string): Promise<BlockP
     ...BlockPackDescriptionFromPackageJsonRaw.parse(descriptionNotParsed),
     id: {
       ...parsePackageName(
-        notEmpty(packageJson['name'] as string | undefined, `"name" not found in ${fullPackageJsonPath}`),
+        notEmpty(
+          packageJson["name"] as string | undefined,
+          `"name" not found in ${fullPackageJsonPath}`,
+        ),
       ),
-      version: SemVer.parse(packageJson['version']),
+      version: SemVer.parse(packageJson["version"]),
     },
     featureFlags: {},
   };

@@ -3,26 +3,26 @@
  * Log Viewer Component
  */
 export default {
-  name: 'PlLogView',
+  name: "PlLogView",
 };
 </script>
 
 <script lang="ts" setup>
-import { computed, ref, useSlots, watch } from 'vue';
-import { PlMaskIcon24 } from '../PlMaskIcon24';
-import './pl-log-view.scss';
-import { okOptional, tapIf } from '@milaboratories/helpers';
-import type { AnyLogHandle, OutputWithStatus, Platforma } from '@platforma-sdk/model';
-import { useLogHandle } from './useLogHandle';
-import { useLabelNotch } from '../../utils/useLabelNotch';
-import DoubleContour from '../../utils/DoubleContour.vue';
-import { PlTooltip } from '../PlTooltip';
-import { PlIcon24 } from '../PlIcon24';
-import { downloadContent } from '../../helpers/dom';
+import { computed, ref, useSlots, watch } from "vue";
+import { PlMaskIcon24 } from "../PlMaskIcon24";
+import "./pl-log-view.scss";
+import { okOptional, tapIf } from "@milaboratories/helpers";
+import type { AnyLogHandle, OutputWithStatus, Platforma } from "@platforma-sdk/model";
+import { useLogHandle } from "./useLogHandle";
+import { useLabelNotch } from "../../utils/useLabelNotch";
+import DoubleContour from "../../utils/DoubleContour.vue";
+import { PlTooltip } from "../PlTooltip";
+import { PlIcon24 } from "../PlIcon24";
+import { downloadContent } from "../../helpers/dom";
 
-const getOutputError = <T>(o?: OutputWithStatus<T>) => {
+const getOutputError = <T,>(o?: OutputWithStatus<T>) => {
   if (o && o.ok === false) {
-    return o.errors.join('\n');
+    return o.errors.join("\n");
   }
 };
 
@@ -83,15 +83,19 @@ const contentRef = ref<HTMLElement>();
 
 const root = ref<HTMLInputElement>();
 
-const computedError = computed(() => logState.value?.error ?? props.error ?? getOutputError(props.output));
+const computedError = computed(
+  () => logState.value?.error ?? props.error ?? getOutputError(props.output),
+);
 
-const computedValue = computed(() => logState.value?.lines ?? props.value ?? okOptional(props.output));
+const computedValue = computed(
+  () => logState.value?.lines ?? props.value ?? okOptional(props.output),
+);
 
 const computedValueToCopy = computed(() => {
   if (props.valueToCopy) {
     return props.valueToCopy;
   }
-  if (computedValue.value && typeof computedValue.value === 'string') {
+  if (computedValue.value && typeof computedValue.value === "string") {
     return computedValue.value;
   }
   return undefined;
@@ -101,7 +105,7 @@ const copyActive = ref(false);
 
 useLabelNotch(root);
 
-const iconName = computed(() => (copyActive.value ? 'clipboard-copied' : 'clipboard'));
+const iconName = computed(() => (copyActive.value ? "clipboard-copied" : "clipboard"));
 
 const onClickCopy = () => {
   copyActive.value = true;
@@ -120,7 +124,7 @@ const onClickDownload = (filename: string) => {
   const toDownload = computedValueToCopy.value;
 
   if (toDownload !== undefined) {
-    downloadContent([toDownload, 'text/plain'], filename);
+    downloadContent([toDownload, "text/plain"], filename);
   }
 };
 
@@ -166,7 +170,7 @@ const onContentScroll = (ev: Event) => {
     <div class="pl-log-view__copy">
       <PlTooltip :close-delay="800" position="top">
         <PlMaskIcon24 title="Copy content" :name="iconName" @click="onClickCopy" />
-        <template #tooltip>{{ copyActive ? 'copied' : 'copy' }}</template>
+        <template #tooltip>{{ copyActive ? "copied" : "copy" }}</template>
       </PlTooltip>
       <PlTooltip v-if="downloadFilename" :close-delay="800" position="top">
         <PlIcon24 name="download" @click="() => onClickDownload(downloadFilename!)" />
@@ -174,6 +178,8 @@ const onContentScroll = (ev: Event) => {
       </PlTooltip>
     </div>
     <div v-if="computedError" class="pl-log-view__error">{{ computedError }}</div>
-    <div v-else ref="contentRef" class="pl-log-view__content" @scroll="onContentScroll">{{ computedValue }}</div>
+    <div v-else ref="contentRef" class="pl-log-view__content" @scroll="onContentScroll">
+      {{ computedValue }}
+    </div>
   </div>
 </template>

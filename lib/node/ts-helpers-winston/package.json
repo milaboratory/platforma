@@ -2,9 +2,13 @@
   "name": "@milaboratories/ts-helpers-winston",
   "version": "1.0.35",
   "description": "Useful helpers for our TS projects (winston-specific)",
-  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,22 +18,21 @@
   },
   "scripts": {
     "build": "ts-builder build --target node",
-    "type-check": "ts-builder types --target node",
-    "lint": "eslint .",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
-  "files": [
-    "dist/**/*",
-    "src/**/*"
-  ],
   "dependencies": {
     "@milaboratories/ts-helpers": "workspace:*",
     "winston": "catalog:"
   },
   "devDependencies": {
-    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
-    "typescript": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "typescript": "catalog:"
   }
 }

@@ -1,5 +1,10 @@
-import { Annotation, parseJson, readAnnotation, type PObjectSpec } from '@milaboratories/pl-model-common';
-import { z } from 'zod';
+import {
+  Annotation,
+  parseJson,
+  readAnnotation,
+  type PObjectSpec,
+} from "@milaboratories/pl-model-common";
+import { z } from "zod";
 
 export type RecordsWithLabel<T> = {
   value: T;
@@ -31,16 +36,18 @@ export type Trace = z.infer<typeof Trace>;
 type FullTrace = FullTraceEntry[];
 
 // Define the possible return types for the specExtractor function
-type SpecExtractorResult = PObjectSpec | {
-  spec: PObjectSpec;
-  prefixTrace?: TraceEntry[];
-  suffixTrace?: TraceEntry[];
-};
+type SpecExtractorResult =
+  | PObjectSpec
+  | {
+      spec: PObjectSpec;
+      prefixTrace?: TraceEntry[];
+      suffixTrace?: TraceEntry[];
+    };
 
 const DistancePenalty = 0.001;
 
-const LabelType = '__LABEL__';
-const LabelTypeFull = '__LABEL__@1';
+const LabelType = "__LABEL__";
+const LabelTypeFull = "__LABEL__@1";
 
 export function deriveLabels<T>(
   values: T[],
@@ -49,9 +56,10 @@ export function deriveLabels<T>(
 ): RecordsWithLabel<T>[] {
   const importances = new Map<string, number>();
 
-  const forceTraceElements = (ops.forceTraceElements !== undefined && ops.forceTraceElements.length > 0)
-    ? new Set(ops.forceTraceElements)
-    : undefined;
+  const forceTraceElements =
+    ops.forceTraceElements !== undefined && ops.forceTraceElements.length > 0
+      ? new Set(ops.forceTraceElements)
+      : undefined;
 
   // number of times certain type occurred among all of the
   const numberOfRecordsWithType = new Map<string, number>();
@@ -63,7 +71,7 @@ export function deriveLabels<T>(
     let suffixTrace: TraceEntry[] | undefined;
 
     // Check if the result is the new structure or just PObjectSpec
-    if ('spec' in extractorResult && typeof extractorResult.spec === 'object') {
+    if ("spec" in extractorResult && typeof extractorResult.spec === "object") {
       // It's the new structure { spec, prefixTrace?, suffixTrace? }
       spec = extractorResult.spec;
       prefixTrace = extractorResult.prefixTrace;
@@ -77,11 +85,7 @@ export function deriveLabels<T>(
     const traceStr = readAnnotation(spec, Annotation.Trace);
     const baseTrace = (traceStr ? Trace.safeParse(parseJson(traceStr)).data : undefined) ?? [];
 
-    const trace = [
-      ...(prefixTrace ?? []),
-      ...baseTrace,
-      ...(suffixTrace ?? []),
-    ];
+    const trace = [...(prefixTrace ?? []), ...baseTrace, ...(suffixTrace ?? [])];
 
     if (label !== undefined) {
       const labelEntry = { label, type: LabelType, importance: -2 };
@@ -127,7 +131,7 @@ export function deriveLabels<T>(
   allTypeRecords.sort(([, i1], [, i2]) => i2 - i1);
 
   for (const [typeName] of allTypeRecords) {
-    if (typeName.endsWith('@1') || numberOfRecordsWithType.get(typeName) === values.length)
+    if (typeName.endsWith("@1") || numberOfRecordsWithType.get(typeName) === values.length)
       mainTypes.push(typeName);
     else secondaryTypes.push(typeName);
   }
@@ -136,20 +140,20 @@ export function deriveLabels<T>(
     const result: RecordsWithLabel<T>[] = [];
     for (let i = 0; i < enrichedRecords.length; i++) {
       const r = enrichedRecords[i];
-      const includedTrace = r.fullTrace
-        .filter((fm) => includedTypes.has(fm.fullType)
-          || (forceTraceElements && forceTraceElements.has(fm.type)));
+      const includedTrace = r.fullTrace.filter(
+        (fm) =>
+          includedTypes.has(fm.fullType) || (forceTraceElements && forceTraceElements.has(fm.type)),
+      );
       if (includedTrace.length === 0) {
         if (force)
           result.push({
-            label: 'Unlabeled',
+            label: "Unlabeled",
             value: r.value,
           } satisfies RecordsWithLabel<T>);
         else return undefined;
       }
-      const labelSet = includedTrace
-        .map((fm) => fm.label);
-      const sep = ops.separator ?? ' / ';
+      const labelSet = includedTrace.map((fm) => fm.label);
+      const sep = ops.separator ?? " / ";
       result.push({
         label: labelSet.join(sep),
         value: r.value,
@@ -172,16 +176,21 @@ export function deriveLabels<T>(
 
     // Get types sorted by importance ascending (lowest first), excluding forced elements
     const removableSorted = [...typeSet]
-      .filter((t) =>
-        !forceTraceElements?.has(t.split('@')[0])
-        && !(ops.includeNativeLabel && t === LabelTypeFull))
+      .filter(
+        (t) =>
+          !forceTraceElements?.has(t.split("@")[0]) &&
+          !(ops.includeNativeLabel && t === LabelTypeFull),
+      )
       .sort((a, b) => (importances.get(a) ?? 0) - (importances.get(b) ?? 0));
 
     for (const typeToRemove of removableSorted) {
       const reducedSet = new Set(typeSet);
       reducedSet.delete(typeToRemove);
       const candidateResult = calculate(reducedSet);
-      if (candidateResult !== undefined && countUniqueLabels(candidateResult) >= currentCardinality) {
+      if (
+        candidateResult !== undefined &&
+        countUniqueLabels(candidateResult) >= currentCardinality
+      ) {
         typeSet.delete(typeToRemove);
       }
     }
@@ -189,7 +198,8 @@ export function deriveLabels<T>(
   };
 
   if (mainTypes.length === 0) {
-    if (secondaryTypes.length !== 0) throw new Error('Non-empty secondary types list while main types list is empty.');
+    if (secondaryTypes.length !== 0)
+      throw new Error("Non-empty secondary types list while main types list is empty.");
     return calculate(new Set(LabelTypeFull), true)!;
   }
 
@@ -208,8 +218,7 @@ export function deriveLabels<T>(
     const currentSet = new Set<string>();
     if (ops.includeNativeLabel) currentSet.add(LabelTypeFull);
     for (let i = 0; i < includedTypes; ++i) currentSet.add(mainTypes[i]);
-    if (additionalType >= 0)
-      currentSet.add(mainTypes[additionalType]);
+    if (additionalType >= 0) currentSet.add(mainTypes[additionalType]);
 
     const candidateResult = calculate(currentSet);
 

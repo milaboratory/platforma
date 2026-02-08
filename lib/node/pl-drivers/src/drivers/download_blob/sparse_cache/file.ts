@@ -1,16 +1,12 @@
 import { fileExists, MiLogger, spawnAsync } from "@milaboratories/ts-helpers";
-import * as fs from 'node:fs/promises';
+import * as fs from "node:fs/promises";
 
 /** Creates a sparse file for all systems
  * Table of what supports sparse files:
  * https://en.wikipedia.org/wiki/Comparison_of_file_systems#Allocation_and_layout_policies */
-export async function createSparseFile(
-  logger: MiLogger,
-  path: string,
-  platform: NodeJS.Platform,
-) {
+export async function createSparseFile(logger: MiLogger, path: string, platform: NodeJS.Platform) {
   try {
-    const ensureCreated = await fs.open(path, 'w');
+    const ensureCreated = await fs.open(path, "w");
     await ensureCreated.close();
 
     await ensureSparseOnWindows(path, platform);
@@ -26,9 +22,9 @@ export async function createSparseFile(
  * `fsutil sparse queryrange <path>`
  */
 async function ensureSparseOnWindows(path: string, platform: NodeJS.Platform) {
-  if (platform === 'win32') {
+  if (platform === "win32") {
     // https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/fsutil-sparse
-    await spawnAsync('fsutil', ['sparse', 'setflag', path], { stdio: 'pipe' });
+    await spawnAsync("fsutil", ["sparse", "setflag", path], { stdio: "pipe" });
   }
 }
 
@@ -38,13 +34,13 @@ export async function writeToSparseFile(
   platform: NodeJS.Platform,
   path: string,
   data: Uint8Array,
-  from: number
+  from: number,
 ) {
   if (!(await fileExists(path))) {
     await createSparseFile(logger, path, platform);
   }
 
-  const fileHandle = await fs.open(path, 'r+');
+  const fileHandle = await fs.open(path, "r+");
   await fileHandle.write(data, 0, data.length, from);
   await fileHandle.close();
 }

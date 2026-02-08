@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { computed, onErrorCaptured, ref, onBeforeUpdate } from 'vue';
-import { PlErrorAlert } from '../PlErrorAlert';
-import { isErrorLike, tryDo } from '@milaboratories/helpers';
+import { computed, onErrorCaptured, ref, onBeforeUpdate } from "vue";
+import { PlErrorAlert } from "../PlErrorAlert";
+import { isErrorLike, tryDo } from "@milaboratories/helpers";
 
 const extractMessage = (err: unknown): undefined | string => {
   if (err == null) {
@@ -13,10 +13,13 @@ const extractMessage = (err: unknown): undefined | string => {
       ? err.message
       : err.stack.includes(err.message)
         ? err.stack
-        : err.message + '\n' + err.stack;
+        : err.message + "\n" + err.stack;
   }
 
-  return tryDo(() => JSON.stringify(err, null, 4), () => err.toString());
+  return tryDo(
+    () => JSON.stringify(err, null, 4),
+    () => err.toString(),
+  );
 };
 
 const data = ref<null | {

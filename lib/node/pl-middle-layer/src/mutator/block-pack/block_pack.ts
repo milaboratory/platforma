@@ -1,32 +1,32 @@
-import type { AnyResourceRef, PlTransaction, ResourceType } from '@milaboratories/pl-client';
-import { field } from '@milaboratories/pl-client';
-import { loadTemplate } from '../template/template_loading';
-import type { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from '../../model';
-import type { Signer } from '@milaboratories/ts-helpers';
-import { assertNever } from '@milaboratories/ts-helpers';
-import fs from 'node:fs';
-import type { Dispatcher } from 'undici';
-import { request } from 'undici';
-import { createFrontend } from './frontend';
-import type { BlockConfigContainer } from '@platforma-sdk/model';
-import { Code } from '@platforma-sdk/model';
-import { loadPackDescription, RegistryV1 } from '@platforma-sdk/block-tools';
-import type { BlockPackInfo } from '../../model/block_pack';
-import { resolveDevPacket } from '../../dev_env';
-import { getDevV2PacketMtime } from '../../block_registry';
-import type { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
-import { LRUCache } from 'lru-cache';
-import type { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
-import { WorkerManager } from '../../worker/WorkerManager';
-import { z } from 'zod';
+import type { AnyResourceRef, PlTransaction, ResourceType } from "@milaboratories/pl-client";
+import { field } from "@milaboratories/pl-client";
+import { loadTemplate } from "../template/template_loading";
+import type { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from "../../model";
+import type { Signer } from "@milaboratories/ts-helpers";
+import { assertNever } from "@milaboratories/ts-helpers";
+import fs from "node:fs";
+import type { Dispatcher } from "undici";
+import { request } from "undici";
+import { createFrontend } from "./frontend";
+import type { BlockConfigContainer } from "@platforma-sdk/model";
+import { Code } from "@platforma-sdk/model";
+import { loadPackDescription, RegistryV1 } from "@platforma-sdk/block-tools";
+import type { BlockPackInfo } from "../../model/block_pack";
+import { resolveDevPacket } from "../../dev_env";
+import { getDevV2PacketMtime } from "../../block_registry";
+import type { V2RegistryProvider } from "../../block_registry/registry-v2-provider";
+import { LRUCache } from "lru-cache";
+import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
+import { WorkerManager } from "../../worker/WorkerManager";
+import { z } from "zod";
 
-export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
-export const BlockPackTemplateField = 'template';
-export const BlockPackFrontendField = 'frontend';
+export const BlockPackCustomType: ResourceType = { name: "BlockPackCustom", version: "1" };
+export const BlockPackTemplateField = "template";
+export const BlockPackFrontendField = "frontend";
 
 /** Ensure trailing slash */
 function tSlash(str: string): string {
-  if (str.endsWith('/')) return str;
+  if (str.endsWith("/")) return str;
   else return `${str}/`;
 }
 
@@ -34,18 +34,18 @@ function parseStringConfig(configContent: string): BlockConfigContainer {
   const res = z.record(z.string(), z.unknown()).safeParse(JSON.parse(configContent));
 
   if (!res.success) {
-    throw new Error('Invalid config content');
+    throw new Error("Invalid config content");
   }
 
   if (!Code.safeParse(res.data.code).success) {
-    throw new Error('parseStringConfig:No code bundle');
+    throw new Error("parseStringConfig:No code bundle");
   }
 
   return res.data as BlockConfigContainer;
 }
 
 function parseBufferConfig(buffer: ArrayBuffer): BlockConfigContainer {
-  return parseStringConfig(Buffer.from(buffer).toString('utf8'));
+  return parseStringConfig(Buffer.from(buffer).toString("utf8"));
 }
 
 export class BlockPackPreparer {
@@ -67,34 +67,34 @@ export class BlockPackPreparer {
 
   public async getBlockConfigContainer(spec: BlockPackSpecAny): Promise<BlockConfigContainer> {
     switch (spec.type) {
-      case 'explicit':
+      case "explicit":
         return spec.config;
 
-      case 'prepared':
+      case "prepared":
         return spec.config;
 
-      case 'dev-v1': {
+      case "dev-v1": {
         const devPaths = await resolveDevPacket(spec.folder, false);
-        const configContent = await fs.promises.readFile(devPaths.config, { encoding: 'utf-8' });
+        const configContent = await fs.promises.readFile(devPaths.config, { encoding: "utf-8" });
         return JSON.parse(configContent);
       }
 
-      case 'dev-v2': {
+      case "dev-v2": {
         const description = await loadPackDescription(spec.folder);
         const configContent = await fs.promises.readFile(description.components.model.file, {
-          encoding: 'utf-8',
+          encoding: "utf-8",
         });
         return parseStringConfig(configContent);
       }
 
-      case 'from-registry-v1': {
+      case "from-registry-v1": {
         const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix({ organization: spec.id.organization, package: spec.id.name, version: spec.id.version })}`;
 
         const configResponse = await this.remoteContentCache.forceFetch(`${urlPrefix}/config.json`);
-        return JSON.parse(Buffer.from(configResponse).toString('utf8'));
+        return JSON.parse(Buffer.from(configResponse).toString("utf8"));
       }
 
-      case 'from-registry-v2': {
+      case "from-registry-v2": {
         const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
         const components = await registry.getComponents(spec.id);
         const configResponse = await this.remoteContentCache.forceFetch(components.model.url);
@@ -107,7 +107,7 @@ export class BlockPackPreparer {
   }
 
   public async prepare(spec: BlockPackSpecAny): Promise<BlockPackSpecPrepared> {
-    if (spec.type === 'prepared') {
+    if (spec.type === "prepared") {
       return spec;
     }
 
@@ -117,42 +117,42 @@ export class BlockPackPreparer {
 
     return {
       ...explicit,
-      type: 'prepared',
+      type: "prepared",
       template: {
-        type: 'prepared',
-        data: await workerManager.process('parseTemplate', explicit.template.content),
+        type: "prepared",
+        data: await workerManager.process("parseTemplate", explicit.template.content),
       },
     };
   }
 
-  private async prepareWithoutUnpacking(spec: BlockPackExplicit | BlockPackSpec): Promise<BlockPackExplicit> {
+  private async prepareWithoutUnpacking(
+    spec: BlockPackExplicit | BlockPackSpec,
+  ): Promise<BlockPackExplicit> {
     switch (spec.type) {
-      case 'explicit':
+      case "explicit":
         return spec;
 
-      case 'dev-v1': {
+      case "dev-v1": {
         const devPaths = await resolveDevPacket(spec.folder, false);
 
         // template
         const templateContent = await fs.promises.readFile(devPaths.workflow);
 
         // config
-        const config = JSON.parse(
-          await fs.promises.readFile(devPaths.config, 'utf-8'),
-        );
+        const config = JSON.parse(await fs.promises.readFile(devPaths.config, "utf-8"));
 
         // frontend
         const frontendPath = devPaths.ui;
 
         return {
-          type: 'explicit',
+          type: "explicit",
           template: {
-            type: 'explicit',
+            type: "explicit",
             content: templateContent,
           },
           config,
           frontend: {
-            type: 'local',
+            type: "local",
             path: frontendPath,
             signature: this.signer.sign(frontendPath),
           },
@@ -160,11 +160,11 @@ export class BlockPackPreparer {
         };
       }
 
-      case 'dev-v2': {
+      case "dev-v2": {
         const description = await loadPackDescription(spec.folder);
         const config = parseStringConfig(
           await fs.promises.readFile(description.components.model.file, {
-            encoding: 'utf-8',
+            encoding: "utf-8",
           }),
         );
         const workflowContent = await fs.promises.readFile(
@@ -176,14 +176,14 @@ export class BlockPackPreparer {
           // if absent, calculating the mtime here, so the block will correctly show whether it can be updated
           source.mtime = await getDevV2PacketMtime(description);
         return {
-          type: 'explicit',
+          type: "explicit",
           template: {
-            type: 'explicit',
+            type: "explicit",
             content: workflowContent,
           },
           config,
           frontend: {
-            type: 'local',
+            type: "local",
             path: frontendPath,
             signature: this.signer.sign(frontendPath),
           },
@@ -191,7 +191,7 @@ export class BlockPackPreparer {
         };
       }
 
-      case 'from-registry-v1': {
+      case "from-registry-v1": {
         const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix({ organization: spec.id.organization, package: spec.id.name, version: spec.id.version })}`;
 
         const templateUrl = `${urlPrefix}/template.plj.gz`;
@@ -201,24 +201,26 @@ export class BlockPackPreparer {
 
         // config
         const configResponse = await this.remoteContentCache.forceFetch(`${urlPrefix}/config.json`);
-        const config = JSON.parse(Buffer.from(configResponse).toString('utf8')) as BlockConfigContainer;
+        const config = JSON.parse(
+          Buffer.from(configResponse).toString("utf8"),
+        ) as BlockConfigContainer;
 
         return {
-          type: 'explicit',
+          type: "explicit",
           template: {
-            type: 'explicit',
+            type: "explicit",
             content: templateContent,
           },
           config,
           frontend: {
-            type: 'url',
+            type: "url",
             url: `${urlPrefix}/frontend.tgz`,
           },
           source: spec,
         };
       }
 
-      case 'from-registry-v2': {
+      case "from-registry-v2": {
         const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
         const components = await registry.getComponents(spec.id);
         const getModel = async () =>
@@ -229,14 +231,14 @@ export class BlockPackPreparer {
         const [model, workflow] = await Promise.all([getModel(), getWorkflow()]);
 
         return {
-          type: 'explicit',
+          type: "explicit",
           template: {
-            type: 'explicit',
+            type: "explicit",
             content: Buffer.from(workflow),
           },
           config: model,
           frontend: {
-            type: 'url',
+            type: "url",
             url: components.ui.url,
           },
           source: spec,
@@ -252,8 +254,8 @@ export class BlockPackPreparer {
 function createCustomBlockPack(tx: PlTransaction, spec: BlockPackSpecPrepared): AnyResourceRef {
   const blockPackInfo: BlockPackInfo = { config: spec.config, source: spec.source };
   const bp = tx.createStruct(BlockPackCustomType, JSON.stringify(blockPackInfo));
-  tx.createField(field(bp, BlockPackTemplateField), 'Input', loadTemplate(tx, spec.template));
-  tx.createField(field(bp, BlockPackFrontendField), 'Input', createFrontend(tx, spec.frontend));
+  tx.createField(field(bp, BlockPackTemplateField), "Input", loadTemplate(tx, spec.template));
+  tx.createField(field(bp, BlockPackFrontendField), "Input", createFrontend(tx, spec.frontend));
   tx.lock(bp);
 
   return bp;
@@ -261,7 +263,7 @@ function createCustomBlockPack(tx: PlTransaction, spec: BlockPackSpecPrepared): 
 
 export function createBlockPack(tx: PlTransaction, spec: BlockPackSpecPrepared): AnyResourceRef {
   switch (spec.type) {
-    case 'prepared':
+    case "prepared":
       return createCustomBlockPack(tx, spec);
     default:
       return assertNever(spec.type);

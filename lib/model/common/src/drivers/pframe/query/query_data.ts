@@ -1,4 +1,4 @@
-import type { PObjectId } from '../../../pool';
+import type { PObjectId } from "../../../pool";
 import type {
   ExprAxisRef,
   ExprColumnRef,
@@ -13,7 +13,8 @@ import type {
   ExprStringRegex,
   ExprNumericUnary,
   QueryAxisSelector,
-  QueryColumn, QuerySparseToDenseColumn,
+  QueryColumn,
+  QuerySparseToDenseColumn,
   QueryFilter,
   QueryInlineColumn,
   QueryJoinEntry,
@@ -23,7 +24,7 @@ import type {
   QuerySymmetricJoin,
   TypeSpec,
   InferBooleanExpressionUnion,
-} from './query_common';
+} from "./query_common";
 
 /**
  * Column identifier with type specification.
@@ -99,12 +100,18 @@ export type ExprAxisRefData = ExprAxisRef<number>;
 export type ExprColumnRefData = ExprColumnRef<number>;
 
 export type QueryExpressionData =
-  | ExprColumnRefData | ExprAxisRefData | ExprConstant
-  | ExprNumericBinary<QueryExpressionData> | ExprNumericUnary<QueryExpressionData>
-  | ExprStringEquals<QueryExpressionData> | ExprStringContains<QueryExpressionData>
-  | ExprStringRegex<QueryExpressionData> | ExprStringContainsFuzzy<QueryExpressionData>
-  | ExprLogicalUnary<QueryExpressionData> | ExprLogicalVariadic<QueryExpressionData>
-  | ExprIsIn<QueryExpressionData, string> | ExprIsIn<QueryExpressionData, number>
-  ;
+  | ExprColumnRefData
+  | ExprAxisRefData
+  | ExprConstant
+  | ExprNumericBinary<QueryExpressionData>
+  | ExprNumericUnary<QueryExpressionData>
+  | ExprStringEquals<QueryExpressionData>
+  | ExprStringContains<QueryExpressionData>
+  | ExprStringRegex<QueryExpressionData>
+  | ExprStringContainsFuzzy<QueryExpressionData>
+  | ExprLogicalUnary<QueryExpressionData>
+  | ExprLogicalVariadic<QueryExpressionData>
+  | ExprIsIn<QueryExpressionData, string>
+  | ExprIsIn<QueryExpressionData, number>;
 
 export type QueryBooleanExpressionData = InferBooleanExpressionUnion<QueryExpressionData>;

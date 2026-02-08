@@ -1,4 +1,4 @@
-import type { Expression } from './base';
+import type { Expression } from "./base";
 
 /**
  * Represents a single "when" condition and its corresponding "then" result expression.
@@ -19,7 +19,7 @@ export interface WhenThenClause {
  */
 export interface WhenThenOtherwiseExpression {
   /** The type of operation, always 'when_then_otherwise'. */
-  type: 'when_then_otherwise';
+  type: "when_then_otherwise";
   /** An array of "when/then" clauses to be evaluated in order. */
   conditions: WhenThenClause[];
   /** The expression whose value is returned if none of the "when" conditions are met. */
@@ -35,7 +35,7 @@ export interface WhenThenOtherwiseExpression {
  */
 export interface FillNullExpression {
   /** The type of operation, always 'fill_null'. */
-  type: 'fill_null';
+  type: "fill_null";
   /** The primary expression to evaluate. */
   input: Expression;
   /** The expression whose value is used if 'input' is null. */
@@ -51,7 +51,7 @@ export interface FillNullExpression {
  */
 export interface FillNaNExpression {
   /** The type of operation, always 'fill_nan'. */
-  type: 'fill_nan';
+  type: "fill_nan";
   /** The primary expression to evaluate. */
   input: Expression;
   /** The expression whose value is used if 'input' is NaN. */

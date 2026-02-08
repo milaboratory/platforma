@@ -52,7 +52,7 @@ export interface TemplateDataV3 {
 
 export interface CompiledTemplateV3 {
   /** Discriminator for future use */
-  type: 'pl.tengo-template.v3';
+  type: "pl.tengo-template.v3";
 
   /** Hashes of all artifacts to sources itself. */
   hashToSource: Record<string, string>;

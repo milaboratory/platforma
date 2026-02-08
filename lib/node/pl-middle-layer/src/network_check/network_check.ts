@@ -17,19 +17,36 @@
  * We don't check backend access to S3 storage, it is checked on the start of backend.
  */
 
-import type { AuthInformation, PlClientConfig } from '@milaboratories/pl-client';
-import { PlClient, UnauthenticatedPlClient, plAddressToConfig } from '@milaboratories/pl-client';
-import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
-import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
-import { channel } from 'node:diagnostics_channel';
-import type { ClientDownload, ClientUpload } from '@milaboratories/pl-drivers';
-import { LsDriver, createDownloadClient, createUploadBlobClient } from '@milaboratories/pl-drivers';
-import type { HttpNetworkReport, NetworkReport } from './pings';
-import { autoUpdateCdnPings, backendPings, blockGARegistryOverviewPings, blockGARegistryUiPings, blockRegistryOverviewPings, blockRegistryUiPings, reportToString } from './pings';
-import type { Dispatcher } from 'undici';
-import type { TemplateReport } from './template';
-import { uploadTemplate, uploadFile, downloadFile, createTempFile, pythonSoftware, softwareCheck, createBigTempFile, downloadFromEveryStorage } from './template';
-import { randomUUID } from 'node:crypto';
+import type { AuthInformation, PlClientConfig } from "@milaboratories/pl-client";
+import { PlClient, UnauthenticatedPlClient, plAddressToConfig } from "@milaboratories/pl-client";
+import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
+import { ConsoleLoggerAdapter, HmacSha256Signer } from "@milaboratories/ts-helpers";
+import { channel } from "node:diagnostics_channel";
+import type { ClientDownload, ClientUpload } from "@milaboratories/pl-drivers";
+import { LsDriver, createDownloadClient, createUploadBlobClient } from "@milaboratories/pl-drivers";
+import type { HttpNetworkReport, NetworkReport } from "./pings";
+import {
+  autoUpdateCdnPings,
+  backendPings,
+  blockGARegistryOverviewPings,
+  blockGARegistryUiPings,
+  blockRegistryOverviewPings,
+  blockRegistryUiPings,
+  reportToString,
+} from "./pings";
+import type { Dispatcher } from "undici";
+import type { TemplateReport } from "./template";
+import {
+  uploadTemplate,
+  uploadFile,
+  downloadFile,
+  createTempFile,
+  pythonSoftware,
+  softwareCheck,
+  createBigTempFile,
+  downloadFromEveryStorage,
+} from "./template";
+import { randomUUID } from "node:crypto";
 
 /** All reports we need to collect. */
 interface NetworkReports {
@@ -138,7 +155,8 @@ export async function checkNetwork(
       ops,
     } = await initNetworkCheck(plCredentials, plUser, plPassword, optsOverrides);
 
-    const { filePath: filePathToDownload, fileContent: fileContentToDownload } = await createTempFile();
+    const { filePath: filePathToDownload, fileContent: fileContentToDownload } =
+      await createTempFile();
     const { filePath: filePathToUpload } = await createBigTempFile();
 
     const report: NetworkReports = {
@@ -150,23 +168,33 @@ export async function checkNetwork(
 
       autoUpdateCdnChecks: await autoUpdateCdnPings(ops, httpClient),
 
-      uploadTemplateCheck: await uploadTemplate(logger, client, 'Jack'),
-      uploadFileCheck: await uploadFile(logger, signer, lsDriver, uploadBlobClient, client, filePathToUpload),
-      downloadFileCheck: await downloadFile(logger, client, lsDriver, uploadBlobClient, downloadClient, filePathToDownload, fileContentToDownload),
-      softwareCheck: await softwareCheck(client),
-      pythonSoftwareCheck: await pythonSoftware(client, 'Jack'),
-      storageToDownloadReport: await downloadFromEveryStorage(
+      uploadTemplateCheck: await uploadTemplate(logger, client, "Jack"),
+      uploadFileCheck: await uploadFile(
+        logger,
+        signer,
+        lsDriver,
+        uploadBlobClient,
+        client,
+        filePathToUpload,
+      ),
+      downloadFileCheck: await downloadFile(
         logger,
         client,
         lsDriver,
-        {
-          minLsRequests: ops.everyStorageMinLsRequests,
-          bytesLimit: ops.everyStorageBytesLimit,
-          minFileSize: ops.everyStorageMinFileSize,
-          maxFileSize: ops.everyStorageMaxFileSize,
-          nFilesToCheck: ops.everyStorageNFilesToCheck,
-        },
+        uploadBlobClient,
+        downloadClient,
+        filePathToDownload,
+        fileContentToDownload,
       ),
+      softwareCheck: await softwareCheck(client),
+      pythonSoftwareCheck: await pythonSoftware(client, "Jack"),
+      storageToDownloadReport: await downloadFromEveryStorage(logger, client, lsDriver, {
+        minLsRequests: ops.everyStorageMinLsRequests,
+        bytesLimit: ops.everyStorageBytesLimit,
+        minFileSize: ops.everyStorageMinFileSize,
+        maxFileSize: ops.everyStorageMaxFileSize,
+        nFilesToCheck: ops.everyStorageNFilesToCheck,
+      }),
     };
 
     return reportsToString(report, plCredentials, ops, undiciLogs);
@@ -181,17 +209,17 @@ export async function initNetworkCheck(
   plPassword: string | undefined,
   optsOverrides: Partial<CheckNetworkOpts> = {},
 ): Promise<{
-    logger: MiLogger;
-    plConfig: PlClientConfig;
-    signer: Signer;
-    client: PlClient;
-    downloadClient: ClientDownload;
-    uploadBlobClient: ClientUpload;
-    lsDriver: LsDriver;
-    httpClient: Dispatcher;
-    ops: CheckNetworkOpts;
-    terminate: () => Promise<void>;
-  }> {
+  logger: MiLogger;
+  plConfig: PlClientConfig;
+  signer: Signer;
+  client: PlClient;
+  downloadClient: ClientDownload;
+  uploadBlobClient: ClientUpload;
+  lsDriver: LsDriver;
+  httpClient: Dispatcher;
+  ops: CheckNetworkOpts;
+  terminate: () => Promise<void>;
+}> {
   const ops: CheckNetworkOpts = {
     pingCheckDurationMs: 10000,
     pingTimeoutMs: 3000,
@@ -202,15 +230,15 @@ export async function initNetworkCheck(
     blockRegistryDurationMs: 3000,
     maxRegistryChecksPerSecond: 1,
 
-    blockRegistryUrl: 'https://blocks.pl-open.science',
-    blockGARegistryUrl: 'https://blocks-ga.pl-open.science',
-    blockOverviewPath: 'v2/overview.json',
-    blockUiPath: 'v2/milaboratories/samples-and-data/1.7.0/ui.tgz',
+    blockRegistryUrl: "https://blocks.pl-open.science",
+    blockGARegistryUrl: "https://blocks-ga.pl-open.science",
+    blockOverviewPath: "v2/overview.json",
+    blockUiPath: "v2/milaboratories/samples-and-data/1.7.0/ui.tgz",
 
     autoUpdateCdnDurationMs: 5000,
     maxAutoUpdateCdnChecksPerSecond: 1,
     autoUpdateCdnUrl:
-      'https://cdn.platforma.bio/software/platforma-desktop-v2/windows/amd64/latest.yml',
+      "https://cdn.platforma.bio/software/platforma-desktop-v2/windows/amd64/latest.yml",
 
     bodyLimit: 300,
 
@@ -243,7 +271,7 @@ export async function initNetworkCheck(
   const logger = new ConsoleLoggerAdapter();
 
   // FIXME: do we need to get an actual secret?
-  const signer = new HmacSha256Signer('localSecret');
+  const signer = new HmacSha256Signer("localSecret");
 
   // We could initialize middle-layer here, but for now it seems like an overkill.
   // Here's the code to do it:
@@ -260,14 +288,7 @@ export async function initNetworkCheck(
   const downloadClient = createDownloadClient(logger, client, []);
   const uploadBlobClient = createUploadBlobClient(client, logger);
 
-  const lsDriver = await LsDriver.init(
-    logger,
-    client,
-    signer,
-    [],
-    () => Promise.resolve([]),
-    [],
-  );
+  const lsDriver = await LsDriver.init(logger, client, signer, [], () => Promise.resolve([]), []);
 
   const terminate = async () => {
     downloadClient.close();
@@ -302,8 +323,9 @@ function reportsToString(
     ...new Set(successPings.map((p) => JSON.stringify((p.response as any).value))),
   ];
 
-  const summary = (ok: boolean) => ok ? 'OK' : 'FAILED';
-  const templateSummary = (report: TemplateReport) => report.status === 'ok' ? 'OK' : report.status === 'warn' ? 'WARN' : 'FAILED';
+  const summary = (ok: boolean) => (ok ? "OK" : "FAILED");
+  const templateSummary = (report: TemplateReport) =>
+    report.status === "ok" ? "OK" : report.status === "warn" ? "WARN" : "FAILED";
 
   const pings = reportToString(report.plPings);
   const blockRegistryOverview = reportToString(report.blockRegistryOverviewChecks);
@@ -313,7 +335,8 @@ function reportsToString(
   const autoUpdateCdn = reportToString(report.autoUpdateCdnChecks);
 
   const storagesSummary = Object.entries(report.storageToDownloadReport)
-    .map(([storage, report]) => `${templateSummary(report)} ${storage} storage check`).join('\n');
+    .map(([storage, report]) => `${templateSummary(report)} ${storage} storage check`)
+    .join("\n");
 
   return `
 ${summary(pings.ok)} pings to Platforma Backend
@@ -378,33 +401,33 @@ Platforma pings success dump examples:
 ${JSON.stringify(successPingsBodies, null, 2)}
 
 Undici logs:
-${undiciLogs.join('\n')}
+${undiciLogs.join("\n")}
 `;
 }
 
 // List of Undici diagnostic channels
 const undiciEvents: string[] = [
-  'undici:request:create', // When a new request is created
-  'undici:request:bodySent', // When the request body is sent
-  'undici:request:headers', // When request headers are sent
-  'undici:request:error', // When a request encounters an error
-  'undici:request:trailers', // When a response completes.
+  "undici:request:create", // When a new request is created
+  "undici:request:bodySent", // When the request body is sent
+  "undici:request:headers", // When request headers are sent
+  "undici:request:error", // When a request encounters an error
+  "undici:request:trailers", // When a response completes.
 
-  'undici:client:sendHeaders',
-  'undici:client:beforeConnect',
-  'undici:client:connected',
-  'undici:client:connectError',
+  "undici:client:sendHeaders",
+  "undici:client:beforeConnect",
+  "undici:client:connected",
+  "undici:client:connectError",
 
-  'undici:socket:close', // When a socket is closed
-  'undici:socket:connect', // When a socket connects
-  'undici:socket:error', // When a socket encounters an error
+  "undici:socket:close", // When a socket is closed
+  "undici:socket:connect", // When a socket connects
+  "undici:socket:error", // When a socket encounters an error
 
-  'undici:pool:request', // When a request is added to the pool
-  'undici:pool:connect', // When a pool creates a new connection
-  'undici:pool:disconnect', // When a pool connection is closed
-  'undici:pool:destroy', // When a pool is destroyed
-  'undici:dispatcher:request', // When a dispatcher processes a request
-  'undici:dispatcher:connect', // When a dispatcher connects
-  'undici:dispatcher:disconnect', // When a dispatcher disconnects
-  'undici:dispatcher:retry', // When a dispatcher retries a request
+  "undici:pool:request", // When a request is added to the pool
+  "undici:pool:connect", // When a pool creates a new connection
+  "undici:pool:disconnect", // When a pool connection is closed
+  "undici:pool:destroy", // When a pool is destroyed
+  "undici:dispatcher:request", // When a dispatcher processes a request
+  "undici:dispatcher:connect", // When a dispatcher connects
+  "undici:dispatcher:disconnect", // When a dispatcher disconnects
+  "undici:dispatcher:retry", // When a dispatcher retries a request
 ];

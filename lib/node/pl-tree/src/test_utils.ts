@@ -5,50 +5,48 @@ import type {
   OptionalResourceId,
   ResourceId,
   ResourceType,
-} from '@milaboratories/pl-client';
-import {
-  NullResourceId,
-} from '@milaboratories/pl-client';
-import type { ExtendedResourceData } from './state';
+} from "@milaboratories/pl-client";
+import { NullResourceId } from "@milaboratories/pl-client";
+import type { ExtendedResourceData } from "./state";
 
 export const TestRootType1: ResourceType = {
-  name: 'TestRootResource1',
-  version: '0',
+  name: "TestRootResource1",
+  version: "0",
 };
 
 export const TestRootType2: ResourceType = {
-  name: 'TestRootResource2',
-  version: '0',
+  name: "TestRootResource2",
+  version: "0",
 };
 
 export const TestStructuralResourceType1: ResourceType = {
-  name: 'TestStructuralResource1',
-  version: '0',
+  name: "TestStructuralResource1",
+  version: "0",
 };
 
 export const TestStructuralResourceType2: ResourceType = {
-  name: 'TestStructuralResource2',
-  version: '0',
+  name: "TestStructuralResource2",
+  version: "0",
 };
 
 export const TestValueResourceType1: ResourceType = {
-  name: 'TestValueResource1',
-  version: '0',
+  name: "TestValueResource1",
+  version: "0",
 };
 
 export const TestValueResourceType2: ResourceType = {
-  name: 'TestValueResource2',
-  version: '0',
+  name: "TestValueResource2",
+  version: "0",
 };
 
 export const TestErrorResourceType1: ResourceType = {
-  name: 'json/resourceError',
-  version: '1',
+  name: "json/resourceError",
+  version: "1",
 };
 
 export const ResourceReady: Pick<
   BasicResourceData,
-  'inputsLocked' | 'outputsLocked' | 'resourceReady' | 'final'
+  "inputsLocked" | "outputsLocked" | "resourceReady" | "final"
 > = {
   inputsLocked: true,
   outputsLocked: true,
@@ -56,9 +54,9 @@ export const ResourceReady: Pick<
   final: true,
 };
 
-export const InitialStructuralResourceState: Omit<ExtendedResourceData, 'id' | 'type' | 'fields'>
-  = {
-    kind: 'Structural',
+export const InitialStructuralResourceState: Omit<ExtendedResourceData, "id" | "type" | "fields"> =
+  {
+    kind: "Structural",
     originalResourceId: NullResourceId,
     error: NullResourceId,
     inputsLocked: false,
@@ -68,8 +66,8 @@ export const InitialStructuralResourceState: Omit<ExtendedResourceData, 'id' | '
     kv: [],
   };
 
-export const InitialValueResourceState: Omit<ExtendedResourceData, 'id' | 'type' | 'data'> = {
-  kind: 'Value',
+export const InitialValueResourceState: Omit<ExtendedResourceData, "id" | "type" | "data"> = {
+  kind: "Value",
   originalResourceId: NullResourceId,
   error: NullResourceId,
   ...ResourceReady,
@@ -77,33 +75,33 @@ export const InitialValueResourceState: Omit<ExtendedResourceData, 'id' | 'type'
   kv: [],
 };
 
-export const TestStructuralResourceState1: Omit<ExtendedResourceData, 'id' | 'fields'> = {
+export const TestStructuralResourceState1: Omit<ExtendedResourceData, "id" | "fields"> = {
   ...InitialStructuralResourceState,
   type: TestStructuralResourceType1,
 };
 
-export const TestStructuralResourceState2: Omit<ExtendedResourceData, 'id' | 'fields'> = {
+export const TestStructuralResourceState2: Omit<ExtendedResourceData, "id" | "fields"> = {
   ...InitialStructuralResourceState,
   type: TestStructuralResourceType2,
 };
 
-export const TestValueResourceState1: Omit<ExtendedResourceData, 'id' | 'data'> = {
+export const TestValueResourceState1: Omit<ExtendedResourceData, "id" | "data"> = {
   ...InitialValueResourceState,
   type: TestValueResourceType1,
 };
 
-export const TestValueResourceState2: Omit<ExtendedResourceData, 'id' | 'data'> = {
+export const TestValueResourceState2: Omit<ExtendedResourceData, "id" | "data"> = {
   ...InitialValueResourceState,
   type: TestValueResourceType2,
 };
 
-export const TestErrorResourceState2: Omit<ExtendedResourceData, 'id' | 'data'> = {
+export const TestErrorResourceState2: Omit<ExtendedResourceData, "id" | "data"> = {
   ...InitialValueResourceState,
   type: TestErrorResourceType1,
 };
 
 export const TestDynamicRootId1 = 1000001n as ResourceId;
-export const TestDynamicRootState1: Omit<ExtendedResourceData, 'fields'> = {
+export const TestDynamicRootState1: Omit<ExtendedResourceData, "fields"> = {
   ...InitialStructuralResourceState,
   inputsLocked: true,
   outputsLocked: true,
@@ -113,7 +111,7 @@ export const TestDynamicRootState1: Omit<ExtendedResourceData, 'fields'> = {
 };
 
 export const TestDynamicRootId2 = 1000002n as ResourceId;
-export const TestDynamicRootState2: Omit<ExtendedResourceData, 'fields'> = {
+export const TestDynamicRootState2: Omit<ExtendedResourceData, "fields"> = {
   ...InitialStructuralResourceState,
   inputsLocked: true,
   outputsLocked: true,
@@ -134,7 +132,7 @@ export function field(
     type,
     value,
     error,
-    status: value !== NullResourceId ? 'Resolved' : error !== NullResourceId ? 'Assigned' : 'Empty',
+    status: value !== NullResourceId ? "Resolved" : error !== NullResourceId ? "Assigned" : "Empty",
     valueIsFinal,
   };
 }
@@ -144,7 +142,7 @@ export function dField(
   value: OptionalResourceId = NullResourceId,
   error: OptionalResourceId = NullResourceId,
 ): FieldData {
-  return field('Dynamic', name, value, error);
+  return field("Dynamic", name, value, error);
 }
 
 export function iField(
@@ -152,5 +150,5 @@ export function iField(
   value: OptionalResourceId = NullResourceId,
   error: OptionalResourceId = NullResourceId,
 ): FieldData {
-  return field('Input', name, value, error);
+  return field("Input", name, value, error);
 }

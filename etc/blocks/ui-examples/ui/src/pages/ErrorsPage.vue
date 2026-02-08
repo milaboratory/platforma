@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { PlAlert, PlBlockPage, PlTextField, PlBtnPrimary, PlRow } from '@platforma-sdk/ui-vue';
-import { useApp } from '../app';
-import { computed, reactive } from 'vue';
+import { PlAlert, PlBlockPage, PlTextField, PlBtnPrimary, PlRow } from "@platforma-sdk/ui-vue";
+import { useApp } from "../app";
+import { computed, reactive } from "vue";
 
 const app = useApp();
 
@@ -11,12 +11,12 @@ const data = reactive({
 
 const numbers = computed({
   get() {
-    return app.model.args.numbers.join(',');
+    return app.model.args.numbers.join(",");
   },
   set(v) {
     app.model.args.numbers = v
-      .split(',')
-      .filter((s) => s !== '')
+      .split(",")
+      .filter((s) => s !== "")
       .map((s) => {
         const n = Number(s);
         return Number.isFinite(n) ? n : (s as unknown as number); // trigger error
@@ -29,11 +29,11 @@ const $ = {
     const parsed = Number(v);
 
     if (!Number.isFinite(parsed)) {
-      throw Error('Not a number');
+      throw Error("Not a number");
     }
 
     if (parsed <= 0) {
-      throw Error('Enter positive value');
+      throw Error("Enter positive value");
     }
 
     return parsed;

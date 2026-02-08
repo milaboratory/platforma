@@ -1,11 +1,11 @@
-import { extractConfigGeneric, type BlockConfigContainer } from '@milaboratories/pl-model-common';
-import type { TypedConfigOrConfigLambda, TypedConfigOrString } from './types';
-import { isConfigLambda } from './types';
-import type { BlockConfig } from './v3';
+import { extractConfigGeneric, type BlockConfigContainer } from "@milaboratories/pl-model-common";
+import type { TypedConfigOrConfigLambda, TypedConfigOrString } from "./types";
+import { isConfigLambda } from "./types";
+import type { BlockConfig } from "./v3";
 
 export function downgradeCfgOrLambda(data: TypedConfigOrConfigLambda): TypedConfigOrString;
 export function downgradeCfgOrLambda(
-  data: TypedConfigOrConfigLambda | undefined
+  data: TypedConfigOrConfigLambda | undefined,
 ): TypedConfigOrString | undefined;
 export function downgradeCfgOrLambda(
   data: TypedConfigOrConfigLambda | undefined,

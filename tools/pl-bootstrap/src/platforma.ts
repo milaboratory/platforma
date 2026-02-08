@@ -1,49 +1,49 @@
-import os from 'node:os';
-import fs from 'node:fs';
-import https from 'https';
-import path from 'node:path';
+import os from "node:os";
+import fs from "node:fs";
+import https from "https";
+import path from "node:path";
 
-import * as tar from 'tar';
-import type winston from 'winston';
-import state from './state';
-import { getDefaultPlVersion } from '@milaboratories/pl-deployments';
+import * as tar from "tar";
+import type winston from "winston";
+import state from "./state";
+import { getDefaultPlVersion } from "@milaboratories/pl-deployments";
 
-export const OSes = ['linux', 'macos', 'windows'] as const;
+export const OSes = ["linux", "macos", "windows"] as const;
 export type OSType = (typeof OSes)[number];
 
 export function archiveOS(osName?: string): OSType {
   const platform = osName ?? os.platform();
 
   switch (platform) {
-    case 'darwin':
-      return 'macos';
-    case 'linux':
-      return 'linux';
-    case 'win32':
-      return 'windows';
+    case "darwin":
+      return "macos";
+    case "linux":
+      return "linux";
+    case "win32":
+      return "windows";
     default:
       throw new Error(
-        `operating system '${platform}' is not currently supported by Platforma ecosystem. The list of OSes supported: `
-        + JSON.stringify(OSes),
+        `operating system '${platform}' is not currently supported by Platforma ecosystem. The list of OSes supported: ` +
+          JSON.stringify(OSes),
       );
   }
 }
 
-export const Arches = ['amd64', 'arm64'] as const;
+export const Arches = ["amd64", "arm64"] as const;
 export type ArchType = (typeof Arches)[number];
 
 export function archiveArch(archName?: string): ArchType {
   const arch = archName ?? os.arch();
 
   switch (arch) {
-    case 'arm64':
-      return 'arm64';
-    case 'x64':
-      return 'amd64';
+    case "arm64":
+      return "arm64";
+    case "x64":
+      return "amd64";
     default:
       throw new Error(
-        `processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: `
-        + JSON.stringify(Arches),
+        `processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: ` +
+          JSON.stringify(Arches),
       );
   }
 }
@@ -61,7 +61,8 @@ export function downloadArchive(
   const showProgress = options?.showProgress ?? process.stdout.isTTY;
 
   const archiveName = `pl-${version}-${archiveArch()}.tgz`;
-  const downloadURL = options?.downloadURL ?? `https://cdn.platforma.bio/software/pl/${archiveOS()}/${archiveName}`;
+  const downloadURL =
+    options?.downloadURL ?? `https://cdn.platforma.bio/software/pl/${archiveOS()}/${archiveName}`;
 
   const archiveFilePath = options?.saveTo ?? state.binaries(archiveName);
   if (fs.existsSync(archiveFilePath)) {
@@ -71,32 +72,38 @@ export function downloadArchive(
 
   fs.mkdirSync(path.dirname(archiveFilePath), { recursive: true });
 
-  logger.info(`Downloading Platforma Backend archive:\n  URL:     ${downloadURL}\n  Save to: ${archiveFilePath}`);
+  logger.info(
+    `Downloading Platforma Backend archive:\n  URL:     ${downloadURL}\n  Save to: ${archiveFilePath}`,
+  );
 
   const request = https.get(downloadURL);
 
   return new Promise((resolve, reject) => {
-    request.on('response', (response) => {
+    request.on("response", (response) => {
       if (!response.statusCode) {
-        const err = new Error('failed to download archive: no HTTP status code in response from server');
+        const err = new Error(
+          "failed to download archive: no HTTP status code in response from server",
+        );
         request.destroy();
         reject(err);
         return;
       }
       if (response.statusCode !== 200) {
-        const err = new Error(`failed to download archive: ${response.statusCode} ${response.statusMessage}`);
+        const err = new Error(
+          `failed to download archive: ${response.statusCode} ${response.statusMessage}`,
+        );
         request.destroy();
         reject(err);
         return;
       }
 
-      const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
+      const totalBytes = parseInt(response.headers["content-length"] || "0", 10);
       let downloadedBytes = 0;
 
       const archive = fs.createWriteStream(archiveFilePath);
 
       response.pipe(archive);
-      response.on('data', (chunk) => {
+      response.on("data", (chunk) => {
         downloadedBytes += chunk.length;
         const progress = (downloadedBytes / totalBytes) * 100;
         if (showProgress) {
@@ -104,14 +111,14 @@ export function downloadArchive(
         }
       });
 
-      response.on('error', (err: Error) => {
+      response.on("error", (err: Error) => {
         fs.unlinkSync(archiveFilePath);
         logger.error(`Failed to download Platforma Binary: ${err.message}`);
         request.destroy();
         reject(err);
       });
 
-      archive.on('finish', () => {
+      archive.on("finish", () => {
         archive.close();
         logger.info(`  ... download done.`);
         request.destroy();
@@ -129,7 +136,7 @@ export function extractArchive(
     extractTo?: string;
   },
 ): string {
-  logger.debug('extracting archive...');
+  logger.debug("extracting archive...");
 
   const version = options?.version ?? getDefaultPlVersion();
   logger.debug(`  version: '${version}'`);
@@ -157,7 +164,9 @@ export function extractArchive(
     fs.mkdirSync(targetDir, { recursive: true });
   }
 
-  logger.info(`Unpacking Platforma Backend archive:\n  Archive:   ${archivePath}\n  Target dir: ${targetDir}`);
+  logger.info(
+    `Unpacking Platforma Backend archive:\n  Archive:   ${archivePath}\n  Target dir: ${targetDir}`,
+  );
 
   tar.x({
     file: archivePath,
@@ -175,7 +184,9 @@ export function getBinary(
   logger: winston.Logger,
   options?: { version?: string; showProgress?: boolean },
 ): Promise<string> {
-  return downloadArchive(logger, options).then((archivePath) => extractArchive(logger, { archivePath }));
+  return downloadArchive(logger, options).then((archivePath) =>
+    extractArchive(logger, { archivePath }),
+  );
 }
 
 function binaryDirName(options?: { version?: string }): string {
@@ -188,7 +199,7 @@ export function binaryPath(version?: string, ...p: string[]): string {
 }
 
 function trimExtension(filename: string): string {
-  const lastDotIndex = filename.lastIndexOf('.');
+  const lastDotIndex = filename.lastIndexOf(".");
   if (lastDotIndex === -1) {
     return filename;
   }

@@ -1,14 +1,15 @@
-import type { Status } from '../proto-grpc/github.com/googleapis/googleapis/google/rpc/status';
-import { Aborted } from '@milaboratories/ts-helpers';
-import { Code } from '../proto-grpc/google/rpc/code';
+import type { Status } from "../proto-grpc/github.com/googleapis/googleapis/google/rpc/status";
+import { Aborted } from "@milaboratories/ts-helpers";
+import { Code } from "../proto-grpc/google/rpc/code";
 
 export function isConnectionProblem(err: unknown, nested: boolean = false): boolean {
   if (err === undefined || err === null) return false;
 
   if (err instanceof DisconnectedError) return true;
-  if ((err as any).name == 'RpcError' && (err as any).code == 'UNAVAILABLE') return true;
-  if ((err as any).name == 'RESTError' && (err as any).status.code == Code.UNAVAILABLE) return true;
-  if ((err as any).cause !== undefined && !nested) return isConnectionProblem((err as any).cause, true);
+  if ((err as any).name == "RpcError" && (err as any).code == "UNAVAILABLE") return true;
+  if ((err as any).name == "RESTError" && (err as any).status.code == Code.UNAVAILABLE) return true;
+  if ((err as any).cause !== undefined && !nested)
+    return isConnectionProblem((err as any).cause, true);
   return false;
 }
 
@@ -16,18 +17,21 @@ export function isUnauthenticated(err: unknown, nested: boolean = false): boolea
   if (err === undefined || err === null) return false;
 
   if (err instanceof UnauthenticatedError) return true;
-  if ((err as any).name == 'RpcError' && (err as any).code == 'UNAUTHENTICATED') return true;
-  if ((err as any).name == 'RESTError' && (err as any).status.code == Code.UNAUTHENTICATED) return true;
-  if ((err as any).cause !== undefined && !nested) return isUnauthenticated((err as any).cause, true);
+  if ((err as any).name == "RpcError" && (err as any).code == "UNAUTHENTICATED") return true;
+  if ((err as any).name == "RESTError" && (err as any).status.code == Code.UNAUTHENTICATED)
+    return true;
+  if ((err as any).cause !== undefined && !nested)
+    return isUnauthenticated((err as any).cause, true);
   return false;
 }
 
 export function isTimeoutError(err: unknown, nested: boolean = false): boolean {
   if (err === undefined || err === null) return false;
 
-  if ((err as any).name == 'TimeoutError') return true;
-  if ((err as any).name == 'RpcError' && (err as any).code == 'DEADLINE_EXCEEDED') return true;
-  if ((err as any).name == 'RESTError' && (err as any).status.code == Code.DEADLINE_EXCEEDED) return true;
+  if ((err as any).name == "TimeoutError") return true;
+  if ((err as any).name == "RpcError" && (err as any).code == "DEADLINE_EXCEEDED") return true;
+  if ((err as any).name == "RESTError" && (err as any).status.code == Code.DEADLINE_EXCEEDED)
+    return true;
   if ((err as any).cause !== undefined && !nested) return isTimeoutError((err as any).cause, true);
   return false;
 }
@@ -35,8 +39,8 @@ export function isTimeoutError(err: unknown, nested: boolean = false): boolean {
 export function isCancelError(err: unknown, nested: boolean = false): boolean {
   if (err === undefined || err === null) return false;
 
-  if ((err as any).name == 'RpcError' && (err as any).code == 'CANCELLED') return true;
-  if ((err as any).name == 'RESTError' && (err as any).status.code == Code.CANCELLED) return true;
+  if ((err as any).name == "RpcError" && (err as any).code == "CANCELLED") return true;
+  if ((err as any).name == "RESTError" && (err as any).status.code == Code.CANCELLED) return true;
   if ((err as any).cause !== undefined && !nested) return isCancelError((err as any).cause, true);
   return false;
 }
@@ -44,11 +48,11 @@ export function isCancelError(err: unknown, nested: boolean = false): boolean {
 export function isAbortedError(err: unknown, nested: boolean = false): boolean {
   if (err === undefined || err === null) return false;
 
-  if (err instanceof Aborted || (err as any).name == 'AbortError') return true;
-  if ((err as any).code == 'ABORT_ERR') return true;
+  if (err instanceof Aborted || (err as any).name == "AbortError") return true;
+  if ((err as any).code == "ABORT_ERR") return true;
   if (err instanceof DOMException && err.code === DOMException.ABORT_ERR) return true; // WebSocket error
-  if ((err as any).name == 'RpcError' && (err as any).code == 'ABORTED') return true;
-  if ((err as any).name == 'RESTError' && (err as any).status.code == Code.ABORTED) return true;
+  if ((err as any).name == "RpcError" && (err as any).code == "ABORTED") return true;
+  if ((err as any).name == "RESTError" && (err as any).status.code == Code.ABORTED) return true;
   if ((err as any).cause !== undefined && !nested) isAbortedError((err as any).cause, true);
   return false;
 }
@@ -59,15 +63,16 @@ export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): b
   if (isAbortedError(err, true)) return true;
   if (isTimeoutError(err, true)) return true;
   if (isCancelError(err, true)) return true;
-  if ((err as any).cause !== undefined && !nested) return isTimeoutOrCancelError((err as any).cause, true);
+  if ((err as any).cause !== undefined && !nested)
+    return isTimeoutOrCancelError((err as any).cause, true);
   return false;
 }
 
 export function isNotFoundError(err: unknown, nested: boolean = false): boolean {
   if (err === undefined || err === null) return false;
 
-  if ((err as any).name == 'RpcError' && (err as any).code == 'NOT_FOUND') return true;
-  if ((err as any).name == 'RESTError' && (err as any).status.code == Code.NOT_FOUND) return true;
+  if ((err as any).name == "RpcError" && (err as any).code == "NOT_FOUND") return true;
+  if ((err as any).name == "RESTError" && (err as any).status.code == Code.NOT_FOUND) return true;
   if ((err as any).cause !== undefined && !nested) return isNotFoundError((err as any).cause, true);
   return err instanceof RecoverablePlError && err.status.code === PlErrorCodeNotFound;
 }
@@ -75,8 +80,11 @@ export function isNotFoundError(err: unknown, nested: boolean = false): boolean 
 export const PlErrorCodeNotFound: number = Code.NOT_FOUND;
 
 export class PlError extends Error {
-  name = 'PlError';
-  constructor(public readonly status: Status, opts?: ErrorOptions) {
+  name = "PlError";
+  constructor(
+    public readonly status: Status,
+    opts?: ErrorOptions,
+  ) {
     super(`code=${status.code} ${status.message}`, opts);
   }
 }
@@ -86,35 +94,35 @@ export function throwPlNotFoundError(message: string): never {
 }
 
 export class RecoverablePlError extends PlError {
-  name = 'RecoverablePlError';
+  name = "RecoverablePlError";
   constructor(status: Status) {
     super(status);
   }
 }
 
 export class UnrecoverablePlError extends PlError {
-  name = 'UnrecoverablePlError';
+  name = "UnrecoverablePlError";
   constructor(status: Status) {
     super(status);
   }
 }
 
 export class UnauthenticatedError extends Error {
-  name = 'UnauthenticatedError';
+  name = "UnauthenticatedError";
   constructor(message: string) {
-    super('LoginFailed: ' + message);
+    super("LoginFailed: " + message);
   }
 }
 
 export class DisconnectedError extends Error {
-  name = 'DisconnectedError';
+  name = "DisconnectedError";
   constructor(message: string) {
-    super('Disconnected: ' + message);
+    super("Disconnected: " + message);
   }
 }
 
 export class RESTError extends PlError {
-  name = 'RESTError';
+  name = "RESTError";
   constructor(status: Status, opts?: ErrorOptions) {
     super(status, opts);
   }
@@ -131,7 +139,7 @@ export function rethrowMeaningfulError(error: any, wrapIfUnknown: boolean = fals
   }
   if (isTimeoutOrCancelError(error)) throw new Aborted(error);
   if (wrapIfUnknown) {
-    const message = error.message || String(error) || 'Unknown error';
+    const message = error.message || String(error) || "Unknown error";
     throw new Error(message, { cause: error });
   } else throw error;
 }

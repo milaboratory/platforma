@@ -2,15 +2,7 @@
   "name": "@platforma-sdk/tengo-builder",
   "version": "2.4.14",
   "description": "Pl Tengo Template Builder",
-  "type": "module",
-  "scripts": {
-    "lint": "eslint .",
-    "type-check": "ts-builder types --target node",
-    "build": "oclif-index && ts-builder build --target node",
-    "watch": "ts-builder build --target node --watch",
-    "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
-  },
+  "license": "UNLICENSED",
   "bin": {
     "pl-tengo": "./bin/run.js"
   },
@@ -19,38 +11,48 @@
     "./src/**/*",
     "README.md"
   ],
-  "license": "UNLICENSED",
-  "engines": {
-    "node": ">=22"
+  "type": "module",
+  "scripts": {
+    "build": "oclif-index && ts-builder format && ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "test": "vitest run --coverage",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@milaboratories/ts-helpers": "workspace:*",
+    "@milaboratories/pl-model-backend": "workspace:*",
     "@milaboratories/resolve-helper": "workspace:*",
     "@milaboratories/tengo-tester": "catalog:",
-    "@milaboratories/pl-model-backend": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
     "@oclif/core": "catalog:",
     "canonicalize": "catalog:",
     "winston": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@vitest/coverage-istanbul": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "oclif": {
     "bin": "pl-tengo",
     "commands": {
+      "identifier": "COMMANDS",
       "strategy": "explicit",
-      "target": "./dist/index.js",
-      "identifier": "COMMANDS"
+      "target": "./dist/index.js"
     },
     "dirname": "pl-tengo",
     "topicSeparator": " "
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

@@ -1,19 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as os from 'node:os';
-import { prepareDockerOptions } from '../docker-conda';
-import type * as artifacts from '../schemas/artifacts';
-import type winston from 'winston';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as os from "node:os";
+import { prepareDockerOptions } from "../docker-conda";
+import type * as artifacts from "../schemas/artifacts";
+import type winston from "winston";
 
-import * as defaults from '../../defaults';
-import * as util from '../util';
+import * as defaults from "../../defaults";
+import * as util from "../util";
 
 // Mock the os module
-vi.mock('node:os', () => ({
+vi.mock("node:os", () => ({
   platform: vi.fn(),
   tmpdir: vi.fn(),
-  arch: vi.fn().mockReturnValue('x64'),
+  arch: vi.fn().mockReturnValue("x64"),
 }));
 
 // Mock winston logger
@@ -27,46 +27,49 @@ const mockLogger = {
 // Mock Python package for testing - will be set in beforeEach
 let mockCondaPackage: artifacts.condaType;
 
-describe('Docker Conda Functions', () => {
+describe("Docker Conda Functions", () => {
   let tempDir: string;
   let testPackageRoot: string;
 
   beforeEach(() => {
     // Set up OS mocks
-    vi.mocked(os.platform).mockReturnValue('linux');
-    vi.mocked(os.tmpdir).mockReturnValue('/tmp');
+    vi.mocked(os.platform).mockReturnValue("linux");
+    vi.mocked(os.tmpdir).mockReturnValue("/tmp");
 
     // Create temporary directories for testing
-    tempDir = fs.mkdtempSync(path.join('/tmp', 'python-docker-test'));
-    testPackageRoot = path.join(tempDir, 'package');
+    tempDir = fs.mkdtempSync(path.join("/tmp", "python-docker-test"));
+    testPackageRoot = path.join(tempDir, "package");
 
     fs.mkdirSync(testPackageRoot, { recursive: true });
 
     // Create src directory for the root property
-    fs.mkdirSync(path.join(testPackageRoot, 'src'), { recursive: true });
+    fs.mkdirSync(path.join(testPackageRoot, "src"), { recursive: true });
 
     // Create a mock spec file
-    fs.writeFileSync(path.join(testPackageRoot, 'some-spec.yaml'), `
+    fs.writeFileSync(
+      path.join(testPackageRoot, "some-spec.yaml"),
+      `
 name: my-env
 channels: []
 dependencies: []
-`);
+`,
+    );
 
     // Initialize mockPythonPackage with absolute path
     mockCondaPackage = {
-      'type': 'conda',
-      'name': 'test-conda-package',
-      'version': '1.0.0',
-      'registry': { name: 'test' },
-      'roots': {
-        'linux-x64': path.join(testPackageRoot, 'src'), // Use absolute path
+      type: "conda",
+      name: "test-conda-package",
+      version: "1.0.0",
+      registry: { name: "test" },
+      roots: {
+        "linux-x64": path.join(testPackageRoot, "src"), // Use absolute path
       },
-      'docker-registry': 'test-docker-registry',
+      "docker-registry": "test-docker-registry",
 
-      'micromamba-version': 'some-micromamba-version',
-      'conda-root-dir': 'some-conda-root-dir',
-      'spec': 'some-spec.yaml',
-      'pkg': '/app',
+      "micromamba-version": "some-micromamba-version",
+      "conda-root-dir": "some-conda-root-dir",
+      spec: "some-spec.yaml",
+      pkg: "/app",
     };
 
     // Clear all mocks
@@ -82,20 +85,26 @@ dependencies: []
     }
   });
 
-  describe('prepareDockerOptions', () => {
-    it('should create dist/docker directories recursively', () => {
+  describe("prepareDockerOptions", () => {
+    it("should create dist/docker directories recursively", () => {
       // Verify directories don't exist initially
-      expect(fs.existsSync(path.join(testPackageRoot, 'dist'))).toBe(false);
+      expect(fs.existsSync(path.join(testPackageRoot, "dist"))).toBe(false);
 
-      const result = prepareDockerOptions(mockLogger, testPackageRoot, 'artifact-id', mockCondaPackage, util.currentArch());
+      const result = prepareDockerOptions(
+        mockLogger,
+        testPackageRoot,
+        "artifact-id",
+        mockCondaPackage,
+        util.currentArch(),
+      );
 
       // Verify directories were created
-      expect(fs.existsSync(path.join(testPackageRoot, 'dist', 'docker'))).toBe(true);
+      expect(fs.existsSync(path.join(testPackageRoot, "dist", "docker"))).toBe(true);
 
       // Verify result structure
       expect(result).toMatchObject({
         context: expect.stringContaining(testPackageRoot) as string,
-        dockerfile: expect.stringContaining('Dockerfile') as string,
+        dockerfile: expect.stringContaining("Dockerfile") as string,
         entrypoint: [],
       });
 
@@ -104,12 +113,18 @@ dependencies: []
       expect(fs.existsSync(result.context)).toBe(true);
     });
 
-    it('should generate Dockerfile with correct content', () => {
-      const result = prepareDockerOptions(mockLogger, testPackageRoot, 'artifact-id', mockCondaPackage, util.currentArch());
+    it("should generate Dockerfile with correct content", () => {
+      const result = prepareDockerOptions(
+        mockLogger,
+        testPackageRoot,
+        "artifact-id",
+        mockCondaPackage,
+        util.currentArch(),
+      );
 
       expect(result).toMatchObject({
         context: expect.stringContaining(testPackageRoot) as string,
-        dockerfile: expect.stringContaining('Dockerfile') as string,
+        dockerfile: expect.stringContaining("Dockerfile") as string,
         entrypoint: [],
       });
 
@@ -117,12 +132,12 @@ dependencies: []
       expect(fs.existsSync(result.dockerfile)).toBe(true);
       expect(fs.existsSync(result.context)).toBe(true);
 
-      const dockerfileContent = fs.readFileSync(result.dockerfile, 'utf-8');
+      const dockerfileContent = fs.readFileSync(result.dockerfile, "utf-8");
 
       // Check essential Dockerfile components
       expect(dockerfileContent).toContain(`FROM ${defaults.CONDA_DOCKER_BASE_IMAGE}`);
-      expect(dockerfileContent).toContain('COPY . /app');
-      expect(dockerfileContent).toContain('RUN micromamba');
+      expect(dockerfileContent).toContain("COPY . /app");
+      expect(dockerfileContent).toContain("RUN micromamba");
       expect(dockerfileContent).toContain(defaults.CONDA_FROZEN_ENV_SPEC_FILE);
       expect(dockerfileContent).toContain(defaults.CONDA_DATA_LOCATION);
     });

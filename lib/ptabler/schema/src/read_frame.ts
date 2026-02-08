@@ -1,4 +1,4 @@
-import type { PTableDef, PObjectId } from '@milaboratories/pl-model-common';
+import type { PTableDef, PObjectId } from "@milaboratories/pl-model-common";
 
 /**
  * Represents the configuration for a step that reads data from a PFrame directory into the tablespace.
@@ -6,7 +6,7 @@ import type { PTableDef, PObjectId } from '@milaboratories/pl-model-common';
  */
 export interface ReadFrameStep {
   /** The type of the step, which is always 'read_frame' for this operation. */
-  type: 'read_frame';
+  type: "read_frame";
   /** The name assigned to the loaded DataFrame in the tablespace. */
   name: string;
   /** Request to create the table from the PFrame. */
@@ -20,7 +20,7 @@ export interface ReadFrameStep {
    * Polars parallel strategy to use for the read. Defaults to 'auto'.
    * @see Parallel option in [scan_parquet](https://docs.pola.rs/api/python/stable/reference/api/polars.scan_parquet.html#polars.scan_parquet) documentation.
    */
-  parallel?: 'auto' | 'columns' | 'row_groups' | 'prefiltered' | 'none';
+  parallel?: "auto" | "columns" | "row_groups" | "prefiltered" | "none";
   /** Whether to use low memory mode for the polars read. Defaults to false. */
   low_memory?: boolean;
 }

@@ -1,6 +1,6 @@
-import type { Ref } from 'vue';
-import { computed, watchEffect } from 'vue';
-import { useEventListener } from './useEventListener';
+import type { Ref } from "vue";
+import { computed, watchEffect } from "vue";
+import { useEventListener } from "./useEventListener";
 
 type SortableItem = {
   el: HTMLElement;
@@ -18,8 +18,8 @@ export type SortableSettings = {
 };
 
 const classes = {
-  item: 'sortable__item',
-  animate: 'sortable__animate',
+  item: "sortable__item",
+  animate: "sortable__animate",
 };
 
 const getOffset = (el: HTMLElement) => {
@@ -100,7 +100,7 @@ export function useSortable(listRef: Ref<HTMLElement | undefined>, settings: Sor
 
   function updatePosition(item: SortableItem, y: number) {
     item.dy = y - item.y;
-    item.el.style.setProperty('transform', `translateY(${item.dy}px)`);
+    item.el.style.setProperty("transform", `translateY(${item.dy}px)`);
   }
 
   function changeOrder(reordered: HTMLElement[]) {
@@ -148,22 +148,22 @@ export function useSortable(listRef: Ref<HTMLElement | undefined>, settings: Sor
     state.item.y = state.item.y + dy;
     state.item.dy = state.item.dy - dy;
     state.item.orderChanged = true;
-    state.item.el.style.setProperty('transform', `translateY(${state.item.dy}px)`);
+    state.item.el.style.setProperty("transform", `translateY(${state.item.dy}px)`);
 
     toAnimate.forEach((o) => o.classList.remove(classes.animate));
 
     requestAnimationFrame(function () {
       toAnimate.forEach((option) => {
         option.classList.add(classes.animate);
-        option.style.transform = '';
-        option.addEventListener('transitionend', () => {
+        option.style.transform = "";
+        option.addEventListener("transitionend", () => {
           option.classList.remove(classes.animate);
         });
       });
     });
   }
 
-  useEventListener(window, 'mousemove', (e: { y: number }) => {
+  useEventListener(window, "mousemove", (e: { y: number }) => {
     if (!state.item) {
       return;
     }
@@ -195,7 +195,7 @@ export function useSortable(listRef: Ref<HTMLElement | undefined>, settings: Sor
     });
   });
 
-  useEventListener(window, 'mouseup', () => {
+  useEventListener(window, "mouseup", () => {
     if (!state.item) {
       return;
     }
@@ -203,9 +203,9 @@ export function useSortable(listRef: Ref<HTMLElement | undefined>, settings: Sor
     const { el, orderChanged } = state.item;
 
     el.classList.add(classes.animate);
-    el.style.removeProperty('transform');
+    el.style.removeProperty("transform");
 
-    el.addEventListener('transitionend', () => {
+    el.addEventListener("transitionend", () => {
       el.classList.remove(classes.animate, classes.item);
     });
 
@@ -214,7 +214,7 @@ export function useSortable(listRef: Ref<HTMLElement | undefined>, settings: Sor
         return;
       }
 
-      const newIndices = state.options().map((o) => Number(o.getAttribute('data-index')));
+      const newIndices = state.options().map((o) => Number(o.getAttribute("data-index")));
 
       const list = listRef.value;
 
@@ -236,9 +236,9 @@ export function useSortable(listRef: Ref<HTMLElement | undefined>, settings: Sor
 
   watchEffect(() => {
     optionsRef.value.forEach((child, i) => {
-      child.removeEventListener('mousedown', mouseDown);
-      child.addEventListener('mousedown', mouseDown);
-      child.setAttribute('data-index', String(i));
+      child.removeEventListener("mousedown", mouseDown);
+      child.addEventListener("mousedown", mouseDown);
+      child.setAttribute("data-index", String(i));
     });
   });
 }

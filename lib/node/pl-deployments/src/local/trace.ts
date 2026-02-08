@@ -1,4 +1,4 @@
-import type { MiLogger } from '@milaboratories/ts-helpers';
+import type { MiLogger } from "@milaboratories/ts-helpers";
 
 /** Records all inputs and outputs of one's choice, so if the error happened
  * one can check how it was by just printing this structure. */

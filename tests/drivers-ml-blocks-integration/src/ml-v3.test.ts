@@ -1,16 +1,16 @@
-import { blockSpec as downloadBlobURLSpec } from '@milaboratories/milaboratories.test-blob-url-custom-protocol';
-import type { platforma as downloadBlobURLModel } from '@milaboratories/milaboratories.test-blob-url-custom-protocol.model';
-import { blockSpec as downloadFileSpec } from '@milaboratories/milaboratories.test-download-file';
-import type { platforma as downloadFileModel } from '@milaboratories/milaboratories.test-download-file.model';
-import { blockSpec as enterNumberSpec } from '@milaboratories/milaboratories.test-enter-numbers-v3';
-import { blockSpec as readLogsSpec } from '@milaboratories/milaboratories.test-read-logs';
-import type { platforma as readLogsModel } from '@milaboratories/milaboratories.test-read-logs.model';
-import { blockSpec as sumNumbersSpec } from '@milaboratories/milaboratories.test-sum-numbers-v3';
-import { blockSpec as uploadFileSpec } from '@milaboratories/milaboratories.test-upload-file';
-import type { platforma as uploadFileModel } from '@milaboratories/milaboratories.test-upload-file.model';
-import { blockSpec as transferFilesSpec } from '@milaboratories/milaboratories.transfer-files';
-import type { platforma as transferFilesModel } from '@milaboratories/milaboratories.transfer-files.model';
-import { DisconnectedError } from '@milaboratories/pl-client';
+import { blockSpec as downloadBlobURLSpec } from "@milaboratories/milaboratories.test-blob-url-custom-protocol";
+import type { platforma as downloadBlobURLModel } from "@milaboratories/milaboratories.test-blob-url-custom-protocol.model";
+import { blockSpec as downloadFileSpec } from "@milaboratories/milaboratories.test-download-file";
+import type { platforma as downloadFileModel } from "@milaboratories/milaboratories.test-download-file.model";
+import { blockSpec as enterNumberSpec } from "@milaboratories/milaboratories.test-enter-numbers-v3";
+import { blockSpec as readLogsSpec } from "@milaboratories/milaboratories.test-read-logs";
+import type { platforma as readLogsModel } from "@milaboratories/milaboratories.test-read-logs.model";
+import { blockSpec as sumNumbersSpec } from "@milaboratories/milaboratories.test-sum-numbers-v3";
+import { blockSpec as uploadFileSpec } from "@milaboratories/milaboratories.test-upload-file";
+import type { platforma as uploadFileModel } from "@milaboratories/milaboratories.test-upload-file.model";
+import { blockSpec as transferFilesSpec } from "@milaboratories/milaboratories.transfer-files";
+import type { platforma as transferFilesModel } from "@milaboratories/milaboratories.transfer-files.model";
+import { DisconnectedError } from "@milaboratories/pl-client";
 import {
   type FolderURL,
   type ImportFileHandle,
@@ -20,78 +20,83 @@ import {
   type PlRef,
   type RangeBytes,
   type RemoteBlobHandleAndSize,
-} from '@milaboratories/pl-middle-layer';
-import type {
-  MiddleLayer,
-} from '@milaboratories/pl-middle-layer';
-import { awaitStableState, blockTest } from '@platforma-sdk/test';
-import fs from 'node:fs';
-import { createHash } from 'node:crypto';
-import * as fsp from 'node:fs/promises';
-import path from 'node:path';
-import { test } from 'vitest';
-import { compareBuffersInChunks, computeHashIncremental, shuffleInPlace } from './imports';
-import { isObject } from '@milaboratories/ts-helpers';
-import { withMl, withMlAndProxy } from './with-ml';
-import { awaitBlockDone } from './test-helpers';
-import { deriveDataFromStorage } from '@platforma-sdk/model';
+} from "@milaboratories/pl-middle-layer";
+import type { MiddleLayer } from "@milaboratories/pl-middle-layer";
+import { awaitStableState, blockTest } from "@platforma-sdk/test";
+import fs from "node:fs";
+import { createHash } from "node:crypto";
+import * as fsp from "node:fs/promises";
+import path from "node:path";
+import { test } from "vitest";
+import { compareBuffersInChunks, computeHashIncremental, shuffleInPlace } from "./imports";
+import { isObject } from "@milaboratories/ts-helpers";
+import { withMl, withMlAndProxy } from "./with-ml";
+import { awaitBlockDone } from "./test-helpers";
+import { deriveDataFromStorage } from "@platforma-sdk/model";
 
-test.skip('v3: disconnect:runBlock throws DisconnectedError when connection drops mid-operation', async ({ expect }) => {
-  await expect(() => withMlAndProxy(async (ml, _wd, proxy) => {
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+test.skip("v3: disconnect:runBlock throws DisconnectedError when connection drops mid-operation", async ({
+  expect,
+}) => {
+  await expect(() =>
+    withMlAndProxy(async (ml, _wd, proxy) => {
+      const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
+      await ml.openProject(pRid1);
+      const prj = ml.getOpenedProject(pRid1);
 
-    expect(await prj.overview.awaitStableValue()).toMatchObject({
-      meta: { label: 'Project 1' },
-      blocks: [],
-    });
+      expect(await prj.overview.awaitStableValue()).toMatchObject({
+        meta: { label: "Project 1" },
+        blocks: [],
+      });
 
-    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
-    const block2Id = await prj.addBlock('Block 2', sumNumbersSpec);
+      const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
+      const block2Id = await prj.addBlock("Block 2", sumNumbersSpec);
 
-    await prj.mutateBlockStorage(block1Id, { operation: 'update-data', value: { numbers: [1, 2, 3] } });
+      await prj.mutateBlockStorage(block1Id, {
+        operation: "update-data",
+        value: { numbers: [1, 2, 3] },
+      });
 
-    await prj.mutateBlockStorage(block2Id, {
-      operation: 'update-data',
-      value: { sources: [outputRef(block1Id, 'numbers')] },
-    });
+      await prj.mutateBlockStorage(block2Id, {
+        operation: "update-data",
+        value: { sources: [outputRef(block1Id, "numbers")] },
+      });
 
-    // Start transaction without awaiting, disconnect while in-flight, then await result.
-    const result = prj.runBlock(block2Id);
+      // Start transaction without awaiting, disconnect while in-flight, then await result.
+      const result = prj.runBlock(block2Id);
 
-    await proxy.disconnectAll();
+      await proxy.disconnectAll();
 
-    await result;
-    await awaitBlockDone(prj, block2Id);
-  })).rejects.toThrow(DisconnectedError);
+      await result;
+      await awaitBlockDone(prj, block2Id);
+    }),
+  ).rejects.toThrow(DisconnectedError);
 });
 
-test('v3: project list manipulations test', async ({ expect }) => {
+test("v3: project list manipulations test", async ({ expect }) => {
   await withMl(async (ml) => {
     const projectList = ml.projectList;
 
     expect(await projectList.awaitStableValue()).toEqual([]);
 
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
 
     expect(await projectList.getValue()).toMatchObject([
       {
-        id: 'id1',
+        id: "id1",
         rid: pRid1,
-        meta: { label: 'Project 1' },
+        meta: { label: "Project 1" },
         opened: false,
       },
     ]);
 
-    await ml.setProjectMeta(pRid1, { label: 'Project 1A' });
+    await ml.setProjectMeta(pRid1, { label: "Project 1A" });
 
     const listSnapshot1 = await projectList.getValue();
     expect(listSnapshot1).toMatchObject([
       {
-        id: 'id1',
+        id: "id1",
         rid: pRid1,
-        meta: { label: 'Project 1A' },
+        meta: { label: "Project 1A" },
         opened: false,
       },
     ]);
@@ -103,9 +108,9 @@ test('v3: project list manipulations test', async ({ expect }) => {
 
     expect(await projectList.getValue()).toMatchObject([
       {
-        id: 'id1',
+        id: "id1",
         rid: pRid1,
-        meta: { label: 'Project 1A' },
+        meta: { label: "Project 1A" },
         opened: true,
       },
     ]);
@@ -114,30 +119,30 @@ test('v3: project list manipulations test', async ({ expect }) => {
 
     expect(await projectList.getValue()).toMatchObject([
       {
-        id: 'id1',
+        id: "id1",
         rid: pRid1,
-        meta: { label: 'Project 1A' },
+        meta: { label: "Project 1A" },
         opened: false,
       },
     ]);
 
-    await ml.deleteProject('id1');
+    await ml.deleteProject("id1");
 
     expect(await projectList.awaitStableValue()).toEqual([]);
   });
 });
 
-test('v3: simple project manipulations test', { timeout: 40000 }, async ({ expect }) => {
+test("v3: simple project manipulations test", { timeout: 40000 }, async ({ expect }) => {
   await withMl(async (ml) => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
     const projectListValue1 = await projectList.getValue();
     expect(projectListValue1).toMatchObject([
       {
-        id: 'id1',
+        id: "id1",
         rid: pRid1,
-        meta: { label: 'Project 1' },
+        meta: { label: "Project 1" },
         opened: false,
       },
     ]);
@@ -148,28 +153,28 @@ test('v3: simple project manipulations test', { timeout: 40000 }, async ({ expec
     const prj = ml.getOpenedProject(pRid1);
 
     expect(await prj.overview.awaitStableValue()).toMatchObject({
-      meta: { label: 'Project 1' },
+      meta: { label: "Project 1" },
       authorMarker: undefined,
       blocks: [],
     });
     await ml.setProjectMeta(
       pRid1,
-      { label: 'New Project Label' },
-      { authorId: 'test_author', localVersion: 1 },
+      { label: "New Project Label" },
+      { authorId: "test_author", localVersion: 1 },
     );
     await prj.overview.refreshState();
     expect(await prj.overview.awaitStableValue()).toMatchObject({
-      meta: { label: 'New Project Label' },
-      authorMarker: { authorId: 'test_author', localVersion: 1 },
+      meta: { label: "New Project Label" },
+      authorMarker: { authorId: "test_author", localVersion: 1 },
       blocks: [],
     });
 
-    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
-    const block2Id = await prj.addBlock('Block 2', enterNumberSpec);
-    const block3Id = await prj.addBlock('Block 3', sumNumbersSpec);
+    const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
+    const block2Id = await prj.addBlock("Block 2", enterNumberSpec);
+    const block3Id = await prj.addBlock("Block 3", sumNumbersSpec);
 
     expect(await prj.overview.awaitStableValue()).toMatchObject({
-      meta: { label: 'New Project Label' },
+      meta: { label: "New Project Label" },
       authorMarker: undefined,
     });
 
@@ -179,25 +184,31 @@ test('v3: simple project manipulations test', { timeout: 40000 }, async ({ expec
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(false);
       expect(block.currentBlockPack).toBeDefined();
-      expect(block.navigationState).toStrictEqual({ href: '/' });
+      expect(block.navigationState).toStrictEqual({ href: "/" });
     });
 
     const _block1StableState0 = await prj.getBlockState(block1Id).awaitStableValue();
     const _block2StableState0 = await prj.getBlockState(block2Id).awaitStableValue();
     const _block3StableState0 = await prj.getBlockState(block3Id).awaitStableValue();
 
-    expect(_block1StableState0.outputs!['activeArgs']).toStrictEqual({
+    expect(_block1StableState0.outputs!["activeArgs"]).toStrictEqual({
       ok: true,
       value: undefined,
       stable: true,
     });
 
-    await prj.setNavigationState(block1Id, { href: '/section1' });
-    await prj.mutateBlockStorage(block1Id, { operation: 'update-data', value: { numbers: [1, 2, 3] } });
-    await prj.mutateBlockStorage(block2Id, { operation: 'update-data', value: { numbers: [3, 4, 5] } });
+    await prj.setNavigationState(block1Id, { href: "/section1" });
+    await prj.mutateBlockStorage(block1Id, {
+      operation: "update-data",
+      value: { numbers: [1, 2, 3] },
+    });
+    await prj.mutateBlockStorage(block2Id, {
+      operation: "update-data",
+      value: { numbers: [3, 4, 5] },
+    });
     await prj.mutateBlockStorage(block3Id, {
-      operation: 'update-data',
-      value: { sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')] },
+      operation: "update-data",
+      value: { sources: [outputRef(block1Id, "numbers"), outputRef(block2Id, "numbers")] },
     });
     await prj.runBlock(block3Id);
     await awaitBlockDone(prj, block3Id);
@@ -212,8 +223,8 @@ test('v3: simple project manipulations test', { timeout: 40000 }, async ({ expec
       expect(block.canRun).toEqual(false);
       expect(block.stale).toEqual(false);
       expect(block.currentBlockPack).toBeDefined();
-      if (block.id === block1Id) expect(block.navigationState).toStrictEqual({ href: '/section1' });
-      else expect(block.navigationState).toStrictEqual({ href: '/' });
+      if (block.id === block1Id) expect(block.navigationState).toStrictEqual({ href: "/section1" });
+      else expect(block.navigationState).toStrictEqual({ href: "/" });
     });
     // console.dir(overviewSnapshot1, { depth: 5 });
     const block1StableFrontend = await prj.getBlockFrontend(block1Id).awaitStableValue();
@@ -230,20 +241,20 @@ test('v3: simple project manipulations test', { timeout: 40000 }, async ({ expec
     const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
     const _block2StableState1 = await prj.getBlockState(block2Id).awaitStableValue();
     const block3StableState1 = await prj.getBlockState(block3Id).awaitStableValue();
-    expect(block1StableState1.navigationState).toStrictEqual({ href: '/section1' });
-    expect(_block2StableState1.navigationState).toStrictEqual({ href: '/' });
-    expect(block3StableState1.navigationState).toStrictEqual({ href: '/' });
+    expect(block1StableState1.navigationState).toStrictEqual({ href: "/section1" });
+    expect(_block2StableState1.navigationState).toStrictEqual({ href: "/" });
+    expect(block3StableState1.navigationState).toStrictEqual({ href: "/" });
     console.dir(block1StableState1, { depth: 5 });
     console.dir(_block2StableState1, { depth: 5 });
     console.dir(block3StableState1, { depth: 5 });
 
-    expect(block1StableState1.outputs!['activeArgs']).toStrictEqual({
+    expect(block1StableState1.outputs!["activeArgs"]).toStrictEqual({
       ok: true,
       value: { numbers: [1, 2, 3] },
       stable: true,
     });
 
-    expect(block3StableState1.outputs!['sum']).toStrictEqual({
+    expect(block3StableState1.outputs!["sum"]).toStrictEqual({
       ok: true,
       value: 18,
       stable: true,
@@ -253,43 +264,50 @@ test('v3: simple project manipulations test', { timeout: 40000 }, async ({ expec
     expect(overviewSnapshot3.blocks.find((b) => b.id === block3Id)?.stale).toEqual(false);
     expect(overviewSnapshot3.blocks.find((b) => b.id === block2Id)?.stale).toEqual(false);
 
-    await prj.mutateBlockStorage(block2Id, { operation: 'update-data', value: { numbers: [3, 4, 5] } });
+    await prj.mutateBlockStorage(block2Id, {
+      operation: "update-data",
+      value: { numbers: [3, 4, 5] },
+    });
 
     const overviewSnapshot4 = await prj.overview.awaitStableValue();
     expect(overviewSnapshot4.blocks.find((b) => b.id === block3Id)?.stale).toEqual(false);
     expect(overviewSnapshot4.blocks.find((b) => b.id === block2Id)?.stale).toEqual(false);
 
     await prj.resetBlockArgsAndUiState(block2Id);
-    await prj.setBlockSettings(block2Id, { versionLock: 'patch' });
+    await prj.setBlockSettings(block2Id, { versionLock: "patch" });
 
     const block2State = await prj.getBlockState(block2Id).getValue();
     // V3 blocks store state directly without nested args/uiState structure
-    console.log('block2State:----------------------------');
+    console.log("block2State:----------------------------");
     console.dir(block2State, { depth: 5 });
-    expect(deriveDataFromStorage(block2State.blockStorage)).toStrictEqual({ numbers: [], labels: [], description: '' });
+    expect(deriveDataFromStorage(block2State.blockStorage)).toStrictEqual({
+      numbers: [],
+      labels: [],
+      description: "",
+    });
 
     const overviewSnapshot2 = await prj.overview.awaitStableValue();
     expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.canRun).toEqual(false);
     expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.stale).toEqual(true);
     expect(overviewSnapshot2.blocks.find((b) => b.id === block2Id)?.stale).toEqual(true);
     expect(overviewSnapshot2.blocks.find((b) => b.id === block2Id)?.settings).toEqual({
-      versionLock: 'patch',
+      versionLock: "patch",
     });
   });
 });
 
-test('v3: reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
+test("v3: reorder & rename blocks", { timeout: 20000 }, async ({ expect }) => {
   await withMl(async (ml) => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
 
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
-    const block2Id = await prj.addBlock('Block 2', enterNumberSpec);
-    const block3Id = await prj.addBlock('Block 3', sumNumbersSpec);
+    const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
+    const block2Id = await prj.addBlock("Block 2", enterNumberSpec);
+    const block3Id = await prj.addBlock("Block 3", sumNumbersSpec);
 
     const overviewSnapshot0 = await prj.overview.awaitStableValue();
 
@@ -297,16 +315,22 @@ test('v3: reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(false);
       expect(block.currentBlockPack).toBeDefined();
-      expect(block.navigationState).toStrictEqual({ href: '/' });
+      expect(block.navigationState).toStrictEqual({ href: "/" });
     });
 
-    await prj.setNavigationState(block1Id, { href: '/section1' });
-    await prj.mutateBlockStorage(block1Id, { operation: 'update-data', value: { numbers: [1, 2, 3] } });
-    await prj.mutateBlockStorage(block2Id, { operation: 'update-data', value: { numbers: [3, 4, 5] } });
+    await prj.setNavigationState(block1Id, { href: "/section1" });
+    await prj.mutateBlockStorage(block1Id, {
+      operation: "update-data",
+      value: { numbers: [1, 2, 3] },
+    });
+    await prj.mutateBlockStorage(block2Id, {
+      operation: "update-data",
+      value: { numbers: [3, 4, 5] },
+    });
 
     await prj.mutateBlockStorage(block3Id, {
-      operation: 'update-data',
-      value: { sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')] },
+      operation: "update-data",
+      value: { sources: [outputRef(block1Id, "numbers"), outputRef(block2Id, "numbers")] },
     });
     await prj.runBlock(block3Id);
     await awaitBlockDone(prj, block3Id);
@@ -314,9 +338,9 @@ test('v3: reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
     expect(overviewSnapshot1).toMatchObject({
       blocks: [
-        { id: block1Id, calculationStatus: 'Done' },
-        { id: block2Id, calculationStatus: 'Done' },
-        { id: block3Id, calculationStatus: 'Done' },
+        { id: block1Id, calculationStatus: "Done" },
+        { id: block2Id, calculationStatus: "Done" },
+        { id: block3Id, calculationStatus: "Done" },
       ],
     });
 
@@ -325,28 +349,28 @@ test('v3: reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
     const overviewSnapshot2 = await prj.overview.awaitStableValue();
     expect(overviewSnapshot2).toMatchObject({
       blocks: [
-        { id: block2Id, calculationStatus: 'Done' },
-        { id: block3Id, calculationStatus: 'Limbo' },
-        { id: block1Id, calculationStatus: 'Done' },
+        { id: block2Id, calculationStatus: "Done" },
+        { id: block3Id, calculationStatus: "Limbo" },
+        { id: block1Id, calculationStatus: "Done" },
       ],
     });
   });
 });
 
-test('v3: dependency test', { timeout: 20000 }, async ({ expect }) => {
+test("v3: dependency test", { timeout: 20000 }, async ({ expect }) => {
   await withMl(async (ml) => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
 
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
-    const block2Id = await prj.addBlock('Block 2', enterNumberSpec);
-    const block3Id = await prj.addBlock('Block 3', sumNumbersSpec);
-    const block4Id = await prj.addBlock('Block 4', sumNumbersSpec);
-    const block5Id = await prj.addBlock('Block 5', sumNumbersSpec);
+    const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
+    const block2Id = await prj.addBlock("Block 2", enterNumberSpec);
+    const block3Id = await prj.addBlock("Block 3", sumNumbersSpec);
+    const block4Id = await prj.addBlock("Block 4", sumNumbersSpec);
+    const block5Id = await prj.addBlock("Block 5", sumNumbersSpec);
 
     const overviewSnapshot0 = await prj.overview.awaitStableValue();
 
@@ -354,23 +378,29 @@ test('v3: dependency test', { timeout: 20000 }, async ({ expect }) => {
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(false);
       expect(block.currentBlockPack).toBeDefined();
-      expect(block.navigationState).toStrictEqual({ href: '/' });
+      expect(block.navigationState).toStrictEqual({ href: "/" });
     });
 
-    await prj.setNavigationState(block1Id, { href: '/section1' });
-    await prj.mutateBlockStorage(block1Id, { operation: 'update-data', value: { numbers: [1, 2, 3] } });
-    await prj.mutateBlockStorage(block2Id, { operation: 'update-data', value: { numbers: [3, 4, 5] } });
+    await prj.setNavigationState(block1Id, { href: "/section1" });
+    await prj.mutateBlockStorage(block1Id, {
+      operation: "update-data",
+      value: { numbers: [1, 2, 3] },
+    });
+    await prj.mutateBlockStorage(block2Id, {
+      operation: "update-data",
+      value: { numbers: [3, 4, 5] },
+    });
     await prj.mutateBlockStorage(block3Id, {
-      operation: 'update-data',
-      value: { sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')] },
+      operation: "update-data",
+      value: { sources: [outputRef(block1Id, "numbers"), outputRef(block2Id, "numbers")] },
     });
     await prj.mutateBlockStorage(block4Id, {
-      operation: 'update-data',
-      value: { sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')] },
+      operation: "update-data",
+      value: { sources: [outputRef(block1Id, "numbers"), outputRef(block2Id, "numbers")] },
     });
     await prj.mutateBlockStorage(block5Id, {
-      operation: 'update-data',
-      value: { sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')] },
+      operation: "update-data",
+      value: { sources: [outputRef(block1Id, "numbers"), outputRef(block2Id, "numbers")] },
     });
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
 
@@ -383,20 +413,27 @@ test('v3: dependency test', { timeout: 20000 }, async ({ expect }) => {
     ]);
 
     await prj.mutateBlockStorage(block3Id, {
-      operation: 'update-data',
-      value: { sources: [outputRef(block1Id, 'numbers', true), outputRef(block2Id, 'numbers', true)] },
+      operation: "update-data",
+      value: {
+        sources: [outputRef(block1Id, "numbers", true), outputRef(block2Id, "numbers", true)],
+      },
     });
     await prj.mutateBlockStorage(block4Id, {
-      operation: 'update-data',
-      value: { sources: [outputRef(block2Id, 'numbers', true)] },
+      operation: "update-data",
+      value: { sources: [outputRef(block2Id, "numbers", true)] },
     });
     await prj.mutateBlockStorage(block5Id, {
-      operation: 'update-data',
-      value: { sources: [outputRef(block1Id, 'numbers', true)] },
+      operation: "update-data",
+      value: { sources: [outputRef(block1Id, "numbers", true)] },
     });
     const overviewSnapshot2 = await prj.overview.awaitStableValue();
 
-    expect(overviewSnapshot2.blocks.map((b) => ({ upstreams: new Set(b.upstreams), downstreams: new Set(b.downstreams) }))).toMatchObject([
+    expect(
+      overviewSnapshot2.blocks.map((b) => ({
+        upstreams: new Set(b.upstreams),
+        downstreams: new Set(b.downstreams),
+      })),
+    ).toMatchObject([
       { upstreams: new Set(), downstreams: new Set([block3Id, block5Id]) },
       { upstreams: new Set(), downstreams: new Set([block3Id, block4Id, block5Id]) },
       { upstreams: new Set([block1Id, block2Id]), downstreams: new Set([block5Id]) },
@@ -406,14 +443,14 @@ test('v3: dependency test', { timeout: 20000 }, async ({ expect }) => {
   });
 });
 
-test('v3: limbo test', async ({ expect }) => {
+test("v3: limbo test", async ({ expect }) => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
-    const block2Id = await prj.addBlock('Block 2', sumNumbersSpec);
+    const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
+    const block2Id = await prj.addBlock("Block 2", sumNumbersSpec);
 
     const overview0 = await prj.overview.awaitStableValue();
     overview0.blocks.forEach((block) => {
@@ -422,14 +459,17 @@ test('v3: limbo test', async ({ expect }) => {
       expect(block.currentBlockPack).toBeDefined();
     });
 
-    await prj.mutateBlockStorage(block1Id, { operation: 'update-data', value: { numbers: [1, 2, 3] } });
+    await prj.mutateBlockStorage(block1Id, {
+      operation: "update-data",
+      value: { numbers: [1, 2, 3] },
+    });
     // V3 Heavy blocks need to be run to produce outputs
     await prj.runBlock(block1Id);
     await awaitBlockDone(prj, block1Id);
 
     await prj.mutateBlockStorage(block2Id, {
-      operation: 'update-data',
-      value: { sources: [outputRef(block1Id, 'numbers')] },
+      operation: "update-data",
+      value: { sources: [outputRef(block1Id, "numbers")] },
     });
 
     const overview1 = await prj.overview.awaitStableValue();
@@ -441,7 +481,7 @@ test('v3: limbo test', async ({ expect }) => {
     await awaitBlockDone(prj, block2Id);
 
     const block2StableState1 = await prj.getBlockState(block2Id).getValue();
-    expect(block2StableState1.outputs!['sum']).toStrictEqual({
+    expect(block2StableState1.outputs!["sum"]).toStrictEqual({
       ok: true,
       value: 6,
       stable: true,
@@ -450,25 +490,28 @@ test('v3: limbo test', async ({ expect }) => {
     const overview2 = await prj.overview.awaitStableValue();
     overview2.blocks.forEach((block) => {
       expect(block.sections).toBeDefined();
-      expect(block.calculationStatus).toEqual('Done');
+      expect(block.calculationStatus).toEqual("Done");
       expect(block.canRun).toEqual(false);
       expect(block.currentBlockPack).toBeDefined();
     });
 
-    await prj.mutateBlockStorage(block1Id, { operation: 'update-data', value: { numbers: [2, 3] } });
+    await prj.mutateBlockStorage(block1Id, {
+      operation: "update-data",
+      value: { numbers: [2, 3] },
+    });
     await prj.runBlock(block1Id);
     await awaitBlockDone(prj, block1Id);
 
     const overview3 = await prj.overview.awaitStableValue();
     const [overview3Block1, overview3Block2] = overview3.blocks;
-    expect(overview3Block1.calculationStatus).toEqual('Done');
-    expect(overview3Block2.calculationStatus).toEqual('Limbo');
+    expect(overview3Block1.calculationStatus).toEqual("Done");
+    expect(overview3Block2.calculationStatus).toEqual("Limbo");
 
     await prj.runBlock(block2Id);
     await awaitBlockDone(prj, block2Id);
 
     const block2StableState2 = await prj.getBlockState(block2Id).getValue();
-    expect(block2StableState2.outputs!['sum']).toStrictEqual({
+    expect(block2StableState2.outputs!["sum"]).toStrictEqual({
       ok: true,
       value: 5,
       stable: true,
@@ -476,18 +519,18 @@ test('v3: limbo test', async ({ expect }) => {
 
     const overview4 = await prj.overview.awaitStableValue();
     const [overview4Block1, overview4Block2] = overview4.blocks;
-    expect(overview4Block1.calculationStatus).toEqual('Done');
-    expect(overview4Block2.calculationStatus).toEqual('Done');
+    expect(overview4Block1.calculationStatus).toEqual("Done");
+    expect(overview4Block2.calculationStatus).toEqual("Done");
   });
 });
 
-test('v3: test error propagation', async ({ expect }) => {
+test("v3: test error propagation", async ({ expect }) => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
+    const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
 
     const overview0 = await prj.overview.awaitStableValue();
     overview0.blocks.forEach((block) => {
@@ -496,48 +539,51 @@ test('v3: test error propagation', async ({ expect }) => {
       expect(block.currentBlockPack).toBeDefined();
     });
 
-    await prj.mutateBlockStorage(block1Id, { operation: 'update-data', value: { numbers: [1] } });
+    await prj.mutateBlockStorage(block1Id, { operation: "update-data", value: { numbers: [1] } });
 
     const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
-    expect(block1StableState1.outputs!['errorIfNumberIs999']).toStrictEqual({
+    expect(block1StableState1.outputs!["errorIfNumberIs999"]).toStrictEqual({
       ok: true,
       value: [1],
       stable: true,
     });
 
-    await prj.mutateBlockStorage(block1Id, { operation: 'update-data', value: { numbers: [999] } });
+    await prj.mutateBlockStorage(block1Id, { operation: "update-data", value: { numbers: [999] } });
 
     const block1StableState2 = await prj.getBlockState(block1Id).awaitStableValue();
 
-    const result = block1StableState2.outputs!['errorIfNumberIs999'];
+    const result = block1StableState2.outputs!["errorIfNumberIs999"];
 
     expect(result.ok).toBe(false);
 
     if (result.ok) {
-      throw new Error('Result is ok (unexpected)');
+      throw new Error("Result is ok (unexpected)");
     }
 
     expect(result.errors).toHaveLength(1);
     // V3 blocks produce PlQuickJSError when trying to access non-existent prerun output
-    expect(result.errors[0].name).toBe('PlQuickJSError');
+    expect(result.errors[0].name).toBe("PlQuickJSError");
   });
 });
 
-test('v3: block duplication test', async ({ expect }) => {
+test("v3: block duplication test", async ({ expect }) => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
     // Create original block with some configuration
-    const originalBlockId = await prj.addBlock('Original Block', enterNumberSpec);
-    await prj.mutateBlockStorage(originalBlockId, { operation: 'update-data', value: { numbers: [1, 2, 3] } });
-    await prj.setBlockSettings(originalBlockId, { versionLock: 'patch' });
+    const originalBlockId = await prj.addBlock("Original Block", enterNumberSpec);
+    await prj.mutateBlockStorage(originalBlockId, {
+      operation: "update-data",
+      value: { numbers: [1, 2, 3] },
+    });
+    await prj.setBlockSettings(originalBlockId, { versionLock: "patch" });
 
     // Get initial overview
     const overviewBefore = await prj.overview.awaitStableValue();
     expect(overviewBefore.blocks).toHaveLength(1);
-    expect(overviewBefore.blocks[0].label).toBe('Original Block');
+    expect(overviewBefore.blocks[0].label).toBe("Original Block");
 
     // Duplicate the block
     const duplicatedBlockId = await prj.duplicateBlock(originalBlockId);
@@ -553,7 +599,7 @@ test('v3: block duplication test', async ({ expect }) => {
     expect(duplicatedBlock).toBeDefined();
 
     // Verify block structure is copied
-    expect(duplicatedBlock!.label).toBe('Original Block');
+    expect(duplicatedBlock!.label).toBe("Original Block");
     expect(duplicatedBlock!.currentBlockPack).toEqual(originalBlock!.currentBlockPack);
     expect(duplicatedBlock!.settings).toEqual(originalBlock!.settings);
 
@@ -564,7 +610,10 @@ test('v3: block duplication test', async ({ expect }) => {
     expect(duplicatedState.blockStorage).toEqual(originalState.blockStorage);
 
     // Verify they are independent - changing one shouldn't affect the other
-    await prj.mutateBlockStorage(originalBlockId, { operation: 'update-data', value: { numbers: [4, 5, 6] } });
+    await prj.mutateBlockStorage(originalBlockId, {
+      operation: "update-data",
+      value: { numbers: [4, 5, 6] },
+    });
 
     const originalStateAfter = await prj.getBlockState(originalBlockId).awaitStableValue();
     const duplicatedStateAfter = await prj.getBlockState(duplicatedBlockId).awaitStableValue();
@@ -572,12 +621,12 @@ test('v3: block duplication test', async ({ expect }) => {
     const orig = deriveDataFromStorage(originalStateAfter.blockStorage);
     const dup = deriveDataFromStorage(duplicatedStateAfter.blockStorage);
 
-    if (!(isObject(orig) && ('numbers' in orig))) {
-      throw new Error('s1 is not an object');
+    if (!(isObject(orig) && "numbers" in orig)) {
+      throw new Error("s1 is not an object");
     }
 
-    if (!(isObject(dup) && ('numbers' in dup))) {
-      throw new Error('s2 is not an object');
+    if (!(isObject(dup) && "numbers" in dup)) {
+      throw new Error("s2 is not an object");
     }
 
     expect(orig.numbers).toEqual([4, 5, 6]);
@@ -585,24 +634,24 @@ test('v3: block duplication test', async ({ expect }) => {
   });
 });
 
-test('v3: block update test', async ({ expect }) => {
+test("v3: block update test", async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    const tmpDevBlockFolder = path.resolve(workFolder, 'dev');
+    const tmpDevBlockFolder = path.resolve(workFolder, "dev");
     await fs.promises.mkdir(tmpDevBlockFolder, { recursive: true });
 
-    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
+    const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
 
     const overview0 = await prj.overview.awaitStableValue();
     expect(overview0.blocks[0].updatedBlockPack).toBeUndefined();
 
     // touch
     await fs.promises.appendFile(
-      path.resolve('..', '..', 'etc', 'blocks', 'enter-numbers-v3', 'model', 'dist', 'model.json'),
-      ' ',
+      path.resolve("..", "..", "etc", "blocks", "enter-numbers-v3", "model", "dist", "model.json"),
+      " ",
     );
 
     // await update watcher
@@ -620,14 +669,17 @@ test('v3: block update test', async ({ expect }) => {
   });
 });
 
-test('v3: project open and close test', async ({ expect }) => {
+test("v3: project open and close test", async ({ expect }) => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
     await ml.openProject(pRid1);
     let prj = ml.getOpenedProject(pRid1);
 
-    const blockId = await prj.addBlock('Test Block', enterNumberSpec);
-    await prj.mutateBlockStorage(blockId, { operation: 'update-data', value: { numbers: [1, 2, 3] } });
+    const blockId = await prj.addBlock("Test Block", enterNumberSpec);
+    await prj.mutateBlockStorage(blockId, {
+      operation: "update-data",
+      value: { numbers: [1, 2, 3] },
+    });
     const overview1 = await prj.overview.awaitStableValue();
     expect(overview1.blocks[0].canRun).toEqual(true);
 
@@ -640,21 +692,21 @@ test('v3: project open and close test', async ({ expect }) => {
   });
 });
 
-test('v3: block error test', async ({ expect }) => {
+test("v3: block error test", async ({ expect }) => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
     expect(await prj.overview.awaitStableValue()).toMatchObject({
-      meta: { label: 'Project 1' },
+      meta: { label: "Project 1" },
       blocks: [],
     });
 
-    const block3Id = await prj.addBlock('Block 3', sumNumbersSpec);
+    const block3Id = await prj.addBlock("Block 3", sumNumbersSpec);
 
     await prj.mutateBlockStorage(block3Id, {
-      operation: 'update-data',
+      operation: "update-data",
       value: { sources: [] }, // empty reference list should produce an error
     });
 
@@ -670,32 +722,32 @@ test('v3: block error test', async ({ expect }) => {
 
     const block3StableState = await prj.getBlockState(block3Id).getValue();
 
-    const sum = block3StableState.outputs!['sum'];
-    console.log('sum output:', sum);
+    const sum = block3StableState.outputs!["sum"];
+    console.log("sum output:", sum);
     // In V3, sum may be ok:true with undefined value when args fails, or ok:false with error
     if (sum.ok) {
       // V3 behavior: output resolver returns undefined when ctx.outputs is undefined
       expect(sum.value).toBeUndefined();
     } else {
-      console.log('ml, block error test, the error:');
+      console.log("ml, block error test, the error:");
       console.dir(sum.errors[0], { depth: 150 });
       // V3 error message comes from the args() function
-      expect(typeof sum.errors[0] == 'string' ? sum.errors[0] : sum.errors[0].message).toContain(
-        'Sources are required',
+      expect(typeof sum.errors[0] == "string" ? sum.errors[0] : sum.errors[0].message).toContain(
+        "Sources are required",
       );
     }
   });
 });
 
 blockTest(
-  'v3: should create download-file block, render it and gets outputs from its config',
+  "v3: should create download-file block, render it and gets outputs from its config",
   async ({ rawPrj: project, ml, expect }) => {
-    const blockId = await project.addBlock('DownloadFile', downloadFileSpec);
+    const blockId = await project.addBlock("DownloadFile", downloadFileSpec);
 
     const inputHandle = await lsDriverGetFileHandleFromAssets(
       ml,
       expect,
-      'answer_to_the_ultimate_question.txt',
+      "answer_to_the_ultimate_question.txt",
     );
 
     await project.setBlockArgs(blockId, { inputHandle });
@@ -716,31 +768,38 @@ blockTest(
       const outputs = state.outputs;
 
       if (outputs.contentAsString.ok) {
-        expect(outputs.contentAsString.value).toStrictEqual('42\n');
-        expect((outputs.contentAsString1 as any).value).toStrictEqual('42\n42\n');
-        expect((outputs.contentAsStringRange as any).value).toStrictEqual('2');
-        expect((outputs.contentAsStringRange1 as any).value).toStrictEqual('22');
+        expect(outputs.contentAsString.value).toStrictEqual("42\n");
+        expect((outputs.contentAsString1 as any).value).toStrictEqual("42\n42\n");
+        expect((outputs.contentAsStringRange as any).value).toStrictEqual("2");
+        expect((outputs.contentAsStringRange1 as any).value).toStrictEqual("22");
 
         expect((outputs.contentAsJson as any).value).toStrictEqual(42);
         const localBlob = (outputs.downloadedBlobContent as any).value as LocalBlobHandleAndSize;
         const remoteBlob = (outputs.onDemandBlobContent as any).value as RemoteBlobHandleAndSize;
-        const quickJsRemoteBlob = (outputs.onDemandBlobContent1 as any).value as RemoteBlobHandleAndSize;
+        const quickJsRemoteBlob = (outputs.onDemandBlobContent1 as any)
+          .value as RemoteBlobHandleAndSize;
 
         expect(
-          Buffer.from(await ml.driverKit.blobDriver.getContent(localBlob.handle)).toString('utf-8'),
-        ).toEqual('42\n');
+          Buffer.from(await ml.driverKit.blobDriver.getContent(localBlob.handle)).toString("utf-8"),
+        ).toEqual("42\n");
 
         expect(
-          Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString('utf-8'),
-        ).toEqual('42\n');
+          Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString(
+            "utf-8",
+          ),
+        ).toEqual("42\n");
 
         expect(
-          Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle, { from: 1, to: 2 })).toString('utf-8'),
-        ).toEqual('2');
+          Buffer.from(
+            await ml.driverKit.blobDriver.getContent(remoteBlob.handle, { from: 1, to: 2 }),
+          ).toString("utf-8"),
+        ).toEqual("2");
 
         expect(
-          Buffer.from(await ml.driverKit.blobDriver.getContent(quickJsRemoteBlob.handle, { from: 1, to: 2 })).toString('utf-8'),
-        ).toEqual('2');
+          Buffer.from(
+            await ml.driverKit.blobDriver.getContent(quickJsRemoteBlob.handle, { from: 1, to: 2 }),
+          ).toString("utf-8"),
+        ).toEqual("2");
 
         return;
       }
@@ -749,16 +808,29 @@ blockTest(
 );
 
 blockTest(
-  'v3: transfer-files concurrent downloads',
+  "v3: transfer-files concurrent downloads",
   { timeout: 600000 },
   async ({ rawPrj: project, ml, tmpFolder, expect }) => {
-    const blockId = await project.addBlock('TransferFiles', transferFilesSpec);
+    const blockId = await project.addBlock("TransferFiles", transferFilesSpec);
 
     // Create test files with known content (text and binary)
     const testFiles: Array<{ name: string; buffer: Buffer }> = [
-      { name: 'test_small_text.txt', buffer: Buffer.from('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.') },
-      { name: 'test_medium_text.txt', buffer: Buffer.from('Lazy dog jumps over the lazy fox. And the quick brown fox jumps over the lazy dog.') },
-      { name: 'test_json.json', buffer: Buffer.from(JSON.stringify({ message: 'Hello from JSON', value: 42 })) },
+      {
+        name: "test_small_text.txt",
+        buffer: Buffer.from(
+          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        ),
+      },
+      {
+        name: "test_medium_text.txt",
+        buffer: Buffer.from(
+          "Lazy dog jumps over the lazy fox. And the quick brown fox jumps over the lazy dog.",
+        ),
+      },
+      {
+        name: "test_json.json",
+        buffer: Buffer.from(JSON.stringify({ message: "Hello from JSON", value: 42 })),
+      },
     ];
 
     const inputHandles: ImportFileHandle[] = [];
@@ -766,12 +838,12 @@ blockTest(
 
     // Create temporary files and get their handles
     const storages = await ml.driverKit.lsDriver.getStorageList();
-    const local = storages.find((s) => s.name == 'local');
+    const local = storages.find((s) => s.name == "local");
     expect(local).not.toBeUndefined();
 
-    const testDir = path.join(tmpFolder, 'test-files');
+    const testDir = path.join(tmpFolder, "test-files");
     await fsp.mkdir(testDir, { recursive: true });
-    console.log('Created test directory:', testDir);
+    console.log("Created test directory:", testDir);
 
     for (const testFile of testFiles) {
       const filePath = path.join(testDir, testFile.name);
@@ -782,7 +854,7 @@ blockTest(
       const files = await ml.driverKit.lsDriver.listFiles(local!.handle, testDir);
       const ourFile = files.entries.find((f) => f.name == testFile.name);
       expect(ourFile).not.toBeUndefined();
-      expect(ourFile?.type).toBe('file');
+      expect(ourFile?.type).toBe("file");
 
       inputHandles.push((ourFile as any).handle);
     }
@@ -790,12 +862,18 @@ blockTest(
     await project.setBlockArgs(blockId, { inputHandles });
     await project.runBlock(blockId);
 
-    async function testChunkedDownload(originalBuffer: Buffer, exportedBlob: RemoteBlobHandleAndSize, chunkSize: number) {
-      console.log('  Test: Chunked download with hash verification, chunkSize', chunkSize);
+    async function testChunkedDownload(
+      originalBuffer: Buffer,
+      exportedBlob: RemoteBlobHandleAndSize,
+      chunkSize: number,
+    ) {
+      console.log("  Test: Chunked download with hash verification, chunkSize", chunkSize);
 
       const totalChunks = Math.ceil(originalBuffer.length / chunkSize);
 
-      console.log(`    - Downloading ${originalBuffer.length} bytes in ${totalChunks} chunks of ${chunkSize} bytes`);
+      console.log(
+        `    - Downloading ${originalBuffer.length} bytes in ${totalChunks} chunks of ${chunkSize} bytes`,
+      );
 
       const downloadedChunks: Buffer[] = [];
       let downloadedBytes = 0;
@@ -815,50 +893,60 @@ blockTest(
 
       shuffleInPlace(tasks);
 
-      const results = await Promise.all(tasks.map(async ({ chunkIndex }) => {
-        const from = chunkIndex * chunkSize;
-        const to = Math.min(from + chunkSize, exportedBlob.size);
-        const expectedChunkSize = to - from;
+      const results = await Promise.all(
+        tasks.map(async ({ chunkIndex }) => {
+          const from = chunkIndex * chunkSize;
+          const to = Math.min(from + chunkSize, exportedBlob.size);
+          const expectedChunkSize = to - from;
 
-        const chunk = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, { from, to });
-        const chunkBuffer = Buffer.from(chunk);
+          const chunk = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, { from, to });
+          const chunkBuffer = Buffer.from(chunk);
 
-        // Verify chunk size
-        if (chunkBuffer.length !== expectedChunkSize) {
-          console.error(`    ❌ Chunk ${chunkIndex}: size mismatch! Expected ${expectedChunkSize}, got ${chunkBuffer.length}`);
-          console.error(`       Range: from=${from}, to=${to}`);
-        }
+          // Verify chunk size
+          if (chunkBuffer.length !== expectedChunkSize) {
+            console.error(
+              `    ❌ Chunk ${chunkIndex}: size mismatch! Expected ${expectedChunkSize}, got ${chunkBuffer.length}`,
+            );
+            console.error(`       Range: from=${from}, to=${to}`);
+          }
 
-        // Verify chunk content against original
-        const originalChunk = originalBuffer.subarray(from, to);
-        if (!chunkBuffer.equals(originalChunk)) {
-          console.error(`    ❌ Chunk ${chunkIndex}: content mismatch!`);
-          console.error(`       Range: from=${from}, to=${to}`);
-          console.error(`       First 20 bytes of original:   ${originalChunk.subarray(0, 20).toString('hex')}`);
-          console.error(`       First 20 bytes of downloaded: ${chunkBuffer.subarray(0, 20).toString('hex')}`);
+          // Verify chunk content against original
+          const originalChunk = originalBuffer.subarray(from, to);
+          if (!chunkBuffer.equals(originalChunk)) {
+            console.error(`    ❌ Chunk ${chunkIndex}: content mismatch!`);
+            console.error(`       Range: from=${from}, to=${to}`);
+            console.error(
+              `       First 20 bytes of original:   ${originalChunk.subarray(0, 20).toString("hex")}`,
+            );
+            console.error(
+              `       First 20 bytes of downloaded: ${chunkBuffer.subarray(0, 20).toString("hex")}`,
+            );
 
-          // Find first differing byte
-          for (let i = 0; i < Math.min(originalChunk.length, chunkBuffer.length); i++) {
-            if (originalChunk[i] !== chunkBuffer[i]) {
-              console.error(`       First difference at byte ${i}: original=0x${originalChunk[i].toString(16)}, downloaded=0x${chunkBuffer[i].toString(16)}`);
-              break;
+            // Find first differing byte
+            for (let i = 0; i < Math.min(originalChunk.length, chunkBuffer.length); i++) {
+              if (originalChunk[i] !== chunkBuffer[i]) {
+                console.error(
+                  `       First difference at byte ${i}: original=0x${originalChunk[i].toString(16)}, downloaded=0x${chunkBuffer[i].toString(16)}`,
+                );
+                break;
+              }
             }
           }
-        }
 
-        // downloadedChunks.push(chunkBuffer);
-        downloadedBytes += chunk.length;
+          // downloadedChunks.push(chunkBuffer);
+          downloadedBytes += chunk.length;
 
-        if ((chunkIndex + 1) % 10 === 0 || chunkIndex === totalChunks - 1) {
-          const progress = ((downloadedBytes / originalBuffer.length) * 100).toFixed(1);
-          console.log(`    - Downloaded ${chunkIndex + 1}/${totalChunks} chunks (${progress}%)`);
-        }
+          if ((chunkIndex + 1) % 10 === 0 || chunkIndex === totalChunks - 1) {
+            const progress = ((downloadedBytes / originalBuffer.length) * 100).toFixed(1);
+            console.log(`    - Downloaded ${chunkIndex + 1}/${totalChunks} chunks (${progress}%)`);
+          }
 
-        return {
-          chunkIndex,
-          chunkBuffer,
-        };
-      }));
+          return {
+            chunkIndex,
+            chunkBuffer,
+          };
+        }),
+      );
 
       const sortedResults = results.sort((a, b) => a.chunkIndex - b.chunkIndex);
 
@@ -871,7 +959,7 @@ blockTest(
       console.log(`    - Download completed in ${downloadTime}ms (${downloadSpeed} MB/s)`);
 
       // Concatenate all chunks
-      console.log('    - Concatenating chunks...');
+      console.log("    - Concatenating chunks...");
       const downloadedBuffer = Buffer.concat(downloadedChunks);
 
       // Verify size
@@ -879,7 +967,7 @@ blockTest(
       console.log(`    ✓ Downloaded size matches: ${downloadedBuffer.length} bytes`);
 
       // Compute hashes
-      console.log('    - Computing hashes...');
+      console.log("    - Computing hashes...");
       const originalHash = computeHashIncremental(originalBuffer);
       const downloadedHash = computeHashIncremental(downloadedBuffer);
 
@@ -888,15 +976,15 @@ blockTest(
 
       // Verify hashes match
       expect(downloadedHash).toBe(originalHash);
-      console.log('    ✓ Hashes match - data integrity verified!');
+      console.log("    ✓ Hashes match - data integrity verified!");
 
       // Additional verification: compare buffers in chunks
-      console.log('    - Comparing buffers in chunks...');
+      console.log("    - Comparing buffers in chunks...");
       const buffersMatch = compareBuffersInChunks(originalBuffer, downloadedBuffer);
       expect(buffersMatch).toBe(true);
-      console.log('    ✓ Chunk-by-chunk comparison passed!');
+      console.log("    ✓ Chunk-by-chunk comparison passed!");
 
-      console.log('  ✓ Chunked download test passed');
+      console.log("  ✓ Chunked download test passed");
     }
 
     while (true) {
@@ -912,9 +1000,12 @@ blockTest(
 
       if (outputs.fileImports.ok && outputs.fileExports.ok) {
         const fileImports = outputs.fileImports.value;
-        const fileExports = outputs.fileExports.value as Record<ImportFileHandle, RemoteBlobHandleAndSize>;
+        const fileExports = outputs.fileExports.value as Record<
+          ImportFileHandle,
+          RemoteBlobHandleAndSize
+        >;
 
-        console.log('\n=== File Transfer Results ===');
+        console.log("\n=== File Transfer Results ===");
         console.log(`Files imported: ${Object.keys(fileImports).length}`);
         console.log(`Files exported: ${Object.keys(fileExports).length}`);
 
@@ -923,36 +1014,38 @@ blockTest(
         expect(Object.keys(fileExports).length).toBe(testFiles.length);
 
         // Test each file with comprehensive range testing
-        await Promise.all(testFiles.map(async (testFile, i) => {
-          const handle = inputHandles[i];
-          const originalBuffer = originalBuffers[i];
+        await Promise.all(
+          testFiles.map(async (testFile, i) => {
+            const handle = inputHandles[i];
+            const originalBuffer = originalBuffers[i];
 
-          console.log(`\n--- Testing ${testFile.name} (${originalBuffer.length} bytes) ---`);
+            console.log(`\n--- Testing ${testFile.name} (${originalBuffer.length} bytes) ---`);
 
-          // Check import progress
-          const importProgress = fileImports[handle];
-          expect(importProgress).toBeDefined();
-          expect(importProgress.done).toBe(true);
+            // Check import progress
+            const importProgress = fileImports[handle];
+            expect(importProgress).toBeDefined();
+            expect(importProgress.done).toBe(true);
 
-          // Check exported blob
-          const exportedBlob = fileExports[handle];
-          expect(exportedBlob).toBeDefined();
-          expect(exportedBlob).toHaveProperty('handle');
-          expect(exportedBlob).toHaveProperty('size');
-          expect(exportedBlob.size).toBe(originalBuffer.length);
+            // Check exported blob
+            const exportedBlob = fileExports[handle];
+            expect(exportedBlob).toBeDefined();
+            expect(exportedBlob).toHaveProperty("handle");
+            expect(exportedBlob).toHaveProperty("size");
+            expect(exportedBlob.size).toBe(originalBuffer.length);
 
-          await Promise.all([
-            testChunkedDownload(originalBuffer, exportedBlob, 13),
-            testChunkedDownload(originalBuffer, exportedBlob, 5),
-            testChunkedDownload(originalBuffer, exportedBlob, 20),
-            testChunkedDownload(originalBuffer, exportedBlob, 1),
-            testChunkedDownload(originalBuffer, exportedBlob, 2),
-          ]);
+            await Promise.all([
+              testChunkedDownload(originalBuffer, exportedBlob, 13),
+              testChunkedDownload(originalBuffer, exportedBlob, 5),
+              testChunkedDownload(originalBuffer, exportedBlob, 20),
+              testChunkedDownload(originalBuffer, exportedBlob, 1),
+              testChunkedDownload(originalBuffer, exportedBlob, 2),
+            ]);
 
-          console.log(`✅ All tests passed for ${testFile.name}`);
-        }));
+            console.log(`✅ All tests passed for ${testFile.name}`);
+          }),
+        );
 
-        console.log('\n=== All transfer-files tests completed successfully ===');
+        console.log("\n=== All transfer-files tests completed successfully ===");
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         return;
@@ -962,10 +1055,10 @@ blockTest(
 );
 
 blockTest(
-  'v3: transfer-files big files',
+  "v3: transfer-files big files",
   { timeout: 600000 },
   async ({ rawPrj: project, ml, tmpFolder, expect }) => {
-    const blockId = await project.addBlock('TransferFiles', transferFilesSpec);
+    const blockId = await project.addBlock("TransferFiles", transferFilesSpec);
 
     // Helper function to create random buffer
     const createRandomBuffer = (size: number): Buffer => {
@@ -978,13 +1071,13 @@ blockTest(
 
     // Helper function to compute hash incrementally for large buffers
     const computeHashIncremental = (buffer: Buffer): string => {
-      const hasher = createHash('sha256');
+      const hasher = createHash("sha256");
       const chunkSize = 64 * 1024 * 1024; // 64 MB chunks
       for (let offset = 0; offset < buffer.length; offset += chunkSize) {
         const end = Math.min(offset + chunkSize, buffer.length);
         hasher.update(buffer.subarray(offset, end));
       }
-      return hasher.digest('hex');
+      return hasher.digest("hex");
     };
 
     // Helper function to compare buffers in chunks
@@ -1015,16 +1108,16 @@ blockTest(
     // Create test files with known content (text and binary)
     const testFiles: Array<{ name: string; buffer: Buffer }> = [
       // Huge binary file (1 GiB) - to test size limits
-      { name: 'test_huge_binary.bin', buffer: createRandomBuffer(33 * 1024 * 1024 + 1) },
-      { name: 'test_huge_binary_2.bin', buffer: createRandomBuffer(33 * 1024 * 1024 + 2) },
-      { name: 'test_huge_binary_3.bin', buffer: createRandomBuffer(33 * 1024 * 1024 + 3) },
-      { name: 'test_huge_binary_4.bin', buffer: createRandomBuffer(33 * 1024 * 1024 + 4) },
-      { name: 'test_huge_binary_5.bin', buffer: createRandomBuffer(33 * 1024 * 1024 + 5) },
-      { name: 'test_huge_binary_6.bin', buffer: createRandomBuffer(33 * 1024 * 1024 + 6) },
-      { name: 'test_huge_binary_7.bin', buffer: createRandomBuffer(33 * 1024 * 1024 + 7) },
-      { name: 'test_huge_binary_8.bin', buffer: createRandomBuffer(33 * 1024 * 1024 + 8) },
-      { name: 'test_huge_binary_9.bin', buffer: createRandomBuffer(33 * 1024 * 1024 + 9) },
-      { name: 'test_huge_binary_10.bin', buffer: createRandomBuffer(33 * 1024 * 1024 + 10) },
+      { name: "test_huge_binary.bin", buffer: createRandomBuffer(33 * 1024 * 1024 + 1) },
+      { name: "test_huge_binary_2.bin", buffer: createRandomBuffer(33 * 1024 * 1024 + 2) },
+      { name: "test_huge_binary_3.bin", buffer: createRandomBuffer(33 * 1024 * 1024 + 3) },
+      { name: "test_huge_binary_4.bin", buffer: createRandomBuffer(33 * 1024 * 1024 + 4) },
+      { name: "test_huge_binary_5.bin", buffer: createRandomBuffer(33 * 1024 * 1024 + 5) },
+      { name: "test_huge_binary_6.bin", buffer: createRandomBuffer(33 * 1024 * 1024 + 6) },
+      { name: "test_huge_binary_7.bin", buffer: createRandomBuffer(33 * 1024 * 1024 + 7) },
+      { name: "test_huge_binary_8.bin", buffer: createRandomBuffer(33 * 1024 * 1024 + 8) },
+      { name: "test_huge_binary_9.bin", buffer: createRandomBuffer(33 * 1024 * 1024 + 9) },
+      { name: "test_huge_binary_10.bin", buffer: createRandomBuffer(33 * 1024 * 1024 + 10) },
     ];
 
     const inputHandles: ImportFileHandle[] = [];
@@ -1032,12 +1125,12 @@ blockTest(
 
     // Create temporary files and get their handles
     const storages = await ml.driverKit.lsDriver.getStorageList();
-    const local = storages.find((s) => s.name == 'local');
+    const local = storages.find((s) => s.name == "local");
     expect(local).not.toBeUndefined();
 
-    const testDir = path.join(tmpFolder, 'test-files');
+    const testDir = path.join(tmpFolder, "test-files");
     await fsp.mkdir(testDir, { recursive: true });
-    console.log('Created test directory:', testDir);
+    console.log("Created test directory:", testDir);
 
     for (const testFile of testFiles) {
       const filePath = path.join(testDir, testFile.name);
@@ -1048,7 +1141,7 @@ blockTest(
       const files = await ml.driverKit.lsDriver.listFiles(local!.handle, testDir);
       const ourFile = files.entries.find((f) => f.name == testFile.name);
       expect(ourFile).not.toBeUndefined();
-      expect(ourFile?.type).toBe('file');
+      expect(ourFile?.type).toBe("file");
 
       inputHandles.push((ourFile as any).handle);
     }
@@ -1069,121 +1162,143 @@ blockTest(
 
       if (outputs.fileImports.ok && outputs.fileExports.ok) {
         const fileImports = outputs.fileImports.value;
-        const fileExports = outputs.fileExports.value as Record<ImportFileHandle, RemoteBlobHandleAndSize>;
+        const fileExports = outputs.fileExports.value as Record<
+          ImportFileHandle,
+          RemoteBlobHandleAndSize
+        >;
 
-        console.log('\n=== File Transfer Results ===');
+        console.log("\n=== File Transfer Results ===");
         console.log(`Files imported: ${Object.keys(fileImports).length}`);
         console.log(`Files exported: ${Object.keys(fileExports).length}`);
 
         expect(Object.keys(fileImports).length).toBe(testFiles.length);
         expect(Object.keys(fileExports).length).toBe(testFiles.length);
 
-        await Promise.allSettled(testFiles.map(async (testFile, i) => {
-          const handle = inputHandles[i];
-          const originalBuffer = originalBuffers[i];
+        await Promise.allSettled(
+          testFiles.map(async (testFile, i) => {
+            const handle = inputHandles[i];
+            const originalBuffer = originalBuffers[i];
 
-          console.log(`\n--- Testing ${testFile.name} (${originalBuffer.length} bytes) ---`);
+            console.log(`\n--- Testing ${testFile.name} (${originalBuffer.length} bytes) ---`);
 
-          const importProgress = fileImports[handle];
-          expect(importProgress).toBeDefined();
-          expect(importProgress.done).toBe(true);
+            const importProgress = fileImports[handle];
+            expect(importProgress).toBeDefined();
+            expect(importProgress.done).toBe(true);
 
-          const exportedBlob = fileExports[handle];
-          expect(exportedBlob).toBeDefined();
-          expect(exportedBlob).toHaveProperty('handle');
-          expect(exportedBlob).toHaveProperty('size');
-          expect(exportedBlob.size).toBe(originalBuffer.length);
+            const exportedBlob = fileExports[handle];
+            expect(exportedBlob).toBeDefined();
+            expect(exportedBlob).toHaveProperty("handle");
+            expect(exportedBlob).toHaveProperty("size");
+            expect(exportedBlob.size).toBe(originalBuffer.length);
 
-          {
-            console.log('Chunked download with hash verification');
+            {
+              console.log("Chunked download with hash verification");
 
-            const chunkSize = 1024 * 1024; // 1 MiB chunks
-            const totalChunks = Math.ceil(originalBuffer.length / chunkSize);
+              const chunkSize = 1024 * 1024; // 1 MiB chunks
+              const totalChunks = Math.ceil(originalBuffer.length / chunkSize);
 
-            console.log(`    - Downloading ${originalBuffer.length} bytes in ${totalChunks} chunks of ${chunkSize} bytes`);
+              console.log(
+                `    - Downloading ${originalBuffer.length} bytes in ${totalChunks} chunks of ${chunkSize} bytes`,
+              );
 
-            const downloadedChunks: Buffer[] = [];
-            let downloadedBytes = 0;
+              const downloadedChunks: Buffer[] = [];
+              let downloadedBytes = 0;
 
-            const startTime = Date.now();
+              const startTime = Date.now();
 
-            for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-              const from = chunkIndex * chunkSize;
-              const to = Math.min(from + chunkSize, exportedBlob.size);
-              const expectedChunkSize = to - from;
+              for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+                const from = chunkIndex * chunkSize;
+                const to = Math.min(from + chunkSize, exportedBlob.size);
+                const expectedChunkSize = to - from;
 
-              const chunk = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, { from, to });
-              const chunkBuffer = Buffer.from(chunk);
+                const chunk = await ml.driverKit.blobDriver.getContent(exportedBlob.handle, {
+                  from,
+                  to,
+                });
+                const chunkBuffer = Buffer.from(chunk);
 
-              // Verify chunk size
-              if (chunkBuffer.length !== expectedChunkSize) {
-                console.error(`    ❌ Chunk ${chunkIndex}: size mismatch! Expected ${expectedChunkSize}, got ${chunkBuffer.length}`);
-                console.error(`       Range: from=${from}, to=${to}`);
-              }
+                // Verify chunk size
+                if (chunkBuffer.length !== expectedChunkSize) {
+                  console.error(
+                    `    ❌ Chunk ${chunkIndex}: size mismatch! Expected ${expectedChunkSize}, got ${chunkBuffer.length}`,
+                  );
+                  console.error(`       Range: from=${from}, to=${to}`);
+                }
 
-              // Verify chunk content against original
-              const originalChunk = originalBuffer.subarray(from, to);
-              if (!chunkBuffer.equals(originalChunk)) {
-                console.error(`    ❌ Chunk ${chunkIndex}: content mismatch!`);
-                console.error(`       Range: from=${from}, to=${to}`);
-                console.error(`       First 20 bytes of original:   ${originalChunk.subarray(0, 20).toString('hex')}`);
-                console.error(`       First 20 bytes of downloaded: ${chunkBuffer.subarray(0, 20).toString('hex')}`);
+                // Verify chunk content against original
+                const originalChunk = originalBuffer.subarray(from, to);
+                if (!chunkBuffer.equals(originalChunk)) {
+                  console.error(`    ❌ Chunk ${chunkIndex}: content mismatch!`);
+                  console.error(`       Range: from=${from}, to=${to}`);
+                  console.error(
+                    `       First 20 bytes of original:   ${originalChunk.subarray(0, 20).toString("hex")}`,
+                  );
+                  console.error(
+                    `       First 20 bytes of downloaded: ${chunkBuffer.subarray(0, 20).toString("hex")}`,
+                  );
 
-                // Find first differing byte
-                for (let i = 0; i < Math.min(originalChunk.length, chunkBuffer.length); i++) {
-                  if (originalChunk[i] !== chunkBuffer[i]) {
-                    console.error(`       First difference at byte ${i}: original=0x${originalChunk[i].toString(16)}, downloaded=0x${chunkBuffer[i].toString(16)}`);
-                    break;
+                  // Find first differing byte
+                  for (let i = 0; i < Math.min(originalChunk.length, chunkBuffer.length); i++) {
+                    if (originalChunk[i] !== chunkBuffer[i]) {
+                      console.error(
+                        `       First difference at byte ${i}: original=0x${originalChunk[i].toString(16)}, downloaded=0x${chunkBuffer[i].toString(16)}`,
+                      );
+                      break;
+                    }
                   }
+                }
+
+                downloadedChunks.push(chunkBuffer);
+                downloadedBytes += chunk.length;
+
+                if ((chunkIndex + 1) % 10 === 0 || chunkIndex === totalChunks - 1) {
+                  const progress = ((downloadedBytes / originalBuffer.length) * 100).toFixed(1);
+                  console.log(
+                    `    - Downloaded ${chunkIndex + 1}/${totalChunks} chunks (${progress}%)`,
+                  );
                 }
               }
 
-              downloadedChunks.push(chunkBuffer);
-              downloadedBytes += chunk.length;
+              const downloadTime = Date.now() - startTime;
+              const downloadSpeed = (downloadedBytes / 1024 / 1024 / (downloadTime / 1000)).toFixed(
+                2,
+              );
+              console.log(`    - Download completed in ${downloadTime}ms (${downloadSpeed} MB/s)`);
 
-              if ((chunkIndex + 1) % 10 === 0 || chunkIndex === totalChunks - 1) {
-                const progress = ((downloadedBytes / originalBuffer.length) * 100).toFixed(1);
-                console.log(`    - Downloaded ${chunkIndex + 1}/${totalChunks} chunks (${progress}%)`);
-              }
+              // Concatenate all chunks
+              console.log("    - Concatenating chunks...");
+              const downloadedBuffer = Buffer.concat(downloadedChunks);
+
+              // Verify size
+              expect(downloadedBuffer.length).toBe(originalBuffer.length);
+              console.log(`    ✓ Downloaded size matches: ${downloadedBuffer.length} bytes`);
+
+              // Compute hashes
+              console.log("    - Computing hashes...");
+              const originalHash = computeHashIncremental(originalBuffer);
+              const downloadedHash = computeHashIncremental(downloadedBuffer);
+
+              console.log(`    - Original hash:    ${originalHash}`);
+              console.log(`    - Downloaded hash:  ${downloadedHash}`);
+
+              // Verify hashes match
+              expect(downloadedHash).toBe(originalHash);
+              console.log("    ✓ Hashes match - data integrity verified!");
+
+              // Additional verification: compare buffers in chunks
+              console.log("    - Comparing buffers in chunks...");
+              const buffersMatch = compareBuffersInChunks(originalBuffer, downloadedBuffer);
+              expect(buffersMatch).toBe(true);
+              console.log("    ✓ Chunk-by-chunk comparison passed!");
+
+              console.log("  ✓ Chunked download test passed");
             }
 
-            const downloadTime = Date.now() - startTime;
-            const downloadSpeed = (downloadedBytes / 1024 / 1024 / (downloadTime / 1000)).toFixed(2);
-            console.log(`    - Download completed in ${downloadTime}ms (${downloadSpeed} MB/s)`);
+            console.log(`✅ All tests passed for ${testFile.name}`);
+          }),
+        );
 
-            // Concatenate all chunks
-            console.log('    - Concatenating chunks...');
-            const downloadedBuffer = Buffer.concat(downloadedChunks);
-
-            // Verify size
-            expect(downloadedBuffer.length).toBe(originalBuffer.length);
-            console.log(`    ✓ Downloaded size matches: ${downloadedBuffer.length} bytes`);
-
-            // Compute hashes
-            console.log('    - Computing hashes...');
-            const originalHash = computeHashIncremental(originalBuffer);
-            const downloadedHash = computeHashIncremental(downloadedBuffer);
-
-            console.log(`    - Original hash:    ${originalHash}`);
-            console.log(`    - Downloaded hash:  ${downloadedHash}`);
-
-            // Verify hashes match
-            expect(downloadedHash).toBe(originalHash);
-            console.log('    ✓ Hashes match - data integrity verified!');
-
-            // Additional verification: compare buffers in chunks
-            console.log('    - Comparing buffers in chunks...');
-            const buffersMatch = compareBuffersInChunks(originalBuffer, downloadedBuffer);
-            expect(buffersMatch).toBe(true);
-            console.log('    ✓ Chunk-by-chunk comparison passed!');
-
-            console.log('  ✓ Chunked download test passed');
-          }
-
-          console.log(`✅ All tests passed for ${testFile.name}`);
-        }));
-
-        console.log('\n=== All transfer-files tests completed successfully ===');
+        console.log("\n=== All transfer-files tests completed successfully ===");
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         return;
@@ -1193,13 +1308,17 @@ blockTest(
 );
 
 blockTest(
-  'v3: should create blob-url-custom-protocol block, render it and gets outputs from its config',
+  "v3: should create blob-url-custom-protocol block, render it and gets outputs from its config",
   { timeout: 30000 },
   async ({ rawPrj: project, ml, expect }) => {
-    const blockId = await project.addBlock('DownloadBlobUrl', downloadBlobURLSpec);
+    const blockId = await project.addBlock("DownloadBlobUrl", downloadBlobURLSpec);
 
-    const inputTgzHandle = await lsDriverGetFileHandleFromAssets(ml, expect, 'funny_cats_site.tar.gz');
-    const inputZipHandle = await lsDriverGetFileHandleFromAssets(ml, expect, 'funny_cats_site.zip');
+    const inputTgzHandle = await lsDriverGetFileHandleFromAssets(
+      ml,
+      expect,
+      "funny_cats_site.tar.gz",
+    );
+    const inputZipHandle = await lsDriverGetFileHandleFromAssets(ml, expect, "funny_cats_site.zip");
 
     await project.setBlockArgs(blockId, { inputTgzHandle, inputZipHandle });
 
@@ -1226,7 +1345,9 @@ blockTest(
         const defaultUrl = ml.internalDriverKit.blobToURLDriver.getPathForCustomProtocol(url);
         expect(defaultUrl).matches(/.*index.html$/);
 
-        const styles = ml.internalDriverKit.blobToURLDriver.getPathForCustomProtocol((url + '/styles.css') as FolderURL);
+        const styles = ml.internalDriverKit.blobToURLDriver.getPathForCustomProtocol(
+          (url + "/styles.css") as FolderURL,
+        );
 
         expect(styles).matches(/.*\/styles.css/);
 
@@ -1237,14 +1358,14 @@ blockTest(
 );
 
 blockTest(
-  'v3: should create upload-file block, render it and upload a file to pl server',
+  "v3: should create upload-file block, render it and upload a file to pl server",
   async ({ rawPrj: project, ml, expect }) => {
-    const blockId = await project.addBlock('UpdateFile', uploadFileSpec);
+    const blockId = await project.addBlock("UpdateFile", uploadFileSpec);
 
     const inputHandle = await lsDriverGetFileHandleFromAssets(
       ml,
       expect,
-      'another_answer_to_the_ultimate_question.txt',
+      "another_answer_to_the_ultimate_question.txt",
     );
 
     await project.setBlockArgs(blockId, { inputHandle });
@@ -1270,23 +1391,23 @@ blockTest(
 );
 
 blockTest(
-  'v3: should create read-logs block, render it and read logs from a file',
+  "v3: should create read-logs block, render it and read logs from a file",
   // The timeout is higher here because pl - core must download a software for this test.
   { timeout: 20000 },
   async ({ rawPrj: project, ml, helpers: _helpers, expect }) => {
-    const blockId = await project.addBlock('ReadLogs', readLogsSpec);
+    const blockId = await project.addBlock("ReadLogs", readLogsSpec);
 
     const inputHandle = await lsDriverGetFileHandleFromAssets(
       ml,
       expect,
-      'maybe_the_number_of_lines_is_the_answer.txt',
+      "maybe_the_number_of_lines_is_the_answer.txt",
     );
 
     await project.setBlockArgs(blockId, {
       inputHandle,
       // args are from here:
       // https://github.com/milaboratory/sleep/blob/3c046cdcc504b63f1a6e592a4aa87ee773a94d72/read-file-to-stdout-with-sleep.go#L24
-      readFileWithSleepArgs: 'PREFIX,100,1000',
+      readFileWithSleepArgs: "PREFIX,100,1000",
     });
 
     await project.runBlock(blockId);
@@ -1301,9 +1422,9 @@ blockTest(
       const outputs = state.outputs;
 
       if (outputs.lastLogs.ok && outputs.lastLogs.value != undefined) {
-        expect((outputs.progressLog as any).value).toContain('PREFIX');
-        expect((outputs.progressLog as any).value).toContain('bytes read');
-        expect((outputs.lastLogs as any).value.split('\n').length).toEqual(10 + 1); // 11 because the last element is empty
+        expect((outputs.progressLog as any).value).toContain("PREFIX");
+        expect((outputs.progressLog as any).value).toContain("bytes read");
+        expect((outputs.lastLogs as any).value.split("\n").length).toEqual(10 + 1); // 11 because the last element is empty
         return;
       }
     }
@@ -1317,15 +1438,15 @@ async function lsDriverGetFileHandleFromAssets(
 ): Promise<ImportFileHandle> {
   const storages = await ml.driverKit.lsDriver.getStorageList();
 
-  const local = storages.find((s) => s.name == 'local');
+  const local = storages.find((s) => s.name == "local");
   expect(local).not.toBeUndefined();
 
-  const fileDir = path.resolve(__dirname, '..', '..', '..', 'assets');
+  const fileDir = path.resolve(__dirname, "..", "..", "..", "assets");
   const files = await ml.driverKit.lsDriver.listFiles(local!.handle, fileDir);
 
   const ourFile = files.entries.find((f) => f.name == fName);
   expect(ourFile).not.toBeUndefined();
-  expect(ourFile?.type).toBe('file');
+  expect(ourFile?.type).toBe("file");
 
   return (ourFile as any).handle;
 }

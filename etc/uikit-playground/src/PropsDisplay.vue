@@ -7,10 +7,12 @@ const props = defineProps<{ data: Record<string, { type: string; description: st
     <div v-for="(value, key) in props.data" :key="key" class="props-description-container__item">
       <div class="props-description-container__wrapper">
         <div class="text-mono-m props-description-container__title">{{ key }}</div>
-        <div class="props-description-container__type text-mono-s">{{ value['type'] }}</div>
+        <div class="props-description-container__type text-mono-s">{{ value["type"] }}</div>
       </div>
 
-      <div class="text-mono-m props-description-container__description">{{ value['description'] }}</div>
+      <div class="text-mono-m props-description-container__description">
+        {{ value["description"] }}
+      </div>
     </div>
   </div>
 </template>
@@ -38,7 +40,7 @@ const props = defineProps<{ data: Record<string, { type: string; description: st
   }
 
   &__title {
-    font-family: 'Spline Sans Mono';
+    font-family: "Spline Sans Mono";
     font-size: 16px;
     background-color: var(--color-ic-link);
     display: inline-block;

@@ -8,21 +8,21 @@ import {
   PlRow,
   PlTextField,
   useInterval,
-} from '@platforma-sdk/ui-vue';
-import { faker } from '@faker-js/faker';
-import { computed, reactive } from 'vue';
-import { ensureErrorLike, type OutputWithStatus, type AnyLogHandle } from '@platforma-sdk/model';
-import { listToOptions } from '@milaboratories/helpers';
+} from "@platforma-sdk/ui-vue";
+import { faker } from "@faker-js/faker";
+import { computed, reactive } from "vue";
+import { ensureErrorLike, type OutputWithStatus, type AnyLogHandle } from "@platforma-sdk/model";
+import { listToOptions } from "@milaboratories/helpers";
 
 const data = reactive({
-  logContent: '',
+  logContent: "",
   showError: false,
-  text: 'my text',
-  type: 'value' as 'value' | 'output' | 'handle',
-  handle: 'log+ready://log/Blob/primary/1/1570892' as AnyLogHandle | undefined, // log+ready://log/Blob/primary/1/1570892
+  text: "my text",
+  type: "value" as "value" | "output" | "handle",
+  handle: "log+ready://log/Blob/primary/1/1570892" as AnyLogHandle | undefined, // log+ready://log/Blob/primary/1/1570892
 });
 
-const options = listToOptions(['value', 'output', 'handle']);
+const options = listToOptions(["value", "output", "handle"]);
 
 const error = computed(() => (data.showError ? faker.lorem.paragraph() : undefined));
 
@@ -30,7 +30,7 @@ const output = computed<OutputWithStatus<string> | undefined>(() => {
   if (data.showError) {
     return {
       ok: false as const,
-      errors: [ensureErrorLike('Error1'), ensureErrorLike('Error2')],
+      errors: [ensureErrorLike("Error1"), ensureErrorLike("Error2")],
       moreErrors: false,
     };
   }
@@ -43,7 +43,7 @@ const output = computed<OutputWithStatus<string> | undefined>(() => {
 });
 
 useInterval(() => {
-  data.logContent += '\n';
+  data.logContent += "\n";
   data.logContent += faker.lorem.paragraph();
 }, 1000);
 

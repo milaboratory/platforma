@@ -1,3 +1,3 @@
-import { createViteDevConfig } from '@milaboratories/build-configs';
+import { createViteDevConfig } from "@milaboratories/build-configs";
 
 export default createViteDevConfig;

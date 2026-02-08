@@ -1,25 +1,10 @@
 <script lang="ts" setup>
-import {
-  PlDropdownLine,
-} from '@milaboratories/uikit';
-import type {
-  PlDataTableSheet,
-  PlDataTableSheetState,
-} from '@platforma-sdk/model';
-import {
-  getAxisId,
-} from '@platforma-sdk/model';
-import {
-  computed,
-  watchEffect,
-} from 'vue';
-import type {
-  PlDataTableSheetsSettings,
-  PlDataTableSheetNormalized,
-} from './types';
-import {
-  isJsonEqual,
-} from '@milaboratories/helpers';
+import { PlDropdownLine } from "@milaboratories/uikit";
+import type { PlDataTableSheet, PlDataTableSheetState } from "@platforma-sdk/model";
+import { getAxisId } from "@platforma-sdk/model";
+import { computed, watchEffect } from "vue";
+import type { PlDataTableSheetsSettings, PlDataTableSheetNormalized } from "./types";
+import { isJsonEqual } from "@milaboratories/helpers";
 
 const state = defineModel<PlDataTableSheetState[]>({
   default: [],
@@ -49,8 +34,7 @@ const sheets = computed<PlDataTableSheetNormalized[]>(() => {
       };
 
       const makePrefix = (): string => {
-        return (sheet.axis.annotations?.['pl7.app/label']?.trim()
-          ?? `Unlabeled axis ${i}`) + ':';
+        return (sheet.axis.annotations?.["pl7.app/label"]?.trim() ?? `Unlabeled axis ${i}`) + ":";
       };
 
       return {
@@ -95,10 +79,7 @@ function onSheetChanged(i: number, newValue: string | number): void {
 </script>
 
 <template>
-  <div
-    v-if="$slots['before'] || sheets.length > 0 || $slots['after']"
-    :class="$style.container"
-  >
+  <div v-if="$slots['before'] || sheets.length > 0 || $slots['after']" :class="$style.container">
     <slot name="before" />
     <template v-for="(sheet, i) in sheets" :key="i">
       <!-- For some reason state[i] is undefined when the sheet initially loads, so v-if to suppress the error -->

@@ -4,7 +4,7 @@
  */
 export interface ConcatenateStep {
   /** The type identifier for this step. Must be 'concatenate'. */
-  type: 'concatenate';
+  type: "concatenate";
 
   /**
    * An array of input table names from the tablespace.

@@ -1,14 +1,14 @@
 <script lang="ts">
 /** Container with vertical spacing */
 export default {
-  name: 'PlContainer',
+  name: "PlContainer",
 };
 </script>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
-import './pl-container.scss';
-import PlSplash from '../../components/PlSplash/PlSplash.vue';
+import { computed } from "vue";
+import "./pl-container.scss";
+import PlSplash from "../../components/PlSplash/PlSplash.vue";
 
 const props = defineProps<{
   /**
@@ -31,7 +31,12 @@ const style = computed(() => ({
 </script>
 
 <template>
-  <PlSplash :loading="loading" :loading-text="loadingText" class="pl-container pl-layout-component" :style="style">
+  <PlSplash
+    :loading="loading"
+    :loading-text="loadingText"
+    class="pl-container pl-layout-component"
+    :style="style"
+  >
     <slot />
   </PlSplash>
 </template>

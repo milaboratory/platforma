@@ -1,14 +1,14 @@
-import { notEmpty } from '@milaboratories/ts-helpers';
-import type { PlTreeEntry } from '@milaboratories/pl-tree';
-import type { MiddleLayerEnvironment } from './middle_layer';
-import { Computable } from '@milaboratories/computable';
-import type { ProjectStructure } from '../model/project_model';
-import { ProjectStructureKey } from '../model/project_model';
-import { allBlocks } from '../model/project_model_util';
-import { constructBlockContext } from './block_ctx';
-import { computableFromCfgOrRF, isActive } from './render';
-import { getBlockPackInfo } from './util';
-import { extractCodeWithInfo, wrapCallback } from '@platforma-sdk/model';
+import { notEmpty } from "@milaboratories/ts-helpers";
+import type { PlTreeEntry } from "@milaboratories/pl-tree";
+import type { MiddleLayerEnvironment } from "./middle_layer";
+import { Computable } from "@milaboratories/computable";
+import type { ProjectStructure } from "../model/project_model";
+import { ProjectStructureKey } from "../model/project_model";
+import { allBlocks } from "../model/project_model_util";
+import { constructBlockContext } from "./block_ctx";
+import { computableFromCfgOrRF, isActive } from "./render";
+import { getBlockPackInfo } from "./util";
+import { extractCodeWithInfo, wrapCallback } from "@platforma-sdk/model";
 
 /** Returns derived general project state form the project resource */
 export function activeConfigs(
@@ -38,7 +38,9 @@ export function activeConfigs(
 
       for (const cfg of activeOutputConfigs) {
         ret.push(
-          Computable.wrapError(computableFromCfgOrRF(env, blockCtx, cfg, codeWithInfoOrError.value, bp.bpId)),
+          Computable.wrapError(
+            computableFromCfgOrRF(env, blockCtx, cfg, codeWithInfoOrError.value, bp.bpId),
+          ),
         );
       }
     }

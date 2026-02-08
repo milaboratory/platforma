@@ -1,11 +1,5 @@
-import { deepClone, isJsonEqual } from '@milaboratories/helpers';
-import {
-  ref,
-  watch,
-  type WatchCallback,
-  type WatchHandle,
-  type WatchSource,
-} from 'vue';
+import { deepClone, isJsonEqual } from "@milaboratories/helpers";
+import { ref, watch, type WatchCallback, type WatchHandle, type WatchSource } from "vue";
 
 type MaybeUndefined<T, I> = I extends true ? T | undefined : T;
 export interface WatchCachedOptions<Immediate = boolean> {

@@ -1,4 +1,4 @@
-import { reactive, onScopeDispose, getCurrentScope, effectScope } from 'vue';
+import { reactive, onScopeDispose, getCurrentScope, effectScope } from "vue";
 
 const shelf = new Map<symbol, unknown>();
 

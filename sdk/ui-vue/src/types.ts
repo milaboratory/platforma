@@ -1,6 +1,6 @@
-import type { Equal, Expect, OmitOverUnion } from '@milaboratories/helpers';
-import type { BlockOutputsBase, ErrorLike, OutputWithStatus } from '@platforma-sdk/model';
-import type { Component, ComputedGetter } from 'vue';
+import type { Equal, Expect, OmitOverUnion } from "@milaboratories/helpers";
+import type { BlockOutputsBase, ErrorLike, OutputWithStatus } from "@platforma-sdk/model";
+import type { Component, ComputedGetter } from "vue";
 
 export interface StateModelOptions<A, T = A> {
   transform?: (v: A) => T;
@@ -32,15 +32,23 @@ interface ReadableComputed<T> {
 
 export type StripLastSlash<S extends string> = S extends `${infer Stripped}/` ? Stripped : S;
 
-export type ParsePathnamePart<S extends string> = S extends `${infer Path}?${string}` ? StripLastSlash<Path> : S;
+export type ParsePathnamePart<S extends string> = S extends `${infer Path}?${string}`
+  ? StripLastSlash<Path>
+  : S;
 
-export type ParseQueryPart<S extends string> = S extends `${string}?${infer Query}` ? Query : '';
+export type ParseQueryPart<S extends string> = S extends `${string}?${infer Query}` ? Query : "";
 
-export type QueryChunks<S extends string> = S extends `${infer Chunk}&${infer Rest}` ? Chunk | QueryChunks<Rest> : S;
+export type QueryChunks<S extends string> = S extends `${infer Chunk}&${infer Rest}`
+  ? Chunk | QueryChunks<Rest>
+  : S;
 
-export type SplitChunks<S extends string> = S extends `${infer Key}=${infer Value}` ? [Key, Value] : never;
+export type SplitChunks<S extends string> = S extends `${infer Key}=${infer Value}`
+  ? [Key, Value]
+  : never;
 
-export type ParseQuery<QueryString extends string> = { [T in SplitChunks<QueryChunks<ParseQueryPart<QueryString>>> as T[0]]: T[1] };
+export type ParseQuery<QueryString extends string> = {
+  [T in SplitChunks<QueryChunks<ParseQueryPart<QueryString>>> as T[0]]: T[1];
+};
 
 export type Routes<Href extends `/${string}` = `/${string}`> = {
   [P in Href as ParsePathnamePart<P>]: Component;
@@ -100,25 +108,28 @@ export type UnwrapValueOrError<W> = W extends {
   ? V
   : never;
 
-export type UnwrapOutputs<Outputs extends BlockOutputsBase, K extends keyof Outputs = keyof Outputs> = {
+export type UnwrapOutputs<
+  Outputs extends BlockOutputsBase,
+  K extends keyof Outputs = keyof Outputs,
+> = {
   [P in K]: UnwrapValueOrError<Outputs[P]>;
 };
 
 // Draft
 export type ModelResult<T, E = unknown> =
   | {
-    ok: true;
-    model: T;
-  }
+      ok: true;
+      model: T;
+    }
   | {
-    ok: false;
-    error: E;
-  };
+      ok: false;
+      error: E;
+    };
 
 export type OutputValues<Outputs extends BlockOutputsBase> = {
   [P in keyof Outputs]: Outputs[P] extends { __unwrap: true }
     ? UnwrapValueOrError<Outputs[P]> | undefined
-    : OmitOverUnion<Outputs[P], '__unwrap'>;
+    : OmitOverUnion<Outputs[P], "__unwrap">;
 };
 
 export type OutputErrors<Outputs extends BlockOutputsBase> = {
@@ -130,13 +141,13 @@ export type OutputErrors<Outputs extends BlockOutputsBase> = {
  */
 export type OptionalResult<T> =
   | {
-    errors?: undefined;
-    value?: T; // I make this optional (wip)
-  }
+      errors?: undefined;
+      value?: T; // I make this optional (wip)
+    }
   | {
-    value?: undefined;
-    errors: ErrorLike[];
-  };
+      value?: undefined;
+      errors: ErrorLike[];
+    };
 
 // Static tests
 

@@ -1,12 +1,10 @@
-import type {
-  ListOption,
-} from '@milaboratories/uikit';
+import type { ListOption } from "@milaboratories/uikit";
 import type {
   PTableColumnSpec,
   PlTableFilter,
   PlDataTableFilterState,
   PlTableFilterType,
-} from '@platforma-sdk/model';
+} from "@platforma-sdk/model";
 
 export type PlDataTableFiltersSettings = {
   /** Table columns for the sourceId */

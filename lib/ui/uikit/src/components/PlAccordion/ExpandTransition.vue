@@ -1,18 +1,24 @@
 <script lang="ts" setup>
 const onStart = (el: Element) => {
-  el.classList.add('expand-collapse-fix');
-  (el as HTMLElement).style.setProperty('--component-height', el.scrollHeight + 'px');
+  el.classList.add("expand-collapse-fix");
+  (el as HTMLElement).style.setProperty("--component-height", el.scrollHeight + "px");
 };
 
 const onAfter = (el: Element) => {
-  (el as HTMLElement).style.removeProperty('--component-height');
-  el.classList.remove('expand-collapse-fix');
+  (el as HTMLElement).style.removeProperty("--component-height");
+  el.classList.remove("expand-collapse-fix");
 };
 </script>
 
 <template>
-  <Transition name="expand-collapse" @enter="onStart" @leave="onStart" @after-enter="onAfter" @after-leave="onAfter">
-    <slot/>
+  <Transition
+    name="expand-collapse"
+    @enter="onStart"
+    @leave="onStart"
+    @after-enter="onAfter"
+    @after-leave="onAfter"
+  >
+    <slot />
   </Transition>
 </template>
 

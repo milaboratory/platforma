@@ -1,11 +1,11 @@
-import type { AuthInformation, PlClientConfig } from './config';
+import type { AuthInformation, PlClientConfig } from "./config";
 import type {
   AuthAPI_ListMethods_Response,
   MaintenanceAPI_Ping_Response,
-} from '../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api';
-import { LLPlClient } from './ll_client';
-import { type MiLogger, notEmpty } from '@milaboratories/ts-helpers';
-import { UnauthenticatedError } from './errors';
+} from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
+import { LLPlClient } from "./ll_client";
+import { type MiLogger, notEmpty } from "@milaboratories/ts-helpers";
+import { UnauthenticatedError } from "./errors";
 
 /** Primarily used for initial authentication (login) */
 export class UnauthenticatedPlClient {
@@ -15,7 +15,10 @@ export class UnauthenticatedPlClient {
     this.ll = ll;
   }
 
-  public static async build(configOrAddress: PlClientConfig | string, ops?: { logger?: MiLogger }): Promise<UnauthenticatedPlClient> {
+  public static async build(
+    configOrAddress: PlClientConfig | string,
+    ops?: { logger?: MiLogger },
+  ): Promise<UnauthenticatedPlClient> {
     const ll = await LLPlClient.build(configOrAddress, ops);
     return new UnauthenticatedPlClient(ll);
   }
@@ -34,15 +37,14 @@ export class UnauthenticatedPlClient {
 
   public async login(user: string, password: string): Promise<AuthInformation> {
     try {
-      const token = await this.ll.getJwtToken(
-        BigInt(this.ll.conf.authTTLSeconds),
-        { authorization: 'Basic ' + Buffer.from(user + ':' + password).toString('base64') },
-      );
+      const token = await this.ll.getJwtToken(BigInt(this.ll.conf.authTTLSeconds), {
+        authorization: "Basic " + Buffer.from(user + ":" + password).toString("base64"),
+      });
       const jwtToken = notEmpty(token);
-      if (jwtToken === '') throw new Error('empty token');
+      if (jwtToken === "") throw new Error("empty token");
       return { jwtToken };
     } catch (e: any) {
-      if (e.code === 'UNAUTHENTICATED') throw new UnauthenticatedError(e.message);
+      if (e.code === "UNAUTHENTICATED") throw new UnauthenticatedError(e.message);
       throw new Error(e);
     }
   }

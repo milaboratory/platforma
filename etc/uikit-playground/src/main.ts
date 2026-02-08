@@ -1,8 +1,8 @@
-import { createApp } from 'vue';
-import router from './router';
-import './demo.scss';
-import DemoApp from './App.vue';
+import { createApp } from "vue";
+import router from "./router";
+import "./demo.scss";
+import DemoApp from "./App.vue";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore @TODO (after vue update)
-createApp(DemoApp).use(router).mount('#app');
+createApp(DemoApp).use(router).mount("#app");

@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createAppV2 } from './createAppV2';
-import { type OutputWithStatus, unwrapResult } from '@platforma-sdk/model';
-import { BlockStateMock } from './test-helpers/BlockMock';
-import { BlockMock } from './test-helpers/BlockMock';
-import { delay } from '@milaboratories/helpers';
-import { createMockApi } from './test-helpers/createMockApi';
-import { watch } from 'vue';
-import { patchPoolingDelay } from './createAppV2';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createAppV2 } from "./createAppV2";
+import { type OutputWithStatus, unwrapResult } from "@platforma-sdk/model";
+import { BlockStateMock } from "./test-helpers/BlockMock";
+import { BlockMock } from "./test-helpers/BlockMock";
+import { delay } from "@milaboratories/helpers";
+import { createMockApi } from "./test-helpers/createMockApi";
+import { watch } from "vue";
+import { patchPoolingDelay } from "./createAppV2";
 
 type Args = {
   x: number;
@@ -38,27 +38,30 @@ const defaultOutputs = (): Outputs => {
 };
 
 const defaultState = (): BlockStateMock<Args, Outputs, UiState, `/${string}`> => {
-  return new BlockStateMock(defaultArgs(), defaultOutputs(), { label: '' }, '/');
+  return new BlockStateMock(defaultArgs(), defaultOutputs(), { label: "" }, "/");
 };
 
 class BlockSum extends BlockMock<Args, Outputs, UiState, `/${string}`> {
   async process(): Promise<void> {
     const { args, author } = this.state;
-    this.state.setState({ author, outputs: { sum: { ok: true, value: args.x + args.y, stable: true } } });
+    this.state.setState({
+      author,
+      outputs: { sum: { ok: true, value: args.x + args.y, stable: true } },
+    });
   }
 }
 
 export const platforma = createMockApi<Args, Outputs, UiState>(new BlockSum(defaultState()));
 
-describe('createApp', { timeout: 20_000 }, () => {
+describe("createApp", { timeout: 20_000 }, () => {
   beforeEach(() => {
     // Mock window.addEventListener to prevent actual event listeners
-    vi.stubGlobal('window', {
+    vi.stubGlobal("window", {
       addEventListener: vi.fn(),
     });
   });
 
-  it('should create an app with reactive snapshot', async () => {
+  it("should create an app with reactive snapshot", async () => {
     const initialState = await platforma.loadBlockState().then(unwrapResult);
 
     const app = createAppV2(
@@ -75,14 +78,17 @@ describe('createApp', { timeout: 20_000 }, () => {
     );
 
     expect(app.model.args).toEqual({ x: 0, y: 0 });
-    expect(app.model.ui).toEqual({ label: '' });
-    expect(app.snapshot.navigationState.href).toBe('/');
+    expect(app.model.ui).toEqual({ label: "" });
+    expect(app.snapshot.navigationState.href).toBe("/");
 
     let watchCountShallow = 0;
 
-    watch(() => app.model.args, () => {
-      watchCountShallow++;
-    });
+    watch(
+      () => app.model.args,
+      () => {
+        watchCountShallow++;
+      },
+    );
 
     app.model.args.x = 1;
     app.model.args.y = 2;
@@ -91,7 +97,7 @@ describe('createApp', { timeout: 20_000 }, () => {
     await app.allSettled();
     await delay(100);
     const t2 = performance.now();
-    console.log('allSettled', t2 - t1);
+    console.log("allSettled", t2 - t1);
 
     expect(app.model.args).toEqual(app.snapshot.args);
     expect(app.model.args).toEqual({ x: 1, y: 2 });
@@ -104,7 +110,7 @@ describe('createApp', { timeout: 20_000 }, () => {
     await app.allSettled();
     await delay(patchPoolingDelay + 10);
     const t4 = performance.now();
-    console.log('allSettled', t4 - t3);
+    console.log("allSettled", t4 - t3);
 
     expect(watchCountShallow).toBe(0); // no changes
 
@@ -115,7 +121,7 @@ describe('createApp', { timeout: 20_000 }, () => {
     app.closedRef = true;
   });
 
-  it('states should be synchronized', async () => {
+  it("states should be synchronized", async () => {
     const sharedBlock = new BlockSum(defaultState());
     const platforma1 = createMockApi<Args, Outputs, UiState>(sharedBlock);
     const platforma2 = createMockApi<Args, Outputs, UiState>(sharedBlock);
@@ -133,7 +139,7 @@ describe('createApp', { timeout: 20_000 }, () => {
           },
         },
       },
-      { appId: 'app1', debug: true, debounceSpan: 10 },
+      { appId: "app1", debug: true, debounceSpan: 10 },
     );
     const app2 = createAppV2(
       initialState2,
@@ -145,7 +151,7 @@ describe('createApp', { timeout: 20_000 }, () => {
           },
         },
       },
-      { appId: 'app2', debug: true, debounceSpan: 10 },
+      { appId: "app2", debug: true, debounceSpan: 10 },
     );
 
     app1.model.args.x = 1;

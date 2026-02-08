@@ -1,4 +1,4 @@
-import { computed, type Ref } from 'vue';
+import { computed, type Ref } from "vue";
 
 // Validation rules similar to those in Vuetify
 
@@ -7,7 +7,7 @@ export function validateFormValue<T>(value: T, rules: ((v: T) => boolean | strin
   if (rules && rules.length > 0) {
     rules.forEach((rule) => {
       const err = rule(value);
-      if (typeof err === 'string') {
+      if (typeof err === "string") {
         errors.push(err);
       }
     });

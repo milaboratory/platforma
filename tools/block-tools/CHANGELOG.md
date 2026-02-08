@@ -349,7 +349,6 @@
 - 0ff2a1b: **Enhanced force mode to support complete package and version removal**
 
   Force mode in the registry now properly handles complete removal of manually deleted packages and versions:
-
   - **Complete rebuild**: Force mode now starts with empty overviews instead of loading existing ones, ensuring overviews exactly match storage contents
   - **Automatic cleanup**: Manually deleted packages/versions are automatically removed from registry overviews during force mode refresh
   - **Pre-write snapshots**: Added safety feature that creates backup snapshots with `-prewrite-` suffix before making any changes in force mode
@@ -364,7 +363,6 @@
   Added comprehensive snapshot functionality for registry overviews and improved Zod schema compatibility across the entire codebase.
 
   ## Registry Snapshots (minor)
-
   - **Automatic backup creation**: Overview files are automatically backed up during every registry update with gzipped compression
   - **Organized storage structure**: Snapshots stored in `_overview_snapshots_v2/global/` and `per_package/` folders mirroring main hierarchy
   - **Security features**: Millisecond timestamps with random suffixes prevent CDN retrieval attacks
@@ -373,7 +371,6 @@
   - **Comprehensive testing**: Full test coverage ensures reliability
 
   ## Schema Backward Compatibility (patch)
-
   - **Strategic schema improvements**: Enhanced Zod schemas to prevent data loss during version transitions
   - **Smart classification**: Applied `.passthrough()` to evolving data structures (overviews, manifests, registries, errors) while maintaining `.strict()` for closed types (content types, identifiers)
   - **Wide compatibility coverage**: Updated schemas across block metadata, registry specifications, error structures, and deployment configurations
@@ -964,7 +961,6 @@
 ### Patch Changes
 
 - e06efcd: Pin and standardize dependency versions for network and utility libraries to ensure consistent builds and prevent unexpected behavior from minor version changes. Changes include:
-
   - Pin `@protobuf-ts/*` packages to version 2.9.4 using YAML anchors
   - Pin AWS SDK packages to version 3.750.0
   - Change `undici` from `^7.2.3` to `~7.2.3` (only patch updates)

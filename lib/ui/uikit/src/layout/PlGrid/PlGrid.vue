@@ -1,13 +1,13 @@
 <script lang="ts">
 /** Grid container */
 export default {
-  name: 'PlGrid',
+  name: "PlGrid",
 };
 </script>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
-import './pl-grid.scss';
+import { computed } from "vue";
+import "./pl-grid.scss";
 
 const props = defineProps<{
   columns: number;

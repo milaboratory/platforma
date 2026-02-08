@@ -39,7 +39,7 @@ directories.forEach((directory) => {
     // We can't use 'build' or 'test' in test packages as it would be started by turbo.
     // Packages depend on each-other. Turbo might run build/test steps independently for packages
     // because of caching.
-    execSync('pnpm run check', { cwd: path.join(scriptDir, directory), stdio: 'pipe' });
+    execSync('pnpm run test:check', { cwd: path.join(scriptDir, directory), stdio: 'pipe' });
 
     process.stdout.write(`OK\n`);
   } catch (error) {

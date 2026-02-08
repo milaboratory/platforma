@@ -1,11 +1,18 @@
-import type { BlockRenderingMode, BlockSection, AnyFunction, PlRef, BlockCodeKnownFeatureFlags, BlockConfigContainer } from '@milaboratories/pl-model-common';
-import type { Checked, ConfigResult, TypedConfig } from './config';
-import { getImmediate } from './config';
-import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
-import type { Platforma, PlatformaApiVersion, PlatformaV1, PlatformaV2 } from './platforma';
-import type { InferRenderFunctionReturn, RenderFunctionLegacy } from './render';
-import { RenderCtxLegacy } from './render';
-import { PlatformaSDKVersion } from './version';
+import type {
+  BlockRenderingMode,
+  BlockSection,
+  AnyFunction,
+  PlRef,
+  BlockCodeKnownFeatureFlags,
+  BlockConfigContainer,
+} from "@milaboratories/pl-model-common";
+import type { Checked, ConfigResult, TypedConfig } from "./config";
+import { getImmediate } from "./config";
+import { getPlatformaInstance, isInUI, tryRegisterCallback } from "./internal";
+import type { Platforma, PlatformaApiVersion, PlatformaV1, PlatformaV2 } from "./platforma";
+import type { InferRenderFunctionReturn, RenderFunctionLegacy } from "./render";
+import { RenderCtxLegacy } from "./render";
+import { PlatformaSDKVersion } from "./version";
 import type {
   TypedConfigOrConfigLambda,
   ConfigRenderLambda,
@@ -13,12 +20,9 @@ import type {
   DeriveHref,
   ConfigRenderLambdaFlags,
   InferOutputsFromConfigs,
-} from './bconfig';
-import {
-  downgradeCfgOrLambda,
-  isConfigLambda,
-} from './bconfig';
-import type { PlatformaExtended } from './platforma';
+} from "./bconfig";
+import { downgradeCfgOrLambda, isConfigLambda } from "./bconfig";
+import type { PlatformaExtended } from "./platforma";
 
 type SectionsExpectedType = readonly BlockSection[];
 
@@ -43,7 +47,7 @@ export class BlockModel<
   Args,
   OutputsCfg extends Record<string, TypedConfigOrConfigLambda>,
   UiState,
-  Href extends `/${string}` = '/',
+  Href extends `/${string}` = "/",
 > {
   private constructor(
     private config: {
@@ -83,7 +87,7 @@ export class BlockModel<
    * @deprecated use create method without generic parameter
    */
   public static create<Args>(): BlockModel<Args, {}, NoOb>;
-  public static create(renderingMode: BlockRenderingMode = 'Heavy'): BlockModel<NoOb, {}, NoOb> {
+  public static create(renderingMode: BlockRenderingMode = "Heavy"): BlockModel<NoOb, {}, NoOb> {
     return new BlockModel<NoOb, {}, NoOb>({
       renderingMode,
       initialUiState: {},
@@ -104,7 +108,7 @@ export class BlockModel<
    * */
   public output<const Key extends string, const Cfg extends TypedConfig>(
     key: Key,
-    cfg: Cfg
+    cfg: Cfg,
   ): BlockModel<Args, OutputsCfg & { [K in Key]: Cfg }, UiState, Href>;
   /**
    * Add output cell wrapped with additional status information to the configuration
@@ -117,10 +121,12 @@ export class BlockModel<
   public output<const Key extends string, const RF extends RenderFunctionLegacy<Args, UiState>>(
     key: Key,
     rf: RF,
-    flags: ConfigRenderLambdaFlags & { withStatus: true }
+    flags: ConfigRenderLambdaFlags & { withStatus: true },
   ): BlockModel<
     Args,
-    OutputsCfg & { [K in Key]: ConfigRenderLambda<InferRenderFunctionReturn<RF>> & { withStatus: true } },
+    OutputsCfg & {
+      [K in Key]: ConfigRenderLambda<InferRenderFunctionReturn<RF>> & { withStatus: true };
+    },
     UiState,
     Href
   >;
@@ -135,7 +141,7 @@ export class BlockModel<
   public output<const Key extends string, const RF extends RenderFunctionLegacy<Args, UiState>>(
     key: Key,
     rf: RF,
-    flags?: ConfigRenderLambdaFlags
+    flags?: ConfigRenderLambdaFlags,
   ): BlockModel<
     Args,
     OutputsCfg & { [K in Key]: ConfigRenderLambda<InferRenderFunctionReturn<RF>> },
@@ -147,7 +153,7 @@ export class BlockModel<
     cfgOrRf: TypedConfig | AnyFunction,
     flags: ConfigRenderLambdaFlags = {},
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
-    if (typeof cfgOrRf === 'function') {
+    if (typeof cfgOrRf === "function") {
       const handle = `output#${key}`;
       tryRegisterCallback(handle, () => cfgOrRf(new RenderCtxLegacy()));
       return new BlockModel({
@@ -173,48 +179,48 @@ export class BlockModel<
   }
 
   /** Shortcut for {@link output} with retentive flag set to true. */
-  public retentiveOutput<const Key extends string, const RF extends RenderFunctionLegacy<Args, UiState>>(
-    key: Key,
-    rf: RF,
-  ) {
+  public retentiveOutput<
+    const Key extends string,
+    const RF extends RenderFunctionLegacy<Args, UiState>,
+  >(key: Key, rf: RF) {
     return this.output(key, rf, { retentive: true });
   }
 
   /** Shortcut for {@link output} with withStatus flag set to true. */
-  public outputWithStatus<const Key extends string, const RF extends RenderFunctionLegacy<Args, UiState>>(
-    key: Key,
-    rf: RF,
-  ) {
+  public outputWithStatus<
+    const Key extends string,
+    const RF extends RenderFunctionLegacy<Args, UiState>,
+  >(key: Key, rf: RF) {
     return this.output(key, rf, { withStatus: true });
   }
 
   /** Shortcut for {@link output} with retentive and withStatus flags set to true. */
-  public retentiveOutputWithStatus<const Key extends string, const RF extends RenderFunctionLegacy<Args, UiState>>(
-    key: Key,
-    rf: RF,
-  ) {
+  public retentiveOutputWithStatus<
+    const Key extends string,
+    const RF extends RenderFunctionLegacy<Args, UiState>,
+  >(key: Key, rf: RF) {
     return this.output(key, rf, { retentive: true, withStatus: true });
   }
 
   /** Sets custom configuration predicate on the block args at which block can be executed
    * @deprecated use lambda-based API */
   public argsValid<Cfg extends TypedConfig>(
-    cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>
+    cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>,
   ): BlockModel<Args, OutputsCfg, UiState, Href>;
   /** Sets custom configuration predicate on the block args at which block can be executed */
   public argsValid<RF extends RenderFunctionLegacy<Args, UiState, boolean>>(
-    rf: RF
+    rf: RF,
   ): BlockModel<Args, OutputsCfg, UiState, Href>;
   public argsValid(
     cfgOrRf: TypedConfig | AnyFunction,
   ): BlockModel<Args, OutputsCfg, UiState, `/${string}`> {
-    if (typeof cfgOrRf === 'function') {
-      tryRegisterCallback('inputsValid', () => cfgOrRf(new RenderCtxLegacy()));
+    if (typeof cfgOrRf === "function") {
+      tryRegisterCallback("inputsValid", () => cfgOrRf(new RenderCtxLegacy()));
       return new BlockModel<Args, OutputsCfg, UiState>({
         ...this.config,
         inputsValid: {
           __renderLambda: true,
-          handle: 'inputsValid',
+          handle: "inputsValid",
         },
       });
     } else {
@@ -228,7 +234,7 @@ export class BlockModel<
   /** Sets the config to generate list of section in the left block overviews panel
    * @deprecated use lambda-based API */
   public sections<const S extends SectionsExpectedType>(
-    rf: S
+    rf: S,
   ): BlockModel<Args, OutputsCfg, UiState, DeriveHref<S>>;
   /** Sets the config to generate list of section in the left block overviews panel */
   public sections<
@@ -236,7 +242,7 @@ export class BlockModel<
     const RF extends RenderFunctionLegacy<Args, UiState, Ret>,
   >(rf: RF): BlockModel<Args, OutputsCfg, UiState, DeriveHref<ReturnType<RF>>>;
   public sections<const Cfg extends TypedConfig>(
-    cfg: Cfg & SectionsCfgChecked<Cfg, Args, UiState>
+    cfg: Cfg & SectionsCfgChecked<Cfg, Args, UiState>,
   ): BlockModel<
     Args,
     OutputsCfg,
@@ -248,13 +254,13 @@ export class BlockModel<
   ): BlockModel<Args, OutputsCfg, UiState, `/${string}`> {
     if (Array.isArray(arrOrCfgOrRf)) {
       return this.sections(getImmediate(arrOrCfgOrRf));
-    } else if (typeof arrOrCfgOrRf === 'function') {
-      tryRegisterCallback('sections', () => arrOrCfgOrRf(new RenderCtxLegacy()));
+    } else if (typeof arrOrCfgOrRf === "function") {
+      tryRegisterCallback("sections", () => arrOrCfgOrRf(new RenderCtxLegacy()));
       return new BlockModel<Args, OutputsCfg, UiState>({
         ...this.config,
         sections: {
           __renderLambda: true,
-          handle: 'sections',
+          handle: "sections",
         },
       });
     } else {
@@ -269,12 +275,12 @@ export class BlockModel<
   public title(
     rf: RenderFunctionLegacy<Args, UiState, string>,
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
-    tryRegisterCallback('title', () => rf(new RenderCtxLegacy()));
+    tryRegisterCallback("title", () => rf(new RenderCtxLegacy()));
     return new BlockModel<Args, OutputsCfg, UiState, Href>({
       ...this.config,
       title: {
         __renderLambda: true,
-        handle: 'title',
+        handle: "title",
       },
     });
   }
@@ -282,12 +288,12 @@ export class BlockModel<
   public subtitle(
     rf: RenderFunctionLegacy<Args, UiState, string>,
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
-    tryRegisterCallback('subtitle', () => rf(new RenderCtxLegacy()));
+    tryRegisterCallback("subtitle", () => rf(new RenderCtxLegacy()));
     return new BlockModel<Args, OutputsCfg, UiState, Href>({
       ...this.config,
       subtitle: {
         __renderLambda: true,
-        handle: 'subtitle',
+        handle: "subtitle",
       },
     });
   }
@@ -295,12 +301,12 @@ export class BlockModel<
   public tags(
     rf: RenderFunctionLegacy<Args, UiState, string[]>,
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
-    tryRegisterCallback('tags', () => rf(new RenderCtxLegacy()));
+    tryRegisterCallback("tags", () => rf(new RenderCtxLegacy()));
     return new BlockModel<Args, OutputsCfg, UiState, Href>({
       ...this.config,
       tags: {
         __renderLambda: true,
-        handle: 'tags',
+        handle: "tags",
       },
     });
   }
@@ -322,7 +328,9 @@ export class BlockModel<
   }
 
   /** Defines type and sets initial value for block UiState. */
-  public withUiState<UiState>(initialUiState: UiState): BlockModel<Args, OutputsCfg, UiState, Href> {
+  public withUiState<UiState>(
+    initialUiState: UiState,
+  ): BlockModel<Args, OutputsCfg, UiState, Href> {
     return new BlockModel<Args, OutputsCfg, UiState, Href>({
       ...this.config,
       initialUiState,
@@ -330,7 +338,9 @@ export class BlockModel<
   }
 
   /** Sets or overrides feature flags for the block. */
-  public withFeatureFlags(flags: Partial<BlockCodeKnownFeatureFlags>): BlockModel<Args, OutputsCfg, UiState, Href> {
+  public withFeatureFlags(
+    flags: Partial<BlockCodeKnownFeatureFlags>,
+  ): BlockModel<Args, OutputsCfg, UiState, Href> {
     return new BlockModel<Args, OutputsCfg, UiState, Href>({
       ...this.config,
       featureFlags: {
@@ -344,55 +354,47 @@ export class BlockModel<
    * Defines how to derive list of upstream references this block is meant to enrich with its exports from block args.
    * Influences dependency graph construction.
    */
-  public enriches(
-    lambda: (args: Args) => PlRef[],
-  ): BlockModel<Args, OutputsCfg, UiState, Href> {
-    tryRegisterCallback('enrichmentTargets', lambda);
+  public enriches(lambda: (args: Args) => PlRef[]): BlockModel<Args, OutputsCfg, UiState, Href> {
+    tryRegisterCallback("enrichmentTargets", lambda);
     return new BlockModel<Args, OutputsCfg, UiState, Href>({
       ...this.config,
       enrichmentTargets: {
         __renderLambda: true,
-        handle: 'enrichmentTargets',
+        handle: "enrichmentTargets",
       },
     });
   }
 
-  public done(apiVersion?: 1): PlatformaExtended<PlatformaV1<
-    Args,
-    InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
-    UiState,
-    Href
-  >>;
+  public done(
+    apiVersion?: 1,
+  ): PlatformaExtended<
+    PlatformaV1<Args, InferOutputsFromConfigs<Args, OutputsCfg, UiState>, UiState, Href>
+  >;
 
-  public done(apiVersion: 2): PlatformaExtended<PlatformaV2<
-    Args,
-    InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
-    UiState,
-    Href
-  >>;
+  public done(
+    apiVersion: 2,
+  ): PlatformaExtended<
+    PlatformaV2<Args, InferOutputsFromConfigs<Args, OutputsCfg, UiState>, UiState, Href>
+  >;
 
   /** Renders all provided block settings into a pre-configured platforma API
    * instance, that can be used in frontend to interact with block state, and
    * other features provided by the platforma to the block. */
-  public done(apiVersion: PlatformaApiVersion = 1): PlatformaExtended<Platforma<
-    Args,
-    InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
-    UiState,
-    Href
-  >> {
+  public done(
+    apiVersion: PlatformaApiVersion = 1,
+  ): PlatformaExtended<
+    Platforma<Args, InferOutputsFromConfigs<Args, OutputsCfg, UiState>, UiState, Href>
+  > {
     return this.withFeatureFlags({
       ...this.config.featureFlags,
       requiresUIAPIVersion: apiVersion,
     }).#done();
   }
 
-  #done(): PlatformaExtended<Platforma<
-    Args,
-    InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
-    UiState,
-    Href
-  >> {
-    if (this.config.initialArgs === undefined) throw new Error('Initial arguments not set.');
+  #done(): PlatformaExtended<
+    Platforma<Args, InferOutputsFromConfigs<Args, OutputsCfg, UiState>, UiState, Href>
+  > {
+    if (this.config.initialArgs === undefined) throw new Error("Initial arguments not set.");
 
     const config: BlockConfigContainer = {
       v4: undefined,
@@ -420,26 +422,36 @@ export class BlockModel<
       inputsValid: downgradeCfgOrLambda(this.config.inputsValid),
       sections: downgradeCfgOrLambda(this.config.sections),
       outputs: Object.fromEntries(
-        Object.entries(this.config.outputs).map(([key, value]) => [key, downgradeCfgOrLambda(value)]),
+        Object.entries(this.config.outputs).map(([key, value]) => [
+          key,
+          downgradeCfgOrLambda(value),
+        ]),
       ),
     };
 
-    globalThis.platformaApiVersion = this.config.featureFlags.requiresUIAPIVersion as PlatformaApiVersion;
+    globalThis.platformaApiVersion = this.config.featureFlags
+      .requiresUIAPIVersion as PlatformaApiVersion;
 
     if (!isInUI())
-    // we are in the configuration rendering routine, not in actual UI
+      // we are in the configuration rendering routine, not in actual UI
       return { config } as any;
     // normal operation inside the UI
-    else return {
-      ...getPlatformaInstance({ sdkVersion: PlatformaSDKVersion, apiVersion: platformaApiVersion }),
-      blockModelInfo: {
-        outputs: Object.fromEntries(
-          Object.entries(this.config.outputs)
-            .map(([key, value]) => [key, {
-              withStatus: Boolean(isConfigLambda(value) && value.withStatus),
-            }]),
-        ),
-      },
-    };
+    else
+      return {
+        ...getPlatformaInstance({
+          sdkVersion: PlatformaSDKVersion,
+          apiVersion: platformaApiVersion,
+        }),
+        blockModelInfo: {
+          outputs: Object.fromEntries(
+            Object.entries(this.config.outputs).map(([key, value]) => [
+              key,
+              {
+                withStatus: Boolean(isConfigLambda(value) && value.withStatus),
+              },
+            ]),
+          ),
+        },
+      };
   }
 }

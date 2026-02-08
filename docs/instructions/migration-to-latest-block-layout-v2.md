@@ -17,8 +17,10 @@ This document provides instructions for migrating Platforma blocks to the latest
 3. **Exact SDK versions** — `@platforma-sdk/*` and `@milaboratories/*` packages use exact versions (no `^` or `~`)
 4. **Shared TypeScript configs** — All tsconfig.json files extend from `@milaboratories/ts-configs/block/*`
 5. **Block-specific targets** — Use `block-model`, `block-ui`, `block-test` targets (not generic ones like `browser`)
-6. **No `.prettierrc`** — Prettier config is legacy
+6. **No `.prettierrc`** — Prettier config is legacy; use `ts-builder format` (oxfmt) instead
 7. **No legacy scripts folder** — Remove `scripts/update-sdk-packages.js` if present
+8. **Unified `check` command** — Use `ts-builder check --target <target>` instead of separate `lint` and `type-check` scripts. The `check` command runs type-check, lint, and format check all at once
+9. **Oxlint/Oxfmt configs** — Each package needs `.oxlintrc.json` and `.oxfmtrc.json` configuration files
 
 ---
 
@@ -27,42 +29,56 @@ This document provides instructions for migrating Platforma blocks to the latest
 Your block likely needs migration if you see any of these patterns:
 
 ### Root Level
+
 - `package.json` has `name` field
 - `package.json` has `pretty` script
 - `package.json` uses `pl-blocks-deps-updater` instead of `block-tools update-deps`
-- `package.json` missing `lint`, `type-check`, `do-pack` scripts
+- `package.json` has separate `lint` and `type-check` scripts instead of unified `check`
+- `package.json` missing `do-pack` script
 - `pnpm-workspace.yaml` has `tsup`, `vite`, `vue-tsc`, `@vitejs/plugin-vue`, `vite-plugin-dts`
 - `pnpm-workspace.yaml` has `@platforma-sdk/blocks-deps-updater`
 - `pnpm-workspace.yaml` SDK packages use `^` or `~` prefixes
 - `turbo.json` has `build:dev` task
-- `turbo.json` missing `lint` and `type-check` tasks
+- `turbo.json` has separate `lint` and `type-check` tasks instead of unified `check`
 - `.prettierrc` file exists
 - `scripts/update-sdk-packages.js` exists
 
 ### Model Package
+
 - Uses `tsup` + `vite build` or just `vite build`
 - Has `main: dist/index.cjs` and `module: dist/index.js` (dual format)
 - Has inline `tsup` config in package.json
 - Has `vite.config.mts` file
-- Missing `watch`, `type-check` scripts
+- Has separate `lint` and `type-check` scripts instead of unified `check`
 - `tsconfig.json` doesn't extend `@milaboratories/ts-configs/block/model`
+- Uses `eslint .` instead of `ts-builder check`
+- Missing `.oxlintrc.json` and `.oxfmtrc.json` configuration files
 
 ### UI Package
+
 - Uses `vite` directly with `vue-tsc`
 - Has `vite.config.ts`, `tsconfig.app.json`, `tsconfig.node.json`
 - `package.json` has `vite`, `vue-tsc`, `@vitejs/plugin-vue` in devDependencies
 - Uses `--target browser` instead of `--target block-ui`
-- Missing `type-check` script
+- Has separate `lint` and `type-check` scripts instead of unified `check`
+- Uses `eslint .` instead of `ts-builder check`
+- Missing `.oxlintrc.json` and `.oxfmtrc.json` configuration files
 
 ### Workflow Package
+
 - Has `index.js` and `index.d.ts` files in root (not in dist/)
-- Missing `lint`, `type-check`, `do-pack` scripts
+- Missing `do-pack` script
 - `tsconfig.json` doesn't extend ts-configs
+- Uses `eslint .` instead of `ts-builder check`
+- Missing `.oxlintrc.json` and `.oxfmtrc.json` configuration files
 
 ### Test Package
-- Uses `tsc --noEmit` instead of `ts-builder types --target block-test`
-- Missing `lint`, `type-check` scripts
+
+- Uses `tsc --noEmit` instead of `ts-builder check --target block-test`
+- Has separate `lint` and `type-check` scripts instead of unified `check`
 - Missing eslint.config.mjs
+- Uses `eslint .` instead of `ts-builder check`
+- Missing `.oxlintrc.json` and `.oxfmtrc.json` configuration files
 
 ---
 
@@ -77,8 +93,7 @@ Your block likely needs migration if you see any of these patterns:
   "scripts": {
     "build": "turbo run build",
     "build:dev": "env PL_PKG_DEV=local turbo run build",
-    "lint": "turbo run lint",
-    "type-check": "turbo run type-check",
+    "check": "turbo run check",
     "test": "env PL_PKG_DEV=local turbo run test --concurrency 1 --env-mode=loose",
     "test:dry-run": "env PL_PKG_DEV=local turbo run test --dry-run=json",
     "mark-stable": "turbo run mark-stable",
@@ -99,10 +114,12 @@ Your block likely needs migration if you see any of these patterns:
 ```
 
 **Key changes:**
+
 - No `name` field
 - No `pretty` script
 - Uses `block-tools update-deps` (not `pl-blocks-deps-updater`)
-- Has `lint`, `type-check`, `do-pack` scripts
+- Has unified `check` script (replaces separate `lint` and `type-check`)
+- Has `do-pack` script
 - Scripts use `env PL_PKG_DEV=local` prefix
 - No `@platforma-sdk/blocks-deps-updater`
 
@@ -120,30 +137,29 @@ packages:
 
 catalog:
   # SDK packages - EXACT VERSIONS (no ^ or ~)
-  '@milaboratories/ts-builder': 1.2.1
-  '@milaboratories/ts-configs': 1.2.0
-  '@platforma-sdk/workflow-tengo': 5.7.3
-  '@platforma-sdk/model': 1.48.4
-  '@platforma-sdk/ui-vue': 1.48.8
-  '@platforma-sdk/tengo-builder': 2.4.2
-  '@platforma-sdk/package-builder': 3.10.7
-  '@platforma-sdk/block-tools': 2.6.27
-  '@platforma-sdk/eslint-config': 1.2.0
-  '@platforma-sdk/test': 1.48.8
-  '@milaboratories/helpers': 1.12.1
+  "@milaboratories/ts-builder": 1.2.1
+  "@milaboratories/ts-configs": 1.2.0
+  "@platforma-sdk/workflow-tengo": 5.7.3
+  "@platforma-sdk/model": 1.48.4
+  "@platforma-sdk/ui-vue": 1.48.8
+  "@platforma-sdk/tengo-builder": 2.4.2
+  "@platforma-sdk/package-builder": 3.10.7
+  "@platforma-sdk/block-tools": 2.6.27
+  "@platforma-sdk/test": 1.48.8
+  "@milaboratories/helpers": 1.12.1
 
   # Common dependencies - can use ^ or ~
-  'vue': ^3.5.24
-  'typescript': ~5.6.3
-  'turbo': ^2.6.3
-  'vitest': ^4.0.7
-  'eslint': ^9.25.1
-  '@changesets/cli': ^2.29.8
+  "vue": ^3.5.24
+  "typescript": ~5.6.3
+  "turbo": ^2.6.3
+  "vitest": ^4.0.7
+  "@changesets/cli": ^2.29.8
 
   # Block-specific dependencies as needed
 ```
 
 **Critical:**
+
 - SDK packages (`@platforma-sdk/*`, `@milaboratories/*`) MUST use exact versions
 - No `tsup`, `vite`, `vue-tsc`, `@vitejs/plugin-vue`, `vite-plugin-dts`
 - No `@platforma-sdk/blocks-deps-updater`
@@ -155,19 +171,14 @@ catalog:
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["tsconfig.json"],
   "tasks": {
-    "lint": {
+    "check": {
       "outputs": [],
-      "dependsOn": ["^build"]
-    },
-    "type-check": {
-      "outputs": [],
-      "dependsOn": ["^build"]
     },
     "build": {
       "inputs": ["$TURBO_DEFAULT$"],
       "env": ["PL_PKG_DEV"],
       "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"],
-      "dependsOn": ["type-check", "lint", "^build"]
+      "dependsOn": ["check", "^build"]
     },
     "do-pack": {
       "dependsOn": ["build"],
@@ -175,7 +186,13 @@ catalog:
     },
     "test": {
       "dependsOn": ["build"],
-      "passThroughEnv": ["PL_ADDRESS", "PL_TEST_PASSWORD", "PL_TEST_USER", "PL_TEST_PROXY", "DEBUG"]
+      "passThroughEnv": [
+        "PL_ADDRESS",
+        "PL_TEST_PASSWORD",
+        "PL_TEST_USER",
+        "PL_TEST_PROXY",
+        "DEBUG"
+      ]
     },
     "mark-stable": {
       "passThroughEnv": ["PL_REGISTRY", "AWS_*"],
@@ -186,8 +203,9 @@ catalog:
 ```
 
 **Key changes:**
-- Has `lint` and `type-check` tasks
-- Build depends on `type-check`, `lint`, AND `^build`
+
+- Has unified `check` task (replaces separate `lint` and `type-check`)
+- Build depends on `check` AND `^build`
 - No `build:dev` task (handled by env var in root script)
 
 #### `.gitignore`
@@ -244,10 +262,10 @@ vite.config.*.timestamp-*
     "./dist/*": "./dist/*"
   },
   "scripts": {
-    "lint": "eslint .",
-    "watch": "ts-builder build --target block-model --watch",
+    "fmt": "ts-builder format",
     "build": "ts-builder build --target block-model && block-tools build-model",
-    "type-check": "ts-builder types --target block-model",
+    "watch": "ts-builder build --target block-model --watch",
+    "check": "ts-builder check --target block-model",
     "test": "vitest --run --passWithNoTests",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
@@ -258,8 +276,6 @@ vite.config.*.timestamp-*
     "@milaboratories/ts-builder": "catalog:",
     "@milaboratories/ts-configs": "catalog:",
     "@platforma-sdk/block-tools": "catalog:",
-    "@platforma-sdk/eslint-config": "catalog:",
-    "eslint": "catalog:",
     "vitest": "catalog:",
     "typescript": "catalog:"
   }
@@ -267,46 +283,32 @@ vite.config.*.timestamp-*
 ```
 
 **Key changes:**
+
 - Has `exports` field with `sources` for IDE resolution
 - `main` is `dist/index.js` only (ESM, no dual CJS/ESM)
 - No `module` field
 - Build uses `ts-builder build --target block-model`
-- Has `watch`, `type-check` scripts
+- Has unified `check` script (replaces separate `lint` and `type-check`). Runs type-check, lint, and format check
 - No `tsup`, `vite` in devDependencies
-- Both `eslint` and `@platforma-sdk/eslint-config` required
+- `fmt` uses `ts-builder format` (oxfmt under the hood)
 
-#### `model/tsconfig.json`
+#### `model/tsconfig.json`, `model/.oxlintrc.json`, `model/.oxfmtrc.json`
 
-```json
-{
-  "extends": "@milaboratories/ts-configs/block/model",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules"]
-}
-```
+Generated by `npx ts-builder init-configs --target block-model`.
 
-#### `model/eslint.config.mjs`
+#### `model/eslint.config.mjs` (LEGACY - delete)
 
-```javascript
-import { model } from '@platforma-sdk/eslint-config';
-
-/** @type {import('eslint').Linter.Config[]} */
-export default [...model];
-```
+Delete this file. The `ts-builder check` command uses oxlint with `.oxlintrc.json` instead.
 
 #### `model/vitest.config.mts`
 
 ```typescript
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    watch: false
-  }
+    watch: false,
+  },
 });
 ```
 
@@ -316,6 +318,8 @@ export default defineConfig({
 
 - `vite.config.mts` or `vite.config.ts`
 - Any inline `tsup` configuration in package.json
+- `eslint.config.mjs` (replaced by `.oxlintrc.json`)
+- `.prettierrc` (replaced by `.oxfmtrc.json`)
 
 ---
 
@@ -330,10 +334,10 @@ export default defineConfig({
   "type": "module",
   "scripts": {
     "dev": "ts-builder serve --target block-ui",
-    "watch": "ts-builder build --target block-ui --watch",
     "build": "ts-builder build --target block-ui",
-    "type-check": "ts-builder types --target block-ui",
-    "lint": "eslint .",
+    "watch": "ts-builder build --target block-ui --watch",
+    "check": "ts-builder check --target block-ui",
+    "fmt": "ts-builder format",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
@@ -344,8 +348,6 @@ export default defineConfig({
   "devDependencies": {
     "@milaboratories/ts-builder": "catalog:",
     "@milaboratories/ts-configs": "catalog:",
-    "@platforma-sdk/eslint-config": "catalog:",
-    "eslint": "catalog:",
     "vitest": "catalog:",
     "typescript": "catalog:"
   }
@@ -353,42 +355,30 @@ export default defineConfig({
 ```
 
 **Key changes:**
+
 - Uses `--target block-ui` (not `--target browser`)
 - `vue` is in dependencies (not devDependencies)
 - No `vite`, `vue-tsc`, `@vitejs/plugin-vue`
-- Both `eslint` and `@platforma-sdk/eslint-config` required
+- Has unified `check` script (replaces separate `lint` and `type-check`). Runs type-check, lint, and format check
+- `fmt` uses `ts-builder format` (oxfmt under the hood)
 
-#### `ui/tsconfig.json`
+#### `ui/tsconfig.json`, `ui/.oxlintrc.json`, `ui/.oxfmtrc.json`
 
-```json
-{
-  "extends": "@milaboratories/ts-configs/block/ui",
-  "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist"
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
-}
-```
+Generated by `npx ts-builder init-configs --target block-ui`.
 
-#### `ui/eslint.config.mjs`
+#### `ui/eslint.config.mjs` (LEGACY - delete)
 
-```javascript
-import { ui } from '@platforma-sdk/eslint-config';
-
-/** @type {import('eslint').Linter.Config[]} */
-export default [...ui];
-```
+Delete this file. The `ts-builder check` command uses oxlint with `.oxlintrc.json` instead.
 
 #### `ui/vitest.config.mts`
 
 ```typescript
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    watch: false
-  }
+    watch: false,
+  },
 });
 ```
 
@@ -397,6 +387,8 @@ export default defineConfig({
 - `vite.config.ts`
 - `tsconfig.app.json`
 - `tsconfig.node.json`
+- `eslint.config.mjs` (replaced by `.oxlintrc.json`)
+- `.prettierrc` (replaced by `.oxfmtrc.json`)
 
 ---
 
@@ -412,72 +404,31 @@ export default defineConfig({
   "scripts": {
     "build": "rm -rf dist && pl-tengo check && pl-tengo build",
     "format": "/usr/bin/env emacs --script ./format.el",
-    "test": "vitest",
-    "lint": "eslint .",
-    "type-check": "ts-builder types --target block-test",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
     "@platforma-sdk/workflow-tengo": "catalog:"
   },
   "devDependencies": {
-    "@milaboratories/ts-builder": "catalog:",
-    "@milaboratories/ts-configs": "catalog:",
-    "@platforma-sdk/eslint-config": "catalog:",
-    "@platforma-sdk/tengo-builder": "catalog:",
-    "@platforma-sdk/model": "catalog:",
-    "@platforma-sdk/test": "catalog:",
-    "eslint": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "@platforma-sdk/tengo-builder": "catalog:"
   }
 }
 ```
 
-**Note:** `type-check` uses `--target block-test` because TypeScript in workflow is for tests only.
+**Key changes:**
 
-#### `workflow/tsconfig.json`
-
-```json
-{
-  "extends": "@milaboratories/ts-configs/block/test",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
-}
-```
-
-#### `workflow/eslint.config.mjs`
-
-```javascript
-import { test } from '@platforma-sdk/eslint-config';
-
-/** @type {import('eslint').Linter.Config[]} */
-export default [...test];
-```
-
-#### `workflow/vitest.config.mts`
-
-```typescript
-import { defineConfig } from 'vitest/config';
-
-export default defineConfig({
-  test: {
-    watch: false,
-    maxConcurrency: 3,
-    testTimeout: 10000,
-    retry: 2
-  }
-});
-```
+- Only `build`, `format`, and `do-pack` scripts
+- No `test`, `lint`, `type-check`, or `check` scripts — workflow has no TypeScript
+- Minimal devDependencies — no TypeScript-related packages
 
 #### Files to DELETE from workflow/
 
+- `tsconfig.json`
+- `eslint.config.mjs`
+- `vitest.config.mts`
 - `index.js` (in root, not dist/)
 - `index.d.ts` (in root, not dist/)
+- `.prettierrc` (replaced by `.oxfmtrc.json`)
 
 ---
 
@@ -492,9 +443,9 @@ export default defineConfig({
   "version": "X.Y.Z",
   "description": "Block tests",
   "scripts": {
-    "test": "vitest --run --passWithNoTests",
-    "lint": "eslint .",
-    "type-check": "ts-builder types --target block-test"
+    "fmt": "ts-builder format",
+    "check": "ts-builder check --target block-test",
+    "test": "vitest --run --passWithNoTests"
   },
   "files": [],
   "keywords": [],
@@ -506,53 +457,45 @@ export default defineConfig({
   "devDependencies": {
     "@milaboratories/ts-builder": "catalog:",
     "@milaboratories/ts-configs": "catalog:",
-    "@platforma-sdk/eslint-config": "catalog:",
     "@platforma-sdk/test": "catalog:",
-    "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
 }
 ```
 
-**Key change:** Uses `ts-builder types --target block-test` (not `tsc --noEmit`)
+**Key changes:**
 
-#### `test/tsconfig.json`
+- Has unified `check` script (replaces separate `lint` and `type-check`). Runs type-check, lint, and format check
+- `fmt` uses `ts-builder format` (oxfmt under the hood)
+- No `eslint` dependency needed
 
-```json
-{
-  "extends": "@milaboratories/ts-configs/block/test",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
-}
-```
+#### `test/tsconfig.json`, `test/.oxlintrc.json`, `test/.oxfmtrc.json`
 
-#### `test/eslint.config.mjs`
+Generated by `npx ts-builder init-configs --target block-test`.
 
-```javascript
-import { test } from '@platforma-sdk/eslint-config';
+#### `test/eslint.config.mjs` (LEGACY - delete)
 
-/** @type {import('eslint').Linter.Config[]} */
-export default [...test];
-```
+Delete this file.
 
 #### `test/vitest.config.mts`
 
 ```typescript
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
     watch: false,
     testTimeout: 10000,
-    retry: 2
-  }
+    retry: 2,
+  },
 });
 ```
+
+#### Files to DELETE from test/
+
+- `eslint.config.mjs` (replaced by `.oxlintrc.json`)
+- `.prettierrc` (replaced by `.oxfmtrc.json`)
 
 ---
 
@@ -570,10 +513,7 @@ export default defineConfig({
     "prepublishOnly": "block-tools pack && block-tools publish -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
     "do-pack": "rm -f *.tgz && block-tools pack && pnpm pack && mv *.tgz package.tgz"
   },
-  "files": [
-    "index.d.ts",
-    "index.js"
-  ],
+  "files": ["index.d.ts", "index.js"],
   "dependencies": {
     "@platforma-open/ORGANIZATION.BLOCK-NAME.workflow": "workspace:*",
     "@platforma-open/ORGANIZATION.BLOCK-NAME.model": "workspace:*",
@@ -608,6 +548,7 @@ export default defineConfig({
 ```
 
 **Key changes:**
+
 - Has `do-pack` script
 - No `pretty` script
 - No `packageManager` field (only in root)
@@ -615,11 +556,11 @@ export default defineConfig({
 #### `block/index.d.ts`
 
 ```typescript
-import { BlockPackDescriptionAbsolute } from '@platforma-sdk/block-tools';
+import { BlockPackDescriptionAbsolute } from "@platforma-sdk/block-tools";
 
 declare function loadBlockDescription(): BlockPackDescriptionAbsolute;
 declare const blockSpec: {
-  type: 'dev-v2';
+  type: "dev-v2";
   folder: string;
 };
 
@@ -629,20 +570,20 @@ export { loadBlockDescription, blockSpec };
 #### `block/index.js`
 
 ```javascript
-const blockTools = require('@platforma-sdk/block-tools');
+const blockTools = require("@platforma-sdk/block-tools");
 
 async function loadBlockDescription() {
   return await blockTools.loadPackDescriptionFromSource(__dirname);
 }
 
 const blockSpec = {
-  type: 'dev-v2',
-  folder: __dirname
+  type: "dev-v2",
+  folder: __dirname,
 };
 
 module.exports = {
   blockSpec,
-  loadBlockDescription
+  loadBlockDescription,
 };
 ```
 
@@ -703,10 +644,10 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     branches:
-      - 'main'
+      - "main"
   push:
     branches:
-      - 'main'
+      - "main"
   workflow_dispatch: {}
 jobs:
   init:
@@ -721,21 +662,21 @@ jobs:
       - init
     uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4
     with:
-      app-name: 'Block: BLOCK-TITLE'
-      app-name-slug: 'block-BLOCK-SLUG'
-      node-version: '20.x'
-      build-script-name: 'build'
+      app-name: "Block: BLOCK-TITLE"
+      app-name-slug: "block-BLOCK-SLUG"
+      node-version: "20.x"
+      build-script-name: "build"
       pnpm-recursive-build: false
 
       test: true
-      test-script-name: 'test'
+      test-script-name: "test"
       pnpm-recursive-tests: false
-      team-id: 'ciplopen-TEAM-ID'
-      pl-docker-tag: '1.41.8'
+      team-id: "ciplopen-TEAM-ID"
+      pl-docker-tag: "1.41.8"
 
-      publish-to-public: 'true'
-      package-path: 'block'
-      create-tag: 'true'
+      publish-to-public: "true"
+      package-path: "block"
+      create-tag: "true"
 
       npmrc-config: |
         {
@@ -786,8 +727,8 @@ jobs:
       - init
     uses: milaboratory/github-ci/.github/workflows/block-mark-stable.yaml@v4
     with:
-      app-name: 'Block: BLOCK-TITLE - Mark Stable'
-      node-version: '20.x'
+      app-name: "Block: BLOCK-TITLE - Mark Stable"
+      node-version: "20.x"
       npmrc-config: |
         {
           "registries": {
@@ -813,14 +754,17 @@ jobs:
 ### Step 1: Update Root Configuration
 
 1. **Update `package.json`:**
+
    - Remove `name` field if present
    - Remove `pretty` script
    - Change `update-sdk` to use `block-tools update-deps`
-   - Add `lint`, `type-check`, `do-pack` scripts
+   - Replace separate `lint` and `type-check` scripts with unified `check`: `"check": "turbo run check"`
+   - Add `do-pack` script
    - Replace `@platforma-sdk/blocks-deps-updater` with `@platforma-sdk/block-tools`
    - Ensure `typescript` is in devDependencies
 
 2. **Update `pnpm-workspace.yaml`:**
+
    - Add `@milaboratories/ts-builder` and `@milaboratories/ts-configs`
    - Remove `^` and `~` from all SDK package versions
    - Remove `tsup`, `vite`, `vue-tsc`, `@vitejs/plugin-vue`, `vite-plugin-dts`
@@ -828,8 +772,9 @@ jobs:
    - Update `vitest` to `^4.0.7`
 
 3. **Update `turbo.json`:**
-   - Add `lint` and `type-check` task configurations
-   - Update `build` to depend on `type-check`, `lint`, `^build`
+
+   - Replace separate `lint` and `type-check` tasks with unified `check` task
+   - Update `build` to depend on `check`, `^build`
    - Remove `build:dev` task if present
 
 4. **Delete files:**
@@ -839,55 +784,63 @@ jobs:
 ### Step 2: Migrate Model Package
 
 1. **Update `model/package.json`:**
+
    - Add `exports` field with `sources`
    - Change `main` to `dist/index.js` (remove `module` field)
    - Change build script to `ts-builder build --target block-model && block-tools build-model`
-   - Add `watch`, `type-check` scripts
-   - Remove `tsup`, `vite`, `vite-plugin-dts` from devDependencies
-   - Add `@milaboratories/ts-builder`, `@milaboratories/ts-configs`, `eslint`, `vitest`
+   - Replace separate `lint` and `type-check` scripts with `check`: `"check": "ts-builder check --target block-model"`
+   - Add `fmt` script: `ts-builder format`
+   - Add `watch` script
+   - Remove `tsup`, `vite`, `vite-plugin-dts`, `eslint`, `@platforma-sdk/eslint-config` from devDependencies
+   - Add `@milaboratories/ts-builder`, `@milaboratories/ts-configs`, `vitest`
    - Remove inline `tsup` configuration
 
-2. **Replace `model/tsconfig.json`** with version extending `@milaboratories/ts-configs/block/model`
+2. **Generate configs:** delete existing `tsconfig.json` and run `npx ts-builder init-configs --target block-model` (creates tsconfig.json, build config, .oxlintrc.json, .oxfmtrc.json)
 
-3. **Ensure `model/eslint.config.mjs`** exists with model preset
+3. **Ensure `model/vitest.config.mts`** exists
 
-4. **Ensure `model/vitest.config.mts`** exists
-
-5. **Delete `model/vite.config.mts`** or `model/vite.config.ts`
+4. **Delete:**
+   - `model/vite.config.mts` or `model/vite.config.ts`
+   - `model/eslint.config.mjs`
+   - `model/.prettierrc`
 
 ### Step 3: Migrate UI Package
 
 1. **Update `ui/package.json`:**
+
    - Change `dev` to `ts-builder serve --target block-ui`
    - Change `build` to `ts-builder build --target block-ui`
    - Change `watch` to `ts-builder build --target block-ui --watch`
-   - Add `type-check` script using `--target block-ui`
+   - Replace separate `lint` and `type-check` scripts with `check`: `"check": "ts-builder check --target block-ui"`
+   - Add `fmt` script: `ts-builder format`
    - Move `vue` to dependencies (not devDependencies)
-   - Remove `vite`, `vue-tsc`, `@vitejs/plugin-vue` from devDependencies
-   - Add `@milaboratories/ts-builder`, `@milaboratories/ts-configs`, `eslint`, `vitest`
+   - Remove `vite`, `vue-tsc`, `@vitejs/plugin-vue`, `eslint`, `@platforma-sdk/eslint-config` from devDependencies
+   - Add `@milaboratories/ts-builder`, `@milaboratories/ts-configs`, `vitest`
 
-2. **Replace `ui/tsconfig.json`** with version extending `@milaboratories/ts-configs/block/ui`
+2. **Generate configs:** delete existing `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json` and run `npx ts-builder init-configs --target block-ui` (creates tsconfig.json, build config, serve config, .oxlintrc.json, .oxfmtrc.json)
 
-3. **Ensure `ui/eslint.config.mjs`** exists with ui preset
+3. **Ensure `ui/vitest.config.mts`** exists
 
-4. **Ensure `ui/vitest.config.mts`** exists
-
-5. **Delete:**
+4. **Delete:**
    - `ui/vite.config.ts`
    - `ui/tsconfig.app.json`
    - `ui/tsconfig.node.json`
+   - `ui/eslint.config.mjs`
+   - `ui/.prettierrc`
 
 ### Step 4: Migrate Workflow Package
 
 **Important:** Workflow packages contain only Tengo templates and do NOT need TypeScript/testing infrastructure.
 
 1. **Update `workflow/package.json`:**
+
    - Keep only `build`, `format`, and `do-pack` scripts
-   - Remove `test`, `lint`, `type-check` scripts if present
+   - Remove `test`, `lint`, `type-check`, `check` scripts if present
    - Keep only minimal devDependencies: `@platforma-sdk/tengo-builder` (and other non-TypeScript tools)
    - Remove ALL TypeScript-related dependencies: `@milaboratories/ts-builder`, `@milaboratories/ts-configs`, `@platforma-sdk/eslint-config`, `eslint`, `typescript`, `vitest`, `@platforma-sdk/test`, `@platforma-sdk/model`
 
 2. **Delete ALL TypeScript/testing configuration files:**
+
    - `tsconfig.json`
    - `eslint.config.mjs`
    - `vitest.config.mts`
@@ -897,6 +850,7 @@ jobs:
    - `index.d.ts`
 
 **Example minimal workflow package.json:**
+
 ```json
 {
   "name": "@platforma-open/ORGANIZATION.BLOCK-NAME.workflow",
@@ -919,15 +873,19 @@ jobs:
 ### Step 5: Migrate Test Package
 
 1. **Update `test/package.json`:**
-   - Add `lint`, `type-check` scripts
-   - `type-check` should use `ts-builder types --target block-test`
-   - Add `@milaboratories/ts-builder`, `@milaboratories/ts-configs`, `eslint`
 
-2. **Replace `test/tsconfig.json`** with version extending `@milaboratories/ts-configs/block/test`
+   - Replace separate `lint` and `type-check` scripts with `check`: `"check": "ts-builder check --target block-test"`
+   - Add `fmt` script: `ts-builder format`
+   - Remove `eslint`, `@platforma-sdk/eslint-config` from devDependencies
+   - Add `@milaboratories/ts-builder`, `@milaboratories/ts-configs`
 
-3. **Ensure `test/eslint.config.mjs`** exists with test preset
+2. **Generate configs:** delete existing `tsconfig.json` and run `npx ts-builder init-configs --target block-test` (creates tsconfig.json, .oxlintrc.json, .oxfmtrc.json)
 
-4. **Ensure `test/vitest.config.mts`** exists
+3. **Ensure `test/vitest.config.mts`** exists
+
+4. **Delete:**
+   - `test/eslint.config.mjs`
+   - `test/.prettierrc`
 
 ### Step 6: Verify Block Package
 
@@ -946,14 +904,14 @@ Compare `.github/workflows/build.yaml` and `.github/workflows/mark-stable.yaml` 
 # Install dependencies (no need to remove node_modules)
 pnpm install
 
-# Build all packages
+# Build all packages (runs check automatically via turbo dependency)
 pnpm run build
 
 # Run tests (if available)
 pnpm run test
 
-# Verify linting works
-pnpm run lint
+# Verify check works (type-check + lint + format check)
+pnpm run check
 ```
 
 All commands should complete without errors.
@@ -965,88 +923,126 @@ All commands should complete without errors.
 ## Migration Checklist
 
 ### Root Level
+
 - [ ] `package.json` has no `name` field
 - [ ] `package.json` has no `pretty` script
 - [ ] `package.json` uses `block-tools update-deps` for update-sdk
-- [ ] `package.json` has `lint`, `type-check`, `do-pack` scripts
+- [ ] `package.json` has unified `check` script (no separate `lint` and `type-check`)
+- [ ] `package.json` has `do-pack` script
 - [ ] `package.json` has `typescript` in devDependencies
 - [ ] `pnpm-workspace.yaml` has `@milaboratories/ts-builder` and `@milaboratories/ts-configs`
 - [ ] `pnpm-workspace.yaml` SDK packages use exact versions (no `^` or `~`)
 - [ ] `pnpm-workspace.yaml` has no `tsup`, `vite`, `vue-tsc`, `vite-plugin-dts`
 - [ ] `pnpm-workspace.yaml` has no `@platforma-sdk/blocks-deps-updater`
-- [ ] `turbo.json` has `lint` and `type-check` tasks
-- [ ] `turbo.json` build depends on `type-check`, `lint`, `^build`
+- [ ] `turbo.json` has unified `check` task (no separate `lint` and `type-check`)
+- [ ] `turbo.json` build depends on `check`, `^build`
 - [ ] `.prettierrc` is DELETED
 - [ ] `scripts/update-sdk-packages.js` is DELETED
 
 ### Model Package
+
 - [ ] `package.json` has `exports` field with `sources`
 - [ ] `package.json` uses `ts-builder build --target block-model`
-- [ ] `package.json` has `watch`, `type-check` scripts
-- [ ] `package.json` has no `tsup` or `vite` dependencies
+- [ ] `package.json` has `fmt`, `watch`, `check` scripts (no separate `lint`/`type-check`)
+- [ ] `package.json` `check` uses `ts-builder check --target block-model`
+- [ ] `package.json` `fmt` uses `ts-builder format`
+- [ ] `package.json` has no `tsup`, `vite`, `eslint`, `@platforma-sdk/eslint-config` dependencies
 - [ ] `tsconfig.json` extends `@milaboratories/ts-configs/block/model`
-- [ ] `eslint.config.mjs` exists with model preset
+- [ ] `.oxlintrc.json` exists with `oxlint-block-model.json` preset
+- [ ] `.oxfmtrc.json` exists with `oxfmt.json` preset
 - [ ] `vitest.config.mts` exists
 - [ ] `vite.config.mts` is DELETED
+- [ ] `eslint.config.mjs` is DELETED
+- [ ] `.prettierrc` is DELETED
 
 ### UI Package
+
 - [ ] `package.json` uses `--target block-ui` (not `--target browser`)
 - [ ] `package.json` has `vue` in dependencies (not devDependencies)
-- [ ] `package.json` has no `vite`, `vue-tsc`, `@vitejs/plugin-vue`
-- [ ] `package.json` has `type-check` script
+- [ ] `package.json` has no `vite`, `vue-tsc`, `@vitejs/plugin-vue`, `eslint`, `@platforma-sdk/eslint-config`
+- [ ] `package.json` has `fmt`, `check` scripts (no separate `lint`/`type-check`)
+- [ ] `package.json` `check` uses `ts-builder check --target block-ui`
+- [ ] `package.json` `fmt` uses `ts-builder format`
 - [ ] `tsconfig.json` extends `@milaboratories/ts-configs/block/ui`
-- [ ] `eslint.config.mjs` exists with ui preset
+- [ ] `.oxlintrc.json` exists with `oxlint-block-ui.json` preset
+- [ ] `.oxfmtrc.json` exists with `oxfmt.json` preset
 - [ ] `vitest.config.mts` exists
 - [ ] `vite.config.ts` is DELETED
 - [ ] `tsconfig.app.json` is DELETED
 - [ ] `tsconfig.node.json` is DELETED
+- [ ] `eslint.config.mjs` is DELETED
+- [ ] `.prettierrc` is DELETED
 
 ### Workflow Package
-- [ ] `package.json` has `lint`, `type-check`, `do-pack` scripts
-- [ ] `package.json` type-check uses `--target block-test`
-- [ ] `tsconfig.json` extends `@milaboratories/ts-configs/block/test`
-- [ ] `eslint.config.mjs` exists with test preset
-- [ ] `vitest.config.mts` exists
+
+- [ ] `package.json` has only `build`, `format`, `do-pack` scripts
+- [ ] No TypeScript-related dependencies
+- [ ] `tsconfig.json` is DELETED
+- [ ] `eslint.config.mjs` is DELETED
+- [ ] `vitest.config.mts` is DELETED
 - [ ] Root `index.js` is DELETED (only dist/index.js should exist)
 - [ ] Root `index.d.ts` is DELETED (only dist/index.d.ts should exist)
+- [ ] `.prettierrc` is DELETED
 
 ### Test Package
-- [ ] `package.json` has `lint`, `type-check` scripts
-- [ ] `package.json` type-check uses `ts-builder types --target block-test`
+
+- [ ] `package.json` has `fmt`, `check` scripts (no separate `lint`/`type-check`)
+- [ ] `package.json` `check` uses `ts-builder check --target block-test`
+- [ ] `package.json` `fmt` uses `ts-builder format`
 - [ ] `tsconfig.json` extends `@milaboratories/ts-configs/block/test`
-- [ ] `eslint.config.mjs` exists with test preset
+- [ ] `.oxlintrc.json` exists with `oxlint-test.json` preset
+- [ ] `.oxfmtrc.json` exists with `oxfmt.json` preset
 - [ ] `vitest.config.mts` exists
+- [ ] `eslint.config.mjs` is DELETED
+- [ ] `.prettierrc` is DELETED
 
 ### Block Package
+
 - [ ] `index.d.ts` exists with correct content
 - [ ] `index.js` exists with correct content
 - [ ] `package.json` has `do-pack` script
 - [ ] `package.json` has no `pretty` script
 
 ### Verification
+
 - [ ] `pnpm install` succeeds
 - [ ] `pnpm run build` succeeds
 - [ ] `pnpm run test` succeeds
-- [ ] `pnpm run lint` succeeds
+- [ ] `pnpm run check` succeeds
 
 ---
 
 ## Common Issues
 
 ### "Cannot find module '@milaboratories/ts-configs'"
+
 Ensure `@milaboratories/ts-configs` is in the catalog with exact version and run `pnpm install`.
 
 ### Build fails with tsup-related errors
+
 Ensure all references to tsup are removed from package.json files, including inline configuration.
 
 ### UI build fails with vite errors
+
 Ensure `vite.config.ts`, `tsconfig.app.json`, and `tsconfig.node.json` are deleted from ui/.
 
 ### Type errors after migration
-Run `pnpm run type-check` and fix any issues. The new ts-configs may be stricter.
+
+Run `pnpm run check` and fix any issues. The new ts-configs may be stricter.
 
 ### "ts-builder build --target block-test" fails
-The `block-test` target does NOT support build—it's type-check only. Use `ts-builder types --target block-test` instead.
+
+The `block-test` target does NOT support build—it's type-check only. Use `ts-builder check --target block-test` instead.
+
+### Linting fails with "Cannot find oxlint" or "Cannot find oxfmt"
+
+Ensure `@milaboratories/ts-builder` is installed. The `ts-builder check` and `ts-builder format` commands use oxlint and oxfmt binaries bundled with ts-builder.
+
+### Missing `.oxlintrc.json` or `.oxfmtrc.json`
+
+Each package needs its own `.oxlintrc.json` and `.oxfmtrc.json` configuration files. Generate them using CLI commands:
+
+- `npx ts-builder init-configs --target <target>` — generates all configs at once (tsconfig, build, lint, fmt)
 
 ---
 
@@ -1055,5 +1051,16 @@ The `block-test` target does NOT support build—it's type-check only. Use `ts-b
 - **Gold standard:** `mixcr-clonotyping` block
 - **Build system docs:** `platforma/docs/block-build-system.md`
 - **ts-builder:** `@milaboratories/ts-builder`
+  - `ts-builder build` — builds TypeScript projects
+  - `ts-builder serve` — dev server for browser/UI targets
+  - `ts-builder check` — runs type-check, lint (oxlint), and format check (oxfmt) all at once
+  - `ts-builder types` — type-checks TypeScript projects (standalone)
+  - `ts-builder lint` — runs oxlint (standalone)
+  - `ts-builder format` — runs oxfmt
+  - `ts-builder init-configs --target <target>` — generates all configs (tsconfig, build, lint, fmt)
+  - `ts-builder init-tsconfig --target <target>` — generates tsconfig.json only
+  - `ts-builder init-build-config --target <target>` — generates build config only
+  - `ts-builder init-serve-config` — generates serve config only
+  - `ts-builder init-lint-config --target <target>` — generates .oxlintrc.json only
+  - `ts-builder init-fmt-config` — generates .oxfmtrc.json only
 - **ts-configs:** `@milaboratories/ts-configs`
-

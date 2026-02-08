@@ -1,4 +1,4 @@
-import { flatten, uniq } from 'es-toolkit';
+import { flatten, uniq } from "es-toolkit";
 
 import type {
   AxisSpec,
@@ -16,10 +16,17 @@ import type {
   PObjectId,
   PTableRecordSingleValueFilterV2,
   ValueType,
-} from '@milaboratories/pl-model-common';
-import { pTableValue, Annotation, canonicalizeAxisId, getAxisId, readAnnotation, PColumnName } from '@milaboratories/pl-model-common';
+} from "@milaboratories/pl-model-common";
+import {
+  pTableValue,
+  Annotation,
+  canonicalizeAxisId,
+  getAxisId,
+  readAnnotation,
+  PColumnName,
+} from "@milaboratories/pl-model-common";
 
-export * from './columns';
+export * from "./columns";
 
 // Types
 type PValue = string | number | null;
@@ -62,7 +69,7 @@ type GetColumnsFullParams = {
   strictlyCompatible: boolean;
   types?: ValueType[];
   names?: string[];
-  annotations?: FindColumnsRequest['columnFilter']['annotationValue'];
+  annotations?: FindColumnsRequest["columnFilter"]["annotationValue"];
   annotationsNotEmpty?: string[];
 };
 
@@ -71,10 +78,14 @@ const UNIQUE_VALUES_LIMIT = 1000000;
 
 // Helper functions
 const sortValuesPredicate = (a: { label: string }, b: { label: string }) =>
-  a.label.localeCompare(b.label, 'en', { numeric: true });
+  a.label.localeCompare(b.label, "en", { numeric: true });
 
-function convertColumnData(type: ValueType, response: PTableVector, absentValue: number | null = null): PValue[] {
-  if (type === 'String') {
+function convertColumnData(
+  type: ValueType,
+  response: PTableVector,
+  absentValue: number | null = null,
+): PValue[] {
+  if (type === "String") {
     return response.data as PValue[];
   }
   const res: PValue[] = new Array(response.data.length);
@@ -89,13 +100,13 @@ function createSearchFilter(
   substring: string,
 ): PTableRecordSingleValueFilterV2 {
   return {
-    type: 'bySingleColumnV2',
+    type: "bySingleColumnV2",
     column: {
-      type: 'column',
+      type: "column",
       id: columnId,
     },
     predicate: {
-      operator: 'StringIContains',
+      operator: "StringIContains",
       substring,
     },
   };
@@ -106,16 +117,16 @@ function createAxisSearchFilter(
   substring: string,
 ): PTableRecordSingleValueFilterV2 {
   return {
-    type: 'bySingleColumnV2',
+    type: "bySingleColumnV2",
     column: {
-      type: 'axis',
+      type: "axis",
       id: {
         type: axisSpec.type,
         name: axisSpec.name,
       },
     },
     predicate: {
-      operator: 'StringIContains',
+      operator: "StringIContains",
       substring,
     },
   };
@@ -126,22 +137,25 @@ function mapValuesToSuggestions(values: string[]): { value: string; label: strin
 }
 
 function getPFrameDriver() {
-  if (typeof platforma === 'undefined') {
-    throw new Error('Platforma instance is not available');
+  if (typeof platforma === "undefined") {
+    throw new Error("Platforma instance is not available");
   }
-  if (typeof platforma.pFrameDriver === 'undefined') {
-    throw new Error('PFrame driver is not available in the current Platforma instance');
+  if (typeof platforma.pFrameDriver === "undefined") {
+    throw new Error("PFrame driver is not available in the current Platforma instance");
   }
   return platforma.pFrameDriver;
 }
 
 // Core functions
-export async function getColumnSpecById(handle: PFrameHandle, id: PObjectId): Promise<PColumnSpec | null> {
+export async function getColumnSpecById(
+  handle: PFrameHandle,
+  id: PObjectId,
+): Promise<PColumnSpec | null> {
   try {
     const response = await getPFrameDriver().getColumnSpec(handle, id);
     return response ?? null;
   } catch (err) {
-    console.error('PFrame: get single column error', err);
+    console.error("PFrame: get single column error", err);
     return null;
   }
 }
@@ -154,15 +168,15 @@ export async function getSingleColumnData(
   try {
     const response: FullPTableColumnData[] = await getPFrameDriver().calculateTableData(handle, {
       src: {
-        type: 'column',
+        type: "column",
         column: id,
       },
       filters,
       sorting: [],
     } as CalculateTableDataRequest<PObjectId>);
 
-    const axes = response.filter((item) => item.spec.type === 'axis');
-    const columns = response.filter((item) => item.spec.type === 'column');
+    const axes = response.filter((item) => item.spec.type === "axis");
+    const columns = response.filter((item) => item.spec.type === "column");
 
     return {
       axesData: axes.reduce((res: Record<string, PValue[]>, item) => {
@@ -173,7 +187,7 @@ export async function getSingleColumnData(
       data: columns.length ? convertColumnData(columns[0].data.type, columns[0].data) : [],
     };
   } catch (err) {
-    console.error('PFrame: calculateTableData error');
+    console.error("PFrame: calculateTableData error");
     throw err;
   }
 }
@@ -200,7 +214,7 @@ export async function getColumnUniqueValues(
       overflow: response.overflow,
     };
   } catch (err) {
-    console.error('PFrame: getUniqueValues for column error');
+    console.error("PFrame: getUniqueValues for column error");
     throw err;
   }
 }
@@ -214,14 +228,14 @@ export async function getAxisUniqueValues(
 
   const parentsSpecs = (await Promise.all(parentColumnIds.map((p) => getColumnSpecById(handle, p))))
     .flatMap((spec, i): [PObjectId, PColumnSpec][] =>
-      spec != null && spec.kind === 'PColumn' ? [[parentColumnIds[i], spec]] : [],
+      spec != null && spec.kind === "PColumn" ? [[parentColumnIds[i], spec]] : [],
     )
     .filter(([_, spec]) =>
       spec.axesSpec.some((axisSpec) => canonicalizeAxisId(getAxisId(axisSpec)) === strAxisId),
     );
 
   if (parentsSpecs.length === 0) {
-    console.warn('Axis unique values requested without parent columns');
+    console.warn("Axis unique values requested without parent columns");
     return { values: [], overflow: false };
   }
 
@@ -240,14 +254,12 @@ export async function getAxisUniqueValues(
     const overflow = responses.some((r) => r.overflow);
     return {
       values: uniq(
-        flatten(responses.map((r) =>
-          Array.from(r.values.data as ArrayLike<unknown>).map(String),
-        )),
+        flatten(responses.map((r) => Array.from(r.values.data as ArrayLike<unknown>).map(String))),
       ),
       overflow,
     };
   } catch (err) {
-    console.error('PFrame: getUniqueValues for axis error', err);
+    console.error("PFrame: getUniqueValues for axis error", err);
     return { values: [], overflow: false };
   }
 }
@@ -259,7 +271,7 @@ export async function getRequestColumnsFromSelectedSources(
   const result: AxisId[] = [];
   for (const item of sources) {
     const spec = await getColumnSpecById(handle, item);
-    if (spec?.kind === 'PColumn') {
+    if (spec?.kind === "PColumn") {
       result.push(...spec.axesSpec.map((spec) => getAxisId(spec)));
     }
   }
@@ -270,7 +282,8 @@ export async function getColumnsFull(
   handle: PFrameHandle,
   params: GetColumnsFullParams,
 ): Promise<PColumnIdAndSpec[]> {
-  const { selectedSources, strictlyCompatible, types, names, annotations, annotationsNotEmpty } = params;
+  const { selectedSources, strictlyCompatible, types, names, annotations, annotationsNotEmpty } =
+    params;
 
   try {
     const request: FindColumnsRequest = {
@@ -278,10 +291,13 @@ export async function getColumnsFull(
         type: types,
         name: names,
         annotationValue: annotations,
-        annotationPattern: annotationsNotEmpty?.reduce((res, v) => {
-          res[v] = '.+';
-          return res;
-        }, {} as Record<string, string>),
+        annotationPattern: annotationsNotEmpty?.reduce(
+          (res, v) => {
+            res[v] = ".+";
+            return res;
+          },
+          {} as Record<string, string>,
+        ),
       },
       compatibleWith: await getRequestColumnsFromSelectedSources(handle, selectedSources),
       strictlyCompatible,
@@ -290,7 +306,7 @@ export async function getColumnsFull(
     const response: FindColumnsResponse = await getPFrameDriver().findColumns(handle, request);
     return response.hits;
   } catch (err) {
-    console.error('PFrame: findColumns error');
+    console.error("PFrame: findColumns error");
     throw err;
   }
 }
@@ -319,7 +335,9 @@ function getDiscreteValuesFromAnnotation(columnSpec: PColumnSpec): undefined | S
   }
 
   try {
-    const discreteValues: string[] = (JSON.parse(discreteValuesStr) as (string | number)[]).map((v) => String(v));
+    const discreteValues: string[] = (JSON.parse(discreteValuesStr) as (string | number)[]).map(
+      (v) => String(v),
+    );
     const values = discreteValues.map((v) => ({ value: v, label: v })).sort(sortValuesPredicate);
     return { values, overflow: false };
   } catch {
@@ -352,7 +370,11 @@ async function getAxisValuesWithLabels(
       filters = [createAxisSearchFilter(axisSpec, searchQueryValue)];
     }
 
-    const { data: dataValues, axesData } = await getSingleColumnData(handle, labelsColumnId, filters);
+    const { data: dataValues, axesData } = await getSingleColumnData(
+      handle,
+      labelsColumnId,
+      filters,
+    );
     const axisKeys = axesData[strAxisId];
     const values: { value: string; label: string }[] = [];
 
@@ -408,7 +430,7 @@ export async function getUniqueSourceValuesWithLabels(
   const { columnId, axisIdx, limit, searchQuery, searchQueryValue } = params;
 
   const selectedSourceSpec = await getColumnSpecById(handle, columnId);
-  if (selectedSourceSpec == null || selectedSourceSpec.kind !== 'PColumn') {
+  if (selectedSourceSpec == null || selectedSourceSpec.kind !== "PColumn") {
     return { values: [], overflow: false };
   }
 

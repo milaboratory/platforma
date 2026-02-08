@@ -17,24 +17,24 @@
  * Discriminator key for BlockStorage format detection.
  * This unique hash-based key identifies data as BlockStorage vs legacy formats.
  */
-export const BLOCK_STORAGE_KEY = '__pl_a7f3e2b9__';
+export const BLOCK_STORAGE_KEY = "__pl_a7f3e2b9__";
 
 /**
  * Current BlockStorage schema version.
  * Increment this when the storage structure itself changes (not block state migrations).
  */
-export const BLOCK_STORAGE_SCHEMA_VERSION = 'v1';
+export const BLOCK_STORAGE_SCHEMA_VERSION = "v1";
 
 /**
  * Default data version for new blocks without migrations.
  * Unique identifier ensures blocks are created via DataModel API.
  */
-export const DATA_MODEL_DEFAULT_VERSION = '__pl_v1_d4e8f2a1__';
+export const DATA_MODEL_DEFAULT_VERSION = "__pl_v1_d4e8f2a1__";
 
 /**
  * Type for valid schema versions
  */
-export type BlockStorageSchemaVersion = 'v1'; // Add 'v2', 'v3', etc. as schema evolves
+export type BlockStorageSchemaVersion = "v1"; // Add 'v2', 'v3', etc. as schema evolves
 
 /**
  * Plugin key type - keys starting with `@plugin/` are reserved for plugin data
@@ -65,11 +65,11 @@ export type BlockStorage<TState = unknown> = {
  * Checks for the discriminator key and valid schema version.
  */
 export function isBlockStorage(value: unknown): value is BlockStorage {
-  if (value === null || typeof value !== 'object') return false;
+  if (value === null || typeof value !== "object") return false;
   const obj = value as Record<string, unknown>;
   const schemaVersion = obj[BLOCK_STORAGE_KEY];
   // Currently only 'v1' is valid, but this allows future versions
-  return schemaVersion === 'v1'; // Add more versions as schema evolves
+  return schemaVersion === "v1"; // Add more versions as schema evolves
 }
 
 // =============================================================================
@@ -108,9 +108,10 @@ export function normalizeBlockStorage<TState = unknown>(raw: unknown): BlockStor
     return {
       ...storage,
       // Fix for early released version where __dataVersion was a number
-      __dataVersion: typeof storage.__dataVersion === 'number'
-        ? DATA_MODEL_DEFAULT_VERSION
-        : storage.__dataVersion,
+      __dataVersion:
+        typeof storage.__dataVersion === "number"
+          ? DATA_MODEL_DEFAULT_VERSION
+          : storage.__dataVersion,
     };
   }
   // Legacy format: raw is the state directly
@@ -142,16 +143,14 @@ export function getStorageData<TState>(storage: BlockStorage<TState>): TState {
  * @param rawStorage - Raw storage data from middle layer (may be any format)
  * @returns The extracted data value, or undefined if storage is undefined/null
  */
-export function deriveDataFromStorage<TData = unknown>(
-  rawStorage: unknown,
-): TData {
+export function deriveDataFromStorage<TData = unknown>(rawStorage: unknown): TData {
   // Normalize to BlockStorage format (handles legacy formats too)
   const storage = normalizeBlockStorage<TData>(rawStorage);
   return getStorageData(storage);
 }
 
 /** Payload for storage mutation operations. SDK defines specific operations. */
-export type MutateStoragePayload<T = unknown> = { operation: 'update-data'; value: T };
+export type MutateStoragePayload<T = unknown> = { operation: "update-data"; value: T };
 
 /**
  * Updates the data in BlockStorage (immutable)
@@ -165,7 +164,7 @@ export function updateStorageData<TValue = unknown>(
   payload: MutateStoragePayload<TValue>,
 ): BlockStorage<TValue> {
   switch (payload.operation) {
-    case 'update-data':
+    case "update-data":
       return { ...storage, __data: payload.value };
     default:
       throw new Error(`Unknown storage operation: ${(payload as { operation: string }).operation}`);
@@ -267,8 +266,8 @@ export function removePluginData<TState>(
  */
 export function getPluginNames(storage: BlockStorage): string[] {
   return Object.keys(storage)
-    .filter((key): key is PluginKey => key.startsWith('@plugin/'))
-    .map((key) => key.slice('@plugin/'.length));
+    .filter((key): key is PluginKey => key.startsWith("@plugin/"))
+    .map((key) => key.slice("@plugin/".length));
 }
 
 // =============================================================================
@@ -282,10 +281,10 @@ export function getPluginNames(storage: BlockStorage): string[] {
  * @param key - The key to retrieve
  * @returns The value at the given key
  */
-export function getFromStorage<
-  TState,
-  K extends keyof BlockStorage<TState>,
->(storage: BlockStorage<TState>, key: K): BlockStorage<TState>[K] {
+export function getFromStorage<TState, K extends keyof BlockStorage<TState>>(
+  storage: BlockStorage<TState>,
+  key: K,
+): BlockStorage<TState>[K] {
   return storage[key];
 }
 
@@ -297,10 +296,7 @@ export function getFromStorage<
  * @param value - The new value
  * @returns A new BlockStorage with the updated value
  */
-export function updateStorage<
-  TState,
-  K extends keyof BlockStorage<TState>,
->(
+export function updateStorage<TState, K extends keyof BlockStorage<TState>>(
   storage: BlockStorage<TState>,
   key: K,
   value: BlockStorage<TState>[K],
@@ -362,7 +358,8 @@ export const defaultBlockStorageHandlers: Required<BlockStorageHandlers<unknown>
   transformStateForStorage: <TState>(
     storage: BlockStorage<TState>,
     newState: TState,
-  ): BlockStorage<TState> => updateStorageData(storage, { operation: 'update-data', value: newState }),
+  ): BlockStorage<TState> =>
+    updateStorageData(storage, { operation: "update-data", value: newState }),
 
   deriveStateForArgs: <TState>(storage: BlockStorage<TState>): TState => getStorageData(storage),
 

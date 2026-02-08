@@ -17,7 +17,7 @@ export async function asyncPool(
 ): Promise<void> {
   let concurrency = initConcurrency;
   const controller: AsyncPoolController = {
-    setConcurrency: (n) => concurrency = n,
+    setConcurrency: (n) => (concurrency = n),
   };
 
   const results = [];
@@ -25,7 +25,10 @@ export async function asyncPool(
   const errs: Array<Error>[] = [];
 
   for (const fn of iterableFns) {
-    if (errs.length > 0) throw new AsyncPoolError(`Errors while executing async pool: ${errs.map((e) => e instanceof Error ? e.message : String(e)).join(', ')}`);
+    if (errs.length > 0)
+      throw new AsyncPoolError(
+        `Errors while executing async pool: ${errs.map((e) => (e instanceof Error ? e.message : String(e))).join(", ")}`,
+      );
 
     const p = fn(controller);
     results.push(p);
@@ -42,10 +45,12 @@ export async function asyncPool(
 
   await Promise.all(results);
   if (errs.length > 0) {
-    throw new AsyncPoolError(`Errors while executing async pool: ${errs.map((e) => e instanceof Error ? e.message : String(e)).join(', ')}`);
+    throw new AsyncPoolError(
+      `Errors while executing async pool: ${errs.map((e) => (e instanceof Error ? e.message : String(e))).join(", ")}`,
+    );
   }
 }
 
 export class AsyncPoolError extends Error {
-  name = 'AsyncPoolError';
+  name = "AsyncPoolError";
 }

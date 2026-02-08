@@ -2,48 +2,50 @@
   "name": "@platforma-sdk/model",
   "version": "1.53.11",
   "description": "Platforma.bio SDK / Block Model",
-  "type": "module",
-  "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "exports": {
-    ".": {
-      "sources": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "scripts": {
-    "type-check": "ts-builder types --target node",
-    "build": "ts-builder build --target node",
-    "watch": "ts-builder build --target node --watch",
-    "lint": "eslint .",
-    "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
-  },
   "files": [
     "./dist/**/*",
     "./src/**/*",
     "README.md"
   ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "sources": "./src/index.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "test": "vitest run --coverage",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
+  },
   "dependencies": {
-    "@milaboratories/ptabler-expression-js": "workspace:*",
-    "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/pl-error-like": "workspace:*",
-    "fast-json-patch": "catalog:",
-    "utility-types": "catalog:",
+    "@milaboratories/pl-model-common": "workspace:*",
+    "@milaboratories/ptabler-expression-js": "workspace:*",
     "canonicalize": "catalog:",
     "es-toolkit": "catalog:",
+    "fast-json-patch": "catalog:",
+    "utility-types": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -1,4 +1,4 @@
-import type { AxisSpec } from '@milaboratories/pl-model-common';
+import type { AxisSpec } from "@milaboratories/pl-model-common";
 
 /**
  * Represents a selector for all columns.
@@ -6,7 +6,7 @@ import type { AxisSpec } from '@milaboratories/pl-model-common';
  */
 export interface AllSelectorExpression {
   /** The type of operation, always 'all'. */
-  type: 'selector_all';
+  type: "selector_all";
 }
 
 /**
@@ -15,7 +15,7 @@ export interface AllSelectorExpression {
  */
 export interface StringSelectorExpression {
   /** The type of operation, always 'string'. */
-  type: 'selector_string';
+  type: "selector_string";
 }
 
 /**
@@ -24,7 +24,7 @@ export interface StringSelectorExpression {
  */
 export interface NumericSelectorExpression {
   /** The type of operation, always 'numeric'. */
-  type: 'selector_numeric';
+  type: "selector_numeric";
 }
 
 /**
@@ -33,7 +33,7 @@ export interface NumericSelectorExpression {
  */
 export interface IntegerSelectorExpression {
   /** The type of operation, always 'integer'. */
-  type: 'selector_integer';
+  type: "selector_integer";
 }
 
 /**
@@ -42,7 +42,7 @@ export interface IntegerSelectorExpression {
  */
 export interface FloatSelectorExpression {
   /** The type of operation, always 'float'. */
-  type: 'selector_float';
+  type: "selector_float";
 }
 
 /**
@@ -51,7 +51,7 @@ export interface FloatSelectorExpression {
  */
 export interface StartsWithSelectorExpression {
   /** The type of operation, always 'starts_with'. */
-  type: 'selector_starts_with';
+  type: "selector_starts_with";
   /** The prefix to match column names against. */
   prefix: string;
 }
@@ -62,7 +62,7 @@ export interface StartsWithSelectorExpression {
  */
 export interface EndsWithSelectorExpression {
   /** The type of operation, always 'ends_with'. */
-  type: 'selector_ends_with';
+  type: "selector_ends_with";
   /** The suffix to match column names against. */
   suffix: string;
 }
@@ -73,7 +73,7 @@ export interface EndsWithSelectorExpression {
  */
 export interface ContainsSelectorExpression {
   /** The type of operation, always 'contains'. */
-  type: 'selector_contains';
+  type: "selector_contains";
   /** The substring to match within column names. */
   substring: string;
 }
@@ -84,7 +84,7 @@ export interface ContainsSelectorExpression {
  */
 export interface MatchesSelectorExpression {
   /** The type of operation, always 'matches'. */
-  type: 'selector_matches';
+  type: "selector_matches";
   /** The regex pattern to match column names against. */
   pattern: string;
 }
@@ -95,7 +95,7 @@ export interface MatchesSelectorExpression {
  */
 export interface ExcludeSelectorExpression {
   /** The type of operation, always 'exclude'. */
-  type: 'selector_exclude';
+  type: "selector_exclude";
   /** The list of column names to exclude from selection. */
   columns: string[];
 }
@@ -106,7 +106,7 @@ export interface ExcludeSelectorExpression {
  */
 export interface ByNameSelectorExpression {
   /** The type of operation, always 'by_name'. */
-  type: 'selector_by_name';
+  type: "selector_by_name";
   /** The list of column names to select. */
   names: string[];
 }
@@ -117,7 +117,7 @@ export interface ByNameSelectorExpression {
  */
 export interface AxisSelectorExpression {
   /** The type of operation, always 'axis'. */
-  type: 'selector_axis';
+  type: "selector_axis";
   /** The axis to select. */
   axis: AxisSpec;
 }
@@ -128,7 +128,7 @@ export interface AxisSelectorExpression {
  */
 export interface NestedSelectorExpression {
   /** The type of operation, always 'nested'. */
-  type: 'selector_nested';
+  type: "selector_nested";
 }
 
 /** Defines all available selector expression types. */
@@ -153,7 +153,7 @@ export type SelectorExpression =
  */
 export interface SelectorComplementExpression {
   /** The type of operation, always 'selector_complement'. */
-  type: 'selector_complement';
+  type: "selector_complement";
   /** The selector to complement. */
   selector: SelectorExpression;
 }
@@ -164,7 +164,7 @@ export interface SelectorComplementExpression {
  */
 export interface SelectorUnionExpression {
   /** The type of operation, always 'selector_union'. */
-  type: 'selector_union';
+  type: "selector_union";
   /** The list of selectors to union. */
   selectors: SelectorExpression[];
 }
@@ -175,7 +175,7 @@ export interface SelectorUnionExpression {
  */
 export interface SelectorIntersectionExpression {
   /** The type of operation, always 'selector_intersection'. */
-  type: 'selector_intersection';
+  type: "selector_intersection";
   /** The list of selectors to intersect. */
   selectors: SelectorExpression[];
 }
@@ -186,7 +186,7 @@ export interface SelectorIntersectionExpression {
  */
 export interface SelectorDifferenceExpression {
   /** The type of operation, always 'selector_difference'. */
-  type: 'selector_difference';
+  type: "selector_difference";
   /** The list of selectors to apply difference operation. */
   selectors: SelectorExpression[];
 }
@@ -197,7 +197,7 @@ export interface SelectorDifferenceExpression {
  */
 export interface SelectorSymmetricDifferenceExpression {
   /** The type of operation, always 'selector_symmetric_difference'. */
-  type: 'selector_symmetric_difference';
+  type: "selector_symmetric_difference";
   /** The list of selectors to apply symmetric difference operation. */
   selectors: SelectorExpression[];
 }

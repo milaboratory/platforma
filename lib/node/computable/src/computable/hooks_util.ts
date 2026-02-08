@@ -1,5 +1,5 @@
-import type { Computable } from './computable';
-import type { ComputableHooks } from './computable_hooks';
+import type { Computable } from "./computable";
+import type { ComputableHooks } from "./computable_hooks";
 
 export type StartStopComputableHooksOps = {
   /** How long to wait after last computable request to send stopUpdating
@@ -23,7 +23,7 @@ export class PollingComputableHooks implements ComputableHooks {
     ops: StartStopComputableHooksOps,
     private readonly scheduleOnNextFreshState?: (
       resolve: () => void,
-      reject: (error: unknown) => void
+      reject: (error: unknown) => void,
     ) => void,
   ) {
     this.stopDebounce = ops.stopDebounce;
@@ -33,10 +33,10 @@ export class PollingComputableHooks implements ComputableHooks {
 
   private scheduleStopIfNeeded(): void {
     if (
-      this.sourceActivated
-      && this.listening.size === 0
-      && this.awaitingRefresh.size === 0
-      && this.stopCountdown === undefined
+      this.sourceActivated &&
+      this.listening.size === 0 &&
+      this.awaitingRefresh.size === 0 &&
+      this.stopCountdown === undefined
     )
       this.stopCountdown = setTimeout(() => {
         this.stopUpdating();

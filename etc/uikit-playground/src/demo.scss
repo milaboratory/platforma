@@ -8,14 +8,15 @@
   -webkit-text-size-adjust: 100%;
 }
 
-body, #app {
+body,
+#app {
   position: relative;
   padding: 0;
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
   overflow: auto !important;
-  background: #E1E3EB;
+  background: #e1e3eb;
 }
 
 .text-color {
@@ -37,12 +38,12 @@ main {
     resize: both;
     overflow: auto;
 
-    >div:first-child {
+    > div:first-child {
       grid-column: 1 / span 2;
     }
 
     &__header {
-      background-color: #0D0D0F;
+      background-color: #0d0d0f;
       padding: 24px 24px 12px 24px;
       color: #fff;
       font-family: Manrope, sans-serif;
@@ -56,11 +57,14 @@ main {
       flex-direction: column;
       gap: 34px;
       background-color: #fff;
-      box-shadow: 0 2px 1px -1px rgb(0 0 0 / 20%), 0px 1px 1px 0px rgb(0 0 0 / 14%), 0px 1px 3px 0px rgb(0 0 0 / 12%);
+      box-shadow:
+        0 2px 1px -1px rgb(0 0 0 / 20%),
+        0px 1px 1px 0px rgb(0 0 0 / 14%),
+        0px 1px 3px 0px rgb(0 0 0 / 12%);
       color-scheme: light;
 
       &[data-theme="dark"] {
-        background-color: #1B1B1F;
+        background-color: #1b1b1f;
         color-scheme: dark;
       }
     }
@@ -70,7 +74,7 @@ main {
 .ground {
   display: inline-block;
   margin-top: 20px;
-  background: linear-gradient(90deg, #fff 50%, #fff 50%, #1B1B1F 50%, #1B1B1F);
+  background: linear-gradient(90deg, #fff 50%, #fff 50%, #1b1b1f 50%, #1b1b1f);
   border-radius: 12px;
 }
 
@@ -98,7 +102,7 @@ main {
     padding: 12px 20px;
   }
 
-  >a {
+  > a {
     margin: 0;
     padding: 8px 20px;
     display: block;
@@ -175,7 +179,7 @@ main {
   color: var(--txt-01);
 
   &.fill {
-    >* {
+    > * {
       flex-grow: 1;
     }
   }
@@ -187,7 +191,7 @@ main {
 
 @for $i from 1 through 34 {
   .gap-#{$i} {
-    gap: #{$i}px
+    gap: #{$i}px;
   }
 }
 

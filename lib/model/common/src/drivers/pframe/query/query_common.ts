@@ -1,6 +1,6 @@
-import type { PObjectId } from '../../../pool';
-import type { JsonDataInfo } from '../data_info';
-import type { AxisValueType, ColumnValueType } from '../spec';
+import type { PObjectId } from "../../../pool";
+import type { JsonDataInfo } from "../data_info";
+import type { AxisValueType, ColumnValueType } from "../spec";
 
 // ============ Type Spec Types ============
 
@@ -38,16 +38,16 @@ export type TypeSpec = {
  * - `negate` - Negation (-x)
  */
 export type NumericUnaryOperand =
-  | 'abs'
-  | 'ceil'
-  | 'floor'
-  | 'round'
-  | 'sqrt'
-  | 'log'
-  | 'log2'
-  | 'log10'
-  | 'exp'
-  | 'negate';
+  | "abs"
+  | "ceil"
+  | "floor"
+  | "round"
+  | "sqrt"
+  | "log"
+  | "log2"
+  | "log10"
+  | "exp"
+  | "negate";
 
 /**
  * Binary mathematical operation kinds.
@@ -62,7 +62,7 @@ export type NumericUnaryOperand =
  * - `div` - Division: left / right (division by zero returns Infinity or NaN)
  * - `mod` - Modulo: left % right
  */
-export type NumericBinaryOperand = 'add' | 'sub' | 'mul' | 'div' | 'mod';
+export type NumericBinaryOperand = "add" | "sub" | "mul" | "div" | "mod";
 
 /**
  * Numeric comparison operation kinds.
@@ -78,7 +78,7 @@ export type NumericBinaryOperand = 'add' | 'sub' | 'mul' | 'div' | 'mod';
  * - `gt` - Greater than: left > right
  * - `ge` - Greater or equal: left >= right
  */
-export type NumericComparisonOperand = 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge';
+export type NumericComparisonOperand = "eq" | "ne" | "lt" | "le" | "gt" | "ge";
 
 // ============ Geometric Types ============
 
@@ -113,7 +113,7 @@ export type Point2D = {
  * { type: 'constant', value: true }
  */
 export type ExprConstant = {
-  type: 'constant';
+  type: "constant";
   value: string | number | boolean;
 };
 
@@ -140,7 +140,7 @@ export type ExprConstant = {
  * @see NumericUnaryOperand for available operations
  */
 export interface ExprNumericUnary<I> {
-  type: 'numericUnary';
+  type: "numericUnary";
   /** The mathematical operation to apply */
   operand: NumericUnaryOperand;
   /** Input expression (must evaluate to numeric) */
@@ -167,7 +167,7 @@ export interface ExprNumericUnary<I> {
  * @see NumericBinaryOperand for available operations
  */
 export interface ExprNumericBinary<I> {
-  type: 'numericBinary';
+  type: "numericBinary";
   /** The arithmetic operation to apply */
   operand: NumericBinaryOperand;
   /** Left operand expression */
@@ -202,7 +202,7 @@ export interface ExprNumericBinary<I> {
  * @see NumericComparisonOperand for available operations
  */
 export interface ExprNumericComparison<I> {
-  type: 'numericComparison';
+  type: "numericComparison";
   /** The comparison operation to apply */
   operand: NumericComparisonOperand;
   /** Left operand expression */
@@ -232,7 +232,7 @@ export interface ExprNumericComparison<I> {
  * { type: 'stringEquals', input: nameColumn, value: 'John', caseInsensitive: true }
  */
 export interface ExprStringEquals<I> {
-  type: 'stringEquals';
+  type: "stringEquals";
   /** Input expression (must evaluate to string) */
   input: I;
   /** Reference string to compare against */
@@ -261,7 +261,7 @@ export interface ExprStringEquals<I> {
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions | MDN Regular Expressions Guide}
  */
 export interface ExprStringRegex<I> {
-  type: 'stringRegex';
+  type: "stringRegex";
   /** Input expression (must evaluate to string) */
   input: I;
   /** Regular expression pattern */
@@ -286,7 +286,7 @@ export interface ExprStringRegex<I> {
  * { type: 'stringContains', input: descColumn, value: 'ERROR', caseInsensitive: true }
  */
 export interface ExprStringContains<I> {
-  type: 'stringContains';
+  type: "stringContains";
   /** Input expression (must evaluate to string) */
   input: I;
   /** Substring to search for */
@@ -330,7 +330,7 @@ export interface ExprStringContains<I> {
  * }
  */
 export interface ExprStringContainsFuzzy<I> {
-  type: 'stringContainsFuzzy';
+  type: "stringContainsFuzzy";
   /** Input expression (must evaluate to string) */
   input: I;
   /** Pattern to match against */
@@ -370,7 +370,7 @@ export interface ExprStringContainsFuzzy<I> {
  * { type: 'not', input: comparisonExpr }
  */
 export interface ExprLogicalUnary<I> {
-  type: 'not';
+  type: "not";
   /** Input boolean expression to negate */
   input: I;
 }
@@ -397,7 +397,7 @@ export interface ExprLogicalUnary<I> {
  */
 export interface ExprLogicalVariadic<I> {
   /** Logical operation: 'and' or 'or' */
-  type: 'and' | 'or';
+  type: "and" | "or";
   /** Array of boolean expressions to combine (minimum 2 elements) */
   input: I[];
 }
@@ -422,7 +422,7 @@ export interface ExprLogicalVariadic<I> {
  * }
  */
 export interface ExprIsIn<I, T extends string | number> {
-  type: 'isIn';
+  type: "isIn";
   /** Input expression to test */
   input: I;
   /** Set of allowed values */
@@ -447,7 +447,7 @@ export interface ExprIsIn<I, T extends string | number> {
  * { type: 'axisRef', value: 0 }
  */
 export interface ExprAxisRef<A> {
-  type: 'axisRef';
+  type: "axisRef";
   /** Axis identifier (selector or index depending on context) */
   value: A;
 }
@@ -468,20 +468,20 @@ export interface ExprAxisRef<A> {
  * { type: 'columnRef', value: 0 }
  */
 export interface ExprColumnRef<C> {
-  type: 'columnRef';
+  type: "columnRef";
   /** Column identifier (ID or index depending on context) */
   value: C;
 }
 
 export type InferBooleanExpressionUnion<E> = [
-  E extends ExprNumericComparison<unknown> ? Extract<E, { type: 'numericComparison' }> : never,
-  E extends ExprStringEquals<unknown> ? Extract<E, { type: 'stringEquals' }> : never,
-  E extends ExprStringContains<unknown> ? Extract<E, { type: 'stringContains' }> : never,
-  E extends ExprStringContainsFuzzy<unknown> ? Extract<E, { type: 'stringContainsFuzzy' }> : never,
-  E extends ExprStringRegex<unknown> ? Extract<E, { type: 'stringRegex' }> : never,
-  E extends ExprLogicalUnary<unknown> ? Extract<E, { type: 'not' }> : never,
-  E extends ExprLogicalVariadic<unknown> ? Extract<E, { type: 'and' | 'or' }> : never,
-  E extends ExprIsIn<unknown, string | number> ? Extract<E, { type: 'isIn' }> : never,
+  E extends ExprNumericComparison<unknown> ? Extract<E, { type: "numericComparison" }> : never,
+  E extends ExprStringEquals<unknown> ? Extract<E, { type: "stringEquals" }> : never,
+  E extends ExprStringContains<unknown> ? Extract<E, { type: "stringContains" }> : never,
+  E extends ExprStringContainsFuzzy<unknown> ? Extract<E, { type: "stringContainsFuzzy" }> : never,
+  E extends ExprStringRegex<unknown> ? Extract<E, { type: "stringRegex" }> : never,
+  E extends ExprLogicalUnary<unknown> ? Extract<E, { type: "not" }> : never,
+  E extends ExprLogicalVariadic<unknown> ? Extract<E, { type: "and" | "or" }> : never,
+  E extends ExprIsIn<unknown, string | number> ? Extract<E, { type: "isIn" }> : never,
 ][number];
 
 // ============ Generic Query Types ============
@@ -506,7 +506,7 @@ export type InferBooleanExpressionUnion<E> = [
  * { type: 'axis', id: 0 }
  */
 export interface QueryAxisSelector<A> {
-  type: 'axis';
+  type: "axis";
   /** Axis identifier (name or index depending on context) */
   id: A;
 }
@@ -529,7 +529,7 @@ export interface QueryAxisSelector<A> {
  * { type: 'column', id: 0 }
  */
 export interface QueryColumnSelector<C> {
-  type: 'column';
+  type: "column";
   /** Column identifier (name or index depending on context) */
   id: C;
 }
@@ -561,7 +561,7 @@ export interface QueryColumnSelector<C> {
  * // Result has all samples; annotations/metadata are null where not available
  */
 export interface QueryOuterJoin<JE extends QueryJoinEntry<unknown>> {
-  type: 'outerJoin';
+  type: "outerJoin";
   /** Primary query - all its records are preserved */
   primary: JE;
   /** Secondary queries - joined where keys match, null where they don't */
@@ -594,7 +594,7 @@ export interface QueryOuterJoin<JE extends QueryJoinEntry<unknown>> {
  * }
  */
 export interface QuerySliceAxes<Q, A extends QueryAxisSelector<unknown>> {
-  type: 'sliceAxes';
+  type: "sliceAxes";
   /** Input query to slice */
   input: Q;
   /** List of axis filters to apply (at least one required) */
@@ -633,7 +633,7 @@ export interface QuerySliceAxes<Q, A extends QueryAxisSelector<unknown>> {
  * }
  */
 export interface QuerySort<Q, E> {
-  type: 'sort';
+  type: "sort";
   /** Input query to sort */
   input: Q;
   /** Sort criteria in priority order (at least one required) */
@@ -684,7 +684,7 @@ export interface QuerySort<Q, E> {
  * }
  */
 export interface QueryFilter<Q, E> {
-  type: 'filter';
+  type: "filter";
   /** Input query to filter */
   input: Q;
   /** Boolean predicate expression - only true records pass */
@@ -705,7 +705,7 @@ export interface QueryFilter<Q, E> {
  * { type: 'column', columnId: 'col_abc123' }
  */
 export interface QueryColumn {
-  type: 'column';
+  type: "column";
   /** Unique identifier of the column to reference */
   columnId: PObjectId;
 }
@@ -730,7 +730,7 @@ export interface QueryColumn {
  * }
  */
 export interface QueryInlineColumn<T> {
-  type: 'inlineColumn';
+  type: "inlineColumn";
   /** Type specification defining axes and column types */
   spec: T;
   /** Data information containing or referencing the actual values */
@@ -763,7 +763,7 @@ export interface QueryInlineColumn<T> {
  * }
  */
 export interface QuerySparseToDenseColumn<SO> {
-  type: 'sparseToDenseColumn';
+  type: "sparseToDenseColumn";
   /** ID of the column to cross-join */
   columnId: PObjectId;
   /** Optional override for the column specification */
@@ -807,7 +807,7 @@ export interface QuerySparseToDenseColumn<SO> {
  */
 export interface QuerySymmetricJoin<JE extends QueryJoinEntry<unknown>> {
   /** 'innerJoin' for intersection, 'fullJoin' for union with nulls */
-  type: 'innerJoin' | 'fullJoin';
+  type: "innerJoin" | "fullJoin";
   /** Queries to join (at least one required) */
   entries: JE[];
 }

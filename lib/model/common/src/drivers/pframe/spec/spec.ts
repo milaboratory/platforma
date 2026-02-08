@@ -1,26 +1,18 @@
-import { ensureError } from '../../../errors';
-import {
-  canonicalizeJson,
-  type CanonicalizedJson,
-  type StringifiedJson,
-} from '../../../json';
-import type {
-  PObject,
-  PObjectId,
-  PObjectSpec,
-} from '../../../pool';
-import { z } from 'zod';
+import { ensureError } from "../../../errors";
+import { canonicalizeJson, type CanonicalizedJson, type StringifiedJson } from "../../../json";
+import type { PObject, PObjectId, PObjectSpec } from "../../../pool";
+import { z } from "zod";
 
 export const ValueType = {
-  Int: 'Int',
-  Long: 'Long',
-  Float: 'Float',
-  Double: 'Double',
-  String: 'String',
-  Bytes: 'Bytes',
+  Int: "Int",
+  Long: "Long",
+  Float: "Float",
+  Double: "Double",
+  String: "String",
+  Bytes: "Bytes",
 } as const;
 
-export type AxisValueType = Extract<ValueType, 'Int' | 'Long' | 'String'>;
+export type AxisValueType = Extract<ValueType, "Int" | "Long" | "String">;
 export type ColumnValueType = ValueType;
 
 /** PFrame columns and axes within them may store one of these types. */
@@ -36,7 +28,9 @@ export function readMetadata<U extends Metadata, T extends keyof U = keyof U>(
 }
 
 type MetadataJsonImpl<M> = {
-  [P in keyof M as (M[P] extends StringifiedJson ? P : never)]: M[P] extends StringifiedJson<infer U> ? z.ZodType<U> : never;
+  [P in keyof M as M[P] extends StringifiedJson ? P : never]: M[P] extends StringifiedJson<infer U>
+    ? z.ZodType<U>
+    : never;
 };
 export type MetadataJson<M> = MetadataJsonImpl<Required<M>>;
 
@@ -44,7 +38,7 @@ export function readMetadataJsonOrThrow<M extends Metadata, T extends keyof Meta
   metadata: Metadata | undefined,
   metadataJson: MetadataJson<M>,
   key: T,
-  methodNameInError: string = 'readMetadataJsonOrThrow',
+  methodNameInError: string = "readMetadataJsonOrThrow",
 ): z.infer<MetadataJson<M>[T]> | undefined {
   const json = readMetadata<M, T>(metadata, key);
   if (json === undefined) return undefined;
@@ -55,10 +49,10 @@ export function readMetadataJsonOrThrow<M extends Metadata, T extends keyof Meta
     return schema.parse(value);
   } catch (error: unknown) {
     throw new Error(
-      `${methodNameInError} failed, `
-      + `key: ${String(key)}, `
-      + `value: ${json}, `
-      + `error: ${ensureError(error)}`,
+      `${methodNameInError} failed, ` +
+        `key: ${String(key)}, ` +
+        `value: ${json}, ` +
+        `error: ${ensureError(error)}`,
     );
   }
 }
@@ -77,20 +71,21 @@ export function readMetadataJson<M extends Metadata, T extends keyof MetadataJso
 
 /// Well-known domains
 export const Domain = {
-  Alphabet: 'pl7.app/alphabet',
-  BlockId: 'pl7.app/blockId',
+  Alphabet: "pl7.app/alphabet",
+  BlockId: "pl7.app/blockId",
   VDJ: {
     ScClonotypeChain: {
-      Index: 'pl7.app/vdj/scClonotypeChain/index',
+      Index: "pl7.app/vdj/scClonotypeChain/index",
     },
   },
 } as const;
 
-export type Domain = Metadata & Partial<{
-  [Domain.Alphabet]: 'nucleotide' | 'aminoacid' | (string & {});
-  [Domain.BlockId]: string;
-  [Domain.VDJ.ScClonotypeChain.Index]: 'primary' | 'secondary' | (string & {});
-}>;
+export type Domain = Metadata &
+  Partial<{
+    [Domain.Alphabet]: "nucleotide" | "aminoacid" | (string & {});
+    [Domain.BlockId]: string;
+    [Domain.VDJ.ScClonotypeChain.Index]: "primary" | "secondary" | (string & {});
+  }>;
 
 export type DomainJson = MetadataJson<Domain>;
 export const DomainJson: DomainJson = {};
@@ -108,7 +103,7 @@ export function readDomainJsonOrThrow<T extends keyof DomainJson>(
   spec: { domain?: Metadata | undefined } | undefined,
   key: T,
 ): z.infer<DomainJson[T]> | undefined {
-  return readMetadataJsonOrThrow<Domain, T>(spec?.domain, DomainJson, key, 'readDomainJsonOrThrow');
+  return readMetadataJsonOrThrow<Domain, T>(spec?.domain, DomainJson, key, "readDomainJsonOrThrow");
 }
 
 /// Helper function for reading json-encoded domain values, returns undefined on JSON parsing error
@@ -121,84 +116,87 @@ export function readDomainJson<T extends keyof DomainJson>(
 
 /// Well-known annotations
 export const Annotation = {
-  AxisNature: 'pl7.app/axisNature',
-  Alphabet: 'pl7.app/alphabet',
-  Description: 'pl7.app/description',
-  DiscreteValues: 'pl7.app/discreteValues',
-  Format: 'pl7.app/format',
+  AxisNature: "pl7.app/axisNature",
+  Alphabet: "pl7.app/alphabet",
+  Description: "pl7.app/description",
+  DiscreteValues: "pl7.app/discreteValues",
+  Format: "pl7.app/format",
   Graph: {
     Axis: {
-      HighCardinality: 'pl7.app/graph/axis/highCardinality',
-      LowerLimit: 'pl7.app/graph/axis/lowerLimit',
-      SymmetricRange: 'pl7.app/graph/axis/symmetricRange',
-      UpperLimit: 'pl7.app/graph/axis/upperLimit',
+      HighCardinality: "pl7.app/graph/axis/highCardinality",
+      LowerLimit: "pl7.app/graph/axis/lowerLimit",
+      SymmetricRange: "pl7.app/graph/axis/symmetricRange",
+      UpperLimit: "pl7.app/graph/axis/upperLimit",
     },
-    IsDenseAxis: 'pl7.app/graph/isDenseAxis',
-    IsVirtual: 'pl7.app/graph/isVirtual',
-    Palette: 'pl7.app/graph/palette',
-    Thresholds: 'pl7.app/graph/thresholds',
-    TreatAbsentValuesAs: 'pl7.app/graph/treatAbsentValuesAs',
+    IsDenseAxis: "pl7.app/graph/isDenseAxis",
+    IsVirtual: "pl7.app/graph/isVirtual",
+    Palette: "pl7.app/graph/palette",
+    Thresholds: "pl7.app/graph/thresholds",
+    TreatAbsentValuesAs: "pl7.app/graph/treatAbsentValuesAs",
   },
-  HideDataFromUi: 'pl7.app/hideDataFromUi',
-  HideDataFromGraphs: 'pl7.app/hideDataFromGraphs',
-  IsDiscreteFilter: 'pl7.app/isDiscreteFilter',
-  IsLinkerColumn: 'pl7.app/isLinkerColumn',
-  IsSubset: 'pl7.app/isSubset',
-  Label: 'pl7.app/label',
-  Max: 'pl7.app/max',
-  Min: 'pl7.app/min',
-  MultipliesBy: 'pl7.app/multipliesBy',
-  Parents: 'pl7.app/parents',
+  HideDataFromUi: "pl7.app/hideDataFromUi",
+  HideDataFromGraphs: "pl7.app/hideDataFromGraphs",
+  IsDiscreteFilter: "pl7.app/isDiscreteFilter",
+  IsLinkerColumn: "pl7.app/isLinkerColumn",
+  IsSubset: "pl7.app/isSubset",
+  Label: "pl7.app/label",
+  Max: "pl7.app/max",
+  Min: "pl7.app/min",
+  MultipliesBy: "pl7.app/multipliesBy",
+  Parents: "pl7.app/parents",
   Sequence: {
     Annotation: {
-      Mapping: 'pl7.app/sequence/annotation/mapping',
+      Mapping: "pl7.app/sequence/annotation/mapping",
     },
-    IsAnnotation: 'pl7.app/sequence/isAnnotation',
+    IsAnnotation: "pl7.app/sequence/isAnnotation",
   },
   Table: {
-    FontFamily: 'pl7.app/table/fontFamily',
-    OrderPriority: 'pl7.app/table/orderPriority',
-    Visibility: 'pl7.app/table/visibility',
+    FontFamily: "pl7.app/table/fontFamily",
+    OrderPriority: "pl7.app/table/orderPriority",
+    Visibility: "pl7.app/table/visibility",
   },
-  Trace: 'pl7.app/trace',
+  Trace: "pl7.app/trace",
   VDJ: {
-    IsAssemblingFeature: 'pl7.app/vdj/isAssemblingFeature',
+    IsAssemblingFeature: "pl7.app/vdj/isAssemblingFeature",
   },
 } as const;
 
-export type Annotation = Metadata & Partial<{
-  [Annotation.Alphabet]: 'nucleotide' | 'aminoacid' | (string & {});
-  [Annotation.AxisNature]: 'homogeneous' | 'heterogeneous' | 'scaleCompatible' | (string & {});
-  [Annotation.Description]: string;
-  [Annotation.DiscreteValues]: StringifiedJson<number[]> | StringifiedJson<string[]>;
-  [Annotation.Format]: string;
-  [Annotation.Graph.Axis.HighCardinality]: StringifiedJson<boolean>;
-  [Annotation.Graph.Axis.LowerLimit]: StringifiedJson<number>;
-  [Annotation.Graph.Axis.SymmetricRange]: StringifiedJson<boolean>;
-  [Annotation.Graph.Axis.UpperLimit]: StringifiedJson<number>;
-  [Annotation.Graph.IsDenseAxis]: StringifiedJson<boolean>;
-  [Annotation.Graph.IsVirtual]: StringifiedJson<boolean>;
-  [Annotation.Graph.Palette]: StringifiedJson<{ mapping: Record<string, number>; name: string }>;
-  [Annotation.Graph.Thresholds]: StringifiedJson<{ columnId: { valueType: ValueType; name: string }; value: number }[]>;
-  [Annotation.Graph.TreatAbsentValuesAs]: StringifiedJson<number>;
-  [Annotation.HideDataFromGraphs]: StringifiedJson<boolean>;
-  [Annotation.HideDataFromUi]: StringifiedJson<boolean>;
-  [Annotation.IsDiscreteFilter]: StringifiedJson<boolean>;
-  [Annotation.IsLinkerColumn]: StringifiedJson<boolean>;
-  [Annotation.IsSubset]: StringifiedJson<boolean>;
-  [Annotation.Label]: string;
-  [Annotation.Max]: StringifiedJson<number>;
-  [Annotation.Min]: StringifiedJson<number>;
-  [Annotation.MultipliesBy]: StringifiedJson<AxisSpec['name'][]>;
-  [Annotation.Parents]: StringifiedJson<AxisSpec['name'][]>;
-  [Annotation.Sequence.Annotation.Mapping]: StringifiedJson<Record<string, string>>;
-  [Annotation.Sequence.IsAnnotation]: StringifiedJson<boolean>;
-  [Annotation.Table.FontFamily]: string;
-  [Annotation.Table.OrderPriority]: StringifiedJson<number>;
-  [Annotation.Table.Visibility]: 'hidden' | 'optional' | (string & {});
-  [Annotation.Trace]: StringifiedJson<Record<string, unknown>>;
-  [Annotation.VDJ.IsAssemblingFeature]: StringifiedJson<boolean>;
-}>;
+export type Annotation = Metadata &
+  Partial<{
+    [Annotation.Alphabet]: "nucleotide" | "aminoacid" | (string & {});
+    [Annotation.AxisNature]: "homogeneous" | "heterogeneous" | "scaleCompatible" | (string & {});
+    [Annotation.Description]: string;
+    [Annotation.DiscreteValues]: StringifiedJson<number[]> | StringifiedJson<string[]>;
+    [Annotation.Format]: string;
+    [Annotation.Graph.Axis.HighCardinality]: StringifiedJson<boolean>;
+    [Annotation.Graph.Axis.LowerLimit]: StringifiedJson<number>;
+    [Annotation.Graph.Axis.SymmetricRange]: StringifiedJson<boolean>;
+    [Annotation.Graph.Axis.UpperLimit]: StringifiedJson<number>;
+    [Annotation.Graph.IsDenseAxis]: StringifiedJson<boolean>;
+    [Annotation.Graph.IsVirtual]: StringifiedJson<boolean>;
+    [Annotation.Graph.Palette]: StringifiedJson<{ mapping: Record<string, number>; name: string }>;
+    [Annotation.Graph.Thresholds]: StringifiedJson<
+      { columnId: { valueType: ValueType; name: string }; value: number }[]
+    >;
+    [Annotation.Graph.TreatAbsentValuesAs]: StringifiedJson<number>;
+    [Annotation.HideDataFromGraphs]: StringifiedJson<boolean>;
+    [Annotation.HideDataFromUi]: StringifiedJson<boolean>;
+    [Annotation.IsDiscreteFilter]: StringifiedJson<boolean>;
+    [Annotation.IsLinkerColumn]: StringifiedJson<boolean>;
+    [Annotation.IsSubset]: StringifiedJson<boolean>;
+    [Annotation.Label]: string;
+    [Annotation.Max]: StringifiedJson<number>;
+    [Annotation.Min]: StringifiedJson<number>;
+    [Annotation.MultipliesBy]: StringifiedJson<AxisSpec["name"][]>;
+    [Annotation.Parents]: StringifiedJson<AxisSpec["name"][]>;
+    [Annotation.Sequence.Annotation.Mapping]: StringifiedJson<Record<string, string>>;
+    [Annotation.Sequence.IsAnnotation]: StringifiedJson<boolean>;
+    [Annotation.Table.FontFamily]: string;
+    [Annotation.Table.OrderPriority]: StringifiedJson<number>;
+    [Annotation.Table.Visibility]: "hidden" | "optional" | (string & {});
+    [Annotation.Trace]: StringifiedJson<Record<string, unknown>>;
+    [Annotation.VDJ.IsAssemblingFeature]: StringifiedJson<boolean>;
+  }>;
 
 // export const AxisSpec = z.object({
 //   type: z.nativeEnum(ValueType),
@@ -219,7 +217,7 @@ export type Annotation = Metadata & Partial<{
 
 export type AnnotationJson = MetadataJson<Annotation>;
 
-const ValueTypeSchema = z.enum(['Int', 'Long', 'Float', 'Double', 'String'] as const);
+const ValueTypeSchema = z.enum(["Int", "Long", "Float", "Double", "String"] as const);
 export const AnnotationJson: AnnotationJson = {
   [Annotation.DiscreteValues]: z.array(z.string()).or(z.array(z.number())),
   [Annotation.Graph.Axis.HighCardinality]: z.boolean(),
@@ -265,7 +263,12 @@ export function readAnnotationJsonOrThrow<T extends keyof AnnotationJson>(
   spec: { annotations?: Metadata | undefined } | undefined,
   key: T,
 ): z.infer<AnnotationJson[T]> | undefined {
-  return readMetadataJsonOrThrow<Annotation, T>(spec?.annotations, AnnotationJson, key, 'readAnnotationJsonOrThrow');
+  return readMetadataJsonOrThrow<Annotation, T>(
+    spec?.annotations,
+    AnnotationJson,
+    key,
+    "readAnnotationJsonOrThrow",
+  );
 }
 
 /// Helper function for reading json-encoded annotation values, returns undefined on JSON parsing error
@@ -325,7 +328,7 @@ export type AxisSpec = {
 };
 
 /** Parents are specs, not indexes; normalized axis can be used considering its parents independently from column */
-export interface AxisSpecNormalized extends Omit<AxisSpec, 'parentAxes'> {
+export interface AxisSpecNormalized extends Omit<AxisSpec, "parentAxes"> {
   parentAxesSpec: AxisSpecNormalized[];
 }
 
@@ -392,7 +395,10 @@ export function canonicalizeAxisWithParents(axis: AxisSpecNormalized) {
   return canonicalizeJson(getArrayFromAxisTree(getAxesTree(axis)).map(getAxisId));
 }
 
-function normalizingAxesComparator(axis1: AxisSpecNormalized, axis2: AxisSpecNormalized): 1 | -1 | 0 {
+function normalizingAxesComparator(
+  axis1: AxisSpecNormalized,
+  axis2: AxisSpecNormalized,
+): 1 | -1 | 0 {
   if (axis1.name !== axis2.name) {
     return axis1.name < axis2.name ? 1 : -1;
   }
@@ -471,17 +477,24 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
 
   axes.forEach((axis, idx) => {
     const modifiedAxis = modifiedAxes[idx];
-    if (axis.parentAxes) { // if we have parents by indexes then take from the list
+    if (axis.parentAxes) {
+      // if we have parents by indexes then take from the list
       modifiedAxis.parentAxesSpec = axis.parentAxes.map((idx) => modifiedAxes[idx]);
-    } else { // else try to parse from annotation name
-      const parents = parseParentsFromAnnotations(axis).map((name) => modifiedAxes.find((axis) => axis.name === name));
-      modifiedAxis.parentAxesSpec = parents.some((p) => p === undefined) ? [] : parents as AxisSpecNormalized[];
+    } else {
+      // else try to parse from annotation name
+      const parents = parseParentsFromAnnotations(axis).map((name) =>
+        modifiedAxes.find((axis) => axis.name === name),
+      );
+      modifiedAxis.parentAxesSpec = parents.some((p) => p === undefined)
+        ? []
+        : (parents as AxisSpecNormalized[]);
 
       delete modifiedAxis.annotations?.[Annotation.Parents];
     }
   });
 
-  if (modifiedAxes.some(hasCycleOfParents)) { // Axes list is broken
+  if (modifiedAxes.some(hasCycleOfParents)) {
+    // Axes list is broken
     modifiedAxes.forEach((axis) => {
       axis.parentAxesSpec = [];
     });
@@ -498,7 +511,9 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
 export function getDenormalizedAxesList(axesSpec: AxisSpecNormalized[]): AxisSpec[] {
   const idsList = axesSpec.map((axisSpec) => canonicalizeJson(getAxisId(axisSpec)));
   return axesSpec.map((axisSpec) => {
-    const parentsIds = axisSpec.parentAxesSpec.map((axisSpec) => canonicalizeJson(getAxisId(axisSpec)));
+    const parentsIds = axisSpec.parentAxesSpec.map((axisSpec) =>
+      canonicalizeJson(getAxisId(axisSpec)),
+    );
     const parentIdxs = parentsIds.map((id) => idsList.indexOf(id));
     const { parentAxesSpec: _, ...copiedRest } = axisSpec;
     if (parentIdxs.length) {
@@ -513,12 +528,12 @@ export type AxesSpec = AxisSpec[];
 
 /// Well-known column names
 export const PColumnName = {
-  Label: 'pl7.app/label',
+  Label: "pl7.app/label",
   Table: {
-    RowSelection: 'pl7.app/table/row-selection',
+    RowSelection: "pl7.app/table/row-selection",
   },
   VDJ: {
-    Sequence: 'pl7.app/vdj/sequence',
+    Sequence: "pl7.app/vdj/sequence",
   },
 } as const;
 
@@ -526,9 +541,9 @@ export const PColumnName = {
 export const PAxisName = {
   VDJ: {
     Assay: {
-      SequenceId: 'pl7.app/vdj/assay/sequenceId',
+      SequenceId: "pl7.app/vdj/assay/sequenceId",
     },
-    ScClonotypeKey: 'pl7.app/vdj/scClonotypeKey',
+    ScClonotypeKey: "pl7.app/vdj/scClonotypeKey",
   },
 } as const;
 
@@ -550,7 +565,7 @@ export function isLabelColumn(column: PColumnSpec) {
 export type PUniversalColumnSpec = PObjectSpec & {
   /** Defines specific type of BObject, the most generic type of unit of
    * information in Platforma Project. */
-  readonly kind: 'PColumn';
+  readonly kind: "PColumn";
 
   /** Type of column values */
   readonly valueType: string;
@@ -593,7 +608,7 @@ export type PColumnSpec = PDataColumnSpec;
 export type PColumnSpecId = {
   /** Defines specific type of BObject, the most generic type of unit of
    * information in Platforma Project. */
-  readonly kind: 'PColumn';
+  readonly kind: "PColumn";
 
   /** Type of column values */
   readonly valueType: ValueType;
@@ -706,9 +721,9 @@ export function matchAxisId(query: AxisId, target: AxisId): boolean {
 }
 
 export function getTypeFromPColumnOrAxisSpec(spec: PColumnSpec | AxisSpec): ValueType {
-  return 'valueType' in spec ? spec.valueType : spec.type;
+  return "valueType" in spec ? spec.valueType : spec.type;
 }
 
 export function isAxisId(id: unknown): id is AxisId {
-  return typeof id === 'object' && id !== null && 'name' in id && 'type' in id;
+  return typeof id === "object" && id !== null && "name" in id && "type" in id;
 }

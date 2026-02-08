@@ -1,7 +1,7 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 
-import type { PartialBy, PlainObject } from './types';
-import { isNil } from './utils';
+import type { PartialBy, PlainObject } from "./types";
+import { isNil } from "./utils";
 
 /**
  * Alias to Array.isArray
@@ -10,11 +10,11 @@ export const isArray = Array.isArray;
 
 // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 export function isNonPrimitive<V, T extends PlainObject<V> | V[]>(obj: T | unknown): obj is T {
-  return obj !== null && typeof obj === 'object';
+  return obj !== null && typeof obj === "object";
 }
 
 export function isObject(value: unknown): value is object {
-  return typeof value === 'object' && value !== null;
+  return typeof value === "object" && value !== null;
 }
 
 /**
@@ -43,10 +43,17 @@ export function isPlainObject(value: unknown): value is PlainObject {
 
   const prototype: unknown = Object.getPrototypeOf(value);
 
-  return (prototype === null || prototype === Object.prototype || Object.getPrototypeOf(prototype) === null);
+  return (
+    prototype === null ||
+    prototype === Object.prototype ||
+    Object.getPrototypeOf(prototype) === null
+  );
 }
 
-export function map<U, T extends Record<string, unknown>>(obj: T, callback: (curr: T[keyof T], key: keyof T) => U) {
+export function map<U, T extends Record<string, unknown>>(
+  obj: T,
+  callback: (curr: T[keyof T], key: keyof T) => U,
+) {
   const keys = Object.keys(obj) as Array<keyof T>;
 
   return keys.map((key: keyof T) => {
@@ -223,7 +230,10 @@ export function omit<T, K extends keyof T>(obj: T, ...keys: K[]): Omit<T, K> {
  * ```
  */
 export function deepPatch<T extends PlainObject | unknown[]>(target: T, source: T) {
-  const sk = new Set<keyof T>([...Object.keys(target) as (keyof T)[], ...Object.keys(source) as (keyof T)[]]);
+  const sk = new Set<keyof T>([
+    ...(Object.keys(target) as (keyof T)[]),
+    ...(Object.keys(source) as (keyof T)[]),
+  ]);
 
   sk.forEach((key) => {
     const t = target[key];
