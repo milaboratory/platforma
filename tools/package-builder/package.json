@@ -33,8 +33,6 @@
     "@types/archiver": "^6.0.3",
     "@types/node": "catalog:",
     "archiver": "^7.0.1",
-    "canonicalize": "catalog:",
-    "tar": "catalog:",
     "undici": "catalog:",
     "winston": "catalog:",
     "yaml": "catalog:",

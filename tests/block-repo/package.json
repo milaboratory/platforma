@@ -16,7 +16,6 @@
     "@platforma-sdk/block-tools": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "remeda": "catalog:",
     "vitest": "catalog:"
   },
   "//": {

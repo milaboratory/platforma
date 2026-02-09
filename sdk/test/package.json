@@ -31,8 +31,6 @@
     "@milaboratories/pl-client": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
     "@milaboratories/pl-tree": "workspace:*",
-    "@milaboratories/ts-helpers": "workspace:*",
-    "@platforma-sdk/model": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
     "vitest": "catalog:"
   },

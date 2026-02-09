@@ -29,7 +29,7 @@ import { computableFromCfgOrRF } from "./render";
 import type { NavigationStates } from "./navigation_states";
 import { getBlockPackInfo } from "./util";
 import { resourceIdToString, type ResourceId } from "@milaboratories/pl-client";
-import * as R from "remeda";
+import { omitBy, isEqual } from "es-toolkit";
 
 type BlockInfo = {
   argsRid?: ResourceId;
@@ -58,8 +58,9 @@ function argsEquals(
 ): boolean {
   if (a === b) return true;
   if (a === undefined || b === undefined) return false;
-  const clean = R.omitBy<Record<string, unknown>>((_, key) => key.startsWith("__"));
-  return R.isDeepEqual(clean(a), clean(b));
+  const cleanA = omitBy(a, (_, key) => key.startsWith("__"));
+  const cleanB = omitBy(b, (_, key) => key.startsWith("__"));
+  return isEqual(cleanA, cleanB);
 }
 
 /** Returns derived general project state form the project resource */

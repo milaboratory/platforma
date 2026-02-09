@@ -17,7 +17,6 @@
     "@milaboratories/milaboratories.transfer-files.model": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:*",
-    "@vueuse/core": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {
@@ -25,7 +24,6 @@
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@zip.js/zip.js": "catalog:",
     "typescript": "catalog:",
     "zod": "catalog:"
   }

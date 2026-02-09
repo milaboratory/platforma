@@ -59,7 +59,6 @@
     "@types/ssh2": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "testcontainers": "catalog:",
-    "tsconfig-paths": "catalog:",
     "typescript": "catalog:",
     "utility-types": "catalog:",
     "vitest": "catalog:"

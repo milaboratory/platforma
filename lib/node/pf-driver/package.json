@@ -44,7 +44,6 @@
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "tsconfig-paths": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
