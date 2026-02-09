@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.171
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @platforma-sdk/ui-vue@1.53.15
+  - @platforma-sdk/model@1.53.15
+  - @milaboratories/milaboratories.monetization-test.model@1.0.60
+
 ## 1.1.170
 
 ### Patch Changes

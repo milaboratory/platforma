@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.4.3
+
+### Patch Changes
+
+- c620234: remove unused packages
+
 ## 1.4.2
 
 ### Patch Changes

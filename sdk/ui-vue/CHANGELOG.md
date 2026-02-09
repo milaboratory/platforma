@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.53.15
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @platforma-sdk/model@1.53.15
+  - @milaboratories/uikit@2.10.18
+
 ## 1.53.14
 
 ### Patch Changes

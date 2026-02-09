@@ -1,5 +1,11 @@
 # @milaboratories/pl-error-like
 
+## 1.12.8
+
+### Patch Changes
+
+- c620234: remove unused packages
+
 ## 1.12.7
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.11.7
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @platforma-sdk/model@1.53.15
+  - @milaboratories/pl-model-common@1.24.6
+
 ## 1.11.6
 
 ### Patch Changes

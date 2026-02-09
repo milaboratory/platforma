@@ -1,5 +1,16 @@
 # @platforma-sdk/test
 
+## 1.53.15
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-middle-layer@1.46.23
+  - @milaboratories/computable@2.8.5
+  - @milaboratories/pl-client@2.16.29
+  - @milaboratories/pl-tree@1.8.37
+
 ## 1.53.14
 
 ### Patch Changes

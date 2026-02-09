@@ -1,5 +1,14 @@
 # @milaboratories/computable
 
+## 2.8.5
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-error-like@1.12.8
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 2.8.4
 
 ### Patch Changes

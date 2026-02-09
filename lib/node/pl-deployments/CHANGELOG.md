@@ -1,5 +1,16 @@
 # @milaboratories/pl-local
 
+## 2.15.10
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-config@1.7.14
+  - @milaboratories/pl-http@1.2.3
+  - @milaboratories/pl-model-common@1.24.6
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 2.15.9
 
 ### Patch Changes

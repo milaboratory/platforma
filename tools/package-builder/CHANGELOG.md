@@ -1,5 +1,12 @@
 # @platforma-sdk/package-builder
 
+## 3.11.3
+
+### Patch Changes
+
+- c620234: remove unused packages
+  - @milaboratories/resolve-helper@1.1.2
+
 ## 3.11.2
 
 ### Patch Changes

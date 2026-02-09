@@ -1,5 +1,11 @@
 # @milaboratories/pl-http
 
+## 1.2.3
+
+### Patch Changes
+
+- c620234: remove unused packages
+
 ## 1.2.2
 
 ### Patch Changes

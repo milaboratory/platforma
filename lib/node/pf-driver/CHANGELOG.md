@@ -1,5 +1,15 @@
 # @milaboratories/pf-driver
 
+## 1.0.42
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-model-middle-layer@1.11.7
+  - @platforma-sdk/model@1.53.15
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 1.0.41
 
 ### Patch Changes

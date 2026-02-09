@@ -1,5 +1,13 @@
 # @platforma-sdk/bootstrap
 
+## 5.2.44
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-deployments@2.15.10
+
 ## 5.2.43
 
 ### Patch Changes

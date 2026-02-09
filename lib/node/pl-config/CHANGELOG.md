@@ -1,5 +1,12 @@
 # @milaboratories/pl-config
 
+## 1.7.14
+
+### Patch Changes
+
+- c620234: remove unused packages
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 1.7.13
 
 ### Patch Changes
