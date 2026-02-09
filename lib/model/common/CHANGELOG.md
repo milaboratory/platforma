@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-common
 
+## 1.24.4
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-error-like@1.12.6
+
 ## 1.24.3
 
 ### Patch Changes

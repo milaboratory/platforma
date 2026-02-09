@@ -1,5 +1,14 @@
 # @milaboratories/computable
 
+## 2.8.3
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-error-like@1.12.6
+  - @milaboratories/ts-helpers@1.7.1
+
 ## 2.8.2
 
 ### Patch Changes

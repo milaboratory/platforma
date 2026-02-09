@@ -1,5 +1,11 @@
 # @milaboratories/node-streams
 
+## 1.0.8
+
+### Patch Changes
+
+- f89a883: full integration oxc
+
 ## 1.0.7
 
 ### Patch Changes

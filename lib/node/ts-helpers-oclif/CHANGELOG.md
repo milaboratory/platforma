@@ -1,5 +1,13 @@
 # @milaboratories/ts-helpers-oclif
 
+## 1.1.36
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/ts-helpers@1.7.1
+
 ## 1.1.35
 
 ### Patch Changes

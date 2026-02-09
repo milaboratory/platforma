@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.pool-explorer.model
 
+## 1.1.11
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @platforma-sdk/model@1.53.13
+
 ## 1.1.10
 
 ### Patch Changes

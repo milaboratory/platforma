@@ -1,5 +1,11 @@
 # @milaboratories/sequences
 
+## 1.1.7
+
+### Patch Changes
+
+- f89a883: full integration oxc
+
 ## 1.1.6
 
 ### Patch Changes

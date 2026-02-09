@@ -1,5 +1,17 @@
 # @milaboratories/pl-tree
 
+## 1.8.35
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-error-like@1.12.6
+  - @milaboratories/computable@2.8.3
+  - @milaboratories/ts-helpers@1.7.1
+  - @milaboratories/pl-client@2.16.27
+  - @milaboratories/pl-errors@1.1.59
+
 ## 1.8.34
 
 ### Patch Changes

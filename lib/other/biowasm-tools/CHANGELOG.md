@@ -1,5 +1,11 @@
 # @milaboratories/biowasm-tools
 
+## 2.0.1
+
+### Patch Changes
+
+- f89a883: full integration oxc
+
 ## 2.0.0
 
 ### Major Changes

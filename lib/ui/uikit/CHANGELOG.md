@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.10.16
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/helpers@1.13.1
+  - @platforma-sdk/model@1.53.13
+
 ## 2.10.15
 
 ### Patch Changes

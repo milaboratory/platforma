@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.7.1
+
+### Patch Changes
+
+- f89a883: full integration oxc
+
 ## 1.7.0
 
 ### Minor Changes

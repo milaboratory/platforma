@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.monetization-test.model
 
+## 1.0.58
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @platforma-sdk/model@1.53.13
+
 ## 1.0.57
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @milaboratories/pl-client
 
+## 2.16.27
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/ts-helpers@1.7.1
+  - @milaboratories/pl-model-common@1.24.4
+  - @milaboratories/pl-http@1.2.1
+
 ## 2.16.26
 
 ### Patch Changes
@@ -511,6 +521,7 @@
 ### Patch Changes
 
 - e06efcd: Pin and standardize dependency versions for network and utility libraries to ensure consistent builds and prevent unexpected behavior from minor version changes. Changes include:
+
   - Pin `@protobuf-ts/*` packages to version 2.9.4 using YAML anchors
   - Pin AWS SDK packages to version 3.750.0
   - Change `undici` from `^7.2.3` to `~7.2.3` (only patch updates)

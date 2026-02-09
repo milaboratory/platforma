@@ -1,5 +1,13 @@
 # @milaboratories/pl-config
 
+## 1.7.12
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/ts-helpers@1.7.1
+
 ## 1.7.11
 
 ### Patch Changes

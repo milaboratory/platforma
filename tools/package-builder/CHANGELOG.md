@@ -1,5 +1,12 @@
 # @platforma-sdk/package-builder
 
+## 3.11.1
+
+### Patch Changes
+
+- f89a883: full integration oxc
+  - @milaboratories/resolve-helper@1.1.1
+
 ## 3.11.0
 
 ### Minor Changes

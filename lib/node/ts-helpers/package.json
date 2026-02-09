@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-helpers",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "Useful helpers for our TS projects",
   "files": [
     "./dist/**/*",

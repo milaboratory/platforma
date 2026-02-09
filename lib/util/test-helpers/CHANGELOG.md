@@ -1,5 +1,13 @@
 # @milaboratories/test-helpers
 
+## 1.1.4
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/helpers@1.13.1
+
 ## 1.1.3
 
 ### Patch Changes
