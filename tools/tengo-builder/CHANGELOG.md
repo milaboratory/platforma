@@ -1,5 +1,14 @@
 # @platforma-sdk/tengo-builder
 
+## 2.4.17
+
+### Patch Changes
+
+- c620234: remove unused packages
+  - @milaboratories/pl-model-backend@1.1.46
+  - @milaboratories/resolve-helper@1.1.2
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 2.4.16
 
 ### Patch Changes

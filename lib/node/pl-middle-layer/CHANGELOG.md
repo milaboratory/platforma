@@ -1,5 +1,28 @@
 # @milaboratories/pl-middle-layer
 
+## 1.46.23
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-deployments@2.15.10
+  - @milaboratories/pl-model-middle-layer@1.11.7
+  - @milaboratories/computable@2.8.5
+  - @milaboratories/pl-drivers@1.11.48
+  - @milaboratories/pf-driver@1.0.42
+  - @milaboratories/pl-client@2.16.29
+  - @platforma-sdk/block-tools@2.6.47
+  - @milaboratories/pl-http@1.2.3
+  - @milaboratories/pl-tree@1.8.37
+  - @platforma-sdk/model@1.53.15
+  - @milaboratories/pl-model-common@1.24.6
+  - @milaboratories/pl-errors@1.1.61
+  - @milaboratories/pl-model-backend@1.1.46
+  - @milaboratories/resolve-helper@1.1.2
+  - @milaboratories/ts-helpers@1.7.2
+  - @platforma-sdk/workflow-tengo@5.8.2
+
 ## 1.46.22
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-model-middle-layer",
-  "version": "1.11.6",
+  "version": "1.11.7",
   "description": "Common model between middle layer and non-block UI code",
   "files": [
     "./dist/**/*",

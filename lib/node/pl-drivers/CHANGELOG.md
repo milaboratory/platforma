@@ -1,5 +1,18 @@
 # @milaboratories/pl-drivers
 
+## 1.11.48
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/computable@2.8.5
+  - @milaboratories/pl-client@2.16.29
+  - @milaboratories/pl-tree@1.8.37
+  - @milaboratories/pl-model-common@1.24.6
+  - @milaboratories/ts-helpers@1.7.2
+  - @milaboratories/helpers@1.13.2
+
 ## 1.11.47
 
 ### Patch Changes

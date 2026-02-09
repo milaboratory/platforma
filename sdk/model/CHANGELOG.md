@@ -1,5 +1,15 @@
 # @platforma-sdk/model
 
+## 1.53.15
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-error-like@1.12.8
+  - @milaboratories/pl-model-common@1.24.6
+  - @milaboratories/ptabler-expression-js@1.1.16
+
 ## 1.53.14
 
 ### Patch Changes

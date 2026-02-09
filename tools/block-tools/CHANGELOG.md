@@ -1,5 +1,18 @@
 # @platforma-sdk/block-tools
 
+## 2.6.47
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-model-middle-layer@1.11.7
+  - @milaboratories/pl-http@1.2.3
+  - @milaboratories/pl-model-common@1.24.6
+  - @milaboratories/resolve-helper@1.1.2
+  - @milaboratories/ts-helpers@1.7.2
+  - @milaboratories/ts-helpers-oclif@1.1.37
+
 ## 2.6.46
 
 ### Patch Changes

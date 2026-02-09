@@ -1,5 +1,16 @@
 # @milaboratories/pl-tree
 
+## 1.8.37
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/computable@2.8.5
+  - @milaboratories/pl-client@2.16.29
+  - @milaboratories/pl-errors@1.1.61
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 1.8.36
 
 ### Patch Changes
