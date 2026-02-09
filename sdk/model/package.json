@@ -16,6 +16,12 @@
       "sources": "./src/index.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./render/internal": {
+      "types": "./dist/render/internal.d.ts",
+      "sources": "./src/render/internal.ts",
+      "import": "./dist/render/internal.js",
+      "require": "./dist/render/internal.cjs"
     }
   },
   "scripts": {

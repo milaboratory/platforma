@@ -147,18 +147,6 @@ async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefin
   }
 }
 
-/**
- * Decorator that wraps the method's returned promise with this.track()
- * This ensures that the promise will be awaited before the transaction is completed.
- */
-function tracked<T extends (this: PlTransaction, ...a: any[]) => Promise<any>>(
-  value: T,
-  _context: ClassMethodDecoratorContext,
-) {
-  return function (this: PlTransaction, ...args: Parameters<T>): ReturnType<T> {
-    return this.track(value.apply(this, args)) as ReturnType<T>;
-  } as unknown as T;
-}
 
 /**
  * Each platform transaction has 3 stages:
@@ -568,71 +556,72 @@ export class PlTransaction {
     loadFields: boolean,
     ignoreCache: boolean,
   ): Promise<BasicResourceData | ResourceData>;
-  @tracked
   public async getResourceData(
     rId: AnyResourceRef,
     loadFields: boolean = true,
     ignoreCache: boolean = false,
   ): Promise<BasicResourceData | ResourceData> {
-    if (!ignoreCache && !isResourceRef(rId) && !isLocalResourceId(rId)) {
-      // checking if we can return result from cache
-      const fromCache = this.sharedResourceDataCache.get(rId);
-      if (fromCache && fromCache.cacheTxOpenTimestamp < this.txOpenTimestamp) {
-        if (!loadFields) {
-          this._stat.rGetDataCacheHits++;
-          this._stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
-          return fromCache.basicData;
-        } else if (fromCache.data) {
-          this._stat.rGetDataCacheHits++;
-          this._stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
-          this._stat.rGetDataCacheFields += fromCache.data.fields.length;
-          return fromCache.data;
+    return this.track(async () => {
+      if (!ignoreCache && !isResourceRef(rId) && !isLocalResourceId(rId)) {
+        // checking if we can return result from cache
+        const fromCache = this.sharedResourceDataCache.get(rId);
+        if (fromCache && fromCache.cacheTxOpenTimestamp < this.txOpenTimestamp) {
+          if (!loadFields) {
+            this._stat.rGetDataCacheHits++;
+            this._stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
+            return fromCache.basicData;
+          } else if (fromCache.data) {
+            this._stat.rGetDataCacheHits++;
+            this._stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
+            this._stat.rGetDataCacheFields += fromCache.data.fields.length;
+            return fromCache.data;
+          }
         }
       }
-    }
 
-    const result = await this.sendSingleAndParse(
-      {
-        oneofKind: "resourceGet",
-        resourceGet: { resourceId: toResourceId(rId), loadFields: loadFields },
-      },
-      (r) => protoToResource(notEmpty(r.resourceGet.resource)),
-    );
+      const result = await this.sendSingleAndParse(
+        {
+          oneofKind: "resourceGet",
+          resourceGet: { resourceId: toResourceId(rId), loadFields: loadFields },
+        },
+        (r) => protoToResource(notEmpty(r.resourceGet.resource)),
+      );
 
-    this._stat.rGetDataNetRequests++;
-    this._stat.rGetDataNetBytes += result.data?.length ?? 0;
-    this._stat.rGetDataNetFields += result.fields.length;
+      this._stat.rGetDataNetRequests++;
+      this._stat.rGetDataNetBytes += result.data?.length ?? 0;
+      this._stat.rGetDataNetFields += result.fields.length;
 
-    // we will cache only final resource data states
-    // caching result even if we were ignore the cache
-    if (!isResourceRef(rId) && !isLocalResourceId(rId) && this.finalPredicate(result)) {
-      deepFreeze(result);
-      const fromCache = this.sharedResourceDataCache.get(rId);
-      if (fromCache) {
-        if (loadFields && !fromCache.data) {
-          fromCache.data = result;
-          // updating timestamp because we updated the record
-          fromCache.cacheTxOpenTimestamp = this.txOpenTimestamp;
+      // we will cache only final resource data states
+      // caching result even if we were ignore the cache
+      if (!isResourceRef(rId) && !isLocalResourceId(rId) && this.finalPredicate(result)) {
+        deepFreeze(result);
+        const fromCache = this.sharedResourceDataCache.get(rId);
+        if (fromCache) {
+          if (loadFields && !fromCache.data) {
+            fromCache.data = result;
+            // updating timestamp because we updated the record
+            fromCache.cacheTxOpenTimestamp = this.txOpenTimestamp;
+          }
+        } else {
+          const basicData = extractBasicResourceData(result);
+          deepFreeze(basicData);
+          if (loadFields)
+            this.sharedResourceDataCache.set(rId, {
+              basicData,
+              data: result,
+              cacheTxOpenTimestamp: this.txOpenTimestamp,
+            });
+          else
+            this.sharedResourceDataCache.set(rId, {
+              basicData,
+              data: undefined,
+              cacheTxOpenTimestamp: this.txOpenTimestamp,
+            });
         }
-      } else {
-        const basicData = extractBasicResourceData(result);
-        deepFreeze(basicData);
-        if (loadFields)
-          this.sharedResourceDataCache.set(rId, {
-            basicData,
-            data: result,
-            cacheTxOpenTimestamp: this.txOpenTimestamp,
-          });
-        else
-          this.sharedResourceDataCache.set(rId, {
-            basicData,
-            data: undefined,
-            cacheTxOpenTimestamp: this.txOpenTimestamp,
-          });
       }
-    }
 
-    return result;
+      return result;
+    });
   }
 
   public async getResourceDataIfExists(
@@ -647,22 +636,23 @@ export class PlTransaction {
     rId: AnyResourceRef,
     loadFields: boolean,
   ): Promise<BasicResourceData | ResourceData | undefined>;
-  @tracked
   public async getResourceDataIfExists(
     rId: AnyResourceRef,
     loadFields: boolean = true,
   ): Promise<BasicResourceData | ResourceData | undefined> {
-    // calling this method will ignore cache, because user intention is to detect resource absence
-    // which cache will prevent
-    const result = await notFoundToUndefined(
-      async () => await this.getResourceData(rId, loadFields, true),
-    );
+    return this.track(async () => {
+      // calling this method will ignore cache, because user intention is to detect resource absence
+      // which cache will prevent
+      const result = await notFoundToUndefined(
+        async () => await this.getResourceData(rId, loadFields, true),
+      );
 
-    // cleaning cache record if resource was removed from the db
-    if (result === undefined && !isResourceRef(rId) && !isLocalResourceId(rId))
-      this.sharedResourceDataCache.delete(rId);
+      // cleaning cache record if resource was removed from the db
+      if (result === undefined && !isResourceRef(rId) && !isLocalResourceId(rId))
+        this.sharedResourceDataCache.delete(rId);
 
-    return result;
+      return result;
+    });
   }
 
   /**
@@ -766,9 +756,8 @@ export class PlTransaction {
     );
   }
 
-  @tracked
   public async getFieldIfExists(fId: AnyFieldRef): Promise<FieldData | undefined> {
-    return notFoundToUndefined(async () => await this.getField(fId));
+    return this.track(notFoundToUndefined(async () => await this.getField(fId)));
   }
 
   public resetField(fId: AnyFieldRef): void {
@@ -783,41 +772,41 @@ export class PlTransaction {
   // KV
   //
 
-  @tracked
   public async listKeyValues(rId: AnyResourceRef): Promise<KeyValue[]> {
-    const result = await this.sendMultiAndParse(
-      {
-        oneofKind: "resourceKeyValueList",
-        resourceKeyValueList: { resourceId: toResourceId(rId), startFrom: "", limit: 0 },
-      },
-      (r) => r.map((e) => e.resourceKeyValueList.record!),
-    );
+    return this.track(async () => {
+      const result = await this.sendMultiAndParse(
+        {
+          oneofKind: "resourceKeyValueList",
+          resourceKeyValueList: { resourceId: toResourceId(rId), startFrom: "", limit: 0 },
+        },
+        (r) => r.map((e) => e.resourceKeyValueList.record!),
+      );
 
-    this._stat.kvListRequests++;
-    this._stat.kvListEntries += result.length;
-    for (const kv of result) this._stat.kvListBytes += kv.key.length + kv.value.length;
+      this._stat.kvListRequests++;
+      this._stat.kvListEntries += result.length;
+      for (const kv of result) this._stat.kvListBytes += kv.key.length + kv.value.length;
 
-    return result;
+      return result;
+    });
   }
 
-  @tracked
   public async listKeyValuesString(rId: AnyResourceRef): Promise<KeyValueString[]> {
-    return (await this.listKeyValues(rId)).map(({ key, value }) => ({
-      key,
-      value: Buffer.from(value).toString(),
-    }));
+    return this.track(async () =>
+      (await this.listKeyValues(rId)).map(({ key, value }) => ({
+        key,
+        value: Buffer.from(value).toString(),
+      })),
+    );
   }
 
-  @tracked
   public async listKeyValuesIfResourceExists(rId: AnyResourceRef): Promise<KeyValue[] | undefined> {
-    return notFoundToUndefined(async () => await this.listKeyValues(rId));
+    return this.track(notFoundToUndefined(async () => await this.listKeyValues(rId)));
   }
 
-  @tracked
   public async listKeyValuesStringIfResourceExists(
     rId: AnyResourceRef,
   ): Promise<KeyValueString[] | undefined> {
-    return notFoundToUndefined(async () => await this.listKeyValuesString(rId));
+    return this.track(notFoundToUndefined(async () => await this.listKeyValuesString(rId)));
   }
 
   public setKValue(rId: AnyResourceRef, key: string, value: Uint8Array | string): void {
@@ -843,66 +832,68 @@ export class PlTransaction {
     });
   }
 
-  @tracked
   public async getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
-    const result = await this.sendSingleAndParse(
-      {
-        oneofKind: "resourceKeyValueGet",
-        resourceKeyValueGet: { resourceId: toResourceId(rId), key },
-      },
-      (r) => r.resourceKeyValueGet.value,
-    );
+    return this.track(async () => {
+      const result = await this.sendSingleAndParse(
+        {
+          oneofKind: "resourceKeyValueGet",
+          resourceKeyValueGet: { resourceId: toResourceId(rId), key },
+        },
+        (r) => r.resourceKeyValueGet.value,
+      );
 
-    this._stat.kvGetRequests++;
-    this._stat.kvGetBytes += result.length;
+      this._stat.kvGetRequests++;
+      this._stat.kvGetBytes += result.length;
 
-    return result;
+      return result;
+    });
   }
 
-  @tracked
   public async getKValueString(rId: AnyResourceRef, key: string): Promise<string> {
-    return Buffer.from(await this.getKValue(rId, key)).toString();
+    return this.track(async () => Buffer.from(await this.getKValue(rId, key)).toString());
   }
 
-  @tracked
   public async getKValueJson<T>(rId: AnyResourceRef, key: string): Promise<T> {
-    return JSON.parse(await this.getKValueString(rId, key)) as T;
+    return this.track(async () => JSON.parse(await this.getKValueString(rId, key)) as T);
   }
 
-  @tracked
   public async getKValueIfExists(
     rId: AnyResourceRef,
     key: string,
   ): Promise<Uint8Array | undefined> {
-    const result = await this.sendSingleAndParse(
-      {
-        oneofKind: "resourceKeyValueGetIfExists",
-        resourceKeyValueGetIfExists: { resourceId: toResourceId(rId), key },
-      },
-      (r) =>
-        r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined,
-    );
+    return this.track(async () => {
+      const result = await this.sendSingleAndParse(
+        {
+          oneofKind: "resourceKeyValueGetIfExists",
+          resourceKeyValueGetIfExists: { resourceId: toResourceId(rId), key },
+        },
+        (r) =>
+          r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined,
+      );
 
-    this._stat.kvGetRequests++;
-    this._stat.kvGetBytes += result?.length ?? 0;
+      this._stat.kvGetRequests++;
+      this._stat.kvGetBytes += result?.length ?? 0;
 
-    return result;
+      return result;
+    });
   }
 
-  @tracked
   public async getKValueStringIfExists(
     rId: AnyResourceRef,
     key: string,
   ): Promise<string | undefined> {
-    const data = await this.getKValueIfExists(rId, key);
-    return data === undefined ? undefined : Buffer.from(data).toString();
+    return this.track(async () => {
+      const data = await this.getKValueIfExists(rId, key);
+      return data === undefined ? undefined : Buffer.from(data).toString();
+    });
   }
 
-  @tracked
   public async getKValueJsonIfExists<T>(rId: AnyResourceRef, key: string): Promise<T | undefined> {
-    const str = await this.getKValueString(rId, key);
-    if (str === undefined) return undefined;
-    return JSON.parse(str) as T;
+    return this.track(async () => {
+      const str = await this.getKValueString(rId, key);
+      if (str === undefined) return undefined;
+      return JSON.parse(str) as T;
+    });
   }
 
   //

@@ -1,5 +1,4 @@
 import type { OutputWithStatus } from "@milaboratories/pl-model-common";
-import {} from "./global";
 import { getPlatformaInstance } from "./internal";
 import type { Platforma, PlatformaApiVersion } from "./platforma";
 import { PlatformaSDKVersion } from "./version";
