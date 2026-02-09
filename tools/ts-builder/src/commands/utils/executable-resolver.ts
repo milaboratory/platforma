@@ -64,10 +64,10 @@ export function resolveVite(): string {
 }
 
 /**
- * Resolves rollup executable
+ * Resolves rolldown executable
  */
-export function resolveRollup(): string {
-  return resolveExecutable("rollup", "rollup");
+export function resolveRolldown(): string {
+  return resolveExecutable("rolldown", "rolldown");
 }
 
 /**
