@@ -229,7 +229,8 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
   defaultCsvExportParams: {
     allColumns: true,
     suppressQuotes: true,
-    fileName: "table.csv",
+    columnSeparator: "\t",
+    fileName: "table.tsv",
   },
   onGridReady: (event) => {
     const api = event.api;
