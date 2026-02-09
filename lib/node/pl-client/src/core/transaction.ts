@@ -147,7 +147,6 @@ async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefin
   }
 }
 
-
 /**
  * Each platform transaction has 3 stages:
  *   - initialization (txOpen message -> txInfo response)
