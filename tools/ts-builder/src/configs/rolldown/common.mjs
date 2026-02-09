@@ -1,14 +1,5 @@
 import { dts } from "rolldown-plugin-dts";
 
-function createEntryFileNames(ext) {
-  return (chunkInfo) => {
-    if (chunkInfo.name.includes("node_modules")) {
-      return chunkInfo.name.replace(/node_modules/g, "__external") + ext;
-    }
-    return `[name]${ext}`;
-  };
-}
-
 const useSources = process.env.USE_SOURCES === "1";
 
 const dtsPlugin = dts({
@@ -41,5 +32,14 @@ export function createBuildEntry(input, output, format) {
       preserveModules: true,
       preserveModulesRoot: "src",
     },
+  };
+}
+
+function createEntryFileNames(ext) {
+  return (chunkInfo) => {
+    if (chunkInfo.name.includes("node_modules")) {
+      return chunkInfo.name.replace(/node_modules/g, "__external") + ext;
+    }
+    return `[name]${ext}`;
   };
 }
