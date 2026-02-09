@@ -64,8 +64,6 @@ export function prettyBytes(number: number | bigint, options: Options) {
     number = -number;
   }
 
-  let localeOptions;
-
   if (number < 1) {
     const numberString = toLocaleString(number, options.locale);
     return prefix + numberString + " " + UNITS[0];
@@ -77,9 +75,7 @@ export function prettyBytes(number: number | bigint, options: Options) {
   );
   number /= (options.binary ? 1024 : 1000) ** exponent;
 
-  if (!localeOptions) {
-    number = Number(number.toPrecision(3));
-  }
+  number = Number(number.toPrecision(3));
 
   const numberString = toLocaleString(Number(number), options.locale);
 

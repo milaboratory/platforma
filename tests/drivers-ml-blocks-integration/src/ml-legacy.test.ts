@@ -34,6 +34,7 @@ import { isObject } from "@milaboratories/ts-helpers";
 import { withMl, withMlAndProxy } from "./with-ml";
 import { awaitBlockDone } from "./test-helpers";
 
+// oxlint-disable-next-line jest/no-disabled-tests
 test.skip("disconnect:runBlock throws DisconnectedError when connection drops mid-operation", async ({
   expect,
 }) => {
@@ -479,7 +480,7 @@ test("limbo test", async ({ expect }) => {
   });
 });
 
-test("test error propagation", async ({ expect }) => {
+test("error propagation", async ({ expect }) => {
   await withMl(async (ml) => {
     const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
     await ml.openProject(pRid1);
