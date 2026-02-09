@@ -1,5 +1,16 @@
 # @milaboratories/milaboratories.pool-explorer
 
+## 1.0.405
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/milaboratories.pool-explorer.model@1.1.12
+  - @milaboratories/milaboratories.pool-explorer.ui@1.1.272
+  - @milaboratories/milaboratories.pool-explorer.workflow@1.1.115
+  - @platforma-sdk/model@1.53.14
+
 ## 1.0.404
 
 ### Patch Changes

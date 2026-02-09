@@ -1,5 +1,11 @@
 # @milaboratories/pl-http
 
+## 1.2.2
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
 ## 1.2.1
 
 ### Patch Changes

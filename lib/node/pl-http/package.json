@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-http",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Common HTTP client settings for Platforma.bio libraries",
   "files": [
     "./dist/**/*",

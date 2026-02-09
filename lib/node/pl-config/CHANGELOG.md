@@ -1,5 +1,13 @@
 # @milaboratories/pl-config
 
+## 1.7.13
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 1.7.12
 
 ### Patch Changes

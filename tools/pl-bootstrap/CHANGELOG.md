@@ -1,5 +1,13 @@
 # @platforma-sdk/bootstrap
 
+## 5.2.43
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-deployments@2.15.9
+
 ## 5.2.42
 
 ### Patch Changes

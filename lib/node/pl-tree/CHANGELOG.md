@@ -1,5 +1,17 @@
 # @milaboratories/pl-tree
 
+## 1.8.36
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-error-like@1.12.7
+  - @milaboratories/computable@2.8.4
+  - @milaboratories/pl-client@2.16.28
+  - @milaboratories/pl-errors@1.1.60
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 1.8.35
 
 ### Patch Changes

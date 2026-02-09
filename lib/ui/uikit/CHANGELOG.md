@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.10.17
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/helpers@1.13.2
+  - @platforma-sdk/model@1.53.14
+
 ## 2.10.16
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.pool-explorer.workflow
 
+## 1.1.115
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @platforma-sdk/workflow-tengo@5.8.2
+
 ## 1.1.114
 
 ### Patch Changes

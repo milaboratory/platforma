@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-common
 
+## 1.24.5
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-error-like@1.12.7
+
 ## 1.24.4
 
 ### Patch Changes

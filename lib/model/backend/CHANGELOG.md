@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-backend
 
+## 1.1.45
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-client@2.16.28
+
 ## 1.1.44
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.11.6
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-common@1.24.5
+  - @platforma-sdk/model@1.53.14
+
 ## 1.11.5
 
 ### Patch Changes

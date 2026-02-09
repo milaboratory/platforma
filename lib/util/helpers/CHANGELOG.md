@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.13.2
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
 ## 1.13.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/sequences
 
+## 1.1.8
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
 ## 1.1.7
 
 ### Patch Changes

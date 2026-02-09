@@ -1,5 +1,15 @@
 # @milaboratories/pl-client
 
+## 2.16.28
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-common@1.24.5
+  - @milaboratories/pl-http@1.2.2
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 2.16.27
 
 ### Patch Changes

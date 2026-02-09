@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.4.12
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @platforma-sdk/model@1.53.14
+
 ## 1.4.11
 
 ### Patch Changes

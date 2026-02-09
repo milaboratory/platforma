@@ -1,5 +1,13 @@
 # @milaboratories/ts-helpers-oclif
 
+## 1.1.37
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 1.1.36
 
 ### Patch Changes

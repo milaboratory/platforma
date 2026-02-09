@@ -1,5 +1,16 @@
 # @milaboratories/pl-local
 
+## 2.15.9
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-common@1.24.5
+  - @milaboratories/pl-config@1.7.13
+  - @milaboratories/pl-http@1.2.2
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 2.15.8
 
 ### Patch Changes

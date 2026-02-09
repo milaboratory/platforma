@@ -1,5 +1,11 @@
 # @milaboratories/pl-error-like
 
+## 1.12.7
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
 ## 1.12.6
 
 ### Patch Changes

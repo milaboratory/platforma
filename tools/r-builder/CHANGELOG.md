@@ -1,5 +1,11 @@
 # @platforma-sdk/r-builder
 
+## 1.1.9
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
 ## 1.1.8
 
 ### Patch Changes

@@ -1,5 +1,18 @@
 # @milaboratories/pl-drivers
 
+## 1.11.47
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-common@1.24.5
+  - @milaboratories/computable@2.8.4
+  - @milaboratories/pl-client@2.16.28
+  - @milaboratories/pl-tree@1.8.36
+  - @milaboratories/ts-helpers@1.7.2
+  - @milaboratories/helpers@1.13.2
+
 ## 1.11.46
 
 ### Patch Changes

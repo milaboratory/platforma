@@ -1,5 +1,13 @@
 # @milaboratories/test-helpers
 
+## 1.1.5
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/helpers@1.13.2
+
 ## 1.1.4
 
 ### Patch Changes
