@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.54.0
+
+### Minor Changes
+
+- ddc83fb: Make PlAgDataTableV2 export TSV by default instead of CSV
+
 ## 1.53.15
 
 ### Patch Changes
