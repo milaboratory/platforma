@@ -1,5 +1,19 @@
 # @platforma-sdk/block-tools
 
+## 2.6.46
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-common@1.24.5
+  - @milaboratories/pl-model-middle-layer@1.11.6
+  - @milaboratories/pl-http@1.2.2
+  - @milaboratories/resolve-helper@1.1.2
+  - @milaboratories/ts-helpers@1.7.2
+  - @milaboratories/ts-helpers-oclif@1.1.37
+  - @platforma-sdk/blocks-deps-updater@2.0.1
+
 ## 2.6.45
 
 ### Patch Changes

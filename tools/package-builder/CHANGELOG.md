@@ -1,5 +1,13 @@
 # @platforma-sdk/package-builder
 
+## 3.11.2
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/resolve-helper@1.1.2
+
 ## 3.11.1
 
 ### Patch Changes

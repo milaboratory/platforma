@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.monetization-test.model
 
+## 1.0.59
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @platforma-sdk/model@1.53.14
+
 ## 1.0.58
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.4.2
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
 ## 1.4.1
 
 ### Patch Changes

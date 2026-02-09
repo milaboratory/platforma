@@ -1,5 +1,11 @@
 # @milaboratories/biowasm-tools
 
+## 2.0.2
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
 ## 2.0.1
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @platforma-sdk/model
 
+## 1.53.14
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-common@1.24.5
+  - @milaboratories/pl-error-like@1.12.7
+  - @milaboratories/ptabler-expression-js@1.1.15
+
 ## 1.53.13
 
 ### Patch Changes

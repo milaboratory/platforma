@@ -1,5 +1,15 @@
 # @milaboratories/pf-driver
 
+## 1.0.41
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-middle-layer@1.11.6
+  - @milaboratories/ts-helpers@1.7.2
+  - @platforma-sdk/model@1.53.14
+
 ## 1.0.40
 
 ### Patch Changes

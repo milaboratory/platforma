@@ -1,5 +1,14 @@
 # @milaboratories/computable
 
+## 2.8.4
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-error-like@1.12.7
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 2.8.3
 
 ### Patch Changes

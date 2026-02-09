@@ -1,5 +1,14 @@
 # @milaboratories/pl-errors
 
+## 1.1.60
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-client@2.16.28
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 1.1.59
 
 ### Patch Changes

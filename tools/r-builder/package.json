@@ -2,7 +2,7 @@
   "name": "@platforma-sdk/r-builder",
   "description": "Build R run environment for Platforma",
   "type": "module",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "files": [
     "assets/",
     "scripts/"
@@ -17,6 +17,5 @@
     "tar": "catalog:",
     "winston": "catalog:"
   },
-  "devDependencies": {
-  }
+  "devDependencies": {}
 }

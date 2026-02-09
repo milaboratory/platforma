@@ -1,5 +1,15 @@
 # @platforma-sdk/tengo-builder
 
+## 2.4.16
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-backend@1.1.45
+  - @milaboratories/resolve-helper@1.1.2
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 2.4.15
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.2.29
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.59
+  - @milaboratories/milaboratories.monetization-test.ui@1.1.170
+  - @milaboratories/milaboratories.monetization-test.workflow@1.1.62
+
 ## 1.2.28
 
 ### Patch Changes

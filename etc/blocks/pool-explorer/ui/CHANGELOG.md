@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.pool-explorer.ui
 
+## 1.1.272
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/milaboratories.pool-explorer.model@1.1.12
+  - @milaboratories/helpers@1.13.2
+  - @platforma-sdk/ui-vue@1.53.14
+
 ## 1.1.271
 
 ### Patch Changes

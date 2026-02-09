@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.7.2
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
 ## 1.7.1
 
 ### Patch Changes

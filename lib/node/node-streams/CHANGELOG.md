@@ -1,5 +1,11 @@
 # @milaboratories/node-streams
 
+## 1.0.9
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
 ## 1.0.8
 
 ### Patch Changes

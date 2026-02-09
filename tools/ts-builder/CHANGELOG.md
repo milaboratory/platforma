@@ -1,5 +1,14 @@
 # @milaboratories/ts-builder
 
+## 1.2.6
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/build-configs@1.4.2
+  - @milaboratories/ts-configs@1.2.1
+
 ## 1.2.5
 
 ### Patch Changes

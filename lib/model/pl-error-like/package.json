@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-error-like",
-  "version": "1.12.6",
+  "version": "1.12.7",
   "description": "Platforma SDK Model",
   "files": [
     "./dist/**/*",

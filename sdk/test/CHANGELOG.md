@@ -1,5 +1,18 @@
 # @platforma-sdk/test
 
+## 1.53.14
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/computable@2.8.4
+  - @milaboratories/pl-client@2.16.28
+  - @milaboratories/pl-middle-layer@1.46.22
+  - @milaboratories/pl-tree@1.8.36
+  - @milaboratories/ts-helpers@1.7.2
+  - @platforma-sdk/model@1.53.14
+
 ## 1.53.13
 
 ### Patch Changes

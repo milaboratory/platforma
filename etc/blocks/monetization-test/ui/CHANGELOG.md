@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.170
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.59
+  - @platforma-sdk/model@1.53.14
+  - @platforma-sdk/ui-vue@1.53.14
+
 ## 1.1.169
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @milaboratories/ptabler-expression-js
 
+## 1.1.15
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.13.8
+
 ## 1.1.14
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @platforma-sdk/ui-vue
 
+## 1.53.14
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/biowasm-tools@2.0.2
+  - @milaboratories/ptabler-expression-js@1.1.15
+  - @milaboratories/uikit@2.10.17
+  - @platforma-sdk/model@1.53.14
+
 ## 1.53.13
 
 ### Patch Changes

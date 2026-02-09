@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.monetization-test.workflow
 
+## 1.1.62
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @platforma-sdk/workflow-tengo@5.8.2
+
 ## 1.1.61
 
 ### Patch Changes

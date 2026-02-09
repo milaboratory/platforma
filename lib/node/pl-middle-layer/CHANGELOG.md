@@ -1,5 +1,29 @@
 # @milaboratories/pl-middle-layer
 
+## 1.46.22
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-backend@1.1.45
+  - @milaboratories/pl-model-common@1.24.5
+  - @milaboratories/pl-model-middle-layer@1.11.6
+  - @milaboratories/computable@2.8.4
+  - @milaboratories/pf-driver@1.0.41
+  - @milaboratories/pl-client@2.16.28
+  - @milaboratories/pl-config@1.7.13
+  - @milaboratories/pl-deployments@2.15.9
+  - @milaboratories/pl-drivers@1.11.47
+  - @milaboratories/pl-errors@1.1.60
+  - @milaboratories/pl-http@1.2.2
+  - @milaboratories/pl-tree@1.8.36
+  - @milaboratories/resolve-helper@1.1.2
+  - @milaboratories/ts-helpers@1.7.2
+  - @platforma-sdk/model@1.53.14
+  - @platforma-sdk/workflow-tengo@5.8.2
+  - @platforma-sdk/block-tools@2.6.46
+
 ## 1.46.21
 
 ### Patch Changes
