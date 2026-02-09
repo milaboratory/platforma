@@ -1,25 +1,18 @@
-import { createRollupNodeConfig } from "@milaboratories/build-configs";
+import { defineConfig } from "rolldown";
 import copy from "rollup-plugin-copy";
 
-const baseConfigs = createRollupNodeConfig({
-  entry: ["./src/cli.ts"],
-  formats: ["es"],
-});
-
-const cliConfig = {
-  ...baseConfigs[0],
+export default defineConfig({
+  input: "./src/cli.ts",
+  external: [/^[^./]/, /^node:/],
   plugins: [
-    ...baseConfigs[0].plugins,
     copy({
       targets: [{ src: "src/configs/*", dest: "dist/configs" }],
     }),
   ],
-  output: baseConfigs[0].output
-    .filter((output) => output)
-    .map((output) => ({
-      ...output,
-      banner: "#!/usr/bin/env node",
-    })),
-};
-
-export default [cliConfig];
+  output: {
+    dir: "dist",
+    format: "es",
+    sourcemap: true,
+    banner: "#!/usr/bin/env node",
+  },
+});

@@ -1,10 +1,21 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { TargetType } from "./config-manager";
 
-const rootDir = resolve(dirname(fileURLToPath(new URL(".", import.meta.url))), "../..");
+function findPackageRoot(): string {
+  let dir = dirname(fileURLToPath(import.meta.url));
+  while (dir !== dirname(dir)) {
+    if (existsSync(join(dir, "package.json"))) {
+      return dir;
+    }
+    dir = dirname(dir);
+  }
+  throw new Error("Could not find ts-builder package root");
+}
+
+const rootDir = findPackageRoot();
 
 function resolvePackageJson(req: ReturnType<typeof createRequire>, packageName: string): string {
   try {
