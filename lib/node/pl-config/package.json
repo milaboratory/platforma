@@ -37,10 +37,8 @@
   },
   "dependencies": {
     "@milaboratories/ts-helpers": "workspace:*",
-    "undici": "catalog:",
     "upath": "catalog:",
-    "yaml": "catalog:",
-    "zod": "catalog:"
+    "yaml": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
@@ -48,7 +46,6 @@
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "tsconfig-paths": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

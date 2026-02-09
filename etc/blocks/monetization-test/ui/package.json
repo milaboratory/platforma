@@ -16,8 +16,7 @@
     "@milaboratories/milaboratories.monetization-test.model": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:*",
-    "vue": "catalog:",
-    "zod": "catalog:"
+    "vue": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

@@ -9,7 +9,6 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve('src', 'index.ts'),
-        tsup: resolve('src', 'tsup.ts'),
         vite: resolve('src', 'vite.ts')
       },
       formats: ['es', 'cjs']

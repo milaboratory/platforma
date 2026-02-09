@@ -11,11 +11,6 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./tsup": {
-      "types": "./src/tsup.d.ts",
-      "import": "./dist/tsup.js",
-      "require": "./dist/tsup.cjs"
-    },
     "./vite": {
       "types": "./src/vite.d.ts",
       "import": "./dist/vite.js",
@@ -43,7 +38,6 @@
     "rollup-plugin-cleandir": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "rollup-plugin-sourcemaps2": "catalog:",
-    "tsup": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",

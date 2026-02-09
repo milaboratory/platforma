@@ -44,7 +44,6 @@
     "openapi-fetch": "catalog:",
     "tar-fs": "catalog:",
     "undici": "catalog:",
-    "upath": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

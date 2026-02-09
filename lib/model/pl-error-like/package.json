@@ -28,7 +28,6 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "canonicalize": "catalog:",
     "json-stringify-safe": "catalog:",
     "zod": "catalog:"
   },

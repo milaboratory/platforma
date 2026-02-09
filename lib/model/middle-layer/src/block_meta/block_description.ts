@@ -3,7 +3,7 @@ import { z } from "zod";
 import { BlockComponentsDescriptionRaw } from "./block_components";
 import { BlockPackMetaDescriptionRaw } from "./block_meta";
 import { BlockPackId } from "./block_id";
-import * as R from "remeda";
+import { toMerged } from "es-toolkit";
 import type { BlockCodeKnownFeatureFlags } from "@milaboratories/pl-model-common";
 
 /** Description, as appears in root block package.json file,
@@ -42,5 +42,5 @@ export function overrideDescriptionVersion<T extends { id: BlockPackId }>(
   manifest: T,
   newVersion: string,
 ): T {
-  return R.mergeDeep(manifest, { id: { version: newVersion } }) as T;
+  return toMerged(manifest, { id: { version: newVersion } }) as T;
 }
