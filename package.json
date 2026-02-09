@@ -26,6 +26,8 @@
     "formatter:check": "turbo run formatter:check",
     "linter:check": "turbo run linter:check",
     "types:check": "turbo run types:check",
+    "ci:test": "pnpm run test --output-logs=errors-only",
+    "ci:test:no-cache": "pnpm run test:no-cache --output-logs=errors-only",
     "ci:prepare": "pnpm --filter \"@milaboratories/ts-builder...\" run build && pnpm run formatter:check --output-logs=errors-only && pnpm run linter:check --output-logs=errors-only",
     "ci:build": "pnpm run ci:prepare && pnpm run build --output-logs=errors-only",
     "ci:build:dev": "pnpm run ci:prepare && pnpm run build:dev --output-logs=errors-only"

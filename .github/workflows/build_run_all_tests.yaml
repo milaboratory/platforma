@@ -25,7 +25,7 @@ jobs:
       test-coverage: true
       test-coverage-reports: '**/coverage/lcov.info'
       test-results-reports: '**/test-report.junit.xml'
-      test-script-name: 'test:no-cache'
+      test-script-name: 'ci:test:no-cache'
       test-skip-dry-run: 'true'
       publish-to-public: 'true'
       pnpm-recursive-build: false

@@ -33,7 +33,7 @@ jobs:
       test-coverage: true
       test-coverage-reports: '**/coverage/lcov.info'
       test-results-reports: '**/test-report.junit.xml'
-      test-script-name: 'test'
+      test-script-name: 'ci:test'
       publish-to-public: 'true'
       cache-monitoring: true
       cache-monitoring-duration-minutes: 10
