@@ -31,8 +31,7 @@
     "@milaboratories/pl-error-like": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
     "@types/node": "catalog:",
-    "utility-types": "catalog:",
-    "zod": "catalog:"
+    "utility-types": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

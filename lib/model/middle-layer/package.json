@@ -29,7 +29,7 @@
   "dependencies": {
     "@milaboratories/pl-model-common": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
-    "remeda": "catalog:",
+    "es-toolkit": "catalog:",
     "utility-types": "catalog:",
     "zod": "catalog:"
   },

@@ -24,15 +24,12 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
-    "@milaboratories/biowasm-tools": "workspace:*",
-    "@milaboratories/ptabler-expression-js": "workspace:*",
     "@milaboratories/uikit": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
     "@types/d3-format": "catalog:",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "@vueuse/core": "catalog:",
-    "@vueuse/integrations": "catalog:",
     "@zip.js/zip.js": "catalog:",
     "ag-grid-enterprise": "catalog:",
     "ag-grid-vue3": "catalog:",

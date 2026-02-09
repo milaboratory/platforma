@@ -28,7 +28,6 @@
   "dependencies": {
     "@milaboratories/pl-deployments": "workspace:*",
     "@oclif/core": "catalog:",
-    "canonicalize": "catalog:",
     "decompress": "catalog:",
     "readline-sync": "catalog:",
     "tar": "catalog:",

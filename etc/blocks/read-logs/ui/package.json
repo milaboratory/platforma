@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-read-logs.model": "workspace:*",
-    "@platforma-sdk/model": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:*",
     "vue": "catalog:"
   },

@@ -29,14 +29,12 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "https-proxy-agent": "catalog:",
     "undici": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@types/http-proxy": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "typescript": "catalog:",

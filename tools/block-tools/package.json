@@ -47,7 +47,6 @@
     "canonicalize": "catalog:",
     "lru-cache": "catalog:",
     "mime-types": "catalog:",
-    "remeda": "catalog:",
     "tar": "catalog:",
     "undici": "catalog:",
     "yaml": "catalog:",
