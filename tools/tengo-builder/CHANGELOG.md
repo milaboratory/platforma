@@ -1,5 +1,15 @@
 # @platforma-sdk/tengo-builder
 
+## 2.4.15
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/ts-helpers@1.7.1
+  - @milaboratories/pl-model-backend@1.1.44
+  - @milaboratories/resolve-helper@1.1.1
+
 ## 2.4.14
 
 ### Patch Changes
@@ -473,6 +483,7 @@
 ### Patch Changes
 
 - e06efcd: Pin and standardize dependency versions for network and utility libraries to ensure consistent builds and prevent unexpected behavior from minor version changes. Changes include:
+
   - Pin `@protobuf-ts/*` packages to version 2.9.4 using YAML anchors
   - Pin AWS SDK packages to version 3.750.0
   - Change `undici` from `^7.2.3` to `~7.2.3` (only patch updates)

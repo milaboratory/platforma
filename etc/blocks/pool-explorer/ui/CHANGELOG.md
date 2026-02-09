@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.pool-explorer.ui
 
+## 1.1.271
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/milaboratories.pool-explorer.model@1.1.11
+  - @milaboratories/helpers@1.13.1
+  - @platforma-sdk/ui-vue@1.53.13
+
 ## 1.1.270
 
 ### Patch Changes

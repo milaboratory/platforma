@@ -1,5 +1,15 @@
 # @platforma-sdk/model
 
+## 1.53.13
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-error-like@1.12.6
+  - @milaboratories/pl-model-common@1.24.4
+  - @milaboratories/ptabler-expression-js@1.1.14
+
 ## 1.53.11
 
 ### Patch Changes

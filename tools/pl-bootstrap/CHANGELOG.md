@@ -1,5 +1,13 @@
 # @platforma-sdk/bootstrap
 
+## 5.2.42
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-deployments@2.15.8
+
 ## 5.2.41
 
 ### Patch Changes
@@ -658,6 +666,7 @@
 ### Patch Changes
 
 - e06efcd: Pin and standardize dependency versions for network and utility libraries to ensure consistent builds and prevent unexpected behavior from minor version changes. Changes include:
+
   - Pin `@protobuf-ts/*` packages to version 2.9.4 using YAML anchors
   - Pin AWS SDK packages to version 3.750.0
   - Change `undici` from `^7.2.3` to `~7.2.3` (only patch updates)

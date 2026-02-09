@@ -1,5 +1,29 @@
 # @milaboratories/pl-middle-layer
 
+## 1.46.21
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-deployments@2.15.8
+  - @milaboratories/pl-model-middle-layer@1.11.5
+  - @milaboratories/computable@2.8.3
+  - @milaboratories/pl-drivers@1.11.46
+  - @milaboratories/ts-helpers@1.7.1
+  - @milaboratories/pf-driver@1.0.40
+  - @milaboratories/pl-client@2.16.27
+  - @milaboratories/pl-config@1.7.12
+  - @milaboratories/pl-errors@1.1.59
+  - @milaboratories/pl-model-backend@1.1.44
+  - @platforma-sdk/block-tools@2.6.45
+  - @milaboratories/pl-model-common@1.24.4
+  - @milaboratories/pl-http@1.2.1
+  - @milaboratories/pl-tree@1.8.35
+  - @platforma-sdk/model@1.53.13
+  - @milaboratories/resolve-helper@1.1.1
+  - @platforma-sdk/workflow-tengo@5.8.1
+
 ## 1.46.20
 
 ### Patch Changes
@@ -4179,6 +4203,7 @@
 ### Patch Changes
 
 - e06efcd: Pin and standardize dependency versions for network and utility libraries to ensure consistent builds and prevent unexpected behavior from minor version changes. Changes include:
+
   - Pin `@protobuf-ts/*` packages to version 2.9.4 using YAML anchors
   - Pin AWS SDK packages to version 3.750.0
   - Change `undici` from `^7.2.3` to `~7.2.3` (only patch updates)

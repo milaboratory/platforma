@@ -1,5 +1,11 @@
 # @milaboratories/pl-http
 
+## 1.2.1
+
+### Patch Changes
+
+- f89a883: full integration oxc
+
 ## 1.2.0
 
 ### Minor Changes

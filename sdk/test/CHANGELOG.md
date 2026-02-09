@@ -1,5 +1,18 @@
 # @platforma-sdk/test
 
+## 1.53.13
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-middle-layer@1.46.21
+  - @milaboratories/computable@2.8.3
+  - @milaboratories/ts-helpers@1.7.1
+  - @milaboratories/pl-client@2.16.27
+  - @milaboratories/pl-tree@1.8.35
+  - @platforma-sdk/model@1.53.13
+
 ## 1.53.12
 
 ### Patch Changes

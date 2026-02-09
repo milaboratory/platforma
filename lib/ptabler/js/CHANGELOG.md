@@ -1,5 +1,13 @@
 # @milaboratories/ptabler-expression-js
 
+## 1.1.14
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.13.7
+
 ## 1.1.13
 
 ### Patch Changes

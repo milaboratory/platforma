@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.4.11
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @platforma-sdk/model@1.53.13
+
 ## 1.4.10
 
 ### Patch Changes

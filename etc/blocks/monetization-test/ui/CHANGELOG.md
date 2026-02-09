@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.169
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.58
+  - @platforma-sdk/ui-vue@1.53.13
+  - @platforma-sdk/model@1.53.13
+
 ## 1.1.168
 
 ### Patch Changes

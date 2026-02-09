@@ -1,5 +1,13 @@
 # @platforma-open/software-ptabler.types
 
+## 1.13.7
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-model-common@1.24.4
+
 ## 1.13.6
 
 ### Patch Changes
@@ -153,6 +161,7 @@
   Added new `StructFieldExpression` to enable accessing fields within nested data structures like JSON objects. This feature is essential for working with complex data formats where nested structures are common.
 
   Key features:
+
   - Extract single fields from struct objects using `struct.field()` functionality
   - Support for deeply nested field access through expression chaining
   - Graceful handling of missing fields and struct objects

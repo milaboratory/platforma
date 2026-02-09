@@ -1,5 +1,16 @@
 # @platforma-sdk/ui-vue
 
+## 1.53.13
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/biowasm-tools@2.0.1
+  - @milaboratories/ptabler-expression-js@1.1.14
+  - @milaboratories/uikit@2.10.16
+  - @platforma-sdk/model@1.53.13
+
 ## 1.53.11
 
 ### Patch Changes

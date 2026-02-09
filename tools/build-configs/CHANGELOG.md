@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.4.1
+
+### Patch Changes
+
+- f89a883: full integration oxc
+
 ## 1.4.0
 
 ### Minor Changes

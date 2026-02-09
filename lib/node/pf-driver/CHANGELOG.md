@@ -1,5 +1,15 @@
 # @milaboratories/pf-driver
 
+## 1.0.40
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-model-middle-layer@1.11.5
+  - @milaboratories/ts-helpers@1.7.1
+  - @platforma-sdk/model@1.53.13
+
 ## 1.0.39
 
 ### Patch Changes

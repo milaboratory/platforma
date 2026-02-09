@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.monetization-test.workflow
 
+## 1.1.61
+
+### Patch Changes
+
+- f89a883: full integration oxc
+  - @platforma-sdk/workflow-tengo@5.8.1
+
 ## 1.1.60
 
 ### Patch Changes

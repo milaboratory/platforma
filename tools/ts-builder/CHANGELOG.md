@@ -1,5 +1,13 @@
 # @milaboratories/ts-builder
 
+## 1.2.5
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/build-configs@1.4.1
+
 ## 1.2.4
 
 ### Patch Changes
