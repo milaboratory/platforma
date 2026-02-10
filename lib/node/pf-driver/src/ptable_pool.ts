@@ -152,7 +152,7 @@ export class PTablePool<TreeEntry extends JsonSerializable> extends RefCountPool
     const defDisposeSignal = this.pTableDefs.tryGetByKey(key)?.disposeSignal;
     const combinedSignal = AbortSignal.any([disposeSignal, defDisposeSignal].filter((s) => !!s));
 
-    const table = pFramePromise.then((pFrame) => pFrame.createTableByDataQuery(key, params.def));
+    const table = pFramePromise.then((pFrame) => pFrame.createTableByV2(key, params.def));
     return new PTableHolder(pFrameHandle, combinedSignal, table);
   }
 
