@@ -181,7 +181,7 @@ export function getOxlintConfigForTarget(target: TargetType): OxlintConfigType {
   return TARGET_TO_OXLINT_MAP[target];
 }
 
-export function createLintConfig(configType: OxlintConfigType): void {
+export function createLintConfigReference(configType: OxlintConfigType): void {
   const targetFile = "./.oxlintrc.json";
 
   if (existsSync(targetFile)) {
@@ -194,18 +194,14 @@ export function createLintConfig(configType: OxlintConfigType): void {
     throw new Error(`Unknown oxlint config type: ${configType}`);
   }
 
-  const configPath = getConfigPath(configFilename);
-
-  if (!existsSync(configPath)) {
-    throw new Error(`Config template not found: ${configPath}`);
-  }
-
-  const templateContent = readFileSync(configPath, "utf-8");
-  writeFileSync(targetFile, templateContent);
+  const extendsPath = `node_modules/@milaboratories/ts-builder/dist/configs/${configFilename}`;
+  const content = JSON.stringify({ extends: [extendsPath] }, null, 2) + "\n";
+  writeFileSync(targetFile, content);
 
   console.log(`Created ${targetFile} with ${configType} preset`);
 }
 
+// @todo: fmt don't support `extends` yet, so we need to copy the config file instead of referencing it. We can change this once it's supported.
 export function createFmtConfig(): void {
   const targetFile = "./.oxfmtrc.json";
 
