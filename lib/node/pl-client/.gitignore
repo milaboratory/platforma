@@ -2,3 +2,4 @@ proto/.proto/
 proto/plapi/.proto/
 proto/shared/.proto/
 sync-proto.log
+.test_auth.json

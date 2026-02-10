@@ -16,7 +16,7 @@
     "./postinstall.js"
   ],
   "scripts": {
-    "build": "oclif-index && ts-builder format && ts-builder build --target node",
+    "build": "oclif-index && node --run fmt && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",

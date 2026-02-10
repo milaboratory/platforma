@@ -7,6 +7,7 @@ import * as fsp from "node:fs/promises";
 import path from "node:path";
 import { test } from "vitest";
 
+// oxlint-disable-next-line jest/expect-expect jest/no-disabled-tests
 export const plTest = test.extend<{
   pl: PlClient;
   createTree: (res: ResourceId, ops?: SynchronizedTreeOps) => Promise<SynchronizedTreeState>;

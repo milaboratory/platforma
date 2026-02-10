@@ -6,13 +6,34 @@ import type { TargetType } from "./config-manager";
 
 const rootDir = resolve(dirname(fileURLToPath(new URL(".", import.meta.url))), "../..");
 
+function resolvePackageJson(req: ReturnType<typeof createRequire>, packageName: string): string {
+  try {
+    return req.resolve(`${packageName}/package.json`);
+  } catch {
+    // If ./package.json subpath is not in "exports", find it via the main entry
+    const resolved = req.resolve(packageName);
+    let dir = dirname(resolved);
+    while (dir !== dirname(dir)) {
+      try {
+        const candidate = join(dir, "package.json");
+        const meta = JSON.parse(readFileSync(candidate, "utf8"));
+        if (meta.name === packageName) return candidate;
+      } catch {
+        // file doesn't exist or is invalid, continue up
+      }
+      dir = dirname(dir);
+    }
+    throw new Error(`Cannot find package.json for ${packageName}`);
+  }
+}
+
 /**
  * Resolves the path to an executable in the ts-builder's node_modules/.bin directory
  * This ensures that ts-builder is self-contained and can work outside of monorepo
  */
 export function resolveExecutable(executableName: string, packageName: string): string {
   const req = createRequire(join(rootDir, "package.json"));
-  const pkgJsonPath = req.resolve(`${packageName}/package.json`);
+  const pkgJsonPath = resolvePackageJson(req, packageName);
   const meta = JSON.parse(readFileSync(pkgJsonPath, "utf8"));
   const binField = meta.bin;
   const rel =

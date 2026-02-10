@@ -40,7 +40,5 @@
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "typescript.tsdk": "./node_modules/typescript/lib",
-  "oxc.format.enable": true,
-  "oxc.lint.enable": true,
   "vitest.maximumConfigs": 1000
 }
