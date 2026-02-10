@@ -33,9 +33,9 @@ import {
 import type {
   AxisLabelProvider,
   ColumnProvider,
-  PColumnDataUniversal,
   RenderCtxBase,
   TreeNodeAccessor,
+  PColumnDataUniversal,
 } from "../render";
 import { allPColumnsReady, deriveLabels, PColumnCollection } from "../render";
 import { identity } from "es-toolkit";

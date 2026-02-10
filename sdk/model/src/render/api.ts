@@ -58,12 +58,8 @@ import type { LabelDerivationOps } from "./util/label";
 import { deriveLabels } from "./util/label";
 import type { APColumnSelectorWithSplit } from "./util/split_selectors";
 import { patchInSetFilters } from "./util/pframe_upgraders";
-import { allPColumnsReady } from "./util";
-
-export type PColumnDataUniversal<TreeEntry = TreeNodeAccessor> =
-  | TreeEntry
-  | DataInfo<TreeEntry>
-  | PColumnValues;
+import { allPColumnsReady } from "./util/pcolumn_data";
+import type { PColumnDataUniversal } from "./internal";
 
 /**
  * Helper function to match domain objects
@@ -682,6 +678,13 @@ export abstract class RenderCtxBase<Args, Data> {
     return this.ctx.createPTable(mapPTableDef(rawDef, (po) => transformPColumnData(po)));
   }
 
+  public createPTableV2(def: PTableDef<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
+    const columns = extractAllColumns(def.src);
+    this.verifyInlineAndExplicitColumnsSupport(columns);
+    if (!allPColumnsReady(columns)) return undefined;
+    return this.ctx.createPTableV2(mapPTableDef(def, (po) => transformPColumnData(po)));
+  }
+
   /** @deprecated scheduled for removal from SDK */
   public getBlockLabel(blockId: string): string {
     return this.ctx.getBlockLabel(blockId);
@@ -721,6 +724,7 @@ export class RenderCtx<Args, Data> extends RenderCtxBase<Args, Data> {
 /** Render context for legacy v1/v2 blocks - provides backward compatibility */
 export class RenderCtxLegacy<Args, UiState> extends RenderCtxBase<Args, UiState> {
   private _argsCache?: { v: Args };
+
   public get args(): Args {
     if (this._argsCache === undefined) {
       const raw = this.ctx.args;

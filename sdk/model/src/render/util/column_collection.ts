@@ -33,7 +33,7 @@ import {
 import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
 import type { TreeNodeAccessor } from "../accessor";
-import type { PColumnDataUniversal } from "../api";
+import type { PColumnDataUniversal } from "../internal";
 import { filterDataInfoEntries } from "./axis_filtering";
 import type { LabelDerivationOps, TraceEntry } from "./label";
 import { deriveLabels } from "./label";

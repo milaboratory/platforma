@@ -16,7 +16,7 @@ import {
   type PColumnKey,
 } from "@milaboratories/pl-model-common";
 import { TreeNodeAccessor } from "../accessor";
-import type { PColumnDataUniversal } from "../api";
+import type { PColumnDataUniversal } from "../internal";
 
 const PCD_PREFIX = "PColumnData/";
 

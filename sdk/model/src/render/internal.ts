@@ -19,12 +19,18 @@ import type {
   DataInfo,
   RangeBytes,
 } from "@milaboratories/pl-model-common";
+import type { TreeNodeAccessor } from "./accessor";
 
 export const StagingAccessorName = "staging";
 export const MainAccessorName = "main";
 
 export type AccessorHandle = Branded<string, "AccessorHandle">;
 export type FutureHandle = Branded<string, "FutureHandle">;
+
+export type PColumnDataUniversal<TreeEntry = TreeNodeAccessor> =
+  | TreeEntry
+  | DataInfo<TreeEntry>
+  | PColumnValues;
 
 export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = FutureHandle> {
   //
@@ -145,6 +151,10 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   createPFrame(def: PFrameDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>): PFrameHandle;
 
   createPTable(def: PTableDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>): PTableHandle;
+
+  createPTableV2(
+    def: PTableDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>,
+  ): PTableHandle;
 
   //
   // Computable

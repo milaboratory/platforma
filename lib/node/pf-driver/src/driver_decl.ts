@@ -39,6 +39,9 @@ export interface AbstractInternalPFrameDriver<PColumnData> extends PFrameDriver,
   /** Create a new PTable */
   createPTable(def: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle>;
 
+  /** Create a new PTable by new Pframe-rs api */
+  createPTableV2(def: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle>;
+
   /** Calculates data for the table and returns complete data representation of it */
   calculateTableData(
     handle: PFrameHandle,
