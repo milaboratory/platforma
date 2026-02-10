@@ -1,5 +1,11 @@
 # @milaboratories/ts-builder
 
+## 1.2.9
+
+### Patch Changes
+
+- 4b08ca5: fix lint
+
 ## 1.2.8
 
 ### Patch Changes
