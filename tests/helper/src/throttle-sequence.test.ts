@@ -4,6 +4,7 @@ import { sequence } from "@milaboratories/sequences";
 
 const { delay, arrayFrom } = utils;
 
+// oxlint-disable-next-line jest/expect-expect
 test("Throttle", async () => {
   const values = arrayFrom(20, (i) => i);
 
