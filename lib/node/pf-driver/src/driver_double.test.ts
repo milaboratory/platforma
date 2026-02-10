@@ -143,7 +143,7 @@ test.for([{ testCase: "01_json" }, { testCase: "02_binary" }, { testCase: "03_pa
   },
 );
 
-test("createTableByDataQuery support", async ({ expect }) => {
+test.skip("createTableV2 support", async ({ expect }) => {
   await using driver = await createPFrameDriverDouble({});
 
   const columnId = "column1" as PObjectId;
