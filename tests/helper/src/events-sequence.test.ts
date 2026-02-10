@@ -4,7 +4,7 @@ import { sequence, Emitter } from "@milaboratories/sequences";
 
 const { delay, timer } = utils;
 
-test("test 1", async () => {
+test("1", async () => {
   async function* gen() {
     for (let i = 1; i <= 10; i++) {
       yield i;
@@ -48,6 +48,7 @@ test("InfiniteTest", async () => {
   expect(dt()).toBeGreaterThan(DELAY_MS);
 }, 100000);
 
+// oxlint-disable-next-line jest/expect-expect
 test("MergeTest", async () => {
   async function* gen(delta: number) {
     let t = 0;
@@ -70,6 +71,7 @@ test("MergeTest", async () => {
   }
 }, 100000);
 
+// oxlint-disable-next-line jest/expect-expect
 test("EmitterTest", async () => {
   const em = new Emitter<number>();
 
@@ -93,6 +95,7 @@ test("EmitterTest", async () => {
 
 /// @todo
 
+// oxlint-disable-next-line jest/expect-expect
 test("PushTestSync", async () => {
   async function* test() {
     console.log("Hello!");
@@ -116,6 +119,7 @@ test("PushTestSync", async () => {
   await it.next("hello again");
 }, 100000);
 
+// oxlint-disable-next-line jest/expect-expect
 test("PushTestAsync", async () => {
   async function* gen() {
     yield 1;

@@ -30,7 +30,7 @@ function bumpVersion(ver: string): string {
   return `${ver.substring(0, sepIdx)}${Number(ver.substring(sepIdx)) + 1}`;
 }
 
-test("test bump version", ({ expect }) => {
+test("bump version", ({ expect }) => {
   expect(bumpVersion("1.2.3")).toEqual("1.2.4");
   expect(bumpVersion("1.2.10")).toEqual("1.2.11");
   expect(bumpVersion("1.1.9")).toEqual("1.1.10");
