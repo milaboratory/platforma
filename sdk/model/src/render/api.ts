@@ -724,6 +724,7 @@ export class RenderCtx<Args, Data> extends RenderCtxBase<Args, Data> {
 /** Render context for legacy v1/v2 blocks - provides backward compatibility */
 export class RenderCtxLegacy<Args, UiState> extends RenderCtxBase<Args, UiState> {
   private _argsCache?: { v: Args };
+
   public get args(): Args {
     if (this._argsCache === undefined) {
       const raw = this.ctx.args;
