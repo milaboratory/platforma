@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.46.25
+
+### Patch Changes
+
+- 25a3d4e: pf-driver createTableByDataQuery
+- Updated dependencies [25a3d4e]
+  - @milaboratories/pf-driver@1.0.43
+
 ## 1.46.24
 
 ### Patch Changes
