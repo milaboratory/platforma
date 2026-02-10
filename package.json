@@ -37,6 +37,8 @@
     "@types/node": "catalog:",
     "@zed-industries/vscode-langservers-extracted": "catalog:",
     "husky": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
     "rimraf": "catalog:",
     "rollup": "catalog:",
     "turbo": "catalog:",

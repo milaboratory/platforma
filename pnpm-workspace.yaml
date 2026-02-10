@@ -186,6 +186,9 @@ catalog:
 
   "rimraf": ^6.0.1
 
+  "oxlint": 1.43.0
+  "oxfmt": 0.28.0
+
   # Net
 
   "undici": ~7.16.0
