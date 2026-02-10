@@ -2,6 +2,7 @@ import type { Optional } from "utility-types";
 import type { Branded } from "../branding";
 import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
 import type {
+  JoinEntry,
   ArchiveFormat,
   AnyFunction,
   Option,
@@ -14,17 +15,29 @@ import type {
   PSpecPredicate,
   PTableDef,
   PTableHandle,
+  PTableColumnId,
+  SingleValuePredicateV2,
+  QueryBooleanExpressionSpec,
+  QueryExpressionSpec,
   ResultCollection,
   ValueOrError,
   DataInfo,
   RangeBytes,
+  QuerySpec,
 } from "@milaboratories/pl-model-common";
+import { isPColumn } from "@milaboratories/pl-model-common";
+import type { TreeNodeAccessor } from "./accessor";
 
 export const StagingAccessorName = "staging";
 export const MainAccessorName = "main";
 
 export type AccessorHandle = Branded<string, "AccessorHandle">;
 export type FutureHandle = Branded<string, "FutureHandle">;
+
+export type PColumnDataUniversal<TreeEntry = TreeNodeAccessor> =
+  | TreeEntry
+  | DataInfo<TreeEntry>
+  | PColumnValues;
 
 export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = FutureHandle> {
   //
@@ -146,6 +159,10 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   createPTable(def: PTableDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>): PTableHandle;
 
+  createPTableV2(
+    def: PTableDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>,
+  ): PTableHandle;
+
   //
   // Computable
   //
@@ -221,4 +238,172 @@ export function getAllFutureAwaits(obj: unknown): Set<string> {
   const set = new Set<string>();
   addAllFutureAwaits(set, new Set(), obj);
   return set;
+}
+
+export function joinEntryToQuerySpec(entry: JoinEntry<PColumn<PColumnDataUniversal>>): QuerySpec {
+  switch (entry.type) {
+    case "column": {
+      const col = entry.column;
+      if (!isPColumn(col)) {
+        throw new Error("Expected PColumn");
+      }
+      return {
+        type: "column",
+        columnId: col.id,
+      };
+    }
+    case "inner": {
+      const entries = entry.entries.map((e) => ({
+        entry: joinEntryToQuerySpec(e),
+        qualifications: [],
+      }));
+      return {
+        type: "innerJoin",
+        entries,
+      };
+    }
+    case "full": {
+      const entries = entry.entries.map((e) => ({
+        entry: joinEntryToQuerySpec(e),
+        qualifications: [],
+      }));
+      return {
+        type: "fullJoin",
+        entries,
+      };
+    }
+    case "outer": {
+      const primary = {
+        entry: joinEntryToQuerySpec(entry.primary),
+        qualifications: [],
+      };
+      const secondary = entry.secondary.map((e) => ({
+        entry: joinEntryToQuerySpec(e),
+        qualifications: [],
+      }));
+      return {
+        type: "outerJoin",
+        primary,
+        secondary,
+      };
+    }
+    default:
+      throw new Error(`Unexpected join entry type ${entry.type}`);
+  }
+}
+
+function pTableColumnIdToQueryExpr(col: PTableColumnId): QueryExpressionSpec {
+  if (col.type === "axis") {
+    return {
+      type: "axisRef",
+      value: { name: col.id.name, domain: col.id.domain },
+    };
+  }
+  return { type: "columnRef", value: col.id };
+}
+
+function convertPredicateV2(
+  colRef: QueryExpressionSpec,
+  pred: SingleValuePredicateV2,
+): QueryBooleanExpressionSpec {
+  switch (pred.operator) {
+    case "Equal":
+      if (typeof pred.reference === "string") {
+        return {
+          type: "stringEquals",
+          input: colRef,
+          value: pred.reference,
+          caseInsensitive: false,
+        };
+      }
+      return { type: "isIn", input: colRef, set: [pred.reference] };
+    case "IEqual":
+      return { type: "stringEquals", input: colRef, value: pred.reference, caseInsensitive: true };
+    case "InSet": {
+      const refs = pred.references;
+      if (refs.length > 0 && typeof refs[0] === "number") {
+        return { type: "isIn", input: colRef, set: refs as number[] };
+      }
+      return { type: "isIn", input: colRef, set: refs as string[] };
+    }
+    case "StringContains":
+      return {
+        type: "stringContains",
+        input: colRef,
+        value: pred.substring,
+        caseInsensitive: false,
+      };
+    case "StringIContains":
+      return {
+        type: "stringContains",
+        input: colRef,
+        value: pred.substring,
+        caseInsensitive: true,
+      };
+    case "Matches":
+      return { type: "stringRegex", input: colRef, value: pred.regex };
+    case "StringContainsFuzzy":
+      return {
+        type: "stringContainsFuzzy",
+        input: colRef,
+        value: pred.reference,
+        maxEdits: pred.maxEdits,
+        caseInsensitive: false,
+        substitutionsOnly: pred.substitutionsOnly ?? false,
+        wildcard: pred.wildcard ?? null,
+      };
+    case "StringIContainsFuzzy":
+      return {
+        type: "stringContainsFuzzy",
+        input: colRef,
+        value: pred.reference,
+        maxEdits: pred.maxEdits,
+        caseInsensitive: true,
+        substitutionsOnly: pred.substitutionsOnly ?? false,
+        wildcard: pred.wildcard ?? null,
+      };
+    case "Not":
+      return { type: "not", input: convertPredicateV2(colRef, pred.operand) };
+    case "And":
+      return { type: "and", input: pred.operands.map((op) => convertPredicateV2(colRef, op)) };
+    case "Or":
+      return { type: "or", input: pred.operands.map((op) => convertPredicateV2(colRef, op)) };
+    case "IsNA":
+    case "Less":
+    case "LessOrEqual":
+    case "Greater":
+    case "GreaterOrEqual":
+      throw new Error(`Predicate operator '${pred.operator}' is not yet supported in QuerySpec`);
+    default:
+      throw new Error(`Unknown predicate operator: ${(pred as { operator: string }).operator}`);
+  }
+}
+
+export function convertPTableDefToSpecQuery(
+  def: PTableDef<PColumn<PColumnDataUniversal>>,
+): QuerySpec {
+  let specQuery = joinEntryToQuerySpec(def.src);
+
+  for (const filter of def.filters) {
+    const colRef = pTableColumnIdToQueryExpr(filter.column);
+    specQuery = {
+      type: "filter",
+      input: specQuery,
+      predicate: convertPredicateV2(colRef, filter.predicate),
+    };
+  }
+
+  if (def.sorting.length > 0) {
+    specQuery = {
+      type: "sort",
+      input: specQuery,
+      sortBy: def.sorting.map((s) => ({
+        expression: pTableColumnIdToQueryExpr(s.column),
+        ascending: s.ascending,
+        nullsFirst: s.ascending === s.naAndAbsentAreLeastValues,
+      })),
+    };
+  }
+
+  return specQuery;
 }

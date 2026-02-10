@@ -30,6 +30,7 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
+    "@milaboratories/pframes-rs-wasm": "catalog:",
     "@milaboratories/pl-error-like": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/ptabler-expression-js": "workspace:*",
@@ -44,6 +45,7 @@
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
+    "fast-json-patch": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

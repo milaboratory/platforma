@@ -410,6 +410,19 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     this.computableCtx.addOnDestroy(unref);
     return key;
   }
+  public createPTableV2(
+    def: PTableDef<PColumn<string | PColumnValues | DataInfo<string>>>,
+  ): PTableHandle {
+    if (this.computableCtx === undefined)
+      throw new Error(
+        "can't instantiate PTable from this context (most porbably called from the future mapper)",
+      );
+    const { key, unref } = this.env.driverKit.pFrameDriver.createPTableV2(
+      mapPTableDef(def, (c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
+    );
+    this.computableCtx.addOnDestroy(unref);
+    return key;
+  }
 
   /**
    * Transforms input data for PFrame/PTable creation
@@ -823,6 +836,15 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       exportCtxFunction("createPTable", (def) => {
         return parent.exportSingleValue(
           this.createPTable(
+            parent.importObjectViaJson(def) as PTableDef<PColumn<string | PColumnValues>>,
+          ),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("createPTableV2", (def) => {
+        return parent.exportSingleValue(
+          this.createPTableV2(
             parent.importObjectViaJson(def) as PTableDef<PColumn<string | PColumnValues>>,
           ),
           undefined,

@@ -10,8 +10,7 @@ import type {
   UniqueValuesRequest,
   UniqueValuesResponse,
   QueryData,
-  AxisId,
-  PColumnIdAndSpec,
+  PTableColumnSpec,
 } from "@milaboratories/pl-model-common";
 import type { CreateTableRequestV4 } from "./create_table";
 import type { PTableV8 } from "./table";
@@ -45,13 +44,10 @@ export interface PFrameReadAPIV11 {
   createTable(tableId: PTableId, request: CreateTableRequestV4): PTableV8;
 
   /** Creates table from data query and returns an object to access it */
-  createTableByDataQuery(
+  createTableByV2(
     tableId: PTableId,
     request: {
-      tableSpec: {
-        axes: AxisId[];
-        columns: PColumnIdAndSpec[];
-      };
+      tableSpec: PTableColumnSpec[];
       dataQuery: QueryData;
     },
   ): PTableV8;

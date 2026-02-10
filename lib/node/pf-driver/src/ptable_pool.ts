@@ -8,13 +8,18 @@ import {
   type JsonSerializable,
   type PColumnValue,
   type PObjectId,
-} from '@platforma-sdk/model';
-import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
-import { RefCountPoolBase, type PoolEntry } from '@milaboratories/ts-helpers';
-import { logPFrames } from './logging';
-import type { PFramePool } from './pframe_pool';
-import { FullPTableDefV1, FullPTableDefV2, stableKeyFromFullPTableDef, type FullPTableDef } from './ptable_shared';
-import type { PTableDefPool } from './ptable_def_pool';
+} from "@platforma-sdk/model";
+import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
+import { RefCountPoolBase, type PoolEntry } from "@milaboratories/ts-helpers";
+import { logPFrames } from "./logging";
+import type { PFramePool } from "./pframe_pool";
+import {
+  FullPTableDefV1,
+  FullPTableDefV2,
+  stableKeyFromFullPTableDef,
+  type FullPTableDef,
+} from "./ptable_shared";
+import type { PTableDefPool } from "./ptable_def_pool";
 
 export class PTableHolder implements Disposable {
   private readonly abortController = new AbortController();
@@ -73,9 +78,9 @@ export class PTablePool<TreeEntry extends JsonSerializable> extends RefCountPool
     }
 
     switch (params.type) {
-      case 'v1':
+      case "v1":
         return this.createNewResourceV1(params, key);
-      case 'v2':
+      case "v2":
         return this.createNewResourceV2(params, key);
       default:
         // @ts-expect-error `params.type` is a string, but we want to make sure all cases are handled
@@ -123,19 +128,21 @@ export class PTablePool<TreeEntry extends JsonSerializable> extends RefCountPool
     }
 
     // 1. Join
-    const table = pFramePromise.then((pFrame) => pFrame.createTable(key, {
-      src: joinEntryToInternal(def.src),
-      // `def.filters` would be non-empty only when join has artificial columns
-      filters: [...def.partitionFilters, ...def.filters],
-    }));
+    const table = pFramePromise.then((pFrame) =>
+      pFrame.createTable(key, {
+        src: joinEntryToInternal(def.src),
+        // `def.filters` would be non-empty only when join has artificial columns
+        filters: [...def.partitionFilters, ...def.filters],
+      }),
+    );
     return new PTableHolder(pFrameHandle, combinedSignal, table);
   }
 
   protected createNewResourceV2(params: FullPTableDefV2, key: PTableHandle): PTableHolder {
     if (logPFrames()) {
-      this.logger('info',
-        `PTable creation (pTableHandle = ${key}): `
-        + `${JSON.stringify(params, bigintReplacer)}`,
+      this.logger(
+        "info",
+        `PTable creation (pTableHandle = ${key}): ` + `${JSON.stringify(params, bigintReplacer)}`,
       );
     }
 
@@ -145,7 +152,7 @@ export class PTablePool<TreeEntry extends JsonSerializable> extends RefCountPool
     const defDisposeSignal = this.pTableDefs.tryGetByKey(key)?.disposeSignal;
     const combinedSignal = AbortSignal.any([disposeSignal, defDisposeSignal].filter((s) => !!s));
 
-    const table = pFramePromise.then((pFrame) => pFrame.createTableByDataQuery(key, params.request));
+    const table = pFramePromise.then((pFrame) => pFrame.createTableByDataQuery(key, params.def));
     return new PTableHolder(pFrameHandle, combinedSignal, table);
   }
 

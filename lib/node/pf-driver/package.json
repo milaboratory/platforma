@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@milaboratories/pframes-rs-node": "catalog:",
+    "@milaboratories/pframes-rs-wasm": "catalog:",
     "@milaboratories/pl-model-middle-layer": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
     "@platforma-sdk/model": "workspace:*",

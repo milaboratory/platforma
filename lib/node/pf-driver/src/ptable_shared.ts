@@ -1,28 +1,24 @@
 import type {
-  AxisId,
-  PColumnIdAndSpec,
   PObjectId,
   PFrameHandle,
   PTableDef,
   PTableHandle,
   QueryData,
+  PTableColumnSpec,
 } from "@platforma-sdk/model";
 import { hashJson } from "@milaboratories/pl-model-middle-layer";
 
 export type FullPTableDefV1 = {
-  type: 'v1';
+  type: "v1";
   pFrameHandle: PFrameHandle;
   def: PTableDef<PObjectId>;
 };
 
 export type FullPTableDefV2 = {
-  type: 'v2';
+  type: "v2";
   pFrameHandle: PFrameHandle;
-  request: {
-    tableSpec: {
-      axes: AxisId[];
-      columns: PColumnIdAndSpec[];
-    };
+  def: {
+    tableSpec: PTableColumnSpec[];
     dataQuery: QueryData;
   };
 };

@@ -7,7 +7,6 @@ import {
   canonicalizeJson,
   bigintReplacer,
   ValueType,
-  type AxisId,
   type CalculateTableDataRequest,
   type CalculateTableDataResponse,
   type FindColumnsRequest,
@@ -20,7 +19,6 @@ import {
   type PTableHandle,
   type PTableShape,
   type PTableVector,
-  type QueryData,
   type TableRange,
   type UniqueValuesRequest,
   type UniqueValuesResponse,
@@ -59,6 +57,7 @@ import {
   PTableCachePlainOpsDefaults,
   type PTableCachePlainOps,
 } from "./ptable_cache_plain";
+import { createPFrame as createSpecFrame } from "@milaboratories/pframes-rs-wasm";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface LocalBlobProvider<
@@ -184,7 +183,7 @@ export class AbstractPFrameDriver<
       ),
     );
     const pTableEntry = this.pTableDefs.acquire({
-      type: 'v1',
+      type: "v1",
       def: sortedDef,
       pFrameHandle: pFrameEntry.key,
     });
@@ -207,32 +206,43 @@ export class AbstractPFrameDriver<
     };
   }
 
-  public createTableByDataQuery(
-    def: PFrameDef<PColumn<PColumnData>>,
-    request: {
-      tableSpec: {
-        axes: AxisId[];
-        columns: PColumnIdAndSpec[];
-      };
-      dataQuery: QueryData;
-    },
-  ): PoolEntry<PTableHandle> {
-    const pFrameEntry = this.createPFrame(def);
-    const pTableEntry = this.pTableDefs.acquire({
-      type: 'v2',
-      pFrameHandle: pFrameEntry.key,
-      request,
-    });
+  public createPTableV2(rawDef: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
+    const columns = extractAllColumns(rawDef.src);
+    const pFrameEntry = this.createPFrame(columns);
 
+    const columnsMap = columns.reduce(
+      (acc, col) => ((acc[col.id] = col.spec), acc),
+      {} as Record<string, PColumnSpec>,
+    );
+    const sortedDef = sortPTableDef(
+      migratePTableFilters(
+        mapPTableDef(rawDef, (c) => c.id),
+        this.logger,
+      ),
+    );
+    const specFrame = createSpecFrame(columnsMap);
+    const specQuery = specFrame.rewriteLegacyQuery(sortedDef);
+    const { tableSpec, dataQuery } = specFrame.evaluateQuery(specQuery);
+
+    const pTableEntry = this.pTableDefs.acquire({
+      type: "v2",
+      pFrameHandle: pFrameEntry.key,
+      def: {
+        tableSpec,
+        dataQuery,
+      },
+    });
     if (logPFrames()) {
-      this.logger('info', `Create PTableByDataQuery call (pFrameHandle = ${pFrameEntry.key}; pTableHandle = ${pTableEntry.key})`);
+      this.logger(
+        "info",
+        `Create PTable call (pFrameHandle = ${pFrameEntry.key}; pTableHandle = ${pTableEntry.key})`,
+      );
     }
 
     const unref = () => {
       pTableEntry.unref();
       pFrameEntry.unref();
     };
-
     return {
       key: pTableEntry.key,
       resource: pTableEntry.resource,
@@ -315,7 +325,7 @@ export class AbstractPFrameDriver<
     }
 
     const table = this.pTables.acquire({
-      type: 'v1',
+      type: "v1",
       pFrameHandle: handle,
       def: sortPTableDef(migratePTableFilters(request, this.logger)),
     });

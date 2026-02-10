@@ -3,7 +3,6 @@ import {
   type CalculateTableDataResponse,
   type PFrameDriver,
   type PObjectId,
-  type QueryData,
 } from "@platforma-sdk/model";
 import { readJson, PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { test } from "vitest";
@@ -144,40 +143,38 @@ test.for([{ testCase: "01_json" }, { testCase: "02_binary" }, { testCase: "03_pa
   },
 );
 
-test('createTableByDataQuery support', async ({ expect }) => {
+test("createTableByDataQuery support", async ({ expect }) => {
   await using driver = await createPFrameDriverDouble({});
 
-  const columnId = 'column1' as PObjectId;
+  const columnId = "column1" as PObjectId;
   const columnSpec = {
-    kind: 'PColumn' as const,
-    axesSpec: [{
-      name: 'axis1',
-      type: 'String' as const,
-    }],
-    name: 'column1',
-    valueType: 'Int' as const,
+    kind: "PColumn" as const,
+    axesSpec: [
+      {
+        name: "axis1",
+        type: "String" as const,
+      },
+    ],
+    name: "column1",
+    valueType: "Int" as const,
   };
 
-  using pTable = driver.createTableByDataQuery(
-    [{
-      id: columnId,
-      spec: columnSpec,
-      data: [
-        { key: ['a'], val: 10 },
-        { key: ['b'], val: 20 },
-      ],
-    }],
-    {
-      tableSpec: {
-        axes: [{ name: 'axis1', type: 'String' }],
-        columns: [{ columnId, spec: columnSpec }],
+  using pTable = driver.createPTableV2({
+    src: {
+      type: "column",
+      column: {
+        id: columnId,
+        spec: columnSpec,
+        data: [
+          { key: ["a"], val: 10 },
+          { key: ["b"], val: 20 },
+        ],
       },
-      dataQuery: {
-        type: 'column',
-        columnId,
-      } satisfies QueryData,
     },
-  );
+    partitionFilters: [],
+    filters: [],
+    sorting: [],
+  });
 
   const uiDriver: PFrameDriver = driver;
   const shape = await uiDriver.getShape(pTable.key);
@@ -186,9 +183,9 @@ test('createTableByDataQuery support', async ({ expect }) => {
 
   const data = await uiDriver.getData(pTable.key, [0, 1]);
   // axis column
-  expect(data[0].type).toBe('String');
-  expect([...data[0].data]).toEqual(['a', 'b']);
+  expect(data[0].type).toBe("String");
+  expect([...data[0].data]).toEqual(["a", "b"]);
   // value column
-  expect(data[1].type).toBe('Int');
+  expect(data[1].type).toBe("Int");
   expect([...data[1].data]).toEqual([10, 20]);
 });
