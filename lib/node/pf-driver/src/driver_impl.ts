@@ -57,7 +57,7 @@ import {
   PTableCachePlainOpsDefaults,
   type PTableCachePlainOps,
 } from "./ptable_cache_plain";
-import { createPFrame as createSpecFrame } from "@milaboratories/pframes-rs-wasm";
+// import { createPFrame as createSpecFrame } from "@milaboratories/pframes-rs-wasm";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface LocalBlobProvider<
@@ -206,49 +206,50 @@ export class AbstractPFrameDriver<
     };
   }
 
-  public createPTableV2(rawDef: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
-    const columns = extractAllColumns(rawDef.src);
-    const pFrameEntry = this.createPFrame(columns);
+  public createPTableV2(_rawDef: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
+    throw new Error("createPTableV2 is not implemented yet");
+    // const columns = extractAllColumns(rawDef.src);
+    // const pFrameEntry = this.createPFrame(columns);
 
-    const columnsMap = columns.reduce(
-      (acc, col) => ((acc[col.id] = col.spec), acc),
-      {} as Record<string, PColumnSpec>,
-    );
-    const sortedDef = sortPTableDef(
-      migratePTableFilters(
-        mapPTableDef(rawDef, (c) => c.id),
-        this.logger,
-      ),
-    );
-    const specFrame = createSpecFrame(columnsMap);
-    const specQuery = specFrame.rewriteLegacyQuery(sortedDef);
-    const { tableSpec, dataQuery } = specFrame.evaluateQuery(specQuery);
+    // const columnsMap = columns.reduce(
+    //   (acc, col) => ((acc[col.id] = col.spec), acc),
+    //   {} as Record<string, PColumnSpec>,
+    // );
+    // const sortedDef = sortPTableDef(
+    //   migratePTableFilters(
+    //     mapPTableDef(rawDef, (c) => c.id),
+    //     this.logger,
+    //   ),
+    // );
+    // const specFrame = createSpecFrame(columnsMap);
+    // const specQuery = specFrame.rewriteLegacyQuery(sortedDef);
+    // const { tableSpec, dataQuery } = specFrame.evaluateQuery(specQuery);
 
-    const pTableEntry = this.pTableDefs.acquire({
-      type: "v2",
-      pFrameHandle: pFrameEntry.key,
-      def: {
-        tableSpec,
-        dataQuery,
-      },
-    });
-    if (logPFrames()) {
-      this.logger(
-        "info",
-        `Create PTable call (pFrameHandle = ${pFrameEntry.key}; pTableHandle = ${pTableEntry.key})`,
-      );
-    }
+    // const pTableEntry = this.pTableDefs.acquire({
+    //   type: "v2",
+    //   pFrameHandle: pFrameEntry.key,
+    //   def: {
+    //     tableSpec,
+    //     dataQuery,
+    //   },
+    // });
+    // if (logPFrames()) {
+    //   this.logger(
+    //     "info",
+    //     `Create PTable call (pFrameHandle = ${pFrameEntry.key}; pTableHandle = ${pTableEntry.key})`,
+    //   );
+    // }
 
-    const unref = () => {
-      pTableEntry.unref();
-      pFrameEntry.unref();
-    };
-    return {
-      key: pTableEntry.key,
-      resource: pTableEntry.resource,
-      unref,
-      [Symbol.dispose]: unref,
-    };
+    // const unref = () => {
+    //   pTableEntry.unref();
+    //   pFrameEntry.unref();
+    // };
+    // return {
+    //   key: pTableEntry.key,
+    //   resource: pTableEntry.resource,
+    //   unref,
+    //   [Symbol.dispose]: unref,
+    // };
   }
 
   //
