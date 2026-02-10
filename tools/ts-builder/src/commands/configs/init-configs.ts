@@ -2,7 +2,7 @@ import { Command } from "commander";
 import {
   createConfigFile,
   createFmtConfig,
-  createLintConfig,
+  createLintConfigReference,
   createServeConfig,
   createTsConfig,
   getGlobalOptions,
@@ -51,7 +51,7 @@ export const initConfigsCommand = new Command("init-configs")
 
     try {
       const configType = getOxlintConfigForTarget(target);
-      createLintConfig(configType);
+      createLintConfigReference(configType);
     } catch (error) {
       console.error("Failed to create .oxlintrc.json:", error);
     }

@@ -9,7 +9,7 @@ const __dirname = dirname(__filename);
 
 function getDefaultConfigPath(): string {
   // __dirname points to dist/commands after build, config is in dist/configs
-  return join(__dirname, "..", "configs", "oxfmtrc.json");
+  return join(__dirname, "..", "configs", "oxfmt.json");
 }
 
 export interface FormatOptions {
