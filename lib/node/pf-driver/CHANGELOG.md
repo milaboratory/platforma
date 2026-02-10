@@ -1,5 +1,11 @@
 # @milaboratories/pf-driver
 
+## 1.0.43
+
+### Patch Changes
+
+- 25a3d4e: pf-driver createTableByDataQuery
+
 ## 1.0.42
 
 ### Patch Changes
