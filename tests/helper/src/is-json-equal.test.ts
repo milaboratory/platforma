@@ -193,9 +193,11 @@ test("is json equal", async () => {
         },
       },
     );
+    // oxlint-disable-next-line jest/require-to-throw-message
   }).toThrowError();
 }, 1000);
 
+// oxlint-disable-next-line jest/no-disabled-tests
 test.skip("speed", async () => {
   function isJsonEqualSlow(a: unknown, b: unknown) {
     return canonicalize(a) === canonicalize(b);

@@ -3,6 +3,7 @@ import fsp from "node:fs/promises";
 import { test } from "vitest";
 import { randomUUID } from "node:crypto";
 
+// oxlint-disable-next-line jest/expect-expect jest/no-disabled-tests
 export const regTest = test.extend<{
   tmpFolder: string;
 }>({
