@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.11.4
+
+### Patch Changes
+
+- 2dc3b33: Update oxc setup
+
 ## 3.11.3
 
 ### Patch Changes

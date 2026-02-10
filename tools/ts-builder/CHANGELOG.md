@@ -1,5 +1,11 @@
 # @milaboratories/ts-builder
 
+## 1.2.8
+
+### Patch Changes
+
+- 2dc3b33: Update oxc setup
+
 ## 1.2.7
 
 ### Patch Changes

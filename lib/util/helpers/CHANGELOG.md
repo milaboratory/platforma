@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.13.3
+
+### Patch Changes
+
+- 2dc3b33: Update oxc setup
+
 ## 1.13.2
 
 ### Patch Changes

@@ -1,5 +1,24 @@
 # @milaboratories/pl-middle-layer
 
+## 1.46.24
+
+### Patch Changes
+
+- @milaboratories/pl-drivers@1.11.49
+- @milaboratories/pl-model-backend@1.1.46
+- @milaboratories/pl-model-common@1.24.6
+- @milaboratories/pl-model-middle-layer@1.11.7
+- @milaboratories/computable@2.8.5
+- @milaboratories/pf-driver@1.0.42
+- @milaboratories/pl-client@2.16.29
+- @milaboratories/pl-deployments@2.15.10
+- @milaboratories/pl-errors@1.1.61
+- @milaboratories/pl-http@1.2.3
+- @milaboratories/pl-tree@1.8.37
+- @milaboratories/ts-helpers@1.7.2
+- @platforma-sdk/model@1.53.15
+- @platforma-sdk/block-tools@2.6.47
+
 ## 1.46.23
 
 ### Patch Changes

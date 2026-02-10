@@ -1,5 +1,15 @@
 # @platforma-sdk/test
 
+## 1.54.1
+
+### Patch Changes
+
+- 2dc3b33: Update oxc setup
+  - @milaboratories/computable@2.8.5
+  - @milaboratories/pl-client@2.16.29
+  - @milaboratories/pl-middle-layer@1.46.24
+  - @milaboratories/pl-tree@1.8.37
+
 ## 1.53.15
 
 ### Patch Changes
