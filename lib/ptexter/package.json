@@ -4,6 +4,7 @@
   "description": "Text processing utilities for platforma",
   "scripts": {
     "build": "rm -rf ./dist && pl-pkg build",
+    "build:local": "PL_PKG_DEV=local node --run build",
     "prepublishOnly": "pl-pkg prepublish",
     "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv platforma-open-milaboratories.software-ptexter-*.tgz package.tgz"
   },
