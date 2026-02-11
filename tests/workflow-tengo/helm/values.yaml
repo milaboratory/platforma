@@ -614,5 +614,5 @@ app:
   dnsConfig: ""
 
 extraArgs:
-- --no-sentry-events
-- --no-mon-events
+  - --no-sentry-events
+  - --no-mon-events

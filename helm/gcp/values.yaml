@@ -552,8 +552,8 @@ authOptions:
 #   - --log-dir=/var/log/platforma
 #   - --log-rotation-size=100MiB
 extraArgs:
-- --no-sentry-events
-- --no-mon-events
+  - --no-sentry-events
+  - --no-mon-events
 
 # -- Google Batch Options (--google-batch-storage, --google-batch-project, --google-batch-region, --google-batch-job-name-prefix, --google-batch-job-image, --google-batch-network, --google-batch-subnetwork, --google-batch-provisioning)
 googleBatch:
