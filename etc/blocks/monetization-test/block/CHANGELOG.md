@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.2.33
+
+### Patch Changes
+
+- bdf3e0b: update package scripts
+
 ## 1.2.32
 
 ### Patch Changes
