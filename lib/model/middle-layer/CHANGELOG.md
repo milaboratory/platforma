@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.11.8
+
+### Patch Changes
+
+- 6689b53: PFrameReadAPIV11 fix type
+
 ## 1.11.7
 
 ### Patch Changes
