@@ -611,3 +611,7 @@ app:
   # These will be passed directly to the PodSpec of same.
   dnsPolicy: ""
   dnsConfig: ""
+
+extraArgs:
+- --no-sentry-events
+- --no-mon-events
