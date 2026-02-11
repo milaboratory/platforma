@@ -44,7 +44,7 @@ export interface PFrameReadAPIV11 {
   createTable(tableId: PTableId, request: CreateTableRequestV4): PTableV8;
 
   /** Creates table from data query and returns an object to access it */
-  createTableByV2(
+  createTableV2(
     tableId: PTableId,
     request: {
       tableSpec: PTableColumnSpec[];
