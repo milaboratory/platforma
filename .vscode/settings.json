@@ -33,6 +33,10 @@
     "source.fixAll.oxc": "explicit"
   },
   "oxc.unusedDisableDirectives": "deny",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "typescript.tsdk": "./node_modules/typescript/lib",
+  "vitest.maximumConfigs": 1000,
   "cSpell.words": [
     "biowasm",
     "canonicalize",
@@ -46,6 +50,4 @@
     "platforma",
     "ptable"
   ],
-  "typescript.tsdk": "./node_modules/typescript/lib",
-  "vitest.maximumConfigs": 1000
 }
