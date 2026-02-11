@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "rm -rf ./block-pack && block-tools pack",
-    "publish-to-local-registry": "block-tools publish --registry file:./../../../../test-registry && block-tools publish --version-override 100.0.0 --registry file:./../../../../test-registry && block-tools mark-stable --registry file:./../../../../test-registry"
+    "build": "rm -rf ./block-pack && block-tools pack"
   },
   "files": [
     "index.d.ts",
