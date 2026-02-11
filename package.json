@@ -5,6 +5,7 @@
     "build": "turbo run build",
     "build:local": "PL_PKG_DEV=local pnpm run build",
     "test": "PL_PKG_DEV=local turbo run test --concurrency 1",
+    "test:dry-run": "PL_PKG_DEV=local turbo run test --concurrency 1 --dry-run=json",
     "test:no-cache": "PL_PKG_DEV=local turbo run test --concurrency 1 --force",
     "do-pack": "turbo run do-pack",
     "do-pack:local": "PL_PKG_DEV=local turbo run do-pack",
