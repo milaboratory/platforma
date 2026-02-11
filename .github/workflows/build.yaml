@@ -27,7 +27,7 @@ jobs:
       gha-runner-label: 'dev-pl-sdk'
       node-version: '22.x'
       team-id: 'ci-010101'
-      build-script-name: 'ci:build:dev'
+      build-script-name: 'ci:build:local'
       build-before-publish-script-name: 'ci:build'
       test: true
       test-coverage: true
