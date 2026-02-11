@@ -16,11 +16,12 @@ export type BlockCodeFeatureFlags = Record<`supports${string}`, boolean | number
  */
 export type BlockCodeKnownFeatureFlags = {
   readonly supportsLazyState?: boolean;
+  readonly supportsStorageDebugView?: boolean;
   readonly requiresModelAPIVersion?: number;
   readonly requiresUIAPIVersion?: number;
 };
 
-export const AllSupportsFeatureFlags = ["supportsLazyState"] as const;
+export const AllSupportsFeatureFlags = ["supportsLazyState", "supportsStorageDebugView"] as const;
 
 export const AllRequiresFeatureFlags = ["requiresUIAPIVersion", "requiresModelAPIVersion"] as const;
 

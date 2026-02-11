@@ -68,6 +68,7 @@ export class BlockModelV3<
 
   public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
     supportsLazyState: true,
+    supportsStorageDebugView: true,
     requiresUIAPIVersion: 3,
     requiresModelAPIVersion: 2,
   };

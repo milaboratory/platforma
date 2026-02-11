@@ -6,6 +6,7 @@ import type {
   StorageDebugView,
 } from "@platforma-sdk/model";
 import type { StringifiedJson } from "@milaboratories/pl-model-common";
+import { checkBlockFlag } from "@milaboratories/pl-model-common";
 import { extractCodeWithInfo, ensureError } from "@platforma-sdk/model";
 import { LRUCache } from "lru-cache";
 import type { QuickJSWASMModule } from "quickjs-emscripten";
@@ -41,6 +42,11 @@ const STORAGE_APPLY_UPDATE_HANDLE: ConfigRenderLambda = {
 const STORAGE_DEBUG_VIEW_HANDLE: ConfigRenderLambda = {
   __renderLambda: true,
   handle: "__pl_storage_debugView",
+};
+// Fallback for older SDK versions that registered the callback under the old name
+const STORAGE_GET_INFO_HANDLE: ConfigRenderLambda = {
+  __renderLambda: true,
+  handle: "__pl_storage_getInfo",
 };
 const STORAGE_MIGRATE_HANDLE: ConfigRenderLambda = {
   __renderLambda: true,
@@ -238,7 +244,7 @@ export class ProjectHelper {
 
   /**
    * Gets storage debug view from raw storage data by calling the VM's __pl_storage_debugView callback.
-   * Returns structured debug info about the storage (e.g., dataVersion).
+   * Falls back to the old __pl_storage_getInfo callback for blocks built with older SDK versions.
    *
    * @param blockConfig Block configuration
    * @param rawStorageJson Raw storage as JSON string (or undefined)
@@ -248,10 +254,13 @@ export class ProjectHelper {
     blockConfig: BlockConfig,
     rawStorageJson: string | undefined,
   ): StringifiedJson<StorageDebugView> | undefined {
+    const handle = checkBlockFlag(blockConfig.featureFlags, "supportsStorageDebugView")
+      ? STORAGE_DEBUG_VIEW_HANDLE
+      : STORAGE_GET_INFO_HANDLE;
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        STORAGE_DEBUG_VIEW_HANDLE,
+        handle,
         extractCodeWithInfo(blockConfig),
         rawStorageJson,
       ) as StringifiedJson<StorageDebugView>;
