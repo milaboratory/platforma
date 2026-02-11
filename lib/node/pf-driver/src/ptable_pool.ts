@@ -1,23 +1,23 @@
 import {
-  assertNever,
-  bigintReplacer,
-  PFrameDriverError,
-  type PFrameHandle,
-  type PTableHandle,
-  type JoinEntry,
-  type JsonSerializable,
-  type PColumnValue,
-  type PObjectId,
+    assertNever,
+    bigintReplacer,
+    PFrameDriverError,
+    type PFrameHandle,
+    type PTableHandle,
+    type JoinEntry,
+    type JsonSerializable,
+    type PColumnValue,
+    type PObjectId,
 } from "@platforma-sdk/model";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { RefCountPoolBase, type PoolEntry } from "@milaboratories/ts-helpers";
 import { logPFrames } from "./logging";
 import type { PFramePool } from "./pframe_pool";
 import {
-  FullPTableDefV1,
-  FullPTableDefV2,
-  stableKeyFromFullPTableDef,
-  type FullPTableDef,
+    FullPTableDefV1,
+    FullPTableDefV2,
+    stableKeyFromFullPTableDef,
+    type FullPTableDef,
 } from "./ptable_shared";
 import type { PTableDefPool } from "./ptable_def_pool";
 
@@ -152,7 +152,7 @@ export class PTablePool<TreeEntry extends JsonSerializable> extends RefCountPool
     const defDisposeSignal = this.pTableDefs.tryGetByKey(key)?.disposeSignal;
     const combinedSignal = AbortSignal.any([disposeSignal, defDisposeSignal].filter((s) => !!s));
 
-    const table = pFramePromise.then((pFrame) => pFrame.createTableByV2(key, params.def));
+    const table = pFramePromise.then((pFrame) => pFrame.createTableV2(key, params.def));
     return new PTableHolder(pFrameHandle, combinedSignal, table);
   }
 
