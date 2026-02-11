@@ -1,16 +1,16 @@
 import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
 import type {
-  DeleteColumnFromColumnsRequest,
-  DeleteColumnFromColumnsResponse,
+    DeleteColumnFromColumnsRequest,
+    DeleteColumnFromColumnsResponse,
 } from "./delete_column";
 import type {
-  PColumnInfo,
-  PColumnSpec,
-  PObjectId,
-  UniqueValuesRequest,
-  UniqueValuesResponse,
-  QueryData,
-  PTableColumnSpec,
+    PColumnInfo,
+    PColumnSpec,
+    PObjectId,
+    UniqueValuesRequest,
+    UniqueValuesResponse,
+    QueryData,
+    PTableColumnSpec,
 } from "@milaboratories/pl-model-common";
 import type { CreateTableRequestV4 } from "./create_table";
 import type { PTableV8 } from "./table";
@@ -44,7 +44,7 @@ export interface PFrameReadAPIV11 {
   createTable(tableId: PTableId, request: CreateTableRequestV4): PTableV8;
 
   /** Creates table from data query and returns an object to access it */
-  createTableByV2(
+  createTableV2(
     tableId: PTableId,
     request: {
       tableSpec: PTableColumnSpec[];
