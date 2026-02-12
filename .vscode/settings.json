@@ -50,4 +50,8 @@
     "platforma",
     "ptable"
   ],
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "vitest.maximumConfigs": 1000,  
 }

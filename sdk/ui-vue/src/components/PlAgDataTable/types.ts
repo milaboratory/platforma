@@ -1,15 +1,10 @@
 import type {
-  JsonCompatible,
   AxisId,
   CanonicalizedJson,
   ListOptionBase,
   PlDataTableModel,
   PlDataTableSheet,
   PlDataTableSheetState,
-  PlTableFilter,
-  PlTableFilterType,
-  PTableColumnId,
-  PTableColumnSpec,
   PTableKey,
   PTableValue,
   OutputWithStatus,
@@ -19,11 +14,6 @@ import type { ComputedRef, MaybeRefOrGetter } from "vue";
 import { computed, toValue } from "vue";
 import canonicalize from "canonicalize";
 import { deepClone } from "@milaboratories/helpers";
-
-export type PlDataTableFilterConfig = {
-  options?: PlTableFilterType[];
-  default?: PlTableFilter;
-};
 
 export type PlDataTableSettingsV2Base =
   | { sourceId: null; pending: boolean }
@@ -37,10 +27,7 @@ export type PlDataTableSettingsV2Base =
     };
 
 /** Data table V2 settings */
-export type PlDataTableSettingsV2 = PlDataTableSettingsV2Base & {
-  /** Callback configuring filters for the table */
-  filtersConfig: (info: { sourceId: string; column: PTableColumnSpec }) => PlDataTableFilterConfig;
-};
+export type PlDataTableSettingsV2 = PlDataTableSettingsV2Base;
 
 type OptionsBasic = {
   /** Block output created by `createPlDataTableV2` */
@@ -52,13 +39,7 @@ type OptionsBasic = {
   sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
 };
 
-type OptionsSimple = OptionsBasic & {
-  /**
-   * Callback configuring filters for the table.
-   * If not provided, filtering will be disabled.
-   */
-  filtersConfig?: (info: { column: PTableColumnSpec }) => PlDataTableFilterConfig;
-};
+type OptionsSimple = OptionsBasic;
 
 type OptionsAdvanced<T> = OptionsBasic & {
   /**
@@ -68,15 +49,6 @@ type OptionsAdvanced<T> = OptionsBasic & {
    * Ask developers for help if you don't know what to set here.
    */
   sourceId: MaybeRefOrGetter<T | undefined>;
-  /**
-   * Callback configuring filters for the table.
-   * If not provided, filtering will be disabled.
-   * Parameter `sourceId` should be compared using `isJsonEqual` from `@milaboratories/helpers`.
-   */
-  filtersConfig?: (info: {
-    sourceId: JsonCompatible<T>;
-    column: PTableColumnSpec;
-  }) => PlDataTableFilterConfig;
 };
 
 export function usePlDataTableSettingsV2<T>(
@@ -88,24 +60,6 @@ export function usePlDataTableSettingsV2(
 export function usePlDataTableSettingsV2<T>(
   options: OptionsAdvanced<T> | OptionsSimple,
 ): ComputedRef<PlDataTableSettingsV2> {
-  const fc = options.filtersConfig;
-  const filtersConfigValue =
-    typeof fc === "function"
-      ? (ops: { sourceId: string; column: PTableColumnSpec }) => {
-          try {
-            return fc({
-              sourceId: JSON.parse(ops.sourceId) as JsonCompatible<T>,
-              column: ops.column,
-            });
-          } catch (e) {
-            console.error(
-              `filtersConfig failed for sourceId: ${ops.sourceId}, column: ${JSON.stringify(ops.column)} - using default config`,
-              e,
-            );
-            return {};
-          }
-        }
-      : () => ({});
   return computed(() => {
     const model = deepClone(toValue(options.model));
     let settingsBase: PlDataTableSettingsV2Base;
@@ -152,28 +106,9 @@ export function usePlDataTableSettingsV2<T>(
           : { sourceId: null, pending: !model.stable };
       }
     }
-    return {
-      ...settingsBase,
-      filtersConfig: filtersConfigValue,
-    };
+    return settingsBase;
   });
 }
-
-/** PlTableFilters restriction entry */
-export type PlTableFiltersRestriction = {
-  /** Spec of the column for which filter types should be restricted */
-  column: PTableColumnId;
-  /** List of filter types applicable to the column */
-  allowedFilterTypes: PlTableFilterType[];
-};
-
-/** PlTableFilters default settings entry */
-export type PlTableFiltersDefault = {
-  /** Spec of the column the default should be applied */
-  column: PTableColumnId;
-  /** Filter entry */
-  default: PlTableFilter;
-};
 
 /** PlAgDataTable controller contains all exported methods */
 export type PlAgDataTableV2Controller = {

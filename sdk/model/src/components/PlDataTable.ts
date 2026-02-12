@@ -18,6 +18,7 @@ import type {
   PTableRecordSingleValueFilterV2,
   PTableSorting,
 } from "@milaboratories/pl-model-common";
+import type { FilterSpec, FilterSpecLeaf } from "../filters";
 import {
   Annotation,
   canonicalizeJson,
@@ -165,6 +166,16 @@ export type PlDataTableStateV2 =
       }[];
       pTableParams: PTableParamsV2;
     }
+  | {
+      version: 4;
+      stateCache: {
+        sourceId: string;
+        gridState: PlDataTableGridStateCore;
+        sheetsState: PlDataTableSheetState[];
+        filtersState: PlDataTableFilterState[];
+      }[];
+      pTableParams: PTableParamsV2;
+    }
   // Normalized state
   | PlDataTableStateV2Normalized;
 
@@ -175,8 +186,8 @@ export type PlDataTableStateV2CacheEntry = {
   gridState: PlDataTableGridStateCore;
   /** Sheets state */
   sheetsState: PlDataTableSheetState[];
-  /** Filters state */
-  filtersState: PlDataTableFilterState[];
+  /** Filters state (tree-based, compatible with PlAdvancedFilter) */
+  filtersState: PlDataTableAdvancedFilter | null;
 };
 
 export type PTableParamsV2 =
@@ -197,7 +208,7 @@ export type PTableParamsV2 =
 
 export type PlDataTableStateV2Normalized = {
   /** Version for upgrades */
-  version: 4;
+  version: 5;
   /** Internal states, LRU cache for 5 sourceId-s */
   stateCache: PlDataTableStateV2CacheEntry[];
   /** PTable params derived from the cache state for the current sourceId */
@@ -217,7 +228,7 @@ export function makeDefaultPTableParams(): PTableParamsV2 {
 /** Create default PlDataTableStateV2 */
 export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
   return {
-    version: 4,
+    version: 5,
     stateCache: [],
     pTableParams: makeDefaultPTableParams(),
   };
@@ -252,6 +263,11 @@ export function upgradePlDataTableStateV2(
     // Non upgradeable as column ids calculation algorithm has changed, resetting state to default
     state = createPlDataTableStateV2();
   }
+  // v4 -> v5
+  if (state.version === 4) {
+    // Non upgradeable as filter format changed from per-column to tree-based, resetting state to default
+    state = createPlDataTableStateV2();
+  }
   return state;
 }
 
@@ -263,6 +279,12 @@ export type PlDataTableFilterState = {
     disabled: boolean;
   };
 };
+
+/** Tree-based filter state compatible with PlAdvancedFilter's RootFilter */
+export type PlDataTableAdvancedFilter = FilterSpec<
+  FilterSpecLeaf<string>,
+  { id: number; isExpanded?: boolean }
+>;
 
 /** PlTableFilters filter entry */
 export type PlTableFilterIsNotNA = {
