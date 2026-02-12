@@ -4,10 +4,10 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     branches:
-      - 'main'
+      - "main"
   push:
     branches:
-      - 'main'
+      - "main"
   workflow_dispatch: {}
 jobs:
   init:
@@ -23,18 +23,18 @@ jobs:
     uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4
     with:
       app-name: Platforma SDK
-      app-name-slug: 'platforma-sdk'
-      gha-runner-label: 'dev-pl-sdk'
-      node-version: '22.x'
-      team-id: 'ci-010101'
-      build-script-name: 'ci:build:local'
-      build-before-publish-script-name: 'ci:build'
+      app-name-slug: "platforma-sdk"
+      gha-runner-label: "dev-pl-sdk"
+      node-version: "22.x"
+      team-id: "ci-010101"
+      build-script-name: "ci:build:local"
+      build-before-publish-script-name: "ci:build"
       test: true
       test-coverage: true
-      test-coverage-reports: '**/coverage/lcov.info'
-      test-results-reports: '**/test-report.junit.xml'
-      test-script-name: 'ci:test'
-      publish-to-public: 'true'
+      test-coverage-reports: "**/coverage/lcov.info"
+      test-results-reports: "**/test-report.junit.xml"
+      test-script-name: "ci:test:local"
+      publish-to-public: "true"
       cache-monitoring: true
       cache-monitoring-duration-minutes: 10
       pnpm-recursive-build: false
