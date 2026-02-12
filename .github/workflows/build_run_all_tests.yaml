@@ -1,7 +1,7 @@
 name: Build and Run all tests without cache
 on:
   schedule:
-    - cron: '0 3 * * *'
+    - cron: "0 3 * * *"
   workflow_dispatch: {}
 jobs:
   init:
@@ -17,17 +17,18 @@ jobs:
     uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4
     with:
       app-name: Platforma SDK
-      app-name-slug: 'platforma-sdk'
-      gha-runner-label: 'dev-pl-sdk'
-      node-version: '22.x'
-      build-script-name: 'ci:build'
+      app-name-slug: "platforma-sdk"
+      gha-runner-label: "dev-pl-sdk"
+      node-version: "22.x"
+      build-script-name: "ci:build"
       test: true
       test-coverage: true
-      test-coverage-reports: '**/coverage/lcov.info'
-      test-results-reports: '**/test-report.junit.xml'
-      test-script-name: 'ci:test:no-cache'
-      test-skip-dry-run: 'true'
-      publish-to-public: 'true'
+      test-coverage-reports: "**/coverage/lcov.info"
+      test-results-reports: "**/test-report.junit.xml"
+      test-dry-run-script-name: "test:local,dry-run"
+      test-script-name: "ci:test:local,no-cache"
+      test-skip-dry-run: "true"
+      publish-to-public: "true"
       pnpm-recursive-build: false
       pnpm-recursive-tests: false
       npmrc-config: |
