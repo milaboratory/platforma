@@ -25,6 +25,7 @@ jobs:
       test-coverage: true
       test-coverage-reports: "**/coverage/lcov.info"
       test-results-reports: "**/test-report.junit.xml"
+      test-dry-run-script-name: "test:local,dry-run"
       test-script-name: "ci:test:local,no-cache"
       test-skip-dry-run: "true"
       publish-to-public: "true"
