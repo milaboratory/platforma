@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.17.0
+
+### Minor Changes
+
+- f37108b: Fix onAuthError callback firing on network disconnections, not just authentication errors
+
 ## 2.16.29
 
 ### Patch Changes
