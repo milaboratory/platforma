@@ -2647,7 +2647,7 @@ importers:
     dependencies:
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
-        version: 0.1.0(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@1.11.7)
+        version: 0.1.0(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@1.11.8)
       '@milaboratories/pl-error-like':
         specifier: workspace:*
         version: link:../../lib/model/pl-error-like
@@ -4768,8 +4768,8 @@ packages:
   '@milaboratories/pl-model-middle-layer@1.11.5':
     resolution: {integrity: sha512-4ireMiilEaAl0G2nCn6/pf+bSui1HX6k8jRrM7XJTXgm2zh8GckaNS+WwIlJ/NOfal4LtMW05cCwXtOBGbcU/g==}
 
-  '@milaboratories/pl-model-middle-layer@1.11.7':
-    resolution: {integrity: sha512-qT8reOK8XnAWJxjn4Lyd9BEdWDUYQ0yLxVNhlFyvQqMZsP94oMaa77SLDYtaCTCLrXm4jIstFsIUuqCvFnJ76w==}
+  '@milaboratories/pl-model-middle-layer@1.11.8':
+    resolution: {integrity: sha512-HEbdJyBpYGStnpaEP7kyLQzvrqoYmlC+UBs1cwtL8yeW2OfyKbff4JvSQ3C8yJ8iTlnuVZ6VYobe/Iyf9dh8hg==}
 
   '@milaboratories/ptabler-expression-js@1.1.14':
     resolution: {integrity: sha512-uBvY++f+7NxTjX5RYeSrt7I6dcqXq+0G7pebEiBF/yUnUALYEHHmarCBD399hGfFCG8JppGxD6Lw5OkbRsk/ew==}
@@ -10868,11 +10868,11 @@ snapshots:
       '@milaboratories/pl-model-common': 1.24.6
       '@milaboratories/pl-model-middle-layer': link:lib/model/middle-layer
 
-  '@milaboratories/pframes-rs-wasm@0.1.0(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@1.11.7)':
+  '@milaboratories/pframes-rs-wasm@0.1.0(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@1.11.8)':
     dependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
       '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.11.7
+      '@milaboratories/pl-model-middle-layer': 1.11.8
 
   '@milaboratories/pl-error-like@1.12.6':
     dependencies:
@@ -10905,7 +10905,7 @@ snapshots:
       utility-types: 3.11.0
       zod: 3.23.8
 
-  '@milaboratories/pl-model-middle-layer@1.11.7':
+  '@milaboratories/pl-model-middle-layer@1.11.8':
     dependencies:
       '@milaboratories/pl-model-common': 1.24.6
       '@platforma-sdk/model': 1.53.15
