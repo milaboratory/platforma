@@ -262,7 +262,14 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
     });
   },
   onStateUpdated: (event) => {
-    gridOptions.value.initialState = gridState.value = makePartialState(event.state);
+    let partialState = makePartialState(event.state);
+    // AG Grid omits columnVisibility when no columns are hidden. If we previously had
+    // hidden columns and now get undefined, treat as "all visible" so we don't revert to default.
+    const hadHiddenCols = (gridState.value.columnVisibility?.hiddenColIds?.length ?? 0) > 0;
+    if (partialState.columnVisibility === undefined && hadHiddenCols) {
+      partialState = { ...partialState, columnVisibility: { hiddenColIds: [] } };
+    }
+    gridOptions.value.initialState = gridState.value = partialState;
     if (!isJsonEqual(event.sources, ["columnSizing"])) {
       event.api.autoSizeColumns(
         event.api
@@ -301,6 +308,13 @@ function makePartialState(state: GridState): PlDataTableGridStateCore {
   };
 }
 
+// Normalize columnVisibility for comparison: undefined and { hiddenColIds: [] } are equivalent.
+function stateForReloadCompare(state: PlDataTableGridStateCore): PlDataTableGridStateCore {
+  const cv = state.columnVisibility;
+  const normalizedCv = !cv || cv.hiddenColIds.length === 0 ? undefined : state.columnVisibility;
+  return { ...state, columnVisibility: normalizedCv };
+}
+
 // Reload AgGrid when new state arrives from server
 const reloadKey = ref(0);
 watch(
@@ -308,7 +322,10 @@ watch(
   ([gridApi, gridState]) => {
     if (!gridApi || gridApi.isDestroyed()) return;
     const selfState = makePartialState(gridApi.getState());
-    if (!isJsonEqual(gridState, {}) && !isJsonEqual(gridState, selfState)) {
+    if (
+      !isJsonEqual(gridState, {}) &&
+      !isJsonEqual(stateForReloadCompare(gridState), stateForReloadCompare(selfState))
+    ) {
       gridOptions.value.initialState = gridState;
       ++reloadKey.value;
     }
