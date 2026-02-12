@@ -1,5 +1,5 @@
 ---
-'@milaboratories/pl-client': patch
+'@milaboratories/pl-client': minor
 ---
 
 Fix onAuthError callback firing on network disconnections, not just authentication errors
