@@ -28,7 +28,7 @@ export const createViteLibConfig = (configEnv: ConfigEnv): UserConfig => {
         formats: ['es'],
         entry: 'src/index.ts',
       },
-      rollupOptions: {
+      rolldownOptions: {
         output: {
           format: 'es',
           preserveModules: true,

@@ -1,5 +1,4 @@
 import type { OutputWithStatus } from "@milaboratories/pl-model-common";
-import {} from "./global";
 import type { Platforma, PlatformaApiVersion } from "./platforma";
 import type { FutureHandle, GlobalCfgRenderCtx } from "./render/internal";
 import type { ConfigRenderLambda, ConfigRenderLambdaFlags } from "./bconfig";

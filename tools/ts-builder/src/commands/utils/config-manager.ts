@@ -17,8 +17,8 @@ export interface ConfigInfo {
 // block-test has no build config - it's type-check only
 const TARGET_CONFIG_MAP: Record<Exclude<TargetType, "block-test">, ConfigInfo> = {
   node: {
-    filename: "rollup.node.config.js",
-    outputPath: "./build.node.config.js",
+    filename: "rolldown/node.config.mjs",
+    outputPath: "./build.node.config.mjs",
   },
   browser: {
     filename: "vite.browser.config.js",
@@ -29,8 +29,8 @@ const TARGET_CONFIG_MAP: Record<Exclude<TargetType, "block-test">, ConfigInfo> =
     outputPath: "./build.browser-lib.config.js",
   },
   "block-model": {
-    filename: "rollup.block-model.config.js",
-    outputPath: "./build.block-model.config.js",
+    filename: "rolldown/block-model.config.mjs",
+    outputPath: "./build.block-model.config.mjs",
   },
   "block-ui": {
     filename: "vite.block-ui.config.js",
