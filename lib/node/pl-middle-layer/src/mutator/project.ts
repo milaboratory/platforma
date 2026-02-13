@@ -1250,6 +1250,24 @@ export class ProjectMutator {
             );
           }
           this.setBlockStorageRaw(blockId, migrationResult.newStorageJson);
+
+          // Derive prerunArgs from the migrated storage so staging can re-render
+          const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
+            newConfig,
+            migrationResult.newStorageJson,
+          );
+          if (prerunArgs !== undefined) {
+            this.setBlockFieldObj(
+              blockId,
+              "currentPrerunArgs",
+              this.createJsonFieldValue(prerunArgs),
+            );
+          }
+        }
+      } else {
+        // Legacy blocks (modelAPIVersion 1): prerunArgs = currentArgs
+        if (info.fields.currentArgs !== undefined) {
+          this.setBlockFieldObj(blockId, "currentPrerunArgs", info.fields.currentArgs);
         }
       }
 
