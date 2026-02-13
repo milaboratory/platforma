@@ -53,5 +53,7 @@
   "editor.defaultFormatter": "oxc.oxc-vscode",
   "editor.formatOnSave": true,
   "editor.formatOnSaveMode": "file",
-  "vitest.maximumConfigs": 1000,  
+  "vitest.maximumConfigs": 1000,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  
 }

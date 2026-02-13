@@ -16,6 +16,7 @@ import type {
   PObjectSpec,
   PSpecPredicate,
   PTableDef,
+  PTableDefV2,
   PTableHandle,
   PTableRecordFilter,
   PTableSorting,
@@ -36,6 +37,7 @@ import {
   mapDataInfo,
   mapPObjectData,
   mapPTableDef,
+  mapPTableDefV2,
   mapValueInVOE,
   PColumnName,
   readAnnotation,
@@ -678,11 +680,11 @@ export abstract class RenderCtxBase<Args, Data> {
     return this.ctx.createPTable(mapPTableDef(rawDef, (po) => transformPColumnData(po)));
   }
 
-  public createPTableV2(def: PTableDef<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
+  public createPTableV2(def: PTableDefV2<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
     const columns = extractAllColumns(def.src);
     this.verifyInlineAndExplicitColumnsSupport(columns);
     if (!allPColumnsReady(columns)) return undefined;
-    return this.ctx.createPTableV2(mapPTableDef(def, (po) => transformPColumnData(po)));
+    return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
   }
 
   /** @deprecated scheduled for removal from SDK */

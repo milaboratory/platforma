@@ -1,10 +1,5 @@
 <script lang="ts" setup>
-import type {
-  PlDataTableAdvancedFilter,
-  PTableColumnSpec,
-  PTableColumnId,
-  ListOptionBase,
-} from "@platforma-sdk/model";
+import type { PTableColumnSpec, PTableColumnId, ListOptionBase } from "@platforma-sdk/model";
 import {
   canonicalizeJson,
   Annotation,
@@ -24,9 +19,7 @@ import {
 } from "../PlAdvancedFilter";
 import type { PlAdvancedFilterColumnId } from "../PlAdvancedFilter/types";
 
-const model = defineModel<PlDataTableAdvancedFilter | null>({
-  default: null,
-});
+const model = defineModel<PlAdvancedFilter>({ required: true });
 const props = defineProps<{
   columns: PTableColumnSpec[];
 }>();
@@ -41,10 +34,7 @@ const showManager = ref(false);
 
 // Check if any filters are active
 const filtersOn = computed(() => {
-  const v = model.value;
-  if (!v) return false;
-  if (v.type !== "and" && v.type !== "or") return false;
-  return "filters" in v && Array.isArray(v.filters) && v.filters.length > 0;
+  return model.value.filters.length > 0;
 });
 
 // Convert PTableColumnSpec to PlAdvancedFilterColumnId
@@ -120,37 +110,29 @@ function getSuggestOptions(params: {
   }
 }
 
-// Bridge between PlDataTableAdvancedFilter | null and PlAdvancedFilterFilter (RootFilter)
-const filterModel = computed<PlAdvancedFilter>({
-  get: () => {
-    const v = model.value;
-    if (v && (v.type === "and" || v.type === "or") && "filters" in v && Array.isArray(v.filters)) {
-      return v as PlAdvancedFilter;
-    }
-    return { id: randomInt(), type: "and" as const, isExpanded: true, filters: [] };
-  },
-  set: (value: PlAdvancedFilter) => {
-    model.value = value as PlDataTableAdvancedFilter;
-  },
-});
-
 // Add filter group
 const addFilterGroup = () => {
   const firstColumn = items.value[0]?.id;
   if (!firstColumn) return;
 
-  filterModel.value.filters.push({
-    id: randomInt(),
-    isExpanded: true,
-    type: "or",
+  model.value = {
+    ...model.value,
     filters: [
+      ...model.value.filters,
       {
         id: randomInt(),
-        type: "isNA",
-        column: firstColumn,
-      },
+        isExpanded: true,
+        type: "or",
+        filters: [
+          {
+            id: randomInt(),
+            type: "isNA",
+            column: firstColumn,
+          },
+        ],
+      } as PlAdvancedFilter["filters"][number],
     ],
-  } as PlAdvancedFilter["filters"][number]);
+  };
 };
 </script>
 
@@ -166,7 +148,7 @@ const addFilterGroup = () => {
 
     <div v-if="items.length > 0" :class="$style.root">
       <PlAdvancedFilter
-        v-model:filters="filterModel"
+        v-model:filters="model"
         :items="items"
         :supported-filters="supportedFilters"
         :get-suggest-options="getSuggestOptions"

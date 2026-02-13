@@ -4,6 +4,7 @@ import type { PObjectId } from "../../pool";
 import { assertNever } from "../../util";
 import type { PColumn } from "./spec/spec";
 import type { PColumnValues } from "./data_info";
+import type { PTableFilters } from "./filter_spec";
 
 /** Defines a terminal column node in the join request tree */
 export interface ColumnJoinEntry<Col> {
@@ -373,6 +374,18 @@ export interface PTableDef<Col> {
   readonly sorting: PTableSorting[];
 }
 
+/** Information required to instantiate a PTable (V2, tree-based filters). */
+export interface PTableDefV2<Col> {
+  /** Join tree to populate the PTable */
+  readonly src: JoinEntry<Col>;
+
+  /** Tree-based record filters */
+  readonly filters: PTableFilters;
+
+  /** Table sorting */
+  readonly sorting: PTableSorting[];
+}
+
 /** Request to create and retrieve entirety of data of PTable. */
 export type CalculateTableDataRequest<Col> = {
   /** Join tree to populate the PTable */
@@ -389,6 +402,10 @@ export type CalculateTableDataRequest<Col> = {
 export type CalculateTableDataResponse = FullPTableColumnData[];
 
 export function mapPTableDef<C1, C2>(def: PTableDef<C1>, cb: (c: C1) => C2): PTableDef<C2> {
+  return { ...def, src: mapJoinEntry(def.src, cb) };
+}
+
+export function mapPTableDefV2<C1, C2>(def: PTableDefV2<C1>, cb: (c: C1) => C2): PTableDefV2<C2> {
   return { ...def, src: mapJoinEntry(def.src, cb) };
 }
 

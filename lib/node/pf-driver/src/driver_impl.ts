@@ -1,6 +1,7 @@
 import {
   mapPObjectData,
   mapPTableDef,
+  mapJoinEntry,
   extractAllColumns,
   uniqueBy,
   getAxisId,
@@ -29,6 +30,14 @@ import {
   type PTableRecordSingleValueFilterV2,
   type PTableRecordFilter,
   type JsonSerializable,
+  type PTableDefV2,
+  type FilterSpec,
+  type FilterSpecLeaf,
+  type PTableColumnId,
+  type SingleAxisSelector,
+  type QuerySpec,
+  type QueryExpressionSpec,
+  type QueryBooleanExpressionSpec,
 } from "@platforma-sdk/model";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import {
@@ -57,7 +66,7 @@ import {
   PTableCachePlainOpsDefaults,
   type PTableCachePlainOps,
 } from "./ptable_cache_plain";
-// import { createPFrame as createSpecFrame } from "@milaboratories/pframes-rs-wasm";
+import { createPFrame as createSpecFrame } from "@milaboratories/pframes-rs-wasm";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface LocalBlobProvider<
@@ -206,50 +215,61 @@ export class AbstractPFrameDriver<
     };
   }
 
-  public createPTableV2(_rawDef: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
-    throw new Error("createPTableV2 is not implemented yet");
-    // const columns = extractAllColumns(rawDef.src);
-    // const pFrameEntry = this.createPFrame(columns);
+  public createPTableV2(rawDef: PTableDefV2<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
+    const columns = extractAllColumns(rawDef.src);
+    const pFrameEntry = this.createPFrame(columns);
 
-    // const columnsMap = columns.reduce(
-    //   (acc, col) => ((acc[col.id] = col.spec), acc),
-    //   {} as Record<string, PColumnSpec>,
-    // );
-    // const sortedDef = sortPTableDef(
-    //   migratePTableFilters(
-    //     mapPTableDef(rawDef, (c) => c.id),
-    //     this.logger,
-    //   ),
-    // );
-    // const specFrame = createSpecFrame(columnsMap);
-    // const specQuery = specFrame.rewriteLegacyQuery(sortedDef);
-    // const { tableSpec, dataQuery } = specFrame.evaluateQuery(specQuery);
+    const columnsMap = columns.reduce(
+      (acc, col) => ((acc[col.id] = col.spec), acc),
+      {} as Record<string, PColumnSpec>,
+    );
 
-    // const pTableEntry = this.pTableDefs.acquire({
-    //   type: "v2",
-    //   pFrameHandle: pFrameEntry.key,
-    //   def: {
-    //     tableSpec,
-    //     dataQuery,
-    //   },
-    // });
-    // if (logPFrames()) {
-    //   this.logger(
-    //     "info",
-    //     `Create PTable call (pFrameHandle = ${pFrameEntry.key}; pTableHandle = ${pTableEntry.key})`,
-    //   );
-    // }
+    // Map column objects to IDs, sort join tree for stable hashing
+    const mappedSrc = sortJoinEntry(mapJoinEntry(rawDef.src, (c) => c.id));
 
-    // const unref = () => {
-    //   pTableEntry.unref();
-    //   pFrameEntry.unref();
-    // };
-    // return {
-    //   key: pTableEntry.key,
-    //   resource: pTableEntry.resource,
-    //   unref,
-    //   [Symbol.dispose]: unref,
-    // };
+    // Use rewriteLegacyQuery for join tree + sorting only (no filters)
+    const specFrame = createSpecFrame(columnsMap);
+    let specQuery: QuerySpec = specFrame.rewriteLegacyQuery({
+      src: mappedSrc,
+      sorting: rawDef.sorting,
+    });
+
+    // Apply tree-based filters as QueryFilterSpec wrapper
+    if (rawDef.filters !== null) {
+      specQuery = {
+        type: "filter",
+        input: specQuery,
+        predicate: filterSpecToExpr(rawDef.filters),
+      };
+    }
+
+    const { tableSpec, dataQuery } = specFrame.evaluateQuery(specQuery);
+
+    const pTableEntry = this.pTableDefs.acquire({
+      type: "v2",
+      pFrameHandle: pFrameEntry.key,
+      def: {
+        tableSpec,
+        dataQuery,
+      },
+    });
+    if (logPFrames()) {
+      this.logger(
+        "info",
+        `Create PTable call (pFrameHandle = ${pFrameEntry.key}; pTableHandle = ${pTableEntry.key})`,
+      );
+    }
+
+    const unref = () => {
+      pTableEntry.unref();
+      pFrameEntry.unref();
+    };
+    return {
+      key: pTableEntry.key,
+      resource: pTableEntry.resource,
+      unref,
+      [Symbol.dispose]: unref,
+    };
   }
 
   //
@@ -459,91 +479,93 @@ export class AbstractPFrameDriver<
   }
 }
 
-function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
-  function cmpJoinEntries(lhs: JoinEntry<PObjectId>, rhs: JoinEntry<PObjectId>): number {
-    if (lhs.type !== rhs.type) {
-      return lhs.type < rhs.type ? -1 : 1;
+function cmpJoinEntries(lhs: JoinEntry<PObjectId>, rhs: JoinEntry<PObjectId>): number {
+  if (lhs.type !== rhs.type) {
+    return lhs.type < rhs.type ? -1 : 1;
+  }
+  const type = lhs.type;
+  switch (type) {
+    case "column":
+      return lhs.column < (rhs as typeof lhs).column ? -1 : 1;
+    case "slicedColumn":
+    case "artificialColumn":
+      return lhs.newId < (rhs as typeof lhs).newId ? -1 : 1;
+    case "inlineColumn": {
+      return lhs.column.id < (rhs as typeof lhs).column.id ? -1 : 1;
     }
-    const type = lhs.type;
-    switch (type) {
-      case "column":
-        return lhs.column < (rhs as typeof lhs).column ? -1 : 1;
-      case "slicedColumn":
-      case "artificialColumn":
-        return lhs.newId < (rhs as typeof lhs).newId ? -1 : 1;
-      case "inlineColumn": {
-        return lhs.column.id < (rhs as typeof lhs).column.id ? -1 : 1;
+    case "inner":
+    case "full": {
+      const rhsInner = rhs as typeof lhs;
+      if (lhs.entries.length !== rhsInner.entries.length) {
+        return lhs.entries.length - rhsInner.entries.length;
       }
-      case "inner":
-      case "full": {
-        const rhsInner = rhs as typeof lhs;
-        if (lhs.entries.length !== rhsInner.entries.length) {
-          return lhs.entries.length - rhsInner.entries.length;
-        }
-        for (let i = 0; i < lhs.entries.length; i++) {
-          const cmp = cmpJoinEntries(lhs.entries[i], rhsInner.entries[i]);
-          if (cmp !== 0) {
-            return cmp;
-          }
-        }
-        return 0;
-      }
-      case "outer": {
-        const rhsOuter = rhs as typeof lhs;
-        const cmp = cmpJoinEntries(lhs.primary, rhsOuter.primary);
+      for (let i = 0; i < lhs.entries.length; i++) {
+        const cmp = cmpJoinEntries(lhs.entries[i], rhsInner.entries[i]);
         if (cmp !== 0) {
           return cmp;
         }
-        if (lhs.secondary.length !== rhsOuter.secondary.length) {
-          return lhs.secondary.length - rhsOuter.secondary.length;
-        }
-        for (let i = 0; i < lhs.secondary.length; i++) {
-          const cmp = cmpJoinEntries(lhs.secondary[i], rhsOuter.secondary[i]);
-          if (cmp !== 0) {
-            return cmp;
-          }
-        }
-        return 0;
       }
-      default:
-        assertNever(type);
+      return 0;
     }
-  }
-  function sortJoinEntry(entry: JoinEntry<PObjectId>): JoinEntry<PObjectId> {
-    switch (entry.type) {
-      case "column":
-      case "slicedColumn":
-      case "inlineColumn":
-        return entry;
-      case "artificialColumn": {
-        const sortedAxesIndices = entry.axesIndices.toSorted((lhs, rhs) => lhs - rhs);
-        return {
-          ...entry,
-          axesIndices: sortedAxesIndices,
-        };
+    case "outer": {
+      const rhsOuter = rhs as typeof lhs;
+      const cmp = cmpJoinEntries(lhs.primary, rhsOuter.primary);
+      if (cmp !== 0) {
+        return cmp;
       }
-      case "inner":
-      case "full": {
-        const sortedEntries = entry.entries.map(sortJoinEntry);
-        sortedEntries.sort(cmpJoinEntries);
-        return {
-          ...entry,
-          entries: sortedEntries,
-        };
+      if (lhs.secondary.length !== rhsOuter.secondary.length) {
+        return lhs.secondary.length - rhsOuter.secondary.length;
       }
-      case "outer": {
-        const sortedSecondary = entry.secondary.map(sortJoinEntry);
-        sortedSecondary.sort(cmpJoinEntries);
-        return {
-          ...entry,
-          primary: sortJoinEntry(entry.primary),
-          secondary: sortedSecondary,
-        };
+      for (let i = 0; i < lhs.secondary.length; i++) {
+        const cmp = cmpJoinEntries(lhs.secondary[i], rhsOuter.secondary[i]);
+        if (cmp !== 0) {
+          return cmp;
+        }
       }
-      default:
-        assertNever(entry);
+      return 0;
     }
+    default:
+      assertNever(type);
   }
+}
+
+function sortJoinEntry(entry: JoinEntry<PObjectId>): JoinEntry<PObjectId> {
+  switch (entry.type) {
+    case "column":
+    case "slicedColumn":
+    case "inlineColumn":
+      return entry;
+    case "artificialColumn": {
+      const sortedAxesIndices = entry.axesIndices.toSorted((lhs, rhs) => lhs - rhs);
+      return {
+        ...entry,
+        axesIndices: sortedAxesIndices,
+      };
+    }
+    case "inner":
+    case "full": {
+      const sortedEntries = entry.entries.map(sortJoinEntry);
+      sortedEntries.sort(cmpJoinEntries);
+      return {
+        ...entry,
+        entries: sortedEntries,
+      };
+    }
+    case "outer": {
+      const sortedSecondary = entry.secondary.map(sortJoinEntry);
+      sortedSecondary.sort(cmpJoinEntries);
+      return {
+        ...entry,
+        primary: sortJoinEntry(entry.primary),
+        secondary: sortedSecondary,
+      };
+    }
+    default:
+      assertNever(entry);
+  }
+}
+
+function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
   function sortFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
     return filters.toSorted((lhs, rhs) => {
       if (lhs.column.type === "axis" && rhs.column.type === "axis") {
@@ -615,4 +637,231 @@ function migratePTableFilters<T>(
     partitionFilters: migrateFilters(def.partitionFilters, logger),
     filters: migrateFilters(def.filters, logger),
   };
+}
+
+/** Parses a CanonicalizedJson<PTableColumnId> string into a QueryExpressionSpec reference. */
+function resolveColumnRef(columnStr: string): QueryExpressionSpec {
+  const parsed = JSON.parse(columnStr) as PTableColumnId;
+  if (parsed.type === "axis") {
+    return { type: "axisRef", value: parsed.id as SingleAxisSelector };
+  }
+  return { type: "columnRef", value: parsed.id };
+}
+
+/** Converts a FilterSpec tree into a QueryBooleanExpressionSpec for use in QueryFilterSpec. */
+function filterSpecToExpr(filter: FilterSpec<FilterSpecLeaf<string>>): QueryBooleanExpressionSpec {
+  switch (filter.type) {
+    case "and":
+    case "or": {
+      const inputs = filter.filters.filter((f) => f.type !== undefined).map(filterSpecToExpr);
+      if (inputs.length === 0) {
+        throw new Error(`${filter.type.toUpperCase()} filter requires at least one operand`);
+      }
+      return { type: filter.type, input: inputs };
+    }
+    case "not":
+      return { type: "not", input: filterSpecToExpr(filter.filter) };
+
+    case "patternEquals":
+      return {
+        type: "stringEquals",
+        input: resolveColumnRef(filter.column),
+        value: filter.value,
+        caseInsensitive: false,
+      };
+    case "patternNotEquals":
+      return {
+        type: "not",
+        input: {
+          type: "stringEquals",
+          input: resolveColumnRef(filter.column),
+          value: filter.value,
+          caseInsensitive: false,
+        },
+      };
+    case "patternContainSubsequence":
+      return {
+        type: "stringContains",
+        input: resolveColumnRef(filter.column),
+        value: filter.value,
+        caseInsensitive: false,
+      };
+    case "patternNotContainSubsequence":
+      return {
+        type: "not",
+        input: {
+          type: "stringContains",
+          input: resolveColumnRef(filter.column),
+          value: filter.value,
+          caseInsensitive: false,
+        },
+      };
+    case "patternMatchesRegularExpression":
+      return {
+        type: "stringRegex",
+        input: resolveColumnRef(filter.column),
+        value: filter.value,
+      };
+    case "patternFuzzyContainSubsequence":
+      return {
+        type: "stringContainsFuzzy",
+        input: resolveColumnRef(filter.column),
+        value: filter.value,
+        maxEdits: filter.maxEdits ?? 1,
+        caseInsensitive: false,
+        substitutionsOnly: filter.substitutionsOnly ?? false,
+        wildcard: filter.wildcard ?? null,
+      };
+
+    case "equal":
+      return {
+        type: "numericComparison",
+        operand: "eq",
+        left: resolveColumnRef(filter.column),
+        right: { type: "constant", value: filter.x },
+      };
+    case "notEqual":
+      return {
+        type: "numericComparison",
+        operand: "ne",
+        left: resolveColumnRef(filter.column),
+        right: { type: "constant", value: filter.x },
+      };
+    case "lessThan":
+      return {
+        type: "numericComparison",
+        operand: "lt",
+        left: resolveColumnRef(filter.column),
+        right: { type: "constant", value: filter.x },
+      };
+    case "greaterThan":
+      return {
+        type: "numericComparison",
+        operand: "gt",
+        left: resolveColumnRef(filter.column),
+        right: { type: "constant", value: filter.x },
+      };
+    case "lessThanOrEqual":
+      return {
+        type: "numericComparison",
+        operand: "le",
+        left: resolveColumnRef(filter.column),
+        right: { type: "constant", value: filter.x },
+      };
+    case "greaterThanOrEqual":
+      return {
+        type: "numericComparison",
+        operand: "ge",
+        left: resolveColumnRef(filter.column),
+        right: { type: "constant", value: filter.x },
+      };
+
+    case "equalToColumn":
+      return {
+        type: "numericComparison",
+        operand: "eq",
+        left: resolveColumnRef(filter.column),
+        right: resolveColumnRef(filter.rhs),
+      };
+    case "lessThanColumn": {
+      const left = resolveColumnRef(filter.column);
+      const right = resolveColumnRef(filter.rhs);
+      if (filter.minDiff !== undefined && filter.minDiff !== 0) {
+        return {
+          type: "numericComparison",
+          operand: "lt",
+          left: {
+            type: "numericBinary",
+            operand: "add",
+            left,
+            right: { type: "constant", value: filter.minDiff },
+          },
+          right,
+        };
+      }
+      return { type: "numericComparison", operand: "lt", left, right };
+    }
+    case "greaterThanColumn": {
+      const left = resolveColumnRef(filter.column);
+      const right = resolveColumnRef(filter.rhs);
+      if (filter.minDiff !== undefined && filter.minDiff !== 0) {
+        return {
+          type: "numericComparison",
+          operand: "gt",
+          left: {
+            type: "numericBinary",
+            operand: "add",
+            left,
+            right: { type: "constant", value: filter.minDiff },
+          },
+          right,
+        };
+      }
+      return { type: "numericComparison", operand: "gt", left, right };
+    }
+    case "lessThanColumnOrEqual": {
+      const left = resolveColumnRef(filter.column);
+      const right = resolveColumnRef(filter.rhs);
+      if (filter.minDiff !== undefined && filter.minDiff !== 0) {
+        return {
+          type: "numericComparison",
+          operand: "le",
+          left: {
+            type: "numericBinary",
+            operand: "add",
+            left,
+            right: { type: "constant", value: filter.minDiff },
+          },
+          right,
+        };
+      }
+      return { type: "numericComparison", operand: "le", left, right };
+    }
+    case "greaterThanColumnOrEqual": {
+      const left = resolveColumnRef(filter.column);
+      const right = resolveColumnRef(filter.rhs);
+      if (filter.minDiff !== undefined && filter.minDiff !== 0) {
+        return {
+          type: "numericComparison",
+          operand: "ge",
+          left: {
+            type: "numericBinary",
+            operand: "add",
+            left,
+            right: { type: "constant", value: filter.minDiff },
+          },
+          right,
+        };
+      }
+      return { type: "numericComparison", operand: "ge", left, right };
+    }
+
+    case "inSet":
+      return {
+        type: "isIn",
+        input: resolveColumnRef(filter.column),
+        set: filter.value,
+      };
+    case "notInSet":
+      return {
+        type: "not",
+        input: {
+          type: "isIn",
+          input: resolveColumnRef(filter.column),
+          set: filter.value,
+        },
+      };
+
+    case "isNA":
+    case "isNotNA":
+    case "topN":
+    case "bottomN":
+      throw new Error(`Filter type "${filter.type}" is not supported in query expressions`);
+
+    case undefined:
+      throw new Error("Filter type is undefined");
+
+    default:
+      assertNever(filter);
+  }
 }

@@ -3,6 +3,7 @@ import type {
   ExprAxisRef,
   ExprColumnRef,
   ExprNumericBinary,
+  ExprNumericComparison,
   ExprConstant,
   ExprIsIn,
   ExprLogicalUnary,
@@ -104,6 +105,7 @@ export type QueryExpressionData =
   | ExprAxisRefData
   | ExprConstant
   | ExprNumericBinary<QueryExpressionData>
+  | ExprNumericComparison<QueryExpressionData>
   | ExprNumericUnary<QueryExpressionData>
   | ExprStringEquals<QueryExpressionData>
   | ExprStringContains<QueryExpressionData>

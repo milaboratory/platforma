@@ -48,3 +48,6 @@ export type FilterSpec<
 export type FilterSpecType = Exclude<FilterSpec, { type: undefined }>["type"];
 
 export type FilterSpecOfType<T extends FilterSpecType> = Extract<FilterSpec, { type: T }>;
+
+/** Tree-based record filters for PTable V2. */
+export type PTableFilters = FilterSpec<FilterSpecLeaf<string>> | null;

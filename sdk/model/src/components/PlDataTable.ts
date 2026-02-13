@@ -12,13 +12,12 @@ import type {
   PTableColumnIdAxis,
   PTableColumnIdColumn,
   PTableColumnSpec,
-  PTableDef,
+  PTableDefV2,
   PTableHandle,
   PTableRecordFilter,
-  PTableRecordSingleValueFilterV2,
   PTableSorting,
 } from "@milaboratories/pl-model-common";
-import type { FilterSpec, FilterSpecLeaf } from "../filters";
+import type { FilterSpec, FilterSpecLeaf, PTableFilters } from "../filters";
 import {
   Annotation,
   canonicalizeJson,
@@ -194,15 +193,13 @@ export type PTableParamsV2 =
   | {
       sourceId: null;
       hiddenColIds: null;
-      partitionFilters: [];
-      filters: [];
+      filters: null;
       sorting: [];
     }
   | {
       sourceId: string;
       hiddenColIds: PObjectId[] | null;
-      partitionFilters: PTableRecordFilter[];
-      filters: PTableRecordFilter[];
+      filters: PTableFilters;
       sorting: PTableSorting[];
     };
 
@@ -219,8 +216,7 @@ export function makeDefaultPTableParams(): PTableParamsV2 {
   return {
     sourceId: null,
     hiddenColIds: null,
-    partitionFilters: [],
-    filters: [],
+    filters: null,
     sorting: [],
   };
 }
@@ -593,11 +589,10 @@ function createPTableDef(params: {
   columns: PColumn<PColumnDataUniversal>[];
   labelColumns: PColumn<PColumnDataUniversal>[];
   coreJoinType: "inner" | "full";
-  partitionFilters: PTableRecordSingleValueFilterV2[];
-  filters: PTableRecordSingleValueFilterV2[];
+  filters: PTableFilters;
   sorting: PTableSorting[];
   coreColumnPredicate?: (spec: PColumnIdAndSpec) => boolean;
-}): PTableDef<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>> {
+}): PTableDefV2<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>> {
   let coreColumns = params.columns;
   const secondaryColumns: typeof params.columns = [];
 
@@ -619,7 +614,6 @@ function createPTableDef(params: {
       },
       secondary: secondaryColumns.map((c) => ({ type: "column", column: c })),
     },
-    partitionFilters: params.partitionFilters,
     filters: params.filters,
     sorting: params.sorting,
   };
@@ -697,24 +691,7 @@ export function createPlDataTableV2<A, U>(
     fullColumnsIdsSet.has(canonicalizeJson<PTableColumnId>(id));
 
   const coreJoinType = ops?.coreJoinType ?? "full";
-  const partitionFilters: PTableRecordSingleValueFilterV2[] =
-    tableStateNormalized.pTableParams.partitionFilters.filter((f) => {
-      const valid = isValidColumnId(f.column);
-      if (!valid)
-        ctx.logWarn(
-          `Partition filter ${JSON.stringify(f)} does not match provided columns, skipping`,
-        );
-      return valid;
-    });
-  const filters: PTableRecordSingleValueFilterV2[] = uniqueBy(
-    [...tableStateNormalized.pTableParams.filters, ...(ops?.filters ?? [])],
-    (f) => canonicalizeJson<PTableColumnId>(f.column),
-  ).filter((f) => {
-    const valid = isValidColumnId(f.column);
-    if (!valid)
-      ctx.logWarn(`Filter ${JSON.stringify(f)} does not match provided columns, skipping`);
-    return valid;
-  });
+  const filters = tableStateNormalized.pTableParams.filters;
   const sorting: PTableSorting[] = uniqueBy(
     [...tableStateNormalized.pTableParams.sorting, ...(ops?.sorting ?? [])],
     (s) => canonicalizeJson<PTableColumnId>(s.column),
@@ -729,12 +706,11 @@ export function createPlDataTableV2<A, U>(
     columns,
     labelColumns: fullLabelColumns,
     coreJoinType,
-    partitionFilters,
     filters,
     sorting,
     coreColumnPredicate: ops?.coreColumnPredicate,
   });
-  const fullHandle = ctx.createPTable(fullDef);
+  const fullHandle = ctx.createPTableV2(fullDef);
   if (!fullHandle) return undefined;
 
   const hiddenColumns = new Set<PObjectId>(
@@ -761,12 +737,9 @@ export function createPlDataTableV2<A, U>(
     coreColumns.forEach((c) => hiddenColumns.delete(c));
   }
 
-  // Filters decrease the number of result rows, sorting changes the order of result rows
-  [
-    ...partitionFilters.map((f) => f.column),
-    ...filters.map((f) => f.column),
-    ...sorting.map((s) => s.column),
-  ]
+  // Sorting changes the order of result rows — preserve sorted columns from being hidden
+  sorting
+    .map((s) => s.column)
     .filter((c): c is PTableColumnIdColumn => c.type === "column")
     .forEach((c) => hiddenColumns.delete(c.id));
 
@@ -783,12 +756,11 @@ export function createPlDataTableV2<A, U>(
     columns: visibleColumns,
     labelColumns: visibleLabelColumns,
     coreJoinType,
-    partitionFilters,
     filters,
     sorting,
     coreColumnPredicate,
   });
-  const visibleHandle = ctx.createPTable(visibleDef);
+  const visibleHandle = ctx.createPTableV2(visibleDef);
   if (!visibleHandle) return undefined;
 
   return {

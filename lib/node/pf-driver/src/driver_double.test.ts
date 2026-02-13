@@ -1,8 +1,10 @@
 import {
   pTableValue,
+  canonicalizeJson,
   type CalculateTableDataResponse,
   type PFrameDriver,
   type PObjectId,
+  type PTableColumnId,
 } from "@platforma-sdk/model";
 import { readJson, PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { test } from "vitest";
@@ -143,7 +145,7 @@ test.for([{ testCase: "01_json" }, { testCase: "02_binary" }, { testCase: "03_pa
   },
 );
 
-test.skip("createTableV2 support", async ({ expect }) => {
+test("createTableV2 support", async ({ expect }) => {
   await using driver = await createPFrameDriverDouble({});
 
   const columnId = "column1" as PObjectId;
@@ -159,33 +161,143 @@ test.skip("createTableV2 support", async ({ expect }) => {
     valueType: "Int" as const,
   };
 
-  using pTable = driver.createPTableV2({
-    src: {
-      type: "column",
-      column: {
-        id: columnId,
-        spec: columnSpec,
-        data: [
-          { key: ["a"], val: 10 },
-          { key: ["b"], val: 20 },
-        ],
-      },
-    },
-    partitionFilters: [],
-    filters: [],
-    sorting: [],
-  });
+  const axisColumnStr = canonicalizeJson<PTableColumnId>({
+    type: "axis",
+    id: { name: "axis1", type: "String" },
+  }) as string;
+
+  const valueColumnStr = canonicalizeJson<PTableColumnId>({
+    type: "column",
+    id: columnId,
+  }) as string;
+
+  const inlineData = [
+    { key: ["a"], val: 10 },
+    { key: ["b"], val: 20 },
+    { key: ["c"], val: 30 },
+    { key: ["d"], val: 5 },
+  ];
 
   const uiDriver: PFrameDriver = driver;
-  const shape = await uiDriver.getShape(pTable.key);
-  expect(shape.rows).toBe(2);
-  expect(shape.columns).toBe(2); // 1 axis + 1 value column
 
-  const data = await uiDriver.getData(pTable.key, [0, 1]);
-  // axis column
-  expect(data[0].type).toBe("String");
-  expect([...data[0].data]).toEqual(["a", "b"]);
-  // value column
-  expect(data[1].type).toBe("Int");
-  expect([...data[1].data]).toEqual([10, 20]);
+  // --- No filters, no sorting ---
+  {
+    using pTable = driver.createPTableV2({
+      src: {
+        type: "column",
+        column: { id: columnId, spec: columnSpec, data: inlineData },
+      },
+      filters: null,
+      sorting: [],
+    });
+
+    const shape = await uiDriver.getShape(pTable.key);
+    expect(shape.rows).toBe(4);
+    expect(shape.columns).toBe(2); // 1 axis + 1 value column
+
+    const data = await uiDriver.getData(pTable.key, [0, 1]);
+    expect(data[0].type).toBe("String");
+    expect([...data[0].data]).toEqual(["a", "b", "c", "d"]);
+    expect(data[1].type).toBe("Int");
+    expect([...data[1].data]).toEqual([10, 20, 30, 5]);
+  }
+
+  // --- With patternEquals filter on axis ---
+  {
+    using pTable = driver.createPTableV2({
+      src: {
+        type: "column",
+        column: { id: columnId, spec: columnSpec, data: inlineData },
+      },
+      filters: {
+        type: "patternEquals",
+        column: axisColumnStr,
+        value: "b",
+      },
+      sorting: [],
+    });
+
+    const shape = await uiDriver.getShape(pTable.key);
+    expect(shape.rows).toBe(1);
+
+    const data = await uiDriver.getData(pTable.key, [0, 1]);
+    expect([...data[0].data]).toEqual(["b"]);
+    expect([...data[1].data]).toEqual([20]);
+  }
+
+  // --- With greaterThan filter on value column ---
+  {
+    using pTable = driver.createPTableV2({
+      src: {
+        type: "column",
+        column: { id: columnId, spec: columnSpec, data: inlineData },
+      },
+      filters: {
+        type: "greaterThan",
+        column: valueColumnStr,
+        x: 15,
+      },
+      sorting: [],
+    });
+
+    const shape = await uiDriver.getShape(pTable.key);
+    expect(shape.rows).toBe(2);
+
+    const data = await uiDriver.getData(pTable.key, [0, 1]);
+    expect([...data[0].data]).toEqual(["b", "c"]);
+    expect([...data[1].data]).toEqual([20, 30]);
+  }
+
+  // --- With sorting descending by value column ---
+  {
+    using pTable = driver.createPTableV2({
+      src: {
+        type: "column",
+        column: { id: columnId, spec: columnSpec, data: inlineData },
+      },
+      filters: null,
+      sorting: [
+        {
+          column: { type: "column", id: columnId },
+          ascending: false,
+          naAndAbsentAreLeastValues: false,
+        },
+      ],
+    });
+
+    const data = await uiDriver.getData(pTable.key, [0, 1]);
+    expect([...data[0].data]).toEqual(["c", "b", "a", "d"]);
+    expect([...data[1].data]).toEqual([30, 20, 10, 5]);
+  }
+
+  // --- With combined filter + sorting ---
+  {
+    using pTable = driver.createPTableV2({
+      src: {
+        type: "column",
+        column: { id: columnId, spec: columnSpec, data: inlineData },
+      },
+      filters: {
+        type: "and",
+        filters: [
+          { type: "greaterThan", column: valueColumnStr, x: 5 },
+          { type: "patternNotEquals", column: axisColumnStr, value: "c" },
+        ],
+      },
+      sorting: [
+        {
+          column: { type: "column", id: columnId },
+          ascending: false,
+          naAndAbsentAreLeastValues: false,
+        },
+      ],
+    });
+
+    const shape = await uiDriver.getShape(pTable.key);
+    expect(shape.rows).toBe(2);
+
+    const data = await uiDriver.getData(pTable.key, [0, 1]);
+    expect([...data[0].data]).toEqual(["b", "a"]);
+    expect([...data[1].data]).toEqual([20, 10]);
+  }
 });

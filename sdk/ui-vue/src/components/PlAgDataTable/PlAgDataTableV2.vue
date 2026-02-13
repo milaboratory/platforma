@@ -131,11 +131,7 @@ const emit = defineEmits<{
 
 const filterableColumns = ref<PTableColumnSpec[]>([]);
 
-const { gridState, sheetsState, filtersState } = useTableState(
-  tableState,
-  settings,
-  filterableColumns,
-);
+const { gridState, sheetsState, filtersState } = useTableState(tableState, settings);
 
 const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
   const settingsCopy = { ...settings.value };

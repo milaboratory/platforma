@@ -13,6 +13,7 @@ import type {
   PObjectSpec,
   PSpecPredicate,
   PTableDef,
+  PTableDefV2,
   PTableHandle,
   ResultCollection,
   ValueOrError,
@@ -153,7 +154,7 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   createPTable(def: PTableDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>): PTableHandle;
 
   createPTableV2(
-    def: PTableDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>,
+    def: PTableDefV2<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>,
   ): PTableHandle;
 
   //
