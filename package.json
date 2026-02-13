@@ -5,6 +5,7 @@
     "build": "turbo run build",
     "build:local": "PL_PKG_DEV=local node --run build",
     "test": "turbo run test --concurrency 1",
+    "test:no-cache": "node --run test -- --force",
     "test:local": "PL_PKG_DEV=local node --run test",
     "test:local,dry-run": "PL_PKG_DEV=local node --run test -- --dry-run=json",
     "test:local,no-cache": "PL_PKG_DEV=local node --run test -- --force",
@@ -22,13 +23,15 @@
     "ci:build": "node --run ci:prepare && node --run build -- --output-logs=errors-only",
     "ci:build:local": "node --run ci:prepare && node --run build:local -- --output-logs=errors-only",
     "ci:test": "node --run test -- --output-logs=errors-only",
+    "ci:test:no-cache": "node --run test:no-cache -- --output-logs=errors-only",
     "ci:test:local": "node --run test:local -- --output-logs=errors-only",
     "ci:test:local,no-cache": "node --run test:local,no-cache -- --output-logs=errors-only",
     "reset": "node --run reset:dist && node --run reset:node_modules && node --run reset:turbo-cache",
     "reset:dist": "find . -type d -name 'dist' | grep -v 'node_modules' | xargs rm -rf",
     "reset:etc-blocks": "rimraf etc/blocks/**/.turbo !**/.pnpm/** etc/blocks/**/ui/dist etc/blocks/**/model/dist --glob",
     "reset:turbo-cache": "find . -type d -name '.turbo' | grep -v '\\.pnpm' | xargs rm -r",
-    "reset:node_modules": "find . -type d -name 'node_modules' | grep -v '\\.pnpm' | xargs rm -r"
+    "reset:node_modules": "find . -type d -name 'node_modules' | grep -v '\\.pnpm' | xargs rm -r",
+    "pl_team:ci:test": "node --run ci:test"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
