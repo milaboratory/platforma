@@ -35,8 +35,8 @@
   "oxc.unusedDisableDirectives": "deny",
   "editor.formatOnSave": true,
   "editor.formatOnSaveMode": "file",
-  "typescript.tsdk": "./node_modules/typescript/lib",
   "vitest.maximumConfigs": 1000,
+  "typescript.tsdk": "node_modules/typescript/lib",
   "cSpell.words": [
     "biowasm",
     "canonicalize",
@@ -50,10 +50,4 @@
     "platforma",
     "ptable"
   ],
-  "editor.defaultFormatter": "oxc.oxc-vscode",
-  "editor.formatOnSave": true,
-  "editor.formatOnSaveMode": "file",
-  "vitest.maximumConfigs": 1000,
-  "typescript.tsdk": "node_modules/typescript/lib",
-  
 }
