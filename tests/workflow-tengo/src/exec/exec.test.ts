@@ -69,19 +69,19 @@ tplTest.concurrent("run-empty-conda-env", async ({ helper, expect }) => {
  * but we at least know SDK does not get broken when custom limits are applied.
  */
 tplTest.concurrent.for([
-  { cpuLimit: 1, ramLimit: "10MiB" },
-  { cpuLimit: 2, ramLimit: "10mib" },
-  { cpuLimit: 1, ramLimit: "10mb" },
-  { cpuLimit: 1, ramLimit: "10m" },
-  { cpuLimit: 1, ramLimit: "10M" },
-  { cpuLimit: 1, ramLimit: "1024k" },
-  { cpuLimit: 1, ramLimit: "1024kb" },
-  { cpuLimit: 1, ramLimit: "1024Kb" },
-  { cpuLimit: 1, ramLimit: "1024kB" },
-  { cpuLimit: 1, ramLimit: "1024Kib" },
-  { cpuLimit: 1, ramLimit: "1024KiB" },
-  { cpuLimit: 1, ramLimit: "1024kiB" },
-  { cpuLimit: 1, ramLimit: 1048576 },
+  { cpuLimit: 1, ramLimit: "20MiB" },
+  { cpuLimit: 2, ramLimit: "20mib" },
+  { cpuLimit: 1, ramLimit: "20mb" },
+  { cpuLimit: 1, ramLimit: "20m" },
+  { cpuLimit: 1, ramLimit: "20M" },
+  { cpuLimit: 1, ramLimit: "20480k" },
+  { cpuLimit: 1, ramLimit: "20480kb" },
+  { cpuLimit: 1, ramLimit: "20480Kb" },
+  { cpuLimit: 1, ramLimit: "20480kB" },
+  { cpuLimit: 1, ramLimit: "20480Kib" },
+  { cpuLimit: 1, ramLimit: "20480KiB" },
+  { cpuLimit: 1, ramLimit: "20480kiB" },
+  { cpuLimit: 1, ramLimit: 20971520 },
 ])(
   "run-hello-world-go (limits) CPU=$cpuLimit, RAM=$ramLimit",
   async ({ cpuLimit, ramLimit }, { helper, expect }) => {
@@ -172,7 +172,7 @@ tplTest.concurrent(
     const result = await helper.renderTemplate(false, "exec.run.cat_on_file", ["main"], (tx) => ({
       file: tx.createValue(
         Pl.JsonObject,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        //
         JSON.stringify((ourFile as any).handle),
       ),
     }));

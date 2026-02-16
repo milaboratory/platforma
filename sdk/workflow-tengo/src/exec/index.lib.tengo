@@ -18,6 +18,7 @@ oop := import(":oop")
 constants := import(":constants")
 monetization := import(":exec.monetization_internal")
 execConstants := import(":exec.constants")
+units := import(":units")
 
 /**
  * Creates a new builder for constructing and executing commands.
@@ -377,7 +378,7 @@ builder := func() {
 		 */
 		mem: func(amount) {
 			validation.assertType(amount, ["or", "number", "string"], "exec.builder.mem: RAM amount should be a number or string")
-			ll.assert(is_string(amount) || amount > 0, "exec.builder.mem: amount in bytes should be greater than 0")
+			ll.assert(is_string(amount) || amount >= 16 * units.MiB, "exec.builder.mem: amount in bytes should be at least 16MiB")
 			ramRequest = amount
 
 			return self
