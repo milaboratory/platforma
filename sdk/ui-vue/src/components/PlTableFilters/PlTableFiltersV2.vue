@@ -11,7 +11,6 @@ import {
 } from "@platforma-sdk/model";
 import { computed, onMounted, ref } from "vue";
 import { PlBtnGhost, PlSlideModal, usePlBlockPageTitleTeleportTarget } from "@milaboratories/uikit";
-import { randomInt } from "@milaboratories/helpers";
 import {
   PlAdvancedFilter,
   PlAdvancedFilterSupportedFilters,
@@ -107,31 +106,6 @@ function getSuggestOptions(params: {
     return [];
   }
 }
-
-// Add filter group
-const addFilterGroup = () => {
-  const firstColumn = items.value[0]?.id;
-  if (!firstColumn) return;
-
-  model.value = {
-    ...model.value,
-    filters: [
-      ...model.value.filters,
-      {
-        id: randomInt(),
-        isExpanded: true,
-        type: "or",
-        filters: [
-          {
-            id: randomInt(),
-            type: "isNA",
-            column: firstColumn,
-          },
-        ],
-      } as PlAdvancedFilter["filters"][number],
-    ],
-  };
-};
 </script>
 
 <template>
