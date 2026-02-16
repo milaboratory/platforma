@@ -4,6 +4,7 @@ export * from "./block_storage";
 export * from "./block_storage_facade";
 export * from "./builder";
 export { BlockModelV3 } from "./block_model";
+export type { PluginInstance, ParamsInput } from "./block_model";
 export {
   DataModel,
   DataModelBuilder,

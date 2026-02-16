@@ -113,7 +113,7 @@ export const BlockStorageFacadeV2Handles = createFacadeHandles(BlockStorageFacad
 /**
  * The complete facade interface between bundled blocks (SDK) and middle layer.
  *
- * This interface defines ALL callbacks that a V1 block registers. The middle layer
+ * This interface defines ALL callbacks that a V2 block registers. The middle layer
  * calls these callbacks to perform storage operations.
  *
  * ALL types are inlined to simplify versioning - when a callback changes,

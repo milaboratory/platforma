@@ -39,7 +39,7 @@ export interface PluginRenderCtx<Data, Params = undefined> {
  * Configured plugin instance returned by PluginModelFactory.create().
  * Contains the plugin's name, data model, and output definitions.
  */
-export class PluginModel<Data, Params = undefined, Outputs = {}> {
+export class PluginModel<Data = unknown, Params = undefined, Outputs = {}> {
   /** Globally unique plugin name */
   readonly name: string;
   /** Data model instance for this plugin */

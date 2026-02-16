@@ -27,12 +27,15 @@ import {
   type BlockStorage,
   type MutateStoragePayload,
   type StorageDebugView,
+  type PluginRegistry,
   createBlockStorage,
   getStorageData,
   isBlockStorage,
+  migrateBlockStorage,
   normalizeBlockStorage,
   updateStorageData,
 } from "./block_storage";
+
 import { stringifyJson, type StringifiedJson } from "@milaboratories/pl-model-common";
 import { tryGetCfgRenderCtx, tryRegisterCallback } from "./internal";
 
@@ -185,58 +188,82 @@ interface DataMigrationResult {
  * - Handles all migration logic internally
  * - Returns { version, data, warning? } - warning present if reset to initial data
  *
+ * Also handles plugin migrations atomically using migrateBlockStorage().
+ *
  * @param currentStorageJson - Current storage as JSON string (or undefined)
  * @returns MigrationResult
  */
 function migrateStorage(currentStorageJson: string | undefined): MigrationResult {
-  // Get the callback registry context
   const ctx = tryGetCfgRenderCtx();
-  if (ctx === undefined) {
-    return { error: "Not in config rendering context" };
-  }
+  if (!ctx) return { error: "Not in config rendering context" };
 
-  // Normalize storage to get current data and version
-  const { storage: currentStorage, data: currentData } = normalizeStorage(currentStorageJson);
-  const currentVersion = currentStorage.__dataVersion;
+  // Normalize current storage
+  const { storage: currentStorage } = normalizeStorage(currentStorageJson);
 
-  // Helper to create storage with given data and version
-  const createStorageJson = (data: unknown, version: string): string => {
-    return JSON.stringify({
-      ...currentStorage,
-      __dataVersion: version,
-      __data: data,
-    });
-  };
+  // Get plugin registry from config (pluginId -> pluginName)
+  const pluginRegistryJson = ctx.pluginRegistryJson ?? "{}";
+  const newPluginRegistry = JSON.parse(pluginRegistryJson) as PluginRegistry;
 
-  // Get the migrate callback (registered by DataModel.registerCallbacks())
+  // Get block data migration callback
   const migrateCallback = ctx.callbackRegistry["__pl_data_upgrade"] as
     | ((v: { version: string; data: unknown }) => DataMigrationResult)
     | undefined;
   if (typeof migrateCallback !== "function") {
-    return { error: "__pl_data_upgrade callback not found (DataModel not registered)" };
+    return { error: "__pl_data_upgrade callback not found" };
   }
 
-  // Call the migrator's migrate function
-  let result: DataMigrationResult;
-  try {
-    result = migrateCallback({ version: currentVersion, data: currentData });
-  } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    return { error: `migrate() threw: ${errorMsg}` };
+  // Perform atomic migration of block + all plugins
+  const migrationResult = migrateBlockStorage(currentStorage, {
+    migrateBlockData: (data, fromVersion) => {
+      const result = migrateCallback({ version: fromVersion, data });
+      return { data: result.data, version: result.version };
+    },
+    migratePluginData: (pluginId, _pluginName, entry) => {
+      const model = ctx.pluginModels?.[pluginId];
+      if (!model) return undefined; // Plugin removed
+
+      const migrated = model.dataModel.migrate({
+        version: entry.__dataVersion,
+        data: entry.__data,
+      });
+
+      return {
+        __dataVersion: migrated.version,
+        __data: migrated.data,
+      };
+    },
+    newPluginRegistry,
+    createPluginData: (pluginId, _pluginName) => {
+      const model = ctx.pluginModels?.[pluginId];
+      if (!model) throw new Error(`Plugin model not found for '${pluginId}'`);
+      const initial = model.dataModel.getDefaultData();
+      return {
+        __dataVersion: initial.version,
+        __data: initial.data,
+      };
+    },
+  });
+
+  if (!migrationResult.success) {
+    return {
+      error: `Migration failed at '${migrationResult.failedAt}': ${migrationResult.error}`,
+    };
   }
 
   // Build info message
+  const oldVersion = currentStorage.__dataVersion;
+  const newVersion = migrationResult.storage.__dataVersion;
   const info =
-    result.version === currentVersion
-      ? `No migration needed (${currentVersion})`
-      : result.warning
-        ? `Reset to initial data (${result.version})`
-        : `Migrated ${currentVersion}→${result.version}`;
+    oldVersion === newVersion
+      ? `No migration needed (${oldVersion})`
+      : `Migrated ${oldVersion} -> ${newVersion}`;
+  const warnings =
+    migrationResult.warnings.length > 0 ? migrationResult.warnings.join("; ") : undefined;
 
   return {
-    newStorageJson: createStorageJson(result.data, result.version),
+    newStorageJson: JSON.stringify(migrationResult.storage),
     info,
-    warn: result.warning,
+    warn: warnings,
   };
 }
 

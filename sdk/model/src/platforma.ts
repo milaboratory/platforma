@@ -9,6 +9,7 @@ import type {
 } from "@milaboratories/pl-model-common";
 import type { SdkInfo } from "./sdk_info";
 import type { BlockStatePatch } from "./block_state_patch";
+import type { PluginInstance } from "./block_model";
 
 /** Defines all methods to interact with the platform environment from within a block UI. @deprecated */
 export interface PlatformaV1<
@@ -50,11 +51,14 @@ export interface PlatformaV3<
   >,
   Data = unknown,
   Href extends `/${string}` = `/${string}`,
+  Plugins extends Record<string, unknown> = Record<string, unknown>,
 >
   extends BlockApiV3<Args, Outputs, Data, Href>, DriverKit {
   /** Information about SDK version current platforma environment was compiled with. */
   readonly sdkInfo: SdkInfo;
   readonly apiVersion: 3;
+  /** @internal Type brand for plugin type inference. Not used at runtime. */
+  readonly __pluginsBrand?: Plugins;
 }
 
 export type Platforma<
@@ -116,3 +120,17 @@ export type InferBlockStatePatch<Pl extends Platforma> = BlockStatePatch<
   InferUiState<Pl>,
   InferHrefType<Pl>
 >;
+
+/** Extract plugin IDs as a string literal union from a Platforma type. */
+export type InferPluginNames<Pl> =
+  Pl extends PlatformaV3<any, any, any, any, infer P> ? string & keyof P : never;
+
+/** Extract the Data type for a specific plugin by its ID. */
+export type InferPluginData<Pl, PluginId extends string> =
+  Pl extends PlatformaV3<any, any, any, any, infer P>
+    ? PluginId extends keyof P
+      ? P[PluginId] extends PluginInstance<infer D, any, any>
+        ? D
+        : never
+      : never
+    : never;

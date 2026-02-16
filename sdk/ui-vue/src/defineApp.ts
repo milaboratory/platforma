@@ -21,6 +21,7 @@ import type { AppSettings, ExtendSettings, Routes } from "./types";
 import { activateAgGrid } from "./aggrid";
 
 const pluginKey = Symbol("sdk-vue");
+export const pluginDataKey = Symbol("plugin-data-access");
 
 export function useSdkPlugin(): SdkPlugin {
   return inject(pluginKey)!;
@@ -86,6 +87,10 @@ export function defineApp<
     | AppV2<Args, Outputs, UiStateOrData, Href, Extend>
     | AppV3<Args, Outputs, UiStateOrData, Href, Extend> = undefined;
 
+  // Captured during install() so V3 can provide plugin data access after async load
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let vueAppInstance: any;
+
   activateAgGrid();
 
   const runtimeApiVersion = platforma.apiVersion ?? 1; // undefined means 1 (backward compatibility)
@@ -145,7 +150,18 @@ export function defineApp<
       await platforma.loadBlockState().then((stateOrError) => {
         const state = unwrapResult(stateOrError);
         plugin.loaded = true;
-        const baseApp = createAppV3<Args, Outputs, UiStateOrData, Href>(state, platforma, settings);
+        const { app: baseApp, pluginAccess } = createAppV3<Args, Outputs, UiStateOrData, Href>(
+          state,
+          platforma,
+          settings,
+        );
+
+        if (!vueAppInstance) {
+          throw new Error(
+            "Plugin data injection failed: Vue app instance not captured during install()",
+          );
+        }
+        vueAppInstance.provide(pluginDataKey, pluginAccess);
 
         const localState = extendApp(baseApp);
 
@@ -183,6 +199,7 @@ export function defineApp<
     // @todo type portability issue with Vue
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     install(app: any) {
+      vueAppInstance = app;
       app.provide(pluginKey, this);
       loadApp().catch((err) => {
         console.error("load initial state error", err);

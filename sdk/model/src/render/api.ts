@@ -533,7 +533,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
-export abstract class RenderCtxBase<Args, Data> {
+export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
   protected readonly ctx: GlobalCfgRenderCtx;
 
   constructor() {
@@ -711,7 +711,7 @@ export abstract class RenderCtxBase<Args, Data> {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) for v3+ blocks */
-export class RenderCtx<Args, Data> extends RenderCtxBase<Args, Data> {
+export class RenderCtx<Args = unknown, Data = unknown> extends RenderCtxBase<Args, Data> {
   private _argsCache?: { v: Args | undefined };
   public get args(): Args | undefined {
     if (this._argsCache === undefined) {
@@ -725,7 +725,10 @@ export class RenderCtx<Args, Data> extends RenderCtxBase<Args, Data> {
 }
 
 /** Render context for legacy v1/v2 blocks - provides backward compatibility */
-export class RenderCtxLegacy<Args, UiState> extends RenderCtxBase<Args, UiState> {
+export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCtxBase<
+  Args,
+  UiState
+> {
   private _argsCache?: { v: Args };
 
   public get args(): Args {

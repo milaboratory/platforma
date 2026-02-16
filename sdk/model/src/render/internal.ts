@@ -1,5 +1,6 @@
 import type { Optional } from "utility-types";
 import type { Branded } from "../branding";
+import type { PluginModel } from "../plugin_model";
 import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
 import type {
   ArchiveFormat,
@@ -203,6 +204,12 @@ export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
   // approach deserialization can be lazily postponed until it is actually needed.
   readonly callbackRegistry: Record<string, AnyFunction>;
   readonly featureFlags?: typeof GlobalCfgRenderCtxFeatureFlags;
+  /** Raw block storage JSON (includes plugin data). Injected by middle layer for V2+ blocks. */
+  readonly blockStorage?: string | (() => string);
+  /** Serialized plugin registry for migration (pluginId -> pluginName) */
+  pluginRegistryJson?: string;
+  /** Live plugin model references (not serialized) - keyed by pluginId */
+  pluginModels?: Record<string, PluginModel>;
 }
 
 export type FutureAwait = {

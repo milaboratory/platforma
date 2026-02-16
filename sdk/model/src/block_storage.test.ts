@@ -19,7 +19,6 @@ import {
   type MutateStoragePayload,
   type PluginName,
   type PluginRegistry,
-  type VersionedData,
 } from "./block_storage";
 
 describe("BlockStorage", () => {
@@ -388,16 +387,16 @@ describe("BlockStorage", () => {
       const newRegistry: PluginRegistry = { plugin1: "typeA" as PluginName };
 
       const result = migrateBlockStorage(storage, {
-        migrateBlockData: (data, fromVersion) => {
+        migrateBlockData: (data, _fromVersion) => {
           const d = data as { count: number };
           return { data: { count: d.count + 1 }, version: "v2" };
         },
-        migratePluginData: (pluginId, pluginName, entry) => ({
+        migratePluginData: (_pluginId, _pluginName, _entry) => ({
           __dataVersion: "v2",
           __data: { value: "migrated" },
         }),
         newPluginRegistry: newRegistry,
-        createPluginData: () => ({ __dataVersion: "v1", __data: {} }),
+        createPluginData: (_pluginId, _pluginName) => ({ __dataVersion: "v1", __data: {} }),
       });
 
       expect(result.success).toBe(true);
@@ -417,12 +416,15 @@ describe("BlockStorage", () => {
       const originalData = storage.__data;
 
       const result = migrateBlockStorage(storage, {
-        migrateBlockData: () => {
+        migrateBlockData: (_data, _fromVersion) => {
           throw new Error("Block migration failed");
         },
-        migratePluginData: () => ({ __dataVersion: "v1", __data: {} }),
+        migratePluginData: (_pluginId, _pluginName, _entry) => ({
+          __dataVersion: "v1",
+          __data: {},
+        }),
         newPluginRegistry: {},
-        createPluginData: () => ({ __dataVersion: "v1", __data: {} }),
+        createPluginData: (_pluginId, _pluginName) => ({ __dataVersion: "v1", __data: {} }),
       });
 
       expect(result.success).toBe(false);
@@ -439,7 +441,7 @@ describe("BlockStorage", () => {
       const newRegistry: PluginRegistry = { plugin1: "typeA" as PluginName };
 
       const result = migrateBlockStorage(storage, {
-        migrateBlockData: (data, fromVersion) => ({
+        migrateBlockData: (data, _fromVersion) => ({
           data: data as { count: number },
           version: "v2",
         }),
@@ -447,7 +449,7 @@ describe("BlockStorage", () => {
           throw new Error(`Plugin ${pluginId} migration failed`);
         },
         newPluginRegistry: newRegistry,
-        createPluginData: () => ({ __dataVersion: "v1", __data: {} }),
+        createPluginData: (_pluginId, _pluginName) => ({ __dataVersion: "v1", __data: {} }),
       });
 
       expect(result.success).toBe(false);
@@ -463,11 +465,11 @@ describe("BlockStorage", () => {
 
       const result = migrateBlockStorage(storage, {
         migrateBlockData: (data) => ({ data: data as { count: number }, version: "v2" }),
-        migratePluginData: () => {
+        migratePluginData: (_pluginId, _pluginName, _entry) => {
           throw new Error("Should not be called for type change");
         },
         newPluginRegistry: newRegistry,
-        createPluginData: (pluginId, pluginName) => ({
+        createPluginData: (_pluginId, pluginName) => ({
           __dataVersion: "v1",
           __data: { fresh: true, type: pluginName },
         }),
@@ -491,11 +493,11 @@ describe("BlockStorage", () => {
 
       const result = migrateBlockStorage(storage, {
         migrateBlockData: (data) => ({ data: data as { count: number }, version: "v2" }),
-        migratePluginData: () => {
+        migratePluginData: (_pluginId, _pluginName, _entry) => {
           throw new Error("Should not be called for new plugin");
         },
         newPluginRegistry: newRegistry,
-        createPluginData: (pluginId, pluginName) => ({
+        createPluginData: (_pluginId, _pluginName) => ({
           __dataVersion: "v1",
           __data: { initialized: true },
         }),

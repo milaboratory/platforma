@@ -558,6 +558,14 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
           const res = this.blockCtx.activeArgs(this.computableCtx);
           return res === undefined ? vm.undefined : vm.newString(res);
         });
+        exportCtxFunction("blockStorage", () => {
+          if (this.computableCtx === undefined)
+            throw new Error(
+              `Add dummy call to ctx.blockStorage outside the future lambda. Can't be directly used in this context.`,
+            );
+          const res = this.blockCtx.blockStorage(this.computableCtx);
+          return res === undefined ? vm.undefined : vm.newString(res);
+        });
         // For v1/v2 blocks, also inject uiState (extracted from state.uiState)
         if (isLegacyBlock) {
           exportCtxFunction("uiState", () => {
@@ -572,12 +580,15 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
         const args = this.blockCtx.args(this.computableCtx!);
         const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
         const data = this.blockCtx.data(this.computableCtx!);
+        const blockStorageValue = this.blockCtx.blockStorage(this.computableCtx!);
         if (args !== undefined) {
           vm.setProp(configCtx, "args", localScope.manage(vm.newString(args)));
         }
         vm.setProp(configCtx, "data", localScope.manage(vm.newString(data ?? "{}")));
         if (activeArgs !== undefined)
           vm.setProp(configCtx, "activeArgs", localScope.manage(vm.newString(activeArgs)));
+        if (blockStorageValue !== undefined)
+          vm.setProp(configCtx, "blockStorage", localScope.manage(vm.newString(blockStorageValue)));
         // For v1/v2 blocks, also inject uiState (extracted from state.uiState)
         if (isLegacyBlock) {
           vm.setProp(configCtx, "uiState", localScope.manage(vm.newString(extractUiState(data))));
