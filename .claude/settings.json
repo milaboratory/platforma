@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-lint.mjs",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "You are a workflow gate. Respond with ONLY a raw JSON object, no markdown, no explanation, no code fences.\n\nContext: $ARGUMENTS\n\nFIRST: Check whether the session only modified files inside the .claude/ directory (agents, hooks, settings, skills). If ALL changed files are under .claude/, approve immediately.\n\nOtherwise, check ALL of the following:\n\n1. PHASE 1: Did Claude run the diff-reviewer agent and receive Approve or Approve with suggestions? If Request changes, did it fix and re-run (max 5 iterations)?\n2. PHASE 1 LOG: Did Claude save a review log of all issues found?\n3. PHASE 2: If Phase 1 passed on first iteration with no instruction gaps, Phase 2 may be skipped with justification. If Phase 1 needed 2+ iterations or revealed instruction gaps, did Claude run reflect + agent-instruction-reviewer and verify suggestions?\n4. FINAL REPORT: Did Claude summarize implementation, Phase 1 results, Phase 2 results (or skip justification), and unresolved items?\n\nRespond with ONLY one of these JSON objects (no other text):\n\nTo approve: {\"decision\":\"approve\",\"reason\":\"...\"}\nTo block: {\"decision\":\"block\",\"reason\":\"...\"}",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "You are validating the output of a code review or instruction review subagent.\n\nContext: $ARGUMENTS\n\nCheck the following based on the subagent type:\n\nFor diff-reviewer / single-file-reviewer subagents:\n- Does the output contain a clear verdict (✅ Approve, ⚠️ Approve with suggestions, or 🔄 Request changes)?\n- Are Critical Issues accompanied by file/line references AND suggested fixes with code snippets?\n- Is there a Changed Files Overview table?\n- Are Cross-Cutting Concerns addressed?\n\nFor reflect skill subagent:\n- Does the output contain an Agent Inventory table?\n- Are suggestions structured with File, Section, Problem, Suggestion, and Proposed Edit?\n- Are suggestions prioritized (🔴 Critical, 🟡 Important, 🟢 Nice to have)?\n- Is there a Cross-File Issues section?\n\nFor agent-instruction-reviewer subagent:\n- Does every suggestion have a verdict (Accept/Revise/Reject)?\n- Do rejected suggestions cite a specific rejection criterion?\n- Is there a Prompt Bloat Assessment?\n- Is there a Statistics table?\n\nIf the output is missing required structure, respond with:\n{\"decision\": \"block\", \"reason\": \"Missing required output: [specifics]\"}\n\nIf the output meets all requirements for its type, respond with:\n{\"decision\": \"approve\", \"reason\": \"Output structure is complete.\"}",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
