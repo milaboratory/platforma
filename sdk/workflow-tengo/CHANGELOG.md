@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.8.3
+
+### Patch Changes
+
+- 8d67c06: Validate minimal memory claim in exec template
+
 ## 5.8.2
 
 ### Patch Changes

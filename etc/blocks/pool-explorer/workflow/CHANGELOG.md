@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.pool-explorer.workflow
 
+## 1.1.116
+
+### Patch Changes
+
+- Updated dependencies [8d67c06]
+  - @platforma-sdk/workflow-tengo@5.8.3
+
 ## 1.1.115
 
 ### Patch Changes
