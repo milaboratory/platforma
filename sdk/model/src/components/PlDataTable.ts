@@ -694,7 +694,7 @@ export function createPlDataTableV2<A, U>(
     return valid;
   });
   const sorting: PTableSorting[] = uniqueBy(
-    [...tableStateNormalized.pTableParams.sorting, ...(ops?.sorting ?? [])],
+    [...(ops?.sorting ?? []), ...tableStateNormalized.pTableParams.sorting],
     (s) => canonicalizeJson<PTableColumnId>(s.column),
   ).filter((s) => {
     const valid = isValidColumnId(s.column);
