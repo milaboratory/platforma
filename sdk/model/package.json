@@ -31,7 +31,6 @@
   },
   "dependencies": {
     "@milaboratories/helpers": "workspace:*",
-    "@milaboratories/pframes-rs-wasm": "catalog:",
     "@milaboratories/pl-error-like": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/ptabler-expression-js": "workspace:*",

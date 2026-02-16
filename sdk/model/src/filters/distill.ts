@@ -10,16 +10,17 @@ type FilterSpecLeafKey = DistributiveKeys<FilterSpecLeaf<string>>;
 
 /** Compile-time check: every key in the tuple is a valid leaf key (via satisfies). */
 const KNOWN_LEAF_KEYS_TUPLE: UnionToTuples<FilterSpecLeafKey> = [
-  "type",
-  "column",
-  "value",
-  "maxEdits",
-  "substitutionsOnly",
-  "wildcard",
   "n",
   "x",
   "rhs",
+  "type",
+  "value",
+  "column",
   "minDiff",
+  "maxEdits",
+  "wildcard",
+  "replacement",
+  "substitutionsOnly",
 ];
 const KNOWN_LEAF_KEYS: Set<FilterSpecLeafKey> = new Set(KNOWN_LEAF_KEYS_TUPLE);
 

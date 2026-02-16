@@ -2646,9 +2646,6 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:*
         version: link:../../lib/util/helpers
-      '@milaboratories/pframes-rs-wasm':
-        specifier: file:/Users/aleksandr/GIT/MILAB/pframes-rs/packages/wasm/package.tgz
-        version: file:../pframes-rs/packages/wasm/package.tgz(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@1.11.8)
       '@milaboratories/pl-error-like':
         specifier: workspace:*
         version: link:../../lib/model/pl-error-like
@@ -10848,12 +10845,6 @@ snapshots:
       '@bytecodealliance/preview2-shim': 0.17.8
       '@milaboratories/pl-model-common': 1.24.6
       '@milaboratories/pl-model-middle-layer': link:lib/model/middle-layer
-
-  '@milaboratories/pframes-rs-wasm@file:../pframes-rs/packages/wasm/package.tgz(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@1.11.8)':
-    dependencies:
-      '@bytecodealliance/preview2-shim': 0.17.8
-      '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.11.8
 
   '@milaboratories/pl-error-like@1.12.8':
     dependencies:

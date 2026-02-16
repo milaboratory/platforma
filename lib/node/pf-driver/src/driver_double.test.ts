@@ -1,10 +1,14 @@
 import {
   pTableValue,
   canonicalizeJson,
+  filterSpecToExpr,
   type CalculateTableDataResponse,
   type PFrameDriver,
   type PObjectId,
   type PTableColumnId,
+  type QuerySpec,
+  type QueryExpressionSpec,
+  QueryBooleanExpressionSpec,
 } from "@platforma-sdk/model";
 import { readJson, PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { test } from "vitest";
@@ -178,17 +182,19 @@ test("createTableV2 support", async ({ expect }) => {
     { key: ["d"], val: 5 },
   ];
 
+  const column = { id: columnId, spec: columnSpec, data: inlineData };
+
+  const columnRef: QueryExpressionSpec = { type: "columnRef", value: columnId };
+
+  const baseQuery: QuerySpec = { type: "column", columnId };
+
   const uiDriver: PFrameDriver = driver;
 
   // --- No filters, no sorting ---
   {
     using pTable = driver.createPTableV2({
-      src: {
-        type: "column",
-        column: { id: columnId, spec: columnSpec, data: inlineData },
-      },
-      filters: null,
-      sorting: [],
+      query: baseQuery,
+      columns: [column],
     });
 
     const shape = await uiDriver.getShape(pTable.key);
@@ -205,16 +211,16 @@ test("createTableV2 support", async ({ expect }) => {
   // --- With patternEquals filter on axis ---
   {
     using pTable = driver.createPTableV2({
-      src: {
-        type: "column",
-        column: { id: columnId, spec: columnSpec, data: inlineData },
+      query: {
+        type: "filter",
+        input: baseQuery,
+        predicate: filterSpecToExpr({
+          type: "patternEquals",
+          column: axisColumnStr,
+          value: "b",
+        }) as QueryBooleanExpressionSpec,
       },
-      filters: {
-        type: "patternEquals",
-        column: axisColumnStr,
-        value: "b",
-      },
-      sorting: [],
+      columns: [column],
     });
 
     const shape = await uiDriver.getShape(pTable.key);
@@ -228,16 +234,16 @@ test("createTableV2 support", async ({ expect }) => {
   // --- With greaterThan filter on value column ---
   {
     using pTable = driver.createPTableV2({
-      src: {
-        type: "column",
-        column: { id: columnId, spec: columnSpec, data: inlineData },
+      query: {
+        type: "filter",
+        input: baseQuery,
+        predicate: filterSpecToExpr({
+          type: "greaterThan",
+          column: valueColumnStr,
+          x: 15,
+        }) as QueryBooleanExpressionSpec,
       },
-      filters: {
-        type: "greaterThan",
-        column: valueColumnStr,
-        x: 15,
-      },
-      sorting: [],
+      columns: [column],
     });
 
     const shape = await uiDriver.getShape(pTable.key);
@@ -251,18 +257,18 @@ test("createTableV2 support", async ({ expect }) => {
   // --- With sorting descending by value column ---
   {
     using pTable = driver.createPTableV2({
-      src: {
-        type: "column",
-        column: { id: columnId, spec: columnSpec, data: inlineData },
+      query: {
+        type: "sort",
+        input: baseQuery,
+        sortBy: [
+          {
+            expression: columnRef,
+            ascending: false,
+            nullsFirst: true,
+          },
+        ],
       },
-      filters: null,
-      sorting: [
-        {
-          column: { type: "column", id: columnId },
-          ascending: false,
-          naAndAbsentAreLeastValues: false,
-        },
-      ],
+      columns: [column],
     });
 
     const data = await uiDriver.getData(pTable.key, [0, 1]);
@@ -273,24 +279,28 @@ test("createTableV2 support", async ({ expect }) => {
   // --- With combined filter + sorting ---
   {
     using pTable = driver.createPTableV2({
-      src: {
-        type: "column",
-        column: { id: columnId, spec: columnSpec, data: inlineData },
-      },
-      filters: {
-        type: "and",
-        filters: [
-          { type: "greaterThan", column: valueColumnStr, x: 5 },
-          { type: "patternNotEquals", column: axisColumnStr, value: "c" },
+      query: {
+        type: "sort",
+        input: {
+          type: "filter",
+          input: baseQuery,
+          predicate: filterSpecToExpr({
+            type: "and",
+            filters: [
+              { type: "greaterThan", column: valueColumnStr, x: 5 },
+              { type: "patternNotEquals", column: axisColumnStr, value: "c" },
+            ],
+          }) as QueryBooleanExpressionSpec,
+        },
+        sortBy: [
+          {
+            expression: columnRef,
+            ascending: false,
+            nullsFirst: true,
+          },
         ],
       },
-      sorting: [
-        {
-          column: { type: "column", id: columnId },
-          ascending: false,
-          naAndAbsentAreLeastValues: false,
-        },
-      ],
+      columns: [column],
     });
 
     const shape = await uiDriver.getShape(pTable.key);

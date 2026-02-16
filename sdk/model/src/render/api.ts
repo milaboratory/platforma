@@ -681,9 +681,8 @@ export abstract class RenderCtxBase<Args, Data> {
   }
 
   public createPTableV2(def: PTableDefV2<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
-    const columns = extractAllColumns(def.src);
-    this.verifyInlineAndExplicitColumnsSupport(columns);
-    if (!allPColumnsReady(columns)) return undefined;
+    this.verifyInlineAndExplicitColumnsSupport(def.columns);
+    if (!allPColumnsReady(def.columns)) return undefined;
     return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
   }
 

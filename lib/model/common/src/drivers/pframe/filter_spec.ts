@@ -10,6 +10,7 @@ export type FilterSpecLeaf<T = SUniversalPColumnId> =
   | { type: undefined }
   | { type: "isNA"; column: T }
   | { type: "isNotNA"; column: T }
+  | { type: "ifNa"; column: T; replacement: string }
   | { type: "patternEquals"; column: T; value: string }
   | { type: "patternNotEquals"; column: T; value: string }
   | { type: "patternContainSubsequence"; column: T; value: string }

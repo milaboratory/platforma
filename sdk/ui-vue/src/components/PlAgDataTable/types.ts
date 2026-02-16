@@ -51,6 +51,56 @@ type OptionsAdvanced<T> = OptionsBasic & {
   sourceId: MaybeRefOrGetter<T | undefined>;
 };
 
+/*
+"Error: missing field `value`
+    at Frame.evaluateQuery (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/pframes-rs-wasm/src/generated/pframes_rs_wasm.js:4040:11)
+    at PFrame.evaluateQuery (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/pframes-rs-wasm/src/p-frame.ts:29:35)
+    at AbstractPFrameDriver.createPTableV2 (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/pf-driver/src/driver_impl.ts:246:48)
+    at ComputableContextHelper.createPTableV2 (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/pl-middle-layer/src/js_render/computable_context.ts:420:60)
+    at <anonymous> (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/pl-middle-layer/src/js_render/computable_context.ts:847:16)
+    at WeakLifetime.withCachedError (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/pl-middle-layer/src/js_render/computable_context.ts:506:21)
+    at QuickJSContext.<anonymous> (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/quickjs-emscripten-core/src/context.ts:1374:44)
+    at Generator.next (<anonymous>)
+    at awaitEachYieldedPromise (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/quickjs-emscripten-core/src/asyncify-helpers.ts:92:29)
+    at awaitYield.awaitYieldOf (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/quickjs-emscripten-core/src/asyncify-helpers.ts:8:21)"
+
+    "PlQuickJSError: missing field `value`
+QuickJS stacktrace:
+Error/uuid:61e75481-1f57-4b1e-8849-8ae1087b2699: 
+    at createPTableV2 (bundle.js:7527)
+    at createPlDataTableV2 (bundle.js:8295)
+    at <anonymous> (bundle.js:8672)
+    at <anonymous> (bundle.js)
+Host: Error/uuid:61e75481-1f57-4b1e-8849-8ae1087b2699: 
+    at QuickJSContext.unwrapResult (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/quickjs-emscripten-core/src/context.ts:1285:27)
+    at <anonymous> (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/pl-middle-layer/src/js_render/context.ts:138:19)
+    at _Scope.withScope (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/quickjs-emscripten-core/src/lifetime.ts:277:14)
+    at JsExecutionContext.runCallback (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/pl-middle-layer/src/js_render/context.ts:131:20)
+    at Object.___kernel___ (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/pl-middle-layer/src/js_render/index.ts:130:27)
+    at renderSelfState (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/computable/src/computable/computable_state.ts:405:28)
+    at updateCellStateWithoutValue (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/computable/src/computable/computable_state.ts:587:7)
+    at calculateChildren (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/computable/src/computable/computable_state.ts:441:16)
+    at updateCellStateWithoutValue (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/computable/src/computable/computable_state.ts:596:26)
+    at calculateChildren (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/computable/src/computable/computable_state.ts:441:16)
+"
+
+"Error/uuid:61e75481-1f57-4b1e-8849-8ae1087b2699: 
+    at createPTableV2 (bundle.js:7527)
+    at createPlDataTableV2 (bundle.js:8295)
+    at <anonymous> (bundle.js:8672)
+    at <anonymous> (bundle.js)
+Host: Error/uuid:61e75481-1f57-4b1e-8849-8ae1087b2699: 
+    at QuickJSContext.unwrapResult (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/quickjs-emscripten-core/src/context.ts:1285:27)
+    at <anonymous> (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/pl-middle-layer/src/js_render/context.ts:138:19)
+    at _Scope.withScope (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/quickjs-emscripten-core/src/lifetime.ts:277:14)
+    at JsExecutionContext.runCallback (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/pl-middle-layer/src/js_render/context.ts:131:20)
+    at Object.___kernel___ (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/pl-middle-layer/src/js_render/index.ts:130:27)
+    at renderSelfState (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/computable/src/computable/computable_state.ts:405:28)
+    at updateCellStateWithoutValue (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/computable/src/computable/computable_state.ts:587:7)
+    at calculateChildren (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/computable/src/computable/computable_state.ts:441:16)
+    at updateCellStateWithoutValue (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/computable/src/computable/computable_state.ts:596:26)
+    at calculateChildren (/Users/aleksandr/GIT/MILAB/platforma-desktop-app/node_modules/@milaboratories/computable/src/computable/computable_state.ts:441:16)"
+*/
 export function usePlDataTableSettingsV2<T>(
   options: OptionsAdvanced<T>,
 ): ComputedRef<PlDataTableSettingsV2>;
@@ -63,7 +113,9 @@ export function usePlDataTableSettingsV2<T>(
   return computed(() => {
     const model = deepClone(toValue(options.model));
     let settingsBase: PlDataTableSettingsV2Base;
+
     if (!model.ok) {
+      model.errors.forEach((e) => console.error("Error in PlDataTableModel:", e));
       settingsBase = { sourceId: null, pending: false };
     } else if ("sourceId" in options) {
       const sourceIdValue = deepClone(toValue(options.sourceId));

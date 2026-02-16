@@ -118,18 +118,13 @@ export function useTableState(
       const cachedState = tableStateNormalized.value.stateCache.find(
         (entry) => entry.sourceId === sourceId,
       );
-      if (!cachedState)
-        return {
-          ...defaultState,
-          sourceId,
-        };
+      if (!cachedState) return { ...defaultState, sourceId };
 
       return cachedState;
     },
     set: (state) => {
-      const oldState = { ...tableStateNormalized.value };
       const newState: PlDataTableStateV2Normalized = {
-        ...oldState,
+        ...tableStateNormalized.value,
         pTableParams: makeDefaultPTableParams(),
       };
 
@@ -148,23 +143,15 @@ export function useTableState(
         }
       }
 
-      tableStateNormalized.value = newState;
+      if (!isJsonEqual(tableStateNormalized.value, newState)) {
+        tableStateNormalized.value = newState;
+      }
     },
   });
 
-  // Update pTableParams when sourceId changes
   watch(
     () => tableState.value,
-    (state) => {
-      const newParams = state.sourceId ? makePTableParams(state) : makeDefaultPTableParams();
-      const oldParams = tableStateNormalized.value.pTableParams;
-      if (!isJsonEqual(newParams, oldParams)) {
-        tableStateNormalized.value = {
-          ...tableStateNormalized.value,
-          pTableParams: newParams,
-        };
-      }
-    },
+    (value) => isJsonEqual(tableState.value, value) && (tableState.value = value),
     { deep: true },
   );
 
@@ -180,6 +167,9 @@ export function useTableState(
       }
     },
   });
+  watch(gridState, (value) => isJsonEqual(gridState.value, value) && (gridState.value = value), {
+    deep: true,
+  });
 
   const sheetsState = computed<PlDataTableSheetState[]>({
     get: () => tableState.value.sheetsState,
@@ -193,19 +183,24 @@ export function useTableState(
       }
     },
   });
+  watch(
+    sheetsState,
+    (value) => isJsonEqual(sheetsState.value, value) && (sheetsState.value = value),
+    { deep: true },
+  );
 
   const filtersState = computed<PlAdvancedFilter>({
     get: () => {
       const raw = tableState.value.filtersState;
-      if (
+      const isCorrect =
         raw &&
         (raw.type === "and" || raw.type === "or") &&
         "filters" in raw &&
-        Array.isArray(raw.filters)
-      ) {
-        return raw as PlAdvancedFilter;
-      }
-      return { id: randomInt(), type: "and" as const, isExpanded: true, filters: [] };
+        Array.isArray(raw.filters);
+
+      return isCorrect
+        ? (raw as PlAdvancedFilter)
+        : { id: randomInt(), type: "and" as const, isExpanded: true, filters: [] };
     },
     set: (filtersState: PlAdvancedFilter) => {
       const oldState = tableState.value;
@@ -217,6 +212,11 @@ export function useTableState(
       }
     },
   });
+  watch(
+    filtersState,
+    (value) => isJsonEqual(filtersState.value, value) && (filtersState.value = value),
+    { deep: true },
+  );
 
   return { gridState, sheetsState, filtersState };
 }

@@ -79,8 +79,6 @@ const supportedFilters = [
   "patternFuzzyContainSubsequence",
   "equal",
   "notEqual",
-  "topN",
-  "bottomN",
 ] as (typeof PlAdvancedFilterSupportedFilters)[number][];
 
 // getSuggestOptions - provide discrete values from column annotations

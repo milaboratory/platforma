@@ -16,8 +16,17 @@ import type {
   PTableHandle,
   PTableRecordFilter,
   PTableSorting,
+  QuerySpec,
+  SingleAxisSelector,
+  QueryExpressionSpec,
+  QueryJoinEntrySpec,
 } from "@milaboratories/pl-model-common";
-import type { FilterSpec, FilterSpecLeaf, PTableFilters } from "../filters";
+import {
+  filterSpecToExpr,
+  type FilterSpec,
+  type FilterSpecLeaf,
+  type PTableFilters,
+} from "../filters";
 import {
   Annotation,
   canonicalizeJson,
@@ -38,7 +47,9 @@ import type {
   PColumnDataUniversal,
 } from "../render";
 import { allPColumnsReady, deriveLabels, PColumnCollection } from "../render";
-import { identity } from "es-toolkit";
+import { identity, isFunction, isNil } from "es-toolkit";
+import { filterEmptyPeaces } from "../filters/converters/filterEmpty";
+import { isBooleanExpression } from "../pframe_utils/querySpec";
 
 export type PlTableColumnId = {
   /** Original column spec */
@@ -585,6 +596,19 @@ export function getMatchingLabelColumns(
   return labelColumns;
 }
 
+/** Convert a PTableColumnId to a QueryExpressionSpec reference. */
+function columnIdToExpr(col: PTableColumnId): QueryExpressionSpec {
+  if (col.type === "axis") {
+    return { type: "axisRef", value: col.id as SingleAxisSelector };
+  }
+  return { type: "columnRef", value: col.id };
+}
+
+/** Wrap a QuerySpec as a QueryJoinEntrySpec with empty qualifications. */
+function joinEntry(input: QuerySpec): QueryJoinEntrySpec {
+  return { entry: input, qualifications: [] };
+}
+
 function createPTableDef(params: {
   columns: PColumn<PColumnDataUniversal>[];
   labelColumns: PColumn<PColumnDataUniversal>[];
@@ -596,7 +620,7 @@ function createPTableDef(params: {
   let coreColumns = params.columns;
   const secondaryColumns: typeof params.columns = [];
 
-  if (params.coreColumnPredicate) {
+  if (isFunction(params.coreColumnPredicate)) {
     coreColumns = [];
     for (const c of params.columns)
       if (params.coreColumnPredicate(getColumnIdAndSpec(c))) coreColumns.push(c);
@@ -605,17 +629,53 @@ function createPTableDef(params: {
 
   secondaryColumns.push(...params.labelColumns);
 
+  const allColumns = [...coreColumns, ...secondaryColumns];
+
+  // Build QuerySpec directly from columns
+  const coreJoinQuery: QuerySpec = {
+    type: params.coreJoinType === "inner" ? "innerJoin" : "fullJoin",
+    entries: coreColumns.map((c) => joinEntry({ type: "column", columnId: c.id })),
+  };
+
+  let query: QuerySpec = {
+    type: "outerJoin",
+    primary: joinEntry(coreJoinQuery),
+    secondary: secondaryColumns.map((c) => joinEntry({ type: "column", columnId: c.id })),
+  };
+
+  // Apply filters
+  if (params.filters !== null) {
+    const nonEmpty = filterEmptyPeaces(params.filters);
+
+    if (!isNil(nonEmpty)) {
+      const pridicate = filterSpecToExpr(nonEmpty);
+      if (!isBooleanExpression(pridicate)) {
+        throw new Error("Invalid filters: filterSpecToExpr did not return a boolean expression");
+      }
+      query = {
+        type: "filter",
+        input: query,
+        predicate: pridicate,
+      };
+    }
+  }
+
+  // Apply sorting
+  if (params.sorting.length > 0) {
+    query = {
+      type: "sort",
+      input: query,
+      sortBy: params.sorting.map((s) => ({
+        expression: columnIdToExpr(s.column),
+        ascending: s.ascending,
+        nullsFirst: s.ascending === s.naAndAbsentAreLeastValues,
+      })),
+    };
+  }
+
   return {
-    src: {
-      type: "outer",
-      primary: {
-        type: params.coreJoinType,
-        entries: coreColumns.map((c) => ({ type: "column", column: c })),
-      },
-      secondary: secondaryColumns.map((c) => ({ type: "column", column: c })),
-    },
-    filters: params.filters,
-    sorting: params.sorting,
+    query,
+    columns: allColumns,
   };
 }
 

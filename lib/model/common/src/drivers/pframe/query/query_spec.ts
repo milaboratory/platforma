@@ -6,6 +6,8 @@ import type {
   ExprNumericComparison,
   ExprConstant,
   ExprIsIn,
+  ExprIsNull,
+  ExprIfNull,
   ExprLogicalUnary,
   ExprLogicalVariadic,
   ExprStringContains,
@@ -120,6 +122,8 @@ export type QueryExpressionSpec =
   | ExprStringContains<QueryExpressionSpec>
   | ExprStringRegex<QueryExpressionSpec>
   | ExprStringContainsFuzzy<QueryExpressionSpec>
+  | ExprIsNull<QueryExpressionSpec>
+  | ExprIfNull<QueryExpressionSpec>
   | ExprLogicalUnary<QueryExpressionSpec>
   | ExprLogicalVariadic<QueryExpressionSpec>
   | ExprIsIn<QueryExpressionSpec, string>

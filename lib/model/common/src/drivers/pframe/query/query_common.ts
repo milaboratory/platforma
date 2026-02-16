@@ -117,6 +117,54 @@ export type ExprConstant = {
   value: string | number | boolean;
 };
 
+/**
+ * Null check expression.
+ *
+ * Tests if an expression evaluates to null.
+ * **Input**: Any expression.
+ * **Output**: Boolean (true if input is null, false otherwise).
+ *
+ * @template I - The expression type (for recursion)
+ *
+ * @example
+ * // Check if column value is null
+ * { type: 'isNull', input: columnRef }
+ *
+ * // Combine with NOT to check for non-null
+ * { type: 'not', input: { type: 'isNull', input: columnRef } }
+ */
+export interface ExprIsNull<I> {
+  type: "isNull";
+  /** Input expression to check for null */
+  input: I;
+}
+
+/**
+ * Null coalescing expression.
+ *
+ * Returns the input value if it is not null, otherwise returns the replacement value.
+ * Equivalent to SQL's `IFNULL(input, replacement)` or `COALESCE(input, replacement)`.
+ * **Input**: Any expression.
+ * **Output**: Same type as input/replacement.
+ * **Null handling**: If input is null, returns replacement; otherwise returns input.
+ *
+ * @template I - The expression type (for recursion)
+ *
+ * @example
+ * // Replace null values with 0
+ * { type: 'ifNull', input: columnRef, replacement: { type: 'constant', value: 0 } }
+ *
+ * // Replace null strings with 'unknown'
+ * { type: 'ifNull', input: nameColumn, replacement: { type: 'constant', value: 'unknown' } }
+ */
+export interface ExprIfNull<I> {
+  type: "ifNull";
+  /** Value to check for null */
+  input: I;
+  /** Replacement value if input is null */
+  replacement: I;
+}
+
 // ============ Generic Expression Interfaces ============
 // I = expression type (recursive), S = selector type
 
@@ -479,6 +527,7 @@ export type InferBooleanExpressionUnion<E> = [
   E extends ExprStringContains<unknown> ? Extract<E, { type: "stringContains" }> : never,
   E extends ExprStringContainsFuzzy<unknown> ? Extract<E, { type: "stringContainsFuzzy" }> : never,
   E extends ExprStringRegex<unknown> ? Extract<E, { type: "stringRegex" }> : never,
+  E extends ExprIsNull<unknown> ? Extract<E, { type: "isNull" }> : never,
   E extends ExprLogicalUnary<unknown> ? Extract<E, { type: "not" }> : never,
   E extends ExprLogicalVariadic<unknown> ? Extract<E, { type: "and" | "or" }> : never,
   E extends ExprIsIn<unknown, string | number> ? Extract<E, { type: "isIn" }> : never,
