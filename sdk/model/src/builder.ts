@@ -70,6 +70,7 @@ export class BlockModel<
       supportsLazyState: true,
       requiresUIAPIVersion: 1,
       requiresModelAPIVersion: 1,
+      requiresCreatePTableV2: true,
     };
   }
 
