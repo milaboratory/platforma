@@ -24,6 +24,9 @@ catalogs:
     '@milaboratories/pframes-rs-node':
       specifier: 1.1.3
       version: 1.1.3
+    '@milaboratories/pframes-rs-wasm':
+      specifier: 0.1.2
+      version: 0.1.2
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.9
       version: 2.2.9
@@ -315,7 +318,6 @@ catalogs:
 
 overrides:
   '@microsoft/api-extractor>typescript': ~5.6.3
-  '@milaboratories/pframes-rs-wasm': file:/Users/aleksandr/GIT/MILAB/pframes-rs/packages/wasm/package.tgz
 
 importers:
 
@@ -1804,8 +1806,8 @@ importers:
         specifier: 'catalog:'
         version: 1.1.3(encoding@0.1.13)
       '@milaboratories/pframes-rs-wasm':
-        specifier: file:/Users/aleksandr/GIT/MILAB/pframes-rs/packages/wasm/package.tgz
-        version: file:../pframes-rs/packages/wasm/package.tgz(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.24.6)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+        specifier: 'catalog:'
+        version: 0.1.2(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.24.6)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
         version: link:../../model/middle-layer
@@ -4744,9 +4746,8 @@ packages:
     resolution: {integrity: sha512-LUYuoWwwlqO8P2ae9n4sSGI2iTiVy+BCtMIGQKkhTbbAa3Ftf0h4nkztpBoNHv8DB8hgk9fgvSSF60QD5Mv4ww==}
     hasBin: true
 
-  '@milaboratories/pframes-rs-wasm@file:../pframes-rs/packages/wasm/package.tgz':
-    resolution: {integrity: sha512-kYihlvBOFuVkkbQzQXDVck1IMKHfb91NeFvJ6/TJ4bPEyxNmDYvTzfJMA01bVKanjL1V4ZfD+9ewemh5n2gGxA==, tarball: file:../pframes-rs/packages/wasm/package.tgz}
-    version: 0.1.1
+  '@milaboratories/pframes-rs-wasm@0.1.2':
+    resolution: {integrity: sha512-4TTN3aQBZak6Haj+rVFX27JITVnUavJ+RNXCpJ/XECCFc20BBrz1PWADoiQhoNeklDueGDU9OpaeWpamwyNZbQ==}
     peerDependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
       '@milaboratories/pl-model-common': 1.24.6
@@ -10840,7 +10841,7 @@ snapshots:
       commander: 14.0.2
       selfsigned: 5.5.0
 
-  '@milaboratories/pframes-rs-wasm@file:../pframes-rs/packages/wasm/package.tgz(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.24.6)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
+  '@milaboratories/pframes-rs-wasm@0.1.2(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.24.6)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
     dependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
       '@milaboratories/pl-model-common': 1.24.6
