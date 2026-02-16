@@ -47,7 +47,7 @@ export const downloadContent = (content: DownloadableContent, filename: string) 
     if (typeof data === "string") {
       blob = new Blob([data], { type: mimeType });
     } else if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
-      blob = new Blob([data], { type: mimeType });
+      blob = new Blob([data as BlobPart], { type: mimeType });
     } else if (data instanceof Blob) {
       blob = new Blob([data], { type: mimeType });
     } else {

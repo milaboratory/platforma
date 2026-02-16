@@ -225,14 +225,14 @@ export function relativeToExplicitBytes(
       return {
         type: "explicit-bytes",
         mimeType: value.mimeType,
-        content: Buffer.from(value.content, "base64"),
+        content: new Uint8Array(Buffer.from(value.content, "base64")),
       };
     const mimeType = mime.lookup(value.path);
     if (!mimeType) throw new Error(`Can't recognize mime type of the file: ${value.path}.`);
     return {
       type: "explicit-bytes",
       mimeType,
-      content: await reader(value.path),
+      content: new Uint8Array(await reader(value.path)),
     };
   };
 }

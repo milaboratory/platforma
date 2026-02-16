@@ -43,6 +43,6 @@
     "vitest": "catalog:",
     "vite-plugin-css-injected-by-js": "catalog:",
     "vite-plugin-dts": "catalog:",
-    "vite-plugin-externalize-deps": "^0.9.0"
+    "vite-plugin-externalize-deps": "^0.10.0"
   }
 }

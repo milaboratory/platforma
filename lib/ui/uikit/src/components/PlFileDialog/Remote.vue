@@ -10,7 +10,7 @@ import Shortcuts from "./Shortcuts.vue";
 import { PlMaskIcon16 } from "../PlMaskIcon16";
 import { PlSearchField } from "../PlSearchField";
 import style from "./pl-file-dialog.module.scss";
-import { defaultData, useVisibleItems, vTextOverflown } from "./remote";
+import { defaultData, useVisibleItems, vTextOverflown } from "./remote-helpers";
 import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from "./utils";
 
 // note that on a Mac, a click combined with the control key is intercepted by the operating system and used to open a context menu, so ctrlKey is not detectable on click events.
