@@ -265,7 +265,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
     let partialState = makePartialState(event.state);
     // AG Grid omits columnVisibility when no columns are hidden. If we previously had
     // hidden columns and now get undefined, treat as "all visible" so we don't revert to default.
-    const hadHiddenCols = (gridState.value.columnVisibility?.hiddenColIds?.length ?? 0) > 0;
+    const hadHiddenCols = gridState.value.columnVisibility?.hiddenColIds !== undefined;
     if (partialState.columnVisibility === undefined && hadHiddenCols) {
       partialState = { ...partialState, columnVisibility: { hiddenColIds: [] } };
     }
