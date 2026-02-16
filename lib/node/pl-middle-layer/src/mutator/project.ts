@@ -1251,6 +1251,19 @@ export class ProjectMutator {
           }
           this.setBlockStorageRaw(blockId, migrationResult.newStorageJson);
 
+          // Re-derive currentArgs from migrated storage (new block code + migrated data)
+          const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
+            newConfig,
+            migrationResult.newStorageJson,
+          );
+          if (!deriveArgsResult.error) {
+            this.setBlockFieldObj(
+              blockId,
+              "currentArgs",
+              this.createJsonFieldValue(deriveArgsResult.value),
+            );
+          }
+
           // Derive prerunArgs from the migrated storage so staging can re-render
           const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
             newConfig,
