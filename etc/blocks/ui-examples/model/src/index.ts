@@ -352,6 +352,7 @@ export const platforma = BlockModel.create("Heavy")
       { type: "link", href: "/pl-autocomplete-multi", label: "PlAutocompleteMulti" },
       { type: "link", href: "/radio", label: "PlRadio" },
       { type: "link", href: "/advanced-filter", label: "PlAdvancedFilter" },
+      { type: "link", href: "/pl-tooltip", label: "PlTooltip" },
       ...(dynamicSections.length
         ? ([{ type: "delimiter" }, ...dynamicSections, { type: "delimiter" }] as const)
         : []),

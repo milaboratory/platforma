@@ -28,32 +28,32 @@ export function useTooltipPosition(el: Ref<HTMLElement | undefined>, optionsRef:
     const gap = options.gap ?? 8;
 
     if (!pos) {
-      return "";
+      return;
     }
 
     const offsetMiddleY = pos.offsetY + Math.floor(pos.height / 2);
     const offsetMiddleX = pos.offsetX + Math.floor(pos.width / 2);
 
     if (position === "top-left") {
-      return `left: ${pos.offsetX}px; top: ${pos.offsetY - gap}px;`;
+      return { left: `${pos.offsetX}px`, top: `${pos.offsetY - gap}px` };
     }
 
     if (position === "top") {
-      return `left: ${offsetMiddleX}px; top: ${pos.offsetY - gap}px;`;
+      return { left: `${offsetMiddleX}px`, top: `${pos.offsetY - gap}px` };
     }
 
     if (position === "right") {
-      return `left: ${pos.offsetX + pos.width + gap}px; top: ${offsetMiddleY}px;`;
+      return { left: `${pos.offsetX + pos.width + gap}px`, top: `${offsetMiddleY}px` };
     }
 
     if (position === "left") {
-      return `right: ${pos.scrollWidth - pos.x + gap}px; top: ${offsetMiddleY}px;`;
+      return { right: `${pos.scrollWidth - pos.x + gap}px`, top: `${offsetMiddleY}px` };
     }
 
     if (position === "southwest") {
-      return `left: ${pos.offsetX + pos.width}px; top: ${pos.offsetY + pos.height + gap}px;`;
+      return { left: `${pos.offsetX + pos.width}px`, top: `${pos.offsetY + pos.height + gap}px` };
     }
 
-    return "";
+    return {};
   });
 }

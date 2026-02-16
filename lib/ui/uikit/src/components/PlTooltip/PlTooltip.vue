@@ -6,12 +6,9 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import "./pl-tooltip.scss";
-import { computed, onUnmounted, reactive, ref, toRef, watch } from "vue";
-import { useTooltipPosition } from "./useTooltipPosition";
+import { computed, onUnmounted, reactive, ref, watch } from "vue";
 import * as utils from "../../helpers/utils";
 import { useClickOutside } from "../../composition/useClickOutside";
-import Beak from "./Beak.vue";
 import { tMap } from "./global";
 
 const emit = defineEmits(["tooltip:close"]);
@@ -80,8 +77,6 @@ watch(
 
 let clearTimeout = () => {};
 
-const dispatchAdjust = utils.throttle(() => window.dispatchEvent(new CustomEvent("adjust")), 1000);
-
 const showTooltip = () => {
   data.open = true;
 
@@ -101,8 +96,6 @@ const onOver = async () => {
   if (props.hide) {
     return;
   }
-
-  dispatchAdjust();
 
   data.over = true;
 
@@ -136,8 +129,6 @@ watch(
 const rootRef = ref<HTMLElement | undefined>();
 const tooltip = ref<HTMLElement | undefined>();
 
-const style = useTooltipPosition(rootRef, toRef(props));
-
 useClickOutside([rootRef, tooltip], () => closeTooltip());
 
 const tooltipStyle = computed(() => ({
@@ -147,10 +138,12 @@ const tooltipStyle = computed(() => ({
 onUnmounted(() => {
   tMap.delete(tKey);
 });
+const anchorName = "--testtesttestanchorname";
 </script>
 
 <template>
   <component
+    :class="$style.plTooltipAnchorWrapper"
     :is="element"
     v-bind="$attrs"
     ref="rootRef"
@@ -160,22 +153,106 @@ onUnmounted(() => {
   >
     <slot />
     <Teleport v-if="$slots['tooltip'] && data.open" to="body">
-      <Transition name="tooltip-transition">
-        <div v-if="data.tooltipOpen" class="pl-tooltip__container" :style="style" @click.stop>
-          <div
-            ref="tooltip"
-            class="pl-tooltip"
-            :style="tooltipStyle"
-            :class="position"
-            @mouseover="onOver"
-            @mouseleave="onLeave"
-          >
-            <!-- should be one line -->
-            <div><slot name="tooltip" /></div>
-            <Beak />
-          </div>
+      <div v-if="data.tooltipOpen" :class="$style['plTooltip__container']" @click.stop>
+        <div
+          ref="tooltip"
+          :class="[$style['plTooltip'], position]"
+          :style="tooltipStyle"
+          @mouseover="onOver"
+          @mouseleave="onLeave"
+        >
+          <!-- should be one line -->
+          <div><slot name="tooltip" /></div>
         </div>
-      </Transition>
+      </div>
     </Teleport>
   </component>
 </template>
+
+<style module>
+/* just to set anchor-name for the anchor */
+.plTooltipAnchorWrapper > :first-child {
+  --anchorName: v-bind("anchorName");
+  anchor-name: var(--anchorName);
+}
+
+.plTooltip {
+  --pl-tooltip-max-width: 300px;
+
+  z-index: var(--z-tooltip);
+  display: inline-block;
+  padding: 8px 12px 9px 12px;
+  background: var(--tooltip-bg);
+  border-radius: 6px;
+  width: max-content;
+  word-break: normal;
+  max-width: var(--pl-tooltip-max-width);
+  color: #fff;
+}
+
+.plTooltip__container {
+  --d: 8px;
+  --s: 16px;
+  --offset: calc(var(--s) - var(--d));
+  --anchorName: v-bind("anchorName");
+  position: absolute;
+  position-area: top;
+  bottom: var(--d);
+  margin-top: var(--d);
+  position-try-fallbacks: flip-block flip-inline;
+  position-anchor: var(--anchorName);
+  anchor-name: --tooltip;
+  z-index: 1;
+}
+
+.plTooltip__container:before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  width: var(--s);
+  background: var(--tooltip-bg);
+  top: calc(anchor(--tooltip top) - var(--d));
+  bottom: calc(anchor(--tooltip bottom) - var(--d));
+  left: calc(anchor(var(--anchorName) center) - var(--s) / 2);
+  margin: inherit;
+  clip-path: polygon(
+    50% 3px,
+    100% var(--d),
+    100% calc(100% - var(--d)),
+    50% calc(100% - 3px),
+    0 calc(100% - var(--d)),
+    0 var(--d)
+  );
+}
+
+.plTooltip a {
+  color: var(--tooltip-link-color);
+}
+
+.plTooltip p {
+  margin-bottom: 8px;
+}
+
+.plTooltip ul,
+.plTooltip li {
+  margin-left: 6px;
+  padding-left: 6px;
+}
+
+.plTooltip li {
+  margin-bottom: 4px;
+}
+
+.tooltip-transition-enter-active,
+.tooltip-transition-leave-active {
+  transition: all 0.1s ease-in-out;
+}
+
+.tooltip-transition-enter-from {
+  opacity: 0;
+}
+
+.tooltip-transition-leave-to {
+  opacity: 0;
+}
+</style>
