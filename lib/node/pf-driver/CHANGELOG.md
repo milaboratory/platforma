@@ -1,5 +1,15 @@
 # @milaboratories/pf-driver
 
+## 1.0.45
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-middle-layer@1.11.9
+  - @platforma-sdk/model@1.54.7
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 1.0.44
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.54.7
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/uikit@2.10.20
+  - @platforma-sdk/model@1.54.7
+
 ## 1.54.1
 
 ### Patch Changes

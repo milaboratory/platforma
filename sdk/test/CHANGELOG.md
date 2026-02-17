@@ -1,5 +1,16 @@
 # @platforma-sdk/test
 
+## 1.54.7
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-middle-layer@1.46.30
+  - @milaboratories/computable@2.8.5
+  - @milaboratories/pl-client@2.17.1
+  - @milaboratories/pl-tree@1.8.39
+
 ## 1.54.6
 
 ### Patch Changes

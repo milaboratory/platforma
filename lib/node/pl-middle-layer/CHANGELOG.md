@@ -1,5 +1,28 @@
 # @milaboratories/pl-middle-layer
 
+## 1.46.30
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-middle-layer@1.11.9
+  - @milaboratories/pf-driver@1.0.45
+  - @platforma-sdk/block-tools@2.6.49
+  - @milaboratories/pl-model-common@1.24.7
+  - @platforma-sdk/model@1.54.7
+  - @milaboratories/pl-model-backend@1.1.48
+  - @milaboratories/computable@2.8.5
+  - @milaboratories/pl-client@2.17.1
+  - @milaboratories/pl-deployments@2.15.11
+  - @milaboratories/pl-drivers@1.11.51
+  - @milaboratories/pl-errors@1.1.63
+  - @milaboratories/pl-http@1.2.3
+  - @milaboratories/pl-tree@1.8.39
+  - @milaboratories/resolve-helper@1.1.2
+  - @milaboratories/ts-helpers@1.7.2
+  - @platforma-sdk/workflow-tengo@5.8.3
+
 ## 1.46.29
 
 ### Patch Changes

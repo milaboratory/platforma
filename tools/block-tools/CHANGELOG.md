@@ -1,5 +1,18 @@
 # @platforma-sdk/block-tools
 
+## 2.6.49
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-middle-layer@1.11.9
+  - @milaboratories/pl-model-common@1.24.7
+  - @milaboratories/pl-http@1.2.3
+  - @milaboratories/resolve-helper@1.1.2
+  - @milaboratories/ts-helpers@1.7.2
+  - @milaboratories/ts-helpers-oclif@1.1.37
+
 ## 2.6.48
 
 ### Patch Changes

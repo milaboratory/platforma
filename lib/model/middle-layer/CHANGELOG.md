@@ -1,5 +1,14 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.11.9
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-common@1.24.7
+  - @platforma-sdk/model@1.54.7
+
 ## 1.11.8
 
 ### Patch Changes

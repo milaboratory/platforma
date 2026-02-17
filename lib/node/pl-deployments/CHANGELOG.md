@@ -1,5 +1,15 @@
 # @milaboratories/pl-local
 
+## 2.15.11
+
+### Patch Changes
+
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-common@1.24.7
+  - @milaboratories/pl-config@1.7.14
+  - @milaboratories/pl-http@1.2.3
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 2.15.10
 
 ### Patch Changes

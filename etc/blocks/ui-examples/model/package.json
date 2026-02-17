@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples.model",
-  "version": "1.4.13",
+  "version": "1.4.14",
   "description": "Block model",
   "type": "module",
   "main": "dist/index.cjs",

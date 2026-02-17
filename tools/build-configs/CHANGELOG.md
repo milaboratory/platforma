@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.4.4
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+
 ## 1.4.3
 
 ### Patch Changes

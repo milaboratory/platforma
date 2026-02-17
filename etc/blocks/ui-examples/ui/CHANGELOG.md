@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.8.14
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @platforma-sdk/model@1.54.7
+  - @milaboratories/milaboratories.ui-examples.model@1.4.14
+
 ## 1.8.13
 
 ### Patch Changes
