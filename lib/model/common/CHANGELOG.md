@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.24.8
+
+### Patch Changes
+
+- 4f04561: simplify distil , renaming
+
 ## 1.24.7
 
 ### Patch Changes

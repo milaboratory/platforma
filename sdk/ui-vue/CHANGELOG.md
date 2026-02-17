@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.54.8
+
+### Patch Changes
+
+- 4f04561: simplify distil , renaming
+- Updated dependencies [4f04561]
+  - @platforma-sdk/model@1.54.8
+  - @milaboratories/uikit@2.10.21
+
 ## 1.54.7
 
 ### Patch Changes
