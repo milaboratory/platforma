@@ -354,6 +354,8 @@ export class BlockModelV3<
         initialData: createRenderLambda({ handle: "__pl_data_initial" }),
         sections: this.config.sections,
         title: this.config.title,
+        subtitle: this.config.subtitle,
+        tags: this.config.tags,
         outputs: this.config.outputs,
         enrichmentTargets: this.config.enrichmentTargets,
         featureFlags: this.config.featureFlags,
