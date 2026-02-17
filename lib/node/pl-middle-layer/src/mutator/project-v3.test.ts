@@ -3,10 +3,10 @@ import { getQuickJS } from "quickjs-emscripten";
 import { expect, test } from "vitest";
 import { outputRef } from "../model/args";
 import { ProjectHelper } from "../model/project_helper";
-import { projectFieldName } from "../model/project_model";
+import { blockArgsAuthorKey, projectFieldName } from "../model/project_model";
 import { TestBPPreparer } from "../test/block_packs";
 import { createProject, ProjectMutator } from "./project";
-import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
+import type { AuthorMarker, BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import path from "node:path";
 
 // V3 block specs - using dev-v2 type with local folders
@@ -280,6 +280,208 @@ test("v3 blocks: prerunArgs skip test", async () => {
       expect(prerunArgs).toHaveProperty("evenNumbers");
       expect(prerunArgs.evenNumbers).toStrictEqual([4]);
       expect(prerunArgs).not.toHaveProperty("numbers");
+    });
+  });
+});
+
+test("v3 blocks: migrateBlockPack preserves state and re-derives args and prerunArgs", async () => {
+  const quickJs = await getQuickJS();
+
+  await TestHelpers.withTempRoot(async (pl) => {
+    const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
+      const prjRef = await createProject(tx);
+      tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
+      await tx.commit();
+      return await toGlobalResourceId(prjRef);
+    });
+
+    // Add enter-numbers-v3 block and set data with even numbers
+    await pl.withWriteTx("AddBlock", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.addBlock(
+        { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
+        {
+          storageMode: "fromModel",
+          blockPack: await TestBPPreparer.prepare(BPSpecEnterV3),
+        },
+      );
+      mut.setStates([
+        {
+          modelAPIVersion: 2,
+          blockId: "enter1",
+          payload: { operation: "update-data", value: { numbers: [4, 2, 6] } },
+        },
+      ]);
+      mut.save();
+      await tx.commit();
+    });
+
+    // Verify initial state
+    await poll(pl, async (tx) => {
+      const prjR = await tx.get(prj);
+
+      const currentArgs = await prjR.get(projectFieldName("enter1", "currentArgs"));
+      const argsData = JSON.parse(Buffer.from(currentArgs.data.data!).toString());
+      expect(argsData).toStrictEqual({ numbers: [2, 4, 6] });
+
+      const currentPrerunArgs = await prjR.get(projectFieldName("enter1", "currentPrerunArgs"));
+      const prerunData = JSON.parse(Buffer.from(currentPrerunArgs.data.data!).toString());
+      expect(prerunData).toStrictEqual({ evenNumbers: [2, 4, 6] });
+    });
+
+    // Call migrateBlockPack without newClearState (state-preserved path)
+    await pl.withWriteTx("MigrateBlockPack", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.migrateBlockPack("enter1", await TestBPPreparer.prepare(BPSpecEnterV3));
+      mut.save();
+      await tx.commit();
+    });
+
+    // Verify: storage preserved, args and prerunArgs re-derived
+    await poll(pl, async (tx) => {
+      const prjR = await tx.get(prj);
+
+      const blockStorage = await prjR.get(projectFieldName("enter1", "blockStorage"));
+      const storageData = JSON.parse(Buffer.from(blockStorage.data.data!).toString());
+      expect(storageData.__data).toStrictEqual({ numbers: [4, 2, 6] });
+
+      const currentArgs = await prjR.get(projectFieldName("enter1", "currentArgs"));
+      const argsData = JSON.parse(Buffer.from(currentArgs.data.data!).toString());
+      expect(argsData).toStrictEqual({ numbers: [2, 4, 6] });
+
+      const currentPrerunArgs = await prjR.get(projectFieldName("enter1", "currentPrerunArgs"));
+      const prerunData = JSON.parse(Buffer.from(currentPrerunArgs.data.data!).toString());
+      expect(prerunData).toStrictEqual({ evenNumbers: [2, 4, 6] });
+    });
+  });
+});
+
+test("v3 blocks: migrateBlockPack with storage migration re-derives args and prerunArgs", async () => {
+  const quickJs = await getQuickJS();
+
+  await TestHelpers.withTempRoot(async (pl) => {
+    const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
+      const prjRef = await createProject(tx);
+      tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
+      await tx.commit();
+      return await toGlobalResourceId(prjRef);
+    });
+
+    // Add enter-numbers-v3 block with initial data
+    await pl.withWriteTx("AddBlock", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.addBlock(
+        { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
+        {
+          storageMode: "fromModel",
+          blockPack: await TestBPPreparer.prepare(BPSpecEnterV3),
+        },
+      );
+      mut.setStates([
+        {
+          modelAPIVersion: 2,
+          blockId: "enter1",
+          payload: { operation: "update-data", value: { numbers: [1] } },
+        },
+      ]);
+      mut.save();
+      await tx.commit();
+    });
+
+    // Overwrite blockStorage with v1-format data (simulating old block version)
+    await pl.withWriteTx("DowngradeStorage", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const v1Storage = JSON.stringify({
+        __pl_a7f3e2b9__: "v1",
+        __dataVersion: "v1",
+        __data: { numbers: [3, 1, 5] },
+      });
+      mut.setBlockStorageRaw("enter1", v1Storage);
+      mut.save();
+      await tx.commit();
+    });
+
+    // Call migrateBlockPack (state-preserved) — triggers v1→v2→v3 migration
+    await pl.withWriteTx("MigrateBlockPack", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.migrateBlockPack("enter1", await TestBPPreparer.prepare(BPSpecEnterV3));
+      mut.save();
+      await tx.commit();
+    });
+
+    // Verify migrated storage + re-derived args + prerunArgs
+    await poll(pl, async (tx) => {
+      const prjR = await tx.get(prj);
+
+      // Storage migrated to v3: v1→v2 sorts + adds labels, v2→v3 adds description
+      const blockStorage = await prjR.get(projectFieldName("enter1", "blockStorage"));
+      const storageData = JSON.parse(Buffer.from(blockStorage.data.data!).toString());
+      expect(storageData.__dataVersion).toBe("v3");
+      expect(storageData.__data).toStrictEqual({
+        numbers: [1, 3, 5],
+        labels: ["migrated-from-v1"],
+        description: "Migrated: migrated-from-v1",
+      });
+
+      // currentArgs derived from migrated storage: args() sorts numbers
+      const currentArgs = await prjR.get(projectFieldName("enter1", "currentArgs"));
+      const argsData = JSON.parse(Buffer.from(currentArgs.data.data!).toString());
+      expect(argsData).toStrictEqual({ numbers: [1, 3, 5] });
+
+      // currentPrerunArgs derived: prerunArgs() filters even numbers
+      const currentPrerunArgs = await prjR.get(projectFieldName("enter1", "currentPrerunArgs"));
+      const prerunData = JSON.parse(Buffer.from(currentPrerunArgs.data.data!).toString());
+      expect(prerunData).toStrictEqual({ evenNumbers: [] });
+    });
+  });
+});
+
+test("v3 blocks: migrateBlockPack assigns author marker", async () => {
+  const quickJs = await getQuickJS();
+
+  await TestHelpers.withTempRoot(async (pl) => {
+    const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
+      const prjRef = await createProject(tx);
+      tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
+      await tx.commit();
+      return await toGlobalResourceId(prjRef);
+    });
+
+    // Add block with data
+    await pl.withWriteTx("AddBlock", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.addBlock(
+        { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
+        {
+          storageMode: "fromModel",
+          blockPack: await TestBPPreparer.prepare(BPSpecEnterV3),
+        },
+      );
+      mut.setStates([
+        {
+          modelAPIVersion: 2,
+          blockId: "enter1",
+          payload: { operation: "update-data", value: { numbers: [1, 2, 3] } },
+        },
+      ]);
+      mut.save();
+      await tx.commit();
+    });
+
+    // Call migrateBlockPack with an author marker
+    const testAuthor: AuthorMarker = { authorId: "test-author-123", localVersion: 1 };
+    await pl.withWriteTx("MigrateWithAuthor", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj, testAuthor);
+      mut.migrateBlockPack("enter1", await TestBPPreparer.prepare(BPSpecEnterV3));
+      mut.save();
+      await tx.commit();
+    });
+
+    // Verify the author marker KV is set
+    await poll(pl, async (tx) => {
+      const prjR = await tx.get(prj);
+      const author = await prjR.getKValueObj<AuthorMarker>(blockArgsAuthorKey("enter1"));
+      expect(author).toStrictEqual(testAuthor);
     });
   });
 });

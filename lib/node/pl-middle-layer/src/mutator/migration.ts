@@ -128,5 +128,12 @@ async function migrateV2ToV3(tx: PlTransaction, rid: ResourceId) {
     const stateR = tx.createJsonGzValue(unifiedState);
     const stateF = field(rid, blockStorageFieldName);
     tx.createField(stateF, "Dynamic", stateR);
+
+    // Initialize currentPrerunArgs from currentArgs (for legacy blocks, prerunArgs = args)
+    if (currentArgsRid) {
+      const prerunArgsR = tx.createJsonGzValue(args);
+      const prerunArgsF = field(rid, projectFieldName(block.id, "currentPrerunArgs"));
+      tx.createField(prerunArgsF, "Dynamic", prerunArgsR);
+    }
   }
 }
