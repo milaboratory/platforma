@@ -58,7 +58,7 @@ type ColumnIdAndSpec = {
  *   ]
  * }
  */
-export type QueryJoinEntrySpec<C = PObjectId> = QueryJoinEntry<QuerySpec<C>> & {
+export type SpecQueryJoinEntry<C = PObjectId> = QueryJoinEntry<SpecQuery<C>> & {
   /** Axis qualifications with additional domain constraints */
   qualifications: {
     /** Axis selector identifying which axis to qualify */
@@ -69,27 +69,27 @@ export type QueryJoinEntrySpec<C = PObjectId> = QueryJoinEntry<QuerySpec<C>> & {
 };
 
 /** @see QueryColumn */
-export type QueryColumnSpec<C = PObjectId> = QueryColumn<C>;
+export type SpecQueryColumn<C = PObjectId> = QueryColumn<C>;
 /** @see QueryInlineColumn */
-export type QueryInlineColumnSpec = QueryInlineColumn<ColumnIdAndSpec>;
+export type SpecQueryInlineColumn = QueryInlineColumn<ColumnIdAndSpec>;
 /** @see QuerySparseToDenseColumn */
-export type QuerySparseToDenseColumnSpec<C = PObjectId> = QuerySparseToDenseColumn<
+export type SpecQuerySparseToDenseColumn<C = PObjectId> = QuerySparseToDenseColumn<
   C,
   PColumnIdAndSpec
 >;
 /** @see QuerySymmetricJoin */
-export type QuerySymmetricJoinSpec<C = PObjectId> = QuerySymmetricJoin<QueryJoinEntrySpec<C>>;
+export type SpecQuerySymmetricJoin<C = PObjectId> = QuerySymmetricJoin<SpecQueryJoinEntry<C>>;
 /** @see QueryOuterJoin */
-export type QueryOuterJoinSpec<C = PObjectId> = QueryOuterJoin<QueryJoinEntrySpec<C>>;
+export type SpecQueryOuterJoin<C = PObjectId> = QueryOuterJoin<SpecQueryJoinEntry<C>>;
 /** @see QuerySliceAxes */
-export type QuerySliceAxesSpec<C = PObjectId> = QuerySliceAxes<
-  QuerySpec<C>,
+export type SpecQuerySliceAxes<C = PObjectId> = QuerySliceAxes<
+  SpecQuery<C>,
   QueryAxisSelector<SingleAxisSelector>
 >;
 /** @see QuerySort */
-export type QuerySortSpec<C = PObjectId> = QuerySort<QuerySpec<C>, QueryExpressionSpec>;
+export type SpecQuerySort<C = PObjectId> = QuerySort<SpecQuery<C>, SpecQueryExpression>;
 /** @see QueryFilter */
-export type QueryFilterSpec<C = PObjectId> = QueryFilter<QuerySpec<C>, QueryBooleanExpressionSpec>;
+export type SpecQueryFilter<C = PObjectId> = QueryFilter<SpecQuery<C>, SpecQueryBooleanExpression>;
 
 /**
  * Union of all spec layer query types.
@@ -106,37 +106,37 @@ export type QueryFilterSpec<C = PObjectId> = QueryFilter<QuerySpec<C>, QueryBool
  * - Join operations: innerJoin, fullJoin, outerJoin
  * - Transformations: sliceAxes, sort, filter
  */
-export type QuerySpec<C = PObjectId> =
-  | QueryColumnSpec<C>
-  | QueryInlineColumnSpec
-  | QuerySparseToDenseColumnSpec<C>
-  | QuerySymmetricJoinSpec<C>
-  | QueryOuterJoinSpec<C>
-  | QuerySliceAxesSpec<C>
-  | QuerySortSpec<C>
-  | QueryFilterSpec<C>;
+export type SpecQuery<C = PObjectId> =
+  | SpecQueryColumn<C>
+  | SpecQueryInlineColumn
+  | SpecQuerySparseToDenseColumn<C>
+  | SpecQuerySymmetricJoin<C>
+  | SpecQueryOuterJoin<C>
+  | SpecQuerySliceAxes<C>
+  | SpecQuerySort<C>
+  | SpecQueryFilter<C>;
 
 /** @see ExprAxisRef */
-export type ExprAxisRefSpec = ExprAxisRef<SingleAxisSelector>;
+export type SpecExprAxisRef = ExprAxisRef<SingleAxisSelector>;
 /** @see ExprColumnRef */
-export type ExprColumnRefSpec = ExprColumnRef<PObjectId>;
+export type SpecExprColumnRef = ExprColumnRef<PObjectId>;
 
-export type QueryExpressionSpec =
-  | ExprColumnRefSpec
-  | ExprAxisRefSpec
+export type SpecQueryExpression =
+  | SpecExprColumnRef
+  | SpecExprAxisRef
   | ExprConstant
-  | ExprNumericBinary<QueryExpressionSpec>
-  | ExprNumericComparison<QueryExpressionSpec>
-  | ExprNumericUnary<QueryExpressionSpec>
-  | ExprStringEquals<QueryExpressionSpec>
-  | ExprStringContains<QueryExpressionSpec>
-  | ExprStringRegex<QueryExpressionSpec>
-  | ExprStringContainsFuzzy<QueryExpressionSpec>
-  | ExprIsNull<QueryExpressionSpec>
-  | ExprIfNull<QueryExpressionSpec>
-  | ExprLogicalUnary<QueryExpressionSpec>
-  | ExprLogicalVariadic<QueryExpressionSpec>
-  | ExprIsIn<QueryExpressionSpec, string>
-  | ExprIsIn<QueryExpressionSpec, number>;
+  | ExprNumericBinary<SpecQueryExpression>
+  | ExprNumericComparison<SpecQueryExpression>
+  | ExprNumericUnary<SpecQueryExpression>
+  | ExprStringEquals<SpecQueryExpression>
+  | ExprStringContains<SpecQueryExpression>
+  | ExprStringRegex<SpecQueryExpression>
+  | ExprStringContainsFuzzy<SpecQueryExpression>
+  | ExprIsNull<SpecQueryExpression>
+  | ExprIfNull<SpecQueryExpression>
+  | ExprLogicalUnary<SpecQueryExpression>
+  | ExprLogicalVariadic<SpecQueryExpression>
+  | ExprIsIn<SpecQueryExpression, string>
+  | ExprIsIn<SpecQueryExpression, number>;
 
-export type QueryBooleanExpressionSpec = InferBooleanExpressionUnion<QueryExpressionSpec>;
+export type SpecQueryBooleanExpression = InferBooleanExpressionUnion<SpecQueryExpression>;

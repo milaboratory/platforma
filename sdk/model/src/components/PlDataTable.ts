@@ -16,10 +16,10 @@ import type {
   PTableHandle,
   PTableRecordFilter,
   PTableSorting,
-  QuerySpec,
+  SpecQuery,
   SingleAxisSelector,
-  QueryExpressionSpec,
-  QueryJoinEntrySpec,
+  SpecQueryExpression,
+  SpecQueryJoinEntry,
 } from "@milaboratories/pl-model-common";
 import {
   filterSpecToExpr,
@@ -596,16 +596,16 @@ export function getMatchingLabelColumns(
   return labelColumns;
 }
 
-/** Convert a PTableColumnId to a QueryExpressionSpec reference. */
-function columnIdToExpr(col: PTableColumnId): QueryExpressionSpec {
+/** Convert a PTableColumnId to a SpecQueryExpression reference. */
+function columnIdToExpr(col: PTableColumnId): SpecQueryExpression {
   if (col.type === "axis") {
     return { type: "axisRef", value: col.id as SingleAxisSelector };
   }
   return { type: "columnRef", value: col.id };
 }
 
-/** Wrap a QuerySpec as a QueryJoinEntrySpec with empty qualifications. */
-function joinEntry<C>(input: QuerySpec<C>): QueryJoinEntrySpec<C> {
+/** Wrap a SpecQuery as a SpecQueryJoinEntry with empty qualifications. */
+function joinEntry<C>(input: SpecQuery<C>): SpecQueryJoinEntry<C> {
   return { entry: input, qualifications: [] };
 }
 
@@ -629,15 +629,15 @@ function createPTableDef(params: {
 
   secondaryColumns.push(...params.labelColumns);
 
-  // Build QuerySpec directly from columns
-  const coreJoinQuery: QuerySpec<
+  // Build SpecQuery directly from columns
+  const coreJoinQuery: SpecQuery<
     PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>
   > = {
     type: params.coreJoinType === "inner" ? "innerJoin" : "fullJoin",
     entries: coreColumns.map((c) => joinEntry({ type: "column", column: c })),
   };
 
-  let query: QuerySpec<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>> = {
+  let query: SpecQuery<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>> = {
     type: "outerJoin",
     primary: joinEntry(coreJoinQuery),
     secondary: secondaryColumns.map((c) => joinEntry({ type: "column", column: c })),

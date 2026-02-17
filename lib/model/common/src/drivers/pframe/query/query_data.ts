@@ -54,27 +54,27 @@ type ColumnIdAndTypeSpec = {
  * // - This entry's axis 1 maps to result axis 2
  * { entry: queryData, axesMapping: [0, 2] }
  */
-export interface QueryJoinEntryData extends QueryJoinEntry<QueryData> {
+export interface DataQueryJoinEntry extends QueryJoinEntry<DataQuery> {
   /** Maps this entry's axes to the result axes by index */
   axesMapping: number[];
 }
 
 /** @see QueryColumn */
-export type QueryColumnData = QueryColumn;
+export type DataQueryColumn = QueryColumn;
 /** @see QueryInlineColumn */
-export type QueryInlineColumnData = QueryInlineColumn<ColumnIdAndTypeSpec>;
+export type DataQueryInlineColumn = QueryInlineColumn<ColumnIdAndTypeSpec>;
 /** @see QuerySparseToDenseColumn */
-export type QuerySparseToDenseColumnData = QuerySparseToDenseColumn<PObjectId, ColumnIdAndTypeSpec>;
+export type DataQuerySparseToDenseColumn = QuerySparseToDenseColumn<PObjectId, ColumnIdAndTypeSpec>;
 /** @see QuerySymmetricJoin */
-export type QuerySymmetricJoinData = QuerySymmetricJoin<QueryJoinEntryData>;
+export type DataQuerySymmetricJoin = QuerySymmetricJoin<DataQueryJoinEntry>;
 /** @see QueryOuterJoin */
-export type QueryOuterJoinData = QueryOuterJoin<QueryJoinEntryData>;
+export type DataQueryOuterJoin = QueryOuterJoin<DataQueryJoinEntry>;
 /** @see QuerySliceAxes */
-export type QuerySliceAxesData = QuerySliceAxes<QueryData, QueryAxisSelector<number>>;
+export type DataQuerySliceAxes = QuerySliceAxes<DataQuery, QueryAxisSelector<number>>;
 /** @see QuerySort */
-export type QuerySortData = QuerySort<QueryData, QueryExpressionData>;
+export type DataQuerySort = QuerySort<DataQuery, DataQueryExpression>;
 /** @see QueryFilter */
-export type QueryFilterData = QueryFilter<QueryData, QueryBooleanExpressionData>;
+export type DataQueryFilter = QueryFilter<DataQuery, DataQueryBooleanExpression>;
 
 /**
  * Union of all data layer query types.
@@ -87,37 +87,37 @@ export type QueryFilterData = QueryFilter<QueryData, QueryBooleanExpressionData>
  * - Join operations: innerJoin, fullJoin, outerJoin
  * - Transformations: sliceAxes, sort, filter
  */
-export type QueryData =
-  | QueryColumnData
-  | QueryInlineColumnData
-  | QuerySparseToDenseColumnData
-  | QuerySymmetricJoinData
-  | QueryOuterJoinData
-  | QuerySliceAxesData
-  | QuerySortData
-  | QueryFilterData;
+export type DataQuery =
+  | DataQueryColumn
+  | DataQueryInlineColumn
+  | DataQuerySparseToDenseColumn
+  | DataQuerySymmetricJoin
+  | DataQueryOuterJoin
+  | DataQuerySliceAxes
+  | DataQuerySort
+  | DataQueryFilter;
 
 /** @see ExprAxisRef */
-export type ExprAxisRefData = ExprAxisRef<number>;
+export type DataExprAxisRef = ExprAxisRef<number>;
 /** @see ExprColumnRef */
-export type ExprColumnRefData = ExprColumnRef<number>;
+export type DataExprColumnRef = ExprColumnRef<number>;
 
-export type QueryExpressionData =
-  | ExprColumnRefData
-  | ExprAxisRefData
+export type DataQueryExpression =
+  | DataExprColumnRef
+  | DataExprAxisRef
   | ExprConstant
-  | ExprNumericBinary<QueryExpressionData>
-  | ExprNumericComparison<QueryExpressionData>
-  | ExprNumericUnary<QueryExpressionData>
-  | ExprStringEquals<QueryExpressionData>
-  | ExprStringContains<QueryExpressionData>
-  | ExprStringRegex<QueryExpressionData>
-  | ExprStringContainsFuzzy<QueryExpressionData>
-  | ExprIsNull<QueryExpressionData>
-  | ExprIfNull<QueryExpressionData>
-  | ExprLogicalUnary<QueryExpressionData>
-  | ExprLogicalVariadic<QueryExpressionData>
-  | ExprIsIn<QueryExpressionData, string>
-  | ExprIsIn<QueryExpressionData, number>;
+  | ExprNumericBinary<DataQueryExpression>
+  | ExprNumericComparison<DataQueryExpression>
+  | ExprNumericUnary<DataQueryExpression>
+  | ExprStringEquals<DataQueryExpression>
+  | ExprStringContains<DataQueryExpression>
+  | ExprStringRegex<DataQueryExpression>
+  | ExprStringContainsFuzzy<DataQueryExpression>
+  | ExprIsNull<DataQueryExpression>
+  | ExprIfNull<DataQueryExpression>
+  | ExprLogicalUnary<DataQueryExpression>
+  | ExprLogicalVariadic<DataQueryExpression>
+  | ExprIsIn<DataQueryExpression, string>
+  | ExprIsIn<DataQueryExpression, number>;
 
-export type QueryBooleanExpressionData = InferBooleanExpressionUnion<QueryExpressionData>;
+export type DataQueryBooleanExpression = InferBooleanExpressionUnion<DataQueryExpression>;

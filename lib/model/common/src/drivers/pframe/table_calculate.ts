@@ -4,7 +4,7 @@ import type { PObjectId } from "../../pool";
 import { assertNever } from "../../util";
 import type { PColumn } from "./spec/spec";
 import type { PColumnValues } from "./data_info";
-import type { QuerySpec, QueryJoinEntrySpec } from "./query/query_spec";
+import type { SpecQuery, SpecQueryJoinEntry } from "./query/query_spec";
 
 /** Defines a terminal column node in the join request tree */
 export interface ColumnJoinEntry<Col> {
@@ -377,7 +377,7 @@ export interface PTableDef<Col> {
 /** Information required to instantiate a PTable (V2, query-based). */
 export interface PTableDefV2<Col> {
   /** Pre-built query spec describing joins, filters and sorting */
-  readonly query: QuerySpec<Col>;
+  readonly query: SpecQuery<Col>;
 }
 
 /** Request to create and retrieve entirety of data of PTable. */
@@ -403,8 +403,8 @@ export function mapPTableDefV2<C1, C2>(def: PTableDefV2<C1>, cb: (c: C1) => C2):
   return { query: mapQuerySpec(def.query, cb) };
 }
 
-/** Recursively maps all column references in a QuerySpec tree. */
-export function mapQuerySpec<C1, C2>(query: QuerySpec<C1>, cb: (c: C1) => C2): QuerySpec<C2> {
+/** Recursively maps all column references in a SpecQuery tree. */
+export function mapQuerySpec<C1, C2>(query: SpecQuery<C1>, cb: (c: C1) => C2): SpecQuery<C2> {
   switch (query.type) {
     case "column":
       return { type: "column", column: cb(query.column) };
@@ -436,9 +436,9 @@ export function mapQuerySpec<C1, C2>(query: QuerySpec<C1>, cb: (c: C1) => C2): Q
 }
 
 function mapQueryJoinEntrySpec<C1, C2>(
-  entry: QueryJoinEntrySpec<C1>,
+  entry: SpecQueryJoinEntry<C1>,
   cb: (c: C1) => C2,
-): QueryJoinEntrySpec<C2> {
+): SpecQueryJoinEntry<C2> {
   return {
     ...entry,
     entry: mapQuerySpec(entry.entry, cb),

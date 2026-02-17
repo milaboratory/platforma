@@ -4,11 +4,11 @@ import type {
   FilterSpecLeaf,
   PTableColumnId,
   SingleAxisSelector,
-  QueryExpressionSpec,
+  SpecQueryExpression,
 } from "@milaboratories/pl-model-common";
 
-/** Parses a CanonicalizedJson<PTableColumnId> string into a QueryExpressionSpec reference. */
-function resolveColumnRef(columnStr: string): QueryExpressionSpec {
+/** Parses a CanonicalizedJson<PTableColumnId> string into a SpecQueryExpression reference. */
+function resolveColumnRef(columnStr: string): SpecQueryExpression {
   const parsed = JSON.parse(columnStr) as PTableColumnId;
   if (parsed.type === "axis") {
     return { type: "axisRef", value: parsed.id as SingleAxisSelector };
@@ -16,8 +16,8 @@ function resolveColumnRef(columnStr: string): QueryExpressionSpec {
   return { type: "columnRef", value: parsed.id };
 }
 
-/** Converts a FilterSpec tree into a QueryExpressionSpec. */
-export function filterSpecToExpr(filter: FilterSpec<FilterSpecLeaf<string>>): QueryExpressionSpec {
+/** Converts a FilterSpec tree into a SpecQueryExpression. */
+export function filterSpecToExpr(filter: FilterSpec<FilterSpecLeaf<string>>): SpecQueryExpression {
   switch (filter.type) {
     case "and":
     case "or": {

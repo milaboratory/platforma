@@ -1,7 +1,7 @@
 import { assertNever } from "../../../util";
-import type { QueryBooleanExpressionSpec, QueryExpressionSpec, QuerySpec } from "./query_spec";
+import type { SpecQueryBooleanExpression, SpecQueryExpression, SpecQuery } from "./query_spec";
 
-const booleanTypesSet = new Set<QueryBooleanExpressionSpec["type"]>([
+const booleanTypesSet = new Set<SpecQueryBooleanExpression["type"]>([
   "numericComparison",
   "stringEquals",
   "stringContains",
@@ -14,21 +14,21 @@ const booleanTypesSet = new Set<QueryBooleanExpressionSpec["type"]>([
   "isIn",
 ]);
 
-export function isBooleanExpression(expr: QueryExpressionSpec): expr is QueryBooleanExpressionSpec {
+export function isBooleanExpression(expr: SpecQueryExpression): expr is SpecQueryBooleanExpression {
   return booleanTypesSet.has(
     // @ts-expect-error -- TypeScript doesn't understand the discriminated union here, but we do at runtime
     expr.type,
   );
 }
 
-/** Collects all column references from a QuerySpec tree. */
-export function collectQueryColumns<C>(query: QuerySpec<C>): C[] {
+/** Collects all column references from a SpecQuery tree. */
+export function collectQueryColumns<C>(query: SpecQuery<C>): C[] {
   const result: C[] = [];
   collectQueryColumnsImpl(query, result);
   return result;
 }
 
-function collectQueryColumnsImpl<C>(query: QuerySpec<C>, result: C[]): void {
+function collectQueryColumnsImpl<C>(query: SpecQuery<C>, result: C[]): void {
   switch (query.type) {
     case "column":
       result.push(query.column);

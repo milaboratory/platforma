@@ -30,8 +30,8 @@ import {
   type PTableRecordFilter,
   type JsonSerializable,
   type PTableDefV2,
-  type QuerySpec,
-  type QueryJoinEntrySpec,
+  type SpecQuery,
+  type SpecQueryJoinEntry,
   mapQuerySpec,
   collectQueryColumns,
 } from "@platforma-sdk/model";
@@ -223,7 +223,7 @@ export class AbstractPFrameDriver<
     const { tableSpec, dataQuery } = specFrame.evaluateQuery(
       // WASM crate expects `columnId` field name, our types use `column`
       // @todo: remove it after update wasm package
-      querySpecToWasm(sortedQuery) as QuerySpec,
+      querySpecToWasm(sortedQuery) as SpecQuery,
     );
 
     const pTableEntry = this.pTableDefs.acquire({
@@ -568,7 +568,7 @@ function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
   };
 }
 
-function cmpQueryJoinEntrySpec(lhs: QueryJoinEntrySpec, rhs: QueryJoinEntrySpec): number {
+function cmpQueryJoinEntrySpec(lhs: SpecQueryJoinEntry, rhs: SpecQueryJoinEntry): number {
   const cmp = cmpQuerySpec(lhs.entry, rhs.entry);
   if (cmp !== 0) return cmp;
   if (lhs.qualifications.length !== rhs.qualifications.length) {
@@ -582,7 +582,7 @@ function cmpQueryJoinEntrySpec(lhs: QueryJoinEntrySpec, rhs: QueryJoinEntrySpec)
   return 0;
 }
 
-function cmpQuerySpec(lhs: QuerySpec, rhs: QuerySpec): number {
+function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
   if (lhs.type !== rhs.type) {
     return lhs.type < rhs.type ? -1 : 1;
   }
@@ -641,7 +641,7 @@ function cmpQuerySpec(lhs: QuerySpec, rhs: QuerySpec): number {
   }
 }
 
-function sortQueryJoinEntrySpec(entry: QueryJoinEntrySpec): QueryJoinEntrySpec {
+function sortQueryJoinEntrySpec(entry: SpecQueryJoinEntry): SpecQueryJoinEntry {
   const sortedQualifications = entry.qualifications.toSorted((lhs, rhs) => {
     const lhsKey = canonicalizeJson(lhs.axis);
     const rhsKey = canonicalizeJson(rhs.axis);
@@ -653,7 +653,7 @@ function sortQueryJoinEntrySpec(entry: QueryJoinEntrySpec): QueryJoinEntrySpec {
   };
 }
 
-function sortQuerySpec(query: QuerySpec): QuerySpec {
+function sortQuerySpec(query: SpecQuery): SpecQuery {
   switch (query.type) {
     case "column":
     case "inlineColumn":
@@ -711,10 +711,10 @@ function sortQuerySpec(query: QuerySpec): QuerySpec {
 }
 
 /**
- * Converts a QuerySpec to the format expected by the WASM crate.
+ * Converts a SpecQuery to the format expected by the WASM crate.
  * Renames `column` → `columnId` in leaf nodes (QueryColumn, QuerySparseToDenseColumn).
  */
-function querySpecToWasm(query: QuerySpec): unknown {
+function querySpecToWasm(query: SpecQuery): unknown {
   switch (query.type) {
     case "column":
       return { type: "column", columnId: query.column };

@@ -6,9 +6,9 @@ import {
   type PFrameDriver,
   type PObjectId,
   type PTableColumnId,
-  type QuerySpec,
-  type QueryExpressionSpec,
-  QueryBooleanExpressionSpec,
+  type SpecQuery,
+  type SpecQueryExpression,
+  SpecQueryBooleanExpression,
 } from "@platforma-sdk/model";
 import { readJson, PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { test } from "vitest";
@@ -184,9 +184,9 @@ test("createTableV2 support", async ({ expect }) => {
 
   const column = { id: columnId, spec: columnSpec, data: inlineData };
 
-  const columnRef: QueryExpressionSpec = { type: "columnRef", value: columnId };
+  const columnRef: SpecQueryExpression = { type: "columnRef", value: columnId };
 
-  const baseQuery: QuerySpec<typeof column> = { type: "column", column };
+  const baseQuery: SpecQuery<typeof column> = { type: "column", column };
 
   const uiDriver: PFrameDriver = driver;
 
@@ -217,7 +217,7 @@ test("createTableV2 support", async ({ expect }) => {
           type: "patternEquals",
           column: axisColumnStr,
           value: "b",
-        }) as QueryBooleanExpressionSpec,
+        }) as SpecQueryBooleanExpression,
       },
     });
 
@@ -239,7 +239,7 @@ test("createTableV2 support", async ({ expect }) => {
           type: "greaterThan",
           column: valueColumnStr,
           x: 15,
-        }) as QueryBooleanExpressionSpec,
+        }) as SpecQueryBooleanExpression,
       },
     });
 
@@ -286,7 +286,7 @@ test("createTableV2 support", async ({ expect }) => {
               { type: "greaterThan", column: valueColumnStr, x: 5 },
               { type: "patternNotEquals", column: axisColumnStr, value: "c" },
             ],
-          }) as QueryBooleanExpressionSpec,
+          }) as SpecQueryBooleanExpression,
         },
         sortBy: [
           {
