@@ -1284,6 +1284,8 @@ export class ProjectMutator {
         }
       }
 
+      this.blocksWithChangedInputs.add(blockId);
+
       // resetting staging outputs for all downstream blocks
       this.getStagingGraph().traverse("downstream", [blockId], ({ id }) => this.resetStaging(id));
     }
