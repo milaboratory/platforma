@@ -7,6 +7,7 @@ import type {
   PlatformaV3,
   ValueWithUTag,
   AuthorMarker,
+  PlatformaExtended,
 } from "@platforma-sdk/model";
 import {
   hasAbortError,
@@ -19,7 +20,7 @@ import type { Ref } from "vue";
 import { reactive, computed, ref } from "vue";
 import type { OutputValues, OutputErrors, AppSettings } from "../types";
 import { parseQuery } from "../urls";
-import { MultiError } from "../utils";
+import { ensureOutputHasStableFlag, MultiError } from "../utils";
 import { applyPatch } from "fast-json-patch";
 import { UpdateSerializer } from "./UpdateSerializer";
 import { watchIgnorable } from "@vueuse/core";
@@ -67,7 +68,7 @@ export function createAppV3<
   Href extends `/${string}` = `/${string}`,
 >(
   state: ValueWithUTag<BlockStateV3<Outputs, Data, Href>>,
-  platforma: PlatformaV3<Args, Outputs, Data, Href>,
+  platforma: PlatformaExtended<PlatformaV3<Args, Outputs, Data, Href>>,
   settings: AppSettings,
 ) {
   const debug = (msg: string, ...rest: unknown[]) => {
@@ -138,12 +139,12 @@ export function createAppV3<
   }>;
 
   const updateData = async (value: Data) => {
-    return platforma.mutateStorage({ operation: "update-data", value }, nextAuthorMarker());
+    return platforma.mutateStorage({ operation: "update-block-data", value }, nextAuthorMarker());
   };
 
   const updatePluginData = async (pluginId: string, value: unknown) => {
     return platforma.mutateStorage(
-      { operation: "update-plugin", pluginId, value },
+      { operation: "update-plugin-data", pluginId, value },
       nextAuthorMarker(),
     );
   };
@@ -160,7 +161,15 @@ export function createAppV3<
 
   const outputs = computed<OutputValues<Outputs>>(() => {
     const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(
-      ([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined],
+      ([k, outputWithStatus]) =>
+        platforma.blockModelInfo.outputs[k]?.withStatus
+          ? [k, ensureOutputHasStableFlag(outputWithStatus)]
+          : [
+              k,
+              outputWithStatus.ok && outputWithStatus.value !== undefined
+                ? outputWithStatus.value
+                : undefined,
+            ],
     );
     return Object.fromEntries(entries);
   });

@@ -11,7 +11,7 @@
  * - Version 1: Legacy BlockModel - state is {args, uiState}, managed directly by middle layer
  * - Version 2: BlockModelV3 - uses blockStorage with VM-based callbacks (this facade)
  *
- * This facade (BlockStorageFacadeV2) is used by blocks with `requiresModelAPIVersion: 2`.
+ * This facade (BlockStorageFacade) is used by blocks with `requiresModelAPIVersion: 2`.
  * The version number matches the model API version for clarity.
  *
  * ============================================================================
@@ -47,9 +47,10 @@
  * @module block_storage_facade
  */
 
-import type { MutateStoragePayload } from "./block_storage";
+import type { MutateStoragePayload, BlockStorage, StorageDebugView } from "./block_storage";
 import type { ConfigRenderLambda } from "./bconfig";
-import { createRenderLambda } from "./internal";
+import { createRenderLambda, tryRegisterCallback } from "./internal";
+import type { StringifiedJson } from "@milaboratories/pl-model-common";
 
 // =============================================================================
 // Facade Version
@@ -74,17 +75,12 @@ export const BLOCK_STORAGE_FACADE_VERSION = 2;
  * 2. Add the callback signature to FacadeCallbackTypes below
  * 3. The BlockStorageFacade type will automatically include it
  */
-export const BlockStorageFacadeV2Callbacks = {
-  // Storage operations (registered in block_storage_vm.ts)
+export const BlockStorageFacadeCallbacks = {
   StorageApplyUpdate: "__pl_storage_applyUpdate",
   StorageDebugView: "__pl_storage_debugView",
   StorageMigrate: "__pl_storage_migrate",
   ArgsDerive: "__pl_args_derive",
   PrerunArgsDerive: "__pl_prerunArgs_derive",
-
-  // Data model operations (registered in block_migrations.ts)
-  DataInitial: "__pl_data_initial",
-  DataUpgrade: "__pl_data_upgrade",
   StorageInitial: "__pl_storage_initial",
 } as const;
 
@@ -101,10 +97,10 @@ function createFacadeHandles<T extends Record<string, string>>(
 }
 
 /**
- * Lambda handles for V2 facade callbacks.
+ * Lambda handles for facade callbacks.
  * Used by the middle layer to invoke callbacks via executeSingleLambda().
  */
-export const BlockStorageFacadeV2Handles = createFacadeHandles(BlockStorageFacadeV2Callbacks);
+export const BlockStorageFacadeHandles = createFacadeHandles(BlockStorageFacadeCallbacks);
 
 // =============================================================================
 // Facade Interface (source of truth for callback signatures)
@@ -113,7 +109,7 @@ export const BlockStorageFacadeV2Handles = createFacadeHandles(BlockStorageFacad
 /**
  * The complete facade interface between bundled blocks (SDK) and middle layer.
  *
- * This interface defines ALL callbacks that a V2 block registers. The middle layer
+ * This interface defines ALL callbacks that a block registers. The middle layer
  * calls these callbacks to perform storage operations.
  *
  * ALL types are inlined to simplify versioning - when a callback changes,
@@ -122,7 +118,7 @@ export const BlockStorageFacadeV2Handles = createFacadeHandles(BlockStorageFacad
  * BACKWARD COMPATIBILITY:
  * - This interface can only be EXTENDED, never shrunk
  * - Existing callback signatures MUST NOT change
- * - Middle layer should use Partial<BlockStorageFacadeV2> when dealing with
+ * - Middle layer should use Partial<BlockStorageFacade> when dealing with
  *   blocks of unknown version (older blocks may not have all callbacks)
  *
  * Each callback is documented with:
@@ -130,7 +126,7 @@ export const BlockStorageFacadeV2Handles = createFacadeHandles(BlockStorageFacad
  * - Parameter descriptions
  * - Return value description
  */
-export interface BlockStorageFacadeV2 {
+export interface BlockStorageFacade {
   /**
    * Apply state update to storage.
    * Called when UI updates block state (setState) or plugin data.
@@ -138,10 +134,10 @@ export interface BlockStorageFacadeV2 {
    * @param payload - Update payload with operation type and value
    * @returns Updated storage as JSON string
    */
-  [BlockStorageFacadeV2Callbacks.StorageApplyUpdate]: (
+  [BlockStorageFacadeCallbacks.StorageApplyUpdate]: (
     currentStorageJson: string,
     payload: MutateStoragePayload,
-  ) => string;
+  ) => StringifiedJson<BlockStorage>;
 
   /**
    * Get debug view of storage.
@@ -149,7 +145,9 @@ export interface BlockStorageFacadeV2 {
    * @param rawStorage - Raw storage data (may be JSON string or object)
    * @returns JSON string containing StorageDebugView
    */
-  [BlockStorageFacadeV2Callbacks.StorageDebugView]: (rawStorage: unknown) => string;
+  [BlockStorageFacadeCallbacks.StorageDebugView]: (
+    rawStorage: unknown,
+  ) => StringifiedJson<StorageDebugView>;
 
   /**
    * Run storage migration.
@@ -157,11 +155,13 @@ export interface BlockStorageFacadeV2 {
    * @param currentStorageJson - Current storage as JSON string (or undefined for new blocks)
    * @returns Migration result - either error or success with new storage
    */
-  [BlockStorageFacadeV2Callbacks.StorageMigrate]: (
-    currentStorageJson: string | undefined,
-  ) =>
+  [BlockStorageFacadeCallbacks.StorageMigrate]: (currentStorageJson: string | undefined) =>
     | { error: string }
-    | { error?: undefined; newStorageJson: string; info: string; warn?: string };
+    | {
+        error?: undefined;
+        newStorageJson: StringifiedJson<BlockStorage>;
+        info: string;
+      };
 
   /**
    * Derive args from storage.
@@ -169,7 +169,7 @@ export interface BlockStorageFacadeV2 {
    * @param storageJson - Storage as JSON string
    * @returns Args derivation result - either error or derived value
    */
-  [BlockStorageFacadeV2Callbacks.ArgsDerive]: (
+  [BlockStorageFacadeCallbacks.ArgsDerive]: (
     storageJson: string,
   ) => { error: string } | { error?: undefined; value: unknown };
 
@@ -179,33 +179,21 @@ export interface BlockStorageFacadeV2 {
    * @param storageJson - Storage as JSON string
    * @returns Args derivation result - either error or derived value
    */
-  [BlockStorageFacadeV2Callbacks.PrerunArgsDerive]: (
+  [BlockStorageFacadeCallbacks.PrerunArgsDerive]: (
     storageJson: string,
   ) => { error: string } | { error?: undefined; value: unknown };
 
   /**
-   * Get initial data for new blocks.
-   * Called when creating a new block instance.
-   * @returns Initial data value
-   */
-  [BlockStorageFacadeV2Callbacks.DataInitial]: () => unknown;
-
-  /**
-   * Upgrade data from old version.
-   * Called during migration to transform data between versions.
-   * @param versioned - Object with version and data to upgrade
-   * @returns Migration result with upgraded data and new version
-   */
-  [BlockStorageFacadeV2Callbacks.DataUpgrade]: (versioned: { version: string; data: unknown }) => {
-    version: string;
-    data: unknown;
-    warning?: string;
-  };
-
-  /**
    * Get initial storage JSON for new blocks.
    * Called when creating a new block to get complete initial storage.
-   * @returns Initial storage as JSON string
+   * @returns Initial storage as branded JSON string
    */
-  [BlockStorageFacadeV2Callbacks.StorageInitial]: () => string;
+  [BlockStorageFacadeCallbacks.StorageInitial]: () => StringifiedJson<BlockStorage>;
+}
+
+/** Register all facade callbacks at once. Ensures all required callbacks are provided. */
+export function registerFacadeCallbacks(callbacks: BlockStorageFacade): void {
+  for (const key of Object.values(BlockStorageFacadeCallbacks)) {
+    tryRegisterCallback(key, callbacks[key] as (...args: any[]) => any);
+  }
 }

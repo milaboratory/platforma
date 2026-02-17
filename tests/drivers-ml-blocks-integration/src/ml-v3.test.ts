@@ -53,12 +53,12 @@ test.skip("v3: disconnect:runBlock throws DisconnectedError when connection drop
       const block2Id = await prj.addBlock("Block 2", sumNumbersSpec);
 
       await prj.mutateBlockStorage(block1Id, {
-        operation: "update-data",
+        operation: "update-block-data",
         value: { numbers: [1, 2, 3] },
       });
 
       await prj.mutateBlockStorage(block2Id, {
-        operation: "update-data",
+        operation: "update-block-data",
         value: { sources: [outputRef(block1Id, "numbers")] },
       });
 
@@ -200,15 +200,15 @@ test("v3: simple project manipulations test", { timeout: 40000 }, async ({ expec
 
     await prj.setNavigationState(block1Id, { href: "/section1" });
     await prj.mutateBlockStorage(block1Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [1, 2, 3] },
     });
     await prj.mutateBlockStorage(block2Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [3, 4, 5] },
     });
     await prj.mutateBlockStorage(block3Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { sources: [outputRef(block1Id, "numbers"), outputRef(block2Id, "numbers")] },
     });
     await prj.runBlock(block3Id);
@@ -266,7 +266,7 @@ test("v3: simple project manipulations test", { timeout: 40000 }, async ({ expec
     expect(overviewSnapshot3.blocks.find((b) => b.id === block2Id)?.stale).toEqual(false);
 
     await prj.mutateBlockStorage(block2Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [3, 4, 5] },
     });
 
@@ -321,16 +321,16 @@ test("v3: reorder & rename blocks", { timeout: 20000 }, async ({ expect }) => {
 
     await prj.setNavigationState(block1Id, { href: "/section1" });
     await prj.mutateBlockStorage(block1Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [1, 2, 3] },
     });
     await prj.mutateBlockStorage(block2Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [3, 4, 5] },
     });
 
     await prj.mutateBlockStorage(block3Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { sources: [outputRef(block1Id, "numbers"), outputRef(block2Id, "numbers")] },
     });
     await prj.runBlock(block3Id);
@@ -384,23 +384,23 @@ test("v3: dependency test", { timeout: 20000 }, async ({ expect }) => {
 
     await prj.setNavigationState(block1Id, { href: "/section1" });
     await prj.mutateBlockStorage(block1Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [1, 2, 3] },
     });
     await prj.mutateBlockStorage(block2Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [3, 4, 5] },
     });
     await prj.mutateBlockStorage(block3Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { sources: [outputRef(block1Id, "numbers"), outputRef(block2Id, "numbers")] },
     });
     await prj.mutateBlockStorage(block4Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { sources: [outputRef(block1Id, "numbers"), outputRef(block2Id, "numbers")] },
     });
     await prj.mutateBlockStorage(block5Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { sources: [outputRef(block1Id, "numbers"), outputRef(block2Id, "numbers")] },
     });
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
@@ -414,17 +414,17 @@ test("v3: dependency test", { timeout: 20000 }, async ({ expect }) => {
     ]);
 
     await prj.mutateBlockStorage(block3Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: {
         sources: [outputRef(block1Id, "numbers", true), outputRef(block2Id, "numbers", true)],
       },
     });
     await prj.mutateBlockStorage(block4Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { sources: [outputRef(block2Id, "numbers", true)] },
     });
     await prj.mutateBlockStorage(block5Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { sources: [outputRef(block1Id, "numbers", true)] },
     });
     const overviewSnapshot2 = await prj.overview.awaitStableValue();
@@ -461,7 +461,7 @@ test("v3: limbo test", async ({ expect }) => {
     });
 
     await prj.mutateBlockStorage(block1Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [1, 2, 3] },
     });
     // V3 Heavy blocks need to be run to produce outputs
@@ -469,7 +469,7 @@ test("v3: limbo test", async ({ expect }) => {
     await awaitBlockDone(prj, block1Id);
 
     await prj.mutateBlockStorage(block2Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { sources: [outputRef(block1Id, "numbers")] },
     });
 
@@ -497,7 +497,7 @@ test("v3: limbo test", async ({ expect }) => {
     });
 
     await prj.mutateBlockStorage(block1Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [2, 3] },
     });
     await prj.runBlock(block1Id);
@@ -540,7 +540,10 @@ test("v3: test error propagation", async ({ expect }) => {
       expect(block.currentBlockPack).toBeDefined();
     });
 
-    await prj.mutateBlockStorage(block1Id, { operation: "update-data", value: { numbers: [1] } });
+    await prj.mutateBlockStorage(block1Id, {
+      operation: "update-block-data",
+      value: { numbers: [1] },
+    });
 
     const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
     expect(block1StableState1.outputs!["errorIfNumberIs999"]).toStrictEqual({
@@ -549,7 +552,10 @@ test("v3: test error propagation", async ({ expect }) => {
       stable: true,
     });
 
-    await prj.mutateBlockStorage(block1Id, { operation: "update-data", value: { numbers: [999] } });
+    await prj.mutateBlockStorage(block1Id, {
+      operation: "update-block-data",
+      value: { numbers: [999] },
+    });
 
     const block1StableState2 = await prj.getBlockState(block1Id).awaitStableValue();
 
@@ -576,7 +582,7 @@ test("v3: block duplication test", async ({ expect }) => {
     // Create original block with some configuration
     const originalBlockId = await prj.addBlock("Original Block", enterNumberSpec);
     await prj.mutateBlockStorage(originalBlockId, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [1, 2, 3] },
     });
     await prj.setBlockSettings(originalBlockId, { versionLock: "patch" });
@@ -612,7 +618,7 @@ test("v3: block duplication test", async ({ expect }) => {
 
     // Verify they are independent - changing one shouldn't affect the other
     await prj.mutateBlockStorage(originalBlockId, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [4, 5, 6] },
     });
 
@@ -678,7 +684,7 @@ test("v3: project open and close test", async ({ expect }) => {
 
     const blockId = await prj.addBlock("Test Block", enterNumberSpec);
     await prj.mutateBlockStorage(blockId, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [1, 2, 3] },
     });
     const overview1 = await prj.overview.awaitStableValue();
@@ -707,7 +713,7 @@ test("v3: block error test", async ({ expect }) => {
     const block3Id = await prj.addBlock("Block 3", sumNumbersSpec);
 
     await prj.mutateBlockStorage(block3Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { sources: [] }, // empty reference list should produce an error
     });
 

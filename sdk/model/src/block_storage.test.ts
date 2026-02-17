@@ -4,18 +4,12 @@ import {
   BLOCK_STORAGE_SCHEMA_VERSION,
   DATA_MODEL_DEFAULT_VERSION,
   createBlockStorage,
-  defaultBlockStorageHandlers,
   getPluginData,
-  getPlugins,
   getStorageData,
-  getStorageDataVersion,
   isBlockStorage,
-  mergeBlockStorageHandlers,
   migrateBlockStorage,
   normalizeBlockStorage,
-  setPlugins,
   updateStorageData,
-  updateStorageDataVersion,
   type MutateStoragePayload,
   type PluginName,
   type PluginRegistry,
@@ -41,7 +35,7 @@ describe("BlockStorage", () => {
 
     it("should return true for BlockStorage with plugin data", () => {
       const storage = updateStorageData(createBlockStorage({ foo: "bar" }), {
-        operation: "update-plugin",
+        operation: "update-plugin-data",
         pluginId: "testPlugin",
         value: { data: 123 },
       });
@@ -169,13 +163,9 @@ describe("BlockStorage", () => {
       expect(getStorageData(storage)).toEqual({ count: 42 });
     });
 
-    it("getStorageDataVersion should return the version", () => {
-      expect(getStorageDataVersion(storage)).toBe("v3");
-    });
-
     it("updateStorageData should return new storage with updated data", () => {
       const newStorage = updateStorageData(storage, {
-        operation: "update-data",
+        operation: "update-block-data",
         value: { count: 100 },
       });
       expect(newStorage.__data).toEqual({ count: 100 });
@@ -184,54 +174,6 @@ describe("BlockStorage", () => {
       // Original should be unchanged
       expect(storage.__data).toEqual({ count: 42 });
     });
-
-    it("updateStorageDataVersion should return new storage with updated version", () => {
-      const newStorage = updateStorageDataVersion(storage, "v5");
-      expect(newStorage.__dataVersion).toBe("v5");
-      expect(newStorage.__data).toEqual({ count: 42 });
-      expect(newStorage[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      // Original should be unchanged
-      expect(storage.__dataVersion).toBe("v3");
-    });
-  });
-
-  describe("Plugin data functions (migration)", () => {
-    const baseStorage = createBlockStorage({});
-
-    it("getPlugins should return empty object when not set", () => {
-      expect(getPlugins(baseStorage)).toEqual({});
-    });
-
-    it("setPlugins should set all plugin entries", () => {
-      const plugins = {
-        table1: { __dataVersion: "v1", __data: { columns: ["a"] } },
-        chart1: { __dataVersion: "v2", __data: { type: "bar" } },
-      };
-      const storage = setPlugins(baseStorage, plugins);
-      expect(storage.__plugins).toEqual(plugins);
-    });
-
-    it("setPlugins should replace existing plugins", () => {
-      const oldPlugins = { old: { __dataVersion: "v1", __data: {} } };
-      const newPlugins = { new: { __dataVersion: "v2", __data: { fresh: true } } };
-      let storage = setPlugins(baseStorage, oldPlugins);
-      storage = setPlugins(storage, newPlugins);
-      expect(storage.__plugins).toEqual(newPlugins);
-    });
-
-    it("setPlugins should set __plugins to empty record when empty", () => {
-      const plugins = { table1: { __dataVersion: "v1", __data: {} } };
-      let storage = setPlugins(baseStorage, plugins);
-      storage = setPlugins(storage, {});
-      expect(storage.__plugins).toEqual({});
-    });
-
-    it("should not modify original storage (immutability)", () => {
-      const plugins = { table1: { __dataVersion: "v1", __data: {} } };
-      const storage = setPlugins(baseStorage, plugins);
-      expect(baseStorage.__plugins).toEqual({});
-      expect(storage.__plugins).toEqual(plugins);
-    });
   });
 
   describe("Plugin data functions (UI)", () => {
@@ -239,7 +181,7 @@ describe("BlockStorage", () => {
 
     it("update-plugin operation should add plugin data with default version", () => {
       const storage = updateStorageData(baseStorage, {
-        operation: "update-plugin",
+        operation: "update-plugin-data",
         pluginId: "table1",
         value: { columns: ["a", "b"] },
       });
@@ -252,10 +194,12 @@ describe("BlockStorage", () => {
     });
 
     it("update-plugin operation should preserve existing version when updating", () => {
-      const plugins = { table1: { __dataVersion: "v5", __data: { old: true } } };
-      let storage = setPlugins(baseStorage, plugins);
+      let storage = {
+        ...baseStorage,
+        __plugins: { table1: { __dataVersion: "v5", __data: { old: true } } },
+      };
       storage = updateStorageData(storage, {
-        operation: "update-plugin",
+        operation: "update-plugin-data",
         pluginId: "table1",
         value: { new: true },
       });
@@ -267,7 +211,7 @@ describe("BlockStorage", () => {
 
     it("getPluginData should retrieve plugin data", () => {
       const storage = updateStorageData(baseStorage, {
-        operation: "update-plugin",
+        operation: "update-plugin-data",
         pluginId: "chart1",
         value: { type: "bar" },
       });
@@ -280,7 +224,7 @@ describe("BlockStorage", () => {
 
     it("should not modify original storage (immutability)", () => {
       const storage = updateStorageData(baseStorage, {
-        operation: "update-plugin",
+        operation: "update-plugin-data",
         pluginId: "table1",
         value: { data: "test" },
       });
@@ -293,7 +237,7 @@ describe("BlockStorage", () => {
     it("update-data operation should update block data", () => {
       const storage = createBlockStorage({ count: 1 });
       const updated = updateStorageData(storage, {
-        operation: "update-data",
+        operation: "update-block-data",
         value: { count: 2 },
       });
       expect(updated.__data).toEqual({ count: 2 });
@@ -302,7 +246,7 @@ describe("BlockStorage", () => {
     it("update-plugin operation should update plugin data", () => {
       const storage = createBlockStorage({});
       const updated = updateStorageData(storage, {
-        operation: "update-plugin",
+        operation: "update-plugin-data",
         pluginId: "plugin1",
         value: { foo: "bar" },
       });
@@ -317,58 +261,6 @@ describe("BlockStorage", () => {
       expect(() => {
         updateStorageData(storage, { operation: "invalid" } as MutateStoragePayload);
       }).toThrow("Unknown storage operation: invalid");
-    });
-  });
-
-  describe("BlockStorageHandlers", () => {
-    describe("defaultBlockStorageHandlers", () => {
-      it("transformStateForStorage should replace data", () => {
-        const storage = createBlockStorage("old");
-        const result = defaultBlockStorageHandlers.transformStateForStorage(storage, "new");
-        expect(result.__data).toBe("new");
-        expect(result.__dataVersion).toBe(DATA_MODEL_DEFAULT_VERSION);
-      });
-
-      it("deriveStateForArgs should return data directly", () => {
-        const storage = createBlockStorage({ data: "test" });
-        expect(defaultBlockStorageHandlers.deriveStateForArgs(storage)).toEqual({ data: "test" });
-      });
-
-      it("migrateStorage should update version only", () => {
-        const storage = createBlockStorage({ data: "test" });
-        const result = defaultBlockStorageHandlers.migrateStorage(storage, "v1", "v3");
-        expect(result.__dataVersion).toBe("v3");
-        expect(result.__data).toEqual({ data: "test" });
-      });
-    });
-
-    describe("mergeBlockStorageHandlers", () => {
-      it("should return defaults when no custom handlers provided", () => {
-        const handlers = mergeBlockStorageHandlers();
-        expect(handlers.transformStateForStorage).toBe(
-          defaultBlockStorageHandlers.transformStateForStorage,
-        );
-        expect(handlers.deriveStateForArgs).toBe(defaultBlockStorageHandlers.deriveStateForArgs);
-        expect(handlers.migrateStorage).toBe(defaultBlockStorageHandlers.migrateStorage);
-      });
-
-      it("should override with custom handlers", () => {
-        const customTransform = <T>(
-          storage: ReturnType<typeof createBlockStorage<T>>,
-          data: T,
-        ) => ({
-          ...storage,
-          __data: data,
-          __dataVersion: `${storage.__dataVersion}-next`,
-        });
-
-        const handlers = mergeBlockStorageHandlers({
-          transformStateForStorage: customTransform,
-        });
-
-        expect(handlers.transformStateForStorage).toBe(customTransform);
-        expect(handlers.deriveStateForArgs).toBe(defaultBlockStorageHandlers.deriveStateForArgs);
-      });
     });
   });
 
@@ -387,16 +279,16 @@ describe("BlockStorage", () => {
       const newRegistry: PluginRegistry = { plugin1: "typeA" as PluginName };
 
       const result = migrateBlockStorage(storage, {
-        migrateBlockData: (data, _fromVersion) => {
-          const d = data as { count: number };
+        migrateBlockData: (versioned) => {
+          const d = versioned.data as { count: number };
           return { data: { count: d.count + 1 }, version: "v2" };
         },
-        migratePluginData: (_pluginId, _pluginName, _entry) => ({
-          __dataVersion: "v2",
-          __data: { value: "migrated" },
+        migratePluginData: (_pluginId, _versioned) => ({
+          version: "v2",
+          data: { value: "migrated" },
         }),
         newPluginRegistry: newRegistry,
-        createPluginData: (_pluginId, _pluginName) => ({ __dataVersion: "v1", __data: {} }),
+        createPluginData: (_pluginId) => ({ version: "v1", data: {} }),
       });
 
       expect(result.success).toBe(true);
@@ -407,7 +299,6 @@ describe("BlockStorage", () => {
           __dataVersion: "v2",
           __data: { value: "migrated" },
         });
-        expect(result.warnings).toEqual([]);
       }
     });
 
@@ -416,15 +307,15 @@ describe("BlockStorage", () => {
       const originalData = storage.__data;
 
       const result = migrateBlockStorage(storage, {
-        migrateBlockData: (_data, _fromVersion) => {
+        migrateBlockData: () => {
           throw new Error("Block migration failed");
         },
-        migratePluginData: (_pluginId, _pluginName, _entry) => ({
-          __dataVersion: "v1",
-          __data: {},
+        migratePluginData: (_pluginId, _versioned) => ({
+          version: "v1",
+          data: {},
         }),
         newPluginRegistry: {},
-        createPluginData: (_pluginId, _pluginName) => ({ __dataVersion: "v1", __data: {} }),
+        createPluginData: (_pluginId) => ({ version: "v1", data: {} }),
       });
 
       expect(result.success).toBe(false);
@@ -441,15 +332,15 @@ describe("BlockStorage", () => {
       const newRegistry: PluginRegistry = { plugin1: "typeA" as PluginName };
 
       const result = migrateBlockStorage(storage, {
-        migrateBlockData: (data, _fromVersion) => ({
-          data: data as { count: number },
+        migrateBlockData: (versioned) => ({
+          data: versioned.data as { count: number },
           version: "v2",
         }),
         migratePluginData: (pluginId) => {
           throw new Error(`Plugin ${pluginId} migration failed`);
         },
         newPluginRegistry: newRegistry,
-        createPluginData: (_pluginId, _pluginName) => ({ __dataVersion: "v1", __data: {} }),
+        createPluginData: (_pluginId) => ({ version: "v1", data: {} }),
       });
 
       expect(result.success).toBe(false);
@@ -464,14 +355,17 @@ describe("BlockStorage", () => {
       const newRegistry: PluginRegistry = { plugin1: "typeB" as PluginName }; // Different type
 
       const result = migrateBlockStorage(storage, {
-        migrateBlockData: (data) => ({ data: data as { count: number }, version: "v2" }),
-        migratePluginData: (_pluginId, _pluginName, _entry) => {
+        migrateBlockData: (versioned) => ({
+          data: versioned.data as { count: number },
+          version: "v2",
+        }),
+        migratePluginData: () => {
           throw new Error("Should not be called for type change");
         },
         newPluginRegistry: newRegistry,
-        createPluginData: (_pluginId, pluginName) => ({
-          __dataVersion: "v1",
-          __data: { fresh: true, type: pluginName },
+        createPluginData: (pluginId) => ({
+          version: "v1",
+          data: { fresh: true, type: newRegistry[pluginId] },
         }),
       });
 
@@ -481,9 +375,6 @@ describe("BlockStorage", () => {
           __dataVersion: "v1",
           __data: { fresh: true, type: "typeB" },
         });
-        expect(result.warnings).toContain(
-          "Plugin 'plugin1' type changed from 'typeA' to 'typeB', data reset",
-        );
       }
     });
 
@@ -492,14 +383,17 @@ describe("BlockStorage", () => {
       const newRegistry: PluginRegistry = { newPlugin: "typeNew" as PluginName };
 
       const result = migrateBlockStorage(storage, {
-        migrateBlockData: (data) => ({ data: data as { count: number }, version: "v2" }),
-        migratePluginData: (_pluginId, _pluginName, _entry) => {
+        migrateBlockData: (versioned) => ({
+          data: versioned.data as { count: number },
+          version: "v2",
+        }),
+        migratePluginData: () => {
           throw new Error("Should not be called for new plugin");
         },
         newPluginRegistry: newRegistry,
-        createPluginData: (_pluginId, _pluginName) => ({
-          __dataVersion: "v1",
-          __data: { initialized: true },
+        createPluginData: (_pluginId) => ({
+          version: "v1",
+          data: { initialized: true },
         }),
       });
 
@@ -512,22 +406,28 @@ describe("BlockStorage", () => {
       }
     });
 
-    it("should remove orphaned plugins and add warning", () => {
+    it("should drop plugins not in new registry", () => {
       const storage = createTestStorage();
       const newRegistry: PluginRegistry = {}; // Empty - removes plugin1
 
       const result = migrateBlockStorage(storage, {
-        migrateBlockData: (data) => ({ data: data as { count: number }, version: "v2" }),
-        migratePluginData: () => ({ __dataVersion: "v1", __data: {} }),
+        migrateBlockData: (versioned) => ({
+          data: versioned.data as { count: number },
+          version: "v2",
+        }),
+        migratePluginData: () => {
+          throw new Error("Should not be called for dropped plugin");
+        },
         newPluginRegistry: newRegistry,
-        createPluginData: () => ({ __dataVersion: "v1", __data: {} }),
+        createPluginData: () => {
+          throw new Error("Should not be called for dropped plugin");
+        },
       });
 
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.storage.__plugins).toEqual({});
         expect(result.storage.__pluginRegistry).toEqual({});
-        expect(result.warnings).toContain("Plugin 'plugin1' removed (no longer in registry)");
       }
     });
 
@@ -536,75 +436,19 @@ describe("BlockStorage", () => {
       const newRegistry: PluginRegistry = { plugin1: "typeA" as PluginName };
 
       const result = migrateBlockStorage(storage, {
-        migrateBlockData: (data) => ({ data: data as { count: number }, version: "v2" }),
+        migrateBlockData: (versioned) => ({
+          data: versioned.data as { count: number },
+          version: "v2",
+        }),
         migratePluginData: () => undefined, // Remove plugin
         newPluginRegistry: newRegistry,
-        createPluginData: () => ({ __dataVersion: "v1", __data: {} }),
+        createPluginData: () => ({ version: "v1", data: {} }),
       });
 
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.storage.__plugins).toEqual({});
       }
-    });
-  });
-
-  describe("Combined plugin and block data operations", () => {
-    it("should support plugin migration workflow (transactional)", () => {
-      let storage = createBlockStorage({ blockData: "test" });
-
-      // Simulate migration: set all plugins together (transactional)
-      const plugins = {
-        mainTable: { __dataVersion: "v1", __data: { columns: ["id", "name"] } },
-        sideChart: { __dataVersion: "v2", __data: { type: "bar" } },
-      };
-      storage = setPlugins(storage, plugins);
-
-      // Verify state
-      expect(getPlugins(storage)).toEqual(plugins);
-      expect(getPluginData(storage, "mainTable")).toEqual({ columns: ["id", "name"] });
-      expect(getPluginData(storage, "sideChart")).toEqual({ type: "bar" });
-
-      // Simulate removing all plugins during migration
-      storage = setPlugins(storage, {});
-
-      // Verify removal
-      expect(getPlugins(storage)).toEqual({});
-      expect(storage.__plugins).toEqual({});
-    });
-
-    it("should support UI updating plugin data without affecting version", () => {
-      // Setup: migration sets plugins
-      const plugins = { table1: { __dataVersion: "v3", __data: { state: "initial" } } };
-      let storage = createBlockStorage({});
-      storage = setPlugins(storage, plugins);
-
-      // UI updates plugin data - version should be preserved
-      storage = updateStorageData(storage, {
-        operation: "update-plugin",
-        pluginId: "table1",
-        value: { state: "updated" },
-      });
-
-      expect(storage.__plugins?.table1).toEqual({
-        __dataVersion: "v3", // preserved
-        __data: { state: "updated" },
-      });
-    });
-
-    it("should preserve block data when manipulating plugins", () => {
-      let storage = createBlockStorage({ important: "data" }, "v5");
-
-      const plugins = { plugin1: { __dataVersion: "v1", __data: { pluginData: true } } };
-      storage = setPlugins(storage, plugins);
-
-      expect(storage.__data).toEqual({ important: "data" });
-      expect(storage.__dataVersion).toBe("v5");
-
-      storage = setPlugins(storage, {});
-
-      expect(storage.__data).toEqual({ important: "data" });
-      expect(storage.__dataVersion).toBe("v5");
     });
   });
 });

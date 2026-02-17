@@ -1,6 +1,3 @@
-import { tryRegisterCallback } from "./internal";
-import { createBlockStorage } from "./block_storage";
-
 export type DataVersionKey = string;
 export type DataVersionMap = Record<string, unknown>;
 export type DataMigrateFn<From, To> = (prev: Readonly<From>) => To;
@@ -434,13 +431,6 @@ export class DataModel<State> {
   }
 
   /**
-   * Number of migration steps defined.
-   */
-  get migrationCount(): number {
-    return this.steps.length;
-  }
-
-  /**
    * Get a fresh copy of the initial data.
    */
   initialData(): State {
@@ -508,23 +498,5 @@ export class DataModel<State> {
     }
 
     return { version: this.version, data: currentData as State };
-  }
-
-  /**
-   * Register callbacks for use in the VM.
-   * Called by BlockModelV3.create() to set up internal callbacks.
-   *
-   * @internal
-   */
-  registerCallbacks(): void {
-    tryRegisterCallback("__pl_data_initial", () => this.initialDataFn());
-    tryRegisterCallback("__pl_data_upgrade", (versioned: DataVersioned<unknown>) =>
-      this.migrate(versioned),
-    );
-    tryRegisterCallback("__pl_storage_initial", () => {
-      const { version, data } = this.getDefaultData();
-      const storage = createBlockStorage(data, version);
-      return JSON.stringify(storage);
-    });
   }
 }

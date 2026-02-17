@@ -1,21 +1,9 @@
 /**
  * BlockStorage VM Integration - Internal module for VM-based storage operations.
  *
- * This module auto-registers internal callbacks that the middle layer can invoke
- * to perform storage transformations. Block developers never interact with these
- * directly - they only see `state`.
- *
- * Registered callbacks (all prefixed with `__pl_` for internal SDK use):
- * - `__pl_storage_applyUpdate`: (currentStorageJson, payload) => updatedStorageJson
- * - `__pl_storage_debugView`: (rawStorage) => JSON string with storage debug view
- * - `__pl_storage_migrate`: (currentStorageJson) => MigrationResult
- * - `__pl_args_derive`: (storageJson) => ArgsDeriveResult
- * - `__pl_prerunArgs_derive`: (storageJson) => ArgsDeriveResult
- *
- * Callbacks registered by DataModel.registerCallbacks():
- * - `__pl_data_initial`: () => initial data
- * - `__pl_data_upgrade`: (versioned) => DataMigrationResult
- * - `__pl_storage_initial`: () => initial BlockStorage as JSON string
+ * Registers facade callbacks (see BlockStorageFacadeCallbacks) that the middle layer
+ * invokes via executeSingleLambda(). Also defines BlockPrivateCallbacks used for
+ * intra-block-pack communication with BlockModelV3.
  *
  * @module block_storage_vm
  * @internal
@@ -28,6 +16,7 @@ import {
   type MutateStoragePayload,
   type StorageDebugView,
   type PluginRegistry,
+  type VersionedData,
   createBlockStorage,
   getStorageData,
   isBlockStorage,
@@ -38,6 +27,48 @@ import {
 
 import { stringifyJson, type StringifiedJson } from "@milaboratories/pl-model-common";
 import { tryGetCfgRenderCtx, tryRegisterCallback } from "./internal";
+import type { DataMigrationResult, DataVersioned } from "./block_migrations";
+import { BlockStorageFacadeCallbacks, registerFacadeCallbacks } from "./block_storage_facade";
+
+/** Registered in BlockModelV3._done(). */
+export const BlockPrivateCallbacks = {
+  BlockDataMigrate: "blockData_migrate",
+  BlockDataInit: "blockData_init",
+  PluginRegistry: "pluginRegistry",
+  PluginDataMigrate: "pluginData_migrate",
+  PluginDataInit: "pluginData_init",
+} as const;
+
+/** Type signatures for BlockPrivateCallbacks. */
+export interface BlockPrivateCallbackTypes {
+  [BlockPrivateCallbacks.BlockDataMigrate]: (
+    versioned: DataVersioned<unknown>,
+  ) => DataMigrationResult<unknown>;
+  [BlockPrivateCallbacks.BlockDataInit]: () => DataVersioned<unknown>;
+  [BlockPrivateCallbacks.PluginRegistry]: () => PluginRegistry;
+  [BlockPrivateCallbacks.PluginDataMigrate]: (
+    pluginId: string,
+    versioned: DataVersioned<unknown>,
+  ) => DataMigrationResult<unknown> | undefined;
+  [BlockPrivateCallbacks.PluginDataInit]: (pluginId: string) => DataVersioned<unknown>;
+}
+
+/** Register all private callbacks at once. Ensures all required callbacks are provided. */
+export function registerPrivateCallbacks(callbacks: BlockPrivateCallbackTypes): void {
+  for (const key of Object.values(BlockPrivateCallbacks)) {
+    tryRegisterCallback(key, callbacks[key] as (...args: any[]) => any);
+  }
+}
+
+/** Typed callback lookup — throws if not registered. */
+function getPrivateCallback<K extends keyof BlockPrivateCallbackTypes>(
+  ctx: { callbackRegistry: Record<string, unknown> },
+  key: K,
+): BlockPrivateCallbackTypes[K] {
+  const cb = ctx.callbackRegistry[key];
+  if (!cb) throw new Error(`${key} callback not registered`);
+  return cb as BlockPrivateCallbackTypes[K];
+}
 
 /**
  * Result of storage normalization
@@ -101,16 +132,19 @@ function normalizeStorage(rawStorage: unknown): NormalizeStorageResult {
  * Used when setData is called from the frontend.
  *
  * @param currentStorageJson - Current storage as JSON string (must be defined)
- * @param newData - New data from application
- * @returns Updated storage as JSON string
+ * @param payload - Update payload with operation type and value
+ * @returns Updated storage as StringifiedJson<BlockStorage>
  */
-function applyStorageUpdate(currentStorageJson: string, payload: MutateStoragePayload): string {
+function applyStorageUpdate(
+  currentStorageJson: string,
+  payload: MutateStoragePayload,
+): StringifiedJson<BlockStorage> {
   const { storage: currentStorage } = normalizeStorage(currentStorageJson);
 
   // Update data while preserving other storage fields (version, plugins)
   const updatedStorage = updateStorageData(currentStorage, payload);
 
-  return JSON.stringify(updatedStorage);
+  return stringifyJson(updatedStorage);
 }
 
 /**
@@ -126,16 +160,8 @@ function isLegacyModelV1ApiFormat(data: unknown): data is { args?: unknown } {
 }
 
 // =============================================================================
-// Auto-register internal callbacks when module is loaded in VM
+// Facade Callback Implementations
 // =============================================================================
-
-// Register apply update callback (requires existing storage)
-tryRegisterCallback(
-  "__pl_storage_applyUpdate",
-  (currentStorageJson: string, payload: MutateStoragePayload) => {
-    return applyStorageUpdate(currentStorageJson, payload);
-  },
-);
 
 /**
  * Gets storage debug view from raw storage data.
@@ -153,11 +179,6 @@ function getStorageDebugView(rawStorage: unknown): StringifiedJson<StorageDebugV
   return stringifyJson(debugView);
 }
 
-// Register debug view callback
-tryRegisterCallback("__pl_storage_debugView", (rawStorage: unknown) => {
-  return getStorageDebugView(rawStorage);
-});
-
 // =============================================================================
 // Migration Support
 // =============================================================================
@@ -167,28 +188,18 @@ tryRegisterCallback("__pl_storage_debugView", (rawStorage: unknown) => {
  * Returned by __pl_storage_migrate callback.
  *
  * - Error result: { error: string } - serious failure (no context, etc.)
- * - Success result: { newStorageJson: string, info: string, warn?: string } - migration succeeded or reset to initial
+ * - Success result: { newStorageJson: StringifiedJson<BlockStorage>, info: string } - migration succeeded
  */
 export type MigrationResult =
   | { error: string }
-  | { error?: undefined; newStorageJson: string; info: string; warn?: string };
-
-/** Result from DataModel.migrate() */
-interface DataMigrationResult {
-  version: string;
-  data: unknown;
-  warning?: string;
-}
+  | { error?: undefined; newStorageJson: StringifiedJson<BlockStorage>; info: string };
 
 /**
- * Runs storage migration using the DataModel's migrate callback.
+ * Runs storage migration using DataModel callbacks from the callback registry.
  * This is the main entry point for the middle layer to trigger migrations.
  *
- * Uses the '__pl_data_upgrade' callback registered by DataModel.registerCallbacks() which:
- * - Handles all migration logic internally
- * - Returns { version, data, warning? } - warning present if reset to initial data
- *
- * Also handles plugin migrations atomically using migrateBlockStorage().
+ * Uses registered private callbacks for block data and plugin data.
+ * Handles plugin migrations atomically using migrateBlockStorage().
  *
  * @param currentStorageJson - Current storage as JSON string (or undefined)
  * @returns MigrationResult
@@ -200,48 +211,20 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
   // Normalize current storage
   const { storage: currentStorage } = normalizeStorage(currentStorageJson);
 
-  // Get plugin registry from config (pluginId -> pluginName)
-  const pluginRegistryJson = ctx.pluginRegistryJson ?? "{}";
-  const newPluginRegistry = JSON.parse(pluginRegistryJson) as PluginRegistry;
+  // Get callbacks from registry
+  const migrate = getPrivateCallback(ctx, BlockPrivateCallbacks.BlockDataMigrate);
+  const getPluginRegistry = getPrivateCallback(ctx, BlockPrivateCallbacks.PluginRegistry);
+  const pluginMigrate = getPrivateCallback(ctx, BlockPrivateCallbacks.PluginDataMigrate);
+  const pluginInit = getPrivateCallback(ctx, BlockPrivateCallbacks.PluginDataInit);
 
-  // Get block data migration callback
-  const migrateCallback = ctx.callbackRegistry["__pl_data_upgrade"] as
-    | ((v: { version: string; data: unknown }) => DataMigrationResult)
-    | undefined;
-  if (typeof migrateCallback !== "function") {
-    return { error: "__pl_data_upgrade callback not found" };
-  }
+  const newPluginRegistry = getPluginRegistry();
 
   // Perform atomic migration of block + all plugins
   const migrationResult = migrateBlockStorage(currentStorage, {
-    migrateBlockData: (data, fromVersion) => {
-      const result = migrateCallback({ version: fromVersion, data });
-      return { data: result.data, version: result.version };
-    },
-    migratePluginData: (pluginId, _pluginName, entry) => {
-      const model = ctx.pluginModels?.[pluginId];
-      if (!model) return undefined; // Plugin removed
-
-      const migrated = model.dataModel.migrate({
-        version: entry.__dataVersion,
-        data: entry.__data,
-      });
-
-      return {
-        __dataVersion: migrated.version,
-        __data: migrated.data,
-      };
-    },
+    migrateBlockData: migrate,
+    migratePluginData: pluginMigrate,
     newPluginRegistry,
-    createPluginData: (pluginId, _pluginName) => {
-      const model = ctx.pluginModels?.[pluginId];
-      if (!model) throw new Error(`Plugin model not found for '${pluginId}'`);
-      const initial = model.dataModel.getDefaultData();
-      return {
-        __dataVersion: initial.version,
-        __data: initial.data,
-      };
-    },
+    createPluginData: pluginInit,
   });
 
   if (!migrationResult.success) {
@@ -257,20 +240,50 @@ function migrateStorage(currentStorageJson: string | undefined): MigrationResult
     oldVersion === newVersion
       ? `No migration needed (${oldVersion})`
       : `Migrated ${oldVersion} -> ${newVersion}`;
-  const warnings =
-    migrationResult.warnings.length > 0 ? migrationResult.warnings.join("; ") : undefined;
 
   return {
-    newStorageJson: JSON.stringify(migrationResult.storage),
+    newStorageJson: stringifyJson(migrationResult.storage),
     info,
-    warn: warnings,
   };
 }
 
-// Register migrate callback
-tryRegisterCallback("__pl_storage_migrate", (currentStorageJson: string | undefined) => {
-  return migrateStorage(currentStorageJson);
-});
+// =============================================================================
+// Initial Storage Creation
+// =============================================================================
+
+/**
+ * Creates complete initial storage (block data + all plugin data) atomically.
+ * Uses registered DataModel callbacks and plugin models from the render context.
+ *
+ * Used by __pl_storage_initial and available as a reset path via the middle layer's
+ * resetToInitialStorage().
+ */
+function createInitialStorage(): StringifiedJson<BlockStorage> {
+  const ctx = tryGetCfgRenderCtx();
+  if (!ctx) throw new Error("Not in config rendering context");
+
+  const getDefaultData = getPrivateCallback(ctx, BlockPrivateCallbacks.BlockDataInit);
+  const getPluginRegistry = getPrivateCallback(ctx, BlockPrivateCallbacks.PluginRegistry);
+  const pluginInit = getPrivateCallback(ctx, BlockPrivateCallbacks.PluginDataInit);
+
+  const blockDefault = getDefaultData();
+  const pluginRegistry = getPluginRegistry();
+
+  const plugins: Record<string, VersionedData<unknown>> = {};
+  for (const pluginId of Object.keys(pluginRegistry)) {
+    const initial = pluginInit(pluginId);
+    plugins[pluginId] = { __dataVersion: initial.version, __data: initial.data };
+  }
+
+  const storage: BlockStorage = {
+    [BLOCK_STORAGE_KEY]: BLOCK_STORAGE_SCHEMA_VERSION,
+    __dataVersion: blockDefault.version,
+    __data: blockDefault.data,
+    __pluginRegistry: pluginRegistry,
+    __plugins: plugins,
+  };
+  return stringifyJson(storage);
+}
 
 // =============================================================================
 // Args Derivation from Storage
@@ -313,11 +326,6 @@ function deriveArgsFromStorage(storageJson: string): ArgsDeriveResult {
     return { error: `args() threw: ${errorMsg}` };
   }
 }
-
-// Register args derivation callback
-tryRegisterCallback("__pl_args_derive", (storageJson: string) => {
-  return deriveArgsFromStorage(storageJson);
-});
 
 /**
  * Derives prerunArgs from storage using the registered 'prerunArgs' callback.
@@ -364,9 +372,17 @@ function derivePrerunArgsFromStorage(storageJson: string): ArgsDeriveResult {
   }
 }
 
-// Register prerunArgs derivation callback
-tryRegisterCallback("__pl_prerunArgs_derive", (storageJson: string) => {
-  return derivePrerunArgsFromStorage(storageJson);
+// =============================================================================
+// Auto-register facade callbacks when module is loaded in VM
+// =============================================================================
+
+registerFacadeCallbacks({
+  [BlockStorageFacadeCallbacks.StorageApplyUpdate]: applyStorageUpdate,
+  [BlockStorageFacadeCallbacks.StorageDebugView]: getStorageDebugView,
+  [BlockStorageFacadeCallbacks.StorageMigrate]: migrateStorage,
+  [BlockStorageFacadeCallbacks.StorageInitial]: createInitialStorage,
+  [BlockStorageFacadeCallbacks.ArgsDerive]: deriveArgsFromStorage,
+  [BlockStorageFacadeCallbacks.PrerunArgsDerive]: derivePrerunArgsFromStorage,
 });
 
 // Export discriminator key and schema version for external checks

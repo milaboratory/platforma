@@ -2,6 +2,7 @@ import { extractConfigGeneric, type BlockConfigContainer } from "@milaboratories
 import type { TypedConfigOrConfigLambda, TypedConfigOrString } from "./types";
 import { isConfigLambda } from "./types";
 import type { BlockConfig } from "./v3";
+import { BlockStorageFacadeHandles } from "../block_storage_facade";
 
 export function downgradeCfgOrLambda(data: TypedConfigOrConfigLambda): TypedConfigOrString;
 export function downgradeCfgOrLambda(
@@ -16,5 +17,11 @@ export function downgradeCfgOrLambda(
 }
 
 export function extractConfig(cfg: BlockConfigContainer): BlockConfig {
-  return extractConfigGeneric(cfg) as BlockConfig;
+  const config = extractConfigGeneric(cfg) as BlockConfig;
+  // Fill facadeCallbacks with defaults for V4 blocks that don't declare them
+  if (config.configVersion === 4 && Object.keys(config.facadeCallbacks).length === 0) {
+    (config as { facadeCallbacks: Record<string, unknown> }).facadeCallbacks =
+      BlockStorageFacadeHandles;
+  }
+  return config;
 }

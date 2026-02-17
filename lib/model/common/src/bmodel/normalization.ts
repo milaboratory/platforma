@@ -21,15 +21,16 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
     const {
       args,
       prerunArgs,
-      initialData,
       outputs,
       renderingMode,
       sdkVersion,
       featureFlags,
       sections,
       title,
+      subtitle,
+      tags,
       enrichmentTargets,
-      migrations,
+      facadeCallbacks = {},
     } = cfg.v4;
     const { code } = cfg;
     return {
@@ -37,15 +38,16 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
       modelAPIVersion: 2,
       args,
       prerunArgs,
-      initialData,
       outputs,
       renderingMode,
       sdkVersion,
       featureFlags,
       sections,
       title,
+      subtitle,
+      tags,
       enrichmentTargets,
-      migrations,
+      facadeCallbacks,
       code,
     };
   } else if (cfg.v3 !== undefined) {

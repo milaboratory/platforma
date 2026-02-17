@@ -6,13 +6,7 @@ import type {
   BlockCodeKnownFeatureFlags,
   BlockConfigContainer,
 } from "@milaboratories/pl-model-common";
-import {
-  getPlatformaInstance,
-  isInUI,
-  createAndRegisterRenderLambda,
-  createRenderLambda,
-  tryGetCfgRenderCtx,
-} from "./internal";
+import { getPlatformaInstance, isInUI, createAndRegisterRenderLambda } from "./internal";
 import type { DataModel } from "./block_migrations";
 import type { PlatformaV3 } from "./platforma";
 import type { InferRenderFunctionReturn, RenderFunction } from "./render";
@@ -21,9 +15,8 @@ import type { PluginModel } from "./plugin_model";
 import type { RenderCtxBase } from "./render";
 import { PlatformaSDKVersion } from "./version";
 // Import storage VM integration (side-effect: registers internal callbacks)
-import "./block_storage_vm";
-import { BLOCK_STORAGE_KEY, BLOCK_STORAGE_SCHEMA_VERSION, type PluginName } from "./block_storage";
-import { replaceCallback } from "./internal";
+import { BlockPrivateCallbacks, registerPrivateCallbacks } from "./block_storage_vm";
+import { type PluginName } from "./block_storage";
 import type {
   ConfigRenderLambda,
   DeriveHref,
@@ -32,7 +25,7 @@ import type {
 } from "./bconfig";
 import { downgradeCfgOrLambda, isConfigLambda } from "./bconfig";
 import type { PlatformaExtended } from "./platforma";
-import { BLOCK_STORAGE_FACADE_VERSION } from "./block_storage_facade";
+import { BLOCK_STORAGE_FACADE_VERSION, BlockStorageFacadeHandles } from "./block_storage_facade";
 
 type SectionsExpectedType = readonly BlockSection[];
 
@@ -141,9 +134,6 @@ export class BlockModelV3<
     options: BlockModelV3Options<Data>,
   ): BlockModelV3<NoOb, {}, Data> {
     const { dataModel, renderingMode = "Heavy" } = options;
-
-    // Register data model callbacks for VM use (initialData and upgrade)
-    dataModel.registerCallbacks();
 
     return new BlockModelV3<NoOb, {}, Data>({
       renderingMode,
@@ -452,9 +442,7 @@ export class BlockModelV3<
 
     const apiVersion = 3;
 
-    const migrationCount = this.config.dataModel.migrationCount;
-
-    // Build plugin registry (pluginId -> pluginName) for storage migration
+    // Build plugin registry and register plugin callbacks for migration
     const pluginRegistry: Record<string, PluginName> = {};
     const pluginModels: Record<string, PluginModel> = {};
 
@@ -463,40 +451,22 @@ export class BlockModelV3<
       pluginModels[pluginId] = instance.__pluginModel;
     }
 
-    // Store plugin metadata in global context for migration
-    const ctx = tryGetCfgRenderCtx();
-    if (ctx) {
-      ctx.pluginRegistryJson = JSON.stringify(pluginRegistry);
-      ctx.pluginModels = pluginModels;
-    }
-
-    // Override __pl_storage_initial to include plugin initial data in block storage
-    if (Object.keys(this.config.plugins).length > 0) {
-      const plugins = this.config.plugins;
-      replaceCallback("__pl_storage_initial", () => {
-        // Get block's initial storage (already registered by dataModel.registerCallbacks())
-        const blockDefault = this.config.dataModel.getDefaultData();
-        const storage = {
-          [BLOCK_STORAGE_KEY]: BLOCK_STORAGE_SCHEMA_VERSION,
-          __dataVersion: blockDefault.version,
-          __data: blockDefault.data,
-          __pluginRegistry: {} as Record<string, PluginName>,
-          __plugins: {} as Record<string, { __dataVersion: string; __data: unknown }>,
-        };
-
-        // Add each plugin's initial data
-        for (const [pluginId, instance] of Object.entries(plugins)) {
-          storage.__pluginRegistry[pluginId] = instance.__pluginModel.name as PluginName;
-          const pluginDefault = instance.__pluginModel.dataModel.getDefaultData();
-          storage.__plugins[pluginId] = {
-            __dataVersion: pluginDefault.version,
-            __data: pluginDefault.data,
-          };
-        }
-
-        return JSON.stringify(storage);
-      });
-    }
+    const { dataModel } = this.config;
+    registerPrivateCallbacks({
+      [BlockPrivateCallbacks.BlockDataMigrate]: (v) => dataModel.migrate(v),
+      [BlockPrivateCallbacks.BlockDataInit]: () => dataModel.getDefaultData(),
+      [BlockPrivateCallbacks.PluginRegistry]: () => pluginRegistry,
+      [BlockPrivateCallbacks.PluginDataMigrate]: (pluginId, v) => {
+        const model = pluginModels[pluginId];
+        if (!model) throw new Error(`Plugin model not found for '${pluginId}'`);
+        return model.dataModel.migrate(v);
+      },
+      [BlockPrivateCallbacks.PluginDataInit]: (pluginId) => {
+        const model = pluginModels[pluginId];
+        if (!model) throw new Error(`Plugin model not found for '${pluginId}'`);
+        return model.dataModel.getDefaultData();
+      },
+    });
 
     const blockConfig: BlockConfigContainer = {
       v4: {
@@ -506,8 +476,6 @@ export class BlockModelV3<
         renderingMode: this.config.renderingMode,
         args: this.config.args,
         prerunArgs: this.config.prerunArgs,
-        // Reference to __pl_data_initial callback registered by DataModel
-        initialData: createRenderLambda({ handle: "__pl_data_initial" }),
         sections: this.config.sections,
         title: this.config.title,
         subtitle: this.config.subtitle,
@@ -515,11 +483,7 @@ export class BlockModelV3<
         outputs: this.config.outputs,
         enrichmentTargets: this.config.enrichmentTargets,
         featureFlags: this.config.featureFlags,
-        // Generate migration descriptors (indices for metadata)
-        migrations:
-          migrationCount > 0
-            ? Array.from({ length: migrationCount }, (_, i) => ({ index: i }))
-            : undefined,
+        facadeCallbacks: { ...BlockStorageFacadeHandles },
       },
 
       // fields below are added to allow previous desktop versions read generated configs

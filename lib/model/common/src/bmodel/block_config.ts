@@ -5,16 +5,6 @@ import type { BlockCodeWithInfo, Code } from "./code";
 import type { BlockRenderingMode } from "./types";
 
 /**
- * Descriptor for a state migration function.
- * Unlike ConfigRenderLambda, migrations are not rendered reactively -
- * they are one-time synchronous transformations called during block pack updates.
- */
-export type MigrationDescriptor = {
-  /** Index of this migration in the migrations callback array */
-  readonly index: number;
-};
-
-/**
  * BroadActiveHandleDescriptor = TypedConfigOrConfigLambda,
  * NarrowActiveHandleDescriptor = ConfigRenderLambda
  */
@@ -49,9 +39,6 @@ export type BlockConfigV4Generic<
    */
   readonly prerunArgs?: NarrowActiveHandleDescriptor;
 
-  /** Lambda to get initial data when block is added to the project */
-  readonly initialData: NarrowActiveHandleDescriptor;
-
   /** Lambda to derive list of sections for the left overview panel */
   readonly sections: NarrowActiveHandleDescriptor;
 
@@ -73,18 +60,14 @@ export type BlockConfigV4Generic<
   /** Configuration for the output cells */
   readonly outputs: Outputs;
 
-  /**
-   * Array of migration descriptors for state version upgrades.
-   * Each migration transforms state from version N to N+1.
-   * Migrations are NOT rendered reactively - they run synchronously during block pack updates.
-   */
-  readonly migrations?: MigrationDescriptor[];
-
   /** Config code bundle */
   readonly code?: Code;
 
   /** Feature flags for the block Model and UI code. */
   readonly featureFlags?: BlockCodeFeatureFlags;
+
+  /** Facade callbacks supported by this block (for pre-execution validation) */
+  readonly facadeCallbacks: Record<string, NarrowActiveHandleDescriptor>;
 };
 
 /**

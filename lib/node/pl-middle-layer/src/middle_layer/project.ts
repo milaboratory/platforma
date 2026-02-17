@@ -34,7 +34,7 @@ import type {
 } from "@milaboratories/pl-model-middle-layer";
 import { activeConfigs } from "./active_cfg";
 import { NavigationStates } from "./navigation_states";
-import { extractConfig } from "@platforma-sdk/model";
+import { extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
 import fs from "node:fs/promises";
 import canonicalize from "canonicalize";
 import type { ProjectOverviewLight } from "./project_overview_light";
@@ -189,7 +189,7 @@ export class Project {
 
     // Build NewBlockSpec based on model API version
     const newBlockSpec =
-      blockCfg.modelAPIVersion === 2
+      blockCfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION
         ? { storageMode: "fromModel" as const, blockPack: preparedBp }
         : {
             storageMode: "legacy" as const,
@@ -282,7 +282,7 @@ export class Project {
     const resetState = resetArgs
       ? {
           state:
-            blockCfg.modelAPIVersion === 2
+            blockCfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION
               ? {}
               : { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState },
         }
@@ -545,7 +545,7 @@ export class Project {
         this.rid,
         author,
         (prj) => {
-          if (config.modelAPIVersion === 2) {
+          if (config.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION) {
             // V2+: Reset to initial storage via VM
             prj.resetToInitialStorage(blockId);
           } else {

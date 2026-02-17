@@ -65,7 +65,12 @@ import {
   cachedDecode,
 } from "@milaboratories/ts-helpers";
 import type { ProjectHelper } from "../model/project_helper";
-import { extractConfig, UiError, type BlockConfig } from "@platforma-sdk/model";
+import {
+  extractConfig,
+  UiError,
+  BLOCK_STORAGE_FACADE_VERSION,
+  type BlockConfig,
+} from "@platforma-sdk/model";
 import { getDebugFlags } from "../debug";
 import type { BlockPackInfo } from "../model/block_pack";
 
@@ -622,7 +627,7 @@ export class ProjectMutator {
     const info = this.getBlockInfo(blockId);
     const blockConfig = info.config;
 
-    if (blockConfig.modelAPIVersion !== 2) {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
       throw new Error("resetToInitialStorage is only supported for model API version 2");
     }
 
@@ -675,7 +680,7 @@ export class ProjectMutator {
       let args: unknown;
       let prerunArgs: unknown;
 
-      if (req.modelAPIVersion === 2) {
+      if (req.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION) {
         const currentStorageJson = info.blockStorageJson;
         if (currentStorageJson === undefined) {
           throw new Error(`Block ${req.blockId} has no blockStorage - this should not happen`);
@@ -1179,106 +1184,77 @@ export class ProjectMutator {
     const info = this.getBlockInfo(blockId);
     const newConfig = extractConfig(spec.config);
 
-    this.setBlockField(
-      blockId,
-      "blockPack",
-      Pl.wrapInHolder(this.tx, createBlockPack(this.tx, spec)),
-      "NotReady",
-    );
+    const persistBlockPack = () => {
+      this.setBlockField(
+        blockId,
+        "blockPack",
+        Pl.wrapInHolder(this.tx, createBlockPack(this.tx, spec)),
+        "NotReady",
+      );
+    };
+
+    const applyStorageAndDeriveArgs = (storageJson: string) => {
+      persistBlockPack();
+      this.setBlockStorageRaw(blockId, storageJson);
+      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(newConfig, storageJson);
+      if (!deriveArgsResult.error) {
+        this.setBlockFieldObj(
+          blockId,
+          "currentArgs",
+          this.createJsonFieldValue(deriveArgsResult.value),
+        );
+        const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(newConfig, storageJson);
+        if (prerunArgs !== undefined) {
+          this.setBlockFieldObj(
+            blockId,
+            "currentPrerunArgs",
+            this.createJsonFieldValue(prerunArgs),
+          );
+        }
+      }
+    };
 
     if (newClearState !== undefined) {
       // State is being reset - no migration needed
-      const supportsStorageFromVM = newConfig.modelAPIVersion === 2;
+      const supportsStorageFromVM = newConfig.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION;
 
       if (supportsStorageFromVM) {
         // V2+: Get initial storage directly from VM and derive args from it
         const initialStorageJson = this.projectHelper.getInitialStorageInVM(newConfig);
-        this.setBlockStorageRaw(blockId, initialStorageJson);
-
-        // Derive args from storage - only set currentArgs if derivation succeeds
-        const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
-          newConfig,
-          initialStorageJson,
-        );
-        if (!deriveArgsResult.error) {
-          this.setBlockFieldObj(
-            blockId,
-            "currentArgs",
-            this.createJsonFieldValue(deriveArgsResult.value),
-          );
-          // Derive prerunArgs from storage
-          const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
-            newConfig,
-            initialStorageJson,
-          );
-          if (prerunArgs !== undefined) {
-            this.setBlockFieldObj(
-              blockId,
-              "currentPrerunArgs",
-              this.createJsonFieldValue(prerunArgs),
-            );
-          }
-        }
+        applyStorageAndDeriveArgs(initialStorageJson);
         this.blocksWithChangedInputs.add(blockId);
         this.updateLastModified();
       } else {
         // V1: Use setStates with legacy state format
+        persistBlockPack();
         this.setStates([{ modelAPIVersion: 1, blockId, state: newClearState.state }]);
       }
     } else {
       // State is being preserved - run migrations if needed via VM
       // Only Model API v2 blocks support migrations
-      const supportsStateMigrations = newConfig.modelAPIVersion === 2;
+      const supportsStateMigrations = newConfig.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION;
 
       if (supportsStateMigrations) {
         const currentStorageJson = info.blockStorageJson;
 
+        // Attempt migration BEFORE persisting block pack — on failure,
+        // block stays on old version (no inconsistent new-code/old-storage state)
         const migrationResult = this.projectHelper.migrateStorageInVM(
           newConfig,
           currentStorageJson,
         );
 
         if (migrationResult.error !== undefined) {
-          console.error(
-            `[migrateBlockPack] Block ${blockId} migration error: ${migrationResult.error}`,
+          throw new Error(
+            `[migrateBlockPack] Block ${blockId} migration failed: ${migrationResult.error}`,
           );
-        } else {
-          console.log(`[migrateBlockPack] Block ${blockId}: ${migrationResult.info}`);
-          if (migrationResult.warn) {
-            console.warn(
-              `[migrateBlockPack] Block ${blockId} migration warning: ${migrationResult.warn}`,
-            );
-          }
-          this.setBlockStorageRaw(blockId, migrationResult.newStorageJson);
-
-          // Re-derive currentArgs from migrated storage (new block code + migrated data)
-          const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
-            newConfig,
-            migrationResult.newStorageJson,
-          );
-          if (!deriveArgsResult.error) {
-            this.setBlockFieldObj(
-              blockId,
-              "currentArgs",
-              this.createJsonFieldValue(deriveArgsResult.value),
-            );
-          }
-
-          // Derive prerunArgs from the migrated storage so staging can re-render
-          const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
-            newConfig,
-            migrationResult.newStorageJson,
-          );
-          if (prerunArgs !== undefined) {
-            this.setBlockFieldObj(
-              blockId,
-              "currentPrerunArgs",
-              this.createJsonFieldValue(prerunArgs),
-            );
-          }
         }
+
+        console.log(`[migrateBlockPack] Block ${blockId}: ${migrationResult.info}`);
+        applyStorageAndDeriveArgs(migrationResult.newStorageJson);
       } else {
-        // Legacy blocks (modelAPIVersion 1): prerunArgs = currentArgs
+        // Legacy blocks (modelAPIVersion 1): persist block pack, set prerunArgs = currentArgs
+        persistBlockPack();
         if (info.fields.currentArgs !== undefined) {
           this.setBlockFieldObj(blockId, "currentPrerunArgs", info.fields.currentArgs);
         }

@@ -23,7 +23,7 @@ import type {
 } from "@milaboratories/pl-model-middle-layer";
 import { constructBlockContext, constructBlockContextArgsOnly } from "./block_ctx";
 import { ifNotUndef } from "../cfg_render/util";
-import { type BlockSection } from "@platforma-sdk/model";
+import { type BlockSection, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
 import { extractCodeWithInfo, wrapCallback } from "@platforma-sdk/model";
 import { computableFromCfgOrRF } from "./render";
 import type { NavigationStates } from "./navigation_states";
@@ -231,7 +231,7 @@ export function projectOverview(
               // inputsValid: for modelAPIVersion 2, it's true if currentArgs exists (args derivation succeeded)
               // For older blocks, use the inputsValid callback from config
               inputsValid:
-                cfg.modelAPIVersion === 2
+                cfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION
                   ? info.currentArguments !== undefined
                   : cfg.inputsValid
                     ? (computableFromCfgOrRF(
@@ -265,7 +265,7 @@ export function projectOverview(
 
         // Get block storage debug view by calling VM function (only for Model API v2 blocks)
         const storageDebugView = ifNotUndef(bp, ({ cfg }) => {
-          if (cfg.modelAPIVersion !== 2) {
+          if (cfg.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
             return undefined;
           }
           const storageNode = prj.traverse({

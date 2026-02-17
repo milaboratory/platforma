@@ -50,7 +50,7 @@ test("v3 blocks: basic test with unified state", async () => {
           modelAPIVersion: 2,
           blockId: "enter1",
           payload: {
-            operation: "update-data",
+            operation: "update-block-data",
             value: { numbers: [1, 2, 3] },
           },
         },
@@ -82,7 +82,7 @@ test("v3 blocks: basic test with unified state", async () => {
           modelAPIVersion: 2,
           blockId: "enter2",
           payload: {
-            operation: "update-data",
+            operation: "update-block-data",
             value: { numbers: [4, 5, 6] },
           },
         },
@@ -108,7 +108,7 @@ test("v3 blocks: basic test with unified state", async () => {
           modelAPIVersion: 2,
           blockId: "sum1",
           payload: {
-            operation: "update-data",
+            operation: "update-block-data",
             value: { sources: [outputRef("enter1", "numbers"), outputRef("enter2", "numbers")] },
           },
         },
@@ -182,7 +182,7 @@ test("v3 blocks: prerunArgs skip test", async () => {
           modelAPIVersion: 2,
           blockId: "enter1",
           payload: {
-            operation: "update-data",
+            operation: "update-block-data",
             value: { numbers: [3, 1, 2] },
           },
         },
@@ -215,7 +215,7 @@ test("v3 blocks: prerunArgs skip test", async () => {
           modelAPIVersion: 2,
           blockId: "enter1",
           payload: {
-            operation: "update-data",
+            operation: "update-block-data",
             value: { numbers: [5, 1, 2] }, // Changed odd numbers only
           },
         },
@@ -245,7 +245,7 @@ test("v3 blocks: prerunArgs skip test", async () => {
           modelAPIVersion: 2,
           blockId: "enter1",
           payload: {
-            operation: "update-data",
+            operation: "update-block-data",
             value: { numbers: [5, 1, 4] }, // Changed even number from 2 to 4
           },
         },
@@ -309,7 +309,7 @@ test("v3 blocks: migrateBlockPack preserves state and re-derives args and prerun
         {
           modelAPIVersion: 2,
           blockId: "enter1",
-          payload: { operation: "update-data", value: { numbers: [4, 2, 6] } },
+          payload: { operation: "update-block-data", value: { numbers: [4, 2, 6] } },
         },
       ]);
       mut.save();
@@ -381,7 +381,7 @@ test("v3 blocks: migrateBlockPack with storage migration re-derives args and pre
         {
           modelAPIVersion: 2,
           blockId: "enter1",
-          payload: { operation: "update-data", value: { numbers: [1] } },
+          payload: { operation: "update-block-data", value: { numbers: [1] } },
         },
       ]);
       mut.save();
@@ -461,7 +461,7 @@ test("v3 blocks: migrateBlockPack assigns author marker", async () => {
         {
           modelAPIVersion: 2,
           blockId: "enter1",
-          payload: { operation: "update-data", value: { numbers: [1, 2, 3] } },
+          payload: { operation: "update-block-data", value: { numbers: [1, 2, 3] } },
         },
       ]);
       mut.save();
