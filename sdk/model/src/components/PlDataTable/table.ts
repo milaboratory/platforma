@@ -27,7 +27,7 @@ import {
   isBooleanExpression,
 } from "@milaboratories/pl-model-common";
 import type { PTableFilters } from "../../filters";
-import { filterSpecToExpr } from "../../filters";
+import { filterSpecToSpecQueryExpr } from "../../filters";
 import type { RenderCtxBase, TreeNodeAccessor, PColumnDataUniversal } from "../../render";
 import { allPColumnsReady, deriveLabels } from "../../render";
 import { identity, isFunction, isNil } from "es-toolkit";
@@ -90,7 +90,7 @@ function createPTableDef(params: {
     const nonEmpty = filterEmptyPieces(params.filters);
 
     if (!isNil(nonEmpty)) {
-      const pridicate = filterSpecToExpr(nonEmpty);
+      const pridicate = filterSpecToSpecQueryExpr(nonEmpty);
       if (!isBooleanExpression(pridicate)) {
         throw new Error(
           `Filter conversion produced a non-boolean expression (got type "${pridicate.type}"), expected a boolean predicate for query filtering`,

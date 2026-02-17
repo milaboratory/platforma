@@ -17,18 +17,22 @@ function resolveColumnRef(columnStr: string): SpecQueryExpression {
 }
 
 /** Converts a FilterSpec tree into a SpecQueryExpression. */
-export function filterSpecToExpr(filter: FilterSpec<FilterSpecLeaf<string>>): SpecQueryExpression {
+export function filterSpecToSpecQueryExpr(
+  filter: FilterSpec<FilterSpecLeaf<string>>,
+): SpecQueryExpression {
   switch (filter.type) {
     case "and":
     case "or": {
-      const inputs = filter.filters.filter((f) => f.type !== undefined).map(filterSpecToExpr);
+      const inputs = filter.filters
+        .filter((f) => f.type !== undefined)
+        .map(filterSpecToSpecQueryExpr);
       if (inputs.length === 0) {
         throw new Error(`${filter.type.toUpperCase()} filter requires at least one operand`);
       }
       return { type: filter.type, input: inputs };
     }
     case "not":
-      return { type: "not", input: filterSpecToExpr(filter.filter) };
+      return { type: "not", input: filterSpecToSpecQueryExpr(filter.filter) };
 
     case "patternEquals":
       return {

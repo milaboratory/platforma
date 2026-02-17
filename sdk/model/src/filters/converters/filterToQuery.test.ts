@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FilterSpec, FilterSpecLeaf } from "@milaboratories/pl-model-common";
-import { filterSpecToExpr } from "./filterToQuery";
+import { filterSpecToSpecQueryExpr } from "./filterToQuery";
 
 type QFilterSpec = FilterSpec<FilterSpecLeaf<string>>;
 
@@ -14,7 +14,7 @@ function axisRef(id: string): string {
   return JSON.stringify({ type: "axis", id });
 }
 
-describe("filterSpecToExpr", () => {
+describe("filterSpecToSpecQueryExpr", () => {
   // --- logical combinators ---
 
   it('should convert "and" filter', () => {
@@ -25,7 +25,7 @@ describe("filterSpecToExpr", () => {
         { type: "equal", column: colRef("c2"), x: 2 },
       ],
     };
-    const result = filterSpecToExpr(filter);
+    const result = filterSpecToSpecQueryExpr(filter);
     expect(result.type).toBe("and");
     if (result.type === "and") {
       expect(result.input).toHaveLength(2);
@@ -40,7 +40,7 @@ describe("filterSpecToExpr", () => {
         { type: "equal", column: colRef("c2"), x: 2 },
       ],
     };
-    const result = filterSpecToExpr(filter);
+    const result = filterSpecToSpecQueryExpr(filter);
     expect(result.type).toBe("or");
     if (result.type === "or") {
       expect(result.input).toHaveLength(2);
@@ -52,7 +52,7 @@ describe("filterSpecToExpr", () => {
       type: "not",
       filter: { type: "equal", column: colRef("c1"), x: 5 },
     };
-    const result = filterSpecToExpr(filter);
+    const result = filterSpecToSpecQueryExpr(filter);
     expect(result.type).toBe("not");
     if (result.type === "not") {
       expect(result.input.type).toBe("numericComparison");
@@ -64,7 +64,7 @@ describe("filterSpecToExpr", () => {
       type: "and",
       filters: [{ type: undefined }, { type: "equal", column: colRef("c1"), x: 1 }],
     };
-    const result = filterSpecToExpr(filter);
+    const result = filterSpecToSpecQueryExpr(filter);
     expect(result.type).toBe("and");
     if (result.type === "and") {
       expect(result.input).toHaveLength(1);
@@ -77,12 +77,16 @@ describe("filterSpecToExpr", () => {
       type: "and",
       filters: [{ type: undefined }],
     };
-    expect(() => filterSpecToExpr(filter)).toThrow("AND filter requires at least one operand");
+    expect(() => filterSpecToSpecQueryExpr(filter)).toThrow(
+      "AND filter requires at least one operand",
+    );
   });
 
   it("should throw for empty or filter", () => {
     const filter: QFilterSpec = { type: "or", filters: [] };
-    expect(() => filterSpecToExpr(filter)).toThrow("OR filter requires at least one operand");
+    expect(() => filterSpecToSpecQueryExpr(filter)).toThrow(
+      "OR filter requires at least one operand",
+    );
   });
 
   // --- string filters ---
@@ -93,7 +97,7 @@ describe("filterSpecToExpr", () => {
       column: colRef("col1"),
       value: "abc",
     };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "stringEquals",
       input: { type: "columnRef", value: "col1" },
       value: "abc",
@@ -107,7 +111,7 @@ describe("filterSpecToExpr", () => {
       column: colRef("col1"),
       value: "abc",
     };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "not",
       input: {
         type: "stringEquals",
@@ -124,7 +128,7 @@ describe("filterSpecToExpr", () => {
       column: colRef("col1"),
       value: "sub",
     };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "stringContains",
       input: { type: "columnRef", value: "col1" },
       value: "sub",
@@ -138,7 +142,7 @@ describe("filterSpecToExpr", () => {
       column: colRef("col1"),
       value: "sub",
     };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "not",
       input: {
         type: "stringContains",
@@ -155,7 +159,7 @@ describe("filterSpecToExpr", () => {
       column: colRef("col1"),
       value: "^abc.*",
     };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "stringRegex",
       input: { type: "columnRef", value: "col1" },
       value: "^abc.*",
@@ -168,7 +172,7 @@ describe("filterSpecToExpr", () => {
       column: colRef("col1"),
       value: "fuz",
     };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "stringContainsFuzzy",
       input: { type: "columnRef", value: "col1" },
       value: "fuz",
@@ -188,7 +192,7 @@ describe("filterSpecToExpr", () => {
       substitutionsOnly: true,
       wildcard: "?",
     };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "stringContainsFuzzy",
       input: { type: "columnRef", value: "col1" },
       value: "fuz",
@@ -213,7 +217,7 @@ describe("filterSpecToExpr", () => {
 
     testCases.forEach(({ type, operand }) => {
       const filter: QFilterSpec = { type, column: colRef("num"), x: 42 };
-      expect(filterSpecToExpr(filter)).toEqual({
+      expect(filterSpecToSpecQueryExpr(filter)).toEqual({
         type: "numericComparison",
         operand,
         left: { type: "columnRef", value: "num" },
@@ -230,7 +234,7 @@ describe("filterSpecToExpr", () => {
       column: colRef("c1"),
       rhs: colRef("c2"),
     };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "numericComparison",
       operand: "eq",
       left: { type: "columnRef", value: "c1" },
@@ -248,7 +252,7 @@ describe("filterSpecToExpr", () => {
 
     cases.forEach(({ type, operand }) => {
       const filter: QFilterSpec = { type, column: colRef("c1"), rhs: colRef("c2") };
-      expect(filterSpecToExpr(filter)).toEqual({
+      expect(filterSpecToSpecQueryExpr(filter)).toEqual({
         type: "numericComparison",
         operand,
         left: { type: "columnRef", value: "c1" },
@@ -267,7 +271,7 @@ describe("filterSpecToExpr", () => {
 
     cases.forEach(({ type, operand }) => {
       const filter: QFilterSpec = { type, column: colRef("c1"), rhs: colRef("c2"), minDiff: 5 };
-      expect(filterSpecToExpr(filter)).toEqual({
+      expect(filterSpecToSpecQueryExpr(filter)).toEqual({
         type: "numericComparison",
         operand,
         left: {
@@ -288,7 +292,7 @@ describe("filterSpecToExpr", () => {
       rhs: colRef("c2"),
       minDiff: 0,
     };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "numericComparison",
       operand: "lt",
       left: { type: "columnRef", value: "c1" },
@@ -304,7 +308,7 @@ describe("filterSpecToExpr", () => {
       column: colRef("col1"),
       value: ["a", "b", "c"],
     };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "isIn",
       input: { type: "columnRef", value: "col1" },
       set: ["a", "b", "c"],
@@ -317,7 +321,7 @@ describe("filterSpecToExpr", () => {
       column: colRef("col1"),
       value: ["x"],
     };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "not",
       input: {
         type: "isIn",
@@ -335,7 +339,7 @@ describe("filterSpecToExpr", () => {
       column: axisRef("pl7.app/sampleId"),
       x: 10,
     };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "numericComparison",
       operand: "eq",
       left: { type: "axisRef", value: "pl7.app/sampleId" },
@@ -347,7 +351,7 @@ describe("filterSpecToExpr", () => {
 
   it('should convert "isNA" filter', () => {
     const filter: QFilterSpec = { type: "isNA", column: colRef("c1") };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "isNull",
       input: { type: "columnRef", value: "c1" },
     });
@@ -355,7 +359,7 @@ describe("filterSpecToExpr", () => {
 
   it('should convert "isNotNA" filter', () => {
     const filter: QFilterSpec = { type: "isNotNA", column: colRef("c1") };
-    expect(filterSpecToExpr(filter)).toEqual({
+    expect(filterSpecToSpecQueryExpr(filter)).toEqual({
       type: "not",
       input: {
         type: "isNull",
@@ -368,17 +372,19 @@ describe("filterSpecToExpr", () => {
 
   it("should throw for topN filter", () => {
     const filter: QFilterSpec = { type: "topN", column: colRef("c1"), n: 5 };
-    expect(() => filterSpecToExpr(filter)).toThrow('Filter type "topN" is not supported');
+    expect(() => filterSpecToSpecQueryExpr(filter)).toThrow('Filter type "topN" is not supported');
   });
 
   it("should throw for bottomN filter", () => {
     const filter: QFilterSpec = { type: "bottomN", column: colRef("c1"), n: 3 };
-    expect(() => filterSpecToExpr(filter)).toThrow('Filter type "bottomN" is not supported');
+    expect(() => filterSpecToSpecQueryExpr(filter)).toThrow(
+      'Filter type "bottomN" is not supported',
+    );
   });
 
   it("should throw for undefined filter type", () => {
     const filter: QFilterSpec = { type: undefined };
-    expect(() => filterSpecToExpr(filter)).toThrow("Filter type is undefined");
+    expect(() => filterSpecToSpecQueryExpr(filter)).toThrow("Filter type is undefined");
   });
 
   // --- nested ---
@@ -400,7 +406,7 @@ describe("filterSpecToExpr", () => {
         },
       ],
     };
-    const result = filterSpecToExpr(filter);
+    const result = filterSpecToSpecQueryExpr(filter);
     expect(result.type).toBe("and");
     if (result.type === "and") {
       expect(result.input).toHaveLength(2);

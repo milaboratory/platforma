@@ -1,7 +1,7 @@
 import {
   pTableValue,
   canonicalizeJson,
-  filterSpecToExpr,
+  filterSpecToSpecQueryExpr,
   type CalculateTableDataResponse,
   type PFrameDriver,
   type PObjectId,
@@ -213,7 +213,7 @@ test("createTableV2 support", async ({ expect }) => {
       query: {
         type: "filter",
         input: baseQuery,
-        predicate: filterSpecToExpr({
+        predicate: filterSpecToSpecQueryExpr({
           type: "patternEquals",
           column: axisColumnStr,
           value: "b",
@@ -235,7 +235,7 @@ test("createTableV2 support", async ({ expect }) => {
       query: {
         type: "filter",
         input: baseQuery,
-        predicate: filterSpecToExpr({
+        predicate: filterSpecToSpecQueryExpr({
           type: "greaterThan",
           column: valueColumnStr,
           x: 15,
@@ -280,7 +280,7 @@ test("createTableV2 support", async ({ expect }) => {
         input: {
           type: "filter",
           input: baseQuery,
-          predicate: filterSpecToExpr({
+          predicate: filterSpecToSpecQueryExpr({
             type: "and",
             filters: [
               { type: "greaterThan", column: valueColumnStr, x: 5 },
