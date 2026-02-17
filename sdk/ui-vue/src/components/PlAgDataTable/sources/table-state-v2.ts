@@ -14,6 +14,7 @@ import {
   type PObjectId,
   type PTableParamsV2,
   type PTableSorting,
+  type PlDataTableFilters,
   distillFilterSpec,
 } from "@platforma-sdk/model";
 import { computed, watch, type Ref, type WritableComputedRef } from "vue";
@@ -21,8 +22,6 @@ import type { PlDataTableSettingsV2 } from "../types";
 import type { PlAdvancedFilter } from "../../PlAdvancedFilter";
 import { isJsonEqual, randomInt } from "@milaboratories/helpers";
 import { computedCached } from "@milaboratories/uikit";
-import { PlDataTableFilters } from "../../../../../model/dist/components/PlDataTable/v5";
-
 type PlDataTableStateV2CacheEntryNullable =
   | PlDataTableStateV2CacheEntry
   | {
