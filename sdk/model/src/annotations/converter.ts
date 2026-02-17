@@ -1,7 +1,7 @@
 import { when } from "@milaboratories/ptabler-expression-js";
 import { convertFilterUiToExpressionImpl } from "../filters/converters/filterUiToExpressionImpl";
 import type { ExpressionSpec, FilterSpecUi } from "./types";
-import { filterEmptyPieces } from "../filters/converters/filterEmpty";
+import { distillFilterSpec } from "../filters/distill";
 
 export function convertFilterSpecsToExpressionSpecs(
   annotationsUI: FilterSpecUi[],
@@ -9,7 +9,7 @@ export function convertFilterSpecsToExpressionSpecs(
   const validAnnotationsUI = annotationsUI
     .map((step) => ({
       label: step.label,
-      filter: filterEmptyPieces(step.filter),
+      filter: distillFilterSpec(step.filter),
     }))
     .filter(
       (step): step is { label: string; filter: NonNullable<typeof step.filter> } =>

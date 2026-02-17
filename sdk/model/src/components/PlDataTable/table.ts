@@ -26,13 +26,12 @@ import {
   uniqueBy,
   isBooleanExpression,
 } from "@milaboratories/pl-model-common";
-import type { PTableFilters } from "../../filters";
 import { filterSpecToSpecQueryExpr } from "../../filters";
 import type { RenderCtxBase, TreeNodeAccessor, PColumnDataUniversal } from "../../render";
 import { allPColumnsReady, deriveLabels } from "../../render";
 import { identity, isFunction, isNil } from "es-toolkit";
-import { filterEmptyPieces } from "../../filters/converters/filterEmpty";
-import type { CreatePlDataTableOps, PlDataTableModel } from "./v5";
+import { distillFilterSpec } from "../../filters/distill";
+import type { CreatePlDataTableOps, PlDataTableFilters, PlDataTableModel } from "./v5";
 import { upgradePlDataTableStateV2 } from "./state-migration";
 import type { PlDataTableStateV2 } from "./state-migration";
 import type { PlDataTableSheet } from "./v5";
@@ -55,7 +54,7 @@ function createPTableDef(params: {
   columns: PColumn<PColumnDataUniversal>[];
   labelColumns: PColumn<PColumnDataUniversal>[];
   coreJoinType: "inner" | "full";
-  filters: PTableFilters;
+  filters: null | PlDataTableFilters;
   sorting: PTableSorting[];
   coreColumnPredicate?: (spec: PColumnIdAndSpec) => boolean;
 }): PTableDefV2<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>> {
@@ -87,7 +86,7 @@ function createPTableDef(params: {
 
   // Apply filters
   if (params.filters !== null) {
-    const nonEmpty = filterEmptyPieces(params.filters);
+    const nonEmpty = distillFilterSpec(params.filters);
 
     if (!isNil(nonEmpty)) {
       const pridicate = filterSpecToSpecQueryExpr(nonEmpty);
