@@ -1,9 +1,5 @@
 import { DistributiveKeys, UnionToTuples } from "@milaboratories/helpers";
-import {
-  type FilterSpec,
-  type FilterSpecLeaf,
-  type PTableFilters,
-} from "@milaboratories/pl-model-common";
+import { type FilterSpec, type FilterSpecLeaf } from "@milaboratories/pl-model-common";
 
 /** All possible field names that can appear in any FilterSpecLeaf variant. */
 type FilterSpecLeafKey = DistributiveKeys<FilterSpecLeaf<string>>;
@@ -24,11 +20,11 @@ const KNOWN_LEAF_KEYS_TUPLE: UnionToTuples<FilterSpecLeafKey> = [
 ];
 const KNOWN_LEAF_KEYS: Set<FilterSpecLeafKey> = new Set(KNOWN_LEAF_KEYS_TUPLE);
 
-type UnknownFilterNode = FilterSpec<
-  FilterSpecLeaf<string>,
-  Record<string, unknown>,
-  Record<string, unknown>
->;
+/** Returns true if the leaf is filled — type is defined and no required fields are undefined. */
+function isFilledLeaf(node: Record<string, unknown>): boolean {
+  if (node.type == null) return false;
+  return !Object.values(node).some((v) => v === undefined);
+}
 
 function distillLeaf(node: Record<string, unknown>): FilterSpecLeaf<string> {
   const result: Record<string, unknown> = {};
@@ -40,20 +36,32 @@ function distillLeaf(node: Record<string, unknown>): FilterSpecLeaf<string> {
   return result as FilterSpecLeaf<string>;
 }
 
-function distillNode(node: UnknownFilterNode): FilterSpec<FilterSpecLeaf<string>> {
+function distillNode<T extends FilterSpecLeaf<unknown>>(
+  node: FilterSpec<T, unknown, unknown>,
+): FilterSpec<T> | null {
   switch (node.type) {
     case "and":
-    case "or":
-      return { type: node.type, filters: node.filters.map(distillNode) };
-    case "not":
-      return { type: "not", filter: distillNode(node.filter) };
+    case "or": {
+      const filtered = node.filters.map(distillNode).filter((f): f is FilterSpec<T> => f !== null);
+      return filtered.length === 0 ? null : { type: node.type, filters: filtered };
+    }
+    case "not": {
+      const inner = distillNode(node.filter);
+      return inner === null ? null : { type: "not", filter: inner };
+    }
     default:
-      return distillLeaf(node as Record<string, unknown>);
+      if (!isFilledLeaf(node)) return null;
+      return distillLeaf(node);
   }
 }
 
-/** Strips all non-FilterSpec metadata from the filter tree (whitelist approach). */
-export function distillFilter(filter: UnknownFilterNode | null | undefined): PTableFilters {
+/**
+ * Strips non-FilterSpec metadata (whitelist approach) and removes
+ * unfilled leaves (type is undefined or any required field is undefined).
+ */
+export function distillFilterSpec<T extends FilterSpecLeaf<unknown>>(
+  filter: null | undefined | FilterSpec<T, unknown, unknown>,
+): null | FilterSpec<T> {
   if (filter == null) return null;
   return distillNode(filter);
 }

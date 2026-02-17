@@ -3,7 +3,6 @@ import {
   parseJson,
   canonicalizeJson,
   upgradePlDataTableStateV2,
-  distillFilter,
   type FilterSpec,
   type FilterSpecLeaf,
   type PTableColumnId,
@@ -13,15 +12,16 @@ import {
   type PlDataTableStateV2CacheEntry,
   type PlDataTableStateV2Normalized,
   type PObjectId,
-  type PTableFilters,
   type PTableParamsV2,
   type PTableSorting,
+  distillFilterSpec,
 } from "@platforma-sdk/model";
 import { computed, watch, type Ref, type WritableComputedRef } from "vue";
 import type { PlDataTableSettingsV2 } from "../types";
 import type { PlAdvancedFilter } from "../../PlAdvancedFilter";
 import { isJsonEqual, randomInt } from "@milaboratories/helpers";
 import { computedCached } from "@milaboratories/uikit";
+import { PlDataTableFilters } from "../../../../../model/dist/components/PlDataTable/v5";
 
 type PlDataTableStateV2CacheEntryNullable =
   | PlDataTableStateV2CacheEntry
@@ -52,7 +52,7 @@ function getHiddenColIds(state: PlDataTableGridStateCore["columnVisibility"]): P
   );
 }
 
-function makePartitionFilters(
+function convertPartitionFiltersToFilterSpec(
   sheetsState: PlDataTableSheetState[],
 ): FilterSpec<FilterSpecLeaf<string>>[] {
   return sheetsState.map((s) => {
@@ -63,7 +63,7 @@ function makePartitionFilters(
   });
 }
 
-function makeSorting(state: PlDataTableGridStateCore["sort"]): PTableSorting[] {
+function convertAgSortingToPTableSorting(state: PlDataTableGridStateCore["sort"]): PTableSorting[] {
   return (
     state?.sortModel.map((item) => {
       const { spec: _, ...column } = parseJson(item.colId).labeled;
@@ -76,22 +76,20 @@ function makeSorting(state: PlDataTableGridStateCore["sort"]): PTableSorting[] {
   );
 }
 
-function makePTableParams(state: PlDataTableStateV2CacheEntry): PTableParamsV2 {
-  const advancedFilter = distillFilter(state.filtersState);
-  const partitionFilters = makePartitionFilters(state.sheetsState);
-
+function createPTableParams(state: PlDataTableStateV2CacheEntry): PTableParamsV2 {
   const parts: FilterSpec<FilterSpecLeaf<string>>[] = [
-    ...partitionFilters,
-    ...(advancedFilter ? [advancedFilter] : []),
+    ...convertPartitionFiltersToFilterSpec(state.sheetsState),
+    ...(state.filtersState ? [state.filtersState] : []),
   ];
-  const filters: PTableFilters =
-    parts.length === 0 ? null : parts.length === 1 ? parts[0] : { type: "and", filters: parts };
+  const filters: null | PlDataTableFilters = distillFilterSpec(
+    parts.length === 0 ? null : parts.length === 1 ? parts[0] : { type: "and", filters: parts },
+  );
 
   return {
     sourceId: state.sourceId,
     hiddenColIds: getHiddenColIds(state.gridState.columnVisibility),
     filters,
-    sorting: makeSorting(state.gridState.sort),
+    sorting: convertAgSortingToPTableSorting(state.gridState.sort),
   };
 }
 
@@ -129,7 +127,7 @@ export function useTableState(
       };
 
       if (state.sourceId) {
-        newState.pTableParams = makePTableParams(state);
+        newState.pTableParams = createPTableParams(state);
 
         const stateIdx = newState.stateCache.findIndex(
           (entry) => entry.sourceId === state.sourceId,

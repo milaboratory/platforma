@@ -14,5 +14,4 @@ export type {
   FilterSpec,
   FilterSpecType,
   FilterSpecOfType,
-  PTableFilters,
 } from "@milaboratories/pl-model-common";

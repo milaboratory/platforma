@@ -5,7 +5,6 @@ import type {
   ListOptionBase,
   PObjectId,
   PTableColumnSpec,
-  PTableFilters,
   PTableRecordFilter,
   PTableSorting,
   PColumnIdAndSpec,
@@ -62,7 +61,8 @@ export type PlDataTableSheetState = {
 };
 
 /** Tree-based filter state compatible with PlAdvancedFilter's RootFilter */
-export type PlDataTableAdvancedFilter = FilterSpec<
+export type PlDataTableFilters = FilterSpec<FilterSpecLeaf<string>>;
+export type PlDataTableFiltersWithMeta = FilterSpec<
   FilterSpecLeaf<string>,
   { id: number; isExpanded?: boolean }
 >;
@@ -75,7 +75,7 @@ export type PlDataTableStateV2CacheEntry = {
   /** Sheets state */
   sheetsState: PlDataTableSheetState[];
   /** Filters state (tree-based, compatible with PlAdvancedFilter) */
-  filtersState: PlDataTableAdvancedFilter | null;
+  filtersState: null | PlDataTableFiltersWithMeta;
 };
 
 export type PTableParamsV2 =
@@ -87,8 +87,8 @@ export type PTableParamsV2 =
     }
   | {
       sourceId: string;
-      hiddenColIds: PObjectId[] | null;
-      filters: PTableFilters;
+      hiddenColIds: null | PObjectId[];
+      filters: null | PlDataTableFilters;
       sorting: PTableSorting[];
     };
 

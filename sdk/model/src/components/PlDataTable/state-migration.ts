@@ -8,10 +8,10 @@ import type {
   PTableSorting,
 } from "@milaboratories/pl-model-common";
 import { canonicalizeJson } from "@milaboratories/pl-model-common";
-import { distillFilter } from "../../filters";
+import { distillFilterSpec } from "../../filters";
 import type { PlDataTableFilterState, PlTableFilter } from "./v4";
 import type {
-  PlDataTableAdvancedFilter,
+  PlDataTableFiltersWithMeta,
   PlDataTableGridStateCore,
   PlDataTableSheetState,
   PlDataTableStateV2CacheEntry,
@@ -158,14 +158,14 @@ function migrateV4toV5(
   const nextId = () => ++idCounter;
 
   const migratedCache: PlDataTableStateV2CacheEntry[] = state.stateCache.map((entry) => {
-    const leaves: PlDataTableAdvancedFilter[] = [];
+    const leaves: PlDataTableFiltersWithMeta[] = [];
     for (const f of entry.filtersState) {
       if (f.filter !== null && !f.filter.disabled) {
         const column = canonicalizeJson<PTableColumnId>(f.id);
         leaves.push(migrateTableFilter(column, f.filter.value, nextId));
       }
     }
-    const filtersState: PlDataTableAdvancedFilter | null =
+    const filtersState: PlDataTableFiltersWithMeta | null =
       leaves.length > 0 ? { id: nextId(), type: "and", filters: leaves } : null;
 
     return {
@@ -189,7 +189,7 @@ function migrateV4toV5(
         ? {
             sourceId: oldSourceId,
             hiddenColIds: state.pTableParams.hiddenColIds,
-            filters: distillFilter(currentCache.filtersState),
+            filters: distillFilterSpec(currentCache.filtersState),
             sorting: state.pTableParams.sorting,
           }
         : createDefaultPTableParams(),
@@ -201,7 +201,7 @@ function migrateTableFilter(
   column: string,
   filter: PlTableFilter,
   nextId: () => number,
-): PlDataTableAdvancedFilter {
+): PlDataTableFiltersWithMeta {
   const id = nextId();
   switch (filter.type) {
     case "isNA":
