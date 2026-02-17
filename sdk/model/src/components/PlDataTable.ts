@@ -650,7 +650,9 @@ function createPTableDef(params: {
     if (!isNil(nonEmpty)) {
       const pridicate = filterSpecToExpr(nonEmpty);
       if (!isBooleanExpression(pridicate)) {
-        throw new Error(`Filter conversion produced a non-boolean expression (got type "${pridicate.type}"), expected a boolean predicate for query filtering`);
+        throw new Error(
+          `Filter conversion produced a non-boolean expression (got type "${pridicate.type}"), expected a boolean predicate for query filtering`,
+        );
       }
       query = {
         type: "filter",
