@@ -4,7 +4,7 @@ import type { PObjectId } from "../../pool";
 import { assertNever } from "../../util";
 import type { PColumn } from "./spec/spec";
 import type { PColumnValues } from "./data_info";
-import type { QuerySpec } from "./query/query_spec";
+import type { QuerySpec, QueryJoinEntrySpec } from "./query/query_spec";
 
 /** Defines a terminal column node in the join request tree */
 export interface ColumnJoinEntry<Col> {
@@ -377,10 +377,7 @@ export interface PTableDef<Col> {
 /** Information required to instantiate a PTable (V2, query-based). */
 export interface PTableDefV2<Col> {
   /** Pre-built query spec describing joins, filters and sorting */
-  readonly query: QuerySpec;
-
-  /** Flat list of all columns referenced by the query */
-  readonly columns: Col[];
+  readonly query: QuerySpec<Col>;
 }
 
 /** Request to create and retrieve entirety of data of PTable. */
@@ -403,7 +400,49 @@ export function mapPTableDef<C1, C2>(def: PTableDef<C1>, cb: (c: C1) => C2): PTa
 }
 
 export function mapPTableDefV2<C1, C2>(def: PTableDefV2<C1>, cb: (c: C1) => C2): PTableDefV2<C2> {
-  return { ...def, columns: def.columns.map(cb) };
+  return { query: mapQuerySpec(def.query, cb) };
+}
+
+/** Recursively maps all column references in a QuerySpec tree. */
+export function mapQuerySpec<C1, C2>(query: QuerySpec<C1>, cb: (c: C1) => C2): QuerySpec<C2> {
+  switch (query.type) {
+    case "column":
+      return { type: "column", column: cb(query.column) };
+    case "sparseToDenseColumn":
+      return { ...query, column: cb(query.column) };
+    case "inlineColumn":
+      return query;
+    case "innerJoin":
+    case "fullJoin":
+      return {
+        ...query,
+        entries: query.entries.map((e) => mapQueryJoinEntrySpec(e, cb)),
+      };
+    case "outerJoin":
+      return {
+        ...query,
+        primary: mapQueryJoinEntrySpec(query.primary, cb),
+        secondary: query.secondary.map((e) => mapQueryJoinEntrySpec(e, cb)),
+      };
+    case "filter":
+      return { ...query, input: mapQuerySpec(query.input, cb) };
+    case "sort":
+      return { ...query, input: mapQuerySpec(query.input, cb) };
+    case "sliceAxes":
+      return { ...query, input: mapQuerySpec(query.input, cb) };
+    default:
+      assertNever(query);
+  }
+}
+
+function mapQueryJoinEntrySpec<C1, C2>(
+  entry: QueryJoinEntrySpec<C1>,
+  cb: (c: C1) => C2,
+): QueryJoinEntrySpec<C2> {
+  return {
+    ...entry,
+    entry: mapQuerySpec(entry.entry, cb),
+  };
 }
 
 export function mapJoinEntry<C1, C2>(entry: JoinEntry<C1>, cb: (c: C1) => C2): JoinEntry<C2> {

@@ -58,7 +58,7 @@ type ColumnIdAndSpec = {
  *   ]
  * }
  */
-export type QueryJoinEntrySpec = QueryJoinEntry<QuerySpec> & {
+export type QueryJoinEntrySpec<C = PObjectId> = QueryJoinEntry<QuerySpec<C>> & {
   /** Axis qualifications with additional domain constraints */
   qualifications: {
     /** Axis selector identifying which axis to qualify */
@@ -69,21 +69,27 @@ export type QueryJoinEntrySpec = QueryJoinEntry<QuerySpec> & {
 };
 
 /** @see QueryColumn */
-export type QueryColumnSpec = QueryColumn;
+export type QueryColumnSpec<C = PObjectId> = QueryColumn<C>;
 /** @see QueryInlineColumn */
 export type QueryInlineColumnSpec = QueryInlineColumn<ColumnIdAndSpec>;
 /** @see QuerySparseToDenseColumn */
-export type QuerySparseToDenseColumnSpec = QuerySparseToDenseColumn<PColumnIdAndSpec>;
+export type QuerySparseToDenseColumnSpec<C = PObjectId> = QuerySparseToDenseColumn<
+  C,
+  PColumnIdAndSpec
+>;
 /** @see QuerySymmetricJoin */
-export type QuerySymmetricJoinSpec = QuerySymmetricJoin<QueryJoinEntrySpec>;
+export type QuerySymmetricJoinSpec<C = PObjectId> = QuerySymmetricJoin<QueryJoinEntrySpec<C>>;
 /** @see QueryOuterJoin */
-export type QueryOuterJoinSpec = QueryOuterJoin<QueryJoinEntrySpec>;
+export type QueryOuterJoinSpec<C = PObjectId> = QueryOuterJoin<QueryJoinEntrySpec<C>>;
 /** @see QuerySliceAxes */
-export type QuerySliceAxesSpec = QuerySliceAxes<QuerySpec, QueryAxisSelector<SingleAxisSelector>>;
+export type QuerySliceAxesSpec<C = PObjectId> = QuerySliceAxes<
+  QuerySpec<C>,
+  QueryAxisSelector<SingleAxisSelector>
+>;
 /** @see QuerySort */
-export type QuerySortSpec = QuerySort<QuerySpec, QueryExpressionSpec>;
+export type QuerySortSpec<C = PObjectId> = QuerySort<QuerySpec<C>, QueryExpressionSpec>;
 /** @see QueryFilter */
-export type QueryFilterSpec = QueryFilter<QuerySpec, QueryBooleanExpressionSpec>;
+export type QueryFilterSpec<C = PObjectId> = QueryFilter<QuerySpec<C>, QueryBooleanExpressionSpec>;
 
 /**
  * Union of all spec layer query types.
@@ -91,20 +97,24 @@ export type QueryFilterSpec = QueryFilter<QuerySpec, QueryBooleanExpressionSpec>
  * The spec layer operates with named selectors and column IDs,
  * making it suitable for user-facing query construction and validation.
  *
+ * @template C - Column reference type. Defaults to PObjectId (ID-only).
+ *   Can be parameterized with richer types (e.g., PColumn<Data>) to carry
+ *   full column data directly in the query tree.
+ *
  * Includes:
  * - Leaf nodes: column, inlineColumn, sparseToDenseColumn
  * - Join operations: innerJoin, fullJoin, outerJoin
  * - Transformations: sliceAxes, sort, filter
  */
-export type QuerySpec =
-  | QueryColumnSpec
+export type QuerySpec<C = PObjectId> =
+  | QueryColumnSpec<C>
   | QueryInlineColumnSpec
-  | QuerySparseToDenseColumnSpec
-  | QuerySymmetricJoinSpec
-  | QueryOuterJoinSpec
-  | QuerySliceAxesSpec
-  | QuerySortSpec
-  | QueryFilterSpec;
+  | QuerySparseToDenseColumnSpec<C>
+  | QuerySymmetricJoinSpec<C>
+  | QueryOuterJoinSpec<C>
+  | QuerySliceAxesSpec<C>
+  | QuerySortSpec<C>
+  | QueryFilterSpec<C>;
 
 /** @see ExprAxisRef */
 export type ExprAxisRefSpec = ExprAxisRef<SingleAxisSelector>;

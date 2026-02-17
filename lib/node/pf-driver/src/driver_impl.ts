@@ -32,6 +32,8 @@ import {
   type PTableDefV2,
   type QuerySpec,
   type QueryJoinEntrySpec,
+  mapQuerySpec,
+  collectQueryColumns,
 } from "@platforma-sdk/model";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import {
@@ -209,7 +211,7 @@ export class AbstractPFrameDriver<
   }
 
   public createPTableV2(def: PTableDefV2<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
-    const columns = def.columns;
+    const columns = uniqueBy(collectQueryColumns(def.query), (c) => c.id);
     const columnsMap = columns.reduce(
       (acc, col) => ((acc[col.id] = col.spec), acc),
       {} as Record<string, PColumnSpec>,
@@ -217,8 +219,12 @@ export class AbstractPFrameDriver<
 
     const pFrameEntry = this.createPFrame(columns);
     const specFrame = createSpecFrame(columnsMap);
-    const sortedQuery = sortQuerySpec(def.query);
-    const { tableSpec, dataQuery } = specFrame.evaluateQuery(sortedQuery);
+    const sortedQuery = sortQuerySpec(mapQuerySpec(def.query, (c) => c.id));
+    const { tableSpec, dataQuery } = specFrame.evaluateQuery(
+      // WASM crate expects `columnId` field name, our types use `column`
+      // @todo: remove it after update wasm package
+      querySpecToWasm(sortedQuery) as QuerySpec,
+    );
 
     const pTableEntry = this.pTableDefs.acquire({
       type: "v2",
@@ -582,9 +588,9 @@ function cmpQuerySpec(lhs: QuerySpec, rhs: QuerySpec): number {
   }
   switch (lhs.type) {
     case "column":
-      return lhs.columnId < (rhs as typeof lhs).columnId
+      return lhs.column < (rhs as typeof lhs).column
         ? -1
-        : lhs.columnId === (rhs as typeof lhs).columnId
+        : lhs.column === (rhs as typeof lhs).column
           ? 0
           : 1;
     case "inlineColumn":
@@ -594,9 +600,9 @@ function cmpQuerySpec(lhs: QuerySpec, rhs: QuerySpec): number {
           ? 0
           : 1;
     case "sparseToDenseColumn":
-      return lhs.columnId < (rhs as typeof lhs).columnId
+      return lhs.column < (rhs as typeof lhs).column
         ? -1
-        : lhs.columnId === (rhs as typeof lhs).columnId
+        : lhs.column === (rhs as typeof lhs).column
           ? 0
           : 1;
     case "innerJoin":
@@ -699,6 +705,49 @@ function sortQuerySpec(query: QuerySpec): QuerySpec {
         ...query,
         input: sortQuerySpec(query.input),
       };
+    default:
+      assertNever(query);
+  }
+}
+
+/**
+ * Converts a QuerySpec to the format expected by the WASM crate.
+ * Renames `column` → `columnId` in leaf nodes (QueryColumn, QuerySparseToDenseColumn).
+ */
+function querySpecToWasm(query: QuerySpec): unknown {
+  switch (query.type) {
+    case "column":
+      return { type: "column", columnId: query.column };
+    case "sparseToDenseColumn": {
+      const { column, ...rest } = query;
+      return { ...rest, columnId: column };
+    }
+    case "inlineColumn":
+      return query;
+    case "innerJoin":
+    case "fullJoin":
+      return {
+        ...query,
+        entries: query.entries.map((e) => ({
+          ...e,
+          entry: querySpecToWasm(e.entry),
+        })),
+      };
+    case "outerJoin":
+      return {
+        ...query,
+        primary: { ...query.primary, entry: querySpecToWasm(query.primary.entry) },
+        secondary: query.secondary.map((e) => ({
+          ...e,
+          entry: querySpecToWasm(e.entry),
+        })),
+      };
+    case "filter":
+      return { ...query, input: querySpecToWasm(query.input) };
+    case "sort":
+      return { ...query, input: querySpecToWasm(query.input) };
+    case "sliceAxes":
+      return { ...query, input: querySpecToWasm(query.input) };
     default:
       assertNever(query);
   }

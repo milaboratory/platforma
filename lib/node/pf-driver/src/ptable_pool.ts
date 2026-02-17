@@ -237,7 +237,6 @@ function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEn
         secondary: entry.secondary.map((col) => joinEntryToInternal(col)),
       };
     default:
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       throw new PFrameDriverError(`unsupported PFrame join entry type: ${type satisfies never}`);
   }
 }

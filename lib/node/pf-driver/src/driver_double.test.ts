@@ -186,7 +186,7 @@ test("createTableV2 support", async ({ expect }) => {
 
   const columnRef: QueryExpressionSpec = { type: "columnRef", value: columnId };
 
-  const baseQuery: QuerySpec = { type: "column", columnId };
+  const baseQuery: QuerySpec<typeof column> = { type: "column", column };
 
   const uiDriver: PFrameDriver = driver;
 
@@ -194,7 +194,6 @@ test("createTableV2 support", async ({ expect }) => {
   {
     using pTable = driver.createPTableV2({
       query: baseQuery,
-      columns: [column],
     });
 
     const shape = await uiDriver.getShape(pTable.key);
@@ -220,7 +219,6 @@ test("createTableV2 support", async ({ expect }) => {
           value: "b",
         }) as QueryBooleanExpressionSpec,
       },
-      columns: [column],
     });
 
     const shape = await uiDriver.getShape(pTable.key);
@@ -243,7 +241,6 @@ test("createTableV2 support", async ({ expect }) => {
           x: 15,
         }) as QueryBooleanExpressionSpec,
       },
-      columns: [column],
     });
 
     const shape = await uiDriver.getShape(pTable.key);
@@ -268,7 +265,6 @@ test("createTableV2 support", async ({ expect }) => {
           },
         ],
       },
-      columns: [column],
     });
 
     const data = await uiDriver.getData(pTable.key, [0, 1]);
@@ -300,7 +296,6 @@ test("createTableV2 support", async ({ expect }) => {
           },
         ],
       },
-      columns: [column],
     });
 
     const shape = await uiDriver.getShape(pTable.key);

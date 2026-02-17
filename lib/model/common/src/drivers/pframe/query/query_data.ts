@@ -64,7 +64,7 @@ export type QueryColumnData = QueryColumn;
 /** @see QueryInlineColumn */
 export type QueryInlineColumnData = QueryInlineColumn<ColumnIdAndTypeSpec>;
 /** @see QuerySparseToDenseColumn */
-export type QuerySparseToDenseColumnData = QuerySparseToDenseColumn<ColumnIdAndTypeSpec>;
+export type QuerySparseToDenseColumnData = QuerySparseToDenseColumn<PObjectId, ColumnIdAndTypeSpec>;
 /** @see QuerySymmetricJoin */
 export type QuerySymmetricJoinData = QuerySymmetricJoin<QueryJoinEntryData>;
 /** @see QueryOuterJoin */

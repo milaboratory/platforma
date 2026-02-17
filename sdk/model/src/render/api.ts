@@ -62,6 +62,7 @@ import type { APColumnSelectorWithSplit } from "./util/split_selectors";
 import { patchInSetFilters } from "./util/pframe_upgraders";
 import { allPColumnsReady } from "./util/pcolumn_data";
 import type { PColumnDataUniversal } from "./internal";
+import { collectQueryColumns } from "@milaboratories/pl-model-common";
 
 /**
  * Helper function to match domain objects
@@ -681,8 +682,9 @@ export abstract class RenderCtxBase<Args, Data> {
   }
 
   public createPTableV2(def: PTableDefV2<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
-    this.verifyInlineAndExplicitColumnsSupport(def.columns);
-    if (!allPColumnsReady(def.columns)) return undefined;
+    const columns = collectQueryColumns(def.query);
+    this.verifyInlineAndExplicitColumnsSupport(columns);
+    if (!allPColumnsReady(columns)) return undefined;
     return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
   }
 

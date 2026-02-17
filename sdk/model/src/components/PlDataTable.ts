@@ -49,7 +49,7 @@ import type {
 import { allPColumnsReady, deriveLabels, PColumnCollection } from "../render";
 import { identity, isFunction, isNil } from "es-toolkit";
 import { filterEmptyPieces } from "../filters/converters/filterEmpty";
-import { isBooleanExpression } from "../pframe_utils/querySpec";
+import { isBooleanExpression } from "@milaboratories/pl-model-common";
 
 export type PlTableColumnId = {
   /** Original column spec */
@@ -605,7 +605,7 @@ function columnIdToExpr(col: PTableColumnId): QueryExpressionSpec {
 }
 
 /** Wrap a QuerySpec as a QueryJoinEntrySpec with empty qualifications. */
-function joinEntry(input: QuerySpec): QueryJoinEntrySpec {
+function joinEntry<C>(input: QuerySpec<C>): QueryJoinEntrySpec<C> {
   return { entry: input, qualifications: [] };
 }
 
@@ -629,18 +629,18 @@ function createPTableDef(params: {
 
   secondaryColumns.push(...params.labelColumns);
 
-  const allColumns = [...coreColumns, ...secondaryColumns];
-
   // Build QuerySpec directly from columns
-  const coreJoinQuery: QuerySpec = {
+  const coreJoinQuery: QuerySpec<
+    PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>
+  > = {
     type: params.coreJoinType === "inner" ? "innerJoin" : "fullJoin",
-    entries: coreColumns.map((c) => joinEntry({ type: "column", columnId: c.id })),
+    entries: coreColumns.map((c) => joinEntry({ type: "column", column: c })),
   };
 
-  let query: QuerySpec = {
+  let query: QuerySpec<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>> = {
     type: "outerJoin",
     primary: joinEntry(coreJoinQuery),
-    secondary: secondaryColumns.map((c) => joinEntry({ type: "column", columnId: c.id })),
+    secondary: secondaryColumns.map((c) => joinEntry({ type: "column", column: c })),
   };
 
   // Apply filters
@@ -675,10 +675,7 @@ function createPTableDef(params: {
     };
   }
 
-  return {
-    query,
-    columns: allColumns,
-  };
+  return { query };
 }
 
 /** PlAgDataTable model */
