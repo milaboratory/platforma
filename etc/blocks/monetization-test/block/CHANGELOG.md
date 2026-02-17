@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.2.35
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+  - @milaboratories/milaboratories.monetization-test.model@1.0.61
+  - @milaboratories/milaboratories.monetization-test.ui@1.1.174
+  - @milaboratories/milaboratories.monetization-test.workflow@1.1.63
+
 ## 1.2.34
 
 ### Patch Changes

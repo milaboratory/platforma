@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.10.20
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/helpers@1.13.4
+  - @platforma-sdk/model@1.54.7
+
 ## 2.10.19
 
 ### Patch Changes

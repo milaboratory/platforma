@@ -1,5 +1,13 @@
 # @milaboratories/ts-builder
 
+## 1.2.10
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/build-configs@1.4.4
+
 ## 1.2.9
 
 ### Patch Changes

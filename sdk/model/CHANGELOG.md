@@ -1,5 +1,16 @@
 # @platforma-sdk/model
 
+## 1.54.7
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-common@1.24.7
+  - @milaboratories/helpers@1.13.4
+  - @milaboratories/pl-error-like@1.12.8
+  - @milaboratories/ptabler-expression-js@1.1.17
+
 ## 1.53.15
 
 ### Patch Changes

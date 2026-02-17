@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.monetization-test.model
 
+## 1.0.61
+
+### Patch Changes
+
+- Updated dependencies [0ae1854]
+  - @platforma-sdk/model@1.54.7
+
 ## 1.0.60
 
 ### Patch Changes

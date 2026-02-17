@@ -1,5 +1,14 @@
 # @milaboratories/pl-client
 
+## 2.17.1
+
+### Patch Changes
+
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-common@1.24.7
+  - @milaboratories/pl-http@1.2.3
+  - @milaboratories/ts-helpers@1.7.2
+
 ## 2.17.0
 
 ### Minor Changes

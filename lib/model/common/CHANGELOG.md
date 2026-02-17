@@ -1,5 +1,12 @@
 # @milaboratories/pl-model-common
 
+## 1.24.7
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+  - @milaboratories/pl-error-like@1.12.8
+
 ## 1.24.6
 
 ### Patch Changes
