@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.54.8
+
+### Patch Changes
+
+- 4f04561: simplify distil , renaming
+- Updated dependencies [4f04561]
+  - @milaboratories/pl-model-common@1.24.8
+  - @milaboratories/ptabler-expression-js@1.1.18
+
 ## 1.54.7
 
 ### Patch Changes

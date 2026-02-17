@@ -1,5 +1,14 @@
 # @milaboratories/pf-driver
 
+## 1.0.46
+
+### Patch Changes
+
+- 4f04561: simplify distil , renaming
+- Updated dependencies [4f04561]
+  - @platforma-sdk/model@1.54.8
+  - @milaboratories/pl-model-middle-layer@1.11.10
+
 ## 1.0.45
 
 ### Patch Changes

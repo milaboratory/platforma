@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-tree",
-  "version": "1.8.39",
+  "version": "1.8.40",
   "description": "Reactive pl tree state",
   "files": [
     "./dist/**/*",
