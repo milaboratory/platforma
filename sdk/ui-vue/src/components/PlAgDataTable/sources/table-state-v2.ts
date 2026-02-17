@@ -1,5 +1,5 @@
 import {
-  makeDefaultPTableParams,
+  createDefaultPTableParams,
   parseJson,
   canonicalizeJson,
   upgradePlDataTableStateV2,
@@ -125,7 +125,7 @@ export function useTableState(
     set: (state) => {
       const newState: PlDataTableStateV2Normalized = {
         ...tableStateNormalized.value,
-        pTableParams: makeDefaultPTableParams(),
+        pTableParams: createDefaultPTableParams(),
       };
 
       if (state.sourceId) {

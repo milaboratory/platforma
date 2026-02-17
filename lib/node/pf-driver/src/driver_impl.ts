@@ -3,7 +3,6 @@ import {
   mapPTableDef,
   extractAllColumns,
   uniqueBy,
-  getAxisId,
   canonicalizeJson,
   bigintReplacer,
   ValueType,
@@ -24,16 +23,16 @@ import {
   type UniqueValuesResponse,
   type PColumn,
   type PFrameDef,
-  type JoinEntry,
   type PTableDef,
   type PTableRecordSingleValueFilterV2,
   type PTableRecordFilter,
   type JsonSerializable,
   type PTableDefV2,
   type SpecQuery,
-  type SpecQueryJoinEntry,
   mapQuerySpec,
   collectQueryColumns,
+  sortQuerySpec,
+  sortPTableDef,
 } from "@platforma-sdk/model";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import {
@@ -457,256 +456,6 @@ export class AbstractPFrameDriver<
 
     this.pTableCachePlain.cache(table, overallSize, defDisposeSignal);
     return data;
-  }
-}
-
-function cmpJoinEntries(lhs: JoinEntry<PObjectId>, rhs: JoinEntry<PObjectId>): number {
-  if (lhs.type !== rhs.type) {
-    return lhs.type < rhs.type ? -1 : 1;
-  }
-  const type = lhs.type;
-  switch (type) {
-    case "column":
-      return lhs.column < (rhs as typeof lhs).column ? -1 : 1;
-    case "slicedColumn":
-    case "artificialColumn":
-      return lhs.newId < (rhs as typeof lhs).newId ? -1 : 1;
-    case "inlineColumn": {
-      return lhs.column.id < (rhs as typeof lhs).column.id ? -1 : 1;
-    }
-    case "inner":
-    case "full": {
-      const rhsInner = rhs as typeof lhs;
-      if (lhs.entries.length !== rhsInner.entries.length) {
-        return lhs.entries.length - rhsInner.entries.length;
-      }
-      for (let i = 0; i < lhs.entries.length; i++) {
-        const cmp = cmpJoinEntries(lhs.entries[i], rhsInner.entries[i]);
-        if (cmp !== 0) {
-          return cmp;
-        }
-      }
-      return 0;
-    }
-    case "outer": {
-      const rhsOuter = rhs as typeof lhs;
-      const cmp = cmpJoinEntries(lhs.primary, rhsOuter.primary);
-      if (cmp !== 0) {
-        return cmp;
-      }
-      if (lhs.secondary.length !== rhsOuter.secondary.length) {
-        return lhs.secondary.length - rhsOuter.secondary.length;
-      }
-      for (let i = 0; i < lhs.secondary.length; i++) {
-        const cmp = cmpJoinEntries(lhs.secondary[i], rhsOuter.secondary[i]);
-        if (cmp !== 0) {
-          return cmp;
-        }
-      }
-      return 0;
-    }
-    default:
-      assertNever(type);
-  }
-}
-
-function sortJoinEntry(entry: JoinEntry<PObjectId>): JoinEntry<PObjectId> {
-  switch (entry.type) {
-    case "column":
-    case "slicedColumn":
-    case "inlineColumn":
-      return entry;
-    case "artificialColumn": {
-      const sortedAxesIndices = entry.axesIndices.toSorted((lhs, rhs) => lhs - rhs);
-      return {
-        ...entry,
-        axesIndices: sortedAxesIndices,
-      };
-    }
-    case "inner":
-    case "full": {
-      const sortedEntries = entry.entries.map(sortJoinEntry);
-      sortedEntries.sort(cmpJoinEntries);
-      return {
-        ...entry,
-        entries: sortedEntries,
-      };
-    }
-    case "outer": {
-      const sortedSecondary = entry.secondary.map(sortJoinEntry);
-      sortedSecondary.sort(cmpJoinEntries);
-      return {
-        ...entry,
-        primary: sortJoinEntry(entry.primary),
-        secondary: sortedSecondary,
-      };
-    }
-    default:
-      assertNever(entry);
-  }
-}
-
-function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
-  function sortFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
-    return filters.toSorted((lhs, rhs) => {
-      if (lhs.column.type === "axis" && rhs.column.type === "axis") {
-        const lhsId = canonicalizeJson(getAxisId(lhs.column.id));
-        const rhsId = canonicalizeJson(getAxisId(rhs.column.id));
-        return lhsId < rhsId ? -1 : 1;
-      } else if (lhs.column.type === "column" && rhs.column.type === "column") {
-        return lhs.column.id < rhs.column.id ? -1 : 1;
-      } else {
-        return lhs.column.type === "axis" ? -1 : 1;
-      }
-    });
-  }
-  return {
-    src: sortJoinEntry(def.src),
-    partitionFilters: sortFilters(def.partitionFilters),
-    filters: sortFilters(def.filters),
-    sorting: def.sorting,
-  };
-}
-
-function cmpQueryJoinEntrySpec(lhs: SpecQueryJoinEntry, rhs: SpecQueryJoinEntry): number {
-  const cmp = cmpQuerySpec(lhs.entry, rhs.entry);
-  if (cmp !== 0) return cmp;
-  if (lhs.qualifications.length !== rhs.qualifications.length) {
-    return lhs.qualifications.length - rhs.qualifications.length;
-  }
-  for (let i = 0; i < lhs.qualifications.length; i++) {
-    const lhsQ = canonicalizeJson(lhs.qualifications[i]);
-    const rhsQ = canonicalizeJson(rhs.qualifications[i]);
-    if (lhsQ !== rhsQ) return lhsQ < rhsQ ? -1 : 1;
-  }
-  return 0;
-}
-
-function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
-  if (lhs.type !== rhs.type) {
-    return lhs.type < rhs.type ? -1 : 1;
-  }
-  switch (lhs.type) {
-    case "column":
-      return lhs.column < (rhs as typeof lhs).column
-        ? -1
-        : lhs.column === (rhs as typeof lhs).column
-          ? 0
-          : 1;
-    case "inlineColumn":
-      return lhs.spec.id < (rhs as typeof lhs).spec.id
-        ? -1
-        : lhs.spec.id === (rhs as typeof lhs).spec.id
-          ? 0
-          : 1;
-    case "sparseToDenseColumn":
-      return lhs.column < (rhs as typeof lhs).column
-        ? -1
-        : lhs.column === (rhs as typeof lhs).column
-          ? 0
-          : 1;
-    case "innerJoin":
-    case "fullJoin": {
-      const rhsJoin = rhs as typeof lhs;
-      if (lhs.entries.length !== rhsJoin.entries.length) {
-        return lhs.entries.length - rhsJoin.entries.length;
-      }
-      for (let i = 0; i < lhs.entries.length; i++) {
-        const cmp = cmpQueryJoinEntrySpec(lhs.entries[i], rhsJoin.entries[i]);
-        if (cmp !== 0) return cmp;
-      }
-      return 0;
-    }
-    case "outerJoin": {
-      const rhsOuter = rhs as typeof lhs;
-      const cmp = cmpQueryJoinEntrySpec(lhs.primary, rhsOuter.primary);
-      if (cmp !== 0) return cmp;
-      if (lhs.secondary.length !== rhsOuter.secondary.length) {
-        return lhs.secondary.length - rhsOuter.secondary.length;
-      }
-      for (let i = 0; i < lhs.secondary.length; i++) {
-        const cmp = cmpQueryJoinEntrySpec(lhs.secondary[i], rhsOuter.secondary[i]);
-        if (cmp !== 0) return cmp;
-      }
-      return 0;
-    }
-    case "sliceAxes":
-      return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
-    case "sort":
-      return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
-    case "filter":
-      return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
-    default:
-      assertNever(lhs);
-  }
-}
-
-function sortQueryJoinEntrySpec(entry: SpecQueryJoinEntry): SpecQueryJoinEntry {
-  const sortedQualifications = entry.qualifications.toSorted((lhs, rhs) => {
-    const lhsKey = canonicalizeJson(lhs.axis);
-    const rhsKey = canonicalizeJson(rhs.axis);
-    return lhsKey < rhsKey ? -1 : lhsKey === rhsKey ? 0 : 1;
-  });
-  return {
-    entry: sortQuerySpec(entry.entry),
-    qualifications: sortedQualifications,
-  };
-}
-
-function sortQuerySpec(query: SpecQuery): SpecQuery {
-  switch (query.type) {
-    case "column":
-    case "inlineColumn":
-      return query;
-    case "sparseToDenseColumn": {
-      const sortedAxesIndices = query.axesIndices.toSorted((lhs, rhs) => lhs - rhs);
-      return {
-        ...query,
-        axesIndices: sortedAxesIndices,
-      };
-    }
-    case "innerJoin":
-    case "fullJoin": {
-      const sortedEntries = query.entries.map(sortQueryJoinEntrySpec);
-      sortedEntries.sort(cmpQueryJoinEntrySpec);
-      return {
-        ...query,
-        entries: sortedEntries,
-      };
-    }
-    case "outerJoin": {
-      const sortedSecondary = query.secondary.map(sortQueryJoinEntrySpec);
-      sortedSecondary.sort(cmpQueryJoinEntrySpec);
-      return {
-        ...query,
-        primary: sortQueryJoinEntrySpec(query.primary),
-        secondary: sortedSecondary,
-      };
-    }
-    case "sliceAxes": {
-      const sortedAxisFilters = query.axisFilters.toSorted((lhs, rhs) => {
-        const lhsKey = canonicalizeJson(lhs.axisSelector);
-        const rhsKey = canonicalizeJson(rhs.axisSelector);
-        return lhsKey < rhsKey ? -1 : lhsKey === rhsKey ? 0 : 1;
-      });
-      return {
-        ...query,
-        input: sortQuerySpec(query.input),
-        axisFilters: sortedAxisFilters,
-      };
-    }
-    case "sort":
-      return {
-        ...query,
-        input: sortQuerySpec(query.input),
-      };
-    case "filter":
-      return {
-        ...query,
-        input: sortQuerySpec(query.input),
-      };
-    default:
-      assertNever(query);
   }
 }
 
