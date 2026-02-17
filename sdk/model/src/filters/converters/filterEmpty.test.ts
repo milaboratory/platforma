@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FilterSpec, FilterSpecLeaf } from "@milaboratories/pl-model-common";
-import { filterEmptyPeaces, filterPredicate } from "./filterEmpty";
+import { filterEmptyPieces, filterPredicate } from "./filterEmpty";
 
 type F = FilterSpec<FilterSpecLeaf<string>>;
 
@@ -42,34 +42,34 @@ describe("filterPredicate", () => {
   });
 });
 
-describe("filterEmptyPeaces", () => {
+describe("filterEmptyPieces", () => {
   it("returns valid leaf as-is", () => {
-    expect(filterEmptyPeaces(leaf)).toEqual(leaf);
+    expect(filterEmptyPieces(leaf)).toEqual(leaf);
   });
 
   it("returns null for empty leaf", () => {
-    expect(filterEmptyPeaces(emptyLeaf)).toBeNull();
+    expect(filterEmptyPieces(emptyLeaf)).toBeNull();
   });
 
   it("returns null for incomplete leaf", () => {
-    expect(filterEmptyPeaces(incompleteLeaf)).toBeNull();
+    expect(filterEmptyPieces(incompleteLeaf)).toBeNull();
   });
 
   // --- and ---
 
   it("filters out empty children from and", () => {
     const filter: F = { type: "and", filters: [emptyLeaf, leaf, emptyLeaf] };
-    expect(filterEmptyPeaces(filter)).toEqual({ type: "and", filters: [leaf] });
+    expect(filterEmptyPieces(filter)).toEqual({ type: "and", filters: [leaf] });
   });
 
   it("returns null when all and children are empty", () => {
     const filter: F = { type: "and", filters: [emptyLeaf, emptyLeaf] };
-    expect(filterEmptyPeaces(filter)).toBeNull();
+    expect(filterEmptyPieces(filter)).toBeNull();
   });
 
   it("returns null for and with no children", () => {
     const filter: F = { type: "and", filters: [] };
-    expect(filterEmptyPeaces(filter)).toBeNull();
+    expect(filterEmptyPieces(filter)).toBeNull();
   });
 
   // --- or ---
@@ -77,24 +77,24 @@ describe("filterEmptyPeaces", () => {
   it("filters out empty children from or", () => {
     const leaf2: F = { type: "equal", column: "c2", x: 2 };
     const filter: F = { type: "or", filters: [leaf, emptyLeaf, leaf2] };
-    expect(filterEmptyPeaces(filter)).toEqual({ type: "or", filters: [leaf, leaf2] });
+    expect(filterEmptyPieces(filter)).toEqual({ type: "or", filters: [leaf, leaf2] });
   });
 
   it("returns null when all or children are empty", () => {
     const filter: F = { type: "or", filters: [emptyLeaf] };
-    expect(filterEmptyPeaces(filter)).toBeNull();
+    expect(filterEmptyPieces(filter)).toBeNull();
   });
 
   // --- not ---
 
   it("preserves not with valid inner filter", () => {
     const filter: F = { type: "not", filter: leaf };
-    expect(filterEmptyPeaces(filter)).toEqual({ type: "not", filter: leaf });
+    expect(filterEmptyPieces(filter)).toEqual({ type: "not", filter: leaf });
   });
 
   it("returns null for not wrapping an empty filter", () => {
     const filter: F = { type: "not", filter: emptyLeaf };
-    expect(filterEmptyPeaces(filter)).toBeNull();
+    expect(filterEmptyPieces(filter)).toBeNull();
   });
 
   // --- nested collapse ---
@@ -104,7 +104,7 @@ describe("filterEmptyPeaces", () => {
       type: "not",
       filter: { type: "and", filters: [emptyLeaf] },
     };
-    expect(filterEmptyPeaces(filter)).toBeNull();
+    expect(filterEmptyPieces(filter)).toBeNull();
   });
 
   it("returns null when parent and has only a collapsing child", () => {
@@ -112,7 +112,7 @@ describe("filterEmptyPeaces", () => {
       type: "and",
       filters: [{ type: "or", filters: [emptyLeaf] }],
     };
-    expect(filterEmptyPeaces(filter)).toBeNull();
+    expect(filterEmptyPieces(filter)).toBeNull();
   });
 
   it("keeps valid siblings when one child collapses", () => {
@@ -120,6 +120,6 @@ describe("filterEmptyPeaces", () => {
       type: "and",
       filters: [{ type: "or", filters: [emptyLeaf] }, leaf],
     };
-    expect(filterEmptyPeaces(filter)).toEqual({ type: "and", filters: [leaf] });
+    expect(filterEmptyPieces(filter)).toEqual({ type: "and", filters: [leaf] });
   });
 });

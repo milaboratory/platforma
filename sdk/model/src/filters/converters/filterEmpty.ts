@@ -24,12 +24,12 @@ export function filterPredicate(
   return !Object.values(item).some((v) => v === undefined);
 }
 
-export function filterEmptyPeaces<T extends FilterSpec<FilterSpecLeaf<unknown>, unknown, unknown>>(
+export function filterEmptyPieces<T extends FilterSpec<FilterSpecLeaf<unknown>, unknown, unknown>>(
   item: T,
 ): null | T {
   if (item.type === "or" || item.type === "and") {
     const filtered = item.filters
-      .map(filterEmptyPeaces)
+      .map(filterEmptyPieces)
       .filter((f): f is T => f !== null && filterPredicate(f));
 
     return filtered.length === 0
@@ -40,7 +40,7 @@ export function filterEmptyPeaces<T extends FilterSpec<FilterSpecLeaf<unknown>, 
         };
   }
   if (item.type === "not") {
-    const inner = filterEmptyPeaces(item.filter);
+    const inner = filterEmptyPieces(item.filter);
     return inner === null || !filterPredicate(inner)
       ? null
       : {

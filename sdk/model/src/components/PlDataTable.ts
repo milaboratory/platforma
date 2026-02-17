@@ -48,7 +48,7 @@ import type {
 } from "../render";
 import { allPColumnsReady, deriveLabels, PColumnCollection } from "../render";
 import { identity, isFunction, isNil } from "es-toolkit";
-import { filterEmptyPeaces } from "../filters/converters/filterEmpty";
+import { filterEmptyPieces } from "../filters/converters/filterEmpty";
 import { isBooleanExpression } from "../pframe_utils/querySpec";
 
 export type PlTableColumnId = {
@@ -645,12 +645,12 @@ function createPTableDef(params: {
 
   // Apply filters
   if (params.filters !== null) {
-    const nonEmpty = filterEmptyPeaces(params.filters);
+    const nonEmpty = filterEmptyPieces(params.filters);
 
     if (!isNil(nonEmpty)) {
       const pridicate = filterSpecToExpr(nonEmpty);
       if (!isBooleanExpression(pridicate)) {
-        throw new Error("Invalid filters: filterSpecToExpr did not return a boolean expression");
+        throw new Error(`Filter conversion produced a non-boolean expression (got type "${pridicate.type}"), expected a boolean predicate for query filtering`);
       }
       query = {
         type: "filter",
