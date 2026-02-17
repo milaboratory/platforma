@@ -4,5 +4,5 @@ import type { RootFilter, SourceOptionInfo, PlAdvancedFilterColumnId } from "./t
 export { default as PlAdvancedFilter } from "./PlAdvancedFilter.vue";
 export const PlAdvancedFilterSupportedFilters = SUPPORTED_FILTER_TYPES;
 export type PlAdvancedFilterItem = SourceOptionInfo;
-export type PlAdvancedFilterFilter = RootFilter;
+export type PlAdvancedFilter = RootFilter;
 export { PlAdvancedFilterColumnId };

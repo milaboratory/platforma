@@ -34,7 +34,6 @@ import { computed, effectScope, ref, shallowRef, toRefs, watch, watchEffect } fr
 import { AgGridTheme } from "../../aggrid";
 import PlAgCsvExporter from "../PlAgCsvExporter/PlAgCsvExporter.vue";
 import { PlAgGridColumnManager } from "../PlAgGridColumnManager";
-import type { PlDataTableFiltersSettings } from "../PlTableFilters";
 import PlTableFiltersV2 from "../PlTableFilters/PlTableFiltersV2.vue";
 import PlAgDataTableSheets from "./PlAgDataTableSheets.vue";
 import PlOverlayLoading from "./PlAgOverlayLoading.vue";
@@ -130,6 +129,8 @@ const emit = defineEmits<{
   newDataRendered: [];
 }>();
 
+const filterableColumns = ref<PTableColumnSpec[]>([]);
+
 const { gridState, sheetsState, filtersState } = useTableState(tableState, settings);
 
 const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
@@ -143,26 +144,6 @@ const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
         sheets: [],
         cachedState: [],
       };
-});
-
-const filterableColumns = ref<PTableColumnSpec[]>([]);
-const filtersSettings = computed<PlDataTableFiltersSettings>(() => {
-  const settingsCopy = { ...settings.value };
-  const columns = filterableColumns.value;
-  const result =
-    settingsCopy.sourceId !== null && columns.length > 0
-      ? {
-          columns,
-          config: (column: PTableColumnSpec) =>
-            settingsCopy.filtersConfig({ sourceId: settingsCopy.sourceId, column }),
-          cachedState: [...filtersState.value],
-        }
-      : {
-          columns: [],
-          config: () => ({}),
-          cachedState: [],
-        };
-  return result;
 });
 
 const gridApi = shallowRef<GridApi<PlAgDataTableV2Row> | null>(null);
@@ -607,7 +588,7 @@ watchEffect(() => {
     <PlTableFiltersV2
       v-if="!disableFiltersPanel"
       v-model="filtersState"
-      :settings="filtersSettings"
+      :columns="filterableColumns"
     />
     <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />
     <PlAgDataTableSheets v-model="sheetsState" :settings="sheetsSettings">

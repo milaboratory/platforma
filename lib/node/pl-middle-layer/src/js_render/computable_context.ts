@@ -16,6 +16,7 @@ import type {
   PObjectSpec,
   PSpecPredicate,
   PTableDef,
+  PTableDefV2,
   PTableHandle,
   ResourceType as ResourceTypeFromSDK,
   ResultCollection,
@@ -29,6 +30,7 @@ import {
   mapDataInfo,
   mapPObjectData,
   mapPTableDef,
+  mapPTableDefV2,
   mapValueInVOE,
 } from "@platforma-sdk/model";
 import { notEmpty } from "@milaboratories/ts-helpers";
@@ -411,14 +413,14 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return key;
   }
   public createPTableV2(
-    def: PTableDef<PColumn<string | PColumnValues | DataInfo<string>>>,
+    def: PTableDefV2<PColumn<string | PColumnValues | DataInfo<string>>>,
   ): PTableHandle {
     if (this.computableCtx === undefined)
       throw new Error(
         "can't instantiate PTable from this context (most porbably called from the future mapper)",
       );
     const { key, unref } = this.env.driverKit.pFrameDriver.createPTableV2(
-      mapPTableDef(def, (c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
+      mapPTableDefV2(def, (c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
     );
     this.computableCtx.addOnDestroy(unref);
     return key;
@@ -845,7 +847,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       exportCtxFunction("createPTableV2", (def) => {
         return parent.exportSingleValue(
           this.createPTableV2(
-            parent.importObjectViaJson(def) as PTableDef<PColumn<string | PColumnValues>>,
+            parent.importObjectViaJson(def) as PTableDefV2<PColumn<string | PColumnValues>>,
           ),
           undefined,
         );

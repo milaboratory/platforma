@@ -2,8 +2,10 @@ import type { PTableColumnId, PTableColumnSpec } from "./table_common";
 import type { PTableVector } from "./data_types";
 import type { PObjectId } from "../../pool";
 import { assertNever } from "../../util";
-import type { PColumn } from "./spec/spec";
+import { getAxisId, type PColumn } from "./spec/spec";
 import type { PColumnValues } from "./data_info";
+import type { SpecQuery, SpecQueryJoinEntry } from "./query/query_spec";
+import { canonicalizeJson } from "../../json";
 
 /** Defines a terminal column node in the join request tree */
 export interface ColumnJoinEntry<Col> {
@@ -373,6 +375,12 @@ export interface PTableDef<Col> {
   readonly sorting: PTableSorting[];
 }
 
+/** Information required to instantiate a PTable (V2, query-based). */
+export interface PTableDefV2<Col> {
+  /** Pre-built query spec describing joins, filters and sorting */
+  readonly query: SpecQuery<Col>;
+}
+
 /** Request to create and retrieve entirety of data of PTable. */
 export type CalculateTableDataRequest<Col> = {
   /** Join tree to populate the PTable */
@@ -390,6 +398,74 @@ export type CalculateTableDataResponse = FullPTableColumnData[];
 
 export function mapPTableDef<C1, C2>(def: PTableDef<C1>, cb: (c: C1) => C2): PTableDef<C2> {
   return { ...def, src: mapJoinEntry(def.src, cb) };
+}
+
+export function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
+  function sortFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
+    return filters.toSorted((lhs, rhs) => {
+      if (lhs.column.type === "axis" && rhs.column.type === "axis") {
+        const lhsId = canonicalizeJson(getAxisId(lhs.column.id));
+        const rhsId = canonicalizeJson(getAxisId(rhs.column.id));
+        return lhsId < rhsId ? -1 : 1;
+      } else if (lhs.column.type === "column" && rhs.column.type === "column") {
+        return lhs.column.id < rhs.column.id ? -1 : 1;
+      } else {
+        return lhs.column.type === "axis" ? -1 : 1;
+      }
+    });
+  }
+  return {
+    src: sortJoinEntry(def.src),
+    partitionFilters: sortFilters(def.partitionFilters),
+    filters: sortFilters(def.filters),
+    sorting: def.sorting,
+  };
+}
+
+export function mapPTableDefV2<C1, C2>(def: PTableDefV2<C1>, cb: (c: C1) => C2): PTableDefV2<C2> {
+  return { query: mapQuerySpec(def.query, cb) };
+}
+
+/** Recursively maps all column references in a SpecQuery tree. */
+export function mapQuerySpec<C1, C2>(query: SpecQuery<C1>, cb: (c: C1) => C2): SpecQuery<C2> {
+  switch (query.type) {
+    case "column":
+      return { type: "column", column: cb(query.column) };
+    case "sparseToDenseColumn":
+      return { ...query, column: cb(query.column) };
+    case "inlineColumn":
+      return query;
+    case "innerJoin":
+    case "fullJoin":
+      return {
+        ...query,
+        entries: query.entries.map((e) => mapQueryJoinEntrySpec(e, cb)),
+      };
+    case "outerJoin":
+      return {
+        ...query,
+        primary: mapQueryJoinEntrySpec(query.primary, cb),
+        secondary: query.secondary.map((e) => mapQueryJoinEntrySpec(e, cb)),
+      };
+    case "filter":
+      return { ...query, input: mapQuerySpec(query.input, cb) };
+    case "sort":
+      return { ...query, input: mapQuerySpec(query.input, cb) };
+    case "sliceAxes":
+      return { ...query, input: mapQuerySpec(query.input, cb) };
+    default:
+      assertNever(query);
+  }
+}
+
+function mapQueryJoinEntrySpec<C1, C2>(
+  entry: SpecQueryJoinEntry<C1>,
+  cb: (c: C1) => C2,
+): SpecQueryJoinEntry<C2> {
+  return {
+    ...entry,
+    entry: mapQuerySpec(entry.entry, cb),
+  };
 }
 
 export function mapJoinEntry<C1, C2>(entry: JoinEntry<C1>, cb: (c: C1) => C2): JoinEntry<C2> {
@@ -427,6 +503,92 @@ export function mapJoinEntry<C1, C2>(entry: JoinEntry<C1>, cb: (c: C1) => C2): J
         primary: mapJoinEntry(entry.primary, cb),
         secondary: entry.secondary.map((col) => mapJoinEntry(col, cb)),
       };
+    default:
+      assertNever(entry);
+  }
+}
+
+function cmpJoinEntries(lhs: JoinEntry<PObjectId>, rhs: JoinEntry<PObjectId>): number {
+  if (lhs.type !== rhs.type) {
+    return lhs.type < rhs.type ? -1 : 1;
+  }
+  const type = lhs.type;
+  switch (type) {
+    case "column":
+      return lhs.column < (rhs as typeof lhs).column ? -1 : 1;
+    case "slicedColumn":
+    case "artificialColumn":
+      return lhs.newId < (rhs as typeof lhs).newId ? -1 : 1;
+    case "inlineColumn": {
+      return lhs.column.id < (rhs as typeof lhs).column.id ? -1 : 1;
+    }
+    case "inner":
+    case "full": {
+      const rhsInner = rhs as typeof lhs;
+      if (lhs.entries.length !== rhsInner.entries.length) {
+        return lhs.entries.length - rhsInner.entries.length;
+      }
+      for (let i = 0; i < lhs.entries.length; i++) {
+        const cmp = cmpJoinEntries(lhs.entries[i], rhsInner.entries[i]);
+        if (cmp !== 0) {
+          return cmp;
+        }
+      }
+      return 0;
+    }
+    case "outer": {
+      const rhsOuter = rhs as typeof lhs;
+      const cmp = cmpJoinEntries(lhs.primary, rhsOuter.primary);
+      if (cmp !== 0) {
+        return cmp;
+      }
+      if (lhs.secondary.length !== rhsOuter.secondary.length) {
+        return lhs.secondary.length - rhsOuter.secondary.length;
+      }
+      for (let i = 0; i < lhs.secondary.length; i++) {
+        const cmp = cmpJoinEntries(lhs.secondary[i], rhsOuter.secondary[i]);
+        if (cmp !== 0) {
+          return cmp;
+        }
+      }
+      return 0;
+    }
+    default:
+      assertNever(type);
+  }
+}
+
+export function sortJoinEntry(entry: JoinEntry<PObjectId>): JoinEntry<PObjectId> {
+  switch (entry.type) {
+    case "column":
+    case "slicedColumn":
+    case "inlineColumn":
+      return entry;
+    case "artificialColumn": {
+      const sortedAxesIndices = entry.axesIndices.toSorted((lhs, rhs) => lhs - rhs);
+      return {
+        ...entry,
+        axesIndices: sortedAxesIndices,
+      };
+    }
+    case "inner":
+    case "full": {
+      const sortedEntries = entry.entries.map(sortJoinEntry);
+      sortedEntries.sort(cmpJoinEntries);
+      return {
+        ...entry,
+        entries: sortedEntries,
+      };
+    }
+    case "outer": {
+      const sortedSecondary = entry.secondary.map(sortJoinEntry);
+      sortedSecondary.sort(cmpJoinEntries);
+      return {
+        ...entry,
+        primary: sortJoinEntry(entry.primary),
+        secondary: sortedSecondary,
+      };
+    }
     default:
       assertNever(entry);
   }

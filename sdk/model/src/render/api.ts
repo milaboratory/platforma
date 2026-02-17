@@ -16,6 +16,7 @@ import type {
   PObjectSpec,
   PSpecPredicate,
   PTableDef,
+  PTableDefV2,
   PTableHandle,
   PTableRecordFilter,
   PTableSorting,
@@ -36,6 +37,7 @@ import {
   mapDataInfo,
   mapPObjectData,
   mapPTableDef,
+  mapPTableDefV2,
   mapValueInVOE,
   PColumnName,
   readAnnotation,
@@ -60,6 +62,7 @@ import type { APColumnSelectorWithSplit } from "./util/split_selectors";
 import { patchInSetFilters } from "./util/pframe_upgraders";
 import { allPColumnsReady } from "./util/pcolumn_data";
 import type { PColumnDataUniversal } from "./internal";
+import { collectQueryColumns } from "@milaboratories/pl-model-common";
 
 /**
  * Helper function to match domain objects
@@ -678,11 +681,11 @@ export abstract class RenderCtxBase<Args, Data> {
     return this.ctx.createPTable(mapPTableDef(rawDef, (po) => transformPColumnData(po)));
   }
 
-  public createPTableV2(def: PTableDef<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
-    const columns = extractAllColumns(def.src);
+  public createPTableV2(def: PTableDefV2<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
+    const columns = collectQueryColumns(def.query);
     this.verifyInlineAndExplicitColumnsSupport(columns);
     if (!allPColumnsReady(columns)) return undefined;
-    return this.ctx.createPTableV2(mapPTableDef(def, (po) => transformPColumnData(po)));
+    return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
   }
 
   /** @deprecated scheduled for removal from SDK */

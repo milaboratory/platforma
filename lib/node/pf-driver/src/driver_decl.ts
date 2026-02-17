@@ -7,6 +7,7 @@ import type {
   PFrameHandle,
   PObjectId,
   PTableDef,
+  PTableDefV2,
   PTableHandle,
   PTableShape,
   PTableVector,
@@ -40,7 +41,7 @@ export interface AbstractInternalPFrameDriver<PColumnData> extends PFrameDriver,
   createPTable(def: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle>;
 
   /** Create a new PTable by new Pframe-rs api */
-  createPTableV2(def: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle>;
+  createPTableV2(def: PTableDefV2<PColumn<PColumnData>>): PoolEntry<PTableHandle>;
 
   /** Calculates data for the table and returns complete data representation of it */
   calculateTableData(

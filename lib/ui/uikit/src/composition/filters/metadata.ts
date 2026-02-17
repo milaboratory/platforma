@@ -555,6 +555,27 @@ export const filterUiMetadata = {
     },
     supportedFor: isStringValueType,
   },
+  ifNa: {
+    label: "If NA Then (Replace NA)",
+    form: {
+      column: {
+        label: "Column",
+        fieldType: "SUniversalPColumnId",
+        defaultValue: () => undefined,
+      },
+      type: {
+        label: "Predicate",
+        fieldType: "FilterType",
+        defaultValue: () => "ifNa",
+      },
+      replacement: {
+        label: "Replacement Value",
+        fieldType: "string",
+        defaultValue: () => "",
+      },
+    },
+    supportedFor: () => true,
+  },
 } satisfies FilterSpecMetadataRecord<FilterSpecType>;
 
 export function getFilterUiTypeOptions(columnSpec?: SimplifiedPColumnSpec) {

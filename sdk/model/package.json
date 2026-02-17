@@ -30,7 +30,7 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@milaboratories/pframes-rs-wasm": "catalog:",
+    "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pl-error-like": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/ptabler-expression-js": "workspace:*",
