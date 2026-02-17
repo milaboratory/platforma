@@ -1250,8 +1250,41 @@ export class ProjectMutator {
             );
           }
           this.setBlockStorageRaw(blockId, migrationResult.newStorageJson);
+
+          // Re-derive currentArgs from migrated storage (new block code + migrated data)
+          const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
+            newConfig,
+            migrationResult.newStorageJson,
+          );
+          if (!deriveArgsResult.error) {
+            this.setBlockFieldObj(
+              blockId,
+              "currentArgs",
+              this.createJsonFieldValue(deriveArgsResult.value),
+            );
+          }
+
+          // Derive prerunArgs from the migrated storage so staging can re-render
+          const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
+            newConfig,
+            migrationResult.newStorageJson,
+          );
+          if (prerunArgs !== undefined) {
+            this.setBlockFieldObj(
+              blockId,
+              "currentPrerunArgs",
+              this.createJsonFieldValue(prerunArgs),
+            );
+          }
+        }
+      } else {
+        // Legacy blocks (modelAPIVersion 1): prerunArgs = currentArgs
+        if (info.fields.currentArgs !== undefined) {
+          this.setBlockFieldObj(blockId, "currentPrerunArgs", info.fields.currentArgs);
         }
       }
+
+      this.blocksWithChangedInputs.add(blockId);
 
       // resetting staging outputs for all downstream blocks
       this.getStagingGraph().traverse("downstream", [blockId], ({ id }) => this.resetStaging(id));
