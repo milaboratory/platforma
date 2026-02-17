@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.24.9
+
+### Patch Changes
+
+- a3659cd: Add well-known constants for commonly used PColumn names, PAxis names, Domain keys, and Annotation keys (VDJ clustering, scores, lead selection, etc.)
+
 ## 1.24.8
 
 ### Patch Changes
