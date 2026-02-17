@@ -181,7 +181,12 @@ export function createPlDataTableV2<A, U>(
     fullColumnsIdsSet.has(canonicalizeJson<PTableColumnId>(id));
 
   const coreJoinType = ops?.coreJoinType ?? "full";
-  const filters = tableStateNormalized.pTableParams.filters;
+  const stateFilters = tableStateNormalized.pTableParams.filters;
+  const opsFilters = ops?.filters ?? null;
+  const filters: PlDataTableFilters | null =
+    stateFilters !== null && opsFilters !== null
+      ? { type: "and", filters: [stateFilters, opsFilters] }
+      : (stateFilters ?? opsFilters);
   const sorting: PTableSorting[] = uniqueBy(
     [...tableStateNormalized.pTableParams.sorting, ...(ops?.sorting ?? [])],
     (s) => canonicalizeJson<PTableColumnId>(s.column),

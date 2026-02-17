@@ -5,7 +5,6 @@ import type {
   ListOptionBase,
   PObjectId,
   PTableColumnSpec,
-  PTableRecordFilter,
   PTableSorting,
   PColumnIdAndSpec,
   PTableHandle,
@@ -113,7 +112,7 @@ export type PlDataTableModel = {
 
 export type CreatePlDataTableOps = {
   /** Filters for columns and non-partitioned axes */
-  filters?: PTableRecordFilter[];
+  filters?: PlDataTableFilters;
 
   /** Sorting to columns hidden from user */
   sorting?: PTableSorting[];
