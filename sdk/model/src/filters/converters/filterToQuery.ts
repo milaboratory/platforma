@@ -6,6 +6,7 @@ import type {
   SingleAxisSelector,
   SpecQueryExpression,
 } from "@milaboratories/pl-model-common";
+import { traverseFilterSpec } from "../traverse";
 
 /** Parses a CanonicalizedJson<PTableColumnId> string into a SpecQueryExpression reference. */
 function resolveColumnRef(columnStr: string): SpecQueryExpression {
@@ -20,20 +21,26 @@ function resolveColumnRef(columnStr: string): SpecQueryExpression {
 export function filterSpecToSpecQueryExpr(
   filter: FilterSpec<FilterSpecLeaf<string>>,
 ): SpecQueryExpression {
-  switch (filter.type) {
-    case "and":
-    case "or": {
-      const inputs = filter.filters
-        .filter((f) => f.type !== undefined)
-        .map(filterSpecToSpecQueryExpr);
+  return traverseFilterSpec(filter, {
+    leaf: leafToSpecQueryExpr,
+    and: (inputs) => {
       if (inputs.length === 0) {
-        throw new Error(`${filter.type.toUpperCase()} filter requires at least one operand`);
+        throw new Error("AND filter requires at least one operand");
       }
-      return { type: filter.type, input: inputs };
-    }
-    case "not":
-      return { type: "not", input: filterSpecToSpecQueryExpr(filter.filter) };
+      return { type: "and", input: inputs };
+    },
+    or: (inputs) => {
+      if (inputs.length === 0) {
+        throw new Error("OR filter requires at least one operand");
+      }
+      return { type: "or", input: inputs };
+    },
+    not: (input) => ({ type: "not", input }),
+  });
+}
 
+function leafToSpecQueryExpr(filter: FilterSpecLeaf<string>): SpecQueryExpression {
+  switch (filter.type) {
     case "patternEquals":
       return {
         type: "stringEquals",

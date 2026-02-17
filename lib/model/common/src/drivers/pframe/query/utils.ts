@@ -27,108 +27,127 @@ export function isBooleanExpression(expr: SpecQueryExpression): expr is SpecQuer
   );
 }
 
-/** Collects all column references from a SpecQuery tree. */
-export function collectQueryColumns<C>(query: SpecQuery<C>): C[] {
-  const result: C[] = [];
-  collectQueryColumnsImpl(query, result);
-  return result;
-}
+/**
+ * Recursively traverses a SpecQuery tree bottom-up, applying visitor callbacks.
+ *
+ * Traversal order:
+ * 1. Recurse into child queries
+ * 2. Apply `column` to transform column references in leaf nodes
+ * 3. Apply `joinEntry` to each join entry (with inner query already traversed)
+ * 4. Assemble node with transformed children
+ * 5. Apply `node` to the assembled node
+ */
+export function traverseQuerySpec<C1, C2>(
+  query: SpecQuery<C1>,
+  visitor: {
+    /** Transform column references in leaf nodes (column, sparseToDenseColumn). */
+    column: (c: C1) => C2;
+    /** Visit a node after its children have been traversed. */
+    node?: (node: SpecQuery<C2>) => SpecQuery<C2>;
+    /** Visit a join entry after its inner query has been traversed. */
+    joinEntry?: (entry: SpecQueryJoinEntry<C2>) => SpecQueryJoinEntry<C2>;
+  },
+): SpecQuery<C2> {
+  const traverseEntry = (entry: SpecQueryJoinEntry<C1>): SpecQueryJoinEntry<C2> => {
+    const traversed: SpecQueryJoinEntry<C2> = {
+      ...entry,
+      entry: traverseQuerySpec(entry.entry, visitor),
+    };
+    return visitor.joinEntry ? visitor.joinEntry(traversed) : traversed;
+  };
 
-function collectQueryColumnsImpl<C>(query: SpecQuery<C>, result: C[]): void {
+  let result: SpecQuery<C2>;
   switch (query.type) {
     case "column":
-      result.push(query.column);
+      result = { type: "column", column: visitor.column(query.column) };
       break;
     case "sparseToDenseColumn":
-      result.push(query.column);
+      result = { ...query, column: visitor.column(query.column) };
       break;
     case "inlineColumn":
+      result = query;
       break;
     case "innerJoin":
     case "fullJoin":
-      for (const e of query.entries) collectQueryColumnsImpl(e.entry, result);
+      result = { ...query, entries: query.entries.map(traverseEntry) };
       break;
     case "outerJoin":
-      collectQueryColumnsImpl(query.primary.entry, result);
-      for (const e of query.secondary) collectQueryColumnsImpl(e.entry, result);
+      result = {
+        ...query,
+        primary: traverseEntry(query.primary),
+        secondary: query.secondary.map(traverseEntry),
+      };
       break;
     case "filter":
     case "sort":
     case "sliceAxes":
-      collectQueryColumnsImpl(query.input, result);
+      result = { ...query, input: traverseQuerySpec(query.input, visitor) };
       break;
     default:
       assertNever(query);
   }
+
+  return visitor.node ? visitor.node(result) : result;
 }
 
-export function sortQuerySpec(query: SpecQuery): SpecQuery {
-  switch (query.type) {
-    case "column":
-    case "inlineColumn":
-      return query;
-    case "sparseToDenseColumn": {
-      const sortedAxesIndices = query.axesIndices.toSorted((lhs, rhs) => lhs - rhs);
-      return {
-        ...query,
-        axesIndices: sortedAxesIndices,
-      };
-    }
-    case "innerJoin":
-    case "fullJoin": {
-      const sortedEntries = query.entries.map(sortQueryJoinEntrySpec);
-      sortedEntries.sort(cmpQueryJoinEntrySpec);
-      return {
-        ...query,
-        entries: sortedEntries,
-      };
-    }
-    case "outerJoin": {
-      const sortedSecondary = query.secondary.map(sortQueryJoinEntrySpec);
-      sortedSecondary.sort(cmpQueryJoinEntrySpec);
-      return {
-        ...query,
-        primary: sortQueryJoinEntrySpec(query.primary),
-        secondary: sortedSecondary,
-      };
-    }
-    case "sliceAxes": {
-      const sortedAxisFilters = query.axisFilters.toSorted((lhs, rhs) => {
-        const lhsKey = canonicalizeJson(lhs.axisSelector);
-        const rhsKey = canonicalizeJson(rhs.axisSelector);
-        return lhsKey < rhsKey ? -1 : lhsKey === rhsKey ? 0 : 1;
-      });
-      return {
-        ...query,
-        input: sortQuerySpec(query.input),
-        axisFilters: sortedAxisFilters,
-      };
-    }
-    case "sort":
-      return {
-        ...query,
-        input: sortQuerySpec(query.input),
-      };
-    case "filter":
-      return {
-        ...query,
-        input: sortQuerySpec(query.input),
-      };
-    default:
-      assertNever(query);
-  }
+/** Recursively maps all column references in a SpecQuery tree. */
+export function mapSpecQueryColumns<C1, C2>(
+  query: SpecQuery<C1>,
+  cb: (c: C1) => C2,
+): SpecQuery<C2> {
+  return traverseQuerySpec(query, { column: cb });
 }
 
-function sortQueryJoinEntrySpec(entry: SpecQueryJoinEntry): SpecQueryJoinEntry {
-  const sortedQualifications = entry.qualifications.toSorted((lhs, rhs) => {
-    const lhsKey = canonicalizeJson(lhs.axis);
-    const rhsKey = canonicalizeJson(rhs.axis);
-    return lhsKey < rhsKey ? -1 : lhsKey === rhsKey ? 0 : 1;
+/** Collects all column references from a SpecQuery tree. */
+export function collectSpecQueryColumns<C>(query: SpecQuery<C>): C[] {
+  const result: C[] = [];
+  traverseQuerySpec(query, {
+    column: (c: C) => {
+      result.push(c);
+      return c;
+    },
   });
-  return {
-    entry: sortQuerySpec(entry.entry),
-    qualifications: sortedQualifications,
-  };
+  return result;
+}
+
+export function sortSpecQuery(query: SpecQuery): SpecQuery {
+  return traverseQuerySpec(query, {
+    column: (c) => c,
+    node: (node) => {
+      switch (node.type) {
+        case "sparseToDenseColumn":
+          return { ...node, axesIndices: node.axesIndices.toSorted((a, b) => a - b) };
+        case "innerJoin":
+        case "fullJoin": {
+          const sorted = [...node.entries].sort(cmpQueryJoinEntrySpec);
+          return { ...node, entries: sorted };
+        }
+        case "outerJoin": {
+          const sorted = [...node.secondary].sort(cmpQueryJoinEntrySpec);
+          return { ...node, secondary: sorted };
+        }
+        case "sliceAxes":
+          return {
+            ...node,
+            axisFilters: node.axisFilters.toSorted((a, b) => {
+              const ak = canonicalizeJson(a.axisSelector);
+              const bk = canonicalizeJson(b.axisSelector);
+              return ak < bk ? -1 : ak === bk ? 0 : 1;
+            }),
+          };
+        default:
+          return node;
+      }
+    },
+    joinEntry: (entry) => ({
+      ...entry,
+      qualifications: entry.qualifications.toSorted((a, b) => {
+        const ak = canonicalizeJson(a.axis);
+        const bk = canonicalizeJson(b.axis);
+        return ak < bk ? -1 : ak === bk ? 0 : 1;
+      }),
+    }),
+  });
 }
 
 function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {

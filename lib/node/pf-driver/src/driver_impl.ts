@@ -29,9 +29,9 @@ import {
   type JsonSerializable,
   type PTableDefV2,
   type SpecQuery,
-  mapQuerySpec,
-  collectQueryColumns,
-  sortQuerySpec,
+  mapSpecQueryColumns,
+  collectSpecQueryColumns,
+  sortSpecQuery,
   sortPTableDef,
 } from "@platforma-sdk/model";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
@@ -210,7 +210,7 @@ export class AbstractPFrameDriver<
   }
 
   public createPTableV2(def: PTableDefV2<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
-    const columns = uniqueBy(collectQueryColumns(def.query), (c) => c.id);
+    const columns = uniqueBy(collectSpecQueryColumns(def.query), (c) => c.id);
     const columnsMap = columns.reduce(
       (acc, col) => ((acc[col.id] = col.spec), acc),
       {} as Record<string, PColumnSpec>,
@@ -218,7 +218,7 @@ export class AbstractPFrameDriver<
 
     const pFrameEntry = this.createPFrame(columns);
     const specFrame = createSpecFrame(columnsMap);
-    const sortedQuery = sortQuerySpec(mapQuerySpec(def.query, (c) => c.id));
+    const sortedQuery = sortSpecQuery(mapSpecQueryColumns(def.query, (c) => c.id));
     const { tableSpec, dataQuery } = specFrame.evaluateQuery(
       // WASM crate expects `columnId` field name, our types use `column`
       // @todo: remove it after update wasm package

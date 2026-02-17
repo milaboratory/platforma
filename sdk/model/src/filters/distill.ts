@@ -1,5 +1,6 @@
 import { DistributiveKeys, UnionToTuples } from "@milaboratories/helpers";
 import { type FilterSpec, type FilterSpecLeaf } from "@milaboratories/pl-model-common";
+import { traverseFilterSpec } from "./traverse";
 
 /** All possible field names that can appear in any FilterSpecLeaf variant. */
 type FilterSpecLeafKey = DistributiveKeys<FilterSpecLeaf<string>>;
@@ -36,25 +37,6 @@ function distillLeaf(node: Record<string, unknown>): FilterSpecLeaf<string> {
   return result as FilterSpecLeaf<string>;
 }
 
-function distillNode<T extends FilterSpecLeaf<unknown>>(
-  node: FilterSpec<T, unknown, unknown>,
-): FilterSpec<T> | null {
-  switch (node.type) {
-    case "and":
-    case "or": {
-      const filtered = node.filters.map(distillNode).filter((f): f is FilterSpec<T> => f !== null);
-      return filtered.length === 0 ? null : { type: node.type, filters: filtered };
-    }
-    case "not": {
-      const inner = distillNode(node.filter);
-      return inner === null ? null : { type: "not", filter: inner };
-    }
-    default:
-      if (!isFilledLeaf(node)) return null;
-      return distillLeaf(node);
-  }
-}
-
 /**
  * Strips non-FilterSpec metadata (whitelist approach) and removes
  * unfilled leaves (type is undefined or any required field is undefined).
@@ -63,5 +45,19 @@ export function distillFilterSpec<T extends FilterSpecLeaf<unknown>>(
   filter: null | undefined | FilterSpec<T, unknown, unknown>,
 ): null | FilterSpec<T> {
   if (filter == null) return null;
-  return distillNode(filter);
+  return traverseFilterSpec(filter, {
+    leaf: (leaf) => {
+      if (!isFilledLeaf(leaf as Record<string, unknown>)) return null;
+      return distillLeaf(leaf as Record<string, unknown>) as FilterSpec<T>;
+    },
+    and: (results) => {
+      const filtered = results.filter((f): f is FilterSpec<T> => f !== null);
+      return filtered.length === 0 ? null : { type: "and", filters: filtered };
+    },
+    or: (results) => {
+      const filtered = results.filter((f): f is FilterSpec<T> => f !== null);
+      return filtered.length === 0 ? null : { type: "or", filters: filtered };
+    },
+    not: (result) => (result === null ? null : { type: "not", filter: result }),
+  });
 }

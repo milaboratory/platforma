@@ -15,6 +15,7 @@ import type {
   SingleAxisSelector,
   SpecQueryExpression,
   SpecQueryJoinEntry,
+  CanonicalizedJson,
 } from "@milaboratories/pl-model-common";
 import {
   Annotation,
@@ -36,6 +37,7 @@ import { upgradePlDataTableStateV2 } from "./state-migration";
 import type { PlDataTableStateV2 } from "./state-migration";
 import type { PlDataTableSheet } from "./v5";
 import { getAllLabelColumns, getMatchingLabelColumns } from "./labels";
+import { collectFilterSpecColumns } from "../../filters/traverse";
 
 /** Convert a PTableColumnId to a SpecQueryExpression reference. */
 function columnIdToExpr(col: PTableColumnId): SpecQueryExpression {
@@ -177,26 +179,33 @@ export function createPlDataTableV2<A, U>(
     ...fullColumns.map((c) => ({ type: "column", id: c.id }) satisfies PTableColumnIdColumn),
   ];
   const fullColumnsIdsSet = new Set(fullColumnsIds.map((c) => canonicalizeJson<PTableColumnId>(c)));
-  const isValidColumnId = (id: PTableColumnId): boolean =>
-    fullColumnsIdsSet.has(canonicalizeJson<PTableColumnId>(id));
+  const isValidColumnId = (id: string): boolean =>
+    fullColumnsIdsSet.has(id as CanonicalizedJson<PTableColumnId>);
 
-  const coreJoinType = ops?.coreJoinType ?? "full";
+  // -- Filtering validation --
   const stateFilters = tableStateNormalized.pTableParams.filters;
   const opsFilters = ops?.filters ?? null;
-  const filters: PlDataTableFilters | null =
+  const filters: null | PlDataTableFilters =
     stateFilters !== null && opsFilters !== null
       ? { type: "and", filters: [stateFilters, opsFilters] }
       : (stateFilters ?? opsFilters);
+  const filterColumns = filters ? collectFilterSpecColumns(filters) : [];
+  const hasInvalidFilterColumns = filterColumns.some((col) => !isValidColumnId(col));
+  if (hasInvalidFilterColumns)
+    throw new Error("Invalid filters provided: all column references must match the table columns");
+
+  // -- Sorting validation --
   const sorting: PTableSorting[] = uniqueBy(
     [...tableStateNormalized.pTableParams.sorting, ...(ops?.sorting ?? [])],
     (s) => canonicalizeJson<PTableColumnId>(s.column),
-  ).filter((s) => {
-    const valid = isValidColumnId(s.column);
-    if (!valid)
-      ctx.logWarn(`Sorting ${JSON.stringify(s)} does not match provided columns, skipping`);
-    return valid;
-  });
+  );
+  const hasInvalidSortingColumns = sorting.some(
+    (s) => !isValidColumnId(canonicalizeJson<PTableColumnId>(s.column)),
+  );
+  if (hasInvalidSortingColumns)
+    throw new Error("Invalid sorting provided: all column references must match the table columns");
 
+  const coreJoinType = ops?.coreJoinType ?? "full";
   const fullDef = createPTableDef({
     columns,
     labelColumns: fullLabelColumns,
