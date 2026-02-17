@@ -10,6 +10,7 @@ import { computed, onUnmounted, reactive, ref, watch } from "vue";
 import * as utils from "../../helpers/utils";
 import { useClickOutside } from "../../composition/useClickOutside";
 import { tMap } from "./global";
+import { uniqueId } from "@milaboratories/helpers";
 
 const emit = defineEmits(["tooltip:close"]);
 
@@ -28,7 +29,7 @@ const props = withDefaults(
     /**
      * Tooltip position
      */
-    position?: "top-left" | "left" | "right" | "top" | "southwest";
+    position?: "top" | "left" | "bottom" | "right" | "top-left";
     /**
      * external prop to hide tooltips
      */
@@ -37,6 +38,11 @@ const props = withDefaults(
      * The gap in pixels between the tooltip and the target element
      */
     gap?: number;
+
+    /**
+     * The minimum offset in pixels from the edge of the screen to the tooltip
+     */
+    offsetToTheEdge?: number;
     /**
      * base html element for tooltip
      */
@@ -45,14 +51,25 @@ const props = withDefaults(
      * Max width (css value) of the tooltip container (default is 300px)
      */
     maxWidth?: string;
+    /**
+     * The container to insert the tooltip to (body by default)
+     */
+    container?: "body" | HTMLElement;
+    /**
+     * Whether the tooltip is shown on hover (default is true); otherwise, it is shown when hide is set to false
+     */
+    hoverable?: boolean;
   }>(),
   {
     openDelay: 100,
     closeDelay: 1000,
     gap: 8,
+    offsetToTheEdge: 8,
     position: "top",
     element: "div",
     maxWidth: "300px",
+    container: "body",
+    hoverable: true,
   },
 );
 
@@ -93,7 +110,7 @@ const closeTooltip = () => {
 };
 
 const onOver = async () => {
-  if (props.hide) {
+  if (props.hide || !props.hoverable) {
     return;
   }
 
@@ -109,6 +126,10 @@ const onOver = async () => {
 };
 
 const onLeave = () => {
+  if (!props.hoverable) {
+    return;
+  }
+
   data.over = false;
   clearTimeout = utils.timeout(() => {
     if (!data.over) {
@@ -122,6 +143,8 @@ watch(
   (hide) => {
     if (hide) {
       closeTooltip();
+    } else if (!props.hoverable) {
+      showTooltip();
     }
   },
 );
@@ -138,7 +161,7 @@ const tooltipStyle = computed(() => ({
 onUnmounted(() => {
   tMap.delete(tKey);
 });
-const anchorName = "--testtesttestanchorname";
+const anchorName = `--anchor-${uniqueId()}`;
 </script>
 
 <template>
@@ -151,35 +174,83 @@ const anchorName = "--testtesttestanchorname";
     @mouseover="onOver"
     @mouseleave="onLeave"
   >
+    <!-- anchor element here -->
     <slot />
-    <Teleport v-if="$slots['tooltip'] && data.open" to="body">
-      <div v-if="data.tooltipOpen" :class="$style['plTooltip__container']" @click.stop>
+    <Transition name="pl-tooltip-fade">
+      <Teleport v-if="$slots['tooltip'] && data.tooltipOpen" :to="container">
         <div
-          ref="tooltip"
-          :class="[$style['plTooltip'], position]"
-          :style="tooltipStyle"
-          @mouseover="onOver"
-          @mouseleave="onLeave"
+          :class="[
+            $style.plTooltipContainer,
+            {
+              [$style.top]: props.position === 'top',
+              [$style.bottom]: props.position === 'bottom',
+              [$style.left]: props.position === 'left',
+              [$style.right]: props.position === 'right',
+              [$style.topLeft]: props.position === 'top-left',
+            },
+          ]"
+          :style="{
+            '--anchorName': anchorName,
+            '--gap': gap + 'px',
+            '--offsetToTheEdge': offsetToTheEdge + 'px',
+          }"
         >
-          <!-- should be one line -->
-          <div><slot name="tooltip" /></div>
+          <div :class="$style.plTooltipBox" @click.stop>
+            <div
+              ref="tooltip"
+              :class="[$style.plTooltipContent, position]"
+              :style="tooltipStyle"
+              @mouseover="onOver"
+              @mouseleave="onLeave"
+            >
+              <!-- should be one line -->
+              <div><slot name="tooltip" /></div>
+            </div>
+          </div>
+          <div :class="$style.plTooltipBeak" />
         </div>
-      </div>
-    </Teleport>
+      </Teleport>
+    </Transition>
   </component>
 </template>
 
 <style module>
+.plTooltipAnchorWrapper {
+  display: inline-block;
+}
 /* just to set anchor-name for the anchor */
 .plTooltipAnchorWrapper > :first-child {
   --anchorName: v-bind("anchorName");
   anchor-name: var(--anchorName);
 }
 
-.plTooltip {
-  --pl-tooltip-max-width: 300px;
+.plTooltipAnchorWrapper:global(.info) {
+  --anchorName: v-bind("anchorName");
+  anchor-name: var(--anchorName);
+}
+
+.plTooltipContainer {
+  --gap: 8px;
+  --tailWidth: 8px;
+  --tailHeight: calc(var(--gap) + 2px);
+
+  --tailClipTop: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - var(--gap)),
+    50% calc(100% - 3px),
+    0 calc(100% - var(--gap))
+  );
+  --tailClipBottom: polygon(0 100%, 100% 100%, 100% var(--gap), 50% 3px, 0 var(--gap));
+  --tailClipLeft: polygon(0 0, 0 100%, 2px 100%, calc(100% - 3px) 50%, 2px 0);
+  --tailClipRight: polygon(100% 0, 100% 100%, calc(100% - 2px) 100%, 3px 50%, calc(100% - 2px) 0);
 
   z-index: var(--z-tooltip);
+}
+
+.plTooltipContent {
+  --pl-tooltip-max-width: 300px;
+
   display: inline-block;
   padding: 8px 12px 9px 12px;
   background: var(--tooltip-bg);
@@ -190,69 +261,121 @@ const anchorName = "--testtesttestanchorname";
   color: #fff;
 }
 
-.plTooltip__container {
-  --d: 8px;
-  --s: 16px;
-  --offset: calc(var(--s) - var(--d));
-  --anchorName: v-bind("anchorName");
+.plTooltipBox {
   position: absolute;
-  position-area: top;
-  bottom: var(--d);
-  margin-top: var(--d);
-  position-try-fallbacks: flip-block flip-inline;
   position-anchor: var(--anchorName);
-  anchor-name: --tooltip;
   z-index: 1;
 }
 
-.plTooltip__container:before {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  width: var(--s);
+.plTooltipBeak {
+  position: absolute;
+  position-anchor: var(--anchorName);
+  z-index: 0;
   background: var(--tooltip-bg);
-  top: calc(anchor(--tooltip top) - var(--d));
-  bottom: calc(anchor(--tooltip bottom) - var(--d));
-  left: calc(anchor(var(--anchorName) center) - var(--s) / 2);
-  margin: inherit;
-  clip-path: polygon(
-    50% 3px,
-    100% var(--d),
-    100% calc(100% - var(--d)),
-    50% calc(100% - 3px),
-    0 calc(100% - var(--d)),
-    0 var(--d)
-  );
+  width: var(--tailWidth);
+  height: var(--tailHeight);
 }
 
-.plTooltip a {
+/* top */
+.plTooltipContainer.top .plTooltipBox {
+  position-area: top;
+  bottom: var(--gap);
+  left: var(--offsetToTheEdge);
+  right: var(--offsetToTheEdge);
+}
+.plTooltipContainer.top .plTooltipBeak {
+  position-area: top;
+  bottom: 0;
+  left: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
+  clip-path: var(--tailClipTop);
+}
+
+/* bottom */
+.plTooltipContainer.bottom .plTooltipBox {
+  position-area: bottom;
+  top: var(--gap);
+  left: var(--offsetToTheEdge);
+  right: var(--offsetToTheEdge);
+}
+.plTooltipContainer.bottom .plTooltipBeak {
+  position-area: bottom;
+  top: 0;
+  left: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
+  clip-path: var(--tailClipBottom);
+}
+
+/* left */
+.plTooltipContainer.left .plTooltipBox {
+  position-area: left;
+  right: var(--gap);
+  top: var(--offsetToTheEdge);
+  bottom: var(--offsetToTheEdge);
+}
+
+.plTooltipContainer.left .plTooltipBeak {
+  position-area: left;
+  right: 0;
+  top: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
+  width: var(--tailHeight);
+  height: var(--tailWidth);
+  clip-path: var(--tailClipLeft);
+}
+
+/* right */
+.plTooltipContainer.right .plTooltipBox {
+  position-area: right;
+  left: var(--gap);
+  top: var(--offsetToTheEdge);
+  bottom: var(--offsetToTheEdge);
+}
+
+.plTooltipContainer.right .plTooltipBeak {
+  position-area: right;
+  left: 0;
+  top: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
+  width: var(--tailHeight);
+  height: var(--tailWidth);
+  clip-path: var(--tailClipRight);
+}
+
+/* top left */
+.plTooltipContainer.topLeft .plTooltipBox {
+  position-area: top;
+  bottom: var(--gap);
+  left: anchor(var(--anchorName) left);
+}
+.plTooltipContainer.topLeft .plTooltipBeak {
+  position-area: top;
+  bottom: 0;
+  left: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
+  clip-path: var(--tailClipTop);
+}
+
+:global(.pl-tooltip-fade-leave-active),
+:global(.pl-tooltip-fade-enter-active) {
+  z-index: var(--z-tooltip);
+  transition: opacity 0.2s ease-in-out;
+}
+:global(.pl-tooltip-fade-enter-from),
+:global(.pl-tooltip-fade-leave-to) {
+  opacity: 0;
+}
+
+.plTooltipContent a {
   color: var(--tooltip-link-color);
 }
 
-.plTooltip p {
+.plTooltipContent p {
   margin-bottom: 8px;
 }
 
-.plTooltip ul,
-.plTooltip li {
+.plTooltipContent ul,
+.plTooltipContent li {
   margin-left: 6px;
   padding-left: 6px;
 }
 
-.plTooltip li {
+.plTooltipContent li {
   margin-bottom: 4px;
-}
-
-.tooltip-transition-enter-active,
-.tooltip-transition-leave-active {
-  transition: all 0.1s ease-in-out;
-}
-
-.tooltip-transition-enter-from {
-  opacity: 0;
-}
-
-.tooltip-transition-leave-to {
-  opacity: 0;
 }
 </style>
