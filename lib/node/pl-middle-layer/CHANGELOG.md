@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.46.29
+
+### Patch Changes
+
+- dff3672: Fix prerun outputs not calculated after v3 API transition
+
 ## 1.46.28
 
 ### Patch Changes
