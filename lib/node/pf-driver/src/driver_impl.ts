@@ -180,7 +180,7 @@ export class AbstractPFrameDriver<
   public createPTable(rawDef: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
     const pFrameEntry = this.createPFrame(extractAllColumns(rawDef.src));
     const sortedDef = sortPTableDef(
-      migratePTableFilters(
+      migrateTableFilter(
         mapPTableDef(rawDef, (c) => c.id),
         this.logger,
       ),
@@ -328,7 +328,7 @@ export class AbstractPFrameDriver<
     const table = this.pTables.acquire({
       type: "v1",
       pFrameHandle: handle,
-      def: sortPTableDef(migratePTableFilters(request, this.logger)),
+      def: sortPTableDef(migrateTableFilter(request, this.logger)),
     });
     const { pTablePromise, disposeSignal } = table.resource;
     const pTable = await pTablePromise;
@@ -529,7 +529,7 @@ function migrateFilters(
   return filtersV2;
 }
 
-function migratePTableFilters<T>(
+function migrateTableFilter<T>(
   def: Omit<PTableDef<T>, "partitionFilters"> | PTableDef<T>,
   logger: PFrameInternal.Logger,
 ): PTableDef<T> {
