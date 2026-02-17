@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.54.9
+
+### Patch Changes
+
+- a3659cd: Add well-known constants for commonly used PColumn names, PAxis names, Domain keys, and Annotation keys (VDJ clustering, scores, lead selection, etc.)
+- Updated dependencies [a3659cd]
+  - @milaboratories/pl-model-common@1.24.9
+  - @milaboratories/ptabler-expression-js@1.1.19
+
 ## 1.54.8
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 2.4.21
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.1.50
+
 ## 2.4.20
 
 ### Patch Changes
