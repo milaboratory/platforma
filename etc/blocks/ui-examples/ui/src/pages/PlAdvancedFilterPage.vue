@@ -5,8 +5,8 @@ import {
   type ListOptionBase,
   type SUniversalPColumnId,
 } from "@platforma-sdk/model";
-import type { PlAdvancedFilterFilter, PlAdvancedFilterItem } from "@platforma-sdk/ui-vue";
-import { PlAdvancedFilter, PlBlockPage, PlCheckbox, PlDropdown } from "@platforma-sdk/ui-vue";
+import type { PlAdvancedFilter, PlAdvancedFilterItem } from "@platforma-sdk/ui-vue";
+import { PlBlockPage, PlCheckbox, PlDropdown } from "@platforma-sdk/ui-vue";
 import { ref, watch } from "vue";
 
 const column1Id = stringifyColumnId({ name: "1", axes: [] }) as SUniversalPColumnId;
@@ -114,7 +114,7 @@ async function getSuggestModel({
   );
 }
 
-const errorState: PlAdvancedFilterFilter = {
+const errorState: PlAdvancedFilter = {
   id: Math.random(),
   type: "and" as const,
   filters: [
@@ -167,7 +167,7 @@ const errorState: PlAdvancedFilterFilter = {
   ],
 };
 
-const normalState: PlAdvancedFilterFilter = {
+const normalState: PlAdvancedFilter = {
   id: Math.random(),
   type: "and" as const,
   filters: [
@@ -208,7 +208,7 @@ const normalState: PlAdvancedFilterFilter = {
   ],
 };
 
-const filterStates = ref<Record<string, PlAdvancedFilterFilter>>({
+const filterStates = ref<Record<string, PlAdvancedFilter>>({
   normalState: normalState,
   errorState: errorState,
   emptyState: {
@@ -258,7 +258,7 @@ watch(
       </div>
       <div :key="selectedSavedFilters" :class="$style.rightColumn">
         <PlAdvancedFilter
-          v-model:filters="filterStates[selectedSavedFilters] as PlAdvancedFilterFilter"
+          v-model:filters="filterStates[selectedSavedFilters] as PlAdvancedFilter"
           :items="options"
           :enable-dnd="enableDnd"
           :get-suggest-options="getSuggestOptions"

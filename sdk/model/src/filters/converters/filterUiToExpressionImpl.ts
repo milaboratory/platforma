@@ -8,7 +8,7 @@ import {
   type Expression,
   type ExpressionImpl,
 } from "@milaboratories/ptabler-expression-js";
-import type { FilterSpec } from "../filters";
+import type { FilterSpec } from "../types";
 
 export function convertFilterUiToExpressionImpl(value: FilterSpec): ExpressionImpl {
   if (value.type === "or") {
@@ -127,7 +127,8 @@ export function convertFilterUiToExpressionImpl(value: FilterSpec): ExpressionIm
     value.type === "patternMatchesRegularExpression" ||
     value.type === "patternFuzzyContainSubsequence" ||
     value.type === "inSet" ||
-    value.type === "notInSet"
+    value.type === "notInSet" ||
+    value.type === "ifNa"
   ) {
     throw new Error("Not implemented filter type: " + value.type);
   }

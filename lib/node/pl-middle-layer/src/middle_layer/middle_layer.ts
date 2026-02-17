@@ -282,6 +282,7 @@ export class MiddleLayer {
     // add runtime capabilities of model here
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 1);
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 2);
+    runtimeCapabilities.addSupportedRequirement("requiresCreatePTableV2", true);
     // runtime capabilities of the desktop are to be added by the desktop app / test framework
 
     const env: MiddleLayerEnvironment = {

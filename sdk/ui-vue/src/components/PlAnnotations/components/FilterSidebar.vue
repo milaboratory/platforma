@@ -20,11 +20,8 @@ import { randomInt } from "@milaboratories/helpers";
 import { PlBtnSecondary, PlEditableTitle, PlSidebarItem } from "@milaboratories/uikit";
 import type { ListOptionBase, PObjectId, SUniversalPColumnId } from "@platforma-sdk/model";
 import { computed } from "vue";
-import type {
-  PlAdvancedFilterFilter,
-  PlAdvancedFilterSupportedFilters,
-} from "../../PlAdvancedFilter";
-import { PlAdvancedFilter, type PlAdvancedFilterItem } from "../../PlAdvancedFilter";
+import type { PlAdvancedFilter, PlAdvancedFilterSupportedFilters } from "../../PlAdvancedFilter";
+import { type PlAdvancedFilterItem } from "../../PlAdvancedFilter";
 import type { PlAdvancedFilterColumnId } from "../../PlAdvancedFilter/types";
 import type { Filter } from "../types";
 
@@ -114,7 +111,7 @@ const supportedFilters = [
     </template>
     <template #body-content>
       <PlAdvancedFilter
-        v-model:filters="step.filter as PlAdvancedFilterFilter"
+        v-model:filters="step.filter as PlAdvancedFilter"
         :class="[$style.root, { [$commonStyle.disabled]: step.label.length === 0 }]"
         :items="props.columns"
         :supported-filters="supportedFilters"

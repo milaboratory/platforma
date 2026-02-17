@@ -1,7 +1,7 @@
 import type { SUniversalPColumnId } from "@milaboratories/pl-model-common";
 import { describe, expect, it } from "vitest";
-import { convertFilterUiToExpressions } from "./converter";
-import { FilterSpec } from "./types";
+import { convertFilterUiToExpressions } from "./filterUiToExpressionImpl";
+import { FilterSpec } from "../types";
 
 describe("convertFilterUiToExpressions", () => {
   it('should compile "or" filter to ptabler expression', () => {
