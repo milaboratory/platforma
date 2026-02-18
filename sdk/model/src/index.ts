@@ -13,6 +13,7 @@ export {
   defaultRecover,
   makeDataVersioned,
 } from "./block_migrations";
+export type { LegacyV1State } from "./block_migrations";
 export { PluginModel } from "./plugin_model";
 export type { PluginRenderCtx } from "./plugin_model";
 export * from "./bconfig";

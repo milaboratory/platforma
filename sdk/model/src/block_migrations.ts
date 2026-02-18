@@ -56,6 +56,9 @@ export const defaultRecover: DataRecoverFn<never> = (version, _data) => {
 /** Symbol for internal builder creation method */
 const FROM_BUILDER = Symbol("fromBuilder");
 
+/** Legacy V1 model state shape: { args, uiState } */
+export type LegacyV1State<Args, UiState> = { args: Args; uiState: UiState };
+
 /** Internal state passed from builder to DataModel */
 type BuilderState<S> = {
   versionChain: DataVersionKey[];
@@ -65,11 +68,14 @@ type BuilderState<S> = {
   /** Index of the first step to run after recovery. Equals the number of steps
    *  present at the time recover() was called. */
   recoverFromIndex?: number;
+  /** Transforms legacy V1 model data ({ args, uiState }) at the initial version. */
+  upgradeLegacyFn?: (data: unknown) => unknown;
 };
 
 type RecoverState = {
   recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
   recoverFromIndex?: number;
+  upgradeLegacyFn?: (data: unknown) => unknown;
 };
 
 /**
@@ -132,35 +138,43 @@ abstract class MigrationChainBase<Current> {
 }
 
 /**
- * Migration chain after recover() has been called.
- * Further migrate() calls are allowed; recover() is not (enforced by type — no recover() method).
+ * Migration chain after recover() or upgradeLegacy() has been called.
+ * Further migrate() calls are allowed; recover() and upgradeLegacy() are not
+ * (enforced by type — no such methods on this class).
  *
  * @typeParam Current - Data type at the current point in the chain
  * @internal
  */
 class DataModelMigrationChainWithRecover<Current> extends MigrationChainBase<Current> {
-  private readonly recoverFn: (version: DataVersionKey, data: unknown) => unknown;
-  private readonly recoverFromIndex: number;
+  private readonly recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
+  private readonly recoverFromIndex?: number;
+  private readonly upgradeLegacyFn?: (data: unknown) => unknown;
 
   /** @internal */
   constructor(state: {
     versionChain: DataVersionKey[];
     steps: MigrationStep[];
-    recoverFn: (version: DataVersionKey, data: unknown) => unknown;
-    recoverFromIndex: number;
+    recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
+    recoverFromIndex?: number;
+    upgradeLegacyFn?: (data: unknown) => unknown;
   }) {
     super(state);
     this.recoverFn = state.recoverFn;
     this.recoverFromIndex = state.recoverFromIndex;
+    this.upgradeLegacyFn = state.upgradeLegacyFn;
   }
 
   protected override recoverState(): RecoverState {
-    return { recoverFn: this.recoverFn, recoverFromIndex: this.recoverFromIndex };
+    return {
+      recoverFn: this.recoverFn,
+      recoverFromIndex: this.recoverFromIndex,
+      upgradeLegacyFn: this.upgradeLegacyFn,
+    };
   }
 
   /**
    * Add a migration step. Same semantics as on the base chain.
-   * recover() is not available — it has already been called.
+   * recover() and upgradeLegacy() are not available — one has already been called.
    */
   migrate<Next>(
     nextVersion: string,
@@ -172,6 +186,7 @@ class DataModelMigrationChainWithRecover<Current> extends MigrationChainBase<Cur
       steps,
       recoverFn: this.recoverFn,
       recoverFromIndex: this.recoverFromIndex,
+      upgradeLegacyFn: this.upgradeLegacyFn,
     });
   }
 }
@@ -224,9 +239,10 @@ class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
    * steps added after recover() will then run on the recovered data.
    *
    * Can only be called once — the returned chain has no recover() method.
+   * Mutually exclusive with upgradeLegacy().
    *
    * @param fn - Recovery function returning Current (the type at this chain position)
-   * @returns Builder with migrate() and init() but without recover()
+   * @returns Builder with migrate() and init() but without recover() or upgradeLegacy()
    *
    * @example
    * // Recover between migrations — recovered data goes through v3 migration
@@ -245,6 +261,57 @@ class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
       steps: this.migrationSteps,
       recoverFn: fn as (version: DataVersionKey, data: unknown) => unknown,
       recoverFromIndex: this.migrationSteps.length,
+    });
+  }
+
+  /**
+   * Handle legacy V1 model state ({ args, uiState }) when upgrading a block from
+   * BlockModel V1 to BlockModelV3.
+   *
+   * When a V1 block is upgraded, its stored state `{ args, uiState }` arrives at the
+   * initial version (DATA_MODEL_DEFAULT_VERSION) in the migration chain. This method
+   * detects the legacy shape and transforms it to the current chain type using the
+   * provided typed callback. Non-legacy data passes through unchanged.
+   *
+   * Should be called right after `.from()` (before any `.migrate()` calls), since legacy
+   * data always arrives at the initial version. Any `.migrate()` steps added after
+   * `upgradeLegacy()` will run on the transformed result.
+   *
+   * Can only be called once — the returned chain has no upgradeLegacy() method.
+   * Mutually exclusive with recover().
+   *
+   * @typeParam Args - Type of the legacy block args
+   * @typeParam UiState - Type of the legacy block uiState
+   * @param fn - Typed transform from { args, uiState } to Current
+   * @returns Builder with migrate() and init() but without recover() or upgradeLegacy()
+   *
+   * @example
+   * type OldArgs = { inputFile: string; threshold: number };
+   * type OldUiState = { selectedTab: string };
+   * type BlockData = { inputFile: string; threshold: number; selectedTab: string };
+   *
+   * const dataModel = new DataModelBuilder()
+   *   .from<BlockData>(DATA_MODEL_DEFAULT_VERSION)
+   *   .upgradeLegacy<OldArgs, OldUiState>(({ args, uiState }) => ({
+   *     inputFile: args.inputFile,
+   *     threshold: args.threshold,
+   *     selectedTab: uiState.selectedTab,
+   *   }))
+   *   .init(() => ({ inputFile: '', threshold: 0, selectedTab: 'main' }));
+   */
+  upgradeLegacy<Args, UiState = unknown>(
+    fn: (legacy: LegacyV1State<Args, UiState>) => Current,
+  ): DataModelMigrationChainWithRecover<Current> {
+    const wrappedFn = (data: unknown): unknown => {
+      if (data !== null && typeof data === "object" && "args" in data) {
+        return fn(data as LegacyV1State<Args, UiState>);
+      }
+      return data;
+    };
+    return new DataModelMigrationChainWithRecover<Current>({
+      versionChain: this.versionChain,
+      steps: this.migrationSteps,
+      upgradeLegacyFn: wrappedFn,
     });
   }
 }
@@ -280,6 +347,20 @@ class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
  *   })
  *   .migrate<BlockDataV3>("v3", (v2) => ({ ...v2, description: '' }))
  *   .init(() => ({ numbers: [], labels: [], description: '' }));
+ *
+ * @example
+ * // With upgradeLegacy() — typed upgrade from BlockModel V1 state:
+ * type OldArgs = { inputFile: string };
+ * type OldUiState = { selectedTab: string };
+ * type BlockData = { inputFile: string; selectedTab: string };
+ *
+ * const dataModel = new DataModelBuilder()
+ *   .from<BlockData>(DATA_MODEL_DEFAULT_VERSION)
+ *   .upgradeLegacy<OldArgs, OldUiState>(({ args, uiState }) => ({
+ *     inputFile: args.inputFile,
+ *     selectedTab: uiState.selectedTab,
+ *   }))
+ *   .init(() => ({ inputFile: '', selectedTab: 'main' }));
  */
 export class DataModelBuilder {
   /**
@@ -322,6 +403,8 @@ export class DataModel<State> {
   private readonly initialDataFn: () => State;
   private readonly recoverFn: (version: DataVersionKey, data: unknown) => unknown;
   private readonly recoverFromIndex: number;
+  /** Transforms legacy V1 model data at the initial version before running migrations. */
+  private readonly upgradeLegacyFn?: (data: unknown) => unknown;
 
   private constructor({
     versionChain,
@@ -329,6 +412,7 @@ export class DataModel<State> {
     initialDataFn,
     recoverFn = defaultRecover,
     recoverFromIndex,
+    upgradeLegacyFn,
   }: BuilderState<State>) {
     if (versionChain.length === 0) {
       throw new Error("DataModel requires at least one version key");
@@ -339,6 +423,7 @@ export class DataModel<State> {
     this.initialDataFn = initialDataFn;
     this.recoverFn = recoverFn;
     this.recoverFromIndex = recoverFromIndex ?? steps.length;
+    this.upgradeLegacyFn = upgradeLegacyFn;
   }
 
   /**
@@ -428,6 +513,20 @@ export class DataModel<State> {
     }
 
     let currentData: unknown = data;
+
+    // Legacy V1 upgrade: detect and transform { args, uiState } at the initial version
+    if (startIndex === 0 && this.upgradeLegacyFn) {
+      try {
+        currentData = this.upgradeLegacyFn(currentData);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          ...this.getDefaultData(),
+          warning: `Legacy upgrade failed: ${errorMessage}`,
+        };
+      }
+    }
+
     for (let i = startIndex; i < this.steps.length; i++) {
       const step = this.steps[i];
       try {
