@@ -190,20 +190,24 @@ export function createPlDataTableV2<A, U>(
       ? { type: "and", filters: [stateFilters, opsFilters] }
       : (stateFilters ?? opsFilters);
   const filterColumns = filters ? collectFilterSpecColumns(filters) : [];
-  const hasInvalidFilterColumns = filterColumns.some((col) => !isValidColumnId(col));
-  if (hasInvalidFilterColumns)
-    throw new Error("Invalid filters provided: all column references must match the table columns");
+  const firstInvalidFilterColumn = filterColumns.find((col) => !isValidColumnId(col));
+  if (firstInvalidFilterColumn)
+    throw new Error(
+      `Invalid filter column ${firstInvalidFilterColumn}: column reference does not match the table columns`,
+    );
 
   // -- Sorting validation --
   const sorting: PTableSorting[] = uniqueBy(
     [...tableStateNormalized.pTableParams.sorting, ...(ops?.sorting ?? [])],
     (s) => canonicalizeJson<PTableColumnId>(s.column),
   );
-  const hasInvalidSortingColumns = sorting.some(
+  const firstInvalidSortingColumn = sorting.find(
     (s) => !isValidColumnId(canonicalizeJson<PTableColumnId>(s.column)),
   );
-  if (hasInvalidSortingColumns)
-    throw new Error("Invalid sorting provided: all column references must match the table columns");
+  if (firstInvalidSortingColumn)
+    throw new Error(
+      `Invalid sorting column ${JSON.stringify(firstInvalidSortingColumn.column)}: column reference does not match the table columns`,
+    );
 
   const coreJoinType = ops?.coreJoinType ?? "full";
   const fullDef = createPTableDef({
