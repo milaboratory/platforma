@@ -4,8 +4,9 @@ import type { PObjectId } from "../../pool";
 import { assertNever } from "../../util";
 import { getAxisId, type PColumn } from "./spec/spec";
 import type { PColumnValues } from "./data_info";
-import type { SpecQuery, SpecQueryJoinEntry } from "./query/query_spec";
+import type { SpecQuery } from "./query/query_spec";
 import { canonicalizeJson } from "../../json";
+import { mapSpecQueryColumns } from "./query";
 
 /** Defines a terminal column node in the join request tree */
 export interface ColumnJoinEntry<Col> {
@@ -423,49 +424,7 @@ export function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
 }
 
 export function mapPTableDefV2<C1, C2>(def: PTableDefV2<C1>, cb: (c: C1) => C2): PTableDefV2<C2> {
-  return { query: mapQuerySpec(def.query, cb) };
-}
-
-/** Recursively maps all column references in a SpecQuery tree. */
-export function mapQuerySpec<C1, C2>(query: SpecQuery<C1>, cb: (c: C1) => C2): SpecQuery<C2> {
-  switch (query.type) {
-    case "column":
-      return { type: "column", column: cb(query.column) };
-    case "sparseToDenseColumn":
-      return { ...query, column: cb(query.column) };
-    case "inlineColumn":
-      return query;
-    case "innerJoin":
-    case "fullJoin":
-      return {
-        ...query,
-        entries: query.entries.map((e) => mapQueryJoinEntrySpec(e, cb)),
-      };
-    case "outerJoin":
-      return {
-        ...query,
-        primary: mapQueryJoinEntrySpec(query.primary, cb),
-        secondary: query.secondary.map((e) => mapQueryJoinEntrySpec(e, cb)),
-      };
-    case "filter":
-      return { ...query, input: mapQuerySpec(query.input, cb) };
-    case "sort":
-      return { ...query, input: mapQuerySpec(query.input, cb) };
-    case "sliceAxes":
-      return { ...query, input: mapQuerySpec(query.input, cb) };
-    default:
-      assertNever(query);
-  }
-}
-
-function mapQueryJoinEntrySpec<C1, C2>(
-  entry: SpecQueryJoinEntry<C1>,
-  cb: (c: C1) => C2,
-): SpecQueryJoinEntry<C2> {
-  return {
-    ...entry,
-    entry: mapQuerySpec(entry.entry, cb),
-  };
+  return { query: mapSpecQueryColumns(def.query, cb) };
 }
 
 export function mapJoinEntry<C1, C2>(entry: JoinEntry<C1>, cb: (c: C1) => C2): JoinEntry<C2> {

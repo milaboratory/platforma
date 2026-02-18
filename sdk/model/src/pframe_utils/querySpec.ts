@@ -1,1 +1,1 @@
-export { collectQueryColumns, isBooleanExpression } from "@milaboratories/pl-model-common";
+export { collectSpecQueryColumns, isBooleanExpression } from "@milaboratories/pl-model-common";
