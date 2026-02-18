@@ -2,6 +2,7 @@ import {
   BlockModelV3,
   DataModelBuilder,
   PluginModel,
+  type PluginName,
   type InferHrefType,
   type InferOutputsType,
   type InferPluginNames,
@@ -49,7 +50,7 @@ const counterPlugin = PluginModel.create<
   CounterPluginParams,
   { defaultCount: number }
 >({
-  name: "counterPlugin",
+  name: "counterPlugin" as PluginName,
   dataModelFactory: (config) => {
     const defaultCount = config?.defaultCount ?? 0;
     return counterDataModelChain.init(() => ({
@@ -79,7 +80,6 @@ export const platforma = BlockModelV3.create({
 })
   .args<BlockArgs>((data) => data)
 
-  // Register the counter plugin with params derived from block context
   .plugin("counter", counterPlugin.create({ defaultCount: 10 }), {
     title: (ctx) => ctx.data.titleArg || "Test Counter",
   })
@@ -111,6 +111,10 @@ export const platforma = BlockModelV3.create({
   })
 
   .output("delayedOutput", (ctx) => ctx.outputs?.resolve("delayedContent")?.getDataAsString())
+
+  .outputWithStatus("delayedOutputWithStatus", (ctx) =>
+    ctx.outputs?.resolve("delayedContent")?.getDataAsString(),
+  )
 
   .done();
 

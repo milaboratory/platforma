@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { PluginModel } from "./plugin_model";
 import type { PluginRenderCtx } from "./plugin_model";
 import { DataModelBuilder } from "./block_migrations";
-import { DATA_MODEL_DEFAULT_VERSION } from "./block_storage";
+import { DATA_MODEL_DEFAULT_VERSION, type PluginName } from "./block_storage";
 import type { ResultPool } from "./render";
 
 // =============================================================================
@@ -23,7 +23,7 @@ const mockResultPool = {} as ResultPool;
 describe("PluginModel", () => {
   it("creates PluginModel with required fields", () => {
     const factory = PluginModel.create<Data>({
-      name: "testPlugin",
+      name: "testPlugin" as PluginName,
       dataModelFactory: () => dataModelChain.init(() => ({ count: 0, label: "" })),
     }).build();
 
@@ -36,7 +36,7 @@ describe("PluginModel", () => {
     type Config = { initialCount: number };
 
     const factory = PluginModel.create<Data, undefined, Config>({
-      name: "factoryPlugin",
+      name: "factoryPlugin" as PluginName,
       dataModelFactory: (cfg) =>
         dataModelChain.init(() => ({ count: cfg.initialCount, label: "initialized" })),
     }).build();
@@ -48,7 +48,7 @@ describe("PluginModel", () => {
 
   it("adds single output", () => {
     const factory = PluginModel.create<Data, { multiplier: number }>({
-      name: "singleOutput",
+      name: "singleOutput" as PluginName,
       dataModelFactory: () => dataModelChain.init(() => ({ count: 0, label: "" })),
     })
       .output("doubled", (ctx) => ctx.data.count * ctx.params.multiplier)
@@ -60,7 +60,7 @@ describe("PluginModel", () => {
 
   it("accumulates multiple outputs", () => {
     const factory = PluginModel.create<Data, { prefix: string }>({
-      name: "multiOutput",
+      name: "multiOutput" as PluginName,
       dataModelFactory: () => dataModelChain.init(() => ({ count: 0, label: "" })),
     })
       .output("formattedCount", (ctx) => `${ctx.params.prefix}${ctx.data.count}`)
@@ -74,7 +74,7 @@ describe("PluginModel", () => {
 
   it("executes output functions with correct context", () => {
     const factory = PluginModel.create<Data, { factor: number }>({
-      name: "contextTest",
+      name: "contextTest" as PluginName,
       dataModelFactory: () => dataModelChain.init(() => ({ count: 0, label: "" })),
     })
       .output("computed", (ctx) => ctx.data.count * ctx.params.factor)
@@ -94,7 +94,7 @@ describe("PluginModel", () => {
 
   it("allows outputs to access resultPool", () => {
     const factory = PluginModel.create<Data>({
-      name: "resultPoolTest",
+      name: "resultPoolTest" as PluginName,
       dataModelFactory: () => dataModelChain.init(() => ({ count: 0, label: "" })),
     })
       .output("hasResultPool", (ctx) => ctx.resultPool !== undefined)
@@ -113,7 +113,7 @@ describe("PluginModel", () => {
 
   it("returns valid PluginModel from factory.create()", () => {
     const factory = PluginModel.create<Data, { items: string[] }, { option: boolean }>({
-      name: "completePlugin",
+      name: "completePlugin" as PluginName,
       dataModelFactory: () => dataModelChain.init(() => ({ count: -1, label: "" })),
     })
       .output("currentItem", (ctx) => ctx.params.items[ctx.data.count])
@@ -127,7 +127,7 @@ describe("PluginModel", () => {
 
   it("allows creating plugin without outputs", () => {
     const factory = PluginModel.create<Data>({
-      name: "noOutputs",
+      name: "noOutputs" as PluginName,
       dataModelFactory: () => dataModelChain.init(() => ({ count: 0, label: "" })),
     }).build();
 
@@ -139,7 +139,7 @@ describe("PluginModel", () => {
     type Config = { defaultCount: number; defaultLabel: string };
 
     const factory = PluginModel.create<Data, undefined, Config>({
-      name: "configInitPlugin",
+      name: "configInitPlugin" as PluginName,
       dataModelFactory: (cfg) =>
         dataModelChain.init(() => ({ count: cfg.defaultCount, label: cfg.defaultLabel })),
     }).build();
@@ -150,7 +150,7 @@ describe("PluginModel", () => {
 
   it("does not modify original builder when chaining", () => {
     const basePlugin = PluginModel.create<Data>({
-      name: "immutableTest",
+      name: "immutableTest" as PluginName,
       dataModelFactory: () => dataModelChain.init(() => ({ count: 0, label: "" })),
     });
 

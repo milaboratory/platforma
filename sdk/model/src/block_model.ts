@@ -41,24 +41,16 @@ export type ParamsInput<Params, BArgs = unknown, BData = unknown> = {
 
 /**
  * Type-erased version of ParamsInput for internal storage.
- * Args and Data are checked at registration time; only Params is preserved.
  */
-type ParamsInputErased<Params> = {
-  [K in keyof Params]: (ctx: RenderCtxBase) => Params[K];
-};
+type ParamsInputErased = Record<string, (ctx: RenderCtxBase) => unknown>;
 
 /**
- * Internal type for tracking registered plugins.
- * Used to accumulate plugin types in BlockModelV3 builder chain.
+ * Registered plugin: model + param derivation lambdas.
+ * Type parameters are carried by PluginModel generic.
  */
 export type PluginInstance<Data = unknown, Params = unknown, Outputs = unknown> = {
-  // Type markers (used only for type inference, set to undefined at runtime)
-  readonly __pluginData?: Data;
-  readonly __pluginParams?: Params;
-  readonly __pluginOutputs?: Outputs;
-  // Runtime values
-  readonly __pluginModel: PluginModel<Data, Params, Outputs>;
-  readonly __paramsInput?: ParamsInputErased<Params>;
+  readonly model: PluginModel<Data, Params, Outputs>;
+  readonly inputs: ParamsInputErased;
 };
 
 interface BlockModelV3Config<
@@ -401,14 +393,9 @@ export class BlockModelV3<
       throw new Error(`Plugin '${pluginId}' already registered`);
     }
 
-    // Create plugin instance metadata
     const instance: PluginInstance<PluginData, PluginParams, PluginOutputs> = {
-      __pluginData: undefined,
-      __pluginParams: undefined,
-      __pluginOutputs: undefined,
-      __pluginModel: plugin,
-      // Type-erase the params input - safe because we only call it with the correct context types
-      __paramsInput: params as ParamsInputErased<PluginParams> | undefined,
+      model: plugin,
+      inputs: (params ?? {}) as ParamsInputErased,
     };
 
     return new BlockModelV3({
@@ -439,12 +426,10 @@ export class BlockModelV3<
     const apiVersion = 3;
 
     // Build plugin registry and register plugin callbacks for migration
+    const { plugins } = this.config;
     const pluginRegistry: Record<string, PluginName> = {};
-    const pluginModels: Record<string, PluginModel> = {};
-
-    for (const [pluginId, instance] of Object.entries(this.config.plugins)) {
-      pluginRegistry[pluginId] = instance.__pluginModel.name as PluginName;
-      pluginModels[pluginId] = instance.__pluginModel;
+    for (const [pluginId, { model }] of Object.entries(plugins)) {
+      pluginRegistry[pluginId] = model.name;
     }
 
     const { dataModel } = this.config;
@@ -453,14 +438,14 @@ export class BlockModelV3<
       [BlockPrivateCallbacks.BlockDataInit]: () => dataModel.getDefaultData(),
       [BlockPrivateCallbacks.PluginRegistry]: () => pluginRegistry,
       [BlockPrivateCallbacks.PluginDataMigrate]: (pluginId, v) => {
-        const model = pluginModels[pluginId];
-        if (!model) throw new Error(`Plugin model not found for '${pluginId}'`);
-        return model.dataModel.migrate(v);
+        const plugin = plugins[pluginId];
+        if (!plugin) throw new Error(`Plugin model not found for '${pluginId}'`);
+        return plugin.model.dataModel.migrate(v);
       },
       [BlockPrivateCallbacks.PluginDataInit]: (pluginId) => {
-        const model = pluginModels[pluginId];
-        if (!model) throw new Error(`Plugin model not found for '${pluginId}'`);
-        return model.dataModel.getDefaultData();
+        const plugin = plugins[pluginId];
+        if (!plugin) throw new Error(`Plugin model not found for '${pluginId}'`);
+        return plugin.model.dataModel.getDefaultData();
       },
     });
 

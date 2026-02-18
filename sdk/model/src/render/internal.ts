@@ -203,8 +203,6 @@ export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
   // approach deserialization can be lazily postponed until it is actually needed.
   readonly callbackRegistry: Record<string, AnyFunction>;
   readonly featureFlags?: typeof GlobalCfgRenderCtxFeatureFlags;
-  /** Raw block storage JSON (includes plugin data). Injected by middle layer for V2+ blocks. */
-  readonly blockStorage?: string | (() => string);
 }
 
 export type FutureAwait = {
