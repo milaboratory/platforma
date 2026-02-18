@@ -269,6 +269,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
     if (partialState.columnVisibility === undefined && hadHiddenCols) {
       partialState = { ...partialState, columnVisibility: { hiddenColIds: [] } };
     }
+    // We have to keep initialState synchronized with gridState for gridState recovery after key updating.
     gridOptions.value.initialState = gridState.value = partialState;
     if (!isJsonEqual(event.sources, ["columnSizing"])) {
       event.api.autoSizeColumns(
