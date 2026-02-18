@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.54.11
+
+### Patch Changes
+
+- 9c33ff6: table hidden columns fix
+
 ## 1.54.10
 
 ### Patch Changes
