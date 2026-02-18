@@ -4,7 +4,6 @@ import {
   BlockModelV3,
   DATA_MODEL_DEFAULT_VERSION,
   DataModelBuilder,
-  defineDataVersions,
   PlRef,
   readAnnotation,
 } from "@platforma-sdk/model";
@@ -16,12 +15,8 @@ export const BlockData = z.object({
 
 export type BlockData = z.infer<typeof BlockData>;
 
-const Version = defineDataVersions({ V1: DATA_MODEL_DEFAULT_VERSION });
-
-type VersionedData = { [Version.V1]: BlockData };
-
-const dataModel = new DataModelBuilder<VersionedData>()
-  .from(Version.V1)
+const dataModel = new DataModelBuilder()
+  .from<BlockData>(DATA_MODEL_DEFAULT_VERSION)
   .init(() => ({ sources: undefined }));
 
 export const platforma = BlockModelV3.create({ dataModel, renderingMode: "Heavy" })

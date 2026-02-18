@@ -2,7 +2,6 @@ import {
   BlockModelV3,
   DataModelBuilder,
   PluginModel,
-  defineDataVersions,
   type InferHrefType,
   type InferOutputsType,
   type InferPluginNames,
@@ -20,16 +19,8 @@ export type BlockData = {
   tagArgs: string[];
 };
 
-const BlockVersion = defineDataVersions({
-  Initial: "v1",
-});
-
-type BlockVersionedData = {
-  [BlockVersion.Initial]: BlockData;
-};
-
-const blockDataModel = new DataModelBuilder<BlockVersionedData>()
-  .from(BlockVersion.Initial)
+const blockDataModel = new DataModelBuilder()
+  .from<BlockData>("v1")
   .init(() => ({
     titleArg: "The title",
     subtitleArg: "The subtitle",
@@ -53,13 +44,7 @@ type CounterPluginParams = {
   title: string;
 };
 
-const CounterVersion = defineDataVersions({
-  Initial: "v1",
-});
-
-type CounterVersionedData = {
-  [CounterVersion.Initial]: CounterPluginData;
-};
+const counterDataModelChain = new DataModelBuilder().from<CounterPluginData>("v1");
 
 const counterPlugin = PluginModel.create<
   CounterPluginData,
@@ -69,7 +54,7 @@ const counterPlugin = PluginModel.create<
   name: "counterPlugin",
   dataModelFactory: (config) => {
     const defaultCount = config?.defaultCount ?? 0;
-    return new DataModelBuilder<CounterVersionedData>().from(CounterVersion.Initial).init(() => ({
+    return counterDataModelChain.init(() => ({
       count: defaultCount,
       lastIncrement: undefined,
     }));

@@ -10,7 +10,6 @@ export {
   DataModelBuilder,
   DataUnrecoverableError,
   isDataUnrecoverableError,
-  defineDataVersions,
   defaultRecover,
   makeDataVersioned,
 } from "./block_migrations";

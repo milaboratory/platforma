@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PluginModel } from "./plugin_model";
 import type { PluginRenderCtx } from "./plugin_model";
-import { DataModelBuilder, defineDataVersions } from "./block_migrations";
+import { DataModelBuilder } from "./block_migrations";
 import { DATA_MODEL_DEFAULT_VERSION } from "./block_storage";
 import type { ResultPool } from "./render";
 
@@ -9,17 +9,9 @@ import type { ResultPool } from "./render";
 // Test Fixtures
 // =============================================================================
 
-const Version = defineDataVersions({
-  V1: DATA_MODEL_DEFAULT_VERSION,
-});
+type Data = { count: number; label: string };
 
-type VersionedData = {
-  [Version.V1]: { count: number; label: string };
-};
-
-type Data = VersionedData[typeof Version.V1];
-
-const dataModelChain = new DataModelBuilder<VersionedData>().from(Version.V1);
+const dataModelChain = new DataModelBuilder().from<Data>(DATA_MODEL_DEFAULT_VERSION);
 
 // Mock ResultPool for testing
 const mockResultPool = {} as ResultPool;

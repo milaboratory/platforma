@@ -78,7 +78,7 @@ export class PluginModel<Data = unknown, Params = undefined, Outputs = {}> {
    * @returns PluginModelBuilder for chaining output definitions
    *
    * @example
-   * const dataModelChain = new DataModelBuilder<VersionedData>().from(Version.V1);
+   * const dataModelChain = new DataModelBuilder().from<MyData>(DATA_MODEL_DEFAULT_VERSION);
    *
    * const myPlugin = PluginModel.create<MyData, MyParams, MyConfig>({
    *   name: 'myPlugin',
@@ -141,7 +141,7 @@ class PluginModelFactory<Data, Params, Config, Outputs> {
  * @typeParam Outputs - Accumulated output types
  *
  * @example
- * const dataModelChain = new DataModelBuilder<VersionedData>().from(Version.V1);
+ * const dataModelChain = new DataModelBuilder().from<TableData>(DATA_MODEL_DEFAULT_VERSION);
  *
  * const dataTable = PluginModel.create<TableData, TableParams, TableConfig>({
  *     name: 'dataTable',

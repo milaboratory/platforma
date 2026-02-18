@@ -115,12 +115,8 @@ export class BlockModelV3<
    * Creates a new BlockModelV3 builder with the specified data model and options.
    *
    * @example
-   * const Version = defineDataVersions({ V1: DATA_MODEL_DEFAULT_VERSION });
-   *
-   * type VersionedData = { [Version.V1]: BlockData };
-   *
-   * const dataModel = new DataModelBuilder<VersionedData>()
-   *   .from(Version.V1)
+   * const dataModel = new DataModelBuilder()
+   *   .from<BlockData>(DATA_MODEL_DEFAULT_VERSION)
    *   .init(() => ({ numbers: [], labels: [] }));
    *
    * BlockModelV3.create({ dataModel })
