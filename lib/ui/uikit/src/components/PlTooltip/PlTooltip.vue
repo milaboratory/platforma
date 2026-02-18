@@ -6,7 +6,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { computed, onUnmounted, reactive, ref, watch } from "vue";
+import { onUnmounted, reactive, ref, watch } from "vue";
 import * as utils from "../../helpers/utils";
 import { useClickOutside } from "../../composition/useClickOutside";
 import { tMap } from "./global";
@@ -154,10 +154,6 @@ const tooltip = ref<HTMLElement | undefined>();
 
 useClickOutside([rootRef, tooltip], () => closeTooltip());
 
-const tooltipStyle = computed(() => ({
-  "--pl-tooltip-max-width": props.maxWidth,
-}));
-
 onUnmounted(() => {
   tMap.delete(tKey);
 });
@@ -193,13 +189,13 @@ const anchorName = `--anchor-${uniqueId()}`;
             '--anchorName': anchorName,
             '--gap': gap + 'px',
             '--offsetToTheEdge': offsetToTheEdge + 'px',
+            '--pl-tooltip-max-width': maxWidth,
           }"
         >
           <div :class="$style.plTooltipBox" @click.stop>
             <div
               ref="tooltip"
               :class="[$style.plTooltipContent, position]"
-              :style="tooltipStyle"
               @mouseover="onOver"
               @mouseleave="onLeave"
             >
@@ -230,6 +226,7 @@ const anchorName = `--anchor-${uniqueId()}`;
 }
 
 .plTooltipContainer {
+  --pl-tooltip-max-width: 300px;
   --gap: 8px;
   --tailWidth: 8px;
   --tailHeight: calc(var(--gap) + 2px);
@@ -249,8 +246,6 @@ const anchorName = `--anchor-${uniqueId()}`;
 }
 
 .plTooltipContent {
-  --pl-tooltip-max-width: 300px;
-
   display: inline-block;
   padding: 8px 12px 9px 12px;
   background: var(--tooltip-bg);
