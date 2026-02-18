@@ -68,7 +68,7 @@ export type AppSettings = {
    */
   debug?: boolean;
   /**
-   * Debounce span in ms (default is 100ms)
+   * Debounce span in ms (default is 200ms)
    */
   debounceSpan?: number;
   /**

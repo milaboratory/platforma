@@ -467,7 +467,7 @@ export class BlockModelV3<
     const blockConfig: BlockConfigContainer = {
       v4: {
         configVersion: 4,
-        modelAPIVersion: 2,
+        modelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
         sdkVersion: PlatformaSDKVersion,
         renderingMode: this.config.renderingMode,
         args: this.config.args,

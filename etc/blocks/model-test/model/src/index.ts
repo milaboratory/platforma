@@ -19,15 +19,13 @@ export type BlockData = {
   tagArgs: string[];
 };
 
-const blockDataModel = new DataModelBuilder()
-  .from<BlockData>("v1")
-  .init(() => ({
-    titleArg: "The title",
-    subtitleArg: "The subtitle",
-    badgeArg: "The badge",
-    tagToWorkflow: "workflow-tag",
-    tagArgs: [],
-  }));
+const blockDataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({
+  titleArg: "The title",
+  subtitleArg: "The subtitle",
+  badgeArg: "The badge",
+  tagToWorkflow: "workflow-tag",
+  tagArgs: [],
+}));
 
 export type BlockArgs = BlockData;
 

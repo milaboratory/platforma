@@ -75,10 +75,9 @@ type RecoverState = {
 /**
  * Abstract base for both migration chain types.
  * Holds shared state, buildStep() helper, and init().
- * migrate() cannot be shared due to a TypeScript limitation: the Visited type parameter
- * in the nextVersion constraint becomes `string` when checking override compatibility,
- * making all migrate() calls appear to return `never`. Each subclass therefore owns its
- * migrate() with the correct concrete return type.
+ * migrate() cannot be shared due to a TypeScript limitation: when the base class
+ * migrate() return type is abstract, subclasses cannot narrow it without losing type safety.
+ * Each subclass therefore owns its migrate() with the correct concrete return type.
  *
  * @internal
  */
@@ -96,6 +95,9 @@ abstract class MigrationChainBase<Current> {
     nextVersion: string,
     fn: DataMigrateFn<Current, Next>,
   ): { versionChain: DataVersionKey[]; steps: MigrationStep[] } {
+    if (this.versionChain.includes(nextVersion)) {
+      throw new Error(`Duplicate version '${nextVersion}' in migration chain`);
+    }
     const fromVersion = this.versionChain[this.versionChain.length - 1];
     const step: MigrationStep = {
       fromVersion,
@@ -132,13 +134,11 @@ abstract class MigrationChainBase<Current> {
 /**
  * Migration chain after recover() has been called.
  * Further migrate() calls are allowed; recover() is not (enforced by type — no recover() method).
- * Duplicate version keys are rejected at compile time.
  *
  * @typeParam Current - Data type at the current point in the chain
- * @typeParam Visited - Union of all version keys used so far (for duplicate detection)
  * @internal
  */
-class DataModelMigrationChainWithRecover<Current, Visited extends string> extends MigrationChainBase<Current> {
+class DataModelMigrationChainWithRecover<Current> extends MigrationChainBase<Current> {
   private readonly recoverFn: (version: DataVersionKey, data: unknown) => unknown;
   private readonly recoverFromIndex: number;
 
@@ -161,14 +161,13 @@ class DataModelMigrationChainWithRecover<Current, Visited extends string> extend
   /**
    * Add a migration step. Same semantics as on the base chain.
    * recover() is not available — it has already been called.
-   * Passing a version already in the chain is a compile-time error.
    */
-  migrate<Next, const NextV extends string>(
-    nextVersion: string extends NextV ? never : [NextV] extends [Visited] ? never : NextV,
+  migrate<Next>(
+    nextVersion: string,
     fn: DataMigrateFn<Current, Next>,
-  ): DataModelMigrationChainWithRecover<Next, Visited | NextV> {
-    const { versionChain, steps } = this.buildStep(nextVersion as string, fn);
-    return new DataModelMigrationChainWithRecover<Next, Visited | NextV>({
+  ): DataModelMigrationChainWithRecover<Next> {
+    const { versionChain, steps } = this.buildStep(nextVersion, fn);
+    return new DataModelMigrationChainWithRecover<Next>({
       versionChain,
       steps,
       recoverFn: this.recoverFn,
@@ -178,40 +177,43 @@ class DataModelMigrationChainWithRecover<Current, Visited extends string> extend
 }
 
 /**
- * Migration chain builder. Tracks the current data type and visited version keys.
- * Each migrate() call advances the type. recover() can be called once at any point —
- * it removes itself from the returned chain so it cannot be called again.
- * Duplicate version keys are rejected at compile time.
+ * Migration chain builder.
+ * Each migrate() call advances the current data type. recover() can be called once
+ * at any point — it removes itself from the returned chain so it cannot be called again.
+ * Duplicate version keys throw at runtime.
  *
  * @typeParam Current - Data type at the current point in the migration chain
- * @typeParam Visited - Union of all version keys used so far (for duplicate detection)
  * @internal
  */
-class DataModelMigrationChain<Current, Visited extends string> extends MigrationChainBase<Current> {
+class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
   /** @internal */
-  constructor({ versionChain, steps = [] }: { versionChain: DataVersionKey[]; steps?: MigrationStep[] }) {
+  constructor({
+    versionChain,
+    steps = [],
+  }: {
+    versionChain: DataVersionKey[];
+    steps?: MigrationStep[];
+  }) {
     super({ versionChain, steps });
   }
 
   /**
    * Add a migration step transforming data from the current version to the next.
-   * Passing a version already in the chain is a compile-time error.
    *
    * @typeParam Next - Data type of the next version
-   * @typeParam NextV - Version key string (inferred from argument; duplicate keys become `never`)
-   * @param nextVersion - Version key to migrate to
+   * @param nextVersion - Version key to migrate to (must be unique in the chain)
    * @param fn - Migration function
    * @returns Builder with the next version as current
    *
    * @example
    * .migrate<BlockDataV2>("v2", (v1) => ({ ...v1, labels: [] }))
    */
-  migrate<Next, const NextV extends string>(
-    nextVersion: string extends NextV ? never : [NextV] extends [Visited] ? never : NextV,
+  migrate<Next>(
+    nextVersion: string,
     fn: DataMigrateFn<Current, Next>,
-  ): DataModelMigrationChain<Next, Visited | NextV> {
-    const { versionChain, steps } = this.buildStep(nextVersion as string, fn);
-    return new DataModelMigrationChain<Next, Visited | NextV>({ versionChain, steps });
+  ): DataModelMigrationChain<Next> {
+    const { versionChain, steps } = this.buildStep(nextVersion, fn);
+    return new DataModelMigrationChain<Next>({ versionChain, steps });
   }
 
   /**
@@ -228,8 +230,7 @@ class DataModelMigrationChain<Current, Visited extends string> extends Migration
    *
    * @example
    * // Recover between migrations — recovered data goes through v3 migration
-   * new DataModelBuilder()
-   *   .from<V1>("v1")
+   * new DataModelBuilder<V1>("v1")
    *   .migrate<V2>("v2", (v1) => ({ ...v1, label: "" }))
    *   .recover((version, data) => {
    *     if (version === 'legacy') return transformLegacy(data); // returns V2
@@ -238,8 +239,8 @@ class DataModelMigrationChain<Current, Visited extends string> extends Migration
    *   .migrate<V3>("v3", (v2) => ({ ...v2, description: "" }))
    *   .init(() => ({ count: 0, label: "", description: "" }));
    */
-  recover(fn: DataRecoverFn<Current>): DataModelMigrationChainWithRecover<Current, Visited> {
-    return new DataModelMigrationChainWithRecover<Current, Visited>({
+  recover(fn: DataRecoverFn<Current>): DataModelMigrationChainWithRecover<Current> {
+    return new DataModelMigrationChainWithRecover<Current>({
       versionChain: this.versionChain,
       steps: this.migrationSteps,
       recoverFn: fn as (version: DataVersionKey, data: unknown) => unknown,
@@ -282,17 +283,14 @@ class DataModelMigrationChain<Current, Visited extends string> extends Migration
  */
 export class DataModelBuilder {
   /**
-   * Start the migration chain with the initial data type and version key.
+   * Start the migration chain with the given initial data type and version key.
    *
    * @typeParam T - Data type for the initial version
-   * @typeParam V - Version key string (inferred from argument; seeded into duplicate-key tracking)
    * @param initialVersion - Version key string (e.g. DATA_MODEL_DEFAULT_VERSION or "v1")
    * @returns Migration chain builder
    */
-  from<T, const V extends string>(
-    initialVersion: string extends V ? never : V,
-  ): DataModelMigrationChain<T, V> {
-    return new DataModelMigrationChain<T, V>({ versionChain: [initialVersion as string] });
+  from<T>(initialVersion: string): DataModelMigrationChain<T> {
+    return new DataModelMigrationChain<T>({ versionChain: [initialVersion] });
   }
 }
 

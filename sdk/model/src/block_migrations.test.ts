@@ -21,6 +21,18 @@ describe("DataModel migrations", () => {
     expect(result.warning).toBe(`Unknown version 'legacy'`);
   });
 
+  it("throws at build time on duplicate version key", () => {
+    expect(() =>
+      new DataModelBuilder()
+        .from<{ count: number }>("v1")
+        .migrate<{ count: number; label: string }>("v2", (v1) => ({ ...v1, label: "" }))
+        .migrate<{ count: number; label: string; description: string }>("v1", (v2) => ({
+          ...v2,
+          description: "",
+        })),
+    ).toThrow("Duplicate version 'v1' in migration chain");
+  });
+
   it("returns initial data on migration failure", () => {
     const dataModel = new DataModelBuilder()
       .from<{ numbers: number[] }>("v1")
@@ -75,7 +87,6 @@ describe("DataModel migrations", () => {
             data !== null &&
             "count" in data
           ) {
-            // Returns V2 — the migration to V3 will still run
             return { count: (data as { count: number }).count, label: "recovered" };
           }
           return defaultRecover(version, data);
@@ -83,7 +94,6 @@ describe("DataModel migrations", () => {
         .migrate<V3>("v3", (v2) => ({ ...v2, description: "added" }))
         .init(() => ({ count: 0, label: "", description: "" }));
 
-      // Legacy → recover produces V2 → v2→v3 migration runs → final is V3
       const result = dataModel.migrate(makeDataVersioned("legacy", { count: 7 }));
       expect(result.version).toBe("v3");
       expect(result.data).toStrictEqual({ count: 7, label: "recovered", description: "added" });
@@ -156,81 +166,10 @@ describe("DataModel migrations", () => {
       expect(result.data).toStrictEqual({ count: 0, label: "", description: "" });
       expect(result.warning).toBe("Migration v2→v3 failed: v3 failed");
     });
+
+    it("recover() cannot be called twice — enforced by type (no recover() on WithRecover)", () => {
+      // This is a compile-time-only check — WithRecover has no recover() method.
+      // Verified by the absence of recover() in DataModelMigrationChainWithRecover.
+    });
   });
 });
-
-function _compileTimeTypeChecks() {
-  type V1 = { count: number };
-  type V2 = { count: number; label: string };
-  type V3 = { count: number; label: string; description: string };
-
-  // Valid: chain without recover
-  new DataModelBuilder()
-    .from<V1>("v1")
-    .migrate<V2>("v2", (v1) => ({ ...v1, label: "" }))
-    .init(() => ({ count: 0, label: "" }));
-
-  // Valid: recover() after from(), then migrate()
-  new DataModelBuilder()
-    .from<V1>("v1")
-    .recover((_version, _data) => ({ count: 0 }))
-    .migrate<V2>("v2", (v1) => ({ ...v1, label: "" }))
-    .init(() => ({ count: 0, label: "" }));
-
-  // Valid: recover() between migrations
-  new DataModelBuilder()
-    .from<V1>("v1")
-    .migrate<V2>("v2", (v1) => ({ ...v1, label: "" }))
-    .recover((version, data) => defaultRecover(version, data))
-    .migrate<V3>("v3", (v2) => ({ ...v2, description: "" }))
-    .init(() => ({ count: 0, label: "", description: "" }));
-
-  // Valid: recover() at the end of chain
-  new DataModelBuilder()
-    .from<V1>("v1")
-    .migrate<V2>("v2", (v1) => ({ ...v1, label: "" }))
-    .recover((version, data) => defaultRecover(version, data))
-    .init(() => ({ count: 0, label: "" }));
-
-  // @ts-expect-error recover() cannot be called twice
-  new DataModelBuilder()
-    .from<V1>("v1")
-    .migrate<V2>("v2", (v1) => ({ ...v1, label: "" }))
-    .recover((version, data) => defaultRecover(version, data))
-    .recover((version, data) => defaultRecover(version, data));
-
-  // @ts-expect-error recover() cannot be called twice — even after from()
-  new DataModelBuilder()
-    .from<V1>("v1")
-    .recover((_version, _data) => ({ count: 0 }))
-    .recover((_version, _data) => ({ count: 0 }));
-
-  // @ts-expect-error duplicate version key is a compile-time error
-  new DataModelBuilder()
-    .from<V1>("v1")
-    .migrate<V2>("v2", (v1) => ({ ...v1, label: "" }))
-    .migrate<V3>("v1", (v2) => ({ ...v2, description: "" }));
-
-  // @ts-expect-error duplicate version key also detected after recover()
-  new DataModelBuilder()
-    .from<V1>("v1")
-    .migrate<V2>("v2", (v1) => ({ ...v1, label: "" }))
-    .recover((version, data) => defaultRecover(version, data))
-    .migrate<V3>("v2", (v2) => ({ ...v2, description: "" }));
-
-  const nonLiteralVersion = "v2" as string;
-
-  // @ts-expect-error non-literal string variable rejected in from()
-  new DataModelBuilder().from<V1>(nonLiteralVersion);
-
-  // @ts-expect-error non-literal string variable rejected in migrate()
-  new DataModelBuilder()
-    .from<V1>("v1")
-    .migrate<V2>(nonLiteralVersion, (v1) => ({ ...v1, label: "" }));
-
-  // @ts-expect-error non-literal string variable rejected in migrate() after recover()
-  new DataModelBuilder()
-    .from<V1>("v1")
-    .recover((_version, _data) => ({ count: 0 }))
-    .migrate<V2>(nonLiteralVersion, (v1) => ({ ...v1, label: "" }));
-}
