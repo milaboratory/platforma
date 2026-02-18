@@ -1,5 +1,14 @@
 # @milaboratories/pf-driver
 
+## 1.0.48
+
+### Patch Changes
+
+- 866a323: Apply user filters, add utils method for traversing
+- Updated dependencies [866a323]
+  - @platforma-sdk/model@1.54.10
+  - @milaboratories/pl-model-middle-layer@1.11.12
+
 ## 1.0.47
 
 ### Patch Changes
