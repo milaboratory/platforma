@@ -114,7 +114,7 @@ describe("collectFilterSpecColumns", () => {
   });
 
   it("collects rhs fields", () => {
-    const filter: F = { type: "greaterThan", column: "c1", rhs: "c2", x: 5 } as F;
+    const filter: F = { type: "greaterThanColumn", column: "c1", rhs: "c2" };
     expect(collectFilterSpecColumns(filter)).toEqual(["c1", "c2"]);
   });
 
@@ -128,8 +128,7 @@ describe("collectFilterSpecColumns", () => {
     expect(collectFilterSpecColumns(filter)).toEqual([]);
   });
 
-  it("returns empty array for leaf without column", () => {
-    const filter: F = { type: "isNA" } as F;
-    expect(collectFilterSpecColumns(filter)).toEqual([]);
+  it("returns empty array for empty leaf", () => {
+    expect(collectFilterSpecColumns(empty)).toEqual([]);
   });
 });
