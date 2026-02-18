@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PlBlockPage, PlBtnSecondary, PlIcon16, PlRow, PlTooltip } from "@platforma-sdk/ui-vue";
-import { CSSProperties, ref } from "vue";
+import { CSSProperties, onUnmounted, ref } from "vue";
 
 const START_X = 500;
 const START_Y = 500;
@@ -10,6 +10,9 @@ const elementPosition = ref({ x: START_X, y: START_Y });
 const offset = ref({ x: 0, y: 0 });
 
 document.addEventListener("mousemove", onMove);
+onUnmounted(() => {
+  document.removeEventListener("mousemove", onMove);
+});
 function onMove(ev: MouseEvent) {
   if (isDragging.value) {
     elementPosition.value.x = offset.value.x + ev.clientX;
