@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.54.10
+
+### Patch Changes
+
+- 866a323: Apply user filters, add utils method for traversing
+- Updated dependencies [866a323]
+  - @milaboratories/pl-model-common@1.24.10
+  - @milaboratories/ptabler-expression-js@1.1.20
+
 ## 1.54.9
 
 ### Patch Changes

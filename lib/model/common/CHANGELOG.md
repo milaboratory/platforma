@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.24.10
+
+### Patch Changes
+
+- 866a323: Apply user filters, add utils method for traversing
+
 ## 1.24.9
 
 ### Patch Changes
