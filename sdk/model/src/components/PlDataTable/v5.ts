@@ -67,7 +67,6 @@ export type PlDataTableFiltersWithMeta = RootFilterSpec<
   FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>,
   { id: number; isExpanded?: boolean; source?: "table-filter" | "table-search" }
 >;
-export type PlDataTableRootFiltersWithMeta = 1;
 
 export type PlDataTableStateV2CacheEntry = {
   /** DataSource identifier for state management */
