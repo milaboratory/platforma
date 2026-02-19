@@ -21,7 +21,7 @@ import {
   createInitialStorage,
   deriveArgsFromStorage,
   derivePrerunArgsFromStorage,
-} from "./block_storage_vm";
+} from "./block_storage_callbacks";
 import { type PluginName } from "./block_storage";
 import type {
   ConfigRenderLambda,
@@ -65,7 +65,6 @@ export type PluginInstance<Data = unknown, Params = unknown, Outputs = unknown> 
 };
 
 interface BlockModelV3Config<
-  _Args,
   OutputsCfg extends Record<string, ConfigRenderLambda>,
   Data,
   Plugins extends Record<string, PluginInstance> = {},
@@ -96,7 +95,7 @@ export class BlockModelV3<
   Plugins extends Record<string, PluginInstance> = {},
 > {
   private constructor(
-    private readonly config: BlockModelV3Config<Args, OutputsCfg, Data, Plugins>,
+    private readonly config: BlockModelV3Config<OutputsCfg, Data, Plugins>,
   ) {}
 
   public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
@@ -474,7 +473,7 @@ export class BlockModelV3<
         outputs: this.config.outputs,
         enrichmentTargets: this.config.enrichmentTargets,
         featureFlags: this.config.featureFlags,
-        facadeCallbacks: { ...BlockStorageFacadeHandles },
+        blockLifecycleCallbacks: { ...BlockStorageFacadeHandles },
       },
 
       // fields below are added to allow previous desktop versions read generated configs
@@ -550,7 +549,7 @@ type _CreateTest = Expect<_CreateIsBlockModelV3>;
 // Test: BlockModelV3Config interface structure
 type _ConfigTest = Expect<
   Equal<
-    BlockModelV3Config<_TestArgs, _TestOutputs, _TestData>,
+    BlockModelV3Config<_TestOutputs, _TestData>,
     {
       renderingMode: BlockRenderingMode;
       argsFunction: ((data: unknown) => unknown) | undefined;

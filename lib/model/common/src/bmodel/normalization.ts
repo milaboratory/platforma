@@ -28,7 +28,7 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
       subtitle,
       tags,
       enrichmentTargets,
-      facadeCallbacks = {},
+      blockLifecycleCallbacks = {},
     } = cfg.v4;
     const { code } = cfg;
     return {
@@ -43,7 +43,7 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
       subtitle,
       tags,
       enrichmentTargets,
-      facadeCallbacks,
+      blockLifecycleCallbacks,
       code,
     };
   } else if (cfg.v3 !== undefined) {

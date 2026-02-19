@@ -18,9 +18,9 @@ export function downgradeCfgOrLambda(
 
 export function extractConfig(cfg: BlockConfigContainer): BlockConfig {
   const config = extractConfigGeneric(cfg) as BlockConfig;
-  // Fill facadeCallbacks with defaults for V4 blocks that don't declare them
-  if (config.configVersion === 4 && Object.keys(config.facadeCallbacks).length === 0) {
-    (config as { facadeCallbacks: Record<string, unknown> }).facadeCallbacks =
+  // Fill blockLifecycleCallbacks with defaults for V4 blocks that don't declare them
+  if (config.configVersion === 4 && Object.keys(config.blockLifecycleCallbacks).length === 0) {
+    (config as { blockLifecycleCallbacks: Record<string, unknown> }).blockLifecycleCallbacks =
       BlockStorageFacadeHandles;
   }
   return config;

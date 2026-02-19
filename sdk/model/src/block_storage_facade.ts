@@ -47,7 +47,7 @@
  * @module block_storage_facade
  */
 
-import type { MutateStoragePayload, BlockStorage, StorageDebugView } from "./block_storage";
+import type { MutateStoragePayload } from "./block_storage";
 import type { ConfigRenderLambda } from "./bconfig";
 import { createRenderLambda, tryRegisterCallback } from "./internal";
 import type { StringifiedJson } from "@milaboratories/pl-model-common";
@@ -135,19 +135,19 @@ export interface BlockStorageFacade {
    * @returns Updated storage as JSON string
    */
   [BlockStorageFacadeCallbacks.StorageApplyUpdate]: (
-    currentStorageJson: string,
+    currentStorageJson: StringifiedJson,
     payload: MutateStoragePayload,
-  ) => StringifiedJson<BlockStorage>;
+  ) => StringifiedJson;
 
   /**
    * Get debug view of storage.
    * Called by developer tools to inspect storage state.
-   * @param rawStorage - Raw storage data (may be JSON string or object)
+   * @param storageJson - Storage as JSON string (or undefined for new blocks)
    * @returns JSON string containing StorageDebugView
    */
   [BlockStorageFacadeCallbacks.StorageDebugView]: (
-    rawStorage: unknown,
-  ) => StringifiedJson<StorageDebugView>;
+    storageJson: StringifiedJson | undefined,
+  ) => StringifiedJson;
 
   /**
    * Run storage migration.
@@ -155,11 +155,11 @@ export interface BlockStorageFacade {
    * @param currentStorageJson - Current storage as JSON string (or undefined for new blocks)
    * @returns Migration result - either error or success with new storage
    */
-  [BlockStorageFacadeCallbacks.StorageMigrate]: (currentStorageJson: string | undefined) =>
+  [BlockStorageFacadeCallbacks.StorageMigrate]: (currentStorageJson: StringifiedJson | undefined) =>
     | { error: string }
     | {
         error?: undefined;
-        newStorageJson: StringifiedJson<BlockStorage>;
+        newStorageJson: StringifiedJson;
         info: string;
       };
 
@@ -170,7 +170,7 @@ export interface BlockStorageFacade {
    * @returns Args derivation result - either error or derived value
    */
   [BlockStorageFacadeCallbacks.ArgsDerive]: (
-    storageJson: string,
+    storageJson: StringifiedJson,
   ) => { error: string } | { error?: undefined; value: unknown };
 
   /**
@@ -180,15 +180,15 @@ export interface BlockStorageFacade {
    * @returns Args derivation result - either error or derived value
    */
   [BlockStorageFacadeCallbacks.PrerunArgsDerive]: (
-    storageJson: string,
+    storageJson: StringifiedJson,
   ) => { error: string } | { error?: undefined; value: unknown };
 
   /**
    * Get initial storage JSON for new blocks.
    * Called when creating a new block to get complete initial storage.
-   * @returns Initial storage as branded JSON string
+   * @returns Initial storage as JSON string
    */
-  [BlockStorageFacadeCallbacks.StorageInitial]: () => StringifiedJson<BlockStorage>;
+  [BlockStorageFacadeCallbacks.StorageInitial]: () => StringifiedJson;
 }
 
 /** Register all facade callbacks at once. Ensures all required callbacks are provided. */

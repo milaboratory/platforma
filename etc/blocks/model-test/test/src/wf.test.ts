@@ -1,4 +1,4 @@
-import type { BlockArgs } from "@milaboratories/milaboratories.test-block-model.model";
+import type { BlockData } from "@milaboratories/milaboratories.test-block-model.model";
 import { blockTest } from "@platforma-sdk/test";
 import { blockSpec } from "this-block";
 
@@ -20,13 +20,16 @@ blockTest("with args", { timeout: 10000 }, async ({ rawPrj: project, expect }) =
     ],
   });
 
-  await project.setBlockArgs(blockId, {
-    titleArg: "Custom title",
-    subtitleArg: "Custom subtitle",
-    badgeArg: "Custom badge",
-    tagToWorkflow: "workflow-tag",
-    tagArgs: ["tag-one", "tag-two"],
-  } satisfies BlockArgs);
+  await project.mutateBlockStorage(blockId, {
+    operation: "update-block-data",
+    value: {
+      titleArg: "Custom title",
+      subtitleArg: "Custom subtitle",
+      badgeArg: "Custom badge",
+      tagToWorkflow: "workflow-tag",
+      tagArgs: ["tag-one", "tag-two"],
+    } satisfies BlockData,
+  });
 
   const stableOverview2 = await project.overview.awaitStableValue();
 

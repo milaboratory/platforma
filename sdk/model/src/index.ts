@@ -2,7 +2,7 @@ export * from "./block_state_patch";
 export * from "./block_state_util";
 export * from "./block_storage";
 export * from "./block_storage_facade";
-export * from "./builder";
+export * from "./block_model_legacy";
 export { BlockModelV3 } from "./block_model";
 export type { PluginInstance, ParamsInput } from "./block_model";
 export {
@@ -23,7 +23,7 @@ export * from "./pframe";
 export * from "./platforma";
 export * from "./ref_util";
 export * from "./render";
-export * from "./sdk_info";
+export * from "./version";
 export * from "./raw_globals";
 export * from "./block_api_v1";
 export * from "./block_api_v2";

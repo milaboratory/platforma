@@ -9,7 +9,7 @@
  * @module block_storage
  */
 
-import type { Branded } from "./branding";
+import type { Branded } from "@milaboratories/pl-model-common";
 import type { DataMigrationResult, DataVersioned } from "./block_migrations";
 
 // =============================================================================

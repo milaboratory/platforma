@@ -1,11 +1,11 @@
 /**
- * BlockStorage VM Integration - Internal module for VM-based storage operations.
+ * BlockStorage Callback Implementations - wired to facade callbacks in BlockModelV3._done().
  *
  * Provides pure functions for storage operations (migration, initialization,
- * args derivation, updates, debug views). These functions take their dependencies
- * explicitly as parameters and are wired to facade callbacks in BlockModelV3._done().
+ * args derivation, updates, debug views). Each function takes its dependencies
+ * explicitly as parameters.
  *
- * @module block_storage_vm
+ * @module block_storage_callbacks
  * @internal
  */
 

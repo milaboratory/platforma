@@ -51,7 +51,7 @@ const counterPlugin = PluginModel.define<
   { defaultCount: number }
 >({
   name: "counterPlugin" as PluginName,
-  dataModelFactory: (config) => {
+  data: (config) => {
     const defaultCount = config?.defaultCount ?? 0;
     return counterDataModelChain.init(() => ({
       count: defaultCount,

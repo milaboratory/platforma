@@ -57,7 +57,7 @@ export type BlockConfigV4Generic<
   readonly featureFlags?: BlockCodeFeatureFlags;
 
   /** Facade callbacks supported by this block (for pre-execution validation) */
-  readonly facadeCallbacks: Record<string, NarrowActiveHandleDescriptor>;
+  readonly blockLifecycleCallbacks: Record<string, NarrowActiveHandleDescriptor>;
 };
 
 /**

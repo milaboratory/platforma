@@ -85,7 +85,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        blockConfig.facadeCallbacks[BlockStorageFacadeCallbacks.ArgsDerive],
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.ArgsDerive],
         extractCodeWithInfo(blockConfig),
         storageJson,
       ) as ArgsDeriveResult;
@@ -115,7 +115,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        blockConfig.facadeCallbacks[BlockStorageFacadeCallbacks.PrerunArgsDerive],
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.PrerunArgsDerive],
         extractCodeWithInfo(blockConfig),
         storageJson,
       ) as ArgsDeriveResult;
@@ -177,7 +177,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        blockConfig.facadeCallbacks[BlockStorageFacadeCallbacks.StorageInitial],
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageInitial],
         extractCodeWithInfo(blockConfig),
       ) as string;
       return result;
@@ -212,7 +212,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        blockConfig.facadeCallbacks[BlockStorageFacadeCallbacks.StorageApplyUpdate],
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageApplyUpdate],
         extractCodeWithInfo(blockConfig),
         currentStorageJson,
         payload,
@@ -243,7 +243,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        blockConfig.facadeCallbacks[BlockStorageFacadeCallbacks.StorageDebugView],
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageDebugView],
         extractCodeWithInfo(blockConfig),
         rawStorageJson,
       ) as StringifiedJson<StorageDebugView>;
@@ -284,7 +284,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        blockConfig.facadeCallbacks[BlockStorageFacadeCallbacks.StorageMigrate],
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageMigrate],
         extractCodeWithInfo(blockConfig),
         currentStorageJson,
       ) as MigrationResult;

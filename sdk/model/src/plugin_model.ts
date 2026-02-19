@@ -75,7 +75,7 @@ export class PluginModel<Data = unknown, Params = undefined, Outputs = {}> {
    * Creates a new PluginModelBuilder for building plugin definitions.
    *
    * @param options.name - Globally unique plugin name
-   * @param options.dataModelFactory - Factory function that creates the data model from config
+   * @param options.data - Factory function that creates the data model from config
    * @returns PluginModelBuilder for chaining output definitions
    *
    * @example
@@ -83,14 +83,14 @@ export class PluginModel<Data = unknown, Params = undefined, Outputs = {}> {
    *
    * const myPlugin = PluginModel.define<MyData, MyParams, MyConfig>({
    *   name: 'myPlugin' as PluginName,
-   *   dataModelFactory: (cfg) => dataModelChain.init(() => ({ value: cfg.defaultValue })),
+   *   data: (cfg) => dataModelChain.init(() => ({ value: cfg.defaultValue })),
    * })
    *   .output('computed', (ctx) => ctx.data.value * ctx.params.multiplier)
    *   .build();
    */
   static define<Data, Params = undefined, Config = undefined>(options: {
     name: PluginName;
-    dataModelFactory: (config?: Config) => DataModel<Data>;
+    data: (config?: Config) => DataModel<Data>;
   }): PluginModelBuilder<Data, Params, Config> {
     return PluginModelBuilder[FROM_BUILDER]<Data, Params, Config>(options);
   }
@@ -102,18 +102,18 @@ export class PluginModel<Data = unknown, Params = undefined, Outputs = {}> {
  */
 class PluginModelFactory<Data, Params, Config, Outputs> {
   private readonly name: PluginName;
-  private readonly dataModelFactory: (config?: Config) => DataModel<Data>;
+  private readonly data: (config?: Config) => DataModel<Data>;
   private readonly outputs: {
     [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K];
   };
 
   constructor(input: {
     name: PluginName;
-    dataModelFactory: (config?: Config) => DataModel<Data>;
+    data: (config?: Config) => DataModel<Data>;
     outputs: { [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K] };
   }) {
     this.name = input.name;
-    this.dataModelFactory = input.dataModelFactory;
+    this.data = input.data;
     this.outputs = input.outputs;
   }
 
@@ -121,7 +121,7 @@ class PluginModelFactory<Data, Params, Config, Outputs> {
   create(config?: Config): PluginModel<Data, Params, Outputs> {
     return PluginModel[FROM_BUILDER]<Data, Params, Outputs>({
       name: this.name,
-      dataModel: this.dataModelFactory(config),
+      dataModel: this.data(config),
       outputs: this.outputs,
     });
   }
@@ -146,7 +146,7 @@ class PluginModelFactory<Data, Params, Config, Outputs> {
  *
  * const dataTable = PluginModel.define<TableData, TableParams, TableConfig>({
  *     name: 'dataTable' as PluginName,
- *     dataModelFactory: (cfg) => {
+ *     data: (cfg) => {
  *       return dataModelChain.init(() => ({ state: createInitialState(cfg.ops) }));
  *     },
  *   })
@@ -160,18 +160,18 @@ class PluginModelBuilder<
   Outputs extends Record<string, unknown> = {},
 > {
   private readonly name: PluginName;
-  private readonly dataModelFactory: (config?: Config) => DataModel<Data>;
+  private readonly data: (config?: Config) => DataModel<Data>;
   private readonly outputs: {
     [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K];
   };
 
   private constructor(input: {
     name: PluginName;
-    dataModelFactory: (config?: Config) => DataModel<Data>;
+    data: (config?: Config) => DataModel<Data>;
     outputs?: { [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K] };
   }) {
     this.name = input.name;
-    this.dataModelFactory = input.dataModelFactory;
+    this.data = input.data;
     this.outputs =
       input.outputs ??
       ({} as { [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K] });
@@ -184,7 +184,7 @@ class PluginModelBuilder<
    */
   static [FROM_BUILDER]<D, P, C, O extends Record<string, unknown> = {}>(input: {
     name: PluginName;
-    dataModelFactory: (config?: C) => DataModel<D>;
+    data: (config?: C) => DataModel<D>;
     outputs?: { [K in keyof O]: (ctx: PluginRenderCtx<D, P>) => O[K] };
   }): PluginModelBuilder<D, P, C, O> {
     return new this<D, P, C, O>(input);
@@ -207,7 +207,7 @@ class PluginModelBuilder<
   ): PluginModelBuilder<Data, Params, Config, Outputs & { [K in Key]: T }> {
     return new PluginModelBuilder<Data, Params, Config, Outputs & { [K in Key]: T }>({
       name: this.name,
-      dataModelFactory: this.dataModelFactory,
+      data: this.data,
       outputs: {
         ...this.outputs,
         [key]: fn,
@@ -235,7 +235,7 @@ class PluginModelBuilder<
   build(): PluginModelFactory<Data, Params, Config, Outputs> {
     return new PluginModelFactory<Data, Params, Config, Outputs>({
       name: this.name,
-      dataModelFactory: this.dataModelFactory,
+      data: this.data,
       outputs: this.outputs,
     });
   }

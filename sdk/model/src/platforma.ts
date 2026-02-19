@@ -7,7 +7,7 @@ import type {
   DriverKit,
   OutputWithStatus,
 } from "@milaboratories/pl-model-common";
-import type { SdkInfo } from "./sdk_info";
+import type { SdkInfo } from "./version";
 import type { BlockStatePatch } from "./block_state_patch";
 import type { PluginInstance } from "./block_model";
 
