@@ -19,8 +19,6 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
   if (cfg.v4 !== undefined) {
     // version 4 (BlockModelV3) - inputsValid is derived from args() success/failure
     const {
-      args,
-      prerunArgs,
       outputs,
       renderingMode,
       sdkVersion,
@@ -36,8 +34,6 @@ export function extractConfigGeneric(cfg: BlockConfigContainer): BlockConfigGene
     return {
       configVersion: 4,
       modelAPIVersion: 2,
-      args,
-      prerunArgs,
       outputs,
       renderingMode,
       sdkVersion,

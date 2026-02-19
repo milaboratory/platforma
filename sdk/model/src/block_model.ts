@@ -14,8 +14,14 @@ import { RenderCtx } from "./render";
 import type { PluginModel } from "./plugin_model";
 import type { RenderCtxBase } from "./render";
 import { PlatformaSDKVersion } from "./version";
-// Import storage VM integration (side-effect: registers internal callbacks)
-import { BlockPrivateCallbacks, registerPrivateCallbacks } from "./block_storage_vm";
+import {
+  applyStorageUpdate,
+  getStorageDebugView,
+  migrateStorage,
+  createInitialStorage,
+  deriveArgsFromStorage,
+  derivePrerunArgsFromStorage,
+} from "./block_storage_vm";
 import { type PluginName } from "./block_storage";
 import type {
   ConfigRenderLambda,
@@ -25,7 +31,12 @@ import type {
 } from "./bconfig";
 import { downgradeCfgOrLambda, isConfigLambda } from "./bconfig";
 import type { PlatformaExtended } from "./platforma";
-import { BLOCK_STORAGE_FACADE_VERSION, BlockStorageFacadeHandles } from "./block_storage_facade";
+import {
+  BLOCK_STORAGE_FACADE_VERSION,
+  BlockStorageFacadeCallbacks,
+  BlockStorageFacadeHandles,
+  registerFacadeCallbacks,
+} from "./block_storage_facade";
 
 type SectionsExpectedType = readonly BlockSection[];
 
@@ -54,7 +65,7 @@ export type PluginInstance<Data = unknown, Params = unknown, Outputs = unknown> 
 };
 
 interface BlockModelV3Config<
-  Args,
+  _Args,
   OutputsCfg extends Record<string, ConfigRenderLambda>,
   Data,
   Plugins extends Record<string, PluginInstance> = {},
@@ -68,8 +79,8 @@ interface BlockModelV3Config<
   tags: ConfigRenderLambda | undefined;
   enrichmentTargets: ConfigRenderLambda | undefined;
   featureFlags: BlockCodeKnownFeatureFlags;
-  args: ConfigRenderLambda<Args> | undefined;
-  prerunArgs: ConfigRenderLambda<unknown> | undefined;
+  argsFunction: ((data: unknown) => unknown) | undefined;
+  prerunArgsFunction: ((data: unknown) => unknown) | undefined;
   plugins: Plugins;
 }
 
@@ -124,8 +135,8 @@ export class BlockModelV3<
       tags: undefined,
       enrichmentTargets: undefined,
       featureFlags: { ...BlockModelV3.INITIAL_BLOCK_FEATURE_FLAGS },
-      args: undefined,
-      prerunArgs: undefined,
+      argsFunction: undefined,
+      prerunArgsFunction: undefined,
       plugins: {},
     });
   }
@@ -237,7 +248,7 @@ export class BlockModelV3<
   ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins> {
     return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins>({
       ...this.config,
-      args: createAndRegisterRenderLambda<Args>({ handle: "args", lambda }),
+      argsFunction: lambda as (data: unknown) => unknown,
     });
   }
 
@@ -266,10 +277,7 @@ export class BlockModelV3<
   ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins> {
     return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins>({
       ...this.config,
-      prerunArgs: createAndRegisterRenderLambda({
-        handle: "prerunArgs",
-        lambda: fn,
-      }),
+      prerunArgsFunction: fn as (data: unknown) => unknown,
     });
   }
 
@@ -411,32 +419,46 @@ export class BlockModelV3<
   public _done(): PlatformaExtended<
     PlatformaV3<Args, InferOutputsFromLambdas<OutputsCfg>, Data, Href, Plugins>
   > {
-    if (this.config.args === undefined) throw new Error("Args rendering function not set.");
+    if (this.config.argsFunction === undefined) throw new Error("Args rendering function not set.");
 
     const apiVersion = 3;
 
-    // Build plugin registry and register plugin callbacks for migration
+    // Build plugin registry
     const { plugins } = this.config;
     const pluginRegistry: Record<string, PluginName> = {};
     for (const [pluginId, { model }] of Object.entries(plugins)) {
       pluginRegistry[pluginId] = model.name;
     }
 
-    const { dataModel } = this.config;
-    registerPrivateCallbacks({
-      [BlockPrivateCallbacks.BlockDataMigrate]: (v) => dataModel.migrate(v),
-      [BlockPrivateCallbacks.BlockDataInit]: () => dataModel.getDefaultData(),
-      [BlockPrivateCallbacks.PluginRegistry]: () => pluginRegistry,
-      [BlockPrivateCallbacks.PluginDataMigrate]: (pluginId, v) => {
-        const plugin = plugins[pluginId];
-        if (!plugin) throw new Error(`Plugin model not found for '${pluginId}'`);
-        return plugin.model.dataModel.migrate(v);
-      },
-      [BlockPrivateCallbacks.PluginDataInit]: (pluginId) => {
-        const plugin = plugins[pluginId];
-        if (!plugin) throw new Error(`Plugin model not found for '${pluginId}'`);
-        return plugin.model.dataModel.getDefaultData();
-      },
+    const { dataModel, argsFunction, prerunArgsFunction } = this.config;
+
+    function getPlugin(pluginId: string): PluginInstance {
+      const plugin = plugins[pluginId];
+      if (!plugin) throw new Error(`Plugin model not found for '${pluginId}'`);
+      return plugin;
+    }
+
+    // Register ALL facade callbacks here, with dependencies captured via closures
+    registerFacadeCallbacks({
+      [BlockStorageFacadeCallbacks.StorageApplyUpdate]: applyStorageUpdate,
+      [BlockStorageFacadeCallbacks.StorageDebugView]: getStorageDebugView,
+      [BlockStorageFacadeCallbacks.StorageMigrate]: (currentStorageJson) =>
+        migrateStorage(currentStorageJson, {
+          migrateBlockData: (v) => dataModel.migrate(v),
+          getPluginRegistry: () => pluginRegistry,
+          migratePluginData: (pluginId, v) => getPlugin(pluginId).model.dataModel.migrate(v),
+          createPluginData: (pluginId) => getPlugin(pluginId).model.dataModel.getDefaultData(),
+        }),
+      [BlockStorageFacadeCallbacks.StorageInitial]: () =>
+        createInitialStorage({
+          getDefaultBlockData: () => dataModel.getDefaultData(),
+          getPluginRegistry: () => pluginRegistry,
+          createPluginData: (pluginId) => getPlugin(pluginId).model.dataModel.getDefaultData(),
+        }),
+      [BlockStorageFacadeCallbacks.ArgsDerive]: (storageJson) =>
+        deriveArgsFromStorage(storageJson, argsFunction),
+      [BlockStorageFacadeCallbacks.PrerunArgsDerive]: (storageJson) =>
+        derivePrerunArgsFromStorage(storageJson, argsFunction, prerunArgsFunction),
     });
 
     const blockConfig: BlockConfigContainer = {
@@ -445,8 +467,6 @@ export class BlockModelV3<
         modelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
         sdkVersion: PlatformaSDKVersion,
         renderingMode: this.config.renderingMode,
-        args: this.config.args,
-        prerunArgs: this.config.prerunArgs,
         sections: this.config.sections,
         title: this.config.title,
         subtitle: this.config.subtitle,
@@ -533,8 +553,8 @@ type _ConfigTest = Expect<
     BlockModelV3Config<_TestArgs, _TestOutputs, _TestData>,
     {
       renderingMode: BlockRenderingMode;
-      args: ConfigRenderLambda<_TestArgs> | undefined;
-      prerunArgs: ConfigRenderLambda<unknown> | undefined;
+      argsFunction: ((data: unknown) => unknown) | undefined;
+      prerunArgsFunction: ((data: unknown) => unknown) | undefined;
       dataModel: DataModel<_TestData>;
       outputs: _TestOutputs;
       sections: ConfigRenderLambda;

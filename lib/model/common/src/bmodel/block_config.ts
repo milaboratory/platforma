@@ -29,16 +29,6 @@ export type BlockConfigV4Generic<
   /** Main rendering mode for the block */
   readonly renderingMode: BlockRenderingMode;
 
-  /** Lambda to derive block args from state */
-  readonly args: NarrowActiveHandleDescriptor;
-
-  /**
-   * Lambda to derive prerun args from state (optional).
-   * If not defined, defaults to using the args() result.
-   * Used for staging/prerun phase.
-   */
-  readonly prerunArgs?: NarrowActiveHandleDescriptor;
-
   /** Lambda to derive list of sections for the left overview panel */
   readonly sections: NarrowActiveHandleDescriptor;
 
