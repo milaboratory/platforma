@@ -1,5 +1,10 @@
 <script lang="ts" setup>
-import type { PTableColumnSpec, PTableColumnId, ListOptionBase } from "@platforma-sdk/model";
+import type {
+  PTableColumnSpec,
+  PTableColumnId,
+  ListOptionBase,
+  PlDataTableFiltersWithMeta,
+} from "@platforma-sdk/model";
 import {
   canonicalizeJson,
   Annotation,
@@ -18,7 +23,7 @@ import {
 } from "../PlAdvancedFilter";
 import type { PlAdvancedFilterColumnId } from "../PlAdvancedFilter/types";
 
-const model = defineModel<PlAdvancedFilter>({ required: true });
+const model = defineModel<PlDataTableFiltersWithMeta>({ required: true });
 const props = defineProps<{
   columns: PTableColumnSpec[];
 }>();
@@ -120,7 +125,7 @@ function getSuggestOptions(params: {
 
     <div v-if="items.length > 0" :class="$style.root">
       <PlAdvancedFilter
-        v-model:filters="model"
+        v-model:filters="model as PlAdvancedFilter"
         :items="items"
         :supported-filters="supportedFilters"
         :get-suggest-options="getSuggestOptions"

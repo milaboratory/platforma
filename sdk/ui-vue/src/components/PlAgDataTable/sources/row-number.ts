@@ -13,7 +13,6 @@ export const PlAgDataTableRowNumberColId = '"##RowNumberColumnId##"';
 
 const HeaderSize = 45;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function makeRowNumberColDef<TData = any>(): ColDef<TData> {
   return {
     colId: PlAgDataTableRowNumberColId,

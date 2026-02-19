@@ -27,6 +27,7 @@ import {
   Annotation,
   ValueType,
   readAnnotationJson,
+  getPTableColumnId,
 } from "@platforma-sdk/model";
 import type {
   CellStyle,
@@ -51,21 +52,6 @@ import type { DeferredCircular } from "./focus-row";
 
 export function isLabelColumn(column: PTableColumnSpec): column is PTableColumnSpecColumn {
   return column.type === "column" && isLabelColumnSpec(column.spec);
-}
-
-export function getPTableColumnId(spec: PTableColumnSpec): PTableColumnId {
-  switch (spec.type) {
-    case "axis":
-      return {
-        type: "axis",
-        id: getAxisId(spec.spec),
-      };
-    case "column":
-      return {
-        type: "column",
-        id: spec.id,
-      };
-  }
 }
 
 /** Convert columnar data from the driver to rows, used by ag-grid */

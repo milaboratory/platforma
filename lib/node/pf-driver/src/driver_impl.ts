@@ -28,18 +28,13 @@ import {
   type PTableRecordFilter,
   type JsonSerializable,
   type PTableDefV2,
-  type SpecQuery,
   mapSpecQueryColumns,
   collectSpecQueryColumns,
   sortSpecQuery,
   sortPTableDef,
 } from "@platforma-sdk/model";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import {
-  assertNever,
-  ConcurrencyLimitingExecutor,
-  type PoolEntry,
-} from "@milaboratories/ts-helpers";
+import { ConcurrencyLimitingExecutor, type PoolEntry } from "@milaboratories/ts-helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";
 import { tmpdir } from "node:os";
 import type { AbstractInternalPFrameDriver } from "./driver_decl";
@@ -219,11 +214,7 @@ export class AbstractPFrameDriver<
     const pFrameEntry = this.createPFrame(columns);
     const specFrame = createSpecFrame(columnsMap);
     const sortedQuery = sortSpecQuery(mapSpecQueryColumns(def.query, (c) => c.id));
-    const { tableSpec, dataQuery } = specFrame.evaluateQuery(
-      // WASM crate expects `columnId` field name, our types use `column`
-      // @todo: remove it after update wasm package
-      querySpecToWasm(sortedQuery) as SpecQuery,
-    );
+    const { tableSpec, dataQuery } = specFrame.evaluateQuery(sortedQuery);
 
     const pTableEntry = this.pTableDefs.acquire({
       type: "v2",
@@ -456,49 +447,6 @@ export class AbstractPFrameDriver<
 
     this.pTableCachePlain.cache(table, overallSize, defDisposeSignal);
     return data;
-  }
-}
-
-/**
- * Converts a SpecQuery to the format expected by the WASM crate.
- * Renames `column` → `columnId` in leaf nodes (QueryColumn, QuerySparseToDenseColumn).
- */
-function querySpecToWasm(query: SpecQuery): unknown {
-  switch (query.type) {
-    case "column":
-      return { type: "column", columnId: query.column };
-    case "sparseToDenseColumn": {
-      const { column, ...rest } = query;
-      return { ...rest, columnId: column };
-    }
-    case "inlineColumn":
-      return query;
-    case "innerJoin":
-    case "fullJoin":
-      return {
-        ...query,
-        entries: query.entries.map((e) => ({
-          ...e,
-          entry: querySpecToWasm(e.entry),
-        })),
-      };
-    case "outerJoin":
-      return {
-        ...query,
-        primary: { ...query.primary, entry: querySpecToWasm(query.primary.entry) },
-        secondary: query.secondary.map((e) => ({
-          ...e,
-          entry: querySpecToWasm(e.entry),
-        })),
-      };
-    case "filter":
-      return { ...query, input: querySpecToWasm(query.input) };
-    case "sort":
-      return { ...query, input: querySpecToWasm(query.input) };
-    case "sliceAxes":
-      return { ...query, input: querySpecToWasm(query.input) };
-    default:
-      assertNever(query);
   }
 }
 
