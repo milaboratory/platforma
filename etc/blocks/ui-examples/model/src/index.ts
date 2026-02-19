@@ -26,25 +26,6 @@ export const ImportFileHandleSchema = z
     ((_a) => true) as (arg: string | undefined) => arg is ImportFileHandle | undefined,
   );
 
-export function* range(from: number, to: number, step = 1) {
-  for (let i = from; i < to; i += step) {
-    yield i;
-  }
-}
-
-export function toList<T>(iterable: Iterable<T>): T[] {
-  const lst: T[] = [];
-  for (const it of iterable) {
-    lst.push(it);
-  }
-
-  return lst;
-}
-
-export function times<R>(n: number, cb: (i: number) => R): R[] {
-  return toList(range(0, n)).map(cb);
-}
-
 export const $BlockArgs = z.object({
   numbers: z.array(z.coerce.number()),
   handles: z.array(ImportFileHandleSchema),
@@ -263,7 +244,7 @@ export const platforma = BlockModel.create("Heavy")
         }),
       },
     ];
-    for (let j = 1; j < 10; ++j) {
+    for (let j = 1; j < 5; ++j) {
       columns.push({
         id: `alphabeticalColumn${j}` as PObjectId,
         spec: {
@@ -273,7 +254,7 @@ export const platforma = BlockModel.create("Heavy")
           annotations: {
             [Annotation.Label]: `Alphabetical column ${j}`,
             [Annotation.Table.Visibility]: "optional",
-            [Annotation.Table.OrderPriority]: stringifyJson(10 - j),
+            [Annotation.Table.OrderPriority]: stringifyJson(5 - j),
           } satisfies Annotation,
           axesSpec: [
             {
@@ -286,10 +267,42 @@ export const platforma = BlockModel.create("Heavy")
           ],
         },
         data: times(rowCount, (i) => {
-          const v = i + 1;
+          const k = i + 1;
           return {
-            key: [v],
-            val: v.toString().repeat(j),
+            key: [k],
+            val: pseudoRandomString(k, k * 10),
+          };
+        }),
+      });
+    }
+    for (let j = 1; j < 5; ++j) {
+      columns.push({
+        id: `numericalColumn${j}` as PObjectId,
+        spec: {
+          kind: "PColumn",
+          valueType: ValueType.Double,
+          name: "value",
+          annotations: {
+            [Annotation.Label]: `Numerical column ${j}`,
+            [Annotation.Table.Visibility]: "optional",
+            [Annotation.Table.OrderPriority]: stringifyJson(5 - 1),
+          } satisfies Annotation,
+          axesSpec: [
+            {
+              type: ValueType.Int,
+              name: "linkedIndex",
+              annotations: {
+                [Annotation.Label]: "Linked int axis",
+              } satisfies Annotation,
+            },
+          ],
+        },
+        data: times(rowCount, (i) => {
+          const k = i + 1;
+          const v = Number(k.toString().repeat(j));
+          return {
+            key: [k],
+            val: j % 2 === 0 ? v * Math.pow(2, i / 10) : v / Math.pow(2, i / 10),
           };
         }),
       });
@@ -368,3 +381,39 @@ export const platforma = BlockModel.create("Heavy")
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;
+
+function mulberry32(seed: number) {
+  return () => {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+function pseudoRandomString(seed: number, length: number): string {
+  const rng = mulberry32(seed);
+  return Array.from({ length }, () => chars.charAt(Math.floor(rng() * chars.length))).join("");
+}
+
+export function* range(from: number, to: number, step = 1) {
+  for (let i = from; i < to; i += step) {
+    yield i;
+  }
+}
+
+export function toList<T>(iterable: Iterable<T>): T[] {
+  const lst: T[] = [];
+  for (const it of iterable) {
+    lst.push(it);
+  }
+
+  return lst;
+}
+
+export function times<R>(n: number, cb: (i: number) => R): R[] {
+  return toList(range(0, n)).map(cb);
+}

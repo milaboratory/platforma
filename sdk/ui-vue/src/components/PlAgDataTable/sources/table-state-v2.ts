@@ -21,12 +21,12 @@ import {
   getPTableColumnId,
   CanonicalizedJson,
 } from "@platforma-sdk/model";
-import { watch, type Ref, type WritableComputedRef } from "vue";
+import { computed, watch, type Ref, type WritableComputedRef } from "vue";
 import type { PlDataTableSettingsV2 } from "../types";
-import { isJsonEqual, randomInt } from "@milaboratories/helpers";
+import { debounce, isJsonEqual, randomInt } from "@milaboratories/helpers";
 import { computedCached } from "@milaboratories/uikit";
 import { isStringValueType, isNumericValueType } from "../../PlAdvancedFilter/utils";
-import { debounce, isNil } from "es-toolkit";
+import { isNil } from "es-toolkit";
 
 export function useTableState(
   tableStateDenormalized: Ref<PlDataTableStateV2>,
@@ -40,10 +40,10 @@ export function useTableState(
 } {
   const tableStateNormalized = computedCached<PlDataTableStateV2Normalized>({
     get: () => upgradePlDataTableStateV2(tableStateDenormalized.value),
-    set: (newState) => (tableStateDenormalized.value = newState),
+    set: debounce((newState) => (tableStateDenormalized.value = newState), 300),
   });
 
-  const tableState = computedCached<PlDataTableStateV2CacheEntryNullable>({
+  const tableState = computed<PlDataTableStateV2CacheEntryNullable>({
     get: () => {
       const defaultState = makeDefaultState();
 
@@ -57,7 +57,7 @@ export function useTableState(
 
       return cachedState;
     },
-    set: debounce((state) => {
+    set: (state) => {
       const newState: PlDataTableStateV2Normalized = {
         ...tableStateNormalized.value,
         pTableParams: createDefaultPTableParams(),
@@ -81,20 +81,10 @@ export function useTableState(
       if (!isJsonEqual(tableStateNormalized.value, newState)) {
         tableStateNormalized.value = newState;
       }
-    }, 300),
+    },
   });
 
-  watch(
-    () => tableState.value,
-    (value) => isJsonEqual(tableState.value, value) && (tableState.value = value),
-    { deep: true },
-  );
-  watch(
-    () => columns.value,
-    () => (tableState.value = { ...tableState.value }),
-  );
-
-  const gridState = computedCached<PlDataTableGridStateCore>({
+  const gridState = computed<PlDataTableGridStateCore>({
     get: () => tableState.value.gridState,
     set: (gridState) => {
       const oldState = tableState.value;
@@ -106,11 +96,8 @@ export function useTableState(
       }
     },
   });
-  watch(gridState, (value) => isJsonEqual(gridState.value, value) && (gridState.value = value), {
-    deep: true,
-  });
 
-  const sheetsState = computedCached<PlDataTableSheetState[]>({
+  const sheetsState = computed<PlDataTableSheetState[]>({
     get: () => tableState.value.sheetsState,
     set: (sheetsState) => {
       const oldState = tableState.value;
@@ -122,13 +109,8 @@ export function useTableState(
       }
     },
   });
-  watch(
-    sheetsState,
-    (value) => isJsonEqual(sheetsState.value, value) && (sheetsState.value = value),
-    { deep: true },
-  );
 
-  const filtersState = computedCached<PlDataTableFiltersWithMeta>({
+  const filtersState = computed<PlDataTableFiltersWithMeta>({
     get: () => {
       const raw = tableState.value.filtersState;
       const isCorrect =
@@ -152,12 +134,13 @@ export function useTableState(
     },
   });
   watch(
-    filtersState,
-    (value) => isJsonEqual(filtersState.value, value) && (filtersState.value = value),
+    () => filtersState.value,
+    // capture only mutations
+    (newValue, oldValue) => newValue === oldValue && (filtersState.value = newValue),
     { deep: true },
   );
 
-  const searchString = computedCached<string>({
+  const searchString = computed<string>({
     get: () => tableState.value.searchString ?? "",
     set: (searchString: string) => {
       const oldState = tableState.value;
