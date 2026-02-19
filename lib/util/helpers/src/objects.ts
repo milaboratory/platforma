@@ -1,4 +1,4 @@
-/* eslint-disable  @typescript-eslint/no-explicit-any */
+/**/
 
 import type { PartialBy, PlainObject } from "./types";
 import { isNil } from "./utils";
@@ -8,7 +8,7 @@ import { isNil } from "./utils";
  */
 export const isArray = Array.isArray;
 
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+//
 export function isNonPrimitive<V, T extends PlainObject<V> | V[]>(obj: T | unknown): obj is T {
   return obj !== null && typeof obj === "object";
 }
@@ -110,7 +110,6 @@ export function isJsonEqual(a: unknown, b: unknown): boolean {
     return Object.keys(a).every((k) => isJsonEqual(a[k], b[k]));
   }
 
-  /* eslint-disable @typescript-eslint/no-base-to-string */
   throw Error(`Cannot compare a ${String(a)} and b ${String(b)}`);
 }
 
@@ -162,7 +161,7 @@ export function shallowDiff<T>(to: T, from: T): Partial<T> {
 export function bindMethods<O extends Record<string, unknown>>(obj: O) {
   Object.entries(obj).forEach(([key, m]) => {
     if (m instanceof Function) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      //
       obj[key as keyof O] = m.bind(obj);
     }
   });

@@ -11,15 +11,14 @@ import { traverseFilterSpec } from "../traverse";
 /** Parses a CanonicalizedJson<PTableColumnId> string into a SpecQueryExpression reference. */
 function resolveColumnRef(columnStr: string): SpecQueryExpression {
   const parsed = JSON.parse(columnStr) as PTableColumnId;
-  if (parsed.type === "axis") {
-    return { type: "axisRef", value: parsed.id as SingleAxisSelector };
-  }
-  return { type: "columnRef", value: parsed.id };
+  return parsed.type === "axis"
+    ? { type: "axisRef", value: parsed.id as SingleAxisSelector }
+    : { type: "columnRef", value: parsed.id };
 }
 
 /** Converts a FilterSpec tree into a SpecQueryExpression. */
-export function filterSpecToSpecQueryExpr(
-  filter: FilterSpec<FilterSpecLeaf<string>>,
+export function filterSpecToSpecQueryExpr<Leaf extends FilterSpecLeaf<string>>(
+  filter: FilterSpec<Leaf>,
 ): SpecQueryExpression {
   return traverseFilterSpec(filter, {
     leaf: leafToSpecQueryExpr,
@@ -39,7 +38,9 @@ export function filterSpecToSpecQueryExpr(
   });
 }
 
-function leafToSpecQueryExpr(filter: FilterSpecLeaf<string>): SpecQueryExpression {
+function leafToSpecQueryExpr<Leaf extends FilterSpecLeaf<string>>(
+  filter: Leaf,
+): SpecQueryExpression {
   switch (filter.type) {
     case "patternEquals":
       return {

@@ -46,6 +46,30 @@ export type FilterSpec<
   CommonLeaf = CommonNode,
 > = FilterSpecNode<Leaf, CommonNode, CommonLeaf>;
 
+export type RootFilterSpec<
+  Leaf extends FilterSpecLeaf<unknown> = FilterSpecLeaf<SUniversalPColumnId>,
+  CommonNode = {},
+  CommonLeaf = CommonNode,
+> = Extract<FilterSpec<Leaf, CommonNode, CommonLeaf>, { type: "or" | "and" }>;
+
 export type FilterSpecType = Exclude<FilterSpec, { type: undefined }>["type"];
 
 export type FilterSpecOfType<T extends FilterSpecType> = Extract<FilterSpec, { type: T }>;
+
+export type InferFilterSpecLeaf<T extends FilterSpec<FilterSpecLeaf<unknown>>> =
+  T extends FilterSpecNode<infer Leaf, unknown, unknown> ? Leaf : never;
+
+export type InferFilterSpecLeafColumn<T extends FilterSpec<FilterSpecLeaf<unknown>>> =
+  T extends FilterSpecNode<infer Leaf, unknown, unknown>
+    ? Leaf extends { column: infer C }
+      ? C
+      : never
+    : never;
+
+export type InferFilterSpecCommonNode<
+  T extends FilterSpec<FilterSpecLeaf<unknown>, unknown, unknown>,
+> = T extends FilterSpecNode<unknown, infer CommonNode, unknown> ? CommonNode : never;
+
+export type InferFilterSpecCommonLeaf<
+  T extends FilterSpec<FilterSpecLeaf<unknown>, unknown, unknown>,
+> = T extends FilterSpecNode<unknown, unknown, infer CommonLeaf> ? CommonLeaf : never;

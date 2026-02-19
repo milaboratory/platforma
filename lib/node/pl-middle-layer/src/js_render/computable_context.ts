@@ -508,8 +508,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
             return (fn as any)(...args);
           } catch (e: unknown) {
             const newErr = parent.errorRepo.setAndRecreateForQuickJS(e);
-
-            // eslint-disable-next-line @typescript-eslint/only-throw-error
             throw vm.newError(newErr);
           }
         };
