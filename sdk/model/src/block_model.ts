@@ -73,14 +73,6 @@ interface BlockModelV3Config<
   plugins: Plugins;
 }
 
-/** Options for creating a BlockModelV3 */
-export interface BlockModelV3Options<Data extends Record<string, unknown>> {
-  /** The data model that defines initial data and migrations */
-  dataModel: DataModel<Data>;
-  /** Rendering mode for the block (default: 'Heavy') */
-  renderingMode?: BlockRenderingMode;
-}
-
 /** Main entry point that each block should use in it's "config" module. Don't forget
  * to call {@link done()} at the end of configuration. Value returned by this builder must be
  * exported as constant with name "platforma" from the "config" module.
@@ -104,27 +96,25 @@ export class BlockModelV3<
   };
 
   /**
-   * Creates a new BlockModelV3 builder with the specified data model and options.
+   * Creates a new BlockModelV3 builder with the specified data model.
    *
    * @example
    * const dataModel = new DataModelBuilder()
    *   .from<BlockData>(DATA_MODEL_DEFAULT_VERSION)
    *   .init(() => ({ numbers: [], labels: [] }));
    *
-   * BlockModelV3.create({ dataModel })
+   * BlockModelV3.create(dataModel)
    *   .args((data) => ({ numbers: data.numbers }))
    *   .sections(() => [{ type: 'link', href: '/', label: 'Main' }])
    *   .done();
    *
-   * @param options Configuration options including required data model
+   * @param dataModel The data model that defines initial data and migrations
    */
   public static create<Data extends Record<string, unknown>>(
-    options: BlockModelV3Options<Data>,
+    dataModel: DataModel<Data>,
   ): BlockModelV3<NoOb, {}, Data> {
-    const { dataModel, renderingMode = "Heavy" } = options;
-
     return new BlockModelV3<NoOb, {}, Data>({
-      renderingMode,
+      renderingMode: "Heavy",
       dataModel,
       outputs: {},
       // Register default sections callback (returns empty array)

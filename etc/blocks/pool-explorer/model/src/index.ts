@@ -16,7 +16,7 @@ const dataModel = new DataModelBuilder()
   .from<BlockData>(DATA_MODEL_DEFAULT_VERSION)
   .init(() => ({ titleArgs: "The title" }));
 
-export const platforma = BlockModelV3.create({ dataModel, renderingMode: "Heavy" })
+export const platforma = BlockModelV3.create(dataModel)
 
   .args<BlockArgs>((data) => {
     return { titleArgs: data.titleArgs };

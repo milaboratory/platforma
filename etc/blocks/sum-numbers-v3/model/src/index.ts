@@ -19,7 +19,7 @@ const dataModel = new DataModelBuilder()
   .from<BlockData>(DATA_MODEL_DEFAULT_VERSION)
   .init(() => ({ sources: undefined }));
 
-export const platforma = BlockModelV3.create({ dataModel, renderingMode: "Heavy" })
+export const platforma = BlockModelV3.create(dataModel)
 
   .args<BlockData>((data) => {
     if (data.sources === undefined || data.sources.length === 0) {

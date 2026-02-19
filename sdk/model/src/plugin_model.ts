@@ -81,14 +81,14 @@ export class PluginModel<Data = unknown, Params = undefined, Outputs = {}> {
    * @example
    * const dataModelChain = new DataModelBuilder().from<MyData>(DATA_MODEL_DEFAULT_VERSION);
    *
-   * const myPlugin = PluginModel.create<MyData, MyParams, MyConfig>({
+   * const myPlugin = PluginModel.define<MyData, MyParams, MyConfig>({
    *   name: 'myPlugin' as PluginName,
    *   dataModelFactory: (cfg) => dataModelChain.init(() => ({ value: cfg.defaultValue })),
    * })
    *   .output('computed', (ctx) => ctx.data.value * ctx.params.multiplier)
    *   .build();
    */
-  static create<Data, Params = undefined, Config = undefined>(options: {
+  static define<Data, Params = undefined, Config = undefined>(options: {
     name: PluginName;
     dataModelFactory: (config?: Config) => DataModel<Data>;
   }): PluginModelBuilder<Data, Params, Config> {
@@ -134,7 +134,7 @@ class PluginModelFactory<Data, Params, Config, Outputs> {
 /**
  * Builder for creating PluginType with type-safe output definitions.
  *
- * Use `PluginModel.create()` to create a builder instance.
+ * Use `PluginModel.define()` to create a builder instance.
  *
  * @typeParam Data - Plugin's persistent data type
  * @typeParam Params - Params derived from block's RenderCtx (optional)
@@ -144,7 +144,7 @@ class PluginModelFactory<Data, Params, Config, Outputs> {
  * @example
  * const dataModelChain = new DataModelBuilder().from<TableData>(DATA_MODEL_DEFAULT_VERSION);
  *
- * const dataTable = PluginModel.create<TableData, TableParams, TableConfig>({
+ * const dataTable = PluginModel.define<TableData, TableParams, TableConfig>({
  *     name: 'dataTable' as PluginName,
  *     dataModelFactory: (cfg) => {
  *       return dataModelChain.init(() => ({ state: createInitialState(cfg.ops) }));

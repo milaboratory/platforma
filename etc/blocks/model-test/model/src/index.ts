@@ -45,7 +45,7 @@ type CounterPluginParams = {
 
 const counterDataModelChain = new DataModelBuilder().from<CounterPluginData>("v1");
 
-const counterPlugin = PluginModel.create<
+const counterPlugin = PluginModel.define<
   CounterPluginData,
   CounterPluginParams,
   { defaultCount: number }
@@ -74,10 +74,7 @@ const counterPlugin = PluginModel.create<
 // Block Model with Plugin
 // =============================================================================
 
-export const platforma = BlockModelV3.create({
-  dataModel: blockDataModel,
-  renderingMode: "Heavy",
-})
+export const platforma = BlockModelV3.create(blockDataModel)
   .args<BlockArgs>((data) => data)
 
   .plugin("counter", counterPlugin.create({ defaultCount: 10 }), {

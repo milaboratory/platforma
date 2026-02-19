@@ -39,7 +39,7 @@ const dataModel = new DataModelBuilder()
   })
   .init(() => ({ numbers: [], labels: [], description: "" }));
 
-export const platforma = BlockModelV3.create({ dataModel, renderingMode: "Heavy" })
+export const platforma = BlockModelV3.create(dataModel)
 
   .args((data) => {
     if (data.numbers.length === 0) {
