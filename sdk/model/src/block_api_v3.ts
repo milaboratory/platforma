@@ -12,16 +12,16 @@ import type { MutateStoragePayload } from "./block_storage";
 
 /** Defines methods to read and write current block data. */
 export interface BlockApiV3<
+  _Data = unknown,
   _Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  _Data = unknown,
   Href extends `/${string}` = `/${string}`,
 > {
   /**
    * Use this method to retrieve block state during UI initialization. Then use
    * {@link onStateUpdates} method to subscribe for updates.
    * */
-  loadBlockState(): Promise<ResultOrError<ValueWithUTag<BlockStateV3<Outputs, _Data, Href>>>>;
+  loadBlockState(): Promise<ResultOrError<ValueWithUTag<BlockStateV3<_Data, Outputs, Href>>>>;
 
   /**
    * Get all json patches (rfc6902) that were applied to the block state.

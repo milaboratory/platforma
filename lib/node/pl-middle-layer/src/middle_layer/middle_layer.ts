@@ -24,7 +24,7 @@ import type { QuickJSWASMModule } from "quickjs-emscripten";
 import { getQuickJS } from "quickjs-emscripten";
 import type { MiddleLayerDriverKit } from "./driver_kit";
 import { initDriverKit } from "./driver_kit";
-import type { DriverKit, SupportedRequirement } from "@platforma-sdk/model";
+import type { BlockCodeFeatureFlags, DriverKit, SupportedRequirement } from "@platforma-sdk/model";
 import { RuntimeCapabilities } from "@platforma-sdk/model";
 import type { DownloadUrlDriver } from "@milaboratories/pl-drivers";
 import { V2RegistryProvider } from "../block_registry";
@@ -97,6 +97,11 @@ export class MiddleLayer {
     value: number | boolean = true,
   ): void {
     this.env.runtimeCapabilities.addSupportedRequirement(requirement, value);
+  }
+
+  /** Checks if the given block feature flags are compatible with the runtime capabilities. */
+  public checkBlockCompatibility(featureFlags: BlockCodeFeatureFlags | undefined): boolean {
+    return this.env.runtimeCapabilities.checkCompatibility(featureFlags);
   }
 
   /** Returns extended API driver kit used internally by middle layer. */
@@ -282,7 +287,7 @@ export class MiddleLayer {
     // add runtime capabilities of model here
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 1);
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 2);
-    runtimeCapabilities.addSupportedRequirement("requiresCreatePTableV2", true);
+    runtimeCapabilities.addSupportedRequirement("requiresCreatePTable", 2);
     // runtime capabilities of the desktop are to be added by the desktop app / test framework
 
     const env: MiddleLayerEnvironment = {

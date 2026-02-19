@@ -34,7 +34,7 @@ import type {
 } from "@milaboratories/pl-model-middle-layer";
 import { activeConfigs } from "./active_cfg";
 import { NavigationStates } from "./navigation_states";
-import { extractConfig } from "@platforma-sdk/model";
+import { extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
 import fs from "node:fs/promises";
 import canonicalize from "canonicalize";
 import type { ProjectOverviewLight } from "./project_overview_light";
@@ -187,9 +187,11 @@ export class Project {
     const blockCfgContainer = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
     const blockCfg = extractConfig(blockCfgContainer); // full content of this var should never be persisted
 
+    this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
+
     // Build NewBlockSpec based on model API version
     const newBlockSpec =
-      blockCfg.modelAPIVersion === 2
+      blockCfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION
         ? { storageMode: "fromModel" as const, blockPack: preparedBp }
         : {
             storageMode: "legacy" as const,
@@ -276,15 +278,18 @@ export class Project {
     const blockCfg = extractConfig(
       await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec),
     );
+
+    this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
+
     // resetState signals to mutator to reset storage
     // For v2+ blocks: mutator gets initial storage directly via getInitialStorageInVM
     // For v1 blocks: we pass the legacy state format
     const resetState = resetArgs
       ? {
           state:
-            blockCfg.modelAPIVersion === 2
-              ? {}
-              : { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState },
+            blockCfg.modelAPIVersion === 1
+              ? { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState }
+              : {},
         }
       : undefined;
     await withProjectAuthored(
@@ -459,7 +464,7 @@ export class Project {
   /**
    * Sets navigation state.
    * */
-  // eslint-disable-next-line @typescript-eslint/require-await
+  //
   public async setNavigationState(blockId: string, state: NavigationState): Promise<void> {
     this.navigationStates.setState(blockId, state);
   }
@@ -545,7 +550,7 @@ export class Project {
         this.rid,
         author,
         (prj) => {
-          if (config.modelAPIVersion === 2) {
+          if (config.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION) {
             // V2+: Reset to initial storage via VM
             prj.resetToInitialStorage(blockId);
           } else {

@@ -1,12 +1,17 @@
 import type {
   ResultOrError,
   BlockConfig,
+  BlockStorage,
   PlRef,
-  ConfigRenderLambda,
   StorageDebugView,
 } from "@platforma-sdk/model";
 import type { StringifiedJson } from "@milaboratories/pl-model-common";
-import { extractCodeWithInfo, ensureError } from "@platforma-sdk/model";
+import {
+  extractCodeWithInfo,
+  ensureError,
+  BlockStorageFacadeCallbacks,
+  BLOCK_STORAGE_FACADE_VERSION,
+} from "@platforma-sdk/model";
 import { LRUCache } from "lru-cache";
 import type { QuickJSWASMModule } from "quickjs-emscripten";
 import { executeSingleLambda } from "../js_render";
@@ -26,36 +31,11 @@ type EnrichmentTargetsValue = {
  * Returned by migrateStorageInVM().
  *
  * - Error result: { error: string } - serious failure (no context, etc.)
- * - Success result: { newStorageJson: string, info: string, warn?: string } - migration succeeded or reset to initial
+ * - Success result: { newStorageJson: StringifiedJson<BlockStorage>, info: string } - migration succeeded
  */
 export type MigrationResult =
   | { error: string }
-  | { error?: undefined; newStorageJson: string; info: string; warn?: string };
-
-// Internal lambda handles for storage operations (registered by SDK's block_storage_vm.ts)
-// All callbacks are prefixed with `__pl_` to indicate internal SDK use
-const STORAGE_APPLY_UPDATE_HANDLE: ConfigRenderLambda = {
-  __renderLambda: true,
-  handle: "__pl_storage_applyUpdate",
-};
-const STORAGE_DEBUG_VIEW_HANDLE: ConfigRenderLambda = {
-  __renderLambda: true,
-  handle: "__pl_storage_debugView",
-};
-const STORAGE_MIGRATE_HANDLE: ConfigRenderLambda = {
-  __renderLambda: true,
-  handle: "__pl_storage_migrate",
-};
-const ARGS_DERIVE_HANDLE: ConfigRenderLambda = { __renderLambda: true, handle: "__pl_args_derive" };
-const PRERUN_ARGS_DERIVE_HANDLE: ConfigRenderLambda = {
-  __renderLambda: true,
-  handle: "__pl_prerunArgs_derive",
-};
-// Registered by DataModel.registerCallbacks()
-const INITIAL_STORAGE_HANDLE: ConfigRenderLambda = {
-  __renderLambda: true,
-  handle: "__pl_storage_initial",
-};
+  | { error?: undefined; newStorageJson: StringifiedJson<BlockStorage>; info: string };
 
 /**
  * Result of args derivation from storage.
@@ -96,7 +76,7 @@ export class ProjectHelper {
     blockConfig: BlockConfig,
     storageJson: string,
   ): ResultOrError<unknown> {
-    if (blockConfig.modelAPIVersion !== 2) {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
       return {
         error: new Error("deriveArgsFromStorage is only supported for model API version 2"),
       };
@@ -105,7 +85,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        ARGS_DERIVE_HANDLE,
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.ArgsDerive],
         extractCodeWithInfo(blockConfig),
         storageJson,
       ) as ArgsDeriveResult;
@@ -128,14 +108,14 @@ export class ProjectHelper {
    * @returns The derived prerunArgs, or undefined if derivation fails
    */
   public derivePrerunArgsFromStorage(blockConfig: BlockConfig, storageJson: string): unknown {
-    if (blockConfig.modelAPIVersion !== 2) {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
       throw new Error("derivePrerunArgsFromStorage is only supported for model API version 2");
     }
 
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        PRERUN_ARGS_DERIVE_HANDLE,
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.PrerunArgsDerive],
         extractCodeWithInfo(blockConfig),
         storageJson,
       ) as ArgsDeriveResult;
@@ -190,10 +170,14 @@ export class ProjectHelper {
    * @throws Error if storage creation fails
    */
   public getInitialStorageInVM(blockConfig: BlockConfig): string {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
+      throw new Error("getInitialStorageInVM is only supported for model API version 2");
+    }
+
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        INITIAL_STORAGE_HANDLE,
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageInitial],
         extractCodeWithInfo(blockConfig),
       ) as string;
       return result;
@@ -221,10 +205,14 @@ export class ProjectHelper {
     currentStorageJson: string,
     payload: { operation: string; value: unknown },
   ): string {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
+      throw new Error("applyStorageUpdateInVM is only supported for model API version 2");
+    }
+
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        STORAGE_APPLY_UPDATE_HANDLE,
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageApplyUpdate],
         extractCodeWithInfo(blockConfig),
         currentStorageJson,
         payload,
@@ -248,10 +236,14 @@ export class ProjectHelper {
     blockConfig: BlockConfig,
     rawStorageJson: string | undefined,
   ): StringifiedJson<StorageDebugView> | undefined {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
+      throw new Error("getStorageDebugViewInVM is only supported for model API version 2");
+    }
+
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        STORAGE_DEBUG_VIEW_HANDLE,
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageDebugView],
         extractCodeWithInfo(blockConfig),
         rawStorageJson,
       ) as StringifiedJson<StorageDebugView>;
@@ -285,10 +277,14 @@ export class ProjectHelper {
     blockConfig: BlockConfig,
     currentStorageJson: string | undefined,
   ): MigrationResult {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
+      return { error: "migrateStorageInVM is only supported for model API version 2" };
+    }
+
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        STORAGE_MIGRATE_HANDLE,
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageMigrate],
         extractCodeWithInfo(blockConfig),
         currentStorageJson,
       ) as MigrationResult;

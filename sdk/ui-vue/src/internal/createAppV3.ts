@@ -7,18 +7,32 @@ import type {
   PlatformaV3,
   ValueWithUTag,
   AuthorMarker,
+  PlatformaExtended,
 } from "@platforma-sdk/model";
-import { hasAbortError, unwrapResult, deriveDataFromStorage } from "@platforma-sdk/model";
+import {
+  hasAbortError,
+  unwrapResult,
+  deriveDataFromStorage,
+  getPluginData,
+  normalizeBlockStorage,
+} from "@platforma-sdk/model";
 import type { Ref } from "vue";
 import { reactive, computed, ref } from "vue";
 import type { OutputValues, OutputErrors, AppSettings } from "../types";
 import { parseQuery } from "../urls";
-import { MultiError } from "../utils";
+import { ensureOutputHasStableFlag, MultiError } from "../utils";
 import { applyPatch } from "fast-json-patch";
 import { UpdateSerializer } from "./UpdateSerializer";
 import { watchIgnorable } from "@vueuse/core";
 
 export const patchPoolingDelay = 150;
+
+/** Internal interface for plugin data access — injected separately from the app. */
+export interface PluginDataAccess {
+  readonly pluginDataMap: Record<string, unknown>;
+  setPluginData(pluginId: string, value: unknown): Promise<boolean>;
+  initPluginDataSlot(pluginId: string): void;
+}
 
 export const createNextAuthorMarker = (marker: AuthorMarker | undefined): AuthorMarker => ({
   authorId: marker?.authorId ?? uniqueId(),
@@ -48,13 +62,13 @@ const stringifyForDebug = (v: unknown) => {
  * @returns A reactive application object with methods, getters, and state.
  */
 export function createAppV3<
+  Data = unknown,
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  Data = unknown,
   Href extends `/${string}` = `/${string}`,
 >(
-  state: ValueWithUTag<BlockStateV3<Outputs, Data, Href>>,
-  platforma: PlatformaV3<Args, Outputs, Data, Href>,
+  state: ValueWithUTag<BlockStateV3<Data, Outputs, Href>>,
+  platforma: PlatformaExtended<PlatformaV3<Data, Args, Outputs, Href>>,
   settings: AppSettings,
 ) {
   const debug = (msg: string, ...rest: unknown[]) => {
@@ -98,7 +112,19 @@ export function createAppV3<
   const debounceSpan = settings.debounceSpan ?? 200;
 
   const setDataQueue = new UpdateSerializer({ debounceSpan });
+  const pluginDataQueues = new Map<string, UpdateSerializer>();
+  const getPluginDataQueue = (pluginId: string): UpdateSerializer => {
+    let queue = pluginDataQueues.get(pluginId);
+    if (!queue) {
+      queue = new UpdateSerializer({ debounceSpan });
+      pluginDataQueues.set(pluginId, queue);
+    }
+    return queue;
+  };
   const setNavigationStateQueue = new UpdateSerializer({ debounceSpan });
+
+  /** Reactive map of plugin data keyed by pluginId. Optimistic state for plugin components. */
+  const pluginDataMap = reactive<Record<string, unknown>>({});
   /**
    * Reactive snapshot of the application state, including args, outputs, UI state, and navigation state.
    */
@@ -113,7 +139,20 @@ export function createAppV3<
   }>;
 
   const updateData = async (value: Data) => {
-    return platforma.mutateStorage({ operation: "update-data", value }, nextAuthorMarker());
+    return platforma.mutateStorage({ operation: "update-block-data", value }, nextAuthorMarker());
+  };
+
+  const updatePluginData = async (pluginId: string, value: unknown) => {
+    return platforma.mutateStorage(
+      { operation: "update-plugin-data", pluginId, value },
+      nextAuthorMarker(),
+    );
+  };
+
+  /** Derives plugin data for a given pluginId from the current snapshot. */
+  const derivePluginDataFromSnapshot = (pluginId: string): unknown => {
+    const storage = normalizeBlockStorage(snapshot.value.blockStorage);
+    return getPluginData(storage, pluginId);
   };
 
   const setNavigationState = async (state: NavigationState<Href>) => {
@@ -122,7 +161,15 @@ export function createAppV3<
 
   const outputs = computed<OutputValues<Outputs>>(() => {
     const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(
-      ([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined],
+      ([k, outputWithStatus]) =>
+        platforma.blockModelInfo.outputs[k]?.withStatus
+          ? [k, ensureOutputHasStableFlag(outputWithStatus)]
+          : [
+              k,
+              outputWithStatus.ok && outputWithStatus.value !== undefined
+                ? outputWithStatus.value
+                : undefined,
+            ],
     );
     return Object.fromEntries(entries);
   });
@@ -205,6 +252,10 @@ export function createAppV3<
           ignoreUpdates(() => {
             snapshot.value = applyPatch(snapshot.value, patches.value, false, false).newDocument;
             updateAppModel({ data: deriveDataFromStorage<Data>(snapshot.value.blockStorage) });
+            // Reconcile plugin data from external source
+            for (const pluginId of Object.keys(pluginDataMap)) {
+              pluginDataMap[pluginId] = derivePluginDataFromSnapshot(pluginId);
+            }
             data.isExternalSnapshot = isAuthorChanged;
           });
         } else {
@@ -261,7 +312,28 @@ export function createAppV3<
     },
     async allSettled() {
       await delay(0);
-      return setDataQueue.allSettled();
+      const allQueues = [
+        setDataQueue.allSettled(),
+        ...Array.from(pluginDataQueues.values()).map((q) => q.allSettled()),
+      ];
+      await Promise.all(allQueues);
+    },
+  };
+
+  /** Plugin internals — provided via separate injection key, not exposed on useApp(). */
+  const pluginAccess: PluginDataAccess = {
+    pluginDataMap,
+    setPluginData(pluginId: string, value: unknown): Promise<boolean> {
+      pluginDataMap[pluginId] = value;
+      debug("setPluginData", pluginId, value);
+      return getPluginDataQueue(pluginId).run(() =>
+        updatePluginData(pluginId, value).then(unwrapResult),
+      );
+    },
+    initPluginDataSlot(pluginId: string): void {
+      if (!(pluginId in pluginDataMap)) {
+        pluginDataMap[pluginId] = derivePluginDataFromSnapshot(pluginId);
+      }
     },
   };
 
@@ -275,19 +347,19 @@ export function createAppV3<
     ),
   };
 
-  const app = reactive(Object.assign(appModel, methods, getters));
+  const app = Object.assign(reactive(Object.assign(appModel, getters)), methods);
 
   if (settings.debug) {
     // @ts-expect-error (to inspect in console in debug mode)
     globalThis.__block_app__ = app;
   }
 
-  return app;
+  return { app, pluginAccess };
 }
 
 export type BaseAppV3<
+  Data = unknown,
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  Data = unknown,
   Href extends `/${string}` = `/${string}`,
-> = ReturnType<typeof createAppV3<Args, Outputs, Data, Href>>;
+> = ReturnType<typeof createAppV3<Data, Args, Outputs, Href>>["app"];

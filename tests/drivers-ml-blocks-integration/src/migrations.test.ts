@@ -501,7 +501,7 @@ test("v3: fresh block with correct version survives block pack update", async ({
 
     // Set some data - this will preserve version 1
     await prj.mutateBlockStorage(block1Id, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: {
         numbers: [1, 2, 3],
         labels: ["my-label"],

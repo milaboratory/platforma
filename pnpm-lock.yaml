@@ -1807,7 +1807,7 @@ importers:
         version: 1.1.7(encoding@0.1.13)
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
-        version: 1.1.7(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.24.10)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+        version: 1.1.7(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.24.11)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
         version: link:../../model/middle-layer
@@ -4760,8 +4760,8 @@ packages:
   '@milaboratories/pl-error-like@1.12.8':
     resolution: {integrity: sha512-j8evT0YYuXQndVcsk8bOGfH9qpXRefFiO7uCdptG9Lz0QTv4e6OOxNUJPe9+TSp/72PXUsCrYGHUeTqtvUb0lA==}
 
-  '@milaboratories/pl-model-common@1.24.10':
-    resolution: {integrity: sha512-eK2EJjX+Rl1TSSpQJhh7r3POe0Jnm6em+zrR9RS/BZINpT0BmUWPJN7PAmiKYgdeqxP4rsrfL/eZGd+fJYGORg==}
+  '@milaboratories/pl-model-common@1.24.11':
+    resolution: {integrity: sha512-ldT4Xxn7j7l8ZvKEyI/s125lZXts7cEnuYIdVvlLo9uVFz+a8bGXK+cMFZls3QyqBW1RqOPwK3eIltqSRM4NZQ==}
 
   '@milaboratories/pl-model-common@1.24.7':
     resolution: {integrity: sha512-xwuWCGxpxExvxNjtHhAm8zI4rSzhO0sLl7APQGD08O5MEz1oOZThjV71NEKt6ikLiVnaBmB0iMXLqJl5i9fIww==}
@@ -10850,10 +10850,10 @@ snapshots:
       commander: 14.0.2
       selfsigned: 5.5.0
 
-  '@milaboratories/pframes-rs-wasm@1.1.7(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.24.10)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
+  '@milaboratories/pframes-rs-wasm@1.1.7(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.24.11)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
     dependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
-      '@milaboratories/pl-model-common': 1.24.10
+      '@milaboratories/pl-model-common': 1.24.11
       '@milaboratories/pl-model-middle-layer': link:lib/model/middle-layer
 
   '@milaboratories/pl-error-like@1.12.8':
@@ -10861,7 +10861,7 @@ snapshots:
       json-stringify-safe: 5.0.1
       zod: 3.23.8
 
-  '@milaboratories/pl-model-common@1.24.10':
+  '@milaboratories/pl-model-common@1.24.11':
     dependencies:
       '@milaboratories/pl-error-like': 1.12.8
       canonicalize: 2.1.0
