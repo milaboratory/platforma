@@ -288,8 +288,6 @@ export function createPlDataTableV2<A, U>(
     sourceId: tableStateNormalized.pTableParams.sourceId,
     fullTableHandle: fullHandle,
     visibleTableHandle: visibleHandle,
-    hiddenColumns: [...hiddenColumns],
-    collectFilterSpecColumns: filters && collectFilterSpecColumns(filters),
   } as PlDataTableModel;
 }
 
