@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.13.5
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+
 ## 1.13.4
 
 ### Patch Changes

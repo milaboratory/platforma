@@ -1,5 +1,14 @@
 # @milaboratories/pf-driver
 
+## 1.0.49
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+- Updated dependencies [cb28fde]
+  - @platforma-sdk/model@1.54.13
+  - @milaboratories/pl-model-middle-layer@1.11.13
+
 ## 1.0.48
 
 ### Patch Changes

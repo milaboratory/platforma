@@ -1,5 +1,15 @@
 # @platforma-sdk/model
 
+## 1.54.13
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+- Updated dependencies [cb28fde]
+  - @milaboratories/pl-model-common@1.24.11
+  - @milaboratories/helpers@1.13.5
+  - @milaboratories/ptabler-expression-js@1.1.21
+
 ## 1.54.10
 
 ### Patch Changes

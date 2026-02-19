@@ -1,5 +1,24 @@
 # @milaboratories/pl-middle-layer
 
+## 1.46.34
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+- Updated dependencies [cb28fde]
+  - @milaboratories/pf-driver@1.0.49
+  - @milaboratories/pl-model-common@1.24.11
+  - @platforma-sdk/model@1.54.13
+  - @milaboratories/pl-model-middle-layer@1.11.13
+  - @milaboratories/pl-client@2.17.5
+  - @milaboratories/pl-deployments@2.15.15
+  - @milaboratories/pl-drivers@1.11.55
+  - @platforma-sdk/block-tools@2.6.53
+  - @milaboratories/pl-model-backend@1.1.52
+  - @milaboratories/pl-errors@1.1.67
+  - @milaboratories/pl-tree@1.8.43
+  - @platforma-sdk/workflow-tengo@5.8.3
+
 ## 1.46.33
 
 ### Patch Changes

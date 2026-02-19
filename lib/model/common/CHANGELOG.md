@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.24.11
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+
 ## 1.24.10
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.54.13
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+- Updated dependencies [cb28fde]
+  - @milaboratories/uikit@2.10.25
+  - @platforma-sdk/model@1.54.13
+
 ## 1.54.12
 
 ### Patch Changes
