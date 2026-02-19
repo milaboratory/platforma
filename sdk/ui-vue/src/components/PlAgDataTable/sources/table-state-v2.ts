@@ -21,12 +21,12 @@ import {
   getPTableColumnId,
   CanonicalizedJson,
 } from "@platforma-sdk/model";
-import { computed, watch, type Ref, type WritableComputedRef } from "vue";
+import { watch, type Ref, type WritableComputedRef } from "vue";
 import type { PlDataTableSettingsV2 } from "../types";
 import { isJsonEqual, randomInt } from "@milaboratories/helpers";
 import { computedCached } from "@milaboratories/uikit";
 import { isStringValueType, isNumericValueType } from "../../PlAdvancedFilter/utils";
-import { isNil } from "es-toolkit";
+import { debounce, isNil } from "es-toolkit";
 
 export function useTableState(
   tableStateDenormalized: Ref<PlDataTableStateV2>,
@@ -43,7 +43,7 @@ export function useTableState(
     set: (newState) => (tableStateDenormalized.value = newState),
   });
 
-  const tableState = computed<PlDataTableStateV2CacheEntryNullable>({
+  const tableState = computedCached<PlDataTableStateV2CacheEntryNullable>({
     get: () => {
       const defaultState = makeDefaultState();
 
@@ -57,7 +57,7 @@ export function useTableState(
 
       return cachedState;
     },
-    set: (state) => {
+    set: debounce((state) => {
       const newState: PlDataTableStateV2Normalized = {
         ...tableStateNormalized.value,
         pTableParams: createDefaultPTableParams(),
@@ -81,7 +81,7 @@ export function useTableState(
       if (!isJsonEqual(tableStateNormalized.value, newState)) {
         tableStateNormalized.value = newState;
       }
-    },
+    }, 300),
   });
 
   watch(
@@ -94,7 +94,7 @@ export function useTableState(
     () => (tableState.value = { ...tableState.value }),
   );
 
-  const gridState = computed<PlDataTableGridStateCore>({
+  const gridState = computedCached<PlDataTableGridStateCore>({
     get: () => tableState.value.gridState,
     set: (gridState) => {
       const oldState = tableState.value;
@@ -110,7 +110,7 @@ export function useTableState(
     deep: true,
   });
 
-  const sheetsState = computed<PlDataTableSheetState[]>({
+  const sheetsState = computedCached<PlDataTableSheetState[]>({
     get: () => tableState.value.sheetsState,
     set: (sheetsState) => {
       const oldState = tableState.value;
@@ -128,7 +128,7 @@ export function useTableState(
     { deep: true },
   );
 
-  const filtersState = computed<PlDataTableFiltersWithMeta>({
+  const filtersState = computedCached<PlDataTableFiltersWithMeta>({
     get: () => {
       const raw = tableState.value.filtersState;
       const isCorrect =
@@ -157,7 +157,7 @@ export function useTableState(
     { deep: true },
   );
 
-  const searchString = computed<string>({
+  const searchString = computedCached<string>({
     get: () => tableState.value.searchString ?? "",
     set: (searchString: string) => {
       const oldState = tableState.value;
