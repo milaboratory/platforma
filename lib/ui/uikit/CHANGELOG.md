@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.10.24
+
+### Patch Changes
+
+- d2e1b6b: fix overflow in PlElementList
+
 ## 2.10.23
 
 ### Patch Changes
