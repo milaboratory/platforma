@@ -35,6 +35,8 @@ export * from "./components/PlAdvancedFilter";
 
 export * from "./defineApp";
 
+export { usePluginData } from "./usePluginData";
+
 export * from "./createModel";
 
 export * from "./types";

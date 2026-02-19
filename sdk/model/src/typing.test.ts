@@ -6,7 +6,7 @@ import {
 } from "@milaboratories/pl-model-common";
 import { expect, test } from "vitest";
 import { DeriveHref, StdCtx } from "./bconfig";
-import { BlockModel } from "./builder";
+import { BlockModel } from "./block_model_legacy";
 import {
   Args,
   ConfigResult,

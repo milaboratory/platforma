@@ -1,5 +1,5 @@
 import type { Optional } from "utility-types";
-import type { Branded } from "../branding";
+import type { Branded } from "@milaboratories/pl-model-common";
 import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
 import type {
   ArchiveFormat,

@@ -1,5 +1,5 @@
 import type { InferHrefType, InferOutputsType } from "@platforma-sdk/model";
-import { BlockModelV3, DataModelBuilder, defineDataVersions } from "@platforma-sdk/model";
+import { BlockModelV3, DataModelBuilder } from "@platforma-sdk/model";
 import { z } from "zod";
 
 // Data version 1: just numbers
@@ -22,36 +22,24 @@ export const $BlockData = z.object({
 
 export type BlockData = z.infer<typeof $BlockData>;
 
-const Version = defineDataVersions({
-  Initial: "v1",
-  AddedLabels: "v2",
-  AddedDescription: "v3",
-});
-
-type VersionedData = {
-  [Version.Initial]: BlockDataV1;
-  [Version.AddedLabels]: BlockDataV2;
-  [Version.AddedDescription]: BlockData;
-};
-
 // Define data model with migrations from v1 to current
-const dataModel = new DataModelBuilder<VersionedData>()
-  .from(Version.Initial)
+const dataModel = new DataModelBuilder()
+  .from<BlockDataV1>("v1")
   // Migration v1 → v2: sort numbers and add labels
   // Throws if numbers contain 666 (for testing migration failure recovery)
-  .migrate(Version.AddedLabels, (data) => {
+  .migrate<BlockDataV2>("v2", (data) => {
     if (data.numbers.includes(666)) {
       throw new Error("Migration failed: number 666 is forbidden!");
     }
-    return { numbers: data.numbers.toSorted(), labels: ["migrated-from-v1"] } satisfies BlockDataV2;
+    return { numbers: data.numbers.toSorted(), labels: ["migrated-from-v1"] };
   })
   // Migration v2 → v3: add description
-  .migrate(Version.AddedDescription, (data) => {
+  .migrate<BlockData>("v3", (data) => {
     return { ...data, description: `Migrated: ${data.labels.join(", ")}` };
   })
   .init(() => ({ numbers: [], labels: [], description: "" }));
 
-export const platforma = BlockModelV3.create({ dataModel, renderingMode: "Heavy" })
+export const platforma = BlockModelV3.create(dataModel)
 
   .args((data) => {
     if (data.numbers.length === 0) {

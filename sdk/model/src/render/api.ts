@@ -533,40 +533,40 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
-export abstract class RenderCtxBase<Args, Data> {
+export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
   protected readonly ctx: GlobalCfgRenderCtx;
 
   constructor() {
     this.ctx = getCfgRenderCtx();
   }
 
-  private _dataCache?: { v: Data };
+  private dataCache?: { v: Data };
 
   public get data(): Data {
-    if (this._dataCache === undefined) {
+    if (this.dataCache === undefined) {
       const raw = this.ctx.data;
       const value = typeof raw === "function" ? raw() : raw;
-      this._dataCache = { v: value ? JSON.parse(value) : ({} as Data) };
+      this.dataCache = { v: value ? JSON.parse(value) : ({} as Data) };
     }
-    return this._dataCache.v;
+    return this.dataCache.v;
   }
 
   // lazy rendering because this feature is rarely used
-  private _activeArgsCache?: { v?: Args };
+  private activeArgsCache?: { v?: Args };
 
   /**
    * Returns args snapshot the block was executed for (i.e. when "Run" button was pressed).
    * Returns undefined, if block was never executed or stopped mid-way execution, so that the result was cleared.
    * */
   public get activeArgs(): Args | undefined {
-    if (this._activeArgsCache === undefined) {
+    if (this.activeArgsCache === undefined) {
       const raw = this.ctx.activeArgs;
       const value = typeof raw === "function" ? raw() : raw;
-      this._activeArgsCache = {
+      this.activeArgsCache = {
         v: value ? JSON.parse(value) : undefined,
       };
     }
-    return this._activeArgsCache.v;
+    return this.activeArgsCache.v;
   }
 
   // /** Can be used to determine features provided by the desktop instance. */
@@ -711,41 +711,43 @@ export abstract class RenderCtxBase<Args, Data> {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) for v3+ blocks */
-export class RenderCtx<Args, Data> extends RenderCtxBase<Args, Data> {
-  private _argsCache?: { v: Args | undefined };
+export class RenderCtx<Args = unknown, Data = unknown> extends RenderCtxBase<Args, Data> {
+  private argsCache?: { v: Args | undefined };
   public get args(): Args | undefined {
-    if (this._argsCache === undefined) {
+    if (this.argsCache === undefined) {
       const raw = this.ctx.args;
       const value = typeof raw === "function" ? raw() : raw;
-      // args can be undefined when derivation fails (e.g., validation error in args())
-      this._argsCache = { v: value === undefined ? undefined : JSON.parse(value) };
+      this.argsCache = { v: value === undefined ? undefined : JSON.parse(value) };
     }
-    return this._argsCache.v;
+    return this.argsCache.v;
   }
 }
 
 /** Render context for legacy v1/v2 blocks - provides backward compatibility */
-export class RenderCtxLegacy<Args, UiState> extends RenderCtxBase<Args, UiState> {
-  private _argsCache?: { v: Args };
+export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCtxBase<
+  Args,
+  UiState
+> {
+  private argsCache?: { v: Args };
 
   public get args(): Args {
-    if (this._argsCache === undefined) {
+    if (this.argsCache === undefined) {
       const raw = this.ctx.args;
       const value = typeof raw === "function" ? raw() : raw;
-      this._argsCache = { v: JSON.parse(value) };
+      this.argsCache = { v: JSON.parse(value) };
     }
-    return this._argsCache.v;
+    return this.argsCache.v;
   }
 
-  private _uiStateCache?: { v: UiState };
+  private uiStateCache?: { v: UiState };
 
   public get uiState(): UiState {
-    if (this._uiStateCache === undefined) {
+    if (this.uiStateCache === undefined) {
       const raw = this.ctx.uiState!;
       const value = typeof raw === "function" ? raw() : raw;
-      this._uiStateCache = { v: value ? JSON.parse(value) : ({} as UiState) };
+      this.uiStateCache = { v: value ? JSON.parse(value) : ({} as UiState) };
     }
-    return this._uiStateCache.v;
+    return this.uiStateCache.v;
   }
 }
 

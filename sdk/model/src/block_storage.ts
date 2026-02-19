@@ -9,6 +9,9 @@
  * @module block_storage
  */
 
+import type { Branded } from "@milaboratories/pl-model-common";
+import type { DataMigrationResult, DataVersioned } from "./block_migrations";
+
 // =============================================================================
 // Core Types
 // =============================================================================
@@ -37,28 +40,44 @@ export const DATA_MODEL_DEFAULT_VERSION = "__pl_v1_d4e8f2a1__";
 export type BlockStorageSchemaVersion = "v1"; // Add 'v2', 'v3', etc. as schema evolves
 
 /**
- * Plugin key type - keys starting with `@plugin/` are reserved for plugin data
+ * Branded type for plugin names - globally unique plugin type identifiers.
+ * Using a branded type enforces explicit casting (`as PluginName`) which makes
+ * it easy to find all plugin name definitions in the codebase and verify uniqueness.
  */
-export type PluginKey = `@plugin/${string}`;
+export type PluginName = Branded<string, "PluginName">;
+
+/**
+ * Plugin registry - maps pluginId (unique within a block) to pluginName (globally unique plugin type).
+ * Using a Record highlights that pluginIds must be unique within a block.
+ */
+export type PluginRegistry = Record<string, PluginName>;
+
+/**
+ * Versioned data - used for both block data and plugin data
+ */
+export interface VersionedData<TData = unknown> {
+  /** Version of the data, used for migrations */
+  __dataVersion: string;
+  /** The persistent data */
+  __data: TData;
+}
 
 /**
  * Core BlockStorage type that holds:
  * - __pl_a7f3e2b9__: Schema version (discriminator key identifies BlockStorage format)
  * - __dataVersion: Version key for block data migrations
  * - __data: The block's user-facing data (state)
- * - @plugin/*: Optional plugin-specific data
+ * - __pluginRegistry: Map from pluginId to pluginName (optional)
+ * - __plugins: Plugin-specific data keyed by pluginId (optional)
  */
 export type BlockStorage<TState = unknown> = {
   /** Schema version - the key itself is the discriminator */
   readonly [BLOCK_STORAGE_KEY]: BlockStorageSchemaVersion;
-  /** Version of the block data, used for migrations */
-  __dataVersion: string;
-  /** The block's user-facing data (state) */
-  __data: TState;
-} & {
-  /** Plugin-specific data, keyed by `@plugin/<pluginName>` */
-  [K in PluginKey]?: unknown;
-};
+  /** Registry of plugins: pluginId -> pluginName */
+  __pluginRegistry?: PluginRegistry;
+  /** Plugin-specific data, keyed by pluginId */
+  __plugins?: Record<string, VersionedData<unknown>>;
+} & VersionedData<TState>;
 
 /**
  * Type guard to check if a value is a valid BlockStorage object.
@@ -91,12 +110,14 @@ export function createBlockStorage<TState = unknown>(
     [BLOCK_STORAGE_KEY]: BLOCK_STORAGE_SCHEMA_VERSION,
     __dataVersion: version,
     __data: initialData,
+    __pluginRegistry: {},
+    __plugins: {},
   };
 }
 
 /**
  * Normalizes raw storage data to BlockStorage format.
- * If the input is already a BlockStorage, returns it as-is.
+ * If the input is already a BlockStorage, returns it as-is (with defaults for missing fields).
  * If the input is legacy format (raw state), wraps it in BlockStorage structure.
  *
  * @param raw - Raw storage data (may be legacy format or BlockStorage)
@@ -112,6 +133,9 @@ export function normalizeBlockStorage<TState = unknown>(raw: unknown): BlockStor
         typeof storage.__dataVersion === "number"
           ? DATA_MODEL_DEFAULT_VERSION
           : storage.__dataVersion,
+      // Ensure plugin fields have defaults
+      __pluginRegistry: storage.__pluginRegistry ?? {},
+      __plugins: storage.__plugins ?? {},
     };
   }
   // Legacy format: raw is the state directly
@@ -150,7 +174,9 @@ export function deriveDataFromStorage<TData = unknown>(rawStorage: unknown): TDa
 }
 
 /** Payload for storage mutation operations. SDK defines specific operations. */
-export type MutateStoragePayload<T = unknown> = { operation: "update-data"; value: T };
+export type MutateStoragePayload<T = unknown> =
+  | { operation: "update-block-data"; value: T }
+  | { operation: "update-plugin-data"; pluginId: string; value: unknown };
 
 /**
  * Updates the data in BlockStorage (immutable)
@@ -164,35 +190,27 @@ export function updateStorageData<TValue = unknown>(
   payload: MutateStoragePayload<TValue>,
 ): BlockStorage<TValue> {
   switch (payload.operation) {
-    case "update-data":
+    case "update-block-data":
       return { ...storage, __data: payload.value };
+    case "update-plugin-data": {
+      const { pluginId, value } = payload;
+      const currentPlugins = storage.__plugins ?? {};
+      const existingEntry = currentPlugins[pluginId];
+      const version = existingEntry?.__dataVersion ?? DATA_MODEL_DEFAULT_VERSION;
+      return {
+        ...storage,
+        __plugins: {
+          ...currentPlugins,
+          [pluginId]: {
+            __dataVersion: version,
+            __data: value,
+          },
+        },
+      };
+    }
     default:
       throw new Error(`Unknown storage operation: ${(payload as { operation: string }).operation}`);
   }
-}
-
-/**
- * Gets the data version from BlockStorage
- *
- * @param storage - The BlockStorage instance
- * @returns The data version key
- */
-export function getStorageDataVersion(storage: BlockStorage): string {
-  return storage.__dataVersion;
-}
-
-/**
- * Updates the data version in BlockStorage (immutable)
- *
- * @param storage - The current BlockStorage
- * @param version - The new version key
- * @returns A new BlockStorage with updated version
- */
-export function updateStorageDataVersion<TState>(
-  storage: BlockStorage<TState>,
-  version: string,
-): BlockStorage<TState> {
-  return { ...storage, __dataVersion: version };
 }
 
 /**
@@ -207,180 +225,173 @@ export interface StorageDebugView {
 }
 
 // =============================================================================
-// Plugin Data Functions
+// Atomic Migration
 // =============================================================================
 
 /**
- * Gets plugin-specific data from BlockStorage
+ * Result of a successful atomic migration.
+ */
+export interface MigrationSuccess<TState> {
+  success: true;
+  /** The fully migrated storage - commit this to persist */
+  storage: BlockStorage<TState>;
+}
+
+/**
+ * Result of a failed atomic migration.
+ * The original storage is untouched - user must choose to abort or reset.
+ */
+export interface MigrationFailure {
+  success: false;
+  /** Description of what failed */
+  error: string;
+  /** Which step failed: 'block' or pluginId */
+  failedAt: string;
+}
+
+export type MigrationResult<TState> = MigrationSuccess<TState> | MigrationFailure;
+
+/**
+ * Configuration for atomic block storage migration.
+ * Callbacks use DataVersioned format (the DataModel API format).
+ * Conversion to internal VersionedData format is handled by migrateBlockStorage().
+ */
+export interface MigrateBlockStorageConfig {
+  /** Migrate block data from any version to latest */
+  migrateBlockData: (versioned: DataVersioned<unknown>) => DataMigrationResult<unknown>;
+  /** Migrate each plugin's data. Return undefined to remove the plugin. */
+  migratePluginData: (
+    pluginId: string,
+    versioned: DataVersioned<unknown>,
+  ) => DataMigrationResult<unknown> | undefined;
+  /** The new plugin registry after migration (pluginId -> pluginName) */
+  newPluginRegistry: PluginRegistry;
+  /** Factory to create initial data for new plugins */
+  createPluginData: (pluginId: string) => DataVersioned<unknown>;
+}
+
+/**
+ * Performs atomic migration of block storage including block data and all plugins.
+ *
+ * Migration is atomic: either everything succeeds and a new storage is returned,
+ * or an error is returned and the original storage is completely untouched.
+ *
+ * Migration steps:
+ * 1. Migrate block data
+ * 2. For each plugin in newPluginRegistry:
+ *    - If plugin exists with same name: migrate its data
+ *    - Otherwise (new or type changed): create with initial data
+ *    Plugins not in newPluginRegistry are dropped.
+ *
+ * If any step throws, migration fails and original storage is preserved.
+ * User can then choose to:
+ * - Abort: keep original storage, don't update block
+ * - Reset: call createBlockStorage() to start fresh
+ *
+ * @param storage - The original storage (will not be modified)
+ * @param config - Migration configuration
+ * @returns Migration result - either success with new storage, or failure with error info
+ *
+ * @example
+ * const result = migrateBlockStorage(storage, {
+ *   migrateBlockData: (versioned) => blockDataModel.migrate(versioned),
+ *   migratePluginData: (pluginId, versioned) => getPluginModel(pluginId).migrate(versioned),
+ *   newPluginRegistry: { table1: 'dataTable' as PluginName },
+ *   createPluginData: (pluginId) => getPluginModel(pluginId).getDefaultData(),
+ * });
+ *
+ * if (result.success) {
+ *   commitStorage(result.storage);
+ * } else {
+ *   const userChoice = await askUser(`Migration failed: ${result.error}. Reset data?`);
+ *   if (userChoice === 'reset') {
+ *     commitStorage(createBlockStorage(initialData, currentVersion));
+ *   }
+ *   // else: abort, keep original
+ * }
+ */
+export function migrateBlockStorage(
+  storage: BlockStorage<unknown>,
+  config: MigrateBlockStorageConfig,
+): MigrationResult<unknown> {
+  const { migrateBlockData, migratePluginData, newPluginRegistry, createPluginData } = config;
+
+  // Step 1: Migrate block data
+  let migratedData: unknown;
+  let newVersion: string;
+  try {
+    const result = migrateBlockData({ version: storage.__dataVersion, data: storage.__data });
+    migratedData = result.data;
+    newVersion = result.version;
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      failedAt: "block",
+    };
+  }
+
+  // Step 2: Migrate plugins
+  const oldPlugins = storage.__plugins ?? {};
+  const oldRegistry = storage.__pluginRegistry ?? {};
+  const newPlugins: Record<string, VersionedData<unknown>> = {};
+
+  for (const [pluginId, pluginName] of Object.entries(newPluginRegistry)) {
+    const existingEntry = oldPlugins[pluginId];
+    const existingName = oldRegistry[pluginId];
+
+    try {
+      if (existingEntry && existingName === pluginName) {
+        // Plugin exists with same type - migrate its data
+        const migrated = migratePluginData(pluginId, {
+          version: existingEntry.__dataVersion,
+          data: existingEntry.__data,
+        });
+        if (migrated) {
+          newPlugins[pluginId] = { __dataVersion: migrated.version, __data: migrated.data };
+        }
+        // If undefined returned, plugin is intentionally removed
+      } else {
+        // New plugin or type changed - create with initial data
+        const initial = createPluginData(pluginId);
+        newPlugins[pluginId] = { __dataVersion: initial.version, __data: initial.data };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        failedAt: pluginId,
+      };
+    }
+  }
+
+  // Step 3: Build final storage atomically
+  const migratedStorage: BlockStorage = {
+    [BLOCK_STORAGE_KEY]: BLOCK_STORAGE_SCHEMA_VERSION,
+    __dataVersion: newVersion,
+    __data: migratedData,
+    __pluginRegistry: newPluginRegistry,
+    __plugins: newPlugins,
+  };
+
+  return {
+    success: true,
+    storage: migratedStorage,
+  };
+}
+
+/**
+ * Gets plugin-specific data from BlockStorage (for UI)
  *
  * @param storage - The BlockStorage instance
- * @param pluginName - The plugin name (without `@plugin/` prefix)
+ * @param pluginId - The plugin instance id
  * @returns The plugin data or undefined if not set
  */
 export function getPluginData<TData = unknown>(
   storage: BlockStorage,
-  pluginName: string,
+  pluginId: string,
 ): TData | undefined {
-  const key: PluginKey = `@plugin/${pluginName}`;
-  return storage[key] as TData | undefined;
-}
-
-/**
- * Sets plugin-specific data in BlockStorage (immutable)
- *
- * @param storage - The current BlockStorage
- * @param pluginName - The plugin name (without `@plugin/` prefix)
- * @param data - The plugin data to store
- * @returns A new BlockStorage with updated plugin data
- */
-export function setPluginData<TState>(
-  storage: BlockStorage<TState>,
-  pluginName: string,
-  data: unknown,
-): BlockStorage<TState> {
-  const key: PluginKey = `@plugin/${pluginName}`;
-  return { ...storage, [key]: data };
-}
-
-/**
- * Removes plugin-specific data from BlockStorage (immutable)
- *
- * @param storage - The current BlockStorage
- * @param pluginName - The plugin name (without `@plugin/` prefix)
- * @returns A new BlockStorage with the plugin data removed
- */
-export function removePluginData<TState>(
-  storage: BlockStorage<TState>,
-  pluginName: string,
-): BlockStorage<TState> {
-  const key: PluginKey = `@plugin/${pluginName}`;
-  const { [key]: _, ...rest } = storage;
-  return rest as BlockStorage<TState>;
-}
-
-/**
- * Gets all plugin names that have data stored
- *
- * @param storage - The BlockStorage instance
- * @returns Array of plugin names (without `@plugin/` prefix)
- */
-export function getPluginNames(storage: BlockStorage): string[] {
-  return Object.keys(storage)
-    .filter((key): key is PluginKey => key.startsWith("@plugin/"))
-    .map((key) => key.slice("@plugin/".length));
-}
-
-// =============================================================================
-// Generic Storage Access
-// =============================================================================
-
-/**
- * Gets a value from BlockStorage by key
- *
- * @param storage - The BlockStorage instance
- * @param key - The key to retrieve
- * @returns The value at the given key
- */
-export function getFromStorage<TState, K extends keyof BlockStorage<TState>>(
-  storage: BlockStorage<TState>,
-  key: K,
-): BlockStorage<TState>[K] {
-  return storage[key];
-}
-
-/**
- * Updates a value in BlockStorage by key (immutable)
- *
- * @param storage - The current BlockStorage
- * @param key - The key to update
- * @param value - The new value
- * @returns A new BlockStorage with the updated value
- */
-export function updateStorage<TState, K extends keyof BlockStorage<TState>>(
-  storage: BlockStorage<TState>,
-  key: K,
-  value: BlockStorage<TState>[K],
-): BlockStorage<TState> {
-  return { ...storage, [key]: value };
-}
-
-// =============================================================================
-// Storage Handlers (for Phase 2 - Model-Level Customization)
-// =============================================================================
-
-/**
- * Interface for model-configurable storage operations.
- * These handlers allow block models to customize how storage is managed.
- */
-export interface BlockStorageHandlers<TState = unknown> {
-  /**
-   * Called when setState is invoked - transforms the new state before storing.
-   * Default behavior: replaces the state directly.
-   *
-   * @param currentStorage - The current BlockStorage
-   * @param newState - The new state being set
-   * @returns The updated BlockStorage
-   */
-  transformStateForStorage?: (
-    currentStorage: BlockStorage<TState>,
-    newState: TState,
-  ) => BlockStorage<TState>;
-
-  /**
-   * Called when reading state for args derivation.
-   * Default behavior: returns the state directly.
-   *
-   * @param storage - The current BlockStorage
-   * @returns The state to use for args derivation
-   */
-  deriveStateForArgs?: (storage: BlockStorage<TState>) => TState;
-
-  /**
-   * Called during storage schema migration.
-   * Default behavior: updates stateVersion only.
-   *
-   * @param oldStorage - The storage before migration
-   * @param fromVersion - The version migrating from
-   * @param toVersion - The version migrating to
-   * @returns The migrated BlockStorage
-   */
-  migrateStorage?: (
-    oldStorage: BlockStorage<TState>,
-    fromVersion: string,
-    toVersion: string,
-  ) => BlockStorage<TState>;
-}
-
-/**
- * Default implementations of storage handlers
- */
-export const defaultBlockStorageHandlers: Required<BlockStorageHandlers<unknown>> = {
-  transformStateForStorage: <TState>(
-    storage: BlockStorage<TState>,
-    newState: TState,
-  ): BlockStorage<TState> =>
-    updateStorageData(storage, { operation: "update-data", value: newState }),
-
-  deriveStateForArgs: <TState>(storage: BlockStorage<TState>): TState => getStorageData(storage),
-
-  migrateStorage: <TState>(
-    storage: BlockStorage<TState>,
-    _fromVersion: string,
-    toVersion: string,
-  ): BlockStorage<TState> => updateStorageDataVersion(storage, toVersion),
-};
-
-/**
- * Merges custom handlers with defaults
- *
- * @param customHandlers - Custom handlers to merge
- * @returns Complete handlers with defaults for missing functions
- */
-export function mergeBlockStorageHandlers<TState>(
-  customHandlers?: BlockStorageHandlers<TState>,
-): Required<BlockStorageHandlers<TState>> {
-  return {
-    ...defaultBlockStorageHandlers,
-    ...customHandlers,
-  } as Required<BlockStorageHandlers<TState>>;
+  const pluginEntry = storage.__plugins?.[pluginId];
+  if (!pluginEntry) return undefined;
+  return pluginEntry.__data as TData;
 }
