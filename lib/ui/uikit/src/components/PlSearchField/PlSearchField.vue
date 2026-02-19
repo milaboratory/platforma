@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { PlIcon16 } from "../PlIcon16";
 import { PlIcon24 } from "../PlIcon24";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 const emit = defineEmits(["update:modelValue"]);
 
@@ -11,9 +11,6 @@ const props = defineProps<{
   placeholder?: string;
   disabled?: boolean;
 }>();
-
-const root = ref<HTMLInputElement | undefined>(undefined);
-const input = ref<HTMLInputElement | undefined>();
 
 const value = computed({
   get() {
@@ -36,8 +33,8 @@ const clear = () => emit("update:modelValue", "");
       ref="input"
       v-model="value"
       :disabled="disabled"
-      type="text"
       :placeholder="placeholder || 'Find...'"
+      type="text"
       spellcheck="false"
     />
     <PlIcon16
@@ -67,11 +64,11 @@ const clear = () => emit("update:modelValue", "");
 
   input {
     margin-left: 8px;
+    width: 100%;
     height: 20px;
     border: none;
     outline: none;
     background-color: transparent;
-    caret-color: var(--txt-focus);
     font-size: 14px;
     font-weight: 500;
     line-height: 20px;
