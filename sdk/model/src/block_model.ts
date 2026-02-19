@@ -406,7 +406,7 @@ export class BlockModelV3<
    * instance, that can be used in frontend to interact with block data, and
    * other features provided by the platforma to the block. */
   public done(): PlatformaExtended<
-    PlatformaV3<Args, InferOutputsFromLambdas<OutputsCfg>, Data, Href, Plugins>
+    PlatformaV3<Data, Args, InferOutputsFromLambdas<OutputsCfg>, Href, Plugins>
   > {
     return this.withFeatureFlags({
       ...this.config.featureFlags,
@@ -414,7 +414,7 @@ export class BlockModelV3<
   }
 
   public _done(): PlatformaExtended<
-    PlatformaV3<Args, InferOutputsFromLambdas<OutputsCfg>, Data, Href, Plugins>
+    PlatformaV3<Data, Args, InferOutputsFromLambdas<OutputsCfg>, Href, Plugins>
   > {
     if (this.config.argsFunction === undefined) throw new Error("Args rendering function not set.");
 

@@ -9,10 +9,9 @@ import {
   getPlatformaApiVersion,
   unwrapResult,
   type BlockOutputsBase,
-  type Platforma,
   type BlockModelInfo,
 } from "@platforma-sdk/model";
-import type { Component, Reactive } from "vue";
+import type { App as VueApp, Component, Reactive } from "vue";
 import { inject, markRaw, reactive } from "vue";
 import { createAppV1, type BaseAppV1 } from "./internal/createAppV1";
 import { createAppV2, type BaseAppV2 } from "./internal/createAppV2";
@@ -58,43 +57,28 @@ export function defineApp<
 export function defineApp<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  Data = unknown,
+  UiState = unknown,
   Href extends `/${string}` = `/${string}`,
   Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
 >(
-  platforma: PlatformaV3<Args, Outputs, Data, Href> & {
-    blockModelInfo: BlockModelInfo;
-  },
-  extendApp: (app: BaseAppV3<Args, Outputs, Data, Href>) => Extend,
-  settings?: AppSettings,
-): SdkPluginV3<Args, Outputs, Data, Href, Extend>;
+  platforma: PlatformaExtended<
+    PlatformaV1<Args, Outputs, UiState, Href> | PlatformaV2<Args, Outputs, UiState, Href>
+  >,
 
-export function defineApp<
-  Args = unknown,
-  Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiStateOrData = unknown,
-  Href extends `/${string}` = `/${string}`,
-  Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
->(
-  platforma: PlatformaExtended<Platforma<Args, Outputs, UiStateOrData, Href>>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   extendApp: (app: any) => Extend,
   settings: AppSettings = {},
-): SdkPlugin<Args, Outputs, UiStateOrData, Href, Extend> {
+):
+  | SdkPluginV1<Args, Outputs, UiState, Href, Extend>
+  | SdkPluginV2<Args, Outputs, UiState, Href, Extend> {
   let app:
-    | undefined
-    | AppV1<Args, Outputs, UiStateOrData, Href, Extend>
-    | AppV2<Args, Outputs, UiStateOrData, Href, Extend>
-    | AppV3<Args, Outputs, UiStateOrData, Href, Extend> = undefined;
-
-  // Captured during install() so V3 can provide plugin data access after async load
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let vueAppInstance: any;
+    | AppV1<Args, Outputs, UiState, Href, Extend>
+    | AppV2<Args, Outputs, UiState, Href, Extend>
+    | undefined = undefined;
 
   activateAgGrid();
 
   const runtimeApiVersion = platforma.apiVersion ?? 1; // undefined means 1 (backward compatibility)
-
   const blockRequestedApiVersion = getPlatformaApiVersion();
 
   const loadApp = async () => {
@@ -106,7 +90,7 @@ export function defineApp<
     if (platforma.apiVersion === undefined || platforma.apiVersion === 1) {
       await platforma.loadBlockState().then((state) => {
         plugin.loaded = true;
-        const baseApp = createAppV1<Args, Outputs, UiStateOrData, Href>(state, platforma, settings);
+        const baseApp = createAppV1<Args, Outputs, UiState, Href>(state, platforma, settings);
 
         const localState = extendApp(baseApp);
 
@@ -122,13 +106,13 @@ export function defineApp<
           getRoute(href: Href): Component | undefined {
             return routes[href];
           },
-        } as unknown as AppV1<Args, Outputs, UiStateOrData, Href, Extend>);
+        } as unknown as AppV1<Args, Outputs, UiState, Href, Extend>);
       });
     } else if (platforma.apiVersion === 2) {
       await platforma.loadBlockState().then((stateOrError) => {
         const state = unwrapResult(stateOrError);
         plugin.loaded = true;
-        const baseApp = createAppV2<Args, Outputs, UiStateOrData, Href>(state, platforma, settings);
+        const baseApp = createAppV2<Args, Outputs, UiState, Href>(state, platforma, settings);
 
         const localState = extendApp(baseApp);
 
@@ -144,40 +128,7 @@ export function defineApp<
           getRoute(href: Href): Component | undefined {
             return routes[href];
           },
-        } as unknown as AppV2<Args, Outputs, UiStateOrData, Href, Extend>);
-      });
-    } else if (platforma.apiVersion === 3) {
-      await platforma.loadBlockState().then((stateOrError) => {
-        const state = unwrapResult(stateOrError);
-        plugin.loaded = true;
-        const { app: baseApp, pluginAccess } = createAppV3<Args, Outputs, UiStateOrData, Href>(
-          state,
-          platforma,
-          settings,
-        );
-
-        if (!vueAppInstance) {
-          throw new Error(
-            "Plugin data injection failed: Vue app instance not captured during install()",
-          );
-        }
-        vueAppInstance.provide(pluginDataKey, pluginAccess);
-
-        const localState = extendApp(baseApp);
-
-        const routes = Object.fromEntries(
-          Object.entries(localState.routes as Routes<Href>).map(([href, component]) => {
-            const c = typeof component === "function" ? component() : component;
-            return [href, markRaw(c as Component)];
-          }),
-        );
-
-        app = Object.assign(baseApp, {
-          ...localState,
-          getRoute(href: Href): Component | undefined {
-            return routes[href];
-          },
-        } as unknown as AppV3<Args, Outputs, UiStateOrData, Href, Extend>);
+        } as unknown as AppV2<Args, Outputs, UiState, Href, Extend>);
       });
     }
   };
@@ -186,19 +137,96 @@ export function defineApp<
     apiVersion: platforma.apiVersion ?? 1,
     loaded: false,
     error: undefined as unknown,
-    // Href to get typed query parameters for a specific route
     useApp<PageHref extends Href = Href>() {
-      return notEmpty(app, "App is not loaded") as App<
-        Args,
-        Outputs,
-        UiStateOrData,
-        PageHref,
-        Extend
-      >;
+      return notEmpty(app, "App is not loaded") as
+        | AppV1<Args, Outputs, UiState, PageHref, Extend>
+        | AppV2<Args, Outputs, UiState, PageHref, Extend>;
     },
-    // @todo type portability issue with Vue
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    install(app: any) {
+    install(app: VueApp) {
+      app.provide(pluginKey, this);
+      loadApp().catch((err) => {
+        console.error("load initial state error", err);
+        plugin.error = err;
+      });
+    },
+  });
+
+  return plugin as
+    | SdkPluginV1<Args, Outputs, UiState, Href, Extend>
+    | SdkPluginV2<Args, Outputs, UiState, Href, Extend>;
+}
+
+export function defineAppV3<
+  Data = unknown,
+  Args = unknown,
+  Outputs extends BlockOutputsBase = BlockOutputsBase,
+  Href extends `/${string}` = `/${string}`,
+  Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
+>(
+  platforma: PlatformaV3<Data, Args, Outputs, Href> & {
+    blockModelInfo: BlockModelInfo;
+  },
+  extendApp: (app: BaseAppV3<Data, Args, Outputs, Href>) => Extend,
+  settings: AppSettings = {},
+): SdkPluginV3<Data, Args, Outputs, Href, Extend> {
+  let app: AppV3<Data, Args, Outputs, Href, Extend> | undefined = undefined;
+
+  // Captured during install() so V3 can provide plugin data access after async load
+  let vueAppInstance: VueApp | undefined;
+
+  activateAgGrid();
+
+  const runtimeApiVersion = 3;
+  const blockRequestedApiVersion = getPlatformaApiVersion();
+
+  const loadApp = async () => {
+    if (blockRequestedApiVersion !== runtimeApiVersion) {
+      throw new Error(`Block requested API version ${blockRequestedApiVersion} but runtime API version is ${runtimeApiVersion}.
+      Please update the desktop app to use the latest API version.`);
+    }
+
+    await platforma.loadBlockState().then((stateOrError) => {
+      const state = unwrapResult(stateOrError);
+      plugin.loaded = true;
+      const { app: baseApp, pluginAccess } = createAppV3<Data, Args, Outputs, Href>(
+        state,
+        platforma,
+        settings,
+      );
+
+      if (!vueAppInstance) {
+        throw new Error(
+          "Plugin data injection failed: Vue app instance not captured during install()",
+        );
+      }
+      vueAppInstance.provide(pluginDataKey, pluginAccess);
+
+      const localState = extendApp(baseApp);
+
+      const routes = Object.fromEntries(
+        Object.entries(localState.routes as Routes<Href>).map(([href, component]) => {
+          const c = typeof component === "function" ? component() : component;
+          return [href, markRaw(c as Component)];
+        }),
+      );
+
+      app = Object.assign(baseApp, {
+        ...localState,
+        getRoute(href: Href): Component | undefined {
+          return routes[href];
+        },
+      } as unknown as AppV3<Data, Args, Outputs, Href, Extend>);
+    });
+  };
+
+  const plugin = reactive({
+    apiVersion: 3,
+    loaded: false,
+    error: undefined as unknown,
+    useApp<PageHref extends Href = Href>() {
+      return notEmpty(app, "App is not loaded") as AppV3<Data, Args, Outputs, PageHref, Extend>;
+    },
+    install(app: VueApp) {
       vueAppInstance = app;
       app.provide(pluginKey, this);
       loadApp().catch((err) => {
@@ -208,7 +236,7 @@ export function defineApp<
     },
   });
 
-  return plugin as SdkPlugin<Args, Outputs, UiStateOrData, Href, Extend>;
+  return plugin as SdkPluginV3<Data, Args, Outputs, Href, Extend>;
 }
 
 export type AppV1<
@@ -230,24 +258,17 @@ export type AppV2<
   Reactive<Omit<Local, "routes">> & { getRoute(href: Href): Component | undefined };
 
 export type AppV3<
-  Args = unknown,
-  Outputs extends BlockOutputsBase = BlockOutputsBase,
   Data = unknown,
+  Args = unknown,
+  Outputs extends BlockOutputsBase = NonNullable<unknown>,
   Href extends `/${string}` = `/${string}`,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
-> = BaseAppV3<Args, Outputs, Data, Href> &
+> = BaseAppV3<Data, Args, Outputs, Href> &
   Reactive<Omit<Local, "routes">> & { getRoute(href: Href): Component | undefined };
 
-export type App<
-  Args = unknown,
-  Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown,
-  Href extends `/${string}` = `/${string}`,
-  Local extends ExtendSettings<Href> = ExtendSettings<Href>,
-> =
-  | AppV1<Args, Outputs, UiState, Href, Local>
-  | AppV2<Args, Outputs, UiState, Href, Local>
-  | AppV3<Args, Outputs, UiState, Href, Local>;
+// ---------------------------------------------------------------------------
+// SdkPlugin types
+// ---------------------------------------------------------------------------
 
 export type SdkPluginV1<
   Args = unknown,
@@ -260,7 +281,7 @@ export type SdkPluginV1<
   loaded: boolean;
   error: unknown;
   useApp<PageHref extends Href = Href>(): AppV1<Args, Outputs, UiState, PageHref, Local>;
-  install(app: unknown): void;
+  install(app: VueApp): void;
 };
 
 export type SdkPluginV2<
@@ -274,30 +295,21 @@ export type SdkPluginV2<
   loaded: boolean;
   error: unknown;
   useApp<PageHref extends Href = Href>(): AppV2<Args, Outputs, UiState, PageHref, Local>;
-  install(app: unknown): void;
+  install(app: VueApp): void;
 };
 
 export type SdkPluginV3<
+  Data = unknown,
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  Data = unknown,
   Href extends `/${string}` = `/${string}`,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
 > = {
   apiVersion: 3;
   loaded: boolean;
   error: unknown;
-  useApp<PageHref extends Href = Href>(): AppV3<Args, Outputs, Data, PageHref, Local>;
-  install(app: unknown): void;
+  useApp<PageHref extends Href = Href>(): AppV3<Data, Args, Outputs, PageHref, Local>;
+  install(app: VueApp): void;
 };
 
-export type SdkPlugin<
-  Args = unknown,
-  Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown,
-  Href extends `/${string}` = `/${string}`,
-  Local extends ExtendSettings<Href> = ExtendSettings<Href>,
-> =
-  | SdkPluginV1<Args, Outputs, UiState, Href, Local>
-  | SdkPluginV2<Args, Outputs, UiState, Href, Local>
-  | SdkPluginV3<Args, Outputs, UiState, Href, Local>;
+export type SdkPlugin = SdkPluginV1 | SdkPluginV2 | SdkPluginV3;

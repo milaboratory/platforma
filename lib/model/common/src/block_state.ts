@@ -1,6 +1,7 @@
 import type { BlockOutputsBase } from "./common_types";
 import type { NavigationState } from "./navigation";
 import type { AuthorMarker } from "./author_marker";
+import { StringifiedJson } from "./json";
 
 /**
  * @template Args    sets type of block arguments passed to the workflow
@@ -33,12 +34,12 @@ export type BlockState<
 };
 
 export type BlockStateV3<
-  Outputs extends BlockOutputsBase = BlockOutputsBase,
   _Data = unknown,
+  Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
 > = {
   /** Block storage persisted in the block state */
-  blockStorage: unknown;
+  blockStorage: StringifiedJson;
 
   /** Outputs rendered with block config */
   outputs: Outputs;

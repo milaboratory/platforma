@@ -62,13 +62,13 @@ const stringifyForDebug = (v: unknown) => {
  * @returns A reactive application object with methods, getters, and state.
  */
 export function createAppV3<
+  Data = unknown,
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  Data = unknown,
   Href extends `/${string}` = `/${string}`,
 >(
-  state: ValueWithUTag<BlockStateV3<Outputs, Data, Href>>,
-  platforma: PlatformaExtended<PlatformaV3<Args, Outputs, Data, Href>>,
+  state: ValueWithUTag<BlockStateV3<Data, Outputs, Href>>,
+  platforma: PlatformaExtended<PlatformaV3<Data, Args, Outputs, Href>>,
   settings: AppSettings,
 ) {
   const debug = (msg: string, ...rest: unknown[]) => {
@@ -347,7 +347,7 @@ export function createAppV3<
     ),
   };
 
-  const app = reactive(Object.assign(appModel, methods, getters));
+  const app = Object.assign(reactive(Object.assign(appModel, getters)), methods);
 
   if (settings.debug) {
     // @ts-expect-error (to inspect in console in debug mode)
@@ -358,8 +358,8 @@ export function createAppV3<
 }
 
 export type BaseAppV3<
+  Data = unknown,
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  Data = unknown,
   Href extends `/${string}` = `/${string}`,
-> = ReturnType<typeof createAppV3<Args, Outputs, Data, Href>>["app"];
+> = ReturnType<typeof createAppV3<Data, Args, Outputs, Href>>["app"];

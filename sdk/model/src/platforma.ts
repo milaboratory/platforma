@@ -44,16 +44,16 @@ export interface PlatformaV2<
 }
 
 export interface PlatformaV3<
+  Data = unknown,
   Args = unknown,
   Outputs extends Record<string, OutputWithStatus<unknown>> = Record<
     string,
     OutputWithStatus<unknown>
   >,
-  Data = unknown,
   Href extends `/${string}` = `/${string}`,
   Plugins extends Record<string, unknown> = Record<string, unknown>,
 >
-  extends BlockApiV3<Args, Outputs, Data, Href>, DriverKit {
+  extends BlockApiV3<Data, Args, Outputs, Href>, DriverKit {
   /** Information about SDK version current platforma environment was compiled with. */
   readonly sdkInfo: SdkInfo;
   readonly apiVersion: 3;
@@ -67,12 +67,12 @@ export type Platforma<
     string,
     OutputWithStatus<unknown>
   >,
-  UiState = unknown,
+  UiStateOrData = unknown,
   Href extends `/${string}` = `/${string}`,
 > =
-  | PlatformaV1<Args, Outputs, UiState, Href>
-  | PlatformaV2<Args, Outputs, UiState, Href>
-  | PlatformaV3<Args, Outputs, UiState, Href>;
+  | PlatformaV1<Args, Outputs, UiStateOrData, Href>
+  | PlatformaV2<Args, Outputs, UiStateOrData, Href>
+  | PlatformaV3<UiStateOrData, Args, Outputs, Href>;
 
 export type PlatformaExtended<Pl extends Platforma = Platforma> = Pl & {
   blockModelInfo: BlockModelInfo;
@@ -110,6 +110,7 @@ export type InferHrefType<Pl extends Platforma> =
 export type PlatformaFactory = (config: { sdkVersion: string }) => Platforma;
 
 export type InferBlockState<Pl extends Platforma> = BlockStateV3<
+  InferDataType<Pl>,
   InferOutputsType<Pl>,
   InferHrefType<Pl>
 >;
