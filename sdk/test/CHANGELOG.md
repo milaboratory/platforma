@@ -1,5 +1,18 @@
 # @platforma-sdk/test
 
+## 1.55.0
+
+### Minor Changes
+
+- 01d0b52: BlockModelV3 update
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @milaboratories/pl-middle-layer@1.47.0
+  - @milaboratories/pl-client@2.17.6
+  - @milaboratories/pl-tree@1.8.44
+
 ## 1.54.13
 
 ### Patch Changes

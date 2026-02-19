@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.pool-explorer.model
 
+## 1.1.19
+
+### Patch Changes
+
+- 01d0b52: BlockModelV3 update
+- Updated dependencies [01d0b52]
+  - @platforma-sdk/model@1.55.0
+
 ## 1.1.18
 
 ### Patch Changes

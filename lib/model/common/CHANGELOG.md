@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.25.0
+
+### Minor Changes
+
+- 01d0b52: BlockModelV3 update
+
 ## 1.24.11
 
 ### Patch Changes

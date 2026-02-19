@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.55.0
+
+### Minor Changes
+
+- 01d0b52: BlockModelV3 update
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @platforma-sdk/model@1.55.0
+  - @milaboratories/uikit@2.10.26
+
 ## 1.54.13
 
 ### Patch Changes

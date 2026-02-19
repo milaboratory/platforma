@@ -1,5 +1,17 @@
 # @platforma-sdk/model
 
+## 1.55.0
+
+### Minor Changes
+
+- 01d0b52: BlockModelV3 update
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @milaboratories/pl-model-common@1.25.0
+  - @milaboratories/ptabler-expression-js@1.1.22
+
 ## 1.54.13
 
 ### Patch Changes
