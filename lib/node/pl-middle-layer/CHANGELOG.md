@@ -1,5 +1,27 @@
 # @milaboratories/pl-middle-layer
 
+## 1.47.0
+
+### Minor Changes
+
+- 01d0b52: BlockModelV3 update
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @milaboratories/pl-model-common@1.25.0
+  - @platforma-sdk/model@1.55.0
+  - @milaboratories/pl-model-middle-layer@1.11.14
+  - @milaboratories/pl-client@2.17.6
+  - @milaboratories/pl-deployments@2.15.16
+  - @milaboratories/pl-drivers@1.11.56
+  - @platforma-sdk/block-tools@2.6.54
+  - @milaboratories/pf-driver@1.0.50
+  - @milaboratories/pl-model-backend@1.1.53
+  - @milaboratories/pl-errors@1.1.68
+  - @milaboratories/pl-tree@1.8.44
+  - @platforma-sdk/workflow-tengo@5.8.3
+
 ## 1.46.34
 
 ### Patch Changes
