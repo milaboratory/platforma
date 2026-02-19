@@ -212,7 +212,6 @@ const emit = defineEmits<{
   flex-direction: row;
   flex: 1 1 0;
   gap: 8px;
-  text-overflow: ellipsis;
   overflow: hidden;
 }
 
