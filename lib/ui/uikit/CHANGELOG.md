@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.10.25
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+- Updated dependencies [cb28fde]
+  - @milaboratories/helpers@1.13.5
+  - @platforma-sdk/model@1.54.13
+
 ## 2.10.24
 
 ### Patch Changes

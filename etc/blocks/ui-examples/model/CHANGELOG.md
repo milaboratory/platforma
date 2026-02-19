@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.4.18
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+- Updated dependencies [cb28fde]
+  - @platforma-sdk/model@1.54.13
+
 ## 1.4.17
 
 ### Patch Changes
