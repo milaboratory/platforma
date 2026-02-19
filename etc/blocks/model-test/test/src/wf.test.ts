@@ -9,7 +9,7 @@ blockTest("with args", { timeout: 10000 }, async ({ rawPrj: project, expect }) =
 
   expect(stableOverview1.blocks[0]).toMatchObject({
     subtitle: "The subtitle <- the subtitle",
-    tags: ["test-tag"],
+    tags: ["test-tag", "plugin-test"],
     sections: [
       {
         type: "link",
@@ -33,7 +33,7 @@ blockTest("with args", { timeout: 10000 }, async ({ rawPrj: project, expect }) =
   expect(stableOverview2.blocks[0]).toMatchObject({
     title: "Custom title <- the title",
     subtitle: "Custom subtitle <- the subtitle",
-    tags: ["test-tag", "tag-one", "tag-two"],
+    tags: ["test-tag", "plugin-test", "tag-one", "tag-two"],
     sections: [
       {
         type: "link",
@@ -49,6 +49,6 @@ blockTest("with args", { timeout: 10000 }, async ({ rawPrj: project, expect }) =
   const stableOverview3 = await project.overview.awaitStableValue();
 
   expect(stableOverview3.blocks[0]).toMatchObject({
-    tags: ["test-tag", "tag-one", "tag-two", "workflow-tag"],
+    tags: ["test-tag", "plugin-test", "tag-one", "tag-two", "workflow-tag"],
   });
 });
