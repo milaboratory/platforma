@@ -100,7 +100,7 @@ export class BlockModelV3<
     supportsLazyState: true,
     requiresUIAPIVersion: 3,
     requiresModelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
-    requiresCreatePTableV2: true,
+    requiresCreatePTable: 2,
   };
 
   /**
