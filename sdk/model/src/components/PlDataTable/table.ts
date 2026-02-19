@@ -26,6 +26,7 @@ import {
   readAnnotation,
   uniqueBy,
   isBooleanExpression,
+  parseJson,
 } from "@milaboratories/pl-model-common";
 import { filterSpecToSpecQueryExpr } from "../../filters";
 import type { RenderCtxBase, TreeNodeAccessor, PColumnDataUniversal } from "../../render";
@@ -186,7 +187,7 @@ export function createPlDataTableV2<A, U>(
   const stateFilters = tableStateNormalized.pTableParams.filters;
   const opsFilters = ops?.filters ?? null;
   const filters: null | PlDataTableFilters =
-    stateFilters !== null && opsFilters !== null
+    stateFilters != null && opsFilters != null
       ? { type: "and", filters: [stateFilters, opsFilters] }
       : (stateFilters ?? opsFilters);
   const filterColumns = filters ? collectFilterSpecColumns(filters) : [];
@@ -218,6 +219,7 @@ export function createPlDataTableV2<A, U>(
     sorting,
     coreColumnPredicate: ops?.coreColumnPredicate,
   });
+
   const fullHandle = ctx.createPTableV2(fullDef);
   if (!fullHandle) return undefined;
 
@@ -245,11 +247,21 @@ export function createPlDataTableV2<A, U>(
     coreColumns.forEach((c) => hiddenColumns.delete(c));
   }
 
-  // Sorting changes the order of result rows — preserve sorted columns from being hidden
+  // Preserve sorted columns from being hidden
   sorting
     .map((s) => s.column)
     .filter((c): c is PTableColumnIdColumn => c.type === "column")
     .forEach((c) => hiddenColumns.delete(c.id));
+
+  // Preserve filter columns from being hidden
+  if (filters) {
+    collectFilterSpecColumns(filters)
+      .flatMap((c) => {
+        const obj = parseJson(c);
+        return obj.type === "column" ? [obj.id] : [];
+      })
+      .forEach((c) => hiddenColumns.delete(c));
+  }
 
   const visibleColumns = columns.filter((c) => !hiddenColumns.has(c.id));
   const visibleLabelColumns = getMatchingLabelColumns(
@@ -269,13 +281,16 @@ export function createPlDataTableV2<A, U>(
     coreColumnPredicate,
   });
   const visibleHandle = ctx.createPTableV2(visibleDef);
+
   if (!visibleHandle) return undefined;
 
   return {
     sourceId: tableStateNormalized.pTableParams.sourceId,
     fullTableHandle: fullHandle,
     visibleTableHandle: visibleHandle,
-  } satisfies PlDataTableModel;
+    hiddenColumns: [...hiddenColumns],
+    collectFilterSpecColumns: filters && collectFilterSpecColumns(filters),
+  } as PlDataTableModel;
 }
 
 /** Create sheet entries for PlDataTable */

@@ -8,8 +8,10 @@ import type {
   PTableSorting,
   PColumnIdAndSpec,
   PTableHandle,
+  RootFilterSpec,
+  PTableColumnId,
 } from "@milaboratories/pl-model-common";
-import type { FilterSpec, FilterSpecLeaf } from "../../filters";
+import type { FilterSpecLeaf } from "../../filters";
 
 export type PlTableColumnId = {
   /** Original column spec */
@@ -60,11 +62,12 @@ export type PlDataTableSheetState = {
 };
 
 /** Tree-based filter state compatible with PlAdvancedFilter's RootFilter */
-export type PlDataTableFilters = FilterSpec<FilterSpecLeaf<string>>;
-export type PlDataTableFiltersWithMeta = FilterSpec<
-  FilterSpecLeaf<string>,
-  { id: number; isExpanded?: boolean }
+export type PlDataTableFilters = RootFilterSpec<FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>>;
+export type PlDataTableFiltersWithMeta = RootFilterSpec<
+  FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>,
+  { id: number; isExpanded?: boolean; source?: "table-filter" | "table-search" }
 >;
+export type PlDataTableRootFiltersWithMeta = 1;
 
 export type PlDataTableStateV2CacheEntry = {
   /** DataSource identifier for state management */
@@ -75,6 +78,8 @@ export type PlDataTableStateV2CacheEntry = {
   sheetsState: PlDataTableSheetState[];
   /** Filters state (tree-based, compatible with PlAdvancedFilter) */
   filtersState: null | PlDataTableFiltersWithMeta;
+  /** Fast search string */
+  searchString?: string;
 };
 
 export type PTableParamsV2 =

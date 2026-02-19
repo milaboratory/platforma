@@ -158,10 +158,10 @@ function migrateV4toV5(
   const nextId = () => ++idCounter;
 
   const migratedCache: PlDataTableStateV2CacheEntry[] = state.stateCache.map((entry) => {
-    const leaves: PlDataTableFiltersWithMeta[] = [];
+    const leaves: PlDataTableFiltersWithMeta["filters"] = [];
     for (const f of entry.filtersState) {
       if (f.filter !== null && !f.filter.disabled) {
-        const column = canonicalizeJson<PTableColumnId>(f.id);
+        const column = canonicalizeJson(f.id);
         leaves.push(migrateTableFilter(column, f.filter.value, nextId));
       }
     }
@@ -198,10 +198,10 @@ function migrateV4toV5(
 
 /** Migrate a single per-column PlTableFilter to a tree-based FilterSpec node */
 function migrateTableFilter(
-  column: string,
+  column: CanonicalizedJson<PTableColumnId>,
   filter: PlTableFilter,
   nextId: () => number,
-): PlDataTableFiltersWithMeta {
+): PlDataTableFiltersWithMeta["filters"][number] {
   const id = nextId();
   switch (filter.type) {
     case "isNA":

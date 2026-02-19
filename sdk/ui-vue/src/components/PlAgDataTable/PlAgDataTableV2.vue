@@ -6,23 +6,19 @@ import type {
   PlDataTableStateV2,
   PlSelectionModel,
   PlTableColumnIdJson,
-  PTableColumnSpec,
   PTableKey,
-  PTableValue,
 } from "@platforma-sdk/model";
 import {
   getRawPlatformaInstance,
-  parseJson,
   createPlSelectionModel,
   matchAxisId,
   getAxisId,
   canonicalizeJson,
   isAbortError,
+  parseJson,
 } from "@platforma-sdk/model";
 import type {
   CellRendererSelectorFunc,
-  ColDef,
-  ColGroupDef,
   GridApi,
   GridOptions,
   GridState,
@@ -35,9 +31,8 @@ import { AgGridTheme } from "../../aggrid";
 import PlAgCsvExporter from "../PlAgCsvExporter/PlAgCsvExporter.vue";
 import { PlAgGridColumnManager } from "../PlAgGridColumnManager";
 import PlTableFiltersV2 from "../PlTableFilters/PlTableFiltersV2.vue";
+import { PlTableFastSearch } from "../PlTableFastSearch";
 import PlAgDataTableSheets from "./PlAgDataTableSheets.vue";
-import PlOverlayLoading from "./PlAgOverlayLoading.vue";
-import PlOverlayNoRows from "./PlAgOverlayNoRows.vue";
 import PlAgRowCount from "./PlAgRowCount.vue";
 import { DeferredCircular, ensureNodeVisible } from "./sources/focus-row";
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from "./sources/row-number";
@@ -54,8 +49,8 @@ import type {
   PlTableRowId,
   PlTableRowIdJson,
 } from "./types";
-import { watchCached } from "@milaboratories/uikit";
-import { type PTableHidden } from "./sources/common";
+import { useFilterableColumns } from "./compositions/useFilterableColumns";
+import { useGrid } from "./compositions/useGrid";
 
 const tableState = defineModel<PlDataTableStateV2>({
   required: true,
@@ -129,10 +124,42 @@ const emit = defineEmits<{
   newDataRendered: [];
 }>();
 
-const filterableColumns = ref<PTableColumnSpec[]>([]);
+const dataRenderedTracker = new DeferredCircular<GridApi<PlAgDataTableV2Row>>();
+const { gridApi, gridOptions } = useGrid({
+  selection: selection.value,
+  noRowsText: props.noRowsText,
+  runningText: props.runningText,
+  loadingText: props.loadingText,
+  notReadyText: props.notReadyText,
+  cellRendererSelector: props.cellRendererSelector,
+});
+gridOptions.value.onRowDoubleClicked = (event) => {
+  if (event.data && event.data.axesKey) emit("rowDoubleClicked", event.data.axesKey);
+};
+gridOptions.value.onStateUpdated = (event) => {
+  gridOptions.value.initialState = gridState.value = makePartialState(event.state);
+  if (!isJsonEqual(event.sources, ["columnSizing"])) {
+    event.api.autoSizeColumns(
+      event.api
+        .getAllDisplayedColumns()
+        .filter((column) => column.getColId() !== PlAgDataTableRowNumberColId),
+    );
+  }
+};
+gridOptions.value.onGridPreDestroyed = (event) => {
+  gridOptions.value.initialState = gridState.value = makePartialState(event.api.getState());
+  gridApi.value = null;
+};
 
-const { gridState, sheetsState, filtersState } = useTableState(tableState, settings);
-
+const [filterableColumns, visibleFilterableColumns] = useFilterableColumns(
+  () => settings.value.sourceId,
+  () => gridOptions.value.columnDefs ?? null,
+);
+const { gridState, sheetsState, filtersState, searchString } = useTableState(
+  tableState,
+  settings,
+  visibleFilterableColumns,
+);
 const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
   const settingsCopy = { ...settings.value };
   return settingsCopy.sourceId !== null
@@ -374,35 +401,6 @@ defineExpose<PlAgDataTableV2Controller>({
   },
 });
 
-function getDataColDefs(
-  columnDefs: ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] | null | undefined,
-): ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] {
-  const isColDef = <TData, TValue>(
-    def: ColDef<TData, TValue> | ColGroupDef<TData>,
-  ): def is ColDef<TData, TValue> => !("children" in def);
-  if (!columnDefs) return [];
-  return columnDefs
-    .filter(isColDef)
-    .filter((def) => def.colId && def.colId !== PlAgDataTableRowNumberColId);
-}
-
-// Propagate columns for filter component
-watchCached(
-  () => gridOptions.value.columnDefs,
-  (columnDefs) => {
-    const sourceId = settings.value.sourceId;
-    if (sourceId === null) {
-      filterableColumns.value = [];
-    } else {
-      const dataColumns = getDataColDefs(columnDefs);
-      filterableColumns.value = dataColumns.map(
-        (def) => parseJson(def.colId! satisfies string as PlTableColumnIdJson).labeled,
-      );
-    }
-  },
-  { immediate: true },
-);
-
 // Update AgGrid when settings change
 const defaultSelection = createPlSelectionModel();
 let oldSettings: PlDataTableSettingsV2 | null = null;
@@ -617,6 +615,7 @@ watchEffect(() => {
         <slot name="after-sheets" />
       </template>
     </PlAgDataTableSheets>
+    <PlTableFastSearch v-model="searchString" />
     <AgGridVue
       :key="reloadKey"
       :theme="AgGridTheme"
