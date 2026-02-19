@@ -37,8 +37,7 @@ describe("PluginModel", () => {
 
     const factory = PluginModel.define<Data, undefined, Config>({
       name: "factoryPlugin" as PluginName,
-      data: (cfg) =>
-        dataModelChain.init(() => ({ count: cfg.initialCount, label: "initialized" })),
+      data: (cfg) => dataModelChain.init(() => ({ count: cfg.initialCount, label: "initialized" })),
     }).build();
 
     const plugin = factory.create({ initialCount: 100 });

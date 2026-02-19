@@ -94,9 +94,7 @@ export class BlockModelV3<
   Href extends `/${string}` = "/",
   Plugins extends Record<string, PluginInstance> = {},
 > {
-  private constructor(
-    private readonly config: BlockModelV3Config<OutputsCfg, Data, Plugins>,
-  ) {}
+  private constructor(private readonly config: BlockModelV3Config<OutputsCfg, Data, Plugins>) {}
 
   public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
     supportsLazyState: true,
