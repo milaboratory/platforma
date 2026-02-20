@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.12.0
+
+### Minor Changes
+
+- 2ad9783: Add `findTableColumn` method to `PFrameWasmAPI` interface
+
 ## 1.11.14
 
 ### Patch Changes
