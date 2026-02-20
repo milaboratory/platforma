@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.8.21
+
+### Patch Changes
+
+- bc16fab: add helper with tooltip for table fast search
+
 ## 1.8.20
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.55.2
+
+### Patch Changes
+
+- bc16fab: add helper with tooltip for table fast search
+- Updated dependencies [bc16fab]
+  - @milaboratories/uikit@2.10.28
+
 ## 1.55.1
 
 ### Patch Changes
