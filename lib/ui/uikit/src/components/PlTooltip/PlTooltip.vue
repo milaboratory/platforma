@@ -6,11 +6,11 @@ export default {
 </script>
 
 <script lang="ts" setup>
+import { uniqueId } from "@milaboratories/helpers";
 import { onUnmounted, reactive, ref, watch } from "vue";
+import { tMap } from "./global";
 import * as utils from "../../helpers/utils";
 import { useClickOutside } from "../../composition/useClickOutside";
-import { tMap } from "./global";
-import { uniqueId } from "@milaboratories/helpers";
 
 const emit = defineEmits(["tooltip:close"]);
 
