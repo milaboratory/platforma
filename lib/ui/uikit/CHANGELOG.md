@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.10.28
+
+### Patch Changes
+
+- bc16fab: add helper with tooltip for table fast search
+
 ## 2.10.27
 
 ### Patch Changes
