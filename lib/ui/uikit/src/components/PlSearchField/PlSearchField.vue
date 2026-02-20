@@ -2,47 +2,52 @@
 import { PlIcon16 } from "../PlIcon16";
 import { PlIcon24 } from "../PlIcon24";
 import { computed } from "vue";
+import PlTooltip from "../PlTooltip/PlTooltip.vue";
 
-const emit = defineEmits(["update:modelValue"]);
+const model = defineModel<string>({ required: true });
 
 const props = defineProps<{
   modelValue?: string;
   clearable?: boolean;
   placeholder?: string;
   disabled?: boolean;
+  helper?: string;
+}>();
+const slots = defineSlots<{
+  helper: () => unknown;
 }>();
 
-const value = computed({
-  get() {
-    return props.modelValue ?? "";
-  },
-  set(v) {
-    emit("update:modelValue", v);
-  },
-});
+const nonEmpty = computed(() => model.value != null && model.value.length > 0);
+const hasHelper = computed(() => props.helper != null || slots.helper != null);
 
-const nonEmpty = computed(() => !!props.modelValue);
-
-const clear = () => emit("update:modelValue", "");
+const clear = () => (model.value = "");
 </script>
 
 <template>
-  <div ref="root" class="pl-search-field" :class="[$style.component]">
+  <div ref="root" :class="$style.component">
     <PlIcon24 name="search" />
     <input
       ref="input"
-      v-model="value"
-      :disabled="disabled"
-      :placeholder="placeholder || 'Find...'"
+      v-model="model"
+      :disabled="props.disabled"
+      :placeholder="props.placeholder || 'Find...'"
       type="text"
       spellcheck="false"
     />
     <PlIcon16
-      v-if="clearable && nonEmpty"
+      v-if="props.clearable && nonEmpty"
       :class="$style.clear"
       name="delete-clear"
       @click.stop="clear"
     />
+
+    <PlTooltip v-if="hasHelper" class="info" position="bottom">
+      <template #tooltip>
+        <slot name="helper">
+          {{ props.helper }}
+        </slot>
+      </template>
+    </PlTooltip>
   </div>
 </template>
 
