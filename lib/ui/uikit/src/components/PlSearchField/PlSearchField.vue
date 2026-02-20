@@ -41,7 +41,7 @@ const clear = () => (model.value = "");
       @click.stop="clear"
     />
 
-    <PlTooltip v-if="hasHelper" class="info" position="left-bottom">
+    <PlTooltip v-if="hasHelper" class="info" position="bottom">
       <template #tooltip>
         <slot name="helper">
           {{ props.helper }}
