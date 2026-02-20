@@ -6,11 +6,11 @@ export default {
 </script>
 
 <script lang="ts" setup>
+import { uniqueId } from "@milaboratories/helpers";
 import { onUnmounted, reactive, ref, watch } from "vue";
+import { tMap } from "./global";
 import * as utils from "../../helpers/utils";
 import { useClickOutside } from "../../composition/useClickOutside";
-import { tMap } from "./global";
-import { uniqueId } from "@milaboratories/helpers";
 
 const emit = defineEmits(["tooltip:close"]);
 
@@ -189,7 +189,7 @@ const anchorName = `--anchor-${uniqueId()}`;
             '--anchorName': anchorName,
             '--gap': gap + 'px',
             '--offsetToTheEdge': offsetToTheEdge + 'px',
-            '--pl-tooltip-max-width': maxWidth,
+            '--plTooltipMaxWidth': maxWidth,
           }"
         >
           <div :class="$style.plTooltipBox" @click.stop>
@@ -226,7 +226,7 @@ const anchorName = `--anchor-${uniqueId()}`;
 }
 
 .plTooltipContainer {
-  --pl-tooltip-max-width: 300px;
+  --plTooltipMaxWidth: 300px;
   --gap: 8px;
   --tailWidth: 8px;
   --tailHeight: calc(var(--gap) + 2px);
@@ -252,7 +252,7 @@ const anchorName = `--anchor-${uniqueId()}`;
   border-radius: 6px;
   width: max-content;
   word-break: normal;
-  max-width: var(--pl-tooltip-max-width);
+  max-width: var(--plTooltipMaxWidth);
   color: #fff;
 }
 
