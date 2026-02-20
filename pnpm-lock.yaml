@@ -354,34 +354,6 @@ importers:
         specifier: 'catalog:'
         version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
-  packages/@milaboratories/backend:
-    dependencies:
-      '@milaboratories/pl-client':
-        specifier: workspace:*
-        version: link:../pl-client
-      canonicalize:
-        specifier: 'catalog:'
-        version: 2.1.0
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../build-configs
-      '@milaboratories/ts-builder':
-        specifier: workspace:*
-        version: link:../ts-builder
-      '@milaboratories/ts-configs':
-        specifier: workspace:*
-        version: link:../ts-configs
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.5.2
-      typescript:
-        specifier: 'catalog:'
-        version: 5.6.3
-
   packages/@milaboratories/biowasm-tools:
     devDependencies:
       '@milaboratories/build-configs':
@@ -457,37 +429,6 @@ importers:
         specifier: 'catalog:'
         version: 3.5.24(typescript@5.6.3)
 
-  packages/@milaboratories/common:
-    dependencies:
-      '@milaboratories/pl-error-like':
-        specifier: workspace:*
-        version: link:../pl-error-like
-      canonicalize:
-        specifier: 'catalog:'
-        version: 2.1.0
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../build-configs
-      '@milaboratories/ts-builder':
-        specifier: workspace:*
-        version: link:../ts-builder
-      '@milaboratories/ts-configs':
-        specifier: workspace:*
-        version: link:../ts-configs
-      '@vitest/coverage-istanbul':
-        specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
-      typescript:
-        specifier: 'catalog:'
-        version: 5.6.3
-      vitest:
-        specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-
   packages/@milaboratories/computable:
     dependencies:
       '@milaboratories/pl-error-like':
@@ -543,40 +484,6 @@ importers:
         specifier: 'catalog:'
         version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
-  packages/@milaboratories/middle-layer:
-    dependencies:
-      '@milaboratories/pl-model-common':
-        specifier: workspace:*
-        version: link:../common
-      '@platforma-sdk/model':
-        specifier: workspace:*
-        version: link:../../@platforma-sdk/model
-      es-toolkit:
-        specifier: 'catalog:'
-        version: 1.39.10
-      utility-types:
-        specifier: 'catalog:'
-        version: 3.11.0
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../build-configs
-      '@milaboratories/ts-builder':
-        specifier: workspace:*
-        version: link:../ts-builder
-      '@milaboratories/ts-configs':
-        specifier: workspace:*
-        version: link:../ts-configs
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.5.2
-      typescript:
-        specifier: 'catalog:'
-        version: 5.6.3
-
   packages/@milaboratories/node-streams:
     devDependencies:
       '@milaboratories/build-configs':
@@ -627,10 +534,10 @@ importers:
         version: 1.1.7(encoding@0.1.13)
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
-        version: 1.1.7(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.0)(@milaboratories/pl-model-middle-layer@packages+@milaboratories+middle-layer)
+        version: 1.1.7(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.0)(@milaboratories/pl-model-middle-layer@packages+@milaboratories+pl-model-middle-layer)
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
-        version: link:../middle-layer
+        version: link:../pl-model-middle-layer
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../ts-helpers
@@ -676,7 +583,7 @@ importers:
         version: link:../pl-http
       '@milaboratories/pl-model-common':
         specifier: workspace:*
-        version: link:../common
+        version: link:../pl-model-common
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../ts-helpers
@@ -786,7 +693,7 @@ importers:
         version: link:../pl-http
       '@milaboratories/pl-model-common':
         specifier: workspace:*
-        version: link:../common
+        version: link:../pl-model-common
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../ts-helpers
@@ -862,7 +769,7 @@ importers:
         version: link:../pl-client
       '@milaboratories/pl-model-common':
         specifier: workspace:*
-        version: link:../common
+        version: link:../pl-model-common
       '@milaboratories/pl-tree':
         specifier: workspace:*
         version: link:../pl-tree
@@ -1055,13 +962,13 @@ importers:
         version: link:../pl-http
       '@milaboratories/pl-model-backend':
         specifier: workspace:*
-        version: link:../backend
+        version: link:../pl-model-backend
       '@milaboratories/pl-model-common':
         specifier: workspace:*
-        version: link:../common
+        version: link:../pl-model-common
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
-        version: link:../middle-layer
+        version: link:../pl-model-middle-layer
       '@milaboratories/pl-tree':
         specifier: workspace:*
         version: link:../pl-tree
@@ -1135,6 +1042,99 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+
+  packages/@milaboratories/pl-model-backend:
+    dependencies:
+      '@milaboratories/pl-client':
+        specifier: workspace:*
+        version: link:../pl-client
+      canonicalize:
+        specifier: 'catalog:'
+        version: 2.1.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../ts-configs
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.5.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+
+  packages/@milaboratories/pl-model-common:
+    dependencies:
+      '@milaboratories/pl-error-like':
+        specifier: workspace:*
+        version: link:../pl-error-like
+      canonicalize:
+        specifier: 'catalog:'
+        version: 2.1.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../ts-configs
+      '@vitest/coverage-istanbul':
+        specifier: 'catalog:'
+        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+
+  packages/@milaboratories/pl-model-middle-layer:
+    dependencies:
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../pl-model-common
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../@platforma-sdk/model
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.39.10
+      utility-types:
+        specifier: 'catalog:'
+        version: 3.11.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../ts-configs
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.5.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
 
   packages/@milaboratories/pl-tree:
     dependencies:
@@ -1432,7 +1432,7 @@ importers:
     dependencies:
       '@milaboratories/pl-model-common':
         specifier: workspace:*
-        version: link:../../../@milaboratories/common
+        version: link:../../../@milaboratories/pl-model-common
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1472,10 +1472,10 @@ importers:
         version: link:../../@milaboratories/pl-http
       '@milaboratories/pl-model-common':
         specifier: workspace:*
-        version: link:../../@milaboratories/common
+        version: link:../../@milaboratories/pl-model-common
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
-        version: link:../../@milaboratories/middle-layer
+        version: link:../../@milaboratories/pl-model-middle-layer
       '@milaboratories/resolve-helper':
         specifier: workspace:*
         version: link:../../@milaboratories/resolve-helper
@@ -1568,6 +1568,61 @@ importers:
         specifier: 'catalog:'
         version: 2.8.0
 
+  packages/@platforma-sdk/bootstrap:
+    dependencies:
+      '@milaboratories/pl-deployments':
+        specifier: workspace:*
+        version: link:../../@milaboratories/pl-deployments
+      '@oclif/core':
+        specifier: 'catalog:'
+        version: 4.0.37
+      decompress:
+        specifier: 'catalog:'
+        version: 4.2.1
+      readline-sync:
+        specifier: 'catalog:'
+        version: 1.4.10
+      tar:
+        specifier: 'catalog:'
+        version: 7.4.3
+      winston:
+        specifier: 'catalog:'
+        version: 3.17.0
+      yaml:
+        specifier: 'catalog:'
+        version: 2.8.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../@milaboratories/build-configs
+      '@milaboratories/oclif-index':
+        specifier: workspace:*
+        version: link:../../@milaboratories/oclif-index
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../@milaboratories/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../@milaboratories/ts-configs
+      '@types/decompress':
+        specifier: 'catalog:'
+        version: 4.2.7
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.5.2
+      '@types/readline-sync':
+        specifier: 'catalog:'
+        version: 1.4.8
+      ts-node:
+        specifier: 'catalog:'
+        version: 10.9.2(@types/node@24.5.2)(typescript@5.6.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+
   packages/@platforma-sdk/model:
     dependencies:
       '@milaboratories/helpers':
@@ -1578,7 +1633,7 @@ importers:
         version: link:../../@milaboratories/pl-error-like
       '@milaboratories/pl-model-common':
         specifier: workspace:*
-        version: link:../../@milaboratories/common
+        version: link:../../@milaboratories/pl-model-common
       '@milaboratories/ptabler-expression-js':
         specifier: workspace:*
         version: link:../../@platforma-open/ptabler/js
@@ -1687,61 +1742,6 @@ importers:
         specifier: 'catalog:'
         version: 1.7.4
 
-  packages/@platforma-sdk/pl-bootstrap:
-    dependencies:
-      '@milaboratories/pl-deployments':
-        specifier: workspace:*
-        version: link:../../@milaboratories/pl-deployments
-      '@oclif/core':
-        specifier: 'catalog:'
-        version: 4.0.37
-      decompress:
-        specifier: 'catalog:'
-        version: 4.2.1
-      readline-sync:
-        specifier: 'catalog:'
-        version: 1.4.10
-      tar:
-        specifier: 'catalog:'
-        version: 7.4.3
-      winston:
-        specifier: 'catalog:'
-        version: 3.17.0
-      yaml:
-        specifier: 'catalog:'
-        version: 2.8.0
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../../@milaboratories/build-configs
-      '@milaboratories/oclif-index':
-        specifier: workspace:*
-        version: link:../../@milaboratories/oclif-index
-      '@milaboratories/ts-builder':
-        specifier: workspace:*
-        version: link:../../@milaboratories/ts-builder
-      '@milaboratories/ts-configs':
-        specifier: workspace:*
-        version: link:../../@milaboratories/ts-configs
-      '@types/decompress':
-        specifier: 'catalog:'
-        version: 4.2.7
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.5.2
-      '@types/readline-sync':
-        specifier: 'catalog:'
-        version: 1.4.8
-      ts-node:
-        specifier: 'catalog:'
-        version: 10.9.2(@types/node@24.5.2)(typescript@5.6.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.6.3
-
   packages/@platforma-sdk/r-builder:
     dependencies:
       fs-extra:
@@ -1761,7 +1761,7 @@ importers:
     dependencies:
       '@milaboratories/pl-model-backend':
         specifier: workspace:*
-        version: link:../../@milaboratories/backend
+        version: link:../../@milaboratories/pl-model-backend
       '@milaboratories/resolve-helper':
         specifier: workspace:*
         version: link:../../@milaboratories/resolve-helper
@@ -3131,7 +3131,7 @@ importers:
         specifier: workspace:*
         version: link:../../../@platforma-sdk/tengo-builder
 
-  packages/tests/block-repo:
+  packages/tests/block-repo-tests:
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -3141,7 +3141,7 @@ importers:
         version: link:../../blocks/enter-numbers/block
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
-        version: link:../../@milaboratories/middle-layer
+        version: link:../../@milaboratories/pl-model-middle-layer
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../../@milaboratories/ts-builder
@@ -3265,7 +3265,7 @@ importers:
         version: link:../../@milaboratories/pl-middle-layer
       '@milaboratories/pl-model-common':
         specifier: workspace:*
-        version: link:../../@milaboratories/common
+        version: link:../../@milaboratories/pl-model-common
       '@milaboratories/pl-tree':
         specifier: workspace:*
         version: link:../../@milaboratories/pl-tree
@@ -3310,7 +3310,7 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
 
-  packages/tests/helper:
+  packages/tests/helper-tests:
     dependencies:
       '@milaboratories/helpers':
         specifier: workspace:*
@@ -3347,25 +3347,25 @@ importers:
         specifier: 'catalog:'
         version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
-  packages/tests/package-builder:
+  packages/tests/pl-package-builder-tests:
     devDependencies:
       '@platforma-sdk/package-builder':
         specifier: workspace:*
         version: link:../../@platforma-sdk/package-builder
 
-  packages/tests/package-builder/10.asset:
+  packages/tests/pl-package-builder-tests/10.asset:
     devDependencies:
       '@platforma-sdk/package-builder':
         specifier: workspace:*
         version: link:../../../@platforma-sdk/package-builder
 
-  packages/tests/package-builder/20.runenv:
+  packages/tests/pl-package-builder-tests/20.runenv:
     devDependencies:
       '@platforma-sdk/package-builder':
         specifier: workspace:*
         version: link:../../../@platforma-sdk/package-builder
 
-  packages/tests/package-builder/30.software-pkg:
+  packages/tests/pl-package-builder-tests/30.software-pkg:
     devDependencies:
       '@milaboratories/example-pl-package-runenv-1':
         specifier: workspace:*
@@ -3374,7 +3374,7 @@ importers:
         specifier: workspace:*
         version: link:../../../@platforma-sdk/package-builder
 
-  packages/tests/package-builder/90.catalogue:
+  packages/tests/pl-package-builder-tests/90.catalogue:
     devDependencies:
       '@milaboratories/example-pl-package-asset-1':
         specifier: workspace:*
@@ -3389,25 +3389,25 @@ importers:
         specifier: workspace:*
         version: link:../../../@platforma-sdk/package-builder
 
-  packages/tests/tengo-builder:
+  packages/tests/pl-tengo-builder-tests:
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../@platforma-sdk/tengo-builder
 
-  packages/tests/tengo-builder/1-library:
+  packages/tests/pl-tengo-builder-tests/1-library:
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../@platforma-sdk/tengo-builder
 
-  packages/tests/tengo-builder/2-artifacts:
+  packages/tests/pl-tengo-builder-tests/2-artifacts:
     devDependencies:
       '@platforma-sdk/package-builder':
         specifier: workspace:*
         version: link:../../../@platforma-sdk/package-builder
 
-  packages/tests/tengo-builder/3-software-dep:
+  packages/tests/pl-tengo-builder-tests/3-software-dep:
     devDependencies:
       '@mi-tests/tengo-integration-2':
         specifier: workspace:*
@@ -3419,7 +3419,7 @@ importers:
         specifier: workspace:*
         version: link:../../../@platforma-sdk/workflow-tengo
 
-  packages/tests/workflow-tengo:
+  packages/tests/workflow-tengo-tests:
     dependencies:
       '@platforma-open/milaboratories.software-conda-empty':
         specifier: 'catalog:'
@@ -9962,11 +9962,11 @@ snapshots:
       commander: 14.0.2
       selfsigned: 5.5.0
 
-  '@milaboratories/pframes-rs-wasm@1.1.7(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.0)(@milaboratories/pl-model-middle-layer@packages+@milaboratories+middle-layer)':
+  '@milaboratories/pframes-rs-wasm@1.1.7(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.0)(@milaboratories/pl-model-middle-layer@packages+@milaboratories+pl-model-middle-layer)':
     dependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
       '@milaboratories/pl-model-common': 1.25.0
-      '@milaboratories/pl-model-middle-layer': link:packages/@milaboratories/middle-layer
+      '@milaboratories/pl-model-middle-layer': link:packages/@milaboratories/pl-model-middle-layer
 
   '@milaboratories/pl-error-like@1.12.8':
     dependencies:
