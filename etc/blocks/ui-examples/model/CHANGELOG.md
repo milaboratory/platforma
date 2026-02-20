@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.4.20
+
+### Patch Changes
+
+- 3e71add: update tooltips
+
 ## 1.4.19
 
 ### Patch Changes

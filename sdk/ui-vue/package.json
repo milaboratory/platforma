@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.55.0",
+  "version": "1.55.1",
   "type": "module",
   "main": "dist/index.js",
   "exports": {

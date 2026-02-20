@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.10.27
+
+### Patch Changes
+
+- 3e71add: update tooltips
+
 ## 2.10.26
 
 ### Patch Changes
