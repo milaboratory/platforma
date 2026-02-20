@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { PlTooltip } from "../PlTooltip";
+
+defineProps<{
+  container?: "body" | HTMLElement;
+}>();
 </script>
 
 <template>
-  <PlTooltip class="info" position="southwest" max-width="420px">
+  <PlTooltip class="info" position="bottom" max-width="420px" :container="container">
     <template #tooltip>
       <span :class="$style.title">Shortcuts</span>
 

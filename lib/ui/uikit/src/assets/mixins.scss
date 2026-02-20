@@ -130,8 +130,7 @@
   align-items: center;
   gap: 4px;
   position: absolute;
-  top: 0;
-  transform: translateY(-60%);
+  top: -8px;
   left: var(--label-offset-left-x);
   padding: 0 4px;
   max-width: calc(100% - 16px);
