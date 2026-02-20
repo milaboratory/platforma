@@ -13,6 +13,7 @@ import { linterCommand } from "./commands/linter";
 import { serveCommand } from "./commands/serve";
 import { typesCommand } from "./commands/types";
 import { formatCommand } from "./commands/format";
+import { vscodeIntegrationCommand } from "./commands/vscode-integration";
 
 const program = new Command();
 
@@ -43,5 +44,6 @@ program.addCommand(initBuildConfigCommand);
 program.addCommand(initServeConfigCommand);
 program.addCommand(initLintConfigCommand);
 program.addCommand(initFmtConfigCommand);
+program.addCommand(vscodeIntegrationCommand);
 
 program.parse();
