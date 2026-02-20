@@ -22,38 +22,7 @@ component_management:
         target: auto
         threshold: 5%
         informational: true
-  individual_components:
-    - component_id: ui
-      name: UI
-      paths:
-        - lib/ui/uikit/**/*
-        - sdk/ui-vue/**/*
-    - component_id: backend
-      name: Backend
-      paths:
-        - helm/**/*
-        - lib/other/**/*
-        - lib/ptabler/**/*
-        - lib/ptexter/**/*
-        - tests/config-local-ml-integration/**/*
-        - tests/helper/**/*
-        - tests/package-builder/**/*
-        - tests/tengo-builder/**/*
-        - tests/workflow-tengo/**/*
-        - packages/@milaboratories/**/*
-        - packages/@platforma-sdk/workflow-tengo/**/*
-    - component_id: desktop
-      name: Desktop
-      paths:
-        - packages/@platforma-sdk/model/**/*
-        - packages/@platforma-sdk/test/**/*
-        - packages/blocks/**/*
-        - lib/model/**/*
-        - lib/node/**/*
-        - lib/util/**/*
-        - tests/block-repo/**/*
-        - tests/drivers-ml-blocks-integration/**/*
 
 ignore:
+  - "packages/@milaboratories/uikit/**/*"
   - "packages/@platforma-sdk/ui-vue/**/*"
-  - "lib/ui/uikit/**/*"
