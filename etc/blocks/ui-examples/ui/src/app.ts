@@ -29,6 +29,7 @@ import PlNumberFieldPage from "./pages/PlNumberFieldPage.vue";
 import PlSplashPage from "./pages/PlSplashPage.vue";
 import PlTabsPage from "./pages/PlTabsPage.vue";
 import PlTextFieldPage from "./pages/PlTextFieldPage.vue";
+import PlTooltipPage from "./pages/PlTooltipPage.vue";
 import RadioPage from "./pages/RadioPage.vue";
 import SectionPage from "./pages/SectionPage.vue";
 import SelectFilesPage from "./pages/SelectFilesPage.vue";
@@ -124,6 +125,7 @@ export const sdkPlugin = defineApp(
         "/section": () => SectionPage,
         "/radio": () => RadioPage,
         "/advanced-filter": () => AdvancedFilterPage,
+        "/pl-tooltip": () => PlTooltipPage,
       },
     };
   },
