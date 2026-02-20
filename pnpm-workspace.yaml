@@ -1,6 +1,9 @@
 catalogMode: strict
 
 packages:
+  - packages/**
+
+  # Lib
   - lib/util/helpers
   - lib/util/sequences
   - lib/util/test-helpers
@@ -39,92 +42,6 @@ packages:
 
   - lib/strings
 
-  - tools/tengo-builder
-  - tools/oclif-index
-  - tools/block-tools
-  - tools/ts-configs
-  - tools/build-configs
-  - tools/package-builder
-  - tools/ts-builder
-  - tools/r-builder
-  - tools/pl-bootstrap
-  - tools/eslint-config
-  - tools/blocks-deps-updater
-
-  - sdk/model
-  - sdk/workflow-tengo
-  - sdk/test
-  - sdk/ui-vue
-  - sdk/eslint-config
-
-  # Test blocks
-
-  - etc/blocks/enter-numbers/workflow
-  - etc/blocks/enter-numbers/model
-  - etc/blocks/enter-numbers/ui
-  - etc/blocks/enter-numbers/block
-
-  - etc/blocks/enter-numbers-v3/workflow
-  - etc/blocks/enter-numbers-v3/model
-  - etc/blocks/enter-numbers-v3/ui
-  - etc/blocks/enter-numbers-v3/block
-
-  - etc/blocks/sum-numbers/workflow
-  - etc/blocks/sum-numbers/model
-  - etc/blocks/sum-numbers/ui
-  - etc/blocks/sum-numbers/block
-
-  - etc/blocks/sum-numbers-v3/workflow
-  - etc/blocks/sum-numbers-v3/model
-  - etc/blocks/sum-numbers-v3/ui
-  - etc/blocks/sum-numbers-v3/block
-
-  - etc/blocks/upload-file/workflow
-  - etc/blocks/upload-file/model
-  - etc/blocks/upload-file/ui
-  - etc/blocks/upload-file/block
-
-  - etc/blocks/blob-url-custom-protocol/workflow
-  - etc/blocks/blob-url-custom-protocol/model
-  - etc/blocks/blob-url-custom-protocol/ui
-  - etc/blocks/blob-url-custom-protocol/block
-
-  - etc/blocks/monetization-test/workflow
-  - etc/blocks/monetization-test/model
-  - etc/blocks/monetization-test/ui
-  - etc/blocks/monetization-test/block
-
-  - etc/blocks/download-file/workflow
-  - etc/blocks/download-file/model
-  - etc/blocks/download-file/ui
-  - etc/blocks/download-file/block
-
-  - etc/blocks/read-logs/workflow
-  - etc/blocks/read-logs/model
-  - etc/blocks/read-logs/ui
-  - etc/blocks/read-logs/block
-
-  - etc/blocks/ui-examples/workflow
-  - etc/blocks/ui-examples/model
-  - etc/blocks/ui-examples/ui
-  - etc/blocks/ui-examples/block
-
-  - etc/blocks/model-test/workflow
-  - etc/blocks/model-test/model
-  - etc/blocks/model-test/ui
-  - etc/blocks/model-test/block
-  - etc/blocks/model-test/test
-
-  - etc/blocks/pool-explorer/workflow
-  - etc/blocks/pool-explorer/model
-  - etc/blocks/pool-explorer/ui
-  - etc/blocks/pool-explorer/block
-
-  - etc/blocks/transfer-files/workflow
-  - etc/blocks/transfer-files/model
-  - etc/blocks/transfer-files/ui
-  - etc/blocks/transfer-files/block
-
   # Tests
 
   - tests/workflow-tengo
@@ -143,11 +60,6 @@ packages:
   - tests/tengo-builder/1-library
   - tests/tengo-builder/2-artifacts
   - tests/tengo-builder/3-software-dep
-
-  # Etc
-
-  - etc/uikit-playground
-  - etc/ui-vue-docs
 
 catalog:
   # Build

@@ -8,7 +8,7 @@ coverage:
     patch: # Changed lines coverage
       default:
         target: 50% # New code coverage
-        threshold: 5%  # Existing code coverage drop
+        threshold: 5% # Existing code coverage drop
         informational: true
 
 component_management:
@@ -26,8 +26,6 @@ component_management:
     - component_id: ui
       name: UI
       paths:
-        - etc/ui-vue-docs/**/*
-        - etc/uikit-playground/**/*
         - lib/ui/uikit/**/*
         - sdk/ui-vue/**/*
     - component_id: backend
@@ -37,26 +35,25 @@ component_management:
         - lib/other/**/*
         - lib/ptabler/**/*
         - lib/ptexter/**/*
-        - sdk/workflow-tengo/**/*
         - tests/config-local-ml-integration/**/*
         - tests/helper/**/*
         - tests/package-builder/**/*
         - tests/tengo-builder/**/*
         - tests/workflow-tengo/**/*
-        - tools/**/*
+        - packages/@milaboratories/**/*
+        - packages/@platforma-sdk/workflow-tengo/**/*
     - component_id: desktop
       name: Desktop
       paths:
-        - etc/blocks/**/*
+        - packages/@platforma-sdk/model/**/*
+        - packages/@platforma-sdk/test/**/*
+        - packages/blocks/**/*
         - lib/model/**/*
         - lib/node/**/*
         - lib/util/**/*
-        - sdk/model/**/*
-        - sdk/test/**/*
         - tests/block-repo/**/*
         - tests/drivers-ml-blocks-integration/**/*
 
 ignore:
-  - "etc/uikit-playground/**/*"
-  - "sdk/ui-vue/**/*"
+  - "packages/@platforma-sdk/ui-vue/**/*"
   - "lib/ui/uikit/**/*"
