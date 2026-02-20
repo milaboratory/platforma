@@ -4,6 +4,7 @@ import type {
   JoinEntry,
   PColumnSpec,
   PObjectId,
+  PTableColumnId,
   PTableColumnSpec,
   PTableRecordFilter,
   PTableSorting,
@@ -36,8 +37,15 @@ export interface PFrameWasmAPI {
 
   /**
    * Finds the index of an axis matching the given selector.
+   * Returns -1 if no matching axis is found.
    */
   findAxis(spec: AxesSpec, selector: SingleAxisSelector): number;
+
+  /**
+   * Finds the flat index of a table column matching the given
+   * selector within a table spec. Returns -1 if not found.
+   */
+  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number;
 }
 
 /**
