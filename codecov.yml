@@ -8,7 +8,7 @@ coverage:
     patch: # Changed lines coverage
       default:
         target: 50% # New code coverage
-        threshold: 5%  # Existing code coverage drop
+        threshold: 5% # Existing code coverage drop
         informational: true
 
 component_management:
@@ -26,37 +26,34 @@ component_management:
     - component_id: ui
       name: UI
       paths:
-        - etc/ui-vue-docs/**/*
-        - etc/uikit-playground/**/*
-        - lib/ui/uikit/**/*
-        - sdk/ui-vue/**/*
+        - packages/lib/ui/uikit/**/*
+        - packages/sdk/ui-vue/**/*
     - component_id: backend
       name: Backend
       paths:
         - helm/**/*
-        - lib/other/**/*
-        - lib/ptabler/**/*
-        - lib/ptexter/**/*
-        - sdk/workflow-tengo/**/*
-        - tests/config-local-ml-integration/**/*
-        - tests/helper/**/*
-        - tests/package-builder/**/*
-        - tests/tengo-builder/**/*
-        - tests/workflow-tengo/**/*
-        - tools/**/*
+        - packages/lib/other/**/*
+        - packages/lib/ptabler/**/*
+        - packages/lib/ptexter/**/*
+        - packages/sdk/workflow-tengo/**/*
+        - packages/tests/config-local-ml-integration/**/*
+        - packages/tests/helper/**/*
+        - packages/tests/package-builder/**/*
+        - packages/tests/tengo-builder/**/*
+        - packages/tests/workflow-tengo/**/*
+        - packages/tools/**/*
     - component_id: desktop
       name: Desktop
       paths:
-        - etc/blocks/**/*
-        - lib/model/**/*
-        - lib/node/**/*
-        - lib/util/**/*
-        - sdk/model/**/*
-        - sdk/test/**/*
-        - tests/block-repo/**/*
-        - tests/drivers-ml-blocks-integration/**/*
+        - packages/etc/blocks/**/*
+        - packages/lib/model/**/*
+        - packages/lib/node/**/*
+        - packages/lib/util/**/*
+        - packages/sdk/model/**/*
+        - packages/sdk/test/**/*
+        - packages/tests/block-repo/**/*
+        - packages/tests/drivers-ml-blocks-integration/**/*
 
 ignore:
-  - "etc/uikit-playground/**/*"
-  - "sdk/ui-vue/**/*"
-  - "lib/ui/uikit/**/*"
+  - "packages/sdk/ui-vue/**/*"
+  - "packages/lib/ui/uikit/**/*"
