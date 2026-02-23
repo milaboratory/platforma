@@ -10,7 +10,7 @@ import { getPlatformaInstance, isInUI, createAndRegisterRenderLambda } from "./i
 import type { DataModel } from "./block_migrations";
 import type { PlatformaV3 } from "./platforma";
 import type { InferRenderFunctionReturn, RenderFunction } from "./render";
-import { RenderCtx } from "./render";
+import { BlockRenderCtx, PluginRenderCtx } from "./render";
 import type { PluginModel } from "./plugin_model";
 import type { RenderCtxBase } from "./render";
 import { PlatformaSDKVersion } from "./version";
@@ -192,8 +192,8 @@ export class BlockModelV3<
       outputs: {
         ...this.config.outputs,
         [key]: createAndRegisterRenderLambda({
-          handle: `output#${key}`,
-          lambda: () => cfgOrRf(new RenderCtx<Args, Data>()),
+          handle: `block-output#${key}`,
+          lambda: () => cfgOrRf(new BlockRenderCtx<Args, Data>()),
           ...flags,
         }),
       },
@@ -287,7 +287,7 @@ export class BlockModelV3<
       ...this.config,
       // Replace the default sections callback with the user-provided one
       sections: createAndRegisterRenderLambda(
-        { handle: "sections", lambda: () => rf(new RenderCtx<Args, Data>()) },
+        { handle: "sections", lambda: () => rf(new BlockRenderCtx<Args, Data>()) },
         true,
       ),
     });
@@ -301,7 +301,7 @@ export class BlockModelV3<
       ...this.config,
       title: createAndRegisterRenderLambda({
         handle: "title",
-        lambda: () => rf(new RenderCtx<Args, Data>()),
+        lambda: () => rf(new BlockRenderCtx<Args, Data>()),
       }),
     });
   }
@@ -313,7 +313,7 @@ export class BlockModelV3<
       ...this.config,
       subtitle: createAndRegisterRenderLambda({
         handle: "subtitle",
-        lambda: () => rf(new RenderCtx<Args, Data>()),
+        lambda: () => rf(new BlockRenderCtx<Args, Data>()),
       }),
     });
   }
@@ -325,7 +325,7 @@ export class BlockModelV3<
       ...this.config,
       tags: createAndRegisterRenderLambda({
         handle: "tags",
-        lambda: () => rf(new RenderCtx<Args, Data>()),
+        lambda: () => rf(new BlockRenderCtx<Args, Data>()),
       }),
     });
   }
@@ -458,6 +458,20 @@ export class BlockModelV3<
         derivePrerunArgsFromStorage(storageJson, argsFunction, prerunArgsFunction),
     });
 
+    // Register plugin output lambdas
+    const pluginOutputs: Record<string, ConfigRenderLambda> = {};
+    for (const [pluginId, { model, inputs }] of Object.entries(plugins)) {
+      const outputs = model.outputs as Record<string, (ctx: PluginRenderCtx) => unknown>;
+      for (const [outputKey, outputFn] of Object.entries(outputs)) {
+        const key = `plugin-output#${pluginId}#${outputKey}`;
+        pluginOutputs[key] = createAndRegisterRenderLambda({
+          handle: key,
+          lambda: () => outputFn(new PluginRenderCtx(pluginId, inputs)),
+        });
+      }
+    }
+    const allOutputs = { ...this.config.outputs, ...pluginOutputs };
+
     const blockConfig: BlockConfigContainer = {
       v4: {
         configVersion: 4,
@@ -468,7 +482,7 @@ export class BlockModelV3<
         title: this.config.title,
         subtitle: this.config.subtitle,
         tags: this.config.tags,
-        outputs: this.config.outputs,
+        outputs: allOutputs,
         enrichmentTargets: this.config.enrichmentTargets,
         featureFlags: this.config.featureFlags,
         blockLifecycleCallbacks: { ...BlockStorageFacadeHandles },
@@ -500,7 +514,7 @@ export class BlockModelV3<
         }),
         blockModelInfo: {
           outputs: Object.fromEntries(
-            Object.entries(this.config.outputs).map(([key, value]) => [
+            Object.entries(allOutputs).map(([key, value]) => [
               key,
               {
                 withStatus: Boolean(isConfigLambda(value) && value.withStatus),

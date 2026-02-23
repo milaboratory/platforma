@@ -30,6 +30,7 @@ import {
   AnchoredIdDeriver,
   collectSpecQueryColumns,
   ensurePColumn,
+  parseJson,
   extractAllColumns,
   isDataInfo,
   isPColumn,
@@ -48,6 +49,7 @@ import {
 import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
 import { getCfgRenderCtx } from "../internal";
+import { getPluginData } from "../block_storage";
 import { TreeNodeAccessor, ifDef } from "./accessor";
 import type { FutureRef } from "./future";
 import type { AccessorHandle, GlobalCfgRenderCtx } from "./internal";
@@ -711,7 +713,7 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) for v3+ blocks */
-export class RenderCtx<Args = unknown, Data = unknown> extends RenderCtxBase<Args, Data> {
+export class BlockRenderCtx<Args = unknown, Data = unknown> extends RenderCtxBase<Args, Data> {
   private argsCache?: { v: Args | undefined };
   public get args(): Args | undefined {
     if (this.argsCache === undefined) {
@@ -751,8 +753,54 @@ export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCt
   }
 }
 
+/**
+ * Render context for plugin output functions.
+ * Reads plugin data from blockStorage and derives params from block RenderCtx via per-property lambdas.
+ */
+export class PluginRenderCtx<Data = unknown, Params = unknown> {
+  private readonly ctx: GlobalCfgRenderCtx;
+  private readonly pluginId: string;
+  private readonly paramsInput: Record<string, (ctx: RenderCtxBase) => unknown>;
+
+  constructor(pluginId: string, paramsInput: Record<string, (ctx: RenderCtxBase) => unknown>) {
+    this.ctx = getCfgRenderCtx();
+    this.pluginId = pluginId;
+    this.paramsInput = paramsInput;
+  }
+
+  private dataCache?: { v: Data };
+
+  /** Plugin's persistent data from blockStorage.__plugins.{pluginId}.__data */
+  public get data(): Data {
+    if (this.dataCache === undefined) {
+      const raw = this.ctx.blockStorage();
+      const pluginData = getPluginData<Data>(parseJson(raw), this.pluginId);
+      this.dataCache = { v: pluginData };
+    }
+    return this.dataCache.v;
+  }
+
+  private paramsCache?: { v: Params };
+
+  /** Params derived from block RenderCtx via per-property lambdas */
+  public get params(): Params {
+    if (this.paramsCache === undefined) {
+      const blockCtx = new BlockRenderCtx();
+      const result: Record<string, unknown> = {};
+      for (const [key, fn] of Object.entries(this.paramsInput)) {
+        result[key] = fn(blockCtx);
+      }
+      this.paramsCache = { v: result as Params };
+    }
+    return this.paramsCache.v;
+  }
+
+  /** Result pool — same as block, from cfgRenderCtx methods */
+  public readonly resultPool = new ResultPool();
+}
+
 export type RenderFunction<Args = unknown, State = unknown, Ret = unknown> = (
-  rCtx: RenderCtx<Args, State>,
+  rCtx: BlockRenderCtx<Args, State>,
 ) => Ret;
 
 export type RenderFunctionLegacy<Args = unknown, State = unknown, Ret = unknown> = (
