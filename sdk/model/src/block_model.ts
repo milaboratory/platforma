@@ -458,15 +458,22 @@ export class BlockModelV3<
         derivePrerunArgsFromStorage(storageJson, argsFunction, prerunArgsFunction),
     });
 
-    // Register plugin output lambdas
+    // Register plugin input and output lambdas
     const pluginOutputs: Record<string, ConfigRenderLambda> = {};
     for (const [pluginId, { model, inputs }] of Object.entries(plugins)) {
+      // Wrap plugin param lambdas: close over BlockRenderCtx creation
+      const wrappedInputs: Record<string, () => unknown> = {};
+      for (const [paramKey, paramFn] of Object.entries(inputs)) {
+        wrappedInputs[paramKey] = () => paramFn(new BlockRenderCtx());
+      }
+
+      // Register plugin outputs (in config pack, evaluated by middle layer)
       const outputs = model.outputs as Record<string, (ctx: PluginRenderCtx) => unknown>;
       for (const [outputKey, outputFn] of Object.entries(outputs)) {
         const key = `plugin-output#${pluginId}#${outputKey}`;
         pluginOutputs[key] = createAndRegisterRenderLambda({
           handle: key,
-          lambda: () => outputFn(new PluginRenderCtx(pluginId, inputs)),
+          lambda: () => outputFn(new PluginRenderCtx(pluginId, wrappedInputs)),
         });
       }
     }

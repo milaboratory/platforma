@@ -389,10 +389,7 @@ export function migrateBlockStorage(
  * @returns The plugin data
  * @throws If pluginId is not found in storage
  */
-export function getPluginData<TData = unknown>(
-  rawStorage: unknown,
-  pluginId: string,
-): TData {
+export function getPluginData<TData = unknown>(rawStorage: unknown, pluginId: string): TData {
   const storage = normalizeBlockStorage(rawStorage);
   const pluginEntry = storage.__plugins?.[pluginId];
   if (!pluginEntry) throw new Error(`Plugin '${pluginId}' not found in block storage`);

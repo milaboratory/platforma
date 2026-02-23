@@ -755,17 +755,17 @@ export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCt
 
 /**
  * Render context for plugin output functions.
- * Reads plugin data from blockStorage and derives params from block RenderCtx via per-property lambdas.
+ * Reads plugin data from blockStorage and derives params from pre-wrapped input callbacks.
  */
 export class PluginRenderCtx<Data = unknown, Params = unknown> {
   private readonly ctx: GlobalCfgRenderCtx;
   private readonly pluginId: string;
-  private readonly paramsInput: Record<string, (ctx: RenderCtxBase) => unknown>;
+  private readonly wrappedInputs: Record<string, () => unknown>;
 
-  constructor(pluginId: string, paramsInput: Record<string, (ctx: RenderCtxBase) => unknown>) {
+  constructor(pluginId: string, wrappedInputs: Record<string, () => unknown>) {
     this.ctx = getCfgRenderCtx();
     this.pluginId = pluginId;
-    this.paramsInput = paramsInput;
+    this.wrappedInputs = wrappedInputs;
   }
 
   private dataCache?: { v: Data };
@@ -782,13 +782,12 @@ export class PluginRenderCtx<Data = unknown, Params = unknown> {
 
   private paramsCache?: { v: Params };
 
-  /** Params derived from block RenderCtx via per-property lambdas */
+  /** Params derived from block context via pre-wrapped input callbacks */
   public get params(): Params {
     if (this.paramsCache === undefined) {
-      const blockCtx = new BlockRenderCtx();
       const result: Record<string, unknown> = {};
-      for (const [key, fn] of Object.entries(this.paramsInput)) {
-        result[key] = fn(blockCtx);
+      for (const [key, fn] of Object.entries(this.wrappedInputs)) {
+        result[key] = fn();
       }
       this.paramsCache = { v: result as Params };
     }
