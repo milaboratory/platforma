@@ -798,6 +798,9 @@ export class PluginRenderCtx<Data = unknown, Params = unknown> {
   public readonly resultPool = new ResultPool();
 }
 
+/** @deprecated Use BlockRenderCtx instead */
+export type RenderCtx<Args = unknown, Data = unknown> = BlockRenderCtx<Args, Data>;
+
 export type RenderFunction<Args = unknown, State = unknown, Ret = unknown> = (
   rCtx: BlockRenderCtx<Args, State>,
 ) => Ret;
