@@ -543,10 +543,17 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
           const args = this.blockCtx.args(this.computableCtx);
           return args === undefined ? vm.undefined : vm.newString(args);
         });
+        exportCtxFunction("blockStorage", () => {
+          if (this.computableCtx === undefined)
+            throw new Error(
+              `Add dummy call to ctx.blockStorage outside the future lambda. Can't be directly used in this context.`,
+            );
+          return vm.newString(this.blockCtx.blockStorage(this.computableCtx) ?? "{}");
+        });
         exportCtxFunction("data", () => {
           if (this.computableCtx === undefined)
             throw new Error(
-              `Add dummy call to ctx.state outside the future lambda. Can't be directly used in this context.`,
+              `Add dummy call to ctx.data outside the future lambda. Can't be directly used in this context.`,
             );
           return vm.newString(this.blockCtx.data(this.computableCtx) ?? "{}");
         });
