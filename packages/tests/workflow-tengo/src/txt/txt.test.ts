@@ -28,7 +28,7 @@ const cases: TestInput[] = [
     expectedContent: "1 line\n2 line\n3 line\n4 line\n5 line\n",
     handleProvider: async (driverKit) => {
       return await driverKit.lsDriver.getLocalFileHandle(
-        path.resolve("../../assets/maybe_the_number_of_lines_is_the_answer.txt"),
+        path.resolve("../../../assets/maybe_the_number_of_lines_is_the_answer.txt"),
       );
     },
   },
@@ -40,7 +40,7 @@ const cases: TestInput[] = [
       "1 line\n2 line\n3 line\n4 line\n5 line\n6 line\n7 line\n8 line\n9 line\n10 line\n",
     handleProvider: async (driverKit) => {
       return await driverKit.lsDriver.getLocalFileHandle(
-        path.resolve("../../assets/maybe_the_number_of_lines_is_the_answer.txt"),
+        path.resolve("../../../assets/maybe_the_number_of_lines_is_the_answer.txt"),
       );
     },
   },
@@ -51,7 +51,7 @@ const cases: TestInput[] = [
     expectedContent: "42",
     handleProvider: async (driverKit) => {
       return await driverKit.lsDriver.getLocalFileHandle(
-        path.resolve("../../assets/answer_to_the_ultimate_question.txt"),
+        path.resolve("../../../assets/answer_to_the_ultimate_question.txt"),
       );
     },
   },
@@ -113,7 +113,7 @@ tplTest.concurrent(
   "txt.head error test: maxBytes exceeded",
   async ({ helper, expect, driverKit }) => {
     const importHandle = await driverKit.lsDriver.getLocalFileHandle(
-      path.resolve("../../assets/maybe_the_number_of_lines_is_the_answer.txt"),
+      path.resolve("../../../assets/maybe_the_number_of_lines_is_the_answer.txt"),
     );
 
     // Try to extract 20 lines but limit to only 50 bytes (should fail)

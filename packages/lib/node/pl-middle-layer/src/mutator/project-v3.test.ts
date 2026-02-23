@@ -13,13 +13,13 @@ import path from "node:path";
 // These blocks use the new unified state format (state instead of args+uiState)
 const BPSpecEnterV3: BlockPackSpec = {
   type: "dev-v2",
-  // Navigate from lib/node/pl-middle-layer/src/mutator to etc/blocks/enter-numbers-v3/block
-  folder: path.resolve(__dirname, "../../../../../etc/blocks/enter-numbers-v3/block"),
+  // Navigate from lib/node/pl-middle-layer/src/mutator to packages/blocks/enter-numbers-v3/block
+  folder: path.resolve(__dirname, "../../../../../blocks/enter-numbers-v3/block"),
 };
 
 const BPSpecSumV3: BlockPackSpec = {
   type: "dev-v2",
-  folder: path.resolve(__dirname, "../../../../../etc/blocks/sum-numbers-v3/block"),
+  folder: path.resolve(__dirname, "../../../../../blocks/sum-numbers-v3/block"),
 };
 
 test("v3 blocks: basic test with unified state", async () => {

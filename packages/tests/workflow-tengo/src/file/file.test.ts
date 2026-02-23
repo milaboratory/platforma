@@ -14,7 +14,7 @@ const cases: TestInput[] = [
     name: "upload",
     handleProvider: async (driverKit) => {
       return await driverKit.lsDriver.getLocalFileHandle(
-        path.resolve("../../assets/answer_to_the_ultimate_question.txt"),
+        path.resolve("../../../assets/answer_to_the_ultimate_question.txt"),
       );
     },
   },
