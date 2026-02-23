@@ -34,7 +34,7 @@ import { isObject } from "@milaboratories/ts-helpers";
 import { withMl, withMlAndProxy } from "./with-ml";
 import { awaitBlockDone } from "./test-helpers";
 
-//
+// oxlint-disable-next-line eslint-plugin-jest/no-disabled-tests
 test.skip("disconnect:runBlock throws DisconnectedError when connection drops mid-operation", async ({
   expect,
 }) => {

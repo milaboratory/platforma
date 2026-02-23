@@ -34,7 +34,7 @@ import { withMl, withMlAndProxy } from "./with-ml";
 import { awaitBlockDone } from "./test-helpers";
 import { deriveDataFromStorage } from "@platforma-sdk/model";
 
-//
+// oxlint-disable-next-line eslint-plugin-jest/no-disabled-tests
 test.skip("v3: disconnect:runBlock throws DisconnectedError when connection drops mid-operation", async ({
   expect,
 }) => {
