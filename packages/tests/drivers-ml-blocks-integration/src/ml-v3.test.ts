@@ -34,7 +34,7 @@ import { withMl, withMlAndProxy } from "./with-ml";
 import { awaitBlockDone } from "./test-helpers";
 import { deriveDataFromStorage } from "@platforma-sdk/model";
 
-// oxlint-disable-next-line jest/no-disabled-tests
+//
 test.skip("v3: disconnect:runBlock throws DisconnectedError when connection drops mid-operation", async ({
   expect,
 }) => {
@@ -657,7 +657,16 @@ test("v3: block update test", async ({ expect }) => {
 
     // touch
     await fs.promises.appendFile(
-      path.resolve("..", "..", "etc", "blocks", "enter-numbers-v3", "model", "dist", "model.json"),
+      path.resolve(
+        "..",
+        "..",
+        "packages",
+        "blocks",
+        "enter-numbers-v3",
+        "model",
+        "dist",
+        "model.json",
+      ),
       " ",
     );
 

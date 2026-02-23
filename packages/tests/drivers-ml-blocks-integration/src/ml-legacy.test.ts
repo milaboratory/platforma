@@ -34,7 +34,7 @@ import { isObject } from "@milaboratories/ts-helpers";
 import { withMl, withMlAndProxy } from "./with-ml";
 import { awaitBlockDone } from "./test-helpers";
 
-// oxlint-disable-next-line jest/no-disabled-tests
+//
 test.skip("disconnect:runBlock throws DisconnectedError when connection drops mid-operation", async ({
   expect,
 }) => {
@@ -602,7 +602,16 @@ test("block update test", async ({ expect }) => {
 
     // touch
     await fs.promises.appendFile(
-      path.resolve("..", "..", "etc", "blocks", "enter-numbers", "model", "dist", "model.json"),
+      path.resolve(
+        "..",
+        "..",
+        "packages",
+        "blocks",
+        "enter-numbers",
+        "model",
+        "dist",
+        "model.json",
+      ),
       " ",
     );
 

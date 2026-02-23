@@ -32,7 +32,16 @@ function createRawBlockStorage(data: unknown, dataVersion: string): string {
  */
 async function triggerBlockPackUpdate(prj: Project): Promise<void> {
   await fs.promises.appendFile(
-    path.resolve("..", "..", "etc", "blocks", "enter-numbers-v3", "model", "dist", "model.json"),
+    path.resolve(
+      "..",
+      "..",
+      "packages",
+      "blocks",
+      "enter-numbers-v3",
+      "model",
+      "dist",
+      "model.json",
+    ),
     " ",
   );
   await prj.overview.refreshState();
