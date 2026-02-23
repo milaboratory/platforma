@@ -198,10 +198,16 @@ export function createPlDataTableV2<A, U>(
     );
 
   // -- Sorting validation --
-  const sorting: PTableSorting[] = uniqueBy(
-    [...tableStateNormalized.pTableParams.sorting, ...(ops?.sorting ?? [])],
-    (s) => canonicalizeJson<PTableColumnId>(s.column),
+  const userSorting = tableStateNormalized.pTableParams.sorting;
+  const userSortingColumnIds = new Set(
+    userSorting.map((s) => canonicalizeJson<PTableColumnId>(s.column)),
   );
+  const sorting: PTableSorting[] = [
+    ...userSorting,
+    ...(ops?.sorting ?? []).filter(
+      (s) => !userSortingColumnIds.has(canonicalizeJson<PTableColumnId>(s.column)),
+    ),
+  ];
   const firstInvalidSortingColumn = sorting.find(
     (s) => !isValidColumnId(canonicalizeJson<PTableColumnId>(s.column)),
   );
