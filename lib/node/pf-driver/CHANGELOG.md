@@ -1,5 +1,11 @@
 # @milaboratories/pf-driver
 
+## 1.0.52
+
+### Patch Changes
+
+- 02b0416: PFrames version bump
+
 ## 1.0.51
 
 ### Patch Changes
