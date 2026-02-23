@@ -6,7 +6,7 @@ import { test, expect } from "vitest";
 import { isImportFileHandleIndex, isImportFileHandleUpload } from "@milaboratories/pl-model-common";
 import * as env from "../test_env";
 
-const assetsPath = path.resolve("../../../assets");
+const assetsPath = path.resolve("../../../../assets");
 
 test("should ok when get all storages from ls driver", async () => {
   const signer = new HmacSha256Signer("abc");

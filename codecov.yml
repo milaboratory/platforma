@@ -45,7 +45,7 @@ component_management:
     - component_id: desktop
       name: Desktop
       paths:
-        - packages/etc/blocks/**/*
+        - packages/blocks/**/*
         - packages/lib/model/**/*
         - packages/lib/node/**/*
         - packages/lib/util/**/*
