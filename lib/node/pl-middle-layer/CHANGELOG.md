@@ -1,5 +1,19 @@
 # @milaboratories/pl-middle-layer
 
+## 1.48.0
+
+### Minor Changes
+
+- f2daf69: Expose blockStorage to vm ctx
+
+### Patch Changes
+
+- Updated dependencies [f2daf69]
+  - @platforma-sdk/model@1.56.0
+  - @milaboratories/pl-model-middle-layer@1.12.1
+  - @milaboratories/pf-driver@1.0.53
+  - @platforma-sdk/block-tools@2.6.56
+
 ## 1.47.2
 
 ### Patch Changes

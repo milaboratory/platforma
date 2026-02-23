@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.1.24
+
+### Patch Changes
+
+- Updated dependencies [f2daf69]
+  - @platforma-sdk/model@1.56.0
+  - @milaboratories/milaboratories.ui-examples.model@1.4.21
+  - @milaboratories/milaboratories.ui-examples.ui@1.8.22
+
 ## 1.1.23
 
 ### Patch Changes

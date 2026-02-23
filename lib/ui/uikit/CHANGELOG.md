@@ -1,5 +1,12 @@
 # @milaboratories/uikit
 
+## 2.10.29
+
+### Patch Changes
+
+- Updated dependencies [f2daf69]
+  - @platforma-sdk/model@1.56.0
+
 ## 2.10.28
 
 ### Patch Changes

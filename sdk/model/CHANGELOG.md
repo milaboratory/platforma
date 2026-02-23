@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.56.0
+
+### Minor Changes
+
+- f2daf69: Expose blockStorage to vm ctx
+
 ## 1.55.0
 
 ### Minor Changes
