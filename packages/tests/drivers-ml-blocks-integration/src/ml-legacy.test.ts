@@ -602,16 +602,7 @@ test("block update test", async ({ expect }) => {
 
     // touch
     await fs.promises.appendFile(
-      path.resolve(
-        "..",
-        "..",
-        "packages",
-        "blocks",
-        "enter-numbers",
-        "model",
-        "dist",
-        "model.json",
-      ),
+      path.resolve("..", "..", "blocks", "enter-numbers", "model", "dist", "model.json"),
       " ",
     );
 
@@ -1396,7 +1387,7 @@ async function lsDriverGetFileHandleFromAssets(
   const local = storages.find((s) => s.name == "local");
   expect(local).not.toBeUndefined();
 
-  const fileDir = path.resolve(__dirname, "..", "..", "..", "assets");
+  const fileDir = path.resolve(__dirname, "..", "..", "..", "..", "assets");
   const files = await ml.driverKit.lsDriver.listFiles(local!.handle, fileDir);
 
   const ourFile = files.entries.find((f) => f.name == fName);
