@@ -10,6 +10,7 @@ import type {
 import type { SdkInfo } from "./version";
 import type { BlockStatePatch } from "./block_state_patch";
 import type { PluginInstance } from "./block_model";
+import type { PluginFactory, PluginHandle } from "./plugin_model";
 
 /** Defines all methods to interact with the platform environment from within a block UI. @deprecated */
 export interface PlatformaV1<
@@ -85,6 +86,7 @@ export type BlockModelInfo = {
       withStatus: boolean;
     }
   >;
+  pluginIds: string[];
 };
 
 export type PlatformaApiVersion = Platforma["apiVersion"];
@@ -135,3 +137,13 @@ export type InferPluginData<Pl, PluginId extends string> =
         : never
       : never
     : never;
+
+/** Map each plugin instance to a type-safe opaque handle. */
+export type InferPluginHandles<Pl> =
+  Pl extends PlatformaV3<any, any, any, any, infer P>
+    ? {
+        readonly [K in string & keyof P]: P[K] extends PluginInstance<infer D, infer Pm, infer O>
+          ? PluginHandle<PluginFactory<D, Pm, O>>
+          : never;
+      }
+    : {};

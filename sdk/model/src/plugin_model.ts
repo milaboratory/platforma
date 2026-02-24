@@ -85,11 +85,30 @@ export class PluginModel<Data = unknown, Params = undefined, Outputs = {}> {
   }
 }
 
+/** Plugin factory returned by PluginModelBuilder.build(). */
+export interface PluginFactory<
+  Data = unknown,
+  Params = undefined,
+  Outputs = {},
+  Config = undefined,
+> {
+  create(config?: Config): PluginModel<Data, Params, Outputs>;
+}
+
 /**
- * Plugin factory returned by PluginModelBuilder.build().
- * Call create() with config to get a configured PluginModel instance.
+ * Opaque handle for passing a plugin instance from block UI to a plugin component.
+ * At runtime this is just the plugin instance ID string.
  */
-class PluginModelFactory<Data, Params, Config, Outputs> {
+export type PluginHandle<F = unknown> = string & {
+  readonly __pluginFactory: F;
+};
+
+class PluginModelFactory<Data, Params, Config, Outputs> implements PluginFactory<
+  Data,
+  Params,
+  Outputs,
+  Config
+> {
   private readonly name: PluginName;
   private readonly data: (config?: Config) => DataModel<Data>;
   private readonly outputs: {
@@ -230,7 +249,7 @@ class PluginModelBuilder<
    * // Later, call create() with config to get a configured instance:
    * const configured = myPlugin.create({ defaultValue: 'test' });
    */
-  build(): PluginModelFactory<Data, Params, Config, Outputs> {
+  build(): PluginFactory<Data, Params, Outputs, Config> {
     return new PluginModelFactory<Data, Params, Config, Outputs>({
       name: this.name,
       data: this.data,

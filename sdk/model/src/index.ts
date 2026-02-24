@@ -14,7 +14,7 @@ export {
   makeDataVersioned,
 } from "./block_migrations";
 export type { LegacyV1State } from "./block_migrations";
-export { PluginModel } from "./plugin_model";
+export { PluginModel, type PluginFactory, type PluginHandle } from "./plugin_model";
 export * from "./bconfig";
 export * from "./components";
 export * from "./config";

@@ -530,6 +530,7 @@ export class BlockModelV3<
               },
             ]),
           ),
+          pluginIds: Object.keys(plugins),
         },
       } as any;
   }
