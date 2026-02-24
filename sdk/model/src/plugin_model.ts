@@ -9,28 +9,10 @@
 
 import type { DataModel } from "./block_migrations";
 import type { PluginName } from "./block_storage";
-import type { ResultPool } from "./render";
+import type { PluginRenderCtx } from "./render";
 
 /** Symbol for internal builder creation method */
 const FROM_BUILDER = Symbol("fromBuilder");
-
-// =============================================================================
-// Plugin Render Context
-// =============================================================================
-
-/**
- * Context passed to plugin output functions.
- * Provides access to plugin's persistent data, params derived from block context,
- * and the result pool for accessing workflow outputs.
- */
-export interface PluginRenderCtx<Data, Params = undefined> {
-  /** Plugin's persistent data */
-  readonly data: Data;
-  /** Params derived from block's RenderCtx */
-  readonly params: Params;
-  /** Result pool for accessing workflow outputs */
-  readonly resultPool: ResultPool;
-}
 
 // =============================================================================
 // Plugin Type

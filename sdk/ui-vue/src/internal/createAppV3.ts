@@ -14,7 +14,6 @@ import {
   unwrapResult,
   deriveDataFromStorage,
   getPluginData,
-  normalizeBlockStorage,
 } from "@platforma-sdk/model";
 import type { Ref } from "vue";
 import { reactive, computed, ref } from "vue";
@@ -151,8 +150,7 @@ export function createAppV3<
 
   /** Derives plugin data for a given pluginId from the current snapshot. */
   const derivePluginDataFromSnapshot = (pluginId: string): unknown => {
-    const storage = normalizeBlockStorage(snapshot.value.blockStorage);
-    return getPluginData(storage, pluginId);
+    return getPluginData(snapshot.value.blockStorage, pluginId);
   };
 
   const setNavigationState = async (state: NavigationState<Href>) => {
