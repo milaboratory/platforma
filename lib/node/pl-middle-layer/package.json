@@ -32,7 +32,7 @@
   "dependencies": {
     "@milaboratories/computable": "workspace:*",
     "@milaboratories/pf-driver": "workspace:*",
-    "@milaboratories/pframes-rs-node": "catalog:*",
+    "@milaboratories/pframes-rs-node": "catalog:",
     "@milaboratories/pl-client": "workspace:*",
     "@milaboratories/pl-deployments": "workspace:*",
     "@milaboratories/pl-drivers": "workspace:*",
