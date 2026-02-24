@@ -1,5 +1,11 @@
 # @milaboratories/pf-driver
 
+## 1.0.55
+
+### Patch Changes
+
+- a95fc4e: Update deps version
+
 ## 1.0.54
 
 ### Patch Changes

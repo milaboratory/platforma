@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.48.2
+
+### Patch Changes
+
+- a95fc4e: Update deps version
+- Updated dependencies [a95fc4e]
+  - @milaboratories/pf-driver@1.0.55
+
 ## 1.48.1
 
 ### Patch Changes
