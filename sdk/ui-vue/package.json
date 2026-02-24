@@ -2,14 +2,16 @@
   "name": "@platforma-sdk/ui-vue",
   "version": "1.57.0",
   "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "main": "dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "sources": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./styles": "./dist/index.js"
+    }
   },
   "scripts": {
     "dev": "ts-builder serve --target browser-lib",
@@ -58,6 +60,5 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
-  },
-  "styles": "dist/index.js"
+  }
 }

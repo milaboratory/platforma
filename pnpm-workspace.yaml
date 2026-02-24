@@ -162,7 +162,8 @@ catalog:
   "rollup-plugin-node-externals": ^8.0.0
   "rollup-plugin-sourcemaps2": ^0.5.2
   "vite-plugin-dts": ^4.5.3
-  "vite-plugin-css-injected-by-js": ^3.5.2
+  "vite-plugin-lib-inject-css": ^2.2.2
+  "vite-plugin-externalize-deps": ^0.9.0
   "ts-node": ^10.9.2
   "@zed-industries/vscode-langservers-extracted": ^4.10.7
 
