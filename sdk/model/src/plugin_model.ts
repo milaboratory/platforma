@@ -7,6 +7,7 @@
  * @module plugin_model
  */
 
+import type { BlockCodeKnownFeatureFlags } from "@milaboratories/pl-model-common";
 import type { DataModel } from "./block_migrations";
 import type { PluginName } from "./block_storage";
 import type { PluginRenderCtx } from "./render";
@@ -29,15 +30,19 @@ export class PluginModel<Data = unknown, Params = undefined, Outputs = {}> {
   readonly dataModel: DataModel<Data>;
   /** Output definitions - functions that compute outputs from plugin context */
   readonly outputs: { [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K] };
+  /** Feature flags declared by this plugin */
+  readonly featureFlags?: BlockCodeKnownFeatureFlags;
 
-  private constructor(input: {
+  private constructor(options: {
     name: PluginName;
     dataModel: DataModel<Data>;
     outputs: { [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K] };
+    featureFlags?: BlockCodeKnownFeatureFlags;
   }) {
-    this.name = input.name;
-    this.dataModel = input.dataModel;
-    this.outputs = input.outputs;
+    this.name = options.name;
+    this.dataModel = options.dataModel;
+    this.outputs = options.outputs;
+    this.featureFlags = options.featureFlags;
   }
 
   /**
@@ -45,12 +50,13 @@ export class PluginModel<Data = unknown, Params = undefined, Outputs = {}> {
    * Uses Symbol key to prevent external access.
    * @internal
    */
-  static [FROM_BUILDER]<D, P, O>(input: {
+  static [FROM_BUILDER]<D, P, O>(options: {
     name: PluginName;
     dataModel: DataModel<D>;
     outputs: { [K in keyof O]: (ctx: PluginRenderCtx<D, P>) => O[K] };
+    featureFlags?: BlockCodeKnownFeatureFlags;
   }): PluginModel<D, P, O> {
-    return new this<D, P, O>(input);
+    return new this<D, P, O>(options);
   }
 
   /**
@@ -73,6 +79,7 @@ export class PluginModel<Data = unknown, Params = undefined, Outputs = {}> {
   static define<Data, Params = undefined, Config = undefined>(options: {
     name: PluginName;
     data: (config?: Config) => DataModel<Data>;
+    featureFlags?: BlockCodeKnownFeatureFlags;
   }): PluginModelBuilder<Data, Params, Config> {
     return PluginModelBuilder[FROM_BUILDER]<Data, Params, Config>(options);
   }
@@ -88,15 +95,18 @@ class PluginModelFactory<Data, Params, Config, Outputs> {
   private readonly outputs: {
     [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K];
   };
+  private readonly featureFlags?: BlockCodeKnownFeatureFlags;
 
-  constructor(input: {
+  constructor(options: {
     name: PluginName;
     data: (config?: Config) => DataModel<Data>;
     outputs: { [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K] };
+    featureFlags?: BlockCodeKnownFeatureFlags;
   }) {
-    this.name = input.name;
-    this.data = input.data;
-    this.outputs = input.outputs;
+    this.name = options.name;
+    this.data = options.data;
+    this.outputs = options.outputs;
+    this.featureFlags = options.featureFlags;
   }
 
   /** Create a configured PluginModel instance */
@@ -105,6 +115,7 @@ class PluginModelFactory<Data, Params, Config, Outputs> {
       name: this.name,
       dataModel: this.data(config),
       outputs: this.outputs,
+      featureFlags: this.featureFlags,
     });
   }
 }
@@ -146,17 +157,20 @@ class PluginModelBuilder<
   private readonly outputs: {
     [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K];
   };
+  private readonly featureFlags?: BlockCodeKnownFeatureFlags;
 
-  private constructor(input: {
+  private constructor(options: {
     name: PluginName;
     data: (config?: Config) => DataModel<Data>;
     outputs?: { [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K] };
+    featureFlags?: BlockCodeKnownFeatureFlags;
   }) {
-    this.name = input.name;
-    this.data = input.data;
+    this.name = options.name;
+    this.data = options.data;
     this.outputs =
-      input.outputs ??
+      options.outputs ??
       ({} as { [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K] });
+    this.featureFlags = options.featureFlags;
   }
 
   /**
@@ -164,12 +178,13 @@ class PluginModelBuilder<
    * Uses Symbol key to prevent external access.
    * @internal
    */
-  static [FROM_BUILDER]<D, P, C, O extends Record<string, unknown> = {}>(input: {
+  static [FROM_BUILDER]<D, P, C, O extends Record<string, unknown> = {}>(options: {
     name: PluginName;
     data: (config?: C) => DataModel<D>;
     outputs?: { [K in keyof O]: (ctx: PluginRenderCtx<D, P>) => O[K] };
+    featureFlags?: BlockCodeKnownFeatureFlags;
   }): PluginModelBuilder<D, P, C, O> {
-    return new this<D, P, C, O>(input);
+    return new this<D, P, C, O>(options);
   }
 
   /**
@@ -190,6 +205,7 @@ class PluginModelBuilder<
     return new PluginModelBuilder<Data, Params, Config, Outputs & { [K in Key]: T }>({
       name: this.name,
       data: this.data,
+      featureFlags: this.featureFlags,
       outputs: {
         ...this.outputs,
         [key]: fn,
@@ -219,6 +235,7 @@ class PluginModelBuilder<
       name: this.name,
       data: this.data,
       outputs: this.outputs,
+      featureFlags: this.featureFlags,
     });
   }
 }

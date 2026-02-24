@@ -6,6 +6,7 @@ import type {
   BlockCodeKnownFeatureFlags,
   BlockConfigContainer,
 } from "@milaboratories/pl-model-common";
+import { mergeFeatureFlags } from "@milaboratories/pl-model-common";
 import { getPlatformaInstance, isInUI, createAndRegisterRenderLambda } from "./internal";
 import type { DataModel } from "./block_migrations";
 import type { PlatformaV3 } from "./platforma";
@@ -399,6 +400,7 @@ export class BlockModelV3<
         ...this.config.plugins,
         [pluginId]: instance,
       },
+      featureFlags: mergeFeatureFlags(this.config.featureFlags, plugin.featureFlags ?? {}),
     });
   }
 
