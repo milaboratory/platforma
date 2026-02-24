@@ -22,11 +22,11 @@ catalogs:
       specifier: ~1.13.4
       version: 1.13.4
     '@milaboratories/pframes-rs-node':
-      specifier: 1.1.8
-      version: 1.1.8
+      specifier: 1.1.9
+      version: 1.1.9
     '@milaboratories/pframes-rs-wasm':
-      specifier: 1.1.8
-      version: 1.1.8
+      specifier: 1.1.9
+      version: 1.1.9
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.9
       version: 2.2.9
@@ -1804,10 +1804,10 @@ importers:
     dependencies:
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.1.8(encoding@0.1.13)
+        version: 1.1.9(encoding@0.1.13)
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
-        version: 1.1.8(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.0)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+        version: 1.1.9(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.0)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
         version: link:../../model/middle-layer
@@ -2186,7 +2186,7 @@ importers:
         version: link:../pf-driver
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.1.8(encoding@0.1.13)
+        version: 1.1.9(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -4739,15 +4739,15 @@ packages:
     resolution: {integrity: sha512-BgwkcYrppMZzHyRpq6CgWZrns9zJr9ppSu+TIeJgozHQV+ufIujziyPttonWz2UmTVUEJh3/Q2TLp1bbbWKyNQ==}
     engines: {node: '>=22'}
 
-  '@milaboratories/pframes-rs-node@1.1.8':
-    resolution: {integrity: sha512-HQZKw161cpDEUTik6ZTWL8hpHm53JGPAUtJ1LQhLLG7f/g3OwsUXohcU98Z1vJAnimVx4dleaZrnXdRreIG+AQ==}
+  '@milaboratories/pframes-rs-node@1.1.9':
+    resolution: {integrity: sha512-93SMAPlI2AassWEp1LlENYdviHMnB+cwpCOyOAAnRhUAat8AM2vm5hPMOsIlK8d6f67G6hSMeH/9Tb2gVWPD2w==}
 
-  '@milaboratories/pframes-rs-serv@1.1.8':
-    resolution: {integrity: sha512-SqYRY9V7C9/j5eesNW3ZMoCyGAhJfANcMVMxEnARO9V7rNh9V6da84SeXfHIdh9F1ZfTm59QJNgDhrk+wilz3Q==}
+  '@milaboratories/pframes-rs-serv@1.1.9':
+    resolution: {integrity: sha512-c1vbrNVQQi8YHKFtUa8R5wJxjhaZwMEBMZ/p89vr2rhUddxym05B0m+W5tWaZAOX6vrokGFe1KFyvzso3q8rEw==}
     hasBin: true
 
-  '@milaboratories/pframes-rs-wasm@1.1.8':
-    resolution: {integrity: sha512-77toE2KwxmspOLCI7ehTE1okK4IzgFgaZoalBkjo3NP5E8rnYNj1yzgwVUQXjjTQz6Mstkn5P037eCj3gzj+ZQ==}
+  '@milaboratories/pframes-rs-wasm@1.1.9':
+    resolution: {integrity: sha512-8n6UqL7H16MWlKwwraEMxm+VDHAcRLNJPPc8FY2fBytzraKx7PDB9u7eCGxRIuARf9xWdi/5unMd96/SbUwpqA==}
     peerDependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
       '@milaboratories/pl-model-common': 1.25.0
@@ -10822,18 +10822,18 @@ snapshots:
 
   '@milaboratories/helpers@1.13.5': {}
 
-  '@milaboratories/pframes-rs-node@1.1.8(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.1.9(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.3(encoding@0.1.13)
       '@milaboratories/helpers': 1.13.5
-      '@milaboratories/pframes-rs-serv': 1.1.8
+      '@milaboratories/pframes-rs-serv': 1.1.9
       '@milaboratories/pl-model-common': 1.25.0
       ulid: 3.0.2
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-serv@1.1.8':
+  '@milaboratories/pframes-rs-serv@1.1.9':
     dependencies:
       '@milaboratories/helpers': 1.13.5
       '@milaboratories/pl-model-common': 1.25.0
@@ -10841,7 +10841,7 @@ snapshots:
       commander: 14.0.2
       selfsigned: 5.5.0
 
-  '@milaboratories/pframes-rs-wasm@1.1.8(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.0)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
+  '@milaboratories/pframes-rs-wasm@1.1.9(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.0)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
     dependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
       '@milaboratories/pl-model-common': 1.25.0

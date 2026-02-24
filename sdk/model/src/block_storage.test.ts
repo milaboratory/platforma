@@ -218,8 +218,10 @@ describe("BlockStorage", () => {
       expect(getPluginData(storage, "chart1")).toEqual({ type: "bar" });
     });
 
-    it("getPluginData should return undefined for missing plugin", () => {
-      expect(getPluginData(baseStorage, "nonexistent")).toBeUndefined();
+    it("getPluginData should throw for missing plugin", () => {
+      expect(() => getPluginData(baseStorage, "nonexistent")).toThrow(
+        "Plugin 'nonexistent' not found in block storage",
+      );
     });
 
     it("should not modify original storage (immutability)", () => {

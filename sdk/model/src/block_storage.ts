@@ -381,17 +381,17 @@ export function migrateBlockStorage(
 }
 
 /**
- * Gets plugin-specific data from BlockStorage (for UI)
+ * Gets plugin-specific data from block storage.
+ * Accepts raw storage (any format) and normalizes internally.
  *
- * @param storage - The BlockStorage instance
+ * @param rawStorage - Raw block storage (may be legacy format or BlockStorage)
  * @param pluginId - The plugin instance id
- * @returns The plugin data or undefined if not set
+ * @returns The plugin data
+ * @throws If pluginId is not found in storage
  */
-export function getPluginData<TData = unknown>(
-  storage: BlockStorage,
-  pluginId: string,
-): TData | undefined {
+export function getPluginData<TData = unknown>(rawStorage: unknown, pluginId: string): TData {
+  const storage = normalizeBlockStorage(rawStorage);
   const pluginEntry = storage.__plugins?.[pluginId];
-  if (!pluginEntry) return undefined;
+  if (!pluginEntry) throw new Error(`Plugin '${pluginId}' not found in block storage`);
   return pluginEntry.__data as TData;
 }
