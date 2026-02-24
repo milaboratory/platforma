@@ -1,5 +1,6 @@
 export * from "./block_state_patch";
 export * from "./block_state_util";
+export * from "./plugin_handle";
 export * from "./block_storage";
 export * from "./block_storage_facade";
 export * from "./block_model_legacy";
@@ -14,7 +15,7 @@ export {
   makeDataVersioned,
 } from "./block_migrations";
 export type { LegacyV1State } from "./block_migrations";
-export { PluginModel, type PluginFactory, type PluginHandle } from "./plugin_model";
+export * from "./plugin_model";
 export * from "./bconfig";
 export * from "./components";
 export * from "./config";

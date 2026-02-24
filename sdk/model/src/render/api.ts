@@ -50,6 +50,7 @@ import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
 import { getCfgRenderCtx } from "../internal";
 import { getPluginData } from "../block_storage";
+import type { PluginHandle, PluginPhantom } from "../plugin_handle";
 import { TreeNodeAccessor, ifDef } from "./accessor";
 import type { FutureRef } from "./future";
 import type { AccessorHandle, GlobalCfgRenderCtx } from "./internal";
@@ -759,12 +760,12 @@ export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCt
  */
 export class PluginRenderCtx<Data = unknown, Params = unknown> {
   private readonly ctx: GlobalCfgRenderCtx;
-  private readonly pluginId: string;
+  private readonly handle: PluginHandle<PluginPhantom<Data>>;
   private readonly wrappedInputs: Record<string, () => unknown>;
 
-  constructor(pluginId: string, wrappedInputs: Record<string, () => unknown>) {
+  constructor(handle: PluginHandle, wrappedInputs: Record<string, () => unknown>) {
     this.ctx = getCfgRenderCtx();
-    this.pluginId = pluginId;
+    this.handle = handle as typeof this.handle;
     this.wrappedInputs = wrappedInputs;
   }
 
@@ -774,7 +775,7 @@ export class PluginRenderCtx<Data = unknown, Params = unknown> {
   public get data(): Data {
     if (this.dataCache === undefined) {
       const raw = this.ctx.blockStorage();
-      const pluginData = getPluginData<Data>(parseJson(raw), this.pluginId);
+      const pluginData = getPluginData(parseJson(raw), this.handle);
       this.dataCache = { v: pluginData };
     }
     return this.dataCache.v;

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { usePlugin, type PluginHandle } from "@platforma-sdk/ui-vue";
-import type { CounterPluginFactory } from "@milaboratories/milaboratories.test-block-model.model";
+import { usePlugin, type InferPluginHandle } from "@platforma-sdk/ui-vue";
+import type { CounterPlugin } from "@milaboratories/milaboratories.test-block-model.model";
 
 const props = defineProps<{
-  instance: PluginHandle<CounterPluginFactory>;
+  instance: InferPluginHandle<CounterPlugin>;
 }>();
 
 const plugin = usePlugin(props.instance);

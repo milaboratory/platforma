@@ -9,12 +9,17 @@ import type {
   AuthorMarker,
   PlatformaExtended,
   InferPluginHandles,
+  PluginHandle,
+  InferFactoryData,
+  InferFactoryOutputs,
 } from "@platforma-sdk/model";
 import {
   hasAbortError,
   unwrapResult,
   deriveDataFromStorage,
   getPluginData,
+  isPluginOutputKey,
+  pluginOutputPrefix,
 } from "@platforma-sdk/model";
 import type { Ref } from "vue";
 import { reactive, computed, ref } from "vue";
@@ -28,21 +33,27 @@ import { watchIgnorable } from "@vueuse/core";
 export const patchPoolingDelay = 150;
 
 /** Per-plugin reactive model exposed to consumers via usePlugin(). */
-export interface PluginSlot {
+export interface PluginState<Data = unknown, Outputs = unknown> {
   readonly model: {
-    data: unknown;
-    outputs: Record<string, unknown>;
-    outputErrors: Record<string, Error | undefined>;
+    data: Data;
+    outputs: Outputs extends Record<string, unknown>
+      ? { [K in keyof Outputs]: Outputs[K] | undefined }
+      : Record<string, unknown>;
+    outputErrors: Outputs extends Record<string, unknown>
+      ? { [K in keyof Outputs]?: Error }
+      : Record<string, Error | undefined>;
   };
 }
 
 /** Internal interface for plugin access — provided via Vue injection to usePlugin(). */
 export interface PluginAccess {
-  getOrCreatePluginSlot(pluginId: string): PluginSlot;
+  getOrCreatePluginState<F>(
+    handle: PluginHandle<F>,
+  ): PluginState<InferFactoryData<F>, InferFactoryOutputs<F>>;
 }
 
-/** Internal per-plugin slot with reconciliation support. */
-interface InternalPluginSlot extends PluginSlot {
+/** Internal per-plugin state with reconciliation support. */
+interface InternalPluginState<Data = unknown, Outputs = unknown> extends PluginState<Data, Outputs> {
   readonly ignoreUpdates: (fn: () => void) => void;
 }
 
@@ -125,19 +136,19 @@ export function createAppV3<
   const debounceSpan = settings.debounceSpan ?? 200;
 
   const setDataQueue = new UpdateSerializer({ debounceSpan });
-  const pluginDataQueues = new Map<string, UpdateSerializer>();
-  const getPluginDataQueue = (pluginId: string): UpdateSerializer => {
-    let queue = pluginDataQueues.get(pluginId);
+  const pluginDataQueues = new Map<PluginHandle, UpdateSerializer>();
+  const getPluginDataQueue = (handle: PluginHandle): UpdateSerializer => {
+    let queue = pluginDataQueues.get(handle);
     if (!queue) {
       queue = new UpdateSerializer({ debounceSpan });
-      pluginDataQueues.set(pluginId, queue);
+      pluginDataQueues.set(handle, queue);
     }
     return queue;
   };
   const setNavigationStateQueue = new UpdateSerializer({ debounceSpan });
 
-  /** Lazily-created per-plugin reactive slots. */
-  const pluginSlots = new Map<string, InternalPluginSlot>();
+  /** Lazily-created per-plugin reactive states. */
+  const pluginStates = new Map<PluginHandle, InternalPluginState>();
   /**
    * Reactive snapshot of the application state, including args, outputs, UI state, and navigation state.
    */
@@ -155,9 +166,9 @@ export function createAppV3<
     return platforma.mutateStorage({ operation: "update-block-data", value }, nextAuthorMarker());
   };
 
-  const updatePluginData = async (pluginId: string, value: unknown) => {
+  const updatePluginData = async (handle: PluginHandle, value: unknown) => {
     return platforma.mutateStorage(
-      { operation: "update-plugin-data", pluginId, value },
+      { operation: "update-plugin-data", pluginId: handle, value },
       nextAuthorMarker(),
     );
   };
@@ -168,7 +179,7 @@ export function createAppV3<
 
   const outputs = computed<OutputValues<Outputs>>(() => {
     const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>)
-      .filter(([k]) => !k.startsWith("plugin-output#"))
+      .filter(([k]) => !isPluginOutputKey(k))
       .map(([k, outputWithStatus]) =>
         platforma.blockModelInfo.outputs[k]?.withStatus
           ? [k, ensureOutputHasStableFlag(outputWithStatus)]
@@ -184,7 +195,7 @@ export function createAppV3<
 
   const outputErrors = computed<OutputErrors<Outputs>>(() => {
     const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>)
-      .filter(([k]) => !k.startsWith("plugin-output#"))
+      .filter(([k]) => !isPluginOutputKey(k))
       .map(([k, vOrErr]) => [
         k,
         vOrErr && vOrErr.ok === false ? new MultiError(vOrErr.errors) : undefined,
@@ -261,9 +272,9 @@ export function createAppV3<
             snapshot.value = applyPatch(snapshot.value, patches.value, false, false).newDocument;
             updateAppModel({ data: deriveDataFromStorage<Data>(snapshot.value.blockStorage) });
             // Reconcile plugin data from external source
-            for (const [pluginId, slot] of pluginSlots) {
-              slot.ignoreUpdates(() => {
-                slot.model.data = deepClone(getPluginData(snapshot.value.blockStorage, pluginId));
+            for (const [handle, pluginState] of pluginStates) {
+              pluginState.ignoreUpdates(() => {
+                pluginState.model.data = deepClone(getPluginData(snapshot.value.blockStorage, handle));
               });
             }
             data.isExternalSnapshot = isAuthorChanged;
@@ -330,9 +341,9 @@ export function createAppV3<
     },
   };
 
-  /** Creates a lazily-cached per-plugin reactive slot. */
-  const createPluginSlot = (pluginId: string): InternalPluginSlot => {
-    const prefix = `plugin-output#${pluginId}#`;
+  /** Creates a lazily-cached per-plugin reactive state. */
+  const createPluginState = <F>(handle: PluginHandle<F>): InternalPluginState<InferFactoryData<F>, InferFactoryOutputs<F>> => {
+    const prefix = pluginOutputPrefix(handle);
 
     const pluginOutputs = computed(() => {
       const result: Record<string, unknown> = {};
@@ -361,7 +372,7 @@ export function createAppV3<
     });
 
     const pluginModel = reactive({
-      data: deepClone(getPluginData(snapshot.value.blockStorage, pluginId)),
+      data: deepClone(getPluginData(snapshot.value.blockStorage, handle)),
       outputs: pluginOutputs,
       outputErrors: pluginOutputErrors,
     });
@@ -370,26 +381,27 @@ export function createAppV3<
       () => pluginModel.data,
       (newData) => {
         if (newData === undefined) return;
-        debug("plugin setData", pluginId, newData);
-        getPluginDataQueue(pluginId).run(() =>
-          updatePluginData(pluginId, deepClone(newData)).then(unwrapResult),
+        debug("plugin setData", handle, newData);
+        getPluginDataQueue(handle).run(() =>
+          updatePluginData(handle, deepClone(newData)).then(unwrapResult),
         );
       },
       { deep: true },
     );
 
-    return { model: pluginModel, ignoreUpdates };
+    return { model: pluginModel, ignoreUpdates } as unknown as InternalPluginState<InferFactoryData<F>, InferFactoryOutputs<F>>;
   };
 
   /** Plugin internals — provided via separate injection key, not exposed on useApp(). */
   const pluginAccess: PluginAccess = {
-    getOrCreatePluginSlot(pluginId: string): PluginSlot {
-      let slot = pluginSlots.get(pluginId);
-      if (!slot) {
-        slot = createPluginSlot(pluginId);
-        pluginSlots.set(pluginId, slot);
+    getOrCreatePluginState<F>(handle: PluginHandle<F>) {
+      const existing = pluginStates.get(handle);
+      if (existing) {
+        return existing as unknown as PluginState<InferFactoryData<F>, InferFactoryOutputs<F>>;
       }
-      return slot;
+      const state = createPluginState(handle);
+      pluginStates.set(handle, state);
+      return state;
     },
   };
 

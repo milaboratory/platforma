@@ -10,14 +10,28 @@
 import type { BlockCodeKnownFeatureFlags } from "@milaboratories/pl-model-common";
 import type { DataModel } from "./block_migrations";
 import type { PluginName } from "./block_storage";
+import type { PluginHandle, PluginPhantom } from "./plugin_handle";
 import type { PluginRenderCtx } from "./render";
+
+const PLUGIN_OUTPUT_PREFIX = "plugin-output#";
+
+/** Construct the output key for a plugin output in the block outputs map. */
+export function pluginOutputKey(handle: PluginHandle, outputKey: string): string {
+  return `${PLUGIN_OUTPUT_PREFIX}${handle}#${outputKey}`;
+}
+
+/** Check whether an output key belongs to a plugin (vs block-level output). */
+export function isPluginOutputKey(key: string): boolean {
+  return key.startsWith(PLUGIN_OUTPUT_PREFIX);
+}
+
+/** Get the prefix used for all outputs of a specific plugin instance. */
+export function pluginOutputPrefix(handle: PluginHandle): string {
+  return pluginOutputKey(handle, "");
+}
 
 /** Symbol for internal builder creation method */
 const FROM_BUILDER = Symbol("fromBuilder");
-
-// =============================================================================
-// Plugin Type
-// =============================================================================
 
 /**
  * Configured plugin instance returned by PluginModelFactory.create().
@@ -93,15 +107,19 @@ export interface PluginFactory<
   Config = undefined,
 > {
   create(config?: Config): PluginModel<Data, Params, Outputs>;
+  /**
+   * @internal Phantom field for structural type extraction.
+   * Enables InferFactoryData/InferFactoryOutputs to work without importing PluginFactory.
+   */
+  readonly __types?: { data: Data; params: Params; outputs: Outputs; config: Config };
 }
 
-/**
- * Opaque handle for passing a plugin instance from block UI to a plugin component.
- * At runtime this is just the plugin instance ID string.
- */
-export type PluginHandle<F = unknown> = string & {
-  readonly __pluginFactory: F;
-};
+/** Derive a typed PluginHandle from a PluginFactory type. */
+export type InferPluginHandle<F> =
+  F extends { readonly __types?: { data: infer D; params: infer Pm; outputs: infer O } }
+    ? PluginHandle<PluginPhantom<D, Pm, O>>
+    : never;
+
 
 class PluginModelFactory<Data, Params, Config, Outputs> implements PluginFactory<
   Data,
@@ -138,10 +156,6 @@ class PluginModelFactory<Data, Params, Config, Outputs> implements PluginFactory
     });
   }
 }
-
-// =============================================================================
-// Plugin Model Builder
-// =============================================================================
 
 /**
  * Builder for creating PluginType with type-safe output definitions.

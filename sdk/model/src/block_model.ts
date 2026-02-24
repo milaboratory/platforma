@@ -13,6 +13,8 @@ import type { PlatformaV3 } from "./platforma";
 import type { InferRenderFunctionReturn, RenderFunction } from "./render";
 import { BlockRenderCtx, PluginRenderCtx } from "./render";
 import type { PluginModel } from "./plugin_model";
+import { pluginOutputKey } from "./plugin_model";
+import type { PluginHandle } from "./plugin_handle";
 import type { RenderCtxBase } from "./render";
 import { PlatformaSDKVersion } from "./version";
 import {
@@ -126,7 +128,6 @@ export class BlockModelV3<
       renderingMode: "Heavy",
       dataModel,
       outputs: {},
-      // Register default sections callback (returns empty array)
       sections: createAndRegisterRenderLambda({ handle: "sections", lambda: () => [] }, true),
       title: undefined,
       subtitle: undefined,
@@ -425,15 +426,16 @@ export class BlockModelV3<
     // Build plugin registry
     const { plugins } = this.config;
     const pluginRegistry: Record<string, PluginName> = {};
-    for (const [pluginId, { model }] of Object.entries(plugins)) {
-      pluginRegistry[pluginId] = model.name;
+    const pluginHandles = Object.keys(plugins) as PluginHandle[];
+    for (const handle of pluginHandles) {
+      pluginRegistry[handle] = plugins[handle].model.name;
     }
 
     const { dataModel, argsFunction, prerunArgsFunction } = this.config;
 
-    function getPlugin(pluginId: string): PluginInstance {
-      const plugin = plugins[pluginId];
-      if (!plugin) throw new Error(`Plugin model not found for '${pluginId}'`);
+    function getPlugin(handle: PluginHandle): PluginInstance {
+      const plugin = plugins[handle];
+      if (!plugin) throw new Error(`Plugin model not found for '${handle}'`);
       return plugin;
     }
 
@@ -445,14 +447,14 @@ export class BlockModelV3<
         migrateStorage(currentStorageJson, {
           migrateBlockData: (v) => dataModel.migrate(v),
           getPluginRegistry: () => pluginRegistry,
-          migratePluginData: (pluginId, v) => getPlugin(pluginId).model.dataModel.migrate(v),
-          createPluginData: (pluginId) => getPlugin(pluginId).model.dataModel.getDefaultData(),
+          migratePluginData: (handle, v) => getPlugin(handle).model.dataModel.migrate(v),
+          createPluginData: (handle) => getPlugin(handle).model.dataModel.getDefaultData(),
         }),
       [BlockStorageFacadeCallbacks.StorageInitial]: () =>
         createInitialStorage({
           getDefaultBlockData: () => dataModel.getDefaultData(),
           getPluginRegistry: () => pluginRegistry,
-          createPluginData: (pluginId) => getPlugin(pluginId).model.dataModel.getDefaultData(),
+          createPluginData: (handle) => getPlugin(handle).model.dataModel.getDefaultData(),
         }),
       [BlockStorageFacadeCallbacks.ArgsDerive]: (storageJson) =>
         deriveArgsFromStorage(storageJson, argsFunction),
@@ -462,7 +464,8 @@ export class BlockModelV3<
 
     // Register plugin input and output lambdas
     const pluginOutputs: Record<string, ConfigRenderLambda> = {};
-    for (const [pluginId, { model, inputs }] of Object.entries(plugins)) {
+    for (const handle of pluginHandles) {
+      const { model, inputs } = plugins[handle];
       // Wrap plugin param lambdas: close over BlockRenderCtx creation
       const wrappedInputs: Record<string, () => unknown> = {};
       for (const [paramKey, paramFn] of Object.entries(inputs)) {
@@ -472,10 +475,10 @@ export class BlockModelV3<
       // Register plugin outputs (in config pack, evaluated by middle layer)
       const outputs = model.outputs as Record<string, (ctx: PluginRenderCtx) => unknown>;
       for (const [outputKey, outputFn] of Object.entries(outputs)) {
-        const key = `plugin-output#${pluginId}#${outputKey}`;
+        const key = pluginOutputKey(handle, outputKey);
         pluginOutputs[key] = createAndRegisterRenderLambda({
           handle: key,
-          lambda: () => outputFn(new PluginRenderCtx(pluginId, wrappedInputs)),
+          lambda: () => outputFn(new PluginRenderCtx(handle, wrappedInputs)),
         });
       }
     }
@@ -530,7 +533,7 @@ export class BlockModelV3<
               },
             ]),
           ),
-          pluginIds: Object.keys(plugins),
+          pluginIds: pluginHandles,
         },
       } as any;
   }

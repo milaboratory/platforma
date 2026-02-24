@@ -10,7 +10,7 @@ import type {
 import type { SdkInfo } from "./version";
 import type { BlockStatePatch } from "./block_state_patch";
 import type { PluginInstance } from "./block_model";
-import type { PluginFactory, PluginHandle } from "./plugin_model";
+import type { PluginHandle, PluginPhantom } from "./plugin_handle";
 
 /** Defines all methods to interact with the platform environment from within a block UI. @deprecated */
 export interface PlatformaV1<
@@ -86,7 +86,7 @@ export type BlockModelInfo = {
       withStatus: boolean;
     }
   >;
-  pluginIds: string[];
+  pluginIds: PluginHandle[];
 };
 
 export type PlatformaApiVersion = Platforma["apiVersion"];
@@ -126,24 +126,24 @@ export type InferBlockStatePatch<Pl extends Platforma> = BlockStatePatch<
 
 /** Extract plugin IDs as a string literal union from a Platforma type. */
 export type InferPluginNames<Pl> =
-  Pl extends PlatformaV3<any, any, any, any, infer P> ? string & keyof P : never;
+  Pl extends PlatformaV3<unknown, unknown, BlockOutputsBase, `/${string}`, infer P> ? string & keyof P : never;
 
 /** Extract the Data type for a specific plugin by its ID. */
 export type InferPluginData<Pl, PluginId extends string> =
-  Pl extends PlatformaV3<any, any, any, any, infer P>
+  Pl extends PlatformaV3<unknown, unknown, BlockOutputsBase, `/${string}`, infer P>
     ? PluginId extends keyof P
-      ? P[PluginId] extends PluginInstance<infer D, any, any>
+      ? P[PluginId] extends PluginInstance<infer D, unknown, unknown>
         ? D
         : never
       : never
     : never;
 
-/** Map each plugin instance to a type-safe opaque handle. */
+/** Map each plugin instance to a type-safe opaque handle branded with factory phantom. */
 export type InferPluginHandles<Pl> =
-  Pl extends PlatformaV3<any, any, any, any, infer P>
+  Pl extends PlatformaV3<unknown, unknown, BlockOutputsBase, `/${string}`, infer P>
     ? {
         readonly [K in string & keyof P]: P[K] extends PluginInstance<infer D, infer Pm, infer O>
-          ? PluginHandle<PluginFactory<D, Pm, O>>
+          ? PluginHandle<PluginPhantom<D, Pm, O>>
           : never;
       }
     : {};

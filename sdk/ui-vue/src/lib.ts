@@ -36,7 +36,7 @@ export * from "./components/PlAdvancedFilter";
 export * from "./defineApp";
 
 export { usePlugin } from "./usePlugin";
-export type { PluginHandle } from "@platforma-sdk/model";
+export type { PluginHandle, InferPluginHandle, InferFactoryData, InferFactoryOutputs } from "@platforma-sdk/model";
 
 export * from "./createModel";
 

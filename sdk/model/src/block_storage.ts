@@ -11,6 +11,7 @@
 
 import type { Branded } from "@milaboratories/pl-model-common";
 import type { DataMigrationResult, DataVersioned } from "./block_migrations";
+import type { PluginHandle, InferFactoryData } from "./plugin_handle";
 
 // =============================================================================
 // Core Types
@@ -50,7 +51,7 @@ export type PluginName = Branded<string, "PluginName">;
  * Plugin registry - maps pluginId (unique within a block) to pluginName (globally unique plugin type).
  * Using a Record highlights that pluginIds must be unique within a block.
  */
-export type PluginRegistry = Record<string, PluginName>;
+export type PluginRegistry = Record<PluginHandle, PluginName>;
 
 /**
  * Versioned data - used for both block data and plugin data
@@ -75,8 +76,8 @@ export type BlockStorage<TState = unknown> = {
   readonly [BLOCK_STORAGE_KEY]: BlockStorageSchemaVersion;
   /** Registry of plugins: pluginId -> pluginName */
   __pluginRegistry?: PluginRegistry;
-  /** Plugin-specific data, keyed by pluginId */
-  __plugins?: Record<string, VersionedData<unknown>>;
+  /** Plugin-specific data, keyed by plugin handle */
+  __plugins?: Record<PluginHandle, VersionedData<unknown>>;
 } & VersionedData<TState>;
 
 /**
@@ -176,7 +177,7 @@ export function deriveDataFromStorage<TData = unknown>(rawStorage: unknown): TDa
 /** Payload for storage mutation operations. SDK defines specific operations. */
 export type MutateStoragePayload<T = unknown> =
   | { operation: "update-block-data"; value: T }
-  | { operation: "update-plugin-data"; pluginId: string; value: unknown };
+  | { operation: "update-plugin-data"; pluginId: PluginHandle; value: unknown };
 
 /**
  * Updates the data in BlockStorage (immutable)
@@ -261,13 +262,13 @@ export interface MigrateBlockStorageConfig {
   migrateBlockData: (versioned: DataVersioned<unknown>) => DataMigrationResult<unknown>;
   /** Migrate each plugin's data. Return undefined to remove the plugin. */
   migratePluginData: (
-    pluginId: string,
+    handle: PluginHandle,
     versioned: DataVersioned<unknown>,
   ) => DataMigrationResult<unknown> | undefined;
   /** The new plugin registry after migration (pluginId -> pluginName) */
   newPluginRegistry: PluginRegistry;
   /** Factory to create initial data for new plugins */
-  createPluginData: (pluginId: string) => DataVersioned<unknown>;
+  createPluginData: (handle: PluginHandle) => DataVersioned<unknown>;
 }
 
 /**
@@ -334,33 +335,34 @@ export function migrateBlockStorage(
   // Step 2: Migrate plugins
   const oldPlugins = storage.__plugins ?? {};
   const oldRegistry = storage.__pluginRegistry ?? {};
-  const newPlugins: Record<string, VersionedData<unknown>> = {};
+  const newPlugins: Record<PluginHandle, VersionedData<unknown>> = {};
 
-  for (const [pluginId, pluginName] of Object.entries(newPluginRegistry)) {
-    const existingEntry = oldPlugins[pluginId];
-    const existingName = oldRegistry[pluginId];
+  for (const [key, pluginName] of Object.entries(newPluginRegistry)) {
+    const handle = key as PluginHandle;
+    const existingEntry = oldPlugins[handle];
+    const existingName = oldRegistry[handle];
 
     try {
       if (existingEntry && existingName === pluginName) {
         // Plugin exists with same type - migrate its data
-        const migrated = migratePluginData(pluginId, {
+        const migrated = migratePluginData(handle, {
           version: existingEntry.__dataVersion,
           data: existingEntry.__data,
         });
         if (migrated) {
-          newPlugins[pluginId] = { __dataVersion: migrated.version, __data: migrated.data };
+          newPlugins[handle] = { __dataVersion: migrated.version, __data: migrated.data };
         }
         // If undefined returned, plugin is intentionally removed
       } else {
         // New plugin or type changed - create with initial data
-        const initial = createPluginData(pluginId);
-        newPlugins[pluginId] = { __dataVersion: initial.version, __data: initial.data };
+        const initial = createPluginData(handle);
+        newPlugins[handle] = { __dataVersion: initial.version, __data: initial.data };
       }
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
-        failedAt: pluginId,
+        failedAt: handle,
       };
     }
   }
@@ -384,14 +386,17 @@ export function migrateBlockStorage(
  * Gets plugin-specific data from block storage.
  * Accepts raw storage (any format) and normalizes internally.
  *
+ * When called with a typed PluginHandle<F>, the return type is automatically
+ * inferred from the factory's phantom `__types.data` field.
+ *
  * @param rawStorage - Raw block storage (may be legacy format or BlockStorage)
- * @param pluginId - The plugin instance id
- * @returns The plugin data
- * @throws If pluginId is not found in storage
+ * @param handle - The plugin handle (branded plugin instance id)
+ * @returns The plugin data, typed via factory inference
+ * @throws If plugin is not found in storage
  */
-export function getPluginData<TData = unknown>(rawStorage: unknown, pluginId: string): TData {
+export function getPluginData<F>(rawStorage: unknown, handle: PluginHandle<F>): InferFactoryData<F> {
   const storage = normalizeBlockStorage(rawStorage);
-  const pluginEntry = storage.__plugins?.[pluginId];
-  if (!pluginEntry) throw new Error(`Plugin '${pluginId}' not found in block storage`);
-  return pluginEntry.__data as TData;
+  const pluginEntry = storage.__plugins?.[handle];
+  if (!pluginEntry) throw new Error(`Plugin '${handle}' not found in block storage`);
+  return pluginEntry.__data as InferFactoryData<F>;
 }

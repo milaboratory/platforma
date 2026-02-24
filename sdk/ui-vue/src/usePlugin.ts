@@ -1,15 +1,7 @@
 import { inject } from "vue";
 import { pluginDataKey } from "./defineApp";
 import type { PluginAccess } from "./internal/createAppV3";
-import type { PluginModel, PluginHandle } from "@platforma-sdk/model";
-
-type InferFactoryData<F> = F extends { create(...args: any[]): PluginModel<infer D, any, any> }
-  ? D
-  : never;
-
-type InferFactoryOutputs<F> = F extends { create(...args: any[]): PluginModel<any, any, infer O> }
-  ? O
-  : never;
+import type { PluginHandle } from "@platforma-sdk/model";
 
 /**
  * Composable for accessing a plugin's reactive model: data, outputs, and outputErrors.
@@ -18,14 +10,15 @@ type InferFactoryOutputs<F> = F extends { create(...args: any[]): PluginModel<an
  * mutations are automatically queued and sent to storage.
  *
  * @param handle - Opaque plugin handle obtained from `app.plugins`.
+ * @typeParam F - The plugin factory type (inferred from the handle)
  *
  * @example
  * ```vue
  * <script setup lang="ts">
- * import { usePlugin, type PluginHandle } from '@platforma-sdk/ui-vue';
- * import type { CounterPluginFactory } from './plugins/counter';
+ * import { usePlugin, type InferPluginHandle } from '@platforma-sdk/ui-vue';
+ * import type { CounterPlugin } from './plugins/counter';
  *
- * const props = defineProps<{ instance: PluginHandle<CounterPluginFactory> }>();
+ * const props = defineProps<{ instance: InferPluginHandle<CounterPlugin> }>();
  * const plugin = usePlugin(props.instance);
  *
  * plugin.model.data.count += 1;          // reactive, triggers storage update
@@ -34,13 +27,7 @@ type InferFactoryOutputs<F> = F extends { create(...args: any[]): PluginModel<an
  * </script>
  * ```
  */
-export function usePlugin<F>(handle: PluginHandle<F>): {
-  model: {
-    data: InferFactoryData<F>;
-    outputs: { [K in keyof InferFactoryOutputs<F>]: InferFactoryOutputs<F>[K] | undefined };
-    outputErrors: { [K in keyof InferFactoryOutputs<F>]?: Error };
-  };
-} {
+export function usePlugin<F>(handle: PluginHandle<F>) {
   const access = inject<PluginAccess>(pluginDataKey);
 
   if (!access) {
@@ -50,7 +37,5 @@ export function usePlugin<F>(handle: PluginHandle<F>): {
     );
   }
 
-  const slot = access.getOrCreatePluginSlot(handle);
-
-  return { model: slot.model } as any;
+  return access.getOrCreatePluginState<F>(handle);
 }
