@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.57.0
+
+### Minor Changes
+
+- 8baa2b3: Add plugin outputs to block config pack
+
 ## 1.56.0
 
 ### Minor Changes
