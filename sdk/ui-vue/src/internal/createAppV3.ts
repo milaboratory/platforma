@@ -53,7 +53,10 @@ export interface PluginAccess {
 }
 
 /** Internal per-plugin state with reconciliation support. */
-interface InternalPluginState<Data = unknown, Outputs = unknown> extends PluginState<Data, Outputs> {
+interface InternalPluginState<Data = unknown, Outputs = unknown> extends PluginState<
+  Data,
+  Outputs
+> {
   readonly ignoreUpdates: (fn: () => void) => void;
 }
 
@@ -274,7 +277,9 @@ export function createAppV3<
             // Reconcile plugin data from external source
             for (const [handle, pluginState] of pluginStates) {
               pluginState.ignoreUpdates(() => {
-                pluginState.model.data = deepClone(getPluginData(snapshot.value.blockStorage, handle));
+                pluginState.model.data = deepClone(
+                  getPluginData(snapshot.value.blockStorage, handle),
+                );
               });
             }
             data.isExternalSnapshot = isAuthorChanged;
@@ -342,7 +347,9 @@ export function createAppV3<
   };
 
   /** Creates a lazily-cached per-plugin reactive state. */
-  const createPluginState = <F>(handle: PluginHandle<F>): InternalPluginState<InferFactoryData<F>, InferFactoryOutputs<F>> => {
+  const createPluginState = <F>(
+    handle: PluginHandle<F>,
+  ): InternalPluginState<InferFactoryData<F>, InferFactoryOutputs<F>> => {
     const prefix = pluginOutputPrefix(handle);
 
     const pluginOutputs = computed(() => {
@@ -389,7 +396,10 @@ export function createAppV3<
       { deep: true },
     );
 
-    return { model: pluginModel, ignoreUpdates } as unknown as InternalPluginState<InferFactoryData<F>, InferFactoryOutputs<F>>;
+    return { model: pluginModel, ignoreUpdates } as unknown as InternalPluginState<
+      InferFactoryData<F>,
+      InferFactoryOutputs<F>
+    >;
   };
 
   /** Plugin internals — provided via separate injection key, not exposed on useApp(). */

@@ -126,7 +126,9 @@ export type InferBlockStatePatch<Pl extends Platforma> = BlockStatePatch<
 
 /** Extract plugin IDs as a string literal union from a Platforma type. */
 export type InferPluginNames<Pl> =
-  Pl extends PlatformaV3<unknown, unknown, BlockOutputsBase, `/${string}`, infer P> ? string & keyof P : never;
+  Pl extends PlatformaV3<unknown, unknown, BlockOutputsBase, `/${string}`, infer P>
+    ? string & keyof P
+    : never;
 
 /** Extract the Data type for a specific plugin by its ID. */
 export type InferPluginData<Pl, PluginId extends string> =

@@ -394,7 +394,10 @@ export function migrateBlockStorage(
  * @returns The plugin data, typed via factory inference
  * @throws If plugin is not found in storage
  */
-export function getPluginData<F>(rawStorage: unknown, handle: PluginHandle<F>): InferFactoryData<F> {
+export function getPluginData<F>(
+  rawStorage: unknown,
+  handle: PluginHandle<F>,
+): InferFactoryData<F> {
   const storage = normalizeBlockStorage(rawStorage);
   const pluginEntry = storage.__plugins?.[handle];
   if (!pluginEntry) throw new Error(`Plugin '${handle}' not found in block storage`);

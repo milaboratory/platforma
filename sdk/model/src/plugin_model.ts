@@ -115,11 +115,11 @@ export interface PluginFactory<
 }
 
 /** Derive a typed PluginHandle from a PluginFactory type. */
-export type InferPluginHandle<F> =
-  F extends { readonly __types?: { data: infer D; params: infer Pm; outputs: infer O } }
-    ? PluginHandle<PluginPhantom<D, Pm, O>>
-    : never;
-
+export type InferPluginHandle<F> = F extends {
+  readonly __types?: { data: infer D; params: infer Pm; outputs: infer O };
+}
+  ? PluginHandle<PluginPhantom<D, Pm, O>>
+  : never;
 
 class PluginModelFactory<Data, Params, Config, Outputs> implements PluginFactory<
   Data,

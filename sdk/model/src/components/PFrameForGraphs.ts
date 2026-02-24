@@ -1,12 +1,5 @@
-import type {
-  PColumn,
-  PColumnSpec,
-  PFrameHandle,
-} from "@milaboratories/pl-model-common";
-import {
-  Annotation,
-  readAnnotationJson,
-} from "@milaboratories/pl-model-common";
+import type { PColumn, PColumnSpec, PFrameHandle } from "@milaboratories/pl-model-common";
+import { Annotation, readAnnotationJson } from "@milaboratories/pl-model-common";
 import type { PColumnDataUniversal, RenderCtxBase } from "../render";
 import { getAllRelatedColumns, getRelatedColumns } from "../pframe_utils/columns";
 export type { AxesVault } from "../pframe_utils/axes";

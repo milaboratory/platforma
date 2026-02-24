@@ -38,13 +38,14 @@ export type PluginPhantom<Data = unknown, Params = unknown, Outputs = unknown> =
 };
 
 /** Extract the Data type from a factory-branded phantom. */
-export type InferFactoryData<F> =
-  F extends { readonly __types?: { data: infer D } } ? D : unknown;
+export type InferFactoryData<F> = F extends { readonly __types?: { data: infer D } } ? D : unknown;
 
 /** Extract the Params type from a factory-branded phantom. */
-export type InferFactoryParams<F> =
-  F extends { readonly __types?: { params: infer P } } ? P : unknown;
+export type InferFactoryParams<F> = F extends { readonly __types?: { params: infer P } }
+  ? P
+  : unknown;
 
 /** Extract the Outputs type from a factory-branded phantom. */
-export type InferFactoryOutputs<F> =
-  F extends { readonly __types?: { outputs: infer O } } ? O : unknown;
+export type InferFactoryOutputs<F> = F extends { readonly __types?: { outputs: infer O } }
+  ? O
+  : unknown;
