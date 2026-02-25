@@ -10,15 +10,15 @@ describe("makeDataVersioned", () => {
 });
 
 describe("DataModel migrations", () => {
-  it("throws on unknown version", () => {
+  it("resets to initial data on unknown version", () => {
     const dataModel = new DataModelBuilder()
       .from<{ count: number }>("v1")
       .migrate<{ count: number; label: string }>("v2", (v1) => ({ ...v1, label: "" }))
       .init(() => ({ count: 0, label: "" }));
 
-    expect(() => dataModel.migrate(makeDataVersioned("legacy", { count: 42 }))).toThrow(
-      "Unknown version 'legacy'",
-    );
+    const result = dataModel.migrate(makeDataVersioned("legacy", { count: 42 }));
+    expect(result.version).toBe("v2");
+    expect(result.data).toStrictEqual({ count: 0, label: "" });
   });
 
   it("throws at build time on duplicate version key", () => {
@@ -121,16 +121,16 @@ describe("DataModel migrations", () => {
       expect(result.data).toStrictEqual({ count: 9, label: "recovered" });
     });
 
-    it("recover() delegates to defaultRecover for truly unknown versions", () => {
+    it("recover() delegates to defaultRecover for truly unknown versions — resets to initial data", () => {
       const dataModel = new DataModelBuilder()
         .from<{ count: number }>("v1")
         .migrate<{ count: number; label: string }>("v2", (v1) => ({ ...v1, label: "" }))
         .recover((version, data) => defaultRecover(version, data))
         .init(() => ({ count: 0, label: "" }));
 
-      expect(() => dataModel.migrate(makeDataVersioned("unknown", { count: 7 }))).toThrow(
-        "Unknown version 'unknown'",
-      );
+      const result = dataModel.migrate(makeDataVersioned("unknown", { count: 7 }));
+      expect(result.version).toBe("v2");
+      expect(result.data).toStrictEqual({ count: 0, label: "" });
     });
 
     it("migration failure after recover() throws", () => {

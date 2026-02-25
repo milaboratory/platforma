@@ -484,13 +484,12 @@ export class DataModel<State> {
    * Migrate versioned data from any version to the latest.
    *
    * - If version is in chain, applies needed migrations (O(1) lookup)
-   * - If version is unknown, calls recover function then runs remaining migrations
-   * - If migration/recovery fails, throws so the caller can preserve original data
+   * - If version is unknown, attempts recovery; falls back to initial data
+   * - If a migration step fails, throws so the caller can preserve original data
    *
    * @param versioned - Data with version tag
    * @returns Migrated data at the latest version
-   * @throws {DataMigrationError} If a migration step fails
-   * @throws {DataUnrecoverableError} If version is unknown and cannot be recovered
+   * @throws If a migration step from a known version fails
    */
   migrate(versioned: DataVersioned<unknown>): DataVersioned<State> {
     const { version: fromVersion, data } = versioned;
@@ -501,7 +500,15 @@ export class DataModel<State> {
 
     const startIndex = this.stepsByFromVersion.get(fromVersion);
     if (startIndex === undefined) {
-      return this.recoverFrom(data, fromVersion);
+      try {
+        return this.recoverFrom(data, fromVersion);
+      } catch (error) {
+        if (isDataUnrecoverableError(error)) {
+          // Unknown version with no recovery path — reset to initial data
+          return this.getDefaultData();
+        }
+        throw error;
+      }
     }
 
     let currentData: unknown = data;
