@@ -151,29 +151,25 @@ describe.each([
   ];
 
   for (const arg of args) {
-    test(
-      arg.name,
-      async () => {
-        await TestHelpers.withTempRoot(async (pl) => {
-          const f0 = field(pl.clientRoot, "result");
-          const f1 = field(pl.clientRoot, "context");
+    test(arg.name, async () => {
+      await TestHelpers.withTempRoot(async (pl) => {
+        const f0 = field(pl.clientRoot, "result");
+        const f1 = field(pl.clientRoot, "context");
 
-          await pl.withWriteTx("test", async (tx) => {
-            const b = await arg.createBlocksFn(tx);
-            tx.createField(f0, "Dynamic", b.result);
-            tx.createField(f1, "Dynamic", b.context);
-            await tx.commit();
-          });
-
-          while (true) {
-            if (await pl.withReadTx("test", (tx) => arg.expect(pl, tx))) break;
-
-            await sleep(30);
-          }
+        await pl.withWriteTx("test", async (tx) => {
+          const b = await arg.createBlocksFn(tx);
+          tx.createField(f0, "Dynamic", b.result);
+          tx.createField(f1, "Dynamic", b.context);
+          await tx.commit();
         });
-      },
-      5000,
-    );
+
+        while (true) {
+          if (await pl.withReadTx("test", (tx) => arg.expect(pl, tx))) break;
+
+          await sleep(30);
+        }
+      });
+    }, 5000);
   }
 });
 
