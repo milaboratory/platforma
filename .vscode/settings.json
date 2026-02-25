@@ -1,0 +1,53 @@
+{
+  "[css]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[vue]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll.oxc": "explicit"
+  },
+  "oxc.unusedDisableDirectives": "deny",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "vitest.maximumConfigs": 1000,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "cSpell.words": [
+    "biowasm",
+    "canonicalize",
+    "datasource",
+    "fasta",
+    "Heterogenize",
+    "kalign",
+    "millis",
+    "pcolumn",
+    "pframe",
+    "platforma",
+    "ptable"
+  ],
+}
