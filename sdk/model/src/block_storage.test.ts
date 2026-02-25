@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   BLOCK_STORAGE_KEY,
   BLOCK_STORAGE_SCHEMA_VERSION,
-  DATA_MODEL_DEFAULT_VERSION,
+  DATA_MODEL_LEGACY_VERSION,
   createBlockStorage,
   getPluginData,
   getStorageData,
@@ -72,7 +72,7 @@ describe("BlockStorage", () => {
     it("should create storage with discriminator key and default values", () => {
       const storage = createBlockStorage();
       expect(storage[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(storage.__dataVersion).toBe(DATA_MODEL_DEFAULT_VERSION);
+      expect(storage.__dataVersion).toBe(DATA_MODEL_LEGACY_VERSION);
       expect(storage.__data).toEqual({});
     });
 
@@ -80,7 +80,7 @@ describe("BlockStorage", () => {
       const data = { numbers: [1, 2, 3] };
       const storage = createBlockStorage(data);
       expect(storage[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(storage.__dataVersion).toBe(DATA_MODEL_DEFAULT_VERSION);
+      expect(storage.__dataVersion).toBe(DATA_MODEL_LEGACY_VERSION);
       expect(storage.__data).toEqual(data);
     });
 
@@ -136,7 +136,7 @@ describe("BlockStorage", () => {
       const legacyData = { numbers: [1, 2, 3], name: "test" };
       const normalized = normalizeBlockStorage(legacyData);
       expect(normalized[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(normalized.__dataVersion).toBe(DATA_MODEL_DEFAULT_VERSION);
+      expect(normalized.__dataVersion).toBe(DATA_MODEL_LEGACY_VERSION);
       expect(normalized.__data).toEqual(legacyData);
       expect(normalized.__pluginRegistry).toEqual({});
       expect(normalized.__plugins).toEqual({});
@@ -145,14 +145,14 @@ describe("BlockStorage", () => {
     it("should wrap primitive legacy data", () => {
       const normalized = normalizeBlockStorage("simple string");
       expect(normalized[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(normalized.__dataVersion).toBe(DATA_MODEL_DEFAULT_VERSION);
+      expect(normalized.__dataVersion).toBe(DATA_MODEL_LEGACY_VERSION);
       expect(normalized.__data).toBe("simple string");
     });
 
     it("should wrap null legacy data", () => {
       const normalized = normalizeBlockStorage(null);
       expect(normalized[BLOCK_STORAGE_KEY]).toBe(BLOCK_STORAGE_SCHEMA_VERSION);
-      expect(normalized.__dataVersion).toBe(DATA_MODEL_DEFAULT_VERSION);
+      expect(normalized.__dataVersion).toBe(DATA_MODEL_LEGACY_VERSION);
       expect(normalized.__data).toBeNull();
     });
   });
@@ -188,7 +188,7 @@ describe("BlockStorage", () => {
       });
       expect(storage.__plugins).toEqual({
         table1: {
-          __dataVersion: DATA_MODEL_DEFAULT_VERSION,
+          __dataVersion: DATA_MODEL_LEGACY_VERSION,
           __data: { columns: ["a", "b"] },
         },
       });
@@ -254,7 +254,7 @@ describe("BlockStorage", () => {
         value: { foo: "bar" },
       });
       expect(updated.__plugins?.plugin1).toEqual({
-        __dataVersion: DATA_MODEL_DEFAULT_VERSION,
+        __dataVersion: DATA_MODEL_LEGACY_VERSION,
         __data: { foo: "bar" },
       });
     });

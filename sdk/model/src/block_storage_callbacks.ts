@@ -27,7 +27,7 @@ import {
 import type { PluginHandle } from "./plugin_handle";
 
 import { stringifyJson, type StringifiedJson } from "@milaboratories/pl-model-common";
-import type { DataMigrationResult, DataVersioned } from "./block_migrations";
+import type { DataVersioned } from "./block_migrations";
 
 // =============================================================================
 // Hook interfaces for dependency injection
@@ -35,12 +35,12 @@ import type { DataMigrationResult, DataVersioned } from "./block_migrations";
 
 /** Dependencies for storage migration */
 export interface MigrationHooks {
-  migrateBlockData: (versioned: DataVersioned<unknown>) => DataMigrationResult<unknown>;
+  migrateBlockData: (versioned: DataVersioned<unknown>) => DataVersioned<unknown>;
   getPluginRegistry: () => PluginRegistry;
   migratePluginData: (
     handle: PluginHandle,
     versioned: DataVersioned<unknown>,
-  ) => DataMigrationResult<unknown> | undefined;
+  ) => DataVersioned<unknown> | undefined;
   createPluginData: (handle: PluginHandle) => DataVersioned<unknown>;
 }
 
@@ -229,6 +229,7 @@ export function migrateStorage(
  *
  * @param hooks - Dependencies for creating initial block and plugin data
  * @returns Initial storage as branded JSON string
+ * @throws If initialDataFn or createPluginData throws
  */
 export function createInitialStorage(hooks: InitialStorageHooks): StringifiedJson<BlockStorage> {
   const blockDefault = hooks.getDefaultBlockData();

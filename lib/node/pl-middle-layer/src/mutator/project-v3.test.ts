@@ -7,6 +7,7 @@ import { blockArgsAuthorKey, projectFieldName } from "../model/project_model";
 import { TestBPPreparer } from "../test/block_packs";
 import { createProject, ProjectMutator } from "./project";
 import type { AuthorMarker, BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
+import { createBlockStorage } from "@platforma-sdk/model";
 import path from "node:path";
 
 // V3 block specs - using dev-v2 type with local folders
@@ -391,11 +392,7 @@ test("v3 blocks: migrateBlockPack with storage migration re-derives args and pre
     // Overwrite blockStorage with v1-format data (simulating old block version)
     await pl.withWriteTx("DowngradeStorage", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
-      const v1Storage = JSON.stringify({
-        __pl_a7f3e2b9__: "v1",
-        __dataVersion: "v1",
-        __data: { numbers: [3, 1, 5] },
-      });
+      const v1Storage = JSON.stringify(createBlockStorage({ numbers: [3, 1, 5] }, "v1"));
       mut.setBlockStorageRaw("enter1", v1Storage);
       mut.save();
       await tx.commit();

@@ -114,7 +114,7 @@ export class BlockModelV3<
    *
    * @example
    * const dataModel = new DataModelBuilder()
-   *   .from<BlockData>(DATA_MODEL_DEFAULT_VERSION)
+   *   .from<BlockData>("v1")
    *   .init(() => ({ numbers: [], labels: [] }));
    *
    * BlockModelV3.create(dataModel)

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { PluginModel } from "./plugin_model";
 import type { PluginRenderCtx } from "./plugin_model";
 import { DataModelBuilder } from "./block_migrations";
-import { DATA_MODEL_DEFAULT_VERSION, type PluginName } from "./block_storage";
+import { type PluginName } from "./block_storage";
 import type { ResultPool } from "./render";
 
 // =============================================================================
@@ -11,7 +11,7 @@ import type { ResultPool } from "./render";
 
 type Data = { count: number; label: string };
 
-const dataModelChain = new DataModelBuilder().from<Data>(DATA_MODEL_DEFAULT_VERSION);
+const dataModelChain = new DataModelBuilder().from<Data>("v1");
 
 // Mock ResultPool for testing
 const mockResultPool = {} as ResultPool;

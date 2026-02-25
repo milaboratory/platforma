@@ -1,6 +1,5 @@
 import {
   BlockModelV3,
-  DATA_MODEL_DEFAULT_VERSION,
   DataModelBuilder,
   type InferHrefType,
   type InferOutputsType,
@@ -13,7 +12,7 @@ export type BlockData = {
 export type BlockArgs = BlockData;
 
 const dataModel = new DataModelBuilder()
-  .from<BlockData>(DATA_MODEL_DEFAULT_VERSION)
+  .from<BlockData>("v1")
   .init(() => ({ titleArgs: "The title" }));
 
 export const platforma = BlockModelV3.create(dataModel)

@@ -2,7 +2,6 @@ import type { InferHrefType, InferOutputsType } from "@platforma-sdk/model";
 import {
   Annotation,
   BlockModelV3,
-  DATA_MODEL_DEFAULT_VERSION,
   DataModelBuilder,
   PlRef,
   readAnnotation,
@@ -15,9 +14,7 @@ export const BlockData = z.object({
 
 export type BlockData = z.infer<typeof BlockData>;
 
-const dataModel = new DataModelBuilder()
-  .from<BlockData>(DATA_MODEL_DEFAULT_VERSION)
-  .init(() => ({ sources: undefined }));
+const dataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({ sources: undefined }));
 
 export const platforma = BlockModelV3.create(dataModel)
 
