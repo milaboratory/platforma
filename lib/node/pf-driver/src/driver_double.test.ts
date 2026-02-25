@@ -306,3 +306,178 @@ test("createTableV2 support", async ({ expect }) => {
     expect([...data[1].data]).toEqual([20, 10]);
   }
 });
+
+test("createTableV2 sorting by axis with 2 axes", async ({ expect }) => {
+  await using driver = await createPFrameDriverDouble({});
+
+  const columnId = "column1" as PObjectId;
+  const columnSpec = {
+    kind: "PColumn" as const,
+    axesSpec: [
+      {
+        name: "sample",
+        type: "String" as const,
+      },
+      {
+        name: "metric",
+        type: "String" as const,
+      },
+    ],
+    name: "value",
+    valueType: "Int" as const,
+  };
+
+  // Data with 2 axes: sample x metric -> value
+  // Intentionally NOT sorted by "sample" to make sort effect visible
+  const inlineData = [
+    { key: ["c", "x"], val: 1 },
+    { key: ["c", "y"], val: 2 },
+    { key: ["a", "x"], val: 3 },
+    { key: ["a", "y"], val: 4 },
+    { key: ["b", "x"], val: 5 },
+    { key: ["b", "y"], val: 6 },
+  ];
+
+  const column = { id: columnId, spec: columnSpec, data: inlineData };
+
+  const axis1Ref: SpecQueryExpression = {
+    type: "axisRef",
+    value: { name: "sample", type: "String" },
+  };
+
+  const axis2Ref: SpecQueryExpression = {
+    type: "axisRef",
+    value: { name: "metric", type: "String" },
+  };
+
+  const columnRef: SpecQueryExpression = { type: "columnRef", value: columnId };
+
+  const baseQuery: SpecQuery<typeof column> = { type: "column", column };
+
+  const uiDriver: PFrameDriver = driver;
+
+  // --- Baseline: no sorting ---
+  {
+    using pTable = driver.createPTableV2({ query: baseQuery });
+    const shape = await uiDriver.getShape(pTable.key);
+    expect(shape.rows).toBe(6);
+    expect(shape.columns).toBe(3); // 2 axes + 1 value column
+  }
+
+  // --- Sort by axis 1 (sample) ascending ---
+  {
+    using pTable = driver.createPTableV2({
+      query: {
+        type: "sort",
+        input: baseQuery,
+        sortBy: [
+          {
+            expression: axis1Ref,
+            ascending: true,
+            nullsFirst: true,
+          },
+        ],
+      },
+    });
+
+    const data = await uiDriver.getData(pTable.key, [0, 1, 2]);
+    // axis "sample" should be sorted: a, a, b, b, c, c
+    expect([...data[0].data]).toEqual(["a", "a", "b", "b", "c", "c"]);
+  }
+
+  // --- Sort by axis 1 (sample) descending ---
+  {
+    using pTable = driver.createPTableV2({
+      query: {
+        type: "sort",
+        input: baseQuery,
+        sortBy: [
+          {
+            expression: axis1Ref,
+            ascending: false,
+            nullsFirst: true,
+          },
+        ],
+      },
+    });
+
+    const data = await uiDriver.getData(pTable.key, [0, 1, 2]);
+    // axis "sample" should be sorted descending: c, c, b, b, a, a
+    expect([...data[0].data]).toEqual(["c", "c", "b", "b", "a", "a"]);
+  }
+
+  // --- Sort by axis 2 (metric) descending ---
+  {
+    using pTable = driver.createPTableV2({
+      query: {
+        type: "sort",
+        input: baseQuery,
+        sortBy: [
+          {
+            expression: axis2Ref,
+            ascending: false,
+            nullsFirst: true,
+          },
+        ],
+      },
+    });
+
+    const data = await uiDriver.getData(pTable.key, [0, 1, 2]);
+    // axis "metric" should be sorted descending: y, y, y, x, x, x
+    expect([...data[1].data]).toEqual(["y", "y", "y", "x", "x", "x"]);
+  }
+
+  // --- Sort by value column descending ---
+  {
+    using pTable = driver.createPTableV2({
+      query: {
+        type: "sort",
+        input: baseQuery,
+        sortBy: [
+          {
+            expression: columnRef,
+            ascending: false,
+            nullsFirst: true,
+          },
+        ],
+      },
+    });
+
+    const data = await uiDriver.getData(pTable.key, [0, 1, 2]);
+    // values sorted descending: 6, 5, 4, 3, 2, 1
+    expect([...data[2].data]).toEqual([6, 5, 4, 3, 2, 1]);
+  }
+
+  // --- Sort by axis 1 (sample) DESC with outerJoin/fullJoin wrapper (like createPTableDef) ---
+  {
+    const wrappedQuery: SpecQuery<typeof column> = {
+      type: "outerJoin",
+      primary: {
+        entry: {
+          type: "fullJoin",
+          entries: [{ entry: baseQuery, qualifications: [] }],
+        },
+        qualifications: [],
+      },
+      secondary: [],
+    };
+
+    using pTable = driver.createPTableV2({
+      query: {
+        type: "sort",
+        input: wrappedQuery,
+        sortBy: [
+          {
+            expression: axis1Ref,
+            ascending: false,
+            nullsFirst: true,
+          },
+        ],
+      },
+    });
+
+    const data = await uiDriver.getData(pTable.key, [0, 1, 2]);
+    // axis "sample" should be sorted descending: c, c, b, b, a, a
+    expect([...data[0].data]).toEqual(["c", "c", "b", "b", "a", "a"]);
+  }
+});

@@ -39,6 +39,7 @@ import type { PlDataTableStateV2 } from "./state-migration";
 import type { PlDataTableSheet } from "./v5";
 import { getAllLabelColumns, getMatchingLabelColumns } from "./labels";
 import { collectFilterSpecColumns } from "../../filters/traverse";
+import { isEmpty } from "es-toolkit/compat";
 
 /** Convert a PTableColumnId to a SpecQueryExpression reference. */
 function columnIdToExpr(col: PTableColumnId): SpecQueryExpression {
@@ -198,10 +199,8 @@ export function createPlDataTableV2<A, U>(
     );
 
   // -- Sorting validation --
-  const sorting: PTableSorting[] = uniqueBy(
-    [...tableStateNormalized.pTableParams.sorting, ...(ops?.sorting ?? [])],
-    (s) => canonicalizeJson<PTableColumnId>(s.column),
-  );
+  const userSorting = tableStateNormalized.pTableParams.sorting;
+  const sorting = (isEmpty(userSorting) ? ops?.sorting : userSorting) ?? [];
   const firstInvalidSortingColumn = sorting.find(
     (s) => !isValidColumnId(canonicalizeJson<PTableColumnId>(s.column)),
   );
