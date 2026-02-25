@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DataModelBuilder, defaultRecover, makeDataVersioned } from "./block_migrations";
+import { DATA_MODEL_LEGACY_VERSION } from "./block_storage";
 
 describe("makeDataVersioned", () => {
   it("creates correct DataVersioned shape", () => {
@@ -18,7 +19,6 @@ describe("DataModel migrations", () => {
     const result = dataModel.migrate(makeDataVersioned("legacy", { count: 42 }));
     expect(result.version).toBe("v2");
     expect(result.data).toStrictEqual({ count: 0, label: "" });
-    expect(result.warning).toBe(`Unknown version 'legacy'`);
   });
 
   it("throws at build time on duplicate version key", () => {
@@ -33,7 +33,7 @@ describe("DataModel migrations", () => {
     ).toThrow("Duplicate version 'v1' in migration chain");
   });
 
-  it("returns initial data on migration failure", () => {
+  it("throws on migration failure", () => {
     const dataModel = new DataModelBuilder()
       .from<{ numbers: number[] }>("v1")
       .migrate<{ numbers: number[]; label: string }>("v2", (v1) => {
@@ -42,10 +42,9 @@ describe("DataModel migrations", () => {
       })
       .init(() => ({ numbers: [], label: "" }));
 
-    const result = dataModel.migrate(makeDataVersioned("v1", { numbers: [666] }));
-    expect(result.version).toBe("v2");
-    expect(result.data).toStrictEqual({ numbers: [], label: "" });
-    expect(result.warning).toBe(`Migration v1→v2 failed: Forbidden number`);
+    expect(() => dataModel.migrate(makeDataVersioned("v1", { numbers: [666] }))).toThrow(
+      "Forbidden number",
+    );
   });
 
   describe("recover()", () => {
@@ -70,7 +69,6 @@ describe("DataModel migrations", () => {
       const result = dataModel.migrate(makeDataVersioned("legacy", { count: 5 }));
       expect(result.version).toBe("v2");
       expect(result.data).toStrictEqual({ count: 5, label: "default" });
-      expect(result.warning).toBeUndefined();
     });
 
     it("recover() between migrations — recovered data goes through subsequent migrations", () => {
@@ -97,7 +95,6 @@ describe("DataModel migrations", () => {
       const result = dataModel.migrate(makeDataVersioned("legacy", { count: 7 }));
       expect(result.version).toBe("v3");
       expect(result.data).toStrictEqual({ count: 7, label: "recovered", description: "added" });
-      expect(result.warning).toBeUndefined();
     });
 
     it("recover() at the end of chain — recovered data is the final type", () => {
@@ -122,10 +119,9 @@ describe("DataModel migrations", () => {
       const result = dataModel.migrate(makeDataVersioned("legacy", { count: 9 }));
       expect(result.version).toBe("v2");
       expect(result.data).toStrictEqual({ count: 9, label: "recovered" });
-      expect(result.warning).toBeUndefined();
     });
 
-    it("recover() delegates to defaultRecover for truly unknown versions", () => {
+    it("recover() delegates to defaultRecover for truly unknown versions — resets to initial data", () => {
       const dataModel = new DataModelBuilder()
         .from<{ count: number }>("v1")
         .migrate<{ count: number; label: string }>("v2", (v1) => ({ ...v1, label: "" }))
@@ -135,7 +131,6 @@ describe("DataModel migrations", () => {
       const result = dataModel.migrate(makeDataVersioned("unknown", { count: 7 }));
       expect(result.version).toBe("v2");
       expect(result.data).toStrictEqual({ count: 0, label: "" });
-      expect(result.warning).toBe(`Unknown version 'unknown'`);
     });
 
     it("migration failure after recover() resets to initial data", () => {
@@ -164,12 +159,114 @@ describe("DataModel migrations", () => {
       const result = dataModel.migrate(makeDataVersioned("legacy", { count: 7 }));
       expect(result.version).toBe("v3");
       expect(result.data).toStrictEqual({ count: 0, label: "", description: "" });
-      expect(result.warning).toBe("Migration v2→v3 failed: v3 failed");
     });
 
     it("recover() cannot be called twice — enforced by type (no recover() on WithRecover)", () => {
       // This is a compile-time-only check — WithRecover has no recover() method.
       // Verified by the absence of recover() in DataModelMigrationChainWithRecover.
+    });
+  });
+
+  describe("upgradeLegacy()", () => {
+    type LegacyArgs = { inputFile: string; threshold: number };
+    type LegacyUiState = { selectedTab: string };
+    type BlockData = { inputFile: string; threshold: number; selectedTab: string };
+
+    it("upgrades legacy { args, uiState } data with custom initial version", () => {
+      const dataModel = new DataModelBuilder()
+        .from<BlockData>("v1")
+        .upgradeLegacy<LegacyArgs, LegacyUiState>(({ args, uiState }) => ({
+          inputFile: args.inputFile,
+          threshold: args.threshold,
+          selectedTab: uiState.selectedTab,
+        }))
+        .init(() => ({ inputFile: "", threshold: 0, selectedTab: "main" }));
+
+      // Legacy data arrives at DATA_MODEL_LEGACY_VERSION (how normalizeBlockStorage wraps it)
+      const result = dataModel.migrate(
+        makeDataVersioned(DATA_MODEL_LEGACY_VERSION, {
+          args: { inputFile: "test.fa", threshold: 5 },
+          uiState: { selectedTab: "results" },
+        }),
+      );
+      expect(result.version).toBe("v1");
+      expect(result.data).toStrictEqual({
+        inputFile: "test.fa",
+        threshold: 5,
+        selectedTab: "results",
+      });
+    });
+
+    it("passes through non-legacy data at custom initial version unchanged", () => {
+      const dataModel = new DataModelBuilder()
+        .from<BlockData>("v1")
+        .upgradeLegacy<LegacyArgs, LegacyUiState>(({ args, uiState }) => ({
+          inputFile: args.inputFile,
+          threshold: args.threshold,
+          selectedTab: uiState.selectedTab,
+        }))
+        .init(() => ({ inputFile: "", threshold: 0, selectedTab: "main" }));
+
+      // Non-legacy data at the user's version passes through unchanged
+      const result = dataModel.migrate(
+        makeDataVersioned("v1", {
+          inputFile: "existing.fa",
+          threshold: 10,
+          selectedTab: "overview",
+        }),
+      );
+      expect(result.version).toBe("v1");
+      expect(result.data).toStrictEqual({
+        inputFile: "existing.fa",
+        threshold: 10,
+        selectedTab: "overview",
+      });
+    });
+
+    it("upgrades legacy data and runs subsequent migrations", () => {
+      type BlockDataV2 = BlockData & { description: string };
+
+      const dataModel = new DataModelBuilder()
+        .from<BlockData>("v1")
+        .upgradeLegacy<LegacyArgs, LegacyUiState>(({ args, uiState }) => ({
+          inputFile: args.inputFile,
+          threshold: args.threshold,
+          selectedTab: uiState.selectedTab,
+        }))
+        .migrate<BlockDataV2>("v2", (v1) => ({ ...v1, description: "auto" }))
+        .init(() => ({ inputFile: "", threshold: 0, selectedTab: "main", description: "" }));
+
+      const result = dataModel.migrate(
+        makeDataVersioned(DATA_MODEL_LEGACY_VERSION, {
+          args: { inputFile: "test.fa", threshold: 3 },
+          uiState: { selectedTab: "tab1" },
+        }),
+      );
+      expect(result.version).toBe("v2");
+      expect(result.data).toStrictEqual({
+        inputFile: "test.fa",
+        threshold: 3,
+        selectedTab: "tab1",
+        description: "auto",
+      });
+    });
+
+    it("throws when legacy upgrade fails", () => {
+      const dataModel = new DataModelBuilder()
+        .from<BlockData>("v1")
+        .upgradeLegacy<LegacyArgs, LegacyUiState>(() => {
+          throw new Error("bad legacy data");
+        })
+        .init(() => ({ inputFile: "", threshold: 0, selectedTab: "main" }));
+
+      expect(() =>
+        dataModel.migrate(
+          makeDataVersioned(DATA_MODEL_LEGACY_VERSION, {
+            args: { inputFile: "test.fa", threshold: 5 },
+            uiState: { selectedTab: "results" },
+          }),
+        ),
+      ).toThrow("bad legacy data");
     });
   });
 });

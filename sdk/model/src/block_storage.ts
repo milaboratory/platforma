@@ -10,7 +10,7 @@
  */
 
 import type { Branded } from "@milaboratories/pl-model-common";
-import type { DataMigrationResult, DataVersioned } from "./block_migrations";
+import type { DataVersioned } from "./block_migrations";
 import type { PluginHandle, PluginFactoryLike, InferFactoryData } from "./plugin_handle";
 
 // =============================================================================
@@ -33,7 +33,7 @@ export const BLOCK_STORAGE_SCHEMA_VERSION = "v1";
  * Default data version for new blocks without migrations.
  * Unique identifier ensures blocks are created via DataModel API.
  */
-export const DATA_MODEL_DEFAULT_VERSION = "__pl_v1_d4e8f2a1__";
+export const DATA_MODEL_LEGACY_VERSION = "__pl_v1_d4e8f2a1__";
 
 /**
  * Type for valid schema versions
@@ -100,12 +100,12 @@ export function isBlockStorage(value: unknown): value is BlockStorage {
  * Creates a BlockStorage with the given initial data
  *
  * @param initialData - The initial data value (defaults to empty object)
- * @param version - The initial data version key (defaults to DATA_MODEL_DEFAULT_VERSION)
+ * @param version - The initial data version key (defaults to DATA_MODEL_LEGACY_VERSION)
  * @returns A new BlockStorage instance with discriminator key
  */
 export function createBlockStorage<TState = unknown>(
   initialData: TState = {} as TState,
-  version: string = DATA_MODEL_DEFAULT_VERSION,
+  version: string = DATA_MODEL_LEGACY_VERSION,
 ): BlockStorage<TState> {
   return {
     [BLOCK_STORAGE_KEY]: BLOCK_STORAGE_SCHEMA_VERSION,
@@ -132,7 +132,7 @@ export function normalizeBlockStorage<TState = unknown>(raw: unknown): BlockStor
       // Fix for early released version where __dataVersion was a number
       __dataVersion:
         typeof storage.__dataVersion === "number"
-          ? DATA_MODEL_DEFAULT_VERSION
+          ? DATA_MODEL_LEGACY_VERSION
           : storage.__dataVersion,
       // Ensure plugin fields have defaults
       __pluginRegistry: storage.__pluginRegistry ?? {},
@@ -197,7 +197,7 @@ export function updateStorageData<TValue = unknown>(
       const { pluginId, value } = payload;
       const currentPlugins = storage.__plugins ?? {};
       const existingEntry = currentPlugins[pluginId];
-      const version = existingEntry?.__dataVersion ?? DATA_MODEL_DEFAULT_VERSION;
+      const version = existingEntry?.__dataVersion ?? DATA_MODEL_LEGACY_VERSION;
       return {
         ...storage,
         __plugins: {
@@ -258,13 +258,13 @@ export type MigrationResult<TState> = MigrationSuccess<TState> | MigrationFailur
  * Conversion to internal VersionedData format is handled by migrateBlockStorage().
  */
 export interface MigrateBlockStorageConfig {
-  /** Migrate block data from any version to latest */
-  migrateBlockData: (versioned: DataVersioned<unknown>) => DataMigrationResult<unknown>;
-  /** Migrate each plugin's data. Return undefined to remove the plugin. */
+  /** Migrate block data from any version to latest. Throws on failure. */
+  migrateBlockData: (versioned: DataVersioned<unknown>) => DataVersioned<unknown>;
+  /** Migrate each plugin's data. Return undefined to remove the plugin. Throws on failure. */
   migratePluginData: (
     handle: PluginHandle,
     versioned: DataVersioned<unknown>,
-  ) => DataMigrationResult<unknown> | undefined;
+  ) => DataVersioned<unknown> | undefined;
   /** The new plugin registry after migration (pluginId -> pluginName) */
   newPluginRegistry: PluginRegistry;
   /** Factory to create initial data for new plugins */
