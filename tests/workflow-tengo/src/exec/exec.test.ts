@@ -23,7 +23,8 @@ tplTest.concurrent("run-hello-world-go", async ({ helper, expect }) => {
  */
 tplTest.concurrent("check-secret", async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
-    false, "exec.run.use_secret",
+    false,
+    "exec.run.use_secret",
     ["customEnv", "defaultEnv"],
     (tx) => ({}),
   );
