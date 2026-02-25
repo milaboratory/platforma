@@ -1,5 +1,14 @@
 # @milaboratories/pf-driver
 
+## 1.0.56
+
+### Patch Changes
+
+- 6ba4c69: Apply user sorting above options
+- Updated dependencies [6ba4c69]
+  - @platforma-sdk/model@1.57.2
+  - @milaboratories/pl-model-middle-layer@1.12.3
+
 ## 1.0.55
 
 ### Patch Changes
