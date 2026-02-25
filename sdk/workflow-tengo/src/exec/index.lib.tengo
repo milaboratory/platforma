@@ -249,10 +249,17 @@ builder := func() {
 		 * Set environment variable to value of given secret.
 		 *
 		 * @param secretName: string - name of secret to pass as environment variable.
-		 * @param envName: string - name of environment variable to set with value of secret.
+		 * @param [envName]: string - name of environment variable to set with value of secret.
+		 *                            defaults to name of a secret
 		 */
-		secret: func(secretName, envName) {
-			validation.assertType([secretName, envName], ["string"])
+		secret: func(secretName, ...opts) {
+			validation.assertType(secretName, "string")
+			envName := secretName
+			if len(opts) > 0 {
+				envName = opts[0]
+				validation.assertType(envName, "string")
+			}
+
 			secrets[envName] = secretName
 			return self
 		},
