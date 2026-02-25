@@ -280,10 +280,9 @@ catalog:
 
   # Test
 
-  "vitest": &vitest-version ^4.0.16
+  "vitest": &vitest-version ^4.0.18
   "@vitest/coverage-istanbul": *vitest-version
   "@faker-js/faker": ^9.2.0
-  "happy-dom": ^15.11.7
   "jsdom": ^25.0.1
   "@vue/test-utils": ^2.4.6
   "resize-observer-polyfill": ^1.5.1

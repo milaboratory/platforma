@@ -53,7 +53,6 @@
     "@vitest/coverage-istanbul": "catalog:",
     "@vue/test-utils": "catalog:",
     "fast-json-patch": "catalog:",
-    "happy-dom": "catalog:",
     "rollup-plugin-sourcemaps2": "catalog:",
     "sass": "catalog:",
     "semver": "catalog:",
