@@ -32,30 +32,30 @@ export interface PluginFactoryLike<
 }
 
 /** Extract the Data type from a PluginFactoryLike phantom. */
-export type InferFactoryData<F extends PluginFactoryLike> =
-  NonNullable<F["__types"]> extends { data: infer D } ? D : Record<string, unknown>;
+export type InferFactoryData<F extends PluginFactoryLike> = NonNullable<
+  F extends PluginFactoryLike<infer D, any, any> ? D : Record<string, unknown>
+>;
 
 /** Extract the Params type from a PluginFactoryLike phantom. */
-export type InferFactoryParams<F extends PluginFactoryLike> =
-  NonNullable<F["__types"]> extends { params: infer P } ? P : undefined;
+export type InferFactoryParams<F extends PluginFactoryLike> = NonNullable<
+  F extends PluginFactoryLike<any, infer P, any> ? P : undefined
+>;
 
 /** Extract the Outputs type from a PluginFactoryLike phantom. */
-export type InferFactoryOutputs<F extends PluginFactoryLike> =
-  NonNullable<F["__types"]> extends { outputs: infer O } ? O : Record<string, unknown>;
+export type InferFactoryOutputs<F extends PluginFactoryLike> = NonNullable<
+  F extends PluginFactoryLike<any, any, infer O> ? O : Record<string, unknown>
+>;
 
 /**
  * Derive a typed PluginHandle from a PluginFactory type.
  * Normalizes the brand to only data/params/outputs (strips config) so handles
  * from InferPluginHandles match handles from InferPluginHandle.
  */
-export type InferPluginHandle<F extends PluginFactoryLike> =
-  NonNullable<F["__types"]> extends {
-    data: infer Data extends Record<string, unknown>;
-    params: infer Params extends undefined | Record<string, unknown>;
-    outputs: infer Outputs extends Record<string, unknown>;
-  }
+export type InferPluginHandle<F extends PluginFactoryLike> = NonNullable<
+  F extends PluginFactoryLike<infer Data, infer Params, infer Outputs>
     ? PluginHandle<PluginFactoryLike<Data, Params, Outputs>>
-    : PluginHandle;
+    : PluginHandle
+>;
 
 /**
  * Opaque handle for a plugin instance. Runtime value is the plugin instance ID string.
