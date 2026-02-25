@@ -1,3 +1,5 @@
+import { DATA_MODEL_LEGACY_VERSION } from "./block_storage";
+
 export type DataVersionKey = string;
 export type DataMigrateFn<From, To> = (prev: Readonly<From>) => To;
 export type DataCreateFn<T> = () => T;
@@ -239,10 +241,9 @@ class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
    * steps added after recover() will then run on the recovered data.
    *
    * Can only be called once — the returned chain has no recover() method.
-   * Mutually exclusive with upgradeLegacy().
    *
    * @param fn - Recovery function returning Current (the type at this chain position)
-   * @returns Builder with migrate() and init() but without recover() or upgradeLegacy()
+   * @returns Builder with migrate() and init() but without recover()
    *
    * @example
    * // Recover between migrations — recovered data goes through v3 migration
@@ -263,19 +264,28 @@ class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
       recoverFromIndex: this.migrationSteps.length,
     });
   }
+}
 
+/**
+ * Initial migration chain returned by `.from()`.
+ * Extends DataModelMigrationChain with `upgradeLegacy()` — available only before
+ * any `.migrate()` calls, since legacy data always arrives at the initial version.
+ *
+ * @typeParam Current - Data type at the initial version
+ * @internal
+ */
+class DataModelInitialChain<Current> extends DataModelMigrationChain<Current> {
   /**
    * Handle legacy V1 model state ({ args, uiState }) when upgrading a block from
    * BlockModel V1 to BlockModelV3.
    *
-   * When a V1 block is upgraded, its stored state `{ args, uiState }` arrives at the
-   * initial version (DATA_MODEL_DEFAULT_VERSION) in the migration chain. This method
-   * detects the legacy shape and transforms it to the current chain type using the
-   * provided typed callback. Non-legacy data passes through unchanged.
+   * When a V1 block is upgraded, its stored state `{ args, uiState }` is normalized
+   * to the internal default version. This method inserts a migration step from that
+   * internal version to the version specified in `.from()`, using the provided typed
+   * callback to transform the legacy shape. Non-legacy data passes through unchanged.
    *
-   * Should be called right after `.from()` (before any `.migrate()` calls), since legacy
-   * data always arrives at the initial version. Any `.migrate()` steps added after
-   * `upgradeLegacy()` will run on the transformed result.
+   * Must be called right after `.from()` — not available after `.migrate()` calls.
+   * Any `.migrate()` steps added after `upgradeLegacy()` will run on the transformed result.
    *
    * Can only be called once — the returned chain has no upgradeLegacy() method.
    * Mutually exclusive with recover().
@@ -291,7 +301,7 @@ class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
    * type BlockData = { inputFile: string; threshold: number; selectedTab: string };
    *
    * const dataModel = new DataModelBuilder()
-   *   .from<BlockData>(DATA_MODEL_DEFAULT_VERSION)
+   *   .from<BlockData>("v1")
    *   .upgradeLegacy<OldArgs, OldUiState>(({ args, uiState }) => ({
    *     inputFile: args.inputFile,
    *     threshold: args.threshold,
@@ -308,10 +318,29 @@ class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
       }
       return data;
     };
+
+    const initialVersion = this.versionChain[0];
+
+    if (initialVersion === DATA_MODEL_LEGACY_VERSION) {
+      // Backward compat: initial version is already DATA_MODEL_LEGACY_VERSION.
+      // Use upgradeLegacyFn which is applied in-place at startIndex 0 in DataModel.migrate().
+      return new DataModelMigrationChainWithRecover<Current>({
+        versionChain: this.versionChain,
+        steps: this.migrationSteps,
+        upgradeLegacyFn: wrappedFn,
+      });
+    }
+
+    // Custom initial version: insert DATA_MODEL_LEGACY_VERSION as the true first version
+    // with a migration step that transforms legacy data to the user's initial version.
+    const step: MigrationStep = {
+      fromVersion: DATA_MODEL_LEGACY_VERSION,
+      toVersion: initialVersion,
+      migrate: wrappedFn,
+    };
     return new DataModelMigrationChainWithRecover<Current>({
-      versionChain: this.versionChain,
-      steps: this.migrationSteps,
-      upgradeLegacyFn: wrappedFn,
+      versionChain: [DATA_MODEL_LEGACY_VERSION, ...this.versionChain],
+      steps: [step, ...this.migrationSteps],
     });
   }
 }
@@ -322,13 +351,13 @@ class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
  * @example
  * // Simple (no migrations):
  * const dataModel = new DataModelBuilder()
- *   .from<BlockData>(DATA_MODEL_DEFAULT_VERSION)
+ *   .from<BlockData>("v1")
  *   .init(() => ({ numbers: [] }));
  *
  * @example
  * // With migrations:
  * const dataModel = new DataModelBuilder()
- *   .from<BlockDataV1>(DATA_MODEL_DEFAULT_VERSION)
+ *   .from<BlockDataV1>("v1")
  *   .migrate<BlockDataV2>("v2", (v1) => ({ ...v1, labels: [] }))
  *   .migrate<BlockDataV3>("v3", (v2) => ({ ...v2, description: '' }))
  *   .init(() => ({ numbers: [], labels: [], description: '' }));
@@ -336,7 +365,7 @@ class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
  * @example
  * // With recover() between migrations — recovered data goes through remaining migrations:
  * const dataModelChain = new DataModelBuilder()
- *   .from<BlockDataV1>(DATA_MODEL_DEFAULT_VERSION)
+ *   .from<BlockDataV1>("v1")
  *   .migrate<BlockDataV2>("v2", (v1) => ({ ...v1, labels: [] }));
  *
  * // recover() placed before the v3 migration: recovered data goes through v3
@@ -355,7 +384,7 @@ class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
  * type BlockData = { inputFile: string; selectedTab: string };
  *
  * const dataModel = new DataModelBuilder()
- *   .from<BlockData>(DATA_MODEL_DEFAULT_VERSION)
+ *   .from<BlockData>("v1")
  *   .upgradeLegacy<OldArgs, OldUiState>(({ args, uiState }) => ({
  *     inputFile: args.inputFile,
  *     selectedTab: uiState.selectedTab,
@@ -367,11 +396,11 @@ export class DataModelBuilder {
    * Start the migration chain with the given initial data type and version key.
    *
    * @typeParam T - Data type for the initial version
-   * @param initialVersion - Version key string (e.g. DATA_MODEL_DEFAULT_VERSION or "v1")
+   * @param initialVersion - Version key string (e.g. "v1")
    * @returns Migration chain builder
    */
-  from<T>(initialVersion: string): DataModelMigrationChain<T> {
-    return new DataModelMigrationChain<T>({ versionChain: [initialVersion] });
+  from<T>(initialVersion: string): DataModelInitialChain<T> {
+    return new DataModelInitialChain<T>({ versionChain: [initialVersion] });
   }
 }
 
@@ -385,7 +414,7 @@ export class DataModelBuilder {
  * // With recover() between migrations:
  * // Recovered data (V2) goes through the v2→v3 migration automatically.
  * const dataModel = new DataModelBuilder()
- *   .from<V1>(DATA_MODEL_DEFAULT_VERSION)
+ *   .from<V1>("v1")
  *   .migrate<V2>("v2", (v1) => ({ ...v1, label: "" }))
  *   .recover((version, data) => {
  *     if (version === "legacy") return transformLegacy(data); // returns V2

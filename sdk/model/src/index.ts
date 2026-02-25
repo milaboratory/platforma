@@ -1,7 +1,27 @@
 export * from "./block_state_patch";
 export * from "./block_state_util";
 export * from "./plugin_handle";
-export * from "./block_storage";
+export {
+  type BlockStorageSchemaVersion,
+  type PluginName,
+  type PluginRegistry,
+  type VersionedData,
+  type BlockStorage,
+  isBlockStorage,
+  createBlockStorage,
+  normalizeBlockStorage,
+  getStorageData,
+  deriveDataFromStorage,
+  type MutateStoragePayload,
+  updateStorageData,
+  type StorageDebugView,
+  type MigrationSuccess,
+  type MigrationFailure,
+  type MigrationResult,
+  type MigrateBlockStorageConfig,
+  migrateBlockStorage,
+  getPluginData,
+} from "./block_storage";
 export * from "./block_storage_facade";
 export * from "./block_model_legacy";
 export { BlockModelV3 } from "./block_model";

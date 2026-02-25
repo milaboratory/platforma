@@ -1,11 +1,7 @@
 import { blockSpec as enterNumberSpec } from "@milaboratories/milaboratories.test-enter-numbers-v3";
 import type { Project } from "@milaboratories/pl-middle-layer";
 import { parseJson } from "@milaboratories/pl-model-common";
-import {
-  BLOCK_STORAGE_KEY,
-  deriveDataFromStorage,
-  type StorageDebugView,
-} from "@platforma-sdk/model";
+import { deriveDataFromStorage, type StorageDebugView } from "@platforma-sdk/model";
 import fs from "node:fs";
 import path from "node:path";
 import { test } from "vitest";
@@ -13,6 +9,9 @@ import { withMl } from "./with-ml";
 import { createProjectWatcher } from "./test-helpers";
 import type { BlockDumpUnified } from "./unified-state-schema";
 import { BlockDumpArraySchemaUnified } from "./unified-state-schema";
+
+/** BlockStorage discriminator key (stable internal constant, inlined for test use) */
+const BLOCK_STORAGE_KEY = "__pl_a7f3e2b9__";
 
 /**
  * Creates a raw BlockStorage JSON string with the given data and version.
