@@ -27,7 +27,8 @@
     "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "fmt": "ts-builder format"
+    "fmt": "ts-builder format",
+    "broken_test": " PL_ADDRESS=\"http://127.0.0.1:6345\" PL_TEST_USER=\"default\" PL_TEST_PASSWORD=\"zpuydlaxztspakdy\" pnpm test"
   },
   "dependencies": {
     "@milaboratories/computable": "workspace:*",
