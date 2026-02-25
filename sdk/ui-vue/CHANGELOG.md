@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.57.3
+
+### Patch Changes
+
+- 0271e3f: Replace css-injected-by-js with lib-inject-css for per-component CSS imports
+- Updated dependencies [0271e3f]
+  - @milaboratories/uikit@2.10.32
+  - @platforma-sdk/model@1.57.2
+
 ## 1.57.2
 
 ### Patch Changes
