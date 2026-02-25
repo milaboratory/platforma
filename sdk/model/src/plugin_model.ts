@@ -13,23 +13,6 @@ import type { PluginName } from "./block_storage";
 import type { PluginHandle, PluginPhantom } from "./plugin_handle";
 import type { PluginRenderCtx } from "./render";
 
-const PLUGIN_OUTPUT_PREFIX = "plugin-output#";
-
-/** Construct the output key for a plugin output in the block outputs map. */
-export function pluginOutputKey(handle: PluginHandle, outputKey: string): string {
-  return `${PLUGIN_OUTPUT_PREFIX}${handle}#${outputKey}`;
-}
-
-/** Check whether an output key belongs to a plugin (vs block-level output). */
-export function isPluginOutputKey(key: string): boolean {
-  return key.startsWith(PLUGIN_OUTPUT_PREFIX);
-}
-
-/** Get the prefix used for all outputs of a specific plugin instance. */
-export function pluginOutputPrefix(handle: PluginHandle): string {
-  return pluginOutputKey(handle, "");
-}
-
 /** Symbol for internal builder creation method */
 const FROM_BUILDER = Symbol("fromBuilder");
 

@@ -29,28 +29,9 @@ import { ensureOutputHasStableFlag, MultiError } from "../utils";
 import { applyPatch } from "fast-json-patch";
 import { UpdateSerializer } from "./UpdateSerializer";
 import { watchIgnorable } from "@vueuse/core";
+import type { PluginState, PluginAccess } from "../usePlugin";
 
 export const patchPoolingDelay = 150;
-
-/** Per-plugin reactive model exposed to consumers via usePlugin(). */
-export interface PluginState<Data = unknown, Outputs = unknown> {
-  readonly model: {
-    data: Data;
-    outputs: Outputs extends Record<string, unknown>
-      ? { [K in keyof Outputs]: Outputs[K] | undefined }
-      : Record<string, unknown>;
-    outputErrors: Outputs extends Record<string, unknown>
-      ? { [K in keyof Outputs]?: Error }
-      : Record<string, Error | undefined>;
-  };
-}
-
-/** Internal interface for plugin access — provided via Vue injection to usePlugin(). */
-export interface PluginAccess {
-  getOrCreatePluginState<F>(
-    handle: PluginHandle<F>,
-  ): PluginState<InferFactoryData<F>, InferFactoryOutputs<F>>;
-}
 
 /** Internal per-plugin state with reconciliation support. */
 interface InternalPluginState<Data = unknown, Outputs = unknown> extends PluginState<

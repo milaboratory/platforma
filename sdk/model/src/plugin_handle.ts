@@ -1,5 +1,5 @@
 /**
- * PluginHandle — Opaque branded handle for plugin instances.
+ * PluginHandle — Opaque branded handle and output key utilities for plugin instances.
  *
  * Extracted into its own module to break circular dependencies:
  * both block_storage.ts and plugin_model.ts can import from here
@@ -20,12 +20,6 @@ import type { Branded } from "@milaboratories/helpers";
  * @typeParam F - The plugin factory type (carries type info via `__types` phantom)
  */
 export type PluginHandle<F = unknown> = Branded<string, F>;
-
-/**
- * Structural protocol for extracting types from a factory phantom.
- * Any type with a `__types` field matching this shape will work —
- * this avoids importing PluginFactory in modules that only need type extraction.
- */
 
 /**
  * Normalized phantom type for plugin handle branding.
@@ -49,3 +43,24 @@ export type InferFactoryParams<F> = F extends { readonly __types?: { params: inf
 export type InferFactoryOutputs<F> = F extends { readonly __types?: { outputs: infer O } }
   ? O
   : unknown;
+
+// =============================================================================
+// Plugin output key conventions
+// =============================================================================
+
+const PLUGIN_OUTPUT_PREFIX = "plugin-output#";
+
+/** Construct the output key for a plugin output in the block outputs map. */
+export function pluginOutputKey(handle: PluginHandle, outputKey: string): string {
+  return `${PLUGIN_OUTPUT_PREFIX}${handle}#${outputKey}`;
+}
+
+/** Check whether an output key belongs to a plugin (vs block-level output). */
+export function isPluginOutputKey(key: string): boolean {
+  return key.startsWith(PLUGIN_OUTPUT_PREFIX);
+}
+
+/** Get the prefix used for all outputs of a specific plugin instance. */
+export function pluginOutputPrefix(handle: PluginHandle): string {
+  return pluginOutputKey(handle, "");
+}

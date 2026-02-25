@@ -13,8 +13,7 @@ import type { PlatformaV3 } from "./platforma";
 import type { InferRenderFunctionReturn, RenderFunction } from "./render";
 import { BlockRenderCtx, PluginRenderCtx } from "./render";
 import type { PluginModel } from "./plugin_model";
-import { pluginOutputKey } from "./plugin_model";
-import type { PluginHandle } from "./plugin_handle";
+import { type PluginHandle, pluginOutputKey } from "./plugin_handle";
 import type { RenderCtxBase } from "./render";
 import { PlatformaSDKVersion } from "./version";
 import {
