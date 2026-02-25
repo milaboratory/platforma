@@ -17,6 +17,7 @@ import {
   updateStorageData,
   wrapAsyncCallback,
   pluginOutputKey,
+  type PluginFactory,
 } from "@platforma-sdk/model";
 import { deepClone, delay, uniqueId } from "@milaboratories/helpers";
 import { compare, type Operation } from "fast-json-patch";
@@ -310,7 +311,8 @@ describe("createAppV3", { timeout: 20_000 }, () => {
   });
 
   it("should provide plugin data and outputs via pluginAccess", async () => {
-    const pluginId = "counter" as PluginHandle;
+    type F = PluginFactory<PluginData, undefined, { formatted: string }>;
+    const pluginId = "counter" as PluginHandle<F>;
     const pluginOutputName = pluginOutputKey(pluginId, "formatted");
 
     const outputsWithPlugin = {
@@ -351,7 +353,8 @@ describe("createAppV3", { timeout: 20_000 }, () => {
   });
 
   it("should persist plugin data mutations", async () => {
-    const pluginId = "counter" as PluginHandle;
+    type F = PluginFactory<PluginData, undefined, { formatted: string }>;
+    const pluginId = "counter" as PluginHandle<F>;
 
     const state = createDefaultState({ [pluginId]: defaultPluginData() });
 
@@ -383,7 +386,8 @@ describe("createAppV3", { timeout: 20_000 }, () => {
   });
 
   it("should reconcile plugin data from external changes", async () => {
-    const pluginId = "counter" as PluginHandle;
+    type F = PluginFactory<PluginData, undefined, { formatted: string }>;
+    const pluginId = "counter" as PluginHandle<F>;
 
     const state = createDefaultState({ [pluginId]: defaultPluginData() });
 
@@ -470,7 +474,8 @@ describe("createAppV3", { timeout: 20_000 }, () => {
   });
 
   it("should report plugin output errors", async () => {
-    const pluginId = "counter" as PluginHandle;
+    type F = PluginFactory<PluginData, undefined, { formatted: string }>;
+    const pluginId = "counter" as PluginHandle<F>;
     const pluginOutputName = pluginOutputKey(pluginId, "formatted");
 
     const outputsWithError = {

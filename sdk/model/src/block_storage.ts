@@ -12,6 +12,7 @@
 import type { Branded } from "@milaboratories/pl-model-common";
 import type { DataMigrationResult, DataVersioned } from "./block_migrations";
 import type { PluginHandle, InferFactoryData } from "./plugin_handle";
+import type { PluginFactory } from "./plugin_model";
 
 // =============================================================================
 // Core Types
@@ -394,7 +395,7 @@ export function migrateBlockStorage(
  * @returns The plugin data, typed via factory inference
  * @throws If plugin is not found in storage
  */
-export function getPluginData<F>(
+export function getPluginData<F extends PluginFactory>(
   rawStorage: unknown,
   handle: PluginHandle<F>,
 ): InferFactoryData<F> {

@@ -50,7 +50,7 @@ import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
 import { getCfgRenderCtx } from "../internal";
 import { getPluginData } from "../block_storage";
-import type { PluginHandle, PluginPhantom } from "../plugin_handle";
+import type { PluginHandle } from "../plugin_handle";
 import { TreeNodeAccessor, ifDef } from "./accessor";
 import type { FutureRef } from "./future";
 import type { AccessorHandle, GlobalCfgRenderCtx } from "./internal";
@@ -66,6 +66,7 @@ import type { APColumnSelectorWithSplit } from "./util/split_selectors";
 import { patchInSetFilters } from "./util/pframe_upgraders";
 import { allPColumnsReady } from "./util/pcolumn_data";
 import type { PColumnDataUniversal } from "./internal";
+import type { PluginData, PluginFactory, PluginParams } from "../plugin_model";
 
 /**
  * Helper function to match domain objects
@@ -758,14 +759,17 @@ export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCt
  * Render context for plugin output functions.
  * Reads plugin data from blockStorage and derives params from pre-wrapped input callbacks.
  */
-export class PluginRenderCtx<Data = unknown, Params = unknown> {
+export class PluginRenderCtx<Data extends PluginData, Params extends PluginParams> {
   private readonly ctx: GlobalCfgRenderCtx;
-  private readonly handle: PluginHandle<PluginPhantom<Data>>;
+  private readonly handle: PluginHandle<PluginFactory<Data, Params>>;
   private readonly wrappedInputs: Record<string, () => unknown>;
 
-  constructor(handle: PluginHandle, wrappedInputs: Record<string, () => unknown>) {
+  constructor(
+    handle: PluginHandle<PluginFactory<Data, Params>>,
+    wrappedInputs: Record<string, () => unknown>,
+  ) {
     this.ctx = getCfgRenderCtx();
-    this.handle = handle as typeof this.handle;
+    this.handle = handle;
     this.wrappedInputs = wrappedInputs;
   }
 

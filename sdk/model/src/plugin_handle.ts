@@ -9,6 +9,7 @@
  */
 
 import type { Branded } from "@milaboratories/helpers";
+import type { PluginFactory } from "./plugin_model";
 
 /**
  * Opaque handle for passing a plugin instance from block UI to a plugin component.
@@ -19,30 +20,16 @@ import type { Branded } from "@milaboratories/helpers";
  *
  * @typeParam F - The plugin factory type (carries type info via `__types` phantom)
  */
-export type PluginHandle<F = unknown> = Branded<string, F>;
-
-/**
- * Normalized phantom type for plugin handle branding.
- * Carries Data, Params, Outputs without depending on PluginFactory.
- * Both InferPluginHandle and InferPluginHandles produce this same phantom,
- * ensuring handle types match regardless of how they were derived.
- */
-export type PluginPhantom<Data = unknown, Params = unknown, Outputs = unknown> = {
-  readonly __types?: { data: Data; params: Params; outputs: Outputs };
-};
+export type PluginHandle<F extends PluginFactory = PluginFactory> = Branded<string, F>;
 
 /** Extract the Data type from a factory-branded phantom. */
-export type InferFactoryData<F> = F extends { readonly __types?: { data: infer D } } ? D : unknown;
+export type InferFactoryData<F> = F extends PluginFactory<infer D> ? D : unknown;
 
 /** Extract the Params type from a factory-branded phantom. */
-export type InferFactoryParams<F> = F extends { readonly __types?: { params: infer P } }
-  ? P
-  : unknown;
+export type InferFactoryParams<F> = F extends PluginFactory<any, infer P> ? P : unknown;
 
 /** Extract the Outputs type from a factory-branded phantom. */
-export type InferFactoryOutputs<F> = F extends { readonly __types?: { outputs: infer O } }
-  ? O
-  : unknown;
+export type InferFactoryOutputs<F> = F extends PluginFactory<any, any, infer O> ? O : unknown;
 
 // =============================================================================
 // Plugin output key conventions
@@ -51,7 +38,10 @@ export type InferFactoryOutputs<F> = F extends { readonly __types?: { outputs: i
 const PLUGIN_OUTPUT_PREFIX = "plugin-output#";
 
 /** Construct the output key for a plugin output in the block outputs map. */
-export function pluginOutputKey(handle: PluginHandle, outputKey: string): string {
+export function pluginOutputKey<F extends PluginFactory>(
+  handle: PluginHandle<F>,
+  outputKey: string,
+): string {
   return `${PLUGIN_OUTPUT_PREFIX}${handle}#${outputKey}`;
 }
 
@@ -61,6 +51,6 @@ export function isPluginOutputKey(key: string): boolean {
 }
 
 /** Get the prefix used for all outputs of a specific plugin instance. */
-export function pluginOutputPrefix(handle: PluginHandle): string {
+export function pluginOutputPrefix<F extends PluginFactory>(handle: PluginHandle<F>): string {
   return pluginOutputKey(handle, "");
 }

@@ -10,7 +10,8 @@ import type {
 import type { SdkInfo } from "./version";
 import type { BlockStatePatch } from "./block_state_patch";
 import type { PluginInstance } from "./block_model";
-import type { PluginHandle, PluginPhantom } from "./plugin_handle";
+import type { PluginHandle } from "./plugin_handle";
+import type { PluginFactory } from "./plugin_model";
 
 /** Defines all methods to interact with the platform environment from within a block UI. @deprecated */
 export interface PlatformaV1<
@@ -52,7 +53,7 @@ export interface PlatformaV3<
     OutputWithStatus<unknown>
   >,
   Href extends `/${string}` = `/${string}`,
-  Plugins extends Record<string, unknown> = Record<string, unknown>,
+  Plugins extends Record<string, PluginInstance> = Record<string, PluginInstance>,
 >
   extends BlockApiV3<Data, Args, Outputs, Href>, DriverKit {
   /** Information about SDK version current platforma environment was compiled with. */
@@ -86,7 +87,7 @@ export type BlockModelInfo = {
       withStatus: boolean;
     }
   >;
-  pluginIds: PluginHandle[];
+  pluginIds: PluginHandle<PluginFactory>[];
 };
 
 export type PlatformaApiVersion = Platforma["apiVersion"];
@@ -134,18 +135,15 @@ export type InferPluginNames<Pl> =
 export type InferPluginData<Pl, PluginId extends string> =
   Pl extends PlatformaV3<unknown, unknown, BlockOutputsBase, `/${string}`, infer P>
     ? PluginId extends keyof P
-      ? P[PluginId] extends PluginInstance<infer D, unknown, unknown>
+      ? P[PluginId] extends PluginInstance<infer D, any, any>
         ? D
         : never
       : never
     : never;
 
 /** Map each plugin instance to a type-safe opaque handle branded with factory phantom. */
-export type InferPluginHandles<Pl> =
-  Pl extends PlatformaV3<unknown, unknown, BlockOutputsBase, `/${string}`, infer P>
-    ? {
-        readonly [K in string & keyof P]: P[K] extends PluginInstance<infer D, infer Pm, infer O>
-          ? PluginHandle<PluginPhantom<D, Pm, O>>
-          : never;
-      }
-    : {};
+export type InferPluginHandles<T extends Record<PluginHandle, PluginInstance>> = {
+  readonly [K in keyof T]: T[K] extends PluginInstance<infer Data, infer Params, infer Outputs>
+    ? PluginHandle<PluginFactory<Data, Params, Outputs>>
+    : never;
+};

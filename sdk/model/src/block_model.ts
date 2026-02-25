@@ -12,8 +12,20 @@ import type { DataModel } from "./block_migrations";
 import type { PlatformaV3 } from "./platforma";
 import type { InferRenderFunctionReturn, RenderFunction } from "./render";
 import { BlockRenderCtx, PluginRenderCtx } from "./render";
-import type { PluginModel } from "./plugin_model";
-import { type PluginHandle, pluginOutputKey } from "./plugin_handle";
+import type {
+  PluginData,
+  PluginFactory,
+  PluginModel,
+  PluginOutputs,
+  PluginParams,
+} from "./plugin_model";
+import {
+  type InferFactoryData,
+  type InferFactoryOutputs,
+  type InferFactoryParams,
+  type PluginHandle,
+  pluginOutputKey,
+} from "./plugin_handle";
 import type { RenderCtxBase } from "./render";
 import { PlatformaSDKVersion } from "./version";
 import {
@@ -61,7 +73,11 @@ type ParamsInputErased = Record<string, (ctx: RenderCtxBase) => unknown>;
  * Registered plugin: model + param derivation lambdas.
  * Type parameters are carried by PluginModel generic.
  */
-export type PluginInstance<Data = unknown, Params = unknown, Outputs = unknown> = {
+export type PluginInstance<
+  Data extends PluginData = PluginData,
+  Params extends PluginParams = undefined,
+  Outputs extends PluginOutputs = PluginOutputs,
+> = {
   readonly model: PluginModel<Data, Params, Outputs>;
   readonly inputs: ParamsInputErased;
 };
@@ -373,23 +389,28 @@ export class BlockModelV3<
    *   sourceId: (ctx) => ctx.data.selectedSource,
    * })
    */
-  public plugin<const PluginId extends string, PluginData, PluginParams, PluginOutputs>(
+  public plugin<
+    const PluginId extends string,
+    PData extends PluginData,
+    PParams extends PluginParams,
+    POutputs extends PluginOutputs,
+  >(
     pluginId: PluginId,
-    plugin: PluginModel<PluginData, PluginParams, PluginOutputs>,
-    params?: ParamsInput<PluginParams, Args, Data>,
+    plugin: PluginModel<PData, PParams, POutputs>,
+    params?: ParamsInput<PParams, Args, Data>,
   ): BlockModelV3<
     Args,
     OutputsCfg,
     Data,
     Href,
-    Plugins & { [K in PluginId]: PluginInstance<PluginData, PluginParams, PluginOutputs> }
+    Plugins & { [K in PluginId]: PluginInstance<PData, PParams, POutputs> }
   > {
     // Validate pluginId uniqueness
     if (pluginId in this.config.plugins) {
       throw new Error(`Plugin '${pluginId}' already registered`);
     }
 
-    const instance: PluginInstance<PluginData, PluginParams, PluginOutputs> = {
+    const instance: PluginInstance<PData, PParams, POutputs> = {
       model: plugin,
       inputs: (params ?? {}) as ParamsInputErased,
     };
@@ -425,17 +446,23 @@ export class BlockModelV3<
     // Build plugin registry
     const { plugins } = this.config;
     const pluginRegistry: Record<string, PluginName> = {};
-    const pluginHandles = Object.keys(plugins) as PluginHandle[];
+    const pluginHandles = Object.keys(plugins) as PluginHandle<PluginFactory>[];
     for (const handle of pluginHandles) {
       pluginRegistry[handle] = plugins[handle].model.name;
     }
 
     const { dataModel, argsFunction, prerunArgsFunction } = this.config;
 
-    function getPlugin(handle: PluginHandle): PluginInstance {
+    function getPlugin<F extends PluginFactory>(
+      handle: PluginHandle<F>,
+    ): PluginInstance<InferFactoryData<F>, InferFactoryParams<F>, InferFactoryOutputs<F>> {
       const plugin = plugins[handle];
       if (!plugin) throw new Error(`Plugin model not found for '${handle}'`);
-      return plugin;
+      return plugin as PluginInstance<
+        InferFactoryData<F>,
+        InferFactoryParams<F>,
+        InferFactoryOutputs<F>
+      >;
     }
 
     // Register ALL facade callbacks here, with dependencies captured via closures
@@ -472,7 +499,10 @@ export class BlockModelV3<
       }
 
       // Register plugin outputs (in config pack, evaluated by middle layer)
-      const outputs = model.outputs as Record<string, (ctx: PluginRenderCtx) => unknown>;
+      const outputs = model.outputs as Record<
+        string,
+        (ctx: PluginRenderCtx<PluginData, PluginParams>) => unknown
+      >;
       for (const [outputKey, outputFn] of Object.entries(outputs)) {
         const key = pluginOutputKey(handle, outputKey);
         pluginOutputs[key] = createAndRegisterRenderLambda({

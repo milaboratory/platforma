@@ -4,6 +4,8 @@ import type {
   PlatformaV3,
   PlatformaV1,
   PlatformaV2,
+  PluginHandle,
+  PluginInstance,
 } from "@platforma-sdk/model";
 import {
   getPlatformaApiVersion,
@@ -65,7 +67,7 @@ export function defineApp<
     PlatformaV1<Args, Outputs, UiState, Href> | PlatformaV2<Args, Outputs, UiState, Href>
   >,
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //
   extendApp: (app: any) => Extend,
   settings: AppSettings = {},
 ):
@@ -161,7 +163,7 @@ export function defineAppV3<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
-  Plugins extends Record<string, unknown> = Record<string, unknown>,
+  Plugins extends Record<PluginHandle, PluginInstance> = Record<PluginHandle, PluginInstance>,
   Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
 >(
   platforma: PlatformaV3<Data, Args, Outputs, Href, Plugins> & {
@@ -270,7 +272,7 @@ export type AppV3<
   Args = unknown,
   Outputs extends BlockOutputsBase = NonNullable<unknown>,
   Href extends `/${string}` = `/${string}`,
-  Plugins extends Record<string, unknown> = Record<string, unknown>,
+  Plugins extends Record<PluginHandle, PluginInstance> = Record<PluginHandle, PluginInstance>,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
 > = BaseAppV3<Data, Args, Outputs, Href, Plugins> &
   Reactive<Omit<Local, "routes">> & { getRoute(href: Href): Component | undefined };
@@ -312,7 +314,7 @@ export type SdkPluginV3<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
-  Plugins extends Record<string, unknown> = Record<string, unknown>,
+  Plugins extends Record<PluginHandle, PluginInstance> = Record<PluginHandle, PluginInstance>,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
 > = {
   apiVersion: 3;

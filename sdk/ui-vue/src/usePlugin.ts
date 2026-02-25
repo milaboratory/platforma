@@ -1,10 +1,15 @@
-import { inject } from "vue";
+import { inject, type Reactive } from "vue";
 import { pluginDataKey } from "./defineApp";
-import type { PluginHandle, InferFactoryData, InferFactoryOutputs } from "@platforma-sdk/model";
+import type {
+  PluginHandle,
+  InferFactoryData,
+  InferFactoryOutputs,
+  PluginFactory,
+} from "@platforma-sdk/model";
 
 /** Per-plugin reactive model exposed to consumers via usePlugin(). */
 export interface PluginState<Data = unknown, Outputs = unknown> {
-  readonly model: {
+  readonly model: Reactive<{
     data: Data;
     outputs: Outputs extends Record<string, unknown>
       ? { [K in keyof Outputs]: Outputs[K] | undefined }
@@ -12,12 +17,12 @@ export interface PluginState<Data = unknown, Outputs = unknown> {
     outputErrors: Outputs extends Record<string, unknown>
       ? { [K in keyof Outputs]?: Error }
       : Record<string, Error | undefined>;
-  };
+  }>;
 }
 
 /** Internal interface for plugin access — provided via Vue injection to usePlugin(). */
 export interface PluginAccess {
-  getOrCreatePluginState<F>(
+  getOrCreatePluginState<F extends PluginFactory>(
     handle: PluginHandle<F>,
   ): PluginState<InferFactoryData<F>, InferFactoryOutputs<F>>;
 }
@@ -46,7 +51,7 @@ export interface PluginAccess {
  * </script>
  * ```
  */
-export function usePlugin<F>(handle: PluginHandle<F>) {
+export function usePlugin<F extends PluginFactory>(handle: PluginHandle<F>) {
   const access = inject<PluginAccess>(pluginDataKey);
 
   if (!access) {
