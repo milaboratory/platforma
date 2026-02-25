@@ -17,6 +17,7 @@ desc := import(":exec.descriptor")
 monetization := import(":exec.monetization_internal")
 maps := import(":maps")
 runcmd := import(":exec.runcmd")
+feats := import(":feats")
 R := import(":exec.R")
 
 delayedCompAlloc := import(":exec.delayed-compute-allocation")
@@ -195,8 +196,12 @@ self.body(func(inputs) {
 	//
 
 	// Load secrets
-	for envName, secretVar in runOptions.secrets {
-		mainRunBuilder.envExpression(envName, secretVar)
+	for envName, secretName in runOptions.secrets {
+		if feats.secretEnvSupport {
+			mainRunBuilder.envSecret(envName, secretName)
+		} else {
+			mainRunBuilder.envExpression(envName, "{secrets." + secretName + "}")
+		}
 	}
 
 	// other options
