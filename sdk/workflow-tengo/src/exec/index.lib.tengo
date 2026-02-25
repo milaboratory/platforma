@@ -246,18 +246,38 @@ builder := func() {
 		},
 
 		/**
-		 * Set environment variable to value of given secret.
+		 * Provide secret to command runtime.
+		 *
+		 * Secrets contain sensitive information that should be available to software,
+		 * but should not be exposed to outer observers. License keys, passwords, API keys are examples
+		 * of such information.
+		 *
+		 * On Platforma Backend side, secrets feature uses native instruments in particular
+		 * infrastructure designed for that purpose (i.e. Kubertenes secrets). The secret is stored
+		 * somewhere _outside_ platforma backend, but Platforma knows how to start the software providing
+		 * this secret to it.
+		 *
+		 * Value of a secret can be exposed to the process only via environment variable, because other
+		 * mechanisms easly 'leak' secret's value to logs, processes list or other places, that is easy
+		 * to access with little permissions.
+		 *
+		 * When you use .secret("SECRET_NAME"), platforma backend knows that this particular software
+		 * needs a value of secret with name "SECRET_NAME" to be available at runtime in environment variable
+		 * with the same name. You can customize env variable name by setting 2nd argument to the .secret() method.
 		 *
 		 * @param secretName: string - name of secret to pass as environment variable.
 		 * @param [envName]: string - name of environment variable to set with value of secret.
-		 *                            defaults to name of a secret
+		 *                            Defaults to name of a secret.
 		 */
 		secret: func(secretName, ...opts) {
 			validation.assertType(secretName, "string")
+			validation.assert(secretName != "", "exec.secret(): secret name cannot be empty")
+
 			envName := secretName
 			if len(opts) > 0 {
 				envName = opts[0]
 				validation.assertType(envName, "string")
+				validation.assert(envName != "", "exec.secret(): environment name for secret cannot be empty")
 			}
 
 			secrets[envName] = secretName
