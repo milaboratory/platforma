@@ -248,22 +248,42 @@ builder := func() {
 		/**
 		 * Provide secret to command runtime.
 		 *
-		 * Secrets contain sensitive information that should be available to software,
+		 * Secrets contain sensitive information that should be available for software,
 		 * but should not be exposed to outer observers. License keys, passwords, API keys are examples
 		 * of such information.
 		 *
-		 * On Platforma Backend side, secrets feature uses native instruments in particular
-		 * infrastructure designed for that purpose (i.e. Kubertenes secrets). The secret is stored
-		 * somewhere _outside_ platforma backend, but Platforma knows how to start the software providing
-		 * this secret to it.
+		 * On Platforma Backend side, secrets feature uses native instruments of particular
+		 * infrastructure designed for that purpose (i.e. Kubertenes secrets). The secret is usually stored
+		 * somewhere _outside_ Platforma Backend, but Platforma Backend knows how to start the software
+		 * and provide access to this secret for one particular run.
 		 *
 		 * Value of a secret can be exposed to the process only via environment variable, because other
 		 * mechanisms easly 'leak' secret's value to logs, processes list or other places, that is easy
 		 * to access with little permissions.
 		 *
-		 * When you use .secret("SECRET_NAME"), platforma backend knows that this particular software
+		 * When you use .secret("SECRET_NAME"), Platforma Backend knows that this particular software
 		 * needs a value of secret with name "SECRET_NAME" to be available at runtime in environment variable
 		 * with the same name. You can customize env variable name by setting 2nd argument to the .secret() method.
+		 *
+		 * For example, MiXCR software expects license to be available in MI_LICENSE environment variable.
+		 * to run MiXCR in workflow, you can use .secret("mixcr-license", "MI_LICENSE").
+		 * to make Platforma Backend provide MiXCR with license code stored in secret 'mixcr-license'.
+		 * This will require infrastructure, that runs Platforma Backend, to have this 'mixcr-license' secret
+		 * on their side.
+		 * Usually, secrets are named after environment variables software expects.
+		 *
+		 * Here are few recommendations on how to work with secrets:
+		 *  - tend to use the environment variable name as a name of a secret for simplicity of understanding.
+		 *  - when declaring a secret in your block workflow, use the same secret name for the same software.
+		 *    Even in different blocks. I.e. use 'MI_LICENSE' in all MiXCR software runs in all blocks.
+		 *  - once secret is added and block is released, do not change name of a secret in a block from version to version.
+		 *    Changing the secret name requires all our clients creating a secret with new name to make new version of a block working.
+		 *  - never use the same secret name for different software unless you know for sure they accept/expect the same secret value.
+		 *
+		 * Examples of secret names:
+		 *  - BAD: "password", "api-key", "secret", "key" - too general. Will overlap in different blocks for different software,
+		 *    making it impossible to use these blocks simultaneously in the same Platforma Backend instance.
+		 *  - GOOD: "MI_LICENSE" - has 'MI_' prefix, stating this is for MiXCR software (or for MiLaboratories software in general)
 		 *
 		 * @param secretName: string - name of secret to pass as environment variable.
 		 * @param [envName]: string - name of environment variable to set with value of secret.
