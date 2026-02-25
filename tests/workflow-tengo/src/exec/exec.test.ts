@@ -19,6 +19,28 @@ tplTest.concurrent("run-hello-world-go", async ({ helper, expect }) => {
 });
 
 /*
+ * Requests a secret and checks its value is not empty.
+ */
+tplTest.concurrent("check-secret", async ({ helper, expect }) => {
+  const result = await helper.renderTemplate(
+    false,
+    "exec.run.use_secret",
+    ["customEnv", "defaultEnv"],
+    (tx) => ({}),
+  );
+  const customEnvResult = result.computeOutput("customEnv", (a) => a?.getDataAsString());
+  const defaultEnvResult = result.computeOutput("defaultEnv", (a) => a?.getDataAsString());
+
+  const secretValue1 = await customEnvResult.awaitStableValue();
+  expect(secretValue1).not.toBe("");
+  expect(secretValue1).not.toBeNull();
+
+  const secretValue2 = await defaultEnvResult.awaitStableValue();
+  expect(secretValue2).not.toBe("");
+  expect(secretValue2).not.toBeNull();
+});
+
+/*
  * Checks that we preserve original image entrypoint when executing software in docker
  */
 tplTest.concurrent("check-docker-entrypoint-preserved", async ({ helper, expect }) => {
