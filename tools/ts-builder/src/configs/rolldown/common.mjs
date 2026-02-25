@@ -32,6 +32,9 @@ export function createBuildEntry(input, output, format) {
       preserveModules: true,
       preserveModulesRoot: "src",
     },
+    transform: {
+      target: "ES2022",
+    },
   };
 }
 
