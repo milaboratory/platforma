@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.9.0
+
+### Minor Changes
+
+- 0f2bec2: Use new 'secret' argType for secrets reference in envs when backend supports it
+
 ## 5.8.3
 
 ### Patch Changes
