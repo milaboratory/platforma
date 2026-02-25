@@ -145,8 +145,6 @@ builder := func() {
 		 * Expressions are evaluated using the expr-lang syntax (https://expr-lang.org/docs/language-definition).
 		 * Available variables in expressions:
 		 *
-		 * - `secrets.SECRET_NAME` - Access to secrets (e.g., `{secrets.API_KEY}`)
-		 * - `env.ENV_NAME` - Access to environment variables (automatically converted to appropriate types)
 		 * - `system.cpu` - Number of CPU cores allocated
 		 * - `system.ram.bytes`, `system.ram.b` - RAM in bytes
 		 * - `system.ram.kb`, `system.ram.mb`, `system.ram.gb` - RAM in metric units (base-10)
@@ -155,9 +153,7 @@ builder := func() {
 		 *
 		 * Expression examples:
 		 * - `--memory={system.ram.mb * 80 / 100}` - Calculate 80% of available RAM in MB
-		 * - `--java-home={env.JAVA_HOME}` - Use environment variable
 		 * - `--threads={system.cpu}` - Use number of CPU cores
-		 * - `--config={secrets.CONFIG_PATH}` - Access secret value
 		 *
 		 * @param arg: string - argument with expressions, e.g., "-Xms{system.ram.mb * 80 / 100}m"
 		 */
@@ -204,8 +200,6 @@ builder := func() {
 		 * Expressions are evaluated using the expr-lang syntax (https://expr-lang.org/docs/language-definition).
 		 * Available variables in expressions:
 		 *
-		 * - `secrets.SECRET_NAME` - Access to secrets (e.g., `{secrets.API_KEY}`)
-		 * - `env.ENV_NAME` - Access to environment variables (automatically converted to appropriate types)
 		 * - `system.cpu` - Number of CPU cores allocated
 		 * - `system.ram.bytes`, `system.ram.b` - RAM in bytes
 		 * - `system.ram.kb`, `system.ram.mb`, `system.ram.gb` - RAM in metric units (base-10)
@@ -213,9 +207,7 @@ builder := func() {
 		 * - Custom substitution variables defined by substitution rules
 		 *
 		 * Expression examples:
-		 * - `{env.JAVA_HOME}/bin/java` - Use environment variable
 		 * - `{system.ram.mb * 80 / 100}` - Calculate 80% of available RAM in MB
-		 * - `{secrets.DATABASE_URL}` - Access secret value
 		 * - `{system.cpu}` - Use number of CPU cores
 		 *
 		 * @param name: string - the name of the environment variable.
@@ -261,7 +253,7 @@ builder := func() {
 		 */
 		secret: func(secretName, envName) {
 			validation.assertType([secretName, envName], ["string"])
-			secrets[envName] = "{secrets."+secretName+"}"
+			secrets[envName] = secretName
 			return self
 		},
 
