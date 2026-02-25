@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.58.1
+
+### Patch Changes
+
+- d318a76: DataModelBuilder upgradeLegacy fix
+
 ## 1.58.0
 
 ### Minor Changes
