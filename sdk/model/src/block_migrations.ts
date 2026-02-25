@@ -502,12 +502,10 @@ export class DataModel<State> {
     if (startIndex === undefined) {
       try {
         return this.recoverFrom(data, fromVersion);
-      } catch (error) {
-        if (isDataUnrecoverableError(error)) {
-          // Unknown version with no recovery path — reset to initial data
-          return this.getDefaultData();
-        }
-        throw error;
+      } catch {
+        // Recovery failed (unknown version, recover fn threw, or post-recover
+        // migration failed) — reset to initial data rather than blocking the update.
+        return this.getDefaultData();
       }
     }
 

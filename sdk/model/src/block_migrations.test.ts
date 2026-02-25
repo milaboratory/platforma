@@ -133,7 +133,7 @@ describe("DataModel migrations", () => {
       expect(result.data).toStrictEqual({ count: 0, label: "" });
     });
 
-    it("migration failure after recover() throws", () => {
+    it("migration failure after recover() resets to initial data", () => {
       type V2 = { count: number; label: string };
       type V3 = { count: number; label: string; description: string };
 
@@ -156,9 +156,9 @@ describe("DataModel migrations", () => {
         })
         .init(() => ({ count: 0, label: "", description: "" }));
 
-      expect(() => dataModel.migrate(makeDataVersioned("legacy", { count: 7 }))).toThrow(
-        "v3 failed",
-      );
+      const result = dataModel.migrate(makeDataVersioned("legacy", { count: 7 }));
+      expect(result.version).toBe("v3");
+      expect(result.data).toStrictEqual({ count: 0, label: "", description: "" });
     });
 
     it("recover() cannot be called twice — enforced by type (no recover() on WithRecover)", () => {
