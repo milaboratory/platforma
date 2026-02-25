@@ -4,7 +4,7 @@ import type {
   PluginHandle,
   InferFactoryData,
   InferFactoryOutputs,
-  PluginFactory,
+  PluginFactoryLike,
 } from "@platforma-sdk/model";
 
 /** Per-plugin reactive model exposed to consumers via usePlugin(). */
@@ -22,7 +22,7 @@ export interface PluginState<Data = unknown, Outputs = unknown> {
 
 /** Internal interface for plugin access — provided via Vue injection to usePlugin(). */
 export interface PluginAccess {
-  getOrCreatePluginState<F extends PluginFactory>(
+  getOrCreatePluginState<F extends PluginFactoryLike>(
     handle: PluginHandle<F>,
   ): PluginState<InferFactoryData<F>, InferFactoryOutputs<F>>;
 }
@@ -51,7 +51,7 @@ export interface PluginAccess {
  * </script>
  * ```
  */
-export function usePlugin<F extends PluginFactory>(handle: PluginHandle<F>) {
+export function usePlugin<F extends PluginFactoryLike>(handle: PluginHandle<F>) {
   const access = inject<PluginAccess>(pluginDataKey);
 
   if (!access) {

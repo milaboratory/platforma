@@ -10,8 +10,7 @@ import type {
 import type { SdkInfo } from "./version";
 import type { BlockStatePatch } from "./block_state_patch";
 import type { PluginInstance } from "./block_model";
-import type { PluginHandle } from "./plugin_handle";
-import type { PluginFactory } from "./plugin_model";
+import type { PluginHandle, PluginFactoryLike } from "./plugin_handle";
 
 /** Defines all methods to interact with the platform environment from within a block UI. @deprecated */
 export interface PlatformaV1<
@@ -53,7 +52,7 @@ export interface PlatformaV3<
     OutputWithStatus<unknown>
   >,
   Href extends `/${string}` = `/${string}`,
-  Plugins extends Record<string, PluginInstance> = Record<string, PluginInstance>,
+  Plugins extends Record<string, unknown> = Record<string, unknown>,
 >
   extends BlockApiV3<Data, Args, Outputs, Href>, DriverKit {
   /** Information about SDK version current platforma environment was compiled with. */
@@ -87,7 +86,7 @@ export type BlockModelInfo = {
       withStatus: boolean;
     }
   >;
-  pluginIds: PluginHandle<PluginFactory>[];
+  pluginIds: PluginHandle[];
 };
 
 export type PlatformaApiVersion = Platforma["apiVersion"];
@@ -141,9 +140,13 @@ export type InferPluginData<Pl, PluginId extends string> =
       : never
     : never;
 
-/** Map each plugin instance to a type-safe opaque handle branded with factory phantom. */
-export type InferPluginHandles<T extends Record<PluginHandle, PluginInstance>> = {
+/**
+ * Map each plugin instance to a type-safe opaque handle branded with normalized phantom.
+ * Uses the same brand structure as InferPluginHandle — only data/params/outputs, no config —
+ * because PluginInstance doesn't carry Config (it's lost after factory.create()).
+ */
+export type InferPluginHandles<T extends Record<string, unknown>> = {
   readonly [K in keyof T]: T[K] extends PluginInstance<infer Data, infer Params, infer Outputs>
-    ? PluginHandle<PluginFactory<Data, Params, Outputs>>
+    ? PluginHandle<PluginFactoryLike<Data, Params, Outputs>>
     : never;
 };

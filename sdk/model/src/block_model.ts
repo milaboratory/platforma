@@ -12,20 +12,8 @@ import type { DataModel } from "./block_migrations";
 import type { PlatformaV3 } from "./platforma";
 import type { InferRenderFunctionReturn, RenderFunction } from "./render";
 import { BlockRenderCtx, PluginRenderCtx } from "./render";
-import type {
-  PluginData,
-  PluginFactory,
-  PluginModel,
-  PluginOutputs,
-  PluginParams,
-} from "./plugin_model";
-import {
-  type InferFactoryData,
-  type InferFactoryOutputs,
-  type InferFactoryParams,
-  type PluginHandle,
-  pluginOutputKey,
-} from "./plugin_handle";
+import type { PluginData, PluginModel, PluginOutputs, PluginParams } from "./plugin_model";
+import { type PluginHandle, pluginOutputKey } from "./plugin_handle";
 import type { RenderCtxBase } from "./render";
 import { PlatformaSDKVersion } from "./version";
 import {
@@ -446,23 +434,17 @@ export class BlockModelV3<
     // Build plugin registry
     const { plugins } = this.config;
     const pluginRegistry: Record<string, PluginName> = {};
-    const pluginHandles = Object.keys(plugins) as PluginHandle<PluginFactory>[];
+    const pluginHandles = Object.keys(plugins) as PluginHandle[];
     for (const handle of pluginHandles) {
       pluginRegistry[handle] = plugins[handle].model.name;
     }
 
     const { dataModel, argsFunction, prerunArgsFunction } = this.config;
 
-    function getPlugin<F extends PluginFactory>(
-      handle: PluginHandle<F>,
-    ): PluginInstance<InferFactoryData<F>, InferFactoryParams<F>, InferFactoryOutputs<F>> {
+    function getPlugin(handle: PluginHandle): PluginInstance {
       const plugin = plugins[handle];
       if (!plugin) throw new Error(`Plugin model not found for '${handle}'`);
-      return plugin as PluginInstance<
-        InferFactoryData<F>,
-        InferFactoryParams<F>,
-        InferFactoryOutputs<F>
-      >;
+      return plugin;
     }
 
     // Register ALL facade callbacks here, with dependencies captured via closures
@@ -501,7 +483,7 @@ export class BlockModelV3<
       // Register plugin outputs (in config pack, evaluated by middle layer)
       const outputs = model.outputs as Record<
         string,
-        (ctx: PluginRenderCtx<PluginData, PluginParams>) => unknown
+        (ctx: PluginRenderCtx) => unknown
       >;
       for (const [outputKey, outputFn] of Object.entries(outputs)) {
         const key = pluginOutputKey(handle, outputKey);

@@ -12,8 +12,7 @@ import type {
   PluginHandle,
   InferFactoryData,
   InferFactoryOutputs,
-  PluginFactory,
-  PluginInstance,
+  PluginFactoryLike,
 } from "@platforma-sdk/model";
 import {
   hasAbortError,
@@ -75,7 +74,7 @@ export function createAppV3<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
-  Plugins extends Record<PluginHandle, PluginInstance> = Record<PluginHandle, PluginInstance>,
+  Plugins extends Record<string, unknown> = Record<string, unknown>,
 >(
   state: ValueWithUTag<BlockStateV3<Data, Outputs, Href>>,
   platforma: PlatformaExtended<PlatformaV3<Data, Args, Outputs, Href, Plugins>>,
@@ -330,7 +329,7 @@ export function createAppV3<
   };
 
   /** Creates a lazily-cached per-plugin reactive state. */
-  const createPluginState = <F extends PluginFactory>(
+  const createPluginState = <F extends PluginFactoryLike>(
     handle: PluginHandle<F>,
   ): InternalPluginState<InferFactoryData<F>, InferFactoryOutputs<F>> => {
     const prefix = pluginOutputPrefix(handle);
@@ -387,7 +386,7 @@ export function createAppV3<
 
   /** Plugin internals — provided via separate injection key, not exposed on useApp(). */
   const pluginAccess: PluginAccess = {
-    getOrCreatePluginState<F extends PluginFactory>(handle: PluginHandle<F>) {
+    getOrCreatePluginState<F extends PluginFactoryLike>(handle: PluginHandle<F>) {
       const existing = pluginStates.get(handle);
       if (existing) {
         return existing as unknown as PluginState<InferFactoryData<F>, InferFactoryOutputs<F>>;
@@ -428,5 +427,5 @@ export type BaseAppV3<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
-  Plugins extends Record<string, PluginInstance> = Record<string, PluginInstance>,
+  Plugins extends Record<string, unknown> = Record<string, unknown>,
 > = ReturnType<typeof createAppV3<Data, Args, Outputs, Href, Plugins>>["app"];

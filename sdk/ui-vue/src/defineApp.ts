@@ -1,12 +1,5 @@
 import { notEmpty } from "@milaboratories/helpers";
-import type {
-  PlatformaExtended,
-  PlatformaV3,
-  PlatformaV1,
-  PlatformaV2,
-  PluginHandle,
-  PluginInstance,
-} from "@platforma-sdk/model";
+import type { PlatformaExtended, PlatformaV3, PlatformaV1, PlatformaV2 } from "@platforma-sdk/model";
 import {
   getPlatformaApiVersion,
   unwrapResult,
@@ -163,7 +156,7 @@ export function defineAppV3<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
-  Plugins extends Record<PluginHandle, PluginInstance> = Record<PluginHandle, PluginInstance>,
+  Plugins extends Record<string, unknown> = Record<string, unknown>,
   Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
 >(
   platforma: PlatformaV3<Data, Args, Outputs, Href, Plugins> & {
@@ -272,7 +265,7 @@ export type AppV3<
   Args = unknown,
   Outputs extends BlockOutputsBase = NonNullable<unknown>,
   Href extends `/${string}` = `/${string}`,
-  Plugins extends Record<PluginHandle, PluginInstance> = Record<PluginHandle, PluginInstance>,
+  Plugins extends Record<string, unknown> = Record<string, unknown>,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
 > = BaseAppV3<Data, Args, Outputs, Href, Plugins> &
   Reactive<Omit<Local, "routes">> & { getRoute(href: Href): Component | undefined };
@@ -314,7 +307,7 @@ export type SdkPluginV3<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
-  Plugins extends Record<PluginHandle, PluginInstance> = Record<PluginHandle, PluginInstance>,
+  Plugins extends Record<string, unknown> = Record<string, unknown>,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
 > = {
   apiVersion: 3;

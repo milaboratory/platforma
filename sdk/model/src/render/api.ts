@@ -50,7 +50,7 @@ import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
 import { getCfgRenderCtx } from "../internal";
 import { getPluginData } from "../block_storage";
-import type { PluginHandle } from "../plugin_handle";
+import type { PluginHandle, PluginFactoryLike, InferFactoryData, InferFactoryParams } from "../plugin_handle";
 import { TreeNodeAccessor, ifDef } from "./accessor";
 import type { FutureRef } from "./future";
 import type { AccessorHandle, GlobalCfgRenderCtx } from "./internal";
@@ -66,7 +66,6 @@ import type { APColumnSelectorWithSplit } from "./util/split_selectors";
 import { patchInSetFilters } from "./util/pframe_upgraders";
 import { allPColumnsReady } from "./util/pcolumn_data";
 import type { PColumnDataUniversal } from "./internal";
-import type { PluginData, PluginFactory, PluginParams } from "../plugin_model";
 
 /**
  * Helper function to match domain objects
@@ -758,43 +757,44 @@ export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCt
 /**
  * Render context for plugin output functions.
  * Reads plugin data from blockStorage and derives params from pre-wrapped input callbacks.
+ *
+ * Parameterized on the factory-like phantom F so that getPluginData returns
+ * InferFactoryData<F> directly — no casts needed for the data getter.
+ *
+ * @typeParam F - PluginFactoryLike phantom carrying data/params/outputs types
  */
-export class PluginRenderCtx<Data extends PluginData, Params extends PluginParams> {
+export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> {
   private readonly ctx: GlobalCfgRenderCtx;
-  private readonly handle: PluginHandle<PluginFactory<Data, Params>>;
+  private readonly handle: PluginHandle<F>;
   private readonly wrappedInputs: Record<string, () => unknown>;
 
-  constructor(
-    handle: PluginHandle<PluginFactory<Data, Params>>,
-    wrappedInputs: Record<string, () => unknown>,
-  ) {
+  constructor(handle: PluginHandle<F>, wrappedInputs: Record<string, () => unknown>) {
     this.ctx = getCfgRenderCtx();
     this.handle = handle;
     this.wrappedInputs = wrappedInputs;
   }
 
-  private dataCache?: { v: Data };
+  private dataCache?: { v: InferFactoryData<F> };
 
   /** Plugin's persistent data from blockStorage.__plugins.{pluginId}.__data */
-  public get data(): Data {
+  public get data(): InferFactoryData<F> {
     if (this.dataCache === undefined) {
       const raw = this.ctx.blockStorage();
-      const pluginData = getPluginData(parseJson(raw), this.handle);
-      this.dataCache = { v: pluginData };
+      this.dataCache = { v: getPluginData(parseJson(raw), this.handle) };
     }
     return this.dataCache.v;
   }
 
-  private paramsCache?: { v: Params };
+  private paramsCache?: { v: InferFactoryParams<F> };
 
   /** Params derived from block context via pre-wrapped input callbacks */
-  public get params(): Params {
+  public get params(): InferFactoryParams<F> {
     if (this.paramsCache === undefined) {
       const result: Record<string, unknown> = {};
       for (const [key, fn] of Object.entries(this.wrappedInputs)) {
         result[key] = fn();
       }
-      this.paramsCache = { v: result as Params };
+      this.paramsCache = { v: result as InferFactoryParams<F> };
     }
     return this.paramsCache.v;
   }
