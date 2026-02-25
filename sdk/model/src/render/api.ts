@@ -50,7 +50,12 @@ import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
 import { getCfgRenderCtx } from "../internal";
 import { getPluginData } from "../block_storage";
-import type { PluginHandle, PluginFactoryLike, InferFactoryData, InferFactoryParams } from "../plugin_handle";
+import type {
+  PluginHandle,
+  PluginFactoryLike,
+  InferFactoryData,
+  InferFactoryParams,
+} from "../plugin_handle";
 import { TreeNodeAccessor, ifDef } from "./accessor";
 import type { FutureRef } from "./future";
 import type { AccessorHandle, GlobalCfgRenderCtx } from "./internal";

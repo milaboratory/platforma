@@ -1,5 +1,10 @@
 import { notEmpty } from "@milaboratories/helpers";
-import type { PlatformaExtended, PlatformaV3, PlatformaV1, PlatformaV2 } from "@platforma-sdk/model";
+import type {
+  PlatformaExtended,
+  PlatformaV3,
+  PlatformaV1,
+  PlatformaV2,
+} from "@platforma-sdk/model";
 import {
   getPlatformaApiVersion,
   unwrapResult,
