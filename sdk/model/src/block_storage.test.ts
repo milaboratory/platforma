@@ -14,6 +14,7 @@ import {
   type PluginName,
   type PluginRegistry,
 } from "./block_storage";
+import type { PluginHandle } from "./plugin_handle";
 
 describe("BlockStorage", () => {
   describe("BLOCK_STORAGE_KEY and BLOCK_STORAGE_SCHEMA_VERSION", () => {
@@ -215,11 +216,11 @@ describe("BlockStorage", () => {
         pluginId: "chart1",
         value: { type: "bar" },
       });
-      expect(getPluginData(storage, "chart1")).toEqual({ type: "bar" });
+      expect(getPluginData(storage, "chart1" as PluginHandle)).toEqual({ type: "bar" });
     });
 
     it("getPluginData should throw for missing plugin", () => {
-      expect(() => getPluginData(baseStorage, "nonexistent")).toThrow(
+      expect(() => getPluginData(baseStorage, "nonexistent" as PluginHandle)).toThrow(
         "Plugin 'nonexistent' not found in block storage",
       );
     });

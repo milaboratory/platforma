@@ -10,6 +10,7 @@ import type {
 import type { SdkInfo } from "./version";
 import type { BlockStatePatch } from "./block_state_patch";
 import type { PluginInstance } from "./block_model";
+import type { PluginHandle, PluginFactoryLike } from "./plugin_handle";
 
 /** Defines all methods to interact with the platform environment from within a block UI. @deprecated */
 export interface PlatformaV1<
@@ -85,6 +86,7 @@ export type BlockModelInfo = {
       withStatus: boolean;
     }
   >;
+  pluginIds: PluginHandle[];
 };
 
 export type PlatformaApiVersion = Platforma["apiVersion"];
@@ -124,14 +126,27 @@ export type InferBlockStatePatch<Pl extends Platforma> = BlockStatePatch<
 
 /** Extract plugin IDs as a string literal union from a Platforma type. */
 export type InferPluginNames<Pl> =
-  Pl extends PlatformaV3<any, any, any, any, infer P> ? string & keyof P : never;
+  Pl extends PlatformaV3<unknown, unknown, BlockOutputsBase, `/${string}`, infer P>
+    ? string & keyof P
+    : never;
 
 /** Extract the Data type for a specific plugin by its ID. */
 export type InferPluginData<Pl, PluginId extends string> =
-  Pl extends PlatformaV3<any, any, any, any, infer P>
+  Pl extends PlatformaV3<unknown, unknown, BlockOutputsBase, `/${string}`, infer P>
     ? PluginId extends keyof P
       ? P[PluginId] extends PluginInstance<infer D, any, any>
         ? D
         : never
       : never
     : never;
+
+/**
+ * Map each plugin instance to a type-safe opaque handle branded with normalized phantom.
+ * Uses the same brand structure as InferPluginHandle — only data/params/outputs, no config —
+ * because PluginInstance doesn't carry Config (it's lost after factory.create()).
+ */
+export type InferPluginHandles<T extends Record<string, unknown>> = {
+  readonly [K in keyof T]: T[K] extends PluginInstance<infer Data, infer Params, infer Outputs>
+    ? PluginHandle<PluginFactoryLike<Data, Params, Outputs>>
+    : never;
+};

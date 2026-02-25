@@ -7,8 +7,8 @@ import {
   matchAxisId,
   isLabelColumn,
 } from "@milaboratories/pl-model-common";
-import type { AxesVault } from "../components";
-import { enrichCompatible, getAvailableWithLinkersAxes } from "../components";
+import type { AxesVault } from "./axes";
+import { enrichCompatible, getAvailableWithLinkersAxes } from "./axes";
 import type { RenderCtxBase, PColumnDataUniversal } from "../render";
 import { PColumnCollection } from "../render";
 

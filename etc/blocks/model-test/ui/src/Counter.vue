@@ -1,38 +1,31 @@
 <script setup lang="ts">
-import { usePluginData } from "@platforma-sdk/ui-vue";
-import type {
-  PluginNames,
-  CounterPluginData,
-} from "@milaboratories/milaboratories.test-block-model.model";
+import { usePlugin, type InferPluginHandle } from "@platforma-sdk/ui-vue";
+import type { CounterPlugin } from "@milaboratories/milaboratories.test-block-model.model";
 
 const props = defineProps<{
-  name: PluginNames;
+  instance: InferPluginHandle<CounterPlugin>;
 }>();
 
-const { data, updateData } = usePluginData<CounterPluginData>(props.name);
+const plugin = usePlugin(props.instance);
 
 function increment() {
-  updateData((d) => ({
-    ...d,
-    count: d.count + 1,
-    lastIncrement: new Date().toISOString(),
-  }));
+  plugin.model.data.count += 1;
+  plugin.model.data.lastIncrement = new Date().toISOString();
 }
 
 function decrement() {
-  updateData((d) => ({
-    ...d,
-    count: d.count - 1,
-    lastIncrement: new Date().toISOString(),
-  }));
+  plugin.model.data.count -= 1;
+  plugin.model.data.lastIncrement = new Date().toISOString();
 }
 </script>
 
 <template>
-  <div v-if="data" style="border: 1px solid #ccc; padding: 16px; border-radius: 8px">
-    <h3>Counter Plugin</h3>
-    <p>Count: {{ data.count }}</p>
-    <p v-if="data.lastIncrement">Last changed: {{ data.lastIncrement }}</p>
+  <div v-if="plugin.model.data" style="border: 1px solid #ccc; padding: 16px; border-radius: 8px">
+    <h3>Counter Plugin (output: {{ plugin.model.outputs.displayText }})</h3>
+    <p>Count: {{ plugin.model.data.count }}</p>
+    <p v-if="plugin.model.data.lastIncrement">
+      Last changed: {{ plugin.model.data.lastIncrement }}
+    </p>
     <div style="display: flex; gap: 8px">
       <button @click="decrement">-</button>
       <button @click="increment">+</button>

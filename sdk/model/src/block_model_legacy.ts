@@ -452,6 +452,7 @@ export class BlockModel<
               },
             ]),
           ),
+          pluginIds: [],
         },
       };
   }

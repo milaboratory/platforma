@@ -45,7 +45,7 @@ type CounterPluginParams = {
 
 const counterDataModelChain = new DataModelBuilder().from<CounterPluginData>("v1");
 
-const counterPlugin = PluginModel.define<
+export const counterPlugin = PluginModel.define<
   CounterPluginData,
   CounterPluginParams,
   { defaultCount: number }
@@ -69,6 +69,8 @@ const counterPlugin = PluginModel.define<
     return ctx.data.count % 2 === 0;
   })
   .build();
+
+export type CounterPlugin = typeof counterPlugin;
 
 // =============================================================================
 // Block Model with Plugin
