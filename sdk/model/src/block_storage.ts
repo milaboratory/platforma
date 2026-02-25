@@ -10,7 +10,7 @@
  */
 
 import type { Branded } from "@milaboratories/pl-model-common";
-import type { DataMigrationResult, DataVersioned } from "./block_migrations";
+import type { DataVersioned } from "./block_migrations";
 import type { PluginHandle, PluginFactoryLike, InferFactoryData } from "./plugin_handle";
 
 // =============================================================================
@@ -258,13 +258,13 @@ export type MigrationResult<TState> = MigrationSuccess<TState> | MigrationFailur
  * Conversion to internal VersionedData format is handled by migrateBlockStorage().
  */
 export interface MigrateBlockStorageConfig {
-  /** Migrate block data from any version to latest */
-  migrateBlockData: (versioned: DataVersioned<unknown>) => DataMigrationResult<unknown>;
-  /** Migrate each plugin's data. Return undefined to remove the plugin. */
+  /** Migrate block data from any version to latest. Throws on failure. */
+  migrateBlockData: (versioned: DataVersioned<unknown>) => DataVersioned<unknown>;
+  /** Migrate each plugin's data. Return undefined to remove the plugin. Throws on failure. */
   migratePluginData: (
     handle: PluginHandle,
     versioned: DataVersioned<unknown>,
-  ) => DataMigrationResult<unknown> | undefined;
+  ) => DataVersioned<unknown> | undefined;
   /** The new plugin registry after migration (pluginId -> pluginName) */
   newPluginRegistry: PluginRegistry;
   /** Factory to create initial data for new plugins */

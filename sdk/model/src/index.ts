@@ -29,6 +29,7 @@ export type { PluginInstance, ParamsInput } from "./block_model";
 export {
   DataModel,
   DataModelBuilder,
+  DataMigrationError,
   DataUnrecoverableError,
   isDataUnrecoverableError,
   defaultRecover,

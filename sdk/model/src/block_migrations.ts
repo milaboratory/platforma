@@ -16,10 +16,13 @@ export function makeDataVersioned<T>(version: DataVersionKey, data: T): DataVers
   return { version, data };
 }
 
-/** Result of migration operation, may include warning if migration failed */
-export type DataMigrationResult<T> = DataVersioned<T> & {
-  warning?: string;
-};
+/** Thrown when a migration step fails. */
+export class DataMigrationError extends Error {
+  name = "DataMigrationError";
+  constructor(message: string) {
+    super(message);
+  }
+}
 
 /** Thrown by recover() to signal unrecoverable data. */
 export class DataUnrecoverableError extends Error {
@@ -463,34 +466,15 @@ export class DataModel<State> {
     return makeDataVersioned(this.latestVersion, this.initialDataFn());
   }
 
-  private recoverFrom(data: unknown, version: DataVersionKey): DataMigrationResult<State> {
+  private recoverFrom(data: unknown, version: DataVersionKey): DataVersioned<State> {
     // Step 1: call the recover function to get data at the recover point
-    let currentData: unknown;
-    try {
-      currentData = this.recoverFn(version, data);
-    } catch (error) {
-      if (isDataUnrecoverableError(error)) {
-        return { ...this.getDefaultData(), warning: error.message };
-      }
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        ...this.getDefaultData(),
-        warning: `Recover failed for version '${version}': ${errorMessage}`,
-      };
-    }
+    // Let errors (including DataUnrecoverableError) propagate to the caller.
+    let currentData: unknown = this.recoverFn(version, data);
 
     // Step 2: run any migrations that were added after recover() in the chain
     for (let i = this.recoverFromIndex; i < this.steps.length; i++) {
       const step = this.steps[i];
-      try {
-        currentData = step.migrate(currentData);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        return {
-          ...this.getDefaultData(),
-          warning: `Migration ${step.fromVersion}→${step.toVersion} failed: ${errorMessage}`,
-        };
-      }
+      currentData = step.migrate(currentData);
     }
 
     return { version: this.latestVersion, data: currentData as State };
@@ -501,12 +485,14 @@ export class DataModel<State> {
    *
    * - If version is in chain, applies needed migrations (O(1) lookup)
    * - If version is unknown, calls recover function then runs remaining migrations
-   * - If migration/recovery fails, returns default data with warning
+   * - If migration/recovery fails, throws so the caller can preserve original data
    *
    * @param versioned - Data with version tag
-   * @returns Migration result with data at latest version
+   * @returns Migrated data at the latest version
+   * @throws {DataMigrationError} If a migration step fails
+   * @throws {DataUnrecoverableError} If version is unknown and cannot be recovered
    */
-  migrate(versioned: DataVersioned<unknown>): DataMigrationResult<State> {
+  migrate(versioned: DataVersioned<unknown>): DataVersioned<State> {
     const { version: fromVersion, data } = versioned;
 
     if (fromVersion === this.latestVersion) {
@@ -522,15 +508,7 @@ export class DataModel<State> {
 
     for (let i = startIndex; i < this.steps.length; i++) {
       const step = this.steps[i];
-      try {
-        currentData = step.migrate(currentData);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        return {
-          ...this.getDefaultData(),
-          warning: `Migration ${step.fromVersion}→${step.toVersion} failed: ${errorMessage}`,
-        };
-      }
+      currentData = step.migrate(currentData);
     }
 
     return { version: this.latestVersion, data: currentData as State };
