@@ -20,7 +20,8 @@ export function createBuildEntry(input, output, format) {
   return {
     input,
     plugins,
-    external: [/^[^./]/, /^node:/],
+    external: (id) =>
+      id.startsWith("node:") || (/^[^./]/.test(id) && !id.startsWith("@oxc-project/runtime")),
     ...(useSources && {
       resolve: { conditionNames: ["sources"] },
     }),
