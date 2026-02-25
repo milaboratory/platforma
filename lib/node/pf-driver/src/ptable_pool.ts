@@ -139,13 +139,6 @@ export class PTablePool<TreeEntry extends JsonSerializable> extends RefCountPool
   }
 
   protected createNewResourceV2(params: FullPTableDefV2, key: PTableHandle): PTableHolder {
-    if (logPFrames()) {
-      this.logger(
-        "info",
-        `PTable creation (pTableHandle = ${key}): ` + `${JSON.stringify(params, bigintReplacer)}`,
-      );
-    }
-
     const { pFrameHandle } = params;
     const { pFramePromise, disposeSignal } = this.pFrames.getByKey(pFrameHandle);
 

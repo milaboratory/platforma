@@ -21,4 +21,9 @@ export {
   createPlDataTableStateV2,
 } from "./state-migration";
 
-export { isColumnHidden, isColumnOptional, createPlDataTableV2 } from "./table";
+export {
+  isColumnHidden,
+  isColumnOptional,
+  createPlDataTableV2,
+  createPlDataTableSheet,
+} from "./table";
