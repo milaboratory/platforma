@@ -279,34 +279,5 @@ describe("DataModel migrations", () => {
       expect(result.data).toStrictEqual({ inputFile: "", threshold: 0, selectedTab: "main" });
       expect(result.warning).toContain("failed");
     });
-
-    it("backward compat: works with DATA_MODEL_LEGACY_VERSION as initial version", () => {
-      type BlockDataV2 = BlockData & { description: string };
-
-      const dataModel = new DataModelBuilder()
-        .from<BlockData>(DATA_MODEL_LEGACY_VERSION)
-        .upgradeLegacy<LegacyArgs, LegacyUiState>(({ args, uiState }) => ({
-          inputFile: args.inputFile,
-          threshold: args.threshold,
-          selectedTab: uiState.selectedTab,
-        }))
-        .migrate<BlockDataV2>("v2", (v1) => ({ ...v1, description: "migrated" }))
-        .init(() => ({ inputFile: "", threshold: 0, selectedTab: "main", description: "" }));
-
-      const result = dataModel.migrate(
-        makeDataVersioned(DATA_MODEL_LEGACY_VERSION, {
-          args: { inputFile: "compat.fa", threshold: 7 },
-          uiState: { selectedTab: "legacy" },
-        }),
-      );
-      expect(result.version).toBe("v2");
-      expect(result.data).toStrictEqual({
-        inputFile: "compat.fa",
-        threshold: 7,
-        selectedTab: "legacy",
-        description: "migrated",
-      });
-      expect(result.warning).toBeUndefined();
-    });
   });
 });

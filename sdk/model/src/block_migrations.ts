@@ -70,14 +70,11 @@ type BuilderState<S> = {
   /** Index of the first step to run after recovery. Equals the number of steps
    *  present at the time recover() was called. */
   recoverFromIndex?: number;
-  /** Transforms legacy V1 model data ({ args, uiState }) at the initial version. */
-  upgradeLegacyFn?: (data: unknown) => unknown;
 };
 
 type RecoverState = {
   recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
   recoverFromIndex?: number;
-  upgradeLegacyFn?: (data: unknown) => unknown;
 };
 
 /**
@@ -150,7 +147,6 @@ abstract class MigrationChainBase<Current> {
 class DataModelMigrationChainWithRecover<Current> extends MigrationChainBase<Current> {
   private readonly recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
   private readonly recoverFromIndex?: number;
-  private readonly upgradeLegacyFn?: (data: unknown) => unknown;
 
   /** @internal */
   constructor(state: {
@@ -158,19 +154,16 @@ class DataModelMigrationChainWithRecover<Current> extends MigrationChainBase<Cur
     steps: MigrationStep[];
     recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
     recoverFromIndex?: number;
-    upgradeLegacyFn?: (data: unknown) => unknown;
   }) {
     super(state);
     this.recoverFn = state.recoverFn;
     this.recoverFromIndex = state.recoverFromIndex;
-    this.upgradeLegacyFn = state.upgradeLegacyFn;
   }
 
   protected override recoverState(): RecoverState {
     return {
       recoverFn: this.recoverFn,
       recoverFromIndex: this.recoverFromIndex,
-      upgradeLegacyFn: this.upgradeLegacyFn,
     };
   }
 
@@ -188,7 +181,6 @@ class DataModelMigrationChainWithRecover<Current> extends MigrationChainBase<Cur
       steps,
       recoverFn: this.recoverFn,
       recoverFromIndex: this.recoverFromIndex,
-      upgradeLegacyFn: this.upgradeLegacyFn,
     });
   }
 }
@@ -319,20 +311,9 @@ class DataModelInitialChain<Current> extends DataModelMigrationChain<Current> {
       return data;
     };
 
-    const initialVersion = this.versionChain[0];
-
-    if (initialVersion === DATA_MODEL_LEGACY_VERSION) {
-      // Backward compat: initial version is already DATA_MODEL_LEGACY_VERSION.
-      // Use upgradeLegacyFn which is applied in-place at startIndex 0 in DataModel.migrate().
-      return new DataModelMigrationChainWithRecover<Current>({
-        versionChain: this.versionChain,
-        steps: this.migrationSteps,
-        upgradeLegacyFn: wrappedFn,
-      });
-    }
-
-    // Custom initial version: insert DATA_MODEL_LEGACY_VERSION as the true first version
+    // Insert DATA_MODEL_LEGACY_VERSION as the true first version
     // with a migration step that transforms legacy data to the user's initial version.
+    const initialVersion = this.versionChain[0];
     const step: MigrationStep = {
       fromVersion: DATA_MODEL_LEGACY_VERSION,
       toVersion: initialVersion,
@@ -432,8 +413,6 @@ export class DataModel<State> {
   private readonly initialDataFn: () => State;
   private readonly recoverFn: (version: DataVersionKey, data: unknown) => unknown;
   private readonly recoverFromIndex: number;
-  /** Transforms legacy V1 model data at the initial version before running migrations. */
-  private readonly upgradeLegacyFn?: (data: unknown) => unknown;
 
   private constructor({
     versionChain,
@@ -441,7 +420,6 @@ export class DataModel<State> {
     initialDataFn,
     recoverFn = defaultRecover,
     recoverFromIndex,
-    upgradeLegacyFn,
   }: BuilderState<State>) {
     if (versionChain.length === 0) {
       throw new Error("DataModel requires at least one version key");
@@ -452,7 +430,6 @@ export class DataModel<State> {
     this.initialDataFn = initialDataFn;
     this.recoverFn = recoverFn;
     this.recoverFromIndex = recoverFromIndex ?? steps.length;
-    this.upgradeLegacyFn = upgradeLegacyFn;
   }
 
   /**
@@ -542,19 +519,6 @@ export class DataModel<State> {
     }
 
     let currentData: unknown = data;
-
-    // Legacy V1 upgrade: detect and transform { args, uiState } at the initial version
-    if (startIndex === 0 && this.upgradeLegacyFn) {
-      try {
-        currentData = this.upgradeLegacyFn(currentData);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        return {
-          ...this.getDefaultData(),
-          warning: `Legacy upgrade failed: ${errorMessage}`,
-        };
-      }
-    }
 
     for (let i = startIndex; i < this.steps.length; i++) {
       const step = this.steps[i];
