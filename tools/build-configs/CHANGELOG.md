@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.5.0
+
+### Minor Changes
+
+- 0271e3f: Replace css-injected-by-js with lib-inject-css for per-component CSS imports
+
 ## 1.4.4
 
 ### Patch Changes

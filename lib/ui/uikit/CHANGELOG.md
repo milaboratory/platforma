@@ -1,5 +1,13 @@
 # @milaboratories/uikit
 
+## 2.10.32
+
+### Patch Changes
+
+- 0271e3f: Replace css-injected-by-js with lib-inject-css for per-component CSS imports
+  - @milaboratories/helpers@1.13.5
+  - @platforma-sdk/model@1.57.2
+
 ## 2.10.31
 
 ### Patch Changes
