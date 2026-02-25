@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.57.2
+
+### Patch Changes
+
+- 6ba4c69: Apply user sorting above options
+
 ## 1.57.0
 
 ### Minor Changes
