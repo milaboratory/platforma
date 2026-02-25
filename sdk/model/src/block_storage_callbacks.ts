@@ -24,6 +24,7 @@ import {
   normalizeBlockStorage,
   updateStorageData,
 } from "./block_storage";
+import type { PluginHandle } from "./plugin_handle";
 
 import { stringifyJson, type StringifiedJson } from "@milaboratories/pl-model-common";
 import type { DataMigrationResult, DataVersioned } from "./block_migrations";
@@ -37,17 +38,17 @@ export interface MigrationHooks {
   migrateBlockData: (versioned: DataVersioned<unknown>) => DataMigrationResult<unknown>;
   getPluginRegistry: () => PluginRegistry;
   migratePluginData: (
-    pluginId: string,
+    handle: PluginHandle,
     versioned: DataVersioned<unknown>,
   ) => DataMigrationResult<unknown> | undefined;
-  createPluginData: (pluginId: string) => DataVersioned<unknown>;
+  createPluginData: (handle: PluginHandle) => DataVersioned<unknown>;
 }
 
 /** Dependencies for initial storage creation */
 export interface InitialStorageHooks {
   getDefaultBlockData: () => DataVersioned<unknown>;
   getPluginRegistry: () => PluginRegistry;
-  createPluginData: (pluginId: string) => DataVersioned<unknown>;
+  createPluginData: (handle: PluginHandle) => DataVersioned<unknown>;
 }
 
 /**
@@ -233,10 +234,10 @@ export function createInitialStorage(hooks: InitialStorageHooks): StringifiedJso
   const blockDefault = hooks.getDefaultBlockData();
   const pluginRegistry = hooks.getPluginRegistry();
 
-  const plugins: Record<string, VersionedData<unknown>> = {};
-  for (const pluginId of Object.keys(pluginRegistry)) {
-    const initial = hooks.createPluginData(pluginId);
-    plugins[pluginId] = { __dataVersion: initial.version, __data: initial.data };
+  const plugins: Record<PluginHandle, VersionedData<unknown>> = {};
+  for (const handle of Object.keys(pluginRegistry) as PluginHandle[]) {
+    const initial = hooks.createPluginData(handle);
+    plugins[handle] = { __dataVersion: initial.version, __data: initial.data };
   }
 
   const storage: BlockStorage = {

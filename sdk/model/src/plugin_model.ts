@@ -7,37 +7,52 @@
  * @module plugin_model
  */
 
+import type { BlockCodeKnownFeatureFlags } from "@milaboratories/pl-model-common";
 import type { DataModel } from "./block_migrations";
 import type { PluginName } from "./block_storage";
+import type { PluginFactoryLike } from "./plugin_handle";
 import type { PluginRenderCtx } from "./render";
 
 /** Symbol for internal builder creation method */
 const FROM_BUILDER = Symbol("fromBuilder");
 
-// =============================================================================
-// Plugin Type
-// =============================================================================
+export type PluginData = Record<string, unknown>;
+export type PluginParams = undefined | Record<string, unknown>;
+export type PluginOutputs = Record<string, unknown>;
+export type PluginConfig = undefined | Record<string, unknown>;
 
 /**
  * Configured plugin instance returned by PluginModelFactory.create().
  * Contains the plugin's name, data model, and output definitions.
  */
-export class PluginModel<Data = unknown, Params = undefined, Outputs = {}> {
+export class PluginModel<
+  Data extends PluginData = PluginData,
+  Params extends PluginParams = undefined,
+  Outputs extends PluginOutputs = PluginOutputs,
+> {
   /** Globally unique plugin name */
   readonly name: PluginName;
   /** Data model instance for this plugin */
   readonly dataModel: DataModel<Data>;
   /** Output definitions - functions that compute outputs from plugin context */
-  readonly outputs: { [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K] };
+  readonly outputs: {
+    [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
+  };
+  /** Feature flags declared by this plugin */
+  readonly featureFlags?: BlockCodeKnownFeatureFlags;
 
-  private constructor(input: {
+  private constructor(options: {
     name: PluginName;
     dataModel: DataModel<Data>;
-    outputs: { [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K] };
+    outputs: {
+      [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
+    };
+    featureFlags?: BlockCodeKnownFeatureFlags;
   }) {
-    this.name = input.name;
-    this.dataModel = input.dataModel;
-    this.outputs = input.outputs;
+    this.name = options.name;
+    this.dataModel = options.dataModel;
+    this.outputs = options.outputs;
+    this.featureFlags = options.featureFlags;
   }
 
   /**
@@ -45,12 +60,19 @@ export class PluginModel<Data = unknown, Params = undefined, Outputs = {}> {
    * Uses Symbol key to prevent external access.
    * @internal
    */
-  static [FROM_BUILDER]<D, P, O>(input: {
+  static [FROM_BUILDER]<
+    Data extends PluginData,
+    Params extends PluginParams,
+    Outputs extends PluginOutputs,
+  >(options: {
     name: PluginName;
-    dataModel: DataModel<D>;
-    outputs: { [K in keyof O]: (ctx: PluginRenderCtx<D, P>) => O[K] };
-  }): PluginModel<D, P, O> {
-    return new this<D, P, O>(input);
+    dataModel: DataModel<Data>;
+    outputs: {
+      [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
+    };
+    featureFlags?: BlockCodeKnownFeatureFlags;
+  }): PluginModel<Data, Params, Outputs> {
+    return new PluginModel<Data, Params, Outputs>(options);
   }
 
   /**
@@ -63,40 +85,66 @@ export class PluginModel<Data = unknown, Params = undefined, Outputs = {}> {
    * @example
    * const dataModelChain = new DataModelBuilder().from<MyData>(DATA_MODEL_DEFAULT_VERSION);
    *
-   * const myPlugin = PluginModel.define<MyData, MyParams, MyConfig>({
+   * const myPlugin = PluginModel.define({
    *   name: 'myPlugin' as PluginName,
    *   data: (cfg) => dataModelChain.init(() => ({ value: cfg.defaultValue })),
    * })
    *   .output('computed', (ctx) => ctx.data.value * ctx.params.multiplier)
    *   .build();
    */
-  static define<Data, Params = undefined, Config = undefined>(options: {
+  static define<
+    Data extends PluginData,
+    Params extends PluginParams,
+    Config extends PluginConfig,
+  >(options: {
     name: PluginName;
     data: (config?: Config) => DataModel<Data>;
-  }): PluginModelBuilder<Data, Params, Config> {
-    return PluginModelBuilder[FROM_BUILDER]<Data, Params, Config>(options);
+    featureFlags?: BlockCodeKnownFeatureFlags;
+  }): PluginModelBuilder<Data, Params, {}, Config> {
+    return PluginModelBuilder[FROM_BUILDER](options);
   }
 }
 
-/**
- * Plugin factory returned by PluginModelBuilder.build().
- * Call create() with config to get a configured PluginModel instance.
- */
-class PluginModelFactory<Data, Params, Config, Outputs> {
+/** Plugin factory returned by PluginModelBuilder.build(). */
+export interface PluginFactory<
+  Data extends PluginData = PluginData,
+  Params extends PluginParams = undefined,
+  Outputs extends PluginOutputs = PluginOutputs,
+  Config extends PluginConfig = undefined,
+> extends PluginFactoryLike {
+  create(config?: Config): PluginModel<Data, Params, Outputs>;
+  /**
+   * @internal Phantom field for structural type extraction.
+   * Enables InferFactoryData/InferFactoryOutputs to work via PluginFactoryLike.
+   */
+  readonly __types?: { data: Data; params: Params; outputs: Outputs; config: Config };
+}
+
+class PluginModelFactory<
+  Data extends PluginData = PluginData,
+  Params extends PluginParams = undefined,
+  Outputs extends PluginOutputs = PluginOutputs,
+  Config extends PluginConfig = undefined,
+> implements PluginFactory<Data, Params, Outputs, Config> {
   private readonly name: PluginName;
   private readonly data: (config?: Config) => DataModel<Data>;
   private readonly outputs: {
-    [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K];
+    [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
   };
+  private readonly featureFlags?: BlockCodeKnownFeatureFlags;
 
-  constructor(input: {
+  constructor(options: {
     name: PluginName;
     data: (config?: Config) => DataModel<Data>;
-    outputs: { [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K] };
+    outputs: {
+      [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
+    };
+    featureFlags?: BlockCodeKnownFeatureFlags;
   }) {
-    this.name = input.name;
-    this.data = input.data;
-    this.outputs = input.outputs;
+    this.name = options.name;
+    this.data = options.data;
+    this.outputs = options.outputs;
+    this.featureFlags = options.featureFlags;
   }
 
   /** Create a configured PluginModel instance */
@@ -105,13 +153,10 @@ class PluginModelFactory<Data, Params, Config, Outputs> {
       name: this.name,
       dataModel: this.data(config),
       outputs: this.outputs,
+      featureFlags: this.featureFlags,
     });
   }
 }
-
-// =============================================================================
-// Plugin Model Builder
-// =============================================================================
 
 /**
  * Builder for creating PluginType with type-safe output definitions.
@@ -136,27 +181,34 @@ class PluginModelFactory<Data, Params, Config, Outputs> {
  *   .build();
  */
 class PluginModelBuilder<
-  Data,
-  Params = undefined,
-  Config = undefined,
-  Outputs extends Record<string, unknown> = {},
+  Data extends PluginData = PluginData,
+  Params extends PluginParams = undefined,
+  Outputs extends PluginOutputs = PluginOutputs,
+  Config extends PluginConfig = undefined,
 > {
   private readonly name: PluginName;
   private readonly data: (config?: Config) => DataModel<Data>;
   private readonly outputs: {
-    [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K];
+    [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
   };
+  private readonly featureFlags?: BlockCodeKnownFeatureFlags;
 
-  private constructor(input: {
+  private constructor(options: {
     name: PluginName;
     data: (config?: Config) => DataModel<Data>;
-    outputs?: { [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K] };
+    outputs?: {
+      [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
+    };
+    featureFlags?: BlockCodeKnownFeatureFlags;
   }) {
-    this.name = input.name;
-    this.data = input.data;
+    this.name = options.name;
+    this.data = options.data;
     this.outputs =
-      input.outputs ??
-      ({} as { [K in keyof Outputs]: (ctx: PluginRenderCtx<Data, Params>) => Outputs[K] });
+      options.outputs ??
+      ({} as {
+        [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
+      });
+    this.featureFlags = options.featureFlags;
   }
 
   /**
@@ -164,12 +216,20 @@ class PluginModelBuilder<
    * Uses Symbol key to prevent external access.
    * @internal
    */
-  static [FROM_BUILDER]<D, P, C, O extends Record<string, unknown> = {}>(input: {
+  static [FROM_BUILDER]<
+    Data extends PluginData,
+    Params extends PluginParams,
+    Outputs extends PluginOutputs,
+    Config extends PluginConfig,
+  >(options: {
     name: PluginName;
-    data: (config?: C) => DataModel<D>;
-    outputs?: { [K in keyof O]: (ctx: PluginRenderCtx<D, P>) => O[K] };
-  }): PluginModelBuilder<D, P, C, O> {
-    return new this<D, P, C, O>(input);
+    data: (config?: Config) => DataModel<Data>;
+    outputs?: {
+      [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
+    };
+    featureFlags?: BlockCodeKnownFeatureFlags;
+  }): PluginModelBuilder<Data, Params, Outputs, Config> {
+    return new PluginModelBuilder(options);
   }
 
   /**
@@ -185,17 +245,18 @@ class PluginModelBuilder<
    */
   output<const Key extends string, T>(
     key: Key,
-    fn: (ctx: PluginRenderCtx<Data, Params>) => T,
-  ): PluginModelBuilder<Data, Params, Config, Outputs & { [K in Key]: T }> {
-    return new PluginModelBuilder<Data, Params, Config, Outputs & { [K in Key]: T }>({
+    fn: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => T,
+  ): PluginModelBuilder<Data, Params, Outputs & { [K in Key]: T }, Config> {
+    return new PluginModelBuilder<Data, Params, Outputs & { [K in Key]: T }, Config>({
       name: this.name,
       data: this.data,
+      featureFlags: this.featureFlags,
       outputs: {
         ...this.outputs,
         [key]: fn,
       } as {
         [K in keyof (Outputs & { [P in Key]: T })]: (
-          ctx: PluginRenderCtx<Data, Params>,
+          ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>,
         ) => (Outputs & { [P in Key]: T })[K];
       },
     });
@@ -214,11 +275,12 @@ class PluginModelBuilder<
    * // Later, call create() with config to get a configured instance:
    * const configured = myPlugin.create({ defaultValue: 'test' });
    */
-  build(): PluginModelFactory<Data, Params, Config, Outputs> {
-    return new PluginModelFactory<Data, Params, Config, Outputs>({
+  build(): PluginFactory<Data, Params, Outputs, Config> {
+    return new PluginModelFactory<Data, Params, Outputs, Config>({
       name: this.name,
       data: this.data,
       outputs: this.outputs,
+      featureFlags: this.featureFlags,
     });
   }
 }

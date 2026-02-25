@@ -8,12 +8,19 @@ import type {
   ValueWithUTag,
   AuthorMarker,
   PlatformaExtended,
+  InferPluginHandles,
+  PluginHandle,
+  InferFactoryData,
+  InferFactoryOutputs,
+  PluginFactoryLike,
 } from "@platforma-sdk/model";
 import {
   hasAbortError,
   unwrapResult,
   deriveDataFromStorage,
   getPluginData,
+  isPluginOutputKey,
+  pluginOutputPrefix,
 } from "@platforma-sdk/model";
 import type { Ref } from "vue";
 import { reactive, computed, ref } from "vue";
@@ -23,14 +30,16 @@ import { ensureOutputHasStableFlag, MultiError } from "../utils";
 import { applyPatch } from "fast-json-patch";
 import { UpdateSerializer } from "./UpdateSerializer";
 import { watchIgnorable } from "@vueuse/core";
+import type { PluginState, PluginAccess } from "../usePlugin";
 
 export const patchPoolingDelay = 150;
 
-/** Internal interface for plugin data access — injected separately from the app. */
-export interface PluginDataAccess {
-  readonly pluginDataMap: Record<string, unknown>;
-  setPluginData(pluginId: string, value: unknown): Promise<boolean>;
-  initPluginDataSlot(pluginId: string): void;
+/** Internal per-plugin state with reconciliation support. */
+interface InternalPluginState<Data = unknown, Outputs = unknown> extends PluginState<
+  Data,
+  Outputs
+> {
+  readonly ignoreUpdates: (fn: () => void) => void;
 }
 
 export const createNextAuthorMarker = (marker: AuthorMarker | undefined): AuthorMarker => ({
@@ -65,9 +74,10 @@ export function createAppV3<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
+  Plugins extends Record<string, unknown> = Record<string, unknown>,
 >(
   state: ValueWithUTag<BlockStateV3<Data, Outputs, Href>>,
-  platforma: PlatformaExtended<PlatformaV3<Data, Args, Outputs, Href>>,
+  platforma: PlatformaExtended<PlatformaV3<Data, Args, Outputs, Href, Plugins>>,
   settings: AppSettings,
 ) {
   const debug = (msg: string, ...rest: unknown[]) => {
@@ -111,19 +121,19 @@ export function createAppV3<
   const debounceSpan = settings.debounceSpan ?? 200;
 
   const setDataQueue = new UpdateSerializer({ debounceSpan });
-  const pluginDataQueues = new Map<string, UpdateSerializer>();
-  const getPluginDataQueue = (pluginId: string): UpdateSerializer => {
-    let queue = pluginDataQueues.get(pluginId);
+  const pluginDataQueues = new Map<PluginHandle, UpdateSerializer>();
+  const getPluginDataQueue = (handle: PluginHandle): UpdateSerializer => {
+    let queue = pluginDataQueues.get(handle);
     if (!queue) {
       queue = new UpdateSerializer({ debounceSpan });
-      pluginDataQueues.set(pluginId, queue);
+      pluginDataQueues.set(handle, queue);
     }
     return queue;
   };
   const setNavigationStateQueue = new UpdateSerializer({ debounceSpan });
 
-  /** Reactive map of plugin data keyed by pluginId. Optimistic state for plugin components. */
-  const pluginDataMap = reactive<Record<string, unknown>>({});
+  /** Lazily-created per-plugin reactive states. */
+  const pluginStates = new Map<PluginHandle, InternalPluginState>();
   /**
    * Reactive snapshot of the application state, including args, outputs, UI state, and navigation state.
    */
@@ -141,16 +151,11 @@ export function createAppV3<
     return platforma.mutateStorage({ operation: "update-block-data", value }, nextAuthorMarker());
   };
 
-  const updatePluginData = async (pluginId: string, value: unknown) => {
+  const updatePluginData = async (handle: PluginHandle, value: unknown) => {
     return platforma.mutateStorage(
-      { operation: "update-plugin-data", pluginId, value },
+      { operation: "update-plugin-data", pluginId: handle, value },
       nextAuthorMarker(),
     );
-  };
-
-  /** Derives plugin data for a given pluginId from the current snapshot. */
-  const derivePluginDataFromSnapshot = (pluginId: string): unknown => {
-    return getPluginData(snapshot.value.blockStorage, pluginId);
   };
 
   const setNavigationState = async (state: NavigationState<Href>) => {
@@ -158,8 +163,9 @@ export function createAppV3<
   };
 
   const outputs = computed<OutputValues<Outputs>>(() => {
-    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(
-      ([k, outputWithStatus]) =>
+    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>)
+      .filter(([k]) => !isPluginOutputKey(k))
+      .map(([k, outputWithStatus]) =>
         platforma.blockModelInfo.outputs[k]?.withStatus
           ? [k, ensureOutputHasStableFlag(outputWithStatus)]
           : [
@@ -168,17 +174,17 @@ export function createAppV3<
                 ? outputWithStatus.value
                 : undefined,
             ],
-    );
+      );
     return Object.fromEntries(entries);
   });
 
   const outputErrors = computed<OutputErrors<Outputs>>(() => {
-    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(
-      ([k, vOrErr]) => [
+    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>)
+      .filter(([k]) => !isPluginOutputKey(k))
+      .map(([k, vOrErr]) => [
         k,
         vOrErr && vOrErr.ok === false ? new MultiError(vOrErr.errors) : undefined,
-      ],
-    );
+      ]);
     return Object.fromEntries(entries);
   });
 
@@ -251,8 +257,12 @@ export function createAppV3<
             snapshot.value = applyPatch(snapshot.value, patches.value, false, false).newDocument;
             updateAppModel({ data: deriveDataFromStorage<Data>(snapshot.value.blockStorage) });
             // Reconcile plugin data from external source
-            for (const pluginId of Object.keys(pluginDataMap)) {
-              pluginDataMap[pluginId] = derivePluginDataFromSnapshot(pluginId);
+            for (const [handle, pluginState] of pluginStates) {
+              pluginState.ignoreUpdates(() => {
+                pluginState.model.data = deepClone(
+                  getPluginData(snapshot.value.blockStorage, handle),
+                );
+              });
             }
             data.isExternalSnapshot = isAuthorChanged;
           });
@@ -318,26 +328,83 @@ export function createAppV3<
     },
   };
 
-  /** Plugin internals — provided via separate injection key, not exposed on useApp(). */
-  const pluginAccess: PluginDataAccess = {
-    pluginDataMap,
-    setPluginData(pluginId: string, value: unknown): Promise<boolean> {
-      pluginDataMap[pluginId] = value;
-      debug("setPluginData", pluginId, value);
-      return getPluginDataQueue(pluginId).run(() =>
-        updatePluginData(pluginId, value).then(unwrapResult),
-      );
-    },
-    initPluginDataSlot(pluginId: string): void {
-      if (!(pluginId in pluginDataMap)) {
-        pluginDataMap[pluginId] = derivePluginDataFromSnapshot(pluginId);
+  /** Creates a lazily-cached per-plugin reactive state. */
+  const createPluginState = <F extends PluginFactoryLike>(
+    handle: PluginHandle<F>,
+  ): InternalPluginState<InferFactoryData<F>, InferFactoryOutputs<F>> => {
+    const prefix = pluginOutputPrefix(handle);
+
+    const pluginOutputs = computed(() => {
+      const result: Record<string, unknown> = {};
+      for (const [key, outputWithStatus] of Object.entries(
+        snapshot.value.outputs as Partial<Readonly<Outputs>>,
+      )) {
+        if (!key.startsWith(prefix)) continue;
+        result[key.slice(prefix.length)] =
+          outputWithStatus.ok && outputWithStatus.value !== undefined
+            ? outputWithStatus.value
+            : undefined;
       }
+      return result;
+    });
+
+    const pluginOutputErrors = computed(() => {
+      const result: Record<string, Error | undefined> = {};
+      for (const [key, vOrErr] of Object.entries(
+        snapshot.value.outputs as Partial<Readonly<Outputs>>,
+      )) {
+        if (!key.startsWith(prefix)) continue;
+        result[key.slice(prefix.length)] =
+          vOrErr && vOrErr.ok === false ? new MultiError(vOrErr.errors) : undefined;
+      }
+      return result;
+    });
+
+    const pluginModel = reactive({
+      data: deepClone(getPluginData(snapshot.value.blockStorage, handle)),
+      outputs: pluginOutputs,
+      outputErrors: pluginOutputErrors,
+    }) as InternalPluginState<InferFactoryData<F>, InferFactoryOutputs<F>>["model"];
+
+    const { ignoreUpdates } = watchIgnorable(
+      () => pluginModel.data,
+      (newData) => {
+        if (newData === undefined) return;
+        debug("plugin setData", handle, newData);
+        getPluginDataQueue(handle).run(() =>
+          updatePluginData(handle, deepClone(newData)).then(unwrapResult),
+        );
+      },
+      { deep: true },
+    );
+
+    return {
+      model: pluginModel,
+      ignoreUpdates,
+    };
+  };
+
+  /** Plugin internals — provided via separate injection key, not exposed on useApp(). */
+  const pluginAccess: PluginAccess = {
+    getOrCreatePluginState<F extends PluginFactoryLike>(handle: PluginHandle<F>) {
+      const existing = pluginStates.get(handle);
+      if (existing) {
+        return existing as unknown as PluginState<InferFactoryData<F>, InferFactoryOutputs<F>>;
+      }
+      const state = createPluginState(handle);
+      pluginStates.set(handle, state);
+      return state;
     },
   };
+
+  const plugins = Object.fromEntries(
+    platforma.blockModelInfo.pluginIds.map((id) => [id, id]),
+  ) as InferPluginHandles<Plugins>;
 
   const getters = {
     closedRef,
     snapshot,
+    plugins,
     queryParams: computed(() => parseQuery<Href>(snapshot.value.navigationState.href as Href)),
     href: computed(() => snapshot.value.navigationState.href),
     hasErrors: computed(() =>
@@ -360,4 +427,5 @@ export type BaseAppV3<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
-> = ReturnType<typeof createAppV3<Data, Args, Outputs, Href>>["app"];
+  Plugins extends Record<string, unknown> = Record<string, unknown>,
+> = ReturnType<typeof createAppV3<Data, Args, Outputs, Href, Plugins>>["app"];
