@@ -118,8 +118,8 @@ catalogs:
       specifier: ^5.2.3
       version: 5.2.3
     '@vitest/coverage-istanbul':
-      specifier: ^4.0.16
-      version: 4.0.16
+      specifier: ^4.0.18
+      version: 4.0.18
     '@vue/test-utils':
       specifier: ^2.4.6
       version: 2.4.6
@@ -177,9 +177,6 @@ catalogs:
     fs-extra:
       specifier: ^11.2.0
       version: 11.3.0
-    happy-dom:
-      specifier: ^15.11.7
-      version: 15.11.7
     highlight.js:
       specifier: 11.10.0
       version: 11.10.0
@@ -301,8 +298,8 @@ catalogs:
       specifier: 1.5.0
       version: 1.5.0
     vitest:
-      specifier: ^4.0.16
-      version: 4.0.16
+      specifier: ^4.0.18
+      version: 4.0.18
     vue:
       specifier: ^3.5.24
       version: 3.5.24
@@ -361,7 +358,7 @@ importers:
         version: 6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   etc/blocks/blob-url-custom-protocol/block:
     dependencies:
@@ -776,7 +773,7 @@ importers:
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   etc/blocks/model-test/ui:
     dependencies:
@@ -902,10 +899,10 @@ importers:
         version: link:../../../../tools/tengo-builder
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   etc/blocks/pool-explorer/block:
     dependencies:
@@ -1610,7 +1607,7 @@ importers:
         version: 5.2.3(vite@6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))(vue@3.5.24(typescript@5.6.3))
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1619,7 +1616,7 @@ importers:
         version: 6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
       vue:
         specifier: 'catalog:'
         version: 3.5.24(typescript@5.6.3)
@@ -1678,13 +1675,13 @@ importers:
         version: link:../../../tools/ts-configs
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/model/middle-layer:
     dependencies:
@@ -1743,13 +1740,13 @@ importers:
         version: 5.0.3
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/node/computable:
     dependencies:
@@ -1777,13 +1774,13 @@ importers:
         version: link:../../../tools/ts-configs
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/node/node-streams:
     devDependencies:
@@ -1841,13 +1838,13 @@ importers:
         version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/node/pl-client:
     dependencies:
@@ -1914,7 +1911,7 @@ importers:
         version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       openapi-typescript:
         specifier: 'catalog:'
         version: 7.10.1(typescript@5.6.3)
@@ -1923,7 +1920,7 @@ importers:
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/node/pl-config:
     dependencies:
@@ -1951,13 +1948,13 @@ importers:
         version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/node/pl-deployments:
     dependencies:
@@ -2015,7 +2012,7 @@ importers:
         version: 1.15.5
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       testcontainers:
         specifier: 'catalog:'
         version: 10.18.0
@@ -2027,7 +2024,7 @@ importers:
         version: 3.11.0
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/node/pl-drivers:
     dependencies:
@@ -2106,7 +2103,7 @@ importers:
         version: 2.0.4
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       openapi-typescript:
         specifier: 'catalog:'
         version: 7.10.1(typescript@5.6.3)
@@ -2115,7 +2112,7 @@ importers:
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/node/pl-errors:
     dependencies:
@@ -2143,13 +2140,13 @@ importers:
         version: link:../../../tools/ts-configs
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/node/pl-http:
     dependencies:
@@ -2171,13 +2168,13 @@ importers:
         version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/node/pl-middle-layer:
     dependencies:
@@ -2277,7 +2274,7 @@ importers:
         version: 7.7.0
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       semver:
         specifier: 'catalog:'
         version: 7.7.2
@@ -2286,7 +2283,7 @@ importers:
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/node/pl-tree:
     dependencies:
@@ -2326,13 +2323,13 @@ importers:
         version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/node/resolve-helper:
     devDependencies:
@@ -2369,13 +2366,13 @@ importers:
         version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/node/ts-helpers-oclif:
     dependencies:
@@ -2434,7 +2431,7 @@ importers:
         version: link:../../../tools/ts-configs
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -2443,7 +2440,7 @@ importers:
         version: 4.5.3(@types/node@24.5.2)(rollup@4.52.4)(typescript@5.6.3)(vite@6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/ptabler/js:
     dependencies:
@@ -2465,13 +2462,13 @@ importers:
         version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/ptabler/schema:
     dependencies:
@@ -2577,7 +2574,7 @@ importers:
         version: link:../../../tools/ts-configs
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       jsdom:
         specifier: 'catalog:'
         version: 25.0.1
@@ -2589,7 +2586,7 @@ importers:
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/util/helpers:
     devDependencies:
@@ -2604,13 +2601,13 @@ importers:
         version: link:../../../tools/ts-configs
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   lib/util/sequences:
     devDependencies:
@@ -2687,13 +2684,13 @@ importers:
         version: link:../../tools/ts-configs
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   sdk/test:
     dependencies:
@@ -2711,10 +2708,10 @@ importers:
         version: link:../../lib/node/pl-tree
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -2803,13 +2800,10 @@ importers:
         version: 5.2.3(vite@6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))(vue@3.5.24(typescript@5.6.3))
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       '@vue/test-utils':
         specifier: 'catalog:'
         version: 2.4.6
-      happy-dom:
-        specifier: 'catalog:'
-        version: 15.11.7
       rollup-plugin-sourcemaps2:
         specifier: 'catalog:'
         version: 0.5.2(@types/node@24.5.2)(rollup@4.52.4)
@@ -2827,7 +2821,7 @@ importers:
         version: 6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   sdk/workflow-tengo:
     dependencies:
@@ -2873,10 +2867,10 @@ importers:
         version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   tests/config-local-ml-integration:
     dependencies:
@@ -2910,13 +2904,13 @@ importers:
         version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   tests/drivers-ml-blocks-integration:
     dependencies:
@@ -3016,13 +3010,13 @@ importers:
         version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -3053,7 +3047,7 @@ importers:
         version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
@@ -3062,7 +3056,7 @@ importers:
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   tests/package-builder:
     devDependencies:
@@ -3189,7 +3183,7 @@ importers:
         version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       dedent:
         specifier: 'catalog:'
         version: 1.7.0
@@ -3198,7 +3192,7 @@ importers:
         version: 1.39.10
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   tools/block-tools:
     dependencies:
@@ -3277,7 +3271,7 @@ importers:
         version: 7.7.0
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       oclif:
         specifier: 'catalog:'
         version: 4.16.2(@types/node@24.5.2)
@@ -3298,7 +3292,7 @@ importers:
         version: 4.5.3(@types/node@24.5.2)(rollup@4.52.4)(typescript@5.6.3)(vite@6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   tools/blocks-deps-updater:
     dependencies:
@@ -3352,7 +3346,7 @@ importers:
         version: 2.2.2(vite@6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
       vue:
         specifier: 'catalog:'
         version: 3.5.24(typescript@5.6.3)
@@ -3435,7 +3429,7 @@ importers:
         version: 1.7.4
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -3444,7 +3438,7 @@ importers:
         version: 6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   tools/pl-bootstrap:
     dependencies:
@@ -3554,13 +3548,13 @@ importers:
         version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
-        version: 4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
   tools/ts-builder:
     dependencies:
@@ -5976,16 +5970,16 @@ packages:
       vite: ^5.0.0 || ^6.0.0
       vue: ^3.2.25
 
-  '@vitest/coverage-istanbul@4.0.16':
-    resolution: {integrity: sha512-CLyueXIHewDzmov97rGW/RNtg++UBwdtY/F9PZbEDvHlX16JWVyolg7OeGXZS3xkuuoaZMheef7luDFCoC6vsQ==}
+  '@vitest/coverage-istanbul@4.0.18':
+    resolution: {integrity: sha512-0OhjP30owEDihYTZGWuq20rNtV1RjjJs1Mv4MaZIKcFBmiLUXX7HJLX4fU7wE+Mrc3lQxI2HKq6WrSXi5FGuCQ==}
     peerDependencies:
-      vitest: 4.0.16
+      vitest: 4.0.18
 
-  '@vitest/expect@4.0.16':
-    resolution: {integrity: sha512-eshqULT2It7McaJkQGLkPjPjNph+uevROGuIMJdG3V+0BSR2w9u6J9Lwu+E8cK5TETlfou8GRijhafIMhXsimA==}
+  '@vitest/expect@4.0.18':
+    resolution: {integrity: sha512-8sCWUyckXXYvx4opfzVY03EOiYVxyNrHS5QxX3DAIi5dpJAAkyJezHCP77VMX4HKA2LDT/Jpfo8i2r5BE3GnQQ==}
 
-  '@vitest/mocker@4.0.16':
-    resolution: {integrity: sha512-yb6k4AZxJTB+q9ycAvsoxGn+j/po0UaPgajllBgt1PzoMAAmJGYFdDk0uCcRcxb3BrME34I6u8gHZTQlkqSZpg==}
+  '@vitest/mocker@4.0.18':
+    resolution: {integrity: sha512-HhVd0MDnzzsgevnOWCBj5Otnzobjy5wLBe4EdeeFGv8luMsGcYqDuFRMcttKWZA5vVO8RFjexVovXvAM4JoJDQ==}
     peerDependencies:
       msw: ^2.4.9
       vite: ^6.0.0 || ^7.0.0-0
@@ -5995,20 +5989,20 @@ packages:
       vite:
         optional: true
 
-  '@vitest/pretty-format@4.0.16':
-    resolution: {integrity: sha512-eNCYNsSty9xJKi/UdVD8Ou16alu7AYiS2fCPRs0b1OdhJiV89buAXQLpTbe+X8V9L6qrs9CqyvU7OaAopJYPsA==}
+  '@vitest/pretty-format@4.0.18':
+    resolution: {integrity: sha512-P24GK3GulZWC5tz87ux0m8OADrQIUVDPIjjj65vBXYG17ZeU3qD7r+MNZ1RNv4l8CGU2vtTRqixrOi9fYk/yKw==}
 
-  '@vitest/runner@4.0.16':
-    resolution: {integrity: sha512-VWEDm5Wv9xEo80ctjORcTQRJ539EGPB3Pb9ApvVRAY1U/WkHXmmYISqU5E79uCwcW7xYUV38gwZD+RV755fu3Q==}
+  '@vitest/runner@4.0.18':
+    resolution: {integrity: sha512-rpk9y12PGa22Jg6g5M3UVVnTS7+zycIGk9ZNGN+m6tZHKQb7jrP7/77WfZy13Y/EUDd52NDsLRQhYKtv7XfPQw==}
 
-  '@vitest/snapshot@4.0.16':
-    resolution: {integrity: sha512-sf6NcrYhYBsSYefxnry+DR8n3UV4xWZwWxYbCJUt2YdvtqzSPR7VfGrY0zsv090DAbjFZsi7ZaMi1KnSRyK1XA==}
+  '@vitest/snapshot@4.0.18':
+    resolution: {integrity: sha512-PCiV0rcl7jKQjbgYqjtakly6T1uwv/5BQ9SwBLekVg/EaYeQFPiXcgrC2Y7vDMA8dM1SUEAEV82kgSQIlXNMvA==}
 
-  '@vitest/spy@4.0.16':
-    resolution: {integrity: sha512-4jIOWjKP0ZUaEmJm00E0cOBLU+5WE0BpeNr3XN6TEF05ltro6NJqHWxXD0kA8/Zc8Nh23AT8WQxwNG+WeROupw==}
+  '@vitest/spy@4.0.18':
+    resolution: {integrity: sha512-cbQt3PTSD7P2OARdVW3qWER5EGq7PHlvE+QfzSC0lbwO+xnt7+XH06ZzFjFRgzUX//JmpxrCu92VdwvEPlWSNw==}
 
-  '@vitest/utils@4.0.16':
-    resolution: {integrity: sha512-h8z9yYhV3e1LEfaQ3zdypIrnAg/9hguReGZoS7Gl0aBG5xgA410zBqECqmaF/+RkTggRsfnzc1XaAHA6bmUufA==}
+  '@vitest/utils@4.0.18':
+    resolution: {integrity: sha512-msMRKLMVLWygpK3u2Hybgi4MNjcYJvwTb0Ru09+fOyCXIgT5raYP041DRRdiJiI3k/2U6SEbAETB3YtBrUkCFA==}
 
   '@volar/language-core@2.4.20':
     resolution: {integrity: sha512-dRDF1G33xaAIDqR6+mXUIjXYdu9vzSxlMGfMEwBxQsfY/JMUEXSpLTR057oTKlUQ2nIvCmP9k94A8h8z2VrNSA==}
@@ -7423,10 +7417,6 @@ packages:
     resolution: {integrity: sha512-GCfE1mtsHGOELCU8e/Z7YWzpmybrx/+dSTfLrvY8qRmaY6zXTKWn6WQIjaAFw069icm6GVMNkgu0NzI4iPZUNw==}
     engines: {node: '>=10'}
 
-  istanbul-lib-source-maps@5.0.6:
-    resolution: {integrity: sha512-yg2d+Em4KizZC5niWhQaIomgf5WlL4vOOjZ5xGCmF8SnPE/mDWWXgvRExdcpCgh9lLRRa1/fSYp2ymmbJ1pI+A==}
-    engines: {node: '>=10'}
-
   istanbul-reports@3.2.0:
     resolution: {integrity: sha512-HGYWWS/ehqTV3xN10i23tkPkpH46MLCIMFNCaaKNavAXTF1RkqxawEPtnjnGZ6XKSInBKkiOA5BKS+aZiY3AvA==}
     engines: {node: '>=8'}
@@ -8770,46 +8760,6 @@ packages:
       terser:
         optional: true
 
-  vite@6.3.5:
-    resolution: {integrity: sha512-cZn6NDFE7wdTpINgs++ZJ4N49W2vRp8LCKrn3Ob1kYNtOo21vfDoaV5GzBfLU4MovSAB8uNRm4jgzVQZ+mBzPQ==}
-    engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
-    hasBin: true
-    peerDependencies:
-      '@types/node': ^18.0.0 || ^20.0.0 || >=22.0.0
-      jiti: '>=1.21.0'
-      less: '*'
-      lightningcss: ^1.21.0
-      sass: '*'
-      sass-embedded: '*'
-      stylus: '*'
-      sugarss: '*'
-      terser: ^5.16.0
-      tsx: ^4.8.1
-      yaml: ^2.4.2
-    peerDependenciesMeta:
-      '@types/node':
-        optional: true
-      jiti:
-        optional: true
-      less:
-        optional: true
-      lightningcss:
-        optional: true
-      sass:
-        optional: true
-      sass-embedded:
-        optional: true
-      stylus:
-        optional: true
-      sugarss:
-        optional: true
-      terser:
-        optional: true
-      tsx:
-        optional: true
-      yaml:
-        optional: true
-
   vite@6.4.1:
     resolution: {integrity: sha512-+Oxm7q9hDoLMyJOYfUYBuHQo+dkAloi33apOPP56pzj+vsdJDzr+j1NISE5pyaAuKL4A3UD34qd0lx5+kfKp2g==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
@@ -8862,18 +8812,18 @@ packages:
       postcss:
         optional: true
 
-  vitest@4.0.16:
-    resolution: {integrity: sha512-E4t7DJ9pESL6E3I8nFjPa4xGUd3PmiWDLsDztS2qXSJWfHtbQnwAWylaBvSNY48I3vr8PTqIZlyK8TE3V3CA4Q==}
+  vitest@4.0.18:
+    resolution: {integrity: sha512-hOQuK7h0FGKgBAas7v0mSAsnvrIgAvWmRFjmzpJ7SwFHH3g1k2u37JtYwOwmEKhK6ZO3v9ggDBBm0La1LCK4uQ==}
     engines: {node: ^20.0.0 || ^22.0.0 || >=24.0.0}
     hasBin: true
     peerDependencies:
       '@edge-runtime/vm': '*'
       '@opentelemetry/api': ^1.9.0
       '@types/node': ^20.0.0 || ^22.0.0 || >=24.0.0
-      '@vitest/browser-playwright': 4.0.16
-      '@vitest/browser-preview': 4.0.16
-      '@vitest/browser-webdriverio': 4.0.16
-      '@vitest/ui': 4.0.16
+      '@vitest/browser-playwright': 4.0.18
+      '@vitest/browser-preview': 4.0.18
+      '@vitest/browser-webdriverio': 4.0.18
+      '@vitest/ui': 4.0.18
       happy-dom: '*'
       jsdom: '*'
     peerDependenciesMeta:
@@ -12374,7 +12324,7 @@ snapshots:
       vite: 6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
       vue: 3.5.24(typescript@5.6.3)
 
-  '@vitest/coverage-istanbul@4.0.16(vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))':
+  '@vitest/coverage-istanbul@4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))':
     dependencies:
       '@istanbuljs/schema': 0.1.3
       '@jridgewell/gen-mapping': 0.3.13
@@ -12382,52 +12332,51 @@ snapshots:
       istanbul-lib-coverage: 3.2.2
       istanbul-lib-instrument: 6.0.3
       istanbul-lib-report: 3.0.1
-      istanbul-lib-source-maps: 5.0.6
       istanbul-reports: 3.2.0
       magicast: 0.5.1
       obug: 2.1.1
       tinyrainbow: 3.0.3
-      vitest: 4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+      vitest: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitest/expect@4.0.16':
+  '@vitest/expect@4.0.18':
     dependencies:
       '@standard-schema/spec': 1.0.0
       '@types/chai': 5.2.3
-      '@vitest/spy': 4.0.16
-      '@vitest/utils': 4.0.16
+      '@vitest/spy': 4.0.18
+      '@vitest/utils': 4.0.18
       chai: 6.2.1
       tinyrainbow: 3.0.3
 
-  '@vitest/mocker@4.0.16(vite@6.3.5(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))':
+  '@vitest/mocker@4.0.18(vite@6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))':
     dependencies:
-      '@vitest/spy': 4.0.16
+      '@vitest/spy': 4.0.18
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 6.3.5(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+      vite: 6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
-  '@vitest/pretty-format@4.0.16':
+  '@vitest/pretty-format@4.0.18':
     dependencies:
       tinyrainbow: 3.0.3
 
-  '@vitest/runner@4.0.16':
+  '@vitest/runner@4.0.18':
     dependencies:
-      '@vitest/utils': 4.0.16
+      '@vitest/utils': 4.0.18
       pathe: 2.0.3
 
-  '@vitest/snapshot@4.0.16':
+  '@vitest/snapshot@4.0.18':
     dependencies:
-      '@vitest/pretty-format': 4.0.16
+      '@vitest/pretty-format': 4.0.18
       magic-string: 0.30.21
       pathe: 2.0.3
 
-  '@vitest/spy@4.0.16': {}
+  '@vitest/spy@4.0.18': {}
 
-  '@vitest/utils@4.0.16':
+  '@vitest/utils@4.0.18':
     dependencies:
-      '@vitest/pretty-format': 4.0.16
+      '@vitest/pretty-format': 4.0.18
       tinyrainbow: 3.0.3
 
   '@volar/language-core@2.4.20':
@@ -13756,6 +13705,7 @@ snapshots:
       entities: 4.5.0
       webidl-conversions: 7.0.0
       whatwg-mimetype: 3.0.0
+    optional: true
 
   has-flag@4.0.0: {}
 
@@ -13957,14 +13907,6 @@ snapshots:
       istanbul-lib-coverage: 3.2.2
       make-dir: 4.0.0
       supports-color: 7.2.0
-
-  istanbul-lib-source-maps@5.0.6:
-    dependencies:
-      '@jridgewell/trace-mapping': 0.3.31
-      debug: 4.4.3
-      istanbul-lib-coverage: 3.2.2
-    transitivePeerDependencies:
-      - supports-color
 
   istanbul-reports@3.2.0:
     dependencies:
@@ -15358,22 +15300,6 @@ snapshots:
       fsevents: 2.3.3
       sass: 1.83.4
 
-  vite@6.3.5(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0):
-    dependencies:
-      esbuild: 0.25.5
-      fdir: 6.5.0(picomatch@4.0.3)
-      picomatch: 4.0.3
-      postcss: 8.5.6
-      rollup: 4.52.4
-      tinyglobby: 0.2.15
-    optionalDependencies:
-      '@types/node': 24.5.2
-      fsevents: 2.3.3
-      jiti: 2.6.1
-      sass: 1.83.4
-      tsx: 4.19.1
-      yaml: 2.8.0
-
   vite@6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0):
     dependencies:
       esbuild: 0.25.5
@@ -15440,15 +15366,15 @@ snapshots:
       - typescript
       - universal-cookie
 
-  vitest@4.0.16(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0):
+  vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0):
     dependencies:
-      '@vitest/expect': 4.0.16
-      '@vitest/mocker': 4.0.16(vite@6.3.5(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
-      '@vitest/pretty-format': 4.0.16
-      '@vitest/runner': 4.0.16
-      '@vitest/snapshot': 4.0.16
-      '@vitest/spy': 4.0.16
-      '@vitest/utils': 4.0.16
+      '@vitest/expect': 4.0.18
+      '@vitest/mocker': 4.0.18(vite@6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+      '@vitest/pretty-format': 4.0.18
+      '@vitest/runner': 4.0.18
+      '@vitest/snapshot': 4.0.18
+      '@vitest/spy': 4.0.18
+      '@vitest/utils': 4.0.18
       es-module-lexer: 1.7.0
       expect-type: 1.2.2
       magic-string: 0.30.21
@@ -15460,7 +15386,7 @@ snapshots:
       tinyexec: 1.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vite: 6.3.5(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+      vite: 6.4.1(@types/node@24.5.2)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 24.5.2
@@ -15575,7 +15501,8 @@ snapshots:
     dependencies:
       iconv-lite: 0.6.3
 
-  whatwg-mimetype@3.0.0: {}
+  whatwg-mimetype@3.0.0:
+    optional: true
 
   whatwg-mimetype@4.0.0: {}
 
