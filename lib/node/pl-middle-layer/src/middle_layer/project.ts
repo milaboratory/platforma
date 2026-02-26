@@ -711,7 +711,13 @@ export class Project {
 function projectTreePruning(logger: MiLogger): PruningFunction {
   return (r: ExtendedResourceData): FieldData[] => {
     if (r.fields.length > 1000)
-      logger.warn(`resource with excessive field count: type=${r.type.name} id=${r.id} fields=${r.fields.length}`);
+      logger.warn(
+        `resource with excessive field count: type=${r.type.name} id=${r.id} fields=${r.fields.length}` +
+          ` names=[${r.fields
+            .slice(0, 10)
+            .map((f) => f.name)
+            .join(", ")}, ...]`,
+      );
     if (r.type.name.startsWith("StreamWorkdir/")) return [];
     switch (r.type.name) {
       case "BlockPackCustom":

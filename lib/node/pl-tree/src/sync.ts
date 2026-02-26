@@ -5,9 +5,8 @@ import type {
   ResourceId,
 } from "@milaboratories/pl-client";
 import { isNullResourceId } from "@milaboratories/pl-client";
-import Denque from "denque";
 import type { ExtendedResourceData, PlTreeState } from "./state";
-import { msToHumanReadable } from "@milaboratories/ts-helpers";
+import { ConcurrencyLimitingExecutor, msToHumanReadable } from "@milaboratories/ts-helpers";
 
 /** Applied to list of fields in resource data. */
 export type PruningFunction = (resource: ExtendedResourceData) => FieldData[];
@@ -92,10 +91,6 @@ export function formatTreeLoadingStat(stat: TreeLoadingStat): string {
   return result;
 }
 
-/** Maximum number of concurrent gRPC resource fetches.
- * Bounds peak memory from in-flight request/response buffers. */
-const MAX_CONCURRENT_FETCHES = 100;
-
 /** Given the transaction (preferably read-only) and loading request, executes
  * the tree traversal algorithm, and collects fresh states of resources
  * to update the tree state. */
@@ -112,37 +107,40 @@ export async function loadTreeState(
 
   const { seedResources, finalResources, pruningFunction } = loadingRequest;
 
-  // Promises of resources whose gRPC requests are already in-flight.
-  // Responses arrive in the same order as they were sent, so we can
-  // wait for the earliest unprocessed promise at any given moment,
-  // keeping the logic linear without recursion.
-  const pending = new Denque<Promise<ExtendedResourceData | undefined>>();
+  // Limits the number of concurrent gRPC fetches to bound peak memory
+  // from in-flight request/response buffers.
+  const limiter = new ConcurrencyLimitingExecutor(100);
+
+  // Promises of resource states, in the order they were requested.
+  const pending: Promise<ExtendedResourceData | undefined>[] = [];
 
   // vars to calculate number of roundtrips for stats
   let roundTripToggle: boolean = true;
   let numberOfRoundTrips = 0;
 
-  // Resource ids discovered during traversal but not yet dispatched
-  // due to the concurrency limit. Drained into `pending` each iteration.
-  let inFlight = 0;
-  const toDispatch = new Denque<ResourceId>();
-
   // tracking resources we already requested or queued
   const requested = new Set<ResourceId>();
 
-  /** Fire gRPC requests for a single resource id. */
-  const dispatch = (rid: ResourceId) => {
-    inFlight++;
+  /** Mark a resource for fetching. Deduplicates and respects final-resource set. */
+  const requestState = (rid: OptionalResourceId) => {
+    if (isNullResourceId(rid) || requested.has(rid)) return;
 
-    const resourceData = tx.getResourceDataIfExists(rid, true);
-    const kvData = tx.listKeyValuesIfResourceExists(rid);
+    if (finalResources.has(rid)) {
+      if (stats) stats.finalResourcesSkipped++;
+      return;
+    }
 
-    // counting round-trip (begin)
-    const addRT = roundTripToggle;
-    if (roundTripToggle) roundTripToggle = false;
+    requested.add(rid);
 
     pending.push(
-      (async () => {
+      limiter.run(async () => {
+        const resourceData = tx.getResourceDataIfExists(rid, true);
+        const kvData = tx.listKeyValuesIfResourceExists(rid);
+
+        // counting round-trip (begin)
+        const addRT = roundTripToggle;
+        if (roundTripToggle) roundTripToggle = false;
+
         const [resource, kv] = await Promise.all([resourceData, kvData]);
 
         // counting round-trip, actually incrementing counter and returning toggle back,
@@ -156,49 +154,17 @@ export async function loadTreeState(
         if (kv === undefined) throw new Error("Inconsistent replies");
 
         return { ...resource, kv };
-      })(),
+      }),
     );
-  };
-
-  /** Move queued resource ids into in-flight up to the concurrency limit. */
-  const drainQueue = () => {
-    while (inFlight < MAX_CONCURRENT_FETCHES) {
-      const rid = toDispatch.shift();
-      if (rid === undefined) break;
-      dispatch(rid);
-    }
-  };
-
-  /** Mark a resource for fetching. Deduplicates and respects final-resource set. */
-  const requestState = (rid: OptionalResourceId) => {
-    if (isNullResourceId(rid) || requested.has(rid)) return;
-
-    if (finalResources.has(rid)) {
-      if (stats) stats.finalResourcesSkipped++;
-      return;
-    }
-
-    requested.add(rid);
-    toDispatch.push(rid);
   };
 
   // sending seed requests
   seedResources.forEach((rid) => requestState(rid));
 
   const result: ExtendedResourceData[] = [];
-  while (true) {
-    // dispatch as many queued resources as the concurrency limit allows
-    drainQueue();
-
-    const nextResourcePromise = pending.shift();
-    if (nextResourcePromise === undefined)
-      // nothing in-flight and nothing queued — traversal is complete
-      break;
-
+  for (let i = 0; i < pending.length; i++) {
     // at this point we pause and wait for the next requested resource state to arrive
-    let nextResource = await nextResourcePromise;
-    inFlight--;
-
+    let nextResource = await pending[i];
     if (nextResource === undefined)
       // ignoring resources that were not found (this may happen for seed resource ids)
       continue;
