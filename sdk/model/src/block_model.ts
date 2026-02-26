@@ -70,9 +70,9 @@ function mergeFeatureFlags(
     if (value === undefined) continue;
     const existing = result[key];
     if (typeof value === "boolean") {
-      result[key] = (existing as boolean | undefined) || value;
+      result[key] = (typeof existing === "boolean" && existing) || value;
     } else if (typeof value === "number") {
-      result[key] = Math.max((existing as number) ?? 0, value);
+      result[key] = Math.max(typeof existing === "number" ? existing : 0, value);
     }
   }
   return result as BlockCodeKnownFeatureFlags;
