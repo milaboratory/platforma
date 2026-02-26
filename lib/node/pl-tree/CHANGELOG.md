@@ -1,5 +1,11 @@
 # @milaboratories/pl-tree
 
+## 1.8.47
+
+### Patch Changes
+
+- 0da9f54: Revert to using deque instead of array
+
 ## 1.8.46
 
 ### Patch Changes
