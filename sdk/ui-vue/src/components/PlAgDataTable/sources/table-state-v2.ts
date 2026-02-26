@@ -133,7 +133,7 @@ export function useTableState(
       }
     },
   });
-  const filtersStateDeepReactive = ref(filtersState.value);
+  const filtersStateDeepReactive = ref(filtersState);
   watch(
     () => filtersStateDeepReactive.value,
     (newValue) => (filtersState.value = newValue),
