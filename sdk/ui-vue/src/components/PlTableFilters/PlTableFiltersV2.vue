@@ -18,6 +18,7 @@ import { computed, onMounted, ref } from "vue";
 import { PlBtnGhost, PlSlideModal, usePlBlockPageTitleTeleportTarget } from "@milaboratories/uikit";
 import {
   PlAdvancedFilter,
+  PlAdvancedFilterComponent,
   PlAdvancedFilterSupportedFilters,
   type PlAdvancedFilterItem,
 } from "../PlAdvancedFilter";
@@ -124,7 +125,7 @@ function getSuggestOptions(params: {
     <template #title>Manage Filters</template>
 
     <div v-if="items.length > 0" :class="$style.root">
-      <PlAdvancedFilter
+      <PlAdvancedFilterComponent
         v-model:filters="model as PlAdvancedFilter"
         :items="items"
         :supported-filters="supportedFilters"
