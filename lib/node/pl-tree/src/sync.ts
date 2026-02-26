@@ -4,6 +4,7 @@ import type {
   PlTransaction,
   ResourceId,
 } from "@milaboratories/pl-client";
+import Denque from "denque";
 import { isNullResourceId } from "@milaboratories/pl-client";
 import type { ExtendedResourceData, PlTreeState } from "./state";
 import { ConcurrencyLimitingExecutor, msToHumanReadable } from "@milaboratories/ts-helpers";
@@ -112,7 +113,7 @@ export async function loadTreeState(
   const limiter = new ConcurrencyLimitingExecutor(100);
 
   // Promises of resource states, in the order they were requested.
-  const pending: Promise<ExtendedResourceData | undefined>[] = [];
+  const pending = new Denque<Promise<ExtendedResourceData | undefined>>();
 
   // vars to calculate number of roundtrips for stats
   let roundTripToggle: boolean = true;
@@ -162,9 +163,10 @@ export async function loadTreeState(
   seedResources.forEach((rid) => requestState(rid));
 
   const result: ExtendedResourceData[] = [];
-  for (let i = 0; i < pending.length; i++) {
+  let nextPromise: Promise<ExtendedResourceData | undefined> | undefined;
+  while ((nextPromise = pending.shift()) !== undefined) {
     // at this point we pause and wait for the next requested resource state to arrive
-    let nextResource = await pending[i];
+    let nextResource = await nextPromise;
     if (nextResource === undefined)
       // ignoring resources that were not found (this may happen for seed resource ids)
       continue;
