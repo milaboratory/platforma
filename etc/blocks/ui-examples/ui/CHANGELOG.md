@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.8.30
+
+### Patch Changes
+
+- 5a37042: fix export component PlAdvancedFilters
+
 ## 1.8.29
 
 ### Patch Changes

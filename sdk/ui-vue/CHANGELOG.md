@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.58.8
+
+### Patch Changes
+
+- 5a37042: fix export component PlAdvancedFilters
+
 ## 1.58.5
 
 ### Patch Changes
