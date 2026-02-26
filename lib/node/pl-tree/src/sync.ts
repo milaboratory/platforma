@@ -205,6 +205,16 @@ export async function loadTreeState(
 
     // aggregating the state
     result.push(nextResource);
+
+    // --- DEBUG: log memory every 100 resources ---
+    if (result.length % 100 === 0) {
+      const mem = process.memoryUsage();
+      const mb = (b: number) => (b / 1024 / 1024).toFixed(1) + "MB";
+      const kvBytes = nextResource.kv?.reduce((s, k) => s + (k.value?.length ?? 0), 0) ?? 0;
+      console.error(
+        `[TREE-LOAD] resources=${result.length} pending=${pending.length} rss=${mb(mem.rss)} heapUsed=${mb(mem.heapUsed)} heapTotal=${mb(mem.heapTotal)} type=${nextResource.type?.name} kvCount=${nextResource.kv?.length} kvBytes=${kvBytes}`,
+      );
+    }
   }
 
   // adding the time we spent in this method to stats
