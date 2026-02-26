@@ -21,12 +21,12 @@ import {
   getPTableColumnId,
   CanonicalizedJson,
 } from "@platforma-sdk/model";
-import { computed, watch, type Ref, type WritableComputedRef } from "vue";
+import { computed, ref, watch, type Ref, type WritableComputedRef } from "vue";
 import type { PlDataTableSettingsV2 } from "../types";
-import { debounce, isJsonEqual, randomInt } from "@milaboratories/helpers";
+import { isJsonEqual, randomInt } from "@milaboratories/helpers";
 import { computedCached } from "@milaboratories/uikit";
 import { isStringValueType, isNumericValueType } from "../../PlAdvancedFilter/utils";
-import { isNil } from "es-toolkit";
+import { debounce, isNil } from "es-toolkit";
 
 export function useTableState(
   tableStateDenormalized: Ref<PlDataTableStateV2>,
@@ -35,7 +35,7 @@ export function useTableState(
 ): {
   gridState: WritableComputedRef<PlDataTableGridStateCore>;
   sheetsState: WritableComputedRef<PlDataTableSheetState[]>;
-  filtersState: WritableComputedRef<PlDataTableFiltersWithMeta>;
+  filtersState: Ref<PlDataTableFiltersWithMeta>;
   searchString: WritableComputedRef<string>;
 } {
   const tableStateNormalized = computedCached<PlDataTableStateV2Normalized>({
@@ -133,10 +133,10 @@ export function useTableState(
       }
     },
   });
+  const filtersStateDeepReactive = ref(filtersState);
   watch(
-    () => filtersState.value,
-    // capture only mutations
-    (newValue, oldValue) => newValue === oldValue && (filtersState.value = newValue),
+    () => filtersStateDeepReactive.value,
+    (newValue) => (filtersState.value = newValue),
     { deep: true },
   );
 
@@ -153,7 +153,7 @@ export function useTableState(
     },
   });
 
-  return { gridState, sheetsState, filtersState, searchString };
+  return { gridState, sheetsState, filtersState: filtersStateDeepReactive, searchString };
 }
 
 type PlDataTableStateV2CacheEntryNullable =
