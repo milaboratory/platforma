@@ -721,15 +721,16 @@ function projectTreePruning(r: ExtendedResourceData): FieldData[] {
   if (r.type.name.startsWith("StreamWorkdir/")) return [];
   // Prune deep output data subtrees — these are not needed for project overview
   // or block state; they will be loaded on demand when actually accessed
-  if (r.type.name.startsWith("PColumnData/")) return [];
-  if (r.type.name.startsWith("Blob/")) return [];
+  if (r.type.name.startsWith("PColumnData/") && r.fields.length > 1000) {
+    console.error(`[TREE-PRUNE] ${r.type.name} id=${r.id} fields=${r.fields.length} kvCount=${r.kv.length} dataLen=${r.data?.length ?? 0} fieldNames=${JSON.stringify(r.fields.slice(0, 5).map(f => f.name))}...`);
+    return [];
+  }
   switch (r.type.name) {
     case "BlockPackCustom":
       return r.fields.filter((f) => f.name !== "template");
     case "UserProject":
       return r.fields.filter((f) => !f.name.startsWith("__serviceTemplate"));
     case "Blob":
-    case "ParquetChunk":
       return [];
     default:
       return r.fields;
