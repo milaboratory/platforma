@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.58.3
+
+### Patch Changes
+
+- 327444c: Move mergeFeatureFlags from pl-model-common to sdk/model (internal-only usage)
+
 ## 1.58.2
 
 ### Patch Changes
