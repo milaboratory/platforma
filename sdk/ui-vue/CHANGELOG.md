@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.58.4
+
+### Patch Changes
+
+- ea0c353: fix reactivity
+
 ## 1.58.3
 
 ### Patch Changes
