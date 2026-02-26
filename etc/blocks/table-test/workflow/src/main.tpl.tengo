@@ -1,0 +1,30 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+wf.body(func(args) {
+	readLogsSW := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:read-file-to-stdout-with-sleep")
+
+	content := "Name\tValue\tCategory\n" +
+		"Alpha\t10\tA\n" +
+		"Beta\t20\tB\n" +
+		"Gamma\t30\tA\n"
+
+	run := exec.builder().
+		cpu(1).ram("50Mi").
+		software(readLogsSW).
+		writeFile("data.tsv", content).
+		arg("data.tsv").
+		arg("progress").
+		arg("500").
+		arg("200")
+
+	result := run.saveStdoutContent().run()
+
+	return {
+		outputs: {
+			tableContent: result.getStdoutContent()
+		},
+		exports: {}
+	}
+})

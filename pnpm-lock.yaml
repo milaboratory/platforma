@@ -1253,6 +1253,110 @@ importers:
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
 
+  etc/blocks/table-test/block:
+    dependencies:
+      '@milaboratories/milaboratories.test-block-table.model':
+        specifier: workspace:*
+        version: link:../model
+      '@milaboratories/milaboratories.test-block-table.ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@milaboratories/milaboratories.test-block-table.workflow':
+        specifier: workspace:*
+        version: link:../workflow
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+
+  etc/blocks/table-test/model:
+    dependencies:
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+
+  etc/blocks/table-test/test:
+    dependencies:
+      '@milaboratories/milaboratories.test-block-table.model':
+        specifier: workspace:*
+        version: link:../model
+      this-block:
+        specifier: workspace:@milaboratories/milaboratories.test-block-table@*
+        version: link:../block
+    devDependencies:
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
+      '@platforma-sdk/test':
+        specifier: workspace:*
+        version: link:../../../../sdk/test
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+
+  etc/blocks/table-test/ui:
+    dependencies:
+      '@milaboratories/milaboratories.test-block-table.model':
+        specifier: workspace:*
+        version: link:../model
+      '@platforma-sdk/ui-vue':
+        specifier: workspace:*
+        version: link:../../../../sdk/ui-vue
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.24(typescript@5.6.3)
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+
+  etc/blocks/table-test/workflow:
+    dependencies:
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
+    devDependencies:
+      '@platforma-open/milaboratories.software-test-utils':
+        specifier: 'catalog:'
+        version: 1.1.1
+      '@platforma-sdk/tengo-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/tengo-builder
+
   etc/blocks/transfer-files/block:
     dependencies:
       '@milaboratories/milaboratories.transfer-files.model':
