@@ -32,7 +32,6 @@
     "@milaboratories/pl-client": "workspace:*",
     "@milaboratories/pl-errors": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
-    "denque": "catalog:",
     "utility-types": "catalog:",
     "zod": "catalog:"
   },

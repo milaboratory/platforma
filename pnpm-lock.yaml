@@ -2299,9 +2299,6 @@ importers:
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../ts-helpers
-      denque:
-        specifier: 'catalog:'
-        version: 2.1.0
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0

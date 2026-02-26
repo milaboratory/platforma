@@ -15,7 +15,7 @@ import { projectOverview } from "./project_overview";
 import type { BlockPackSpecAny } from "../model";
 import { randomUUID } from "node:crypto";
 import { withProject, withProjectAuthored } from "../mutator/project";
-import type { ExtendedResourceData } from "@milaboratories/pl-tree";
+import type { ExtendedResourceData, PruningFunction } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState, treeDumpStats } from "@milaboratories/pl-tree";
 import { setTimeout } from "node:timers/promises";
 import { frontendData } from "./frontend_path";
@@ -24,7 +24,7 @@ import { getBlockParameters, blockOutputs } from "./block";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectStructure } from "../model/project_model";
 import { projectFieldName } from "../model/project_model";
-import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
+import { cachedDeserialize, notEmpty, type MiLogger } from "@milaboratories/ts-helpers";
 import type { BlockPackInfo } from "../model/block_pack";
 import type {
   ProjectOverview,
@@ -691,7 +691,7 @@ export class Project {
       rid,
       {
         ...env.ops.defaultTreeOptions,
-        pruning: projectTreePruning,
+        pruning: projectTreePruning(env.logger),
       },
       env.logger,
     );
@@ -708,27 +708,28 @@ export class Project {
   }
 }
 
-function projectTreePruning(r: ExtendedResourceData): FieldData[] {
-  // console.log(
-  //   JSON.stringify(
-  //     { ...r, kv: [], data: undefined } satisfies ExtendedResourceData,
-  //     (_, v) => {
-  //       if (typeof v === 'bigint') return v.toString();
-  //       return v;
-  //     }
-  //   )
-  // );
-  if (r.type.name.startsWith("StreamWorkdir/")) return [];
-  switch (r.type.name) {
-    case "BlockPackCustom":
-      return r.fields.filter((f) => f.name !== "template");
-    case "UserProject":
-      return r.fields.filter((f) => !f.name.startsWith("__serviceTemplate"));
-    case "Blob":
-      return [];
-    default:
-      return r.fields;
-  }
+function projectTreePruning(logger: MiLogger): PruningFunction {
+  return (r: ExtendedResourceData): FieldData[] => {
+    if (r.fields.length > 1000)
+      logger.warn(
+        `resource with excessive field count: type=${r.type.name} id=${r.id} fields=${r.fields.length}` +
+          ` names=[${r.fields
+            .slice(0, 10)
+            .map((f) => f.name)
+            .join(", ")}, ...]`,
+      );
+    if (r.type.name.startsWith("StreamWorkdir/")) return [];
+    switch (r.type.name) {
+      case "BlockPackCustom":
+        return r.fields.filter((f) => f.name !== "template");
+      case "UserProject":
+        return r.fields.filter((f) => !f.name.startsWith("__serviceTemplate"));
+      case "Blob":
+        return [];
+      default:
+        return r.fields;
+    }
+  };
 }
 
 /** Returns true if sdk version of the block is old and we need to convert
