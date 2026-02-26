@@ -1,12 +1,15 @@
 import {
   BlockModelV3,
   DataModelBuilder,
+  createPlDataTableV2,
   type InferHrefType,
   type InferOutputsType,
+  type PlDataTableStateV2,
 } from "@platforma-sdk/model";
 
 export type BlockData = {
   label: string;
+  tableState?: PlDataTableStateV2;
 };
 
 const blockDataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({
@@ -30,7 +33,15 @@ export const platforma = BlockModelV3.create(blockDataModel)
 
   .title((ctx) => ctx.args?.label || "Table Test")
 
-  .output("tableContent", (ctx) => ctx.outputs?.resolve("tableContent")?.getDataAsString())
+  .outputWithStatus("table", (ctx) => {
+    const pf = ctx.outputs?.resolve("tableFrame");
+    if (!pf) return undefined;
+
+    const columns = pf.getPColumns();
+    if (!columns || columns.length === 0) return undefined;
+
+    return createPlDataTableV2(ctx, columns, ctx.data.tableState);
+  })
 
   .done();
 

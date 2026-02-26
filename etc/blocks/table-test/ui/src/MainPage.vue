@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { PlBlockPage, PlTextField } from "@platforma-sdk/ui-vue";
+import { PlAgDataTableV2, PlBlockPage, usePlDataTableSettingsV2 } from "@platforma-sdk/ui-vue";
 import { useApp } from "./app";
 
 const app = useApp();
+
+const tableSettings = usePlDataTableSettingsV2({
+  model: () => app.model.outputs.table,
+});
 </script>
 
 <template>
   <PlBlockPage>
-    <PlTextField v-model="app.model.data.label" label="Label" />
-
-    <details open>
-      <summary>Workflow Output (tableContent)</summary>
-      <pre>{{ app.model.outputs.tableContent }}</pre>
-    </details>
+    <template #title>Table Test</template>
+    <PlAgDataTableV2 v-model="app.model.data.tableState" :settings="tableSettings" />
   </PlBlockPage>
 </template>

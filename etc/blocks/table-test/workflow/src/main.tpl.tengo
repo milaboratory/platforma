@@ -1,29 +1,66 @@
 wf := import("@platforma-sdk/workflow-tengo:workflow")
 exec := import("@platforma-sdk/workflow-tengo:exec")
-assets := import("@platforma-sdk/workflow-tengo:assets")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
 
 wf.body(func(args) {
-	readLogsSW := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:read-file-to-stdout-with-sleep")
-
-	content := "Name\tValue\tCategory\n" +
+	tsvContent := "name\tvalue\tcategory\n" +
 		"Alpha\t10\tA\n" +
 		"Beta\t20\tB\n" +
-		"Gamma\t30\tA\n"
+		"Gamma\t30\tA\n" +
+		"Delta\t40\tB\n" +
+		"Epsilon\t50\tA\n"
 
-	run := exec.builder().
+	e := exec.builder().
 		cpu(1).ram("50Mi").
-		software(readLogsSW).
-		writeFile("data.tsv", content).
-		arg("data.tsv").
-		arg("progress").
-		arg("500").
-		arg("200")
+		cmd("env").
+		writeFile("data.tsv", tsvContent).
+		saveFile("data.tsv").
+		run()
 
-	result := run.saveStdoutContent().run()
+	tsvFile := e.getFile("data.tsv")
+
+	spec := {
+		axes: [{
+			column: "name",
+			spec: {
+				name: "name",
+				type: "String",
+				annotations: {
+					"pl7.app/label": "Name"
+				}
+			}
+		}],
+		columns: [{
+			column: "value",
+			id: "value",
+			spec: {
+				name: "value",
+				valueType: "Int",
+				annotations: {
+					"pl7.app/label": "Value"
+				}
+			}
+		}, {
+			column: "category",
+			id: "category",
+			spec: {
+				name: "category",
+				valueType: "String",
+				annotations: {
+					"pl7.app/label": "Category"
+				}
+			}
+		}],
+		storageFormat: "Binary",
+		partitionKeyLength: 0
+	}
+
+	pf := xsv.importFile(tsvFile, "tsv", spec)
 
 	return {
 		outputs: {
-			tableContent: result.getStdoutContent()
+			tableFrame: pframes.exportFrame(pf)
 		},
 		exports: {}
 	}
