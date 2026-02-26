@@ -1,6 +1,5 @@
 ---
-"@milaboratories/pl-model-common": patch
 "@platforma-sdk/model": patch
 ---
 
-Export mergeFeatureFlags from pl-model-common (missing from 1.25.0 publish)
+Move mergeFeatureFlags from pl-model-common to sdk/model (internal-only usage)
