@@ -27,6 +27,18 @@ blockTest(
 
     const allIndices = Array.from({ length: shape.columns }, (_, i) => i);
     const data = await pFrameDriver.getData(handle, allIndices);
-    expect(data.length).toBe(shape.columns);
+    expect(data.length).toBe(3);
+
+    // Column 0: axis "name"
+    expect(data[0].type).toBe("String");
+    expect([...data[0].data]).toEqual(["Alpha", "Beta", "Gamma", "Delta", "Epsilon"]);
+
+    // Column 1: "value"
+    expect(data[1].type).toBe("Int");
+    expect([...data[1].data]).toEqual([10, 20, 30, 40, 50]);
+
+    // Column 2: "category"
+    expect(data[2].type).toBe("String");
+    expect([...data[2].data]).toEqual(["A", "B", "A", "B", "A"]);
   },
 );

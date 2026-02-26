@@ -1,6 +1,7 @@
 import {
   BlockModelV3,
   DataModelBuilder,
+  createPlDataTableStateV2,
   createPlDataTableV2,
   type InferHrefType,
   type InferOutputsType,
@@ -9,11 +10,12 @@ import {
 
 export type BlockData = {
   label: string;
-  tableState?: PlDataTableStateV2;
+  tableState: PlDataTableStateV2;
 };
 
 const blockDataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({
   label: "Table Test",
+  tableState: createPlDataTableStateV2(),
 }));
 
 export type BlockArgs = BlockData;
