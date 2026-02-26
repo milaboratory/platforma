@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.58.5
+
+### Patch Changes
+
+- c2d9319: distill empty leafs with empty fields
+
 ## 1.58.3
 
 ### Patch Changes
