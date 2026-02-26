@@ -6,7 +6,7 @@ import type {
   RequiredMeta,
 } from "./types.ts";
 
-export { default as PlAdvancedFilter } from "./PlAdvancedFilter.vue";
+export { default as PlAdvancedFilterComponent } from "./PlAdvancedFilter.vue";
 export const PlAdvancedFilterSupportedFilters = SUPPORTED_FILTER_TYPES;
 export type PlAdvancedFilterItem = SourceOptionInfo;
 export type PlAdvancedFilter<Meta extends RequiredMeta = RequiredMeta> = RootFilter<Meta>;

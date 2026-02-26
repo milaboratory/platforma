@@ -257,7 +257,7 @@ watch(
         </div>
       </div>
       <div :key="selectedSavedFilters" :class="$style.rightColumn">
-        <PlAdvancedFilter
+        <PlAdvancedFilterComponent
           v-model:filters="filterStates[selectedSavedFilters] as PlAdvancedFilter"
           :items="options"
           :enable-dnd="enableDnd"
