@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.25.1
+
+### Patch Changes
+
+- 523a59f: Version bump
+
 ## 1.25.0
 
 ### Minor Changes

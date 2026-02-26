@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pf-driver",
-  "version": "1.0.58",
+  "version": "1.0.59",
   "description": "PFrameDriver implementation abstracted from Middle Layer",
   "keywords": [],
   "license": "UNLICENSED",
