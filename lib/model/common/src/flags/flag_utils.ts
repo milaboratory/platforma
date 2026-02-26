@@ -42,28 +42,6 @@ export function extractAllSupports(
   );
 }
 
-/**
- * Merges two feature flag objects with type-aware logic:
- * - `supports*` (boolean): OR — `true` if either side is `true`
- * - `requires*` (numeric): MAX — take the higher version requirement
- */
-export function mergeFeatureFlags(
-  base: BlockCodeKnownFeatureFlags,
-  override: BlockCodeKnownFeatureFlags,
-): BlockCodeKnownFeatureFlags {
-  const result: Record<string, boolean | number | undefined> = { ...base };
-  for (const [key, value] of Object.entries(override)) {
-    if (value === undefined) continue;
-    const existing = result[key];
-    if (typeof value === "boolean") {
-      result[key] = (existing as boolean | undefined) || value;
-    } else if (typeof value === "number") {
-      result[key] = Math.max((existing as number) ?? 0, value);
-    }
-  }
-  return result as BlockCodeKnownFeatureFlags;
-}
-
 export class IncompatibleFlagsError extends Error {
   name = "IncompatibleFlagsError";
   constructor(public readonly incompatibleFlags: Map<`requires${string}`, number | boolean>) {

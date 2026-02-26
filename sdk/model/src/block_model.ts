@@ -6,7 +6,6 @@ import type {
   BlockCodeKnownFeatureFlags,
   BlockConfigContainer,
 } from "@milaboratories/pl-model-common";
-import { mergeFeatureFlags } from "@milaboratories/pl-model-common";
 import { getPlatformaInstance, isInUI, createAndRegisterRenderLambda } from "./internal";
 import type { DataModel } from "./block_migrations";
 import type { PlatformaV3 } from "./platforma";
@@ -56,6 +55,28 @@ export type ParamsInput<Params, BArgs = unknown, BData = unknown> = {
  * Type-erased version of ParamsInput for internal storage.
  */
 type ParamsInputErased = Record<string, (ctx: RenderCtxBase) => unknown>;
+
+/**
+ * Merges two feature flag objects with type-aware logic:
+ * - `supports*` (boolean): OR — `true` if either side is `true`
+ * - `requires*` (numeric): MAX — take the higher version requirement
+ */
+function mergeFeatureFlags(
+  base: BlockCodeKnownFeatureFlags,
+  override: BlockCodeKnownFeatureFlags,
+): BlockCodeKnownFeatureFlags {
+  const result: Record<string, boolean | number | undefined> = { ...base };
+  for (const [key, value] of Object.entries(override)) {
+    if (value === undefined) continue;
+    const existing = result[key];
+    if (typeof value === "boolean") {
+      result[key] = (typeof existing === "boolean" && existing) || value;
+    } else if (typeof value === "number") {
+      result[key] = Math.max(typeof existing === "number" ? existing : 0, value);
+    }
+  }
+  return result as BlockCodeKnownFeatureFlags;
+}
 
 /**
  * Registered plugin: model + param derivation lambdas.
