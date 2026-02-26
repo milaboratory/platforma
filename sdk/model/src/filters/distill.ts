@@ -6,6 +6,7 @@ import {
 } from "@milaboratories/pl-model-common";
 import { traverseFilterSpec } from "./traverse";
 import { InferFilterSpecLeaf } from "@milaboratories/pl-model-common";
+import { isEmpty } from "es-toolkit/compat";
 
 /** All possible field names that can appear in any FilterSpecLeaf variant. */
 type FilterSpecLeafKey = DistributiveKeys<FilterSpecLeaf<string>>;
@@ -27,19 +28,29 @@ const KNOWN_LEAF_KEYS_TUPLE: UnionToTuples<FilterSpecLeafKey> = [
 const KNOWN_LEAF_KEYS: Set<FilterSpecLeafKey> = new Set(KNOWN_LEAF_KEYS_TUPLE);
 
 /** Returns true if the leaf is filled — type is defined and no required fields are undefined. */
-function isFilledLeaf(node: Record<string, unknown>): boolean {
+function isFilledLeaf<T>(node: FilterSpecLeaf<T>): boolean {
   if (node.type == null) return false;
-  return !Object.values(node).some((v) => v === undefined);
+  return !Object.values(node).some((value) => {
+    switch (typeof value) {
+      case "number":
+      case "boolean":
+        return false;
+      case "string":
+        return value.trim() === "";
+      default: // undefined, null, empty objects/arrays
+        return isEmpty(value);
+    }
+  });
 }
 
-function distillLeaf(node: Record<string, unknown>): FilterSpecLeaf<string> {
+function distillLeaf<T>(node: FilterSpecLeaf<T>): FilterSpecLeaf<T> {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(node)) {
     if (KNOWN_LEAF_KEYS.has(key as FilterSpecLeafKey)) {
       result[key] = value;
     }
   }
-  return result as FilterSpecLeaf<string>;
+  return result as FilterSpecLeaf<T>;
 }
 
 /**
@@ -55,8 +66,8 @@ export function distillFilterSpec<
   if (filter == null) return null;
   return traverseFilterSpec<FS, null | R>(filter, {
     leaf: (leaf) => {
-      if (!isFilledLeaf(leaf as Record<string, unknown>)) return null;
-      return distillLeaf(leaf as Record<string, unknown>) as R;
+      const distilled = distillLeaf(leaf);
+      return isFilledLeaf(distilled) ? (distilled as R) : null;
     },
     and: (results) => {
       const filtered = results.filter((f): f is NonNullable<typeof f> => f !== null);
