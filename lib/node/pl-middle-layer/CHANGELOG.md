@@ -1,5 +1,14 @@
 # @milaboratories/pl-middle-layer
 
+## 1.48.10
+
+### Patch Changes
+
+- c498d1b: Fix OOM crash when opening large projects by limiting concurrent gRPC fetches during tree loading. Warn on resources with excessive field count.
+- Updated dependencies [c498d1b]
+  - @milaboratories/pl-tree@1.8.46
+  - @milaboratories/pl-drivers@1.11.58
+
 ## 1.48.9
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/pl-tree
 
+## 1.8.46
+
+### Patch Changes
+
+- c498d1b: Fix OOM crash when opening large projects by limiting concurrent gRPC fetches during tree loading. Warn on resources with excessive field count.
+
 ## 1.8.45
 
 ### Patch Changes
