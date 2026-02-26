@@ -26,7 +26,7 @@
     },
     "build": {
       "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"],
-      "env": ["PL_PKG_DEV"],
+      "env": [],
       "dependsOn": ["^build", "types:check"],
       "passThroughEnv": [
         "GENERATE_TAGS",
