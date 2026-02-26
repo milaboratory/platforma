@@ -1,7 +1,9 @@
 wf := import("@platforma-sdk/workflow-tengo:workflow")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+times := import("times")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
+
 
 wf.body(func(args) {
 	tsvContent := "name\tvalue\tcategory\n" +
@@ -56,7 +58,7 @@ wf.body(func(args) {
 		partitionKeyLength: 0
 	}
 
-	pf := xsv.importFile(tsvFile, "tsv", spec)
+	pf := xsv.importFile(tsvFile, "tsv", spec, { inputCache: times.second })
 
 	return {
 		outputs: {
