@@ -5,9 +5,11 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
+import { parse as parseJsonc } from "jsonc-parser";
 import {
   createFmtConfig,
   createLintConfigReference,
@@ -20,19 +22,21 @@ export const vscodeIntegrationCommand = new Command("vscode-integration")
   .description("Configure VSCode/Cursor IDE settings and oxc tooling for the monorepo")
   .action(async () => {
     const root = findMonorepoRoot();
-    console.log(`Monorepo root: ${root}\n`);
+    console.log(`📂 Monorepo root: ${root}\n`);
 
     configureVscodeSettings(root);
     configureVscodeExtensions(root);
-    ensureRootDeps(root);
+    ensureDeps(root);
     ensurePackageConfigs(root);
+    removeEslintConfigs(root);
 
-    console.log("\nDone.");
+    console.log("\n✅ Done! Please reload VSCode/Cursor to apply changes.");
   });
 
 const OXC_EXTENSION = "oxc.oxc-vscode";
 
 const VSCODE_SETTINGS: Record<string, unknown> = {
+  "editor.defaultFormatter": OXC_EXTENSION,
   "[typescript]": { "editor.defaultFormatter": OXC_EXTENSION },
   "[vue]": { "editor.defaultFormatter": OXC_EXTENSION },
   "[javascript]": { "editor.defaultFormatter": OXC_EXTENSION },
@@ -57,7 +61,7 @@ function findMonorepoRoot(): string {
 }
 
 function readJson(filePath: string): Record<string, unknown> {
-  return JSON.parse(readFileSync(filePath, "utf-8"));
+  return parseJsonc(readFileSync(filePath, "utf-8"));
 }
 
 function writeJson(filePath: string, data: unknown): void {
@@ -77,12 +81,8 @@ function configureVscodeSettings(root: string): void {
     settings = readJson(settingsPath);
   }
 
-  let modified = false;
   for (const [key, value] of Object.entries(VSCODE_SETTINGS)) {
-    if (!(key in settings)) {
-      settings[key] = value;
-      modified = true;
-    } else if (
+    if (
       typeof value === "object" &&
       value !== null &&
       !Array.isArray(value) &&
@@ -90,22 +90,17 @@ function configureVscodeSettings(root: string): void {
       settings[key] !== null &&
       !Array.isArray(settings[key])
     ) {
-      const existing = settings[key] as Record<string, unknown>;
-      for (const [prop, propValue] of Object.entries(value as Record<string, unknown>)) {
-        if (!(prop in existing)) {
-          existing[prop] = propValue;
-          modified = true;
-        }
-      }
+      settings[key] = {
+        ...(settings[key] as Record<string, unknown>),
+        ...(value as Record<string, unknown>),
+      };
+    } else {
+      settings[key] = value;
     }
   }
 
-  if (modified || !existsSync(settingsPath)) {
-    writeJson(settingsPath, settings);
-    console.log("Updated .vscode/settings.json");
-  } else {
-    console.log(".vscode/settings.json already configured. Skipping...");
-  }
+  writeJson(settingsPath, settings);
+  console.log("⚙️  Updated .vscode/settings.json");
 }
 
 function configureVscodeExtensions(root: string): void {
@@ -123,36 +118,47 @@ function configureVscodeExtensions(root: string): void {
   if (!extensions.recommendations.includes(OXC_EXTENSION)) {
     extensions.recommendations.push(OXC_EXTENSION);
     writeJson(extensionsPath, extensions);
-    console.log("Updated .vscode/extensions.json");
+    console.log("🧩 Updated .vscode/extensions.json");
   } else {
-    console.log(".vscode/extensions.json already configured. Skipping...");
+    console.log("🧩 .vscode/extensions.json already configured. Skipping...");
   }
 }
 
-function ensureRootDeps(root: string): void {
+function ensureDeps(root: string): void {
+  const oxcDeps = ["oxlint", "oxfmt"];
   const pkgPath = join(root, "package.json");
   const pkg = readJson(pkgPath) as {
+    dependencies?: Record<string, string>;
     devDependencies?: Record<string, string>;
+    peerDependencies?: Record<string, string>;
   };
 
-  if (!pkg.devDependencies) {
-    pkg.devDependencies = {};
-  }
-
   let modified = false;
-  for (const dep of ["oxlint", "oxfmt"]) {
-    if (!(dep in pkg.devDependencies)) {
-      pkg.devDependencies[dep] = "catalog:";
+
+  for (const dep of oxcDeps) {
+    if (pkg.dependencies?.[dep]) {
+      delete pkg.dependencies[dep];
       modified = true;
-      console.log(`Added ${dep} to root devDependencies`);
+    }
+    if (pkg.devDependencies?.[dep]) {
+      delete pkg.devDependencies[dep];
+      modified = true;
+    }
+
+    if (!pkg.peerDependencies) {
+      pkg.peerDependencies = {};
+    }
+    if (!(dep in pkg.peerDependencies)) {
+      pkg.peerDependencies[dep] = "*";
+      modified = true;
     }
   }
 
   if (modified) {
     writeJson(pkgPath, pkg);
-    console.log("Updated root package.json");
+    console.log("📦 Ensured oxlint/oxfmt as peerDependencies in root package.json");
   } else {
-    console.log("Root package.json already has oxlint and oxfmt. Skipping...");
+    console.log("📦 Root package.json already configured. Skipping...");
   }
 }
 
@@ -169,7 +175,7 @@ function resolveOxlintConfigType(pkgDir: string, relPath: string) {
   const target = detectTarget(pkg.scripts);
 
   if (!target) {
-    console.warn(`  Warning: Could not detect target for ${relPath}, using "node" as default`);
+    console.warn(`⚠️  Could not detect target for ${relPath}, using "node" as default`);
   }
 
   return getOxlintConfigForTarget((target || "node") as TargetType);
@@ -220,9 +226,49 @@ function findPackagesWithTsBuilder(root: string): string[] {
   return results.sort();
 }
 
+const ESLINT_CONFIG_PATTERNS = [
+  ".eslintrc",
+  ".eslintrc.js",
+  ".eslintrc.cjs",
+  ".eslintrc.mjs",
+  ".eslintrc.json",
+  ".eslintrc.yml",
+  ".eslintrc.yaml",
+  "eslint.config.js",
+  "eslint.config.cjs",
+  "eslint.config.mjs",
+  "eslint.config.ts",
+  ".eslintignore",
+];
+
+function removeEslintConfigs(root: string): void {
+  const packages = findPackagesWithTsBuilder(root);
+  let removed = 0;
+
+  for (const pkgDir of packages) {
+    for (const name of ESLINT_CONFIG_PATTERNS) {
+      const filePath = join(pkgDir, name);
+      if (existsSync(filePath)) {
+        unlinkSync(filePath);
+        const relPath = filePath.replace(root + "/", "");
+        console.log(`🗑️  Removed ${relPath}`);
+        removed++;
+      }
+    }
+  }
+
+  if (removed > 0) {
+    console.log(`🗑️  Removed ${removed} ESLint config file(s)`);
+  } else {
+    console.log("🗑️  No ESLint config files found to remove.");
+  }
+}
+
 function ensurePackageConfigs(root: string): void {
   const packages = findPackagesWithTsBuilder(root);
-  console.log(`\nFound ${packages.length} packages with @milaboratories/ts-builder dependency\n`);
+  console.log(
+    `\n🔍 Found ${packages.length} packages with @milaboratories/ts-builder dependency\n`,
+  );
 
   const originalCwd = process.cwd();
 
@@ -239,7 +285,7 @@ function ensurePackageConfigs(root: string): void {
       const configType = resolveOxlintConfigType(pkgDir, relPath);
       createLintConfigReference(configType);
     } catch (error) {
-      console.error(`  Error configuring ${relPath}:`, error);
+      console.error(`❌ Error configuring ${relPath}:`, error);
     }
   }
 

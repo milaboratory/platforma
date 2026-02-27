@@ -188,9 +188,6 @@ catalog:
 
   "rimraf": ^6.0.1
 
-  "oxlint": 1.43.0
-  "oxfmt": 0.28.0
-
   # Net
 
   "undici": ~7.16.0
@@ -211,6 +208,7 @@ catalog:
   "long": ^5.3.2
   "mime-types": ^2.1.35
   "semver": ^7.7.2
+  "jsonc-parser": 3.3.1
 
   "upath": ^2.0.1
   "tar": ^7.4.3
@@ -265,7 +263,6 @@ catalog:
   "ag-grid-vue3": *ag-grid
 
   "monaco-editor": ^0.52.2
-
   "sortablejs": ^1.15.6
   "@types/sortablejs": ^1.15.6
 
