@@ -1,5 +1,11 @@
 # @milaboratories/ts-builder
 
+## 1.2.12
+
+### Patch Changes
+
+- 1b1dcea: vscode-integration command
+
 ## 1.2.11
 
 ### Patch Changes
