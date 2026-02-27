@@ -9,7 +9,7 @@ import type {
 } from "@milaboratories/pl-model-common";
 import type { SdkInfo } from "./version";
 import type { BlockStatePatch } from "./block_state_patch";
-import type { PluginInstance } from "./block_model";
+import type { RegisteredPlugin } from "./block_model";
 import type { PluginHandle, PluginFactoryLike } from "./plugin_handle";
 
 /** Defines all methods to interact with the platform environment from within a block UI. @deprecated */
@@ -134,7 +134,7 @@ export type InferPluginNames<Pl> =
 export type InferPluginData<Pl, PluginId extends string> =
   Pl extends PlatformaV3<unknown, unknown, BlockOutputsBase, `/${string}`, infer P>
     ? PluginId extends keyof P
-      ? P[PluginId] extends PluginInstance<infer D, any, any>
+      ? P[PluginId] extends RegisteredPlugin<infer D, any, any>
         ? D
         : never
       : never
@@ -143,10 +143,10 @@ export type InferPluginData<Pl, PluginId extends string> =
 /**
  * Map each plugin instance to a type-safe opaque handle branded with normalized phantom.
  * Uses the same brand structure as InferPluginHandle — only data/params/outputs, no config —
- * because PluginInstance doesn't carry Config (it's lost after factory.create()).
+ * because RegisteredPlugin doesn't carry Config (it's lost after factory.create()).
  */
 export type InferPluginHandles<T extends Record<string, unknown>> = {
-  readonly [K in keyof T]: T[K] extends PluginInstance<infer Data, infer Params, infer Outputs>
+  readonly [K in keyof T]: T[K] extends RegisteredPlugin<infer Data, infer Params, infer Outputs>
     ? PluginHandle<PluginFactoryLike<Data, Params, Outputs>>
     : never;
 };

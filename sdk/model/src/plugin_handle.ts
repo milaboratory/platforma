@@ -13,7 +13,7 @@ import type { Branded } from "@milaboratories/helpers";
 /**
  * Phantom-only base type for constraining PluginHandle's type parameter.
  *
- * PluginFactory has create() → PluginModel with function properties, making it invariant
+ * PluginFactory has create() → PluginInstance with function properties, making it invariant
  * under strictFunctionTypes. PluginFactoryLike exposes only the covariant `__types` phantom,
  * avoiding the contravariance chain. Handles only need `__types` for type extraction.
  *
