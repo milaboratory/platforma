@@ -30,22 +30,22 @@ export const vscodeIntegrationCommand = new Command("vscode-integration")
     ensurePackageConfigs(root);
     removeEslintConfigs(root);
 
-    console.log("\n✅ Done! Please reload VSCode/Cursor to apply changes.");
+    console.log("\nDone! Please reload VSCode/Cursor to apply changes.");
   });
 
 const OXC_EXTENSION = "oxc.oxc-vscode";
 
 const VSCODE_SETTINGS: Record<string, unknown> = {
   "editor.defaultFormatter": OXC_EXTENSION,
-  "[typescript]": { "editor.defaultFormatter": OXC_EXTENSION },
-  "[vue]": { "editor.defaultFormatter": OXC_EXTENSION },
-  "[javascript]": { "editor.defaultFormatter": OXC_EXTENSION },
-  "[css]": { "editor.defaultFormatter": OXC_EXTENSION },
-  "[scss]": { "editor.defaultFormatter": OXC_EXTENSION },
-  "[html]": { "editor.defaultFormatter": OXC_EXTENSION },
-  "[yaml]": { "editor.defaultFormatter": OXC_EXTENSION },
-  "[markdown]": { "editor.defaultFormatter": OXC_EXTENSION },
-  "[json]": { "editor.defaultFormatter": OXC_EXTENSION },
+  "[typescript]": { "editor.defaultFormatter": OXC_EXTENSION, "editor.tabSize": 2 },
+  "[vue]": { "editor.defaultFormatter": OXC_EXTENSION, "editor.tabSize": 2 },
+  "[javascript]": { "editor.defaultFormatter": OXC_EXTENSION, "editor.tabSize": 2 },
+  "[css]": { "editor.defaultFormatter": OXC_EXTENSION, "editor.tabSize": 2 },
+  "[scss]": { "editor.defaultFormatter": OXC_EXTENSION, "editor.tabSize": 2 },
+  "[html]": { "editor.defaultFormatter": OXC_EXTENSION, "editor.tabSize": 2 },
+  "[yaml]": { "editor.defaultFormatter": OXC_EXTENSION, "editor.tabSize": 2 },
+  "[markdown]": { "editor.defaultFormatter": OXC_EXTENSION, "editor.tabSize": 2 },
+  "[json]": { "editor.defaultFormatter": OXC_EXTENSION, "editor.tabSize": 2 },
   "typescript.tsdk": "./node_modules/typescript/lib",
 };
 
@@ -118,9 +118,9 @@ function configureVscodeExtensions(root: string): void {
   if (!extensions.recommendations.includes(OXC_EXTENSION)) {
     extensions.recommendations.push(OXC_EXTENSION);
     writeJson(extensionsPath, extensions);
-    console.log("🧩 Updated .vscode/extensions.json");
+    console.log("Updated .vscode/extensions.json");
   } else {
-    console.log("🧩 .vscode/extensions.json already configured. Skipping...");
+    console.log(".vscode/extensions.json already configured. Skipping...");
   }
 }
 
@@ -156,9 +156,9 @@ function ensureDeps(root: string): void {
 
   if (modified) {
     writeJson(pkgPath, pkg);
-    console.log("📦 Ensured oxlint/oxfmt as peerDependencies in root package.json");
+    console.log("Ensured oxlint/oxfmt as peerDependencies in root package.json");
   } else {
-    console.log("📦 Root package.json already configured. Skipping...");
+    console.log("Root package.json already configured. Skipping...");
   }
 }
 
@@ -175,7 +175,7 @@ function resolveOxlintConfigType(pkgDir: string, relPath: string) {
   const target = detectTarget(pkg.scripts);
 
   if (!target) {
-    console.warn(`⚠️  Could not detect target for ${relPath}, using "node" as default`);
+    console.warn(`Could not detect target for ${relPath}, using "node" as default`);
   }
 
   return getOxlintConfigForTarget((target || "node") as TargetType);
@@ -251,24 +251,22 @@ function removeEslintConfigs(root: string): void {
       if (existsSync(filePath)) {
         unlinkSync(filePath);
         const relPath = filePath.replace(root + "/", "");
-        console.log(`🗑️  Removed ${relPath}`);
+        console.log(`Removed ${relPath}`);
         removed++;
       }
     }
   }
 
   if (removed > 0) {
-    console.log(`🗑️  Removed ${removed} ESLint config file(s)`);
+    console.log(`Removed ${removed} ESLint config file(s)`);
   } else {
-    console.log("🗑️  No ESLint config files found to remove.");
+    console.log("No ESLint config files found to remove.");
   }
 }
 
 function ensurePackageConfigs(root: string): void {
   const packages = findPackagesWithTsBuilder(root);
-  console.log(
-    `\n🔍 Found ${packages.length} packages with @milaboratories/ts-builder dependency\n`,
-  );
+  console.log(`\nFound ${packages.length} packages with @milaboratories/ts-builder dependency\n`);
 
   const originalCwd = process.cwd();
 
@@ -285,7 +283,7 @@ function ensurePackageConfigs(root: string): void {
       const configType = resolveOxlintConfigType(pkgDir, relPath);
       createLintConfigReference(configType);
     } catch (error) {
-      console.error(`❌ Error configuring ${relPath}:`, error);
+      console.error(`Error configuring ${relPath}:`, error);
     }
   }
 
