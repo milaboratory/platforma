@@ -38,14 +38,16 @@
     "@types/node": "catalog:",
     "@zed-industries/vscode-langservers-extracted": "catalog:",
     "husky": "catalog:",
-    "oxfmt": "catalog:",
-    "oxlint": "catalog:",
     "rimraf": "catalog:",
     "rollup": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "oxfmt": "*",
+    "oxlint": "*"
   },
   "engines": {
     "node": ">=22"
