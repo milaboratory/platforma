@@ -1,5 +1,12 @@
 import { Command } from "commander";
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import {
   createFmtConfig,
@@ -75,6 +82,21 @@ function configureVscodeSettings(root: string): void {
     if (!(key in settings)) {
       settings[key] = value;
       modified = true;
+    } else if (
+      typeof value === "object" &&
+      value !== null &&
+      !Array.isArray(value) &&
+      typeof settings[key] === "object" &&
+      settings[key] !== null &&
+      !Array.isArray(settings[key])
+    ) {
+      const existing = settings[key] as Record<string, unknown>;
+      for (const [prop, propValue] of Object.entries(value as Record<string, unknown>)) {
+        if (!(prop in existing)) {
+          existing[prop] = propValue;
+          modified = true;
+        }
+      }
     }
   }
 
@@ -185,7 +207,7 @@ function findPackagesWithTsBuilder(root: string): string[] {
       if (entry === "node_modules" || entry === "dist" || entry === ".git") continue;
       const fullPath = join(dir, entry);
       try {
-        if (statSync(fullPath).isDirectory()) {
+        if (lstatSync(fullPath).isDirectory()) {
           walk(fullPath);
         }
       } catch {
