@@ -1,0 +1,69 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+times := import("times")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+
+
+wf.body(func(args) {
+	tsvContent := "name\tvalue\tcategory\n" +
+		"Alpha\t10\tA\n" +
+		"Beta\t20\tB\n" +
+		"Gamma\t30\tA\n" +
+		"Delta\t40\tB\n" +
+		"Epsilon\t50\tA\n"
+
+	e := exec.builder().
+		cpu(1).ram("50Mi").
+		cmd("env").
+		writeFile("data.tsv", tsvContent).
+		saveFile("data.tsv").
+		run()
+
+	tsvFile := e.getFile("data.tsv")
+
+	spec := {
+		axes: [{
+			column: "name",
+			spec: {
+				name: "name",
+				type: "String",
+				annotations: {
+					"pl7.app/label": "Name"
+				}
+			}
+		}],
+		columns: [{
+			column: "value",
+			id: "value",
+			spec: {
+				name: "value",
+				valueType: "Int",
+				annotations: {
+					"pl7.app/label": "Value"
+				}
+			}
+		}, {
+			column: "category",
+			id: "category",
+			spec: {
+				name: "category",
+				valueType: "String",
+				annotations: {
+					"pl7.app/label": "Category"
+				}
+			}
+		}],
+		storageFormat: "Binary",
+		partitionKeyLength: 0
+	}
+
+	pf := xsv.importFile(tsvFile, "tsv", spec, { inputCache: times.second })
+
+	return {
+		outputs: {
+			tableFrame: pframes.exportFrame(pf)
+		},
+		exports: {}
+	}
+})

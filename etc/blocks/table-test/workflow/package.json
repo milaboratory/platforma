@@ -1,0 +1,17 @@
+{
+  "name": "@milaboratories/milaboratories.test-block-table.workflow",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Tengo-based template",
+  "scripts": {
+    "build": "rm -rf dist && pl-tengo check && pl-tengo build"
+  },
+  "dependencies": {
+    "@platforma-sdk/workflow-tengo": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/tengo-builder": "workspace:*",
+    "@platforma-open/milaboratories.software-test-utils": "catalog:"
+  }
+}

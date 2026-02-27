@@ -115,6 +115,12 @@ packages:
   - etc/blocks/model-test/block
   - etc/blocks/model-test/test
 
+  - etc/blocks/table-test/workflow
+  - etc/blocks/table-test/model
+  - etc/blocks/table-test/ui
+  - etc/blocks/table-test/block
+  - etc/blocks/table-test/test
+
   - etc/blocks/pool-explorer/workflow
   - etc/blocks/pool-explorer/model
   - etc/blocks/pool-explorer/ui
