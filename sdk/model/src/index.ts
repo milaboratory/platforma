@@ -25,7 +25,7 @@ export {
 export * from "./block_storage_facade";
 export * from "./block_model_legacy";
 export { BlockModelV3 } from "./block_model";
-export type { RegisteredPlugin, ParamsInput } from "./block_model";
+export type { PluginRecord, ParamsInput } from "./block_model";
 export { DataModel, DataModelBuilder } from "./block_migrations";
 export {
   type PluginData,

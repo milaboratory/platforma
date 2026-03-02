@@ -80,10 +80,10 @@ function mergeFeatureFlags(
 }
 
 /**
- * Registered plugin: model + param derivation lambdas + optional config.
+ * Plugin record: model + param derivation lambdas.
  * Type parameters are carried by PluginModel generic.
  */
-export type RegisteredPlugin<
+export type PluginRecord<
   Data extends PluginData = PluginData,
   Params extends PluginParams = undefined,
   Outputs extends PluginOutputs = PluginOutputs,
@@ -95,7 +95,7 @@ export type RegisteredPlugin<
 interface BlockModelV3Config<
   OutputsCfg extends Record<string, ConfigRenderLambda>,
   Data,
-  Plugins extends Record<string, RegisteredPlugin> = {},
+  Plugins extends Record<string, PluginRecord> = {},
   Transfers extends Record<string, unknown> = {},
 > {
   renderingMode: BlockRenderingMode;
@@ -121,7 +121,7 @@ export class BlockModelV3<
   OutputsCfg extends Record<string, ConfigRenderLambda>,
   Data extends Record<string, unknown> = Record<string, unknown>,
   Href extends `/${string}` = "/",
-  Plugins extends Record<string, RegisteredPlugin> = {},
+  Plugins extends Record<string, PluginRecord> = {},
   Transfers extends Record<string, unknown> = {},
 > {
   private constructor(
@@ -439,7 +439,7 @@ export class BlockModelV3<
     OutputsCfg,
     Data,
     Href,
-    Plugins & { [K in PluginId]: RegisteredPlugin<PData, PParams, POutputs> },
+    Plugins & { [K in PluginId]: PluginRecord<PData, PParams, POutputs> },
     Omit<Transfers, PluginId>
   >;
   public plugin(
@@ -450,7 +450,7 @@ export class BlockModelV3<
     OutputsCfg,
     Data,
     Href,
-    Record<string, RegisteredPlugin>,
+    Record<string, PluginRecord>,
     Record<string, unknown>
   > {
     const pluginId = instance.id;
@@ -461,7 +461,7 @@ export class BlockModelV3<
       throw new Error(`Plugin '${pluginId}' already registered`);
     }
 
-    const registered: RegisteredPlugin = {
+    const registered: PluginRecord = {
       model: plugin,
       inputs: resolvedParams,
     };
@@ -504,7 +504,7 @@ export class BlockModelV3<
 
     const { dataModel, argsFunction, prerunArgsFunction } = this.config;
 
-    function getPlugin(handle: PluginHandle): RegisteredPlugin {
+    function getPlugin(handle: PluginHandle): PluginRecord {
       const plugin = plugins[handle];
       if (!plugin) throw new Error(`Plugin model not found for '${handle}'`);
       return plugin;
