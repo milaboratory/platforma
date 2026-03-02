@@ -15,7 +15,7 @@ user-invocable: true
 | Pack all packages | `pnpm do-pack` | monorepo root |
 | Pack single package | `pnpm do-pack --filter="<pkg>"` | monorepo root |
 | Reset everything | `pnpm reset` | monorepo root |
-| Desktop app dev | `npm run build && npm run dev` | desktop app root |
+| Desktop app dev | `pnpm build && pnpm run dev` | desktop app root |
 
 ---
 
@@ -164,7 +164,7 @@ Never commit `pnpm.overrides` pointing to local paths — CI will fail.
 
 ## Using local SDK packages in the desktop app
 
-The desktop app (`platforma-desktop-app/`) uses **npm** (not pnpm). It consumes platforma SDK packages as regular npm dependencies from the registry.
+The desktop app (`platforma-desktop-app/`) uses **pnpm** with `catalog:` versions in `pnpm-workspace.yaml`, the same pattern as blocks. It consumes platforma SDK packages from the npm registry.
 
 ### Step 1: Build and pack in the platforma monorepo
 
@@ -173,65 +173,92 @@ The desktop app (`platforma-desktop-app/`) uses **npm** (not pnpm). It consumes 
 pnpm do-pack
 ```
 
-### Step 2: Install local `.tgz` files
+### Step 2: Add pnpm overrides in the desktop app
 
-```bash
-# In the desktop app root (adjust relative paths to your layout)
-npm install \
-      ../platforma/lib/ui/uikit/package.tgz \
-      ../platforma/lib/node/pl-middle-layer/package.tgz \
-      ../platforma/lib/node/pl-tree/package.tgz \
-      ../platforma/lib/node/computable/package.tgz \
-      ../platforma/lib/model/middle-layer/package.tgz \
-      ../platforma/lib/model/common/package.tgz \
-      ../platforma/sdk/model/package.tgz \
-      ../platforma/sdk/test/package.tgz \
-      ../platforma/lib/node/pl-drivers/package.tgz
+In the desktop app's root `package.json`, add overrides to the existing `pnpm.overrides` section:
+
+```json
+{
+  "pnpm": {
+    "overrides": {
+      "@sentry/core": "10.40.0",
+      "jsonfile": "^6.0.1",
+      "@platforma-sdk/model": "file:../platforma/sdk/model/package.tgz",
+      "@milaboratories/uikit": "file:../platforma/lib/ui/uikit/package.tgz"
+    }
+  }
+}
 ```
 
-`npm install` rewrites version specifiers in `package.json` from registry versions (e.g., `"2.6.1"`) to local paths (e.g., `"file:../platforma/lib/ui/uikit/package.tgz"`) and updates `package-lock.json` accordingly.
+Use relative paths from the desktop app root (e.g., `file:../platforma/sdk/model/package.tgz`). Keep existing overrides (`@sentry/core`, `jsonfile`) in place — only add the packages you're developing.
 
-**Install all changed packages together.** If you modified multiple packages in the platforma monorepo, include all their `.tgz` files in a single `npm install` command. Partial installs leave mismatched internal dependencies and cause build errors. When in doubt, install the full set listed above.
+**Override all changed packages together.** The same rule as for blocks: SDK packages have internal dependencies, so partial overrides cause type mismatches and build failures.
 
-### Step 3: Iterate
-
-After making more changes in the platforma monorepo:
+### Step 3: Install and build
 
 ```bash
-# In platforma monorepo
-pnpm do-pack    # or selective filter
-
-# In desktop app — re-install the same tgz paths
-npm install ../platforma/lib/ui/uikit/package.tgz  # etc.
+pnpm install    # resolves overrides, updates lockfile
+pnpm build      # builds all internal desktop app packages
 ```
 
-npm detects content changes in the `.tgz` files and updates `package-lock.json` with new integrity hashes.
+### Step 4: Iterate
+
+```bash
+# In platforma monorepo — rebuild and repack
+pnpm do-pack --filter="@platforma-sdk/model"
+
+# In desktop app — reinstall and rebuild
+pnpm install    # detects changed tgz content, updates lockfile
+pnpm build
+```
 
 ### Running the desktop app in development mode
 
-The desktop app uses Vite + Electron with hot-reload watchers. On a fresh checkout (or after `npm run clean-build`), the internal packages need to be built before the dev server can start:
+The desktop app uses Vite + Electron with hot-reload watchers.
+
+#### First-time setup (or after `pnpm clean-build`)
+
+The internal workspace packages (`@platforma/core`, `@platforma/ipc`, etc.) must be built before the dev server can start. The Vite renderer dev server needs `@platforma/core` for dependency pre-bundling at startup.
 
 ```bash
 cd /path/to/platforma-desktop-app
-npm install
-npm run build       # build all internal packages (core, ipc, main, etc.)
-npm run dev          # starts Vite dev server + Electron with hot reload
+pnpm install
+pnpm build       # build all internal packages — needed once
+pnpm run dev     # starts Vite dev server + Electron with hot reload
 ```
 
-On subsequent runs, `npm run dev` is sufficient — it watches and rebuilds internal packages automatically. The initial `npm run build` is only needed once (or after cleaning the `dist/` directories).
+For a faster start, `pnpm --filter=@platforma/core run build` is the minimum needed before `pnpm run dev`. The watch script builds the remaining packages automatically.
 
-If you only need to unblock the dev server quickly, `npm run build:core` is the minimum — the renderer Vite dev server requires `@platforma/core` to be built for dependency pre-bundling.
+#### Subsequent runs
+
+`pnpm run dev` is sufficient — the watch script rebuilds internal packages on change.
+
+#### Running from Claude Code
+
+`pnpm run dev` is a long-running process (Vite dev server + Electron). Run it as a background task:
+
+```
+Bash tool:
+  command: "cd /path/to/platforma-desktop-app && pnpm run dev 2>&1"
+  run_in_background: true
+```
+
+This returns a task ID. Use:
+- `TaskOutput` (with `block: false`) to read logs
+- `TaskStop` to terminate the app cleanly (kills both Vite and Electron)
+
+Do NOT append `&` to the command — `run_in_background` handles backgrounding. Adding `&` causes the shell to exit immediately, orphaning the Electron process with no way to read logs or stop it.
 
 ### Cleanup before committing
 
-Reset `package.json` and `package-lock.json` to their original state:
+Reset `package.json` and `pnpm-lock.yaml` to their original state:
 
 ```bash
-git checkout -- package.json package-lock.json
-npm install
+git checkout -- package.json pnpm-lock.yaml
+pnpm install
 ```
 
-Never commit local `.tgz` references.
+Never commit `pnpm.overrides` pointing to local paths.
 
 ---
 
@@ -483,23 +510,23 @@ pnpm build
 cd /path/to/platforma
 pnpm do-pack
 
-# 2. Install ALL changed tgz files in desktop app
+# 2. Add pnpm.overrides in desktop app's package.json for ALL changed packages
 cd /path/to/platforma-desktop-app
-npm install \
-  ../platforma/sdk/model/package.tgz \
-  ../platforma/lib/ui/uikit/package.tgz \
-  ../platforma/lib/node/pl-middle-layer/package.tgz
-  # ... include every package you modified
+#    (edit package.json — add overrides to pnpm.overrides section, see above)
 
-# 3. Build internal packages and run the desktop app
-npm run build       # needed once after clean checkout or tgz install
-npm run dev
+# 3. Install and build
+pnpm install
+pnpm build
 
-# 4. Iterate: change code -> do-pack -> npm install tgz -> restart dev
+# 4. Run the desktop app (use run_in_background from Claude Code — see dev mode section above)
+pnpm run dev
 
-# 5. Cleanup before committing
-git checkout -- package.json package-lock.json
-npm install
+# 5. Iterate: change code -> do-pack -> pnpm install in desktop app -> pnpm build -> restart dev
+#    (stop previous pnpm run dev with TaskStop before restarting)
+
+# 6. Cleanup before committing
+git checkout -- package.json pnpm-lock.yaml
+pnpm install
 ```
 
 ### Running integration tests locally
