@@ -232,7 +232,7 @@ function normalizeColumnVisibility(
 }
 
 function getDefaultHiddenColIds(api: GridApi<PlAgDataTableV2Row>): PlTableColumnIdJson[] {
-  const cols = api.getColumns();
+  const cols = api.getAllGridColumns();
   if (!cols) return [];
   return cols
     .filter((col) => {
