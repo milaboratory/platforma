@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.58.10
+
+### Patch Changes
+
+- d2c7384: Fix table column visibility state: prevent reload loop, preserve defaults for optional columns
+
 ## 1.58.9
 
 ### Patch Changes
