@@ -36,7 +36,7 @@ jobs:
   # 2. Deploy Platforma to GKE and run tests
   # ──────────────────────────────────────────────
   deploy-and-test:
-    runs-on: [self-hosted, dev-gke]
+    runs-on: dev-gke
     needs: [init]
     steps:
       - uses: azure/setup-kubectl@v4
