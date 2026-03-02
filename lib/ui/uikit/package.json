@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/uikit",
-  "version": "2.10.37",
+  "version": "2.10.38",
   "type": "module",
   "sideEffects": [
     "**/*.css"
