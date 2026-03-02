@@ -10,7 +10,11 @@
  */
 
 import type { Branded } from "@milaboratories/pl-model-common";
-import type { DataVersioned } from "./block_migrations";
+import {
+  type DataVersioned,
+  type TransferRecord,
+  isDataUnrecoverableError,
+} from "./block_migrations";
 import type { PluginHandle, PluginFactoryLike, InferFactoryData } from "./plugin_handle";
 
 // =============================================================================
@@ -258,8 +262,10 @@ export type MigrationResult<TState> = MigrationSuccess<TState> | MigrationFailur
  * Conversion to internal VersionedData format is handled by migrateBlockStorage().
  */
 export interface MigrateBlockStorageConfig {
-  /** Migrate block data from any version to latest. Throws on failure. */
-  migrateBlockData: (versioned: DataVersioned<unknown>) => DataVersioned<unknown>;
+  /** Migrate block data from any version to latest. Returns migrated data and transfers. */
+  migrateBlockData: (versioned: DataVersioned<unknown>) => DataVersioned<unknown> & {
+    transfers: TransferRecord;
+  };
   /** Migrate each plugin's data. Return undefined to remove the plugin. Throws on failure. */
   migratePluginData: (
     handle: PluginHandle,
@@ -267,8 +273,12 @@ export interface MigrateBlockStorageConfig {
   ) => DataVersioned<unknown> | undefined;
   /** The new plugin registry after migration (pluginId -> pluginName) */
   newPluginRegistry: PluginRegistry;
-  /** Factory to create initial data for new plugins */
-  createPluginData: (handle: PluginHandle) => DataVersioned<unknown>;
+  /** Factory to create initial data for new plugins. Transfer is provided when a
+   *  .transfer() was defined for this plugin in the block's migration chain. */
+  createPluginData: (
+    handle: PluginHandle,
+    transfer?: DataVersioned<unknown>,
+  ) => DataVersioned<unknown>;
 }
 
 /**
@@ -317,13 +327,15 @@ export function migrateBlockStorage(
 ): MigrationResult<unknown> {
   const { migrateBlockData, migratePluginData, newPluginRegistry, createPluginData } = config;
 
-  // Step 1: Migrate block data
+  // Step 1: Migrate block data and collect transfers
   let migratedData: unknown;
   let newVersion: string;
+  let transfers: TransferRecord;
   try {
     const result = migrateBlockData({ version: storage.__dataVersion, data: storage.__data });
     migratedData = result.data;
     newVersion = result.version;
+    transfers = result.transfers;
   } catch (error) {
     return {
       success: false,
@@ -353,9 +365,32 @@ export function migrateBlockStorage(
           newPlugins[handle] = { __dataVersion: migrated.version, __data: migrated.data };
         }
         // If undefined returned, plugin is intentionally removed
+      } else if (existingEntry) {
+        // Plugin type changed — pass old data with DATA_MODEL_LEGACY_VERSION.
+        // If the new plugin has upgradeLegacy(), it migrates the old data.
+        // If not, defaultRecover throws DataUnrecoverableError → fall back to init.
+        let recovered = false;
+        try {
+          const migrated = migratePluginData(handle, {
+            version: DATA_MODEL_LEGACY_VERSION,
+            data: existingEntry.__data,
+          });
+          if (migrated) {
+            newPlugins[handle] = { __dataVersion: migrated.version, __data: migrated.data };
+            recovered = true;
+          }
+        } catch (recoverError) {
+          if (!isDataUnrecoverableError(recoverError)) throw recoverError;
+        }
+        if (!recovered) {
+          const transfer = transfers[handle];
+          const initial = createPluginData(handle, transfer);
+          newPlugins[handle] = { __dataVersion: initial.version, __data: initial.data };
+        }
       } else {
-        // New plugin or type changed - create with initial data
-        const initial = createPluginData(handle);
+        // New plugin - create with initial data, passing transfer if available
+        const transfer = transfers[handle];
+        const initial = createPluginData(handle, transfer);
         newPlugins[handle] = { __dataVersion: initial.version, __data: initial.data };
       }
     } catch (error) {

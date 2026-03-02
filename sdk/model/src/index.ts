@@ -25,18 +25,19 @@ export {
 export * from "./block_storage_facade";
 export * from "./block_model_legacy";
 export { BlockModelV3 } from "./block_model";
-export type { PluginInstance, ParamsInput } from "./block_model";
+export type { PluginRecord, ParamsInput } from "./block_model";
+export { DataModel, DataModelBuilder } from "./block_migrations";
 export {
-  DataModel,
-  DataModelBuilder,
-  DataMigrationError,
-  DataUnrecoverableError,
-  isDataUnrecoverableError,
-  defaultRecover,
-  makeDataVersioned,
-} from "./block_migrations";
-export type { LegacyV1State } from "./block_migrations";
-export * from "./plugin_model";
+  type PluginData,
+  type PluginParams,
+  type PluginOutputs,
+  type PluginConfig,
+  PluginDataModel,
+  PluginDataModelBuilder,
+  PluginInstance,
+  PluginModel,
+  type PluginFactory,
+} from "./plugin_model";
 export * from "./bconfig";
 export * from "./components";
 export * from "./config";

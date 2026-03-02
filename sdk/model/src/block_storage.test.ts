@@ -14,6 +14,7 @@ import {
   type PluginName,
   type PluginRegistry,
 } from "./block_storage";
+import { DataUnrecoverableError } from "./block_migrations";
 import type { PluginHandle } from "./plugin_handle";
 
 describe("BlockStorage", () => {
@@ -284,7 +285,7 @@ describe("BlockStorage", () => {
       const result = migrateBlockStorage(storage, {
         migrateBlockData: (versioned) => {
           const d = versioned.data as { count: number };
-          return { data: { count: d.count + 1 }, version: "v2" };
+          return { data: { count: d.count + 1 }, version: "v2", transfers: {} };
         },
         migratePluginData: (_pluginId, _versioned) => ({
           version: "v2",
@@ -338,6 +339,7 @@ describe("BlockStorage", () => {
         migrateBlockData: (versioned) => ({
           data: versioned.data as { count: number },
           version: "v2",
+          transfers: {},
         }),
         migratePluginData: (pluginId) => {
           throw new Error(`Plugin ${pluginId} migration failed`);
@@ -353,7 +355,7 @@ describe("BlockStorage", () => {
       }
     });
 
-    it("should reset plugin data when plugin type changes", () => {
+    it("should pass DATA_MODEL_LEGACY_VERSION when plugin type changes (upgradeLegacy handles it)", () => {
       const storage = createTestStorage();
       const newRegistry: PluginRegistry = { plugin1: "typeB" as PluginName }; // Different type
 
@@ -361,9 +363,43 @@ describe("BlockStorage", () => {
         migrateBlockData: (versioned) => ({
           data: versioned.data as { count: number },
           version: "v2",
+          transfers: {},
+        }),
+        migratePluginData: (_handle, versioned) => {
+          // Version should be reset to DATA_MODEL_LEGACY_VERSION
+          expect(versioned.version).toBe(DATA_MODEL_LEGACY_VERSION);
+          return {
+            version: "upgraded",
+            data: { upgraded: true, from: versioned.data },
+          };
+        },
+        newPluginRegistry: newRegistry,
+        createPluginData: () => {
+          throw new Error("Should not be called when upgradeLegacy succeeds");
+        },
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.storage.__plugins?.plugin1).toEqual({
+          __dataVersion: "upgraded",
+          __data: { upgraded: true, from: { value: "old" } },
+        });
+      }
+    });
+
+    it("should fall back to createPluginData when plugin type changes and no upgradeLegacy", () => {
+      const storage = createTestStorage();
+      const newRegistry: PluginRegistry = { plugin1: "typeB" as PluginName }; // Different type
+
+      const result = migrateBlockStorage(storage, {
+        migrateBlockData: (versioned) => ({
+          data: versioned.data as { count: number },
+          version: "v2",
+          transfers: {},
         }),
         migratePluginData: () => {
-          throw new Error("Should not be called for type change");
+          throw new DataUnrecoverableError(DATA_MODEL_LEGACY_VERSION);
         },
         newPluginRegistry: newRegistry,
         createPluginData: (pluginId) => ({
@@ -389,6 +425,7 @@ describe("BlockStorage", () => {
         migrateBlockData: (versioned) => ({
           data: versioned.data as { count: number },
           version: "v2",
+          transfers: {},
         }),
         migratePluginData: () => {
           throw new Error("Should not be called for new plugin");
@@ -417,6 +454,7 @@ describe("BlockStorage", () => {
         migrateBlockData: (versioned) => ({
           data: versioned.data as { count: number },
           version: "v2",
+          transfers: {},
         }),
         migratePluginData: () => {
           throw new Error("Should not be called for dropped plugin");
@@ -442,6 +480,7 @@ describe("BlockStorage", () => {
         migrateBlockData: (versioned) => ({
           data: versioned.data as { count: number },
           version: "v2",
+          transfers: {},
         }),
         migratePluginData: () => undefined, // Remove plugin
         newPluginRegistry: newRegistry,
@@ -451,6 +490,111 @@ describe("BlockStorage", () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.storage.__plugins).toEqual({});
+      }
+    });
+
+    it("should pass transfer data to createPluginData for new plugins", () => {
+      const storage = createBlockStorage({ count: 1, tableState: "expanded" }, "v1");
+      const newRegistry: PluginRegistry = { table1: "dataTable" as PluginName };
+
+      const result = migrateBlockStorage(storage, {
+        migrateBlockData: (versioned) => ({
+          data: { count: (versioned.data as any).count },
+          version: "v2",
+          transfers: {
+            table1: { version: "__legacy__", data: { state: (versioned.data as any).tableState } },
+          },
+        }),
+        migratePluginData: () => {
+          throw new Error("Should not be called for new plugin");
+        },
+        newPluginRegistry: newRegistry,
+        createPluginData: (_handle, transfer) => {
+          // Transfer should be passed through
+          if (transfer) {
+            return { version: "v1", data: { upgraded: true, fromState: transfer.data } };
+          }
+          return { version: "v1", data: { upgraded: false } };
+        },
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.storage.__plugins?.table1).toEqual({
+          __dataVersion: "v1",
+          __data: { upgraded: true, fromState: { state: "expanded" } },
+        });
+      }
+    });
+
+    it("should not pass transfer to existing plugin with same type (uses migration instead)", () => {
+      const storage = createTestStorage(); // has plugin1 of typeA
+      const newRegistry: PluginRegistry = { plugin1: "typeA" as PluginName };
+
+      const result = migrateBlockStorage(storage, {
+        migrateBlockData: (versioned) => ({
+          data: versioned.data,
+          version: "v2",
+          transfers: {
+            plugin1: { version: "__legacy__", data: { should: "be ignored" } },
+          },
+        }),
+        migratePluginData: (_handle, versioned) => ({
+          version: "v2",
+          data: { migrated: true, from: versioned.data },
+        }),
+        newPluginRegistry: newRegistry,
+        createPluginData: () => {
+          throw new Error("Should not be called — existing plugin migrates");
+        },
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.storage.__plugins?.plugin1).toEqual({
+          __dataVersion: "v2",
+          __data: { migrated: true, from: { value: "old" } },
+        });
+      }
+    });
+
+    it("should handle multiple plugins: one transferred, one fresh", () => {
+      const storage = createBlockStorage({ count: 1 }, "v1");
+      const newRegistry: PluginRegistry = {
+        transferred: "typeT" as PluginName,
+        fresh: "typeF" as PluginName,
+      };
+
+      const result = migrateBlockStorage(storage, {
+        migrateBlockData: (versioned) => ({
+          data: versioned.data,
+          version: "v2",
+          transfers: {
+            transferred: { version: "__legacy__", data: { legacy: true } },
+          },
+        }),
+        migratePluginData: () => {
+          throw new Error("No existing plugins to migrate");
+        },
+        newPluginRegistry: newRegistry,
+        createPluginData: (_handle, transfer) => {
+          if (transfer) {
+            return { version: "v1", data: { fromTransfer: transfer.data } };
+          }
+          return { version: "v1", data: { default: true } };
+        },
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.storage.__plugins?.transferred).toEqual({
+          __dataVersion: "v1",
+          __data: { fromTransfer: { legacy: true } },
+        });
+        expect(result.storage.__plugins?.fresh).toEqual({
+          __dataVersion: "v1",
+          __data: { default: true },
+        });
       }
     });
   });

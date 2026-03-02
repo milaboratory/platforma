@@ -5,6 +5,31 @@ export type DataMigrateFn<From, To> = (prev: Readonly<From>) => To;
 export type DataCreateFn<T> = () => T;
 export type DataRecoverFn<T> = (version: DataVersionKey, data: unknown) => T;
 
+/**
+ * Minimal interface that .transfer() accepts. PluginInstance implements this.
+ * Defined here to avoid circular dependency with plugin_model.ts.
+ */
+export interface TransferTarget<Id extends string = string, TransferData = never> {
+  readonly id: Id;
+  /** Version key in the plugin's data model chain where transferred data enters. */
+  readonly transferVersion: string;
+  /** @internal Phantom field for TransferData type extraction */
+  readonly __transferBrand?: TransferData;
+}
+
+/** Internal record of a single transfer step in the migration chain. */
+export type TransferStep = {
+  pluginId: string;
+  /** Capture data before this step index executes. */
+  beforeStepIndex: number;
+  extract: (data: unknown) => unknown;
+  /** Version key in the plugin's data model chain where the transferred data enters. */
+  targetVersion: string;
+};
+
+/** Map of plugin ID → versioned data extracted during migration. */
+export type TransferRecord = Record<string, DataVersioned<unknown>>;
+
 /** Versioned data wrapper for persistence */
 export type DataVersioned<T> = {
   version: DataVersionKey;
@@ -12,7 +37,7 @@ export type DataVersioned<T> = {
 };
 
 /** Create a DataVersioned wrapper with correct shape */
-export function makeDataVersioned<T>(version: DataVersionKey, data: T): DataVersioned<T> {
+export function makeVersionedData<T>(version: DataVersionKey, data: T): DataVersioned<T> {
   return { version, data };
 }
 
@@ -68,6 +93,7 @@ export type LegacyV1State<Args, UiState> = { args: Args; uiState: UiState };
 type BuilderState<S> = {
   versionChain: DataVersionKey[];
   steps: MigrationStep[];
+  transferSteps: TransferStep[];
   initialDataFn: () => S;
   recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
   /** Index of the first step to run after recovery. Equals the number of steps
@@ -89,13 +115,19 @@ type RecoverState = {
  *
  * @internal
  */
-abstract class MigrationChainBase<Current> {
+abstract class MigrationChainBase<Current, Transfers extends Record<string, unknown> = {}> {
   protected readonly versionChain: DataVersionKey[];
   protected readonly migrationSteps: MigrationStep[];
+  protected readonly transferSteps: TransferStep[];
 
-  protected constructor(state: { versionChain: DataVersionKey[]; steps: MigrationStep[] }) {
+  protected constructor(state: {
+    versionChain: DataVersionKey[];
+    steps: MigrationStep[];
+    transferSteps?: TransferStep[];
+  }) {
     this.versionChain = state.versionChain;
     this.migrationSteps = state.steps;
+    this.transferSteps = state.transferSteps ?? [];
   }
 
   /** Appends a migration step and returns the new versionChain and steps arrays. */
@@ -118,6 +150,23 @@ abstract class MigrationChainBase<Current> {
     };
   }
 
+  /** Validates uniqueness and records a TransferStep. */
+  protected buildTransfer<Id extends string, L>(
+    target: TransferTarget<Id, L>,
+    extract: (data: Current) => L,
+  ): { transferSteps: TransferStep[] } {
+    if (this.transferSteps.some((t) => t.pluginId === target.id)) {
+      throw new Error(`Duplicate transfer for plugin '${target.id}'`);
+    }
+    const entry: TransferStep = {
+      pluginId: target.id,
+      beforeStepIndex: this.migrationSteps.length,
+      extract: extract as (data: unknown) => unknown,
+      targetVersion: target.transferVersion,
+    };
+    return { transferSteps: [...this.transferSteps, entry] };
+  }
+
   /** Returns recover-specific fields for DataModel construction. Overridden by WithRecover. */
   protected recoverState(): RecoverState {
     return {};
@@ -129,10 +178,11 @@ abstract class MigrationChainBase<Current> {
    * @param initialData - Factory function returning the initial state
    * @returns Finalized DataModel instance
    */
-  init(initialData: DataCreateFn<Current>): DataModel<Current> {
-    return DataModel[FROM_BUILDER]<Current>({
+  init(initialData: DataCreateFn<Current>): DataModel<Current, Transfers> {
+    return DataModel[FROM_BUILDER]<Current, Transfers>({
       versionChain: this.versionChain,
       steps: this.migrationSteps,
+      transferSteps: this.transferSteps,
       initialDataFn: initialData,
       ...this.recoverState(),
     });
@@ -141,13 +191,17 @@ abstract class MigrationChainBase<Current> {
 
 /**
  * Migration chain after recover() or upgradeLegacy() has been called.
- * Further migrate() calls are allowed; recover() and upgradeLegacy() are not
+ * Further migrate() and transfer() calls are allowed; recover() and upgradeLegacy() are not
  * (enforced by type — no such methods on this class).
  *
  * @typeParam Current - Data type at the current point in the chain
+ * @typeParam Transfers - Accumulated transfer types keyed by plugin ID
  * @internal
  */
-class DataModelMigrationChainWithRecover<Current> extends MigrationChainBase<Current> {
+class DataModelMigrationChainWithRecover<
+  Current,
+  Transfers extends Record<string, unknown> = {},
+> extends MigrationChainBase<Current, Transfers> {
   private readonly recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
   private readonly recoverFromIndex?: number;
 
@@ -155,6 +209,7 @@ class DataModelMigrationChainWithRecover<Current> extends MigrationChainBase<Cur
   constructor(state: {
     versionChain: DataVersionKey[];
     steps: MigrationStep[];
+    transferSteps?: TransferStep[];
     recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
     recoverFromIndex?: number;
   }) {
@@ -177,11 +232,31 @@ class DataModelMigrationChainWithRecover<Current> extends MigrationChainBase<Cur
   migrate<Next>(
     nextVersion: string,
     fn: DataMigrateFn<Current, Next>,
-  ): DataModelMigrationChainWithRecover<Next> {
+  ): DataModelMigrationChainWithRecover<Next, Transfers> {
     const { versionChain, steps } = this.buildStep(nextVersion, fn);
-    return new DataModelMigrationChainWithRecover<Next>({
+    return new DataModelMigrationChainWithRecover<Next, Transfers>({
       versionChain,
       steps,
+      transferSteps: this.transferSteps,
+      recoverFn: this.recoverFn,
+      recoverFromIndex: this.recoverFromIndex,
+    });
+  }
+
+  /**
+   * Extract data at the current chain position for seeding a new plugin.
+   * The extract function's return type must match the plugin's transfer data type.
+   * Duplicate plugin IDs are rejected at both type and runtime level.
+   */
+  transfer<Id extends string, L>(
+    target: TransferTarget<Id & (Id extends keyof Transfers ? never : string), L>,
+    extract: (data: Current) => L,
+  ): DataModelMigrationChainWithRecover<Current, Transfers & Record<Id, L>> {
+    const { transferSteps } = this.buildTransfer(target, extract);
+    return new DataModelMigrationChainWithRecover<Current, Transfers & Record<Id, L>>({
+      versionChain: this.versionChain,
+      steps: this.migrationSteps,
+      transferSteps,
       recoverFn: this.recoverFn,
       recoverFromIndex: this.recoverFromIndex,
     });
@@ -195,18 +270,24 @@ class DataModelMigrationChainWithRecover<Current> extends MigrationChainBase<Cur
  * Duplicate version keys throw at runtime.
  *
  * @typeParam Current - Data type at the current point in the migration chain
+ * @typeParam Transfers - Accumulated transfer types keyed by plugin ID
  * @internal
  */
-class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
+class DataModelMigrationChain<
+  Current,
+  Transfers extends Record<string, unknown> = {},
+> extends MigrationChainBase<Current, Transfers> {
   /** @internal */
   constructor({
     versionChain,
     steps = [],
+    transferSteps = [],
   }: {
     versionChain: DataVersionKey[];
     steps?: MigrationStep[];
+    transferSteps?: TransferStep[];
   }) {
-    super({ versionChain, steps });
+    super({ versionChain, steps, transferSteps });
   }
 
   /**
@@ -223,9 +304,38 @@ class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
   migrate<Next>(
     nextVersion: string,
     fn: DataMigrateFn<Current, Next>,
-  ): DataModelMigrationChain<Next> {
+  ): DataModelMigrationChain<Next, Transfers> {
     const { versionChain, steps } = this.buildStep(nextVersion, fn);
-    return new DataModelMigrationChain<Next>({ versionChain, steps });
+    return new DataModelMigrationChain<Next, Transfers>({
+      versionChain,
+      steps,
+      transferSteps: this.transferSteps,
+    });
+  }
+
+  /**
+   * Extract data at the current chain position for seeding a new plugin.
+   * The extract function's return type must match the plugin's transfer data type.
+   * Duplicate plugin IDs are rejected at both type and runtime level.
+   *
+   * Calling .transfer() on DataModelInitialChain returns DataModelMigrationChain,
+   * which removes .upgradeLegacy() from the chain (preventing a problematic combination).
+   *
+   * @example
+   * .from<V1>("v1")
+   * .transfer(tablePlugin, (v1) => ({ state: v1.tableState }))
+   * .migrate<V2>("v2", ({ tableState: _, ...rest }) => rest)
+   */
+  transfer<Id extends string, L>(
+    target: TransferTarget<Id & (Id extends keyof Transfers ? never : string), L>,
+    extract: (data: Current) => L,
+  ): DataModelMigrationChain<Current, Transfers & Record<Id, L>> {
+    const { transferSteps } = this.buildTransfer(target, extract);
+    return new DataModelMigrationChain<Current, Transfers & Record<Id, L>>({
+      versionChain: this.versionChain,
+      steps: this.migrationSteps,
+      transferSteps,
+    });
   }
 
   /**
@@ -251,10 +361,11 @@ class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
    *   .migrate<V3>("v3", (v2) => ({ ...v2, description: "" }))
    *   .init(() => ({ count: 0, label: "", description: "" }));
    */
-  recover(fn: DataRecoverFn<Current>): DataModelMigrationChainWithRecover<Current> {
-    return new DataModelMigrationChainWithRecover<Current>({
+  recover(fn: DataRecoverFn<Current>): DataModelMigrationChainWithRecover<Current, Transfers> {
+    return new DataModelMigrationChainWithRecover<Current, Transfers>({
       versionChain: this.versionChain,
       steps: this.migrationSteps,
+      transferSteps: this.transferSteps,
       recoverFn: fn as (version: DataVersionKey, data: unknown) => unknown,
       recoverFromIndex: this.migrationSteps.length,
     });
@@ -267,9 +378,13 @@ class DataModelMigrationChain<Current> extends MigrationChainBase<Current> {
  * any `.migrate()` calls, since legacy data always arrives at the initial version.
  *
  * @typeParam Current - Data type at the initial version
+ * @typeParam Transfers - Accumulated transfer types keyed by plugin ID
  * @internal
  */
-class DataModelInitialChain<Current> extends DataModelMigrationChain<Current> {
+class DataModelInitialChain<
+  Current,
+  Transfers extends Record<string, unknown> = {},
+> extends DataModelMigrationChain<Current, Transfers> {
   /**
    * Handle legacy V1 model state ({ args, uiState }) when upgrading a block from
    * BlockModel V1 to BlockModelV3.
@@ -306,7 +421,7 @@ class DataModelInitialChain<Current> extends DataModelMigrationChain<Current> {
    */
   upgradeLegacy<Args, UiState = unknown>(
     fn: (legacy: LegacyV1State<Args, UiState>) => Current,
-  ): DataModelMigrationChainWithRecover<Current> {
+  ): DataModelMigrationChainWithRecover<Current, Transfers> {
     const wrappedFn = (data: unknown): unknown => {
       if (data !== null && typeof data === "object" && "args" in data) {
         return fn(data as LegacyV1State<Args, UiState>);
@@ -322,9 +437,14 @@ class DataModelInitialChain<Current> extends DataModelMigrationChain<Current> {
       toVersion: initialVersion,
       migrate: wrappedFn,
     };
-    return new DataModelMigrationChainWithRecover<Current>({
+    return new DataModelMigrationChainWithRecover<Current, Transfers>({
       versionChain: [DATA_MODEL_LEGACY_VERSION, ...this.versionChain],
       steps: [step, ...this.migrationSteps],
+      // Shift transfer indices to account for the prepended legacy step
+      transferSteps: this.transferSteps.map((t) => ({
+        ...t,
+        beforeStepIndex: t.beforeStepIndex + 1,
+      })),
     });
   }
 }
@@ -407,12 +527,16 @@ export class DataModelBuilder {
  *   .migrate<V3>("v3", (v2) => ({ ...v2, description: "" }))
  *   .init(() => ({ count: 0, label: "", description: "" }));
  */
-export class DataModel<State> {
+export class DataModel<State, Transfers extends Record<string, unknown> = {}> {
+  /** @internal Phantom field to anchor the Transfers type parameter. */
+  declare readonly __transfers?: Transfers;
+
   /** Latest version key — O(1) access for the common "already current" check. */
   private readonly latestVersion: DataVersionKey;
   /** Maps each known version key to the index of the first step to run from it. O(1) lookup. */
   private readonly stepsByFromVersion: ReadonlyMap<DataVersionKey, number>;
   private readonly steps: MigrationStep[];
+  private readonly transferSteps: TransferStep[];
   private readonly initialDataFn: () => State;
   private readonly recoverFn: (version: DataVersionKey, data: unknown) => unknown;
   private readonly recoverFromIndex: number;
@@ -420,6 +544,7 @@ export class DataModel<State> {
   private constructor({
     versionChain,
     steps,
+    transferSteps = [],
     initialDataFn,
     recoverFn = defaultRecover,
     recoverFromIndex,
@@ -430,6 +555,7 @@ export class DataModel<State> {
     this.latestVersion = versionChain[versionChain.length - 1];
     this.stepsByFromVersion = new Map(versionChain.map((v, i) => [v, i]));
     this.steps = steps;
+    this.transferSteps = transferSteps;
     this.initialDataFn = initialDataFn;
     this.recoverFn = recoverFn;
     this.recoverFromIndex = recoverFromIndex ?? steps.length;
@@ -440,8 +566,10 @@ export class DataModel<State> {
    * Uses Symbol key to prevent external access.
    * @internal
    */
-  static [FROM_BUILDER]<S>(state: BuilderState<S>): DataModel<S> {
-    return new DataModel<S>(state);
+  static [FROM_BUILDER]<S, T extends Record<string, unknown> = {}>(
+    state: BuilderState<S>,
+  ): DataModel<S, T> {
+    return new DataModel<S, T>(state);
   }
 
   /**
@@ -463,7 +591,7 @@ export class DataModel<State> {
    * Used when creating new blocks or resetting to defaults.
    */
   getDefaultData(): DataVersioned<State> {
-    return makeDataVersioned(this.latestVersion, this.initialDataFn());
+    return makeVersionedData(this.latestVersion, this.initialDataFn());
   }
 
   private recoverFrom(data: unknown, version: DataVersionKey): DataVersioned<State> {
@@ -482,40 +610,67 @@ export class DataModel<State> {
 
   /**
    * Migrate versioned data from any version to the latest.
+   * Collects transfer extractions at their designated chain positions.
    *
    * - If version is in chain, applies needed migrations (O(1) lookup)
    * - If version is unknown, attempts recovery; falls back to initial data
    * - If a migration step fails, throws so the caller can preserve original data
    *
+   * Transfers only fire during normal step-by-step migration:
+   * - Recovery path: returns empty transfers
+   * - Fast-path (already at latest): returns empty transfers
+   *
    * @param versioned - Data with version tag
-   * @returns Migrated data at the latest version
+   * @returns Migrated data at the latest version with transfer record
    * @throws If a migration step from a known version fails
    */
-  migrate(versioned: DataVersioned<unknown>): DataVersioned<State> {
+  migrate(versioned: DataVersioned<unknown>): DataVersioned<State> & { transfers: TransferRecord } {
     const { version: fromVersion, data } = versioned;
 
+    // Fast path: already at latest version
     if (fromVersion === this.latestVersion) {
-      return { version: this.latestVersion, data: data as State };
+      return { version: this.latestVersion, data: data as State, transfers: {} };
     }
 
+    // Unknown version: recovery path — empty transfers
     const startIndex = this.stepsByFromVersion.get(fromVersion);
     if (startIndex === undefined) {
       try {
-        return this.recoverFrom(data, fromVersion);
+        return { ...this.recoverFrom(data, fromVersion), transfers: {} };
       } catch {
         // Recovery failed (unknown version, recover fn threw, or post-recover
         // migration failed) — reset to initial data rather than blocking the update.
-        return this.getDefaultData();
+        return { ...this.getDefaultData(), transfers: {} };
       }
     }
 
     let currentData: unknown = data;
+    const transfers: TransferRecord = {};
 
+    // Run steps and check transfer entries before each step
     for (let i = startIndex; i < this.steps.length; i++) {
-      const step = this.steps[i];
-      currentData = step.migrate(currentData);
+      for (const t of this.transferSteps) {
+        if (t.beforeStepIndex === i) {
+          transfers[t.pluginId] = {
+            version: t.targetVersion,
+            data: t.extract(currentData),
+          };
+        }
+      }
+      currentData = this.steps[i].migrate(currentData);
     }
 
-    return { version: this.latestVersion, data: currentData as State };
+    // Check for transfers positioned at or past the end of the steps array
+    // (e.g., .transfer() was the last call before .init(), after all .migrate() calls)
+    for (const t of this.transferSteps) {
+      if (t.beforeStepIndex >= this.steps.length && t.beforeStepIndex >= startIndex) {
+        transfers[t.pluginId] = {
+          version: t.targetVersion,
+          data: t.extract(currentData),
+        };
+      }
+    }
+
+    return { version: this.latestVersion, data: currentData as State, transfers };
   }
 }

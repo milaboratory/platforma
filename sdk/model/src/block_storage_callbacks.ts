@@ -1,5 +1,5 @@
 /**
- * BlockStorage Callback Implementations - wired to facade callbacks in BlockModelV3._done().
+ * BlockStorage Callback Implementations - wired to facade callbacks in BlockModelV3.done().
  *
  * Provides pure functions for storage operations (migration, initialization,
  * args derivation, updates, debug views). Each function takes its dependencies
@@ -27,7 +27,7 @@ import {
 import type { PluginHandle } from "./plugin_handle";
 
 import { stringifyJson, type StringifiedJson } from "@milaboratories/pl-model-common";
-import type { DataVersioned } from "./block_migrations";
+import type { DataVersioned, TransferRecord } from "./block_migrations";
 
 // =============================================================================
 // Hook interfaces for dependency injection
@@ -35,13 +35,18 @@ import type { DataVersioned } from "./block_migrations";
 
 /** Dependencies for storage migration */
 export interface MigrationHooks {
-  migrateBlockData: (versioned: DataVersioned<unknown>) => DataVersioned<unknown>;
+  migrateBlockData: (versioned: DataVersioned<unknown>) => DataVersioned<unknown> & {
+    transfers: TransferRecord;
+  };
   getPluginRegistry: () => PluginRegistry;
   migratePluginData: (
     handle: PluginHandle,
     versioned: DataVersioned<unknown>,
   ) => DataVersioned<unknown> | undefined;
-  createPluginData: (handle: PluginHandle) => DataVersioned<unknown>;
+  createPluginData: (
+    handle: PluginHandle,
+    transfer?: DataVersioned<unknown>,
+  ) => DataVersioned<unknown>;
 }
 
 /** Dependencies for initial storage creation */
