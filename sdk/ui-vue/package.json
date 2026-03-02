@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.58.9",
+  "version": "1.58.10",
   "type": "module",
   "sideEffects": [
     "**/*.css"
