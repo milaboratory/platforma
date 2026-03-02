@@ -14,7 +14,7 @@ export const createViteDevConfig = ({ mode, command }: ConfigEnv): UserConfig =>
       emptyOutDir: isProd,
       sourcemap: isProd,
       minify: isProd,
-      rollupOptions: {
+      rolldownOptions: {
         plugins: isProd ? [sourcemaps()] : [],
       },
     },

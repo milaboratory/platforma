@@ -1,4 +1,3 @@
-import nodeResolve from '@rollup/plugin-node-resolve';
 import nodeExternals from 'rollup-plugin-node-externals';
 import type { UserConfig } from 'vite';
 import { defineConfig } from 'vite';
@@ -16,11 +15,10 @@ export function PlViteStdNode(overrideConfig?: UserConfig) {
         formats: ['es', 'cjs'],
       },
       sourcemap: true,
-      rollupOptions: {},
+      rolldownOptions: {},
     },
     plugins: [
       nodeExternals(),
-      nodeResolve(),
       dts({
         staticImport: true,
       }),

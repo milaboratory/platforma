@@ -25,8 +25,11 @@ export async function tryStat(path: string): Promise<BigIntStats | undefined> {
   }
 }
 
-export function calculateSha256(bytes: ArrayBuffer): Promise<string> {
+export function calculateSha256(bytes: Uint8Array<ArrayBufferLike> | ArrayBuffer): Promise<string> {
   return Promise.resolve(
-    createHash("sha256").update(Buffer.from(bytes)).digest("hex").toUpperCase(),
+    createHash("sha256")
+      .update(ArrayBuffer.isView(bytes) ? bytes : Buffer.from(bytes))
+      .digest("hex")
+      .toUpperCase(),
   );
 }

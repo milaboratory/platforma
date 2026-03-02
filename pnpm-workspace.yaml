@@ -152,8 +152,11 @@ packages:
 
 catalog:
   # Build
-  "typescript": ~5.6.3
-  "vite": ^6.4.1
+  "typescript": ~5.9.3
+  "tsconfig-paths": ^4.2.0
+  "tsup": ~8.3.5
+  "vite": 8.0.0-beta.15
+  "@vitejs/plugin-vue": ^6.0.4
   "rollup": ^4.45.1
   "@rollup/plugin-node-resolve": ^16.0.1
   "@rollup/plugin-typescript": ^12.1.4
@@ -182,11 +185,13 @@ catalog:
 
   "husky": ^9.1.7
 
-  "@vitejs/plugin-vue": ^5.2.3
-
   "svgo": ^3.3.2
 
   "rimraf": ^6.0.1
+
+  "oxlint": 1.43.0
+  "oxfmt": 0.28.0
+
 
   # Net
 

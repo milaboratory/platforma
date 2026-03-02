@@ -6,7 +6,7 @@ import {
   getValidatedConfigPath,
   isBuildableTarget,
   requireTarget,
-  resolveRollup,
+  resolveRolldown,
   resolveVite,
   type TargetType,
 } from "./utils/index";
@@ -36,7 +36,7 @@ export const buildCommand = new Command("build")
       if (target === "browser" || target === "browser-lib" || target === "block-ui") {
         await buildWithVite(target, { customConfig: customBuildConfig, isWatch, useSources });
       } else {
-        await buildWithRollup(target, { customConfig: customBuildConfig, isWatch, useSources });
+        await buildWithRolldown(target, { customConfig: customBuildConfig, isWatch, useSources });
       }
 
       console.log("Build completed successfully");
@@ -75,7 +75,7 @@ async function buildWithVite(
   await executeCommand(viteCommand, viteArgs, env);
 }
 
-async function buildWithRollup(
+async function buildWithRolldown(
   target: TargetType,
   options?: {
     customConfig?: string;
@@ -83,20 +83,20 @@ async function buildWithRollup(
     useSources?: boolean;
   },
 ): Promise<void> {
-  const rollupCommand = resolveRollup();
-  const rollupArgs = ["-c"];
+  const rolldownCommand = resolveRolldown();
+  const rolldownArgs = ["-c"];
   const configInfo = getConfigInfo(target);
   if (!configInfo) {
     throw new Error(`No build configuration found for target: ${target}`);
   }
   const configPath = getValidatedConfigPath(options?.customConfig, configInfo.filename);
 
-  rollupArgs.push(configPath);
+  rolldownArgs.push(configPath);
 
   if (options?.isWatch) {
-    rollupArgs.push("--watch");
+    rolldownArgs.push("--watch");
   }
 
   const env = options?.useSources ? { USE_SOURCES: "1" } : undefined;
-  await executeCommand(rollupCommand, rollupArgs, env);
+  await executeCommand(rolldownCommand, rolldownArgs, env);
 }
