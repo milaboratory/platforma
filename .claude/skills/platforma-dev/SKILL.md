@@ -1,0 +1,531 @@
+---
+name: platforma-dev
+description: Platforma SDK monorepo development — building packages, do-pack, using local SDK in blocks and desktop app, turbo filters, dev vs normal builds, pnpm overrides workflow, changesets, PRs, running local platforma server for tests.
+user-invocable: true
+---
+# Platforma SDK monorepo development
+
+## Quick reference
+
+| Task | Command | Run from |
+|:-----|:--------|:---------|
+| Install deps | `pnpm install` | monorepo root |
+| Build all | `pnpm build` | monorepo root |
+| Build all (dev) | `pnpm build:local` | monorepo root |
+| Pack all packages | `pnpm do-pack` | monorepo root |
+| Pack single package | `pnpm do-pack --filter="<pkg>"` | monorepo root |
+| Reset everything | `pnpm reset` | monorepo root |
+| Desktop app dev | `npm run build && npm run dev` | desktop app root |
+
+---
+
+## Building the monorepo
+
+### First-time setup
+
+```bash
+pnpm install
+pnpm build
+```
+
+Node >= 22 required. Package manager: pnpm 9.14+.
+
+### Build commands
+
+`pnpm build` runs `turbo run build`, which compiles every package in dependency order. Turbo caches outputs — unchanged packages are skipped on subsequent builds.
+
+`pnpm do-pack` runs `turbo run do-pack`, which first builds (if needed), then creates `package.tgz` in every package directory. These `.tgz` files are what gets consumed by blocks and the desktop app.
+
+### Selective builds with turbo filters
+
+Build or pack specific packages instead of the full monorepo. Turbo flags like `--filter` pass through from `pnpm do-pack` / `pnpm build`:
+
+```bash
+# Pack a single package (and its dependencies)
+pnpm do-pack --filter="@platforma-sdk/model"
+
+# Pack a package and all its dependencies
+pnpm do-pack --filter="@platforma-sdk/model..."
+
+# Pack a package and everything that depends on it (dependents)
+pnpm do-pack --filter="...@platforma-sdk/model"
+
+# Build a specific package only
+pnpm build --filter="@platforma-sdk/ui-vue"
+
+# Multiple packages
+pnpm do-pack --filter="@platforma-sdk/model" --filter="@platforma-sdk/ui-vue"
+```
+
+Filter syntax:
+- `--filter="pkg"` — the package + its dependencies
+- `--filter="pkg..."` — the package + all its dependencies (what it needs)
+- `--filter="...pkg"` — the package + all its dependents (what needs it)
+
+For iteration, pack only what you changed. Example: if you modified `sdk/model/`, run `pnpm do-pack --filter="@platforma-sdk/model"` instead of the full `pnpm do-pack`.
+
+### Force rebuild (bypass cache)
+
+```bash
+pnpm build --force                          # rebuild everything
+pnpm do-pack --filter="pkg" --force         # force-repack one package
+```
+
+### Key packages
+
+| Package | Path | Typical consumers |
+|:--------|:-----|:------------------|
+| `@platforma-sdk/model` | `sdk/model/` | Block model definitions |
+| `@platforma-sdk/ui-vue` | `sdk/ui-vue/` | Block UI (Vue components) |
+| `@platforma-sdk/workflow-tengo` | `sdk/workflow-tengo/` | Block workflows (Tengo) |
+| `@platforma-sdk/test` | `sdk/test/` | Block test utilities |
+| `@milaboratories/uikit` | `lib/ui/uikit/` | Desktop app, block UI |
+| `@milaboratories/pl-middle-layer` | `lib/node/pl-middle-layer/` | Desktop app |
+| `@milaboratories/pl-model-common` | `lib/model/common/` | Desktop app, blocks |
+| `@platforma-sdk/block-tools` | `tools/block-tools/` | Block build tooling |
+| `@platforma-sdk/tengo-builder` | `tools/tengo-builder/` | Workflow compilation |
+| `@platforma-sdk/package-builder` | `tools/package-builder/` | Software package builds |
+
+---
+
+## Using local SDK packages in blocks
+
+Blocks are separate pnpm workspaces. They pull SDK packages from the npm registry via `catalog:` versions in their `pnpm-workspace.yaml`. To develop with local (unpublished) SDK changes:
+
+### Step 1: Build and pack in the platforma monorepo
+
+```bash
+# In the platforma monorepo root
+pnpm do-pack             # pack everything
+# or selectively:
+pnpm do-pack --filter="@platforma-sdk/model" --filter="@platforma-sdk/ui-vue"
+```
+
+This creates `package.tgz` files in each package directory (e.g., `sdk/model/package.tgz`).
+
+### Step 2: Add pnpm overrides in the block
+
+In the block's root `package.json`, add (or uncomment) a `pnpm.overrides` section pointing to the `.tgz` files:
+
+```json
+{
+  "pnpm": {
+    "overrides": {
+      "@platforma-sdk/model": "file:/path/to/platforma/sdk/model/package.tgz",
+      "@platforma-sdk/ui-vue": "file:/path/to/platforma/sdk/ui-vue/package.tgz"
+    }
+  }
+}
+```
+
+Use absolute paths or relative paths from the block root (e.g., `file:../../core/platforma/sdk/model/package.tgz`).
+
+**Convention:** Most blocks keep commented-out overrides under `"//pnpm"` or `"//pnpm2"` keys — these are inactive JSON that serve as templates. Copy the structure to a real `"pnpm"` key and update the paths to your local environment.
+
+**Override all changed packages.** If you modified multiple packages in the platforma monorepo, override all of them in the block — not just one. SDK packages have internal dependencies; overriding `@platforma-sdk/model` to a newer version while keeping `@platforma-sdk/ui-vue` at the old registry version causes type mismatches and build failures. The linked trio (`model`, `ui-vue`, `test`) should always be overridden together. Similarly, if you changed `@milaboratories/uikit` alongside `@platforma-sdk/ui-vue`, override both.
+
+### Step 3: Install and build
+
+```bash
+pnpm install    # resolves overrides, updates lockfile
+pnpm build      # turbo detects lockfile change, rebuilds affected packages
+```
+
+No `--force` is needed. When `pnpm install` resolves overrides pointing to local `.tgz` files, the lockfile changes (different integrity hashes). Turbo detects the lockfile change and invalidates the cache automatically.
+
+### Step 4: Iterate
+
+After making more changes in the platforma monorepo:
+
+```bash
+# In platforma monorepo — rebuild and repack changed packages
+pnpm do-pack --filter="@platforma-sdk/model"
+
+# In the block — reinstall and rebuild
+pnpm install    # detects changed tgz content, updates lockfile
+pnpm build      # turbo cache invalidated, rebuilds
+```
+
+pnpm tracks the integrity hash of `file:` dependencies. When the `.tgz` content changes (even at the same path), `pnpm install` updates the lockfile, and turbo rebuilds.
+
+### Cleanup before committing
+
+Remove (or comment out) the `pnpm.overrides` section and restore the lockfile:
+
+```bash
+# Edit package.json: remove or comment out pnpm.overrides
+# Then:
+pnpm install    # regenerates lockfile without overrides
+```
+
+Never commit `pnpm.overrides` pointing to local paths — CI will fail.
+
+---
+
+## Using local SDK packages in the desktop app
+
+The desktop app (`platforma-desktop-app/`) uses **npm** (not pnpm). It consumes platforma SDK packages as regular npm dependencies from the registry.
+
+### Step 1: Build and pack in the platforma monorepo
+
+```bash
+# In the platforma monorepo root
+pnpm do-pack
+```
+
+### Step 2: Install local `.tgz` files
+
+```bash
+# In the desktop app root (adjust relative paths to your layout)
+npm install \
+      ../platforma/lib/ui/uikit/package.tgz \
+      ../platforma/lib/node/pl-middle-layer/package.tgz \
+      ../platforma/lib/node/pl-tree/package.tgz \
+      ../platforma/lib/node/computable/package.tgz \
+      ../platforma/lib/model/middle-layer/package.tgz \
+      ../platforma/lib/model/common/package.tgz \
+      ../platforma/sdk/model/package.tgz \
+      ../platforma/sdk/test/package.tgz \
+      ../platforma/lib/node/pl-drivers/package.tgz
+```
+
+`npm install` rewrites version specifiers in `package.json` from registry versions (e.g., `"2.6.1"`) to local paths (e.g., `"file:../platforma/lib/ui/uikit/package.tgz"`) and updates `package-lock.json` accordingly.
+
+**Install all changed packages together.** If you modified multiple packages in the platforma monorepo, include all their `.tgz` files in a single `npm install` command. Partial installs leave mismatched internal dependencies and cause build errors. When in doubt, install the full set listed above.
+
+### Step 3: Iterate
+
+After making more changes in the platforma monorepo:
+
+```bash
+# In platforma monorepo
+pnpm do-pack    # or selective filter
+
+# In desktop app — re-install the same tgz paths
+npm install ../platforma/lib/ui/uikit/package.tgz  # etc.
+```
+
+npm detects content changes in the `.tgz` files and updates `package-lock.json` with new integrity hashes.
+
+### Running the desktop app in development mode
+
+The desktop app uses Vite + Electron with hot-reload watchers. On a fresh checkout (or after `npm run clean-build`), the internal packages need to be built before the dev server can start:
+
+```bash
+cd /path/to/platforma-desktop-app
+npm install
+npm run build       # build all internal packages (core, ipc, main, etc.)
+npm run dev          # starts Vite dev server + Electron with hot reload
+```
+
+On subsequent runs, `npm run dev` is sufficient — it watches and rebuilds internal packages automatically. The initial `npm run build` is only needed once (or after cleaning the `dist/` directories).
+
+If you only need to unblock the dev server quickly, `npm run build:core` is the minimum — the renderer Vite dev server requires `@platforma/core` to be built for dependency pre-bundling.
+
+### Cleanup before committing
+
+Reset `package.json` and `package-lock.json` to their original state:
+
+```bash
+git checkout -- package.json package-lock.json
+npm install
+```
+
+Never commit local `.tgz` references.
+
+---
+
+## Normal build vs dev build
+
+The difference applies to **software packages** — binary tools (MiXCR, ptexter, etc.) that run on the platform backend.
+
+### Normal build (`pnpm build`)
+
+Software descriptors (`sw.json`) reference the **remote registry** using the version from `package.json`. The platform downloads the published software from the registry at runtime.
+
+Use normal build when:
+- You only changed **workflow**, **model**, or **UI** code (not the underlying software)
+- You want to test on a **remote server** — the server pulls published software versions
+- The published software version matches what you need
+
+### Dev build (`pnpm build:dev` / `PL_PKG_DEV=local`)
+
+Software descriptors reference **local file paths**. The platform loads software from the local filesystem.
+
+Use dev build when:
+- You changed the software itself and need to test locally
+- You need to run with the **desktop app** using local software binaries
+
+In the platforma monorepo:
+```bash
+pnpm build:local          # same as PL_PKG_DEV=local pnpm build
+pnpm do-pack:local        # same as PL_PKG_DEV=local pnpm do-pack
+```
+
+In blocks:
+```bash
+pnpm build:dev            # same as env PL_PKG_DEV=local turbo run build
+```
+
+The block's `turbo.json` includes `PL_PKG_DEV` in the build task's `env` array, so turbo invalidates the cache when switching between normal and dev modes.
+
+---
+
+## Running a local platforma server for tests
+
+Integration tests in the monorepo (e.g., `etc/blocks/model-test/test/`) require a running platforma backend. This section explains how to download, run, and connect to a local server.
+
+### Download the server binary
+
+In a multi-repo workspace, store the server outside any git repo (e.g., at the workspace root). In a standalone platforma checkout, use a gitignored `.pl-server/` directory.
+
+```bash
+# Pick the directory for the server binary and its data
+PL_SERVER_DIR=/path/to/workspace/.pl-server   # adjust to your layout
+
+mkdir -p "$PL_SERVER_DIR"
+```
+
+Download the binary for your platform:
+
+| OS / Arch | URL |
+|:----------|:----|
+| macOS ARM64 (Apple Silicon) | `https://dl.platforma.bio/software/platforma-backend/pl-macos-arm64.tgz` |
+| macOS AMD64 (Intel) | `https://dl.platforma.bio/software/platforma-backend/pl-macos-amd64.tgz` |
+| Linux AMD64 | `https://dl.platforma.bio/software/platforma-backend/pl-linux-amd64.tgz` |
+
+```bash
+curl -L -o "$PL_SERVER_DIR/pl.tgz" https://dl.platforma.bio/software/platforma-backend/pl-macos-arm64.tgz
+cd "$PL_SERVER_DIR" && tar xzf pl.tgz
+```
+
+The binary is at `$PL_SERVER_DIR/binaries/platforma`.
+
+### Start the server
+
+The server requires a license key. Set `MI_LICENSE` in your shell environment (e.g., in `~/.zshrc`). The test framework reads this variable automatically.
+
+```bash
+PL_SERVER_DIR=/path/to/workspace/.pl-server   # same as above
+PLATFORMA_ROOT=/path/to/platforma              # path to the platforma monorepo
+
+"$PL_SERVER_DIR/binaries/platforma" \
+    --license "$MI_LICENSE" \
+    --main-root "$PL_SERVER_DIR/data" \
+    --data-library-fs=library="$PLATFORMA_ROOT/assets"
+```
+
+Key flags:
+- `--license "$MI_LICENSE"` — license from environment
+- `--main-root "$PL_SERVER_DIR/data"` — self-contained data directory (database, packages, work dirs) — keeps everything in one place instead of scattering across `$HOME`
+- `--data-library-fs=library=<path>` — mounts the monorepo's `assets/` directory as a data library (test fixtures live there)
+
+On successful start, the server prints:
+
+```
+API  address:  http://127.0.0.1:6345?token=<TOKEN>
+```
+
+The token changes on every start. Copy it for use in tests.
+
+### Run tests
+
+Tests need three environment variables:
+
+```bash
+cd /path/to/platforma
+
+export PL_ADDRESS=http://127.0.0.1:6345/
+export PL_TEST_USER=default
+export PL_TEST_PASSWORD=<TOKEN>    # the token from server startup output
+
+# Run a specific test package
+(cd etc/blocks/model-test/test && pnpm test)
+
+# Or use turbo to run all tests
+pnpm test:local
+```
+
+`pnpm test:local` sets `PL_PKG_DEV=local` and runs all tests via turbo. The `PL_ADDRESS`, `PL_TEST_USER`, `PL_TEST_PASSWORD`, and `MI_LICENSE` environment variables are passed through to test processes via turbo's `passThroughEnv` configuration.
+
+### Stop the server
+
+Press `Ctrl+C` in the terminal where the server is running, or `kill <PID>`.
+
+The data in `$PL_SERVER_DIR/data/` persists between runs. To start fresh, delete the `data/` directory.
+
+---
+
+## Changesets and PRs
+
+Every PR to the platforma monorepo **must** include a changeset. Without it, no version bump or release happens.
+
+### Creating a changeset
+
+Add a markdown file in `.changeset/` (use any kebab-case name):
+
+```markdown
+---
+"@platforma-sdk/model": minor
+"@platforma-sdk/ui-vue": minor
+---
+
+Type-safe `usePlugin` composable with `PluginHandle` branded type.
+```
+
+The YAML frontmatter lists affected packages with bump type (`patch` / `minor` / `major`). The body is a human-readable description of the change.
+
+### Package naming
+
+Use the full npm package name (including scope):
+- `"@platforma-sdk/model"`, `"@platforma-sdk/ui-vue"`, `"@platforma-sdk/test"`
+- `"@milaboratories/uikit"`, `"@milaboratories/pl-middle-layer"`, etc.
+- `"@milaboratories/build-configs"`, `"@milaboratories/ts-builder"`, etc.
+
+### Linked packages
+
+`@platforma-sdk/model`, `@platforma-sdk/ui-vue`, and `@platforma-sdk/test` are **linked** in the changeset config. When one bumps, the others bump together. Internal dependency updates propagate as `patch`.
+
+### Empty changesets
+
+If a PR has no user-facing changes (CI fixes, internal refactors), use an empty changeset:
+
+```markdown
+---
+---
+```
+
+### Examples
+
+Bug fix in one package:
+```markdown
+---
+"@milaboratories/pl-model-common": patch
+---
+
+Version bump
+```
+
+Feature spanning multiple packages:
+```markdown
+---
+"@milaboratories/build-configs": minor
+"@milaboratories/uikit": patch
+"@platforma-sdk/ui-vue": patch
+---
+
+Replace css-injected-by-js with lib-inject-css for per-component CSS imports
+```
+
+### Pre-commit checklist
+
+After `pnpm install && pnpm build`, **before committing**, run `git status` and verify:
+
+1. **No unstaged changes remain.** Every modified file must be either staged or intentionally excluded. If `pnpm install` modified `pnpm-lock.yaml`, it must be committed.
+2. **`pnpm-lock.yaml` is included** whenever `pnpm-workspace.yaml` changed. CI rejects PRs without matching lock file updates.
+3. **Changeset file is included.** Every PR needs one in `.changeset/`.
+4. **After pushing**, run `git diff --name-only origin/main..HEAD` to confirm the PR contains exactly the files you expect.
+
+---
+
+## Troubleshooting
+
+### Build fails with missing binaries (`rolldown`, `oxfmt`, etc.)
+
+Run `pnpm install` — dev dependencies with CLI binaries may need to be installed.
+
+### Turbo uses stale cache after changing overrides
+
+This should not happen. `pnpm install` changes the lockfile when overrides change, which invalidates turbo cache. If it does happen, use `--force`:
+
+```bash
+pnpm build --force
+```
+
+### Block build fails after adding overrides for only some packages
+
+Override **all related packages** together. SDK packages have internal dependencies — overriding `@platforma-sdk/model` to a newer version while keeping `@platforma-sdk/ui-vue` at the old version causes type mismatches. Override the linked trio (`model`, `ui-vue`, `test`) together.
+
+### `pnpm install` warns about unmet peer dependencies
+
+Expected when mixing SDK versions. The warnings are usually safe to ignore during local development. Address them if the build fails.
+
+---
+
+## Common workflows
+
+### Developing an SDK feature and testing in a block
+
+```bash
+# 1. Make changes in platforma monorepo (e.g., sdk/model/src/)
+
+# 2. Build and pack the changed packages (and anything they depend on)
+cd /path/to/platforma
+pnpm do-pack --filter="@platforma-sdk/model" --filter="@platforma-sdk/ui-vue" --filter="@platforma-sdk/test"
+
+# 3. Set up overrides in the block's package.json for ALL changed packages
+#    (add pnpm.overrides section, see above)
+
+# 4. Install and build the block
+cd /path/to/my-block
+pnpm install
+pnpm build
+
+# 5. Test the block (use desktop app with devBlocksPaths setting)
+
+# 6. Iterate: change code in platforma -> do-pack -> pnpm install in block -> pnpm build
+```
+
+### Testing SDK changes in the desktop app
+
+```bash
+# 1. Build and pack in platforma monorepo
+cd /path/to/platforma
+pnpm do-pack
+
+# 2. Install ALL changed tgz files in desktop app
+cd /path/to/platforma-desktop-app
+npm install \
+  ../platforma/sdk/model/package.tgz \
+  ../platforma/lib/ui/uikit/package.tgz \
+  ../platforma/lib/node/pl-middle-layer/package.tgz
+  # ... include every package you modified
+
+# 3. Build internal packages and run the desktop app
+npm run build       # needed once after clean checkout or tgz install
+npm run dev
+
+# 4. Iterate: change code -> do-pack -> npm install tgz -> restart dev
+
+# 5. Cleanup before committing
+git checkout -- package.json package-lock.json
+npm install
+```
+
+### Running integration tests locally
+
+```bash
+# 1. Start platforma server (in a separate terminal)
+PL_SERVER_DIR=/path/to/workspace/.pl-server
+PLATFORMA_ROOT=/path/to/platforma
+
+"$PL_SERVER_DIR/binaries/platforma" \
+    --license "$MI_LICENSE" \
+    --main-root "$PL_SERVER_DIR/data" \
+    --data-library-fs=library="$PLATFORMA_ROOT/assets"
+
+# 2. Copy the token from the server output
+#    (shown in: API address: http://127.0.0.1:6345?token=<TOKEN>)
+
+# 3. Run tests
+cd /path/to/platforma
+export PL_ADDRESS=http://127.0.0.1:6345/
+export PL_TEST_USER=default
+export PL_TEST_PASSWORD=<TOKEN>
+
+# Single test package:
+(cd etc/blocks/model-test/test && pnpm test)
+
+# All tests:
+pnpm test:local
+```
