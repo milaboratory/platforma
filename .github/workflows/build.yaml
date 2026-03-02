@@ -68,7 +68,7 @@ jobs:
   # 3. Build
   # ──────────────────────────────────────────────
   build:
-    runs-on: [self-hosted, dev-pl-sdk]
+    runs-on: dev-pl-sdk
     needs: [init]
     steps:
       - name: Generate GitHub App token
@@ -116,7 +116,7 @@ jobs:
   # 4. Test
   # ──────────────────────────────────────────────
   test:
-    runs-on: [self-hosted, dev-pl-sdk]
+    runs-on: dev-pl-sdk
     needs: [build]
     steps:
       - name: Generate GitHub App token
@@ -198,7 +198,7 @@ jobs:
   # 5. Publish — only on main
   # ──────────────────────────────────────────────
   publish:
-    runs-on: [self-hosted, dev-pl-sdk]
+    runs-on: dev-pl-sdk
     needs: [init, build, test, check-changesets]
     if: ${{ github.ref_name == 'main' && !failure() && !cancelled() && (needs.check-changesets.result == 'success' || needs.check-changesets.result == 'skipped') }}
     steps:
