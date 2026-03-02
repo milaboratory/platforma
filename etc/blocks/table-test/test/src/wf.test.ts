@@ -1,6 +1,6 @@
+import type { PTableHandle } from "@platforma-sdk/model";
 import { blockTest } from "@platforma-sdk/test";
 import { blockSpec } from "this-block";
-import type { PTableHandle } from "../../../../../lib/model/common/dist/drivers";
 
 blockTest(
   "workflow produces table from PFrame",

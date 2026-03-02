@@ -16,8 +16,8 @@
     "./configs/*": "./dist/configs/*"
   },
   "scripts": {
-    "build": "rollup -c",
-    "watch": "rollup -c --watch",
+    "build": "rolldown -c",
+    "watch": "rolldown -c --watch",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "check": "oxlint && oxfmt --check && tsc --noEmit",
     "fmt": "oxlint --fix && oxfmt"
@@ -29,11 +29,11 @@
     "jsonc-parser": "catalog:",
     "oxfmt": "0.35.0",
     "oxlint": "1.43.0",
-    "rollup": "catalog:",
+    "rolldown": "^1.0.0-rc.5",
+    "rolldown-plugin-dts": "^0.22.1",
     "rollup-plugin-copy": "^3.5.0",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vue-tsc": "catalog:"
-  },
-  "devDependencies": {}
+  }
 }
