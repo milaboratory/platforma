@@ -32,7 +32,7 @@ jobs:
   # 2. Build (full, non-local)
   # ──────────────────────────────────────────────
   build:
-    runs-on: [self-hosted, dev-pl-sdk]
+    runs-on: dev-pl-sdk
     needs: [init]
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +58,7 @@ jobs:
   # 3. Test (no cache — force re-run all tests)
   # ──────────────────────────────────────────────
   test:
-    runs-on: [self-hosted, dev-pl-sdk]
+    runs-on: dev-pl-sdk
     needs: [build]
     steps:
       - uses: actions/checkout@v4
