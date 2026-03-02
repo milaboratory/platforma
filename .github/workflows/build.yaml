@@ -1,77 +1,349 @@
 name: Build and Test NPM packages
+
 on:
   merge_group:
   pull_request:
     types: [opened, reopened, synchronize]
     branches:
-      - "main"
+      - main
   push:
     branches:
-      - "main"
+      - main
   workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  packages: write
+  contents: write
+  pull-requests: write
+  issues: read
+
+env:
+  BODY_LIMIT: '1048576000'
+
 jobs:
+  # ──────────────────────────────────────────────
+  # 1. Init — determine version and release status
+  # ──────────────────────────────────────────────
   init:
     runs-on: ubuntu-latest
+    outputs:
+      is-release: ${{ steps.context.outputs.is-release }}
+      current-version: ${{ steps.context.outputs.current-version }}
     steps:
-      - uses: milaboratory/github-ci/actions/context/init@v4
+      - id: context
+        uses: milaboratory/github-ci/actions/context/init@v4
         with:
           version-canonize: false
           branch-versioning: main
-  run:
-    needs:
-      - init
-    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4
-    with:
-      app-name: Platforma SDK
-      app-name-slug: "platforma-sdk"
-      gha-runner-label: "dev-pl-sdk"
-      node-version: "22.x"
-      team-id: "ci-010101"
-      build-script-name: "ci:build:local"
-      build-before-publish-script-name: "ci:build"
-      test: true
-      test-coverage: true
-      test-coverage-reports: "**/coverage/lcov.info"
-      test-results-reports: "**/test-report.junit.xml"
-      test-dry-run-script-name: "test:local+dry-run"
-      test-script-name: "ci:test:local"
-      publish-to-public: "true"
-      cache-monitoring: true
-      cache-monitoring-duration-minutes: 10
-      pnpm-recursive-build: false
-      pnpm-recursive-tests: false
-      npmrc-config: |
-        {
-          "registries": {
-            "https://registry.npmjs.org/": {
-              "scopes": ["milaboratories", "platforma-sdk"],
-              "tokenVar": "NPMJS_TOKEN"
-            },
-            "https://npm.pkg.github.com/": {
-              "scopes": ["milaboratory"],
-              "tokenVar": "NODE_AUTH_TOKEN"
+
+  # ──────────────────────────────────────────────
+  # 2. Check changesets — validate on main / merge queue
+  # ──────────────────────────────────────────────
+  check-changesets:
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'main' || github.event_name == 'merge_group'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable pnpm
+        run: corepack enable pnpm
+
+      - name: Install dependencies
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Check changeset status
+        run: pnpm changeset status --since=origin/main
+
+  # ──────────────────────────────────────────────
+  # 3. Build
+  # ──────────────────────────────────────────────
+  build:
+    runs-on: [self-hosted, dev-pl-sdk]
+    needs: [check-changesets]
+    if: ${{ !failure() && !cancelled() && (needs.check-changesets.result == 'success' || needs.check-changesets.result == 'skipped') }}
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_ZEN_APP_ID }}
+          private-key: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          npmjs-token: ${{ secrets.NPMJS_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
+          aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
+          turbo-s3-bucket: ${{ secrets.AWS_CI_TURBOREPO_S3_BUCKET }}
+          quay-username: ${{ secrets.QUAY_USERNAME }}
+          quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+      - name: Check pnpm-workspace.yaml consistency
+        run: |
+          if git diff --name-only origin/main..HEAD | grep -q -E '^pnpm-workspace.yaml$'; then
+            if ! git diff --name-only origin/main..HEAD | grep -q -E '^pnpm-lock.yaml$'; then
+              echo "::error::Changes in pnpm-workspace.yaml detected, but no updates in pnpm-lock.yaml"
+              exit 1
+            fi
+          fi
+
+      - name: Run changeset version
+        if: (github.event_name == 'push' && github.ref_name == 'main') || github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        run: pnpm run version-packages
+
+      - name: Build
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PL_DOCKER_REGISTRY_PUSH_TO: 'quay.io/milaboratories/pl-containers'
+        run: pnpm run ci:build:local
+
+  # ──────────────────────────────────────────────
+  # 4. Test
+  # ──────────────────────────────────────────────
+  test:
+    runs-on: [self-hosted, dev-pl-sdk]
+    needs: [build]
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_ZEN_APP_ID }}
+          private-key: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          npmjs-token: ${{ secrets.NPMJS_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
+          aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
+          turbo-s3-bucket: ${{ secrets.AWS_CI_TURBOREPO_S3_BUCKET }}
+          quay-username: ${{ secrets.QUAY_USERNAME }}
+          quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+      - name: Restore changeset version state
+        if: (github.event_name == 'push' && github.ref_name == 'main') || github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        run: pnpm run version-packages
+
+      - name: Rebuild from Turbo cache
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PL_DOCKER_REGISTRY_PUSH_TO: 'quay.io/milaboratories/pl-containers'
+        run: pnpm run ci:build:local
+
+      - name: Check test cache (dry-run)
+        id: dry-run
+        run: |
+          pnpm run test:local+dry-run > ./test-dry-run.json || true
+          SKIP_TESTS=$(tail -n +5 ./test-dry-run.json | jq -r '.tasks | map(select(.task == "test")) | all((.cache.status == "HIT") or (.cache.status == "MISS" and .command == "<NONEXISTENT>"))' 2>/dev/null || echo "false")
+          echo "skip=$SKIP_TESTS" >> "$GITHUB_OUTPUT"
+          echo "Test cache skip: $SKIP_TESTS"
+
+      - name: Launch Platforma backend
+        if: steps.dry-run.outputs.skip != 'true'
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: 'true'
+
+      - name: Start Platforma Docker
+        if: steps.dry-run.outputs.skip != 'true'
+        uses: milaboratory/github-ci/actions/docker/pl-compose@v4
+        with:
+          pl-docker-registry: ${{ format('{0}/{1}', steps.ecr-login.outputs.registry, 'pl') }}
+          pl-docker-tag: main
+          pl-test-assets-dir: assets
+          pl-log-level: info
+
+      - name: Run tests
+        if: steps.dry-run.outputs.skip != 'true'
+        env:
+          PL_ADDRESS: 'http://127.0.0.1:6345'
+          PL_TEST_USER: ${{ secrets.PL_CI_TEST_USER }}
+          PL_TEST_PASSWORD: ${{ secrets.PL_CI_TEST_PASSWORD }}
+          PL_LICENSE: ${{ secrets.MI_LICENSE }}
+          MI_LICENSE: ${{ secrets.MI_LICENSE }}
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm run ci:test:local
+
+      - name: Upload coverage
+        if: always()
+        uses: milaboratory/github-ci/actions/node/upload-coverage@v4
+        with:
+          test-coverage-reports: '**/coverage/lcov.info'
+          test-results-reports: '**/test-report.junit.xml'
+
+  # ──────────────────────────────────────────────
+  # 5. Publish — only on main
+  # ──────────────────────────────────────────────
+  publish:
+    runs-on: [self-hosted, dev-pl-sdk]
+    needs: [init, build, test]
+    if: github.ref_name == 'main'
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_ZEN_APP_ID }}
+          private-key: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          npmjs-token: ${{ secrets.NPMJS_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
+          aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
+          turbo-s3-bucket: ${{ secrets.AWS_CI_TURBOREPO_S3_BUCKET }}
+          quay-username: ${{ secrets.QUAY_USERNAME }}
+          quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+      - name: Build for publish (full, non-local)
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm run ci:build
+
+      - name: Security scan
+        uses: milaboratory/github-ci/actions/docker/scan-pnpm-repo@v4
+
+      - name: Check for auto-generated changes
+        id: check-changes
+        run: |
+          TRACKED=$(git diff --diff-filter=ACMUXTR --name-only)
+          UNTRACKED=$(git ls-files --others --exclude-standard)
+          DELETED=$(git ls-files --deleted)
+
+          if [ -n "$TRACKED" ] || [ -n "$UNTRACKED" ] || [ -n "$DELETED" ]; then
+            echo "has-changes=1" >> "$GITHUB_OUTPUT"
+            echo "Auto-generated changes detected"
+          else
+            echo "has-changes=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get GitHub App User ID
+        if: steps.check-changes.outputs.has-changes == '1'
+        id: get-user-id
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+
+      - name: Commit auto-generated changes
+        if: steps.check-changes.outputs.has-changes == '1'
+        env:
+          USER_ID: ${{ steps.get-user-id.outputs.user-id }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          git config --global user.name "${APP_SLUG}[bot]"
+          git config --global user.email "${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git checkout main
+          git add .
+          git commit -m "Auto-generated changes"
+          git push
+
+      - name: Publish packages (public)
+        if: steps.check-changes.outputs.has-changes == '0'
+        uses: changesets/action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+        with:
+          publish: pnpm -r publish --no-git-checks --access public
+
+  # ──────────────────────────────────────────────
+  # 6. Notify — Slack
+  # ──────────────────────────────────────────────
+  notify:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [init, check-changesets, build, test, publish]
+    steps:
+      - id: search-tags
+        uses: milaboratory/github-ci/actions/strings/json-list@v4
+        with:
+          input: release
+
+      - uses: milaboratory/github-ci/blocks/notify/slack/release@v4
+        with:
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          slack-channel: ${{ secrets.SLACK_PL_SDK_CHANNEL }}
+          job-status: |
+            ${{ needs.build.result }}
+            ${{ needs.test.result }}
+            ${{ needs.publish.result }}
+            ${{ needs.check-changesets.result }}
+          product-name: Platforma SDK
+          search-tags: ${{ steps.search-tags.outputs.result }}
+
+  # ──────────────────────────────────────────────
+  # 7. Monitor merge queue duration
+  # ──────────────────────────────────────────────
+  monitor-merge-queue:
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'merge_group'
+    needs: [test]
+    steps:
+      - name: Check workflow duration
+        id: check-duration
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DURATION_THRESHOLD_MINUTES: '10'
+        run: |
+          RUN_STARTED_AT=$(gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" --jq '.run_started_at')
+          START_EPOCH=$(date -d "${RUN_STARTED_AT}" +%s)
+          CURRENT_EPOCH=$(date +%s)
+          DURATION_MINUTES=$(( (CURRENT_EPOCH - START_EPOCH) / 60 ))
+
+          echo "Duration: ${DURATION_MINUTES} minutes (threshold: ${DURATION_THRESHOLD_MINUTES})"
+
+          if [ "${DURATION_MINUTES}" -gt "${DURATION_THRESHOLD_MINUTES}" ]; then
+            echo "::warning::Merge queue run took ${DURATION_MINUTES} minutes, exceeding threshold"
+            echo "alert=true" >> "$GITHUB_OUTPUT"
+            echo "duration=${DURATION_MINUTES}" >> "$GITHUB_OUTPUT"
+          else
+            echo "alert=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send slow merge queue alert
+        if: steps.check-duration.outputs.alert == 'true'
+        uses: milaboratory/github-ci/actions/notify/slack/send@v4
+        with:
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          payload: |
+            {
+              "channel": "${{ secrets.SLACK_PL_SDK_CHANNEL }}",
+              "text": "Slow Merge Queue: ${{ github.repository }} took ${{ steps.check-duration.outputs.duration }} min (threshold: 10 min)",
+              "blocks": [
+                {"type": "header", "text": {"type": "plain_text", "text": "Slow Merge Queue Alert"}},
+                {"type": "section", "text": {"type": "mrkdwn", "text": "*${{ github.repository }}* merge queue took *${{ steps.check-duration.outputs.duration }} minutes*"}},
+                {"type": "section", "text": {"type": "mrkdwn", "text": "This may indicate Turbo cache issues or infrastructure problems."}}
+              ]
             }
-          }
-        }
-      env: |
-        { "BODY_LIMIT": "1048576000" }
-    secrets:
-      env: |
-        { "PL_LICENSE": ${{ toJSON(secrets.MI_LICENSE) }},
-          "MI_LICENSE": ${{ toJSON(secrets.MI_LICENSE) }},
-          "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
-          "PL_CI_TEST_PASSWORD": ${{ toJSON(secrets.PL_CI_TEST_PASSWORD) }},
-
-          "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
-          "AWS_CI_IAM_MONOREPO_SIMPLE_ROLE": ${{ toJSON(secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE) }},
-          "AWS_CI_TURBOREPO_S3_BUCKET": ${{ toJSON(secrets.AWS_CI_TURBOREPO_S3_BUCKET) }},
-
-          "PL_REGISTRY_PLATFORMA_OPEN_UPLOAD_URL": ${{ toJSON(secrets.PL_REGISTRY_PLOPEN_UPLOAD_URL) }},
-          "QUAY_USERNAME": ${{ toJSON(secrets.QUAY_USERNAME) }},
-          "QUAY_ROBOT_TOKEN": ${{ toJSON(secrets.QUAY_ROBOT_TOKEN) }} }
-
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      SLACK_CHANNEL: ${{ secrets.SLACK_PL_SDK_CHANNEL }}
-
-      GH_ZEN_APP_ID: ${{ secrets.GH_ZEN_APP_ID }}
-      GH_ZEN_APP_PRIVATE_KEY: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}

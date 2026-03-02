@@ -1,67 +1,136 @@
 name: Build and Run all tests without cache
+
 on:
   schedule:
-    - cron: "0 3 * * *"
+    - cron: '0 3 * * *'
   workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  BODY_LIMIT: '1048576000'
+
 jobs:
+  # ──────────────────────────────────────────────
+  # 1. Init
+  # ──────────────────────────────────────────────
   init:
     runs-on: ubuntu-latest
+    outputs:
+      is-release: ${{ steps.context.outputs.is-release }}
+      current-version: ${{ steps.context.outputs.current-version }}
     steps:
-      - uses: milaboratory/github-ci/actions/context/init@v4
+      - id: context
+        uses: milaboratory/github-ci/actions/context/init@v4
         with:
           version-canonize: false
           branch-versioning: main
-  run:
-    needs:
-      - init
-    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4
-    with:
-      app-name: Platforma SDK
-      app-name-slug: "platforma-sdk"
-      gha-runner-label: "dev-pl-sdk"
-      node-version: "22.x"
-      build-script-name: "ci:build"
-      test: true
-      test-coverage: true
-      test-coverage-reports: "**/coverage/lcov.info"
-      test-results-reports: "**/test-report.junit.xml"
-      test-dry-run-script-name: "test:local+dry-run"
-      test-script-name: "ci:test:local+no-cache"
-      test-skip-dry-run: "true"
-      publish-to-public: "true"
-      pnpm-recursive-build: false
-      pnpm-recursive-tests: false
-      npmrc-config: |
-        {
-          "registries": {
-            "https://registry.npmjs.org/": {
-              "scopes": ["milaboratories", "platforma-sdk"],
-              "tokenVar": "NPMJS_TOKEN"
-            },
-            "https://npm.pkg.github.com/": {
-              "scopes": ["milaboratory"],
-              "tokenVar": "NODE_AUTH_TOKEN"
-            }
-          }
-        }
-    secrets:
-      env: |
-        { "PL_LICENSE": ${{ toJSON(secrets.MI_LICENSE) }},
-          "MI_LICENSE": ${{ toJSON(secrets.MI_LICENSE) }},
 
-          "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
-          "PL_CI_TEST_PASSWORD": ${{ toJSON(secrets.PL_CI_TEST_PASSWORD) }},
+  # ──────────────────────────────────────────────
+  # 2. Build (full, non-local)
+  # ──────────────────────────────────────────────
+  build:
+    runs-on: [self-hosted, dev-pl-sdk]
+    needs: [init]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-          "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
-          "AWS_CI_IAM_MONOREPO_SIMPLE_ROLE": ${{ toJSON(secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE) }},
-          "AWS_CI_TURBOREPO_S3_BUCKET": ${{ toJSON(secrets.AWS_CI_TURBOREPO_S3_BUCKET) }},
+      - uses: ./.github/actions/setup
+        with:
+          npmjs-token: ${{ secrets.NPMJS_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
+          turbo-s3-bucket: ${{ secrets.AWS_CI_TURBOREPO_S3_BUCKET }}
+          quay-username: ${{ secrets.QUAY_USERNAME }}
+          quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
 
-          "PL_REGISTRY_PLATFORMA_OPEN_UPLOAD_URL": ${{ toJSON(secrets.PL_REGISTRY_PLOPEN_UPLOAD_URL) }},
-          "QUAY_USERNAME": ${{ toJSON(secrets.QUAY_USERNAME) }},
-          "QUAY_ROBOT_TOKEN": ${{ toJSON(secrets.QUAY_ROBOT_TOKEN) }} }
+      - name: Build
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm run ci:build
 
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      SLACK_CHANNEL: ${{ secrets.SLACK_PL_SDK_CHANNEL }}
+  # ──────────────────────────────────────────────
+  # 3. Test (no cache — force re-run all tests)
+  # ──────────────────────────────────────────────
+  test:
+    runs-on: [self-hosted, dev-pl-sdk]
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      GH_ZEN_APP_ID: ${{ secrets.GH_ZEN_APP_ID }}
-      GH_ZEN_APP_PRIVATE_KEY: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}
+      - uses: ./.github/actions/setup
+        with:
+          npmjs-token: ${{ secrets.NPMJS_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
+          turbo-s3-bucket: ${{ secrets.AWS_CI_TURBOREPO_S3_BUCKET }}
+          quay-username: ${{ secrets.QUAY_USERNAME }}
+          quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+      - name: Rebuild from Turbo cache
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm run ci:build
+
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: 'true'
+
+      - name: Start Platforma Docker
+        uses: milaboratory/github-ci/actions/docker/pl-compose@v4
+        with:
+          pl-docker-registry: ${{ format('{0}/{1}', steps.ecr-login.outputs.registry, 'pl') }}
+          pl-docker-tag: main
+          pl-test-assets-dir: assets
+          pl-log-level: info
+
+      - name: Run all tests (no cache)
+        env:
+          PL_ADDRESS: 'http://127.0.0.1:6345'
+          PL_TEST_USER: ${{ secrets.PL_CI_TEST_USER }}
+          PL_TEST_PASSWORD: ${{ secrets.PL_CI_TEST_PASSWORD }}
+          PL_LICENSE: ${{ secrets.MI_LICENSE }}
+          MI_LICENSE: ${{ secrets.MI_LICENSE }}
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm run ci:test:local+no-cache
+
+      - name: Upload coverage
+        if: always()
+        uses: milaboratory/github-ci/actions/node/upload-coverage@v4
+        with:
+          test-coverage-reports: '**/coverage/lcov.info'
+          test-results-reports: '**/test-report.junit.xml'
+
+  # ──────────────────────────────────────────────
+  # 4. Notify
+  # ──────────────────────────────────────────────
+  notify:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [build, test]
+    steps:
+      - id: search-tags
+        uses: milaboratory/github-ci/actions/strings/json-list@v4
+        with:
+          input: nightly
+
+      - uses: milaboratory/github-ci/blocks/notify/slack/release@v4
+        with:
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          slack-channel: ${{ secrets.SLACK_PL_SDK_CHANNEL }}
+          job-status: |
+            ${{ needs.build.result }}
+            ${{ needs.test.result }}
+          product-name: Platforma SDK (nightly)
+          search-tags: ${{ steps.search-tags.outputs.result }}

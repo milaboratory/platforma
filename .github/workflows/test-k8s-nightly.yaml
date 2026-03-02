@@ -1,56 +1,152 @@
 name: Test K8S Nightly (without cache)
+
 on:
   schedule:
     - cron: '0 3 * * *'
   workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  BODY_LIMIT: '1048576000'
+  LONG_TEST_TIMEOUT: '30m'
+  PL_VERSION: main
+  NAMESPACE: dev-gke
+  HELM_RELEASE_NAME: pl-dev-gcp
+
 jobs:
+  # ──────────────────────────────────────────────
+  # 1. Init
+  # ──────────────────────────────────────────────
   init:
     runs-on: ubuntu-latest
+    outputs:
+      is-release: ${{ steps.context.outputs.is-release }}
+      current-version: ${{ steps.context.outputs.current-version }}
     steps:
-      - uses: milaboratory/github-ci/actions/context/init@v4
+      - id: context
+        uses: milaboratory/github-ci/actions/context/init@v4
         with:
           version-canonize: false
           branch-versioning: main
-  run:
-    needs:
-      - init
-    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm-k8s.yaml@v4
-    with:
-      app-name: Platforma SDK Google Batch Int Tests
-      app-name-slug: 'platforma-sdk-gcp'
-      gha-runner-label: 'dev-gke'
-      node-version: '22.x'
-      pl-version: 'main'
-      pnpm-build-command: '--filter "*/workflow-tengo*"'
-      pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --maxWorkers=5 --testTimeout=1800000 --no-cache'
-      helm-release-name: 'pl-dev-gcp'
-      helm-chart-values-file: 'helm/gcp/values.yaml'
-      notify-slack: true
-      namespace: 'dev-gke'
-      npmrc-config: |
-        {
-          "registries": {
-            "https://registry.npmjs.org/": {
-              "scopes": ["milaboratories", "platforma-sdk"],
-              "tokenVar": "NPMJS_TOKEN"
-            },
-            "https://npm.pkg.github.com/": {
-              "scopes": ["milaboratory"],
-              "tokenVar": "NODE_AUTH_TOKEN"
-            }
-          }
-        }
-      env: |
-        { "BODY_LIMIT": "1048576000",
-          "LONG_TEST_TIMEOUT": "30m" }
-    secrets:
-      env: |
-        { "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
-          "PL_CI_TEST_PASSWORD": ${{ toJSON(secrets.PL_CI_TEST_PASSWORD) }},
-          "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
-          "GCLOUD_CI_GKE_BUCKET_NAME": ${{ toJSON(secrets.GCLOUD_CI_GKE_BUCKET_NAME) }},
-          "QUAY_USERNAME": ${{ toJSON(secrets.QUAY_USERNAME) }},
-          "QUAY_ROBOT_TOKEN": ${{ toJSON(secrets.QUAY_ROBOT_TOKEN) }} }
 
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      SLACK_CHANNEL: ${{ secrets.SLACK_PL_SDK_CHANNEL }}
+  # ──────────────────────────────────────────────
+  # 2. Deploy Platforma to GKE and run tests
+  # ──────────────────────────────────────────────
+  deploy-and-test:
+    runs-on: [self-hosted, dev-gke]
+    needs: [init]
+    steps:
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: v1.32.6
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: 3.15.4
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          npmjs-token: ${{ secrets.NPMJS_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
+          turbo-s3-bucket: ${{ secrets.AWS_CI_TURBOREPO_S3_BUCKET }}
+          quay-username: ${{ secrets.QUAY_USERNAME }}
+          quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+      # ── Deploy Platforma via Helm ──
+      - name: Deploy Platforma to GKE
+        uses: milaboratory/github-ci/actions/k8s/helm-deployment@v4
+        with:
+          helm-release-name: ${{ env.HELM_RELEASE_NAME }}
+          helm-chart-name: platforma
+          helm-chart-values-file: helm/gcp/values.yaml
+          helm-chart-atomic-upgrade: true
+          helm-chart-wait-timeout: 5m0s
+          namespace: ${{ env.NAMESPACE }}
+          helm-chart-values: |
+            image.tag=${{ env.PL_VERSION }}
+            primaryStorage.gcs.url=${{ format('gs://{0}/ci/{1}/primary', secrets.GCLOUD_CI_GKE_BUCKET_NAME, env.HELM_RELEASE_NAME) }}
+            googleBatch.jobNamePrefix=${{ env.HELM_RELEASE_NAME }}
+            googleBatch.volumes.workDirName=${{ format('ci/{0}/work', env.HELM_RELEASE_NAME) }}
+            googleBatch.volumes.packagesDirName=${{ format('ci/{0}/packages', env.HELM_RELEASE_NAME) }}
+
+      - name: Wait for pods to be ready
+        run: |
+          start_time=$(date +%s)
+          until kubectl get pods \
+            --namespace "${{ env.NAMESPACE }}" \
+            -l "app.kubernetes.io/instance=${{ env.HELM_RELEASE_NAME }}" \
+            -o json | \
+            jq -e '.items[] | select(.status.phase == "Running" and (any(.status.conditions[]; .type == "Ready" and .status == "True")))' >/dev/null
+          do
+            elapsed=$(( $(date +%s) - start_time ))
+            if [ "$elapsed" -ge 180 ]; then
+              echo "::error::Timeout: pods not ready after 3 minutes"
+              exit 1
+            fi
+            echo "Waiting for pods..."
+            sleep 1
+          done
+
+      # ── Build and test ──
+      - name: Build (filtered)
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm build --filter "*/workflow-tengo*"
+
+      - name: Run integration tests
+        env:
+          PL_ADDRESS: ${{ format('http://{0}.{1}.svc.cluster.local:6345?request-timeout=3000', env.HELM_RELEASE_NAME, env.NAMESPACE) }}
+          PL_TEST_USER: ${{ secrets.PL_CI_TEST_USER }}
+          PL_TEST_PASSWORD: ${{ secrets.PL_CI_TEST_PASSWORD }}
+          PL_TEST_STORAGE_ID: test-assets
+        run: >-
+          pnpm test
+          --filter="@platforma-sdk/workflow-tengo-tests"
+          -- --maxConcurrency=5 --maxWorkers=5 --testTimeout=1800000 --no-cache
+
+      # ── Cleanup ──
+      - name: Uninstall Platforma helm release
+        if: always()
+        run: |
+          helm uninstall "${{ env.HELM_RELEASE_NAME }}" \
+            --debug \
+            --wait \
+            --timeout 5m0s \
+            --namespace "${{ env.NAMESPACE }}"
+
+  # ──────────────────────────────────────────────
+  # 3. Notify
+  # ──────────────────────────────────────────────
+  notify:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [deploy-and-test]
+    steps:
+      - id: search-tags
+        uses: milaboratory/github-ci/actions/strings/json-list@v4
+        with:
+          input: |
+            test
+            integration
+            google-batch
+
+      - uses: milaboratory/github-ci/blocks/notify/slack/tests@v4
+        with:
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          slack-channel: ${{ secrets.SLACK_PL_SDK_CHANNEL }}
+          tests-status: ${{ needs.deploy-and-test.result }}
+          tests-type: Integration
+          notification-mode: 'true'
+          search-tags: ${{ steps.search-tags.outputs.result }}
+          product-name: Platforma SDK Google Batch Int Tests
