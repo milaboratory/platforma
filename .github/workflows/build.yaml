@@ -69,8 +69,7 @@ jobs:
   # ──────────────────────────────────────────────
   build:
     runs-on: [self-hosted, dev-pl-sdk]
-    needs: [check-changesets]
-    if: ${{ !failure() && !cancelled() && (needs.check-changesets.result == 'success' || needs.check-changesets.result == 'skipped') }}
+    needs: [init]
     steps:
       - name: Generate GitHub App token
         id: app-token
@@ -200,8 +199,8 @@ jobs:
   # ──────────────────────────────────────────────
   publish:
     runs-on: [self-hosted, dev-pl-sdk]
-    needs: [init, build, test]
-    if: github.ref_name == 'main'
+    needs: [init, build, test, check-changesets]
+    if: ${{ github.ref_name == 'main' && !failure() && !cancelled() && (needs.check-changesets.result == 'success' || needs.check-changesets.result == 'skipped') }}
     steps:
       - name: Generate GitHub App token
         id: app-token
