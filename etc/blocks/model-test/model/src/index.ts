@@ -76,10 +76,12 @@ export type CounterPlugin = typeof counterPlugin;
 // Block Model with Plugin
 // =============================================================================
 
+const counter = counterPlugin.create({ pluginId: "counter", config: { defaultCount: 10 } });
+
 export const platforma = BlockModelV3.create(blockDataModel)
   .args<BlockArgs>((data) => data)
 
-  .plugin("counter", counterPlugin.create({ defaultCount: 10 }), {
+  .plugin(counter, {
     title: (ctx) => ctx.data.titleArg || "Test Counter",
   })
 

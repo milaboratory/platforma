@@ -12,6 +12,7 @@ import type { PlatformaV3 } from "./platforma";
 import type { InferRenderFunctionReturn, RenderFunction } from "./render";
 import { BlockRenderCtx, PluginRenderCtx } from "./render";
 import type { PluginData, PluginModel, PluginOutputs, PluginParams } from "./plugin_model";
+import { PluginInstance as PluginInstanceClass, CREATE_PLUGIN_MODEL } from "./plugin_model";
 import { type PluginHandle, pluginOutputKey } from "./plugin_handle";
 import type { RenderCtxBase } from "./render";
 import { PlatformaSDKVersion } from "./version";
@@ -79,10 +80,10 @@ function mergeFeatureFlags(
 }
 
 /**
- * Registered plugin: model + param derivation lambdas.
+ * Plugin record: model + param derivation lambdas.
  * Type parameters are carried by PluginModel generic.
  */
-export type PluginInstance<
+export type PluginRecord<
   Data extends PluginData = PluginData,
   Params extends PluginParams = undefined,
   Outputs extends PluginOutputs = PluginOutputs,
@@ -94,10 +95,11 @@ export type PluginInstance<
 interface BlockModelV3Config<
   OutputsCfg extends Record<string, ConfigRenderLambda>,
   Data,
-  Plugins extends Record<string, PluginInstance> = {},
+  Plugins extends Record<string, PluginRecord> = {},
+  Transfers extends Record<string, unknown> = {},
 > {
   renderingMode: BlockRenderingMode;
-  dataModel: DataModel<Data>;
+  dataModel: DataModel<Data, Transfers>;
   outputs: OutputsCfg;
   sections: ConfigRenderLambda;
   title: ConfigRenderLambda | undefined;
@@ -119,9 +121,12 @@ export class BlockModelV3<
   OutputsCfg extends Record<string, ConfigRenderLambda>,
   Data extends Record<string, unknown> = Record<string, unknown>,
   Href extends `/${string}` = "/",
-  Plugins extends Record<string, PluginInstance> = {},
+  Plugins extends Record<string, PluginRecord> = {},
+  Transfers extends Record<string, unknown> = {},
 > {
-  private constructor(private readonly config: BlockModelV3Config<OutputsCfg, Data, Plugins>) {}
+  private constructor(
+    private readonly config: BlockModelV3Config<OutputsCfg, Data, Plugins, Transfers>,
+  ) {}
 
   public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
     supportsLazyState: true,
@@ -145,10 +150,11 @@ export class BlockModelV3<
    *
    * @param dataModel The data model that defines initial data and migrations
    */
-  public static create<Data extends Record<string, unknown>>(
-    dataModel: DataModel<Data>,
-  ): BlockModelV3<NoOb, {}, Data> {
-    return new BlockModelV3<NoOb, {}, Data>({
+  public static create<
+    Data extends Record<string, unknown>,
+    Transfers extends Record<string, unknown> = {},
+  >(dataModel: DataModel<Data, Transfers>): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers> {
+    return new BlockModelV3<NoOb, {}, Data, "/", {}, Transfers>({
       renderingMode: "Heavy",
       dataModel,
       outputs: {},
@@ -185,7 +191,8 @@ export class BlockModelV3<
     },
     Data,
     Href,
-    Plugins
+    Plugins,
+    Transfers
   >;
   /**
    * Add output cell to the configuration
@@ -206,13 +213,14 @@ export class BlockModelV3<
     },
     Data,
     Href,
-    Plugins
+    Plugins,
+    Transfers
   >;
   public output(
     key: string,
     cfgOrRf: RenderFunction<Args, Data, unknown>,
     flags: ConfigRenderLambdaFlags = {},
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins> {
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
     return new BlockModelV3({
       ...this.config,
       outputs: {
@@ -240,7 +248,8 @@ export class BlockModelV3<
     },
     Data,
     Href,
-    Plugins
+    Plugins,
+    Transfers
   > {
     return this.output(key, rf, { retentive: true });
   }
@@ -266,10 +275,10 @@ export class BlockModelV3<
    *   return { numbers: data.numbers };
    * })
    */
-  public args<Args>(
-    lambda: (data: Data) => Args,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins>({
+  public args<A>(
+    lambda: (data: Data) => A,
+  ): BlockModelV3<A, OutputsCfg, Data, Href, Plugins, Transfers> {
+    return new BlockModelV3<A, OutputsCfg, Data, Href, Plugins, Transfers>({
       ...this.config,
       argsFunction: lambda as (data: unknown) => unknown,
     });
@@ -297,8 +306,8 @@ export class BlockModelV3<
    */
   public prerunArgs(
     fn: (data: Data) => unknown,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers>({
       ...this.config,
       prerunArgsFunction: fn as (data: unknown) => unknown,
     });
@@ -308,22 +317,24 @@ export class BlockModelV3<
   public sections<
     const Ret extends SectionsExpectedType,
     const RF extends RenderFunction<Args, Data, Ret>,
-  >(rf: RF): BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>, Plugins> {
-    return new BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>, Plugins>({
-      ...this.config,
-      // Replace the default sections callback with the user-provided one
-      sections: createAndRegisterRenderLambda(
-        { handle: "sections", lambda: () => rf(new BlockRenderCtx<Args, Data>()) },
-        true,
-      ),
-    });
+  >(rf: RF): BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>, Plugins, Transfers> {
+    return new BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>, Plugins, Transfers>(
+      {
+        ...this.config,
+        // Replace the default sections callback with the user-provided one
+        sections: createAndRegisterRenderLambda(
+          { handle: "sections", lambda: () => rf(new BlockRenderCtx<Args, Data>()) },
+          true,
+        ),
+      },
+    );
   }
 
   /** Sets a rendering function to derive block title, shown for the block in the left blocks-overview panel. */
   public title(
     rf: RenderFunction<Args, Data, string>,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers>({
       ...this.config,
       title: createAndRegisterRenderLambda({
         handle: "title",
@@ -334,8 +345,8 @@ export class BlockModelV3<
 
   public subtitle(
     rf: RenderFunction<Args, Data, string>,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers>({
       ...this.config,
       subtitle: createAndRegisterRenderLambda({
         handle: "subtitle",
@@ -346,8 +357,8 @@ export class BlockModelV3<
 
   public tags(
     rf: RenderFunction<Args, Data, string[]>,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers>({
       ...this.config,
       tags: createAndRegisterRenderLambda({
         handle: "tags",
@@ -359,8 +370,8 @@ export class BlockModelV3<
   /** Sets or overrides feature flags for the block. */
   public withFeatureFlags(
     flags: Partial<BlockCodeKnownFeatureFlags>,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers>({
       ...this.config,
       featureFlags: { ...this.config.featureFlags, ...flags },
     });
@@ -372,8 +383,8 @@ export class BlockModelV3<
    */
   public enriches(
     lambda: (args: Args) => PlRef[],
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers>({
       ...this.config,
       enrichmentTargets: createAndRegisterRenderLambda({
         handle: "enrichmentTargets",
@@ -384,16 +395,18 @@ export class BlockModelV3<
 
   /**
    * Registers a plugin instance with the block.
+   * Consumes a transfer if one was defined for this plugin ID in the migration chain.
    *
-   * Plugins are UI components with their own model logic and persistent state.
-   * Each plugin must have a unique pluginId within the block.
+   * Type checks:
+   * - If Transfers[Id] exists, verifies it extends PTransferData (transfer type compatibility)
+   * - If no Transfers[Id], rejects plugins with transferAt set (missing .transfer() in data model)
+   * - Rejects duplicate plugin IDs (Id already in keyof Plugins)
    *
-   * @param pluginId - Unique identifier for this plugin instance within the block
-   * @param plugin - Configured PluginModel instance (created via factory.create(config))
+   * @param instance - PluginInstance created via factory.create({ pluginId, ... })
    * @param params - Per-property lambdas deriving plugin params from block RenderCtx
    *
    * @example
-   * .plugin('mainTable', dataTablePlugin.create({ defaultOps: {...} }), {
+   * .plugin(mainTable, {
    *   columns: (ctx) => ctx.outputs?.resolve("data")?.getPColumns(),
    *   sourceId: (ctx) => ctx.data.selectedSource,
    * })
@@ -403,32 +416,61 @@ export class BlockModelV3<
     PData extends PluginData,
     PParams extends PluginParams,
     POutputs extends PluginOutputs,
+    PTransferData,
   >(
-    pluginId: PluginId,
-    plugin: PluginModel<PData, PParams, POutputs>,
+    instance: PluginInstanceClass<
+      PluginId &
+        (PluginId extends keyof Transfers
+          ? Transfers[PluginId] extends PTransferData
+            ? string
+            : never
+          : [PTransferData] extends [never]
+            ? string
+            : never) &
+        (PluginId extends keyof Plugins ? never : string),
+      PData,
+      PParams,
+      POutputs,
+      PTransferData
+    >,
     params?: ParamsInput<PParams, Args, Data>,
   ): BlockModelV3<
     Args,
     OutputsCfg,
     Data,
     Href,
-    Plugins & { [K in PluginId]: PluginInstance<PData, PParams, POutputs> }
+    Plugins & { [K in PluginId]: PluginRecord<PData, PParams, POutputs> },
+    Omit<Transfers, PluginId>
+  >;
+  public plugin(
+    instance: PluginInstanceClass,
+    params?: ParamsInput<Record<string, unknown>, unknown, unknown>,
+  ): BlockModelV3<
+    Args,
+    OutputsCfg,
+    Data,
+    Href,
+    Record<string, PluginRecord>,
+    Record<string, unknown>
   > {
-    // Validate pluginId uniqueness
+    const pluginId = instance.id;
+    const plugin = instance[CREATE_PLUGIN_MODEL]();
+    const resolvedParams = (params ?? {}) as ParamsInputErased;
+
     if (pluginId in this.config.plugins) {
       throw new Error(`Plugin '${pluginId}' already registered`);
     }
 
-    const instance: PluginInstance<PData, PParams, POutputs> = {
+    const registered: PluginRecord = {
       model: plugin,
-      inputs: (params ?? {}) as ParamsInputErased,
+      inputs: resolvedParams,
     };
 
     return new BlockModelV3({
       ...this.config,
       plugins: {
         ...this.config.plugins,
-        [pluginId]: instance,
+        [pluginId]: registered,
       },
       featureFlags: mergeFeatureFlags(this.config.featureFlags, plugin.featureFlags ?? {}),
     });
@@ -436,16 +478,16 @@ export class BlockModelV3<
 
   /** Renders all provided block settings into a pre-configured platforma API
    * instance, that can be used in frontend to interact with block data, and
-   * other features provided by the platforma to the block. */
-  public done(): PlatformaExtended<
-    PlatformaV3<Data, Args, InferOutputsFromLambdas<OutputsCfg>, Href, Plugins>
-  > {
-    return this.withFeatureFlags({
-      ...this.config.featureFlags,
-    })._done();
-  }
-
-  public _done(): PlatformaExtended<
+   * other features provided by the platforma to the block.
+   *
+   * Type-level check: if there are unconsumed transfers (from `.transfer()` calls
+   * in the migration chain), this method requires an impossible `never` argument,
+   * producing a compile error. Register all transferred plugins via `.plugin(instance)`
+   * before calling `.done()`.
+   */
+  public done(
+    ..._: keyof Transfers extends never ? [] : [never]
+  ): PlatformaExtended<
     PlatformaV3<Data, Args, InferOutputsFromLambdas<OutputsCfg>, Href, Plugins>
   > {
     if (this.config.argsFunction === undefined) throw new Error("Args rendering function not set.");
@@ -462,7 +504,7 @@ export class BlockModelV3<
 
     const { dataModel, argsFunction, prerunArgsFunction } = this.config;
 
-    function getPlugin(handle: PluginHandle): PluginInstance {
+    function getPlugin(handle: PluginHandle): PluginRecord {
       const plugin = plugins[handle];
       if (!plugin) throw new Error(`Plugin model not found for '${handle}'`);
       return plugin;
@@ -477,13 +519,16 @@ export class BlockModelV3<
           migrateBlockData: (v) => dataModel.migrate(v),
           getPluginRegistry: () => pluginRegistry,
           migratePluginData: (handle, v) => getPlugin(handle).model.dataModel.migrate(v),
-          createPluginData: (handle) => getPlugin(handle).model.dataModel.getDefaultData(),
+          createPluginData: (handle, transfer) => {
+            if (transfer) return transfer;
+            return getPlugin(handle).model.getDefaultData();
+          },
         }),
       [BlockStorageFacadeCallbacks.StorageInitial]: () =>
         createInitialStorage({
           getDefaultBlockData: () => dataModel.getDefaultData(),
           getPluginRegistry: () => pluginRegistry,
-          createPluginData: (handle) => getPlugin(handle).model.dataModel.getDefaultData(),
+          createPluginData: (handle) => getPlugin(handle).model.getDefaultData(),
         }),
       [BlockStorageFacadeCallbacks.ArgsDerive]: (storageJson) =>
         deriveArgsFromStorage(storageJson, argsFunction),
@@ -600,7 +645,7 @@ type _CreateIsBlockModelV3 =
   _CreateResult extends BlockModelV3<infer _A, infer _O, infer _S> ? true : false;
 type _CreateTest = Expect<_CreateIsBlockModelV3>;
 
-// Test: BlockModelV3Config interface structure
+// Test: BlockModelV3Config interface structure (default generics)
 type _ConfigTest = Expect<
   Equal<
     BlockModelV3Config<_TestOutputs, _TestData>,
@@ -608,7 +653,7 @@ type _ConfigTest = Expect<
       renderingMode: BlockRenderingMode;
       argsFunction: ((data: unknown) => unknown) | undefined;
       prerunArgsFunction: ((data: unknown) => unknown) | undefined;
-      dataModel: DataModel<_TestData>;
+      dataModel: DataModel<_TestData, {}>;
       outputs: _TestOutputs;
       sections: ConfigRenderLambda;
       title: ConfigRenderLambda | undefined;
