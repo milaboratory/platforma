@@ -6,6 +6,7 @@ import type {
   PlDataTableStateV2,
   PlSelectionModel,
   PlTableColumnIdJson,
+  PTableColumnSpec,
   PTableKey,
 } from "@platforma-sdk/model";
 import {
@@ -15,10 +16,11 @@ import {
   getAxisId,
   canonicalizeJson,
   isAbortError,
+  isColumnOptional,
 } from "@platforma-sdk/model";
 import type { CellRendererSelectorFunc, GridApi, GridState } from "ag-grid-enterprise";
 import { AgGridVue } from "ag-grid-vue3";
-import { computed, effectScope, ref, toRefs, watch, watchEffect } from "vue";
+import { computed, effectScope, nextTick, ref, toRefs, watch, watchEffect } from "vue";
 import { AgGridTheme } from "../../aggrid";
 import PlAgCsvExporter from "../PlAgCsvExporter/PlAgCsvExporter.vue";
 import { PlAgGridColumnManager } from "../PlAgGridColumnManager";
@@ -124,21 +126,26 @@ const { gridApi, gridOptions } = useGrid({
   notReadyText: props.notReadyText,
   cellRendererSelector: props.cellRendererSelector,
 });
+let isReloading = false;
 gridOptions.value.onGridPreDestroyed = (event) => {
-  gridOptions.value.initialState = gridState.value = makePartialState(event.api.getState());
+  if (!isReloading) {
+    gridOptions.value.initialState = gridState.value = normalizeColumnVisibility(
+      makePartialState(event.api.getState()),
+      gridState.value,
+      event.api,
+    );
+  }
   gridApi.value = null;
 };
 gridOptions.value.onRowDoubleClicked = (event) => {
   if (event.data && event.data.axesKey) emit("rowDoubleClicked", event.data.axesKey);
 };
 gridOptions.value.onStateUpdated = (event) => {
-  let partialState = makePartialState(event.state);
-  // AG Grid omits columnVisibility when no columns are hidden. If we previously had
-  // hidden columns and now get undefined, treat as "all visible" so we don't revert to default.
-  const hadHiddenCols = gridState.value.columnVisibility?.hiddenColIds !== undefined;
-  if (partialState.columnVisibility === undefined && hadHiddenCols) {
-    partialState = { ...partialState, columnVisibility: { hiddenColIds: [] } };
-  }
+  const partialState = normalizeColumnVisibility(
+    makePartialState(event.state),
+    gridState.value,
+    event.api,
+  );
   // We have to keep initialState synchronized with gridState for gridState recovery after key updating.
   gridOptions.value.initialState = gridState.value = partialState;
 
@@ -198,6 +205,43 @@ function makePartialState(state: GridState): PlDataTableGridStateCore {
   };
 }
 
+// AG Grid returns columnVisibility: undefined when all columns are visible.
+// We need to distinguish "no state yet" (use isColumnOptional defaults) from
+// "user explicitly showed all columns" (store []). This function normalizes
+// the undefined from AG Grid based on the previous state.
+function normalizeColumnVisibility(
+  partialState: PlDataTableGridStateCore,
+  prevState: PlDataTableGridStateCore,
+  api: GridApi<PlAgDataTableV2Row>,
+): PlDataTableGridStateCore {
+  if (partialState.columnVisibility !== undefined) return partialState;
+
+  if (prevState.columnVisibility !== undefined) {
+    // Had explicit visibility state before → user made all columns visible → store [].
+    return { ...partialState, columnVisibility: { hiddenColIds: [] } };
+  }
+
+  // No previous explicit state → compute defaults from current columns
+  // to replicate: hide: hiddenColIds?.includes(colId) ?? isColumnOptional(spec.spec)
+  const defaultHidden = getDefaultHiddenColIds(api);
+  if (defaultHidden.length > 0) {
+    return { ...partialState, columnVisibility: { hiddenColIds: defaultHidden } };
+  }
+
+  return partialState;
+}
+
+function getDefaultHiddenColIds(api: GridApi<PlAgDataTableV2Row>): PlTableColumnIdJson[] {
+  const cols = api.getColumns();
+  if (!cols) return [];
+  return cols
+    .filter((col) => {
+      const spec = col.getColDef().context as PTableColumnSpec | undefined;
+      return spec && isColumnOptional(spec.spec);
+    })
+    .map((col) => col.getColId() as PlTableColumnIdJson);
+}
+
 // Normalize columnVisibility for comparison: undefined and { hiddenColIds: [] } are equivalent.
 function stateForReloadCompare(state: PlDataTableGridStateCore): PlDataTableGridStateCore {
   const cv = state.columnVisibility;
@@ -216,8 +260,12 @@ watch(
       !isJsonEqual(gridState, {}) &&
       !isJsonEqual(stateForReloadCompare(gridState), stateForReloadCompare(selfState))
     ) {
+      isReloading = true;
       gridOptions.value.initialState = gridState;
       ++reloadKey.value;
+      nextTick(() => {
+        isReloading = false;
+      });
     }
   },
 );
