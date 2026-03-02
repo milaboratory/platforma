@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.58.9
+
+### Patch Changes
+
+- 4d83b3c: Transfer data from block to plugin
+
 ## 1.58.5
 
 ### Patch Changes
