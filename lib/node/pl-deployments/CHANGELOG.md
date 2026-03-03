@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.15.19
+
+### Patch Changes
+
+- b3c0745: Update Built-In version to 1.46.0
+
 ## 2.15.18
 
 ### Patch Changes
