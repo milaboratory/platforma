@@ -23,8 +23,8 @@
     "fmt": "oxlint --fix && oxfmt"
   },
   "dependencies": {
-    "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
+    "@vitejs/plugin-vue": "catalog:",
     "commander": "^12.0.0",
     "jsonc-parser": "catalog:",
     "oxfmt": "0.35.0",
@@ -32,8 +32,12 @@
     "rolldown": "^1.0.0-rc.5",
     "rolldown-plugin-dts": "^0.22.1",
     "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-sourcemaps2": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vite-plugin-externalize-deps": "catalog:",
+    "vite-plugin-lib-inject-css": "catalog:",
     "vue-tsc": "catalog:"
   }
 }
