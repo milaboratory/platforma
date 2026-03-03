@@ -215,7 +215,10 @@ export class SynchronizedTreeState {
           });
         } catch (e: unknown) {
           if (!isTimeoutOrCancelError(e)) throw new Error("Unexpected error", { cause: e });
-          break;
+          // If the main abort controller fired, this is a permanent termination
+          if (this.abortController.signal.aborted) break;
+          // Otherwise it was just the loop delay interrupt (scheduleOnNextState),
+          // continue to the next iteration
         } finally {
           this.currentLoopDelayInterrupt = undefined;
         }
