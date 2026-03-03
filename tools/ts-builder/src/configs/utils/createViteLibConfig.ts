@@ -4,12 +4,12 @@ import dts from "vite-plugin-dts";
 import { externalizeDeps } from "vite-plugin-externalize-deps";
 import { libInjectCss } from "vite-plugin-lib-inject-css";
 import { createViteDevConfig } from "./createViteDevConfig";
-import { ModuleResolutionKind } from "typescript";
-import { sanitizeVueOutputPlugin } from "./plugins/sanitizeVueOutputPlugin";
+import { sanitizeVueOutputPlugin } from "./sanitizeVueOutputPlugin";
 
-/**
- * @deprecated Use ts-builder internal configs
- * */
+// typescript ModuleResolutionKind constants (avoid importing typescript at runtime)
+const ModuleResolutionKind_NodeJs = 2;
+const ModuleResolutionKind_Bundler = 100;
+
 export function createViteLibConfig(configEnv: ConfigEnv): UserConfig {
   const useSources = process.env.USE_SOURCES === "1";
 
@@ -20,7 +20,7 @@ export function createViteLibConfig(configEnv: ConfigEnv): UserConfig {
         compilerOptions: {
           declaration: true,
           declarationMap: true,
-          moduleResolution: useSources ? ModuleResolutionKind.Bundler : ModuleResolutionKind.NodeJs,
+          moduleResolution: useSources ? ModuleResolutionKind_Bundler : ModuleResolutionKind_NodeJs,
           customConditions: useSources ? ["sources"] : [],
         },
       }),
@@ -39,16 +39,11 @@ export function createViteLibConfig(configEnv: ConfigEnv): UserConfig {
           format: "es",
           preserveModules: true,
           preserveModulesRoot: "src",
-          // Required for lib-inject-css: keeps CSS imports co-located
-          // with the chunks that use them instead of hoisting to entry
           hoistTransitiveImports: false,
           inlineDynamicImports: false,
           entryFileNames: "[name].js",
           chunkFileNames: "[name]-[hash].js",
           assetFileNames: (chunkInfo) => {
-            // Strip .module from CSS filenames so consumers don't
-            // re-process already-compiled CSS modules.
-            // See https://github.com/emosheeep/vite-plugin-lib-inject-css/issues/34
             const moduleCss = chunkInfo.names.find((n) => n.endsWith(".module.css"));
             if (moduleCss) {
               return moduleCss.replace(".module.css", ".css");

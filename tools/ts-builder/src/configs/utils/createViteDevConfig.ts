@@ -2,10 +2,7 @@ import vue from "@vitejs/plugin-vue";
 import sourcemaps from "rollup-plugin-sourcemaps2";
 import type { ConfigEnv, UserConfig } from "vite";
 
-/**
- * @deprecated Use ts-builder internal configs
- * */
-export const createViteDevConfig = ({ mode, command }: ConfigEnv): UserConfig => {
+export function createViteDevConfig({ mode, command }: ConfigEnv): UserConfig {
   const isProd = mode === "production";
   const isServe = command === "serve";
   const useSources = process.env.USE_SOURCES === "1" || isServe;
@@ -28,4 +25,4 @@ export const createViteDevConfig = ({ mode, command }: ConfigEnv): UserConfig =>
       "import.meta.vitest": "undefined",
     },
   };
-};
+}
