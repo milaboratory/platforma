@@ -192,7 +192,6 @@ catalog:
   "oxlint": 1.43.0
   "oxfmt": 0.28.0
 
-
   # Net
 
   "undici": ~7.16.0
@@ -239,7 +238,7 @@ catalog:
   "winston": ^3.17.0
 
   "@milaboratories/tengo-tester": ^1.6.4
-  "@milaboratories/pframes-rs-node": &pframes-rs 1.1.10
+  "@milaboratories/pframes-rs-node": &pframes-rs 1.1.11
   "@milaboratories/pframes-rs-wasm": *pframes-rs
 
   "quickjs-emscripten": 0.31.0
