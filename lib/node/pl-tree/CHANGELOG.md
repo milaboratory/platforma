@@ -1,5 +1,16 @@
 # @milaboratories/pl-tree
 
+## 1.8.48
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/computable@2.8.6
+  - @milaboratories/pl-client@2.17.8
+  - @milaboratories/pl-errors@1.1.70
+  - @milaboratories/ts-helpers@1.7.3
+
 ## 1.8.47
 
 ### Patch Changes

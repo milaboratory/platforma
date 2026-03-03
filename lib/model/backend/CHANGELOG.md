@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-backend
 
+## 1.1.55
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-client@2.17.8
+
 ## 1.1.54
 
 ### Patch Changes

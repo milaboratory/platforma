@@ -1,5 +1,12 @@
 # @milaboratories/build-configs
 
+## 1.5.1
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- c4fb398: Correct export and share build configs
+
 ## 1.5.0
 
 ### Minor Changes

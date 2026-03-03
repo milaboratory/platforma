@@ -1,5 +1,17 @@
 # @platforma-sdk/test
 
+## 1.58.11
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+- Updated dependencies [c4fb398]
+  - @milaboratories/computable@2.8.6
+  - @milaboratories/pl-client@2.17.8
+  - @milaboratories/pl-middle-layer@1.48.13
+  - @milaboratories/pl-tree@1.8.48
+
 ## 1.58.9
 
 ### Patch Changes

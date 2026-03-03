@@ -1,5 +1,13 @@
 # @milaboratories/pl-config
 
+## 1.7.15
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/ts-helpers@1.7.3
+
 ## 1.7.14
 
 ### Patch Changes

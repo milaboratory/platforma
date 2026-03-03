@@ -1,5 +1,19 @@
 # @platforma-sdk/block-tools
 
+## 2.6.65
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-common@1.25.2
+  - @milaboratories/pl-model-middle-layer@1.12.10
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/resolve-helper@1.1.3
+  - @milaboratories/ts-helpers@1.7.3
+  - @milaboratories/ts-helpers-oclif@1.1.38
+  - @platforma-sdk/blocks-deps-updater@2.0.2
+
 ## 2.6.64
 
 ### Patch Changes

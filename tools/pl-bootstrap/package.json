@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/bootstrap",
-  "version": "5.2.51",
+  "version": "5.2.52",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "keywords": [],
   "license": "UNLICENSED",

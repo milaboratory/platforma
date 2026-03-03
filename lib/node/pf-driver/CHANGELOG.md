@@ -1,5 +1,15 @@
 # @milaboratories/pf-driver
 
+## 1.0.63
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-middle-layer@1.12.10
+  - @milaboratories/ts-helpers@1.7.3
+  - @platforma-sdk/model@1.58.11
+
 ## 1.0.62
 
 ### Patch Changes

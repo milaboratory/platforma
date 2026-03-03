@@ -1,5 +1,11 @@
 # @milaboratories/node-streams
 
+## 1.0.10
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
 ## 1.0.9
 
 ### Patch Changes

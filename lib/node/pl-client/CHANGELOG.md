@@ -1,5 +1,15 @@
 # @milaboratories/pl-client
 
+## 2.17.8
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-common@1.25.2
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.7.3
+
 ## 2.17.7
 
 ### Patch Changes

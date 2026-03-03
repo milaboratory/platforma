@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.pool-explorer.ui
 
+## 1.1.299
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/milaboratories.pool-explorer.model@1.1.29
+  - @milaboratories/helpers@1.13.6
+  - @platforma-sdk/ui-vue@1.58.11
+
 ## 1.1.298
 
 ### Patch Changes

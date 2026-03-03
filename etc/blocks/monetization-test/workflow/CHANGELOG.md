@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.monetization-test.workflow
 
+## 1.1.65
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @platforma-sdk/workflow-tengo@5.9.1
+
 ## 1.1.64
 
 ### Patch Changes

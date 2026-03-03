@@ -1,5 +1,15 @@
 # @platforma-sdk/tengo-builder
 
+## 2.4.26
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-backend@1.1.55
+  - @milaboratories/resolve-helper@1.1.3
+  - @milaboratories/ts-helpers@1.7.3
+
 ## 2.4.25
 
 ### Patch Changes

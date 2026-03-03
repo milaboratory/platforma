@@ -1,5 +1,13 @@
 # @platforma-sdk/package-builder
 
+## 3.11.5
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/resolve-helper@1.1.3
+
 ## 3.11.4
 
 ### Patch Changes

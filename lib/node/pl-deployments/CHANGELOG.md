@@ -1,5 +1,16 @@
 # @milaboratories/pl-local
 
+## 2.15.18
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-common@1.25.2
+  - @milaboratories/pl-config@1.7.15
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.7.3
+
 ## 2.15.17
 
 ### Patch Changes

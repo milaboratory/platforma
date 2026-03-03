@@ -1,5 +1,13 @@
 # @platforma-open/software-ptabler.types
 
+## 1.13.17
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-common@1.25.2
+
 ## 1.13.16
 
 ### Patch Changes

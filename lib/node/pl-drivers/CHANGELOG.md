@@ -1,5 +1,18 @@
 # @milaboratories/pl-drivers
 
+## 1.11.60
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-common@1.25.2
+  - @milaboratories/computable@2.8.6
+  - @milaboratories/pl-client@2.17.8
+  - @milaboratories/pl-tree@1.8.48
+  - @milaboratories/ts-helpers@1.7.3
+  - @milaboratories/helpers@1.13.6
+
 ## 1.11.59
 
 ### Patch Changes

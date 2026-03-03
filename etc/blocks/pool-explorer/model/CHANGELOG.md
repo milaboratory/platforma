@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.pool-explorer.model
 
+## 1.1.29
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @platforma-sdk/model@1.58.11
+
 ## 1.1.28
 
 ### Patch Changes

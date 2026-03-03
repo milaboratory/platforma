@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.2.59
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.76
+  - @milaboratories/milaboratories.monetization-test.ui@1.1.197
+  - @milaboratories/milaboratories.monetization-test.workflow@1.1.65
+
 ## 1.2.58
 
 ### Patch Changes
