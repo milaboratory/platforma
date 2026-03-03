@@ -5,6 +5,9 @@ import { cleandir } from "rollup-plugin-cleandir";
 import nodeExternals from "rollup-plugin-node-externals";
 import { createRollupResolvePlugin, createRollupTypescriptPlugin } from "./rollupUtils";
 
+/**
+ * @deprecated Use ts-builder internal configs
+ * */
 export function createRollupNodeConfig(props?: {
   entry?: string[];
   output?: string;

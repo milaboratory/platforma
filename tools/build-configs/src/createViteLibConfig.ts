@@ -7,6 +7,9 @@ import { createViteDevConfig } from "./createViteDevConfig";
 import { ModuleResolutionKind } from "typescript";
 import { sanitizeVueOutputPlugin } from "./plugins/sanitizeVueOutputPlugin";
 
+/**
+ * @deprecated Use ts-builder internal configs
+ * */
 export function createViteLibConfig(configEnv: ConfigEnv): UserConfig {
   const useSources = process.env.USE_SOURCES === "1";
 

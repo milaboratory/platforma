@@ -1,18 +1,21 @@
-import commonjs from '@rollup/plugin-commonjs';
-import json from '@rollup/plugin-json';
-import type { RollupOptions } from 'rollup';
-import { createRollupNodeConfig } from './createRollupNodeConfig';
-import { createRollupResolvePlugin, createRollupTypescriptPlugin } from './rollupUtils';
+import commonjs from "@rollup/plugin-commonjs";
+import json from "@rollup/plugin-json";
+import type { RollupOptions } from "rollup";
+import { createRollupNodeConfig } from "./createRollupNodeConfig";
+import { createRollupResolvePlugin, createRollupTypescriptPlugin } from "./rollupUtils";
 
+/**
+ * @deprecated Use ts-builder internal configs
+ * */
 export function createRollupBlockModelConfig(props?: {
   entry?: string[];
   output?: string;
-  formats?: ('es' | 'cjs')[];
+  formats?: ("es" | "cjs")[];
 }): RollupOptions[] {
   const base = createRollupNodeConfig(props);
-  const input = props?.entry ?? ['./src/index.ts'];
-  const output = props?.output ?? 'dist';
-  const useSources = process.env.USE_SOURCES === '1';
+  const input = props?.entry ?? ["./src/index.ts"];
+  const output = props?.output ?? "dist";
+  const useSources = process.env.USE_SOURCES === "1";
 
   return [
     ...base,
@@ -26,7 +29,7 @@ export function createRollupBlockModelConfig(props?: {
       ],
       onwarn(warning, warn) {
         // Suppress TS5098: customConditions requires moduleResolution bundler/node16/nodenext
-        if (warning.code === 'PLUGIN_WARNING' && warning.message?.includes('TS5098')) {
+        if (warning.code === "PLUGIN_WARNING" && warning.message?.includes("TS5098")) {
           return;
         }
         warn(warning);
@@ -34,9 +37,9 @@ export function createRollupBlockModelConfig(props?: {
       output: [
         {
           dir: output,
-          name: 'block-model',
-          format: 'umd',
-          entryFileNames: 'bundle.js',
+          name: "block-model",
+          format: "umd",
+          entryFileNames: "bundle.js",
           sourcemap: true,
         },
       ],

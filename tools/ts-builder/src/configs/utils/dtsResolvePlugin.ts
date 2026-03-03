@@ -1,8 +1,9 @@
 import { existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
+import type { Plugin } from "rolldown";
 
 /** Resolves .d.ts side-effect imports (e.g. `import {} from "./global"`) as empty modules */
-export function dtsResolvePlugin() {
+export function dtsResolvePlugin(): Plugin {
   return {
     name: "dts-resolve",
     resolveId(source, importer) {
