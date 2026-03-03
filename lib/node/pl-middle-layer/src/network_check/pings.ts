@@ -20,11 +20,16 @@ export async function backendPings(
   ops: CheckNetworkOpts,
   plConfig: PlClientConfig,
 ): Promise<NetworkReport<string>[]> {
-  return await recordPings(ops.pingCheckDurationMs, ops.maxPingsPerSecond, async () => {
-    const uaClient = await UnauthenticatedPlClient.build(plConfig);
-    const response = await uaClient.ping();
-    return JSON.stringify(response).slice(0, ops.bodyLimit) + "...";
-  });
+  return await recordPings(
+    ops.pingCheckDurationMs,
+    ops.maxPingsPerSecond,
+    async () => {
+      const uaClient = await UnauthenticatedPlClient.build(plConfig);
+      const response = await uaClient.ping();
+      return JSON.stringify(response).slice(0, ops.bodyLimit) + "...";
+    },
+    ops.signal,
+  );
 }
 
 export async function blockRegistryOverviewPings(
@@ -36,6 +41,7 @@ export async function blockRegistryOverviewPings(
     ops.maxRegistryChecksPerSecond,
     async () =>
       await requestUrl(new URL(ops.blockOverviewPath, ops.blockRegistryUrl), ops, httpClient),
+    ops.signal,
   );
 }
 
@@ -48,6 +54,7 @@ export async function blockGARegistryOverviewPings(
     ops.maxRegistryChecksPerSecond,
     async () =>
       await requestUrl(new URL(ops.blockOverviewPath, ops.blockGARegistryUrl), ops, httpClient),
+    ops.signal,
   );
 }
 
@@ -59,6 +66,7 @@ export async function blockRegistryUiPings(
     ops.blockRegistryDurationMs,
     ops.maxRegistryChecksPerSecond,
     async () => await requestUrl(new URL(ops.blockUiPath, ops.blockRegistryUrl), ops, httpClient),
+    ops.signal,
   );
 }
 
@@ -70,6 +78,7 @@ export async function blockGARegistryUiPings(
     ops.blockRegistryDurationMs,
     ops.maxRegistryChecksPerSecond,
     async () => await requestUrl(new URL(ops.blockUiPath, ops.blockGARegistryUrl), ops, httpClient),
+    ops.signal,
   );
 }
 
@@ -81,6 +90,7 @@ export async function autoUpdateCdnPings(
     ops.autoUpdateCdnDurationMs,
     ops.maxAutoUpdateCdnChecksPerSecond,
     async () => await requestUrl(ops.autoUpdateCdnUrl, ops, httpClient),
+    ops.signal,
   );
 }
 
@@ -90,11 +100,12 @@ export async function recordPings<T>(
   pingCheckDurationMs: number,
   maxPingsPerSecond: number,
   body: () => Promise<T>,
+  signal?: AbortSignal,
 ): Promise<NetworkReport<T>[]> {
   const startPings = Date.now();
   const reports: NetworkReport<T>[] = [];
 
-  while (elapsed(startPings) < pingCheckDurationMs) {
+  while (elapsed(startPings) < pingCheckDurationMs && !signal?.aborted) {
     const startPing = Date.now();
     let response: ValueOrError<T>;
     try {
@@ -112,7 +123,12 @@ export async function recordPings<T>(
     const sleepBetweenPings = 1000 / maxPingsPerSecond - elapsedPing;
 
     if (sleepBetweenPings > 0) {
-      await setTimeout(sleepBetweenPings);
+      try {
+        await setTimeout(sleepBetweenPings, undefined, signal ? { signal } : undefined);
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name === "AbortError") break;
+        throw e;
+      }
     }
   }
 
@@ -160,6 +176,7 @@ export function reportToString<T>(report: NetworkReport<T>[]): {
 }
 
 function elapsedStat(reports: { elapsedMs: number }[]) {
+  if (reports.length === 0) return { mean: 0, median: undefined };
   const checks = reports.map((p) => p.elapsedMs).sort();
   const mean = checks.reduce((sum, p) => sum + p) / checks.length;
 
