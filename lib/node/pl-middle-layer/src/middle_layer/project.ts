@@ -116,6 +116,7 @@ export class Project {
   }
 
   private async refreshLoop(): Promise<void> {
+    let consecutiveFailures = 0;
     while (!this.destroyed) {
       try {
         await withProject(
@@ -128,7 +129,9 @@ export class Project {
           { name: "doRefresh", lockId: this.projectLockId },
         );
         await this.activeConfigs.getValue();
-        await setTimeout(this.env.ops.projectRefreshInterval, this.abortController.signal);
+        await setTimeout(this.env.ops.projectRefreshInterval, undefined, {
+          signal: this.abortController.signal,
+        });
 
         // Block computables housekeeping
         const overviewLight = await this.overviewLight.getValue();
@@ -141,6 +144,7 @@ export class Project {
             this.blockComputables.set(blockId, null);
           }
         }
+        consecutiveFailures = 0;
       } catch (e: unknown) {
         // If we're destroyed, exit gracefully regardless of error type
         if (this.destroyed) {
@@ -150,16 +154,22 @@ export class Project {
         }
 
         if (isNotFoundError(e)) {
-          console.warn(
+          this.env.logger.warn(
             "project refresh routine terminated, because project was externally deleted",
           );
           break;
         } else if (isTimeoutOrCancelError(e)) {
           // Timeout during normal operation, continue the loop
         } else {
-          // TODO: This stops the refresh loop permanently, leaving the project broken.
-          // Need to decide how to handle this case.
-          throw new Error("Unexpected exception", { cause: e });
+          consecutiveFailures++;
+          const backoff = Math.min(1000 * Math.pow(2, consecutiveFailures - 1), 60_000);
+          this.env.logger.error(
+            new Error(
+              `[refreshLoop] unexpected exception (failure #${consecutiveFailures}), retrying in ${backoff}ms`,
+              { cause: e },
+            ),
+          );
+          await setTimeout(backoff, undefined, { signal: this.abortController.signal });
         }
       }
     }

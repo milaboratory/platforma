@@ -207,10 +207,12 @@ export class SynchronizedTreeState {
       if (this.scheduledOnNextState.length === 0) {
         try {
           this.currentLoopDelayInterrupt = new AbortController();
-          await tp.setTimeout(
-            this.pollingInterval,
-            AbortSignal.any([this.abortController.signal, this.currentLoopDelayInterrupt.signal]),
-          );
+          await tp.setTimeout(this.pollingInterval, undefined, {
+            signal: AbortSignal.any([
+              this.abortController.signal,
+              this.currentLoopDelayInterrupt.signal,
+            ]),
+          });
         } catch (e: unknown) {
           if (!isTimeoutOrCancelError(e)) throw new Error("Unexpected error", { cause: e });
           break;

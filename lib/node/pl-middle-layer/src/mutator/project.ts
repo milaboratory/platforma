@@ -63,6 +63,8 @@ import {
   notEmpty,
   canonicalJsonBytes,
   cachedDecode,
+  type MiLogger,
+  ConsoleLoggerAdapter,
 } from "@milaboratories/ts-helpers";
 import type { ProjectHelper } from "../model/project_helper";
 import {
@@ -119,6 +121,7 @@ class BlockInfo {
     public readonly fields: BlockFieldStates,
     public readonly config: BlockConfig,
     public readonly source: BlockPackSpec,
+    private readonly logger: MiLogger = new ConsoleLoggerAdapter(),
   ) {}
 
   public check() {
@@ -200,7 +203,7 @@ class BlockInfo {
     try {
       return this.blockStorageC();
     } catch (e) {
-      console.error("Error getting blockStorage:", e);
+      this.logger.error(new Error(`Error getting blockStorage for ${this.id}`, { cause: e }));
       return undefined;
     }
   }
@@ -595,6 +598,9 @@ export class ProjectMutator {
   ): { args?: unknown; uiState?: unknown } {
     const info = this.getBlockInfo(blockId);
     const currentState = info.blockStorage as { args?: unknown; uiState?: unknown } | undefined;
+    if (currentState === undefined) {
+      throw new Error(`Cannot merge block state for ${blockId}: blockStorage is unavailable`);
+    }
     return { ...currentState, ...partialUpdate };
   }
 
@@ -653,9 +659,22 @@ export class ProjectMutator {
       );
       if (prerunArgs !== undefined) {
         this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
+      } else {
+        if (info.fields.currentPrerunArgs !== undefined) {
+          this.projectHelper.logger.warn(
+            `[staging] ${blockId}: currentPrerunArgs cleared (prerunArgs derivation returned undefined)`,
+          );
+        }
+        this.deleteBlockFields(blockId, "currentPrerunArgs");
       }
     } else {
+      if (info.fields.currentPrerunArgs !== undefined) {
+        this.projectHelper.logger.warn(
+          `[staging] ${blockId}: currentPrerunArgs cleared (args derivation failed)`,
+        );
+      }
       this.deleteBlockFields(blockId, "currentArgs");
+      this.deleteBlockFields(blockId, "currentPrerunArgs");
     }
   }
 
@@ -759,7 +778,11 @@ export class ProjectMutator {
         // prerunArgs is undefined - check if we previously had one
         if (info.fields.currentPrerunArgs !== undefined) {
           prerunArgsChanged = true;
+          this.projectHelper.logger.warn(
+            `[staging] ${req.blockId}: currentPrerunArgs cleared (prerunArgs derivation returned undefined)`,
+          );
         }
+        this.deleteBlockFields(req.blockId, "currentPrerunArgs");
       }
 
       blockChanged = true;
@@ -852,6 +875,8 @@ export class ProjectMutator {
     // thus creating a certain discrepancy between staging workflow context behavior and desktop's result pool.
     this.setBlockField(blockId, "stagingUiCtx", this.exportCtx(results.context), "NotReady");
     this.setBlockField(blockId, "stagingOutput", results.result, "NotReady");
+
+    this.projectHelper.logger.info(`[staging] ${blockId}: workflow created`);
   }
 
   private renderProductionFor(blockId: string) {
@@ -903,6 +928,7 @@ export class ProjectMutator {
       {},
       extractConfig(spec.blockPack.config),
       spec.blockPack.source,
+      this.projectHelper.logger,
     );
     this.blockInfos.set(blockId, info);
 
@@ -1006,7 +1032,13 @@ export class ProjectMutator {
   }
 
   private initializeBlockDuplicate(blockId: string, originalBlockInfo: BlockInfo) {
-    const info = new BlockInfo(blockId, {}, originalBlockInfo.config, originalBlockInfo.source);
+    const info = new BlockInfo(
+      blockId,
+      {},
+      originalBlockInfo.config,
+      originalBlockInfo.source,
+      this.projectHelper.logger,
+    );
 
     this.blockInfos.set(blockId, info);
 
@@ -1210,7 +1242,22 @@ export class ProjectMutator {
             "currentPrerunArgs",
             this.createJsonFieldValue(prerunArgs),
           );
+        } else {
+          if (info.fields.currentPrerunArgs !== undefined) {
+            this.projectHelper.logger.warn(
+              `[staging] ${blockId}: currentPrerunArgs cleared (prerunArgs derivation returned undefined)`,
+            );
+          }
+          this.deleteBlockFields(blockId, "currentPrerunArgs");
         }
+      } else {
+        if (info.fields.currentPrerunArgs !== undefined) {
+          this.projectHelper.logger.warn(
+            `[staging] ${blockId}: currentPrerunArgs cleared (args derivation failed)`,
+          );
+        }
+        this.deleteBlockFields(blockId, "currentArgs");
+        this.deleteBlockFields(blockId, "currentPrerunArgs");
       }
     };
 
@@ -1250,7 +1297,9 @@ export class ProjectMutator {
           );
         }
 
-        console.log(`[migrateBlockPack] Block ${blockId}: ${migrationResult.info}`);
+        this.projectHelper.logger.info(
+          `[migrateBlockPack] Block ${blockId}: ${migrationResult.info}`,
+        );
         applyStorageAndDeriveArgs(migrationResult.newStorageJson);
       } else {
         // Legacy blocks (modelAPIVersion 1): persist block pack, set prerunArgs = currentArgs
@@ -1413,9 +1462,14 @@ export class ProjectMutator {
         // meaning staging already rendered
         return;
       if (lagThreshold === undefined || lag <= lagThreshold) {
-        // console.log(`[refreshStagings] RENDER staging for ${blockId} (lag=${lag})`);
-        this.renderStagingFor(blockId);
-        rendered++;
+        try {
+          this.renderStagingFor(blockId);
+          rendered++;
+        } catch (e) {
+          this.projectHelper.logger.error(
+            new Error(`[refreshStagings] renderStagingFor failed for ${blockId}`, { cause: e }),
+          );
+        }
       }
     });
     if (rendered > 0) this.resetStagingRefreshTimestamp();
@@ -1654,7 +1708,10 @@ export class ProjectMutator {
 
     const blockInfos = new Map<string, BlockInfo>();
     blockInfoStates.forEach(({ id, fields, blockConfig, blockPack }) =>
-      blockInfos.set(id, new BlockInfo(id, fields, notEmpty(blockConfig), notEmpty(blockPack))),
+      blockInfos.set(
+        id,
+        new BlockInfo(id, fields, notEmpty(blockConfig), notEmpty(blockPack), projectHelper.logger),
+      ),
     );
 
     // check consistency of project state
