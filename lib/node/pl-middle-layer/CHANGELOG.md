@@ -1,5 +1,29 @@
 # @milaboratories/pl-middle-layer
 
+## 1.48.13
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- c4fb398: Correct export and share build configs
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-backend@1.1.55
+  - @milaboratories/pl-model-common@1.25.2
+  - @milaboratories/pl-model-middle-layer@1.12.10
+  - @milaboratories/computable@2.8.6
+  - @milaboratories/pf-driver@1.0.63
+  - @milaboratories/pl-client@2.17.8
+  - @milaboratories/pl-deployments@2.15.18
+  - @milaboratories/pl-drivers@1.11.60
+  - @milaboratories/pl-errors@1.1.70
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/pl-tree@1.8.48
+  - @milaboratories/resolve-helper@1.1.3
+  - @milaboratories/ts-helpers@1.7.3
+  - @platforma-sdk/model@1.58.11
+  - @platforma-sdk/workflow-tengo@5.9.1
+  - @platforma-sdk/block-tools@2.6.65
+
 ## 1.48.12
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @milaboratories/ts-builder
 
+## 1.2.13
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- c4fb398: Correct export and share build configs
+- Updated dependencies [79156bc]
+  - @milaboratories/ts-configs@1.2.2
+
 ## 1.2.12
 
 ### Patch Changes

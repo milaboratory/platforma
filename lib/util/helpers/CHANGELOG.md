@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.13.6
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
 ## 1.13.5
 
 ### Patch Changes

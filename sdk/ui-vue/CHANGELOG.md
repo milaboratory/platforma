@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.58.11
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/uikit@2.10.39
+  - @platforma-sdk/model@1.58.11
+
 ## 1.58.10
 
 ### Patch Changes

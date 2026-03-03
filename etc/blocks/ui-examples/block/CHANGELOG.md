@@ -1,5 +1,16 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.1.35
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/milaboratories.ui-examples.model@1.4.30
+  - @milaboratories/milaboratories.ui-examples.ui@1.8.32
+  - @milaboratories/milaboratories.ui-examples.workflow@1.1.118
+  - @platforma-sdk/model@1.58.11
+
 ## 1.1.34
 
 ### Patch Changes

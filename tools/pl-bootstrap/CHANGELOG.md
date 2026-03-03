@@ -1,5 +1,13 @@
 # @platforma-sdk/bootstrap
 
+## 5.2.52
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-deployments@2.15.18
+
 ## 5.2.51
 
 ### Patch Changes

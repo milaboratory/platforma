@@ -1,5 +1,14 @@
 # @milaboratories/computable
 
+## 2.8.6
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-error-like@1.12.9
+  - @milaboratories/ts-helpers@1.7.3
+
 ## 2.8.5
 
 ### Patch Changes

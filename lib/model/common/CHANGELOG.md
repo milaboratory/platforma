@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-common
 
+## 1.25.2
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-error-like@1.12.9
+
 ## 1.25.1
 
 ### Patch Changes

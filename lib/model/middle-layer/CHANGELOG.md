@@ -1,5 +1,14 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.12.10
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-common@1.25.2
+  - @platforma-sdk/model@1.58.11
+
 ## 1.12.9
 
 ### Patch Changes

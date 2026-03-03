@@ -1,5 +1,16 @@
 # @platforma-sdk/model
 
+## 1.58.11
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-common@1.25.2
+  - @milaboratories/pl-error-like@1.12.9
+  - @milaboratories/ptabler-expression-js@1.1.24
+  - @milaboratories/helpers@1.13.6
+
 ## 1.58.9
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @milaboratories/ptabler-expression-js
 
+## 1.1.24
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.13.17
+
 ## 1.1.23
 
 ### Patch Changes

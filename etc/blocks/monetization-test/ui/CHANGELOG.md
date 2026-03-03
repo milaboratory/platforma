@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.197
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.76
+  - @platforma-sdk/model@1.58.11
+  - @platforma-sdk/ui-vue@1.58.11
+
 ## 1.1.196
 
 ### Patch Changes

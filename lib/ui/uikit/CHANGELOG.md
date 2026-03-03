@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.10.39
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/helpers@1.13.6
+  - @platforma-sdk/model@1.58.11
+
 ## 2.10.38
 
 ### Patch Changes
