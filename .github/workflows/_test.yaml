@@ -49,7 +49,7 @@ jobs:
         id: dry-run
         run: |
           pnpm run test:local+dry-run > ./test-dry-run.json || true
-          SKIP_TESTS=$(tail -n +5 ./test-dry-run.json | jq -r '.tasks | map(select(.task == "test")) | all((.cache.status == "HIT") or (.cache.status == "MISS" and .command == "<NONEXISTENT>"))' 2>/dev/null || echo "false")
+          SKIP_TESTS=$(sed -n '/^{/,$p' ./test-dry-run.json | jq -r '.tasks | map(select(.task == "test")) | all((.cache.status == "HIT") or (.cache.status == "MISS" and .command == "<NONEXISTENT>"))' 2>/dev/null || echo "false")
           echo "skip=$SKIP_TESTS" >> "$GITHUB_OUTPUT"
           echo "Test cache skip: $SKIP_TESTS"
 
