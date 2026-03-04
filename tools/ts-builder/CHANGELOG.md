@@ -1,5 +1,11 @@
 # @milaboratories/ts-builder
 
+## 1.2.14
+
+### Patch Changes
+
+- 90ee879: Set build target to Chrome 140 (Electron 38) to prevent LightningCSS from polyfilling modern CSS features like `light-dark()`
+
 ## 1.2.13
 
 ### Patch Changes
