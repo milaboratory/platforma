@@ -1,5 +1,18 @@
 # @milaboratories/pl-middle-layer
 
+## 1.48.17
+
+### Patch Changes
+
+- c19a02b: Fixes for problems Claude discovered
+- Updated dependencies [c19a02b]
+  - @milaboratories/pl-client@2.17.9
+  - @milaboratories/pl-tree@1.8.49
+  - @milaboratories/pl-model-backend@1.1.56
+  - @milaboratories/pl-drivers@1.11.61
+  - @milaboratories/pl-errors@1.1.71
+  - @platforma-sdk/workflow-tengo@5.9.1
+
 ## 1.48.16
 
 ### Patch Changes
