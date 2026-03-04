@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.15.21
+
+### Patch Changes
+
+- e2d86ca: Update built-in backend version to 1.46.0
+
 ## 2.15.20
 
 ### Patch Changes

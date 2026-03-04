@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.48.16
+
+### Patch Changes
+
+- Updated dependencies [e2d86ca]
+  - @milaboratories/pl-deployments@2.15.21
+
 ## 1.48.15
 
 ### Patch Changes
