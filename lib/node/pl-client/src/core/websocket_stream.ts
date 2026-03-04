@@ -61,6 +61,9 @@ export class WebSocketBiDiStream<
   // Error tracking
   private lastError?: Error;
 
+  // Abort listener reference for cleanup
+  private readonly abortHandler?: () => void;
+
   // === Public API ===
 
   public readonly requests = {
@@ -122,7 +125,8 @@ export class WebSocketBiDiStream<
       return;
     }
 
-    this.options.abortSignal?.addEventListener("abort", () => this.close());
+    this.abortHandler = () => this.close();
+    this.options.abortSignal?.addEventListener("abort", this.abortHandler, { once: true });
     this.connect();
   }
 
@@ -191,6 +195,11 @@ export class WebSocketBiDiStream<
 
   private onClose(): void {
     this.progressConnectionState(ConnectionState.CLOSED);
+
+    // Clean up abort listener to prevent memory leaks
+    if (this.abortHandler) {
+      this.options.abortSignal?.removeEventListener("abort", this.abortHandler);
+    }
 
     // If abort signal was triggered, use that as the error source
     if (this.options.abortSignal?.aborted && !this.lastError) {

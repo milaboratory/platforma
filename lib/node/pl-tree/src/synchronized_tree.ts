@@ -207,13 +207,18 @@ export class SynchronizedTreeState {
       if (this.scheduledOnNextState.length === 0) {
         try {
           this.currentLoopDelayInterrupt = new AbortController();
-          await tp.setTimeout(
-            this.pollingInterval,
-            AbortSignal.any([this.abortController.signal, this.currentLoopDelayInterrupt.signal]),
-          );
+          await tp.setTimeout(this.pollingInterval, undefined, {
+            signal: AbortSignal.any([
+              this.abortController.signal,
+              this.currentLoopDelayInterrupt.signal,
+            ]),
+          });
         } catch (e: unknown) {
           if (!isTimeoutOrCancelError(e)) throw new Error("Unexpected error", { cause: e });
-          break;
+          // If the main abort controller fired, this is a permanent termination
+          if (this.abortController.signal.aborted) break;
+          // Otherwise it was just the loop delay interrupt (scheduleOnNextState),
+          // continue to the next iteration
         } finally {
           this.currentLoopDelayInterrupt = undefined;
         }

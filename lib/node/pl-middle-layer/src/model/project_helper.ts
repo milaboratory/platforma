@@ -16,6 +16,7 @@ import { LRUCache } from "lru-cache";
 import type { QuickJSWASMModule } from "quickjs-emscripten";
 import { executeSingleLambda } from "../js_render";
 import type { ResourceId } from "@milaboratories/pl-client";
+import { ConsoleLoggerAdapter, type MiLogger } from "@milaboratories/ts-helpers";
 
 type EnrichmentTargetsRequest = {
   blockConfig: () => BlockConfig;
@@ -55,7 +56,10 @@ export class ProjectHelper {
     },
   });
 
-  constructor(private readonly quickJs: QuickJSWASMModule) {}
+  constructor(
+    private readonly quickJs: QuickJSWASMModule,
+    public readonly logger: MiLogger = new ConsoleLoggerAdapter(),
+  ) {}
 
   // =============================================================================
   // Args Derivation from Storage (V3+)
@@ -182,7 +186,11 @@ export class ProjectHelper {
       ) as string;
       return result;
     } catch (e) {
-      console.error("[ProjectHelper.getInitialStorageInVM] Initial storage creation failed:", e);
+      this.logger.error(
+        new Error("[ProjectHelper.getInitialStorageInVM] Initial storage creation failed", {
+          cause: e,
+        }),
+      );
       throw new Error(`Block initial storage creation failed: ${e}`);
     }
   }
@@ -219,7 +227,9 @@ export class ProjectHelper {
       ) as string;
       return result;
     } catch (e) {
-      console.error("[ProjectHelper.applyStorageUpdateInVM] Storage update failed:", e);
+      this.logger.error(
+        new Error("[ProjectHelper.applyStorageUpdateInVM] Storage update failed", { cause: e }),
+      );
       throw new Error(`Block storage update failed: ${e}`);
     }
   }
@@ -249,7 +259,11 @@ export class ProjectHelper {
       ) as StringifiedJson<StorageDebugView>;
       return result;
     } catch (e) {
-      console.error("[ProjectHelper.getStorageDebugViewInVM] Get storage debug view failed:", e);
+      this.logger.error(
+        new Error("[ProjectHelper.getStorageDebugViewInVM] Get storage debug view failed", {
+          cause: e,
+        }),
+      );
       return undefined;
     }
   }
@@ -290,7 +304,9 @@ export class ProjectHelper {
       ) as MigrationResult;
       return result;
     } catch (e) {
-      console.error("[ProjectHelper.migrateStorageInVM] Migration failed:", e);
+      this.logger.error(
+        new Error("[ProjectHelper.migrateStorageInVM] Migration failed", { cause: e }),
+      );
       return { error: `VM execution failed: ${e}` };
     }
   }
