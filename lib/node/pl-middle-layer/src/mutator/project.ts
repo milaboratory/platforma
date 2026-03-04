@@ -660,11 +660,6 @@ export class ProjectMutator {
       if (prerunArgs !== undefined) {
         this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
       } else {
-        if (info.fields.currentPrerunArgs !== undefined) {
-          this.projectHelper.logger.warn(
-            `[staging] ${blockId}: currentPrerunArgs cleared (prerunArgs derivation returned undefined)`,
-          );
-        }
         this.deleteBlockFields(blockId, "currentPrerunArgs");
       }
     } else {
@@ -775,13 +770,6 @@ export class ProjectMutator {
           prerunArgsData,
         );
       } else {
-        // prerunArgs is undefined - check if we previously had one
-        if (info.fields.currentPrerunArgs !== undefined) {
-          prerunArgsChanged = true;
-          this.projectHelper.logger.warn(
-            `[staging] ${req.blockId}: currentPrerunArgs cleared (prerunArgs derivation returned undefined)`,
-          );
-        }
         this.deleteBlockFields(req.blockId, "currentPrerunArgs");
       }
 
@@ -875,8 +863,6 @@ export class ProjectMutator {
     // thus creating a certain discrepancy between staging workflow context behavior and desktop's result pool.
     this.setBlockField(blockId, "stagingUiCtx", this.exportCtx(results.context), "NotReady");
     this.setBlockField(blockId, "stagingOutput", results.result, "NotReady");
-
-    this.projectHelper.logger.info(`[staging] ${blockId}: workflow created`);
   }
 
   private renderProductionFor(blockId: string) {
@@ -1243,19 +1229,9 @@ export class ProjectMutator {
             this.createJsonFieldValue(prerunArgs),
           );
         } else {
-          if (info.fields.currentPrerunArgs !== undefined) {
-            this.projectHelper.logger.warn(
-              `[staging] ${blockId}: currentPrerunArgs cleared (prerunArgs derivation returned undefined)`,
-            );
-          }
           this.deleteBlockFields(blockId, "currentPrerunArgs");
         }
       } else {
-        if (info.fields.currentPrerunArgs !== undefined) {
-          this.projectHelper.logger.warn(
-            `[staging] ${blockId}: currentPrerunArgs cleared (args derivation failed)`,
-          );
-        }
         this.deleteBlockFields(blockId, "currentArgs");
         this.deleteBlockFields(blockId, "currentPrerunArgs");
       }

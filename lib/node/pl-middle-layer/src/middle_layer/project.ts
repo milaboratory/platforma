@@ -24,7 +24,14 @@ import { getBlockParameters, blockOutputs } from "./block";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectStructure } from "../model/project_model";
 import { projectFieldName } from "../model/project_model";
-import { cachedDeserialize, notEmpty, type MiLogger } from "@milaboratories/ts-helpers";
+import {
+  cachedDeserialize,
+  notEmpty,
+  type MiLogger,
+  createInfiniteRetryState,
+  nextInfiniteRetryState,
+  type InfiniteRetryState,
+} from "@milaboratories/ts-helpers";
 import type { BlockPackInfo } from "../model/block_pack";
 import type {
   ProjectOverview,
@@ -116,7 +123,7 @@ export class Project {
   }
 
   private async refreshLoop(): Promise<void> {
-    let consecutiveFailures = 0;
+    let retryState: InfiniteRetryState | undefined;
     while (!this.destroyed) {
       try {
         await withProject(
@@ -144,7 +151,7 @@ export class Project {
             this.blockComputables.set(blockId, null);
           }
         }
-        consecutiveFailures = 0;
+        retryState = undefined;
       } catch (e: unknown) {
         // If we're destroyed, exit gracefully regardless of error type
         if (this.destroyed) {
@@ -161,15 +168,23 @@ export class Project {
         } else if (isTimeoutOrCancelError(e)) {
           // Timeout during normal operation, continue the loop
         } else {
-          consecutiveFailures++;
-          const backoff = Math.min(1000 * Math.pow(2, consecutiveFailures - 1), 60_000);
+          retryState = retryState
+            ? nextInfiniteRetryState(retryState)
+            : createInfiniteRetryState({
+                type: "exponentialWithMaxDelayBackoff",
+                initialDelay: 1000,
+                maxDelay: 60_000,
+                backoffMultiplier: 2,
+                jitter: 0,
+              });
           this.env.logger.error(
-            new Error(
-              `[refreshLoop] unexpected exception (failure #${consecutiveFailures}), retrying in ${backoff}ms`,
-              { cause: e },
-            ),
+            new Error(`[refreshLoop] unexpected exception, retrying in ${retryState.nextDelay}ms`, {
+              cause: e,
+            }),
           );
-          await setTimeout(backoff, undefined, { signal: this.abortController.signal });
+          await setTimeout(retryState.nextDelay, undefined, {
+            signal: this.abortController.signal,
+          });
         }
       }
     }
