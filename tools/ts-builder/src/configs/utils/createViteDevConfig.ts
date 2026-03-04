@@ -11,6 +11,7 @@ export function createViteDevConfig({ mode, command }: ConfigEnv): UserConfig {
     base: "./",
     plugins: [vue()],
     build: {
+      target: ["chrome140"],
       emptyOutDir: isProd,
       sourcemap: isProd,
       minify: isProd,
