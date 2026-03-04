@@ -24,7 +24,14 @@ import { getBlockParameters, blockOutputs } from "./block";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectStructure } from "../model/project_model";
 import { projectFieldName } from "../model/project_model";
-import { cachedDeserialize, notEmpty, type MiLogger } from "@milaboratories/ts-helpers";
+import {
+  cachedDeserialize,
+  notEmpty,
+  type MiLogger,
+  createInfiniteRetryState,
+  nextInfiniteRetryState,
+  type InfiniteRetryState,
+} from "@milaboratories/ts-helpers";
 import type { BlockPackInfo } from "../model/block_pack";
 import type {
   ProjectOverview,
@@ -116,6 +123,7 @@ export class Project {
   }
 
   private async refreshLoop(): Promise<void> {
+    let retryState: InfiniteRetryState | undefined;
     while (!this.destroyed) {
       try {
         await withProject(
@@ -128,7 +136,9 @@ export class Project {
           { name: "doRefresh", lockId: this.projectLockId },
         );
         await this.activeConfigs.getValue();
-        await setTimeout(this.env.ops.projectRefreshInterval, this.abortController.signal);
+        await setTimeout(this.env.ops.projectRefreshInterval, undefined, {
+          signal: this.abortController.signal,
+        });
 
         // Block computables housekeeping
         const overviewLight = await this.overviewLight.getValue();
@@ -141,25 +151,41 @@ export class Project {
             this.blockComputables.set(blockId, null);
           }
         }
+        retryState = undefined;
       } catch (e: unknown) {
         // If we're destroyed, exit gracefully regardless of error type
-        if (this.destroyed) {
-          // Log just in case, to help with debugging if something unexpected happens during shutdown
-          this.env.logger.warn(new Error("Error during refresh loop shutdown", { cause: e }));
-          break;
-        }
+        if (this.destroyed) break;
 
         if (isNotFoundError(e)) {
-          console.warn(
+          this.env.logger.warn(
             "project refresh routine terminated, because project was externally deleted",
           );
           break;
         } else if (isTimeoutOrCancelError(e)) {
           // Timeout during normal operation, continue the loop
         } else {
-          // TODO: This stops the refresh loop permanently, leaving the project broken.
-          // Need to decide how to handle this case.
-          throw new Error("Unexpected exception", { cause: e });
+          retryState = retryState
+            ? nextInfiniteRetryState(retryState)
+            : createInfiniteRetryState({
+                type: "exponentialWithMaxDelayBackoff",
+                initialDelay: 1000,
+                maxDelay: 60_000,
+                backoffMultiplier: 2,
+                jitter: 0,
+              });
+          this.env.logger.error(
+            new Error(`[refreshLoop] unexpected exception, retrying in ${retryState.nextDelay}ms`, {
+              cause: e,
+            }),
+          );
+          try {
+            await setTimeout(retryState.nextDelay, undefined, {
+              signal: this.abortController.signal,
+            });
+          } catch {
+            // Aborted during retry delay, will exit via while condition or destroyed check
+            break;
+          }
         }
       }
     }
