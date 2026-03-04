@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.5.2
+
+### Patch Changes
+
+- 90ee879: Set build target to Chrome 140 (Electron 38) to prevent LightningCSS from polyfilling modern CSS features like `light-dark()`
+
 ## 1.5.1
 
 ### Patch Changes
