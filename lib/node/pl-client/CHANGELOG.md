@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.17.9
+
+### Patch Changes
+
+- c19a02b: Fixes for problems Claude discovered
+
 ## 2.17.8
 
 ### Patch Changes

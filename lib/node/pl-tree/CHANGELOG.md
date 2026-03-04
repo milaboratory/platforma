@@ -1,5 +1,14 @@
 # @milaboratories/pl-tree
 
+## 1.8.49
+
+### Patch Changes
+
+- c19a02b: Fixes for problems Claude discovered
+- Updated dependencies [c19a02b]
+  - @milaboratories/pl-client@2.17.9
+  - @milaboratories/pl-errors@1.1.71
+
 ## 1.8.48
 
 ### Patch Changes
