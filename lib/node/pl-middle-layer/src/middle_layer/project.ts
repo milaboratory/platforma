@@ -154,11 +154,7 @@ export class Project {
         retryState = undefined;
       } catch (e: unknown) {
         // If we're destroyed, exit gracefully regardless of error type
-        if (this.destroyed) {
-          // Log just in case, to help with debugging if something unexpected happens during shutdown
-          this.env.logger.warn(new Error("Error during refresh loop shutdown", { cause: e }));
-          break;
-        }
+        if (this.destroyed) break;
 
         if (isNotFoundError(e)) {
           this.env.logger.warn(
@@ -182,9 +178,14 @@ export class Project {
               cause: e,
             }),
           );
-          await setTimeout(retryState.nextDelay, undefined, {
-            signal: this.abortController.signal,
-          });
+          try {
+            await setTimeout(retryState.nextDelay, undefined, {
+              signal: this.abortController.signal,
+            });
+          } catch {
+            // Aborted during retry delay, will exit via while condition or destroyed check
+            break;
+          }
         }
       }
     }
