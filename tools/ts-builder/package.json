@@ -35,6 +35,7 @@
     "rollup-plugin-sourcemaps2": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
+    "vite-plugin-commonjs": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vite-plugin-externalize-deps": "catalog:",
     "vite-plugin-lib-inject-css": "catalog:",
