@@ -15,6 +15,7 @@ import type {
   ExprStringEquals,
   ExprStringRegex,
   ExprNumericUnary,
+  ExprRanking,
   QueryAxisSelector,
   QueryColumn,
   QuerySparseToDenseColumn,
@@ -118,6 +119,7 @@ export type DataQueryExpression =
   | ExprLogicalUnary<DataQueryExpression>
   | ExprLogicalVariadic<DataQueryExpression>
   | ExprIsIn<DataQueryExpression, string>
-  | ExprIsIn<DataQueryExpression, number>;
+  | ExprIsIn<DataQueryExpression, number>
+  | ExprRanking<DataQueryExpression, number, number>;
 
 export type DataQueryBooleanExpression = InferBooleanExpressionUnion<DataQueryExpression>;

@@ -477,6 +477,56 @@ export interface ExprIsIn<I, T extends string | number> {
   set: T[];
 }
 
+// ============ Ranking Expression ============
+
+/**
+ * Ranking function kind.
+ *
+ * - `rank` - Standard rank: 1,2,2,4 (gaps after ties)
+ * - `denseRank` - Dense rank: 1,2,2,3 (no gaps)
+ * - `rowNumber` - Row number: 1,2,3,4 (no ties)
+ */
+export type RankingKind = "rank" | "denseRank" | "rowNumber";
+
+/**
+ * Ranking expression (window function).
+ *
+ * Assigns ranks to records within partitions based on explicit ordering.
+ * Each unique combination of axis values is a record.
+ * Records are grouped by `partitionBy` values, then ordered by `orderBy` expression
+ * within each partition. Ties are broken deterministically by axis values.
+ *
+ * **Output**: Numeric rank value.
+ *
+ * @template I - The expression type (for recursion)
+ * @template A - Axis selector type
+ * @template C - Column selector type
+ *
+ * @example
+ * // Rank rows by score descending
+ * { type: 'ranking', kind: 'rank', orderBy: scoreRef, ascending: false }
+ *
+ * // Dense rank within partitions
+ * {
+ *   type: 'ranking',
+ *   kind: 'denseRank',
+ *   orderBy: valueRef,
+ *   ascending: true,
+ *   partitionBy: [{ type: 'axis', id: 'sample' }]
+ * }
+ */
+export interface ExprRanking<I, A, C> {
+  type: "ranking";
+  /** Ranking function kind */
+  kind: RankingKind;
+  /** Expression to order by */
+  orderBy: I;
+  /** Ascending or descending order */
+  ascending?: boolean;
+  /** Partition specification — ranking is computed independently within each partition */
+  partitionBy?: (QueryAxisSelector<A> | QueryColumnSelector<C>)[];
+}
+
 // ============ Reference Expression Types ============
 
 /**

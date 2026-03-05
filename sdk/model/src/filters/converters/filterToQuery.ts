@@ -254,8 +254,29 @@ function leafToSpecQueryExpr<Leaf extends FilterSpecLeaf<string>>(
       };
 
     case "topN":
+      return {
+        type: "numericComparison",
+        operand: "le",
+        left: {
+          type: "ranking",
+          kind: "rank",
+          orderBy: resolveColumnRef(filter.column),
+          ascending: false,
+        },
+        right: { type: "constant", value: filter.n },
+      };
     case "bottomN":
-      throw new Error(`Filter type "${filter.type}" is not supported in query expressions`);
+      return {
+        type: "numericComparison",
+        operand: "le",
+        left: {
+          type: "ranking",
+          kind: "rank",
+          orderBy: resolveColumnRef(filter.column),
+          ascending: true,
+        },
+        right: { type: "constant", value: filter.n },
+      };
 
     case undefined:
       throw new Error("Filter type is undefined");
