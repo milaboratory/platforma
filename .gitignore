@@ -6,6 +6,10 @@
 .vscode/
 .claude/settings.local.json
 
+# Agent tools
+.mcp_*
+.mcp.*
+
 # Testing
 test_config.json
 test-dry-run.json
