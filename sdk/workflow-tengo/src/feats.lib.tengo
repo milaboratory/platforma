@@ -69,5 +69,5 @@ export ll.toStrict({
 
 	// when true (default), ui-tasks queue uses RunCommand/executor resource type.
 	// when false, ui-tasks queue uses RunCommand/batch resource type (when batch setup is active).
-	uiQueueUsesForBatchSetup: _isEnabled("uiQueueUsesForBatchSetup")
+	uiQueueForceLocalExecutor: _isEnabled("uiQueueForceLocalExecutor")
 })
