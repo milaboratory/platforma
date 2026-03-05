@@ -65,5 +65,9 @@ export ll.toStrict({
 	hasBlobSize:            ll.methodExists(plapi, "getBlobSize"),
 
 	// true when backend supports docker packages
-	isDockerAvailable:        _isEnabled("dockerSupport")
+	isDockerAvailable:        _isEnabled("dockerSupport"),
+
+	// when true (default), ui-tasks queue uses RunCommand/executor resource type.
+	// when false, ui-tasks queue uses RunCommand/batch resource type (when batch setup is active).
+	uiQueueUsesForBatchSetup: _isEnabled("uiQueueUsesForBatchSetup")
 })
