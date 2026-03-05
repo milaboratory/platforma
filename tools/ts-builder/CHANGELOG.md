@@ -1,5 +1,11 @@
 # @milaboratories/ts-builder
 
+## 1.3.0
+
+### Minor Changes
+
+- 6fd7371: Update ts-builder serve config to support CJS
+
 ## 1.2.14
 
 ### Patch Changes
