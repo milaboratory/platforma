@@ -40,5 +40,6 @@
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "typescript.tsdk": "./node_modules/typescript/lib",
-  "vitest.maximumConfigs": 1000
+  "vitest.maximumConfigs": 1000,
+  "vitest.disableWorkspaceWarning": true
 }
