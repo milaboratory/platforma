@@ -279,6 +279,9 @@ catalogs:
     vite:
       specifier: 8.0.0-beta.15
       version: 8.0.0-beta.15
+    vite-plugin-commonjs:
+      specifier: ^0.10.4
+      version: 0.10.4
     vite-plugin-dts:
       specifier: ^4.5.3
       version: 4.5.3
@@ -1817,7 +1820,7 @@ importers:
         version: 1.1.11(encoding@0.1.13)
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
-        version: 1.1.11(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.1)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+        version: 1.1.11(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.2)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
         version: link:../../model/middle-layer
@@ -3604,6 +3607,9 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 8.0.0-beta.15(@types/node@24.5.2)(esbuild@0.27.3)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+      vite-plugin-commonjs:
+        specifier: 'catalog:'
+        version: 0.10.4
       vite-plugin-dts:
         specifier: 'catalog:'
         version: 4.5.3(@types/node@24.5.2)(rollup@4.52.4)(typescript@5.9.3)(vite@8.0.0-beta.15(@types/node@24.5.2)(esbuild@0.27.3)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
@@ -4643,8 +4649,14 @@ packages:
   '@milaboratories/pl-error-like@1.12.8':
     resolution: {integrity: sha512-j8evT0YYuXQndVcsk8bOGfH9qpXRefFiO7uCdptG9Lz0QTv4e6OOxNUJPe9+TSp/72PXUsCrYGHUeTqtvUb0lA==}
 
+  '@milaboratories/pl-error-like@1.12.9':
+    resolution: {integrity: sha512-9qlfawLFO4qG656ayvVSRholhhwlfXUvKKllXpHadqbnf2zO2oCd+5J76bPaFXDz/A3T+1eokCnCX74JsqCYSw==}
+
   '@milaboratories/pl-model-common@1.25.1':
     resolution: {integrity: sha512-U3nwSU7FPhpSWyjrz47w/T1MmyS3sR66bzmvQw3FxXVV1fblNkTqSo/okuH1gJLRdaKnF6SZfxH9pTDa7vhHNg==}
+
+  '@milaboratories/pl-model-common@1.25.2':
+    resolution: {integrity: sha512-Pl8Dq6yXihVCjUi9gYmSoCOPCs619x4dz9EcB6zGfIJEPZiAsKu03qmC5F297wgJukeQ5yEUcETebE4sh7DiJw==}
 
   '@milaboratories/pl-model-middle-layer@1.12.8':
     resolution: {integrity: sha512-0StiAyYcnYxiwY+8bkXx9n1R63NB3SaV2rRkZXKYDyx2on440Ftlrh3arKmCmEAHA9oiA/KpBoVAe5VXLDJC+g==}
@@ -8547,6 +8559,9 @@ packages:
     resolution: {integrity: sha512-OljLrQ9SQdOUqTaQxqL5dEfZWrXExyyWsozYlAWFawPVNuD83igl7uJD2RTkNMbniIYgt8l81eCJGIdQF7avLQ==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
 
+  vite-plugin-commonjs@0.10.4:
+    resolution: {integrity: sha512-eWQuvQKCcx0QYB5e5xfxBNjQKyrjEWZIR9UOkOV6JAgxVhtbZvCOF+FNC2ZijBJ3U3Px04ZMMyyMyFBVWIJ5+g==}
+
   vite-plugin-dts@4.5.3:
     resolution: {integrity: sha512-P64VnD00dR+e8S26ESoFELqc17+w7pKkwlBpgXteOljFyT0zDwD8hH4zXp49M/kciy//7ZbVXIwQCekBJjfWzA==}
     peerDependencies:
@@ -8555,6 +8570,9 @@ packages:
     peerDependenciesMeta:
       vite:
         optional: true
+
+  vite-plugin-dynamic-import@1.6.0:
+    resolution: {integrity: sha512-TM0sz70wfzTIo9YCxVFwS8OA9lNREsh+0vMHGSkWDTZ7bgd1Yjs5RV8EgB634l/91IsXJReg0xtmuQqP0mf+rg==}
 
   vite-plugin-externalize-deps@0.9.0:
     resolution: {integrity: sha512-wg3qb5gCy2d1KpPKyD9wkXMcYJ84yjgziHrStq9/8R7chhUC73mhQz+tVtvhFiICQHsBn1pnkY4IBbPqF9JHNw==}
@@ -10547,10 +10565,10 @@ snapshots:
       commander: 14.0.3
       selfsigned: 5.5.0
 
-  '@milaboratories/pframes-rs-wasm@1.1.11(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.1)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
+  '@milaboratories/pframes-rs-wasm@1.1.11(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.2)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
     dependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
-      '@milaboratories/pl-model-common': 1.25.1
+      '@milaboratories/pl-model-common': 1.25.2
       '@milaboratories/pl-model-middle-layer': link:lib/model/middle-layer
 
   '@milaboratories/pl-error-like@1.12.8':
@@ -10558,9 +10576,20 @@ snapshots:
       json-stringify-safe: 5.0.1
       zod: 3.23.8
 
+  '@milaboratories/pl-error-like@1.12.9':
+    dependencies:
+      json-stringify-safe: 5.0.1
+      zod: 3.23.8
+
   '@milaboratories/pl-model-common@1.25.1':
     dependencies:
       '@milaboratories/pl-error-like': 1.12.8
+      canonicalize: 2.1.0
+      zod: 3.23.8
+
+  '@milaboratories/pl-model-common@1.25.2':
+    dependencies:
+      '@milaboratories/pl-error-like': 1.12.9
       canonicalize: 2.1.0
       zod: 3.23.8
 
@@ -14765,6 +14794,12 @@ snapshots:
 
   validate-npm-package-name@5.0.1: {}
 
+  vite-plugin-commonjs@0.10.4:
+    dependencies:
+      acorn: 8.15.0
+      magic-string: 0.30.21
+      vite-plugin-dynamic-import: 1.6.0
+
   vite-plugin-dts@4.5.3(@types/node@24.5.2)(rollup@4.52.4)(typescript@5.9.3)(vite@7.3.1(@types/node@24.5.2)(jiti@2.6.1)(lightningcss@1.31.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)):
     dependencies:
       '@microsoft/api-extractor': 7.52.2(@types/node@24.5.2)
@@ -14802,6 +14837,13 @@ snapshots:
       - '@types/node'
       - rollup
       - supports-color
+
+  vite-plugin-dynamic-import@1.6.0:
+    dependencies:
+      acorn: 8.15.0
+      es-module-lexer: 1.7.0
+      fast-glob: 3.3.2
+      magic-string: 0.30.21
 
   vite-plugin-externalize-deps@0.9.0(vite@8.0.0-beta.15(@types/node@24.5.2)(esbuild@0.27.3)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)):
     dependencies:

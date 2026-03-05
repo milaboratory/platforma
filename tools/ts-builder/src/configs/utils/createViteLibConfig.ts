@@ -12,21 +12,26 @@ const ModuleResolutionKind_Bundler = 100;
 
 export function createViteLibConfig(configEnv: ConfigEnv): UserConfig {
   const useSources = process.env.USE_SOURCES === "1";
+  const isServe = configEnv.command === "serve";
 
   return mergeConfig(createViteDevConfig(configEnv), {
-    plugins: [
-      libInjectCss(),
-      dts({
-        compilerOptions: {
-          declaration: true,
-          declarationMap: true,
-          moduleResolution: useSources ? ModuleResolutionKind_Bundler : ModuleResolutionKind_NodeJs,
-          customConditions: useSources ? ["sources"] : [],
-        },
-      }),
-      externalizeDeps(),
-      sanitizeVueOutputPlugin(),
-    ],
+    plugins: isServe
+      ? []
+      : [
+          libInjectCss(),
+          dts({
+            compilerOptions: {
+              declaration: true,
+              declarationMap: true,
+              moduleResolution: useSources
+                ? ModuleResolutionKind_Bundler
+                : ModuleResolutionKind_NodeJs,
+              customConditions: useSources ? ["sources"] : [],
+            },
+          }),
+          externalizeDeps(),
+          sanitizeVueOutputPlugin(),
+        ],
     build: {
       cssCodeSplit: true,
       lib: {
