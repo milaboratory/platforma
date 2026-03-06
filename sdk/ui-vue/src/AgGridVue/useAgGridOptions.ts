@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/**/
 import type {
   ColGroupDef,
   GridApi,
@@ -10,7 +10,7 @@ import type {
 } from "ag-grid-enterprise";
 import type { Component } from "vue";
 import { computed, shallowRef, watch } from "vue";
-import { AgGridTheme } from "../aggrid";
+import { AgGridTheme } from "../composition/AgGrid";
 import {
   autoSizeRowNumberColumn,
   makeRowNumberColDef,

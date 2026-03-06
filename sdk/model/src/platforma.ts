@@ -2,6 +2,7 @@ import type { BlockApiV1 } from "./block_api_v1";
 import type { BlockApiV2 } from "./block_api_v2";
 import type { BlockApiV3 } from "./block_api_v3";
 import type {
+  BlockCodeKnownFeatureFlags,
   BlockOutputsBase,
   BlockStateV3,
   DriverKit,
@@ -87,6 +88,7 @@ export type BlockModelInfo = {
     }
   >;
   pluginIds: PluginHandle[];
+  featureFlags: BlockCodeKnownFeatureFlags;
 };
 
 export type PlatformaApiVersion = Platforma["apiVersion"];

@@ -16,12 +16,13 @@ export type BlockCodeFeatureFlags = Record<`supports${string}`, boolean | number
  */
 export type BlockCodeKnownFeatureFlags = {
   readonly supportsLazyState?: boolean;
+  readonly supportsPframesRanking?: boolean;
   readonly requiresModelAPIVersion?: number;
   readonly requiresUIAPIVersion?: number;
   readonly requiresCreatePTable?: number;
 };
 
-export const AllSupportsFeatureFlags = ["supportsLazyState"] as const;
+export const AllSupportsFeatureFlags = ["supportsLazyState", "supportsPframesRanking"] as const;
 
 export const AllRequiresFeatureFlags = [
   "requiresUIAPIVersion",

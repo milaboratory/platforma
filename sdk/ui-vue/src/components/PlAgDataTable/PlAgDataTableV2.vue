@@ -21,7 +21,7 @@ import {
 import type { CellRendererSelectorFunc, GridApi, GridState } from "ag-grid-enterprise";
 import { AgGridVue } from "ag-grid-vue3";
 import { computed, effectScope, nextTick, ref, toRefs, watch, watchEffect } from "vue";
-import { AgGridTheme } from "../../aggrid";
+import { AgGridTheme } from "../../composition/AgGrid";
 import PlAgCsvExporter from "../PlAgCsvExporter/PlAgCsvExporter.vue";
 import { PlAgGridColumnManager } from "../PlAgGridColumnManager";
 import PlTableFiltersV2 from "../PlTableFilters/PlTableFiltersV2.vue";

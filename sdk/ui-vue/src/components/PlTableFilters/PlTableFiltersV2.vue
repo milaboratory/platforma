@@ -27,6 +27,9 @@ import {
 import type { PlAdvancedFilterColumnId } from "../PlAdvancedFilter/types";
 import type { Nil } from "@milaboratories/helpers";
 import { isNil } from "es-toolkit";
+import { useSdkPlugin } from "../../defineApp";
+
+const sdk = useSdkPlugin();
 
 const model = defineModel<PlDataTableFiltersWithMeta>({ required: true });
 const props = defineProps<{
@@ -89,6 +92,7 @@ const supportedFilters = [
   "notEqual",
 ] as (typeof PlAdvancedFilterSupportedFilters)[number][];
 
+// getSuggestOptions - provide discrete values from column annotations
 function handleSuggestOptions(params: {
   columnId: PlAdvancedFilterColumnId;
   axisIdx?: number;

@@ -68,6 +68,7 @@ export class BlockModel<
   public static get INITIAL_BLOCK_FEATURE_FLAGS(): BlockCodeKnownFeatureFlags {
     return {
       supportsLazyState: true,
+      supportsPframesRanking: true,
       requiresUIAPIVersion: 1,
       requiresModelAPIVersion: 1,
       requiresCreatePTable: 2,
@@ -433,11 +434,11 @@ export class BlockModel<
     globalThis.platformaApiVersion = this.config.featureFlags
       .requiresUIAPIVersion as PlatformaApiVersion;
 
-    if (!isInUI())
+    if (!isInUI()) {
       // we are in the configuration rendering routine, not in actual UI
       return { config } as any;
-    // normal operation inside the UI
-    else
+    } else {
+      // normal operation inside the UI
       return {
         ...getPlatformaInstance({
           sdkVersion: PlatformaSDKVersion,
@@ -453,7 +454,9 @@ export class BlockModel<
             ]),
           ),
           pluginIds: [],
+          featureFlags: this.config.featureFlags,
         },
       };
+    }
   }
 }

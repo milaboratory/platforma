@@ -20,8 +20,6 @@ export function activateAgGrid() {
   }
 }
 
-const agGridOverrideStyles = createPart({ feature: "headerBottomBorder", css: OverrideCss });
-
 export const AgGridTheme: Theme = themeQuartz
   .withParams({
     headerColumnResizeHandleColor: "transparent",
@@ -57,4 +55,4 @@ export const AgGridTheme: Theme = themeQuartz
     tooltipTextColor: "#FFFFFF",
     wrapperBorderRadius: "6px",
   })
-  .withPart(agGridOverrideStyles);
+  .withPart(createPart({ feature: "headerBottomBorder", css: OverrideCss }));

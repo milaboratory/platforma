@@ -193,6 +193,7 @@ const defaultBlockModelInfo = (pluginIds: PluginHandle[] = []): BlockModelInfo =
     doubled: { withStatus: false },
   },
   pluginIds,
+  featureFlags: {},
 });
 
 function createDefaultState(plugins?: Record<string, unknown>) {

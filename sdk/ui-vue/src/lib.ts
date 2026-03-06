@@ -51,7 +51,7 @@ export * from "./types";
 
 export * from "./defineStore";
 
-export * from "./aggrid";
+export * from "./composition/AgGrid";
 
 export * from "./utils";
 
