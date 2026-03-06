@@ -2,9 +2,6 @@
   "name": "@platforma-sdk/ui-vue",
   "version": "1.58.11",
   "type": "module",
-  "sideEffects": [
-    "**/*.css"
-  ],
   "main": "dist/index.js",
   "exports": {
     ".": {
