@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.10.41
+
+### Patch Changes
+
+- f2b7989: Use shared PlCloseModalBtn in PlAlert and PlPureSlideModal instead of duplicated close button styles
+
 ## 2.10.40
 
 ### Patch Changes
