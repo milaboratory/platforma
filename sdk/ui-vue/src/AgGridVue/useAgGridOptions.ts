@@ -10,7 +10,6 @@ import type {
 } from "ag-grid-enterprise";
 import type { Component } from "vue";
 import { computed, shallowRef, watch } from "vue";
-import { AgGridTheme } from "../composition/AgGrid";
 import {
   autoSizeRowNumberColumn,
   makeRowNumberColDef,
@@ -26,6 +25,7 @@ import { PlAgChartHistogramCell } from "../components/PlAgChartHistogramCell";
 import type { ImportFileHandle } from "@platforma-sdk/model";
 import type { ImportProgress } from "@platforma-sdk/model";
 import { PlAgCellStatusTag } from "../components/PlAgCellStatusTag";
+import { AgGridTheme } from "../components/PlAgDataTable/compositions/useTheme";
 interface GridOptionsExtended<TData = any> extends Omit<
   GridOptions<TData>,
   "columnDefs" | "loadingOverlayComponentParams"

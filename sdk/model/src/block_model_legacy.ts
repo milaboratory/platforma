@@ -68,7 +68,7 @@ export class BlockModel<
   public static get INITIAL_BLOCK_FEATURE_FLAGS(): BlockCodeKnownFeatureFlags {
     return {
       supportsLazyState: true,
-      supportsPframesRanking: true,
+      supportsPframeQueryRanking: true,
       requiresUIAPIVersion: 1,
       requiresModelAPIVersion: 1,
       requiresCreatePTable: 2,

@@ -293,6 +293,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
         [pluginOutputName]: { withStatus: false },
       },
       pluginIds: [pluginId],
+      featureFlags: {},
     };
 
     const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
@@ -331,6 +332,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
         [pluginOutputName]: { withStatus: false },
       },
       pluginIds: [pluginId],
+      featureFlags: {},
     };
 
     const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
@@ -497,6 +499,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
         [pluginOutputName]: { withStatus: false },
       },
       pluginIds: [pluginId],
+      featureFlags: {},
     };
 
     const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
