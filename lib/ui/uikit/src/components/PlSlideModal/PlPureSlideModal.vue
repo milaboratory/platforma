@@ -7,9 +7,12 @@ export default {
 
 <script lang="ts" setup>
 import "./pl-slide-modal.scss";
+
 import { ref, useAttrs } from "vue";
+import { useClickOutside } from "../../composition/useClickOutside";
+import { useEventListener } from "../../composition/useEventListener";
+import PlCloseModalBtn from "../../utils/PlCloseModalBtn.vue";
 import TransitionSlidePanel from "../TransitionSlidePanel.vue";
-import { useClickOutside, useEventListener } from "../../index";
 import type { Props } from "./props";
 import { defaultProps } from "./props";
 
@@ -45,7 +48,7 @@ useEventListener(document, "keydown", (evt: KeyboardEvent) => {
         v-bind="attrs"
         @keyup.esc="emit('update:modelValue', false)"
       >
-        <div class="close-dialog-btn" @click="emit('update:modelValue', false)" />
+        <PlCloseModalBtn class="close-dialog-btn" @click="emit('update:modelValue', false)" />
         <slot />
       </div>
     </TransitionSlidePanel>
