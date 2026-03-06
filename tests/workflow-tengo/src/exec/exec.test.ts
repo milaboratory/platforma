@@ -19,6 +19,25 @@ tplTest.concurrent("run-hello-world-go", async ({ helper, expect }) => {
 });
 
 /*
+ * Checks that default limits for ui-tasks queue are applied when no explicit
+ * cpu/ram is set: QueueUITasksDefaultTaskCores=1, QueueUITasksDefaultTaskRAM=100MiB.
+ */
+tplTest.concurrent("ui-queue-default-limits", async ({ helper, expect }) => {
+  const result = await helper.renderTemplate(
+    false,
+    "exec.run.echo_ui_queue_limits",
+    ["cpu", "ram"],
+    (_tx) => ({}),
+  );
+
+  const cpu = await result.computeOutput("cpu", (a) => a?.getDataAsString()).awaitStableValue();
+  const ram = await result.computeOutput("ram", (a) => a?.getDataAsString()).awaitStableValue();
+
+  expect(Number(cpu)).eq(1);                 // QueueUITasksDefaultTaskCores
+  expect(Number(ram)).eq(100 * 1024 * 1024); // QueueUITasksDefaultTaskRAM = 100 MiB
+});
+
+/*
  * Checks that we preserve original image entrypoint when executing software in docker
  */
 tplTest.concurrent("check-docker-entrypoint-preserved", async ({ helper, expect }) => {
