@@ -300,71 +300,14 @@ The block's `turbo.json` includes `PL_PKG_DEV` in the build task's `env` array, 
 
 ## Running a local platforma server for tests
 
-Integration tests in the monorepo (e.g., `etc/blocks/model-test/test/`) require a running platforma backend. This section explains how to download, run, and connect to a local server.
+For server download, startup, and environment variables, see [local-server.md](./local-server.md).
 
-### Download the server binary
+### Run monorepo tests
 
-In a multi-repo workspace, store the server outside any git repo (e.g., at the workspace root). In a standalone platforma checkout, use a gitignored `.pl-server/` directory.
-
-```bash
-# Pick the directory for the server binary and its data
-PL_SERVER_DIR=/path/to/workspace/.pl-server   # adjust to your layout
-
-mkdir -p "$PL_SERVER_DIR"
-```
-
-Download the binary for your platform:
-
-| OS / Arch | URL |
-|:----------|:----|
-| macOS ARM64 (Apple Silicon) | `https://dl.platforma.bio/software/platforma-backend/pl-macos-arm64.tgz` |
-| macOS AMD64 (Intel) | `https://dl.platforma.bio/software/platforma-backend/pl-macos-amd64.tgz` |
-| Linux AMD64 | `https://dl.platforma.bio/software/platforma-backend/pl-linux-amd64.tgz` |
-
-```bash
-curl -L -o "$PL_SERVER_DIR/pl.tgz" https://dl.platforma.bio/software/platforma-backend/pl-macos-arm64.tgz
-cd "$PL_SERVER_DIR" && tar xzf pl.tgz
-```
-
-The binary is at `$PL_SERVER_DIR/binaries/platforma`.
-
-### Start the server
-
-The server requires a license key. Set `MI_LICENSE` in your shell environment (e.g., in `~/.zshrc`). The test framework reads this variable automatically.
-
-```bash
-PL_SERVER_DIR=/path/to/workspace/.pl-server   # same as above
-PLATFORMA_ROOT=/path/to/platforma              # path to the platforma monorepo
-
-"$PL_SERVER_DIR/binaries/platforma" \
-    --license "$MI_LICENSE" \
-    --main-root "$PL_SERVER_DIR/data" \
-    --data-library-fs=library="$PLATFORMA_ROOT/assets"
-```
-
-Key flags:
-- `--license "$MI_LICENSE"` — license from environment
-- `--main-root "$PL_SERVER_DIR/data"` — self-contained data directory (database, packages, work dirs) — keeps everything in one place instead of scattering across `$HOME`
-- `--data-library-fs=library=<path>` — mounts the monorepo's `assets/` directory as a data library (test fixtures live there)
-
-On successful start, the server prints:
-
-```
-API  address:  http://127.0.0.1:6345?token=<TOKEN>
-```
-
-The token changes on every start. Copy it for use in tests.
-
-### Run tests
-
-Tests need three environment variables:
+With the server running and env vars set:
 
 ```bash
 cd /path/to/platforma
-
-export PL_ADDRESS=http://127.0.0.1:6345/
-export PL_TEST_USER=default
-export PL_TEST_PASSWORD=<TOKEN>    # the token from server startup output
 
 # Run a specific test package
 (cd etc/blocks/model-test/test && pnpm test)
@@ -373,13 +316,7 @@ export PL_TEST_PASSWORD=<TOKEN>    # the token from server startup output
 pnpm test:local
 ```
 
-`pnpm test:local` sets `PL_PKG_DEV=local` and runs all tests via turbo. The `PL_ADDRESS`, `PL_TEST_USER`, `PL_TEST_PASSWORD`, and `MI_LICENSE` environment variables are passed through to test processes via turbo's `passThroughEnv` configuration.
-
-### Stop the server
-
-Press `Ctrl+C` in the terminal where the server is running, or `kill <PID>`.
-
-The data in `$PL_SERVER_DIR/data/` persists between runs. To start fresh, delete the `data/` directory.
+`pnpm test:local` sets `PL_PKG_DEV=local` and runs all tests via turbo.
 
 ---
 
@@ -531,24 +468,10 @@ pnpm install
 
 ### Running integration tests locally
 
+Start the platforma server and set env vars (see [local-server.md](./local-server.md)), then:
+
 ```bash
-# 1. Start platforma server (in a separate terminal)
-PL_SERVER_DIR=/path/to/workspace/.pl-server
-PLATFORMA_ROOT=/path/to/platforma
-
-"$PL_SERVER_DIR/binaries/platforma" \
-    --license "$MI_LICENSE" \
-    --main-root "$PL_SERVER_DIR/data" \
-    --data-library-fs=library="$PLATFORMA_ROOT/assets"
-
-# 2. Copy the token from the server output
-#    (shown in: API address: http://127.0.0.1:6345?token=<TOKEN>)
-
-# 3. Run tests
 cd /path/to/platforma
-export PL_ADDRESS=http://127.0.0.1:6345/
-export PL_TEST_USER=default
-export PL_TEST_PASSWORD=<TOKEN>
 
 # Single test package:
 (cd etc/blocks/model-test/test && pnpm test)
