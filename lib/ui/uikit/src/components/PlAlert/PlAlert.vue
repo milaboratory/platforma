@@ -7,6 +7,8 @@ export default {
 <script lang="ts" setup>
 import "./pl-alert.scss";
 
+import PlCloseModalBtn from "../../utils/PlCloseModalBtn.vue";
+
 defineEmits<{
   /**
    * Emitted when the model value is updated, typically when the close button is clicked.
@@ -89,11 +91,9 @@ const iconMap = {
       <label v-if="label">{{ label }}</label>
       <div class="pl-alert__main__text"><slot /></div>
     </div>
-    <div
+    <PlCloseModalBtn
       v-if="closeable"
       class="pl-alert__close-btn"
-      aria-label="Close alert"
-      role="button"
       @click="$emit('update:modelValue', false)"
     />
   </div>
