@@ -74,6 +74,9 @@ export const Domain = {
   Alphabet: "pl7.app/alphabet",
   BlockId: "pl7.app/blockId",
   VDJ: {
+    Clustering: {
+      BlockId: "pl7.app/vdj/clustering/blockId",
+    },
     ScClonotypeChain: {
       Index: "pl7.app/vdj/scClonotypeChain/index",
     },
@@ -137,13 +140,19 @@ export const Annotation = {
   HideDataFromUi: "pl7.app/hideDataFromUi",
   HideDataFromGraphs: "pl7.app/hideDataFromGraphs",
   IsDiscreteFilter: "pl7.app/isDiscreteFilter",
+  IsAnchor: "pl7.app/isAnchor",
   IsLinkerColumn: "pl7.app/isLinkerColumn",
+  IsScore: "pl7.app/isScore",
   IsSubset: "pl7.app/isSubset",
   Label: "pl7.app/label",
   Max: "pl7.app/max",
   Min: "pl7.app/min",
   MultipliesBy: "pl7.app/multipliesBy",
   Parents: "pl7.app/parents",
+  Score: {
+    DefaultCutoff: "pl7.app/score/defaultCutoff",
+    RankingOrder: "pl7.app/score/rankingOrder",
+  },
   Sequence: {
     Annotation: {
       Mapping: "pl7.app/sequence/annotation/mapping",
@@ -158,6 +167,7 @@ export const Annotation = {
   Trace: "pl7.app/trace",
   VDJ: {
     IsAssemblingFeature: "pl7.app/vdj/isAssemblingFeature",
+    IsMainSequence: "pl7.app/vdj/isMainSequence",
   },
 } as const;
 
@@ -533,16 +543,21 @@ export const PColumnName = {
     RowSelection: "pl7.app/table/row-selection",
   },
   VDJ: {
+    LeadSelection: "pl7.app/vdj/lead-selection",
+    RankingOrder: "pl7.app/vdj/ranking-order",
     Sequence: "pl7.app/vdj/sequence",
   },
 } as const;
 
 /// Well-known axis names
 export const PAxisName = {
+  SampleId: "pl7.app/sampleId",
   VDJ: {
     Assay: {
       SequenceId: "pl7.app/vdj/assay/sequenceId",
     },
+    ClusterId: "pl7.app/vdj/clusterId",
+    ClonotypeKey: "pl7.app/vdj/clonotypeKey",
     ScClonotypeKey: "pl7.app/vdj/scClonotypeKey",
   },
 } as const;

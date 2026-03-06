@@ -63,9 +63,16 @@ import {
   notEmpty,
   canonicalJsonBytes,
   cachedDecode,
+  type MiLogger,
+  ConsoleLoggerAdapter,
 } from "@milaboratories/ts-helpers";
 import type { ProjectHelper } from "../model/project_helper";
-import { extractConfig, UiError, type BlockConfig } from "@platforma-sdk/model";
+import {
+  extractConfig,
+  UiError,
+  BLOCK_STORAGE_FACADE_VERSION,
+  type BlockConfig,
+} from "@platforma-sdk/model";
 import { getDebugFlags } from "../debug";
 import type { BlockPackInfo } from "../model/block_pack";
 
@@ -114,6 +121,7 @@ class BlockInfo {
     public readonly fields: BlockFieldStates,
     public readonly config: BlockConfig,
     public readonly source: BlockPackSpec,
+    private readonly logger: MiLogger = new ConsoleLoggerAdapter(),
   ) {}
 
   public check() {
@@ -195,7 +203,7 @@ class BlockInfo {
     try {
       return this.blockStorageC();
     } catch (e) {
-      console.error("Error getting blockStorage:", e);
+      this.logger.error(new Error(`Error getting blockStorage for ${this.id}`, { cause: e }));
       return undefined;
     }
   }
@@ -590,6 +598,9 @@ export class ProjectMutator {
   ): { args?: unknown; uiState?: unknown } {
     const info = this.getBlockInfo(blockId);
     const currentState = info.blockStorage as { args?: unknown; uiState?: unknown } | undefined;
+    if (currentState === undefined) {
+      throw new Error(`Cannot merge block state for ${blockId}: blockStorage is unavailable`);
+    }
     return { ...currentState, ...partialUpdate };
   }
 
@@ -622,7 +633,7 @@ export class ProjectMutator {
     const info = this.getBlockInfo(blockId);
     const blockConfig = info.config;
 
-    if (blockConfig.modelAPIVersion !== 2) {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
       throw new Error("resetToInitialStorage is only supported for model API version 2");
     }
 
@@ -648,9 +659,17 @@ export class ProjectMutator {
       );
       if (prerunArgs !== undefined) {
         this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
+      } else {
+        this.deleteBlockFields(blockId, "currentPrerunArgs");
       }
     } else {
+      if (info.fields.currentPrerunArgs !== undefined) {
+        this.projectHelper.logger.warn(
+          `[staging] ${blockId}: currentPrerunArgs cleared (args derivation failed)`,
+        );
+      }
       this.deleteBlockFields(blockId, "currentArgs");
+      this.deleteBlockFields(blockId, "currentPrerunArgs");
     }
   }
 
@@ -675,7 +694,7 @@ export class ProjectMutator {
       let args: unknown;
       let prerunArgs: unknown;
 
-      if (req.modelAPIVersion === 2) {
+      if (req.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION) {
         const currentStorageJson = info.blockStorageJson;
         if (currentStorageJson === undefined) {
           throw new Error(`Block ${req.blockId} has no blockStorage - this should not happen`);
@@ -751,10 +770,7 @@ export class ProjectMutator {
           prerunArgsData,
         );
       } else {
-        // prerunArgs is undefined - check if we previously had one
-        if (info.fields.currentPrerunArgs !== undefined) {
-          prerunArgsChanged = true;
-        }
+        this.deleteBlockFields(req.blockId, "currentPrerunArgs");
       }
 
       blockChanged = true;
@@ -898,6 +914,7 @@ export class ProjectMutator {
       {},
       extractConfig(spec.blockPack.config),
       spec.blockPack.source,
+      this.projectHelper.logger,
     );
     this.blockInfos.set(blockId, info);
 
@@ -1001,7 +1018,13 @@ export class ProjectMutator {
   }
 
   private initializeBlockDuplicate(blockId: string, originalBlockInfo: BlockInfo) {
-    const info = new BlockInfo(blockId, {}, originalBlockInfo.config, originalBlockInfo.source);
+    const info = new BlockInfo(
+      blockId,
+      {},
+      originalBlockInfo.config,
+      originalBlockInfo.source,
+      this.projectHelper.logger,
+    );
 
     this.blockInfos.set(blockId, info);
 
@@ -1179,79 +1202,90 @@ export class ProjectMutator {
     const info = this.getBlockInfo(blockId);
     const newConfig = extractConfig(spec.config);
 
-    this.setBlockField(
-      blockId,
-      "blockPack",
-      Pl.wrapInHolder(this.tx, createBlockPack(this.tx, spec)),
-      "NotReady",
-    );
+    const persistBlockPack = () => {
+      this.setBlockField(
+        blockId,
+        "blockPack",
+        Pl.wrapInHolder(this.tx, createBlockPack(this.tx, spec)),
+        "NotReady",
+      );
+    };
+
+    const applyStorageAndDeriveArgs = (storageJson: string) => {
+      persistBlockPack();
+      this.setBlockStorageRaw(blockId, storageJson);
+      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(newConfig, storageJson);
+      if (!deriveArgsResult.error) {
+        this.setBlockFieldObj(
+          blockId,
+          "currentArgs",
+          this.createJsonFieldValue(deriveArgsResult.value),
+        );
+        const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(newConfig, storageJson);
+        if (prerunArgs !== undefined) {
+          this.setBlockFieldObj(
+            blockId,
+            "currentPrerunArgs",
+            this.createJsonFieldValue(prerunArgs),
+          );
+        } else {
+          this.deleteBlockFields(blockId, "currentPrerunArgs");
+        }
+      } else {
+        this.deleteBlockFields(blockId, "currentArgs");
+        this.deleteBlockFields(blockId, "currentPrerunArgs");
+      }
+    };
 
     if (newClearState !== undefined) {
       // State is being reset - no migration needed
-      const supportsStorageFromVM = newConfig.modelAPIVersion === 2;
+      const supportsStorageFromVM = newConfig.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION;
 
       if (supportsStorageFromVM) {
         // V2+: Get initial storage directly from VM and derive args from it
         const initialStorageJson = this.projectHelper.getInitialStorageInVM(newConfig);
-        this.setBlockStorageRaw(blockId, initialStorageJson);
-
-        // Derive args from storage - only set currentArgs if derivation succeeds
-        const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
-          newConfig,
-          initialStorageJson,
-        );
-        if (!deriveArgsResult.error) {
-          this.setBlockFieldObj(
-            blockId,
-            "currentArgs",
-            this.createJsonFieldValue(deriveArgsResult.value),
-          );
-          // Derive prerunArgs from storage
-          const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
-            newConfig,
-            initialStorageJson,
-          );
-          if (prerunArgs !== undefined) {
-            this.setBlockFieldObj(
-              blockId,
-              "currentPrerunArgs",
-              this.createJsonFieldValue(prerunArgs),
-            );
-          }
-        }
+        applyStorageAndDeriveArgs(initialStorageJson);
         this.blocksWithChangedInputs.add(blockId);
         this.updateLastModified();
       } else {
         // V1: Use setStates with legacy state format
+        persistBlockPack();
         this.setStates([{ modelAPIVersion: 1, blockId, state: newClearState.state }]);
       }
     } else {
       // State is being preserved - run migrations if needed via VM
       // Only Model API v2 blocks support migrations
-      const supportsStateMigrations = newConfig.modelAPIVersion === 2;
+      const supportsStateMigrations = newConfig.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION;
 
       if (supportsStateMigrations) {
         const currentStorageJson = info.blockStorageJson;
 
+        // Attempt migration BEFORE persisting block pack — on failure,
+        // block stays on old version (no inconsistent new-code/old-storage state)
         const migrationResult = this.projectHelper.migrateStorageInVM(
           newConfig,
           currentStorageJson,
         );
 
         if (migrationResult.error !== undefined) {
-          console.error(
-            `[migrateBlockPack] Block ${blockId} migration error: ${migrationResult.error}`,
+          throw new Error(
+            `[migrateBlockPack] Block ${blockId} migration failed: ${migrationResult.error}`,
           );
-        } else {
-          console.log(`[migrateBlockPack] Block ${blockId}: ${migrationResult.info}`);
-          if (migrationResult.warn) {
-            console.warn(
-              `[migrateBlockPack] Block ${blockId} migration warning: ${migrationResult.warn}`,
-            );
-          }
-          this.setBlockStorageRaw(blockId, migrationResult.newStorageJson);
+        }
+
+        this.projectHelper.logger.info(
+          `[migrateBlockPack] Block ${blockId}: ${migrationResult.info}`,
+        );
+        applyStorageAndDeriveArgs(migrationResult.newStorageJson);
+      } else {
+        // Legacy blocks (modelAPIVersion 1): persist block pack, set prerunArgs = currentArgs
+        persistBlockPack();
+        if (info.fields.currentArgs !== undefined) {
+          this.setBlockFieldObj(blockId, "currentPrerunArgs", info.fields.currentArgs);
         }
       }
+
+      this.blocksWithChangedInputs.add(blockId);
 
       // resetting staging outputs for all downstream blocks
       this.getStagingGraph().traverse("downstream", [blockId], ({ id }) => this.resetStaging(id));
@@ -1404,9 +1438,14 @@ export class ProjectMutator {
         // meaning staging already rendered
         return;
       if (lagThreshold === undefined || lag <= lagThreshold) {
-        // console.log(`[refreshStagings] RENDER staging for ${blockId} (lag=${lag})`);
-        this.renderStagingFor(blockId);
-        rendered++;
+        try {
+          this.renderStagingFor(blockId);
+          rendered++;
+        } catch (e) {
+          this.projectHelper.logger.error(
+            new Error(`[refreshStagings] renderStagingFor failed for ${blockId}`, { cause: e }),
+          );
+        }
       }
     });
     if (rendered > 0) this.resetStagingRefreshTimestamp();
@@ -1645,7 +1684,10 @@ export class ProjectMutator {
 
     const blockInfos = new Map<string, BlockInfo>();
     blockInfoStates.forEach(({ id, fields, blockConfig, blockPack }) =>
-      blockInfos.set(id, new BlockInfo(id, fields, notEmpty(blockConfig), notEmpty(blockPack))),
+      blockInfos.set(
+        id,
+        new BlockInfo(id, fields, notEmpty(blockConfig), notEmpty(blockPack), projectHelper.logger),
+      ),
     );
 
     // check consistency of project state

@@ -3,7 +3,7 @@ import type {
   PFrameHandle,
   PTableDef,
   PTableHandle,
-  QueryData,
+  DataQuery,
   PTableColumnSpec,
 } from "@platforma-sdk/model";
 import { hashJson } from "@milaboratories/pl-model-middle-layer";
@@ -19,7 +19,7 @@ export type FullPTableDefV2 = {
   pFrameHandle: PFrameHandle;
   def: {
     tableSpec: PTableColumnSpec[];
-    dataQuery: QueryData;
+    dataQuery: DataQuery;
   };
 };
 

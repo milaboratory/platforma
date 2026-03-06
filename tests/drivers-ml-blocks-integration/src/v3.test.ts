@@ -44,7 +44,7 @@ test("v3: prerunArgs fastNumbers test", { timeout: 10_000 }, async ({ expect }) 
 
     // Set state with numbers - prerunArgs should derive fastNumbers
     await prj.mutateBlockStorage(enterNumberId, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [3, 1, 2] },
     });
 
@@ -95,7 +95,7 @@ test("v3: prerunArgs fastNumbers test", { timeout: 10_000 }, async ({ expect }) 
     );
     // Change [3, 1, 2] to [5, 1, 2] - evenNumbers stays [2], so staging should be skipped
     await prj.mutateBlockStorage(enterNumberId, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [5, 1, 2] }, // odd numbers changed (3→5), but even numbers still just [2]
     });
 
@@ -117,7 +117,7 @@ test("v3: prerunArgs fastNumbers test", { timeout: 10_000 }, async ({ expect }) 
     );
     // Change [5, 1, 2] to [5, 1, 4] - evenNumbers changes from [2] to [4], staging should run
     await prj.mutateBlockStorage(enterNumberId, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [5, 1, 4] }, // now even number is 4 instead of 2
     });
 
@@ -193,12 +193,12 @@ test("v3: project watcher test", { timeout: 20_000 }, async ({ expect }) => {
 
     // v3 state format: direct state object (not wrapped in {args: ...})
     await prj.mutateBlockStorage(enterNumberId, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [1, 2, 3] },
     });
 
     await prj.mutateBlockStorage(sumNumbersId, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { sources: [outputRef(enterNumberId, "numbers")] },
     });
 
@@ -231,7 +231,7 @@ test("v3: project watcher test", { timeout: 20_000 }, async ({ expect }) => {
     });
 
     await prj.mutateBlockStorage(enterNumberId, {
-      operation: "update-data",
+      operation: "update-block-data",
       value: { numbers: [2, 3] },
     });
     await prj.runBlock(enterNumberId);

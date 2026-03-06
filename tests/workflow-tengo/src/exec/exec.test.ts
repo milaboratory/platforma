@@ -41,6 +41,27 @@ tplTest.concurrent("ui-queue-default-limits", async ({ helper, expect }) => {
   expect(Number(cpu)).eq(UI_QUEUE_DEFAULT_CPU_CORES);
   expect(Number(ram)).eq(UI_QUEUE_DEFAULT_RAM_BYTES);
 });
+/**
+ * Requests a secret and checks its value is not empty.
+ */
+tplTest.concurrent("check-secret", async ({ helper, expect }) => {
+  const result = await helper.renderTemplate(
+    false,
+    "exec.run.use_secret",
+    ["customEnv", "defaultEnv"],
+    (tx) => ({}),
+  );
+  const customEnvResult = result.computeOutput("customEnv", (a) => a?.getDataAsString());
+  const defaultEnvResult = result.computeOutput("defaultEnv", (a) => a?.getDataAsString());
+
+  const secretValue1 = await customEnvResult.awaitStableValue();
+  expect(secretValue1).not.toBe("");
+  expect(secretValue1).not.toBeNull();
+
+  const secretValue2 = await defaultEnvResult.awaitStableValue();
+  expect(secretValue2).not.toBe("");
+  expect(secretValue2).not.toBeNull();
+});
 
 /*
  * Checks that we preserve original image entrypoint when executing software in docker
@@ -93,19 +114,19 @@ tplTest.concurrent("run-empty-conda-env", async ({ helper, expect }) => {
  * but we at least know SDK does not get broken when custom limits are applied.
  */
 tplTest.concurrent.for([
-  { cpuLimit: 1, ramLimit: "10MiB" },
-  { cpuLimit: 2, ramLimit: "10mib" },
-  { cpuLimit: 1, ramLimit: "10mb" },
-  { cpuLimit: 1, ramLimit: "10m" },
-  { cpuLimit: 1, ramLimit: "10M" },
-  { cpuLimit: 1, ramLimit: "1024k" },
-  { cpuLimit: 1, ramLimit: "1024kb" },
-  { cpuLimit: 1, ramLimit: "1024Kb" },
-  { cpuLimit: 1, ramLimit: "1024kB" },
-  { cpuLimit: 1, ramLimit: "1024Kib" },
-  { cpuLimit: 1, ramLimit: "1024KiB" },
-  { cpuLimit: 1, ramLimit: "1024kiB" },
-  { cpuLimit: 1, ramLimit: 1048576 },
+  { cpuLimit: 1, ramLimit: "20MiB" },
+  { cpuLimit: 2, ramLimit: "20mib" },
+  { cpuLimit: 1, ramLimit: "20mb" },
+  { cpuLimit: 1, ramLimit: "20m" },
+  { cpuLimit: 1, ramLimit: "20M" },
+  { cpuLimit: 1, ramLimit: "20480k" },
+  { cpuLimit: 1, ramLimit: "20480kb" },
+  { cpuLimit: 1, ramLimit: "20480Kb" },
+  { cpuLimit: 1, ramLimit: "20480kB" },
+  { cpuLimit: 1, ramLimit: "20480Kib" },
+  { cpuLimit: 1, ramLimit: "20480KiB" },
+  { cpuLimit: 1, ramLimit: "20480kiB" },
+  { cpuLimit: 1, ramLimit: 20971520 },
 ])(
   "run-hello-world-go (limits) CPU=$cpuLimit, RAM=$ramLimit",
   async ({ cpuLimit, ramLimit }, { helper, expect }) => {
@@ -196,7 +217,7 @@ tplTest.concurrent(
     const result = await helper.renderTemplate(false, "exec.run.cat_on_file", ["main"], (tx) => ({
       file: tx.createValue(
         Pl.JsonObject,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        //
         JSON.stringify((ourFile as any).handle),
       ),
     }));

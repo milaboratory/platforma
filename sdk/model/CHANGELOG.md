@@ -1,5 +1,148 @@
 # @platforma-sdk/model
 
+## 1.58.11
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-common@1.25.2
+  - @milaboratories/pl-error-like@1.12.9
+  - @milaboratories/ptabler-expression-js@1.1.24
+  - @milaboratories/helpers@1.13.6
+
+## 1.58.9
+
+### Patch Changes
+
+- 4d83b3c: Transfer data from block to plugin
+
+## 1.58.5
+
+### Patch Changes
+
+- c2d9319: distill empty leafs with empty fields
+
+## 1.58.3
+
+### Patch Changes
+
+- 327444c: Move mergeFeatureFlags from pl-model-common to sdk/model (internal-only usage)
+
+## 1.58.2
+
+### Patch Changes
+
+- Updated dependencies [523a59f]
+  - @milaboratories/pl-model-common@1.25.1
+  - @milaboratories/ptabler-expression-js@1.1.23
+
+## 1.58.1
+
+### Patch Changes
+
+- d318a76: DataModelBuilder upgradeLegacy fix
+
+## 1.58.0
+
+### Minor Changes
+
+- b5d19c6: Type-safe `usePlugin` composable with `PluginHandle` branded type.
+
+  **`@platforma-sdk/model`:**
+
+  - Added `PluginFactory` interface (public return type of `PluginModelBuilder.build()`)
+  - Added `PluginHandle<F>` branded type using `Branded` from `@milaboratories/helpers`
+  - Added `InferPluginHandles` type helper
+  - Added `pluginIds` to `BlockModelInfo`
+  - Added `pluginOutputKey`, `isPluginOutputKey`, `pluginOutputPrefix` helpers
+
+  **`@platforma-sdk/ui-vue`:**
+
+  - Added `usePlugin(handle)` composable — reactive `model.data`, computed `model.outputs` and `model.outputErrors`, isolated per plugin
+  - Added `app.plugins` record mapping plugin IDs to typed `PluginHandle` values
+  - Renamed `PluginSlot` to `PluginState<Data, Outputs>` (generic, avoids Vue naming conflict)
+  - Filtered plugin output keys from block-level `outputs` and `outputErrors` via helpers
+  - Removed `usePluginData` (replaced by `usePlugin`)
+
+## 1.57.2
+
+### Patch Changes
+
+- 6ba4c69: Apply user sorting above options
+
+## 1.57.0
+
+### Minor Changes
+
+- 8baa2b3: Add plugin outputs to block config pack
+
+## 1.56.0
+
+### Minor Changes
+
+- f2daf69: Expose blockStorage to vm ctx
+
+## 1.55.0
+
+### Minor Changes
+
+- 01d0b52: BlockModelV3 update
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @milaboratories/pl-model-common@1.25.0
+  - @milaboratories/ptabler-expression-js@1.1.22
+
+## 1.54.13
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+- Updated dependencies [cb28fde]
+  - @milaboratories/pl-model-common@1.24.11
+  - @milaboratories/helpers@1.13.5
+  - @milaboratories/ptabler-expression-js@1.1.21
+
+## 1.54.10
+
+### Patch Changes
+
+- 866a323: Apply user filters, add utils method for traversing
+- Updated dependencies [866a323]
+  - @milaboratories/pl-model-common@1.24.10
+  - @milaboratories/ptabler-expression-js@1.1.20
+
+## 1.54.9
+
+### Patch Changes
+
+- a3659cd: Add well-known constants for commonly used PColumn names, PAxis names, Domain keys, and Annotation keys (VDJ clustering, scores, lead selection, etc.)
+- Updated dependencies [a3659cd]
+  - @milaboratories/pl-model-common@1.24.9
+  - @milaboratories/ptabler-expression-js@1.1.19
+
+## 1.54.8
+
+### Patch Changes
+
+- 4f04561: simplify distil , renaming
+- Updated dependencies [4f04561]
+  - @milaboratories/pl-model-common@1.24.8
+  - @milaboratories/ptabler-expression-js@1.1.18
+
+## 1.54.7
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-common@1.24.7
+  - @milaboratories/helpers@1.13.4
+  - @milaboratories/pl-error-like@1.12.8
+  - @milaboratories/ptabler-expression-js@1.1.17
+
 ## 1.53.15
 
 ### Patch Changes

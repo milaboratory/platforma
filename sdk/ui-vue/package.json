@@ -1,15 +1,17 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.54.1",
+  "version": "1.58.11",
   "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "main": "dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "sources": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./styles": "./dist/index.js"
+    }
   },
   "scripts": {
     "dev": "ts-builder serve --target browser-lib",
@@ -51,13 +53,11 @@
     "@vitest/coverage-istanbul": "catalog:",
     "@vue/test-utils": "catalog:",
     "fast-json-patch": "catalog:",
-    "happy-dom": "catalog:",
     "rollup-plugin-sourcemaps2": "catalog:",
     "sass": "catalog:",
     "semver": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
-  },
-  "styles": "dist/index.js"
+  }
 }

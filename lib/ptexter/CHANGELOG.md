@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.software-ptexter
 
+## 1.2.2
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
 ## 1.2.1
 
 ### Patch Changes

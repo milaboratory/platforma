@@ -3,7 +3,6 @@ import {
   mapPTableDef,
   extractAllColumns,
   uniqueBy,
-  getAxisId,
   canonicalizeJson,
   bigintReplacer,
   ValueType,
@@ -24,18 +23,18 @@ import {
   type UniqueValuesResponse,
   type PColumn,
   type PFrameDef,
-  type JoinEntry,
   type PTableDef,
   type PTableRecordSingleValueFilterV2,
   type PTableRecordFilter,
   type JsonSerializable,
+  type PTableDefV2,
+  mapSpecQueryColumns,
+  collectSpecQueryColumns,
+  sortSpecQuery,
+  sortPTableDef,
 } from "@platforma-sdk/model";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import {
-  assertNever,
-  ConcurrencyLimitingExecutor,
-  type PoolEntry,
-} from "@milaboratories/ts-helpers";
+import { ConcurrencyLimitingExecutor, type PoolEntry } from "@milaboratories/ts-helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";
 import { tmpdir } from "node:os";
 import type { AbstractInternalPFrameDriver } from "./driver_decl";
@@ -57,9 +56,8 @@ import {
   PTableCachePlainOpsDefaults,
   type PTableCachePlainOps,
 } from "./ptable_cache_plain";
-// import { createPFrame as createSpecFrame } from "@milaboratories/pframes-rs-wasm";
+import { createPFrame as createSpecFrame } from "@milaboratories/pframes-rs-wasm";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface LocalBlobProvider<
   TreeEntry extends JsonSerializable,
 > extends PoolLocalBlobProvider<TreeEntry> {}
@@ -177,7 +175,7 @@ export class AbstractPFrameDriver<
   public createPTable(rawDef: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
     const pFrameEntry = this.createPFrame(extractAllColumns(rawDef.src));
     const sortedDef = sortPTableDef(
-      migratePTableFilters(
+      migrateTableFilter(
         mapPTableDef(rawDef, (c) => c.id),
         this.logger,
       ),
@@ -206,50 +204,43 @@ export class AbstractPFrameDriver<
     };
   }
 
-  public createPTableV2(_rawDef: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
-    throw new Error("createPTableV2 is not implemented yet");
-    // const columns = extractAllColumns(rawDef.src);
-    // const pFrameEntry = this.createPFrame(columns);
+  public createPTableV2(def: PTableDefV2<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
+    const columns = uniqueBy(collectSpecQueryColumns(def.query), (c) => c.id);
+    const columnsMap = columns.reduce(
+      (acc, col) => ((acc[col.id] = col.spec), acc),
+      {} as Record<string, PColumnSpec>,
+    );
 
-    // const columnsMap = columns.reduce(
-    //   (acc, col) => ((acc[col.id] = col.spec), acc),
-    //   {} as Record<string, PColumnSpec>,
-    // );
-    // const sortedDef = sortPTableDef(
-    //   migratePTableFilters(
-    //     mapPTableDef(rawDef, (c) => c.id),
-    //     this.logger,
-    //   ),
-    // );
-    // const specFrame = createSpecFrame(columnsMap);
-    // const specQuery = specFrame.rewriteLegacyQuery(sortedDef);
-    // const { tableSpec, dataQuery } = specFrame.evaluateQuery(specQuery);
+    const pFrameEntry = this.createPFrame(columns);
+    const specFrame = createSpecFrame(columnsMap);
+    const sortedQuery = sortSpecQuery(mapSpecQueryColumns(def.query, (c) => c.id));
+    const { tableSpec, dataQuery } = specFrame.evaluateQuery(sortedQuery);
 
-    // const pTableEntry = this.pTableDefs.acquire({
-    //   type: "v2",
-    //   pFrameHandle: pFrameEntry.key,
-    //   def: {
-    //     tableSpec,
-    //     dataQuery,
-    //   },
-    // });
-    // if (logPFrames()) {
-    //   this.logger(
-    //     "info",
-    //     `Create PTable call (pFrameHandle = ${pFrameEntry.key}; pTableHandle = ${pTableEntry.key})`,
-    //   );
-    // }
+    const pTableEntry = this.pTableDefs.acquire({
+      type: "v2",
+      pFrameHandle: pFrameEntry.key,
+      def: {
+        tableSpec,
+        dataQuery,
+      },
+    });
+    if (logPFrames()) {
+      this.logger(
+        "info",
+        `Create PTable call (pFrameHandle = ${pFrameEntry.key}; pTableHandle = ${pTableEntry.key})`,
+      );
+    }
 
-    // const unref = () => {
-    //   pTableEntry.unref();
-    //   pFrameEntry.unref();
-    // };
-    // return {
-    //   key: pTableEntry.key,
-    //   resource: pTableEntry.resource,
-    //   unref,
-    //   [Symbol.dispose]: unref,
-    // };
+    const unref = () => {
+      pTableEntry.unref();
+      pFrameEntry.unref();
+    };
+    return {
+      key: pTableEntry.key,
+      resource: pTableEntry.resource,
+      unref,
+      [Symbol.dispose]: unref,
+    };
   }
 
   //
@@ -328,7 +319,7 @@ export class AbstractPFrameDriver<
     const table = this.pTables.acquire({
       type: "v1",
       pFrameHandle: handle,
-      def: sortPTableDef(migratePTableFilters(request, this.logger)),
+      def: sortPTableDef(migrateTableFilter(request, this.logger)),
     });
     const { pTablePromise, disposeSignal } = table.resource;
     const pTable = await pTablePromise;
@@ -459,112 +450,6 @@ export class AbstractPFrameDriver<
   }
 }
 
-function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
-  function cmpJoinEntries(lhs: JoinEntry<PObjectId>, rhs: JoinEntry<PObjectId>): number {
-    if (lhs.type !== rhs.type) {
-      return lhs.type < rhs.type ? -1 : 1;
-    }
-    const type = lhs.type;
-    switch (type) {
-      case "column":
-        return lhs.column < (rhs as typeof lhs).column ? -1 : 1;
-      case "slicedColumn":
-      case "artificialColumn":
-        return lhs.newId < (rhs as typeof lhs).newId ? -1 : 1;
-      case "inlineColumn": {
-        return lhs.column.id < (rhs as typeof lhs).column.id ? -1 : 1;
-      }
-      case "inner":
-      case "full": {
-        const rhsInner = rhs as typeof lhs;
-        if (lhs.entries.length !== rhsInner.entries.length) {
-          return lhs.entries.length - rhsInner.entries.length;
-        }
-        for (let i = 0; i < lhs.entries.length; i++) {
-          const cmp = cmpJoinEntries(lhs.entries[i], rhsInner.entries[i]);
-          if (cmp !== 0) {
-            return cmp;
-          }
-        }
-        return 0;
-      }
-      case "outer": {
-        const rhsOuter = rhs as typeof lhs;
-        const cmp = cmpJoinEntries(lhs.primary, rhsOuter.primary);
-        if (cmp !== 0) {
-          return cmp;
-        }
-        if (lhs.secondary.length !== rhsOuter.secondary.length) {
-          return lhs.secondary.length - rhsOuter.secondary.length;
-        }
-        for (let i = 0; i < lhs.secondary.length; i++) {
-          const cmp = cmpJoinEntries(lhs.secondary[i], rhsOuter.secondary[i]);
-          if (cmp !== 0) {
-            return cmp;
-          }
-        }
-        return 0;
-      }
-      default:
-        assertNever(type);
-    }
-  }
-  function sortJoinEntry(entry: JoinEntry<PObjectId>): JoinEntry<PObjectId> {
-    switch (entry.type) {
-      case "column":
-      case "slicedColumn":
-      case "inlineColumn":
-        return entry;
-      case "artificialColumn": {
-        const sortedAxesIndices = entry.axesIndices.toSorted((lhs, rhs) => lhs - rhs);
-        return {
-          ...entry,
-          axesIndices: sortedAxesIndices,
-        };
-      }
-      case "inner":
-      case "full": {
-        const sortedEntries = entry.entries.map(sortJoinEntry);
-        sortedEntries.sort(cmpJoinEntries);
-        return {
-          ...entry,
-          entries: sortedEntries,
-        };
-      }
-      case "outer": {
-        const sortedSecondary = entry.secondary.map(sortJoinEntry);
-        sortedSecondary.sort(cmpJoinEntries);
-        return {
-          ...entry,
-          primary: sortJoinEntry(entry.primary),
-          secondary: sortedSecondary,
-        };
-      }
-      default:
-        assertNever(entry);
-    }
-  }
-  function sortFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
-    return filters.toSorted((lhs, rhs) => {
-      if (lhs.column.type === "axis" && rhs.column.type === "axis") {
-        const lhsId = canonicalizeJson(getAxisId(lhs.column.id));
-        const rhsId = canonicalizeJson(getAxisId(rhs.column.id));
-        return lhsId < rhsId ? -1 : 1;
-      } else if (lhs.column.type === "column" && rhs.column.type === "column") {
-        return lhs.column.id < rhs.column.id ? -1 : 1;
-      } else {
-        return lhs.column.type === "axis" ? -1 : 1;
-      }
-    });
-  }
-  return {
-    src: sortJoinEntry(def.src),
-    partitionFilters: sortFilters(def.partitionFilters),
-    filters: sortFilters(def.filters),
-    sorting: def.sorting,
-  };
-}
-
 function migrateFilters(
   filters: PTableRecordFilter[],
   logger: PFrameInternal.Logger,
@@ -592,7 +477,7 @@ function migrateFilters(
   return filtersV2;
 }
 
-function migratePTableFilters<T>(
+function migrateTableFilter<T>(
   def: Omit<PTableDef<T>, "partitionFilters"> | PTableDef<T>,
   logger: PFrameInternal.Logger,
 ): PTableDef<T> {

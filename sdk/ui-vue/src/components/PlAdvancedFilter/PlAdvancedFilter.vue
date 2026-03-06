@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script lang="ts" setup generic="T extends RootFilter">
 import { PlBtnSecondary, PlCheckbox, PlElementList } from "@milaboratories/uikit";
 import type { ListOptionBase } from "@platforma-sdk/model";
 import { computed, toRaw } from "vue";
@@ -15,7 +15,7 @@ import type {
 } from "./types";
 import { createNewGroup, getNewId, isValidColumnId } from "./utils";
 
-const model = defineModel<RootFilter>("filters", { required: true });
+const model = defineModel<T>("filters", { required: true });
 
 const props = withDefaults(
   defineProps<{

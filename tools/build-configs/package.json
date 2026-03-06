@@ -1,5 +1,5 @@
 {
-  "version": "1.4.3",
+  "version": "1.5.2",
   "name": "@milaboratories/build-configs",
   "type": "module",
   "deprecated": {
@@ -33,16 +33,16 @@
     "@rollup/plugin-node-resolve": "catalog:",
     "@rollup/plugin-typescript": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
-    "vue": "catalog:",
     "rollup": "catalog:",
     "rollup-plugin-cleandir": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "rollup-plugin-sourcemaps2": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "vite-plugin-css-injected-by-js": "catalog:",
     "vite-plugin-dts": "catalog:",
-    "vite-plugin-externalize-deps": "^0.9.0"
+    "vite-plugin-lib-inject-css": "catalog:",
+    "vite-plugin-externalize-deps": "catalog:",
+    "vitest": "catalog:",
+    "vue": "catalog:"
   }
 }

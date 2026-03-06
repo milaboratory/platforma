@@ -329,7 +329,7 @@ export class LLPlClient implements WireClientProviderFactory {
       if (this._status !== newStatus) {
         this._status = newStatus;
         if (this.statusListener !== undefined) this.statusListener(this._status);
-        if (this.onAuthError !== undefined) this.onAuthError();
+        if (newStatus === "Unauthenticated" && this.onAuthError !== undefined) this.onAuthError();
       }
     });
   }

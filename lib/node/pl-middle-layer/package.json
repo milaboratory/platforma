@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.46.26",
+  "version": "1.48.17",
   "description": "Pl Middle Layer",
   "keywords": [],
   "license": "UNLICENSED",
@@ -19,8 +19,8 @@
     }
   },
   "scripts": {
-    "build": "ts-builder build --target node --build-config ./build.node.config.mjs",
-    "watch": "ts-builder build --target node --build-config ./build.node.config.mjs --watch",
+    "build": "ts-builder build --target node --build-config ./build.node.config.js",
+    "watch": "ts-builder build --target node --build-config ./build.node.config.js --watch",
     "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",

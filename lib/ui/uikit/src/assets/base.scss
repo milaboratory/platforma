@@ -143,11 +143,14 @@ body,
   box-sizing: border-box;
   position: relative;
   background-size: cover;
+}
+
+html,
+#app {
   overflow: hidden;
 }
 
 body {
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   height: 100%;

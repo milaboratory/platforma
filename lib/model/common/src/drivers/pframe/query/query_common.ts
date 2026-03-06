@@ -117,6 +117,54 @@ export type ExprConstant = {
   value: string | number | boolean;
 };
 
+/**
+ * Null check expression.
+ *
+ * Tests if an expression evaluates to null.
+ * **Input**: Any expression.
+ * **Output**: Boolean (true if input is null, false otherwise).
+ *
+ * @template I - The expression type (for recursion)
+ *
+ * @example
+ * // Check if column value is null
+ * { type: 'isNull', input: columnRef }
+ *
+ * // Combine with NOT to check for non-null
+ * { type: 'not', input: { type: 'isNull', input: columnRef } }
+ */
+export interface ExprIsNull<I> {
+  type: "isNull";
+  /** Input expression to check for null */
+  input: I;
+}
+
+/**
+ * Null coalescing expression.
+ *
+ * Returns the input value if it is not null, otherwise returns the replacement value.
+ * Equivalent to SQL's `IFNULL(input, replacement)` or `COALESCE(input, replacement)`.
+ * **Input**: Any expression.
+ * **Output**: Same type as input/replacement.
+ * **Null handling**: If input is null, returns replacement; otherwise returns input.
+ *
+ * @template I - The expression type (for recursion)
+ *
+ * @example
+ * // Replace null values with 0
+ * { type: 'ifNull', input: columnRef, replacement: { type: 'constant', value: 0 } }
+ *
+ * // Replace null strings with 'unknown'
+ * { type: 'ifNull', input: nameColumn, replacement: { type: 'constant', value: 'unknown' } }
+ */
+export interface ExprIfNull<I> {
+  type: "ifNull";
+  /** Value to check for null */
+  input: I;
+  /** Replacement value if input is null */
+  replacement: I;
+}
+
 // ============ Generic Expression Interfaces ============
 // I = expression type (recursive), S = selector type
 
@@ -479,6 +527,7 @@ export type InferBooleanExpressionUnion<E> = [
   E extends ExprStringContains<unknown> ? Extract<E, { type: "stringContains" }> : never,
   E extends ExprStringContainsFuzzy<unknown> ? Extract<E, { type: "stringContainsFuzzy" }> : never,
   E extends ExprStringRegex<unknown> ? Extract<E, { type: "stringRegex" }> : never,
+  E extends ExprIsNull<unknown> ? Extract<E, { type: "isNull" }> : never,
   E extends ExprLogicalUnary<unknown> ? Extract<E, { type: "not" }> : never,
   E extends ExprLogicalVariadic<unknown> ? Extract<E, { type: "and" | "or" }> : never,
   E extends ExprIsIn<unknown, string | number> ? Extract<E, { type: "isIn" }> : never,
@@ -702,12 +751,14 @@ export interface QueryFilter<Q, E> {
  *
  * @example
  * // Reference column by ID
- * { type: 'column', columnId: 'col_abc123' }
+ * { type: 'column', column: 'col_abc123' }
+ *
+ * @template C - Column reference type (e.g., PObjectId for spec, full PColumn for rich queries)
  */
-export interface QueryColumn {
+export interface QueryColumn<C = PObjectId> {
   type: "column";
-  /** Unique identifier of the column to reference */
-  columnId: PObjectId;
+  /** Column reference (ID or full column object depending on context) */
+  column: C;
 }
 
 /**
@@ -751,21 +802,22 @@ export interface QueryInlineColumn<T> {
  * - Expands it across specified axes indices
  * - Result has Cartesian product of original axes × new axes
  *
+ * @template C - Column reference type
  * @template SO - Spec override type
  *
  * @example
  * // Expand column across axes at indices 0 and 2
  * {
  *   type: 'sparseToDenseColumn',
- *   columnId: 'col_abc123',
+ *   column: 'col_abc123',
  *   axesIndices: [0, 2],
  *   specOverride: { ... } // optional spec modifications
  * }
  */
-export interface QuerySparseToDenseColumn<SO> {
+export interface QuerySparseToDenseColumn<C, SO> {
   type: "sparseToDenseColumn";
-  /** ID of the column to cross-join */
-  columnId: PObjectId;
+  /** Column reference (ID or full column object depending on context) */
+  column: C;
   /** Optional override for the column specification */
   specOverride?: SO;
   /** Indices of axes to expand across */

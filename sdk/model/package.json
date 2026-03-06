@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/model",
-  "version": "1.53.15",
+  "version": "1.58.11",
   "description": "Platforma.bio SDK / Block Model",
   "files": [
     "./dist/**/*",
@@ -16,6 +16,12 @@
       "sources": "./src/index.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./render/internal": {
+      "types": "./dist/render/internal.d.ts",
+      "sources": "./src/render/internal.ts",
+      "import": "./dist/render/internal.js",
+      "require": "./dist/render/internal.cjs"
     }
   },
   "scripts": {
@@ -30,7 +36,7 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@milaboratories/pframes-rs-wasm": "catalog:",
+    "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pl-error-like": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/ptabler-expression-js": "workspace:*",

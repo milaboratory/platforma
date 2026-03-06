@@ -1,5 +1,11 @@
 # @milaboratories/strings
 
+## 0.1.2
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
 ## 0.1.1
 
 ### Patch Changes

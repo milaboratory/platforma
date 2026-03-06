@@ -3,14 +3,14 @@ import { useEventListener } from "../../composition/useEventListener";
 import type { ImportedFiles } from "../../types";
 import { between, notEmpty, tapIf } from "@milaboratories/helpers";
 import { getRawPlatformaInstance, type StorageHandle } from "@platforma-sdk/model";
-import { computed, onMounted, reactive, toRef, watch } from "vue";
+import { computed, onMounted, reactive, ref, toRef, watch } from "vue";
 import { PlDropdown } from "../PlDropdown";
 import { PlIcon16 } from "../PlIcon16";
 import Shortcuts from "./Shortcuts.vue";
 import { PlMaskIcon16 } from "../PlMaskIcon16";
 import { PlSearchField } from "../PlSearchField";
 import style from "./pl-file-dialog.module.scss";
-import { defaultData, useVisibleItems, vTextOverflown } from "./remote";
+import { defaultData, useVisibleItems, vTextOverflown } from "./remote-helpers";
 import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from "./utils";
 
 // note that on a Mac, a click combined with the control key is intercepted by the operating system and used to open a context menu, so ctrlKey is not detectable on click events.
@@ -273,6 +273,8 @@ defineExpose({
 });
 
 onMounted(loadAvailableStorages);
+
+const lsContainerRef = ref<HTMLElement | undefined>();
 </script>
 
 <template>
@@ -289,7 +291,7 @@ onMounted(loadAvailableStorages);
         <PlSearchField v-model="data.search" label="Search in folder" clearable />
       </div>
     </div>
-    <div :class="style['ls-container']">
+    <div :class="style['ls-container']" ref="lsContainerRef">
       <div :class="style['ls-head']">
         <div :class="style['breadcrumbs']">
           <template v-for="(s, i) in breadcrumbs" :key="i">
@@ -299,7 +301,7 @@ onMounted(loadAvailableStorages);
         </div>
         <div :class="style.selected">
           <span>Selected: {{ selectedFiles.length }}</span>
-          <Shortcuts />
+          <Shortcuts :container="lsContainerRef" />
         </div>
       </div>
       <div v-if="data.currentLoadingPath !== undefined" class="ls-loader">

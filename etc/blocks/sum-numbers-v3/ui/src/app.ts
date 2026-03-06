@@ -1,11 +1,11 @@
 import { platforma } from "@milaboratories/milaboratories.test-sum-numbers-v3.model";
 import MainPage from "./MainPage.vue";
-import { defineApp } from "@platforma-sdk/ui-vue";
+import { defineAppV3 } from "@platforma-sdk/ui-vue";
 import type { Component } from "vue";
 import { computed, reactive } from "vue";
 import type { Equal, Expect } from "@milaboratories/helpers";
 
-export const sdkPlugin = defineApp(platforma, (base) => {
+export const sdkPlugin = defineAppV3(platforma, (base) => {
   // Additional data
   const data = reactive({
     counter: 0,

@@ -16,6 +16,7 @@ import type {
   PObjectSpec,
   PSpecPredicate,
   PTableDef,
+  PTableDefV2,
   PTableHandle,
   PTableRecordFilter,
   PTableSorting,
@@ -27,7 +28,9 @@ import type {
 } from "@milaboratories/pl-model-common";
 import {
   AnchoredIdDeriver,
+  collectSpecQueryColumns,
   ensurePColumn,
+  parseJson,
   extractAllColumns,
   isDataInfo,
   isPColumn,
@@ -36,6 +39,7 @@ import {
   mapDataInfo,
   mapPObjectData,
   mapPTableDef,
+  mapPTableDefV2,
   mapValueInVOE,
   PColumnName,
   readAnnotation,
@@ -45,6 +49,13 @@ import {
 import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
 import { getCfgRenderCtx } from "../internal";
+import { getPluginData } from "../block_storage";
+import type {
+  PluginHandle,
+  PluginFactoryLike,
+  InferFactoryData,
+  InferFactoryParams,
+} from "../plugin_handle";
 import { TreeNodeAccessor, ifDef } from "./accessor";
 import type { FutureRef } from "./future";
 import type { AccessorHandle, GlobalCfgRenderCtx } from "./internal";
@@ -530,40 +541,40 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
-export abstract class RenderCtxBase<Args, Data> {
+export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
   protected readonly ctx: GlobalCfgRenderCtx;
 
   constructor() {
     this.ctx = getCfgRenderCtx();
   }
 
-  private _dataCache?: { v: Data };
+  private dataCache?: { v: Data };
 
   public get data(): Data {
-    if (this._dataCache === undefined) {
+    if (this.dataCache === undefined) {
       const raw = this.ctx.data;
       const value = typeof raw === "function" ? raw() : raw;
-      this._dataCache = { v: value ? JSON.parse(value) : ({} as Data) };
+      this.dataCache = { v: value ? JSON.parse(value) : ({} as Data) };
     }
-    return this._dataCache.v;
+    return this.dataCache.v;
   }
 
   // lazy rendering because this feature is rarely used
-  private _activeArgsCache?: { v?: Args };
+  private activeArgsCache?: { v?: Args };
 
   /**
    * Returns args snapshot the block was executed for (i.e. when "Run" button was pressed).
    * Returns undefined, if block was never executed or stopped mid-way execution, so that the result was cleared.
    * */
   public get activeArgs(): Args | undefined {
-    if (this._activeArgsCache === undefined) {
+    if (this.activeArgsCache === undefined) {
       const raw = this.ctx.activeArgs;
       const value = typeof raw === "function" ? raw() : raw;
-      this._activeArgsCache = {
+      this.activeArgsCache = {
         v: value ? JSON.parse(value) : undefined,
       };
     }
-    return this._activeArgsCache.v;
+    return this.activeArgsCache.v;
   }
 
   // /** Can be used to determine features provided by the desktop instance. */
@@ -678,11 +689,11 @@ export abstract class RenderCtxBase<Args, Data> {
     return this.ctx.createPTable(mapPTableDef(rawDef, (po) => transformPColumnData(po)));
   }
 
-  public createPTableV2(def: PTableDef<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
-    const columns = extractAllColumns(def.src);
+  public createPTableV2(def: PTableDefV2<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
+    const columns = collectSpecQueryColumns(def.query);
     this.verifyInlineAndExplicitColumnsSupport(columns);
     if (!allPColumnsReady(columns)) return undefined;
-    return this.ctx.createPTableV2(mapPTableDef(def, (po) => transformPColumnData(po)));
+    return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
   }
 
   /** @deprecated scheduled for removal from SDK */
@@ -708,46 +719,100 @@ export abstract class RenderCtxBase<Args, Data> {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) for v3+ blocks */
-export class RenderCtx<Args, Data> extends RenderCtxBase<Args, Data> {
-  private _argsCache?: { v: Args | undefined };
+export class BlockRenderCtx<Args = unknown, Data = unknown> extends RenderCtxBase<Args, Data> {
+  private argsCache?: { v: Args | undefined };
   public get args(): Args | undefined {
-    if (this._argsCache === undefined) {
+    if (this.argsCache === undefined) {
       const raw = this.ctx.args;
       const value = typeof raw === "function" ? raw() : raw;
-      // args can be undefined when derivation fails (e.g., validation error in args())
-      this._argsCache = { v: value === undefined ? undefined : JSON.parse(value) };
+      this.argsCache = { v: value === undefined ? undefined : JSON.parse(value) };
     }
-    return this._argsCache.v;
+    return this.argsCache.v;
   }
 }
 
 /** Render context for legacy v1/v2 blocks - provides backward compatibility */
-export class RenderCtxLegacy<Args, UiState> extends RenderCtxBase<Args, UiState> {
-  private _argsCache?: { v: Args };
+export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCtxBase<
+  Args,
+  UiState
+> {
+  private argsCache?: { v: Args };
 
   public get args(): Args {
-    if (this._argsCache === undefined) {
+    if (this.argsCache === undefined) {
       const raw = this.ctx.args;
       const value = typeof raw === "function" ? raw() : raw;
-      this._argsCache = { v: JSON.parse(value) };
+      this.argsCache = { v: JSON.parse(value) };
     }
-    return this._argsCache.v;
+    return this.argsCache.v;
   }
 
-  private _uiStateCache?: { v: UiState };
+  private uiStateCache?: { v: UiState };
 
   public get uiState(): UiState {
-    if (this._uiStateCache === undefined) {
+    if (this.uiStateCache === undefined) {
       const raw = this.ctx.uiState!;
       const value = typeof raw === "function" ? raw() : raw;
-      this._uiStateCache = { v: value ? JSON.parse(value) : ({} as UiState) };
+      this.uiStateCache = { v: value ? JSON.parse(value) : ({} as UiState) };
     }
-    return this._uiStateCache.v;
+    return this.uiStateCache.v;
   }
 }
 
+/**
+ * Render context for plugin output functions.
+ * Reads plugin data from blockStorage and derives params from pre-wrapped input callbacks.
+ *
+ * Parameterized on the factory-like phantom F so that getPluginData returns
+ * InferFactoryData<F> directly — no casts needed for the data getter.
+ *
+ * @typeParam F - PluginFactoryLike phantom carrying data/params/outputs types
+ */
+export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> {
+  private readonly ctx: GlobalCfgRenderCtx;
+  private readonly handle: PluginHandle<F>;
+  private readonly wrappedInputs: Record<string, () => unknown>;
+
+  constructor(handle: PluginHandle<F>, wrappedInputs: Record<string, () => unknown>) {
+    this.ctx = getCfgRenderCtx();
+    this.handle = handle;
+    this.wrappedInputs = wrappedInputs;
+  }
+
+  private dataCache?: { v: InferFactoryData<F> };
+
+  /** Plugin's persistent data from blockStorage.__plugins.{pluginId}.__data */
+  public get data(): InferFactoryData<F> {
+    if (this.dataCache === undefined) {
+      const raw = this.ctx.blockStorage();
+      this.dataCache = { v: getPluginData(parseJson(raw), this.handle) };
+    }
+    return this.dataCache.v;
+  }
+
+  private paramsCache?: { v: InferFactoryParams<F> };
+
+  /** Params derived from block context via pre-wrapped input callbacks */
+  public get params(): InferFactoryParams<F> {
+    if (this.paramsCache === undefined) {
+      const result: Record<string, unknown> = {};
+      for (const [key, fn] of Object.entries(this.wrappedInputs)) {
+        result[key] = fn();
+      }
+      this.paramsCache = { v: result as InferFactoryParams<F> };
+    }
+    return this.paramsCache.v;
+  }
+
+  /** Result pool — same as block, from cfgRenderCtx methods */
+  public readonly resultPool = new ResultPool();
+}
+
+/** @deprecated Use BlockRenderCtx instead */
+export type RenderCtx<Args = unknown, Data = unknown> = BlockRenderCtx<Args, Data>;
+
 export type RenderFunction<Args = unknown, State = unknown, Ret = unknown> = (
-  rCtx: RenderCtx<Args, State>,
+  rCtx: BlockRenderCtx<Args, State>,
 ) => Ret;
 
 export type RenderFunctionLegacy<Args = unknown, State = unknown, Ret = unknown> = (

@@ -1,5 +1,11 @@
 # @milaboratories/pl-http
 
+## 1.2.4
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
 ## 1.2.3
 
 ### Patch Changes

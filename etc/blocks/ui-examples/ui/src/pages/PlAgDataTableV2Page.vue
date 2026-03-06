@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { isJsonEqual } from "@milaboratories/helpers";
 import { type PlSelectionModel } from "@platforma-sdk/model";
 import {
   PlAgDataTableV2,
@@ -31,34 +30,6 @@ const tableSettings = usePlDataTableSettingsV2({
   sourceId: () => (loading.value ? "loading_source" : app.model.ui.dataTableV2.sourceId),
   model: () => app.model.outputs.ptV2,
   sheets: () => app.model.outputs.ptV2Sheets,
-  filtersConfig: ({ sourceId, column }) => {
-    if (isJsonEqual(sourceId, sources[0].value)) {
-      if (column.id === "column1") {
-        return {
-          default: {
-            type: "string_contains",
-            reference: "1",
-          },
-        };
-      }
-      if (column.id === "column2") {
-        return {
-          options: ["isNotNA", "isNA"],
-        };
-      }
-    }
-    if (isJsonEqual(sourceId, sources[1].value)) {
-      if (column.id === "labelColumn") {
-        return {
-          default: {
-            type: "number_greaterThanOrEqualTo",
-            reference: 100000 - 10,
-          },
-        };
-      }
-    }
-    return {};
-  },
 });
 
 const verbose = ref(false);

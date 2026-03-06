@@ -1,5 +1,13 @@
 # @milaboratories/ts-helpers-oclif
 
+## 1.1.38
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/ts-helpers@1.7.3
+
 ## 1.1.37
 
 ### Patch Changes

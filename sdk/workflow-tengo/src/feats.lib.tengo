@@ -65,5 +65,8 @@ export ll.toStrict({
 	hasBlobSize:            ll.methodExists(plapi, "getBlobSize"),
 
 	// true when backend supports docker packages
-	isDockerAvailable:        _isEnabled("dockerSupport")
+	isDockerAvailable:        _isEnabled("dockerSupport"),
+
+	// true when backend supports 'secret' argType for environment variables
+	secretEnvSupport:         _isEnabled("secretEnvSupport")
 })
