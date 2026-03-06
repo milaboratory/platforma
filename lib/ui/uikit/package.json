@@ -2,9 +2,6 @@
   "name": "@milaboratories/uikit",
   "version": "2.10.39",
   "type": "module",
-  "sideEffects": [
-    "**/*.css"
-  ],
   "main": "dist/index.js",
   "exports": {
     ".": {
