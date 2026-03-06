@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.10.40
+
+### Patch Changes
+
+- 746838c: Remove `sideEffects` field that caused Rolldown to tree-shake CSS imports from barrel modules
+
 ## 2.10.39
 
 ### Patch Changes

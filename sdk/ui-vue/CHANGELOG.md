@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.58.16
+
+### Patch Changes
+
+- 746838c: Remove `sideEffects` field that caused Rolldown to tree-shake CSS imports from barrel modules
+- Updated dependencies [746838c]
+  - @milaboratories/uikit@2.10.40
+
 ## 1.58.11
 
 ### Patch Changes
