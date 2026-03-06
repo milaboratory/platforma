@@ -1,29 +1,19 @@
 self := import("@platforma-sdk/workflow-tengo:tpl")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 
-self.defineOutputs(["cpu", "ram"])
+self.defineOutputs(["limits"])
 
 self.body(func(inputs) {
-	cpuRun := exec.builder().
+	limitsRun := exec.builder().
 		inUiQueue().
 		cmd("/usr/bin/env").
 		arg("bash").
 		arg("-c").
-		argWithVar("echo -n {system.cpu}").
-		saveStdoutContent().
-		run()
-
-	ramRun := exec.builder().
-		inUiQueue().
-		cmd("/usr/bin/env").
-		arg("bash").
-		arg("-c").
-		argWithVar("echo -n {system.ram.bytes}").
+		argWithVar("echo -n {system.cpu},{system.ram.bytes}").
 		saveStdoutContent().
 		run()
 
 	return {
-		cpu: cpuRun.getStdoutContent(),
-		ram: ramRun.getStdoutContent()
+		limits: limitsRun.getStdoutContent()
 	}
 })

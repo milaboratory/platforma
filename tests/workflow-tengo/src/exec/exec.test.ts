@@ -23,18 +23,23 @@ tplTest.concurrent("run-hello-world-go", async ({ helper, expect }) => {
  * cpu/ram is set: QueueUITasksDefaultTaskCores=1, QueueUITasksDefaultTaskRAM=100MiB.
  */
 tplTest.concurrent("ui-queue-default-limits", async ({ helper, expect }) => {
+  const UI_QUEUE_DEFAULT_CPU_CORES = 1;
+  const UI_QUEUE_DEFAULT_RAM_BYTES = 100 * 1024 * 1024;
+
   const result = await helper.renderTemplate(
     false,
     "exec.run.echo_ui_queue_limits",
-    ["cpu", "ram"],
+    ["limits"],
     (_tx) => ({}),
   );
 
-  const cpu = await result.computeOutput("cpu", (a) => a?.getDataAsString()).awaitStableValue();
-  const ram = await result.computeOutput("ram", (a) => a?.getDataAsString()).awaitStableValue();
+  const limits = await result
+    .computeOutput("limits", (a) => a?.getDataAsString())
+    .awaitStableValue();
+  const [cpu, ram] = limits!.split(",");
 
-  expect(Number(cpu)).eq(1); // QueueUITasksDefaultTaskCores
-  expect(Number(ram)).eq(100 * 1024 * 1024); // QueueUITasksDefaultTaskRAM = 100 MiB
+  expect(Number(cpu)).eq(UI_QUEUE_DEFAULT_CPU_CORES);
+  expect(Number(ram)).eq(UI_QUEUE_DEFAULT_RAM_BYTES);
 });
 
 /*
