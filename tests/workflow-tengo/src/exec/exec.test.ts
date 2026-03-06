@@ -33,7 +33,7 @@ tplTest.concurrent("ui-queue-default-limits", async ({ helper, expect }) => {
   const cpu = await result.computeOutput("cpu", (a) => a?.getDataAsString()).awaitStableValue();
   const ram = await result.computeOutput("ram", (a) => a?.getDataAsString()).awaitStableValue();
 
-  expect(Number(cpu)).eq(1);                 // QueueUITasksDefaultTaskCores
+  expect(Number(cpu)).eq(1); // QueueUITasksDefaultTaskCores
   expect(Number(ram)).eq(100 * 1024 * 1024); // QueueUITasksDefaultTaskRAM = 100 MiB
 });
 
