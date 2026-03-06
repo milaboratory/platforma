@@ -10,7 +10,7 @@ self.body(func(inputs) {
 	limitsRun := exec.builder().
 		inUiQueue().
 		software(sw).
-		argWithVar("{system.cpu},{system.ram.bytes}").
+		argWithVar("{system.cpu},{system.ram.bytes},"+inputs.id).
 		saveStdoutContent().
 		run()
 

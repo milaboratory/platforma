@@ -30,7 +30,9 @@ tplTest.concurrent("ui-queue-default-limits", async ({ helper, expect }) => {
     false,
     "exec.run.echo_ui_queue_limits",
     ["limits"],
-    (_tx) => ({}),
+    (tx) => ({
+      id: tx.createValue(Pl.JsonObject, JSON.stringify(Math.random())),
+    }),
   );
 
   const limits = await result
