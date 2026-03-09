@@ -6,8 +6,14 @@ import { computed, reactive } from "vue";
 const app = useApp();
 
 const data = reactive({
-  progressDurationMs: 10000,
+  progressDurationMs: "10000",
 });
+
+function positiveNumberRule(v: string): boolean | string {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return "Must be a positive number";
+  return true;
+}
 
 const numbers = computed({
   get() {
@@ -24,21 +30,6 @@ const numbers = computed({
   },
 });
 
-const $ = {
-  positiveNumber: (v: string) => {
-    const parsed = Number(v);
-
-    if (!Number.isFinite(parsed)) {
-      throw Error("Not a number");
-    }
-
-    if (parsed <= 0) {
-      throw Error("Enter positive value");
-    }
-
-    return parsed;
-  },
-};
 </script>
 
 <template>
@@ -65,16 +56,16 @@ const $ = {
       {{ app.model.outputErrors }}
     </PlAlert>
     <PlRow>
-      <PlBtnPrimary @click="() => app.showInfiniteProgress(data.progressDurationMs)">
+      <PlBtnPrimary @click="() => app.showInfiniteProgress(Number(data.progressDurationMs))">
         Show loader
       </PlBtnPrimary>
-      <PlBtnPrimary @click="() => app.showProgress(data.progressDurationMs)">
+      <PlBtnPrimary @click="() => app.showProgress(Number(data.progressDurationMs))">
         Show progress
       </PlBtnPrimary>
       <PlTextField
         v-model="data.progressDurationMs"
         label="Progress duration (ms)"
-        :parse="$.positiveNumber"
+        :rules="[positiveNumberRule]"
       />
     </PlRow>
   </PlBlockPage>

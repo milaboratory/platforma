@@ -26,16 +26,17 @@ const app = useApp();
 const PRODUCT_KEY_PREFIX = "PRODUCT:";
 const PRODUCT_KEY_LENGTH = 48;
 
-function extractProductKey(key: string) {
+function onProductKeyInput(key: string) {
   if (key.startsWith(PRODUCT_KEY_PREFIX)) {
-    key = key.slice(PRODUCT_KEY_PREFIX.length);
+    app.model.args.productKey = key.slice(PRODUCT_KEY_PREFIX.length);
   }
+}
 
-  if (key.length !== PRODUCT_KEY_LENGTH) {
-    throw new Error("Invalid product key");
+function validateProductKey(key: string): boolean | string {
+  if (key.length > 0 && key.length !== PRODUCT_KEY_LENGTH) {
+    return "Invalid product key";
   }
-
-  return key;
+  return true;
 }
 
 const dropdownOptions: ListOption<string>[] = [
@@ -135,10 +136,11 @@ const productOptions = [
           :options="productOptions"
         />
         <PlTextField
-          v-model="app.model.args.productKey"
+          :model-value="app.model.args.productKey"
           label="or enter product key"
           clearable
-          :parse="extractProductKey"
+          :rules="[validateProductKey]"
+          @update:model-value="onProductKeyInput"
         />
       </PlContainer>
     </PlRow>

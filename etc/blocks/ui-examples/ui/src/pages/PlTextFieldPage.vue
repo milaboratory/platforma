@@ -4,26 +4,17 @@ import { reactive } from "vue";
 
 const data = reactive({
   text: "lorem ipsum",
-  optionalText: "optional" as string | undefined,
-  num: 0,
-  optionalNum: 0 as number | undefined,
+  optionalText: "optional",
+  num: "0",
+  optionalNum: "" as string,
 });
 
-const $ = {
-  number: (v: string) => {
-    const parsed = Number(v);
-
-    if (!Number.isFinite(parsed)) {
-      throw Error("Not a number");
-    }
-
-    return parsed;
-  },
-};
-
-const clearableUndefined = () => undefined;
-
-const clearableZero = () => 0;
+function numberRule(v: string): boolean | string {
+  if (v === "") return true;
+  const parsed = Number(v);
+  if (!Number.isFinite(parsed)) return "Not a number";
+  return true;
+}
 </script>
 
 <template>
@@ -35,7 +26,7 @@ const clearableZero = () => 0;
         v-model="data.optionalText"
         label="Optional text (string | undefined)"
         placeholder="Now value is undefined"
-        :clearable="clearableUndefined"
+        clearable
       />
 
       <PlTextField v-model="data.text" label="Password" placeholder="Password" type="password" />
@@ -50,22 +41,20 @@ const clearableZero = () => 0;
         type="password"
       />
 
-      <div>Number (see focusout effect) + clearable to zero</div>
-      <!-- Note: you cannot pass text -->
-      <!-- <PlTextField v-model="data.text" placeholder="Number" :parse="$.number" /> -->
+      <div>Number (string) + clearable</div>
       <PlTextField
         v-model="data.num"
         placeholder="Number"
-        :parse="$.number"
-        :clearable="clearableZero"
+        :rules="[numberRule]"
+        clearable
       />
 
-      <div>Optional number (number | undefined)</div>
+      <div>Optional number (string)</div>
       <PlTextField
         v-model="data.optionalNum"
         placeholder="Number"
-        :parse="$.number"
-        :clearable="clearableUndefined"
+        :rules="[numberRule]"
+        clearable
       />
 
       <PlAlert white-space-pre label="Data">
