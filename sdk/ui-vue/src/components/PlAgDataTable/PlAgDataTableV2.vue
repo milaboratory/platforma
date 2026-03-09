@@ -533,6 +533,7 @@ watchEffect(() => {
     <PlTableFiltersV2
       v-if="!disableFiltersPanel"
       v-model="filtersState"
+      :pframe-handle="'model' in settings ? settings?.model?.fullPframeHandle : undefined"
       :columns="filterableColumns"
     />
     <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />

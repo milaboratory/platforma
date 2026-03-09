@@ -220,7 +220,8 @@ export function createPlDataTableV2<A, U>(
   });
 
   const fullHandle = ctx.createPTableV2(fullDef);
-  if (!fullHandle) return undefined;
+  const pframeHandle = ctx.createPFrame(fullColumns);
+  if (!fullHandle || !pframeHandle) return undefined;
 
   const hiddenColumns = new Set<PObjectId>(
     ((): PObjectId[] => {
@@ -286,8 +287,9 @@ export function createPlDataTableV2<A, U>(
   return {
     sourceId: tableStateNormalized.pTableParams.sourceId,
     fullTableHandle: fullHandle,
+    fullPframeHandle: pframeHandle,
     visibleTableHandle: visibleHandle,
-  } as PlDataTableModel;
+  } satisfies PlDataTableModel;
 }
 
 /** Create sheet entries for PlDataTable */

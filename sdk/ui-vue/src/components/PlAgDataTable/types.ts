@@ -16,7 +16,7 @@ import canonicalize from "canonicalize";
 import { deepClone } from "@milaboratories/helpers";
 
 export type PlDataTableSettingsV2Base =
-  | { sourceId: null; pending: boolean }
+  | { sourceId: null; pending: boolean; error: boolean }
   | {
       /** Unique source id for state caching */
       sourceId: string;
@@ -66,7 +66,7 @@ export function usePlDataTableSettingsV2<T>(
 
     if (!model.ok) {
       model.errors.forEach((e) => console.error("Error in PlDataTableModel:", e));
-      settingsBase = { sourceId: null, pending: false };
+      settingsBase = { sourceId: null, pending: false, error: true };
     } else if ("sourceId" in options) {
       const sourceIdValue = deepClone(toValue(options.sourceId));
       if (options.sheets) {
@@ -78,7 +78,7 @@ export function usePlDataTableSettingsV2<T>(
                 sheets: sheetsValue,
                 model: model.value,
               }
-            : { sourceId: null, pending: !model.stable };
+            : { sourceId: null, pending: !model.stable, error: false };
       } else {
         settingsBase = sourceIdValue
           ? {
@@ -86,7 +86,7 @@ export function usePlDataTableSettingsV2<T>(
               sheets: [],
               model: model.value,
             }
-          : { sourceId: null, pending: !model.stable };
+          : { sourceId: null, pending: !model.stable, error: false };
       }
     } else {
       if (options.sheets) {
@@ -97,7 +97,7 @@ export function usePlDataTableSettingsV2<T>(
               sheets: sheetsValue,
               model: model.value,
             }
-          : { sourceId: null, pending: !model.stable };
+          : { sourceId: null, pending: !model.stable, error: false };
       } else {
         settingsBase = model.value
           ? {
@@ -105,7 +105,7 @@ export function usePlDataTableSettingsV2<T>(
               sheets: [],
               model: model.value,
             }
-          : { sourceId: null, pending: !model.stable };
+          : { sourceId: null, pending: !model.stable, error: false };
       }
     }
     return settingsBase;

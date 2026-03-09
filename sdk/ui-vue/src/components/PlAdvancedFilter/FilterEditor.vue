@@ -336,9 +336,12 @@ const stringMatchesError = computed(() => {
 
     <!-- bottom element - individual settings for every filter type -->
     <div :class="$style.bottom">
-      <PlTextField
+      <PlAutocomplete
         v-if="filter.type === 'patternEquals' || filter.type === 'patternNotEquals'"
         v-model="filter.value"
+        :options-search="
+          (str, type) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, type, str)
+        "
         :clearable="true"
         group-position="bottom"
       />
