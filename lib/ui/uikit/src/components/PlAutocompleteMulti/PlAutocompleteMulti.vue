@@ -46,7 +46,7 @@ export interface OptionsSearch<T> {
 import "./pl-autocomplete-multi.scss";
 
 import type { ListOptionBase } from "@platforma-sdk/model";
-// import canonicalize from "canonicalize";
+import canonicalize from "canonicalize";
 import { computed, reactive, ref, toRef, unref, useSlots, useTemplateRef, watch } from "vue";
 import { useWatchFetch } from "../../composition/useWatchFetch.ts";
 import { getErrorMessage } from "../../helpers/error.ts";
@@ -213,11 +213,11 @@ const allOptionsRef = computed(() => {
 
   const addOptions = (options: Readonly<ListOptionBase<M>[]>) => {
     for (const option of options) {
-      // const canonicalValue = canonicalize(option.value);
-      // if (!seenValues.has(canonicalValue)) {
-      //   seenValues.add(canonicalValue);
-      //   result.push(option);
-      // }
+      const canonicalValue = canonicalize(option.value);
+      if (!seenValues.has(canonicalValue)) {
+        seenValues.add(canonicalValue);
+        result.push(option);
+      }
     }
   };
 
