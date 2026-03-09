@@ -29,7 +29,6 @@ const numbers = computed({
       });
   },
 });
-
 </script>
 
 <template>

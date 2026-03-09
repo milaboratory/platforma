@@ -42,12 +42,7 @@ function numberRule(v: string): boolean | string {
       />
 
       <div>Number (string) + clearable</div>
-      <PlTextField
-        v-model="data.num"
-        placeholder="Number"
-        :rules="[numberRule]"
-        clearable
-      />
+      <PlTextField v-model="data.num" placeholder="Number" :rules="[numberRule]" clearable />
 
       <div>Optional number (string)</div>
       <PlTextField
