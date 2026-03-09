@@ -8,7 +8,7 @@ sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:
 
 self.body(func(inputs) {
 	limitsRun := exec.builder().
-		inUiQueue().
+		inQueue(inputs.queue).
 		software(sw).
 		argWithVar("{system.cpu},{system.ram.bytes},"+inputs.id).
 		saveStdoutContent().

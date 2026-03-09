@@ -19,30 +19,37 @@ tplTest.concurrent("run-hello-world-go", async ({ helper, expect }) => {
 });
 
 /*
- * Checks that default limits for ui-tasks queue are applied when no explicit
- * cpu/ram is set: QueueUITasksDefaultTaskCores=1, QueueUITasksDefaultTaskRAM=100MiB.
+ * Checks that default limits are applied per queue when no explicit cpu/ram is set.
+ * Actual values are capped by min(queueLimit, queueDefault), so we assert > 0 and <= default.
  */
-tplTest.concurrent("ui-queue-default-limits", async ({ helper, expect }) => {
-  const UI_QUEUE_DEFAULT_CPU_CORES = 1;
-  const UI_QUEUE_DEFAULT_RAM_BYTES = 100 * 1024 * 1024;
+tplTest.concurrent.for([
+  { queue: "ui-tasks", defaultCpuCores: 1, defaultRamBytes: 100 * 1024 * 1024 },
+  { queue: "heavy", defaultCpuCores: 16, defaultRamBytes: 32 * 1024 * 1024 * 1024 },
+  { queue: "medium", defaultCpuCores: 2, defaultRamBytes: 1 * 1024 * 1024 * 1024 },
+  { queue: "light", defaultCpuCores: 1, defaultRamBytes: 512 * 1024 * 1024 },
+])(
+  "queue-default-limits ($queue)",
+  async ({ queue, defaultCpuCores, defaultRamBytes }, { helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.run.echo_ui_queue_limits",
+      ["limits"],
+      (tx) => ({
+        queue: tx.createValue(Pl.JsonObject, JSON.stringify(queue)),
+        id: tx.createValue(Pl.JsonObject, JSON.stringify(Math.random())),
+      }),
+    );
 
-  const result = await helper.renderTemplate(
-    false,
-    "exec.run.echo_ui_queue_limits",
-    ["limits"],
-    (tx) => ({
-      id: tx.createValue(Pl.JsonObject, JSON.stringify(Math.random())),
-    }),
-  );
+    const limits = await result
+      .computeOutput("limits", (a) => a?.getDataAsString())
+      .awaitStableValue();
+    const [cpu, ram] = limits!.split(",");
 
-  const limits = await result
-    .computeOutput("limits", (a) => a?.getDataAsString())
-    .awaitStableValue();
-  const [cpu, ram] = limits!.split(",");
+    expect(Number(cpu)).gt(0).lte(defaultCpuCores);
+    expect(Number(ram)).gt(0).lte(defaultRamBytes);
+  },
+);
 
-  expect(Number(cpu)).eq(UI_QUEUE_DEFAULT_CPU_CORES);
-  expect(Number(ram)).eq(UI_QUEUE_DEFAULT_RAM_BYTES);
-});
 /**
  * Requests a secret and checks its value is not empty.
  */
