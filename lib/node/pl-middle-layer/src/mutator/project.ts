@@ -327,14 +327,44 @@ export class ProjectMutator {
   ) {}
 
   private fixProblemsAndMigrate() {
-    // Fixing problems introduced by old code
+    // Fix inconsistent production fields
     this.blockInfos.forEach((blockInfo) => {
       if (
         blockInfo.fields.prodArgs === undefined ||
         blockInfo.fields.prodOutput === undefined ||
         blockInfo.fields.prodCtx === undefined
       )
-        this.deleteBlockFields(blockInfo.id, "prodArgs", "prodOutput", "prodCtx");
+        this.deleteBlockFields(blockInfo.id, "prodArgs", "prodOutput", "prodCtx", "prodUiCtx");
+    });
+
+    // Fix inconsistent staging fields
+    this.blockInfos.forEach((blockInfo) => {
+      if (blockInfo.fields.stagingOutput === undefined || blockInfo.fields.stagingCtx === undefined)
+        this.deleteBlockFields(blockInfo.id, "stagingOutput", "stagingCtx", "stagingUiCtx");
+    });
+
+    // Fix inconsistent cache fields
+    this.blockInfos.forEach((blockInfo) => {
+      if (
+        blockInfo.fields.prodOutputPrevious === undefined ||
+        blockInfo.fields.prodCtxPrevious === undefined
+      )
+        this.deleteBlockFields(
+          blockInfo.id,
+          "prodOutputPrevious",
+          "prodCtxPrevious",
+          "prodUiCtxPrevious",
+        );
+      if (
+        blockInfo.fields.stagingOutputPrevious === undefined ||
+        blockInfo.fields.stagingCtxPrevious === undefined
+      )
+        this.deleteBlockFields(
+          blockInfo.id,
+          "stagingOutputPrevious",
+          "stagingCtxPrevious",
+          "stagingUiCtxPrevious",
+        );
     });
 
     // Migration for addition of block settings field
@@ -346,6 +376,9 @@ export class ProjectMutator {
         this.setBlockFieldObj(blockInfo.id, "blockSettings", initialBlockSettings);
       }
     });
+
+    // Validate after fixes
+    this.blockInfos.forEach((info) => info.check());
   }
 
   get wasModified(): boolean {
@@ -812,9 +845,14 @@ export class ProjectMutator {
     const upstreamContexts: AnyRef[] = [];
     upstream.forEach((id) => {
       const info = this.getBlockInfo(id);
-      if (info.fields["stagingCtx"]?.ref === undefined)
-        throw new Error("One of the upstreams staging is not rendered.");
-      upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields["stagingCtx"].ref));
+      if (info.fields["stagingCtx"]?.ref !== undefined) {
+        upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields["stagingCtx"].ref));
+      } else if (info.fields.currentPrerunArgs !== undefined) {
+        // Upstream has currentPrerunArgs but no staging — this is an inconsistency
+        throw new Error(`Upstream ${id} staging is not rendered but has currentPrerunArgs set.`);
+      }
+      // Blocks without currentPrerunArgs (e.g. block model doesn't define prerunArgs, or args
+      // derivation failed) never get stagingCtx. Use prodCtx if available.
       if (info.fields["prodCtx"]?.ref !== undefined)
         upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields["prodCtx"].ref));
     });
@@ -830,15 +868,18 @@ export class ProjectMutator {
    * If currentPrerunArgs is not set (prerunArgs returned undefined), skips staging for this block.
    */
   private renderStagingFor(blockId: string) {
-    this.resetStaging(blockId);
-
     const info = this.getBlockInfo(blockId);
 
-    // If currentPrerunArgs is not set (prerunArgs returned undefined), skip staging for this block
+    // Check BEFORE resetStaging: if currentPrerunArgs is not set (e.g. prerunArgs() returned undefined
+    // because inputs aren't ready, or args derivation failed), skip without clearing existing staging.
+    // Otherwise resetStaging would delete stagingCtx, and downstream blocks that reference this block
+    // as an upstream would fail in createStagingCtx.
     const prerunArgsRef = info.fields.currentPrerunArgs?.ref;
     if (prerunArgsRef === undefined) {
       return;
     }
+
+    this.resetStaging(blockId);
 
     const ctx = this.createStagingCtx(this.getStagingGraph().nodes.get(blockId)!.upstream);
 
@@ -1700,8 +1741,6 @@ export class ProjectMutator {
     blockInfos.forEach((info) => {
       if (!blockInStruct.has(info.id))
         throw new Error(`Inconsistent project structure: no structure entry for ${info.id}`);
-      // checking structure
-      info.check();
     });
 
     const prj = new ProjectMutator(
