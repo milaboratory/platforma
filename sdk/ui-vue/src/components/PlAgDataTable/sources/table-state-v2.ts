@@ -48,7 +48,7 @@ export function useTableState(
       const defaultState = makeDefaultState();
 
       const sourceId = settings.value.sourceId;
-      const undefinedSourceId = "error" in settings.value && !settings.value.error;
+      const undefinedSourceId = "error" in settings.value && settings.value.error == null;
       if (!sourceId && undefinedSourceId) return defaultState;
 
       const suitableSourceId = sourceId ?? tableStateNormalized.value.stateCache.at(-1)?.sourceId;
