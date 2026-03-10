@@ -8,6 +8,7 @@ import {
   type PTableKey,
   type PTableValue,
   type OutputWithStatus,
+  type ErrorLike,
 } from "@platforma-sdk/model";
 import type { PTableHidden } from "./sources/common";
 import type { ComputedRef, MaybeRefOrGetter } from "vue";
@@ -16,7 +17,7 @@ import canonicalize from "canonicalize";
 import { deepClone } from "@milaboratories/helpers";
 
 export type PlDataTableSettingsV2Base =
-  | { sourceId: null; pending: boolean }
+  | { sourceId: null; pending: boolean; error: null | ErrorLike[] }
   | {
       /** Unique source id for state caching */
       sourceId: string;
@@ -66,7 +67,7 @@ export function usePlDataTableSettingsV2<T>(
 
     if (!model.ok) {
       model.errors.forEach((e) => console.error("Error in PlDataTableModel:", e));
-      settingsBase = { sourceId: null, pending: false };
+      settingsBase = { sourceId: null, pending: false, error: model.errors };
     } else if ("sourceId" in options) {
       const sourceIdValue = deepClone(toValue(options.sourceId));
       if (options.sheets) {
@@ -78,7 +79,7 @@ export function usePlDataTableSettingsV2<T>(
                 sheets: sheetsValue,
                 model: model.value,
               }
-            : { sourceId: null, pending: !model.stable };
+            : { sourceId: null, pending: !model.stable, error: null };
       } else {
         settingsBase = sourceIdValue
           ? {
@@ -86,7 +87,7 @@ export function usePlDataTableSettingsV2<T>(
               sheets: [],
               model: model.value,
             }
-          : { sourceId: null, pending: !model.stable };
+          : { sourceId: null, pending: !model.stable, error: null };
       }
     } else {
       if (options.sheets) {
@@ -97,7 +98,7 @@ export function usePlDataTableSettingsV2<T>(
               sheets: sheetsValue,
               model: model.value,
             }
-          : { sourceId: null, pending: !model.stable };
+          : { sourceId: null, pending: !model.stable, error: null };
       } else {
         settingsBase = model.value
           ? {
@@ -105,7 +106,7 @@ export function usePlDataTableSettingsV2<T>(
               sheets: [],
               model: model.value,
             }
-          : { sourceId: null, pending: !model.stable };
+          : { sourceId: null, pending: !model.stable, error: null };
       }
     }
     return settingsBase;

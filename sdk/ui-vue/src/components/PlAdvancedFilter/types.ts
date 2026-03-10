@@ -5,13 +5,18 @@ import type {
   FilterSpec,
   FilterSpecLeaf,
   PColumnSpec,
+  PTableColumnId,
   SUniversalPColumnId,
 } from "@platforma-sdk/model";
 import type { SUPPORTED_FILTER_TYPES } from "./constants";
 
 export type Operand = "or" | "and";
 
-export type PlAdvancedFilterColumnId = SUniversalPColumnId | CanonicalizedJson<AxisId>;
+// Can be any of string type, but for better type safety we use union of specific types
+export type PlAdvancedFilterColumnId =
+  | SUniversalPColumnId
+  | CanonicalizedJson<AxisId>
+  | CanonicalizedJson<PTableColumnId>;
 
 export type RequiredMeta = { id: number; isExpanded?: boolean };
 

@@ -336,27 +336,24 @@ const stringMatchesError = computed(() => {
 
     <!-- bottom element - individual settings for every filter type -->
     <div :class="$style.bottom">
-      <template v-if="filter.type === 'patternEquals' || filter.type === 'patternNotEquals'">
-        <PlAutocomplete
-          v-model="filter.value"
-          :options-search="
-            (str, type) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, type, str)
-          "
-          :disabled="inconsistentSourceSelected"
-          :clearable="true"
-          group-position="bottom"
-        />
-      </template>
-      <template v-if="filter.type === 'inSet' || filter.type === 'notInSet'">
-        <PlAutocompleteMulti
-          v-model="filter.value"
-          :options-search="
-            (str, type) => getMultiSuggestOptionsFn(columnAsSourceAndFixedAxes.source, type, str)
-          "
-          :disabled="inconsistentSourceSelected"
-          group-position="bottom"
-        />
-      </template>
+      <PlAutocomplete
+        v-if="filter.type === 'patternEquals' || filter.type === 'patternNotEquals'"
+        v-model="filter.value"
+        :options-search="
+          (str, type) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, type, str)
+        "
+        :clearable="true"
+        group-position="bottom"
+      />
+      <PlAutocompleteMulti
+        v-if="filter.type === 'inSet' || filter.type === 'notInSet'"
+        v-model="filter.value"
+        :options-search="
+          (str, type) => getMultiSuggestOptionsFn(columnAsSourceAndFixedAxes.source, type, str)
+        "
+        :disabled="inconsistentSourceSelected"
+        group-position="bottom"
+      />
       <PlNumberField v-if="isNumericFilter(filter)" v-model="filter.x" group-position="bottom" />
       <PlNumberField v-if="isPositionFilter(filter)" v-model="filter.n" group-position="bottom" />
       <PlTextField

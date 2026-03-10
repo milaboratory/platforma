@@ -48,12 +48,16 @@ export function useTableState(
       const defaultState = makeDefaultState();
 
       const sourceId = settings.value.sourceId;
-      if (!sourceId) return defaultState;
+      const undefinedSourceId = "error" in settings.value && settings.value.error == null;
+      if (!sourceId && undefinedSourceId) return defaultState;
+
+      const suitableSourceId = sourceId ?? tableStateNormalized.value.stateCache.at(-1)?.sourceId;
+      if (!suitableSourceId) return defaultState;
 
       const cachedState = tableStateNormalized.value.stateCache.find(
-        (entry) => entry.sourceId === sourceId,
+        (entry) => entry.sourceId === suitableSourceId,
       );
-      if (!cachedState) return { ...defaultState, sourceId };
+      if (!cachedState) return { ...defaultState, sourceId: suitableSourceId };
 
       return cachedState;
     },
@@ -70,12 +74,11 @@ export function useTableState(
           (entry) => entry.sourceId === state.sourceId,
         );
         if (stateIdx !== -1) {
-          newState.stateCache[stateIdx] = state;
-        } else {
-          const CacheDepth = 5;
-          newState.stateCache.push(state);
-          newState.stateCache = newState.stateCache.slice(-CacheDepth);
+          newState.stateCache.splice(stateIdx, 1);
         }
+        const CacheDepth = 5;
+        newState.stateCache.push(state);
+        newState.stateCache = newState.stateCache.slice(-CacheDepth);
       }
 
       if (!isJsonEqual(tableStateNormalized.value, newState)) {
