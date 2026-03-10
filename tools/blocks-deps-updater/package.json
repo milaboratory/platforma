@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/blocks-deps-updater",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "Update dependencies in pnpm workspace catalog",
   "license": "UNLICENSED",
   "bin": {

@@ -1,5 +1,13 @@
 # @platforma-sdk/block-tools
 
+## 2.6.67
+
+### Patch Changes
+
+- 4f3a521: Rewrite blocks-deps-updater as a TypeScript package with vite build, add ag-grid version pinning to ~34.1.2, and update block-tools to import directly instead of spawning a subprocess.
+- Updated dependencies [4f3a521]
+  - @platforma-sdk/blocks-deps-updater@2.1.0
+
 ## 2.6.66
 
 ### Patch Changes
