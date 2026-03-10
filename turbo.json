@@ -1,30 +1,30 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["tsconfig.json"],
   "tasks": {
     "fmt": {
       "outputs": [],
-      "inputs": ["$TURBO_DEFAULT$", ".oxfmtrc.json", ".oxlintrc.json"]
+      "inputs": ["$TURBO_DEFAULT$"]
     },
     "check": {
       "outputs": [],
-      "inputs": ["$TURBO_DEFAULT$", ".oxfmtrc.json", ".oxlintrc.json", "tsconfig.json"],
+      "inputs": ["$TURBO_DEFAULT$"],
       "dependsOn": ["^build"]
     },
     "formatter:check": {
       "outputs": [],
-      "inputs": ["$TURBO_DEFAULT$", ".oxfmtrc.json"]
+      "inputs": ["$TURBO_DEFAULT$"]
     },
     "linter:check": {
       "outputs": [],
-      "inputs": ["$TURBO_DEFAULT$", ".oxlintrc.json"]
+      "inputs": ["$TURBO_DEFAULT$"]
     },
     "types:check": {
       "outputs": [],
-      "inputs": ["$TURBO_DEFAULT$", "tsconfig.json"],
+      "inputs": ["$TURBO_DEFAULT$"],
       "dependsOn": ["^build"]
     },
     "build": {
+      "inputs": ["$TURBO_DEFAULT$"],
       "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"],
       "env": [],
       "dependsOn": ["^build", "types:check"],
@@ -40,6 +40,7 @@
       ]
     },
     "test": {
+      "inputs": ["$TURBO_DEFAULT$"],
       "env": ["TEST_CACHE_CRUTCH"],
       "outputs": ["./coverage/**", "test-report.junit.xml"],
       "dependsOn": ["build"],
@@ -59,6 +60,7 @@
       ]
     },
     "do-pack": {
+      "inputs": ["$TURBO_DEFAULT$"],
       "dependsOn": ["build"],
       "outputs": ["package.tgz"]
     }
