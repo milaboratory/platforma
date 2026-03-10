@@ -3,7 +3,7 @@ import type { FilterSpecMetadataRecord } from "./types";
 
 export const filterUiMetadata = {
   equal: {
-    label: "Col = X (Equal)",
+    label: "Exactly (=)",
     form: {
       column: {
         label: "Column",
@@ -24,7 +24,7 @@ export const filterUiMetadata = {
     supportedFor: isNumericValueType,
   },
   notEqual: {
-    label: "Col ≠ X (Not Equal)",
+    label: "Not Equal To (≠)",
     form: {
       column: {
         label: "Column",
@@ -45,7 +45,7 @@ export const filterUiMetadata = {
     supportedFor: isNumericValueType,
   },
   lessThan: {
-    label: "Col < X (Less Than)",
+    label: "Below (<)",
     form: {
       column: {
         label: "Column",
@@ -66,7 +66,7 @@ export const filterUiMetadata = {
     supportedFor: isNumericValueType,
   },
   greaterThan: {
-    label: "Col > X (Greater Than)",
+    label: "Above (>)",
     form: {
       column: {
         label: "Column",
@@ -87,7 +87,7 @@ export const filterUiMetadata = {
     supportedFor: isNumericValueType,
   },
   lessThanOrEqual: {
-    label: "Col ≤ X (Less Than or Equal)",
+    label: "At Most (≤)",
     form: {
       column: {
         label: "Column",
@@ -108,7 +108,7 @@ export const filterUiMetadata = {
     supportedFor: isNumericValueType,
   },
   greaterThanOrEqual: {
-    label: "Col ≥ X (Greater Than or Equal)",
+    label: "At Least (≥)",
     form: {
       column: {
         label: "Column",
@@ -392,7 +392,7 @@ export const filterUiMetadata = {
     supportedFor: isStringValueType,
   },
   isNA: {
-    label: "Is NA",
+    label: "Is Empty (NA)",
     form: {
       column: {
         label: "Column",
@@ -408,7 +408,7 @@ export const filterUiMetadata = {
     supportedFor: () => true,
   },
   isNotNA: {
-    label: "Is Not NA",
+    label: "Is Not Empty (≠ NA)",
     form: {
       column: {
         label: "Column",
