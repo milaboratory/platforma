@@ -27,7 +27,10 @@ const PRODUCT_KEY_PREFIX = "PRODUCT:";
 const PRODUCT_KEY_LENGTH = 48;
 
 function onProductKeyInput(key: string) {
-  if (key.startsWith(PRODUCT_KEY_PREFIX)) {
+  if (
+    key.startsWith(PRODUCT_KEY_PREFIX) &&
+    key.length === PRODUCT_KEY_PREFIX.length + PRODUCT_KEY_LENGTH
+  ) {
     app.model.args.productKey = key.slice(PRODUCT_KEY_PREFIX.length);
   }
 }
