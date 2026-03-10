@@ -1,20 +1,45 @@
 {
   "name": "@platforma-sdk/blocks-deps-updater",
-  "description": "Update dependencies in pnpm workspace catalog",
-  "type": "module",
   "version": "2.0.2",
-  "scripts": {
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+  "description": "Update dependencies in pnpm workspace catalog",
+  "license": "UNLICENSED",
+  "bin": {
+    "pl-blocks-deps-updater": "./bin/run.mjs"
   },
   "files": [
-    "scripts/"
+    "bin/",
+    "dist/"
   ],
-  "bin": {
-    "pl-blocks-deps-updater": "./scripts/updater.js"
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    }
   },
-  "license": "UNLICENSED",
+  "scripts": {
+    "build": "ts-builder build --target node",
+    "test": "vitest run",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "fmt": "ts-builder format",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+  },
   "dependencies": {
     "yaml": "catalog:"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@types/node": "catalog:",
+    "dedent": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
 }
