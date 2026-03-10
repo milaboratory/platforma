@@ -4,24 +4,24 @@
   "tasks": {
     "fmt": {
       "outputs": [],
-      "inputs": [".oxfmtrc.json", ".oxlintrc.json", "$TURBO_DEFAULT$", "!**/*.md"]
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md"]
     },
     "check": {
       "outputs": [],
-      "inputs": [".oxfmtrc.json", ".oxlintrc.json", "tsconfig.json", "$TURBO_DEFAULT$", "!**/*.md"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md"],
       "dependsOn": ["^build"]
     },
     "formatter:check": {
       "outputs": [],
-      "inputs": [".oxfmtrc.json", "$TURBO_DEFAULT$", "!**/*.md"]
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md"]
     },
     "linter:check": {
       "outputs": [],
-      "inputs": [".oxlintrc.json", "$TURBO_DEFAULT$", "!**/*.md"]
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md"]
     },
     "types:check": {
       "outputs": [],
-      "inputs": ["tsconfig.json", "$TURBO_DEFAULT$", "!**/*.md"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md"],
       "dependsOn": ["^build"]
     },
     "build": {
