@@ -12,22 +12,22 @@
  * inline env vars along the way, then runs the turbo command with --dry-run=json.
  */
 
-import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 // ── colours ──────────────────────────────────────────────────────────────────
-const RED = '\x1b[91m';
-const GREEN = '\x1b[92m';
-const YELLOW = '\x1b[93m';
-const DIM = '\x1b[2m';
-const BOLD = '\x1b[1m';
-const RESET = '\x1b[0m';
+const RED = "\x1b[91m";
+const GREEN = "\x1b[92m";
+const YELLOW = "\x1b[93m";
+const DIM = "\x1b[2m";
+const BOLD = "\x1b[1m";
+const RESET = "\x1b[0m";
 
 function short(taskId) {
-  if (!taskId.includes('#')) return taskId;
-  let [pkg, task] = taskId.split('#', 2);
-  for (const prefix of ['@milaboratories/', '@platforma-sdk/', '@platforma-open/', '@mi-tests/']) {
+  if (!taskId.includes("#")) return taskId;
+  let [pkg, task] = taskId.split("#", 2);
+  for (const prefix of ["@milaboratories/", "@platforma-sdk/", "@platforma-open/", "@mi-tests/"]) {
     if (pkg.startsWith(prefix)) {
       pkg = pkg.slice(prefix.length);
       break;
@@ -55,8 +55,8 @@ function collectDownstream(tid, children) {
  * Collects inline env vars (KEY=value) along the way.
  */
 function resolveScript(scriptName) {
-  const pkgPath = join(process.cwd(), 'package.json');
-  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+  const pkgPath = join(process.cwd(), "package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
   const scripts = pkg.scripts ?? {};
 
   const env = {};
@@ -80,19 +80,19 @@ function resolveScript(scriptName) {
     const tokens = value.split(/\s+/);
     let i = 0;
     while (i < tokens.length && /^\w+=\S+$/.test(tokens[i])) {
-      const [k, ...rest] = tokens[i].split('=');
-      env[k] = rest.join('=');
+      const [k, ...rest] = tokens[i].split("=");
+      env[k] = rest.join("=");
       i++;
     }
     const rest = tokens.slice(i);
 
     // Case 1: turbo run <args>
-    if (rest[0] === 'turbo' && rest[1] === 'run') {
+    if (rest[0] === "turbo" && rest[1] === "run") {
       return { turboArgs: rest.slice(2), env };
     }
 
     // Case 2: pnpm <script> [-- extra-args]  →  follow the chain
-    if (rest[0] === 'pnpm') {
+    if (rest[0] === "pnpm") {
       const nextScript = rest[1];
       // Collect extra args after `--` (e.g. pnpm test -- --force)
       // but ignore `--` separator and args like --output-logs since those
@@ -102,7 +102,7 @@ function resolveScript(scriptName) {
     }
 
     // Case 3: npx turbo run <args>
-    if (rest[0] === 'npx' && rest[1] === 'turbo' && rest[2] === 'run') {
+    if (rest[0] === "npx" && rest[1] === "turbo" && rest[2] === "run") {
       return { turboArgs: rest.slice(3), env };
     }
 
@@ -113,11 +113,11 @@ function resolveScript(scriptName) {
 }
 
 function runDryRun(turboArgs, env) {
-  const turboCmd = `npx turbo run ${turboArgs.join(' ')} --dry-run=json`;
+  const turboCmd = `npx turbo run ${turboArgs.join(" ")} --dry-run=json`;
   let stdout;
   try {
     stdout = execSync(turboCmd, {
-      encoding: 'utf-8',
+      encoding: "utf-8",
       maxBuffer: 50 * 1024 * 1024,
       env: { ...process.env, ...env },
     });
@@ -127,7 +127,7 @@ function runDryRun(turboArgs, env) {
     process.exit(1);
   }
 
-  const idx = stdout.indexOf('{');
+  const idx = stdout.indexOf("{");
   if (idx === -1) {
     console.error(`${RED}No JSON in turbo output${RESET}`);
     process.exit(1);
@@ -145,12 +145,12 @@ function analyse(data) {
   // Filter out tasks with no actual command (<NONEXISTENT>) — these are
   // packages that don't define the given script. Turbo skips them at runtime
   // but dry-run reports them as MISS since there are no cached artifacts.
-  const realTasks = tasks.filter((t) => t.command !== '<NONEXISTENT>');
+  const realTasks = tasks.filter((t) => t.command !== "<NONEXISTENT>");
   const skipped = tasks.length - realTasks.length;
 
   const byId = new Map(realTasks.map((t) => [t.taskId, t]));
-  const hits = realTasks.filter((t) => t.cache.status === 'HIT');
-  const misses = realTasks.filter((t) => t.cache.status !== 'HIT');
+  const hits = realTasks.filter((t) => t.cache.status === "HIT");
+  const misses = realTasks.filter((t) => t.cache.status !== "HIT");
 
   // ── summary ──────────────────────────────────────────────────────────
   console.log();
@@ -159,12 +159,14 @@ function analyse(data) {
       `${GREEN}${hits.length} HIT${RESET}  /  ` +
       `${RED}${misses.length} MISS${RESET}  /  ` +
       `${realTasks.length} total` +
-      (skipped ? `  ${DIM}(${skipped} skipped — no script)${RESET}` : '')
+      (skipped ? `  ${DIM}(${skipped} skipped — no script)${RESET}` : ""),
   );
 
   if (!misses.length) {
     const saved = hits.reduce((s, t) => s + (t.cache.timeSaved ?? 0), 0);
-    console.log(`\n${GREEN}Everything is cached!${RESET}  (estimated time saved: ${Math.round(saved / 1000)}s)`);
+    console.log(
+      `\n${GREEN}Everything is cached!${RESET}  (estimated time saved: ${Math.round(saved / 1000)}s)`,
+    );
     return;
   }
 
@@ -204,18 +206,15 @@ function analyse(data) {
 
     // input files with hashes
     const inputs = rc.inputs ?? {};
-    const inputFiles = Object.entries(inputs).sort(([a], [b]) => a.localeCompare(b));
+    const inputFiles = Object.values(inputs);
     if (inputFiles.length) {
       console.log(`    ${DIM}${inputFiles.length} input files:${RESET}`);
-      for (const [file, hash] of inputFiles) {
-        console.log(`      ${DIM}${hash.slice(0, 8)}  ${file}${RESET}`);
-      }
     }
 
     // env vars
     const envVars = rc.environmentVariables?.specified?.env ?? [];
     if (envVars.length) {
-      console.log(`    ${DIM}env vars in hash: ${envVars.join(', ')}${RESET}`);
+      console.log(`    ${DIM}env vars in hash: ${envVars.join(", ")}${RESET}`);
     }
 
     // downstream cascade
@@ -235,8 +234,10 @@ function analyse(data) {
 
     for (const t of cascadeOnly.sort((a, b) => a.taskId.localeCompare(b.taskId))) {
       const depsMiss = (t.dependencies ?? []).filter((d) => missIds.has(d));
-      const depStr = depsMiss.map(short).join(', ');
-      console.log(`  ${YELLOW}${short(t.taskId)}${RESET}  ${DIM}hash: ${t.hash}${RESET}  <- ${depStr}`);
+      const depStr = depsMiss.map(short).join(", ");
+      console.log(
+        `  ${YELLOW}${short(t.taskId)}${RESET}  ${DIM}hash: ${t.hash}${RESET}  <- ${depStr}`,
+      );
     }
     console.log();
   }
@@ -245,23 +246,29 @@ function analyse(data) {
 // ── main ─────────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
 if (!args.length) {
-  console.log('Usage: node scripts/turbo-why.mjs <script-name>');
-  console.log('');
-  console.log('The argument is a script name from package.json.');
-  console.log('The script resolves pnpm→turbo chains and collects env vars.');
-  console.log('');
-  console.log('Examples:');
+  console.log("Usage: node scripts/turbo-why.mjs <script-name>");
+  console.log("");
+  console.log("The argument is a script name from package.json.");
+  console.log("The script resolves pnpm→turbo chains and collects env vars.");
+  console.log("");
+  console.log("Examples:");
   console.log('  node scripts/turbo-why.mjs build        # "build" → turbo run build');
-  console.log('  node scripts/turbo-why.mjs build:local   # "build:local" → PL_PKG_DEV=local → turbo run build');
-  console.log('  node scripts/turbo-why.mjs test:local    # "test:local" → PL_PKG_DEV=local → turbo run test');
+  console.log(
+    '  node scripts/turbo-why.mjs build:local   # "build:local" → PL_PKG_DEV=local → turbo run build',
+  );
+  console.log(
+    '  node scripts/turbo-why.mjs test:local    # "test:local" → PL_PKG_DEV=local → turbo run test',
+  );
   process.exit(1);
 }
 
 const scriptName = args[0];
 const { turboArgs, env } = resolveScript(scriptName);
 
-const envStr = Object.entries(env).map(([k, v]) => `${k}=${v}`).join(' ');
-const displayCmd = [envStr, 'turbo run', ...turboArgs, '--dry-run=json'].filter(Boolean).join(' ');
+const envStr = Object.entries(env)
+  .map(([k, v]) => `${k}=${v}`)
+  .join(" ");
+const displayCmd = [envStr, "turbo run", ...turboArgs, "--dry-run=json"].filter(Boolean).join(" ");
 console.log(`${DIM}${scriptName} → ${displayCmd}${RESET}`);
 
 const data = runDryRun(turboArgs, env);
