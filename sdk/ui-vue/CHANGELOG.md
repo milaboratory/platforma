@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.58.19
+
+### Patch Changes
+
+- a93de45: Fix table filters bugs
+- Updated dependencies [a93de45]
+  - @milaboratories/uikit@2.10.42
+  - @platforma-sdk/model@1.58.19
+
 ## 1.58.17
 
 ### Patch Changes

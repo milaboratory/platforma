@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.8.33
+
+### Patch Changes
+
+- a93de45: Fix table filters bugs
+- Updated dependencies [a93de45]
+  - @platforma-sdk/model@1.58.19
+  - @milaboratories/milaboratories.ui-examples.model@1.4.31
+
 ## 1.8.32
 
 ### Patch Changes

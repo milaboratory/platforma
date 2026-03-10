@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.13.7
+
+### Patch Changes
+
+- a93de45: Fix table filters bugs
+
 ## 1.13.6
 
 ### Patch Changes
