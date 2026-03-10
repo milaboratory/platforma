@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import type {
   PTableColumnSpec,
-  PTableColumnId,
-  ListOptionBase,
   PlDataTableFiltersWithMeta,
+  PFrameHandle,
+  PTableColumnId,
+  CanonicalizedJson,
 } from "@platforma-sdk/model";
 import {
   canonicalizeJson,
@@ -11,8 +12,9 @@ import {
   Domain,
   readAnnotation,
   readDomain,
-  parseJson,
   getAxisId,
+  getUniqueSourceValuesWithLabels,
+  parseJson,
 } from "@platforma-sdk/model";
 import { computed, onMounted, ref } from "vue";
 import { PlBtnGhost, PlSlideModal, usePlBlockPageTitleTeleportTarget } from "@milaboratories/uikit";
@@ -23,9 +25,12 @@ import {
   type PlAdvancedFilterItem,
 } from "../PlAdvancedFilter";
 import type { PlAdvancedFilterColumnId } from "../PlAdvancedFilter/types";
+import type { Nil } from "@milaboratories/helpers";
+import { isNil } from "es-toolkit";
 
 const model = defineModel<PlDataTableFiltersWithMeta>({ required: true });
 const props = defineProps<{
+  pframeHandle: Nil | PFrameHandle;
   columns: PTableColumnSpec[];
 }>();
 
@@ -42,16 +47,14 @@ const filtersOn = computed(() => {
   return model.value.filters.length > 0;
 });
 
-// Convert PTableColumnSpec to PlAdvancedFilterColumnId
-function makeFilterColumnId(spec: PTableColumnSpec): PlAdvancedFilterColumnId {
+function makeFilterColumnId(spec: PTableColumnSpec): CanonicalizedJson<PTableColumnId> {
   const id: PTableColumnId =
     spec.type === "axis"
       ? { type: "axis", id: getAxisId(spec.spec) }
       : { type: "column", id: spec.id };
-  return canonicalizeJson<PTableColumnId>(id) as unknown as PlAdvancedFilterColumnId;
+  return canonicalizeJson<PTableColumnId>(id);
 }
 
-// Convert PTableColumnSpec[] to PlAdvancedFilterItem[]
 const items = computed<PlAdvancedFilterItem[]>(() => {
   return props.columns.map((col, idx) => {
     const id = makeFilterColumnId(col);
@@ -86,31 +89,31 @@ const supportedFilters = [
   "notEqual",
 ] as (typeof PlAdvancedFilterSupportedFilters)[number][];
 
-// getSuggestOptions - provide discrete values from column annotations
-function getSuggestOptions(params: {
+function handleSuggestOptions(params: {
   columnId: PlAdvancedFilterColumnId;
   axisIdx?: number;
   searchStr: string;
   searchType: "value" | "label";
-}): ListOptionBase<string | number>[] {
-  const item = items.value.find((i) => i.id === params.columnId);
-  if (!item) return [];
-
-  const discreteValuesStr = readAnnotation(item.spec, Annotation.DiscreteValues);
-  if (!discreteValuesStr) return [];
-
-  try {
-    const values = parseJson<(string | number)[]>(discreteValuesStr);
-    return values
-      .filter((v) => {
-        if (!params.searchStr) return true;
-        const str = String(v).toLowerCase();
-        return str.includes(params.searchStr.toLowerCase());
-      })
-      .map((v) => ({ value: v, label: String(v) }));
-  } catch {
+}) {
+  if (isNil(props.pframeHandle)) {
+    console.warn("PFrame handle is not available, cannot fetch suggest options");
     return [];
   }
+
+  const strId = params.columnId as CanonicalizedJson<PTableColumnId>;
+  const tableColumnId = parseJson<PTableColumnId>(strId);
+
+  if (tableColumnId.type !== "column") {
+    throw new Error("ColumnId should be of type 'column' for suggest options");
+  }
+
+  return getUniqueSourceValuesWithLabels(props.pframeHandle, {
+    columnId: tableColumnId.id,
+    axisIdx: params.axisIdx,
+    limit: 100,
+    searchQuery: params.searchType === "label" ? params.searchStr : undefined,
+    searchQueryValue: params.searchType === "value" ? params.searchStr : undefined,
+  }).then((v) => v.values);
 }
 </script>
 
@@ -124,17 +127,16 @@ function getSuggestOptions(params: {
   <PlSlideModal v-model="showManager" :close-on-outside-click="false">
     <template #title>Manage Filters</template>
 
-    <div v-if="items.length > 0" :class="$style.root">
+    <div :class="$style.root">
       <PlAdvancedFilterComponent
         v-model:filters="model as PlAdvancedFilter"
         :items="items"
         :supported-filters="supportedFilters"
-        :get-suggest-options="getSuggestOptions"
+        :get-suggest-options="handleSuggestOptions"
         :enable-dnd="false"
         :enable-add-group-button="true"
       />
     </div>
-    <div v-else>No filters applicable</div>
   </PlSlideModal>
 </template>
 

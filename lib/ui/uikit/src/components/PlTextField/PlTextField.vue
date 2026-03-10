@@ -7,9 +7,8 @@ export default {
 };
 </script>
 
-<script lang="ts" setup generic="M, E = string, C = E">
-import type { Equal } from "@milaboratories/helpers";
-import { computed, reactive, ref, useSlots } from "vue";
+<script lang="ts" setup>
+import { computed, ref, useSlots } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
 import { getErrorMessage } from "../../helpers/error.ts";
 import DoubleContour from "../../utils/DoubleContour.vue";
@@ -23,13 +22,11 @@ import "./pl-text-field.scss";
 
 const slots = useSlots();
 
-type Model = Equal<M, E | C> extends true ? M : never; // basically in === out
-
 /**
  * The current value of the input field.
  */
-const model = defineModel<Model>({
-  required: true,
+const model = defineModel<string>({
+  default: "",
 });
 
 const props = defineProps<{
@@ -39,14 +36,8 @@ const props = defineProps<{
   label?: string;
   /**
    * If `true`, a clear icon will appear in the input field to clear the value (set it to empty string).
-   * Or you can pass a callback that returns a custom "empty" value (null | undefined | string)
    */
-  clearable?: boolean | (() => C);
-  /**
-   * An optional callback to parse and/or cast the value, the return type overrides the model type.
-   * The callback must throw an exception if the value is invalid
-   */
-  parse?: (v: string) => E;
+  clearable?: boolean;
   /**
    * If `true`, the input field is marked as required.
    */
@@ -104,35 +95,6 @@ const inputRef = ref<HTMLInputElement | undefined>();
 
 const showPassword = ref(false);
 
-const data = reactive({
-  cached: undefined as { error: string; value: string } | undefined,
-});
-
-const valueRef = computed<string>({
-  get() {
-    if (data.cached) {
-      return data.cached.value;
-    }
-    return model.value === undefined || model.value === null ? "" : String(model.value);
-  },
-  set(value) {
-    data.cached = undefined;
-
-    if (props.parse) {
-      try {
-        model.value = props.parse(value) as Model;
-      } catch (err) {
-        data.cached = {
-          error: err instanceof Error ? err.message : String(err),
-          value,
-        };
-      }
-    } else {
-      model.value = value as Model;
-    }
-  },
-});
-
 const fieldType = computed(() => {
   if (props.type && props.type === "password") {
     return showPassword.value ? "text" : props.type;
@@ -145,20 +107,13 @@ const passwordIcon = computed(() => (showPassword.value ? "view-show" : "view-hi
 
 const clear = () => {
   if (props.clearable) {
-    data.cached = undefined;
-    model.value = props.clearable === true ? ("" as Model) : (props.clearable() as Model);
+    model.value = "";
   }
 };
 
-const validationData = useValidation(valueRef, props.rules || []);
+const validationData = useValidation(model, props.rules || []);
 
-const isEmpty = computed(() => {
-  if (props.clearable) {
-    return props.clearable === true ? model.value === "" : model.value === props.clearable();
-  }
-
-  return model.value === "";
-});
+const isEmpty = computed(() => model.value === "");
 
 const nonEmpty = computed(() => !isEmpty.value);
 
@@ -167,9 +122,6 @@ const displayErrors = computed(() => {
   const propsError = getErrorMessage(props.error);
   if (propsError) {
     errors.push(propsError);
-  }
-  if (data.cached) {
-    errors.push(data.cached.error);
   }
   if (!validationData.value.isValid) {
     errors.push(...validationData.value.errors);
@@ -184,10 +136,6 @@ const canShowClearable = computed(
 );
 
 const togglePasswordVisibility = () => (showPassword.value = !showPassword.value);
-
-const onFocusOut = () => {
-  data.cached = undefined;
-};
 
 const setFocusOnInput = () => inputRef.value?.focus();
 
@@ -220,12 +168,11 @@ useLabelNotch(rootRef);
       </div>
       <input
         ref="inputRef"
-        v-model="valueRef"
+        v-model="model"
         :disabled="disabled"
         :placeholder="placeholder || '...'"
         :type="fieldType"
         spellcheck="false"
-        @focusout="onFocusOut"
       />
       <div class="pl-text-field__append" @click="setFocusOnInput">
         <PlIcon16

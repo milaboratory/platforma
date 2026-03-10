@@ -10,6 +10,7 @@ import type {
   PTableHandle,
   RootFilterSpec,
   PTableColumnId,
+  PFrameHandle,
 } from "@milaboratories/pl-model-common";
 import type { FilterSpecLeaf } from "../../filters";
 
@@ -110,6 +111,8 @@ export type PlDataTableModel = {
   sourceId: string | null;
   /** p-table including all columns, used to show the full specification of the table */
   fullTableHandle: PTableHandle;
+  /** p-frame handle */
+  fullPframeHandle: PFrameHandle;
   /** p-table including only visible columns, used to get the data */
   visibleTableHandle: PTableHandle;
 };
