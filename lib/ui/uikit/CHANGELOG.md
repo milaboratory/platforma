@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.10.42
+
+### Patch Changes
+
+- a93de45: Fix table filters bugs
+- Updated dependencies [a93de45]
+  - @milaboratories/helpers@1.13.7
+  - @platforma-sdk/model@1.58.19
+
 ## 2.10.41
 
 ### Patch Changes

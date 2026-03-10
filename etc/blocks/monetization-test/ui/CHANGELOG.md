@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.200
+
+### Patch Changes
+
+- a93de45: Fix table filters bugs
+- Updated dependencies [a93de45]
+  - @platforma-sdk/ui-vue@1.58.19
+  - @platforma-sdk/model@1.58.19
+  - @milaboratories/milaboratories.monetization-test.model@1.0.77
+
 ## 1.1.199
 
 ### Patch Changes
