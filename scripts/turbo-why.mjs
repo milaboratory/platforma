@@ -202,10 +202,14 @@ function analyse(data) {
     const tid = rc.taskId;
     console.log(`  ${RED}${BOLD}${short(tid)}${RESET}  ${DIM}hash: ${rc.hash}${RESET}`);
 
-    // input file count
-    const inputCount = Object.keys(rc.inputs ?? {}).length;
-    if (inputCount) {
-      console.log(`    ${DIM}${inputCount} input files${RESET}`);
+    // input files with hashes
+    const inputs = rc.inputs ?? {};
+    const inputFiles = Object.entries(inputs).sort(([a], [b]) => a.localeCompare(b));
+    if (inputFiles.length) {
+      console.log(`    ${DIM}${inputFiles.length} input files:${RESET}`);
+      for (const [file, hash] of inputFiles) {
+        console.log(`      ${DIM}${hash.slice(0, 8)}  ${file}${RESET}`);
+      }
     }
 
     // env vars
