@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 import { parseDocument, isScalar, isAlias } from "yaml";
 
 /** Pinned versions for packages */
@@ -8,11 +9,45 @@ const PINNED_VERSIONS = {
   "ag-grid-vue3": "~34.1.2",
 } as const;
 
-async function getLatestVersion(packageName: string): Promise<string> {
-  const res = await fetch(`https://registry.npmjs.org/-/package/${packageName}/dist-tags`);
-  if (!res.ok) {
-    throw new Error(`registry returned HTTP ${res.status}`);
+const RETRY_COUNT = 2;
+const RETRY_BASE_MS = 500;
+const TIMEOUT_MS = 30_000;
+
+/** Parse Retry-After header: delay-seconds (e.g. "120") or HTTP-date (RFC 9110). Returns ms, or null if absent/invalid. */
+function parseRetryAfter(header: string | null): number | null {
+  if (!header) return null;
+  const seconds = Number(header);
+  if (Number.isFinite(seconds) && seconds > 0) return seconds * 1000;
+  const date = Date.parse(header);
+  if (!Number.isNaN(date)) return Math.max(0, date - Date.now());
+  return null;
+}
+
+async function fetchWithRetry(url: string): Promise<Response> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+      if (res.ok) return res;
+      const retryable = res.status === 429 || res.status >= 500;
+      if (!retryable || attempt > RETRY_COUNT) {
+        throw new Error(`registry returned HTTP ${res.status}`);
+      }
+      // Respect Retry-After header: either delay-seconds or HTTP-date (RFC 9110)
+      const retryAfterMs = parseRetryAfter(res.headers.get("retry-after"));
+      if (retryAfterMs != null) {
+        await sleep(retryAfterMs);
+        continue;
+      }
+    } catch (err) {
+      if (attempt > RETRY_COUNT) throw err;
+    }
+    const delay = RETRY_BASE_MS * 2 ** (attempt - 1) * (0.8 + 0.4 * Math.random());
+    await sleep(delay);
   }
+}
+
+async function getLatestVersion(packageName: string): Promise<string> {
+  const res = await fetchWithRetry(`https://registry.npmjs.org/-/package/${packageName}/dist-tags`);
 
   const tags = (await res.json()) as Record<string, string>;
   const latest = tags.latest;
