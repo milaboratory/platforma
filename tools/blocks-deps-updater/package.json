@@ -22,8 +22,7 @@
     }
   },
   "scripts": {
-    "build": "vite build",
-    "pretest": "vite build",
+    "build": "ts-builder build --target node",
     "test": "vitest run",
     "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",
@@ -40,10 +39,7 @@
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "dedent": "catalog:",
-    "rollup-plugin-node-externals": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
     "vitest": "catalog:"
   }
 }

@@ -1,13 +1,9 @@
-import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { promisify } from "node:util";
 import dedent from "dedent";
 import { describe, expect, it } from "vitest";
-
-const execFileAsync = promisify(execFile);
-const BIN_PATH = path.resolve(__dirname, "../bin/run.mjs");
+import { updatePackages } from "./updater";
 
 async function tmpDir(): Promise<AsyncDisposable & { path: string }> {
   // TODO: migrate to `mkdtempDisposable` after migration to Node.js 24
@@ -16,15 +12,6 @@ async function tmpDir(): Promise<AsyncDisposable & { path: string }> {
     path: dirPath,
     [Symbol.asyncDispose]: () => fs.rm(dirPath, { recursive: true, force: true }),
   };
-}
-
-async function runUpdater(cwd: string): Promise<string> {
-  const { stdout } = await execFileAsync(process.execPath, [BIN_PATH], {
-    cwd,
-    encoding: "utf8",
-    timeout: 30_000,
-  });
-  return stdout;
 }
 
 function writeWorkspace(dir: string, content: string): Promise<void> {
@@ -47,7 +34,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n",
     );
 
-    await runUpdater(dir.path);
+    await updatePackages(dir.path);
 
     expect(await readWorkspace(dir.path)).toBe(
       dedent`
@@ -69,7 +56,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n",
     );
 
-    await runUpdater(dir.path);
+    await updatePackages(dir.path);
 
     const result = await readWorkspace(dir.path);
     expect(result).toContain("ag-grid-enterprise: ~34.1.2");
@@ -89,7 +76,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n",
     );
 
-    await runUpdater(dir.path);
+    await updatePackages(dir.path);
 
     const result = await readWorkspace(dir.path);
     expect(result).toContain("ag-grid-enterprise");
@@ -107,7 +94,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n";
     await writeWorkspace(dir.path, content);
 
-    await runUpdater(dir.path);
+    await updatePackages(dir.path);
 
     expect(await readWorkspace(dir.path)).toBe(content);
   });
@@ -122,10 +109,12 @@ describe("pinned versions enforcement", () => {
       ` + "\n";
     await writeWorkspace(dir.path, content);
 
-    const output = await runUpdater(dir.path);
+    const before = (await fs.stat(path.join(dir.path, "pnpm-workspace.yaml"))).mtimeMs;
+    await updatePackages(dir.path);
+    const after = (await fs.stat(path.join(dir.path, "pnpm-workspace.yaml"))).mtimeMs;
 
+    expect(after).toBe(before);
     expect(await readWorkspace(dir.path)).toBe(content);
-    expect(output).toContain("up to date");
   });
 
   it("does not touch catalog without ag-grid", async () => {
@@ -138,7 +127,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n";
     await writeWorkspace(dir.path, content);
 
-    await runUpdater(dir.path);
+    await updatePackages(dir.path);
 
     const result = await readWorkspace(dir.path);
     expect(result).not.toContain("ag-grid");
@@ -159,7 +148,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n",
     );
 
-    await runUpdater(dir.path);
+    await updatePackages(dir.path);
 
     const result = await readWorkspace(dir.path);
     expect(result).toContain("# workspace config");
@@ -181,7 +170,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n",
     );
 
-    await runUpdater(dir.path);
+    await updatePackages(dir.path);
 
     expect(await readWorkspace(dir.path)).toBe(
       dedent`
@@ -210,7 +199,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n",
     );
 
-    await runUpdater(dir.path);
+    await updatePackages(dir.path);
 
     const result = await readWorkspace(dir.path);
     expect(result).toContain("~34.1.2");
