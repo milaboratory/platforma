@@ -200,7 +200,7 @@ function analyse(data) {
 
   for (const rc of rootCauses.sort((a, b) => a.taskId.localeCompare(b.taskId))) {
     const tid = rc.taskId;
-    console.log(`  ${RED}${BOLD}${short(tid)}${RESET}`);
+    console.log(`  ${RED}${BOLD}${short(tid)}${RESET}  ${DIM}hash: ${rc.hash}${RESET}`);
 
     // input file count
     const inputCount = Object.keys(rc.inputs ?? {}).length;
@@ -232,7 +232,7 @@ function analyse(data) {
     for (const t of cascadeOnly.sort((a, b) => a.taskId.localeCompare(b.taskId))) {
       const depsMiss = (t.dependencies ?? []).filter((d) => missIds.has(d));
       const depStr = depsMiss.map(short).join(', ');
-      console.log(`  ${YELLOW}${short(t.taskId)}${RESET}  <- ${depStr}`);
+      console.log(`  ${YELLOW}${short(t.taskId)}${RESET}  ${DIM}hash: ${t.hash}${RESET}  <- ${depStr}`);
     }
     console.log();
   }
