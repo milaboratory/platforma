@@ -714,7 +714,9 @@ export class Core {
   }) {
     this.logger.info(`Publishing docker images...`);
 
-    const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
+    const packagesToPublish = options?.ids ?? [
+      ...new Set([...this.buildablePackages.keys(), ...this.dockerPackages.keys()]),
+    ];
     this.logger.debug(`Selected packages:\n  ${packagesToPublish.join("\n  ")}`);
     this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join("\n  ")}`);
 
