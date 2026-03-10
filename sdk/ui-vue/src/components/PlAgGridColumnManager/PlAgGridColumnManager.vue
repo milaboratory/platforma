@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { PlBtnGhost, PlElementList, PlSearchField, PlSlideModal, usePlBlockPageTitleTeleportTarget } from '@milaboratories/uikit';
-import { type Column, type DisplayedColumnsChangedEvent, type GridApi } from 'ag-grid-enterprise';
-import { computed, ref, toRefs, watch } from 'vue';
-import { PlAgDataTableRowNumberColId } from '../PlAgDataTable/sources/row-number';
-import { useFilteredItems } from './useFilteredItems';
+import {
+  PlBtnGhost,
+  PlElementList,
+  PlSearchField,
+  PlSlideModal,
+  usePlBlockPageTitleTeleportTarget,
+} from "@milaboratories/uikit";
+import { type Column, type DisplayedColumnsChangedEvent, type GridApi } from "ag-grid-enterprise";
+import { computed, ref, toRefs, watch } from "vue";
+import { PlAgDataTableRowNumberColId } from "../PlAgDataTable/sources/row-number";
+import { useFilteredItems } from "./useFilteredItems";
 
 const props = defineProps<{
   /**
@@ -27,7 +33,7 @@ watch(
   (gridApi) => {
     if (gridApi.isDestroyed()) return;
 
-    gridApi.addEventListener('displayedColumnsChanged', (event: DisplayedColumnsChangedEvent) => {
+    gridApi.addEventListener("displayedColumnsChanged", (event: DisplayedColumnsChangedEvent) => {
       columns.value = event.api.getAllGridColumns();
     });
 
@@ -47,10 +53,10 @@ const items = computed(() => {
   }));
 });
 
-const query = ref('');
+const query = ref("");
 
 const slideModal = ref(false);
-const teleportTarget = usePlBlockPageTitleTeleportTarget('PlAgGridColumnManager');
+const teleportTarget = usePlBlockPageTitleTeleportTarget("PlAgGridColumnManager");
 
 const { filteredItems, segments } = useFilteredItems(() => ({
   items: items.value,
@@ -61,9 +67,7 @@ const { filteredItems, segments } = useFilteredItems(() => ({
 
 <template>
   <Teleport v-if="teleportTarget" :to="teleportTarget">
-    <PlBtnGhost icon="columns" @click.stop="slideModal = !slideModal">
-      Columns
-    </PlBtnGhost>
+    <PlBtnGhost icon="columns" @click.stop="slideModal = !slideModal"> Columns </PlBtnGhost>
   </Teleport>
 
   <PlSlideModal v-model="slideModal" :width="width" close-on-outside-click>
@@ -73,18 +77,22 @@ const { filteredItems, segments } = useFilteredItems(() => ({
       :items="filteredItems"
       :get-item-key="(item) => item.id"
       :is-draggable="(item) => !item.column.getColDef().lockPosition"
-      :on-sort="(fromIndex, toIndex) => {
-        if (!gridApi.isDestroyed()) {
-          const columnToMove = columns[fromIndex];
-          gridApi.moveColumns([columnToMove], toIndex);
+      :on-sort="
+        (fromIndex, toIndex) => {
+          if (!gridApi.isDestroyed()) {
+            const columnToMove = columns[fromIndex];
+            gridApi.moveColumns([columnToMove], toIndex);
+          }
+          return true; // Let PlElementList handle the visual update
         }
-        return true; // Let PlElementList handle the visual update
-      }"
-      :on-toggle="(item) => {
-        if (!gridApi.isDestroyed()) {
-          gridApi.setColumnsVisible([item.column], !item.column.isVisible());
+      "
+      :on-toggle="
+        (item) => {
+          if (!gridApi.isDestroyed()) {
+            gridApi.setColumnsVisible([item.column], !item.column.isVisible());
+          }
         }
-      }"
+      "
       :is-toggled="(item) => !item.column.isVisible()"
       :is-toggable="(item) => item.id !== PlAgDataTableRowNumberColId"
       :is-pinned="(item) => !!item.column.getColDef().lockPosition"
@@ -98,7 +106,8 @@ const { filteredItems, segments } = useFilteredItems(() => ({
             v-for="(segment, i) of segments.get(item.label)"
             :key="i"
             :class="{ [$style.match]: segment.match }"
-          >{{ segment.value }}</span>
+            >{{ segment.value }}</span
+          >
         </span>
       </template>
     </PlElementList>

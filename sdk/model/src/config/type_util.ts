@@ -1,4 +1,4 @@
-import type { ExtractAction, TypedConfig } from './type_engine';
+import type { ExtractAction, TypedConfig } from "./type_engine";
 
 export type SyncConfAction = { isSync: true };
 
@@ -22,4 +22,4 @@ export type And<A extends boolean, B extends boolean> = A extends true
 
 export type IsA<T, E> = T extends E ? true : false;
 
-export type Checked<Type, Condition> = Condition extends true ? Type : 'error';
+export type Checked<Type, Condition> = Condition extends true ? Type : "error";

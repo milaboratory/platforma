@@ -1,23 +1,23 @@
-import { expect, test } from 'vitest';
-import { CallersCounter } from '@milaboratories/ts-helpers';
-import type { CachedFile } from './files_cache';
-import { FilesCache } from './files_cache';
+import { expect, test } from "vitest";
+import { CallersCounter } from "@milaboratories/ts-helpers";
+import type { CachedFile } from "./files_cache";
+import { FilesCache } from "./files_cache";
 
-test('should delete blob3 when add 3 blobs, exceed a soft limit and nothing holds blob3', () => {
+test("should delete blob3 when add 3 blobs, exceed a soft limit and nothing holds blob3", () => {
   const cache = new FilesCache(20);
-  const callerId1 = 'callerId1';
+  const callerId1 = "callerId1";
   const blob1: CachedFile = {
-    path: 'path1',
+    path: "path1",
     size: 5,
     counter: new CallersCounter(),
   };
   const blob2: CachedFile = {
-    path: 'path2',
+    path: "path2",
     size: 10,
     counter: new CallersCounter(),
   };
   const blob3: CachedFile = {
-    path: 'path3',
+    path: "path3",
     size: 10,
     counter: new CallersCounter(),
   };
@@ -48,16 +48,16 @@ test('should delete blob3 when add 3 blobs, exceed a soft limit and nothing hold
   expect(cache.getFile(blob3.path, callerId1)).toBeUndefined();
 });
 
-test('regression should allow to add empty files', () => {
+test("regression should allow to add empty files", () => {
   const cache = new FilesCache(1);
-  const callerId1 = 'callerId1';
+  const callerId1 = "callerId1";
   const blob1: CachedFile = {
-    path: 'path1',
+    path: "path1",
     size: 0,
     counter: new CallersCounter(),
   };
   const blob2: CachedFile = {
-    path: 'path2',
+    path: "path2",
     size: 2,
     counter: new CallersCounter(),
   };

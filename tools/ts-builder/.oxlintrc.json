@@ -1,0 +1,3 @@
+{
+  "extends": ["./public/oxlint-node.json"]
+}

@@ -1,5 +1,17 @@
 # @platforma-open/software-ptabler
 
+## 1.14.2
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
+## 1.14.1
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
 ## 1.14.0
 
 ### Minor Changes

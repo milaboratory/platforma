@@ -1,5 +1,23 @@
 # @milaboratories/biowasm-tools
 
+## 2.0.3
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
+## 2.0.2
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
+## 2.0.1
+
+### Patch Changes
+
+- f89a883: full integration oxc
+
 ## 2.0.0
 
 ### Major Changes

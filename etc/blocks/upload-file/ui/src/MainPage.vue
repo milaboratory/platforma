@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { PlAlert, PlBlockPage, PlFileInput } from '@platforma-sdk/ui-vue';
-import { useApp } from './app';
-import { computed } from 'vue';
+import { PlAlert, PlBlockPage, PlFileInput } from "@platforma-sdk/ui-vue";
+import { useApp } from "./app";
+import { computed } from "vue";
 
 const app = useApp();
 
@@ -18,7 +18,11 @@ const progress = computed(() => {
 
 <template>
   <PlBlockPage style="max-width: 100%">
-    <PlFileInput v-model="app.model.args.inputHandle" label="Select file to import" :progress="progress" />
+    <PlFileInput
+      v-model="app.model.args.inputHandle"
+      label="Select file to import"
+      :progress="progress"
+    />
 
     <PlAlert type="success">
       Blob content:

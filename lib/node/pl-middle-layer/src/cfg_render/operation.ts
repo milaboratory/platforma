@@ -1,5 +1,5 @@
-import type { Computable, ComputableCtx } from '@milaboratories/computable';
-import type { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
+import type { Computable, ComputableCtx } from "@milaboratories/computable";
+import type { MiddleLayerDriverKit } from "../middle_layer/driver_kit";
 
 export type ArgumentKey = string;
 
@@ -17,18 +17,18 @@ export type ArgumentRequests = Record<ArgumentKey, Operation>;
 export type Subroutine = (args: ArgumentValues) => Operation;
 
 export type ScheduleSubroutine = {
-  type: 'ScheduleSubroutine';
+  type: "ScheduleSubroutine";
   subroutine: Subroutine;
   args: ArgumentRequests;
 };
 
 export type ScheduleComputable = {
-  type: 'ScheduleComputable';
+  type: "ScheduleComputable";
   computable: Computable<unknown>;
 };
 
 export type ReturnResult = {
-  type: 'ReturnResult';
+  type: "ReturnResult";
   result: unknown;
 };
 

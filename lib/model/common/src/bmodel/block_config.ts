@@ -1,18 +1,8 @@
 // TODO BroadActiveHandleDescriptor must be removed
 
-import type { BlockCodeFeatureFlags } from '../flags';
-import type { BlockCodeWithInfo, Code } from './code';
-import type { BlockRenderingMode } from './types';
-
-/**
- * Descriptor for a state migration function.
- * Unlike ConfigRenderLambda, migrations are not rendered reactively -
- * they are one-time synchronous transformations called during block pack updates.
- */
-export type MigrationDescriptor = {
-  /** Index of this migration in the migrations callback array */
-  readonly index: number;
-};
+import type { BlockCodeFeatureFlags } from "../flags";
+import type { BlockCodeWithInfo, Code } from "./code";
+import type { BlockRenderingMode } from "./types";
 
 /**
  * BroadActiveHandleDescriptor = TypedConfigOrConfigLambda,
@@ -23,7 +13,10 @@ export type BlockConfigV4Generic<
   _Data extends Record<string, unknown> = Record<string, unknown>,
   BroadActiveHandleDescriptor = unknown,
   NarrowActiveHandleDescriptor extends BroadActiveHandleDescriptor = BroadActiveHandleDescriptor,
-  Outputs extends Record<string, BroadActiveHandleDescriptor> = Record<string, BroadActiveHandleDescriptor>,
+  Outputs extends Record<string, BroadActiveHandleDescriptor> = Record<
+    string,
+    BroadActiveHandleDescriptor
+  >,
 > = {
   /** Discriminator to identify config version */
   readonly configVersion: 4;
@@ -35,19 +28,6 @@ export type BlockConfigV4Generic<
 
   /** Main rendering mode for the block */
   readonly renderingMode: BlockRenderingMode;
-
-  /** Lambda to derive block args from state */
-  readonly args: NarrowActiveHandleDescriptor;
-
-  /**
-   * Lambda to derive prerun args from state (optional).
-   * If not defined, defaults to using the args() result.
-   * Used for staging/prerun phase.
-   */
-  readonly prerunArgs?: NarrowActiveHandleDescriptor;
-
-  /** Lambda to get initial data when block is added to the project */
-  readonly initialData: NarrowActiveHandleDescriptor;
 
   /** Lambda to derive list of sections for the left overview panel */
   readonly sections: NarrowActiveHandleDescriptor;
@@ -70,18 +50,14 @@ export type BlockConfigV4Generic<
   /** Configuration for the output cells */
   readonly outputs: Outputs;
 
-  /**
-   * Array of migration descriptors for state version upgrades.
-   * Each migration transforms state from version N to N+1.
-   * Migrations are NOT rendered reactively - they run synchronously during block pack updates.
-   */
-  readonly migrations?: MigrationDescriptor[];
-
   /** Config code bundle */
   readonly code?: Code;
 
   /** Feature flags for the block Model and UI code. */
   readonly featureFlags?: BlockCodeFeatureFlags;
+
+  /** Facade callbacks supported by this block (for pre-execution validation) */
+  readonly blockLifecycleCallbacks: Record<string, NarrowActiveHandleDescriptor>;
 };
 
 /**
@@ -93,7 +69,10 @@ export type BlockConfigV3Generic<
   UiState = unknown,
   BroadActiveHandleDescriptor = unknown,
   NarrowActiveHandleDescriptor extends BroadActiveHandleDescriptor = BroadActiveHandleDescriptor,
-  Outputs extends Record<string, BroadActiveHandleDescriptor> = Record<string, BroadActiveHandleDescriptor>,
+  Outputs extends Record<string, BroadActiveHandleDescriptor> = Record<
+    string,
+    BroadActiveHandleDescriptor
+  >,
 > = {
   /** Discriminator to identify config version */
   readonly configVersion: 3;
@@ -151,7 +130,7 @@ export type BlockConfigV3Generic<
 export type BlockConfigGeneric = BlockConfigV3Generic | BlockConfigV4Generic;
 
 export function extractCodeWithInfo(cfg: BlockConfigGeneric): BlockCodeWithInfo {
-  if (cfg.code === undefined) throw new Error('extractCodeWithInfo: No code bundle');
+  if (cfg.code === undefined) throw new Error("extractCodeWithInfo: No code bundle");
   return {
     code: cfg.code,
     sdkVersion: cfg.sdkVersion,

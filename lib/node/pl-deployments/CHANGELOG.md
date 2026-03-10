@@ -1,5 +1,119 @@
 # @milaboratories/pl-local
 
+## 2.15.21
+
+### Patch Changes
+
+- e2d86ca: Update built-in backend version to 1.46.0
+
+## 2.15.20
+
+### Patch Changes
+
+- 0ffffec: Set Built-In backend version to 1.44.1
+
+## 2.15.19
+
+### Patch Changes
+
+- b3c0745: Update Built-In version to 1.46.0
+
+## 2.15.18
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-common@1.25.2
+  - @milaboratories/pl-config@1.7.15
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.7.3
+
+## 2.15.17
+
+### Patch Changes
+
+- Updated dependencies [523a59f]
+  - @milaboratories/pl-model-common@1.25.1
+
+## 2.15.16
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @milaboratories/pl-model-common@1.25.0
+
+## 2.15.15
+
+### Patch Changes
+
+- Updated dependencies [cb28fde]
+  - @milaboratories/pl-model-common@1.24.11
+
+## 2.15.14
+
+### Patch Changes
+
+- Updated dependencies [866a323]
+  - @milaboratories/pl-model-common@1.24.10
+
+## 2.15.13
+
+### Patch Changes
+
+- Updated dependencies [a3659cd]
+  - @milaboratories/pl-model-common@1.24.9
+
+## 2.15.12
+
+### Patch Changes
+
+- Updated dependencies [4f04561]
+  - @milaboratories/pl-model-common@1.24.8
+
+## 2.15.11
+
+### Patch Changes
+
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-common@1.24.7
+  - @milaboratories/pl-config@1.7.14
+  - @milaboratories/pl-http@1.2.3
+  - @milaboratories/ts-helpers@1.7.2
+
+## 2.15.10
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-config@1.7.14
+  - @milaboratories/pl-http@1.2.3
+  - @milaboratories/pl-model-common@1.24.6
+  - @milaboratories/ts-helpers@1.7.2
+
+## 2.15.9
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-common@1.24.5
+  - @milaboratories/pl-config@1.7.13
+  - @milaboratories/pl-http@1.2.2
+  - @milaboratories/ts-helpers@1.7.2
+
+## 2.15.8
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/ts-helpers@1.7.1
+  - @milaboratories/pl-config@1.7.12
+  - @milaboratories/pl-model-common@1.24.4
+  - @milaboratories/pl-http@1.2.1
+
 ## 2.15.7
 
 ### Patch Changes

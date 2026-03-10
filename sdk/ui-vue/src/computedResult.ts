@@ -1,8 +1,8 @@
-import type { ComputedRef } from 'vue';
-import { computed, type ComputedGetter } from 'vue';
-import type { OptionalResult } from './types';
-import { wrapOptionalResult } from './utils';
-import { ensureErrorLike } from '@platforma-sdk/model';
+import type { ComputedRef } from "vue";
+import { computed, type ComputedGetter } from "vue";
+import type { OptionalResult } from "./types";
+import { wrapOptionalResult } from "./utils";
+import { ensureErrorLike } from "@platforma-sdk/model";
 
 /**
  * Creates a computed reference that wraps the result of a getter function in an `OptionalResult` object.

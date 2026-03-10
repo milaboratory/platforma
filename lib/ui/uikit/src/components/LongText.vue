@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { debounce, notEmpty } from '@milaboratories/helpers';
+import { computed, ref } from "vue";
+import { debounce, notEmpty } from "@milaboratories/helpers";
 
 const hasElementEllipsis = ref(false);
 
@@ -8,16 +8,18 @@ const span = ref<HTMLElement>();
 
 const isHovered = ref(false);
 
-const classes = computed(() => (isHovered.value && hasElementEllipsis.value ? 'ui-lt-animate' : ''));
+const classes = computed(() =>
+  isHovered.value && hasElementEllipsis.value ? "ui-lt-animate" : "",
+);
 
 const updateStatus = debounce((val: boolean) => (isHovered.value = val), 500);
 
 const animationTime = computed(() => {
-  return span.value ? `${span.value?.innerHTML.length * 0.4}s` : '5s';
+  return span.value ? `${span.value?.innerHTML.length * 0.4}s` : "5s";
 });
 
 function isEllipsisEnabled() {
-  const el = notEmpty(span.value, 'span cannot be empty');
+  const el = notEmpty(span.value, "span cannot be empty");
   hasElementEllipsis.value = el.clientWidth < el.scrollWidth;
 }
 

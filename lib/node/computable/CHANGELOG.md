@@ -1,5 +1,41 @@
 # @milaboratories/computable
 
+## 2.8.6
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-error-like@1.12.9
+  - @milaboratories/ts-helpers@1.7.3
+
+## 2.8.5
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-error-like@1.12.8
+  - @milaboratories/ts-helpers@1.7.2
+
+## 2.8.4
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-error-like@1.12.7
+  - @milaboratories/ts-helpers@1.7.2
+
+## 2.8.3
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-error-like@1.12.6
+  - @milaboratories/ts-helpers@1.7.1
+
 ## 2.8.2
 
 ### Patch Changes

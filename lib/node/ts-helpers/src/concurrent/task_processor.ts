@@ -1,13 +1,8 @@
-import type { MiLogger } from '../log';
-import type {
-  ExponentialWithMaxBackoffDelayRetryOptions,
-  InfiniteRetryOptions } from '../temporal';
-import {
-  createInfiniteRetryState,
-  nextInfiniteRetryState,
-} from '../temporal';
-import { AsyncQueue } from './async_queue';
-import { scheduler } from 'node:timers/promises';
+import type { MiLogger } from "../log";
+import type { ExponentialWithMaxBackoffDelayRetryOptions, InfiniteRetryOptions } from "../temporal";
+import { createInfiniteRetryState, nextInfiniteRetryState } from "../temporal";
+import { AsyncQueue } from "./async_queue";
+import { scheduler } from "node:timers/promises";
 
 export interface Task {
   readonly fn: () => Promise<void>;
@@ -29,7 +24,7 @@ export class TaskProcessor {
     numberOfWorkers: number,
     /** The task will be tried infinitely. */
     backoffOptions: ExponentialWithMaxBackoffDelayRetryOptions = {
-      type: 'exponentialWithMaxDelayBackoff',
+      type: "exponentialWithMaxDelayBackoff",
       initialDelay: 1,
       maxDelay: 15000, // 15 seconds
       backoffMultiplier: 1.5,
@@ -70,8 +65,8 @@ export class TaskProcessor {
       } catch (e: any) {
         if (task.recoverableErrorPredicate(e)) {
           this.logger.warn(
-            `recoverable error in a task processor: ${String(e)},`
-            + ` worker ${id} will wait for ${retry.nextDelay} ms.`,
+            `recoverable error in a task processor: ${String(e)},` +
+              ` worker ${id} will wait for ${retry.nextDelay} ms.`,
           );
           this.queue.push(task);
           retry = nextInfiniteRetryState(retry);

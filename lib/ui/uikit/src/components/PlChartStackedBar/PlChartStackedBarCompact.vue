@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { computed } from 'vue';
-import type { PlChartStackedBarSettingsCompact } from './types';
-import StackedRowCompact from './StackedRowCompact.vue';
+import { computed } from "vue";
+import type { PlChartStackedBarSettingsCompact } from "./types";
+import StackedRowCompact from "./StackedRowCompact.vue";
 
 const props = defineProps<{
   settings: PlChartStackedBarSettingsCompact;
@@ -14,7 +14,7 @@ const data = computed(() => {
 
 <template>
   <div :class="$style.component">
-    <StackedRowCompact :value="data"/>
+    <StackedRowCompact :value="data" />
   </div>
 </template>
 

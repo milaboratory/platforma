@@ -1,11 +1,12 @@
-import { extractConfigGeneric, type BlockConfigContainer } from '@milaboratories/pl-model-common';
-import type { TypedConfigOrConfigLambda, TypedConfigOrString } from './types';
-import { isConfigLambda } from './types';
-import type { BlockConfig } from './v3';
+import { extractConfigGeneric, type BlockConfigContainer } from "@milaboratories/pl-model-common";
+import type { TypedConfigOrConfigLambda, TypedConfigOrString } from "./types";
+import { isConfigLambda } from "./types";
+import type { BlockConfig } from "./v3";
+import { BlockStorageFacadeHandles } from "../block_storage_facade";
 
 export function downgradeCfgOrLambda(data: TypedConfigOrConfigLambda): TypedConfigOrString;
 export function downgradeCfgOrLambda(
-  data: TypedConfigOrConfigLambda | undefined
+  data: TypedConfigOrConfigLambda | undefined,
 ): TypedConfigOrString | undefined;
 export function downgradeCfgOrLambda(
   data: TypedConfigOrConfigLambda | undefined,
@@ -16,5 +17,11 @@ export function downgradeCfgOrLambda(
 }
 
 export function extractConfig(cfg: BlockConfigContainer): BlockConfig {
-  return extractConfigGeneric(cfg) as BlockConfig;
+  const config = extractConfigGeneric(cfg) as BlockConfig;
+  // Fill blockLifecycleCallbacks with defaults for V4 blocks that don't declare them
+  if (config.configVersion === 4 && Object.keys(config.blockLifecycleCallbacks).length === 0) {
+    (config as { blockLifecycleCallbacks: Record<string, unknown> }).blockLifecycleCallbacks =
+      BlockStorageFacadeHandles;
+  }
+  return config;
 }

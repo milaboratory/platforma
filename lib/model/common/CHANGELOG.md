@@ -1,5 +1,79 @@
 # @milaboratories/pl-model-common
 
+## 1.25.2
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-error-like@1.12.9
+
+## 1.25.1
+
+### Patch Changes
+
+- 523a59f: Version bump
+
+## 1.25.0
+
+### Minor Changes
+
+- 01d0b52: BlockModelV3 update
+
+## 1.24.11
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+
+## 1.24.10
+
+### Patch Changes
+
+- 866a323: Apply user filters, add utils method for traversing
+
+## 1.24.9
+
+### Patch Changes
+
+- a3659cd: Add well-known constants for commonly used PColumn names, PAxis names, Domain keys, and Annotation keys (VDJ clustering, scores, lead selection, etc.)
+
+## 1.24.8
+
+### Patch Changes
+
+- 4f04561: simplify distil , renaming
+
+## 1.24.7
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+  - @milaboratories/pl-error-like@1.12.8
+
+## 1.24.6
+
+### Patch Changes
+
+- Updated dependencies [c620234]
+  - @milaboratories/pl-error-like@1.12.8
+
+## 1.24.5
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-error-like@1.12.7
+
+## 1.24.4
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-error-like@1.12.6
+
 ## 1.24.3
 
 ### Patch Changes

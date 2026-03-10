@@ -1,1 +1,1 @@
-export { default as PlAgCellProgress } from './PlAgCellProgress.vue';
+export { default as PlAgCellProgress } from "./PlAgCellProgress.vue";

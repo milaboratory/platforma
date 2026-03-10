@@ -1,0 +1,4 @@
+{
+  "extends": ["node_modules/@milaboratories/ts-builder/configs/oxfmt.json"],
+  "ignorePatterns": ["dist", "CHANGELOG.md", "assets/**"]
+}

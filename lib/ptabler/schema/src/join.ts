@@ -14,7 +14,7 @@ export interface ColumnMapping {
  */
 export interface JoinStep {
   /** The type of the step, which is always "join" for this operation. */
-  type: 'join';
+  type: "join";
 
   /** The name of the left table in the tablespace to be joined. */
   leftTable: string;
@@ -67,7 +67,7 @@ export interface JoinStep {
  */
 export interface CrossJoinStep {
   /** The type of the step, which is always "join" for this operation. */
-  type: 'join'; // Or should this be 'cross_join'? For now, keeping it 'join' as per user doc for steps having a 'type'.
+  type: "join"; // Or should this be 'cross_join'? For now, keeping it 'join' as per user doc for steps having a 'type'.
 
   /** The name of the left table in the tablespace to be joined. */
   leftTable: string;
@@ -79,7 +79,7 @@ export interface CrossJoinStep {
   outputTable: string;
 
   /** The type of join to perform, which is always "cross" for this operation. */
-  how: 'cross';
+  how: "cross";
 
   /**
    * An optional list to select and rename columns from the left table.
@@ -97,7 +97,7 @@ export interface CrossJoinStep {
 }
 
 /** Defines the possible join strategies for a standard join operation (excluding cross join). */
-export type JoinStrategy = 'inner' | 'left' | 'right' | 'full';
+export type JoinStrategy = "inner" | "left" | "right" | "full";
 
 /** Defines any possible join step. */
 export type AnyJoinStep = JoinStep | CrossJoinStep;

@@ -3,7 +3,6 @@
     "private": true,
     "description": "Tests for package builder",
     "scripts": {
-        "build": "true",
         "test": "node test.js"
     },
     "files": [

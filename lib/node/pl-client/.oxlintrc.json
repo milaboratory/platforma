@@ -1,0 +1,7 @@
+{
+  "extends": ["node_modules/@milaboratories/ts-builder/dist/configs/oxlint-node.json"],
+  "ignorePatterns": ["src/proto-grpc/**"],
+  "rules": {
+    "unicorn/no-thenable": "off"
+  }
+}

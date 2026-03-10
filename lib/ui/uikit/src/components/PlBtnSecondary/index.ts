@@ -1,1 +1,1 @@
-export { default as PlBtnSecondary } from './PlBtnSecondary.vue';
+export { default as PlBtnSecondary } from "./PlBtnSecondary.vue";

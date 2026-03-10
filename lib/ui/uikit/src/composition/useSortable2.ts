@@ -1,6 +1,6 @@
-import type { Ref } from 'vue';
-import { computed, watch, watchEffect } from 'vue';
-import { useEventListener } from './useEventListener';
+import type { Ref } from "vue";
+import { computed, watch, watchEffect } from "vue";
+import { useEventListener } from "./useEventListener";
 
 type SortableItem = {
   el: HTMLElement;
@@ -19,8 +19,8 @@ export type SortableSettings = {
 };
 
 const classes = {
-  item: 'sortable__item',
-  animate: 'sortable__animate',
+  item: "sortable__item",
+  animate: "sortable__animate",
 };
 
 const getOffset = (el: HTMLElement) => {
@@ -55,13 +55,16 @@ export function useSortable2(listRef: Ref<HTMLElement | undefined>, settings: So
   };
   let oldScrollTop = 0;
 
-  watch(() => listRef.value, () => {
-    setTimeout(() => {
-      if (listRef.value) {
-        listRef.value.scrollTop = oldScrollTop;
-      }
-    }, 0);
-  });
+  watch(
+    () => listRef.value,
+    () => {
+      setTimeout(() => {
+        if (listRef.value) {
+          listRef.value.scrollTop = oldScrollTop;
+        }
+      }, 0);
+    },
+  );
 
   const optionsRef = computed(() => {
     return state.options();
@@ -122,7 +125,7 @@ export function useSortable2(listRef: Ref<HTMLElement | undefined>, settings: So
     const currentScrollTop = listRef.value?.scrollTop || 0;
     const scrollDiff = currentScrollTop - (item.initialScrollTop || 0);
     item.dy = y - item.y + scrollDiff;
-    item.el.style.setProperty('transform', `translateY(${item.dy}px)`);
+    item.el.style.setProperty("transform", `translateY(${item.dy}px)`);
   }
 
   function changeOrder(reordered: HTMLElement[]) {
@@ -170,22 +173,22 @@ export function useSortable2(listRef: Ref<HTMLElement | undefined>, settings: So
     state.item.y = state.item.y + dy;
     state.item.dy = state.item.dy - dy;
     state.item.orderChanged = true;
-    state.item.el.style.setProperty('transform', `translateY(${state.item.dy}px)`);
+    state.item.el.style.setProperty("transform", `translateY(${state.item.dy}px)`);
 
     toAnimate.forEach((o) => o.classList.remove(classes.animate));
 
     requestAnimationFrame(function () {
       toAnimate.forEach((option) => {
         option.classList.add(classes.animate);
-        option.style.transform = '';
-        option.addEventListener('transitionend', () => {
+        option.style.transform = "";
+        option.addEventListener("transitionend", () => {
           option.classList.remove(classes.animate);
         });
       });
     });
   }
 
-  useEventListener(window, 'mousemove', (e: { y: number }) => {
+  useEventListener(window, "mousemove", (e: { y: number }) => {
     if (!state.item) {
       return;
     }
@@ -231,7 +234,7 @@ export function useSortable2(listRef: Ref<HTMLElement | undefined>, settings: So
     }
   });
 
-  useEventListener(window, 'mouseup', () => {
+  useEventListener(window, "mouseup", () => {
     if (!state.item) {
       return;
     }
@@ -241,9 +244,9 @@ export function useSortable2(listRef: Ref<HTMLElement | undefined>, settings: So
     const { el, orderChanged } = state.item;
 
     el.classList.add(classes.animate);
-    el.style.removeProperty('transform');
+    el.style.removeProperty("transform");
 
-    el.addEventListener('transitionend', () => {
+    el.addEventListener("transitionend", () => {
       el.classList.remove(classes.animate, classes.item);
     });
 
@@ -252,7 +255,7 @@ export function useSortable2(listRef: Ref<HTMLElement | undefined>, settings: So
         return;
       }
 
-      const newIndices = state.options().map((o) => Number(o.getAttribute('data-index')));
+      const newIndices = state.options().map((o) => Number(o.getAttribute("data-index")));
 
       const list = listRef.value;
 
@@ -274,9 +277,9 @@ export function useSortable2(listRef: Ref<HTMLElement | undefined>, settings: So
 
   watchEffect(() => {
     optionsRef.value.forEach((child, i) => {
-      child.removeEventListener('mousedown', mouseDown);
-      child.addEventListener('mousedown', mouseDown);
-      child.setAttribute('data-index', String(i));
+      child.removeEventListener("mousedown", mouseDown);
+      child.addEventListener("mousedown", mouseDown);
+      child.setAttribute("data-index", String(i));
     });
   });
 }

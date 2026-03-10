@@ -1,13 +1,16 @@
-import type { Palette } from './palette';
-import { palettes } from './palette';
-import { Color } from './color';
+import type { Palette } from "./palette";
+import { palettes } from "./palette";
+import { Color } from "./color";
 
 export type GradientSource = (string | Color)[] | Palette;
 
 Color.fromHex = (hex: string): Color => {
-  hex = hex.replace('#', '');
+  hex = hex.replace("#", "");
 
-  let r: number, g: number, b: number, a: number = 1;
+  let r: number,
+    g: number,
+    b: number,
+    a: number = 1;
 
   if (hex.length === 6) {
     r = parseInt(hex.slice(0, 2), 16);
@@ -19,7 +22,7 @@ Color.fromHex = (hex: string): Color => {
     b = parseInt(hex.slice(4, 6), 16);
     a = parseInt(hex.slice(6, 8), 16) / 255;
   } else {
-    throw new Error('Invalid HEX color format.');
+    throw new Error("Invalid HEX color format.");
   }
 
   return Color(r, g, b, a);
@@ -29,11 +32,11 @@ Color.fromHex = (hex: string): Color => {
  * Parses a color string (attention: currently supports only HEX, @todo)
  */
 Color.fromString = (str: string) => {
-  if (str.startsWith('#')) {
+  if (str.startsWith("#")) {
     return Color.fromHex(str);
   }
 
-  throw Error('TODO: implement rgb(a), hsl');
+  throw Error("TODO: implement rgb(a), hsl");
 };
 
 function lerp(a: number, b: number, t: number): number {
@@ -62,12 +65,12 @@ export function interpolateColor(color1: Color, color2: Color, t: number): Color
  * @returns {Color[]} Array of normalized Color objects.
  */
 export function normalizeGradient(raw: GradientSource): Color[] {
-  if (typeof raw === 'string') {
+  if (typeof raw === "string") {
     return palettes[raw].map((it) => Color.fromString(it));
   }
 
   return raw.map((it) => {
-    if (typeof it === 'string') {
+    if (typeof it === "string") {
       return Color.fromString(it);
     }
 
@@ -79,7 +82,7 @@ export function normalizeGradient(raw: GradientSource): Color[] {
  * Creates a gradient with utilities to sample or split colors.
  */
 export function Gradient(gradient: GradientSource) {
-  return new class {
+  return new (class {
     constructor(public readonly colors: Color[]) {}
 
     /**
@@ -88,8 +91,8 @@ export function Gradient(gradient: GradientSource) {
      * @param {number} t - A value in [0, 1] representing the position in the gradient.
      */
     fromInterval(t: number) {
-      if (t < 0) throw new Error('t must be greater than or equal to 0');
-      if (t > 1) throw new Error('t must be less than or equal to 1');
+      if (t < 0) throw new Error("t must be greater than or equal to 0");
+      if (t > 1) throw new Error("t must be less than or equal to 1");
 
       const colors = this.colors;
 
@@ -112,8 +115,8 @@ export function Gradient(gradient: GradientSource) {
      * @param {number} segments - Total number of segments.
      */
     getNthOf(n: number, segments: number) {
-      if (n <= 0) throw new Error('n must be greater than 0');
-      if (n > segments) throw Error('n must be lower or equal than count of segments');
+      if (n <= 0) throw new Error("n must be greater than 0");
+      if (n > segments) throw Error("n must be lower or equal than count of segments");
       return this.fromInterval((n - 1) / (segments - 1));
     }
 
@@ -121,7 +124,7 @@ export function Gradient(gradient: GradientSource) {
      * Splits the gradient into n evenly spaced colors.
      */
     split(n: number) {
-      if (n <= 0) throw new Error('n must be greater than 0');
+      if (n <= 0) throw new Error("n must be greater than 0");
 
       const colors: Color[] = [];
 
@@ -132,5 +135,5 @@ export function Gradient(gradient: GradientSource) {
 
       return colors;
     }
-  }(normalizeGradient(gradient));
+  })(normalizeGradient(gradient));
 }

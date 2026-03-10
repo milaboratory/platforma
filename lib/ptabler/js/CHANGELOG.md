@@ -1,5 +1,77 @@
 # @milaboratories/ptabler-expression-js
 
+## 1.1.24
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.13.17
+
+## 1.1.23
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.13.16
+
+## 1.1.22
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.13.15
+
+## 1.1.21
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.13.14
+
+## 1.1.20
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.13.13
+
+## 1.1.19
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.13.12
+
+## 1.1.18
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.13.11
+
+## 1.1.17
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.13.10
+
+## 1.1.16
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.13.9
+
+## 1.1.15
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.13.8
+
+## 1.1.14
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.13.7
+
 ## 1.1.13
 
 ### Patch Changes

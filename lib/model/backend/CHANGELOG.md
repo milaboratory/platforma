@@ -1,5 +1,92 @@
 # @milaboratories/pl-model-backend
 
+## 1.1.56
+
+### Patch Changes
+
+- Updated dependencies [c19a02b]
+  - @milaboratories/pl-client@2.17.9
+
+## 1.1.55
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-client@2.17.8
+
+## 1.1.54
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.7
+
+## 1.1.53
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.6
+
+## 1.1.52
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.5
+
+## 1.1.51
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.4
+
+## 1.1.50
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.3
+
+## 1.1.49
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.2
+
+## 1.1.48
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.1
+
+## 1.1.47
+
+### Patch Changes
+
+- Updated dependencies [f37108b]
+  - @milaboratories/pl-client@2.17.0
+
+## 1.1.46
+
+### Patch Changes
+
+- Updated dependencies [c620234]
+  - @milaboratories/pl-client@2.16.29
+
+## 1.1.45
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-client@2.16.28
+
+## 1.1.44
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-client@2.16.27
+
 ## 1.1.43
 
 ### Patch Changes

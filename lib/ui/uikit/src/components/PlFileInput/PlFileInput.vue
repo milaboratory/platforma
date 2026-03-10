@@ -1,20 +1,20 @@
 <script lang="ts" setup>
-import './pl-file-input.scss';
+import "./pl-file-input.scss";
 
-import { prettyBytes } from '@milaboratories/helpers';
-import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
-import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/model';
-import { computed, reactive, ref, useSlots, watch } from 'vue';
-import { getErrorMessage } from '../../helpers/error.ts';
-import type { ImportedFiles } from '../../types';
-import DoubleContour from '../../utils/DoubleContour.vue';
-import { useLabelNotch } from '../../utils/useLabelNotch';
-import { PlFileDialog } from '../PlFileDialog';
-import { PlMaskIcon24 } from '../PlMaskIcon24';
-import { PlTooltip } from '../PlTooltip';
+import { prettyBytes } from "@milaboratories/helpers";
+import type { ImportFileHandle, ImportProgress } from "@platforma-sdk/model";
+import { getFileNameFromHandle, getFilePathFromHandle } from "@platforma-sdk/model";
+import { computed, reactive, ref, useSlots, watch } from "vue";
+import { getErrorMessage } from "../../helpers/error.ts";
+import type { ImportedFiles } from "../../types";
+import DoubleContour from "../../utils/DoubleContour.vue";
+import { useLabelNotch } from "../../utils/useLabelNotch";
+import { PlFileDialog } from "../PlFileDialog";
+import { PlMaskIcon24 } from "../PlMaskIcon24";
+import { PlTooltip } from "../PlTooltip";
 
-import SvgRequired from '../../assets/images/required.svg?raw';
-import { PlSvg } from '../PlSvg';
+import SvgRequired from "../../assets/images/required.svg?raw";
+import { PlSvg } from "../PlSvg";
 
 const data = reactive({
   fileDialogOpen: false,
@@ -24,7 +24,7 @@ const data = reactive({
 const slots = useSlots();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: ImportFileHandle | undefined): void;
+  (e: "update:modelValue", value: ImportFileHandle | undefined): void;
 }>();
 
 const props = withDefaults(
@@ -91,7 +91,10 @@ const props = withDefaults(
   },
 );
 
-const tryValue = <T extends ImportFileHandle>(v: T | undefined, cb: (v: T) => string | undefined) => {
+const tryValue = <T extends ImportFileHandle>(
+  v: T | undefined,
+  cb: (v: T) => string | undefined,
+) => {
   if (!v) {
     return undefined;
   }
@@ -114,17 +117,17 @@ const isUploaded = computed(() => props.progress && props.progress.done);
 
 const computedErrorMessage = computed(() => getErrorMessage(data.error, props.error));
 
-const hasErrors = computed(() => typeof computedErrorMessage.value === 'string');
+const hasErrors = computed(() => typeof computedErrorMessage.value === "string");
 
 const uploadStats = computed(() => {
   const { status, done } = props.progress ?? {};
 
   if (!status || !status.bytesTotal) {
-    return '';
+    return "";
   }
 
   if (status.bytesProcessed && !done) {
-    return prettyBytes(status.bytesProcessed, {}) + ' / ' + prettyBytes(status.bytesTotal, {});
+    return prettyBytes(status.bytesProcessed, {}) + " / " + prettyBytes(status.bytesTotal, {});
   }
 
   return prettyBytes(status.bytesTotal, {});
@@ -138,7 +141,7 @@ const progressStyle = computed(() => {
   }
 
   return {
-    width: progress.done ? '100%' : Math.round((progress.status?.progress ?? 0) * 100) + '%',
+    width: progress.done ? "100%" : Math.round((progress.status?.progress ?? 0) * 100) + "%",
   };
 });
 
@@ -148,11 +151,11 @@ const openFileDialog = () => {
 
 const onImport = (v: ImportedFiles) => {
   if (v.files.length) {
-    emit('update:modelValue', v.files[0]);
+    emit("update:modelValue", v.files[0]);
   }
 };
 
-const clear = () => emit('update:modelValue', undefined);
+const clear = () => emit("update:modelValue", undefined);
 
 watch(
   () => props.modelValue,
@@ -168,7 +171,10 @@ if (!props.cellStyle) {
 </script>
 
 <template>
-  <div :class="{ 'pl-file-input__cell-style': !!cellStyle, 'has-file': !!fileName }" class="pl-file-input__envelope">
+  <div
+    :class="{ 'pl-file-input__cell-style': !!cellStyle, 'has-file': !!fileName }"
+    class="pl-file-input__envelope"
+  >
     <div
       ref="rootRef"
       :class="{ dashed, error: hasErrors }"
@@ -196,7 +202,12 @@ if (!props.cellStyle) {
         {{ fileName }}
       </div>
       <div v-if="uploadStats" class="pl-file-input__stats">{{ uploadStats }}</div>
-      <PlMaskIcon24 v-if="modelValue" class="pl-file-input__clear" name="close" @click.stop="clear" />
+      <PlMaskIcon24
+        v-if="modelValue"
+        class="pl-file-input__clear"
+        name="close"
+        @click.stop="clear"
+      />
       <DoubleContour class="pl-file-input__contour" />
     </div>
     <div v-if="hasErrors" class="pl-file-input__error">

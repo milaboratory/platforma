@@ -1,56 +1,66 @@
-import './assets/ui.scss';
+import "./assets/ui.scss";
 
-export { default as BlockLayout } from './components/BlockLayout.vue';
-export { default as PlAgDataTableV2 } from './components/PlAgDataTable/PlAgDataTableV2.vue';
-export { default as PlAgOverlayLoading } from './components/PlAgDataTable/PlAgOverlayLoading.vue';
-export { default as PlAgOverlayNoRows } from './components/PlAgDataTable/PlAgOverlayNoRows.vue';
+export { default as BlockLayout } from "./components/BlockLayout.vue";
+export { default as PlAgDataTableV2 } from "./components/PlAgDataTable/PlAgDataTableV2.vue";
+export { default as PlAgOverlayLoading } from "./components/PlAgDataTable/PlAgOverlayLoading.vue";
+export { default as PlAgOverlayNoRows } from "./components/PlAgDataTable/PlAgOverlayNoRows.vue";
 
-export type { ListOptionBase } from '@platforma-sdk/model';
+export type { ListOptionBase } from "@platforma-sdk/model";
 
-export * from './AgGridVue';
+export * from "./AgGridVue";
 
-export * from './components/PlAgColumnHeader';
+export * from "./components/PlAgColumnHeader";
 
-export * from './components/PlAgCellFile';
-export * from './components/PlAgCellProgress';
-export * from './components/PlAgCellStatusTag';
-export * from './components/PlAgChartHistogramCell';
-export * from './components/PlAgChartStackedBarCell';
+export * from "./components/PlAgCellFile";
+export * from "./components/PlAgCellProgress";
+export * from "./components/PlAgCellStatusTag";
+export * from "./components/PlAgChartHistogramCell";
+export * from "./components/PlAgChartStackedBarCell";
 
-export * from './components/PlAgDataTable';
+export * from "./components/PlAgDataTable";
 
-export * from './components/PlAgCsvExporter';
+export * from "./components/PlAgCsvExporter";
 
-export * from './components/PlAgTextAndButtonCell';
+export * from "./components/PlAgTextAndButtonCell";
 
-export * from './components/PlAgGridColumnManager';
+export * from "./components/PlAgGridColumnManager";
 
-export * from './components/PlTableFilters';
+export * from "./components/PlTableFilters";
 
-export * from './components/PlAnnotations';
+export * from "./components/PlAnnotations";
 
-export * from './components/PlBtnExportArchive';
+export * from "./components/PlBtnExportArchive";
 
-export * from './components/PlAdvancedFilter';
+export * from "./components/PlAdvancedFilter";
 
-export * from './defineApp';
+export * from "./defineApp";
 
-export * from './createModel';
+export { usePlugin } from "./usePlugin";
+export type { PluginState } from "./usePlugin";
+export type {
+  PluginHandle,
+  PluginFactoryLike,
+  InferPluginHandle,
+  InferFactoryData,
+  InferFactoryOutputs,
+} from "@platforma-sdk/model";
 
-export * from './types';
+export * from "./createModel";
 
-export * from './defineStore';
+export * from "./types";
 
-export * from './aggrid';
+export * from "./defineStore";
 
-export * from './utils';
+export * from "./aggrid";
 
-export * from './objectHash';
+export * from "./utils";
 
-export * from './computedResult';
+export * from "./objectHash";
 
-export * from './composition/fileContent';
+export * from "./computedResult";
 
-export * from '@milaboratories/uikit';
+export * from "./composition/fileContent";
 
-export type * from '@milaboratories/uikit';
+export * from "@milaboratories/uikit";
+
+export type * from "@milaboratories/uikit";

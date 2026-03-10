@@ -1,33 +1,31 @@
 /** Pl Backend throws arbitrary errors, and we're trying to parse them here. */
 
-import { z } from 'zod';
-import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
-import { resourceIdToString, resourceTypeToString } from '@milaboratories/pl-client';
-import { notEmpty } from '@milaboratories/ts-helpers';
+import { z } from "zod";
+import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
+import { resourceIdToString, resourceTypeToString } from "@milaboratories/pl-client";
+import { notEmpty } from "@milaboratories/ts-helpers";
 
 /** The error that comes from QuickJS. */
 export class PlQuickJSError extends Error {
   public stack: string;
   public fullMessage: string;
 
-  constructor(
-    quickJSError: Error,
-    cause: Error,
-  ) {
+  constructor(quickJSError: Error, cause: Error) {
     super(`PlQuickJSError: ${cause.message}`, { cause });
-    this.name = 'PlQuickJSError';
+    this.name = "PlQuickJSError";
 
     // QuickJS wraps the error with the name and the message,
     // but we need another format.
     let stack = notEmpty(quickJSError.stack);
-    stack = stack.replace(quickJSError.message, '');
-    stack = stack.replace(notEmpty(cause.message), '');
+    stack = stack.replace(quickJSError.message, "");
+    stack = stack.replace(notEmpty(cause.message), "");
 
     this.stack = stack;
 
-    const causeMsg = 'fullMessage' in cause && typeof cause.fullMessage === 'string'
-      ? cause.fullMessage
-      : cause.message;
+    const causeMsg =
+      "fullMessage" in cause && typeof cause.fullMessage === "string"
+        ? cause.fullMessage
+        : cause.message;
 
     this.fullMessage = `PlQuickJSError: ${causeMsg}
 QuickJS stacktrace:
@@ -61,16 +59,16 @@ export class PlErrorReport extends Error {
     public readonly resource?: ResourceId,
     public readonly resourceType?: ResourceType,
   ) {
-    const errorMessages = errors.map((e) => e.message).join('\n\n');
-    const errorFullMessages = errors.map((e) => e.fullMessage).join('\n\n');
+    const errorMessages = errors.map((e) => e.message).join("\n\n");
+    const errorFullMessages = errors.map((e) => e.fullMessage).join("\n\n");
 
     super(`PlErrorReport: ${errorMessages}`);
-    this.name = 'PlErrorReport';
+    this.name = "PlErrorReport";
 
-    const rt = this.resourceType ? `${resourceTypeToString(this.resourceType)},` : '';
-    const r = this.resource ? resourceIdToString(this.resource) : '';
-    const f = this.fieldName ? `/${this.fieldName}` : '';
-    const errType = this.plErrorType ? `error type: ${this.plErrorType}` : '';
+    const rt = this.resourceType ? `${resourceTypeToString(this.resourceType)},` : "";
+    const r = this.resource ? resourceIdToString(this.resource) : "";
+    const f = this.fieldName ? `/${this.fieldName}` : "";
+    const errType = this.plErrorType ? `error type: ${this.plErrorType}` : "";
 
     this.fullMessage = `PlErrorReport: resource: ${rt} ${r}${f}
 ${errType}
@@ -82,22 +80,16 @@ ${errorFullMessages}
 /**
  * A suberror of a parsed error.
  */
-export type PlCoreError =
-  | PlInternalError
-  | PlTengoError
-  | PlRunnerError
-  | PlMonetizationError;
+export type PlCoreError = PlInternalError | PlTengoError | PlRunnerError | PlMonetizationError;
 
 /**
  * An general error when we couldn't parse the cause.
  */
 export class PlInternalError extends Error {
   public readonly fullMessage: string;
-  constructor(
-    public readonly message: string,
-  ) {
+  constructor(public readonly message: string) {
     super(message);
-    this.name = 'PlInternalError';
+    this.name = "PlInternalError";
     this.fullMessage = `PlInternalError: ${message}`;
   }
 }
@@ -123,7 +115,7 @@ ${tengoStacktrace}
 `;
 
     super(msg);
-    this.name = 'PlTengoError';
+    this.name = "PlTengoError";
 
     this.fullMessage = `${msg}
 raw message:
@@ -153,7 +145,7 @@ stdout:
 ${stdout}`;
 
     super(msg);
-    this.name = 'PlRunnerError';
+    this.name = "PlRunnerError";
     this.fullMessage = `
 ${msg}
 raw message:
@@ -180,7 +172,7 @@ ${this.stdout}
 `;
 
     this.message = msg;
-    this.name = 'PlMonetizationError';
+    this.name = "PlMonetizationError";
 
     this.fullMessage = `
 ${msg}
@@ -197,10 +189,12 @@ ${this.rawBackendMessage}
 /**
  * How the Pl backend represents an error.
  */
-const backendErrorSchema = z.object({
-  errorType: z.string().default(''),
-  message: z.string(),
-}).passthrough();
+const backendErrorSchema = z
+  .object({
+    errorType: z.string().default(""),
+    message: z.string(),
+  })
+  .passthrough();
 
 /**
  * Parses a Pl error and suberrors from the Pl backend.
@@ -237,24 +231,24 @@ export function parsePlError(
 export function parseSubErrors(message: string): PlCoreError[] {
   // the state of this reducing function
   const state = {
-    stage: 'initial' as 'initial' | 'path' | 'message',
+    stage: "initial" as "initial" | "path" | "message",
     value: [] as string[],
     result: [] as PlCoreError[],
   };
 
-  for (const line of message.split('\n')) {
-    if (state.stage == 'initial') {
+  for (const line of message.split("\n")) {
+    if (state.stage == "initial") {
       // we need initial stage because apparently the first line
       // of the error doesn't have [I], but is a path line.
-      state.stage = 'path';
-    } else if (state.stage == 'path' && line.startsWith('---')) {
+      state.stage = "path";
+    } else if (state.stage == "path" && line.startsWith("---")) {
       // we should add stack separator to path stage
       // without break stage processing
-    } else if (state.stage == 'path' && !isPath(line)) {
-      state.stage = 'message';
-    } else if (state.stage == 'message' && isPath(line)) {
-      state.stage = 'path';
-      const text = state.value.join('\n');
+    } else if (state.stage == "path" && !isPath(line)) {
+      state.stage = "message";
+    } else if (state.stage == "message" && isPath(line)) {
+      state.stage = "path";
+      const text = state.value.join("\n");
       state.result.push(parseCoreError(text));
       state.value = [];
     }
@@ -262,16 +256,15 @@ export function parseSubErrors(message: string): PlCoreError[] {
     state.value.push(line);
   }
 
-  const text = state.value.join('\n');
+  const text = state.value.join("\n");
   state.result.push(parseCoreError(text));
 
   return state.result;
 }
 
 function isPath(line: string): boolean {
-  for (const fieldType of ['U', 'I', 'O', 'S', 'OTW', 'D', 'MTW']) {
-    if (line.startsWith(`[${fieldType}]`))
-      return true;
+  for (const fieldType of ["U", "I", "O", "S", "OTW", "D", "MTW"]) {
+    if (line.startsWith(`[${fieldType}]`)) return true;
   }
 
   return false;
@@ -283,7 +276,8 @@ function isPath(line: string): boolean {
 function parseCoreError(message: string): PlCoreError {
   // trying to parse a runner or monetization error.
   // https://regex101.com/r/tmKLj7/1
-  const runnerErrorRegex = /working directory: "(.*)"[\s\S]failed to run command: "([^"]+)" exited with code (\d+)\.[\s\S]*?Here is the latest command output:[\s\S]*?\t([\s\S]*)/;
+  const runnerErrorRegex =
+    /working directory: "(.*)"[\s\S]failed to run command: "([^"]+)" exited with code (\d+)\.[\s\S]*?Here is the latest command output:[\s\S]*?\t([\s\S]*)/;
   const match = message.match(runnerErrorRegex);
   if (match) {
     const workingDirectory = match[1];
@@ -300,7 +294,8 @@ function parseCoreError(message: string): PlCoreError {
 
   // trying to parse a Tengo error.
   // https://regex101.com/r/1a7RpO/1
-  const workflowErrorRegex = /cannot eval code: cannot eval template: template: (.+)\n\t(.*?)\n\t(at [\s\S]*)/;
+  const workflowErrorRegex =
+    /cannot eval code: cannot eval template: template: (.+)\n\t(.*?)\n\t(at [\s\S]*)/;
   const workflowMatch = message.match(workflowErrorRegex);
   if (workflowMatch) {
     const templateName = workflowMatch[1];

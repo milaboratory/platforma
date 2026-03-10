@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import type { ICellRendererParams } from 'ag-grid-enterprise';
-import {
-  type InferComponentProps,
-  PlChartHistogram,
-} from '@milaboratories/uikit';
-import { computed, ref } from 'vue';
-import { useElementBounding } from '@vueuse/core';
+import type { ICellRendererParams } from "ag-grid-enterprise";
+import { type InferComponentProps, PlChartHistogram } from "@milaboratories/uikit";
+import { computed, ref } from "vue";
+import { useElementBounding } from "@vueuse/core";
 
-type PlChartHistogramSettings = InferComponentProps<typeof PlChartHistogram>['settings'];
+type PlChartHistogramSettings = InferComponentProps<typeof PlChartHistogram>["settings"];
 
 const props = defineProps<{
   params: ICellRendererParams<unknown, PlChartHistogramSettings | undefined>;
@@ -33,7 +30,7 @@ const settings = computed<PlChartHistogramSettings | undefined>(() => {
 <template>
   <div ref="root" class="pl-ag-chart-histogram-cell">
     <PlChartHistogram v-if="settings" :settings="settings" />
-    <div v-else class="pl-ag-chart-histogram-cell__not-ready ">Not ready</div>
+    <div v-else class="pl-ag-chart-histogram-cell__not-ready">Not ready</div>
   </div>
 </template>
 

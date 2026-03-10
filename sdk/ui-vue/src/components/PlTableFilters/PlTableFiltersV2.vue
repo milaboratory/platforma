@@ -1,105 +1,120 @@
 <script lang="ts" setup>
-import {
-  type PlDataTableFilterState,
-  canonicalizeJson,
-  type PTableColumnId,
-} from '@platforma-sdk/model';
 import type {
-  PlDataTableFiltersSettings,
-} from './types';
+  PTableColumnSpec,
+  PlDataTableFiltersWithMeta,
+  PFrameHandle,
+  PTableColumnId,
+  CanonicalizedJson,
+} from "@platforma-sdk/model";
 import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  toRefs,
-  watch,
-} from 'vue';
+  canonicalizeJson,
+  Annotation,
+  Domain,
+  readAnnotation,
+  readDomain,
+  getAxisId,
+  getUniqueSourceValuesWithLabels,
+  parseJson,
+} from "@platforma-sdk/model";
+import { computed, onMounted, ref } from "vue";
+import { PlBtnGhost, PlSlideModal, usePlBlockPageTitleTeleportTarget } from "@milaboratories/uikit";
 import {
-  PlBtnGhost,
-  PlSlideModal,
-  PlBtnSecondary,
-  PlMaskIcon16,
-  PlElementList,
-  usePlBlockPageTitleTeleportTarget,
-} from '@milaboratories/uikit';
-import { useFilters } from './filters-state';
-import PlTableAddFilterV2 from './PlTableAddFilterV2.vue';
-import PlTableFilterEntryV2 from './PlTableFilterEntryV2.vue';
-import { isJsonEqual } from '@milaboratories/helpers';
+  PlAdvancedFilter,
+  PlAdvancedFilterComponent,
+  PlAdvancedFilterSupportedFilters,
+  type PlAdvancedFilterItem,
+} from "../PlAdvancedFilter";
+import type { PlAdvancedFilterColumnId } from "../PlAdvancedFilter/types";
+import type { Nil } from "@milaboratories/helpers";
+import { isNil } from "es-toolkit";
 
-const state = defineModel<PlDataTableFilterState[]>({
-  default: [],
-});
+const model = defineModel<PlDataTableFiltersWithMeta>({ required: true });
 const props = defineProps<{
-  settings: Readonly<PlDataTableFiltersSettings>;
+  pframeHandle: Nil | PFrameHandle;
+  columns: PTableColumnSpec[];
 }>();
-const { settings } = toRefs(props);
 
-const filters = useFilters(settings, state);
-
-const filtersOn = computed<boolean>(() => filters.value.some((s) => s.filter && !s.filter.disabled));
-
+// Teleport for "Filters" button
 const mounted = ref(false);
 onMounted(() => {
   mounted.value = true;
 });
-const teleportTarget = usePlBlockPageTitleTeleportTarget('PlTableFiltersV2');
-
+const teleportTarget = usePlBlockPageTitleTeleportTarget("PlTableFiltersV2");
 const showManager = ref(false);
 
-const scrollIsActive = ref(false);
-const filterManager = ref<HTMLElement>();
-let observer: ResizeObserver;
-onMounted(() => {
-  observer = new ResizeObserver(() => {
-    const parent = filterManager.value?.parentElement;
-    if (!parent) return;
-    scrollIsActive.value = parent.scrollHeight > parent.clientHeight || parent.scrollWidth > parent.clientWidth;
+// Check if any filters are active
+const filtersOn = computed(() => {
+  return model.value.filters.length > 0;
+});
+
+function makeFilterColumnId(spec: PTableColumnSpec): CanonicalizedJson<PTableColumnId> {
+  const id: PTableColumnId =
+    spec.type === "axis"
+      ? { type: "axis", id: getAxisId(spec.spec) }
+      : { type: "column", id: spec.id };
+  return canonicalizeJson<PTableColumnId>(id);
+}
+
+const items = computed<PlAdvancedFilterItem[]>(() => {
+  return props.columns.map((col, idx) => {
+    const id = makeFilterColumnId(col);
+    const label =
+      readAnnotation(col.spec, Annotation.Label)?.trim() ?? `Unlabeled ${col.type} ${idx}`;
+    const alphabet =
+      readDomain(col.spec, Domain.Alphabet) ?? readAnnotation(col.spec, Annotation.Alphabet);
+    return {
+      id,
+      label,
+      spec: col.spec,
+      alphabet: alphabet ?? undefined,
+    };
   });
-  if (filterManager.value && filterManager.value.parentElement) {
-    observer.observe(filterManager.value!.parentElement);
-  }
 });
 
-watch(filterManager, (newElement, oldElement) => {
-  if (oldElement?.parentElement) {
-    observer.unobserve(oldElement.parentElement);
+// Supported filters (same set as FilterSidebar)
+const supportedFilters = [
+  "isNA",
+  "isNotNA",
+  "greaterThan",
+  "greaterThanOrEqual",
+  "lessThan",
+  "lessThanOrEqual",
+  "patternEquals",
+  "patternNotEquals",
+  "patternContainSubsequence",
+  "patternNotContainSubsequence",
+  "patternMatchesRegularExpression",
+  "patternFuzzyContainSubsequence",
+  "equal",
+  "notEqual",
+] as (typeof PlAdvancedFilterSupportedFilters)[number][];
+
+function handleSuggestOptions(params: {
+  columnId: PlAdvancedFilterColumnId;
+  axisIdx?: number;
+  searchStr: string;
+  searchType: "value" | "label";
+}) {
+  if (isNil(props.pframeHandle)) {
+    console.warn("PFrame handle is not available, cannot fetch suggest options");
+    return [];
   }
-  if (newElement?.parentElement) {
-    observer.observe(newElement.parentElement);
+
+  const strId = params.columnId as CanonicalizedJson<PTableColumnId>;
+  const tableColumnId = parseJson<PTableColumnId>(strId);
+
+  if (tableColumnId.type !== "column") {
+    throw new Error("ColumnId should be of type 'column' for suggest options");
   }
-});
 
-onBeforeUnmount(() => {
-  if (observer !== undefined) {
-    observer.disconnect();
-  }
-});
-
-const canAddFilter = computed<boolean>(() => filters.value.some((s) => !s.filter));
-const showAddFilter = ref(false);
-
-const canResetToDefaults = computed<boolean>(() => {
-  return filters.value
-    .some((s) => (!s.defaultFilter && s.filter) || (s.defaultFilter
-      && (s.filter?.disabled === true || !isJsonEqual(s.filter?.value, s.defaultFilter))));
-});
-const resetToDefaults = () => {
-  filters.value.forEach((s) => {
-    if (s.defaultFilter) {
-      s.filter = {
-        value: s.defaultFilter,
-        disabled: false,
-        open: false,
-      };
-    } else {
-      s.filter = null;
-    }
-  });
-};
-
-const items = computed(() => filters.value.filter((s) => s.filter !== null));
+  return getUniqueSourceValuesWithLabels(props.pframeHandle, {
+    columnId: tableColumnId.id,
+    axisIdx: params.axisIdx,
+    limit: 100,
+    searchQuery: params.searchType === "label" ? params.searchStr : undefined,
+    searchQueryValue: params.searchType === "value" ? params.searchStr : undefined,
+  }).then((v) => v.values);
+}
 </script>
 
 <template>
@@ -112,169 +127,23 @@ const items = computed(() => filters.value.filter((s) => s.filter !== null));
   <PlSlideModal v-model="showManager" :close-on-outside-click="false">
     <template #title>Manage Filters</template>
 
-    <div ref="filterManager" :class="$style['filter-manager']">
-      <PlElementList
-        v-model:items="items"
-        :on-expand="(item) => {
-          if (item.filter) {
-            item.filter.open = !item.filter.open;
-          }
-        }"
-        :is-expanded="(item) => item.filter?.open ?? false"
-        :on-toggle="(item) => {
-          if (item.filter) {
-            item.filter.disabled = !item.filter.disabled;
-          }
-        }"
-        :is-toggled="(item) => item.filter?.disabled ?? false"
-        :on-remove="(item) => {
-          if (item.filter) {
-            item.filter = null;
-          }
-        }"
-        :get-item-key="(item) => canonicalizeJson<PTableColumnId>(item.id)"
-        disable-dragging
-      >
-        <template #item-title="{ item }">
-          {{ item.label }}
-        </template>
-        <template #item-content="{ index }">
-          <PlTableFilterEntryV2 v-model="filters.value[index]" />
-        </template>
-      </PlElementList>
-
-      <div
-        v-if="filters.value.length"
-        :class="$style['add-action-wrapper']"
-      >
-        <button
-          :disabled="!canAddFilter"
-          :class="$style['add-btn']"
-          @click="showAddFilter = true"
-        >
-          <PlMaskIcon16 name="add" />
-          <div :class="$style['add-btn-title']">Add Filter</div>
-        </button>
-
-        <PlBtnSecondary
-          :disabled="!canResetToDefaults"
-          @click.stop="resetToDefaults"
-        >
-          Reset to defaults
-        </PlBtnSecondary>
-      </div>
-
-      <div v-if="!filters.value.length">No filters applicable</div>
+    <div :class="$style.root">
+      <PlAdvancedFilterComponent
+        v-model:filters="model as PlAdvancedFilter"
+        :items="items"
+        :supported-filters="supportedFilters"
+        :get-suggest-options="handleSuggestOptions"
+        :enable-dnd="false"
+        :enable-add-group-button="true"
+      />
     </div>
   </PlSlideModal>
-
-  <PlTableAddFilterV2
-    v-model="showAddFilter"
-    :filters="filters.value"
-    :set-filter="(idx, filter) => filters.value[idx] = filter"
-  />
 </template>
 
-<style lang="scss" module>
-.filter-manager {
-    --expand-icon-rotation: rotate(0deg);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.add-action-wrapper {
-    position: sticky;
-    bottom: -16px;
-    background-color: var(--bg-elevated-01);
-    transition: all .15s ease-in-out;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.add-btn {
-    height: 40px;
-    background-color: var(--bg-elevated-01);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding-left: 12px;
-    padding-right: 12px;
-    border-radius: 6px;
-    border: 1px dashed var(--border-color-div-grey);
-    line-height: 0;
-    cursor: pointer;
-    text-align: left;
-}
-
-.add-btn:disabled {
-    --icon-color: var(--dis-01);
-    cursor: auto;
-}
-
-.add-btn:not([disabled]):hover {
-    border-radius: 6px;
-    border: 1px dashed var(--border-color-focus, #49CC49);
-    background: rgba(99, 224, 36, 0.12);
-}
-
-.add-btn-title {
-    flex-grow: 1;
-    font-weight: 600;
-}
-
-.expand-icon {
-    transition: all .15s ease-in-out;
-    transform: var(--expand-icon-rotation);
-    line-height: 0;
-    cursor: pointer;
-}
-
-.toggle,
-.delete {
-    line-height: 0;
-    cursor: pointer;
-    display: none;
-}
-
-.toggle .mask-24,
-.delete .mask-24 {
-    --icon-color: var(--ic-02);
-}
-
-.toggle:hover .mask-24 {
-    --icon-color: var(--ic-01);
-}
-
-.delete:hover .mask-24 {
-    --icon-color: var(--ic-01);
-}
-
-.filter:hover .toggle,
-.filter:hover .delete {
-    display: block;
-}
-
-.filter {
-    border-radius: 6px;
-    border: 1px solid var(--border-color-div-grey);
-    background-color: var(--bg-base-light);
-    transition: background-color .15s ease-in-out;
-    overflow: auto;
-}
-
-.filter.disabled .expand-icon,
-.filter.disabled .title {
-    opacity: 0.3;
-}
-
-.filter:hover {
-    background-color: var(--bg-elevated-01);
-}
-
-.filter:global(.open) {
-    background-color: var(--bg-elevated-01);
-    --expand-icon-rotation: rotate(90deg);
+<style module>
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 </style>

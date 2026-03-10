@@ -1,5 +1,173 @@
 # @milaboratories/pl-drivers
 
+## 1.11.62
+
+### Patch Changes
+
+- Updated dependencies [a93de45]
+  - @milaboratories/helpers@1.13.7
+
+## 1.11.61
+
+### Patch Changes
+
+- Updated dependencies [c19a02b]
+  - @milaboratories/pl-client@2.17.9
+  - @milaboratories/pl-tree@1.8.49
+
+## 1.11.60
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-common@1.25.2
+  - @milaboratories/computable@2.8.6
+  - @milaboratories/pl-client@2.17.8
+  - @milaboratories/pl-tree@1.8.48
+  - @milaboratories/ts-helpers@1.7.3
+  - @milaboratories/helpers@1.13.6
+
+## 1.11.59
+
+### Patch Changes
+
+- Updated dependencies [0da9f54]
+  - @milaboratories/pl-tree@1.8.47
+
+## 1.11.58
+
+### Patch Changes
+
+- Updated dependencies [c498d1b]
+  - @milaboratories/pl-tree@1.8.46
+
+## 1.11.57
+
+### Patch Changes
+
+- Updated dependencies [523a59f]
+  - @milaboratories/pl-model-common@1.25.1
+  - @milaboratories/pl-client@2.17.7
+  - @milaboratories/pl-tree@1.8.45
+
+## 1.11.56
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @milaboratories/pl-model-common@1.25.0
+  - @milaboratories/pl-client@2.17.6
+  - @milaboratories/pl-tree@1.8.44
+
+## 1.11.55
+
+### Patch Changes
+
+- Updated dependencies [cb28fde]
+  - @milaboratories/pl-model-common@1.24.11
+  - @milaboratories/helpers@1.13.5
+  - @milaboratories/pl-client@2.17.5
+  - @milaboratories/pl-tree@1.8.43
+
+## 1.11.54
+
+### Patch Changes
+
+- Updated dependencies [866a323]
+  - @milaboratories/pl-model-common@1.24.10
+  - @milaboratories/pl-client@2.17.4
+  - @milaboratories/pl-tree@1.8.42
+
+## 1.11.53
+
+### Patch Changes
+
+- Updated dependencies [a3659cd]
+  - @milaboratories/pl-model-common@1.24.9
+  - @milaboratories/pl-client@2.17.3
+  - @milaboratories/pl-tree@1.8.41
+
+## 1.11.52
+
+### Patch Changes
+
+- Updated dependencies [4f04561]
+  - @milaboratories/pl-model-common@1.24.8
+  - @milaboratories/pl-client@2.17.2
+  - @milaboratories/pl-tree@1.8.40
+
+## 1.11.51
+
+### Patch Changes
+
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-common@1.24.7
+  - @milaboratories/helpers@1.13.4
+  - @milaboratories/computable@2.8.5
+  - @milaboratories/pl-client@2.17.1
+  - @milaboratories/pl-tree@1.8.39
+  - @milaboratories/ts-helpers@1.7.2
+
+## 1.11.50
+
+### Patch Changes
+
+- Updated dependencies [f37108b]
+  - @milaboratories/pl-client@2.17.0
+  - @milaboratories/pl-tree@1.8.38
+
+## 1.11.49
+
+### Patch Changes
+
+- Updated dependencies [2dc3b33]
+  - @milaboratories/helpers@1.13.3
+  - @milaboratories/pl-model-common@1.24.6
+  - @milaboratories/computable@2.8.5
+  - @milaboratories/pl-client@2.16.29
+  - @milaboratories/pl-tree@1.8.37
+  - @milaboratories/ts-helpers@1.7.2
+
+## 1.11.48
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/computable@2.8.5
+  - @milaboratories/pl-client@2.16.29
+  - @milaboratories/pl-tree@1.8.37
+  - @milaboratories/pl-model-common@1.24.6
+  - @milaboratories/ts-helpers@1.7.2
+  - @milaboratories/helpers@1.13.2
+
+## 1.11.47
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-common@1.24.5
+  - @milaboratories/computable@2.8.4
+  - @milaboratories/pl-client@2.16.28
+  - @milaboratories/pl-tree@1.8.36
+  - @milaboratories/ts-helpers@1.7.2
+  - @milaboratories/helpers@1.13.2
+
+## 1.11.46
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/computable@2.8.3
+  - @milaboratories/ts-helpers@1.7.1
+  - @milaboratories/pl-client@2.16.27
+  - @milaboratories/pl-model-common@1.24.4
+  - @milaboratories/pl-tree@1.8.35
+  - @milaboratories/helpers@1.13.1
+
 ## 1.11.45
 
 ### Patch Changes
@@ -575,7 +743,6 @@
 ### Minor Changes
 
 - 4306ff2: Fix file corruption issue in upload client by preventing connection reuse
-
   - **CRITICAL**: Add `reset: true` to prevent connection reuse and fix data corruption where HTTP/1.1 protocol lines were being included in uploaded file content with backend's built-in S3 implementation
   - Validate existing Content-Length header values match expected chunk size
   - Add assertion to verify read chunk size matches expected content length
@@ -612,7 +779,6 @@
 ### Minor Changes
 
 - ff4a709: **BREAKING**: Refactor download methods to lambda-based pattern for better resource management
-
   - `RemoteFileDownloader.download()` → `withContent<T>()`
   - `ClientDownload.downloadBlob()` → `withBlobContent<T>()`
   - `ClientDownload.readLocalFile()` → `withLocalFileContent<T>()`

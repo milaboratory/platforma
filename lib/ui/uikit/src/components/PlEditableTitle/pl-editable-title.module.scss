@@ -10,11 +10,11 @@
   --mask-size: 24px;
 
   &:hover {
-    --mask-icon-bg-color: var(--ic-02);  
+    --mask-icon-bg-color: var(--ic-02);
   }
 
   &:focus-within:not(&:hover) {
-    --mask-icon-bg-color: transparent;  
+    --mask-icon-bg-color: transparent;
   }
 
   .container {
@@ -57,7 +57,7 @@
     }
 
     &::before {
-      content: '';
+      content: "";
       @include mask-var(url(../../assets/icons/icon-assets-min/24_edit.svg));
       position: absolute;
       right: calc((var(--mask-size)) * -1);

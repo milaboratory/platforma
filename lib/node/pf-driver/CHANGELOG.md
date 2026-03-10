@@ -1,5 +1,211 @@
 # @milaboratories/pf-driver
 
+## 1.0.64
+
+### Patch Changes
+
+- Updated dependencies [a93de45]
+  - @platforma-sdk/model@1.58.19
+  - @milaboratories/pl-model-middle-layer@1.12.11
+
+## 1.0.63
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-middle-layer@1.12.10
+  - @milaboratories/ts-helpers@1.7.3
+  - @platforma-sdk/model@1.58.11
+
+## 1.0.62
+
+### Patch Changes
+
+- Updated dependencies [4d83b3c]
+  - @platforma-sdk/model@1.58.9
+  - @milaboratories/pl-model-middle-layer@1.12.9
+
+## 1.0.61
+
+### Patch Changes
+
+- Updated dependencies [c2d9319]
+  - @platforma-sdk/model@1.58.5
+  - @milaboratories/pl-model-middle-layer@1.12.8
+
+## 1.0.60
+
+### Patch Changes
+
+- Updated dependencies [327444c]
+  - @platforma-sdk/model@1.58.3
+  - @milaboratories/pl-model-middle-layer@1.12.7
+
+## 1.0.59
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.12.6
+- @platforma-sdk/model@1.58.2
+
+## 1.0.58
+
+### Patch Changes
+
+- Updated dependencies [d318a76]
+  - @platforma-sdk/model@1.58.1
+  - @milaboratories/pl-model-middle-layer@1.12.5
+
+## 1.0.57
+
+### Patch Changes
+
+- Updated dependencies [b5d19c6]
+  - @platforma-sdk/model@1.58.0
+  - @milaboratories/pl-model-middle-layer@1.12.4
+
+## 1.0.56
+
+### Patch Changes
+
+- 6ba4c69: Apply user sorting above options
+- Updated dependencies [6ba4c69]
+  - @platforma-sdk/model@1.57.2
+  - @milaboratories/pl-model-middle-layer@1.12.3
+
+## 1.0.55
+
+### Patch Changes
+
+- a95fc4e: Update deps version
+
+## 1.0.54
+
+### Patch Changes
+
+- 8baa2b3: PFrames version bump
+- Updated dependencies [8baa2b3]
+  - @platforma-sdk/model@1.57.0
+  - @milaboratories/pl-model-middle-layer@1.12.2
+
+## 1.0.53
+
+### Patch Changes
+
+- Updated dependencies [f2daf69]
+  - @platforma-sdk/model@1.56.0
+  - @milaboratories/pl-model-middle-layer@1.12.1
+
+## 1.0.52
+
+### Patch Changes
+
+- 02b0416: PFrames version bump
+
+## 1.0.51
+
+### Patch Changes
+
+- Updated dependencies [2ad9783]
+  - @milaboratories/pl-model-middle-layer@1.12.0
+
+## 1.0.50
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @platforma-sdk/model@1.55.0
+  - @milaboratories/pl-model-middle-layer@1.11.14
+
+## 1.0.49
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+- Updated dependencies [cb28fde]
+  - @platforma-sdk/model@1.54.13
+  - @milaboratories/pl-model-middle-layer@1.11.13
+
+## 1.0.48
+
+### Patch Changes
+
+- 866a323: Apply user filters, add utils method for traversing
+- Updated dependencies [866a323]
+  - @platforma-sdk/model@1.54.10
+  - @milaboratories/pl-model-middle-layer@1.11.12
+
+## 1.0.47
+
+### Patch Changes
+
+- Updated dependencies [a3659cd]
+  - @platforma-sdk/model@1.54.9
+  - @milaboratories/pl-model-middle-layer@1.11.11
+
+## 1.0.46
+
+### Patch Changes
+
+- 4f04561: simplify distil , renaming
+- Updated dependencies [4f04561]
+  - @platforma-sdk/model@1.54.8
+  - @milaboratories/pl-model-middle-layer@1.11.10
+
+## 1.0.45
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-middle-layer@1.11.9
+  - @platforma-sdk/model@1.54.7
+  - @milaboratories/ts-helpers@1.7.2
+
+## 1.0.44
+
+### Patch Changes
+
+- Updated dependencies [6689b53]
+  - @milaboratories/pl-model-middle-layer@1.11.8
+
+## 1.0.43
+
+### Patch Changes
+
+- 25a3d4e: pf-driver createTableByDataQuery
+
+## 1.0.42
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-model-middle-layer@1.11.7
+  - @platforma-sdk/model@1.53.15
+  - @milaboratories/ts-helpers@1.7.2
+
+## 1.0.41
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-middle-layer@1.11.6
+  - @milaboratories/ts-helpers@1.7.2
+  - @platforma-sdk/model@1.53.14
+
+## 1.0.40
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-model-middle-layer@1.11.5
+  - @milaboratories/ts-helpers@1.7.1
+  - @platforma-sdk/model@1.53.13
+
 ## 1.0.39
 
 ### Patch Changes

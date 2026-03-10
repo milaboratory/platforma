@@ -1,7 +1,4 @@
-import type {
-  ImportFileHandle,
-  InferHrefType,
-  InferOutputsType } from '@platforma-sdk/model';
+import type { ImportFileHandle, InferHrefType, InferOutputsType } from "@platforma-sdk/model";
 import {
   BlockModel,
   getImportProgress,
@@ -11,8 +8,8 @@ import {
   getProgressLogWithInfo,
   getResourceField,
   MainOutputs,
-} from '@platforma-sdk/model';
-import { z } from 'zod';
+} from "@platforma-sdk/model";
+import { z } from "zod";
 
 export const ImportFileHandleSchema = z
   .string()
@@ -28,27 +25,32 @@ export const BlockArgs = z.object({
 
 export type BlockArgs = z.infer<typeof BlockArgs>;
 
-export const platforma = BlockModel.create('Heavy')
+export const platforma = BlockModel.create("Heavy")
 
   .withArgs({
     inputHandle: undefined,
-    readFileWithSleepArgs: 'PREFIX,5,1000',
+    readFileWithSleepArgs: "PREFIX,5,1000",
   })
 
-  .output('handle', getImportProgress(getResourceField(MainOutputs, 'handle')))
+  .output("handle", getImportProgress(getResourceField(MainOutputs, "handle")))
 
-  .output('lastLogs', getLastLogs(getResourceField(MainOutputs, 'log'), 10))
+  .output("lastLogs", getLastLogs(getResourceField(MainOutputs, "log"), 10))
 
-  .output('progressLog', getProgressLog(getResourceField(MainOutputs, 'log'), 'PREFIX'))
+  .output("progressLog", getProgressLog(getResourceField(MainOutputs, "log"), "PREFIX"))
 
-  .output('progressLogWithInfo', getProgressLogWithInfo(getResourceField(MainOutputs, 'log'), 'PREFIX'))
+  .output(
+    "progressLogWithInfo",
+    getProgressLogWithInfo(getResourceField(MainOutputs, "log"), "PREFIX"),
+  )
 
-  .output('progressLogWithInfoCtx', (ctx) => ctx.outputs?.resolve('log')?.getProgressLogWithInfo('PREFIX'))
+  .output("progressLogWithInfoCtx", (ctx) =>
+    ctx.outputs?.resolve("log")?.getProgressLogWithInfo("PREFIX"),
+  )
 
-  .output('logHandle', getLogHandle(getResourceField(MainOutputs, 'log')))
+  .output("logHandle", getLogHandle(getResourceField(MainOutputs, "log")))
 
   .sections((_ctx) => {
-    return [{ type: 'link', href: '/', label: 'Main' }];
+    return [{ type: "link", href: "/", label: "Main" }];
   })
 
   .done();

@@ -1,7 +1,7 @@
-import type { Block, ProjectStructure } from './project_model';
-import type { Optional, Writable } from 'utility-types';
-import { inferAllReferencedBlocks } from './args';
-import type { PlRef } from '@milaboratories/pl-model-common';
+import type { Block, ProjectStructure } from "./project_model";
+import type { Optional, Writable } from "utility-types";
+import { inferAllReferencedBlocks } from "./args";
+import type { PlRef } from "@milaboratories/pl-model-common";
 
 export function allBlocks(structure: ProjectStructure): Iterable<Block> {
   return {
@@ -28,7 +28,13 @@ export interface BlockGraphNode {
   readonly enrichmentTargets: Set<string>;
 }
 
-export type BlockGraphDirection = 'upstream' | 'downstream' | 'directUpstream' | 'directDownstream' | 'enrichments' | 'enrichmentTargets';
+export type BlockGraphDirection =
+  | "upstream"
+  | "downstream"
+  | "directUpstream"
+  | "directDownstream"
+  | "enrichments"
+  | "enrichmentTargets";
 
 export class BlockGraph {
   /** Nodes are stored in the map in topological order */
@@ -38,10 +44,7 @@ export class BlockGraph {
     this.nodes = nodes;
   }
 
-  public traverseIds(
-    direction: BlockGraphDirection,
-    ...rootBlockIds: string[]
-  ): Set<string> {
+  public traverseIds(direction: BlockGraphDirection, ...rootBlockIds: string[]): Set<string> {
     const all = new Set<string>();
     this.traverse(direction, rootBlockIds, (node) => all.add(node.id));
     return all;
@@ -143,7 +146,7 @@ export function productionGraph(
     // They may produce additional columns, anchored in our direct upstream, those columns might be needed by the workflow.
     const potentialUpstreams = new Set([
       ...references.upstreams,
-      ...resultGraph.traverseIds('enrichments', ...references.upstreamsRequiringEnrichments),
+      ...resultGraph.traverseIds("enrichments", ...references.upstreamsRequiringEnrichments),
     ]);
 
     // To minimize complexity of the graph, we leave only the closest upstreams, removing all their transitive dependencies,
@@ -153,15 +156,16 @@ export function productionGraph(
       if (pId === id) break; // stopping on current block
       if (potentialUpstreams.has(pId)) {
         upstreams.add(pId);
-        for (const transitiveUpstream of resultGraph.traverseIdsExcludingRoots('upstream', pId))
+        for (const transitiveUpstream of resultGraph.traverseIdsExcludingRoots("upstream", pId))
           upstreams.delete(transitiveUpstream);
       }
     }
 
     // default assumption is that all direct upstreams are enrichment targets
-    const enrichmentTargets = info.enrichmentTargets === undefined
-      ? new Set(references.upstreams)
-      : new Set(info.enrichmentTargets.map((t) => t.blockId));
+    const enrichmentTargets =
+      info.enrichmentTargets === undefined
+        ? new Set(references.upstreams)
+        : new Set(info.enrichmentTargets.map((t) => t.blockId));
 
     const node: BlockGraphNode = {
       id,

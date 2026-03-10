@@ -3,33 +3,30 @@
  * Component for one-line string data manipulation
  */
 export default {
-  name: 'PlTextField',
+  name: "PlTextField",
 };
 </script>
 
-<script lang="ts" setup generic="M, E = string, C = E">
-import type { Equal } from '@milaboratories/helpers';
-import { computed, reactive, ref, useSlots } from 'vue';
-import SvgRequired from '../../assets/images/required.svg?raw';
-import { getErrorMessage } from '../../helpers/error.ts';
-import DoubleContour from '../../utils/DoubleContour.vue';
-import { useLabelNotch } from '../../utils/useLabelNotch';
-import { useValidation } from '../../utils/useValidation';
-import { PlIcon16 } from '../PlIcon16';
-import { PlIcon24 } from '../PlIcon24';
-import { PlSvg } from '../PlSvg';
-import { PlTooltip } from '../PlTooltip';
-import './pl-text-field.scss';
+<script lang="ts" setup>
+import { computed, ref, useSlots } from "vue";
+import SvgRequired from "../../assets/images/required.svg?raw";
+import { getErrorMessage } from "../../helpers/error.ts";
+import DoubleContour from "../../utils/DoubleContour.vue";
+import { useLabelNotch } from "../../utils/useLabelNotch";
+import { useValidation } from "../../utils/useValidation";
+import { PlIcon16 } from "../PlIcon16";
+import { PlIcon24 } from "../PlIcon24";
+import { PlSvg } from "../PlSvg";
+import { PlTooltip } from "../PlTooltip";
+import "./pl-text-field.scss";
 
 const slots = useSlots();
-
-type Model = Equal<M, E | C> extends true ? M : never; // basically in === out
 
 /**
  * The current value of the input field.
  */
-const model = defineModel<Model>({
-  required: true,
+const model = defineModel<string>({
+  default: "",
 });
 
 const props = defineProps<{
@@ -39,14 +36,8 @@ const props = defineProps<{
   label?: string;
   /**
    * If `true`, a clear icon will appear in the input field to clear the value (set it to empty string).
-   * Or you can pass a callback that returns a custom "empty" value (null | undefined | string)
    */
-  clearable?: boolean | (() => C);
-  /**
-   * An optional callback to parse and/or cast the value, the return type overrides the model type.
-   * The callback must throw an exception if the value is invalid
-   */
-  parse?: (v: string) => E;
+  clearable?: boolean;
   /**
    * If `true`, the input field is marked as required.
    */
@@ -82,11 +73,20 @@ const props = defineProps<{
   /**
    * The string specifies whether the field should be a password or not, value could be "password" or undefined.
    */
-  type?: 'password';
+  type?: "password";
   /**
    * Makes some of corners not rounded
    * */
-  groupPosition?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'middle';
+  groupPosition?:
+    | "top"
+    | "bottom"
+    | "left"
+    | "right"
+    | "top-left"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-right"
+    | "middle";
 }>();
 
 const rootRef = ref<HTMLInputElement | undefined>(undefined);
@@ -95,61 +95,25 @@ const inputRef = ref<HTMLInputElement | undefined>();
 
 const showPassword = ref(false);
 
-const data = reactive({
-  cached: undefined as { error: string; value: string } | undefined,
-});
-
-const valueRef = computed<string>({
-  get() {
-    if (data.cached) {
-      return data.cached.value;
-    }
-    return model.value === undefined || model.value === null ? '' : String(model.value);
-  },
-  set(value) {
-    data.cached = undefined;
-
-    if (props.parse) {
-      try {
-        model.value = props.parse(value) as Model;
-      } catch (err) {
-        data.cached = {
-          error: err instanceof Error ? err.message : String(err),
-          value,
-        };
-      }
-    } else {
-      model.value = value as Model;
-    }
-  },
-});
-
 const fieldType = computed(() => {
-  if (props.type && props.type === 'password') {
-    return showPassword.value ? 'text' : props.type;
+  if (props.type && props.type === "password") {
+    return showPassword.value ? "text" : props.type;
   } else {
-    return 'text';
+    return "text";
   }
 });
 
-const passwordIcon = computed(() => (showPassword.value ? 'view-show' : 'view-hide'));
+const passwordIcon = computed(() => (showPassword.value ? "view-show" : "view-hide"));
 
 const clear = () => {
   if (props.clearable) {
-    data.cached = undefined;
-    model.value = props.clearable === true ? ('' as Model) : (props.clearable() as Model);
+    model.value = "";
   }
 };
 
-const validationData = useValidation(valueRef, props.rules || []);
+const validationData = useValidation(model, props.rules || []);
 
-const isEmpty = computed(() => {
-  if (props.clearable) {
-    return props.clearable === true ? model.value === '' : model.value === props.clearable();
-  }
-
-  return model.value === '';
-});
+const isEmpty = computed(() => model.value === "");
 
 const nonEmpty = computed(() => !isEmpty.value);
 
@@ -159,9 +123,6 @@ const displayErrors = computed(() => {
   if (propsError) {
     errors.push(propsError);
   }
-  if (data.cached) {
-    errors.push(data.cached.error);
-  }
   if (!validationData.value.isValid) {
     errors.push(...validationData.value.errors);
   }
@@ -170,13 +131,11 @@ const displayErrors = computed(() => {
 
 const hasErrors = computed(() => displayErrors.value.length > 0);
 
-const canShowClearable = computed(() => props.clearable && nonEmpty.value && props.type !== 'password' && !props.disabled);
+const canShowClearable = computed(
+  () => props.clearable && nonEmpty.value && props.type !== "password" && !props.disabled,
+);
 
 const togglePasswordVisibility = () => (showPassword.value = !showPassword.value);
-
-const onFocusOut = () => {
-  data.cached = undefined;
-};
 
 const setFocusOnInput = () => inputRef.value?.focus();
 
@@ -209,22 +168,31 @@ useLabelNotch(rootRef);
       </div>
       <input
         ref="inputRef"
-        v-model="valueRef"
+        v-model="model"
         :disabled="disabled"
         :placeholder="placeholder || '...'"
         :type="fieldType"
         spellcheck="false"
-        @focusout="onFocusOut"
       />
       <div class="pl-text-field__append" @click="setFocusOnInput">
-        <PlIcon16 v-if="canShowClearable" class="pl-text-field__clearable" name="delete-clear" @click.stop="clear" />
-        <PlIcon24 v-if="type === 'password'" :name="passwordIcon" style="cursor: pointer" @click.stop="togglePasswordVisibility" />
+        <PlIcon16
+          v-if="canShowClearable"
+          class="pl-text-field__clearable"
+          name="delete-clear"
+          @click.stop="clear"
+        />
+        <PlIcon24
+          v-if="type === 'password'"
+          :name="passwordIcon"
+          style="cursor: pointer"
+          @click.stop="togglePasswordVisibility"
+        />
         <slot name="append" />
       </div>
       <DoubleContour class="pl-text-field__contour" :group-position="groupPosition" />
     </div>
     <div v-if="hasErrors" class="pl-text-field__error">
-      {{ displayErrors.join(' ') }}
+      {{ displayErrors.join(" ") }}
     </div>
     <div v-else-if="helper" class="pl-text-field__helper">{{ helper }}</div>
   </div>

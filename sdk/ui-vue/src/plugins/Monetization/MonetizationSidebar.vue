@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { PlSlideModal, PlBtnGhost, PlDropdown, PlAlert, PlIcon24, PlBtnSecondary } from '@milaboratories/uikit';
-import { useButtonTarget } from './useButtonTarget';
-import { useInfo } from './useInfo';
-import UserCabinetCard from './UserCabinetCard.vue';
-import RunStatus from './RunStatus.vue';
-import LimitCard from './LimitCard.vue';
-import EndOfPeriod from './EndOfPeriod.vue';
+import { ref, computed } from "vue";
+import {
+  PlSlideModal,
+  PlBtnGhost,
+  PlDropdown,
+  PlAlert,
+  PlIcon24,
+  PlBtnSecondary,
+} from "@milaboratories/uikit";
+import { useButtonTarget } from "./useButtonTarget";
+import { useInfo } from "./useInfo";
+import UserCabinetCard from "./UserCabinetCard.vue";
+import RunStatus from "./RunStatus.vue";
+import LimitCard from "./LimitCard.vue";
+import EndOfPeriod from "./EndOfPeriod.vue";
 
 const isOpen = ref(false);
 
@@ -33,7 +40,7 @@ const userCabinetUrl = computed(() => {
   const u = new URL(`https://scientist.platforma.bio/product/${result.value.productKey}`);
 
   if (customerEmail.value) {
-    u.searchParams.set('email', customerEmail.value);
+    u.searchParams.set("email", customerEmail.value);
   }
 
   return u.toString();
@@ -52,24 +59,24 @@ const options = computed(() => {
 
 const statusText = computed(() => {
   switch (status.value) {
-    case 'active':
-      return '';
-    case 'limits_exceeded':
-      return 'Usage limits exceeded for the current billing period.';
-    case 'payment_required':
-      return 'Payment required to continue using the service.';
-    case 'select-tariff':
-      return 'Select a subscription plan in the Scientist Cabinet.';
-    case 'inactive':
-      return 'Not found billing period.';
+    case "active":
+      return "";
+    case "limits_exceeded":
+      return "Usage limits exceeded for the current billing period.";
+    case "payment_required":
+      return "Payment required to continue using the service.";
+    case "select-tariff":
+      return "Select a subscription plan in the Scientist Cabinet.";
+    case "inactive":
+      return "Not found billing period.";
     default:
-      return '';
+      return "";
   }
 });
 
 const btnIcon = computed(() => {
-  if (canRun.value) return 'monetization-on';
-  return 'monetization-off';
+  if (canRun.value) return "monetization-on";
+  return "monetization-off";
 });
 </script>
 
@@ -86,7 +93,7 @@ const btnIcon = computed(() => {
         title="Refresh status"
         round
         size="small"
-        style="margin-left: auto;"
+        style="margin-left: auto"
         icon="loading"
         :loading="isLoading"
         @click="refresh"
@@ -95,7 +102,11 @@ const btnIcon = computed(() => {
     <PlAlert v-if="error" type="error">
       {{ error }}
     </PlAlert>
-    <UserCabinetCard v-if="userCabinetUrl" :email="customerEmail" :user-cabinet-url="userCabinetUrl" />
+    <UserCabinetCard
+      v-if="userCabinetUrl"
+      :email="customerEmail"
+      :user-cabinet-url="userCabinetUrl"
+    />
     <EndOfPeriod v-if="endOfBillingPeriod" :end-of-period="endOfBillingPeriod" />
     <template v-if="limits">
       <LimitCard

@@ -1,13 +1,13 @@
-import archiver from 'archiver';
-import fs from 'node:fs';
-import path from 'node:path';
-import type * as winston from 'winston';
-import * as util from './util';
-import type { Hash } from 'node:crypto';
-import { createHash } from 'node:crypto';
+import archiver from "archiver";
+import fs from "node:fs";
+import path from "node:path";
+import type * as winston from "winston";
+import * as util from "./util";
+import type { Hash } from "node:crypto";
+import { createHash } from "node:crypto";
 
-const tarArchiveType = 'tgz';
-const zipArchiveType = 'zip';
+const tarArchiveType = "tgz";
+const zipArchiveType = "zip";
 export const allArchiveTypes = [tarArchiveType, zipArchiveType];
 export type archiveType = (typeof allArchiveTypes)[number];
 
@@ -23,7 +23,7 @@ export type archiveOptions = {
 };
 
 export function getPath(options: archiveOptions): string {
-  const packageName = options.packageName.replaceAll('/', '-').replaceAll('\\', '-');
+  const packageName = options.packageName.replaceAll("/", "-").replaceAll("\\", "-");
 
   if (options && !options.crossplatform) {
     return path.resolve(
@@ -46,22 +46,22 @@ export async function create(
 ): Promise<Hash> {
   const compressionLevel = 9;
 
-  let format = '';
-  if (dstArchivePath.endsWith('.tgz') || dstArchivePath.endsWith('.tar.gz')) {
-    format = 'tar';
+  let format = "";
+  if (dstArchivePath.endsWith(".tgz") || dstArchivePath.endsWith(".tar.gz")) {
+    format = "tar";
   }
-  if (dstArchivePath.endsWith('.zip')) {
-    format = 'zip';
+  if (dstArchivePath.endsWith(".zip")) {
+    format = "zip";
   }
 
-  if (format == '') {
+  if (format == "") {
     throw util.CLIError(
       `Archive ${dstArchivePath} has unsupported extension. Cannot create archive of unknown format`,
     );
   }
 
   const output = fs.createWriteStream(dstArchivePath);
-  const hash = hasher ? hasher : createHash('sha256');
+  const hash = hasher ? hasher : createHash("sha256");
 
   const a = archiver.create(format, {
     gzip: true,
@@ -71,22 +71,22 @@ export async function create(
 
   return new Promise((resolve, reject) => {
     // Waits for the output stream to be closed.
-    output.on('close', function () {
+    output.on("close", function () {
       logger.debug(`archive created. Total data processed: ${a.pointer()} bytes`);
       resolve(hash);
     });
 
-    output.on('error', function (err) {
+    output.on("error", function (err) {
       reject(err);
     });
 
     // Catch errors
-    a.on('error', function (err) {
+    a.on("error", function (err) {
       reject(err);
     });
 
     // Update hash with every chunk of data written to the archive
-    a.on('data', function (chunk) {
+    a.on("data", function (chunk) {
       hash.update(chunk);
     });
 

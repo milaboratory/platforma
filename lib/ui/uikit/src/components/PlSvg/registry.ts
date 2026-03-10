@@ -1,4 +1,4 @@
-import { uniqueId } from '@milaboratories/helpers';
+import { uniqueId } from "@milaboratories/helpers";
 
 declare global {
   interface Window {
@@ -8,9 +8,9 @@ declare global {
 }
 
 function createSpriteContainer() {
-  const defsElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  defsElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  defsElement.style.display = 'none';
+  const defsElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  defsElement.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  defsElement.style.display = "none";
   document.body.prepend(defsElement);
   return defsElement;
 }
@@ -30,7 +30,7 @@ const defsElement = window.SvgRegistryDefsElement;
 
 export function registerSvg(raw: string, name?: string): SvgMeta {
   if (!registeredRaw.has(raw)) {
-    const id = `svg-${name ? `${name}-` : ''}${uniqueId(16)}`;
+    const id = `svg-${name ? `${name}-` : ""}${uniqueId(16)}`;
 
     const openSvgTagMatch = raw.match(/^<svg[^>]*>/i)?.[0];
     const fillMatch = openSvgTagMatch?.match(/fill\s*=\s*"(.*?)"/)?.[1];
@@ -48,28 +48,24 @@ export function registerSvg(raw: string, name?: string): SvgMeta {
 
     let fillIdx = 0;
     let strokeIdx = 0;
-    const fillAttr = fillMatch ? `fill="${fillMatch}"` : '';
-    const strokeAttr = strokeMatch ? `stroke="${strokeMatch}"` : '';
+    const fillAttr = fillMatch ? `fill="${fillMatch}"` : "";
+    const strokeAttr = strokeMatch ? `stroke="${strokeMatch}"` : "";
 
     const preparedSvg = raw
       .replace(/^<svg[^>]*>/i, `<svg id="${id}" viewBox="${viewBox}" ${fillAttr} ${strokeAttr}>`)
-      .replace(/<\/svg>\s*$/, '</svg>')
-      .replace(
-        /\bfill\s*=\s*(['"])(.*?)\1/gi,
-        (_, q, value) =>
-          /^(none|transparent)$/i.test(value)
-            ? `fill=${q}${value}${q}`
-            : `fill=${q}var(--svg-fill-${fillIdx++}, ${value})${q}`,
+      .replace(/<\/svg>\s*$/, "</svg>")
+      .replace(/\bfill\s*=\s*(['"])(.*?)\1/gi, (_, q, value) =>
+        /^(none|transparent)$/i.test(value)
+          ? `fill=${q}${value}${q}`
+          : `fill=${q}var(--svg-fill-${fillIdx++}, ${value})${q}`,
       )
-      .replace(
-        /\bstroke\s*=\s*(['"])(.*?)\1/gi,
-        (_, q, value) =>
-          /^(none|transparent)$/i.test(value)
-            ? `stroke=${q}${value}${q}`
-            : `stroke=${q}var(--svg-stroke-${strokeIdx++}, ${value})${q}`,
+      .replace(/\bstroke\s*=\s*(['"])(.*?)\1/gi, (_, q, value) =>
+        /^(none|transparent)$/i.test(value)
+          ? `stroke=${q}${value}${q}`
+          : `stroke=${q}var(--svg-stroke-${strokeIdx++}, ${value})${q}`,
       );
 
-    const template = document.createElement('template');
+    const template = document.createElement("template");
     template.innerHTML = preparedSvg;
 
     const symbol = template.content.firstElementChild;

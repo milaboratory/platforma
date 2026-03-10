@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { computed } from 'vue';
-import { injectState } from './keys';
+import { computed } from "vue";
+import { injectState } from "./keys";
 
 const state = injectState();
 
@@ -26,6 +26,8 @@ const actions = computed(() =>
   <div v-if="isVisible" class="command-menu">
     <span v-if="selectedRows.length">{{ selectedRows.length }} rows selected</span>
     <hr />
-    <span v-for="(action, i) in actions" :key="i" class="command" @click.stop="action.cb">{{ action.label }}</span>
+    <span v-for="(action, i) in actions" :key="i" class="command" @click.stop="action.cb">{{
+      action.label
+    }}</span>
   </div>
 </template>

@@ -1,13 +1,13 @@
-import { Command } from '@oclif/core';
-import * as cmdOpts from '../../core/cmd-opts';
-import * as util from '../../core/util';
-import { Core } from '../../core/core';
-import * as envs from '../../core/envs';
+import { Command } from "@oclif/core";
+import * as cmdOpts from "../../core/cmd-opts";
+import * as util from "../../core/util";
+import { Core } from "../../core/core";
+import * as envs from "../../core/envs";
 
 export default class Docker extends Command {
-  static override description = 'publish docker image to its registry';
+  static override description = "publish docker image to its registry";
 
-  static override examples = ['<%= config.bin %> <%= command.id %>'];
+  static override examples = ["<%= config.bin %> <%= command.id %>"];
 
   static override flags = {
     ...cmdOpts.GlobalFlags,
@@ -15,7 +15,7 @@ export default class Docker extends Command {
 
     ...cmdOpts.PackageIDFlag,
     ...cmdOpts.VersionFlag,
-    ['docker-push-to']: cmdOpts.DockerFlags['docker-push-to'],
+    ["docker-push-to"]: cmdOpts.DockerFlags["docker-push-to"],
 
     ...cmdOpts.FailExistingPackagesFlag,
   };
@@ -24,14 +24,14 @@ export default class Docker extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Docker);
-    const logger = util.createLogger(flags['log-level']);
+    const logger = util.createLogger(flags["log-level"]);
 
-    const core = new Core(logger, { packageRoot: flags['package-root'] });
+    const core = new Core(logger, { packageRoot: flags["package-root"] });
     core.pkgInfo.version = flags.version;
 
     core.publishDockerImages({
-      ids: flags['package-id'],
-      pushTo: flags['docker-push-to'],
+      ids: flags["package-id"],
+      pushTo: flags["docker-push-to"],
       strictPlatformMatching: envs.isCI(),
     });
   }

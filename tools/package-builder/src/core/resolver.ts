@@ -1,30 +1,30 @@
-import path from 'node:path';
-import fs from 'node:fs';
-import type winston from 'winston';
+import path from "node:path";
+import fs from "node:fs";
+import type winston from "winston";
 
-import * as swJson from './schemas/sw-json';
-import type * as artifacts from './schemas/artifacts';
-import type * as entrypoint from './schemas/entrypoints';
-import * as util from './util';
+import * as swJson from "./schemas/sw-json";
+import type * as artifacts from "./schemas/artifacts";
+import type * as entrypoint from "./schemas/entrypoints";
+import * as util from "./util";
 
-export const compiledSoftwareSuffix = '.sw.json';
-export const compiledAssetSuffix = '.as.json';
+export const compiledSoftwareSuffix = ".sw.json";
+export const compiledAssetSuffix = ".as.json";
 
 export function descriptorFilePath(
   packageRoot: string,
-  entrypointType: Extract<entrypoint.EntrypointType, 'software' | 'asset'>,
+  entrypointType: Extract<entrypoint.EntrypointType, "software" | "asset">,
   entrypointName?: string,
 ): string {
-  const typeSuffix = entrypointType === 'software' ? compiledSoftwareSuffix : compiledAssetSuffix;
+  const typeSuffix = entrypointType === "software" ? compiledSoftwareSuffix : compiledAssetSuffix;
 
   if (!entrypointName) {
-    return path.resolve(packageRoot, 'dist', 'tengo', entrypointType);
+    return path.resolve(packageRoot, "dist", "tengo", entrypointType);
   }
 
   return path.resolve(
     packageRoot,
-    'dist',
-    'tengo',
+    "dist",
+    "tengo",
     entrypointType,
     `${entrypointName}${typeSuffix}`,
   );
@@ -44,7 +44,7 @@ export function readSwJsonFile(
   packageName: string,
   entrypointName: string,
 ): swJson.swJsonType {
-  const filePath = descriptorFilePath(packageRoot, 'software', entrypointName);
+  const filePath = descriptorFilePath(packageRoot, "software", entrypointName);
   return readDescriptorFile(packageName, entrypointName, filePath);
 }
 
@@ -62,7 +62,9 @@ export function readDescriptorFile(
   descriptorFilePath: string,
 ): swJson.swJsonType {
   if (!fs.existsSync(descriptorFilePath)) {
-    throw util.CLIError(`entrypoint '${entrypointForDescriptor}' not found in '${descriptorFilePath}'`);
+    throw util.CLIError(
+      `entrypoint '${entrypointForDescriptor}' not found in '${descriptorFilePath}'`,
+    );
   }
 
   const swJsonContent = fs.readFileSync(descriptorFilePath);
@@ -97,13 +99,35 @@ export function resolveDependency(
   dependencyPackageName: string,
   dependencyEntrypointName: string,
 ): swJson.swJsonType {
-  const dependencyPath = util.findInstalledModule(logger, dependencyPackageName, currentPackageRoot);
+  const dependencyPath = util.findInstalledModule(
+    logger,
+    dependencyPackageName,
+    currentPackageRoot,
+  );
   return readSwJsonFile(dependencyPath, dependencyPackageName, dependencyEntrypointName);
 }
 
-export function resolveRunEnvironment(logger: winston.Logger, packageRoot: string, packageName: string, envName: string, requireType: 'java'): swJson.runEnvDependencyJava;
-export function resolveRunEnvironment(logger: winston.Logger, packageRoot: string, packageName: string, envName: string, requireType: 'python'): swJson.runEnvDependencyPython;
-export function resolveRunEnvironment(logger: winston.Logger, packageRoot: string, packageName: string, envName: string, requireType: 'R'): swJson.runEnvDependencyR;
+export function resolveRunEnvironment(
+  logger: winston.Logger,
+  packageRoot: string,
+  packageName: string,
+  envName: string,
+  requireType: "java",
+): swJson.runEnvDependencyJava;
+export function resolveRunEnvironment(
+  logger: winston.Logger,
+  packageRoot: string,
+  packageName: string,
+  envName: string,
+  requireType: "python",
+): swJson.runEnvDependencyPython;
+export function resolveRunEnvironment(
+  logger: winston.Logger,
+  packageRoot: string,
+  packageName: string,
+  envName: string,
+  requireType: "R",
+): swJson.runEnvDependencyR;
 export function resolveRunEnvironment(
   logger: winston.Logger,
   packageRoot: string,
@@ -111,11 +135,11 @@ export function resolveRunEnvironment(
   envName: string,
   requireType: artifacts.runEnvironmentType,
 ): swJson.runEnvDependency {
-  const [pkgName, id] = util.rSplit(envName, ':', 2);
-  const swDescriptor
-      = pkgName === ''
-        ? readSwJsonFile(packageRoot, packageName, id)
-        : resolveDependency(logger, packageRoot, pkgName, id);
+  const [pkgName, id] = util.rSplit(envName, ":", 2);
+  const swDescriptor =
+    pkgName === ""
+      ? readSwJsonFile(packageRoot, packageName, id)
+      : resolveDependency(logger, packageRoot, pkgName, id);
 
   if (!swDescriptor.runEnv) {
     throw util.CLIError(
@@ -135,35 +159,37 @@ export function resolveRunEnvironment(
   }
 
   switch (runEnv.type) {
-    case 'python': {
+    case "python": {
       return {
         name: envName,
         ...runEnv,
 
-        type: 'python',
-        ['python-version']: runEnv['python-version'] ?? '',
+        type: "python",
+        ["python-version"]: runEnv["python-version"] ?? "",
       };
     }
-    case 'R': {
+    case "R": {
       return {
         name: envName,
         ...runEnv,
 
-        type: 'R',
-        ['r-version']: runEnv['r-version'] ?? '',
+        type: "R",
+        ["r-version"]: runEnv["r-version"] ?? "",
       };
     }
-    case 'java': {
+    case "java": {
       return {
         name: envName,
         ...runEnv,
 
-        type: 'java',
-        ['java-version']: runEnv['java-version'] ?? '',
+        type: "java",
+        ["java-version"]: runEnv["java-version"] ?? "",
       };
     }
     default:
       util.assertNever(runEnv.type);
-      throw new Error('renderer logic error: resolveRunEnvironment does not cover all run environment types'); // calm down the linter
+      throw new Error(
+        "renderer logic error: resolveRunEnvironment does not cover all run environment types",
+      ); // calm down the linter
   }
 }

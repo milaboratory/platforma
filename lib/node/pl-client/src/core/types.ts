@@ -1,17 +1,17 @@
-import { cachedDeserialize, notEmpty } from '@milaboratories/ts-helpers';
+import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
 
 // more details here: https://egghead.io/blog/using-branded-types-in-typescript
 declare const __resource_id_type__: unique symbol;
 type BrandResourceId<B> = bigint & { [__resource_id_type__]: B };
 
 /** Global resource id */
-export type ResourceId = BrandResourceId<'global'>;
+export type ResourceId = BrandResourceId<"global">;
 
 /** Null resource id */
-export type NullResourceId = BrandResourceId<'null'>;
+export type NullResourceId = BrandResourceId<"null">;
 
 /** Local resource id */
-export type LocalResourceId = BrandResourceId<'local'>;
+export type LocalResourceId = BrandResourceId<"local">;
 
 /** Any non-null resource id */
 export type AnyResourceId = ResourceId | LocalResourceId;
@@ -33,7 +33,7 @@ export function isNotNullResourceId(resourceId: OptionalResourceId): resourceId 
 }
 
 export function ensureResourceIdNotNull(resourceId: OptionalResourceId): ResourceId {
-  if (!isNotNullResourceId(resourceId)) throw new Error('null resource id');
+  if (!isNotNullResourceId(resourceId)) throw new Error("null resource id");
   return resourceId;
 }
 
@@ -43,13 +43,13 @@ export function isAnyResourceId(resourceId: bigint): resourceId is AnyResourceId
 
 // see local / global resource logic below...
 
-export type ResourceKind = 'Structural' | 'Value';
+export type ResourceKind = "Structural" | "Value";
 
-export type FieldType = 'Input' | 'Output' | 'Service' | 'OTW' | 'Dynamic' | 'MTW';
+export type FieldType = "Input" | "Output" | "Service" | "OTW" | "Dynamic" | "MTW";
 
-export type FutureFieldType = 'Output' | 'Input' | 'Service';
+export type FutureFieldType = "Output" | "Input" | "Service";
 
-export type FieldStatus = 'Empty' | 'Assigned' | 'Resolved';
+export type FieldStatus = "Empty" | "Assigned" | "Resolved";
 
 export interface ResourceType {
   readonly name: string;
@@ -174,16 +174,16 @@ export function createLocalResourceId(
   localTxId: number,
 ): LocalResourceId {
   if (
-    localCounterValue > MaxLocalId
-    || localTxId > MaxTxId
-    || localCounterValue < 0
-    || localTxId <= 0
+    localCounterValue > MaxLocalId ||
+    localTxId > MaxTxId ||
+    localCounterValue < 0 ||
+    localTxId <= 0
   )
-    throw Error('wrong local id or tx id');
-  return ((isRoot ? ResourceIdRootMask : 0n)
-    | ResourceIdLocalMask
-    | BigInt(localCounterValue)
-    | (BigInt(localTxId) << LocalResourceIdTxIdOffset)) as LocalResourceId;
+    throw Error("wrong local id or tx id");
+  return ((isRoot ? ResourceIdRootMask : 0n) |
+    ResourceIdLocalMask |
+    BigInt(localCounterValue) |
+    (BigInt(localTxId) << LocalResourceIdTxIdOffset)) as LocalResourceId;
 }
 
 export function createGlobalResourceId(isRoot: boolean, unmaskedId: bigint): ResourceId {
@@ -198,40 +198,40 @@ export function checkLocalityOfResourceId(resourceId: AnyResourceId, expectedTxI
   if (!isLocalResourceId(resourceId)) return;
   if (extractTxId(resourceId) !== expectedTxId)
     throw Error(
-      'local id from another transaction, globalize id before leaking it from the transaction',
+      "local id from another transaction, globalize id before leaking it from the transaction",
     );
 }
 
 export function resourceIdToString(resourceId: OptionalAnyResourceId): string {
-  if (isNullResourceId(resourceId)) return 'XX:0x0';
+  if (isNullResourceId(resourceId)) return "XX:0x0";
   if (isLocalResourceId(resourceId))
     return (
-      (isRootResourceId(resourceId) ? 'R' : 'N')
-      + 'L:0x'
-      + (LocalIdMask & resourceId).toString(16)
-      + '[0x'
-      + extractTxId(resourceId).toString(16)
-      + ']'
+      (isRootResourceId(resourceId) ? "R" : "N") +
+      "L:0x" +
+      (LocalIdMask & resourceId).toString(16) +
+      "[0x" +
+      extractTxId(resourceId).toString(16) +
+      "]"
     );
   else
     return (
-      (isRootResourceId(resourceId) ? 'R' : 'N')
-      + 'G:0x'
-      + (NoFlagsIdMask & resourceId).toString(16)
+      (isRootResourceId(resourceId) ? "R" : "N") +
+      "G:0x" +
+      (NoFlagsIdMask & resourceId).toString(16)
     );
 }
 
-const resourceIdRegexp
-  = /^(?:(?<xx>XX)|(?<rn>[XRN])(?<lg>[XLG])):0x(?<rid>[0-9a-fA-F]+)(?:\[0x(?<txid>[0-9a-fA-F]+)])?$/;
+const resourceIdRegexp =
+  /^(?:(?<xx>XX)|(?<rn>[XRN])(?<lg>[XLG])):0x(?<rid>[0-9a-fA-F]+)(?:\[0x(?<txid>[0-9a-fA-F]+)])?$/;
 
 export function resourceIdFromString(str: string): OptionalAnyResourceId | undefined {
   const match = str.match(resourceIdRegexp);
   if (match === null) return undefined;
   const { xx, rn, lg, rid, txid } = match.groups!;
   if (xx) return NullResourceId;
-  if (lg === 'L')
-    return createLocalResourceId(rn === 'R', Number.parseInt(rid, 16), Number.parseInt(txid, 16));
-  else return createGlobalResourceId(rn === 'R', BigInt('0x' + rid));
+  if (lg === "L")
+    return createLocalResourceId(rn === "R", Number.parseInt(rid, 16), Number.parseInt(txid, 16));
+  else return createGlobalResourceId(rn === "R", BigInt("0x" + rid));
 }
 
 /** Converts bigint to global resource id */
@@ -244,6 +244,6 @@ export function bigintToResourceId(resourceId: bigint): ResourceId {
 
 export function stringifyWithResourceId(object: unknown): string {
   return JSON.stringify(object, (key, value) =>
-    typeof value === 'bigint' ? resourceIdToString(value as OptionalAnyResourceId) : value,
+    typeof value === "bigint" ? resourceIdToString(value as OptionalAnyResourceId) : value,
   );
 }

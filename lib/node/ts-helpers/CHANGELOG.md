@@ -1,5 +1,23 @@
 # @milaboratories/ts-helpers
 
+## 1.7.3
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
+## 1.7.2
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
+## 1.7.1
+
+### Patch Changes
+
+- f89a883: full integration oxc
+
 ## 1.7.0
 
 ### Minor Changes
@@ -71,7 +89,6 @@
 ### Patch Changes
 
 - ff4a709: Improve atomic file creation with random suffixes
-
   - Enhanced `createPathAtomically()` to use random suffixes for temporary files
   - Prevents race conditions when multiple processes create files concurrently
   - Added proper cleanup of temporary files on errors

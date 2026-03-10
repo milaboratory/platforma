@@ -13,25 +13,33 @@ import {
   PlAccordion,
   PlAccordionSection,
   PlDropdownMulti,
-} from '@platforma-sdk/ui-vue';
-import { reactive } from 'vue';
+  PlSearchField,
+} from "@platforma-sdk/ui-vue";
+import { reactive } from "vue";
 
 const data = reactive({
-  text: 'some text',
-  single: 'A',
-  multiple: ['A', 'B'],
-  multiple2: ['B', 'A', 'D'],
+  text: "some text",
+  single: "A",
+  multiple: ["A", "B"],
+  multiple2: ["B", "A", "D"],
   importHandles: [] as unknown[],
-  currentTab: 'one',
+  currentTab: "one",
   compactBtnGroup: false,
   multipleAccordion: false,
   indeterminateCheckboxValue: false,
   indeterminateCheckboxIsIndeterminate: true,
 });
 
-const shortOptions = listToOptions(['A', 'B', 'C', 'D']);
-const options = listToOptions(['A', 'B', 'C', 'D', 'Lorem ipsum', 'Lorem ipsum dolor sit amet', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.']);
-
+const shortOptions = listToOptions(["A", "B", "C", "D"]);
+const options = listToOptions([
+  "A",
+  "B",
+  "C",
+  "D",
+  "Lorem ipsum",
+  "Lorem ipsum dolor sit amet",
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+]);
 </script>
 
 <template>
@@ -46,20 +54,33 @@ const options = listToOptions(['A', 'B', 'C', 'D', 'Lorem ipsum', 'Lorem ipsum d
       <PlCheckbox v-model="data.compactBtnGroup">Compact btn group component</PlCheckbox>
       <PlTextField v-model="data.text" label="PlTextField" clearable />
       <PlTextField v-model="data.text" label="PlTextField (password)" type="password" clearable />
+      <PlSearchField v-model="data.text">
+        <template #helper>
+          Helper text for search field. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        </template>
+      </PlSearchField>
       <PlDropdown v-model="data.single" label="PlDropdown" :options="options" />
       <PlDropdownMulti v-model="data.multiple" label="PlDropdownMulti" :options="options" />
-      <PlDropdownMulti v-model="data.multiple2" label="PlDropdownMulti (multiple2)" :options="options" />
+      <PlDropdownMulti
+        v-model="data.multiple2"
+        label="PlDropdownMulti (multiple2)"
+        :options="options"
+      />
       <PlSectionSeparator>Group name</PlSectionSeparator>
       <PlTextField v-model="data.text" label="PlTextField" />
       <PlDropdown v-model="data.single" label="PlDropdown" :options="options" />
-      <PlCheckbox v-model="data.indeterminateCheckboxIsIndeterminate">Make checkbox below indeterminate</PlCheckbox>
+      <PlCheckbox v-model="data.indeterminateCheckboxIsIndeterminate"
+        >Make checkbox below indeterminate</PlCheckbox
+      >
       <PlCheckbox
         :model-value="data.indeterminateCheckboxValue"
         :indeterminate="data.indeterminateCheckboxIsIndeterminate"
-        @update:model-value="() => {
-          data.indeterminateCheckboxValue = !data.indeterminateCheckboxValue;
-          data.indeterminateCheckboxIsIndeterminate = false;
-        }"
+        @update:model-value="
+          () => {
+            data.indeterminateCheckboxValue = !data.indeterminateCheckboxValue;
+            data.indeterminateCheckboxIsIndeterminate = false;
+          }
+        "
       >
         Indeterminate checkbox demo (checked: {{ data.indeterminateCheckboxValue }})
       </PlCheckbox>

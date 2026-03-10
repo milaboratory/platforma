@@ -1,13 +1,13 @@
 <script lang="ts" setup>
-import { PlBtnSecondary } from '@milaboratories/uikit';
-import { useSdkPlugin } from '../defineApp';
+import { PlBtnSecondary } from "@milaboratories/uikit";
+import { useSdkPlugin } from "../defineApp";
 
 const sdk = useSdkPlugin();
 
 const app = sdk.useApp();
 
 const goToMain = () => {
-  app.navigateTo('/');
+  app.navigateTo("/");
 };
 </script>
 

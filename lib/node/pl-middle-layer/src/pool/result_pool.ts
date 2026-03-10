@@ -1,5 +1,5 @@
-import type { ComputableCtx } from '@milaboratories/computable';
-import type { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import type { ComputableCtx } from "@milaboratories/computable";
+import type { PlTreeEntry, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import type {
   Option,
   PObject,
@@ -8,32 +8,21 @@ import type {
   PlRef,
   ResultCollection,
   ResultPoolEntry,
-  ValueOrError } from '@platforma-sdk/model';
-import {
-  executePSpecPredicate,
-  mapValueInVOE,
-} from '@platforma-sdk/model';
-import { notEmpty } from '@milaboratories/ts-helpers';
-import { outputRef } from '../model/args';
-import type {
-  Block,
-  ProjectStructure } from '../model/project_model';
-import {
-  ProjectStructureKey,
-  projectFieldName,
-} from '../model/project_model';
-import { allBlocks, stagingGraph } from '../model/project_model_util';
-import type { Optional } from 'utility-types';
-import { deriveGlobalPObjectId } from './data';
-import type {
-  RawPObjectCollection,
-  RawPObjectEntry } from './p_object_collection';
-import {
-  parseRawPObjectCollection,
-} from './p_object_collection';
+  ValueOrError,
+} from "@platforma-sdk/model";
+import { executePSpecPredicate, mapValueInVOE } from "@platforma-sdk/model";
+import { notEmpty } from "@milaboratories/ts-helpers";
+import { outputRef } from "../model/args";
+import type { Block, ProjectStructure } from "../model/project_model";
+import { ProjectStructureKey, projectFieldName } from "../model/project_model";
+import { allBlocks, stagingGraph } from "../model/project_model_util";
+import type { Optional } from "utility-types";
+import { deriveGlobalPObjectId } from "./data";
+import type { RawPObjectCollection, RawPObjectEntry } from "./p_object_collection";
+import { parseRawPObjectCollection } from "./p_object_collection";
 
 /** All exported results are addressed  */
-export type ResultKey = Pick<PlRef, 'blockId' | 'name'>;
+export type ResultKey = Pick<PlRef, "blockId" | "name">;
 
 /** Represents current information about particular block */
 interface PoolBlock {
@@ -146,10 +135,10 @@ export class ResultPool {
   }
 
   public getDataWithErrors(): ExtendedResultCollection<
-    Optional<PObject<ValueOrError<PlTreeNodeAccessor, Error>>, 'id'>
+    Optional<PObject<ValueOrError<PlTreeNodeAccessor, Error>>, "id">
   > {
     const entries: ResultPoolEntry<
-      Optional<PObject<ValueOrError<PlTreeNodeAccessor, Error>>, 'id'>
+      Optional<PObject<ValueOrError<PlTreeNodeAccessor, Error>>, "id">
     >[] = [];
     let isComplete = true;
 
@@ -260,7 +249,7 @@ export class ResultPool {
           exportsChecked.add(exportName);
           if (executePSpecPredicate(predicate, result.spec))
             found.push({
-              label: block.info.label + ' / ' + exportName,
+              label: block.info.label + " / " + exportName,
               ref: outputRef(block.info.id, exportName),
               spec: result.spec,
             });
@@ -277,7 +266,7 @@ export class ResultPool {
 
     const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
     const graph = stagingGraph(structure);
-    const targetBlocks = graph.traverseIds('upstream', rootBlockId);
+    const targetBlocks = graph.traverseIds("upstream", rootBlockId);
 
     const blocks = new Map<string, PoolBlock>();
 
@@ -286,25 +275,25 @@ export class ResultPool {
 
       const prod = loadCtx(
         prj.traverse({
-          field: projectFieldName(blockInfo.id, 'prodCtx'),
+          field: projectFieldName(blockInfo.id, "prodCtx"),
           ignoreError: true,
           pureFieldErrorToUndefined: true,
           stableIfNotFound: true,
         }) !== undefined,
         prj.traverseOrError({
-          field: projectFieldName(blockInfo.id, 'prodUiCtx'),
+          field: projectFieldName(blockInfo.id, "prodUiCtx"),
           stableIfNotFound: true,
         }),
       );
       const staging = loadCtx(
         prj.traverse({
-          field: projectFieldName(blockInfo.id, 'stagingCtx'),
+          field: projectFieldName(blockInfo.id, "stagingCtx"),
           ignoreError: true,
           pureFieldErrorToUndefined: true,
           stableIfNotFound: true,
         }) !== undefined,
         prj.traverseOrError({
-          field: projectFieldName(blockInfo.id, 'stagingUiCtx'),
+          field: projectFieldName(blockInfo.id, "stagingUiCtx"),
           stableIfNotFound: true,
         }),
       );

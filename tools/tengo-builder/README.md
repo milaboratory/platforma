@@ -1,15 +1,15 @@
 # Overview
 
-This repo contains a tool, that facilitates integration of `tengo` libraries and template build and distribution process into npm infrastructure. 
+This repo contains a tool, that facilitates integration of `tengo` libraries and template build and distribution process into npm infrastructure.
 
-<!-- 
+<!--
 # Example config & file layout
 
 `package.json`
 
 ```json5
 {
-  // if your repo is a library or template collection, this sets its name in npm repo 
+  // if your repo is a library or template collection, this sets its name in npm repo
   "name": "@milaboratory/tengo-test-repo-1",
   // package version for publishing
   "version": "1.1.0",
@@ -27,7 +27,7 @@ This repo contains a tool, that facilitates integration of `tengo` libraries and
   ],
   // (see important comment about dependencies)
   "devDependencies": {
-    // use latest version of tengo-template-builder package 
+    // use latest version of tengo-template-builder package
     "@milaboratory/tengo-template-builder": "1.0.1"
   }
 }

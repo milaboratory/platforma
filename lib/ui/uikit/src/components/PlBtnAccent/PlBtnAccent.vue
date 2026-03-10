@@ -3,14 +3,14 @@
  * Accent button
  */
 export default {
-  name: 'PlBtnAccent',
+  name: "PlBtnAccent",
 };
 </script>
 
 <script lang="ts" setup>
-import './pl-btn-accent.scss';
-import type { MaskIconName16, Size } from '../../types';
-import BtnBase from '../../base/BtnBase.vue';
+import "./pl-btn-accent.scss";
+import type { MaskIconName16, Size } from "../../types";
+import BtnBase from "../../base/BtnBase.vue";
 
 const props = defineProps<{
   /**

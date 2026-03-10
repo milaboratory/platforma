@@ -1,10 +1,10 @@
-import { test, expect } from 'vitest';
-import { utils } from '@milaboratories/helpers';
-import { sequence, Emitter } from '@milaboratories/sequences';
+import { test, expect } from "vitest";
+import { utils } from "@milaboratories/helpers";
+import { sequence, Emitter } from "@milaboratories/sequences";
 
 const { delay, timer } = utils;
 
-test('test 1', async () => {
+test("1", async () => {
   async function* gen() {
     for (let i = 1; i <= 10; i++) {
       yield i;
@@ -13,12 +13,16 @@ test('test 1', async () => {
 
   const s = sequence(gen());
 
-  const values = await s.map((v) => v + 1).map((v) => v * 10).filter((v) => v % 2 === 0).toArray();
+  const values = await s
+    .map((v) => v + 1)
+    .map((v) => v * 10)
+    .filter((v) => v % 2 === 0)
+    .toArray();
 
   expect(values.reduce((x, y) => x + y)).toBe(650);
 }, 100000);
 
-test('InfiniteTest', async () => {
+test("InfiniteTest", async () => {
   const DELAY_MS = 2000;
   async function* gen() {
     let t = 0;
@@ -44,7 +48,8 @@ test('InfiniteTest', async () => {
   expect(dt()).toBeGreaterThan(DELAY_MS);
 }, 100000);
 
-test('MergeTest', async () => {
+// oxlint-disable-next-line jest/expect-expect
+test("MergeTest", async () => {
   async function* gen(delta: number) {
     let t = 0;
     while (true) {
@@ -58,15 +63,16 @@ test('MergeTest', async () => {
     }
   }
 
-  const s1 = sequence(gen(10)).map((v) => ['s1', v]);
-  const s2 = sequence(gen(5)).map((v) => ['s2', v]);
+  const s1 = sequence(gen(10)).map((v) => ["s1", v]);
+  const s2 = sequence(gen(5)).map((v) => ["s2", v]);
 
   for await (const _v of s1.merge(s2).it()) {
     // console.log('tuple', v);
   }
 }, 100000);
 
-test('EmitterTest', async () => {
+// oxlint-disable-next-line jest/expect-expect
+test("EmitterTest", async () => {
   const em = new Emitter<number>();
 
   (async () => {
@@ -83,19 +89,20 @@ test('EmitterTest', async () => {
   })().catch(console.error);
 
   for await (const n of em) {
-    console.log('got number', n);
+    console.log("got number", n);
   }
 }, 10000);
 
 /// @todo
 
-test('PushTestSync', async () => {
+// oxlint-disable-next-line jest/expect-expect
+test("PushTestSync", async () => {
   async function* test() {
-    console.log('Hello!');
+    console.log("Hello!");
     const x: unknown = yield;
-    console.log('First I got: ' + x);
+    console.log("First I got: " + x);
     const y: unknown = yield;
-    console.log('Then I got: ' + y);
+    console.log("Then I got: " + y);
     yield y;
   }
 
@@ -103,16 +110,17 @@ test('PushTestSync', async () => {
 
   (async () => {
     for await (const v of it) {
-      console.log('v', v);
+      console.log("v", v);
     }
   })().catch(console.error);
 
-  await it.next('First');
-  await it.next('hello');
-  await it.next('hello again');
+  await it.next("First");
+  await it.next("hello");
+  await it.next("hello again");
 }, 100000);
 
-test('PushTestAsync', async () => {
+// oxlint-disable-next-line jest/expect-expect
+test("PushTestAsync", async () => {
   async function* gen() {
     yield 1;
 
@@ -120,7 +128,7 @@ test('PushTestAsync', async () => {
 
     const x: number = yield;
 
-    console.log('got x', x);
+    console.log("got x", x);
 
     yield x;
   }
@@ -131,9 +139,9 @@ test('PushTestAsync', async () => {
 
   (async () => {
     await delay(10);
-    console.log('send 3');
+    console.log("send 3");
     await it.next(3);
-    console.log('send 3 again');
+    console.log("send 3 again");
     await it.next(3);
   })().catch(console.error);
 

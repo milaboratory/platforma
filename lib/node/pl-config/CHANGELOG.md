@@ -1,5 +1,36 @@
 # @milaboratories/pl-config
 
+## 1.7.15
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/ts-helpers@1.7.3
+
+## 1.7.14
+
+### Patch Changes
+
+- c620234: remove unused packages
+  - @milaboratories/ts-helpers@1.7.2
+
+## 1.7.13
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/ts-helpers@1.7.2
+
+## 1.7.12
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/ts-helpers@1.7.1
+
 ## 1.7.11
 
 ### Patch Changes
@@ -223,7 +254,6 @@
 ### Patch Changes
 
 - e06efcd: Pin and standardize dependency versions for network and utility libraries to ensure consistent builds and prevent unexpected behavior from minor version changes. Changes include:
-
   - Pin `@protobuf-ts/*` packages to version 2.9.4 using YAML anchors
   - Pin AWS SDK packages to version 3.750.0
   - Change `undici` from `^7.2.3` to `~7.2.3` (only patch updates)

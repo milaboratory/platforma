@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import type { BlockOutputsBase } from '@platforma-sdk/model';
-import type { OutputErrors } from '../../types';
+import type { BlockOutputsBase } from "@platforma-sdk/model";
+import type { OutputErrors } from "../../types";
 // @TODO module
-import './pl-app-error-notification-alert.scss';
-import { PlBtnPrimary, PlDialogModal, PlNotificationAlert, PlSpacer, PlLogView } from '@milaboratories/uikit';
-import { computed, ref, watch } from 'vue';
+import "./pl-app-error-notification-alert.scss";
+import {
+  PlBtnPrimary,
+  PlDialogModal,
+  PlNotificationAlert,
+  PlSpacer,
+  PlLogView,
+} from "@milaboratories/uikit";
+import { computed, ref, watch } from "vue";
 
 export type FullMessage = { fullMessage: string };
 
@@ -39,7 +45,11 @@ watch(
             <div class="pl-app-notification-alert__title">Block output: {{ item[0] }}</div>
             <PlLogView
               :value="item[1]?.message"
-              :valueToCopy="'fullMessage' in (item[1] ?? {}) ? (item[1] as unknown as FullMessage).fullMessage : item[1]?.message"
+              :valueToCopy="
+                'fullMessage' in (item[1] ?? {})
+                  ? (item[1] as unknown as FullMessage).fullMessage
+                  : item[1]?.message
+              "
               :download-filename="`output-${item[0]}-error.txt`"
             />
           </div>

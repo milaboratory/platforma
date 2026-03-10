@@ -1,0 +1,3 @@
+{
+  "extends": ["node_modules/@milaboratories/ts-builder/dist/configs/oxlint-block-model.json"]
+}

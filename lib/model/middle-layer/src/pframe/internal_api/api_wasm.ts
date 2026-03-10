@@ -4,21 +4,19 @@ import type {
   JoinEntry,
   PColumnSpec,
   PObjectId,
+  PTableColumnId,
   PTableColumnSpec,
   PTableRecordFilter,
   PTableSorting,
-  QueryData,
-  QuerySpec,
+  DataQuery,
+  SpecQuery,
   SingleAxisSelector,
-} from '@milaboratories/pl-model-common';
+} from "@milaboratories/pl-model-common";
 import type {
   DeleteColumnFromColumnsRequest,
   DeleteColumnFromColumnsResponse,
-} from './delete_column';
-import type {
-  FindColumnsRequest,
-  FindColumnsResponse,
-} from './find_columns';
+} from "./delete_column";
+import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
 
 export interface PFrameWasmAPI {
   /**
@@ -39,9 +37,16 @@ export interface PFrameWasmAPI {
 
   /**
    * Finds the index of an axis matching the given selector.
+   * Returns -1 if no matching axis is found.
    */
   findAxis(spec: AxesSpec, selector: SingleAxisSelector): number;
-};
+
+  /**
+   * Finds the flat index of a table column matching the given
+   * selector within a table spec. Returns -1 if not found.
+   */
+  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number;
+}
 
 /**
  * A PFrame represents a collection of columns that can be queried and joined.
@@ -50,37 +55,29 @@ export interface PFrameWasm extends Disposable {
   /**
    * Deletes columns from a columns specification.
    */
-  deleteColumns(
-    request: DeleteColumnFromColumnsRequest
-  ): DeleteColumnFromColumnsResponse;
+  deleteColumns(request: DeleteColumnFromColumnsRequest): DeleteColumnFromColumnsResponse;
 
   /**
    * Finds columns in the PFrame matching the given filter criteria.
    */
-  findColumns(
-    request: FindColumnsRequest
-  ): FindColumnsResponse;
+  findColumns(request: FindColumnsRequest): FindColumnsResponse;
   /**
    * Evaluates a query specification against this PFrame.
    *
-   * Takes a QuerySpec (which can represent columns, joins, filters, sorts,
+   * Takes a SpecQuery (which can represent columns, joins, filters, sorts,
    * etc.) and returns the resulting table specification along with the data
    * layer query representation.
    */
-  evaluateQuery(
-    request: QuerySpec
-  ): EvaluateQueryResponse;
+  evaluateQuery(request: SpecQuery): EvaluateQueryResponse;
 
   /**
-   * Rewrites a legacy query format (V4) to the current QuerySpec format.
+   * Rewrites a legacy query format (V4) to the current SpecQuery format.
    *
    * This method upgrades older query structures that use JoinEntryV4, filters,
-   * and sorting into the new unified QuerySpec format with proper filter and
+   * and sorting into the new unified SpecQuery format with proper filter and
    * sort query nodes.
    */
-  rewriteLegacyQuery(
-    request: LegacyQuery
-  ): QuerySpec;
+  rewriteLegacyQuery(request: LegacyQuery): SpecQuery;
 }
 
 /**
@@ -96,14 +93,14 @@ export type EvaluateQueryResponse = {
    * The data layer query representation with numeric indices,
    * suitable for execution by the data processing engine.
    */
-  dataQuery: QueryData;
+  dataQuery: DataQuery;
 };
 
 /**
- * Represents a legacy (V4) query format used before the unified QuerySpec.
+ * Represents a legacy (V4) query format used before the unified SpecQuery.
  *
  * This type is used with {@link PFrameWasm.rewriteLegacyQuery} to upgrade
- * older query structures to the current {@link QuerySpec} format.
+ * older query structures to the current {@link SpecQuery} format.
  */
 export type LegacyQuery = {
   /** The source join entry defining the data sources and join structure. */

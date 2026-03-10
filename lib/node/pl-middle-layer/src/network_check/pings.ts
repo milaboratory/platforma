@@ -1,9 +1,9 @@
-import type { ValueOrError } from '@milaboratories/ts-helpers';
-import { setTimeout } from 'node:timers/promises';
-import { request } from 'undici';
-import type { Dispatcher } from 'undici';
-import type { CheckNetworkOpts } from './network_check';
-import { UnauthenticatedPlClient, type PlClientConfig } from '@milaboratories/pl-client';
+import type { ValueOrError } from "@milaboratories/ts-helpers";
+import { setTimeout } from "node:timers/promises";
+import { request } from "undici";
+import type { Dispatcher } from "undici";
+import type { CheckNetworkOpts } from "./network_check";
+import { UnauthenticatedPlClient, type PlClientConfig } from "@milaboratories/pl-client";
 
 /** A report about one concrete ping to the service. */
 export interface NetworkReport<T> {
@@ -16,52 +16,81 @@ export type HttpNetworkReport = NetworkReport<{
   beginningOfBody: string;
 }>;
 
-export async function backendPings(ops: CheckNetworkOpts, plConfig: PlClientConfig): Promise<NetworkReport<string>[]> {
-  return await recordPings(ops.pingCheckDurationMs, ops.maxPingsPerSecond, async () => {
-    const uaClient = await UnauthenticatedPlClient.build(plConfig);
-    const response = await uaClient.ping();
-    return JSON.stringify(response).slice(0, ops.bodyLimit) + '...';
-  });
+export async function backendPings(
+  ops: CheckNetworkOpts,
+  plConfig: PlClientConfig,
+): Promise<NetworkReport<string>[]> {
+  return await recordPings(
+    ops.pingCheckDurationMs,
+    ops.maxPingsPerSecond,
+    async () => {
+      const uaClient = await UnauthenticatedPlClient.build(plConfig);
+      const response = await uaClient.ping();
+      return JSON.stringify(response).slice(0, ops.bodyLimit) + "...";
+    },
+    ops.signal,
+  );
 }
 
-export async function blockRegistryOverviewPings(ops: CheckNetworkOpts, httpClient: Dispatcher): Promise<HttpNetworkReport[]> {
+export async function blockRegistryOverviewPings(
+  ops: CheckNetworkOpts,
+  httpClient: Dispatcher,
+): Promise<HttpNetworkReport[]> {
   return await recordPings(
     ops.blockRegistryDurationMs,
     ops.maxRegistryChecksPerSecond,
     async () =>
       await requestUrl(new URL(ops.blockOverviewPath, ops.blockRegistryUrl), ops, httpClient),
+    ops.signal,
   );
 }
 
-export async function blockGARegistryOverviewPings(ops: CheckNetworkOpts, httpClient: Dispatcher): Promise<HttpNetworkReport[]> {
+export async function blockGARegistryOverviewPings(
+  ops: CheckNetworkOpts,
+  httpClient: Dispatcher,
+): Promise<HttpNetworkReport[]> {
   return await recordPings(
     ops.blockRegistryDurationMs,
     ops.maxRegistryChecksPerSecond,
-    async () => await requestUrl(new URL(ops.blockOverviewPath, ops.blockGARegistryUrl), ops, httpClient),
+    async () =>
+      await requestUrl(new URL(ops.blockOverviewPath, ops.blockGARegistryUrl), ops, httpClient),
+    ops.signal,
   );
 }
 
-export async function blockRegistryUiPings(ops: CheckNetworkOpts, httpClient: Dispatcher): Promise<HttpNetworkReport[]> {
+export async function blockRegistryUiPings(
+  ops: CheckNetworkOpts,
+  httpClient: Dispatcher,
+): Promise<HttpNetworkReport[]> {
   return await recordPings(
     ops.blockRegistryDurationMs,
     ops.maxRegistryChecksPerSecond,
     async () => await requestUrl(new URL(ops.blockUiPath, ops.blockRegistryUrl), ops, httpClient),
+    ops.signal,
   );
 }
 
-export async function blockGARegistryUiPings(ops: CheckNetworkOpts, httpClient: Dispatcher): Promise<HttpNetworkReport[]> {
+export async function blockGARegistryUiPings(
+  ops: CheckNetworkOpts,
+  httpClient: Dispatcher,
+): Promise<HttpNetworkReport[]> {
   return await recordPings(
     ops.blockRegistryDurationMs,
     ops.maxRegistryChecksPerSecond,
     async () => await requestUrl(new URL(ops.blockUiPath, ops.blockGARegistryUrl), ops, httpClient),
+    ops.signal,
   );
 }
 
-export async function autoUpdateCdnPings(ops: CheckNetworkOpts, httpClient: Dispatcher): Promise<HttpNetworkReport[]> {
+export async function autoUpdateCdnPings(
+  ops: CheckNetworkOpts,
+  httpClient: Dispatcher,
+): Promise<HttpNetworkReport[]> {
   return await recordPings(
     ops.autoUpdateCdnDurationMs,
     ops.maxAutoUpdateCdnChecksPerSecond,
     async () => await requestUrl(ops.autoUpdateCdnUrl, ops, httpClient),
+    ops.signal,
   );
 }
 
@@ -71,11 +100,12 @@ export async function recordPings<T>(
   pingCheckDurationMs: number,
   maxPingsPerSecond: number,
   body: () => Promise<T>,
+  signal?: AbortSignal,
 ): Promise<NetworkReport<T>[]> {
   const startPings = Date.now();
   const reports: NetworkReport<T>[] = [];
 
-  while (elapsed(startPings) < pingCheckDurationMs) {
+  while (elapsed(startPings) < pingCheckDurationMs && !signal?.aborted) {
     const startPing = Date.now();
     let response: ValueOrError<T>;
     try {
@@ -93,7 +123,12 @@ export async function recordPings<T>(
     const sleepBetweenPings = 1000 / maxPingsPerSecond - elapsedPing;
 
     if (sleepBetweenPings > 0) {
-      await setTimeout(sleepBetweenPings);
+      try {
+        await setTimeout(sleepBetweenPings, undefined, signal ? { signal } : undefined);
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name === "AbortError") break;
+        throw e;
+      }
     }
   }
 
@@ -110,7 +145,7 @@ export async function requestUrl(url: string | URL, ops: CheckNetworkOpts, httpC
 
   return {
     statusCode: statusCode,
-    beginningOfBody: body.slice(0, ops.bodyLimit) + '...',
+    beginningOfBody: body.slice(0, ops.bodyLimit) + "...",
   };
 }
 
@@ -124,7 +159,7 @@ export function reportToString<T>(report: NetworkReport<T>[]): {
 } {
   const successes = report.filter((r) => r.response.ok);
   const errorsLen = report.length - successes.length;
-  const { mean: mean, median: median } = elapsedStat(report);
+  const { mean, median } = elapsedStat(report);
 
   const details = `
   total: ${report.length};
@@ -141,6 +176,7 @@ export function reportToString<T>(report: NetworkReport<T>[]): {
 }
 
 function elapsedStat(reports: { elapsedMs: number }[]) {
+  if (reports.length === 0) return { mean: 0, median: undefined };
   const checks = reports.map((p) => p.elapsedMs).sort();
   const mean = checks.reduce((sum, p) => sum + p) / checks.length;
 

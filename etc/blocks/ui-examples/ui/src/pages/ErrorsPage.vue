@@ -1,44 +1,34 @@
 <script setup lang="ts">
-import { PlAlert, PlBlockPage, PlTextField, PlBtnPrimary, PlRow } from '@platforma-sdk/ui-vue';
-import { useApp } from '../app';
-import { computed, reactive } from 'vue';
+import { PlAlert, PlBlockPage, PlTextField, PlBtnPrimary, PlRow } from "@platforma-sdk/ui-vue";
+import { useApp } from "../app";
+import { computed, reactive } from "vue";
 
 const app = useApp();
 
 const data = reactive({
-  progressDurationMs: 10000,
+  progressDurationMs: "10000",
 });
+
+function positiveNumberRule(v: string): boolean | string {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return "Must be a positive number";
+  return true;
+}
 
 const numbers = computed({
   get() {
-    return app.model.args.numbers.join(',');
+    return app.model.args.numbers.join(",");
   },
   set(v) {
     app.model.args.numbers = v
-      .split(',')
-      .filter((s) => s !== '')
+      .split(",")
+      .filter((s) => s !== "")
       .map((s) => {
         const n = Number(s);
         return Number.isFinite(n) ? n : (s as unknown as number); // trigger error
       });
   },
 });
-
-const $ = {
-  positiveNumber: (v: string) => {
-    const parsed = Number(v);
-
-    if (!Number.isFinite(parsed)) {
-      throw Error('Not a number');
-    }
-
-    if (parsed <= 0) {
-      throw Error('Enter positive value');
-    }
-
-    return parsed;
-  },
-};
 </script>
 
 <template>
@@ -65,16 +55,16 @@ const $ = {
       {{ app.model.outputErrors }}
     </PlAlert>
     <PlRow>
-      <PlBtnPrimary @click="() => app.showInfiniteProgress(data.progressDurationMs)">
+      <PlBtnPrimary @click="() => app.showInfiniteProgress(Number(data.progressDurationMs))">
         Show loader
       </PlBtnPrimary>
-      <PlBtnPrimary @click="() => app.showProgress(data.progressDurationMs)">
+      <PlBtnPrimary @click="() => app.showProgress(Number(data.progressDurationMs))">
         Show progress
       </PlBtnPrimary>
       <PlTextField
         v-model="data.progressDurationMs"
         label="Progress duration (ms)"
-        :parse="$.positiveNumber"
+        :rules="[positiveNumberRule]"
       />
     </PlRow>
   </PlBlockPage>

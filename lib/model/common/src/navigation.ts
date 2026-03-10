@@ -6,7 +6,7 @@ export type BlockSection = BlockSectionLink | BlockSectionDelimiter;
 export type BlockSectionLink = {
   /** Potentially there may be multiple section types, i.e. for "+" rows and for
    * sections directly opening html from the outputs. */
-  readonly type: 'link';
+  readonly type: "link";
 
   /** Internal block section identifier */
   readonly href: `/${string}`;
@@ -24,11 +24,11 @@ export type BlockSectionLink = {
 /** Different variants for link section appearance */
 export type BlockSectionLinkAppearance =
   /** Shows a section of type `link` with a `+` icon and a certain specific style */
-  'add-section';
+  "add-section";
 
 /** Create a horizontal line between sections */
 export type BlockSectionDelimiter = {
-  readonly type: 'delimiter';
+  readonly type: "delimiter";
 };
 
 /**
@@ -39,4 +39,4 @@ export type NavigationState<Href extends `/${string}` = `/${string}`> = {
   readonly href: Href;
 };
 
-export const DefaultNavigationState: NavigationState = { href: '/' };
+export const DefaultNavigationState: NavigationState = { href: "/" };

@@ -1,17 +1,17 @@
 export function extractFileName(filePath: string) {
-  return filePath.replace(/^.*[\\/]/, '');
+  return filePath.replace(/^.*[\\/]/, "");
 }
 
 export function extractExtension(filePath: string) {
-  const parts = extractFileName(filePath).split('.');
+  const parts = extractFileName(filePath).split(".");
 
   if (parts.length > 2) {
-    return parts.slice(-2).join('.');
+    return parts.slice(-2).join(".");
   } else if (parts.length === 2) {
-    return parts.slice(-1).join('.');
+    return parts.slice(-1).join(".");
   }
 
-  return '';
+  return "";
 }
 
 export function extractPaths(e: DragEvent, extensions?: string[]) {
@@ -19,7 +19,7 @@ export function extractPaths(e: DragEvent, extensions?: string[]) {
 
   if (e.dataTransfer) {
     for (let i = 0; i < e.dataTransfer.items.length; i++) {
-      if (e.dataTransfer.items[i].kind !== 'file') {
+      if (e.dataTransfer.items[i].kind !== "file") {
         continue;
       }
       const file = e.dataTransfer.items[i].getAsFile() as (File & { path: string }) | null; // @TODO check

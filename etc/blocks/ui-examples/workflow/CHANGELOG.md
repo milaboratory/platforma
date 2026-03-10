@@ -1,5 +1,35 @@
 # @milaboratories/milaboratories.ui-examples.workflow
 
+## 1.1.118
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @platforma-sdk/workflow-tengo@5.9.1
+
+## 1.1.117
+
+### Patch Changes
+
+- Updated dependencies [0f2bec2]
+  - @platforma-sdk/workflow-tengo@5.9.0
+
+## 1.1.116
+
+### Patch Changes
+
+- Updated dependencies [8d67c06]
+  - @platforma-sdk/workflow-tengo@5.8.3
+
+## 1.1.115
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @platforma-sdk/workflow-tengo@5.8.2
+
 ## 1.1.114
 
 ### Patch Changes

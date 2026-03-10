@@ -2,11 +2,10 @@ import type {
   ImportFileHandle,
   InferHrefType,
   InferOutputsType,
-  RemoteBlobHandleAndSize } from '@platforma-sdk/model';
-import {
-  BlockModel,
-} from '@platforma-sdk/model';
-import { z } from 'zod';
+  RemoteBlobHandleAndSize,
+} from "@platforma-sdk/model";
+import { BlockModel } from "@platforma-sdk/model";
+import { z } from "zod";
 
 export const ImportFileHandleSchema = z
   .string()
@@ -21,22 +20,22 @@ export const BlockArgs = z.object({
 
 export type BlockArgs = z.infer<typeof BlockArgs>;
 
-export const platforma = BlockModel.create('Heavy')
+export const platforma = BlockModel.create("Heavy")
 
   .withArgs({
     inputHandles: [] as ImportFileHandle[],
   })
 
-// fileImports: smart.createMapResource(maps.mapValues(fileImports, func(im) {
-//   return im.handle
-// }))
+  // fileImports: smart.createMapResource(maps.mapValues(fileImports, func(im) {
+  //   return im.handle
+  // }))
 
   .output(
-    'fileImports',
+    "fileImports",
     (ctx) =>
       Object.fromEntries(
         ctx.outputs
-          ?.resolve({ field: 'fileImports', assertFieldType: 'Input' })
+          ?.resolve({ field: "fileImports", assertFieldType: "Input" })
           ?.mapFields((handle, acc) => [handle as ImportFileHandle, acc.getImportProgress()], {
             skipUnresolved: true,
           }) ?? [],
@@ -45,11 +44,11 @@ export const platforma = BlockModel.create('Heavy')
   )
 
   .output(
-    'fileExports',
+    "fileExports",
     (ctx) =>
       Object.fromEntries(
         ctx.outputs
-          ?.resolve({ field: 'fileExports', assertFieldType: 'Input' })
+          ?.resolve({ field: "fileExports", assertFieldType: "Input" })
           ?.mapFields((handle, acc) => [handle as ImportFileHandle, acc.getRemoteFileHandle()], {
             skipUnresolved: true,
           }) ?? [],
@@ -58,7 +57,7 @@ export const platforma = BlockModel.create('Heavy')
   )
 
   .sections((_ctx) => {
-    return [{ type: 'link', href: '/', label: 'Main' }];
+    return [{ type: "link", href: "/", label: "Main" }];
   })
 
   .done(2);

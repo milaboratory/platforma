@@ -1,25 +1,22 @@
-import type { Watcher } from '@milaboratories/computable';
-import { ChangeSource } from '@milaboratories/computable';
-import type {
-  MiLogger,
-  Signer,
-} from '@milaboratories/ts-helpers';
+import type { Watcher } from "@milaboratories/computable";
+import { ChangeSource } from "@milaboratories/computable";
+import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
 import {
   CallersCounter,
   createPathAtomically,
   ensureDirExists,
   fileExists,
   notEmpty,
-} from '@milaboratories/ts-helpers';
-import * as fsp from 'node:fs/promises';
-import * as path from 'node:path';
-import { Transform, Writable } from 'node:stream';
-import * as zlib from 'node:zlib';
-import * as tar from 'tar-fs';
-import type { RemoteFileDownloader } from '../../helpers/download';
-import { isDownloadNetworkError400 } from '../../helpers/download_errors';
-import type { UrlResult } from './driver';
-import { newBlockUIURL } from '../urls/url';
+} from "@milaboratories/ts-helpers";
+import * as fsp from "node:fs/promises";
+import * as path from "node:path";
+import { Transform, Writable } from "node:stream";
+import * as zlib from "node:zlib";
+import * as tar from "tar-fs";
+import type { RemoteFileDownloader } from "../../helpers/download";
+import { isDownloadNetworkError400 } from "../../helpers/download_errors";
+import type { UrlResult } from "./driver";
+import { newBlockUIURL } from "../urls/url";
 
 /** Downloads and extracts an archive to a directory. */
 export class DownloadByUrlTask {
@@ -36,7 +33,7 @@ export class DownloadByUrlTask {
     readonly url: URL,
     readonly signer: Signer,
     readonly saveDir: string,
-  ) { }
+  ) {}
 
   public info() {
     return {
@@ -83,8 +80,8 @@ export class DownloadByUrlTask {
     }
 
     const size = await clientDownload.withContent(
-      this.url.toString(), 
-      {}, 
+      this.url.toString(),
+      {},
       { signal },
       async (content, size) => {
         let processedContent = content;
@@ -100,16 +97,17 @@ export class DownloadByUrlTask {
         });
 
         return size;
-      }
+      },
     );
 
     return size;
   }
 
   getUrl(): UrlResult | undefined {
-    if (this.done) return {
-      url: newBlockUIURL(this.signer, this.saveDir, notEmpty(this.path))
-     };
+    if (this.done)
+      return {
+        url: newBlockUIURL(this.signer, this.saveDir, notEmpty(this.path)),
+      };
 
     if (this.error) return { error: this.error };
 
@@ -132,7 +130,7 @@ export class DownloadByUrlTask {
 
 /** Throws when a downloading aborts. */
 export class URLAborted extends Error {
-  name = 'URLAborted';
+  name = "URLAborted";
 }
 
 /** Gets a directory size by calculating sizes recursively. */

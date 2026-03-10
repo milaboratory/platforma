@@ -1,12 +1,12 @@
-import stringify from 'json-stringify-safe';
-import { z } from 'zod';
+import stringify from "json-stringify-safe";
+import { z } from "zod";
 
 // We want to define StandardErrorLike and PlErrorLike, it's a way to define recursive types in zod.
 // https://zod.dev/?id=recursive-types
 // We need zod to parse error strings into these objects for keeping new UI and old blocks compatible.
 
 export const BasePlErrorLike = z.object({
-  type: z.literal('PlError'),
+  type: z.literal("PlError"),
   name: z.string(),
   message: z.string(),
   /** The message with all details needed for SDK developers. */
@@ -26,7 +26,7 @@ export const PlErrorLike: z.ZodType<PlErrorLike> = BasePlErrorLike.extend({
 });
 
 const BaseStandardErrorLike = z.object({
-  type: z.literal('StandardError'),
+  type: z.literal("StandardError"),
   name: z.string(),
   message: z.string(),
   stack: z.string().optional(),
@@ -53,14 +53,16 @@ export function ensureErrorLike(error: unknown): ErrorLike {
   if (result.success) {
     const err = result.data;
 
-    if (err.name === 'PlQuickJSError'
-      || err.name === 'PlErrorReport'
-      || err.name === 'PlInternalError'
-      || err.name === 'PlTengoError'
-      || err.name === 'PlRunnerError'
-      || err.name === 'PlMonetizationError') {
+    if (
+      err.name === "PlQuickJSError" ||
+      err.name === "PlErrorReport" ||
+      err.name === "PlInternalError" ||
+      err.name === "PlTengoError" ||
+      err.name === "PlRunnerError" ||
+      err.name === "PlMonetizationError"
+    ) {
       return {
-        type: 'PlError',
+        type: "PlError",
         name: err.name,
         message: err.message,
         fullMessage: err.fullMessage ?? undefined,
@@ -71,7 +73,7 @@ export function ensureErrorLike(error: unknown): ErrorLike {
     }
 
     return {
-      type: 'StandardError',
+      type: "StandardError",
       name: err.name,
       message: err.message,
       stack: err.stack ?? undefined,
@@ -81,8 +83,8 @@ export function ensureErrorLike(error: unknown): ErrorLike {
   }
 
   return {
-    type: 'StandardError',
-    name: 'Error',
+    type: "StandardError",
+    name: "Error",
     // Stringify without circular dependencies.
     // Maps (and sets?) will be converted to empty json objects,
     // if this is a problem, we should change the library,
@@ -92,17 +94,22 @@ export function ensureErrorLike(error: unknown): ErrorLike {
 }
 
 /** Tries to parse strings into ErrorLike. It's needed for keeping old blocks compatible with new UI. */
-export function parseErrorLikeSafe(err: string): {
-  success: true;
-  data: ErrorLike;
-} | {
-  success: false;
-  error: Error;
-} {
+export function parseErrorLikeSafe(err: string):
+  | {
+      success: true;
+      data: ErrorLike;
+    }
+  | {
+      success: false;
+      error: Error;
+    } {
   try {
     return ErrorLike.safeParse(JSON.parse(err));
   } catch (e) {
-    return { success: false, error: new Error(`parseErrorLikeSafe: could not parse JSON: ${err}, ${String(e)}`) };
+    return {
+      success: false,
+      error: new Error(`parseErrorLikeSafe: could not parse JSON: ${err}, ${String(e)}`),
+    };
   }
 }
 

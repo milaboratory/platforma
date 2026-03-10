@@ -1,125 +1,85 @@
-import type {
-  JsonCompatible,
-  AxisId,
-  CanonicalizedJson,
-  ListOptionBase,
-  PlDataTableModel,
-  PlDataTableSheet,
-  PlDataTableSheetState,
-  PlTableFilter,
-  PlTableFilterType,
-  PTableColumnId,
-  PTableColumnSpec,
-  PTableKey,
-  PTableValue,
-  OutputWithStatus,
-} from '@platforma-sdk/model';
-import type { PTableHidden } from './sources/common';
-import type { ComputedRef, MaybeRefOrGetter } from 'vue';
-import { computed, toValue } from 'vue';
-import canonicalize from 'canonicalize';
-import { deepClone } from '@milaboratories/helpers';
-
-export type PlDataTableFilterConfig = {
-  options?: PlTableFilterType[];
-  default?: PlTableFilter;
-};
+import {
+  type AxisId,
+  type CanonicalizedJson,
+  type ListOptionBase,
+  type PlDataTableModel,
+  type PlDataTableSheet,
+  type PlDataTableSheetState,
+  type PTableKey,
+  type PTableValue,
+  type OutputWithStatus,
+  type ErrorLike,
+} from "@platforma-sdk/model";
+import type { PTableHidden } from "./sources/common";
+import type { ComputedRef, MaybeRefOrGetter } from "vue";
+import { computed, toValue } from "vue";
+import canonicalize from "canonicalize";
+import { deepClone } from "@milaboratories/helpers";
 
 export type PlDataTableSettingsV2Base =
-  | { sourceId: null; pending: boolean }
+  | { sourceId: null; pending: boolean; error: null | ErrorLike[] }
   | {
-    /** Unique source id for state caching */
-    sourceId: string;
-    /** Sheets that we want to show in our table */
-    sheets: PlDataTableSheet[];
-    /** Result of `createPlDataTableV2` */
-    model: PlDataTableModel | undefined;
-  };
+      /** Unique source id for state caching */
+      sourceId: string;
+      /** Sheets that we want to show in our table */
+      sheets: PlDataTableSheet[];
+      /** Result of `createPlDataTableV2` */
+      model: PlDataTableModel | undefined;
+    };
 
 /** Data table V2 settings */
-export type PlDataTableSettingsV2 = PlDataTableSettingsV2Base & {
-  /** Callback configuring filters for the table */
-  filtersConfig: (info: {
-    sourceId: string;
-    column: PTableColumnSpec;
-  }) => PlDataTableFilterConfig;
-};
+export type PlDataTableSettingsV2 = PlDataTableSettingsV2Base;
 
 type OptionsBasic = {
   /** Block output created by `createPlDataTableV2` */
   model: MaybeRefOrGetter<OutputWithStatus<PlDataTableModel | undefined>>;
   /**
-    * Sheets for partitioned data sources.
-    * Do not set if data source is never partitioned.
-    */
+   * Sheets for partitioned data sources.
+   * Do not set if data source is never partitioned.
+   */
   sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
 };
 
-type OptionsSimple = OptionsBasic & {
-  /**
-    * Callback configuring filters for the table.
-    * If not provided, filtering will be disabled.
-    */
-  filtersConfig?: (info: {
-    column: PTableColumnSpec;
-  }) => PlDataTableFilterConfig;
-};
+type OptionsSimple = OptionsBasic;
 
 type OptionsAdvanced<T> = OptionsBasic & {
   /**
-    * Block property (such as inputAnchor) used to produce the data source.
-    * Mandatory for cases when the table can change without block run.
-    * Skip when the table is changed only after block run.
-    * Ask developers for help if you don't know what to set here.
-    */
+   * Block property (such as inputAnchor) used to produce the data source.
+   * Mandatory for cases when the table can change without block run.
+   * Skip when the table is changed only after block run.
+   * Ask developers for help if you don't know what to set here.
+   */
   sourceId: MaybeRefOrGetter<T | undefined>;
-  /**
-    * Callback configuring filters for the table.
-    * If not provided, filtering will be disabled.
-    * Parameter `sourceId` should be compared using `isJsonEqual` from `@milaboratories/helpers`.
-    */
-  filtersConfig?: (info: {
-    sourceId: JsonCompatible<T>;
-    column: PTableColumnSpec;
-  }) => PlDataTableFilterConfig;
 };
 
-export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T>): ComputedRef<PlDataTableSettingsV2>;
-export function usePlDataTableSettingsV2(options: OptionsSimple): ComputedRef<PlDataTableSettingsV2>;
-export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | OptionsSimple): ComputedRef<PlDataTableSettingsV2> {
-  const fc = options.filtersConfig;
-  const filtersConfigValue = typeof fc === 'function'
-    ? (ops: {
-        sourceId: string;
-        column: PTableColumnSpec;
-      }) => {
-        try {
-          return fc({
-            sourceId: JSON.parse(ops.sourceId) as JsonCompatible<T>,
-            column: ops.column,
-          });
-        } catch (e) {
-          console.error(`filtersConfig failed for sourceId: ${ops.sourceId}, column: ${JSON.stringify(ops.column)} - using default config`, e);
-          return {};
-        }
-      }
-    : () => ({});
+export function usePlDataTableSettingsV2<T>(
+  options: OptionsAdvanced<T>,
+): ComputedRef<PlDataTableSettingsV2>;
+export function usePlDataTableSettingsV2(
+  options: OptionsSimple,
+): ComputedRef<PlDataTableSettingsV2>;
+export function usePlDataTableSettingsV2<T>(
+  options: OptionsAdvanced<T> | OptionsSimple,
+): ComputedRef<PlDataTableSettingsV2> {
   return computed(() => {
     const model = deepClone(toValue(options.model));
     let settingsBase: PlDataTableSettingsV2Base;
+
     if (!model.ok) {
-      settingsBase = { sourceId: null, pending: false };
-    } else if ('sourceId' in options) {
+      model.errors.forEach((e) => console.error("Error in PlDataTableModel:", e));
+      settingsBase = { sourceId: null, pending: false, error: model.errors };
+    } else if ("sourceId" in options) {
       const sourceIdValue = deepClone(toValue(options.sourceId));
       if (options.sheets) {
         const sheetsValue = deepClone(toValue(options.sheets));
-        settingsBase = sourceIdValue && sheetsValue
-          ? {
-              sourceId: canonicalize(sourceIdValue)!,
-              sheets: sheetsValue,
-              model: model.value,
-            }
-          : { sourceId: null, pending: !model.stable };
+        settingsBase =
+          sourceIdValue && sheetsValue
+            ? {
+                sourceId: canonicalize(sourceIdValue)!,
+                sheets: sheetsValue,
+                model: model.value,
+              }
+            : { sourceId: null, pending: !model.stable, error: null };
       } else {
         settingsBase = sourceIdValue
           ? {
@@ -127,50 +87,31 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
               sheets: [],
               model: model.value,
             }
-          : { sourceId: null, pending: !model.stable };
+          : { sourceId: null, pending: !model.stable, error: null };
       }
     } else {
       if (options.sheets) {
         const sheetsValue = deepClone(toValue(options.sheets));
         settingsBase = sheetsValue
           ? {
-              sourceId: canonicalize('static')!,
+              sourceId: canonicalize("static")!,
               sheets: sheetsValue,
               model: model.value,
             }
-          : { sourceId: null, pending: !model.stable };
+          : { sourceId: null, pending: !model.stable, error: null };
       } else {
         settingsBase = model.value
           ? {
-              sourceId: canonicalize('static')!,
+              sourceId: canonicalize("static")!,
               sheets: [],
               model: model.value,
             }
-          : { sourceId: null, pending: !model.stable };
+          : { sourceId: null, pending: !model.stable, error: null };
       }
     }
-    return {
-      ...settingsBase,
-      filtersConfig: filtersConfigValue,
-    };
+    return settingsBase;
   });
-};
-
-/** PlTableFilters restriction entry */
-export type PlTableFiltersRestriction = {
-  /** Spec of the column for which filter types should be restricted */
-  column: PTableColumnId;
-  /** List of filter types applicable to the column */
-  allowedFilterTypes: PlTableFilterType[];
-};
-
-/** PlTableFilters default settings entry */
-export type PlTableFiltersDefault = {
-  /** Spec of the column the default should be applied */
-  column: PTableColumnId;
-  /** Filter entry */
-  default: PlTableFilter;
-};
+}
 
 /** PlAgDataTable controller contains all exported methods */
 export type PlAgDataTableV2Controller = {
@@ -214,21 +155,25 @@ export type PlAgOverlayLoadingParams = {
   /**
    * Required flag, that shows catInBag icon with message if `true`, shows PlSplash component if `false`.
    */
-  variant: 'not-ready' | 'running' | 'loading';
+  variant: "not-ready" | "running" | "loading";
   /**
    * Prop to override default "Loading data..." text and the subtitles
    */
-  loadingText?: string | {
-    title: string;
-    subtitle: string | string[];
-  };
+  loadingText?:
+    | string
+    | {
+        title: string;
+        subtitle: string | string[];
+      };
   /**
    * Prop to override default "Running analysis..." text and the subtitles
    */
-  runningText?: string | {
-    title: string;
-    subtitle: string | string[];
-  };
+  runningText?:
+    | string
+    | {
+        title: string;
+        subtitle: string | string[];
+      };
   /**
    * Prop to override default "Data is not computed" text (So why props name is notReady? Good question)
    */

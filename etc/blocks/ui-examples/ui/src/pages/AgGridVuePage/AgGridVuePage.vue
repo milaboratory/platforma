@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Component } from 'vue';
-import { h, ref } from 'vue';
+import type { Component } from "vue";
+import { h, ref } from "vue";
 import {
   PlBlockPage,
   PlAgGridColumnManager,
@@ -15,13 +15,13 @@ import {
   animate,
   PlBtnPrimary,
   PlTextField,
-} from '@platforma-sdk/ui-vue';
-import { AgGridVue } from 'ag-grid-vue3';
-import { times } from '@milaboratories/helpers';
-import { faker } from '@faker-js/faker';
-import { stackedSettings } from './stackedSettings';
-import { histogramSettings } from './histogramSettings';
-import { LinkComponent } from './LinkComponent';
+} from "@platforma-sdk/ui-vue";
+import { AgGridVue } from "ag-grid-vue3";
+import { times } from "@milaboratories/helpers";
+import { faker } from "@faker-js/faker";
+import { stackedSettings } from "./stackedSettings";
+import { histogramSettings } from "./histogramSettings";
+import { LinkComponent } from "./LinkComponent";
 
 type Row = {
   id: number;
@@ -40,9 +40,9 @@ function generateData(): Row[] {
       id: i,
       label: faker.company.buzzNoun(),
       progress: faker.number.int({ min: 24, max: 100 }),
-      stacked_bar: (i % 2 === 0) ? stackedSettings.value : undefined,
+      stacked_bar: i % 2 === 0 ? stackedSettings.value : undefined,
       date: faker.date.birthdate(),
-      file: '',
+      file: "",
       link: faker.internet.url(),
       time: `${faker.number.int()} h`,
     };
@@ -64,10 +64,9 @@ function showProgress() {
 }
 
 const BlankComponent: Component = {
-  props: ['params'],
+  props: ["params"],
   setup(props) {
-    return () =>
-      h('div', { style: `padding: 0 15px` }, props.params.value);
+    return () => h("div", { style: `padding: 0 15px` }, props.params.value);
   },
 };
 
@@ -75,7 +74,7 @@ const rowNumbers = ref(true);
 
 const loading = ref(false);
 
-const loadingText = ref('Loading...');
+const loadingText = ref("Loading...");
 
 const notReady = ref(true);
 
@@ -87,43 +86,43 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
   return {
     columnDefs: [
       {
-        field: 'id',
-        headerName: 'ID',
+        field: "id",
+        headerName: "ID",
         mainMenuItems: defaultMainMenuItems,
-        headerComponentParams: { type: 'Number' },
+        headerComponentParams: { type: "Number" },
       },
       {
-        field: 'label',
-        pinned: 'left',
+        field: "label",
+        pinned: "left",
         lockPinned: true,
         lockPosition: true,
-        headerName: 'Sample label long text for overflow label long text for overflow',
-        headerComponentParams: { type: 'Text' },
+        headerName: "Sample label long text for overflow label long text for overflow",
+        headerComponentParams: { type: "Text" },
         textWithButton: true,
       },
       column<number | undefined>({
-        field: 'progress',
-        headerName: 'Progress',
+        field: "progress",
+        headerName: "Progress",
         progress(value, cellData) {
-          const percent = value as number ?? 0;
+          const percent = (value as number) ?? 0;
 
           if (cellData.data?.id === 2) {
             return {
-              status: 'not_started',
-              error: 'Test Error',
+              status: "not_started",
+              error: "Test Error",
             };
           }
 
           if (cellData.data?.id === 3) {
             return {
-              status: 'running',
-              text: 'Infinite progress',
+              status: "running",
+              text: "Infinite progress",
             };
           }
 
           if (percent < 10) {
             return {
-              status: 'not_started',
+              status: "not_started",
             };
           }
 
@@ -133,12 +132,12 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
 
           if (percent > 90) {
             return {
-              status: 'done',
+              status: "done",
             };
           }
 
           return {
-            status: 'running',
+            status: "running",
             percent,
             text: `Progress`,
             suffix: `${percent.toFixed(1)}%`,
@@ -150,19 +149,19 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
             params: { value: cellData.value },
           };
         },
-        headerComponentParams: { type: 'Progress' },
+        headerComponentParams: { type: "Progress" },
       }), // But you could use builder
       {
-        field: 'stacked_bar',
-        headerName: 'StackedBar',
+        field: "stacked_bar",
+        headerName: "StackedBar",
         progress: (value) => {
           if (value) {
             return undefined; // If no progress show main component
           }
 
           return {
-            status: 'running',
-            text: 'Loading data...',
+            status: "running",
+            text: "Loading data...",
           };
         },
         cellRendererSelector: (cellData) => {
@@ -173,12 +172,10 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
         },
       },
       {
-        colId: 'histogram',
-        headerName: 'Histogram',
+        colId: "histogram",
+        headerName: "Histogram",
         cellRendererSelector: (cellData) => {
-          const value = (cellData.data?.id ?? 0 % 2 === 0)
-            ? histogramSettings.value
-            : undefined;
+          const value = (cellData.data?.id ?? 0 % 2 === 0) ? histogramSettings.value : undefined;
           return {
             component: PlAgChartHistogramCell,
             params: { value },
@@ -186,35 +183,35 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
         },
       },
       {
-        field: 'date',
-        headerName: 'Date',
-        headerComponentParams: { type: 'Date' },
+        field: "date",
+        headerName: "Date",
+        headerComponentParams: { type: "Date" },
       },
       {
-        field: 'file',
-        headerName: 'File input',
-        cellRenderer: 'PlAgCellFile',
-        headerComponentParams: { type: 'File' },
+        field: "file",
+        headerName: "File input",
+        cellRenderer: "PlAgCellFile",
+        headerComponentParams: { type: "File" },
         cellStyle: { padding: 0 },
       },
       {
-        field: 'link',
-        headerName: 'Link',
-        headerComponentParams: { type: 'Text' },
-        cellRenderer: 'LinkComponent',
+        field: "link",
+        headerName: "Link",
+        headerComponentParams: { type: "Text" },
+        cellRenderer: "LinkComponent",
       },
       {
-        colId: 'time',
-        field: 'time',
-        headerName: 'Duration',
-        headerComponentParams: { type: 'Duration' },
+        colId: "time",
+        field: "time",
+        headerName: "Duration",
+        headerComponentParams: { type: "Duration" },
       },
     ],
     rowNumbersColumn: rowNumbers.value,
     // @TODO (Now rowNumbersColumn && rowSelection enables rows selection with checkboxes)
     rowSelection: rowSelection.value
       ? {
-          mode: 'multiRow',
+          mode: "multiRow",
           checkboxes: false,
           headerCheckbox: false,
         }
@@ -222,7 +219,7 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
     loading: loading.value,
     loadingText: loadingText.value,
     notReady: notReady.value,
-    notReadyText: 'I am not ready(',
+    notReadyText: "I am not ready(",
     noRowsText: 'No rows text (custom, default is "Empty")',
     rowData: hasRows.value ? result.value : [],
     onRowDoubleClicked: (_e) => {
@@ -253,9 +250,6 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
       <PlTextField v-model="loadingText" label="Loading text" />
     </PlRow>
 
-    <AgGridVue
-      :style="{ height: '100%' }"
-      v-bind="gridOptions"
-    />
+    <AgGridVue :style="{ height: '100%' }" v-bind="gridOptions" />
   </PlBlockPage>
 </template>

@@ -7,7 +7,8 @@
   gap: 12px;
   --color-text: var(--txt-01);
   color: var(--txt-01);
-  &.disabled,&.loading {
+  &.disabled,
+  &.loading {
     color: var(--color-dis-01);
   }
   &:hover {

@@ -1,5 +1,5 @@
-import type { ScaleLinear, ScaleSymLog } from 'd3-scale';
-import type { Selection } from 'd3-selection';
+import type { ScaleLinear, ScaleSymLog } from "d3-scale";
+import type { Selection } from "d3-selection";
 
 export type Margin = { top: number; right: number; bottom: number; left: number };
 
@@ -39,7 +39,7 @@ export type AnyBin = CustomBin | BinLike;
  * Common case: array of numbers
  */
 export type PlChartHistogramBasicSettings = {
-  type: 'basic';
+  type: "basic";
   threshold?: number;
   numbers: number[];
   log?: boolean;
@@ -50,14 +50,14 @@ export type PlChartHistogramBasicSettings = {
  * For precalculated bins on log x scale
  */
 export type PlChartHistogramLogBinsSettings = {
-  type: 'log-bins';
+  type: "log-bins";
   threshold?: number;
   bins: AnyBin[];
 };
 
 export type PlChartHistogramSettings = (
-  PlChartHistogramBasicSettings |
-  PlChartHistogramLogBinsSettings
+  | PlChartHistogramBasicSettings
+  | PlChartHistogramLogBinsSettings
 ) & {
   title?: string;
   yAxisLabel?: string;

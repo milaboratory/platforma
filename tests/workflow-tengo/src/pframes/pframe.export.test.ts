@@ -1,8 +1,8 @@
-import { Annotation, type DriverKit, Pl, stringifyJson } from '@milaboratories/pl-middle-layer';
-import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import * as env from '../env';
-import { getLongTestTimeout } from '@milaboratories/test-helpers';
-import { vi } from 'vitest';
+import { Annotation, type DriverKit, Pl, stringifyJson } from "@milaboratories/pl-middle-layer";
+import { awaitStableState, tplTest } from "@platforma-sdk/test";
+import * as env from "../env";
+import { getLongTestTimeout } from "@milaboratories/test-helpers";
+import { vi } from "vitest";
 
 const TIMEOUT = getLongTestTimeout(40_000);
 
@@ -12,23 +12,23 @@ vi.setConfig({
 
 // pfconv spec
 const baseSpec = {
-  kind: 'File',
-  name: 'ax1',
+  kind: "File",
+  name: "ax1",
 
   domain: {},
   annotations: {},
 };
 
 tplTest.concurrent(
-  'should export files for p-frame without skipExportForUI annotation',
+  "should export files for p-frame without skipExportForUI annotation",
   async ({ helper, expect, driverKit }) => {
     const spec = baseSpec;
     const fileHandle = await importFile(driverKit);
 
     const result = await helper.renderTemplate(
       true,
-      'pframes.pframe.export',
-      ['exported'],
+      "pframes.pframe.export",
+      ["exported"],
       (tx) => {
         return {
           spec: tx.createValue(Pl.JsonObject, stringifyJson(spec)),
@@ -37,8 +37,8 @@ tplTest.concurrent(
       },
     );
 
-    const exported = result.computeOutput('exported', (a, _ctx) => {
-      const data = a?.traverseOrError('val1.data');
+    const exported = result.computeOutput("exported", (a, _ctx) => {
+      const data = a?.traverseOrError("val1.data");
       if (!data?.ok) return undefined;
 
       return data.value.resourceInfo;
@@ -47,21 +47,24 @@ tplTest.concurrent(
     const finalResult = await awaitStableState(exported, TIMEOUT);
 
     expect(finalResult).toBeDefined();
-    expect(finalResult?.type.version).toBe('1');
+    expect(finalResult?.type.version).toBe("1");
     expect(finalResult?.type.name).toMatch(/Blob\/.+/);
   },
 );
 
 tplTest.concurrent(
-  'should not export files for p-frame with hideDataFromUi annotation',
+  "should not export files for p-frame with hideDataFromUi annotation",
   async ({ helper, expect, driverKit }) => {
-    const spec = { ...baseSpec, annotations: { [Annotation.HideDataFromUi]: stringifyJson(true) } satisfies Annotation };
+    const spec = {
+      ...baseSpec,
+      annotations: { [Annotation.HideDataFromUi]: stringifyJson(true) } satisfies Annotation,
+    };
     const fileHandle = await importFile(driverKit);
 
     const result = await helper.renderTemplate(
       true,
-      'pframes.pframe.export',
-      ['exported'],
+      "pframes.pframe.export",
+      ["exported"],
       (tx) => {
         return {
           spec: tx.createValue(Pl.JsonObject, stringifyJson(spec)),
@@ -70,8 +73,8 @@ tplTest.concurrent(
       },
     );
 
-    const exported = result.computeOutput('exported', (a, _ctx) => {
-      const data = a?.traverseOrError('val1.data');
+    const exported = result.computeOutput("exported", (a, _ctx) => {
+      const data = a?.traverseOrError("val1.data");
       if (!data?.ok) return undefined;
 
       return data.value.resourceInfo;
@@ -87,13 +90,10 @@ async function importFile(driverKit: DriverKit) {
   const storages = await driverKit.lsDriver.getStorageList();
   const library = storages.find((s) => s.name === env.libraryStorage);
   if (library === undefined) throw new Error(`Library '${env.libraryStorage}' not found`);
-  const files = await driverKit.lsDriver.listFiles(library.handle, '');
-  const ourFile = files.entries.find(
-    (f) => f.name === 'answer_to_the_ultimate_question.txt',
-  );
-  if (ourFile === undefined)
-    throw new Error('Test file not found in the library');
-  if (ourFile.type !== 'file') throw new Error('Dir');
+  const files = await driverKit.lsDriver.listFiles(library.handle, "");
+  const ourFile = files.entries.find((f) => f.name === "answer_to_the_ultimate_question.txt");
+  if (ourFile === undefined) throw new Error("Test file not found in the library");
+  if (ourFile.type !== "file") throw new Error("Dir");
 
   return ourFile.handle;
 }

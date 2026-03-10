@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { useElementPosition } from '../../composition/usePosition';
-import { scrollIntoView } from '../../helpers/dom';
-import { tapIf } from '@milaboratories/helpers';
-import { reactive, ref, toRef, watch } from 'vue';
+import { useElementPosition } from "../../composition/usePosition";
+import { scrollIntoView } from "../../helpers/dom";
+import { tapIf } from "@milaboratories/helpers";
+import { reactive, ref, toRef, watch } from "vue";
 
 const props = defineProps<{
   root: HTMLElement | undefined; // element to "track"
@@ -16,11 +16,11 @@ const data = reactive({
 const optionsStyle = reactive<Record<string, string | undefined>>({
   top: undefined,
   bottom: undefined,
-  left: '0px',
-  width: '0px',
+  left: "0px",
+  width: "0px",
 });
 
-const rootRef = toRef(props, 'root');
+const rootRef = toRef(props, "root");
 
 const listRef = ref<HTMLElement>();
 
@@ -31,7 +31,7 @@ const scrollIntoActive = () => {
     return;
   }
 
-  tapIf($list.querySelector('.hovered-item') as HTMLElement, (opt) => {
+  tapIf($list.querySelector(".hovered-item") as HTMLElement, (opt) => {
     scrollIntoView($list, opt);
   });
 };
@@ -46,7 +46,7 @@ watch(listRef, (el) => {
     requestAnimationFrame(() => {
       const rect = el.getBoundingClientRect();
       data.optionsHeight = rect.height;
-      window.dispatchEvent(new CustomEvent('adjust'));
+      window.dispatchEvent(new CustomEvent("adjust"));
     });
   }
 });
@@ -65,15 +65,15 @@ useElementPosition(rootRef, (pos) => {
   if (downTopOffset + data.optionsHeight > pos.clientHeight) {
     const bottom = bodyRect.bottom - pos.bottom;
     const upBottomOffset = bottom + pos.height + gap;
-    optionsStyle.bottom = upBottomOffset + 'px';
+    optionsStyle.bottom = upBottomOffset + "px";
     optionsStyle.top = undefined;
   } else {
-    optionsStyle.top = downTopOffset + 'px';
+    optionsStyle.top = downTopOffset + "px";
     optionsStyle.bottom = undefined;
   }
 
-  optionsStyle.left = left + 'px';
-  optionsStyle.width = pos.width + 'px';
+  optionsStyle.left = left + "px";
+  optionsStyle.width = pos.width + "px";
 });
 </script>
 

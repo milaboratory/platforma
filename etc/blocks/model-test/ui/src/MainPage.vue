@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { PlBlockPage, PlTextField } from '@platforma-sdk/ui-vue';
-import { PlAutocompleteMulti } from '@platforma-sdk/ui-vue';
-import { useApp } from './app';
+import { PlBlockPage, PlTextField } from "@platforma-sdk/ui-vue";
+import { PlAutocompleteMulti } from "@platforma-sdk/ui-vue";
+import { useApp } from "./app";
+import Counter from "./Counter.vue";
 
 const app = useApp();
 
-async function optionsSearch(s: string | string[], type: 'label' | 'value') {
-  if (type === 'value' && Array.isArray(s)) {
+async function optionsSearch(s: string | string[], type: "label" | "value") {
+  if (type === "value" && Array.isArray(s)) {
     return s.map((v) => ({ value: v, label: v }));
   }
-  if (type === 'label' && typeof s === 'string') {
-    s = s.replaceAll(' ', '-');
-    if (s === '') return [];
+  if (type === "label" && typeof s === "string") {
+    s = s.replaceAll(" ", "-");
+    if (s === "") return [];
     return [{ value: s, label: s }];
   }
   return [];
@@ -20,11 +21,11 @@ async function optionsSearch(s: string | string[], type: 'label' | 'value') {
 
 <template>
   <PlBlockPage>
-    <PlTextField v-model="app.model.args.titleArg" label="Title" />
-    <PlTextField v-model="app.model.args.subtitleArg" label="Subtitle" />
-    <PlTextField v-model="app.model.args.badgeArg" label="Badge" />
+    <PlTextField v-model="app.model.data.titleArg" label="Title" />
+    <PlTextField v-model="app.model.data.subtitleArg" label="Subtitle" />
+    <PlTextField v-model="app.model.data.badgeArg" label="Badge" />
     <PlAutocompleteMulti
-      v-model="app.model.args.tagArgs"
+      v-model="app.model.data.tagArgs"
       label="Tags"
       emptyOptionsText="Enter tag name and press Enter"
       resetSearchOnSelect
@@ -43,5 +44,6 @@ async function optionsSearch(s: string | string[], type: 'label' | 'value') {
       <summary>Output with status</summary>
       <pre>{{ JSON.stringify(app.model.outputs.delayedOutputWithStatus, null, 2) }}</pre>
     </details>
+    <Counter :instance="app.plugins.counter" />
   </PlBlockPage>
 </template>

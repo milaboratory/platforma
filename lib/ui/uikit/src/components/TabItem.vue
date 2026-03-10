@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { ListOptionNormalized } from '../types';
+import { computed } from "vue";
+import type { ListOptionNormalized } from "../types";
 
 const props = withDefaults(
   defineProps<{
@@ -19,12 +19,12 @@ const label = computed(() => props.option.label);
 const classes = computed<string>(() => {
   const classList: string[] = [];
   if (props.isSelected) {
-    classList.push('dropdown-tab-item__selected');
+    classList.push("dropdown-tab-item__selected");
   }
   if (props.isHovered) {
-    classList.push('hovered-item');
+    classList.push("hovered-item");
   }
-  return classList.join(' ');
+  return classList.join(" ");
 });
 </script>
 <template>

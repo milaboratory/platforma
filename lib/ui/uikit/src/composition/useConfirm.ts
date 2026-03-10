@@ -1,5 +1,5 @@
-import { h, render } from 'vue';
-import PlConfirmDialog from '../components/PlConfirmDialog.vue';
+import { h, render } from "vue";
+import PlConfirmDialog from "../components/PlConfirmDialog.vue";
 
 export type ConfirmProps = {
   title: string;
@@ -15,13 +15,13 @@ export function useConfirm(props: ConfirmProps) {
         opened: true,
         title: props.title,
         message: props.message,
-        confirmLabel: props.confirmLabel ?? 'Confirm',
-        cancelLabel: props.cancelLabel ?? 'Cancel',
+        confirmLabel: props.confirmLabel ?? "Confirm",
+        cancelLabel: props.cancelLabel ?? "Cancel",
         onConfirm: () => finish(true),
         onCancel: () => finish(false),
       });
 
-      const mountPoint = document.createElement('div');
+      const mountPoint = document.createElement("div");
       document.body.appendChild(mountPoint);
       render(vnode, mountPoint);
 

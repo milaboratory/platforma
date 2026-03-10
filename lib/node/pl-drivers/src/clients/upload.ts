@@ -1,37 +1,44 @@
-import type { WireClientProvider, WireClientProviderFactory, PlClient } from '@milaboratories/pl-client';
-import { addRTypeToMetadata, createRTypeRoutingHeader, RestAPI } from '@milaboratories/pl-client';
-import type { ResourceInfo } from '@milaboratories/pl-tree';
-import type { MiLogger } from '@milaboratories/ts-helpers';
-import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import * as fs from 'node:fs/promises';
-import type { Dispatcher } from 'undici';
-import { request } from 'undici';
-import { UploadAPI_ChecksumAlgorithm, type UploadAPI_GetPartURL_Response } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
-import { UploadClient } from '../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client';
-import type { UploadApiPaths, UploadRestClientType } from '../proto-rest';
-import { crc32c } from './crc32c';
+import type {
+  WireClientProvider,
+  WireClientProviderFactory,
+  PlClient,
+} from "@milaboratories/pl-client";
+import { addRTypeToMetadata, createRTypeRoutingHeader, RestAPI } from "@milaboratories/pl-client";
+import type { ResourceInfo } from "@milaboratories/pl-tree";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
+import * as fs from "node:fs/promises";
+import type { Dispatcher } from "undici";
+import { request } from "undici";
+import {
+  UploadAPI_ChecksumAlgorithm,
+  type UploadAPI_GetPartURL_Response,
+} from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol";
+import { UploadClient } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client";
+import type { UploadApiPaths, UploadRestClientType } from "../proto-rest";
+import { crc32c } from "./crc32c";
 
-import type { IncomingHttpHeaders } from 'undici/types/header';
+import type { IncomingHttpHeaders } from "undici/types/header";
 
 export class MTimeError extends Error {
-  name = 'MTimeError';
+  name = "MTimeError";
 }
 
 export class UnexpectedEOF extends Error {
-  name = 'UnexpectedEOF';
+  name = "UnexpectedEOF";
 }
 
 export class NetworkError extends Error {
-  name = 'NetworkError';
+  name = "NetworkError";
 }
 
 /** Happens when the file doesn't exist */
 export class NoFileForUploading extends Error {
-  name = 'NoFileForUploading';
+  name = "NoFileForUploading";
 }
 
 export class BadRequestError extends Error {
-  name = 'BadRequestError';
+  name = "BadRequestError";
 }
 
 /** Low-level client for grpc uploadapi.
@@ -46,20 +53,18 @@ export class ClientUpload {
     _: PlClient,
     public readonly logger: MiLogger,
   ) {
-    this.wire = wireClientProviderFactory.createWireClientProvider(
-      (wire) => {
-        if (wire.type === 'grpc') {
-          return new UploadClient(wire.Transport);
-        }
+    this.wire = wireClientProviderFactory.createWireClientProvider((wire) => {
+      if (wire.type === "grpc") {
+        return new UploadClient(wire.Transport);
+      }
 
-        return RestAPI.createClient<UploadApiPaths>({
-          hostAndPort: wire.Config.hostAndPort,
-          ssl: wire.Config.ssl,
-          dispatcher: wire.Dispatcher,
-          middlewares: wire.Middlewares,
-        });
-      },
-    );
+      return RestAPI.createClient<UploadApiPaths>({
+        hostAndPort: wire.Config.hostAndPort,
+        ssl: wire.Config.ssl,
+        dispatcher: wire.Dispatcher,
+        middlewares: wire.Middlewares,
+      });
+    });
   }
 
   close() {}
@@ -68,11 +73,11 @@ export class ClientUpload {
     { id, type }: ResourceInfo,
     options?: RpcOptions,
   ): Promise<{
-      overall: bigint;
-      toUpload: bigint[];
-      checksumAlgorithm: UploadAPI_ChecksumAlgorithm;
-      checksumHeader: string;
-    }> {
+    overall: bigint;
+    toUpload: bigint[];
+    checksumAlgorithm: UploadAPI_ChecksumAlgorithm;
+    checksumHeader: string;
+  }> {
     const client = this.wire.get();
 
     if (client instanceof UploadClient) {
@@ -87,12 +92,14 @@ export class ClientUpload {
       };
     }
 
-    const init = (await client.POST('/v1/upload/init', {
-      body: {
-        resourceId: id.toString(),
-      },
-      headers: { ...createRTypeRoutingHeader(type) },
-    })).data!;
+    const init = (
+      await client.POST("/v1/upload/init", {
+        body: {
+          resourceId: id.toString(),
+        },
+        headers: { ...createRTypeRoutingHeader(type) },
+      })
+    ).data!;
 
     return {
       overall: BigInt(init.partsCount),
@@ -116,27 +123,31 @@ export class ClientUpload {
     let info: UploadAPI_GetPartURL_Response;
     if (client instanceof UploadClient) {
       // partChecksum isn't used for now but protoc requires it to be set
-      info = (await client.getPartURL(
-        {
-          resourceId: id,
-          partNumber,
-          uploadedPartSize: 0n,
-          isInternalUse: false,
-          partChecksum: '',
-        },
-        addRTypeToMetadata(type, options),
-      )).response;
+      info = (
+        await client.getPartURL(
+          {
+            resourceId: id,
+            partNumber,
+            uploadedPartSize: 0n,
+            isInternalUse: false,
+            partChecksum: "",
+          },
+          addRTypeToMetadata(type, options),
+        )
+      ).response;
     } else {
-      const resp = (await client.POST('/v1/upload/get-part-url', {
-        body: {
-          resourceId: id.toString(),
-          partNumber: partNumber.toString(),
-          uploadedPartSize: '0',
-          isInternalUse: false,
-          partChecksum: '',
-        },
-        headers: { ...createRTypeRoutingHeader(type) },
-      })).data!;
+      const resp = (
+        await client.POST("/v1/upload/get-part-url", {
+          body: {
+            resourceId: id.toString(),
+            partNumber: partNumber.toString(),
+            uploadedPartSize: "0",
+            isInternalUse: false,
+            partChecksum: "",
+          },
+          headers: { ...createRTypeRoutingHeader(type) },
+        })
+      ).data!;
       info = {
         uploadUrl: resp.uploadUrl,
         method: resp.method,
@@ -160,7 +171,9 @@ export class ClientUpload {
       );
     }
 
-    const headers = Object.fromEntries(info.headers.map(({ name, value }) => [name.toLowerCase(), value]));
+    const headers = Object.fromEntries(
+      info.headers.map(({ name, value }) => [name.toLowerCase(), value]),
+    );
 
     try {
       const {
@@ -188,13 +201,13 @@ export class ClientUpload {
       const body = await rawBody.text();
       checkStatusCodeOk(statusCode, body, responseHeaders, info);
     } catch (e: unknown) {
-      if (e instanceof NetworkError)
-        throw e;
+      if (e instanceof NetworkError) throw e;
 
-      if (e instanceof BadRequestError)
-        throw e;
+      if (e instanceof BadRequestError) throw e;
 
-      throw new Error(`partUpload: error ${JSON.stringify(e)} happened while trying to do part upload to the url ${info.uploadUrl}, headers: ${JSON.stringify(info.headers)}`);
+      throw new Error(
+        `partUpload: error ${JSON.stringify(e)} happened while trying to do part upload to the url ${info.uploadUrl}, headers: ${JSON.stringify(info.headers)}`,
+      );
     }
 
     await this.updateProgress({ id, type }, BigInt(info.chunkEnd - info.chunkStart), options);
@@ -206,7 +219,7 @@ export class ClientUpload {
     if (client instanceof UploadClient) {
       await client.finalize({ resourceId: info.id }, addRTypeToMetadata(info.type, options));
     } else {
-      await client.POST('/v1/upload/finalize', {
+      await client.POST("/v1/upload/finalize", {
         body: {
           resourceId: info.id.toString(),
         },
@@ -246,7 +259,7 @@ export class ClientUpload {
       return;
     }
 
-    await client.POST('/v1/upload/update-progress', {
+    await client.POST("/v1/upload/update-progress", {
       body: {
         resourceId: id.toString(),
         bytesProcessed: bytesProcessed.toString(),
@@ -268,7 +281,8 @@ async function readFileChunk(path: string, chunkStart: bigint, chunkEnd: bigint)
 
     return b.subarray(0, bytesRead);
   } catch (e: unknown) {
-    if (e && typeof e === 'object' && ('code' in e) && e.code == 'ENOENT') throw new NoFileForUploading(`there is no file ${path} for uploading`);
+    if (e && typeof e === "object" && "code" in e && e.code == "ENOENT")
+      throw new NoFileForUploading(`there is no file ${path} for uploading`);
     throw e;
   } finally {
     await f?.close();
@@ -287,7 +301,7 @@ async function readBytesFromPosition(f: fs.FileHandle, b: Buffer, len: number, p
       position + bytesReadTotal,
     );
     if (bytesRead === 0) {
-      throw new UnexpectedEOF('file ended earlier than expected.');
+      throw new UnexpectedEOF("file ended earlier than expected.");
     }
     bytesReadTotal += bytesRead;
   }
@@ -309,14 +323,16 @@ function checkStatusCodeOk(
   info: UploadAPI_GetPartURL_Response,
 ) {
   if (statusCode == 400) {
-    throw new BadRequestError(`response is not ok, status code: ${statusCode},`
-      + ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`);
+    throw new BadRequestError(
+      `response is not ok, status code: ${statusCode},` +
+        ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`,
+    );
   }
 
   if (statusCode != 200) {
     throw new NetworkError(
-      `response is not ok, status code: ${statusCode},`
-      + ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`,
+      `response is not ok, status code: ${statusCode},` +
+        ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`,
     );
   }
 }
@@ -328,5 +344,5 @@ function calculateCrc32cChecksum(data: Buffer): string {
   const buffer = Buffer.alloc(4);
 
   buffer.writeUInt32BE(checksum, 0);
-  return buffer.toString('base64');
+  return buffer.toString("base64");
 }

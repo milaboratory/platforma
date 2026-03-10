@@ -1,9 +1,9 @@
-import type { PTableHandle } from '@platforma-sdk/model';
-import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
-import type { PoolEntry } from '@milaboratories/ts-helpers';
-import { LRUCache } from 'lru-cache';
-import { logPFrames } from './logging';
-import type { PTableHolder } from './ptable_pool';
+import type { PTableHandle } from "@platforma-sdk/model";
+import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
+import type { PoolEntry } from "@milaboratories/ts-helpers";
+import { LRUCache } from "lru-cache";
+import { logPFrames } from "./logging";
+import type { PTableHolder } from "./ptable_pool";
 
 export type PTableCachePlainOps = {
   /**
@@ -31,16 +31,20 @@ export class PTableCachePlain {
       dispose: (resource, key, reason) => {
         resource.unref();
         if (logPFrames()) {
-          logger('info', `createPTable cache - removed PTable ${key} (reason: ${reason})`);
+          logger("info", `createPTable cache - removed PTable ${key} (reason: ${reason})`);
         }
       },
     });
   }
 
-  public cache(resource: PoolEntry<PTableHandle, PTableHolder>, size: number, defDisposeSignal: AbortSignal): void {
+  public cache(
+    resource: PoolEntry<PTableHandle, PTableHolder>,
+    size: number,
+    defDisposeSignal: AbortSignal,
+  ): void {
     const key = resource.key;
     if (logPFrames()) {
-      this.logger('info', `createPTable cache - added PTable ${key} with size ${size}`);
+      this.logger("info", `createPTable cache - added PTable ${key} with size ${size}`);
     }
 
     const status: LRUCache.Status<PoolEntry<PTableHandle, PTableHolder>> = {};
@@ -49,7 +53,7 @@ export class PTableCachePlain {
     if (status.maxEntrySizeExceeded) {
       resource.unref();
       if (logPFrames()) {
-        this.logger('info', `createPTable cache - removed PTable ${key} (maxEntrySizeExceeded)`);
+        this.logger("info", `createPTable cache - removed PTable ${key} (maxEntrySizeExceeded)`);
       }
     } else {
       if (!this.disposeListeners.has(key)) {
@@ -57,10 +61,10 @@ export class PTableCachePlain {
           this.global.delete(key);
 
           this.disposeListeners.delete(key);
-          defDisposeSignal.removeEventListener('abort', disposeListener);
+          defDisposeSignal.removeEventListener("abort", disposeListener);
         };
         this.disposeListeners.add(key);
-        defDisposeSignal.addEventListener('abort', disposeListener);
+        defDisposeSignal.addEventListener("abort", disposeListener);
       }
     }
   }

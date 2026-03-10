@@ -1,24 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { ColDef, ICellRendererParams } from 'ag-grid-enterprise';
-import { PlAgCellProgress } from '../components/PlAgCellProgress';
-import type { MaskIconName16, PlProgressCellProps } from '@milaboratories/uikit';
-import { tapIf } from '@milaboratories/helpers';
-import type { PlAgHeaderComponentParams } from '../components/PlAgColumnHeader';
-import { PlAgColumnHeader } from '../components/PlAgColumnHeader';
-import { PlAgTextAndButtonCell } from '../components/PlAgTextAndButtonCell';
+import type { ColDef, ICellRendererParams } from "ag-grid-enterprise";
+import { PlAgCellProgress } from "../components/PlAgCellProgress";
+import type { MaskIconName16, PlProgressCellProps } from "@milaboratories/uikit";
+import { tapIf } from "@milaboratories/helpers";
+import type { PlAgHeaderComponentParams } from "../components/PlAgColumnHeader";
+import { PlAgColumnHeader } from "../components/PlAgColumnHeader";
+import { PlAgTextAndButtonCell } from "../components/PlAgTextAndButtonCell";
 
 /**
  * Represents the available progress statuses for a cell.
  */
-type ProgressStatus = 'not_started' | 'running' | 'done';
+type ProgressStatus = "not_started" | "running" | "done";
 
 /**
  * Human-readable labels for each {@link ProgressStatus}.
  */
 const progressStatusLabels: Record<ProgressStatus, string> = {
-  not_started: 'Not Started',
-  running: 'Running',
-  done: 'Done',
+  not_started: "Not Started",
+  running: "Running",
+  done: "Done",
 };
 
 /**
@@ -27,32 +27,34 @@ const progressStatusLabels: Record<ProgressStatus, string> = {
  * When provided, a progress overlay will be rendered. If the value is
  * `undefined`, no progress overlay is shown.
  */
-export type ColDefProgress = {
-  /**
-   * The progress status which influences default text and styling:
-   *   - `'not_started'`: Typically renders gray text without a progress bar.
-   *   - `'running'`: Indicates an active progress state.
-   *   - `'done'`: Implies completion (commonly rendered as 100%).
-   */
-  status: ProgressStatus;
-  /**
-   * A number (or numeric string) between 0 and 100 that indicates progress.
-   * If omitted or invalid, it implies an infinite or indeterminate progress state
-   */
-  percent?: number | string;
-  /**
-   * The main label displayed on the left side of the cell.
-   */
-  text?: string;
-  /**
-   * Additional text, often used to display the percentage by default.
-   */
-  suffix?: string;
-  /**
-   * If provided, this message takes precedence over `text` to indicate an error.
-   */
-  error?: string;
-} | undefined;
+export type ColDefProgress =
+  | {
+      /**
+       * The progress status which influences default text and styling:
+       *   - `'not_started'`: Typically renders gray text without a progress bar.
+       *   - `'running'`: Indicates an active progress state.
+       *   - `'done'`: Implies completion (commonly rendered as 100%).
+       */
+      status: ProgressStatus;
+      /**
+       * A number (or numeric string) between 0 and 100 that indicates progress.
+       * If omitted or invalid, it implies an infinite or indeterminate progress state
+       */
+      percent?: number | string;
+      /**
+       * The main label displayed on the left side of the cell.
+       */
+      text?: string;
+      /**
+       * Additional text, often used to display the percentage by default.
+       */
+      suffix?: string;
+      /**
+       * If provided, this message takes precedence over `text` to indicate an error.
+       */
+      error?: string;
+    }
+  | undefined;
 
 /**
  * Callback function type to dynamically generate a {@link ColDefProgress} configuration
@@ -67,7 +69,7 @@ export type ColDefProgress = {
  */
 export type ColDefProgressCallback<TData = any, TValue = any> = (
   value: TValue,
-  cellData: ICellRendererParams<TData, TValue>
+  cellData: ICellRendererParams<TData, TValue>,
 ) => ColDefProgress;
 
 /**
@@ -84,45 +86,51 @@ export interface ColDefExtended<TData, TValue = any> extends ColDef<TData, TValu
   progress?: ColDefProgressCallback<TData, TValue>;
   noGutters?: boolean;
   headerComponentParams?: PlAgHeaderComponentParams;
-  textWithButton?: true | {
-    /**
-     * Button icon MaskIconName16
-     */
-    icon?: MaskIconName16;
-    /**
-     * Button label
-     */
-    btnLabel?: string;
-    /**
-     * If invokeRowsOnDoubleClick = true, clicking a button inside the row
-     * triggers the doubleClick event for the entire row. In this case,
-     * the handler passed to the component is not called, even if it is defined.
-     *
-     * If invokeRowsOnDoubleClick = false, the doubleClick event for the row
-     * is not triggered, but the provided handler will be called, receiving
-     * the ICellRendererParams as an argument.
-     */
-    invokeRowsOnDoubleClick?: boolean;
-    /**
-     * plHandler parameter is a click handler that is invoked when
-     * the invokeRowsOnDoubleClick property is set to false.
-     */
-    onClick?: (params: ICellRendererParams) => void;
-  };
+  textWithButton?:
+    | true
+    | {
+        /**
+         * Button icon MaskIconName16
+         */
+        icon?: MaskIconName16;
+        /**
+         * Button label
+         */
+        btnLabel?: string;
+        /**
+         * If invokeRowsOnDoubleClick = true, clicking a button inside the row
+         * triggers the doubleClick event for the entire row. In this case,
+         * the handler passed to the component is not called, even if it is defined.
+         *
+         * If invokeRowsOnDoubleClick = false, the doubleClick event for the row
+         * is not triggered, but the provided handler will be called, receiving
+         * the ICellRendererParams as an argument.
+         */
+        invokeRowsOnDoubleClick?: boolean;
+        /**
+         * plHandler parameter is a click handler that is invoked when
+         * the invokeRowsOnDoubleClick property is set to false.
+         */
+        onClick?: (params: ICellRendererParams) => void;
+      };
 }
 
 /**
  * Utility type to infer the type of a specific property key from a {@link ColDefExtended}. Maybe not useful
  */
-export type InferColDefKey<TData, TValue, K extends keyof ColDefExtended<TData, TValue>> = ColDefExtended<TData, TValue>[K];
+export type InferColDefKey<
+  TData,
+  TValue,
+  K extends keyof ColDefExtended<TData, TValue>,
+> = ColDefExtended<TData, TValue>[K];
 
 /**
  * Returns a style object that removes horizontal and vertical padding from an AG Grid cell.
  */
 function noGuttersStyle() {
   return {
-    '--ag-cell-horizontal-padding': '0px',
-    '--ag-cell-vertical-padding': '0px',
+    "--ag-cell-horizontal-padding": "0px",
+    "--ag-cell-vertical-padding": "0px",
   };
 }
 
@@ -166,8 +174,10 @@ function handleProgress<TData>(def: ColDefExtended<TData>) {
       }
 
       return createProgressComponent({
-        progress: tapIf(Number(pt.percent), (n) => Number.isFinite(n) ? (n < 0 ? 0 : n) : undefined),
-        progressString: pt.suffix ?? (pt.status === 'running' ? `${pt.percent ?? 0}%` : ''),
+        progress: tapIf(Number(pt.percent), (n) =>
+          Number.isFinite(n) ? (n < 0 ? 0 : n) : undefined,
+        ),
+        progressString: pt.suffix ?? (pt.status === "running" ? `${pt.percent ?? 0}%` : ""),
         step: pt.text ?? progressStatusLabels[pt.status],
         stage: pt.status,
         error: pt.error,
@@ -189,7 +199,9 @@ function handleProgress<TData>(def: ColDefExtended<TData>) {
  * @param def - The extended column definition containing custom properties.
  * @returns The processed column definition ready for use with AG Grid.
  */
-export function createAgGridColDef<TData, TValue = any>(def: ColDefExtended<TData, TValue>): ColDef<TData, TValue> {
+export function createAgGridColDef<TData, TValue = any>(
+  def: ColDefExtended<TData, TValue>,
+): ColDef<TData, TValue> {
   handleProgress(def);
 
   if (def.noGutters) {
@@ -202,7 +214,7 @@ export function createAgGridColDef<TData, TValue = any>(def: ColDefExtended<TDat
 
   if (def.textWithButton) {
     def.cellRenderer = PlAgTextAndButtonCell;
-    if (typeof def.textWithButton !== 'boolean') {
+    if (typeof def.textWithButton !== "boolean") {
       def.cellRendererParams = def.textWithButton;
     } else {
       def.cellRendererParams = {

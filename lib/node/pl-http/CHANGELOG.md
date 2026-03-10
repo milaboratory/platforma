@@ -1,5 +1,29 @@
 # @milaboratories/pl-http
 
+## 1.2.4
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
+## 1.2.3
+
+### Patch Changes
+
+- c620234: remove unused packages
+
+## 1.2.2
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
+## 1.2.1
+
+### Patch Changes
+
+- f89a883: full integration oxc
+
 ## 1.2.0
 
 ### Minor Changes
@@ -81,7 +105,6 @@
 ### Patch Changes
 
 - e06efcd: Pin and standardize dependency versions for network and utility libraries to ensure consistent builds and prevent unexpected behavior from minor version changes. Changes include:
-
   - Pin `@protobuf-ts/*` packages to version 2.9.4 using YAML anchors
   - Pin AWS SDK packages to version 3.750.0
   - Change `undici` from `^7.2.3` to `~7.2.3` (only patch updates)

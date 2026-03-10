@@ -1,5 +1,131 @@
 # @milaboratories/pl-tree
 
+## 1.8.49
+
+### Patch Changes
+
+- c19a02b: Fixes for problems Claude discovered
+- Updated dependencies [c19a02b]
+  - @milaboratories/pl-client@2.17.9
+  - @milaboratories/pl-errors@1.1.71
+
+## 1.8.48
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/computable@2.8.6
+  - @milaboratories/pl-client@2.17.8
+  - @milaboratories/pl-errors@1.1.70
+  - @milaboratories/ts-helpers@1.7.3
+
+## 1.8.47
+
+### Patch Changes
+
+- 0da9f54: Revert to using deque instead of array
+
+## 1.8.46
+
+### Patch Changes
+
+- c498d1b: Fix OOM crash when opening large projects by limiting concurrent gRPC fetches during tree loading. Warn on resources with excessive field count.
+
+## 1.8.45
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.7
+- @milaboratories/pl-errors@1.1.69
+
+## 1.8.44
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.6
+- @milaboratories/pl-errors@1.1.68
+
+## 1.8.43
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.5
+- @milaboratories/pl-errors@1.1.67
+
+## 1.8.42
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.4
+- @milaboratories/pl-errors@1.1.66
+
+## 1.8.41
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.3
+- @milaboratories/pl-errors@1.1.65
+
+## 1.8.40
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.2
+- @milaboratories/pl-errors@1.1.64
+
+## 1.8.39
+
+### Patch Changes
+
+- @milaboratories/computable@2.8.5
+- @milaboratories/pl-client@2.17.1
+- @milaboratories/pl-errors@1.1.63
+- @milaboratories/ts-helpers@1.7.2
+
+## 1.8.38
+
+### Patch Changes
+
+- Updated dependencies [f37108b]
+  - @milaboratories/pl-client@2.17.0
+  - @milaboratories/pl-errors@1.1.62
+
+## 1.8.37
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/computable@2.8.5
+  - @milaboratories/pl-client@2.16.29
+  - @milaboratories/pl-errors@1.1.61
+  - @milaboratories/ts-helpers@1.7.2
+
+## 1.8.36
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-error-like@1.12.7
+  - @milaboratories/computable@2.8.4
+  - @milaboratories/pl-client@2.16.28
+  - @milaboratories/pl-errors@1.1.60
+  - @milaboratories/ts-helpers@1.7.2
+
+## 1.8.35
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-error-like@1.12.6
+  - @milaboratories/computable@2.8.3
+  - @milaboratories/ts-helpers@1.7.1
+  - @milaboratories/pl-client@2.16.27
+  - @milaboratories/pl-errors@1.1.59
+
 ## 1.8.34
 
 ### Patch Changes

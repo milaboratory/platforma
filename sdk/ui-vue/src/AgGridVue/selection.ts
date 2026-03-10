@@ -1,4 +1,4 @@
-import type { GridApi } from 'ag-grid-enterprise';
+import type { GridApi } from "ag-grid-enterprise";
 
 /**
  * Returns the number of selected rows in the grid.
@@ -6,13 +6,13 @@ import type { GridApi } from 'ag-grid-enterprise';
  * @returns The number of selected rows.
  */
 export function getSelectedRowsCount(gridApi: GridApi) {
-  if (!gridApi.getGridOption('loading')) {
-    const rowModel = gridApi.getGridOption('rowModelType');
+  if (!gridApi.getGridOption("loading")) {
+    const rowModel = gridApi.getGridOption("rowModelType");
     switch (rowModel) {
-      case 'clientSide': {
+      case "clientSide": {
         return gridApi.getSelectedRows().length;
       }
-      case 'serverSide': {
+      case "serverSide": {
         const state = gridApi.getServerSideSelectionState();
         // `state.selectAll` flag is ignored as we assume `selectAll` was used to select all rows
         return state?.toggledNodes?.length ?? 0;
@@ -27,13 +27,13 @@ export function getSelectedRowsCount(gridApi: GridApi) {
  * @param gridApi - The grid API.
  */
 export function selectAll(gridApi: GridApi) {
-  const rowModel = gridApi.getGridOption('rowModelType');
+  const rowModel = gridApi.getGridOption("rowModelType");
   switch (rowModel) {
-    case 'clientSide': {
+    case "clientSide": {
       gridApi.selectAll();
       break;
     }
-    case 'serverSide': {
+    case "serverSide": {
       // Instead of using `selectAll` we set selection state manually
       // as `selectAll` will not give us the selected rows ids.
       // `forEachNode` goes over all cached rows, so increase cached block size
@@ -50,13 +50,13 @@ export function selectAll(gridApi: GridApi) {
  * @param gridApi - The grid API.
  */
 export function deselectAll(gridApi: GridApi) {
-  const rowModel = gridApi.getGridOption('rowModelType');
+  const rowModel = gridApi.getGridOption("rowModelType");
   switch (rowModel) {
-    case 'clientSide': {
+    case "clientSide": {
       gridApi.deselectAll();
       break;
     }
-    case 'serverSide': {
+    case "serverSide": {
       gridApi.setServerSideSelectionState({
         selectAll: false,
         toggledNodes: [],
@@ -71,7 +71,7 @@ export function deselectAll(gridApi: GridApi) {
  * @returns The total number of rows.
  */
 export function getTotalRowsCount(gridApi: GridApi) {
-  return gridApi.getGridOption('loading') ? 0 : gridApi.getDisplayedRowCount();
+  return gridApi.getGridOption("loading") ? 0 : gridApi.getDisplayedRowCount();
 }
 
 /**
@@ -80,5 +80,5 @@ export function getTotalRowsCount(gridApi: GridApi) {
  * @returns True if selection is enabled.
  */
 export function isSelectionEnabled(gridApi: GridApi) {
-  return Boolean(gridApi.getGridOption('rowSelection'));
+  return Boolean(gridApi.getGridOption("rowSelection"));
 }

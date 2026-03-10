@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { PlBtnSecondary } from '../components/PlBtnSecondary';
-import { PlBtnGhost } from '../components/PlBtnGhost';
-import { computed, ref } from 'vue';
+import { PlBtnSecondary } from "../components/PlBtnSecondary";
+import { PlBtnGhost } from "../components/PlBtnGhost";
+import { computed, ref } from "vue";
 
 type PropsType = {
   modelValue: File[] | null;
@@ -15,16 +15,16 @@ type PropsType = {
 
 const props = withDefaults(defineProps<PropsType>(), {
   modelValue: null,
-  title: 'FASTQ',
-  description: 'Drag & drop FASTQ files here or...',
+  title: "FASTQ",
+  description: "Drag & drop FASTQ files here or...",
   multiple: false,
-  acceptedTypes: '',
-  buttonText: 'Select local file',
+  acceptedTypes: "",
+  buttonText: "Select local file",
 });
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', files: File[] | null): void;
-  (e: 'selected', files: File[]): void;
+  (e: "update:modelValue", files: File[] | null): void;
+  (e: "selected", files: File[]): void;
 }>();
 
 const fileInput = ref<HTMLInputElement>();
@@ -44,8 +44,8 @@ function handleFiles(event: Event) {
     if (!props.multiple) {
       filteredFiles.length = 1;
     }
-    emit('update:modelValue', filteredFiles);
-    emit('selected', filteredFiles);
+    emit("update:modelValue", filteredFiles);
+    emit("selected", filteredFiles);
   }
 
   dragging.value = false;
@@ -59,12 +59,12 @@ function handleDrop(event: DragEvent) {
 
 function filterFiles(files: File[]): File[] {
   if (!props.acceptedTypes) return files;
-  const acceptedTypesArray = props.acceptedTypes.split(',').map((type) => type.trim());
+  const acceptedTypesArray = props.acceptedTypes.split(",").map((type) => type.trim());
   return Array.from(files).filter((file) => {
     return acceptedTypesArray.some((type) => {
-      if (type.includes('/*')) {
+      if (type.includes("/*")) {
         // Шаблон типа, например, 'image/*'
-        return file.type.startsWith(type.split('/')[0]);
+        return file.type.startsWith(type.split("/")[0]);
       }
       return file.type === type;
     });
@@ -77,7 +77,7 @@ function deleteFile(file: File) {
     if (i !== -1) {
       const arr = [...props.modelValue];
       arr.splice(i, 1);
-      emit('update:modelValue', arr);
+      emit("update:modelValue", arr);
     }
   }
 }
@@ -100,7 +100,13 @@ function deleteFile(file: File) {
         </div>
       </div>
       <div class="pl-file-base-input__buttons d-flex gap-2">
-        <input ref="fileInput" :multiple="multiple" :accept="acceptedTypes" type="file" @change="handleFiles" />
+        <input
+          ref="fileInput"
+          :multiple="multiple"
+          :accept="acceptedTypes"
+          type="file"
+          @change="handleFiles"
+        />
         <PlBtnSecondary :disabled="disabled" class="text-caps11">
           {{ buttonText }}
         </PlBtnSecondary>
@@ -109,11 +115,22 @@ function deleteFile(file: File) {
     </div>
 
     <div v-if="hasFiles" class="d-flex gap-2 pa-4 flex-wrap">
-      <div v-for="file in modelValue" :key="file.name" class="pl-file-base-input__file d-flex align-center">
+      <div
+        v-for="file in modelValue"
+        :key="file.name"
+        class="pl-file-base-input__file d-flex align-center"
+      >
         <div class="pl-file-base-input__file-name text-m">
           {{ file.name }}
         </div>
-        <PlBtnGhost :disabled="disabled" icon="close" round size="small" class="flex-shrink-0" @click.stop="deleteFile(file)" />
+        <PlBtnGhost
+          :disabled="disabled"
+          icon="close"
+          round
+          size="small"
+          class="flex-shrink-0"
+          @click.stop="deleteFile(file)"
+        />
       </div>
     </div>
   </div>

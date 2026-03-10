@@ -1,1 +1,1 @@
-export { default as PlLogView } from './PlLogView.vue';
+export { default as PlLogView } from "./PlLogView.vue";

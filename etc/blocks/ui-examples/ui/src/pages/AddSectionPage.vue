@@ -1,16 +1,10 @@
 <script setup lang="ts">
-import {
-  PlBlockPage,
-  PlBtnPrimary,
-  PlContainer,
-  PlRow,
-  PlTextField,
-} from '@platforma-sdk/ui-vue';
-import { reactive } from 'vue';
-import { useApp } from '../app';
+import { PlBlockPage, PlBtnPrimary, PlContainer, PlRow, PlTextField } from "@platforma-sdk/ui-vue";
+import { reactive } from "vue";
+import { useApp } from "../app";
 
 const data = reactive({
-  label: '',
+  label: "",
 });
 
 const create = async () => {

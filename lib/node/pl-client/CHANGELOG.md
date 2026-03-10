@@ -1,5 +1,108 @@
 # @milaboratories/pl-client
 
+## 2.17.9
+
+### Patch Changes
+
+- c19a02b: Fixes for problems Claude discovered
+
+## 2.17.8
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-common@1.25.2
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.7.3
+
+## 2.17.7
+
+### Patch Changes
+
+- Updated dependencies [523a59f]
+  - @milaboratories/pl-model-common@1.25.1
+
+## 2.17.6
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @milaboratories/pl-model-common@1.25.0
+
+## 2.17.5
+
+### Patch Changes
+
+- Updated dependencies [cb28fde]
+  - @milaboratories/pl-model-common@1.24.11
+
+## 2.17.4
+
+### Patch Changes
+
+- Updated dependencies [866a323]
+  - @milaboratories/pl-model-common@1.24.10
+
+## 2.17.3
+
+### Patch Changes
+
+- Updated dependencies [a3659cd]
+  - @milaboratories/pl-model-common@1.24.9
+
+## 2.17.2
+
+### Patch Changes
+
+- Updated dependencies [4f04561]
+  - @milaboratories/pl-model-common@1.24.8
+
+## 2.17.1
+
+### Patch Changes
+
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-common@1.24.7
+  - @milaboratories/pl-http@1.2.3
+  - @milaboratories/ts-helpers@1.7.2
+
+## 2.17.0
+
+### Minor Changes
+
+- f37108b: Fix onAuthError callback firing on network disconnections, not just authentication errors
+
+## 2.16.29
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-http@1.2.3
+  - @milaboratories/pl-model-common@1.24.6
+  - @milaboratories/ts-helpers@1.7.2
+
+## 2.16.28
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-common@1.24.5
+  - @milaboratories/pl-http@1.2.2
+  - @milaboratories/ts-helpers@1.7.2
+
+## 2.16.27
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/ts-helpers@1.7.1
+  - @milaboratories/pl-model-common@1.24.4
+  - @milaboratories/pl-http@1.2.1
+
 ## 2.16.26
 
 ### Patch Changes

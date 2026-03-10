@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { ref, nextTick } from 'vue';
-import type { TableRow } from './types';
-import { tapIf } from '@milaboratories/helpers';
+import { ref, nextTick } from "vue";
+import type { TableRow } from "./types";
+import { tapIf } from "@milaboratories/helpers";
 
 defineProps<{
   row: TableRow;
@@ -18,7 +18,14 @@ const onScroll = () => {
 </script>
 
 <template>
-  <div ref="trRef" class="tr-body" scroll="no" :style="row.style" :class="{ selected: row.selected }" @scroll="onScroll">
+  <div
+    ref="trRef"
+    class="tr-body"
+    scroll="no"
+    :style="row.style"
+    :class="{ selected: row.selected }"
+    @scroll="onScroll"
+  >
     <slot />
   </div>
 </template>

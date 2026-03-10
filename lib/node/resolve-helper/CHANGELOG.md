@@ -1,5 +1,17 @@
 # @milaboratories/resolve-helper
 
+## 1.1.3
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
+## 1.1.2
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
 ## 1.1.1
 
 ### Patch Changes

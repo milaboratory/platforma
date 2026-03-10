@@ -1,12 +1,12 @@
-import type { MaybeRef, WatchSource } from 'vue';
-import { onScopeDispose, readonly, ref, shallowRef, toValue, watch } from 'vue';
+import type { MaybeRef, WatchSource } from "vue";
+import { onScopeDispose, readonly, ref, shallowRef, toValue, watch } from "vue";
 
-type AbortReason = 'args' | 'pause' | 'dispose';
+type AbortReason = "args" | "pause" | "dispose";
 
 type PollingData<Result> =
-  | { status: 'idle' }
-  | { status: 'synced'; value: Result }
-  | { status: 'stale'; value: Result };
+  | { status: "idle" }
+  | { status: "synced"; value: Result }
+  | { status: "stale"; value: Result };
 
 interface InternalOptions {
   minInterval: MaybeRef<number>;
@@ -23,13 +23,13 @@ interface Waiter {
 }
 
 const enum ScheduleSource {
-  Normal = 'normal',
-  External = 'external',
+  Normal = "normal",
+  External = "external",
 }
 
 function toError(error: unknown): Error {
   if (error instanceof Error) return error;
-  return new Error(typeof error === 'string' ? error : JSON.stringify(error));
+  return new Error(typeof error === "string" ? error : JSON.stringify(error));
 }
 
 /**
@@ -147,7 +147,7 @@ export function usePollingQuery<Args, Result>(
   };
   const canRun = () => resolveMinInterval() > 0;
 
-  const data = shallowRef<PollingData<Result>>({ status: 'idle' });
+  const data = shallowRef<PollingData<Result>>({ status: "idle" });
   const lastError = ref<Error | null>(null);
   const isActive = ref(false);
 
@@ -175,9 +175,9 @@ export function usePollingQuery<Args, Result>(
   };
 
   const markStale = () => {
-    if (data.value.status === 'synced' || data.value.status === 'stale') {
+    if (data.value.status === "synced" || data.value.status === "stale") {
       const { value } = data.value;
-      data.value = { status: 'stale', value };
+      data.value = { status: "stale", value };
     }
   };
 
@@ -279,11 +279,14 @@ export function usePollingQuery<Args, Result>(
     };
 
     try {
-      const result = await queryFn(argsSnapshot, { signal: controller.signal, pause: pauseFromCallback });
+      const result = await queryFn(argsSnapshot, {
+        signal: controller.signal,
+        pause: pauseFromCallback,
+      });
       if (!controller.signal.aborted) {
         if (version === latestVersion && assignedArgsVersion === argsVersion) {
           lastError.value = null;
-          data.value = { status: 'synced', value: result };
+          data.value = { status: "synced", value: result };
         }
       }
     } catch (error) {
@@ -312,8 +315,7 @@ export function usePollingQuery<Args, Result>(
         abortReasons.delete(version);
       }
 
-      const shouldSchedule
-        = isActive.value && !disposed && reason !== 'args';
+      const shouldSchedule = isActive.value && !disposed && reason !== "args";
 
       if (shouldSchedule) {
         queueExecution();
@@ -329,7 +331,7 @@ export function usePollingQuery<Args, Result>(
   const handleArgsChange = () => {
     argsVersion += 1;
     markStale();
-    abortAll('args');
+    abortAll("args");
 
     if (!isActive.value || !canRun()) {
       return;
@@ -355,7 +357,7 @@ export function usePollingQuery<Args, Result>(
     isActive.value = false;
     clearScheduled();
     clearDebounce();
-    abortAll('pause');
+    abortAll("pause");
     nextMinIntervalStart = Date.now();
     nextMinDelayStart = Date.now();
   };
@@ -382,7 +384,7 @@ export function usePollingQuery<Args, Result>(
     disposed = true;
     clearScheduled();
     clearDebounce();
-    abortAll('dispose');
+    abortAll("dispose");
     isActive.value = false;
     waiters.splice(0, waiters.length).forEach(({ resolve }) => resolve());
   });
@@ -397,7 +399,7 @@ export function usePollingQuery<Args, Result>(
       }
       handleArgsChange();
     },
-    { flush: 'sync', immediate: true },
+    { flush: "sync", immediate: true },
   );
 
   if (internal.autoStart && canRun()) {

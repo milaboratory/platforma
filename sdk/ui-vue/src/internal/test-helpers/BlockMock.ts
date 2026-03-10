@@ -1,4 +1,4 @@
-import { deepClone, delay, uniqueId } from '@milaboratories/helpers';
+import { deepClone, delay, uniqueId } from "@milaboratories/helpers";
 import {
   type BlockOutputsBase,
   type BlockState,
@@ -8,9 +8,9 @@ import {
   wrapAsyncCallback,
   type ResultOrError,
   unwrapResult,
-} from '@platforma-sdk/model';
-import { compare, type Operation } from 'fast-json-patch';
-import type { BlockApiV2, ValueWithUTag } from '@platforma-sdk/model';
+} from "@platforma-sdk/model";
+import { compare, type Operation } from "fast-json-patch";
+import type { BlockApiV2, ValueWithUTag } from "@platforma-sdk/model";
 
 export class BlockStateMock<
   Args = unknown,
@@ -23,7 +23,7 @@ export class BlockStateMock<
     public outputs: Outputs,
     public ui: UiState,
     public href: Href,
-    public author: AuthorMarker = { authorId: 'test', localVersion: 0 },
+    public author: AuthorMarker = { authorId: "test", localVersion: 0 },
     public uTag: string = uniqueId(),
   ) {}
 
@@ -34,7 +34,7 @@ export class BlockStateMock<
     this.ui = state.ui ?? this.ui;
     this.href = state.href ?? this.href;
     this.author = state.author ?? this.author;
-    console.log('set author', state.author);
+    console.log("set author", state.author);
     this.uTag = uniqueId();
   }
 }
@@ -45,21 +45,23 @@ export abstract class BlockMock<
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
 > implements BlockApiV2<Args, Outputs, UiState, Href> {
-  #previousState: {
-    uTag: string;
-    value: BlockState<Args, Outputs, UiState, Href>;
-  } | undefined;
+  #previousState:
+    | {
+        uTag: string;
+        value: BlockState<Args, Outputs, UiState, Href>;
+      }
+    | undefined;
 
-  constructor(
-    public state: BlockStateMock<Args, Outputs, UiState, Href>,
-  ) {
-    this.loadBlockState().then(unwrapResult).then(({ uTag, value }) => {
-      this.#previousState = { value, uTag };
-    });
+  constructor(public state: BlockStateMock<Args, Outputs, UiState, Href>) {
+    this.loadBlockState()
+      .then(unwrapResult)
+      .then(({ uTag, value }) => {
+        this.#previousState = { value, uTag };
+      });
   }
 
   async dispose(): Promise<ResultOrError<void>> {
-    console.log('unused');
+    console.log("unused");
     return { value: undefined };
   }
 
@@ -84,8 +86,14 @@ export abstract class BlockMock<
   async setBlockArgsAndUiState(args: Args, ui: UiState, author?: AuthorMarker) {
     return wrapAsyncCallback(async () => {
       await delay(0);
-      if (typeof ui === 'object' && ui !== null && 'delay' in ui && ui.delay && typeof ui.delay === 'number') {
-        console.log('DELAY', ui.delay);
+      if (
+        typeof ui === "object" &&
+        ui !== null &&
+        "delay" in ui &&
+        ui.delay &&
+        typeof ui.delay === "number"
+      ) {
+        console.log("DELAY", ui.delay);
         await delay(ui.delay);
       }
       this.state.setState({ args, ui, author });
@@ -100,7 +108,9 @@ export abstract class BlockMock<
     });
   }
 
-  async loadBlockState(): Promise<ResultOrError<ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>>> {
+  async loadBlockState(): Promise<
+    ResultOrError<ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>>
+  > {
     return wrapAsyncCallback(async () => {
       return deepClone({
         value: {
@@ -124,11 +134,13 @@ export abstract class BlockMock<
       }
 
       if (this.#previousState?.uTag !== uTag) {
-        console.log('uTag mismatch, resetting previous state');
+        console.log("uTag mismatch, resetting previous state");
         this.#previousState = undefined;
       }
 
-      const currentState = await this.loadBlockState().then(unwrapResult).then(({ uTag, value }) => ({ uTag, value }));
+      const currentState = await this.loadBlockState()
+        .then(unwrapResult)
+        .then(({ uTag, value }) => ({ uTag, value }));
       const patches = compare(this.#previousState?.value ?? {}, currentState.value);
       this.#previousState = currentState;
       return {

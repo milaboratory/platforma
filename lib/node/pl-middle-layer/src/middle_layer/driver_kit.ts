@@ -1,6 +1,5 @@
-import type { PlClient } from '@milaboratories/pl-client';
-import type {
-  InternalLsDriver } from '@milaboratories/pl-drivers';
+import type { PlClient } from "@milaboratories/pl-client";
+import type { InternalLsDriver } from "@milaboratories/pl-drivers";
 import {
   createDownloadClient,
   createLogsClient,
@@ -13,20 +12,14 @@ import {
   LsDriver,
   UploadDriver,
   DownloadUrlDriver,
-} from '@milaboratories/pl-drivers';
-import type * as Sdk from '@milaboratories/pl-model-common';
-import type { Signer } from '@milaboratories/ts-helpers';
-import { HmacSha256Signer, isAsyncDisposable } from '@milaboratories/ts-helpers';
-import type { InternalPFrameDriver } from '../pool';
-import { createPFrameDriver } from '../pool';
-import type {
-  DriverKitOps,
-  DriverKitOpsConstructor,
-} from './ops';
-import {
-  DefaultDriverKitOpsPaths,
-  DefaultDriverKitOpsSettings,
-} from './ops';
+} from "@milaboratories/pl-drivers";
+import type * as Sdk from "@milaboratories/pl-model-common";
+import type { Signer } from "@milaboratories/ts-helpers";
+import { HmacSha256Signer, isAsyncDisposable } from "@milaboratories/ts-helpers";
+import type { InternalPFrameDriver } from "../pool";
+import { createPFrameDriver } from "../pool";
+import type { DriverKitOps, DriverKitOpsConstructor } from "./ops";
+import { DefaultDriverKitOpsPaths, DefaultDriverKitOpsSettings } from "./ops";
 
 /**
  * Drivers offered by the middle-layer for internal consumers,
@@ -147,8 +140,9 @@ export async function initDriverKit(
   };
 
   const dispose = async () => {
-    const disposePromises = Object.values(driverKit)
-      .flatMap((driver) => isAsyncDisposable(driver) ? [driver[Symbol.asyncDispose]] : []);
+    const disposePromises = Object.values(driverKit).flatMap((driver) =>
+      isAsyncDisposable(driver) ? [driver[Symbol.asyncDispose]] : [],
+    );
     await Promise.all(disposePromises);
   };
 

@@ -1,4 +1,4 @@
-import { randomBytes, createHmac } from 'node:crypto';
+import { randomBytes, createHmac } from "node:crypto";
 
 /** Creates and validates signatures. */
 export interface Signer {
@@ -22,11 +22,11 @@ export class HmacSha256Signer implements Signer {
   constructor(private readonly secret: string | Uint8Array) {}
 
   sign(data: string | Uint8Array): string {
-    return createHmac('sha256', this.secret).update(data).digest('hex');
+    return createHmac("sha256", this.secret).update(data).digest("hex");
   }
 
   verify(data: string | Uint8Array, signature: string, validationErrorMessage?: string): void {
-    if (signature !== createHmac('sha256', this.secret).update(data).digest('hex')) {
+    if (signature !== createHmac("sha256", this.secret).update(data).digest("hex")) {
       if (validationErrorMessage === undefined)
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         throw new SignatureVerificationError(`Signature verification failed for ${data}`);
@@ -39,6 +39,6 @@ export class HmacSha256Signer implements Signer {
    * its persistence. */
   public static generateSecret(): string {
     // https://crypto.stackexchange.com/questions/31473/what-size-should-the-hmac-key-be-with-sha-256
-    return randomBytes(32).toString('base64');
+    return randomBytes(32).toString("base64");
   }
 }

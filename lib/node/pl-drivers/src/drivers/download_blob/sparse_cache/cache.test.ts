@@ -1,7 +1,7 @@
-import { SparseCache, type SparseFileStorage, type SparseCacheRanges } from './cache';
-import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
-import type { Ranges } from './ranges';
-import { describe, it, expect } from 'vitest';
+import { SparseCache, type SparseFileStorage, type SparseCacheRanges } from "./cache";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
+import type { Ranges } from "./ranges";
+import { describe, it, expect } from "vitest";
 
 /** gen helpers */
 
@@ -19,9 +19,7 @@ function toString(arr: Uint8Array) {
 
 /** In-memory implementation for cache ranges. */
 class InMemoryRanges implements SparseCacheRanges {
-  constructor(
-    public readonly keyToRanges: Record<string, Ranges>,
-  ) {}
+  constructor(public readonly keyToRanges: Record<string, Ranges>) {}
 
   async get(key: string) {
     const result = this.keyToRanges[key];
@@ -39,9 +37,7 @@ class InMemoryRanges implements SparseCacheRanges {
 
 /** In-memory implementation for a sparse file. */
 class InMemoryFile implements SparseFileStorage {
-  constructor(
-    public readonly keyToFromToData: Record<string, Record<number, string>>,
-  ) {}
+  constructor(public readonly keyToFromToData: Record<string, Record<number, string>>) {}
 
   async all() {
     return Object.entries(this.keyToFromToData).map(([k, _]) => k);
@@ -72,19 +68,14 @@ function genCache(
   ranges: Record<string, Ranges>,
   storage: Record<string, Record<number, string>>,
 ): {
-  cache: SparseCache,
-  ranges: InMemoryRanges,
-  storage: InMemoryFile,
+  cache: SparseCache;
+  ranges: InMemoryRanges;
+  storage: InMemoryFile;
 } {
   const inMemRanges = new InMemoryRanges(ranges);
   const inMemStorage = new InMemoryFile(storage);
 
-  const c = new SparseCache(
-    new ConsoleLoggerAdapter(),
-    maxSize,
-    inMemRanges,
-    inMemStorage,
-  );
+  const c = new SparseCache(new ConsoleLoggerAdapter(), maxSize, inMemRanges, inMemStorage);
   c.keyToLastAccessTime = new Map(Object.entries(keyToLastAccessTime));
   c.size = size;
 
@@ -97,7 +88,7 @@ function genCache(
 
 /** Tests */
 
-describe('SparseCache.get', () => {
+describe("SparseCache.get", () => {
   const cases: {
     name: string;
     initialCache: SparseCache;
@@ -105,53 +96,53 @@ describe('SparseCache.get', () => {
     range: { from: number; to: number };
     expectedPath?: string;
   }[] = [
-      {
-        name: 'key does not exist in storage',
-        initialCache: genCache({}, 0, 100, {}, {}).cache,
-        key: 'key1',
-        range: { from: 0, to: 10 },
-        expectedPath: undefined,
-      },
-      {
-        name: 'key exists, but range does not exist in cache',
-        initialCache: genCache(
-          { 'key1': new Date() },
-          10,
-          100,
-          { 'key1': { ranges: [{ from: 0, to: 10 }] } },
-          { 'key1': { 0: 'data' } },
-        ).cache,
-        key: 'key1',
-        range: { from: 5, to: 15 },
-        expectedPath: undefined,
-      },
-      {
-        name: 'key exists, and exact range exists in cache',
-        initialCache: genCache(
-          { 'key1': new Date() },
-          10,
-          100,
-          { 'key1': { ranges: [{ from: 0, to: 10 }] } },
-          { 'key1': { 0: 'data' } },
-        ).cache,
-        key: 'key1',
-        range: { from: 0, to: 10 },
-        expectedPath: 'key1',
-      },
-      {
-        name: 'key exists, and sub-range exists in cache',
-        initialCache: genCache(
-          { 'key1': new Date() },
-          20,
-          100,
-          { 'key1': { ranges: [{ from: 0, to: 20 }] } },
-          { 'key1': { 0: 'data' } },
-        ).cache,
-        key: 'key1',
-        range: { from: 5, to: 15 },
-        expectedPath: 'key1',
-      },
-    ];
+    {
+      name: "key does not exist in storage",
+      initialCache: genCache({}, 0, 100, {}, {}).cache,
+      key: "key1",
+      range: { from: 0, to: 10 },
+      expectedPath: undefined,
+    },
+    {
+      name: "key exists, but range does not exist in cache",
+      initialCache: genCache(
+        { key1: new Date() },
+        10,
+        100,
+        { key1: { ranges: [{ from: 0, to: 10 }] } },
+        { key1: { 0: "data" } },
+      ).cache,
+      key: "key1",
+      range: { from: 5, to: 15 },
+      expectedPath: undefined,
+    },
+    {
+      name: "key exists, and exact range exists in cache",
+      initialCache: genCache(
+        { key1: new Date() },
+        10,
+        100,
+        { key1: { ranges: [{ from: 0, to: 10 }] } },
+        { key1: { 0: "data" } },
+      ).cache,
+      key: "key1",
+      range: { from: 0, to: 10 },
+      expectedPath: "key1",
+    },
+    {
+      name: "key exists, and sub-range exists in cache",
+      initialCache: genCache(
+        { key1: new Date() },
+        20,
+        100,
+        { key1: { ranges: [{ from: 0, to: 20 }] } },
+        { key1: { 0: "data" } },
+      ).cache,
+      key: "key1",
+      range: { from: 5, to: 15 },
+      expectedPath: "key1",
+    },
+  ];
 
   for (const tc of cases) {
     it(tc.name, async () => {
@@ -162,188 +153,187 @@ describe('SparseCache.get', () => {
   }
 });
 
-describe('SparseCache.setWithoutEviction', () => {
-  it('should add a new key and range', async () => {
-    const c = genCache(
-      {},
-      0,
-      100,
-      {},
-      {},
-    );
+describe("SparseCache.setWithoutEviction", () => {
+  it("should add a new key and range", async () => {
+    const c = genCache({}, 0, 100, {}, {});
 
-    await c.cache.setWithoutEviction('key1', { from: 0, to: 10 }, genData('abc123abc1'));
+    await c.cache.setWithoutEviction("key1", { from: 0, to: 10 }, genData("abc123abc1"));
 
     expect(c.ranges.keyToRanges).toMatchObject({
-      'key1': { ranges: [{ from: 0, to: 10 }] },
+      key1: { ranges: [{ from: 0, to: 10 }] },
     });
     expect(c.storage.keyToFromToData).toMatchObject({
-      'key1': { 0: 'abc123abc1' },
+      key1: { 0: "abc123abc1" },
     });
     expect(c.cache.size).toEqual(10);
   });
 
-  it('should overwrite data when adding the same key and range', async () => {
+  it("should overwrite data when adding the same key and range", async () => {
     const c = genCache(
-      { 'key1': new Date(Date.now() - 1000) },
+      { key1: new Date(Date.now() - 1000) },
       10,
       100,
-      { 'key1': { ranges: [{ from: 0, to: 10 }] } },
-      { 'key1': { 0: 'data' } },
+      { key1: { ranges: [{ from: 0, to: 10 }] } },
+      { key1: { 0: "data" } },
     );
 
-    await c.cache.setWithoutEviction('key1', { from: 0, to: 10 }, genData('abc123abc1'));
+    await c.cache.setWithoutEviction("key1", { from: 0, to: 10 }, genData("abc123abc1"));
 
     expect(c.ranges.keyToRanges).toMatchObject({
-      'key1': { ranges: [{ from: 0, to: 10 }] },
+      key1: { ranges: [{ from: 0, to: 10 }] },
     });
     expect(c.storage.keyToFromToData).toMatchObject({
-      'key1': { 0: 'abc123abc1' },
+      key1: { 0: "abc123abc1" },
     });
     expect(c.cache.size).toEqual(10);
   });
 
-  it('should add a new non-overlapping range to an existing key', async () => {
+  it("should add a new non-overlapping range to an existing key", async () => {
     const c = genCache(
-      { 'key1': new Date(Date.now() - 10000) },
+      { key1: new Date(Date.now() - 10000) },
       10,
       100,
-      { 'key1': { ranges: [{ from: 0, to: 10 }] } },
-      { 'key1': { 0: 'original  ' } } // 10 chars
+      { key1: { ranges: [{ from: 0, to: 10 }] } },
+      { key1: { 0: "original  " } }, // 10 chars
     );
 
-    await c.cache.setWithoutEviction('key1', { from: 20, to: 30 }, genData('new       ')); // 10 chars
+    await c.cache.setWithoutEviction("key1", { from: 20, to: 30 }, genData("new       ")); // 10 chars
 
-    expect(c.ranges.keyToRanges['key1']).toEqual({ ranges: [{ from: 0, to: 10 }, { from: 20, to: 30 }] });
-    expect(c.storage.keyToFromToData['key1']).toMatchObject({
-      0: 'original  ',
-      20: 'new       '
+    expect(c.ranges.keyToRanges["key1"]).toEqual({
+      ranges: [
+        { from: 0, to: 10 },
+        { from: 20, to: 30 },
+      ],
+    });
+    expect(c.storage.keyToFromToData["key1"]).toMatchObject({
+      0: "original  ",
+      20: "new       ",
     });
     expect(c.cache.size).toEqual(20); // 10 for original + 10 for new
   });
 
-  it('should add an overlapping range and merge with existing range', async () => {
+  it("should add an overlapping range and merge with existing range", async () => {
     const c = genCache(
-      { 'key1': new Date(Date.now() - 10000) },
+      { key1: new Date(Date.now() - 10000) },
       10,
       100,
-      { 'key1': { ranges: [{ from: 0, to: 10 }] } }, // 0-10
-      { 'key1': { 0: 'original  ' } }      // data for 0-10
+      { key1: { ranges: [{ from: 0, to: 10 }] } }, // 0-10
+      { key1: { 0: "original  " } }, // data for 0-10
     );
 
     // Add range 5-15, overlaps with 0-10
-    await c.cache.setWithoutEviction('key1', { from: 5, to: 15 }, genData('nal1231231')); // data for 5-15
+    await c.cache.setWithoutEviction("key1", { from: 5, to: 15 }, genData("nal1231231")); // data for 5-15
 
-    expect(c.ranges.keyToRanges['key1']).toEqual({ ranges: [{ from: 0, to: 15 }] });
-    expect(c.storage.keyToFromToData['key1']).toMatchObject({
-      0: 'original  ',
-      5: 'nal1231231'
+    expect(c.ranges.keyToRanges["key1"]).toEqual({ ranges: [{ from: 0, to: 15 }] });
+    expect(c.storage.keyToFromToData["key1"]).toMatchObject({
+      0: "original  ",
+      5: "nal1231231",
     });
     expect(c.cache.size).toEqual(15); // Size of merged range 0-15
   });
 
-  it('should update size correctly when ranges are modified (subsumed range)', async () => {
+  it("should update size correctly when ranges are modified (subsumed range)", async () => {
     const c = genCache(
-      { 'key1': new Date() },
+      { key1: new Date() },
       20,
       100,
-      { 'key1': { ranges: [{ from: 0, to: 20 }] } },
-      { 'key1': { 0: 'longoriginaldata    ' } }
+      { key1: { ranges: [{ from: 0, to: 20 }] } },
+      { key1: { 0: "longoriginaldata    " } },
     );
 
     // Add range 5-15, which is a sub-range of 0-20. The total range 0-20 should remain.
     // The size should remain 20 as normalizeRanges will keep the outer [0, 20] range.
-    await c.cache.setWithoutEviction('key1', { from: 5, to: 15 }, genData('subrange  '));
+    await c.cache.setWithoutEviction("key1", { from: 5, to: 15 }, genData("subrange  "));
 
     expect(c.cache.size).toEqual(20);
-    expect(c.ranges.keyToRanges['key1']).toEqual({ ranges: [{ from: 0, to: 20 }] });
-    expect(c.storage.keyToFromToData['key1']).toMatchObject({
-      0: 'longoriginaldata    ',
-      5: 'subrange  '
+    expect(c.ranges.keyToRanges["key1"]).toEqual({ ranges: [{ from: 0, to: 20 }] });
+    expect(c.storage.keyToFromToData["key1"]).toMatchObject({
+      0: "longoriginaldata    ",
+      5: "subrange  ",
     });
   });
 });
 
-describe('SparseCache.ensureEvicted', () => {
-  it('should do nothing if cache size is below or equal to maxSize', async () => {
+describe("SparseCache.ensureEvicted", () => {
+  it("should do nothing if cache size is below or equal to maxSize", async () => {
     const c = genCache(
       {
-        'key1': new Date(2023, 0, 1, 10, 0, 0), // oldest
-        'key2': new Date(2023, 0, 1, 11, 0, 0), // newest
+        key1: new Date(2023, 0, 1, 10, 0, 0), // oldest
+        key2: new Date(2023, 0, 1, 11, 0, 0), // newest
       },
       20,
       30,
       {
-        'key1': { ranges: [{ from: 0, to: 10 }] },
-        'key2': { ranges: [{ from: 0, to: 10 }] },
+        key1: { ranges: [{ from: 0, to: 10 }] },
+        key2: { ranges: [{ from: 0, to: 10 }] },
       },
       {
-        'key1': { 0: 'data1' },
-        'key2': { 0: 'data2' },
-      }
+        key1: { 0: "data1" },
+        key2: { 0: "data2" },
+      },
     );
 
     await c.cache.ensureEvicted();
 
     expect(c.cache.size).toEqual(20);
     expect(c.ranges.keyToRanges).toMatchObject({
-      'key1': { ranges: [{ from: 0, to: 10 }] },
-      'key2': { ranges: [{ from: 0, to: 10 }] },
+      key1: { ranges: [{ from: 0, to: 10 }] },
+      key2: { ranges: [{ from: 0, to: 10 }] },
     });
     expect(c.storage.keyToFromToData).toMatchObject({
-      'key1': { 0: 'data1' },
-      'key2': { 0: 'data2' },
+      key1: { 0: "data1" },
+      key2: { 0: "data2" },
     });
   });
 
-  it('should evict the oldest item(s) if cache size is above maxSize', async () => {
+  it("should evict the oldest item(s) if cache size is above maxSize", async () => {
     const c = genCache(
       {
-        'key1': new Date(2023, 0, 1, 10, 0, 0),
-        'key2': new Date(2023, 0, 1, 11, 0, 0),
-        'key3': new Date(2023, 0, 1, 12, 0, 0),
+        key1: new Date(2023, 0, 1, 10, 0, 0),
+        key2: new Date(2023, 0, 1, 11, 0, 0),
+        key3: new Date(2023, 0, 1, 12, 0, 0),
       },
       41,
       25,
       {
-        'key1': { ranges: [{ from: 0, to: 11 }] },
-        'key2': { ranges: [{ from: 0, to: 20 }] },
-        'key3': { ranges: [{ from: 0, to: 10 }] },
+        key1: { ranges: [{ from: 0, to: 11 }] },
+        key2: { ranges: [{ from: 0, to: 20 }] },
+        key3: { ranges: [{ from: 0, to: 10 }] },
       },
       {
-        'key1': { 0: 'data1' },
-        'key2': { 0: 'data2' },
-        'key3': { 0: 'data3' },
-      }
+        key1: { 0: "data1" },
+        key2: { 0: "data2" },
+        key3: { 0: "data3" },
+      },
     );
 
     await c.cache.ensureEvicted();
 
     expect(c.cache.size).toEqual(10);
     expect(c.ranges.keyToRanges).toMatchObject({
-      'key3': { ranges: [{ from: 0, to: 10 }] },
+      key3: { ranges: [{ from: 0, to: 10 }] },
     });
     expect(c.storage.keyToFromToData).toMatchObject({
-      'key3': { 0: 'data3' },
+      key3: { 0: "data3" },
     });
   });
 
-  it('should evict all items if necessary to meet maxSize (e.g., maxSize is 0)', async () => {
+  it("should evict all items if necessary to meet maxSize (e.g., maxSize is 0)", async () => {
     const c = genCache(
       {
-        'key1': new Date(2023, 0, 1, 10, 0, 0),
-        'key2': new Date(2023, 0, 1, 11, 0, 0),
+        key1: new Date(2023, 0, 1, 10, 0, 0),
+        key2: new Date(2023, 0, 1, 11, 0, 0),
       },
       30, // size = 10 (key1) + 20 (key2)
-      0,  // maxSize
+      0, // maxSize
       {
-        'key1': { ranges: [{ from: 0, to: 10 }] },
-        'key2': { ranges: [{ from: 0, to: 20 }] },
+        key1: { ranges: [{ from: 0, to: 10 }] },
+        key2: { ranges: [{ from: 0, to: 20 }] },
       },
       {
-        'key1': { 0: 'data1' },
-        'key2': { 0: 'data2' },
-      }
+        key1: { 0: "data1" },
+        key2: { 0: "data2" },
+      },
     );
 
     await c.cache.ensureEvicted();
@@ -353,14 +343,8 @@ describe('SparseCache.ensureEvicted', () => {
     expect(Object.keys(c.storage.keyToFromToData).length).toEqual(0);
   });
 
-  it('should handle an empty cache initially', async () => {
-    const c = genCache(
-      {},
-      0,
-      10,
-      {},
-      {}
-    );
+  it("should handle an empty cache initially", async () => {
+    const c = genCache({}, 0, 10, {}, {});
 
     await c.cache.ensureEvicted();
 

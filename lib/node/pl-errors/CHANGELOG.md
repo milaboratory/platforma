@@ -1,5 +1,97 @@
 # @milaboratories/pl-errors
 
+## 1.1.71
+
+### Patch Changes
+
+- Updated dependencies [c19a02b]
+  - @milaboratories/pl-client@2.17.9
+
+## 1.1.70
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-client@2.17.8
+  - @milaboratories/ts-helpers@1.7.3
+
+## 1.1.69
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.7
+
+## 1.1.68
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.6
+
+## 1.1.67
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.5
+
+## 1.1.66
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.4
+
+## 1.1.65
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.3
+
+## 1.1.64
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.2
+
+## 1.1.63
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.1
+- @milaboratories/ts-helpers@1.7.2
+
+## 1.1.62
+
+### Patch Changes
+
+- Updated dependencies [f37108b]
+  - @milaboratories/pl-client@2.17.0
+
+## 1.1.61
+
+### Patch Changes
+
+- Updated dependencies [c620234]
+  - @milaboratories/pl-client@2.16.29
+  - @milaboratories/ts-helpers@1.7.2
+
+## 1.1.60
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-client@2.16.28
+  - @milaboratories/ts-helpers@1.7.2
+
+## 1.1.59
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/ts-helpers@1.7.1
+  - @milaboratories/pl-client@2.16.27
+
 ## 1.1.58
 
 ### Patch Changes

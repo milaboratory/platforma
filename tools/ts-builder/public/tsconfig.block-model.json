@@ -1,0 +1,9 @@
+{
+  "extends": "@milaboratories/ts-configs/block/model",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules"]
+}

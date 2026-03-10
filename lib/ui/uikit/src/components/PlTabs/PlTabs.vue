@@ -3,23 +3,23 @@
  * A component for selecting one value from a list of options
  */
 export default {
-  name: 'PlTabs',
+  name: "PlTabs",
 };
 </script>
 
 <script lang="ts" setup generic="M extends string">
-import style from './pl-tabs.module.scss';
-import type { TabOption } from './types';
-import Tab from './Tab.vue';
+import style from "./pl-tabs.module.scss";
+import type { TabOption } from "./types";
+import Tab from "./Tab.vue";
 
 const emit = defineEmits<{
   /**
    * Emitted when the model value is updated.
    */
-  (e: 'update:modelValue', value: M): void;
+  (e: "update:modelValue", value: M): void;
 }>();
 
-const emitModel = (v: M) => emit('update:modelValue', v);
+const emitModel = (v: M) => emit("update:modelValue", v);
 
 defineProps<{
   /**
@@ -52,7 +52,10 @@ defineProps<{
       :key="i"
       :tabindex="modelValue === opt.value || disabled || opt.disabled ? undefined : 0"
       :option="opt"
-      :class="[{ [style.active]: modelValue === opt.value, [style.disabled]: opt.disabled }, style.tab]"
+      :class="[
+        { [style.active]: modelValue === opt.value, [style.disabled]: opt.disabled },
+        style.tab,
+      ]"
       :style="{ '--pl-tabs-item-max-width': opt.maxWidth ?? maxTabWidth }"
       @keydown.enter="emitModel(opt.value)"
       @click="emitModel(opt.value)"

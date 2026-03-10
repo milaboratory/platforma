@@ -1,21 +1,17 @@
-import upath from 'upath';
-import yaml from 'yaml';
-import type { PlConfigPortsCustomWithMinio } from '../common/ports';
-import { getLocalhostEndpoints } from '../common/ports';
-import type { PlConfig } from '../common/types';
-import type {
-  PlLicenseMode,
-} from '../common/license';
-import {
-  getLicenseValue,
-} from '../common/license';
-import { newHtpasswdFile } from '../common/auth';
-import type { StoragesSettings } from '../common/storages';
-import { newRemoteConfigStoragesFS, newRemoteConfigStoragesMinio } from '../common/storages';
-import { packageLoaderConfig } from '../common/packageloader';
-import * as crypto from 'node:crypto';
-import { newDefaultPlConfig } from '../common/config';
-import type { MiLogger } from '@milaboratories/ts-helpers';
+import upath from "upath";
+import yaml from "yaml";
+import type { PlConfigPortsCustomWithMinio } from "../common/ports";
+import { getLocalhostEndpoints } from "../common/ports";
+import type { PlConfig } from "../common/types";
+import type { PlLicenseMode } from "../common/license";
+import { getLicenseValue } from "../common/license";
+import { newHtpasswdFile } from "../common/auth";
+import type { StoragesSettings } from "../common/storages";
+import { newRemoteConfigStoragesFS, newRemoteConfigStoragesMinio } from "../common/storages";
+import { packageLoaderConfig } from "../common/packageloader";
+import * as crypto from "node:crypto";
+import { newDefaultPlConfig } from "../common/config";
+import type { MiLogger } from "@milaboratories/ts-helpers";
 
 export type SshPlConfigGeneratorOptions = {
   /** Logger for Middle-Layer */
@@ -97,21 +93,21 @@ export type MinioConfig = {
 export async function generateSshPlConfigs(
   opts: SshPlConfigGeneratorOptions,
 ): Promise<SshPlConfigGenerationResult> {
-  const plUser = 'default-user';
-  const plPassword = crypto.randomBytes(16).toString('hex');
-  const plJwt = crypto.randomBytes(32).toString('hex');
+  const plUser = "default-user";
+  const plPassword = crypto.randomBytes(16).toString("hex");
+  const plJwt = crypto.randomBytes(32).toString("hex");
 
-  const minioUser = 'minio-user';
-  const bucketName = 'main-bucket';
-  const minioPassword = crypto.randomBytes(16).toString('hex');
+  const minioUser = "minio-user";
+  const bucketName = "main-bucket";
+  const minioPassword = crypto.randomBytes(16).toString("hex");
 
   const endpoints = await getLocalhostEndpoints(opts.portsMode);
 
   let storages: StoragesSettings;
   if (opts.useMinio) {
     storages = newRemoteConfigStoragesMinio(opts.workingDir, {
-      endpoint: 'http://' + endpoints.minio!,
-      presignEndpoint: 'http://' + endpoints.minioLocal!,
+      endpoint: "http://" + endpoints.minio!,
+      presignEndpoint: "http://" + endpoints.minioLocal!,
       key: minioUser,
       secret: minioPassword,
       bucketName,
@@ -124,10 +120,16 @@ export async function generateSshPlConfigs(
   const htpasswd = newHtpasswdFile(opts.workingDir, [{ user: plUser, password: plPassword }]);
   const packageLoader = packageLoaderConfig(opts.workingDir, opts.useGlobalAccess);
 
-  const configPath = upath.join(opts.workingDir, 'config.yaml');
-  let config = newDefaultPlConfig(endpoints, license, htpasswd.filePath, plJwt, packageLoader, storages);
-  if (opts.plConfigPostprocessing)
-    config = opts.plConfigPostprocessing(config);
+  const configPath = upath.join(opts.workingDir, "config.yaml");
+  let config = newDefaultPlConfig(
+    endpoints,
+    license,
+    htpasswd.filePath,
+    plJwt,
+    packageLoader,
+    storages,
+  );
+  if (opts.plConfigPostprocessing) config = opts.plConfigPostprocessing(config);
 
   const filesToCreate: Record<string, string> = {};
   filesToCreate[configPath] = yaml.stringify(config);
@@ -138,18 +140,26 @@ export async function generateSshPlConfigs(
     filesToCreate,
     dirsToCreate: storages.dirsToCreate.concat([packageLoader.packagesRoot]),
     plConfig: { configPath },
-    minioConfig: newMinioConfig(minioUser, minioPassword, storages.mainStoragePath, endpoints.minio!, endpoints.minioConsole!),
+    minioConfig: newMinioConfig(
+      minioUser,
+      minioPassword,
+      storages.mainStoragePath,
+      endpoints.minio!,
+      endpoints.minioConsole!,
+    ),
 
-    plAddress: 'http://' + endpoints.grpcLocal!,
+    plAddress: "http://" + endpoints.grpcLocal!,
     plUser: plUser,
     plPassword: plPassword,
   };
 }
 
 function newMinioConfig(
-  user: string, password: string,
+  user: string,
+  password: string,
   storageDir: string,
-  minioAddress: string, minioConsoleAddress: string,
+  minioAddress: string,
+  minioConsoleAddress: string,
 ): MinioConfig {
   return {
     envs: {

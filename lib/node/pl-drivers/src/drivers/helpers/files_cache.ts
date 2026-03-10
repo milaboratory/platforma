@@ -1,5 +1,5 @@
-import type { CallersCounter } from '@milaboratories/ts-helpers';
-import { mapEntries, mapGet } from '@milaboratories/ts-helpers';
+import type { CallersCounter } from "@milaboratories/ts-helpers";
+import { mapEntries, mapGet } from "@milaboratories/ts-helpers";
 
 type PathLike = string;
 

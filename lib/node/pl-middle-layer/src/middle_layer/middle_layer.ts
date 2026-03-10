@@ -1,45 +1,37 @@
+import type { PlClient, ResourceId } from "@milaboratories/pl-client";
+import { field, isNullResourceId, toGlobalResourceId } from "@milaboratories/pl-client";
+import { createProjectList, ProjectsField, ProjectsResourceType } from "./project_list";
+import { createProject, withProjectAuthored } from "../mutator/project";
+import type { SynchronizedTreeState } from "@milaboratories/pl-tree";
+import { BlockPackPreparer } from "../mutator/block-pack/block_pack";
+import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
+import { BlockEventDispatcher } from "@milaboratories/ts-helpers";
+import { HmacSha256Signer } from "@milaboratories/ts-helpers";
+import type { ComputableStableDefined } from "@milaboratories/computable";
+import { WatchableValue } from "@milaboratories/computable";
+import { Project } from "./project";
+import type { MiddleLayerOps, MiddleLayerOpsConstructor } from "./ops";
+import { DefaultMiddleLayerOpsPaths, DefaultMiddleLayerOpsSettings } from "./ops";
+import { randomUUID } from "node:crypto";
+import type { ProjectListEntry } from "../model";
 import type {
-  PlClient,
-  ResourceId } from '@milaboratories/pl-client';
-import {
-  field,
-  isNullResourceId,
-  toGlobalResourceId,
-} from '@milaboratories/pl-client';
-import { createProjectList, ProjectsField, ProjectsResourceType } from './project_list';
-import { createProject, withProjectAuthored } from '../mutator/project';
-import type { SynchronizedTreeState } from '@milaboratories/pl-tree';
-import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
-import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
-import { BlockEventDispatcher } from '@milaboratories/ts-helpers';
-import { HmacSha256Signer } from '@milaboratories/ts-helpers';
-import type { ComputableStableDefined } from '@milaboratories/computable';
-import { WatchableValue } from '@milaboratories/computable';
-import { Project } from './project';
-import type {
-  MiddleLayerOps,
-  MiddleLayerOpsConstructor,
-} from './ops';
-import {
-  DefaultMiddleLayerOpsPaths,
-  DefaultMiddleLayerOpsSettings,
-} from './ops';
-import { randomUUID } from 'node:crypto';
-import type { ProjectListEntry } from '../model';
-import type { AuthorMarker, ProjectMeta, BlockPlatform } from '@milaboratories/pl-model-middle-layer';
-import { BlockUpdateWatcher } from '../block_registry/watcher';
-import type { QuickJSWASMModule } from 'quickjs-emscripten';
-import { getQuickJS } from 'quickjs-emscripten';
-import type { MiddleLayerDriverKit } from './driver_kit';
-import { initDriverKit } from './driver_kit';
-import type { DriverKit, SupportedRequirement } from '@platforma-sdk/model';
-import { RuntimeCapabilities } from '@platforma-sdk/model';
-import type { DownloadUrlDriver } from '@milaboratories/pl-drivers';
-import { V2RegistryProvider } from '../block_registry';
-import type { Dispatcher } from 'undici';
-import { RetryAgent } from 'undici';
-import { getDebugFlags } from '../debug';
-import { ProjectHelper } from '../model/project_helper';
+  AuthorMarker,
+  ProjectMeta,
+  BlockPlatform,
+} from "@milaboratories/pl-model-middle-layer";
+import { BlockUpdateWatcher } from "../block_registry/watcher";
+import type { QuickJSWASMModule } from "quickjs-emscripten";
+import { getQuickJS } from "quickjs-emscripten";
+import type { MiddleLayerDriverKit } from "./driver_kit";
+import { initDriverKit } from "./driver_kit";
+import type { BlockCodeFeatureFlags, DriverKit, SupportedRequirement } from "@platforma-sdk/model";
+import { RuntimeCapabilities } from "@platforma-sdk/model";
+import type { DownloadUrlDriver } from "@milaboratories/pl-drivers";
+import { V2RegistryProvider } from "../block_registry";
+import type { Dispatcher } from "undici";
+import { RetryAgent } from "undici";
+import { getDebugFlags } from "../debug";
+import { ProjectHelper } from "../model/project_helper";
 
 export interface MiddleLayerEnvironment {
   dispose(): Promise<void>;
@@ -100,8 +92,16 @@ export class MiddleLayer {
   }
 
   /** Adds a runtime capability to the middle layer. */
-  public addRuntimeCapability(requirement: SupportedRequirement, value: number | boolean = true): void {
+  public addRuntimeCapability(
+    requirement: SupportedRequirement,
+    value: number | boolean = true,
+  ): void {
     this.env.runtimeCapabilities.addSupportedRequirement(requirement, value);
+  }
+
+  /** Checks if the given block feature flags are compatible with the runtime capabilities. */
+  public checkBlockCompatibility(featureFlags: BlockCodeFeatureFlags | undefined): boolean {
+    return this.env.runtimeCapabilities.checkCompatibility(featureFlags);
   }
 
   /** Returns extended API driver kit used internally by middle layer. */
@@ -115,9 +115,9 @@ export class MiddleLayer {
 
   /** Creates a project with initial state and adds it to project list. */
   public async createProject(meta: ProjectMeta, id: string = randomUUID()): Promise<ResourceId> {
-    const resource = await this.pl.withWriteTx('MLCreateProject', async (tx) => {
+    const resource = await this.pl.withWriteTx("MLCreateProject", async (tx) => {
       const prj = await createProject(tx, meta);
-      tx.createField(field(this.projectListResourceId, id), 'Dynamic', prj);
+      tx.createField(field(this.projectListResourceId, id), "Dynamic", prj);
       await tx.commit();
       return await toGlobalResourceId(prj);
     });
@@ -131,16 +131,23 @@ export class MiddleLayer {
     meta: ProjectMeta,
     author?: AuthorMarker,
   ): Promise<void> {
-    await withProjectAuthored(this.env.projectHelper, this.pl, rid, author, (prj) => {
-      prj.setMeta(meta);
-    }, { name: 'setProjectMeta' });
+    await withProjectAuthored(
+      this.env.projectHelper,
+      this.pl,
+      rid,
+      author,
+      (prj) => {
+        prj.setMeta(meta);
+      },
+      { name: "setProjectMeta" },
+    );
     await this.projectListTree.refreshState();
   }
 
   /** Permanently deletes project from the project list, this will result in
    * destruction of all attached objects, like files, analysis results etc. */
   public async deleteProject(id: string): Promise<void> {
-    await this.pl.withWriteTx('MLRemoveProject', async (tx) => {
+    await this.pl.withWriteTx("MLRemoveProject", async (tx) => {
       tx.removeField(field(this.projectListResourceId, id));
       await tx.commit();
     });
@@ -154,15 +161,15 @@ export class MiddleLayer {
   private readonly openedProjectsByRid = new Map<ResourceId, Project>();
 
   private async projectIdToResourceId(id: string): Promise<ResourceId> {
-    return await this.pl.withReadTx('Project id to resource id', async (tx) => {
+    return await this.pl.withReadTx("Project id to resource id", async (tx) => {
       const rid = (await tx.getField(field(this.projectListResourceId, id))).value;
-      if (isNullResourceId(rid)) throw new Error('Unexpected project list structure.');
+      if (isNullResourceId(rid)) throw new Error("Unexpected project list structure.");
       return rid;
     });
   }
 
   private async ensureProjectRid(id: ResourceId | string): Promise<ResourceId> {
-    if (typeof id === 'string') return await this.projectIdToResourceId(id);
+    if (typeof id === "string") return await this.projectIdToResourceId(id);
     else return id;
   }
 
@@ -241,9 +248,9 @@ export class MiddleLayer {
     ops.defaultTreeOptions.logStat = getDebugFlags().logTreeStats;
     ops.debugOps.dumpInitialTreeState = getDebugFlags().dumpInitialTreeState;
 
-    const projects = await pl.withWriteTx('MLInitialization', async (tx) => {
+    const projects = await pl.withWriteTx("MLInitialization", async (tx) => {
       const projectsField = field(tx.clientRoot, ProjectsField);
-      tx.createField(projectsField, 'Dynamic');
+      tx.createField(projectsField, "Dynamic");
       const projectsFieldData = await tx.getField(projectsField);
       if (isNullResourceId(projectsFieldData.value)) {
         const projects = tx.createEphemeral(ProjectsResourceType);
@@ -278,8 +285,9 @@ export class MiddleLayer {
 
     const runtimeCapabilities = new RuntimeCapabilities();
     // add runtime capabilities of model here
-    runtimeCapabilities.addSupportedRequirement('requiresModelAPIVersion', 1);
-    runtimeCapabilities.addSupportedRequirement('requiresModelAPIVersion', 2);
+    runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 1);
+    runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 2);
+    runtimeCapabilities.addSupportedRequirement("requiresCreatePTable", 2);
     // runtime capabilities of the desktop are to be added by the desktop app / test framework
 
     const env: MiddleLayerEnvironment = {
@@ -300,7 +308,7 @@ export class MiddleLayer {
       }),
       runtimeCapabilities,
       quickJs,
-      projectHelper: new ProjectHelper(quickJs),
+      projectHelper: new ProjectHelper(quickJs, logger),
       dispose: async () => {
         await retryHttpDispatcher.destroy();
         await driverKit.dispose();

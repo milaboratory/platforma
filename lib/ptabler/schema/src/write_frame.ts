@@ -2,10 +2,10 @@
  * Axes values are used as unique key to access the column data,
  * so they cannot be floating point numbers.
  */
-export type AxisType = 'Int' | 'Long' | 'String';
+export type AxisType = "Int" | "Long" | "String";
 
 /** PColumn values could be of any type supported by PFrames. */
-export type ColumnType = 'Int' | 'Long' | 'Float' | 'Double' | 'String';
+export type ColumnType = "Int" | "Long" | "Float" | "Double" | "String";
 
 export interface AxisMapping {
   /** The name of the column in the input table. */
@@ -32,7 +32,7 @@ export interface ColumnMapping {
 /** Defines a step that creates a PFrame from the lazy table. */
 export interface WriteFrameStep {
   /** The type identifier for this step. */
-  type: 'write_frame';
+  type: "write_frame";
 
   /** The name of the table from the tablespace which will be written. */
   inputTable: string;

@@ -10,24 +10,21 @@ import {
   type ContentHandler,
   type PColumnSpec,
   type PColumnDataUniversal,
-} from '@platforma-sdk/model';
-import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
+} from "@platforma-sdk/model";
+import { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import {
   emptyDir,
   RefCountPoolBase,
   type PoolEntry,
   type MiLogger,
-} from '@milaboratories/ts-helpers';
-import type { DownloadDriver } from '@milaboratories/pl-drivers';
+} from "@milaboratories/ts-helpers";
+import type { DownloadDriver } from "@milaboratories/pl-drivers";
 import {
   isPlTreeNodeAccessor,
   type PlTreeEntry,
   type PlTreeNodeAccessor,
-} from '@milaboratories/pl-tree';
-import type {
-  Computable,
-  ComputableStableDefined,
-} from '@milaboratories/computable';
+} from "@milaboratories/pl-tree";
+import type { Computable, ComputableStableDefined } from "@milaboratories/computable";
 import {
   makeJsonDataInfo,
   AbstractPFrameDriver,
@@ -36,15 +33,12 @@ import {
   type AbstractPFrameDriverOps,
   type LocalBlobProvider,
   type RemoteBlobProvider,
-} from '@milaboratories/pf-driver';
-import { HttpHelpers } from '@milaboratories/pframes-rs-node';
-import path from 'node:path';
-import { Readable } from 'node:stream';
-import {
-  parseDataInfoResource,
-  traverseParquetChunkResource,
-} from './data';
-import { isDownloadNetworkError400 } from '@milaboratories/pl-drivers';
+} from "@milaboratories/pf-driver";
+import { HttpHelpers } from "@milaboratories/pframes-rs-node";
+import path from "node:path";
+import { Readable } from "node:stream";
+import { parseDataInfoResource, traverseParquetChunkResource } from "./data";
+import { isDownloadNetworkError400 } from "@milaboratories/pl-drivers";
 
 function makeBlobId(res: PlTreeEntry): PFrameInternal.PFrameBlobId {
   return String(res.rid) as PFrameInternal.PFrameBlobId;
@@ -53,7 +47,8 @@ function makeBlobId(res: PlTreeEntry): PFrameInternal.PFrameBlobId {
 type LocalBlob = ComputableStableDefined<LocalBlobHandleAndSize>;
 class LocalBlobProviderImpl
   extends RefCountPoolBase<PlTreeEntry, PFrameInternal.PFrameBlobId, LocalBlob>
-  implements LocalBlobProvider<PlTreeEntry> {
+  implements LocalBlobProvider<PlTreeEntry>
+{
   constructor(
     private readonly blobDriver: DownloadDriver,
     private readonly logger: PFrameInternal.Logger,
@@ -75,11 +70,15 @@ class LocalBlobProviderImpl
     return resource;
   }
 
-  public makeDataSource(signal: AbortSignal): Omit<PFrameInternal.PFrameDataSourceV2, 'parquetServer'> {
+  public makeDataSource(
+    signal: AbortSignal,
+  ): Omit<PFrameInternal.PFrameDataSourceV2, "parquetServer"> {
     return {
       preloadBlob: async (blobIds: PFrameInternal.PFrameBlobId[]) => {
         try {
-          await Promise.all(blobIds.map((blobId) => this.getByKey(blobId).awaitStableFullValue(signal)));
+          await Promise.all(
+            blobIds.map((blobId) => this.getByKey(blobId).awaitStableFullValue(signal)),
+          );
         } catch (err: unknown) {
           if (!isAbortError(err)) throw err;
         }
@@ -94,8 +93,11 @@ class LocalBlobProviderImpl
 }
 
 type RemoteBlob = Computable<RemoteBlobHandleAndSize>;
-class RemoteBlobPool
-  extends RefCountPoolBase<PlTreeEntry, PFrameInternal.PFrameBlobId, RemoteBlob> {
+class RemoteBlobPool extends RefCountPoolBase<
+  PlTreeEntry,
+  PFrameInternal.PFrameBlobId,
+  RemoteBlob
+> {
   constructor(
     private readonly blobDriver: DownloadDriver,
     private readonly logger: PFrameInternal.Logger,
@@ -138,7 +140,7 @@ class RemoteBlobPool
 
 interface BlobStoreOptions extends PFrameInternal.ObjectStoreOptions {
   remoteBlobProvider: RemoteBlobPool;
-};
+}
 
 class BlobStore extends PFrameInternal.BaseObjectStore {
   private readonly remoteBlobProvider: RemoteBlobPool;
@@ -157,12 +159,16 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
       callback: (response: PFrameInternal.ObjectStoreResponse) => Promise<void>;
     },
   ): Promise<void> {
-    const blobId = filename.slice(0, -PFrameInternal.ParquetExtension.length) as PFrameInternal.PFrameBlobId;
+    const blobId = filename.slice(
+      0,
+      -PFrameInternal.ParquetExtension.length,
+    ) as PFrameInternal.PFrameBlobId;
     const respond = async (response: PFrameInternal.ObjectStoreResponse): Promise<void> => {
       try {
         await params.callback(response);
       } catch (error: unknown) {
-        this.logger('warn',
+        this.logger(
+          "warn",
           `PFrames blob store received unhandled rejection from HTTP handler: ${ensureError(error)}`,
         );
       }
@@ -170,45 +176,47 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
 
     try {
       const computable = this.remoteBlobProvider.tryGetByKey(blobId);
-      if (!computable) return await respond({ type: 'NotFound' });
+      if (!computable) return await respond({ type: "NotFound" });
 
       let blob: RemoteBlobHandleAndSize;
       try {
         blob = await computable.getValue();
       } catch (error: unknown) {
-        this.logger('error',
+        this.logger(
+          "error",
           `PFrames blob store failed to get blob from computable: ${ensureError(error)}`,
         );
-        return await respond({ type: 'InternalError' });
+        return await respond({ type: "InternalError" });
       }
       params.signal.throwIfAborted();
 
       const translatedRange = this.translate(blob.size, params.range);
       if (!translatedRange) {
         return await respond({
-          type: 'RangeNotSatisfiable',
+          type: "RangeNotSatisfiable",
           size: blob.size,
         });
       }
 
-      if (params.method === 'HEAD') {
+      if (params.method === "HEAD") {
         return await respond({
-          type: 'Ok',
+          type: "Ok",
           size: blob.size,
           range: translatedRange,
         });
       }
 
-      this.logger('info',
-        `PFrames blob store requesting content for ${blobId}, `
-        + `range [${translatedRange.start}..=${translatedRange.end}]`,
+      this.logger(
+        "info",
+        `PFrames blob store requesting content for ${blobId}, ` +
+          `range [${translatedRange.start}..=${translatedRange.end}]`,
       );
       return await this.remoteBlobProvider.withContent(blob.handle, {
         range: translatedRange,
         signal: params.signal,
         handler: async (data) => {
           return await respond({
-            type: 'Ok',
+            type: "Ok",
             size: blob.size,
             range: translatedRange,
             // eslint-disable-next-line n/no-unsupported-features/node-builtins
@@ -219,14 +227,12 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
     } catch (error: unknown) {
       if (!isAbortError(error)) {
         if (isDownloadNetworkError400(error) && error.statusCode === 404) {
-          this.logger('info', `PFrames blob store known race error: ${ensureError(error)}`);
+          this.logger("info", `PFrames blob store known race error: ${ensureError(error)}`);
         } else {
-          this.logger('warn',
-            `PFrames blob store unhandled error: ${ensureError(error)}`,
-          );
+          this.logger("warn", `PFrames blob store unhandled error: ${ensureError(error)}`);
         }
       }
-      return await respond({ type: 'InternalError' });
+      return await respond({ type: "InternalError" });
     }
   }
 }
@@ -240,14 +246,14 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
   public static async init(
     blobDriver: DownloadDriver,
     logger: PFrameInternal.Logger,
-    serverOptions: Omit<PFrameInternal.HttpServerOptions, 'handler'>,
+    serverOptions: Omit<PFrameInternal.HttpServerOptions, "handler">,
   ): Promise<RemoteBlobProviderImpl> {
     const pool = new RemoteBlobPool(blobDriver, logger);
     const store = new BlobStore({ remoteBlobProvider: pool, logger });
 
     const handler = HttpHelpers.createRequestHandler({ store });
     const server = await HttpHelpers.createHttpServer({ ...serverOptions, handler });
-    logger('info', `PFrames HTTP server started on ${server.info.url}`);
+    logger("info", `PFrames HTTP server started on ${server.info.url}`);
 
     return new RemoteBlobProviderImpl(pool, server);
   }
@@ -265,8 +271,9 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
   }
 }
 
-export interface InternalPFrameDriver
-  extends AbstractInternalPFrameDriver<PColumnDataUniversal<PlTreeNodeAccessor>> {};
+export interface InternalPFrameDriver extends AbstractInternalPFrameDriver<
+  PColumnDataUniversal<PlTreeNodeAccessor>
+> {}
 
 export type PFrameDriverOps = AbstractPFrameDriverOps & {
   /** Port to run parquet HTTP server on. */
@@ -289,17 +296,15 @@ export async function createPFrameDriver(params: {
 
   const logger: PFrameInternal.Logger = (level, message) => params.logger[level](message);
   const localBlobProvider = new LocalBlobProviderImpl(params.blobDriver, logger);
-  const remoteBlobProvider = await RemoteBlobProviderImpl.init(
-    params.blobDriver,
-    logger,
-    { port: params.options.parquetServerPort },
-  );
+  const remoteBlobProvider = await RemoteBlobProviderImpl.init(params.blobDriver, logger, {
+    port: params.options.parquetServerPort,
+  });
 
   const resolveDataInfo = (spec: PColumnSpec, data: PColumnDataUniversal<PlTreeNodeAccessor>) => {
     return isPlTreeNodeAccessor(data)
       ? parseDataInfoResource(data)
       : isDataInfo(data)
-        ? data.type === 'ParquetPartitioned'
+        ? data.type === "ParquetPartitioned"
           ? mapDataInfo(data, (a) => traverseParquetChunkResource(a))
           : mapDataInfo(data, (a) => a.persist())
         : makeJsonDataInfo(spec, data);

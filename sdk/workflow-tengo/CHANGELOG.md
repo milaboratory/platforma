@@ -1,5 +1,35 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.9.1
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @platforma-open/milaboratories.software-ptabler@1.14.2
+  - @platforma-open/milaboratories.software-ptexter@1.2.2
+
+## 5.9.0
+
+### Minor Changes
+
+- 0f2bec2: Use new 'secret' argType for secrets reference in envs when backend supports it
+
+## 5.8.3
+
+### Patch Changes
+
+- 8d67c06: Validate minimal memory claim in exec template
+
+## 5.8.2
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @platforma-open/milaboratories.software-ptabler@1.14.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.1
+
 ## 5.8.1
 
 ### Patch Changes
@@ -491,11 +521,11 @@
 
   ```javascript
   // Reading NDJSON
-  wf.frame(content, { format: 'ndjson', nRows: 100 });
+  wf.frame(content, { format: "ndjson", nRows: 100 });
 
   // Writing NDJSON
-  df.save('output.jsonl');
-  df.save('data.txt', { format: 'ndjson' });
+  df.save("output.jsonl");
+  df.save("data.txt", { format: "ndjson" });
   ```
 
 ## 4.14.1

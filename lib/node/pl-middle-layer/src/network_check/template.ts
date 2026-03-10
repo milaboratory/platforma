@@ -1,37 +1,60 @@
-import type { FieldId, FieldRef, PlClient, ResourceData } from '@milaboratories/pl-client';
-import { type PlTransaction, ContinuePolling, field, isNotNullResourceId, isNullResourceId, Pl, poll, toGlobalFieldId } from '@milaboratories/pl-client';
-import { createRenderTemplate } from '../mutator/template/render_template';
-import { Templates as SdkTemplates } from '@platforma-sdk/workflow-tengo';
-import type { TemplateSpecAny } from '../model/template_spec';
-import { loadTemplate, prepareTemplateSpec } from '../mutator/template/template_loading';
-import type { ClientDownload, LsDriver } from '@milaboratories/pl-drivers';
-import { ImportFileHandleUploadData, isSignMatch, isUpload, uploadBlob, type ClientUpload, type LsEntryWithAdditionalInfo } from '@milaboratories/pl-drivers';
-import type { Signer } from '@milaboratories/ts-helpers';
-import { notEmpty, type MiLogger } from '@milaboratories/ts-helpers';
-import type { ResourceInfo } from '@milaboratories/pl-tree';
-import { text } from 'node:stream/consumers';
-import path from 'node:path';
-import fs from 'node:fs/promises';
-import os from 'node:os';
-import { randomBytes } from 'node:crypto';
-import type { StorageEntry } from '@milaboratories/pl-model-common';
+import type { FieldId, FieldRef, PlClient, ResourceData } from "@milaboratories/pl-client";
+import {
+  type PlTransaction,
+  ContinuePolling,
+  field,
+  isNotNullResourceId,
+  isNullResourceId,
+  Pl,
+  poll,
+  toGlobalFieldId,
+} from "@milaboratories/pl-client";
+import { createRenderTemplate } from "../mutator/template/render_template";
+import { Templates as SdkTemplates } from "@platforma-sdk/workflow-tengo";
+import type { TemplateSpecAny } from "../model/template_spec";
+import { loadTemplate, prepareTemplateSpec } from "../mutator/template/template_loading";
+import type { ClientDownload, LsDriver } from "@milaboratories/pl-drivers";
+import {
+  ImportFileHandleUploadData,
+  isSignMatch,
+  isUpload,
+  uploadBlob,
+  type ClientUpload,
+  type LsEntryWithAdditionalInfo,
+} from "@milaboratories/pl-drivers";
+import type { Signer } from "@milaboratories/ts-helpers";
+import { notEmpty, type MiLogger } from "@milaboratories/ts-helpers";
+import type { ResourceInfo } from "@milaboratories/pl-tree";
+import { text } from "node:stream/consumers";
+import path from "node:path";
+import fs from "node:fs/promises";
+import os from "node:os";
+import { randomBytes } from "node:crypto";
+import type { StorageEntry } from "@milaboratories/pl-model-common";
 
 export interface TemplateReport {
-  status: 'ok' | 'warn' | 'failed';
+  status: "ok" | "warn" | "failed";
   message: string;
 }
 
 /** Uploads `hello-world` template and checks the output is correct. */
-export async function uploadTemplate(logger: MiLogger, pl: PlClient, name: string): Promise<TemplateReport> {
+export async function uploadTemplate(
+  logger: MiLogger,
+  pl: PlClient,
+  name: string,
+): Promise<TemplateReport> {
   try {
     const gotGreeting = await runUploadTemplate(logger, pl, name);
     if (gotGreeting !== `Hello, ${name}`) {
-      return { status: 'failed', message: `Template uploading failed: expected: ${name}, got: ${gotGreeting}` };
+      return {
+        status: "failed",
+        message: `Template uploading failed: expected: ${name}, got: ${gotGreeting}`,
+      };
     }
 
-    return { status: 'ok', message: `Template uploading succeeded: ${gotGreeting}` };
+    return { status: "ok", message: `Template uploading succeeded: ${gotGreeting}` };
   } catch (e: unknown) {
-    return { status: 'failed', message: `Template uploading failed: error occurred: ${e}` };
+    return { status: "failed", message: `Template uploading failed: error occurred: ${e}` };
   }
 }
 
@@ -42,12 +65,12 @@ export async function runUploadTemplate(
 ): Promise<string> {
   const outputs = await runTemplate(
     pl,
-    SdkTemplates['check_network.upload_template'],
+    SdkTemplates["check_network.upload_template"],
     true,
     (tx) => ({
       name: tx.createValue(Pl.JsonObject, JSON.stringify(name)),
     }),
-    ['greeting'],
+    ["greeting"],
   );
 
   try {
@@ -71,13 +94,13 @@ export async function uploadFile(
   try {
     const gotBlob = await runUploadFile(logger, signer, lsDriver, uploadClient, pl, filePath);
 
-    if (gotBlob.type.name !== 'Blob') {
-      return { status: 'failed', message: `File uploading failed: ${gotBlob.type.name}` };
+    if (gotBlob.type.name !== "Blob") {
+      return { status: "failed", message: `File uploading failed: ${gotBlob.type.name}` };
     }
 
-    return { status: 'ok', message: `File uploading succeeded: ${gotBlob.type.name}` };
+    return { status: "ok", message: `File uploading succeeded: ${gotBlob.type.name}` };
   } catch (e: unknown) {
-    return { status: 'failed', message: `File uploading failed: error occurred: ${e}` };
+    return { status: "failed", message: `File uploading failed: error occurred: ${e}` };
   }
 }
 
@@ -92,35 +115,30 @@ export async function runUploadFile(
   const handle = await lsDriver.getLocalFileHandle(filePath);
   const result = await runTemplate(
     pl,
-    SdkTemplates['check_network.upload_blob'],
+    SdkTemplates["check_network.upload_blob"],
     true,
     (tx) => ({
       file: tx.createValue(Pl.JsonObject, JSON.stringify(handle)),
     }),
-    ['progress', 'file'],
+    ["progress", "file"],
   );
 
   try {
     const progress = await getFieldValue(pl, result.progress);
 
     if (isUpload(progress)) {
-      const uploadData = ImportFileHandleUploadData.parse(JSON.parse(notEmpty(progress.data?.toString())));
+      const uploadData = ImportFileHandleUploadData.parse(
+        JSON.parse(notEmpty(progress.data?.toString())),
+      );
       const isUploadSignMatch = isSignMatch(signer, uploadData.localPath, uploadData.pathSignature);
 
       if (isUploadSignMatch) {
-        await uploadBlob(
-          logger,
-          uploadClient,
-          progress,
-          uploadData,
-          () => false,
-          {
-            nPartsWithThisUploadSpeed: 10,
-            nPartsToIncreaseUpload: 10,
-            currentSpeed: 10,
-            maxSpeed: 10,
-          },
-        );
+        await uploadBlob(logger, uploadClient, progress, uploadData, () => false, {
+          nPartsWithThisUploadSpeed: 10,
+          nPartsToIncreaseUpload: 10,
+          currentSpeed: 10,
+          maxSpeed: 10,
+        });
       }
     }
 
@@ -141,14 +159,24 @@ export async function downloadFile(
   fileContent: string,
 ): Promise<TemplateReport> {
   try {
-    const gotFileContent = await runDownloadFile(logger, pl, lsDriver, uploadClient, downloadClient, filePath);
+    const gotFileContent = await runDownloadFile(
+      logger,
+      pl,
+      lsDriver,
+      uploadClient,
+      downloadClient,
+      filePath,
+    );
 
     if (gotFileContent !== fileContent) {
-      return { status: 'failed', message: `File downloading failed: expected: ${fileContent}, got: ${gotFileContent}` };
+      return {
+        status: "failed",
+        message: `File downloading failed: expected: ${fileContent}, got: ${gotFileContent}`,
+      };
     }
-    return { status: 'ok', message: `File downloading succeeded: ${gotFileContent}` };
+    return { status: "ok", message: `File downloading succeeded: ${gotFileContent}` };
   } catch (e: unknown) {
-    return { status: 'failed', message: `File downloading failed: error occurred: ${e}` };
+    return { status: "failed", message: `File downloading failed: error occurred: ${e}` };
   }
 }
 
@@ -164,10 +192,10 @@ export async function runDownloadFile(
 
   const outputs = await runTemplate(
     pl,
-    SdkTemplates['check_network.download_blob'],
+    SdkTemplates["check_network.download_blob"],
     true,
     (tx) => ({ file: tx.createValue(Pl.JsonObject, JSON.stringify(handle)) }),
-    ['progress', 'file'],
+    ["progress", "file"],
   );
 
   try {
@@ -205,22 +233,22 @@ export async function softwareCheck(pl: PlClient): Promise<TemplateReport> {
   try {
     const gotGreeting = await runSoftware(pl);
 
-    if (gotGreeting !== 'Hello from go binary\n') {
-      return { status: 'failed', message: `Software check failed: got: ${gotGreeting}` };
+    if (gotGreeting !== "Hello from go binary\n") {
+      return { status: "failed", message: `Software check failed: got: ${gotGreeting}` };
     }
-    return { status: 'ok', message: `Software check succeeded: ${gotGreeting}` };
+    return { status: "ok", message: `Software check succeeded: ${gotGreeting}` };
   } catch (e: unknown) {
-    return { status: 'failed', message: `Software check failed: error occurred: ${e}` };
+    return { status: "failed", message: `Software check failed: error occurred: ${e}` };
   }
 }
 
 export async function runSoftware(pl: PlClient): Promise<string> {
   const result = await runTemplate(
     pl,
-    SdkTemplates['check_network.run_hello_world'],
+    SdkTemplates["check_network.run_hello_world"],
     true,
     (_: PlTransaction) => ({}),
-    ['greeting'],
+    ["greeting"],
   );
 
   try {
@@ -236,21 +264,21 @@ export async function pythonSoftware(pl: PlClient, name: string): Promise<Templa
     const gotGreeting = await runPythonSoftware(pl, name);
 
     if (gotGreeting !== `Hello, ${name}!\n`) {
-      return { status: 'failed', message: `Python software check failed: got: ${gotGreeting}` };
+      return { status: "failed", message: `Python software check failed: got: ${gotGreeting}` };
     }
-    return { status: 'ok', message: `Python software check succeeded: ${gotGreeting}` };
+    return { status: "ok", message: `Python software check succeeded: ${gotGreeting}` };
   } catch (e: unknown) {
-    return { status: 'failed', message: `Python software check failed: error occurred: ${e}` };
+    return { status: "failed", message: `Python software check failed: error occurred: ${e}` };
   }
 }
 
 export async function runPythonSoftware(pl: PlClient, name: string): Promise<string> {
   const result = await runTemplate(
     pl,
-    SdkTemplates['check_network.run_hello_world_py'],
+    SdkTemplates["check_network.run_hello_world_py"],
     true,
     (tx) => ({ name: tx.createValue(Pl.JsonObject, JSON.stringify(name)) }),
-    ['greeting'],
+    ["greeting"],
   );
 
   try {
@@ -278,13 +306,21 @@ export async function downloadFromEveryStorage(
     const results: Record<string, TemplateReport> = {};
 
     for (const storage of storages) {
-      const result = await chooseFile(lsDriver, storage, ops.nFilesToCheck, ops.minFileSize, ops.maxFileSize, ops.minLsRequests);
+      const result = await chooseFile(
+        lsDriver,
+        storage,
+        ops.nFilesToCheck,
+        ops.minFileSize,
+        ops.maxFileSize,
+        ops.minLsRequests,
+      );
       if (result.file === undefined) {
         results[storage.name] = {
-          status: 'warn',
-          message: `No file between ${ops.minFileSize} and ${ops.maxFileSize} bytes `
-            + `found in storage ${storage.name}, checked ${result.nCheckedFiles} files, `
-            + `did ${result.nLsRequests} ls requests`,
+          status: "warn",
+          message:
+            `No file between ${ops.minFileSize} and ${ops.maxFileSize} bytes ` +
+            `found in storage ${storage.name}, checked ${result.nCheckedFiles} files, ` +
+            `did ${result.nLsRequests} ls requests`,
         };
         continue;
       }
@@ -292,26 +328,35 @@ export async function downloadFromEveryStorage(
       logger.info(`Downloading file ${JSON.stringify(result)} from storage ${storage.name}`);
       const outputs = await runTemplate(
         pl,
-        SdkTemplates['check_network.create_workdir_from_storage'],
+        SdkTemplates["check_network.create_workdir_from_storage"],
         true,
-        (tx) => ({ file: tx.createValue(Pl.JsonObject, JSON.stringify((result.file as { handle: string }).handle)) }),
-        ['workdirTypeName'],
+        (tx) => ({
+          file: tx.createValue(
+            Pl.JsonObject,
+            JSON.stringify((result.file as { handle: string }).handle),
+          ),
+        }),
+        ["workdirTypeName"],
       );
 
       try {
-        const workdirTypeName = JSON.parse(Buffer.from((await getFieldValue(pl, outputs.workdirTypeName)).data!).toString()) as string;
+        const workdirTypeName = JSON.parse(
+          Buffer.from((await getFieldValue(pl, outputs.workdirTypeName)).data!).toString(),
+        ) as string;
 
-        if (workdirTypeName?.startsWith('WorkingDirectory')) {
+        if (workdirTypeName?.startsWith("WorkingDirectory")) {
           results[storage.name] = {
-            status: 'ok',
-            message: `Workdir creation succeeded, size of file: ${result.file?.size}, `
-              + `checked ${result.nCheckedFiles} files, did ${result.nLsRequests} ls requests`,
+            status: "ok",
+            message:
+              `Workdir creation succeeded, size of file: ${result.file?.size}, ` +
+              `checked ${result.nCheckedFiles} files, did ${result.nLsRequests} ls requests`,
           };
         } else {
           results[storage.name] = {
-            status: 'failed',
-            message: `Workdir creation failed: ${workdirTypeName}, size of file: ${result.file?.size}, `
-              + `checked ${result.nCheckedFiles} files, did ${result.nLsRequests} ls requests`,
+            status: "failed",
+            message:
+              `Workdir creation failed: ${workdirTypeName}, size of file: ${result.file?.size}, ` +
+              `checked ${result.nCheckedFiles} files, did ${result.nLsRequests} ls requests`,
           };
         }
       } finally {
@@ -321,7 +366,12 @@ export async function downloadFromEveryStorage(
 
     return results;
   } catch (e: unknown) {
-    return { unknown: { status: 'failed', message: `Download from every storage failed: error occurred: ${e}` } };
+    return {
+      unknown: {
+        status: "failed",
+        message: `Download from every storage failed: error occurred: ${e}`,
+      },
+    };
   }
 }
 
@@ -336,11 +386,11 @@ export async function chooseFile(
   maxSize: number,
   minLsRequests: number,
 ): Promise<{
-    file: LsEntryWithAdditionalInfo | undefined;
-    nLsRequests: number;
-    nCheckedFiles: number;
-  }> {
-  const files = listFilesSequence(lsDriver, storage, '', 0);
+  file: LsEntryWithAdditionalInfo | undefined;
+  nLsRequests: number;
+  nCheckedFiles: number;
+}> {
+  const files = listFilesSequence(lsDriver, storage, "", 0);
 
   // return small file in case we don't have many normal-sized files.
   // While we'll download only a small range of bytes from the file,
@@ -378,13 +428,18 @@ export async function* listFilesSequence(
   const files = await lsDriver.listRemoteFilesWithAdditionalInfo(storage.handle, parent);
 
   for (const file of files.entries) {
-    if (file.type === 'file' && file.fullPath.startsWith(parent)) {
+    if (file.type === "file" && file.fullPath.startsWith(parent)) {
       yield {
         file,
         nLsRequests,
       };
-    } else if (file.type === 'dir') {
-      for await (const nestedFile of listFilesSequence(lsDriver, storage, file.fullPath, nLsRequests)) {
+    } else if (file.type === "dir") {
+      for await (const nestedFile of listFilesSequence(
+        lsDriver,
+        storage,
+        file.fullPath,
+        nLsRequests,
+      )) {
         nLsRequests = Math.max(nestedFile.nLsRequests, nLsRequests);
         yield nestedFile;
       }
@@ -408,7 +463,7 @@ export async function createBigTempFile(): Promise<{ filePath: string }> {
 export async function createTempFile(): Promise<{ filePath: string; fileContent: string }> {
   const filePath = path.join(os.tmpdir(), `check-network-temp-${Date.now()}.txt`);
 
-  const fileContent = 'Hello, world! ' + new Date().toISOString();
+  const fileContent = "Hello, world! " + new Date().toISOString();
   await fs.writeFile(filePath, fileContent);
 
   return { filePath, fileContent };
@@ -424,19 +479,23 @@ async function runTemplate(
   inputs: (tx: PlTransaction) => Pl.PlRecord,
   outputs: string[],
 ): Promise<Record<string, FieldId>> {
-  return await client.withWriteTx('TemplateRender', async (tx) => {
+  return await client.withWriteTx("TemplateRender", async (tx) => {
     const preparedTemplate = await prepareTemplateSpec(tpl);
     const tplResource = loadTemplate(tx, preparedTemplate);
 
     const outputFields: Record<string, FieldRef> = createRenderTemplate(
-      tx, tplResource, ephemeral, inputs(tx), outputs,
+      tx,
+      tplResource,
+      ephemeral,
+      inputs(tx),
+      outputs,
     );
 
     const outputsIds: Record<string, FieldId> = {};
 
     for (const output of outputs) {
       const fieldRef = field(client.clientRoot, output);
-      tx.createField(fieldRef, 'Dynamic', outputFields[output]);
+      tx.createField(fieldRef, "Dynamic", outputFields[output]);
       outputsIds[output] = await toGlobalFieldId(fieldRef);
     }
 
@@ -447,10 +506,7 @@ async function runTemplate(
 }
 
 /** Gets a resource from field's value or throws a error. */
-async function getFieldValue(
-  client: PlClient,
-  fieldId: FieldId,
-): Promise<ResourceData> {
+async function getFieldValue(client: PlClient, fieldId: FieldId): Promise<ResourceData> {
   // We could also do polling with pl-tree, but it seemed like an overkill,
   // that's why we have a simple polling here.
 
@@ -470,7 +526,7 @@ async function getFieldValue(
 }
 
 async function deleteFields(client: PlClient, fieldIds: FieldId[]) {
-  await client.withWriteTx('DeleteFields', async (tx) => {
+  await client.withWriteTx("DeleteFields", async (tx) => {
     for (const fieldId of fieldIds) {
       tx.resetField(fieldId);
     }

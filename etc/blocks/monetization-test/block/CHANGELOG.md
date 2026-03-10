@@ -1,5 +1,258 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.2.62
+
+### Patch Changes
+
+- Updated dependencies [a93de45]
+  - @milaboratories/milaboratories.monetization-test.ui@1.1.200
+  - @milaboratories/milaboratories.monetization-test.model@1.0.77
+
+## 1.2.61
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.199
+
+## 1.2.60
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.198
+
+## 1.2.59
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.76
+  - @milaboratories/milaboratories.monetization-test.ui@1.1.197
+  - @milaboratories/milaboratories.monetization-test.workflow@1.1.65
+
+## 1.2.58
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.196
+
+## 1.2.57
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.75
+- @milaboratories/milaboratories.monetization-test.ui@1.1.195
+
+## 1.2.56
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.194
+
+## 1.2.55
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.74
+- @milaboratories/milaboratories.monetization-test.ui@1.1.193
+
+## 1.2.54
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.192
+
+## 1.2.53
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.73
+- @milaboratories/milaboratories.monetization-test.ui@1.1.191
+
+## 1.2.52
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.72
+- @milaboratories/milaboratories.monetization-test.ui@1.1.190
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.64
+
+## 1.2.51
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.71
+- @milaboratories/milaboratories.monetization-test.ui@1.1.189
+
+## 1.2.50
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.70
+- @milaboratories/milaboratories.monetization-test.ui@1.1.188
+
+## 1.2.49
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.64
+
+## 1.2.48
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.69
+- @milaboratories/milaboratories.monetization-test.ui@1.1.187
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.63
+
+## 1.2.47
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.69
+- @milaboratories/milaboratories.monetization-test.ui@1.1.186
+
+## 1.2.46
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.68
+- @milaboratories/milaboratories.monetization-test.ui@1.1.185
+
+## 1.2.45
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.67
+- @milaboratories/milaboratories.monetization-test.ui@1.1.184
+
+## 1.2.44
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.183
+
+## 1.2.43
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.182
+
+## 1.2.42
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.66
+- @milaboratories/milaboratories.monetization-test.ui@1.1.181
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.63
+
+## 1.2.41
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.180
+- @milaboratories/milaboratories.monetization-test.model@1.0.65
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.63
+
+## 1.2.40
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.179
+
+## 1.2.39
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.178
+
+## 1.2.38
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.64
+- @milaboratories/milaboratories.monetization-test.ui@1.1.177
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.63
+
+## 1.2.37
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.63
+- @milaboratories/milaboratories.monetization-test.ui@1.1.176
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.63
+
+## 1.2.36
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.175
+- @milaboratories/milaboratories.monetization-test.model@1.0.62
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.63
+
+## 1.2.35
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+  - @milaboratories/milaboratories.monetization-test.model@1.0.61
+  - @milaboratories/milaboratories.monetization-test.ui@1.1.174
+  - @milaboratories/milaboratories.monetization-test.workflow@1.1.63
+
+## 1.2.34
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.63
+
+## 1.2.33
+
+### Patch Changes
+
+- bdf3e0b: update package scripts
+
+## 1.2.32
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.60
+- @milaboratories/milaboratories.monetization-test.ui@1.1.173
+- @milaboratories/milaboratories.monetization-test.workflow@1.1.62
+
+## 1.2.31
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.172
+
+## 1.2.30
+
+### Patch Changes
+
+- Updated dependencies [c620234]
+  - @milaboratories/milaboratories.monetization-test.ui@1.1.171
+  - @milaboratories/milaboratories.monetization-test.model@1.0.60
+  - @milaboratories/milaboratories.monetization-test.workflow@1.1.62
+
+## 1.2.29
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.59
+  - @milaboratories/milaboratories.monetization-test.ui@1.1.170
+  - @milaboratories/milaboratories.monetization-test.workflow@1.1.62
+
+## 1.2.28
+
+### Patch Changes
+
+- Updated dependencies [f89a883]
+  - @milaboratories/milaboratories.monetization-test.workflow@1.1.61
+  - @milaboratories/milaboratories.monetization-test.model@1.0.58
+  - @milaboratories/milaboratories.monetization-test.ui@1.1.169
+
 ## 1.2.27
 
 ### Patch Changes

@@ -1,5 +1,5 @@
-import { assertNever } from '@milaboratories/ts-helpers';
-import type { PlRef } from '@platforma-sdk/model';
+import { assertNever } from "@milaboratories/ts-helpers";
+import type { PlRef } from "@platforma-sdk/model";
 
 export function outputRef(blockId: string, name: string, requireEnrichments?: boolean): PlRef {
   if (requireEnrichments) return { __isRef: true, blockId, name, requireEnrichments };
@@ -8,35 +8,34 @@ export function outputRef(blockId: string, name: string, requireEnrichments?: bo
 
 export function isBlockOutputReference(obj: unknown): obj is PlRef {
   return (
-    typeof obj === 'object'
-    && obj !== null
-    && '__isRef' in obj
-    && obj.__isRef === true
-    && 'blockId' in obj
-    && 'name' in obj
+    typeof obj === "object" &&
+    obj !== null &&
+    "__isRef" in obj &&
+    obj.__isRef === true &&
+    "blockId" in obj &&
+    "name" in obj
   );
 }
 
 function addAllReferencedBlocks(result: BlockUpstreams, node: unknown, allowed?: Set<string>) {
   const type = typeof node;
   switch (type) {
-    case 'function':
-    case 'bigint':
-    case 'number':
-    case 'string':
-    case 'boolean':
-    case 'symbol':
-    case 'undefined':
+    case "function":
+    case "bigint":
+    case "number":
+    case "string":
+    case "boolean":
+    case "symbol":
+    case "undefined":
       return;
 
-    case 'object':
+    case "object":
       if (node === null) return;
 
       if (isBlockOutputReference(node)) {
         if (allowed === undefined || allowed.has(node.blockId)) {
           result.upstreams.add(node.blockId);
-          if (node.requireEnrichments)
-            result.upstreamsRequiringEnrichments.add(node.blockId);
+          if (node.requireEnrichments) result.upstreamsRequiringEnrichments.add(node.blockId);
         } else result.missingReferences = true;
       } else if (Array.isArray(node)) {
         for (const child of node) addAllReferencedBlocks(result, child, allowed);
@@ -63,7 +62,11 @@ export interface BlockUpstreams {
 
 /** Extracts all resource ids referenced by args object. */
 export function inferAllReferencedBlocks(args: unknown, allowed?: Set<string>): BlockUpstreams {
-  const result = { upstreams: new Set<string>(), upstreamsRequiringEnrichments: new Set<string>(), missingReferences: false };
+  const result = {
+    upstreams: new Set<string>(),
+    upstreamsRequiringEnrichments: new Set<string>(),
+    missingReferences: false,
+  };
   addAllReferencedBlocks(result, args, allowed);
   return result;
 }

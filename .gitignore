@@ -3,13 +3,11 @@
 .idea/
 *.tgz
 .DS_Store
-.vscode/
 .claude/settings.local.json
 
 # Testing
 test_config.json
 test-dry-run.json
-.test_auth.json
 .test/
 /test-registry/
 coverage/

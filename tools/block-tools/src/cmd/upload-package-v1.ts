@@ -1,62 +1,62 @@
-import { Command, Flags } from '@oclif/core';
-import { getConfig } from '../registry_v1/config';
-import { targetFile } from '../registry_v1/flags';
-import fs from 'node:fs';
-import YAML from 'yaml';
-import { PlRegPackageConfigDataShard } from '../registry_v1/config_schema';
-import { OclifLoggerAdapter } from '@milaboratories/ts-helpers-oclif';
+import { Command, Flags } from "@oclif/core";
+import { getConfig } from "../registry_v1/config";
+import { targetFile } from "../registry_v1/flags";
+import fs from "node:fs";
+import YAML from "yaml";
+import { PlRegPackageConfigDataShard } from "../registry_v1/config_schema";
+import { OclifLoggerAdapter } from "@milaboratories/ts-helpers-oclif";
 
 type BasicConfigField = keyof PlRegPackageConfigDataShard &
-  ('registry' | 'organization' | 'package' | 'version');
-const BasicConfigFields: BasicConfigField[] = ['registry', 'organization', 'package', 'version'];
+  ("registry" | "organization" | "package" | "version");
+const BasicConfigFields: BasicConfigField[] = ["registry", "organization", "package", "version"];
 
 export default class UploadPackageV1 extends Command {
-  static description = 'Uploads V1 package and refreshes the registry';
+  static description = "Uploads V1 package and refreshes the registry";
 
   static flags = {
     registry: Flags.string({
-      char: 'r',
-      summary: 'full address of the registry or alias from .pl.reg',
-      helpValue: '<address|alias>',
-      env: 'PL_REGISTRY',
+      char: "r",
+      summary: "full address of the registry or alias from .pl.reg",
+      helpValue: "<address|alias>",
+      env: "PL_REGISTRY",
     }),
 
     organization: Flags.string({
-      char: 'o',
-      summary: 'target organisation',
-      env: 'PL_PACKAGE_ORGANIZATION',
+      char: "o",
+      summary: "target organisation",
+      env: "PL_PACKAGE_ORGANIZATION",
     }),
 
     package: Flags.string({
-      char: 'p',
-      summary: 'target package',
-      env: 'PL_PACKAGE_NAME',
+      char: "p",
+      summary: "target package",
+      env: "PL_PACKAGE_NAME",
     }),
 
     version: Flags.string({
-      char: 'v',
-      summary: 'target version',
-      env: 'PL_PACKAGE_VERSION',
+      char: "v",
+      summary: "target version",
+      env: "PL_PACKAGE_VERSION",
     }),
 
     meta: Flags.file({
-      char: 'm',
-      summary: 'json file containing meta information to associate with tha package',
+      char: "m",
+      summary: "json file containing meta information to associate with tha package",
       exists: true,
     }),
 
     file: targetFile({
-      char: 'f',
-      summary: 'package files',
+      char: "f",
+      summary: "package files",
       multiple: true,
       default: [],
     }),
 
     refresh: Flags.boolean({
-      summary: 'refresh repository after adding the package',
+      summary: "refresh repository after adding the package",
       default: true,
       allowNo: true,
-      env: 'PL_REGISTRY_REFRESH',
+      env: "PL_REGISTRY_REFRESH",
     }),
   };
 
@@ -67,13 +67,13 @@ export default class UploadPackageV1 extends Command {
     for (const field of BasicConfigFields) if (flags[field]) configFromFlags[field] = flags[field];
 
     if (flags.meta) {
-      if (flags.meta.endsWith('.json'))
+      if (flags.meta.endsWith(".json"))
         configFromFlags.meta = JSON.parse(
-          await fs.promises.readFile(flags.meta, { encoding: 'utf-8' }),
+          await fs.promises.readFile(flags.meta, { encoding: "utf-8" }),
         ) as Record<string, unknown>;
-      else if (flags.meta.endsWith('.yaml'))
+      else if (flags.meta.endsWith(".yaml"))
         configFromFlags.meta = YAML.parse(
-          await fs.promises.readFile(flags.meta, { encoding: 'utf-8' }),
+          await fs.promises.readFile(flags.meta, { encoding: "utf-8" }),
         ) as Record<string, unknown>;
     }
 

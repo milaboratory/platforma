@@ -7,7 +7,7 @@ import type {
   PlDataTableSheet,
   PlDataTableStateV2,
   PObjectId,
-} from '@platforma-sdk/model';
+} from "@platforma-sdk/model";
 import {
   Annotation,
   BlockModel,
@@ -16,8 +16,8 @@ import {
   PColumnName,
   stringifyJson,
   ValueType,
-} from '@platforma-sdk/model';
-import { z } from 'zod';
+} from "@platforma-sdk/model";
+import { z } from "zod";
 
 export const ImportFileHandleSchema = z
   .string()
@@ -25,25 +25,6 @@ export const ImportFileHandleSchema = z
   .refine<ImportFileHandle | undefined>(
     ((_a) => true) as (arg: string | undefined) => arg is ImportFileHandle | undefined,
   );
-
-export function* range(from: number, to: number, step = 1) {
-  for (let i = from; i < to; i += step) {
-    yield i;
-  }
-}
-
-export function toList<T>(iterable: Iterable<T>): T[] {
-  const lst: T[] = [];
-  for (const it of iterable) {
-    lst.push(it);
-  }
-
-  return lst;
-}
-
-export function times<R>(n: number, cb: (i: number) => R): R[] {
-  return toList(range(0, n)).map(cb);
-}
 
 export const $BlockArgs = z.object({
   numbers: z.array(z.coerce.number()),
@@ -68,13 +49,13 @@ export type UiState = {
   }[];
 };
 
-export const platforma = BlockModel.create('Heavy')
+export const platforma = BlockModel.create("Heavy")
 
   .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], handles: [] })
 
   .withUiState<UiState>({
     dataTableV2: {
-      sourceId: 'source_1',
+      sourceId: "source_1",
       numRows: 200,
       state: createPlDataTableStateV2(),
     },
@@ -84,71 +65,71 @@ export const platforma = BlockModel.create('Heavy')
 
   .argsValid((ctx) => {
     if (ctx.args.numbers.length === 5) {
-      throw new Error('argsValid: test error');
+      throw new Error("argsValid: test error");
     }
 
     return ctx.args.numbers.length > 0;
   })
 
-  .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
+  .output("numbers", (ctx) => ctx.outputs?.resolve("numbers")?.getDataAsJson<number[]>())
 
-  .output('progresses', (ctx) => {
-    const m = ctx.outputs?.resolve('progresses');
+  .output("progresses", (ctx) => {
+    const m = ctx.outputs?.resolve("progresses");
     const progresses = m?.mapFields((name, val) => [name, val?.getImportProgress()] as const);
     return Object.fromEntries(progresses ?? []);
   })
 
-  .output('ptV2Sheets', (ctx) => {
+  .output("ptV2Sheets", (ctx) => {
     const rowCount = ctx.uiState.dataTableV2.numRows ?? 0;
     const sheets = [
       {
         axis: {
           type: ValueType.Int,
-          name: 'part',
+          name: "part",
           annotations: {
-            [Annotation.Label]: 'Partitioned axis',
+            [Annotation.Label]: "Partitioned axis",
             [Annotation.DiscreteValues]: stringifyJson([0, 1]),
           } satisfies Annotation,
         },
         options: [
-          { value: 0, label: 'Partition 1' },
-          { value: 1, label: 'Partition 2' },
+          { value: 0, label: "Partition 1" },
+          { value: 1, label: "Partition 2" },
         ],
       } satisfies PlDataTableSheet,
     ];
     return rowCount > 0 ? sheets : [];
   })
 
-  .outputWithStatus('ptV2', (ctx) => {
+  .outputWithStatus("ptV2", (ctx) => {
     const rowCount = ctx.uiState.dataTableV2.numRows ?? 0;
     const makePartitionId = (rowCount: number, i: number) => Math.floor((2 * i) / (rowCount + 1));
     const columns: PColumn<PColumnValues>[] = [
       {
-        id: 'column1' as PObjectId,
+        id: "column1" as PObjectId,
         spec: {
-          kind: 'PColumn',
+          kind: "PColumn",
           valueType: ValueType.String,
-          name: 'example',
+          name: "example",
           annotations: {
-            [Annotation.Label]: 'String column',
-            [Annotation.DiscreteValues]: stringifyJson(['up', 'down']),
+            [Annotation.Label]: "String column",
+            [Annotation.DiscreteValues]: stringifyJson(["up", "down"]),
             [Annotation.Table.OrderPriority]: stringifyJson(101),
-            [Annotation.Description]: 'String column description',
+            [Annotation.Description]: "String column description",
           } satisfies Annotation,
           axesSpec: [
             {
               type: ValueType.Int,
-              name: 'part',
+              name: "part",
               annotations: {
-                [Annotation.Label]: 'Partitioned axis',
+                [Annotation.Label]: "Partitioned axis",
                 [Annotation.DiscreteValues]: stringifyJson([0, 1]),
               } satisfies Annotation,
             },
             {
               type: ValueType.Int,
-              name: 'index',
+              name: "index",
               annotations: {
-                [Annotation.Label]: 'Int axis',
+                [Annotation.Label]: "Int axis",
               } satisfies Annotation,
             },
           ],
@@ -162,31 +143,31 @@ export const platforma = BlockModel.create('Heavy')
         }),
       },
       {
-        id: 'column2' as PObjectId,
+        id: "column2" as PObjectId,
         spec: {
-          kind: 'PColumn',
+          kind: "PColumn",
           valueType: ValueType.Float,
-          name: 'value',
+          name: "value",
           annotations: {
-            [Annotation.Label]: 'Float column',
-            [Annotation.Table.Visibility]: 'optional',
+            [Annotation.Label]: "Float column",
+            [Annotation.Table.Visibility]: "optional",
             [Annotation.Table.OrderPriority]: stringifyJson(100),
-            [Annotation.Description]: 'Float column description',
+            [Annotation.Description]: "Float column description",
           } satisfies Annotation,
           axesSpec: [
             {
               type: ValueType.Int,
-              name: 'part',
+              name: "part",
               annotations: {
-                [Annotation.Label]: 'Partitioned axis',
+                [Annotation.Label]: "Partitioned axis",
                 [Annotation.DiscreteValues]: stringifyJson([0, 1]),
               } satisfies Annotation,
             },
             {
               type: ValueType.Int,
-              name: 'index',
+              name: "index",
               annotations: {
-                [Annotation.Label]: 'Int axis',
+                [Annotation.Label]: "Int axis",
               } satisfies Annotation,
             },
           ],
@@ -200,20 +181,20 @@ export const platforma = BlockModel.create('Heavy')
         }),
       },
       {
-        id: 'labelColumn' as PObjectId,
+        id: "labelColumn" as PObjectId,
         spec: {
-          kind: 'PColumn',
+          kind: "PColumn",
           valueType: ValueType.Int,
           name: PColumnName.Label,
           annotations: {
-            [Annotation.Label]: 'Int axis labels',
+            [Annotation.Label]: "Int axis labels",
           } satisfies Annotation,
           axesSpec: [
             {
               type: ValueType.Int,
-              name: 'index',
+              name: "index",
               annotations: {
-                [Annotation.Label]: 'Int axis',
+                [Annotation.Label]: "Int axis",
               } satisfies Annotation,
             },
           ],
@@ -227,29 +208,29 @@ export const platforma = BlockModel.create('Heavy')
         }),
       },
       {
-        id: 'linkerColumn' as PObjectId,
+        id: "linkerColumn" as PObjectId,
         spec: {
-          kind: 'PColumn',
+          kind: "PColumn",
           valueType: ValueType.Int,
-          name: 'linker',
+          name: "linker",
           annotations: {
-            [Annotation.Label]: 'Index axis linker',
+            [Annotation.Label]: "Index axis linker",
             [Annotation.IsLinkerColumn]: stringifyJson(true),
-            [Annotation.Table.Visibility]: 'hidden',
+            [Annotation.Table.Visibility]: "hidden",
           } satisfies Annotation,
           axesSpec: [
             {
               type: ValueType.Int,
-              name: 'index',
+              name: "index",
               annotations: {
-                [Annotation.Label]: 'Int axis',
+                [Annotation.Label]: "Int axis",
               } satisfies Annotation,
             },
             {
               type: ValueType.Int,
-              name: 'linkedIndex',
+              name: "linkedIndex",
               annotations: {
-                [Annotation.Label]: 'Linked int axis',
+                [Annotation.Label]: "Linked int axis",
               } satisfies Annotation,
             },
           ],
@@ -263,111 +244,136 @@ export const platforma = BlockModel.create('Heavy')
         }),
       },
     ];
-    for (let j = 1; j < 10; ++j) {
+    for (let j = 1; j < 5; ++j) {
       columns.push({
         id: `alphabeticalColumn${j}` as PObjectId,
         spec: {
-          kind: 'PColumn',
+          kind: "PColumn",
           valueType: ValueType.String,
-          name: 'value',
+          name: "value",
           annotations: {
             [Annotation.Label]: `Alphabetical column ${j}`,
-            [Annotation.Table.Visibility]: 'optional',
-            [Annotation.Table.OrderPriority]: stringifyJson(10 - j),
+            [Annotation.Table.Visibility]: "optional",
+            [Annotation.Table.OrderPriority]: stringifyJson(5 - j),
           } satisfies Annotation,
           axesSpec: [
             {
               type: ValueType.Int,
-              name: 'linkedIndex',
+              name: "linkedIndex",
               annotations: {
-                [Annotation.Label]: 'Linked int axis',
+                [Annotation.Label]: "Linked int axis",
               } satisfies Annotation,
             },
           ],
         },
         data: times(rowCount, (i) => {
-          const v = i + 1;
+          const k = i + 1;
           return {
-            key: [v],
-            val: v.toString().repeat(j),
+            key: [k],
+            val: pseudoRandomString(k, k * 10),
           };
         }),
       });
     }
-    return createPlDataTableV2(
-      ctx,
-      columns,
-      ctx.uiState.dataTableV2.state,
-    );
+    for (let j = 1; j < 5; ++j) {
+      columns.push({
+        id: `numericalColumn${j}` as PObjectId,
+        spec: {
+          kind: "PColumn",
+          valueType: ValueType.Double,
+          name: "value",
+          annotations: {
+            [Annotation.Label]: `Numerical column ${j}`,
+            [Annotation.Table.Visibility]: "optional",
+            [Annotation.Table.OrderPriority]: stringifyJson(5 - 1),
+          } satisfies Annotation,
+          axesSpec: [
+            {
+              type: ValueType.Int,
+              name: "linkedIndex",
+              annotations: {
+                [Annotation.Label]: "Linked int axis",
+              } satisfies Annotation,
+            },
+          ],
+        },
+        data: times(rowCount, (i) => {
+          const k = i + 1;
+          const v = Number(k.toString().repeat(j));
+          return {
+            key: [k],
+            val: j % 2 === 0 ? v * Math.pow(2, i / 10) : v / Math.pow(2, i / 10),
+          };
+        }),
+      });
+    }
+    return createPlDataTableV2(ctx, columns, ctx.uiState.dataTableV2.state);
   })
 
   .title((ctx) => {
     if (ctx.args.numbers.length === 5) {
-      throw new Error('block title: test error');
+      throw new Error("block title: test error");
     }
 
-    return 'Ui Examples';
+    return "Ui Examples";
   })
 
   .sections((ctx) => {
     const dynamicSections = (ctx.uiState.dynamicSections ?? []).map((it) => ({
-      type: 'link' as const,
+      type: "link" as const,
       href: `/section?id=${it.id}` as const,
       label: it.label,
     }));
 
-    if (dynamicSections.some((it) => it.label === 'Error')) {
-      throw new Error('sections: test error');
+    if (dynamicSections.some((it) => it.label === "Error")) {
+      throw new Error("sections: test error");
     }
 
     return [
-      { type: 'link', href: '/loaders', label: 'Loaders' },
-      { type: 'link', href: '/', label: 'Icons/Masks' },
-      { type: 'link', href: '/state', label: 'State' },
-      { type: 'link', href: '/layout', label: 'Layout' },
-      { type: 'link', href: '/form-components', label: 'Form Components' },
-      { type: 'link', href: '/log-view', label: 'PlLogView' },
-      { type: 'link', href: '/modals', label: 'Modals' },
-      { type: 'link', href: '/select-files', label: 'Select Files' },
-      { type: 'link', href: '/inject-env', label: 'Inject env' },
-      { type: 'link', href: '/use-watch-fetch', label: 'useWatchFetch' },
-      { type: 'link', href: '/typography', label: 'Typography' },
-      { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },
-      { type: 'link', href: '/ag-grid-vue-with-builder', label: 'AgGridVue with builder' },
-      { type: 'link', href: '/pl-annotations', label: 'PlAnnotations' },
-      { type: 'link', href: '/pl-ag-data-table-v2', label: 'PlAgDataTableV2' },
-      { type: 'link', href: '/pl-splash-page', label: 'PlSplashPage' },
-      { type: 'link', href: '/pl-file-input-page', label: 'PlFileInputPage' },
-      { type: 'link', href: '/pl-number-field-page', label: 'PlNumberFieldPage' },
-      { type: 'link', href: '/pl-error-boundary-page', label: 'PlErrorBoundaryPage' },
-      { type: 'link', href: '/pl-element-list-page', label: 'PlElementList' },
-      { type: 'link', href: '/text-fields', label: 'PlTextField' },
-      { type: 'link', href: '/tabs', label: 'PlTabs' },
-      { type: 'link', href: '/pl-autocomplete', label: 'PlAutocomplete' },
-      { type: 'link', href: '/radio', label: 'PlRadio' },
-      { type: 'link', href: '/stacked-bar', label: 'PlChartStackedBar' },
-      { type: 'link', href: '/histogram', label: 'PlChartHistogram' },
-      { type: 'link', href: '/buttons', label: 'ButtonsPage' },
-      { type: 'link', href: '/errors', label: 'Errors' },
-      { type: 'link', href: '/downloads', label: 'Downloads' },
-      { type: 'link', href: '/notifications', label: 'Notifications' },
-      { type: 'link', href: '/drafts', label: 'Drafts' },
-      { type: 'link', href: '/pl-autocomplete', label: 'PlAutocomplete' },
-      { type: 'link', href: '/pl-autocomplete-multi', label: 'PlAutocompleteMulti' },
-      { type: 'link', href: '/radio', label: 'PlRadio' },
-      { type: 'link', href: '/advanced-filter', label: 'PlAdvancedFilter' },
+      { type: "link", href: "/loaders", label: "Loaders" },
+      { type: "link", href: "/", label: "Icons/Masks" },
+      { type: "link", href: "/state", label: "State" },
+      { type: "link", href: "/layout", label: "Layout" },
+      { type: "link", href: "/form-components", label: "Form Components" },
+      { type: "link", href: "/log-view", label: "PlLogView" },
+      { type: "link", href: "/modals", label: "Modals" },
+      { type: "link", href: "/select-files", label: "Select Files" },
+      { type: "link", href: "/inject-env", label: "Inject env" },
+      { type: "link", href: "/use-watch-fetch", label: "useWatchFetch" },
+      { type: "link", href: "/typography", label: "Typography" },
+      { type: "link", href: "/ag-grid-vue", label: "AgGridVue" },
+      { type: "link", href: "/ag-grid-vue-with-builder", label: "AgGridVue with builder" },
+      { type: "link", href: "/pl-annotations", label: "PlAnnotations" },
+      { type: "link", href: "/pl-ag-data-table-v2", label: "PlAgDataTableV2" },
+      { type: "link", href: "/pl-splash-page", label: "PlSplashPage" },
+      { type: "link", href: "/pl-file-input-page", label: "PlFileInputPage" },
+      { type: "link", href: "/pl-number-field-page", label: "PlNumberFieldPage" },
+      { type: "link", href: "/pl-error-boundary-page", label: "PlErrorBoundaryPage" },
+      { type: "link", href: "/pl-element-list-page", label: "PlElementList" },
+      { type: "link", href: "/text-fields", label: "PlTextField" },
+      { type: "link", href: "/tabs", label: "PlTabs" },
+      { type: "link", href: "/pl-autocomplete", label: "PlAutocomplete" },
+      { type: "link", href: "/radio", label: "PlRadio" },
+      { type: "link", href: "/stacked-bar", label: "PlChartStackedBar" },
+      { type: "link", href: "/histogram", label: "PlChartHistogram" },
+      { type: "link", href: "/buttons", label: "ButtonsPage" },
+      { type: "link", href: "/errors", label: "Errors" },
+      { type: "link", href: "/downloads", label: "Downloads" },
+      { type: "link", href: "/notifications", label: "Notifications" },
+      { type: "link", href: "/drafts", label: "Drafts" },
+      { type: "link", href: "/pl-autocomplete", label: "PlAutocomplete" },
+      { type: "link", href: "/pl-autocomplete-multi", label: "PlAutocompleteMulti" },
+      { type: "link", href: "/radio", label: "PlRadio" },
+      { type: "link", href: "/advanced-filter", label: "PlAdvancedFilter" },
+      { type: "link", href: "/pl-tooltip", label: "PlTooltip" },
       ...(dynamicSections.length
-        ? [
-            { type: 'delimiter' },
-            ...dynamicSections,
-            { type: 'delimiter' },
-          ] as const
+        ? ([{ type: "delimiter" }, ...dynamicSections, { type: "delimiter" }] as const)
         : []),
       {
-        type: 'link',
-        href: '/add-section',
-        appearance: 'add-section',
-        label: 'New Dynamic section',
+        type: "link",
+        href: "/add-section",
+        appearance: "add-section",
+        label: "New Dynamic section",
       },
     ];
   })
@@ -376,3 +382,39 @@ export const platforma = BlockModel.create('Heavy')
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;
+
+function mulberry32(seed: number) {
+  return () => {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+function pseudoRandomString(seed: number, length: number): string {
+  const rng = mulberry32(seed);
+  return Array.from({ length }, () => chars.charAt(Math.floor(rng() * chars.length))).join("");
+}
+
+export function* range(from: number, to: number, step = 1) {
+  for (let i = from; i < to; i += step) {
+    yield i;
+  }
+}
+
+export function toList<T>(iterable: Iterable<T>): T[] {
+  const lst: T[] = [];
+  for (const it of iterable) {
+    lst.push(it);
+  }
+
+  return lst;
+}
+
+export function times<R>(n: number, cb: (i: number) => R): R[] {
+  return toList(range(0, n)).map(cb);
+}

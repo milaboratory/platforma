@@ -1,4 +1,4 @@
-import type { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
+import type { DuplexStreamingCall } from "@protobuf-ts/runtime-rpc";
 
 export interface RequestsStream<T> {
   /**
@@ -20,6 +20,5 @@ export interface BiDiStream<I extends object, O extends object> {
 }
 
 // Compile-time type compatibility check: BiDiStream is compatible with DuplexStreamingCall implementaions.
-type _CompatibilityTest<I extends object, O extends object> = DuplexStreamingCall<I, O> extends BiDiStream<I, O>
-  ? true
-  : never;
+type _CompatibilityTest<I extends object, O extends object> =
+  DuplexStreamingCall<I, O> extends BiDiStream<I, O> ? true : never;

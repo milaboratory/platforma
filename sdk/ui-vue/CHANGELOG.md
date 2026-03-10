@@ -1,5 +1,283 @@
 # @platforma-sdk/ui-vue
 
+## 1.58.19
+
+### Patch Changes
+
+- a93de45: Fix table filters bugs
+- Updated dependencies [a93de45]
+  - @milaboratories/uikit@2.10.42
+  - @platforma-sdk/model@1.58.19
+
+## 1.58.17
+
+### Patch Changes
+
+- Updated dependencies [f2b7989]
+  - @milaboratories/uikit@2.10.41
+
+## 1.58.16
+
+### Patch Changes
+
+- 746838c: Remove `sideEffects` field that caused Rolldown to tree-shake CSS imports from barrel modules
+- Updated dependencies [746838c]
+  - @milaboratories/uikit@2.10.40
+
+## 1.58.11
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/uikit@2.10.39
+  - @platforma-sdk/model@1.58.11
+
+## 1.58.10
+
+### Patch Changes
+
+- d2c7384: Fix table column visibility state: prevent reload loop, preserve defaults for optional columns
+
+## 1.58.9
+
+### Patch Changes
+
+- Updated dependencies [4d83b3c]
+  - @platforma-sdk/model@1.58.9
+  - @milaboratories/uikit@2.10.38
+
+## 1.58.8
+
+### Patch Changes
+
+- 5a37042: fix export component PlAdvancedFilters
+
+## 1.58.5
+
+### Patch Changes
+
+- Updated dependencies [c2d9319]
+  - @platforma-sdk/model@1.58.5
+  - @milaboratories/uikit@2.10.37
+
+## 1.58.4
+
+### Patch Changes
+
+- ea0c353: fix reactivity
+
+## 1.58.3
+
+### Patch Changes
+
+- Updated dependencies [327444c]
+  - @platforma-sdk/model@1.58.3
+  - @milaboratories/uikit@2.10.36
+
+## 1.58.2
+
+### Patch Changes
+
+- @platforma-sdk/model@1.58.2
+- @milaboratories/uikit@2.10.35
+
+## 1.58.1
+
+### Patch Changes
+
+- Updated dependencies [d318a76]
+  - @platforma-sdk/model@1.58.1
+  - @milaboratories/uikit@2.10.34
+
+## 1.58.0
+
+### Minor Changes
+
+- b5d19c6: Type-safe `usePlugin` composable with `PluginHandle` branded type.
+
+  **`@platforma-sdk/model`:**
+
+  - Added `PluginFactory` interface (public return type of `PluginModelBuilder.build()`)
+  - Added `PluginHandle<F>` branded type using `Branded` from `@milaboratories/helpers`
+  - Added `InferPluginHandles` type helper
+  - Added `pluginIds` to `BlockModelInfo`
+  - Added `pluginOutputKey`, `isPluginOutputKey`, `pluginOutputPrefix` helpers
+
+  **`@platforma-sdk/ui-vue`:**
+
+  - Added `usePlugin(handle)` composable — reactive `model.data`, computed `model.outputs` and `model.outputErrors`, isolated per plugin
+  - Added `app.plugins` record mapping plugin IDs to typed `PluginHandle` values
+  - Renamed `PluginSlot` to `PluginState<Data, Outputs>` (generic, avoids Vue naming conflict)
+  - Filtered plugin output keys from block-level `outputs` and `outputErrors` via helpers
+  - Removed `usePluginData` (replaced by `usePlugin`)
+
+### Patch Changes
+
+- Updated dependencies [b5d19c6]
+  - @platforma-sdk/model@1.58.0
+  - @milaboratories/uikit@2.10.33
+
+## 1.57.3
+
+### Patch Changes
+
+- 0271e3f: Replace css-injected-by-js with lib-inject-css for per-component CSS imports
+- Updated dependencies [0271e3f]
+  - @milaboratories/uikit@2.10.32
+  - @platforma-sdk/model@1.57.2
+
+## 1.57.2
+
+### Patch Changes
+
+- Updated dependencies [6ba4c69]
+  - @platforma-sdk/model@1.57.2
+  - @milaboratories/uikit@2.10.31
+
+## 1.57.0
+
+### Patch Changes
+
+- Updated dependencies [8baa2b3]
+  - @platforma-sdk/model@1.57.0
+  - @milaboratories/uikit@2.10.30
+
+## 1.56.0
+
+### Patch Changes
+
+- Updated dependencies [f2daf69]
+  - @platforma-sdk/model@1.56.0
+  - @milaboratories/uikit@2.10.29
+
+## 1.55.2
+
+### Patch Changes
+
+- bc16fab: add helper with tooltip for table fast search
+- Updated dependencies [bc16fab]
+  - @milaboratories/uikit@2.10.28
+
+## 1.55.1
+
+### Patch Changes
+
+- Updated dependencies [3e71add]
+  - @milaboratories/uikit@2.10.27
+
+## 1.55.0
+
+### Minor Changes
+
+- 01d0b52: BlockModelV3 update
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @platforma-sdk/model@1.55.0
+  - @milaboratories/uikit@2.10.26
+
+## 1.54.13
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+- Updated dependencies [cb28fde]
+  - @milaboratories/uikit@2.10.25
+  - @platforma-sdk/model@1.54.13
+
+## 1.54.12
+
+### Patch Changes
+
+- Updated dependencies [d2e1b6b]
+  - @milaboratories/uikit@2.10.24
+
+## 1.54.11
+
+### Patch Changes
+
+- 9c33ff6: table hidden columns fix
+
+## 1.54.10
+
+### Patch Changes
+
+- Updated dependencies [866a323]
+  - @platforma-sdk/model@1.54.10
+  - @milaboratories/uikit@2.10.23
+
+## 1.54.9
+
+### Patch Changes
+
+- Updated dependencies [a3659cd]
+  - @platforma-sdk/model@1.54.9
+  - @milaboratories/uikit@2.10.22
+
+## 1.54.8
+
+### Patch Changes
+
+- 4f04561: simplify distil , renaming
+- Updated dependencies [4f04561]
+  - @platforma-sdk/model@1.54.8
+  - @milaboratories/uikit@2.10.21
+
+## 1.54.7
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/uikit@2.10.20
+  - @platforma-sdk/model@1.54.7
+
+## 1.54.1
+
+### Patch Changes
+
+- @milaboratories/uikit@2.10.19
+- @platforma-sdk/model@1.53.15
+
+## 1.54.0
+
+### Minor Changes
+
+- ddc83fb: Make PlAgDataTableV2 export TSV by default instead of CSV
+
+## 1.53.15
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @platforma-sdk/model@1.53.15
+  - @milaboratories/uikit@2.10.18
+
+## 1.53.14
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/biowasm-tools@2.0.2
+  - @milaboratories/ptabler-expression-js@1.1.15
+  - @milaboratories/uikit@2.10.17
+  - @platforma-sdk/model@1.53.14
+
+## 1.53.13
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/biowasm-tools@2.0.1
+  - @milaboratories/ptabler-expression-js@1.1.14
+  - @milaboratories/uikit@2.10.16
+  - @platforma-sdk/model@1.53.13
+
 ## 1.53.11
 
 ### Patch Changes
@@ -1947,7 +2225,6 @@
 ### Patch Changes
 
 - e06efcd: Pin and standardize dependency versions for network and utility libraries to ensure consistent builds and prevent unexpected behavior from minor version changes. Changes include:
-
   - Pin `@protobuf-ts/*` packages to version 2.9.4 using YAML anchors
   - Pin AWS SDK packages to version 3.750.0
   - Change `undici` from `^7.2.3` to `~7.2.3` (only patch updates)

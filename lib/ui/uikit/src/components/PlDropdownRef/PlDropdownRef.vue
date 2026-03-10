@@ -3,14 +3,14 @@
  * A component for selecting one value from a list of options
  */
 export default {
-  name: 'PlDropdownRef',
+  name: "PlDropdownRef",
 };
 </script>
 
 <script lang="ts" setup generic="M = ModelRef">
-import { computed, useSlots } from 'vue';
-import type { ListOption, ModelRef, RefOption } from '../../types';
-import { PlDropdown } from '../PlDropdown';
+import { computed, useSlots } from "vue";
+import type { ListOption, ModelRef, RefOption } from "../../types";
+import { PlDropdown } from "../PlDropdown";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const slots: any = useSlots();
@@ -19,7 +19,7 @@ defineEmits<{
   /**
    * Emitted when the model value is updated.
    */
-  (e: 'update:modelValue', value: M | undefined): void;
+  (e: "update:modelValue", value: M | undefined): void;
 }>();
 
 const props = withDefaults(
@@ -67,31 +67,31 @@ const props = withDefaults(
     /**
      * Option list item size
      */
-    optionSize?: 'small' | 'medium';
+    optionSize?: "small" | "medium";
   }>(),
   {
-    label: '',
+    label: "",
     helper: undefined,
     loadingOptionsHelper: undefined,
     error: undefined,
-    placeholder: '...',
+    placeholder: "...",
     clearable: false,
     required: false,
     disabled: false,
     arrowIcon: undefined,
-    optionSize: 'small',
+    optionSize: "small",
     options: undefined,
   },
 );
 
 const options = computed(() =>
   props.options?.map((opt) =>
-    'ref' in opt
-      ? {
+    "ref" in opt
+      ? ({
           label: opt.label,
           value: opt.ref,
           group: opt.group,
-        } as ListOption<M>
+        } as ListOption<M>)
       : opt,
   ),
 );

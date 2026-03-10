@@ -1,5 +1,23 @@
 # @milaboratories/sequences
 
+## 1.1.9
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
+## 1.1.8
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
+## 1.1.7
+
+### Patch Changes
+
+- f89a883: full integration oxc
+
 ## 1.1.6
 
 ### Patch Changes

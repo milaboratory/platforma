@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import type { ContextOption } from './types';
+import type { ContextOption } from "./types";
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(["close"]);
 
 defineProps<{
   options: readonly ContextOption[];
@@ -9,7 +9,7 @@ defineProps<{
 
 const onClickOption = (opt: ContextOption) => {
   opt.cb();
-  emit('close');
+  emit("close");
 };
 </script>
 
@@ -45,7 +45,7 @@ const onClickOption = (opt: ContextOption) => {
   &::before {
     display: block;
     position: absolute;
-    content: '';
+    content: "";
     top: -1px;
     left: -1px;
     bottom: -1px;

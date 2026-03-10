@@ -1,5 +1,188 @@
 # @platforma-sdk/block-tools
 
+## 2.6.66
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.12.11
+
+## 2.6.65
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-common@1.25.2
+  - @milaboratories/pl-model-middle-layer@1.12.10
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/resolve-helper@1.1.3
+  - @milaboratories/ts-helpers@1.7.3
+  - @milaboratories/ts-helpers-oclif@1.1.38
+  - @platforma-sdk/blocks-deps-updater@2.0.2
+
+## 2.6.64
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.12.9
+
+## 2.6.63
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.12.8
+
+## 2.6.62
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.12.7
+
+## 2.6.61
+
+### Patch Changes
+
+- Updated dependencies [523a59f]
+  - @milaboratories/pl-model-common@1.25.1
+  - @milaboratories/pl-model-middle-layer@1.12.6
+
+## 2.6.60
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.12.5
+
+## 2.6.59
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.12.4
+
+## 2.6.58
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.12.3
+
+## 2.6.57
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.12.2
+
+## 2.6.56
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.12.1
+
+## 2.6.55
+
+### Patch Changes
+
+- Updated dependencies [2ad9783]
+  - @milaboratories/pl-model-middle-layer@1.12.0
+
+## 2.6.54
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @milaboratories/pl-model-common@1.25.0
+  - @milaboratories/pl-model-middle-layer@1.11.14
+
+## 2.6.53
+
+### Patch Changes
+
+- Updated dependencies [cb28fde]
+  - @milaboratories/pl-model-common@1.24.11
+  - @milaboratories/pl-model-middle-layer@1.11.13
+
+## 2.6.52
+
+### Patch Changes
+
+- Updated dependencies [866a323]
+  - @milaboratories/pl-model-common@1.24.10
+  - @milaboratories/pl-model-middle-layer@1.11.12
+
+## 2.6.51
+
+### Patch Changes
+
+- Updated dependencies [a3659cd]
+  - @milaboratories/pl-model-common@1.24.9
+  - @milaboratories/pl-model-middle-layer@1.11.11
+
+## 2.6.50
+
+### Patch Changes
+
+- Updated dependencies [4f04561]
+  - @milaboratories/pl-model-common@1.24.8
+  - @milaboratories/pl-model-middle-layer@1.11.10
+
+## 2.6.49
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-middle-layer@1.11.9
+  - @milaboratories/pl-model-common@1.24.7
+  - @milaboratories/pl-http@1.2.3
+  - @milaboratories/resolve-helper@1.1.2
+  - @milaboratories/ts-helpers@1.7.2
+  - @milaboratories/ts-helpers-oclif@1.1.37
+
+## 2.6.48
+
+### Patch Changes
+
+- Updated dependencies [6689b53]
+  - @milaboratories/pl-model-middle-layer@1.11.8
+
+## 2.6.47
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-model-middle-layer@1.11.7
+  - @milaboratories/pl-http@1.2.3
+  - @milaboratories/pl-model-common@1.24.6
+  - @milaboratories/resolve-helper@1.1.2
+  - @milaboratories/ts-helpers@1.7.2
+  - @milaboratories/ts-helpers-oclif@1.1.37
+
+## 2.6.46
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-model-common@1.24.5
+  - @milaboratories/pl-model-middle-layer@1.11.6
+  - @milaboratories/pl-http@1.2.2
+  - @milaboratories/resolve-helper@1.1.2
+  - @milaboratories/ts-helpers@1.7.2
+  - @milaboratories/ts-helpers-oclif@1.1.37
+  - @platforma-sdk/blocks-deps-updater@2.0.1
+
+## 2.6.45
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/ts-helpers-oclif@1.1.36
+  - @milaboratories/pl-model-middle-layer@1.11.5
+  - @milaboratories/ts-helpers@1.7.1
+  - @milaboratories/pl-model-common@1.24.4
+  - @milaboratories/pl-http@1.2.1
+  - @milaboratories/resolve-helper@1.1.1
+
 ## 2.6.44
 
 ### Patch Changes

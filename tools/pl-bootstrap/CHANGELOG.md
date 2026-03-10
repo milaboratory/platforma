@@ -1,5 +1,100 @@
 # @platforma-sdk/bootstrap
 
+## 5.2.55
+
+### Patch Changes
+
+- Updated dependencies [e2d86ca]
+  - @milaboratories/pl-deployments@2.15.21
+
+## 5.2.54
+
+### Patch Changes
+
+- Updated dependencies [0ffffec]
+  - @milaboratories/pl-deployments@2.15.20
+
+## 5.2.53
+
+### Patch Changes
+
+- Updated dependencies [b3c0745]
+  - @milaboratories/pl-deployments@2.15.19
+
+## 5.2.52
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-deployments@2.15.18
+
+## 5.2.51
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.15.17
+
+## 5.2.50
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.15.16
+
+## 5.2.49
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.15.15
+
+## 5.2.48
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.15.14
+
+## 5.2.47
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.15.13
+
+## 5.2.46
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.15.12
+
+## 5.2.45
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.15.11
+
+## 5.2.44
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @milaboratories/pl-deployments@2.15.10
+
+## 5.2.43
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/pl-deployments@2.15.9
+
+## 5.2.42
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/pl-deployments@2.15.8
+
 ## 5.2.41
 
 ### Patch Changes

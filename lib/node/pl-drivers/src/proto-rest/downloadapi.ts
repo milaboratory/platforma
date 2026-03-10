@@ -4,102 +4,102 @@
  */
 
 export interface paths {
-    "/v1/get-download-url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["Download_GetDownloadURL"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/v1/get-download-url": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    post: operations["Download_GetDownloadURL"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        GetDownloadURL_HTTPHeader: {
-            name: string;
-            value: string;
-        };
-        GetDownloadURL_Request: {
-            resourceId: string;
-            /**
-             * @description Pass `true` here if the blob will be downloaded from internal network,
-             *      e.g. controllers could use this if they are trying to download something from internal network.
-             *      For backward compatibility, by default pl treats all requests as from external network.
-             */
-            isInternalUse: boolean;
-        };
-        GetDownloadURL_Response: {
-            downloadUrl: string;
-            headers: components["schemas"]["GetDownloadURL_HTTPHeader"][];
-        };
-        /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
-        GoogleProtobufAny: {
-            /** @description The type of the serialized message. */
-            "@type": string;
-        } & {
-            [key: string]: unknown;
-        };
-        /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
-        Status: {
-            /**
-             * Format: int32
-             * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
-             */
-            code: number;
-            /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
-            message: string;
-            /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
-            details: components["schemas"]["GoogleProtobufAny"][];
-        };
+  schemas: {
+    GetDownloadURL_HTTPHeader: {
+      name: string;
+      value: string;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    GetDownloadURL_Request: {
+      resourceId: string;
+      /**
+       * @description Pass `true` here if the blob will be downloaded from internal network,
+       *      e.g. controllers could use this if they are trying to download something from internal network.
+       *      For backward compatibility, by default pl treats all requests as from external network.
+       */
+      isInternalUse: boolean;
+    };
+    GetDownloadURL_Response: {
+      downloadUrl: string;
+      headers: components["schemas"]["GetDownloadURL_HTTPHeader"][];
+    };
+    /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
+    GoogleProtobufAny: {
+      /** @description The type of the serialized message. */
+      "@type": string;
+    } & {
+      [key: string]: unknown;
+    };
+    /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
+    Status: {
+      /**
+       * Format: int32
+       * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+       */
+      code: number;
+      /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
+      message: string;
+      /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
+      details: components["schemas"]["GoogleProtobufAny"][];
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    Download_GetDownloadURL: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GetDownloadURL_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetDownloadURL_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  Download_GetDownloadURL: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GetDownloadURL_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GetDownloadURL_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
 }

@@ -1,5 +1,273 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.200
+
+### Patch Changes
+
+- a93de45: Fix table filters bugs
+- Updated dependencies [a93de45]
+  - @platforma-sdk/ui-vue@1.58.19
+  - @platforma-sdk/model@1.58.19
+  - @milaboratories/milaboratories.monetization-test.model@1.0.77
+
+## 1.1.199
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.58.17
+
+## 1.1.198
+
+### Patch Changes
+
+- Updated dependencies [746838c]
+  - @platforma-sdk/ui-vue@1.58.16
+
+## 1.1.197
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.76
+  - @platforma-sdk/model@1.58.11
+  - @platforma-sdk/ui-vue@1.58.11
+
+## 1.1.196
+
+### Patch Changes
+
+- Updated dependencies [d2c7384]
+  - @platforma-sdk/ui-vue@1.58.10
+
+## 1.1.195
+
+### Patch Changes
+
+- Updated dependencies [4d83b3c]
+  - @platforma-sdk/model@1.58.9
+  - @milaboratories/milaboratories.monetization-test.model@1.0.75
+  - @platforma-sdk/ui-vue@1.58.9
+
+## 1.1.194
+
+### Patch Changes
+
+- Updated dependencies [5a37042]
+  - @platforma-sdk/ui-vue@1.58.8
+
+## 1.1.193
+
+### Patch Changes
+
+- Updated dependencies [c2d9319]
+  - @platforma-sdk/model@1.58.5
+  - @milaboratories/milaboratories.monetization-test.model@1.0.74
+  - @platforma-sdk/ui-vue@1.58.5
+
+## 1.1.192
+
+### Patch Changes
+
+- Updated dependencies [ea0c353]
+  - @platforma-sdk/ui-vue@1.58.4
+
+## 1.1.191
+
+### Patch Changes
+
+- Updated dependencies [327444c]
+  - @platforma-sdk/model@1.58.3
+  - @milaboratories/milaboratories.monetization-test.model@1.0.73
+  - @platforma-sdk/ui-vue@1.58.3
+
+## 1.1.190
+
+### Patch Changes
+
+- @platforma-sdk/model@1.58.2
+- @milaboratories/milaboratories.monetization-test.model@1.0.72
+- @platforma-sdk/ui-vue@1.58.2
+
+## 1.1.189
+
+### Patch Changes
+
+- Updated dependencies [d318a76]
+  - @platforma-sdk/model@1.58.1
+  - @milaboratories/milaboratories.monetization-test.model@1.0.71
+  - @platforma-sdk/ui-vue@1.58.1
+
+## 1.1.188
+
+### Patch Changes
+
+- Updated dependencies [b5d19c6]
+  - @platforma-sdk/model@1.58.0
+  - @platforma-sdk/ui-vue@1.58.0
+  - @milaboratories/milaboratories.monetization-test.model@1.0.70
+
+## 1.1.187
+
+### Patch Changes
+
+- Updated dependencies [0271e3f]
+  - @platforma-sdk/ui-vue@1.57.3
+  - @milaboratories/milaboratories.monetization-test.model@1.0.69
+  - @platforma-sdk/model@1.57.2
+
+## 1.1.186
+
+### Patch Changes
+
+- Updated dependencies [6ba4c69]
+  - @platforma-sdk/model@1.57.2
+  - @milaboratories/milaboratories.monetization-test.model@1.0.69
+  - @platforma-sdk/ui-vue@1.57.2
+
+## 1.1.185
+
+### Patch Changes
+
+- Updated dependencies [8baa2b3]
+  - @platforma-sdk/model@1.57.0
+  - @milaboratories/milaboratories.monetization-test.model@1.0.68
+  - @platforma-sdk/ui-vue@1.57.0
+
+## 1.1.184
+
+### Patch Changes
+
+- Updated dependencies [f2daf69]
+  - @platforma-sdk/model@1.56.0
+  - @milaboratories/milaboratories.monetization-test.model@1.0.67
+  - @platforma-sdk/ui-vue@1.56.0
+
+## 1.1.183
+
+### Patch Changes
+
+- Updated dependencies [bc16fab]
+  - @platforma-sdk/ui-vue@1.55.2
+
+## 1.1.182
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.55.1
+
+## 1.1.181
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @platforma-sdk/model@1.55.0
+  - @platforma-sdk/ui-vue@1.55.0
+  - @milaboratories/milaboratories.monetization-test.model@1.0.66
+
+## 1.1.180
+
+### Patch Changes
+
+- Updated dependencies [cb28fde]
+  - @platforma-sdk/ui-vue@1.54.13
+  - @platforma-sdk/model@1.54.13
+  - @milaboratories/milaboratories.monetization-test.model@1.0.65
+
+## 1.1.179
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.54.12
+
+## 1.1.178
+
+### Patch Changes
+
+- Updated dependencies [9c33ff6]
+  - @platforma-sdk/ui-vue@1.54.11
+
+## 1.1.177
+
+### Patch Changes
+
+- Updated dependencies [866a323]
+  - @platforma-sdk/model@1.54.10
+  - @milaboratories/milaboratories.monetization-test.model@1.0.64
+  - @platforma-sdk/ui-vue@1.54.10
+
+## 1.1.176
+
+### Patch Changes
+
+- Updated dependencies [a3659cd]
+  - @platforma-sdk/model@1.54.9
+  - @milaboratories/milaboratories.monetization-test.model@1.0.63
+  - @platforma-sdk/ui-vue@1.54.9
+
+## 1.1.175
+
+### Patch Changes
+
+- Updated dependencies [4f04561]
+  - @platforma-sdk/ui-vue@1.54.8
+  - @platforma-sdk/model@1.54.8
+  - @milaboratories/milaboratories.monetization-test.model@1.0.62
+
+## 1.1.174
+
+### Patch Changes
+
+- Updated dependencies [0ae1854]
+  - @platforma-sdk/ui-vue@1.54.7
+  - @platforma-sdk/model@1.54.7
+  - @milaboratories/milaboratories.monetization-test.model@1.0.61
+
+## 1.1.173
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.54.1
+- @milaboratories/milaboratories.monetization-test.model@1.0.60
+- @platforma-sdk/model@1.53.15
+
+## 1.1.172
+
+### Patch Changes
+
+- Updated dependencies [ddc83fb]
+  - @platforma-sdk/ui-vue@1.54.0
+
+## 1.1.171
+
+### Patch Changes
+
+- c620234: remove unused packages
+- Updated dependencies [c620234]
+  - @platforma-sdk/ui-vue@1.53.15
+  - @platforma-sdk/model@1.53.15
+  - @milaboratories/milaboratories.monetization-test.model@1.0.60
+
+## 1.1.170
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+- Updated dependencies [a6ea24f]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.59
+  - @platforma-sdk/model@1.53.14
+  - @platforma-sdk/ui-vue@1.53.14
+
+## 1.1.169
+
+### Patch Changes
+
+- f89a883: full integration oxc
+- Updated dependencies [f89a883]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.58
+  - @platforma-sdk/ui-vue@1.53.13
+  - @platforma-sdk/model@1.53.13
+
 ## 1.1.168
 
 ### Patch Changes

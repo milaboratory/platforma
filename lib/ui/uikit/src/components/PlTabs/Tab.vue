@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { onMounted, unref, ref, reactive } from 'vue';
-import { PlTooltip } from '../PlTooltip';
-import type { TabOption } from './types';
+import { onMounted, unref, ref, reactive } from "vue";
+import { PlTooltip } from "../PlTooltip";
+import type { TabOption } from "./types";
 
 const rootRef = ref<{ $el: HTMLElement }>();
 
@@ -20,7 +20,7 @@ onMounted(() => {
     return;
   }
 
-  const el = root.$el.querySelector('span') as HTMLElement | null;
+  const el = root.$el.querySelector("span") as HTMLElement | null;
 
   if (!el) {
     return;

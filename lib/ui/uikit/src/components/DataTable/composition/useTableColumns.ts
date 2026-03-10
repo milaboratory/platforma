@@ -1,10 +1,10 @@
-import type { ColumnSpecSettings, TableSettings, TableColumn, TableData } from '../types';
-import type { ComputedRef } from 'vue';
-import { computed } from 'vue';
-import { sliceBy } from '@milaboratories/helpers';
-import { asConst } from '@milaboratories/helpers';
-import { uniqueId } from '@milaboratories/helpers';
-import { GAP } from '../constants';
+import type { ColumnSpecSettings, TableSettings, TableColumn, TableData } from "../types";
+import type { ComputedRef } from "vue";
+import { computed } from "vue";
+import { sliceBy } from "@milaboratories/helpers";
+import { asConst } from "@milaboratories/helpers";
+import { uniqueId } from "@milaboratories/helpers";
+import { GAP } from "../constants";
 
 export function useTableColumns(state: { data: TableData; settings: ComputedRef<TableSettings> }) {
   return computed<TableColumn[]>(() => {
@@ -20,7 +20,7 @@ export function useTableColumns(state: { data: TableData; settings: ComputedRef<
       columns.unshift(
         asConst<ColumnSpecSettings>({
           id: controlId,
-          label: '#',
+          label: "#",
           width: 60,
           frozen: true,
         }),

@@ -1,14 +1,17 @@
-import type { PTableColumnId, PTableColumnSpec } from './table_common';
-import type { PTableVector } from './data_types';
-import type { PObjectId } from '../../pool';
-import { assertNever } from '../../util';
-import type { PColumn } from './spec/spec';
-import type { PColumnValues } from './data_info';
+import type { PTableColumnId, PTableColumnSpec } from "./table_common";
+import type { PTableVector } from "./data_types";
+import type { PObjectId } from "../../pool";
+import { assertNever } from "../../util";
+import { getAxisId, type PColumn } from "./spec/spec";
+import type { PColumnValues } from "./data_info";
+import type { SpecQuery } from "./query/query_spec";
+import { canonicalizeJson } from "../../json";
+import { mapSpecQueryColumns } from "./query";
 
 /** Defines a terminal column node in the join request tree */
 export interface ColumnJoinEntry<Col> {
   /** Node type discriminator */
-  readonly type: 'column';
+  readonly type: "column";
 
   /** Local column */
   readonly column: Col;
@@ -20,7 +23,7 @@ export interface ColumnJoinEntry<Col> {
  * */
 export interface ConstantAxisFilter {
   /** Filter type discriminator */
-  readonly type: 'constant';
+  readonly type: "constant";
 
   /** Index of axis to slice (zero-based) */
   readonly axisIndex: number;
@@ -32,7 +35,7 @@ export interface ConstantAxisFilter {
 /** Defines a terminal column node in the join request tree */
 export interface SlicedColumnJoinEntry<Col> {
   /** Node type discriminator */
-  readonly type: 'slicedColumn';
+  readonly type: "slicedColumn";
 
   /** Local column */
   readonly column: Col;
@@ -46,7 +49,7 @@ export interface SlicedColumnJoinEntry<Col> {
 
 export interface ArtificialColumnJoinEntry<Col> {
   /** Node type discriminator */
-  readonly type: 'artificialColumn';
+  readonly type: "artificialColumn";
 
   /** Column definition */
   readonly column: Col;
@@ -61,7 +64,7 @@ export interface ArtificialColumnJoinEntry<Col> {
 /** Defines a terminal column node in the join request tree */
 export interface InlineColumnJoinEntry {
   /** Node type discriminator */
-  readonly type: 'inlineColumn';
+  readonly type: "inlineColumn";
 
   /** Column definition */
   readonly column: PColumn<PColumnValues>;
@@ -73,7 +76,7 @@ export interface InlineColumnJoinEntry {
  * */
 export interface InnerJoin<Col> {
   /** Node type discriminator */
-  readonly type: 'inner';
+  readonly type: "inner";
 
   /** Child nodes to be inner joined */
   readonly entries: JoinEntry<Col>[];
@@ -87,7 +90,7 @@ export interface InnerJoin<Col> {
  * */
 export interface FullJoin<Col> {
   /** Node type discriminator */
-  readonly type: 'full';
+  readonly type: "full";
 
   /** Child nodes to be fully outer joined */
   readonly entries: JoinEntry<Col>[];
@@ -105,7 +108,7 @@ export interface FullJoin<Col> {
  * */
 export interface OuterJoin<Col> {
   /** Node type discriminator */
-  readonly type: 'outer';
+  readonly type: "outer";
 
   /** Primes the join operation. Left part of LEFT JOIN. */
   readonly primary: JoinEntry<Col>;
@@ -142,12 +145,12 @@ export interface FullPTableColumnData {
 
 export interface SingleValueIsNAPredicate {
   /** Comparison operator */
-  readonly operator: 'IsNA';
+  readonly operator: "IsNA";
 }
 
 export interface SingleValueEqualPredicate {
   /** Comparison operator */
-  readonly operator: 'Equal';
+  readonly operator: "Equal";
 
   /** Reference value, NA values will not match */
   readonly reference: string | number;
@@ -155,7 +158,7 @@ export interface SingleValueEqualPredicate {
 
 export interface SingleValueInSetPredicate {
   /** Comparison operator */
-  readonly operator: 'InSet';
+  readonly operator: "InSet";
 
   /** Reference values, NA values will not match */
   readonly references: (string | number)[];
@@ -163,7 +166,7 @@ export interface SingleValueInSetPredicate {
 
 export interface SingleValueIEqualPredicate {
   /** Comparison operator (case insensitive) */
-  readonly operator: 'IEqual';
+  readonly operator: "IEqual";
 
   /** Reference value, NA values will not match */
   readonly reference: string;
@@ -171,7 +174,7 @@ export interface SingleValueIEqualPredicate {
 
 export interface SingleValueLessPredicate {
   /** Comparison operator */
-  readonly operator: 'Less';
+  readonly operator: "Less";
 
   /** Reference value, NA values will not match */
   readonly reference: string | number;
@@ -179,7 +182,7 @@ export interface SingleValueLessPredicate {
 
 export interface SingleValueLessOrEqualPredicate {
   /** Comparison operator */
-  readonly operator: 'LessOrEqual';
+  readonly operator: "LessOrEqual";
 
   /** Reference value, NA values will not match */
   readonly reference: string | number;
@@ -187,7 +190,7 @@ export interface SingleValueLessOrEqualPredicate {
 
 export interface SingleValueGreaterPredicate {
   /** Comparison operator */
-  readonly operator: 'Greater';
+  readonly operator: "Greater";
 
   /** Reference value, NA values will not match */
   readonly reference: string | number;
@@ -195,7 +198,7 @@ export interface SingleValueGreaterPredicate {
 
 export interface SingleValueGreaterOrEqualPredicate {
   /** Comparison operator */
-  readonly operator: 'GreaterOrEqual';
+  readonly operator: "GreaterOrEqual";
 
   /** Reference value, NA values will not match */
   readonly reference: string | number;
@@ -203,7 +206,7 @@ export interface SingleValueGreaterOrEqualPredicate {
 
 export interface SingleValueStringContainsPredicate {
   /** Comparison operator */
-  readonly operator: 'StringContains';
+  readonly operator: "StringContains";
 
   /** Reference substring, NA values are skipped */
   readonly substring: string;
@@ -211,7 +214,7 @@ export interface SingleValueStringContainsPredicate {
 
 export interface SingleValueStringIContainsPredicate {
   /** Comparison operator (case insensitive) */
-  readonly operator: 'StringIContains';
+  readonly operator: "StringIContains";
 
   /** Reference substring, NA values are skipped */
   readonly substring: string;
@@ -219,7 +222,7 @@ export interface SingleValueStringIContainsPredicate {
 
 export interface SingleValueMatchesPredicate {
   /** Comparison operator */
-  readonly operator: 'Matches';
+  readonly operator: "Matches";
 
   /** Regular expression, NA values are skipped */
   readonly regex: string;
@@ -227,7 +230,7 @@ export interface SingleValueMatchesPredicate {
 
 export interface SingleValueStringContainsFuzzyPredicate {
   /** Comparison operator */
-  readonly operator: 'StringContainsFuzzy';
+  readonly operator: "StringContainsFuzzy";
 
   /** Reference value, NA values are skipped */
   readonly reference: string;
@@ -256,7 +259,7 @@ export interface SingleValueStringContainsFuzzyPredicate {
 
 export interface SingleValueStringIContainsFuzzyPredicate {
   /** Comparison operator (case insensitive) */
-  readonly operator: 'StringIContainsFuzzy';
+  readonly operator: "StringIContainsFuzzy";
 
   /** Reference value, NA values are skipped */
   readonly reference: string;
@@ -285,7 +288,7 @@ export interface SingleValueStringIContainsFuzzyPredicate {
 
 export interface SingleValueNotPredicateV2 {
   /** Comparison operator */
-  readonly operator: 'Not';
+  readonly operator: "Not";
 
   /** Operand to negate */
   readonly operand: SingleValuePredicateV2;
@@ -293,7 +296,7 @@ export interface SingleValueNotPredicateV2 {
 
 export interface SingleValueAndPredicateV2 {
   /** Comparison operator */
-  readonly operator: 'And';
+  readonly operator: "And";
 
   /** Operands to combine */
   readonly operands: SingleValuePredicateV2[];
@@ -301,7 +304,7 @@ export interface SingleValueAndPredicateV2 {
 
 export interface SingleValueOrPredicateV2 {
   /** Comparison operator */
-  readonly operator: 'Or';
+  readonly operator: "Or";
 
   /** Operands to combine */
   readonly operands: SingleValuePredicateV2[];
@@ -334,7 +337,7 @@ export type SingleValuePredicateV2 =
  * */
 export interface PTableRecordSingleValueFilterV2 {
   /** Filter type discriminator */
-  readonly type: 'bySingleColumnV2';
+  readonly type: "bySingleColumnV2";
 
   /** Target axis selector to examine values from */
   readonly column: PTableColumnId;
@@ -373,6 +376,12 @@ export interface PTableDef<Col> {
   readonly sorting: PTableSorting[];
 }
 
+/** Information required to instantiate a PTable (V2, query-based). */
+export interface PTableDefV2<Col> {
+  /** Pre-built query spec describing joins, filters and sorting */
+  readonly query: SpecQuery<Col>;
+}
+
 /** Request to create and retrieve entirety of data of PTable. */
 export type CalculateTableDataRequest<Col> = {
   /** Join tree to populate the PTable */
@@ -388,51 +397,157 @@ export type CalculateTableDataRequest<Col> = {
 /** Response for {@link CalculateTableDataRequest} */
 export type CalculateTableDataResponse = FullPTableColumnData[];
 
-export function mapPTableDef<C1, C2>(
-  def: PTableDef<C1>,
-  cb: (c: C1) => C2,
-): PTableDef<C2> {
+export function mapPTableDef<C1, C2>(def: PTableDef<C1>, cb: (c: C1) => C2): PTableDef<C2> {
   return { ...def, src: mapJoinEntry(def.src, cb) };
 }
 
-export function mapJoinEntry<C1, C2>(
-  entry: JoinEntry<C1>,
-  cb: (c: C1) => C2,
-): JoinEntry<C2> {
+export function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
+  function sortFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
+    return filters.toSorted((lhs, rhs) => {
+      if (lhs.column.type === "axis" && rhs.column.type === "axis") {
+        const lhsId = canonicalizeJson(getAxisId(lhs.column.id));
+        const rhsId = canonicalizeJson(getAxisId(rhs.column.id));
+        return lhsId < rhsId ? -1 : 1;
+      } else if (lhs.column.type === "column" && rhs.column.type === "column") {
+        return lhs.column.id < rhs.column.id ? -1 : 1;
+      } else {
+        return lhs.column.type === "axis" ? -1 : 1;
+      }
+    });
+  }
+  return {
+    src: sortJoinEntry(def.src),
+    partitionFilters: sortFilters(def.partitionFilters),
+    filters: sortFilters(def.filters),
+    sorting: def.sorting,
+  };
+}
+
+export function mapPTableDefV2<C1, C2>(def: PTableDefV2<C1>, cb: (c: C1) => C2): PTableDefV2<C2> {
+  return { query: mapSpecQueryColumns(def.query, cb) };
+}
+
+export function mapJoinEntry<C1, C2>(entry: JoinEntry<C1>, cb: (c: C1) => C2): JoinEntry<C2> {
   switch (entry.type) {
-    case 'column':
+    case "column":
       return {
-        type: 'column',
+        type: "column",
         column: cb(entry.column),
       };
-    case 'slicedColumn':
+    case "slicedColumn":
       return {
-        type: 'slicedColumn',
+        type: "slicedColumn",
         column: cb(entry.column),
         newId: entry.newId,
         axisFilters: entry.axisFilters,
       };
-    case 'artificialColumn':
+    case "artificialColumn":
       return {
-        type: 'artificialColumn',
+        type: "artificialColumn",
         column: cb(entry.column),
         newId: entry.newId,
         axesIndices: entry.axesIndices,
       };
-    case 'inlineColumn':
+    case "inlineColumn":
       return entry;
-    case 'inner':
-    case 'full':
+    case "inner":
+    case "full":
       return {
         type: entry.type,
         entries: entry.entries.map((col) => mapJoinEntry(col, cb)),
       };
-    case 'outer':
+    case "outer":
       return {
-        type: 'outer',
+        type: "outer",
         primary: mapJoinEntry(entry.primary, cb),
         secondary: entry.secondary.map((col) => mapJoinEntry(col, cb)),
       };
+    default:
+      assertNever(entry);
+  }
+}
+
+function cmpJoinEntries(lhs: JoinEntry<PObjectId>, rhs: JoinEntry<PObjectId>): number {
+  if (lhs.type !== rhs.type) {
+    return lhs.type < rhs.type ? -1 : 1;
+  }
+  const type = lhs.type;
+  switch (type) {
+    case "column":
+      return lhs.column < (rhs as typeof lhs).column ? -1 : 1;
+    case "slicedColumn":
+    case "artificialColumn":
+      return lhs.newId < (rhs as typeof lhs).newId ? -1 : 1;
+    case "inlineColumn": {
+      return lhs.column.id < (rhs as typeof lhs).column.id ? -1 : 1;
+    }
+    case "inner":
+    case "full": {
+      const rhsInner = rhs as typeof lhs;
+      if (lhs.entries.length !== rhsInner.entries.length) {
+        return lhs.entries.length - rhsInner.entries.length;
+      }
+      for (let i = 0; i < lhs.entries.length; i++) {
+        const cmp = cmpJoinEntries(lhs.entries[i], rhsInner.entries[i]);
+        if (cmp !== 0) {
+          return cmp;
+        }
+      }
+      return 0;
+    }
+    case "outer": {
+      const rhsOuter = rhs as typeof lhs;
+      const cmp = cmpJoinEntries(lhs.primary, rhsOuter.primary);
+      if (cmp !== 0) {
+        return cmp;
+      }
+      if (lhs.secondary.length !== rhsOuter.secondary.length) {
+        return lhs.secondary.length - rhsOuter.secondary.length;
+      }
+      for (let i = 0; i < lhs.secondary.length; i++) {
+        const cmp = cmpJoinEntries(lhs.secondary[i], rhsOuter.secondary[i]);
+        if (cmp !== 0) {
+          return cmp;
+        }
+      }
+      return 0;
+    }
+    default:
+      assertNever(type);
+  }
+}
+
+export function sortJoinEntry(entry: JoinEntry<PObjectId>): JoinEntry<PObjectId> {
+  switch (entry.type) {
+    case "column":
+    case "slicedColumn":
+    case "inlineColumn":
+      return entry;
+    case "artificialColumn": {
+      const sortedAxesIndices = entry.axesIndices.toSorted((lhs, rhs) => lhs - rhs);
+      return {
+        ...entry,
+        axesIndices: sortedAxesIndices,
+      };
+    }
+    case "inner":
+    case "full": {
+      const sortedEntries = entry.entries.map(sortJoinEntry);
+      sortedEntries.sort(cmpJoinEntries);
+      return {
+        ...entry,
+        entries: sortedEntries,
+      };
+    }
+    case "outer": {
+      const sortedSecondary = entry.secondary.map(sortJoinEntry);
+      sortedSecondary.sort(cmpJoinEntries);
+      return {
+        ...entry,
+        primary: sortJoinEntry(entry.primary),
+        secondary: sortedSecondary,
+      };
+    }
     default:
       assertNever(entry);
   }

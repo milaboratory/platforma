@@ -1,1 +1,1 @@
-export type * from '@platforma-open/milaboratories.software-ptabler.schema';
+export type * from "@platforma-open/milaboratories.software-ptabler.schema";

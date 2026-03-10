@@ -1,5 +1,5 @@
 # This docker-compose is designed to allow easy proxy support testing in pl-client.
-version: '3.8'
+version: "3.8"
 
 services:
   platforma:
@@ -22,7 +22,7 @@ services:
     image: ubuntu/squid:latest
     container_name: http-proxy
     ports:
-      - "8080:3128"  # Host port 8080 -> container port 3128 (Squid default)
+      - "8080:3128" # Host port 8080 -> container port 3128 (Squid default)
     networks:
       - proxy-network
     volumes:
@@ -33,4 +33,3 @@ services:
 networks:
   proxy-network:
     driver: bridge
-

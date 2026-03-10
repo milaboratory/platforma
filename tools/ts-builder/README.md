@@ -31,6 +31,7 @@ ts-builder --target <type> <command>
 ## Commands
 
 ### build
+
 Build the project.
 
 ```bash
@@ -45,6 +46,7 @@ ts-builder --target browser --build-config custom.config.js build
 ```
 
 ### serve
+
 Start dev server (only for browser/browser-lib projects).
 
 ```bash
@@ -59,6 +61,7 @@ ts-builder --target browser --serve-config custom.serve.js serve
 ```
 
 ### types
+
 TypeScript type checking.
 
 ```bash
@@ -70,6 +73,7 @@ ts-builder --target browser types --project ./custom.tsconfig.json
 ```
 
 ### init-build-config
+
 Create build configuration file.
 
 ```bash
@@ -78,6 +82,7 @@ ts-builder --target node init-build-config
 ```
 
 ### init-serve-config
+
 Create dev server configuration file.
 
 ```bash
@@ -86,6 +91,7 @@ ts-builder init-serve-config
 ```
 
 ### init-tsconfig
+
 Create tsconfig.json file.
 
 ```bash
@@ -96,11 +102,13 @@ ts-builder --target browser init-tsconfig
 ## Options
 
 ### Global options
+
 - `--target <type>` - Project type (required)
 - `--build-config <path>` - Path to custom build configuration
 - `--serve-config <path>` - Path to custom dev server configuration
 
 ### Command options
+
 - `build -w, --watch` - Watch mode for automatic rebuilding
 - `serve -p, --port <port>` - Port for dev server (default: 3000)
 - `serve --host <host>` - Host for dev server (default: localhost)

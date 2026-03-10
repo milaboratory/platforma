@@ -1,7 +1,7 @@
-import type * as sdk from '@milaboratories/pl-model-common';
-import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
-import { bigintToResourceId } from '@milaboratories/pl-client';
-import { assertNever } from '@milaboratories/ts-helpers';
+import type * as sdk from "@milaboratories/pl-model-common";
+import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
+import { bigintToResourceId } from "@milaboratories/pl-client";
+import { assertNever } from "@milaboratories/ts-helpers";
 
 export type StorageHandleData = RemoteStorageHandleData | LocalStorageHandleData;
 
@@ -88,5 +88,5 @@ function parseRemoteStorageHandle(handle: string): RemoteStorageHandleData {
 }
 
 function storageType(name: string): ResourceType {
-  return { name: `LS/${name}`, version: '1' };
+  return { name: `LS/${name}`, version: "1" };
 }

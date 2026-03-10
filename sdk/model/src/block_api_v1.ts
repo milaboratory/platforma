@@ -1,5 +1,9 @@
-import type { BlockOutputsBase, BlockState, NavigationState } from '@milaboratories/pl-model-common';
-import type { BlockStatePatch } from './block_state_patch';
+import type {
+  BlockOutputsBase,
+  BlockState,
+  NavigationState,
+} from "@milaboratories/pl-model-common";
+import type { BlockStatePatch } from "./block_state_patch";
 
 /** Returned by state subscription methods to be able to cancel the subscription. */
 export type CancelSubscription = () => void;
@@ -35,7 +39,7 @@ export interface BlockApiV1<
    * @return function that cancels created subscription
    * */
   onStateUpdates(
-    cb: (updates: BlockStatePatch<Args, Outputs, UiState, Href>[]) => Promise<void>
+    cb: (updates: BlockStatePatch<Args, Outputs, UiState, Href>[]) => Promise<void>,
   ): CancelSubscription;
 
   /**

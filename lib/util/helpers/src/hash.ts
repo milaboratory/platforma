@@ -1,5 +1,5 @@
-import { createGetIncrementalId } from './uniqId';
-import { isPrimitive } from './utils';
+import { createGetIncrementalId } from "./uniqId";
+import { isPrimitive } from "./utils";
 
 export function hashString(str: string, seed = 0): number {
   let h1 = 0xdeadbeef ^ seed,
@@ -17,15 +17,15 @@ export function hashString(str: string, seed = 0): number {
 }
 
 export function shallowHash(...values: unknown[]): number {
-  let str = '';
+  let str = "";
 
   for (let i = 0; i < values.length; i += 1) {
     const value = values[i];
 
     if (isPrimitive(value)) {
-      str += '/' + String(value);
+      str += "/" + String(value);
     } else {
-      str += '/' + getIdForPointer(value as object);
+      str += "/" + getIdForPointer(value as object);
     }
   }
 

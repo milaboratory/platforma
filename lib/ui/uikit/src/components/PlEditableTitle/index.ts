@@ -1,1 +1,1 @@
-export { default as PlEditableTitle } from './PlEditableTitle.vue';
+export { default as PlEditableTitle } from "./PlEditableTitle.vue";

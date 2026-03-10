@@ -115,6 +115,12 @@ packages:
   - etc/blocks/model-test/block
   - etc/blocks/model-test/test
 
+  - etc/blocks/table-test/workflow
+  - etc/blocks/table-test/model
+  - etc/blocks/table-test/ui
+  - etc/blocks/table-test/block
+  - etc/blocks/table-test/test
+
   - etc/blocks/pool-explorer/workflow
   - etc/blocks/pool-explorer/model
   - etc/blocks/pool-explorer/ui
@@ -144,18 +150,13 @@ packages:
   - tests/tengo-builder/2-artifacts
   - tests/tengo-builder/3-software-dep
 
-  # Etc
-
-  - etc/uikit-playground
-  - etc/ui-vue-docs
-
 catalog:
   # Build
-  "typescript": ~5.6.3
-  "tslib": ~2.7.0
+  "typescript": ~5.9.3
   "tsconfig-paths": ^4.2.0
   "tsup": ~8.3.5
-  "vite": ^6.3.5
+  "vite": 8.0.0-beta.15
+  "@vitejs/plugin-vue": ^6.0.4
   "rollup": ^4.45.1
   "@rollup/plugin-node-resolve": ^16.0.1
   "@rollup/plugin-typescript": ^12.1.4
@@ -165,10 +166,11 @@ catalog:
   "rollup-plugin-node-externals": ^8.0.0
   "rollup-plugin-sourcemaps2": ^0.5.2
   "vite-plugin-dts": ^4.5.3
-  "vite-plugin-css-injected-by-js": ^3.5.2
-  "tsc-alias": ^1.8.11
-  "yarpm": ^1.2.0
+  "vite-plugin-lib-inject-css": ^2.2.2
+  "vite-plugin-externalize-deps": ^0.9.0
+  "vite-plugin-commonjs": ^0.10.4
   "ts-node": ^10.9.2
+  "@zed-industries/vscode-langservers-extracted": ^4.10.7
 
   # Build util / linters
 
@@ -178,26 +180,18 @@ catalog:
 
   "@changesets/cli": ^2.29.5
 
-  "eslint": ^9.25.1
-  "@eslint/js": ^9.16.0
-  "typescript-eslint": ^8.17.0
-  "eslint-plugin-vue": "^9.26.0"
-  "@stylistic/eslint-plugin": ^2.11.0
-  "eslint-plugin-import": ^2.31.0
-  "eslint-plugin-n": ^17.12.0
-  "globals": ^15.13.0
-
   "oclif": ^4.16.2
 
   "turbo": 2.5.3
 
   "husky": ^9.1.7
 
-  "@vitejs/plugin-vue": ^5.2.3
-
   "svgo": ^3.3.2
 
   "rimraf": ^6.0.1
+
+  "oxlint": 1.43.0
+  "oxfmt": 0.28.0
 
   # Net
 
@@ -206,7 +200,6 @@ catalog:
   "@protobuf-ts/grpc-transport": *protobuf-ts
   "@protobuf-ts/runtime": *protobuf-ts
   "@protobuf-ts/runtime-rpc": *protobuf-ts
-  "https-proxy-agent": ^7.0.6
   "@aws-sdk/client-s3": &aws-sdk-version 3.859.0
   "@aws-sdk/lib-storage": *aws-sdk-version
 
@@ -220,6 +213,7 @@ catalog:
   "long": ^5.3.2
   "mime-types": ^2.1.35
   "semver": ^7.7.2
+  "jsonc-parser": 3.3.1
 
   "upath": ^2.0.1
   "tar": ^7.4.3
@@ -245,9 +239,8 @@ catalog:
   "winston": ^3.17.0
 
   "@milaboratories/tengo-tester": ^1.6.4
-  "@milaboratories/pframes-rs-node": &pframes-rs-version 1.0.109
-
-  "remeda": ^2.28.0
+  "@milaboratories/pframes-rs-node": &pframes-rs 1.1.11
+  "@milaboratories/pframes-rs-wasm": *pframes-rs
 
   "quickjs-emscripten": 0.31.0
 
@@ -275,7 +268,6 @@ catalog:
   "ag-grid-vue3": *ag-grid
 
   "monaco-editor": ^0.52.2
-
   "sortablejs": ^1.15.6
   "@types/sortablejs": ^1.15.6
 
@@ -287,16 +279,13 @@ catalog:
   "@platforma-open/milaboratories.software-small-binaries": ^2.0.1
   "@platforma-open/milaboratories.software-test-utils": ^1.1.1
   "@platforma-open/milaboratories.software-conda-empty": ^0.0.3
-  "@biowasm/aioli": ~3.2.1
-
   "@platforma-open/milaboratories.runenv-python-3": 1.7.4
 
   # Test
 
-  "vitest": &vitest-version ^4.0.16
+  "vitest": &vitest-version ^4.0.18
   "@vitest/coverage-istanbul": *vitest-version
   "@faker-js/faker": ^9.2.0
-  "happy-dom": ^15.11.7
   "jsdom": ^25.0.1
   "@vue/test-utils": ^2.4.6
   "resize-observer-polyfill": ^1.5.1
@@ -307,9 +296,7 @@ catalog:
   "@types/json-stringify-safe": ^5.0.3
   "@types/decompress": ^4.2.7
   "@types/readline-sync": ^1.4.8
-  "@types/http-proxy": ^1.17.16
   "@types/node": ~24.5.2
-  "@types/eslint__js": ^8.42.3
   "@types/semver": ^7.7.0
   "@types/mime-types": ^2.1.4
   "@types/tar-fs": ^2.0.4

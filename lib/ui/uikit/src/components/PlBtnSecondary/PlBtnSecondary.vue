@@ -3,14 +3,14 @@
  * Secondary button
  */
 export default {
-  name: 'PlBtnSecondary',
+  name: "PlBtnSecondary",
 };
 </script>
 
 <script lang="ts" setup>
-import './pl-btn-secondary.scss';
-import type { MaskIconName16, Size } from '../../types';
-import BtnBase from '../../base/BtnBase.vue';
+import "./pl-btn-secondary.scss";
+import type { MaskIconName16, Size } from "../../types";
+import BtnBase from "../../base/BtnBase.vue";
 
 const props = defineProps<{
   /**

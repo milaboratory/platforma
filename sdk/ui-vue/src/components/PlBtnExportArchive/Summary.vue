@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import type { ExportItem } from './types';
-import { prettyBytes } from '@milaboratories/helpers';
+import type { ExportItem } from "./types";
+import { prettyBytes } from "@milaboratories/helpers";
 
 defineProps<{
   item: ExportItem;
 }>();
 
 const emit = defineEmits<{
-  (e: 'cancel'): void;
+  (e: "cancel"): void;
 }>();
 </script>
 
 <template>
-  <div
-    :class="$style.summary"
-  >
-    <div :class="$style.name">{{ item.fileName }}<span v-if="false" @click.stop="emit('cancel')">[TODO: Cancel]</span></div>
+  <div :class="$style.summary">
+    <div :class="$style.name">
+      {{ item.fileName }}<span v-if="false" @click.stop="emit('cancel')">[TODO: Cancel]</span>
+    </div>
     <div v-if="item.status === 'in-progress'" :class="$style.details">
       <span>{{ prettyBytes(item.current, {}) }}</span>
       <span>/</span>
@@ -24,9 +24,7 @@ const emit = defineEmits<{
     <div v-else-if="item.status === 'completed'" :class="$style.details">
       Done <span>{{ prettyBytes(item.size, {}) }}</span>
     </div>
-    <div v-else :class="$style.details">
-      Pending
-    </div>
+    <div v-else :class="$style.details">Pending</div>
   </div>
 </template>
 

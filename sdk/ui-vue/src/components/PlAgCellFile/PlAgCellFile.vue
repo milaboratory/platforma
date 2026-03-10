@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { PlFileInput } from '@milaboratories/uikit';
-import type { ICellRendererParams } from 'ag-grid-enterprise';
-import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
-import { computed } from 'vue';
+import { PlFileInput } from "@milaboratories/uikit";
+import type { ICellRendererParams } from "ag-grid-enterprise";
+import type { ImportFileHandle, ImportProgress } from "@platforma-sdk/model";
+import { computed } from "vue";
 
 const props = defineProps<{
   // this component is intended to be used in ag-grid, params are the main object

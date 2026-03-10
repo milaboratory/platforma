@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { showContextMenu } from '../contextMenu';
-import type { ContextOption } from '../contextMenu/types';
-import { rotate } from './domain';
-import type { ColumnSpecSettings } from './types';
+import { showContextMenu } from "../contextMenu";
+import type { ContextOption } from "../contextMenu/types";
+import { rotate } from "./domain";
+import type { ColumnSpecSettings } from "./types";
 
-const emit = defineEmits(['delete:column', 'expand:column', 'change:sort']);
+const emit = defineEmits(["delete:column", "expand:column", "change:sort"]);
 
 defineProps<{
   col: ColumnSpecSettings;
@@ -23,16 +23,21 @@ function onContextMenu(ev: MouseEvent) {
 }
 
 function onSort(col: ColumnSpecSettings) {
-  const v = col.sort?.direction ?? 'DESC';
-  emit('change:sort', {
+  const v = col.sort?.direction ?? "DESC";
+  emit("change:sort", {
     colId: col.id,
-    direction: rotate(v, ['DESC', 'ASC']),
+    direction: rotate(v, ["DESC", "ASC"]),
   });
 }
 </script>
 
 <template>
-  <div class="cell th-cell" :data-col-id.attr="col.id" :class="{ 'justify-center': col.justify, frozen: col.frozen }" @contextmenu="onContextMenu">
+  <div
+    class="cell th-cell"
+    :data-col-id.attr="col.id"
+    :class="{ 'justify-center': col.justify, frozen: col.frozen }"
+    @contextmenu="onContextMenu"
+  >
     <div v-if="col.valueType" :class="col.valueType" />
     {{ col.label }}
     <div v-if="col.sort" class="sort" :class="col.sort.direction" @click.stop="() => onSort(col)" />

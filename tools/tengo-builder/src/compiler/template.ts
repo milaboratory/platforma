@@ -1,17 +1,7 @@
-import type {
-  CompileMode,
-  FullArtifactName,
-  FullArtifactNameWithoutType,
-} from './package';
-import {
-  fullNameWithoutTypeToString,
-  parseArtefactNameAndVersion,
-} from './package';
-import type { CompiledTemplateV3 } from '@milaboratories/pl-model-backend';
-import {
-  parseTemplate,
-  serializeTemplate,
-} from '@milaboratories/pl-model-backend';
+import type { CompileMode, FullArtifactName, FullArtifactNameWithoutType } from "./package";
+import { fullNameWithoutTypeToString, parseArtefactNameAndVersion } from "./package";
+import type { CompiledTemplateV3 } from "@milaboratories/pl-model-backend";
+import { parseTemplate, serializeTemplate } from "@milaboratories/pl-model-backend";
 
 /** Just a holder for template data, compilation options, full name and source code.
  * It mimics ArtifactSource interface.
@@ -66,8 +56,8 @@ export function newTemplateFromContent(
   content: Uint8Array,
 ): Template {
   const data = parseTemplate(content);
-  if (data.type !== 'pl.tengo-template.v3') {
-    throw new Error('malformed v3 template');
+  if (data.type !== "pl.tengo-template.v3") {
+    throw new Error("malformed v3 template");
   }
 
   validateTemplateName(fullName, data);
@@ -91,12 +81,12 @@ function validateTemplateName(fullName: FullArtifactName, data: CompiledTemplate
   const nameFromData: FullArtifactNameWithoutType = parseArtefactNameAndVersion(data.template);
 
   if (
-    nameFromData.pkg !== fullName.pkg
-    || nameFromData.id !== fullName.id
-    || nameFromData.version !== fullName.version
+    nameFromData.pkg !== fullName.pkg ||
+    nameFromData.id !== fullName.id ||
+    nameFromData.version !== fullName.version
   )
     throw new Error(
-      `Compiled template name don't match it's package and file names: `
-      + `${fullNameWithoutTypeToString(nameFromData)} != ${fullNameWithoutTypeToString(fullName)}`,
+      `Compiled template name don't match it's package and file names: ` +
+        `${fullNameWithoutTypeToString(nameFromData)} != ${fullNameWithoutTypeToString(fullName)}`,
     );
 }

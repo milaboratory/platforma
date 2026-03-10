@@ -1,12 +1,12 @@
 export type ValueOrError<V, E> =
   | {
-    ok: true;
-    value: V;
-  }
+      ok: true;
+      value: V;
+    }
   | {
-    ok: false;
-    error: E;
-  };
+      ok: false;
+      error: E;
+    };
 
 export function mapValueInVOE<V1, V2, E>(
   voe: ValueOrError<V1, E>,

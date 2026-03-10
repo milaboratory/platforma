@@ -1,6 +1,6 @@
-import type { BlockConfigV3Generic, BlockConfigV4Generic } from '@milaboratories/pl-model-common';
-import type { TypedConfigOrConfigLambda } from './types';
-import type { ConfigRenderLambda } from './lambdas';
+import type { BlockConfigV3Generic, BlockConfigV4Generic } from "@milaboratories/pl-model-common";
+import type { TypedConfigOrConfigLambda } from "./types";
+import type { ConfigRenderLambda } from "./lambdas";
 
 export type BlockConfigV3<
   Args = unknown,

@@ -1,1 +1,1 @@
-export type PlStatusTagType = 'ALERT' | 'WARN' | 'OK' | 'HOLD';
+export type PlStatusTagType = "ALERT" | "WARN" | "OK" | "HOLD";

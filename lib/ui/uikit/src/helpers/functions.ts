@@ -20,7 +20,11 @@ export function generate<R>(count: number, cb: (i: number) => R): R[] {
   return r;
 }
 
-export function copyProps<T extends Record<string, unknown>>(target: T, source: T, ...keys: (keyof T)[]) {
+export function copyProps<T extends Record<string, unknown>>(
+  target: T,
+  source: T,
+  ...keys: (keyof T)[]
+) {
   keys.forEach((key) => {
     target[key] = source[key];
   });

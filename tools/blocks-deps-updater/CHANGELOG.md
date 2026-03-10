@@ -1,5 +1,17 @@
 # @platforma-sdk/blocks-deps-updater
 
+## 2.0.2
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
+## 2.0.1
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
 ## 2.0.0
 
 ### Major Changes

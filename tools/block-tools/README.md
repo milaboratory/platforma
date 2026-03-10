@@ -1,10 +1,13 @@
 ## Table of contents
+
 <!-- toc -->
 
 <!-- tocstop -->
 
 ## Usage
+
 <!-- usage -->
+
 ```sh-session
 $ npm install -g @platforma-sdk/block-tools
 $ block-tools COMMAND
@@ -16,19 +19,22 @@ USAGE
   $ block-tools COMMAND
 ...
 ```
+
 <!-- usagestop -->
 
 ## Commands
+
 <!-- commands -->
-* [`block-tools build-meta`](#block-tools-build-meta)
-* [`block-tools build-model`](#block-tools-build-model)
-* [`block-tools list-overview-snapshots`](#block-tools-list-overview-snapshots)
-* [`block-tools mark-stable`](#block-tools-mark-stable)
-* [`block-tools pack`](#block-tools-pack)
-* [`block-tools publish`](#block-tools-publish)
-* [`block-tools refresh-registry`](#block-tools-refresh-registry)
-* [`block-tools restore-overview-from-snapshot`](#block-tools-restore-overview-from-snapshot)
-* [`block-tools upload-package-v1`](#block-tools-upload-package-v1)
+
+- [`block-tools build-meta`](#block-tools-build-meta)
+- [`block-tools build-model`](#block-tools-build-model)
+- [`block-tools list-overview-snapshots`](#block-tools-list-overview-snapshots)
+- [`block-tools mark-stable`](#block-tools-mark-stable)
+- [`block-tools pack`](#block-tools-pack)
+- [`block-tools publish`](#block-tools-publish)
+- [`block-tools refresh-registry`](#block-tools-refresh-registry)
+- [`block-tools restore-overview-from-snapshot`](#block-tools-restore-overview-from-snapshot)
+- [`block-tools upload-package-v1`](#block-tools-upload-package-v1)
 
 ## `block-tools build-meta`
 
@@ -190,4 +196,5 @@ FLAGS
 DESCRIPTION
   Uploads V1 package and refreshes the registry
 ```
+
 <!-- commandsstop -->

@@ -1,13 +1,25 @@
-import { reactive, computed, ref, watch, unref, type ComputedRef, type UnwrapNestedRefs } from 'vue';
-import type { ModelOptions, Model, AppSettings } from '../types';
-import { deepClone, isJsonEqual } from '@milaboratories/helpers';
-import { identity, ensureError, isZodError, formatZodError } from '../utils';
+import {
+  reactive,
+  computed,
+  ref,
+  watch,
+  unref,
+  type ComputedRef,
+  type UnwrapNestedRefs,
+} from "vue";
+import type { ModelOptions, Model, AppSettings } from "../types";
+import { deepClone, isJsonEqual } from "@milaboratories/helpers";
+import { identity, ensureError, isZodError, formatZodError } from "../utils";
 
 export function createAppModel<
   M extends { args: unknown; ui: unknown },
   V = unknown,
   E extends Record<string, ComputedRef<unknown>> = Record<string, ComputedRef<unknown>>,
->(options: ModelOptions<M, V>, extended: E, _settings: AppSettings): Model<M & UnwrapNestedRefs<E>> {
+>(
+  options: ModelOptions<M, V>,
+  extended: E,
+  _settings: AppSettings,
+): Model<M & UnwrapNestedRefs<E>> {
   type R = M & UnwrapNestedRefs<E>;
 
   const validate = options.validate ?? identity;
@@ -64,7 +76,7 @@ export function createAppModel<
       return local.value?.model as R;
     },
     set() {
-      throw Error('Cannot replace base model');
+      throw Error("Cannot replace base model");
     },
   });
 
@@ -85,7 +97,7 @@ export function createAppModel<
     return !isJsonEqual(options.get(), { args, ui });
   });
 
-  const errorString = computed(() => (error.value ? error.value.message : ''));
+  const errorString = computed(() => (error.value ? error.value.message : ""));
 
   return reactive({
     model,

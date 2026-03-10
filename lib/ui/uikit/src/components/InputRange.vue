@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -7,13 +7,13 @@ const props = withDefaults(
     separator?: string;
   }>(),
   {
-    separator: '-',
+    separator: "-",
   },
 );
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: [number, number]): void;
-  (e: 'change', val: [number, number]): void;
+  (e: "update:modelValue", val: [number, number]): void;
+  (e: "change", val: [number, number]): void;
 }>();
 
 const data = reactive({
@@ -23,7 +23,9 @@ const data = reactive({
 
 const isFocused = ref(false);
 
-const classes = computed(() => (isFocused.value ? 'ui-input-range-focused' : 'ui-input-range-focused'));
+const classes = computed(() =>
+  isFocused.value ? "ui-input-range-focused" : "ui-input-range-focused",
+);
 
 const valuesModel = computed({
   get() {
@@ -49,8 +51,8 @@ watch(
 // );
 
 function updateModel() {
-  emit('update:modelValue', [+data.left, +data.right]);
-  emit('change', [+data.left, +data.right]);
+  emit("update:modelValue", [+data.left, +data.right]);
+  emit("change", [+data.left, +data.right]);
 }
 
 function validateInput(isLeft: boolean, event: Event) {

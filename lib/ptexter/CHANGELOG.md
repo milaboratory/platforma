@@ -1,5 +1,17 @@
 # @platforma-open/milaboratories.software-ptexter
 
+## 1.2.2
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
+## 1.2.1
+
+### Patch Changes
+
+- a6ea24f: silent ci tests
+
 ## 1.2.0
 
 ### Minor Changes

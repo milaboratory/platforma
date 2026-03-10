@@ -1,17 +1,17 @@
-import { assertNever } from '../util';
-import type { Branded } from '../branding';
-import type { TableRange } from './pframe';
-import type { FileLike } from './interfaces';
+import { assertNever } from "../util";
+import type { Branded } from "../branding";
+import type { TableRange } from "./pframe";
+import type { FileLike } from "./interfaces";
 
-const uploadPrefix = 'upload://upload/';
-const indexPrefix = 'index://index/';
+const uploadPrefix = "upload://upload/";
+const indexPrefix = "index://index/";
 
 export type ImportFileHandleUpload = `upload://upload/${string}`;
 export type ImportFileHandleIndex = `index://index/${string}`;
 
 export type ImportFileHandle = ImportFileHandleUpload | ImportFileHandleIndex;
 
-export type LocalImportFileHandle = Branded<ImportFileHandle, 'Local'>;
+export type LocalImportFileHandle = Branded<ImportFileHandle, "Local">;
 
 export function isImportFileHandleUpload(
   handle: ImportFileHandle,
@@ -47,18 +47,18 @@ export type ListFilesResult = {
 
 export type LsEntry =
   | {
-    type: 'dir';
-    name: string;
-    fullPath: string;
-  }
+      type: "dir";
+      name: string;
+      fullPath: string;
+    }
   | {
-    type: 'file';
-    name: string;
-    fullPath: string;
+      type: "file";
+      name: string;
+      fullPath: string;
 
-    /** This handle should be set to args... */
-    handle: ImportFileHandle;
-  };
+      /** This handle should be set to args... */
+      handle: ImportFileHandle;
+    };
 
 export type OpenDialogFilter = {
   /** Human-readable file type name */
@@ -142,7 +142,7 @@ export function getFilePathFromHandle(handle: ImportFileHandle): string {
 }
 
 function extractFileName(filePath: string) {
-  return filePath.replace(/^.*[\\/]/, '');
+  return filePath.replace(/^.*[\\/]/, "");
 }
 
 /** Gets a file name from an import handle. */

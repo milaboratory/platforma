@@ -1,20 +1,20 @@
-import fs from 'node:fs';
-import type { AuthInformation, PlClientConfig } from './config';
-import { plAddressToConfig } from './config';
-import canonicalize from 'canonicalize';
-import YAML from 'yaml';
-import * as os from 'node:os';
-import * as path from 'node:path';
-import { notEmpty } from '@milaboratories/ts-helpers';
-import { UnauthenticatedPlClient } from './unauth_client';
-import { PlClient } from './client';
-import { createHash } from 'node:crypto';
-import { inferAuthRefreshTime } from './auth';
+import fs from "node:fs";
+import type { AuthInformation, PlClientConfig } from "./config";
+import { plAddressToConfig } from "./config";
+import canonicalize from "canonicalize";
+import YAML from "yaml";
+import * as os from "node:os";
+import * as path from "node:path";
+import { notEmpty } from "@milaboratories/ts-helpers";
+import { UnauthenticatedPlClient } from "./unauth_client";
+import { PlClient } from "./client";
+import { createHash } from "node:crypto";
+import { inferAuthRefreshTime } from "./auth";
 
-const CONFIG_FILE_LOCAL_JSON = 'pl.json';
-const CONFIG_FILE_USER_JSON = path.join(os.homedir(), '.pl.json');
-const CONFIG_FILE_LOCAL_YAML = 'pl.yaml';
-const CONFIG_FILE_USER_YAML = path.join(os.homedir(), '.pl.yaml');
+const CONFIG_FILE_LOCAL_JSON = "pl.json";
+const CONFIG_FILE_USER_JSON = path.join(os.homedir(), ".pl.json");
+const CONFIG_FILE_LOCAL_YAML = "pl.yaml";
+const CONFIG_FILE_USER_YAML = path.join(os.homedir(), ".pl.yaml");
 const CONF_FILE_SEQUENCE = [
   CONFIG_FILE_LOCAL_JSON,
   CONFIG_FILE_LOCAL_YAML,
@@ -22,30 +22,30 @@ const CONF_FILE_SEQUENCE = [
   CONFIG_FILE_USER_YAML,
 ];
 
-const AUTH_DATA_FILE = '.pl_auth.json';
+const AUTH_DATA_FILE = ".pl_auth.json";
 
 type FileConfigOverrideFields =
-  | 'grpcProxy'
-  | 'httpProxy'
-  | 'user'
-  | 'password'
-  | 'alternativeRoot'
-  | 'defaultROTransactionTimeout'
-  | 'defaultRWTransactionTimeout'
-  | 'defaultRequestTimeout'
-  | 'authTTLSeconds'
-  | 'authMaxRefreshSeconds';
+  | "grpcProxy"
+  | "httpProxy"
+  | "user"
+  | "password"
+  | "alternativeRoot"
+  | "defaultROTransactionTimeout"
+  | "defaultRWTransactionTimeout"
+  | "defaultRequestTimeout"
+  | "authTTLSeconds"
+  | "authMaxRefreshSeconds";
 const FILE_CONFIG_OVERRIDE_FIELDS: FileConfigOverrideFields[] = [
-  'grpcProxy',
-  'httpProxy',
-  'user',
-  'password',
-  'alternativeRoot',
-  'defaultROTransactionTimeout',
-  'defaultRWTransactionTimeout',
-  'defaultRequestTimeout',
-  'authTTLSeconds',
-  'authMaxRefreshSeconds',
+  "grpcProxy",
+  "httpProxy",
+  "user",
+  "password",
+  "alternativeRoot",
+  "defaultROTransactionTimeout",
+  "defaultRWTransactionTimeout",
+  "defaultRequestTimeout",
+  "authTTLSeconds",
+  "authMaxRefreshSeconds",
 ];
 
 type PlConfigFile = {
@@ -62,8 +62,8 @@ interface AuthCache {
 export function tryGetFileConfig(): [PlConfigFile, string] | undefined {
   for (const confPath of CONF_FILE_SEQUENCE)
     if (fs.existsSync(confPath)) {
-      const fileContent = fs.readFileSync(confPath, { encoding: 'utf-8' });
-      if (confPath.endsWith('json')) return [JSON.parse(fileContent) as PlConfigFile, confPath];
+      const fileContent = fs.readFileSync(confPath, { encoding: "utf-8" });
+      if (confPath.endsWith("json")) return [JSON.parse(fileContent) as PlConfigFile, confPath];
       else return [YAML.parse(fileContent) as PlConfigFile, confPath];
     }
   return undefined;
@@ -83,7 +83,7 @@ function saveAuthInfoCallback(
           expiration: inferAuthRefreshTime(newAuthInfo, authMaxRefreshSeconds),
         } as AuthCache),
       ),
-      'utf8',
+      "utf8",
     );
   };
 }
@@ -110,21 +110,21 @@ export async function defaultPlClient(): Promise<PlClient> {
   }
 
   if (config === undefined)
-    throw new Error('Can\'t find configuration to create default platform client.');
+    throw new Error("Can't find configuration to create default platform client.");
 
   if (process.env.PL_USER !== undefined) config.user = process.env.PL_USER;
 
   if (process.env.PL_PASSWORD !== undefined) config.user = process.env.PL_PASSWORD;
 
-  const confHash = createHash('sha256')
+  const confHash = createHash("sha256")
     .update(Buffer.from(canonicalize(config)!))
-    .digest('base64');
+    .digest("base64");
 
   let authInformation: AuthInformation | undefined = undefined;
 
   // try recover auth information from cache
   if (fs.existsSync(AUTH_DATA_FILE)) {
-    const cache: AuthCache = JSON.parse(fs.readFileSync(AUTH_DATA_FILE, { encoding: 'utf-8' }));
+    const cache: AuthCache = JSON.parse(fs.readFileSync(AUTH_DATA_FILE, { encoding: "utf-8" }));
     if (cache.confHash === confHash && cache.expiration > Date.now())
       authInformation = cache.authInformation;
   }
@@ -151,7 +151,7 @@ export async function defaultPlClient(): Promise<PlClient> {
           expiration: inferAuthRefreshTime(authInformation, config.authMaxRefreshSeconds),
         } as AuthCache),
       ),
-      'utf8',
+      "utf8",
     );
   }
 

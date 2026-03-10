@@ -1,24 +1,24 @@
-import type { PlClient, PlTransaction, ResourceId } from '@milaboratories/pl-client';
-import { TestHelpers } from '@milaboratories/pl-client';
-import type { Signer } from '@milaboratories/ts-helpers';
-import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
-import { getLongTestTimeout } from '@milaboratories/test-helpers';
-import * as fsp from 'node:fs/promises';
-import * as os from 'node:os';
-import * as path from 'node:path';
-import { makeBlobImportSnapshot, UploadDriver } from './upload';
-import { createUploadBlobClient, createUploadProgressClient } from '../clients/constructors';
-import { expect, test } from 'vitest';
-import { Computable } from '@milaboratories/computable';
-import { SynchronizedTreeState } from '@milaboratories/pl-tree';
-import type { ImportResourceSnapshot } from './types';
-import * as env from '../test_env';
+import type { PlClient, PlTransaction, ResourceId } from "@milaboratories/pl-client";
+import { TestHelpers } from "@milaboratories/pl-client";
+import type { Signer } from "@milaboratories/ts-helpers";
+import { ConsoleLoggerAdapter, HmacSha256Signer } from "@milaboratories/ts-helpers";
+import { getLongTestTimeout } from "@milaboratories/test-helpers";
+import * as fsp from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
+import { makeBlobImportSnapshot, UploadDriver } from "./upload";
+import { createUploadBlobClient, createUploadProgressClient } from "../clients/constructors";
+import { expect, test } from "vitest";
+import { Computable } from "@milaboratories/computable";
+import { SynchronizedTreeState } from "@milaboratories/pl-tree";
+import type { ImportResourceSnapshot } from "./types";
+import * as env from "../test_env";
 
 const TIMEOUT = getLongTestTimeout(30_000);
 
-test('upload a blob', async () => {
+test("upload a blob", async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
-    const stats = await writeFile('42', signer);
+    const stats = await writeFile("42", signer);
     const uploadId = await createBlobUpload(client, stats);
     const handleRes = await getSnapshot(client, uploadId);
 
@@ -42,12 +42,12 @@ test('upload a blob', async () => {
   });
 });
 
-test('upload a big blob', { timeout: TIMEOUT }, async () => {
+test("upload a big blob", { timeout: TIMEOUT }, async () => {
   const lotsOfNumbers: number[] = [];
   for (let i = 0; i < 5000000; i++) {
     lotsOfNumbers.push(i);
   }
-  const hugeString = lotsOfNumbers.join(' ');
+  const hugeString = lotsOfNumbers.join(" ");
 
   await withTest(async ({ client, uploader, signer }: TestArg) => {
     const stats = await writeFile(hugeString, signer);
@@ -58,7 +58,7 @@ test('upload a big blob', { timeout: TIMEOUT }, async () => {
 
     while (true) {
       const p = await c.getValue();
-      console.log('got progress of big blob: ', p);
+      console.log("got progress of big blob: ", p);
 
       expect(p.isUpload).toBeTruthy();
       if (p.done) {
@@ -75,9 +75,9 @@ test('upload a big blob', { timeout: TIMEOUT }, async () => {
 });
 
 // unskip if you need to test uploads of big files
-test.skip('upload a very big blob', { timeout: TIMEOUT }, async () => {
+test.skip("upload a very big blob", { timeout: TIMEOUT }, async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
-    const stats = await getFileStats(signer, '/home/snyssfx/Downloads/a_very_big_file.txt');
+    const stats = await getFileStats(signer, "/home/snyssfx/Downloads/a_very_big_file.txt");
     const uploadId = await createBlobUpload(client, stats);
     const handleRes = await getSnapshot(client, uploadId);
 
@@ -85,7 +85,7 @@ test.skip('upload a very big blob', { timeout: TIMEOUT }, async () => {
 
     while (true) {
       const p = await c.getValue();
-      console.log('got progress of a very big blob: ', p);
+      console.log("got progress of a very big blob: ", p);
 
       expect(p.isUpload).toBeTruthy();
       if (p.done) {
@@ -100,9 +100,9 @@ test.skip('upload a very big blob', { timeout: TIMEOUT }, async () => {
   });
 });
 
-test('upload a blob with wrong modification time', async () => {
+test("upload a blob with wrong modification time", async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
-    const stats = await writeFile('42', signer);
+    const stats = await writeFile("42", signer);
     stats.mtime -= 1000n;
     const uploadId = await createBlobUpload(client, stats);
     const handleRes = await getSnapshot(client, uploadId);
@@ -113,7 +113,7 @@ test('upload a blob with wrong modification time', async () => {
       try {
         await c.getValue();
       } catch (e: any) {
-        if (String(e).includes('file was modified')) {
+        if (String(e).includes("file was modified")) {
           return;
         }
         throw e;
@@ -124,9 +124,9 @@ test('upload a blob with wrong modification time', async () => {
   });
 });
 
-test('upload a duplicate blob', async () => {
+test("upload a duplicate blob", async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
-    const stats = await writeFile('42', signer);
+    const stats = await writeFile("42", signer);
     const uploadId = await createBlobUpload(client, stats);
     const handleRes = await getSnapshot(client, uploadId);
 
@@ -153,7 +153,7 @@ test('upload a duplicate blob', async () => {
   });
 });
 
-test('upload lots of duplicate blobs concurrently', async () => {
+test("upload lots of duplicate blobs concurrently", async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const signer = new HmacSha256Signer(HmacSha256Signer.generateSecret());
     const logger = new ConsoleLoggerAdapter();
@@ -164,13 +164,13 @@ test('upload lots of duplicate blobs concurrently', async () => {
       createUploadProgressClient(client, logger),
     );
 
-    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), "test"));
     const n = 100;
 
     const settings: FileStat[] = [];
     for (let i = 0; i < n; i++) {
       const stat = await writeFile(
-        'DuplicateBlobsFileContent',
+        "DuplicateBlobsFileContent",
         signer,
         tmpDir,
         `testUploadABlob_${i}.txt`,
@@ -204,11 +204,11 @@ test('upload lots of duplicate blobs concurrently', async () => {
   });
 });
 
-test('index a blob', async () => {
+test("index a blob", async () => {
   await withTest(async ({ client, uploader }: TestArg) => {
     const uploadId = await createBlobIndex(
       client,
-      'another_answer_to_the_ultimate_question.txt',
+      "another_answer_to_the_ultimate_question.txt",
       env.libraryStorage,
     );
     const handleRes = await getSnapshot(client, uploadId);
@@ -217,7 +217,7 @@ test('index a blob', async () => {
 
     while (true) {
       const p = await c.getValue();
-      console.log('got index progress: ', p);
+      console.log("got index progress: ", p);
 
       expect(p.isUpload).toBeFalsy();
       expect(p.isUploadSignMatch).toBeUndefined();
@@ -264,9 +264,9 @@ async function writeFile(
   fileContent: string,
   signer: Signer,
   tmpDir?: string,
-  fileName: string = 'testUploadABlob.txt',
+  fileName: string = "testUploadABlob.txt",
 ): Promise<FileStat> {
-  if (tmpDir == undefined) tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
+  if (tmpDir == undefined) tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), "test"));
 
   const fPath = path.join(tmpDir, fileName);
 
@@ -286,20 +286,20 @@ async function getFileStats(signer: Signer, fPath: string): Promise<FileStat> {
 
 async function createMapOfUploads(c: PlClient, n: number, settings: FileStat[]) {
   return await c.withWriteTx(
-    'UploaderCreateMapOfUploads',
+    "UploaderCreateMapOfUploads",
     async (tx: PlTransaction) => {
       const uploads: ResourceId[] = [];
 
-      const mapId = tx.createStruct({ name: 'StdMap', version: '1' });
+      const mapId = tx.createStruct({ name: "StdMap", version: "1" });
       for (let i = 0; i < n; i++) {
         const uploadId = await createBlobUploadTx(tx, settings[i]);
         uploads.push(uploadId);
         const fId = { resourceId: mapId, fieldName: String(i) };
-        tx.createField(fId, 'Input');
+        tx.createField(fId, "Input");
         tx.setField(fId, uploadId);
       }
 
-      tx.createField({ resourceId: c.clientRoot, fieldName: 'project1' }, 'Dynamic', mapId);
+      tx.createField({ resourceId: c.clientRoot, fieldName: "project1" }, "Dynamic", mapId);
       await tx.commit();
 
       return {
@@ -313,11 +313,11 @@ async function createMapOfUploads(c: PlClient, n: number, settings: FileStat[]) 
 
 async function createBlobUpload(c: PlClient, stat: FileStat): Promise<ResourceId> {
   return await c.withWriteTx(
-    'UploadDriverCreateTest',
+    "UploadDriverCreateTest",
     async (tx: PlTransaction) => {
       const uploadId = await createBlobUploadTx(tx, stat);
 
-      tx.createField({ resourceId: c.clientRoot, fieldName: 'project1' }, 'Dynamic', uploadId);
+      tx.createField({ resourceId: c.clientRoot, fieldName: "project1" }, "Dynamic", uploadId);
       await tx.commit();
 
       return uploadId;
@@ -334,24 +334,24 @@ async function createBlobUploadTx(tx: PlTransaction, stat: FileStat): Promise<Re
     sizeBytes: stat.size.toString(),
   };
   const data = new TextEncoder().encode(JSON.stringify(settings));
-  const upload = tx.createStruct({ name: 'BlobUpload', version: '1' }, data);
+  const upload = tx.createStruct({ name: "BlobUpload", version: "1" }, data);
 
   return await upload.globalId;
 }
 
 async function createBlobIndex(c: PlClient, path: string, storageId: string): Promise<ResourceId> {
   return await c.withWriteTx(
-    'UploadDriverCreateTest',
+    "UploadDriverCreateTest",
     async (tx: PlTransaction) => {
       const settings = {
         storageId: storageId,
         path: path,
       };
       const data = new TextEncoder().encode(JSON.stringify(settings));
-      const importInternal = tx.createStruct({ name: 'BlobImportInternal', version: '1' }, data);
+      const importInternal = tx.createStruct({ name: "BlobImportInternal", version: "1" }, data);
       tx.createField(
-        { resourceId: c.clientRoot, fieldName: 'project1' },
-        'Dynamic',
+        { resourceId: c.clientRoot, fieldName: "project1" },
+        "Dynamic",
         importInternal,
       );
       await tx.commit();
@@ -375,7 +375,7 @@ async function getSnapshot(
       const handle = ctx
         .accessor(tree.entry())
         .node()
-        .traverse({ field: 'handle', assertFieldType: 'Output' });
+        .traverse({ field: "handle", assertFieldType: "Output" });
       if (!handle) return undefined;
       else return makeBlobImportSnapshot(handle, ctx);
     }).withStableType();

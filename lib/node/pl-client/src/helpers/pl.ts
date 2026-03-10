@@ -7,31 +7,31 @@
  *
  */
 
-import type { FutureFieldType, ResourceType } from '../core/types';
-import type { AnyRef, FieldRef, PlTransaction, ResourceRef } from '../core/transaction';
-import { field } from '../core/transaction';
+import type { FutureFieldType, ResourceType } from "../core/types";
+import type { AnyRef, FieldRef, PlTransaction, ResourceRef } from "../core/transaction";
+import { field } from "../core/transaction";
 
 function rt(name: string, version: string): ResourceType {
   return { name, version };
 }
 
-export const ClientRoot = rt('ClientRoot', '1');
+export const ClientRoot = rt("ClientRoot", "1");
 
-export const StructTestResource = rt('StructTest', '1');
-export const ValueTestResource = rt('ValueTest', '1');
+export const StructTestResource = rt("StructTest", "1");
+export const ValueTestResource = rt("ValueTest", "1");
 
-export const JsonString = rt('json/string', '1');
-export const JsonBool = rt('json/bool', '1');
-export const JsonObject = rt('json/object', '1');
-export const JsonGzObject = rt('json-gz/object', '1');
-export const JsonArray = rt('json/array', '1');
-export const JsonNumber = rt('json/number', '1');
-export const JsonNull = rt('json/null', '1');
+export const JsonString = rt("json/string", "1");
+export const JsonBool = rt("json/bool", "1");
+export const JsonObject = rt("json/object", "1");
+export const JsonGzObject = rt("json-gz/object", "1");
+export const JsonArray = rt("json/array", "1");
+export const JsonNumber = rt("json/number", "1");
+export const JsonNull = rt("json/null", "1");
 
-export const RNull = rt('Null', '1');
+export const RNull = rt("Null", "1");
 
-export const EphStdMap: ResourceType = rt('EphStdMap', '1');
-export const StdMap: ResourceType = rt('StdMap', '1');
+export const EphStdMap: ResourceType = rt("EphStdMap", "1");
+export const StdMap: ResourceType = rt("StdMap", "1");
 
 //
 // Standard value resources
@@ -96,7 +96,7 @@ export function createPlMap(
   const rId = ephemeral ? tx.createEphemeral(actualType) : tx.createStruct(actualType);
 
   for (const [name, value] of Array.isArray(entries) ? entries : plEntries(entries))
-    tx.createField(field(rId, name), 'Input', value);
+    tx.createField(field(rId, name), "Input", value);
 
   tx.lock(rId);
 
@@ -108,7 +108,7 @@ export function futureRecord<Key extends string>(
   rId: AnyRef,
   keys: Key[],
   fieldType: FutureFieldType,
-  prefix: string = '',
+  prefix: string = "",
 ): PlRecord<Key, FieldRef> {
   return Object.fromEntries(
     keys.map((k) => plEntry(k, tx.getFutureFieldValue(rId, `${prefix}${k}`, fieldType))),
@@ -122,12 +122,12 @@ export function futureRecord<Key extends string>(
 /** Name of the field in block holder, that references the actual block-pack. */
 export const Holder = StdMap;
 export const EphHolder = EphStdMap;
-export const HolderRefField = 'ref';
+export const HolderRefField = "ref";
 
 export function wrapInHolder(tx: PlTransaction, ref: AnyRef): ResourceRef {
   const holder = tx.createStruct(Holder);
   const mainHolderField = field(holder, HolderRefField);
-  tx.createField(mainHolderField, 'Input', ref);
+  tx.createField(mainHolderField, "Input", ref);
   tx.lock(holder);
   return holder;
 }
@@ -135,11 +135,11 @@ export function wrapInHolder(tx: PlTransaction, ref: AnyRef): ResourceRef {
 export function wrapInEphHolder(tx: PlTransaction, ref: AnyRef): ResourceRef {
   const holder = tx.createEphemeral(EphHolder);
   const mainHolderField = field(holder, HolderRefField);
-  tx.createField(mainHolderField, 'Input', ref);
+  tx.createField(mainHolderField, "Input", ref);
   tx.lock(holder);
   return holder;
 }
 
 export function unwrapHolder(tx: PlTransaction, ref: AnyRef): FieldRef {
-  return tx.getFutureFieldValue(ref, HolderRefField, 'Input');
+  return tx.getFutureFieldValue(ref, HolderRefField, "Input");
 }

@@ -1,28 +1,14 @@
-import type { PlClient } from '../core/client';
-import type {
-  RetryOptions,
-} from '@milaboratories/ts-helpers';
-import {
-  createRetryState,
-  nextRetryStateOrError,
-  notEmpty,
-} from '@milaboratories/ts-helpers';
-import type {
-  FieldData,
-  FieldType,
-  ResourceData,
-  ResourceId } from '../core/types';
-import {
-  isNotNullResourceId,
-  isNullResourceId,
-  resourceIdToString,
-} from '../core/types';
-import type { PlTransaction } from '../core/transaction';
-import * as tp from 'node:timers/promises';
+import type { PlClient } from "../core/client";
+import type { RetryOptions } from "@milaboratories/ts-helpers";
+import { createRetryState, nextRetryStateOrError, notEmpty } from "@milaboratories/ts-helpers";
+import type { FieldData, FieldType, ResourceData, ResourceId } from "../core/types";
+import { isNotNullResourceId, isNullResourceId, resourceIdToString } from "../core/types";
+import type { PlTransaction } from "../core/transaction";
+import * as tp from "node:timers/promises";
 
 /** This error tells state assertion mechanism that required state is not yet ready */
 export class ContinuePolling extends Error {
-  name = 'ContinuePolling';
+  name = "ContinuePolling";
 }
 
 export type PollFieldTraverseOps = {
@@ -68,8 +54,8 @@ export class PollResourceAccessor {
     }
 
     if (
-      ((expectedType === 'Input' || expectedType === 'Service') && this.data.inputsLocked)
-      || (expectedType === 'Output' && this.data.outputsLocked)
+      ((expectedType === "Input" || expectedType === "Service") && this.data.inputsLocked) ||
+      (expectedType === "Output" && this.data.outputsLocked)
     )
       throw new Error(
         // eslint-disable-next-line @typescript-eslint/no-base-to-string, @typescript-eslint/restrict-template-expressions
@@ -150,12 +136,12 @@ export class PollTxAccessor {
   async throwError(error: ResourceId, path: string[] = []): Promise<never> {
     const errorRes = await this.get(error);
     const errorText = Buffer.from(notEmpty(errorRes.data.data)).toString();
-    throw new Error(`${path.join(' -> ')} = ${errorText}`);
+    throw new Error(`${path.join(" -> ")} = ${errorText}`);
   }
 }
 
 export const DefaultPollingRetryOptions: RetryOptions = {
-  type: 'linearBackoff',
+  type: "linearBackoff",
   jitter: 0,
   maxAttempts: 100,
   backoffStep: 10,
@@ -166,7 +152,7 @@ export async function poll<T>(
   cl: PlClient,
   cb: (tx: PollTxAccessor) => Promise<T>,
   retryOptions: RetryOptions = DefaultPollingRetryOptions,
-  txName: string = 'polling',
+  txName: string = "polling",
 ): Promise<T> {
   let retryState = createRetryState(retryOptions);
   while (true) {

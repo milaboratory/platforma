@@ -1,17 +1,17 @@
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import type winston from 'winston';
-import { z } from 'zod/v4';
+import * as path from "node:path";
+import * as fs from "node:fs";
+import type winston from "winston";
+import { z } from "zod/v4";
 
-import * as defaults from '../defaults';
-import * as util from './util';
-import * as envs from './envs';
-import * as artifacts from './schemas/artifacts';
-import * as entrypoints from './schemas/entrypoints';
-import { tryResolve } from '@milaboratories/resolve-helper';
-import * as docker from './docker';
-import { prepareDockerOptions as pythonDockerOptions } from './docker-python';
-import { prepareDockerOptions as condaDockerOptions } from './docker-conda';
+import * as defaults from "../defaults";
+import * as util from "./util";
+import * as envs from "./envs";
+import * as artifacts from "./schemas/artifacts";
+import * as entrypoints from "./schemas/entrypoints";
+import { tryResolve } from "@milaboratories/resolve-helper";
+import * as docker from "./docker";
+import { prepareDockerOptions as pythonDockerOptions } from "./docker-python";
+import { prepareDockerOptions as condaDockerOptions } from "./docker-conda";
 
 const storagePresetSchema = z.object({
   downloadURL: z.string().optional(),
@@ -23,11 +23,11 @@ const binaryRegistryPresetsSchema = z.record(z.string(), storagePresetSchema);
 type binaryRegistryPresets = z.infer<typeof binaryRegistryPresetsSchema>;
 
 const packageJsonSchema = z.object({
-  'name': z.string(),
-  'version': z.string(),
-  'private': z.boolean().optional(),
+  name: z.string(),
+  version: z.string(),
+  private: z.boolean().optional(),
 
-  'block-software': z.object({
+  "block-software": z.object({
     registries: z
       .object({
         binary: binaryRegistryPresetsSchema.optional(),
@@ -92,7 +92,7 @@ export class PackageInfo {
       pkgJsonData?: string;
     },
   ) {
-    this.logger.debug('Reading package information...');
+    this.logger.debug("Reading package information...");
 
     this.packageRoot = options?.packageRoot ?? util.findPackageRoot(logger);
 
@@ -105,10 +105,10 @@ export class PackageInfo {
       this.logger.debug(`  - loading '${pkgJsonPath}'`);
       if (!fs.existsSync(pkgJsonPath)) {
         this.logger.error(`no '${util.packageJsonName}' file found at '${this.packageRoot}'`);
-        throw util.CLIError('not a platform software package directory');
+        throw util.CLIError("not a platform software package directory");
       }
 
-      pkgJsonData = fs.readFileSync(pkgJsonPath, 'utf8');
+      pkgJsonData = fs.readFileSync(pkgJsonPath, "utf8");
     }
 
     const result = parsePackageJson(pkgJsonData);
@@ -116,13 +116,13 @@ export class PackageInfo {
       throw util.CLIError(`\n` + util.formatZodIssues(result.error.issues));
     }
     this.pkgJson = result.data;
-    this.logger.debug('    ' + JSON.stringify(this.pkgJson));
+    this.logger.debug("    " + JSON.stringify(this.pkgJson));
 
     this.validateConfig();
 
     this.packageName = this.pkgJson.name;
 
-    logger.debug('  package information loaded successfully.');
+    logger.debug("  package information loaded successfully.");
   }
 
   get isPrivate(): boolean {
@@ -130,21 +130,21 @@ export class PackageInfo {
   }
 
   get binaryRegistries(): binaryRegistryPresets {
-    return this.pkgJson['block-software'].registries?.binary ?? {};
+    return this.pkgJson["block-software"].registries?.binary ?? {};
   }
 
   get entrypoints(): Map<string, entrypoints.Entrypoint> {
     const list = new Map<string, entrypoints.Entrypoint>();
 
-    for (const [epName, ep] of Object.entries(this.pkgJson['block-software'].entrypoints)) {
+    for (const [epName, ep] of Object.entries(this.pkgJson["block-software"].entrypoints)) {
       if (ep.docker) {
-        const artifactID = typeof ep.docker.artifact === 'string' ? ep.docker.artifact : epName;
-        const artifact = this.getArtifact(artifactID, 'docker');
+        const artifactID = typeof ep.docker.artifact === "string" ? ep.docker.artifact : epName;
+        const artifact = this.getArtifact(artifactID, "docker");
 
         // will mix docker to separate entrypoint
         // render function have to merge
         list.set(docker.entrypointName(epName), {
-          type: 'software',
+          type: "software",
           name: epName,
           artifact: artifact,
           cmd: ep.docker.cmd ?? [],
@@ -154,7 +154,7 @@ export class PackageInfo {
 
       if (ep.reference) {
         list.set(epName, {
-          type: 'reference',
+          type: "reference",
           name: epName,
           reference: ep.reference,
         });
@@ -164,17 +164,17 @@ export class PackageInfo {
       if (ep.binary || ep.conda) {
         const swOptions: entrypoints.softwareOptionsType = ep.binary ? ep.binary : ep.conda!;
         const artifactOrRef = ep.binary ? ep.binary.artifact : ep.conda!.artifact;
-        const artifactID = typeof artifactOrRef === 'string' ? artifactOrRef : epName;
-        const artifact = this.getArtifact(artifactID, 'any');
-        if (artifact.type === 'asset') {
+        const artifactID = typeof artifactOrRef === "string" ? artifactOrRef : epName;
+        const artifact = this.getArtifact(artifactID, "any");
+        if (artifact.type === "asset") {
           throw util.CLIError(`binary entrypoint cannot point to asset artifact: ${epName}`);
         }
-        if (artifact.type === 'environment') {
+        if (artifact.type === "environment") {
           throw util.CLIError(`binary entrypoint cannot point to environment artifact: ${epName}`);
         }
 
         list.set(epName, {
-          type: 'software',
+          type: "software",
           name: epName,
           artifact: artifact,
           cmd: swOptions.cmd,
@@ -184,10 +184,10 @@ export class PackageInfo {
         if (!ep.docker) {
           if (artifacts.dockerAutogenTypes.includes(artifact.type)) {
             switch (artifact.type) {
-              case 'conda':
-              case 'python':
+              case "conda":
+              case "python":
                 list.set(docker.entrypointName(epName), {
-                  type: 'software',
+                  type: "software",
                   name: epName,
                   artifact: this.generateDockerPackage(artifact),
                   cmd: swOptions.cmd,
@@ -203,23 +203,23 @@ export class PackageInfo {
       }
 
       if (ep.environment) {
-        const packageID
-          = typeof ep.environment.artifact === 'string' ? ep.environment.artifact : epName;
+        const packageID =
+          typeof ep.environment.artifact === "string" ? ep.environment.artifact : epName;
         list.set(epName, {
-          type: 'environment',
+          type: "environment",
           name: epName,
-          artifact: this.getArtifact(packageID, 'environment'),
+          artifact: this.getArtifact(packageID, "environment"),
           env: ep.environment.envVars ?? [],
         });
         continue;
       }
 
       if (ep.asset) {
-        const packageID = typeof ep.asset === 'string' ? ep.asset : epName;
+        const packageID = typeof ep.asset === "string" ? ep.asset : epName;
         list.set(epName, {
-          type: 'asset',
+          type: "asset",
           name: epName,
-          artifact: this.getArtifact(packageID, 'asset'),
+          artifact: this.getArtifact(packageID, "asset"),
         });
         continue;
       }
@@ -249,7 +249,9 @@ export class PackageInfo {
    * Resolves entrypoint reference to full entrypoint file path and type
    */
   public resolveReference(epName: string, ep: entrypoints.ReferenceEntrypoint): string {
-    this.logger.debug(`resolving entrypoint '${epName}' reference '${ep.reference}'. packageRoot='${this.packageRoot}'`);
+    this.logger.debug(
+      `resolving entrypoint '${epName}' reference '${ep.reference}'. packageRoot='${this.packageRoot}'`,
+    );
 
     const refInfo = ep.reference.match(entrypoints.EnyrypointReferencePattern)?.groups;
 
@@ -274,7 +276,7 @@ export class PackageInfo {
     const result = new Map<string, artifacts.withId<artifacts.anyArtifactType>>();
 
     for (const ep of this.entrypoints.values()) {
-      if (ep.type === 'reference') {
+      if (ep.type === "reference") {
         // Entrypoint references are not buildable
         continue;
       }
@@ -287,57 +289,95 @@ export class PackageInfo {
     return result;
   }
 
-  public artifactInfoLocation(pkgID: string, artifactType: 'docker', platform: util.ArchType): string;
-  public artifactInfoLocation(pkgID: string, artifactType: 'archive', platform?: util.PlatformType): string;
-  public artifactInfoLocation(pkgID: string, artifactType: 'archive' | 'docker', platform?: util.PlatformType | util.ArchType): string {
-    const platformPart = platform ? `_${platform}` : '';
-    return path.resolve(this.packageRoot, 'dist', 'artifacts', pkgID, `${artifactType}${platformPart}.json`);
+  public artifactInfoLocation(
+    pkgID: string,
+    artifactType: "docker",
+    platform: util.ArchType,
+  ): string;
+  public artifactInfoLocation(
+    pkgID: string,
+    artifactType: "archive",
+    platform?: util.PlatformType,
+  ): string;
+  public artifactInfoLocation(
+    pkgID: string,
+    artifactType: "archive" | "docker",
+    platform?: util.PlatformType | util.ArchType,
+  ): string {
+    const platformPart = platform ? `_${platform}` : "";
+    return path.resolve(
+      this.packageRoot,
+      "dist",
+      "artifacts",
+      pkgID,
+      `${artifactType}${platformPart}.json`,
+    );
   }
 
-  private generateDockerPackage(artifact: artifacts.withId<artifacts.pythonType | artifacts.condaType>): artifacts.withId<artifacts.dockerType> {
+  private generateDockerPackage(
+    artifact: artifacts.withId<artifacts.pythonType | artifacts.condaType>,
+  ): artifacts.withId<artifacts.dockerType> {
     switch (artifact.type) {
-      case 'python': {
-        const options = pythonDockerOptions(this.logger, this.packageRoot, this.packageName, artifact.id, artifact);
+      case "python": {
+        const options = pythonDockerOptions(
+          this.logger,
+          this.packageRoot,
+          this.packageName,
+          artifact.id,
+          artifact,
+        );
 
         return {
           id: artifact.id,
-          type: 'docker',
-          registry: artifact['docker-registry'],
+          type: "docker",
+          registry: artifact["docker-registry"],
           ...options,
         };
       }
-      case 'conda': {
-        const options = condaDockerOptions(this.logger, this.packageRoot, artifact.id, artifact, util.currentArch());
+      case "conda": {
+        const options = condaDockerOptions(
+          this.logger,
+          this.packageRoot,
+          artifact.id,
+          artifact,
+          util.currentArch(),
+        );
 
         return {
           id: artifact.id,
-          type: 'docker',
-          registry: artifact['docker-registry'],
+          type: "docker",
+          registry: artifact["docker-registry"],
           ...options,
         };
       }
       default: {
         util.assertNever(artifact);
-        throw new Error('calm down the linter');
+        throw new Error("calm down the linter");
       }
     }
   }
 
-  public getArtifact(id: string, type: 'asset'): artifacts.withId<artifacts.withType<'asset', artifacts.assetType>>;
-  public getArtifact(id: string, type: 'environment'): artifacts.withId<artifacts.environmentType>;
-  public getArtifact(id: string, type: 'binary'): artifacts.withId<artifacts.binaryType>;
-  public getArtifact(id: string, type: 'java'): artifacts.withId<artifacts.javaType>;
-  public getArtifact(id: string, type: 'python'): artifacts.withId<artifacts.pythonType>;
-  public getArtifact(id: string, type: 'R'): artifacts.withId<artifacts.rType>;
-  public getArtifact(id: string, type: 'docker'): artifacts.withId<artifacts.dockerType>;
-  public getArtifact(id: string, type: 'conda'): artifacts.withId<artifacts.condaType>;
-  public getArtifact(id: string, type: 'any'): artifacts.withId<artifacts.anyArtifactType>;
-  public getArtifact(id: string, type: artifacts.artifactType | 'any'): artifacts.withId<artifacts.anyArtifactType> {
-    const artifacts = this.pkgJson['block-software'].artifacts ?? {};
-    const entrypoints = this.pkgJson['block-software'].entrypoints;
+  public getArtifact(
+    id: string,
+    type: "asset",
+  ): artifacts.withId<artifacts.withType<"asset", artifacts.assetType>>;
+  public getArtifact(id: string, type: "environment"): artifacts.withId<artifacts.environmentType>;
+  public getArtifact(id: string, type: "binary"): artifacts.withId<artifacts.binaryType>;
+  public getArtifact(id: string, type: "java"): artifacts.withId<artifacts.javaType>;
+  public getArtifact(id: string, type: "python"): artifacts.withId<artifacts.pythonType>;
+  public getArtifact(id: string, type: "R"): artifacts.withId<artifacts.rType>;
+  public getArtifact(id: string, type: "docker"): artifacts.withId<artifacts.dockerType>;
+  public getArtifact(id: string, type: "conda"): artifacts.withId<artifacts.condaType>;
+  public getArtifact(id: string, type: "any"): artifacts.withId<artifacts.anyArtifactType>;
+  public getArtifact(
+    id: string,
+    type: artifacts.artifactType | "any",
+  ): artifacts.withId<artifacts.anyArtifactType> {
+    const artifacts = this.pkgJson["block-software"].artifacts ?? {};
+    const entrypoints = this.pkgJson["block-software"].entrypoints;
 
     let artifact: artifacts.anyArtifactType | undefined;
-    let errMsg = '';
+    let errMsg = "";
     if (artifacts[id]) {
       artifact = artifacts[id];
     } else {
@@ -351,19 +391,29 @@ export class PackageInfo {
       errMsg = `incorrect artifact reference in entrypoint '${id}'`;
 
       if (ep.asset) {
-        artifact = (typeof ep.asset === 'string') ? artifacts[ep.asset] : { type: 'asset', ...ep.asset } as artifacts.assetType;
-      } else if (ep.binary && type !== 'docker') { // single entrypoint can keep both binary and docker
+        artifact =
+          typeof ep.asset === "string"
+            ? artifacts[ep.asset]
+            : ({ type: "asset", ...ep.asset } as artifacts.assetType);
+      } else if (ep.binary && type !== "docker") {
+        // single entrypoint can keep both binary and docker
         const a = ep.binary.artifact;
-        artifact = (typeof a === 'string') ? artifacts[a] : a;
-      } else if (ep.conda && type !== 'docker') { // single entrypoint can keep both conda and docker
+        artifact = typeof a === "string" ? artifacts[a] : a;
+      } else if (ep.conda && type !== "docker") {
+        // single entrypoint can keep both conda and docker
         const a = ep.conda.artifact;
-        artifact = (typeof a === 'string') ? artifacts[a] : { type: 'conda', ...a } as artifacts.condaType;
+        artifact =
+          typeof a === "string" ? artifacts[a] : ({ type: "conda", ...a } as artifacts.condaType);
       } else if (ep.environment) {
         const a = ep.environment.artifact;
-        artifact = (typeof a === 'string') ? artifacts[a] : { type: 'environment', ...a } as artifacts.environmentType;
+        artifact =
+          typeof a === "string"
+            ? artifacts[a]
+            : ({ type: "environment", ...a } as artifacts.environmentType);
       } else if (ep.docker) {
         const a = ep.docker.artifact;
-        artifact = (typeof a === 'string') ? artifacts[a] : { type: 'docker', ...a } as artifacts.dockerType;
+        artifact =
+          typeof a === "string" ? artifacts[a] : ({ type: "docker", ...a } as artifacts.dockerType);
       }
     }
 
@@ -374,55 +424,55 @@ export class PackageInfo {
     }
 
     switch (type) {
-      case 'docker': {
+      case "docker": {
         return {
           id: id,
-          ...requireArtifactType(artifact, 'docker', errMsg),
+          ...requireArtifactType(artifact, "docker", errMsg),
         };
       }
-      case 'asset': {
+      case "asset": {
         return {
           id: id,
-          ...requireArtifactType(artifact, 'asset', errMsg),
+          ...requireArtifactType(artifact, "asset", errMsg),
         };
       }
-      case 'environment': {
+      case "environment": {
         return {
           id: id,
-          ...requireArtifactType(artifact, 'environment', errMsg),
+          ...requireArtifactType(artifact, "environment", errMsg),
         };
       }
-      case 'binary': {
+      case "binary": {
         return {
           id: id,
-          ...requireArtifactType(artifact, 'binary', errMsg),
+          ...requireArtifactType(artifact, "binary", errMsg),
         };
       }
-      case 'java': {
+      case "java": {
         return {
           id: id,
-          ...requireArtifactType(artifact, 'java', errMsg),
+          ...requireArtifactType(artifact, "java", errMsg),
         };
       }
-      case 'python': {
+      case "python": {
         return {
           id: id,
-          ...requireArtifactType(artifact, 'python', errMsg),
+          ...requireArtifactType(artifact, "python", errMsg),
         };
       }
-      case 'R': {
+      case "R": {
         return {
           id: id,
-          ...requireArtifactType(artifact, 'R', errMsg),
+          ...requireArtifactType(artifact, "R", errMsg),
         };
       }
-      case 'conda': {
+      case "conda": {
         return {
           id: id,
-          ...requireArtifactType(artifact, 'conda', errMsg),
+          ...requireArtifactType(artifact, "conda", errMsg),
         };
       }
-      case 'any': {
+      case "any": {
         return {
           id: id,
           ...artifact,
@@ -440,13 +490,13 @@ export class PackageInfo {
   }
 
   public artifactName(artifact: artifacts.withId<artifacts.anyArtifactType>): string {
-    if (artifact.type !== 'docker') {
+    if (artifact.type !== "docker") {
       if (artifact.name) {
         return artifact.name;
       }
     }
 
-    return util.trimPrefix(this.pkgJson.name, '@') + '/' + artifact.id;
+    return util.trimPrefix(this.pkgJson.name, "@") + "/" + artifact.id;
   }
 
   public artifactVersion(artifact: artifacts.anyArtifactType): string {
@@ -458,7 +508,7 @@ export class PackageInfo {
       return process.env[envs.PL_PKG_VERSION];
     }
 
-    if (artifact.type !== 'docker' && artifact.version) {
+    if (artifact.type !== "docker" && artifact.version) {
       return artifact.version;
     }
 
@@ -466,7 +516,7 @@ export class PackageInfo {
   }
 
   public artifactRegistrySettings(artifact: artifacts.anyArtifactType): artifacts.registry {
-    if (artifact.type === 'docker') {
+    if (artifact.type === "docker") {
       return {
         name: artifact.registry,
       };
@@ -476,13 +526,13 @@ export class PackageInfo {
     const registries = this.binaryRegistries;
 
     const result: artifacts.registry = {
-      name: 'default',
+      name: "default",
       downloadURL: registries.default?.downloadURL,
       storageURL: registries.default?.storageURL,
     };
 
     if (registry) {
-      if (typeof registry === 'string') {
+      if (typeof registry === "string") {
         result.name = registry;
         const regDefault = wellKnownRegistries[result.name];
         result.downloadURL = registries[result.name]?.downloadURL ?? regDefault?.downloadURL;
@@ -490,14 +540,14 @@ export class PackageInfo {
       } else {
         result.name = registry.name;
         const regDefault = wellKnownRegistries[result.name];
-        result.downloadURL
-          = registry.downloadURL ?? registries[result.name]?.downloadURL ?? regDefault?.downloadURL;
-        result.storageURL
-          = registry.storageURL ?? registries[result.name]?.storageURL ?? regDefault?.storageURL;
+        result.downloadURL =
+          registry.downloadURL ?? registries[result.name]?.downloadURL ?? regDefault?.downloadURL;
+        result.storageURL =
+          registry.storageURL ?? registries[result.name]?.storageURL ?? regDefault?.storageURL;
       }
     }
 
-    const regNameUpper = result.name.toUpperCase().replaceAll(/[^A-Z0-9_]/g, '_');
+    const regNameUpper = result.name.toUpperCase().replaceAll(/[^A-Z0-9_]/g, "_");
 
     const uploadTo = process.env[`PL_REGISTRY_${regNameUpper}_UPLOAD_URL`];
     if (uploadTo) {
@@ -510,8 +560,8 @@ export class PackageInfo {
     }
 
     if (result.downloadURL) {
-      const u = new URL(result.downloadURL, 'file:/nonexistent'); // check download URL is valid URL
-      if (!['https:', 'http:'].includes(u.protocol)) {
+      const u = new URL(result.downloadURL, "file:/nonexistent"); // check download URL is valid URL
+      if (!["https:", "http:"].includes(u.protocol)) {
         throw util.CLIError(
           `registry ${result.name} download URL is not valid. Only 'https://' and 'http://' schemes are supported for now`,
         );
@@ -521,11 +571,14 @@ export class PackageInfo {
     return result;
   }
 
-  public artifactContentRoot(artifact: artifacts.withId<artifacts.anyArtifactType>, platform: util.PlatformType): string {
-    if (('root' in artifact) && artifact.root) {
+  public artifactContentRoot(
+    artifact: artifacts.withId<artifacts.anyArtifactType>,
+    platform: util.PlatformType,
+  ): string {
+    if ("root" in artifact && artifact.root) {
       return path.resolve(this.packageRoot, artifact.root);
     }
-    if (('roots' in artifact) && artifact.roots[platform]) {
+    if ("roots" in artifact && artifact.roots[platform]) {
       return path.resolve(this.packageRoot, artifact.roots[platform]);
     }
 
@@ -534,22 +587,24 @@ export class PackageInfo {
     );
   }
 
-  public artifactPlatforms(artifact: artifacts.withId<artifacts.anyArtifactType>): util.PlatformType[] {
-    if (artifact.type === 'docker') {
+  public artifactPlatforms(
+    artifact: artifacts.withId<artifacts.anyArtifactType>,
+  ): util.PlatformType[] {
+    if (artifact.type === "docker") {
       return [util.currentPlatform()];
     }
 
-    if (('root' in artifact) && artifact.root) {
+    if ("root" in artifact && artifact.root) {
       return [util.currentPlatform()];
     }
 
-    if (('roots' in artifact)) {
+    if ("roots" in artifact) {
       return Object.keys(artifact.roots) as util.PlatformType[];
     }
 
     throw util.CLIError(
-      `no platforms are defined as supported for artifact '${artifact.id}' in binary mode `
-      + `(no 'roots' are defined)`,
+      `no platforms are defined as supported for artifact '${artifact.id}' in binary mode ` +
+        `(no 'roots' are defined)`,
     );
   }
 
@@ -557,8 +612,8 @@ export class PackageInfo {
     artifact: artifacts.withId<artifacts.anyArtifactType>,
     platform: util.PlatformType,
   ): string {
-    const group = artifact.type === 'asset' ? 'assets' : 'software';
-    const extension = artifact.type === 'asset' ? 'zip' : 'tgz';
+    const group = artifact.type === "asset" ? "assets" : "software";
+    const extension = artifact.type === "asset" ? "zip" : "tgz";
     const name = this.artifactName(artifact);
     const version = this.artifactVersion(artifact);
 
@@ -573,8 +628,8 @@ export class PackageInfo {
   public artifactArchiveAddressPattern(
     artifact: artifacts.withId<artifacts.anyArtifactType>,
   ): string {
-    const group = artifact.type === 'asset' ? 'assets' : 'software';
-    const extension = artifact.type === 'asset' ? 'zip' : 'tgz';
+    const group = artifact.type === "asset" ? "assets" : "software";
+    const extension = artifact.type === "asset" ? "zip" : "tgz";
     const name = this.artifactName(artifact);
     const version = this.artifactVersion(artifact);
 
@@ -588,15 +643,15 @@ export class PackageInfo {
   private validateConfig() {
     let hasErrors: boolean = false;
 
-    const blockSoftware = this.pkgJson['block-software'];
+    const blockSoftware = this.pkgJson["block-software"];
 
     const as = blockSoftware.artifacts ?? {};
     const entrypoints = blockSoftware.entrypoints ?? {};
 
     for (const [epName, ep] of Object.entries(entrypoints)) {
       if (ep.binary) {
-        const artifactID = typeof ep.binary.artifact === 'string' ? ep.binary.artifact : epName;
-        const artifact = this.getArtifact(artifactID, 'any');
+        const artifactID = typeof ep.binary.artifact === "string" ? ep.binary.artifact : epName;
+        const artifact = this.getArtifact(artifactID, "any");
 
         if (!artifact) {
           this.logger.error(
@@ -616,7 +671,7 @@ export class PackageInfo {
           hasErrors = true;
         }
 
-        if (artifact.type === 'environment') {
+        if (artifact.type === "environment") {
           this.logger.error(
             `entrypoint '${epName}' artifact type '${artifact.type}' cannot be build into software pacakge. Use 'environment' entrypoint`,
           );
@@ -625,9 +680,9 @@ export class PackageInfo {
       }
 
       if (ep.environment) {
-        const artifactID
-          = typeof ep.environment.artifact === 'string' ? ep.environment.artifact : epName;
-        const artifact = this.getArtifact(artifactID, 'any');
+        const artifactID =
+          typeof ep.environment.artifact === "string" ? ep.environment.artifact : epName;
+        const artifact = this.getArtifact(artifactID, "any");
 
         if (!artifact) {
           this.logger.error(
@@ -640,7 +695,7 @@ export class PackageInfo {
           hasErrors = true;
         }
 
-        if (artifact.type !== 'environment') {
+        if (artifact.type !== "environment") {
           this.logger.error(
             `entrypoint '${epName}' with 'environment' settings should refer to 'environment' artifact type`,
           );
@@ -689,24 +744,27 @@ export class PackageInfo {
       const resolvedRoots: string[] = [];
       const aType = artifact.type;
       switch (aType) {
-        case 'asset':
-        case 'java':
-        case 'R':
-        case 'python': {
+        case "asset":
+        case "java":
+        case "R":
+        case "python": {
           resolvedRoots.push(path.resolve(this.packageRoot, artifact.root));
           break;
         }
-        case 'docker': {
+        case "docker": {
           resolvedRoots.push(path.resolve(this.packageRoot, artifact.context));
           break;
         }
-        case 'environment':
-        case 'conda':
-        case 'binary': {
-          resolvedRoots.push(...Object.values(artifact.roots).map((root) => path.resolve(this.packageRoot, root)));
+        case "environment":
+        case "conda":
+        case "binary": {
+          resolvedRoots.push(
+            ...Object.values(artifact.roots).map((root) => path.resolve(this.packageRoot, root)),
+          );
           break;
         }
-        default: util.assertNever(aType);
+        default:
+          util.assertNever(aType);
       }
 
       for (const root of resolvedRoots) {
@@ -728,15 +786,51 @@ function parsePackageJson(data: string): z.ZodSafeParseResult<packageJson> {
   return packageJsonSchema.safeParse(parsedData);
 }
 
-function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'asset', errMsg: string): artifacts.withType<'asset', artifacts.assetType>;
-function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'environment', errMsg: string): artifacts.environmentType;
-function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'java', errMsg: string): artifacts.javaType;
-function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'python', errMsg: string): artifacts.pythonType;
-function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'R', errMsg: string): artifacts.rType;
-function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'binary', errMsg: string): artifacts.binaryType;
-function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'docker', errMsg: string): artifacts.dockerType;
-function requireArtifactType(artifact: artifacts.anyArtifactType, type: 'conda', errMsg: string): artifacts.condaType;
-function requireArtifactType(artifact: artifacts.anyArtifactType, type: artifacts.artifactType, errMsg: string): artifacts.anyArtifactType {
+function requireArtifactType(
+  artifact: artifacts.anyArtifactType,
+  type: "asset",
+  errMsg: string,
+): artifacts.withType<"asset", artifacts.assetType>;
+function requireArtifactType(
+  artifact: artifacts.anyArtifactType,
+  type: "environment",
+  errMsg: string,
+): artifacts.environmentType;
+function requireArtifactType(
+  artifact: artifacts.anyArtifactType,
+  type: "java",
+  errMsg: string,
+): artifacts.javaType;
+function requireArtifactType(
+  artifact: artifacts.anyArtifactType,
+  type: "python",
+  errMsg: string,
+): artifacts.pythonType;
+function requireArtifactType(
+  artifact: artifacts.anyArtifactType,
+  type: "R",
+  errMsg: string,
+): artifacts.rType;
+function requireArtifactType(
+  artifact: artifacts.anyArtifactType,
+  type: "binary",
+  errMsg: string,
+): artifacts.binaryType;
+function requireArtifactType(
+  artifact: artifacts.anyArtifactType,
+  type: "docker",
+  errMsg: string,
+): artifacts.dockerType;
+function requireArtifactType(
+  artifact: artifacts.anyArtifactType,
+  type: "conda",
+  errMsg: string,
+): artifacts.condaType;
+function requireArtifactType(
+  artifact: artifacts.anyArtifactType,
+  type: artifacts.artifactType,
+  errMsg: string,
+): artifacts.anyArtifactType {
   if (artifact.type === type) {
     return artifact;
   }
@@ -745,7 +839,5 @@ function requireArtifactType(artifact: artifacts.anyArtifactType, type: artifact
     errMsg = `${errMsg}: `;
   }
 
-  throw util.CLIError(
-    `${errMsg}wrong artifact type: expected '${type}', got '${artifact.type}'`,
-  );
+  throw util.CLIError(`${errMsg}wrong artifact type: expected '${type}', got '${artifact.type}'`);
 }

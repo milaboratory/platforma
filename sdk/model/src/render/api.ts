@@ -16,6 +16,7 @@ import type {
   PObjectSpec,
   PSpecPredicate,
   PTableDef,
+  PTableDefV2,
   PTableHandle,
   PTableRecordFilter,
   PTableSorting,
@@ -24,10 +25,12 @@ import type {
   ResultCollection,
   SUniversalPColumnId,
   ValueOrError,
-} from '@milaboratories/pl-model-common';
+} from "@milaboratories/pl-model-common";
 import {
   AnchoredIdDeriver,
+  collectSpecQueryColumns,
   ensurePColumn,
+  parseJson,
   extractAllColumns,
   isDataInfo,
   isPColumn,
@@ -36,27 +39,38 @@ import {
   mapDataInfo,
   mapPObjectData,
   mapPTableDef,
+  mapPTableDefV2,
   mapValueInVOE,
   PColumnName,
   readAnnotation,
   selectorsToPredicate,
   withEnrichments,
-} from '@milaboratories/pl-model-common';
-import canonicalize from 'canonicalize';
-import type { Optional } from 'utility-types';
-import { getCfgRenderCtx } from '../internal';
-import { TreeNodeAccessor, ifDef } from './accessor';
-import type { FutureRef } from './future';
-import type { AccessorHandle, GlobalCfgRenderCtx } from './internal';
-import { MainAccessorName, StagingAccessorName } from './internal';
-import { PColumnCollection, type AxisLabelProvider, type ColumnProvider } from './util/column_collection';
-import type { LabelDerivationOps } from './util/label';
-import { deriveLabels } from './util/label';
-import type { APColumnSelectorWithSplit } from './util/split_selectors';
-import { patchInSetFilters } from './util/pframe_upgraders';
-import { allPColumnsReady } from './util';
-
-export type PColumnDataUniversal<TreeEntry = TreeNodeAccessor> = TreeEntry | DataInfo<TreeEntry> | PColumnValues;
+} from "@milaboratories/pl-model-common";
+import canonicalize from "canonicalize";
+import type { Optional } from "utility-types";
+import { getCfgRenderCtx } from "../internal";
+import { getPluginData } from "../block_storage";
+import type {
+  PluginHandle,
+  PluginFactoryLike,
+  InferFactoryData,
+  InferFactoryParams,
+} from "../plugin_handle";
+import { TreeNodeAccessor, ifDef } from "./accessor";
+import type { FutureRef } from "./future";
+import type { AccessorHandle, GlobalCfgRenderCtx } from "./internal";
+import { MainAccessorName, StagingAccessorName } from "./internal";
+import {
+  PColumnCollection,
+  type AxisLabelProvider,
+  type ColumnProvider,
+} from "./util/column_collection";
+import type { LabelDerivationOps } from "./util/label";
+import { deriveLabels } from "./util/label";
+import type { APColumnSelectorWithSplit } from "./util/split_selectors";
+import { patchInSetFilters } from "./util/pframe_upgraders";
+import { allPColumnsReady } from "./util/pcolumn_data";
+import type { PColumnDataUniversal } from "./internal";
 
 /**
  * Helper function to match domain objects
@@ -138,18 +152,19 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     predicateOrSelector: ((spec: PObjectSpec) => boolean) | PColumnSelector | PColumnSelector[],
     opts?: GetOptionsOpts | ((spec: PObjectSpec, ref: PlRef) => string) | LabelDerivationOps,
   ): Option[] {
-    const predicate = typeof predicateOrSelector === 'function'
-      ? predicateOrSelector
-      : selectorsToPredicate(predicateOrSelector);
+    const predicate =
+      typeof predicateOrSelector === "function"
+        ? predicateOrSelector
+        : selectorsToPredicate(predicateOrSelector);
     const filtered = this.getSpecs().entries.filter((s) => predicate(s.obj));
 
     let labelOps: LabelDerivationOps | ((spec: PObjectSpec, ref: PlRef) => string) = {};
     let refsWithEnrichments: boolean = false;
-    if (typeof opts !== 'undefined') {
-      if (typeof opts === 'function') {
+    if (typeof opts !== "undefined") {
+      if (typeof opts === "function") {
         labelOps = opts;
-      } else if (typeof opts === 'object') {
-        if ('includeNativeLabel' in opts || 'separator' in opts || 'addLabelAsSuffix' in opts) {
+      } else if (typeof opts === "object") {
+        if ("includeNativeLabel" in opts || "separator" in opts || "addLabelAsSuffix" in opts) {
           labelOps = opts;
         } else {
           opts = opts as GetOptionsOpts;
@@ -159,11 +174,13 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
       }
     }
 
-    if (typeof labelOps === 'object')
-      return deriveLabels(filtered, (o) => o.obj, labelOps ?? {}).map(({ value: { ref }, label }) => ({
-        ref: withEnrichments(ref, refsWithEnrichments),
-        label,
-      }));
+    if (typeof labelOps === "object")
+      return deriveLabels(filtered, (o) => o.obj, labelOps ?? {}).map(
+        ({ value: { ref }, label }) => ({
+          ref: withEnrichments(ref, refsWithEnrichments),
+          label,
+        }),
+      );
     else
       return filtered.map(({ ref, obj }) => ({
         ref: withEnrichments(ref, refsWithEnrichments),
@@ -171,14 +188,15 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
       }));
   }
 
-  public resolveAnchorCtx(anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>): AnchoredIdDeriver | undefined {
+  public resolveAnchorCtx(
+    anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>,
+  ): AnchoredIdDeriver | undefined {
     if (anchorsOrCtx instanceof AnchoredIdDeriver) return anchorsOrCtx;
     const resolvedAnchors: Record<string, PColumnSpec> = {};
     for (const [key, value] of Object.entries(anchorsOrCtx)) {
       if (isPlRef(value)) {
         const resolvedSpec = this.getPColumnSpecByRef(value);
-        if (!resolvedSpec)
-          return undefined;
+        if (!resolvedSpec) return undefined;
         resolvedAnchors[key] = resolvedSpec;
       } else {
         resolvedAnchors[key] = value;
@@ -197,7 +215,10 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
    */
   public getAnchoredPColumns(
     anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>,
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
+    predicateOrSelectors:
+      | ((spec: PColumnSpec) => boolean)
+      | APColumnSelectorWithSplit
+      | APColumnSelectorWithSplit[],
     opts?: UniversalPColumnOpts,
   ): PColumn<PColumnDataUniversal>[] | undefined {
     const anchorCtx = this.resolveAnchorCtx(anchorsOrCtx);
@@ -242,7 +263,10 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
    */
   getCanonicalOptions(
     anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>,
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
+    predicateOrSelectors:
+      | ((spec: PColumnSpec) => boolean)
+      | APColumnSelectorWithSplit
+      | APColumnSelectorWithSplit[],
     opts?: UniversalPColumnOpts,
   ): { label: string; value: SUniversalPColumnId }[] | undefined {
     const anchorCtx = this.resolveAnchorCtx(anchorsOrCtx);
@@ -286,13 +310,13 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
    * @deprecated use getDataWithErrors()
    */
   public getDataWithErrorsFromResultPool(): ResultCollection<
-    Optional<PObject<ValueOrError<TreeNodeAccessor, Error>>, 'id'>
+    Optional<PObject<ValueOrError<TreeNodeAccessor, Error>>, "id">
   > {
     return this.getDataWithErrors();
   }
 
   public getDataWithErrors(): ResultCollection<
-    Optional<PObject<ValueOrError<TreeNodeAccessor, Error>>, 'id'>
+    Optional<PObject<ValueOrError<TreeNodeAccessor, Error>>, "id">
   > {
     const result = this.ctx.getDataWithErrorsFromResultPool();
     return {
@@ -327,17 +351,14 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
    */
   public getDataByRef(ref: PlRef): PObject<TreeNodeAccessor> | undefined {
     // @TODO remove after 1 Jan 2025; forward compatibility
-    if (typeof this.ctx.getDataFromResultPoolByRef === 'undefined')
+    if (typeof this.ctx.getDataFromResultPoolByRef === "undefined")
       return this.getData().entries.find(
         (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name,
       )?.obj;
     const data = this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name); // Keep original call
     // Need to handle undefined case before mapping
     if (!data) return undefined;
-    return mapPObjectData(
-      data,
-      (handle) => new TreeNodeAccessor(handle, [ref.blockId, ref.name]),
-    );
+    return mapPObjectData(data, (handle) => new TreeNodeAccessor(handle, [ref.blockId, ref.name]));
   }
 
   /**
@@ -432,13 +453,13 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 
       const spec = column.obj.spec;
       if (
-        spec.name === PColumnName.Label
-        && spec.axesSpec.length === 1
-        && spec.axesSpec[0].name === axis.name
-        && spec.axesSpec[0].type === axis.type
-        && matchDomain(axis.domain, spec.axesSpec[0].domain)
+        spec.name === PColumnName.Label &&
+        spec.axesSpec.length === 1 &&
+        spec.axesSpec[0].name === axis.name &&
+        spec.axesSpec[0].type === axis.type &&
+        matchDomain(axis.domain, spec.axesSpec[0].domain)
       ) {
-        if (column.obj.data.resourceType.name !== 'PColumnData/Json') {
+        if (column.obj.data.resourceType.name !== "PColumnData/Json") {
           throw Error(`Expected JSON column for labels, got: ${column.obj.data.resourceType.name}`);
         }
         const labels: Record<string | number, string> = Object.fromEntries(
@@ -465,7 +486,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
   public selectColumns(
     selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
   ): PColumn<TreeNodeAccessor | undefined>[] {
-    const predicate = typeof selectors === 'function' ? selectors : selectorsToPredicate(selectors);
+    const predicate = typeof selectors === "function" ? selectors : selectorsToPredicate(selectors);
 
     const matchedSpecs = this.getSpecs().entries.filter(({ obj: spec }) => {
       if (!isPColumnSpec(spec)) return false;
@@ -499,15 +520,20 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
    * Find labels data for a given axis id of a p-column.
    * @returns a map of axis value => label
    */
-  public findLabelsForColumnAxis(column: PColumnSpec, axisIdx: number): Record<string | number, string> | undefined {
+  public findLabelsForColumnAxis(
+    column: PColumnSpec,
+    axisIdx: number,
+  ): Record<string | number, string> | undefined {
     const labels = this.findLabels(column.axesSpec[axisIdx]);
     if (!labels) return undefined;
     const axisKeys = readAnnotation(column, `pl7.app/axisKeys/${axisIdx}`);
     if (axisKeys !== undefined) {
       const keys = JSON.parse(axisKeys) as string[];
-      return Object.fromEntries(keys.map((key) => {
-        return [key, labels[key] ?? 'Unlabelled'];
-      }));
+      return Object.fromEntries(
+        keys.map((key) => {
+          return [key, labels[key] ?? "Unlabelled"];
+        }),
+      );
     } else {
       return labels;
     }
@@ -515,40 +541,40 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
-export abstract class RenderCtxBase<Args, Data> {
+export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
   protected readonly ctx: GlobalCfgRenderCtx;
 
   constructor() {
     this.ctx = getCfgRenderCtx();
   }
 
-  private _dataCache?: { v: Data };
+  private dataCache?: { v: Data };
 
   public get data(): Data {
-    if (this._dataCache === undefined) {
+    if (this.dataCache === undefined) {
       const raw = this.ctx.data;
-      const value = typeof raw === 'function' ? raw() : raw;
-      this._dataCache = { v: value ? JSON.parse(value) : ({} as Data) };
+      const value = typeof raw === "function" ? raw() : raw;
+      this.dataCache = { v: value ? JSON.parse(value) : ({} as Data) };
     }
-    return this._dataCache.v;
+    return this.dataCache.v;
   }
 
   // lazy rendering because this feature is rarely used
-  private _activeArgsCache?: { v?: Args };
+  private activeArgsCache?: { v?: Args };
 
   /**
    * Returns args snapshot the block was executed for (i.e. when "Run" button was pressed).
    * Returns undefined, if block was never executed or stopped mid-way execution, so that the result was cleared.
    * */
   public get activeArgs(): Args | undefined {
-    if (this._activeArgsCache === undefined) {
+    if (this.activeArgsCache === undefined) {
       const raw = this.ctx.activeArgs;
-      const value = typeof raw === 'function' ? raw() : raw;
-      this._activeArgsCache = {
+      const value = typeof raw === "function" ? raw() : raw;
+      this.activeArgsCache = {
         v: value ? JSON.parse(value) : undefined,
       };
     }
-    return this._activeArgsCache.v;
+    return this.activeArgsCache.v;
   }
 
   // /** Can be used to determine features provided by the desktop instance. */
@@ -582,15 +608,22 @@ export abstract class RenderCtxBase<Args, Data> {
     return this.resultPool.findLabels(axis);
   }
 
-  private verifyInlineAndExplicitColumnsSupport(columns: (PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>)[]) {
-    const hasInlineColumns = columns.some((c) => !(c.data instanceof TreeNodeAccessor) || isDataInfo(c.data)); // Updated check for DataInfo
+  private verifyInlineAndExplicitColumnsSupport(
+    columns: (PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>)[],
+  ) {
+    const hasInlineColumns = columns.some(
+      (c) => !(c.data instanceof TreeNodeAccessor) || isDataInfo(c.data),
+    ); // Updated check for DataInfo
     const inlineColumnsSupport = this.ctx.featureFlags?.inlineColumnsSupport === true;
-    if (hasInlineColumns && !inlineColumnsSupport) throw Error(`Inline or explicit columns not supported`); // Combined check
+    if (hasInlineColumns && !inlineColumnsSupport)
+      throw Error(`Inline or explicit columns not supported`); // Combined check
 
     // Removed redundant explicitColumns check
   }
 
-  private patchPTableDef(def: PTableDef<PColumn<PColumnDataUniversal>>): PTableDef<PColumn<PColumnDataUniversal>> {
+  private patchPTableDef(
+    def: PTableDef<PColumn<PColumnDataUniversal>>,
+  ): PTableDef<PColumn<PColumnDataUniversal>> {
     if (!this.ctx.featureFlags?.pTablePartitionFiltersSupport) {
       // For old desktop move all partition filters to filters field as it doesn't read partitionFilters field
       def = {
@@ -610,12 +643,12 @@ export abstract class RenderCtxBase<Args, Data> {
   }
 
   // TODO remove all non-PColumn fields
-  public createPFrame(def: PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>>): PFrameHandle | undefined {
+  public createPFrame(
+    def: PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>>,
+  ): PFrameHandle | undefined {
     this.verifyInlineAndExplicitColumnsSupport(def);
     if (!allPColumnsReady(def)) return undefined;
-    return this.ctx.createPFrame(
-      def.map((c) => transformPColumnData(c)),
-    );
+    return this.ctx.createPFrame(def.map((c) => transformPColumnData(c)));
   }
 
   // TODO remove all non-PColumn fields
@@ -630,18 +663,18 @@ export abstract class RenderCtxBase<Args, Data> {
     def:
       | PTableDef<PColumn<PColumnDataUniversal>>
       | {
-        columns: PColumn<PColumnDataUniversal>[];
-        filters?: PTableRecordFilter[];
-        /** Table sorting */
-        sorting?: PTableSorting[];
-      },
+          columns: PColumn<PColumnDataUniversal>[];
+          filters?: PTableRecordFilter[];
+          /** Table sorting */
+          sorting?: PTableSorting[];
+        },
   ): PTableHandle | undefined {
     let rawDef: PTableDef<PColumn<PColumnDataUniversal>>;
-    if ('columns' in def) {
+    if ("columns" in def) {
       rawDef = this.patchPTableDef({
         src: {
-          type: 'full',
-          entries: def.columns.map((c) => ({ type: 'column', column: c })),
+          type: "full",
+          entries: def.columns.map((c) => ({ type: "column", column: c })),
         },
         partitionFilters: def.filters ?? [],
         filters: [],
@@ -653,9 +686,14 @@ export abstract class RenderCtxBase<Args, Data> {
     const columns = extractAllColumns(rawDef.src);
     this.verifyInlineAndExplicitColumnsSupport(columns);
     if (!allPColumnsReady(columns)) return undefined;
-    return this.ctx.createPTable(
-      mapPTableDef(rawDef, (po) => transformPColumnData(po)),
-    );
+    return this.ctx.createPTable(mapPTableDef(rawDef, (po) => transformPColumnData(po)));
+  }
+
+  public createPTableV2(def: PTableDefV2<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
+    const columns = collectSpecQueryColumns(def.query);
+    this.verifyInlineAndExplicitColumnsSupport(columns);
+    if (!allPColumnsReady(columns)) return undefined;
+    return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
   }
 
   /** @deprecated scheduled for removal from SDK */
@@ -681,49 +719,104 @@ export abstract class RenderCtxBase<Args, Data> {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) for v3+ blocks */
-export class RenderCtx<Args, Data> extends RenderCtxBase<Args, Data> {
-  private _argsCache?: { v: Args | undefined };
+export class BlockRenderCtx<Args = unknown, Data = unknown> extends RenderCtxBase<Args, Data> {
+  private argsCache?: { v: Args | undefined };
   public get args(): Args | undefined {
-    if (this._argsCache === undefined) {
+    if (this.argsCache === undefined) {
       const raw = this.ctx.args;
-      const value = typeof raw === 'function' ? raw() : raw;
-      // args can be undefined when derivation fails (e.g., validation error in args())
-      this._argsCache = { v: value === undefined ? undefined : JSON.parse(value) };
+      const value = typeof raw === "function" ? raw() : raw;
+      this.argsCache = { v: value === undefined ? undefined : JSON.parse(value) };
     }
-    return this._argsCache.v;
+    return this.argsCache.v;
   }
 }
 
 /** Render context for legacy v1/v2 blocks - provides backward compatibility */
-export class RenderCtxLegacy<Args, UiState> extends RenderCtxBase<Args, UiState> {
-  private _argsCache?: { v: Args };
+export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCtxBase<
+  Args,
+  UiState
+> {
+  private argsCache?: { v: Args };
+
   public get args(): Args {
-    if (this._argsCache === undefined) {
+    if (this.argsCache === undefined) {
       const raw = this.ctx.args;
-      const value = typeof raw === 'function' ? raw() : raw;
-      this._argsCache = { v: JSON.parse(value) };
+      const value = typeof raw === "function" ? raw() : raw;
+      this.argsCache = { v: JSON.parse(value) };
     }
-    return this._argsCache.v;
+    return this.argsCache.v;
   }
 
-  private _uiStateCache?: { v: UiState };
+  private uiStateCache?: { v: UiState };
 
   public get uiState(): UiState {
-    if (this._uiStateCache === undefined) {
+    if (this.uiStateCache === undefined) {
       const raw = this.ctx.uiState!;
-      const value = typeof raw === 'function' ? raw() : raw;
-      this._uiStateCache = { v: value ? JSON.parse(value) : ({} as UiState) };
+      const value = typeof raw === "function" ? raw() : raw;
+      this.uiStateCache = { v: value ? JSON.parse(value) : ({} as UiState) };
     }
-    return this._uiStateCache.v;
+    return this.uiStateCache.v;
   }
 }
 
+/**
+ * Render context for plugin output functions.
+ * Reads plugin data from blockStorage and derives params from pre-wrapped input callbacks.
+ *
+ * Parameterized on the factory-like phantom F so that getPluginData returns
+ * InferFactoryData<F> directly — no casts needed for the data getter.
+ *
+ * @typeParam F - PluginFactoryLike phantom carrying data/params/outputs types
+ */
+export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> {
+  private readonly ctx: GlobalCfgRenderCtx;
+  private readonly handle: PluginHandle<F>;
+  private readonly wrappedInputs: Record<string, () => unknown>;
+
+  constructor(handle: PluginHandle<F>, wrappedInputs: Record<string, () => unknown>) {
+    this.ctx = getCfgRenderCtx();
+    this.handle = handle;
+    this.wrappedInputs = wrappedInputs;
+  }
+
+  private dataCache?: { v: InferFactoryData<F> };
+
+  /** Plugin's persistent data from blockStorage.__plugins.{pluginId}.__data */
+  public get data(): InferFactoryData<F> {
+    if (this.dataCache === undefined) {
+      const raw = this.ctx.blockStorage();
+      this.dataCache = { v: getPluginData(parseJson(raw), this.handle) };
+    }
+    return this.dataCache.v;
+  }
+
+  private paramsCache?: { v: InferFactoryParams<F> };
+
+  /** Params derived from block context via pre-wrapped input callbacks */
+  public get params(): InferFactoryParams<F> {
+    if (this.paramsCache === undefined) {
+      const result: Record<string, unknown> = {};
+      for (const [key, fn] of Object.entries(this.wrappedInputs)) {
+        result[key] = fn();
+      }
+      this.paramsCache = { v: result as InferFactoryParams<F> };
+    }
+    return this.paramsCache.v;
+  }
+
+  /** Result pool — same as block, from cfgRenderCtx methods */
+  public readonly resultPool = new ResultPool();
+}
+
+/** @deprecated Use BlockRenderCtx instead */
+export type RenderCtx<Args = unknown, Data = unknown> = BlockRenderCtx<Args, Data>;
+
 export type RenderFunction<Args = unknown, State = unknown, Ret = unknown> = (
-  rCtx: RenderCtx<Args, State>
+  rCtx: BlockRenderCtx<Args, State>,
 ) => Ret;
 
 export type RenderFunctionLegacy<Args = unknown, State = unknown, Ret = unknown> = (
-  rCtx: RenderCtxLegacy<Args, State>
+  rCtx: RenderCtxLegacy<Args, State>,
 ) => Ret;
 
 export type UnwrapFutureRef<K> =
