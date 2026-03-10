@@ -115,7 +115,7 @@ function createPTableDef(params: {
       sortBy: params.sorting.map((s) => ({
         expression: columnIdToExpr(s.column),
         ascending: s.ascending,
-        nullsFirst: s.ascending === s.naAndAbsentAreLeastValues,
+        nullsFirst: !s.naAndAbsentAreLeastValues,
       })),
     };
   }
