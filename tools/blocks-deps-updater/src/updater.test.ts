@@ -10,6 +10,7 @@ const execFileAsync = promisify(execFile);
 const BIN_PATH = path.resolve(__dirname, "../bin/run.mjs");
 
 async function tmpDir(): Promise<AsyncDisposable & { path: string }> {
+  // TODO: migrate to `mkdtempDisposable` after migration to Node.js 24
   const dirPath = await fs.mkdtemp(path.join(os.tmpdir(), "deps-updater-test-"));
   return {
     path: dirPath,

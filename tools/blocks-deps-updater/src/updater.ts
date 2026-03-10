@@ -86,23 +86,21 @@ export async function updatePackages(cwd?: string): Promise<void> {
   const updated: Change[] = [];
   const pinned: Change[] = [];
 
-  // Update SDK packages to latest from npm registry
-  for (const packageName of sdkPackages) {
+  // Fetch latest versions for all SDK packages in parallel
+  const latestVersions = await Promise.all(sdkPackages.map((pkg) => getLatestVersion(pkg)));
+
+  for (let i = 0; i < sdkPackages.length; i++) {
+    const packageName = sdkPackages[i];
     const currentVersion = catalog[packageName];
     if (typeof currentVersion !== "string") continue;
 
+    const latestVersion = latestVersions[i];
     const cleanCurrentVersion = currentVersion.replace(/^[\^~]/, "");
 
-    try {
-      const latestVersion = await getLatestVersion(packageName);
-
-      if (cleanCurrentVersion !== latestVersion) {
-        if (setCatalogValue({ doc, packageName, version: latestVersion })) {
-          updated.push({ packageName, from: currentVersion, to: latestVersion });
-        }
+    if (cleanCurrentVersion !== latestVersion) {
+      if (setCatalogValue({ doc, packageName, version: latestVersion })) {
+        updated.push({ packageName, from: currentVersion, to: latestVersion });
       }
-    } catch (error) {
-      console.error(`skipped: ${packageName} — ${(error as Error).message}`);
     }
   }
 
