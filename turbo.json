@@ -4,43 +4,28 @@
   "tasks": {
     "fmt": {
       "outputs": [],
-      "inputs": [
-        ".oxfmtrc.json",
-        ".oxlintrc.json",
-        "$TURBO_DEFAULT$",
-        "!**/*.md",
-        "!**/.gitignore",
-        "!**/LICENSE"
-      ]
+      "inputs": [".oxfmtrc.json", ".oxlintrc.json", "$TURBO_DEFAULT$", "!**/*.md"]
     },
     "check": {
       "outputs": [],
-      "inputs": [
-        ".oxfmtrc.json",
-        ".oxlintrc.json",
-        "$TURBO_DEFAULT$",
-        "tsconfig.json",
-        "!**/*.md",
-        "!**/.gitignore",
-        "!**/LICENSE"
-      ],
+      "inputs": [".oxfmtrc.json", ".oxlintrc.json", "tsconfig.json", "$TURBO_DEFAULT$", "!**/*.md"],
       "dependsOn": ["^build"]
     },
     "formatter:check": {
       "outputs": [],
-      "inputs": [".oxfmtrc.json", "$TURBO_DEFAULT$", "!**/*.md", "!**/.gitignore", "!**/LICENSE"]
+      "inputs": [".oxfmtrc.json", "$TURBO_DEFAULT$", "!**/*.md"]
     },
     "linter:check": {
       "outputs": [],
-      "inputs": [".oxlintrc.json", "$TURBO_DEFAULT$", "!**/*.md", "!**/.gitignore", "!**/LICENSE"]
+      "inputs": [".oxlintrc.json", "$TURBO_DEFAULT$", "!**/*.md"]
     },
     "types:check": {
       "outputs": [],
-      "inputs": ["tsconfig.json", "$TURBO_DEFAULT$", "!**/*.md", "!**/.gitignore", "!**/LICENSE"],
+      "inputs": ["tsconfig.json", "$TURBO_DEFAULT$", "!**/*.md"],
       "dependsOn": ["^build"]
     },
     "build": {
-      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!**/.gitignore", "!**/LICENSE"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md"],
       "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"],
       "env": [],
       "dependsOn": ["^build", "types:check"],
@@ -56,7 +41,7 @@
       ]
     },
     "test": {
-      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!**/.gitignore", "!**/LICENSE"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md"],
       "env": ["TEST_CACHE_CRUTCH"],
       "outputs": ["./coverage/**", "test-report.junit.xml"],
       "dependsOn": ["build"],
@@ -76,7 +61,7 @@
       ]
     },
     "do-pack": {
-      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!**/.gitignore", "!**/LICENSE"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md"],
       "dependsOn": ["build"],
       "outputs": ["package.tgz"]
     }
