@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.25.3
+
+### Patch Changes
+
+- 15959f8: Add support feature flags for UI
+
 ## 1.25.2
 
 ### Patch Changes
