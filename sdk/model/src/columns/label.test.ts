@@ -106,17 +106,14 @@ test.each<{ name: string; traces: Trace[]; labels: string[] }>([
     labels: ["Unique entry 1", "Unique entry 2"],
   },
 ])("test label derivation: $name", ({ traces, labels }) => {
-  expect(deriveLabels(tracesToSpecs(traces), (s) => s).map((r) => r.label)).toEqual(labels);
+  expect(deriveLabels(tracesToSpecs(traces)).map((r) => r.label)).toEqual(labels);
   expect(
-    deriveLabels(tracesToSpecs(traces), (s) => s, { includeNativeLabel: true }).map((r) => r.label),
+    deriveLabels(tracesToSpecs(traces), { includeNativeLabel: true }).map((r) => r.label),
   ).toEqual(labels.map((l) => "Label / " + l));
 });
 
 test("test fallback to native labels in label derivation", () => {
-  expect(deriveLabels(tracesToSpecs([[], []]), (s) => s).map((r) => r.label)).toEqual([
-    "Label",
-    "Label",
-  ]);
+  expect(deriveLabels(tracesToSpecs([[], []])).map((r) => r.label)).toEqual(["Label", "Label"]);
 });
 
 test.each<{ name: string; traces: Trace[]; labels: string[] }>([
@@ -197,7 +194,7 @@ test.each<{ name: string; traces: Trace[]; labels: string[] }>([
     labels: ["A", "A", "B"],
   },
 ])("test label minimization: $name", ({ traces, labels }) => {
-  expect(deriveLabels(tracesToSpecs(traces), (s) => s).map((r) => r.label)).toEqual(labels);
+  expect(deriveLabels(tracesToSpecs(traces)).map((r) => r.label)).toEqual(labels);
 });
 
 test.each<{ name: string; traces: Trace[]; labels: string[]; forceTraceElements: string[] }>([
@@ -263,13 +260,13 @@ test.each<{ name: string; traces: Trace[]; labels: string[]; forceTraceElements:
 ])(
   "test label derivation with forceTraceElements: $name",
   ({ name, traces, labels, forceTraceElements }) => {
-    expect(
-      deriveLabels(tracesToSpecs(traces), (s) => s, { forceTraceElements }).map((r) => r.label),
-    ).toEqual(labels);
+    expect(deriveLabels(tracesToSpecs(traces), { forceTraceElements }).map((r) => r.label)).toEqual(
+      labels,
+    );
 
     if (name === "force element with includeNativeLabel") {
       expect(
-        deriveLabels(tracesToSpecs(traces), (s) => s, {
+        deriveLabels(tracesToSpecs(traces), {
           forceTraceElements,
           includeNativeLabel: true,
         }).map((r) => r.label),
