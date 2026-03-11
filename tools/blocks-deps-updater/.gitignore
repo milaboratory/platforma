@@ -1,2 +1,3 @@
 dist/
 package.tgz
+src/pinned-versions.generated.ts
