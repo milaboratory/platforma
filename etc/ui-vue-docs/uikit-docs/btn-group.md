@@ -1,3 +1,0 @@
-# PlBtnGroup
-
-<PlBtnGroupBasic />

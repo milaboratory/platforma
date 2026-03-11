@@ -1,89 +1,68 @@
 {
   "auto_install_extensions": {
-    "vue": true,
-    "yaml": true,
-    "toml": true,
-    "scss": true,
-    "dockerfile": true,
+    "basher": true,
     "docker-compose": true,
+    "dockerfile": true,
+    "github-actions": true,
+    "html": true,
+    "markdownlint": true,
     "proto": true,
     "python": true,
     "ruff": true,
-    "html": true,
-    "basher": true,
-    "github-actions": true,
-    "markdownlint": true,
-    "typos": true
+    "scss": true,
+    "toml": true,
+    "typos": true,
+    "vue": true,
+    "yaml": true
   },
-  "prettier": {
-    "allowed": false
+  "languages": {
+    "CSS": {
+      "formatter": [{ "language_server": { "name": "oxfmt" } }]
+    },
+    "HTML": {
+      "formatter": [{ "language_server": { "name": "oxfmt" } }]
+    },
+    "JavaScript": {
+      "formatter": [
+        { "language_server": { "name": "oxfmt" } },
+        { "code_action": "source.fixAll.oxc" }
+      ]
+    },
+    "JSON": {
+      "formatter": [{ "language_server": { "name": "oxfmt" } }]
+    },
+    "JSONC": {
+      "formatter": [{ "language_server": { "name": "oxfmt" } }]
+    },
+    "Markdown": {
+      "formatter": [{ "language_server": { "name": "oxfmt" } }]
+    },
+    "SCSS": {
+      "formatter": [{ "language_server": { "name": "oxfmt" } }]
+    },
+    "TypeScript": {
+      "formatter": [
+        { "language_server": { "name": "oxfmt" } },
+        { "code_action": "source.fixAll.oxc" }
+      ]
+    },
+    "Vue.js": {
+      "formatter": [
+        { "language_server": { "name": "oxfmt" } },
+        { "code_action": "source.fixAll.oxc" }
+      ]
+    },
+    "YAML": {
+      "formatter": [{ "language_server": { "name": "oxfmt" } }]
+    }
   },
   "lsp": {
     "oxlint": {
       "initialization_options": {
         "settings": {
-          "run": "onType",
-          "fixKind": "safe_fix",
-          "typeAware": true,
-          "disableNestedConfig": false,
           "unusedDisableDirectives": "deny"
         }
       }
-    },
-    "oxfmt": {
-      "initialization_options": {
-        "settings": {
-          "run": "onSave"
-        }
-      }
-    }
-  },
-  "languages": {
-    "CSS": {
-      "language_servers": ["oxfmt"],
-      "formatter": [{ "language_server": { "name": "oxfmt" } }],
-      "format_on_save": "on"
-    },
-    "SCSS": {
-      "language_servers": ["oxfmt"],
-      "formatter": [{ "language_server": { "name": "oxfmt" } }],
-      "format_on_save": "on"
-    },
-    "HTML": {
-      "language_servers": ["oxfmt"],
-      "formatter": [{ "language_server": { "name": "oxfmt" } }],
-      "format_on_save": "on"
-    },
-    "YAML": {
-      "language_servers": ["oxfmt"],
-      "formatter": [{ "language_server": { "name": "oxfmt" } }],
-      "format_on_save": "on"
-    },
-    "Markdown": {
-      "language_servers": ["oxfmt"],
-      "formatter": [{ "language_server": { "name": "oxfmt" } }],
-      "format_on_save": "on"
-    },
-    "JSON": {
-      "language_servers": ["oxfmt"],
-      "formatter": [{ "language_server": { "name": "oxfmt" } }],
-      "format_on_save": "on"
-    },
-    "JavaScript": {
-      "language_servers": ["oxlint", "oxfmt"],
-      "formatter": [
-        { "language_server": { "name": "oxfmt" } },
-        { "code_action": "source.fixAll.oxc" }
-      ],
-      "format_on_save": "on"
-    },
-    "TypeScript": {
-      "language_servers": ["typescript-language-server", "oxlint", "oxfmt"],
-      "formatter": [
-        { "language_server": { "name": "oxfmt" } },
-        { "code_action": "source.fixAll.oxc" }
-      ],
-      "format_on_save": "on"
     }
   }
 }

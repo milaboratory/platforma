@@ -1,0 +1,28 @@
+{
+  "name": "@milaboratories/milaboratories.test-block-table.test",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Block tests",
+  "keywords": [],
+  "files": [],
+  "scripts": {
+    "test": "vitest",
+    "check": "ts-builder check --target block-test",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target block-test",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@milaboratories/milaboratories.test-block-table.model": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
+    "this-block": "workspace:@milaboratories/milaboratories.test-block-table@*"
+  },
+  "devDependencies": {
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/test": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

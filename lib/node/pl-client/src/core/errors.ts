@@ -53,7 +53,7 @@ export function isAbortedError(err: unknown, nested: boolean = false): boolean {
   if (err instanceof DOMException && err.code === DOMException.ABORT_ERR) return true; // WebSocket error
   if ((err as any).name == "RpcError" && (err as any).code == "ABORTED") return true;
   if ((err as any).name == "RESTError" && (err as any).status.code == Code.ABORTED) return true;
-  if ((err as any).cause !== undefined && !nested) isAbortedError((err as any).cause, true);
+  if ((err as any).cause !== undefined && !nested) return isAbortedError((err as any).cause, true);
   return false;
 }
 

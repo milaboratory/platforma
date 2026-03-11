@@ -1,5 +1,19 @@
 # @platforma-sdk/package-builder
 
+## 3.11.6
+
+### Patch Changes
+
+- 0aa41e1: Fix docker image publishing to include all docker packages, not just buildable archive packages
+
+## 3.11.5
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/resolve-helper@1.1.3
+
 ## 3.11.4
 
 ### Patch Changes

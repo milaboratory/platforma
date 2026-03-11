@@ -1,5 +1,124 @@
 # @milaboratories/milaboratories.monetization-test.model
 
+## 1.0.77
+
+### Patch Changes
+
+- Updated dependencies [a93de45]
+  - @platforma-sdk/model@1.58.19
+
+## 1.0.76
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @platforma-sdk/model@1.58.11
+
+## 1.0.75
+
+### Patch Changes
+
+- Updated dependencies [4d83b3c]
+  - @platforma-sdk/model@1.58.9
+
+## 1.0.74
+
+### Patch Changes
+
+- Updated dependencies [c2d9319]
+  - @platforma-sdk/model@1.58.5
+
+## 1.0.73
+
+### Patch Changes
+
+- Updated dependencies [327444c]
+  - @platforma-sdk/model@1.58.3
+
+## 1.0.72
+
+### Patch Changes
+
+- @platforma-sdk/model@1.58.2
+
+## 1.0.71
+
+### Patch Changes
+
+- Updated dependencies [d318a76]
+  - @platforma-sdk/model@1.58.1
+
+## 1.0.70
+
+### Patch Changes
+
+- Updated dependencies [b5d19c6]
+  - @platforma-sdk/model@1.58.0
+
+## 1.0.69
+
+### Patch Changes
+
+- Updated dependencies [6ba4c69]
+  - @platforma-sdk/model@1.57.2
+
+## 1.0.68
+
+### Patch Changes
+
+- Updated dependencies [8baa2b3]
+  - @platforma-sdk/model@1.57.0
+
+## 1.0.67
+
+### Patch Changes
+
+- Updated dependencies [f2daf69]
+  - @platforma-sdk/model@1.56.0
+
+## 1.0.66
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @platforma-sdk/model@1.55.0
+
+## 1.0.65
+
+### Patch Changes
+
+- Updated dependencies [cb28fde]
+  - @platforma-sdk/model@1.54.13
+
+## 1.0.64
+
+### Patch Changes
+
+- Updated dependencies [866a323]
+  - @platforma-sdk/model@1.54.10
+
+## 1.0.63
+
+### Patch Changes
+
+- Updated dependencies [a3659cd]
+  - @platforma-sdk/model@1.54.9
+
+## 1.0.62
+
+### Patch Changes
+
+- Updated dependencies [4f04561]
+  - @platforma-sdk/model@1.54.8
+
+## 1.0.61
+
+### Patch Changes
+
+- Updated dependencies [0ae1854]
+  - @platforma-sdk/model@1.54.7
+
 ## 1.0.60
 
 ### Patch Changes

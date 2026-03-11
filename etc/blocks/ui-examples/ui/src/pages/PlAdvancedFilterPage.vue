@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import type { AxisId, CanonicalizedJson } from "@platforma-sdk/model";
 import {
   stringifyColumnId,
   type ListOptionBase,
   type SUniversalPColumnId,
 } from "@platforma-sdk/model";
-import type { PlAdvancedFilterFilter, PlAdvancedFilterItem } from "@platforma-sdk/ui-vue";
-import { PlAdvancedFilter, PlBlockPage, PlCheckbox, PlDropdown } from "@platforma-sdk/ui-vue";
+import type {
+  PlAdvancedFilter,
+  PlAdvancedFilterColumnId,
+  PlAdvancedFilterItem,
+} from "@platforma-sdk/ui-vue";
+import {
+  PlAdvancedFilterComponent,
+  PlBlockPage,
+  PlCheckbox,
+  PlDropdown,
+} from "@platforma-sdk/ui-vue";
 import { ref, watch } from "vue";
 
 const column1Id = stringifyColumnId({ name: "1", axes: [] }) as SUniversalPColumnId;
@@ -76,7 +84,7 @@ async function getSuggestOptions({
   searchStr,
   axisIdx,
 }: {
-  columnId: SUniversalPColumnId | CanonicalizedJson<AxisId>;
+  columnId: PlAdvancedFilterColumnId;
   searchStr: string;
   axisIdx?: number;
 }) {
@@ -92,7 +100,7 @@ async function getSuggestModel({
   searchStr,
   axisIdx,
 }: {
-  columnId: SUniversalPColumnId | CanonicalizedJson<AxisId>;
+  columnId: PlAdvancedFilterColumnId;
   searchStr: string;
   axisIdx?: number;
 }) {
@@ -114,7 +122,7 @@ async function getSuggestModel({
   );
 }
 
-const errorState: PlAdvancedFilterFilter = {
+const errorState: PlAdvancedFilter = {
   id: Math.random(),
   type: "and" as const,
   filters: [
@@ -167,7 +175,7 @@ const errorState: PlAdvancedFilterFilter = {
   ],
 };
 
-const normalState: PlAdvancedFilterFilter = {
+const normalState: PlAdvancedFilter = {
   id: Math.random(),
   type: "and" as const,
   filters: [
@@ -208,7 +216,7 @@ const normalState: PlAdvancedFilterFilter = {
   ],
 };
 
-const filterStates = ref<Record<string, PlAdvancedFilterFilter>>({
+const filterStates = ref<Record<string, PlAdvancedFilter>>({
   normalState: normalState,
   errorState: errorState,
   emptyState: {
@@ -257,8 +265,8 @@ watch(
         </div>
       </div>
       <div :key="selectedSavedFilters" :class="$style.rightColumn">
-        <PlAdvancedFilter
-          v-model:filters="filterStates[selectedSavedFilters] as PlAdvancedFilterFilter"
+        <PlAdvancedFilterComponent
+          v-model:filters="filterStates[selectedSavedFilters] as PlAdvancedFilter"
           :items="options"
           :enable-dnd="enableDnd"
           :get-suggest-options="getSuggestOptions"

@@ -72,6 +72,7 @@ describe("createApp", { timeout: 20_000 }, () => {
           outputs: {
             sum: { withStatus: false },
           },
+          pluginIds: [],
         },
       },
       { debug: true, debounceSpan: 10 },
@@ -137,6 +138,7 @@ describe("createApp", { timeout: 20_000 }, () => {
           outputs: {
             sum: { withStatus: false },
           },
+          pluginIds: [],
         },
       },
       { appId: "app1", debug: true, debounceSpan: 10 },
@@ -149,6 +151,7 @@ describe("createApp", { timeout: 20_000 }, () => {
           outputs: {
             sum: { withStatus: false },
           },
+          pluginIds: [],
         },
       },
       { appId: "app2", debug: true, debounceSpan: 10 },

@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.7.3
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
 ## 1.7.2
 
 ### Patch Changes

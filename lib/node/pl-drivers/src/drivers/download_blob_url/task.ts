@@ -244,7 +244,8 @@ export function nonRecoverableError(e: any) {
     // file that we downloads from was moved or deleted.
     e?.code == "ENOENT" ||
     // A resource was deleted.
-    (e.name == "RpcError" && (e.code == "NOT_FOUND" || e.code == "ABORTED")) ||
+    (e.name == "RpcError" &&
+      (e.code == "NOT_FOUND" || e.code == "ABORTED" || e.code == "UNIMPLEMENTED")) ||
     // wrong archive format
     String(e).includes("incorrect header check")
   );

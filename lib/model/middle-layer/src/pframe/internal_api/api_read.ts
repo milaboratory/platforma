@@ -9,7 +9,7 @@ import type {
   PObjectId,
   UniqueValuesRequest,
   UniqueValuesResponse,
-  QueryData,
+  DataQuery,
   PTableColumnSpec,
 } from "@milaboratories/pl-model-common";
 import type { CreateTableRequestV4 } from "./create_table";
@@ -48,7 +48,7 @@ export interface PFrameReadAPIV11 {
     tableId: PTableId,
     request: {
       tableSpec: PTableColumnSpec[];
-      dataQuery: QueryData;
+      dataQuery: DataQuery;
     },
   ): PTableV8;
 

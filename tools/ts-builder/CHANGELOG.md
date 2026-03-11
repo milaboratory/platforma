@@ -1,5 +1,47 @@
 # @milaboratories/ts-builder
 
+## 1.3.0
+
+### Minor Changes
+
+- 6fd7371: Update ts-builder serve config to support CJS
+
+## 1.2.14
+
+### Patch Changes
+
+- 90ee879: Set build target to Chrome 140 (Electron 38) to prevent LightningCSS from polyfilling modern CSS features like `light-dark()`
+
+## 1.2.13
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- c4fb398: Correct export and share build configs
+- Updated dependencies [79156bc]
+  - @milaboratories/ts-configs@1.2.2
+
+## 1.2.12
+
+### Patch Changes
+
+- 1b1dcea: vscode-integration command
+
+## 1.2.11
+
+### Patch Changes
+
+- Updated dependencies [0271e3f]
+  - @milaboratories/build-configs@1.5.0
+
+## 1.2.10
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/build-configs@1.4.4
+
 ## 1.2.9
 
 ### Patch Changes

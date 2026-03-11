@@ -5,10 +5,12 @@ import {
   type ListOptionBase,
   type PObjectId,
   type SUniversalPColumnId,
-  type CanonicalizedJson,
-  type AxisId,
 } from "@platforma-sdk/model";
-import type { PlAdvancedFilterItem, Annotation } from "@platforma-sdk/ui-vue";
+import type {
+  PlAdvancedFilterItem,
+  Annotation,
+  PlAdvancedFilterColumnId,
+} from "@platforma-sdk/ui-vue";
 import { PlAnnotationsModal } from "@platforma-sdk/ui-vue";
 import { ref, watch } from "vue";
 
@@ -135,7 +137,7 @@ async function getSuggestOptions({
   columnId,
   searchStr,
 }: {
-  columnId: SUniversalPColumnId | CanonicalizedJson<AxisId>;
+  columnId: PlAdvancedFilterColumnId;
   searchStr: string;
   axisIdx?: number;
 }) {
@@ -148,7 +150,7 @@ async function getSuggestModel({
   columnId,
   searchStr,
 }: {
-  columnId: SUniversalPColumnId | CanonicalizedJson<AxisId>;
+  columnId: PlAdvancedFilterColumnId;
   searchStr: string;
   axisIdx?: number;
 }) {

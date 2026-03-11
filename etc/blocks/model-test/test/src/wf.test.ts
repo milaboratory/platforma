@@ -1,4 +1,4 @@
-import type { BlockArgs } from "@milaboratories/milaboratories.test-block-model.model";
+import type { BlockData } from "@milaboratories/milaboratories.test-block-model.model";
 import { blockTest } from "@platforma-sdk/test";
 import { blockSpec } from "this-block";
 
@@ -9,7 +9,7 @@ blockTest("with args", { timeout: 10000 }, async ({ rawPrj: project, expect }) =
 
   expect(stableOverview1.blocks[0]).toMatchObject({
     subtitle: "The subtitle <- the subtitle",
-    tags: ["test-tag"],
+    tags: ["test-tag", "plugin-test"],
     sections: [
       {
         type: "link",
@@ -20,20 +20,23 @@ blockTest("with args", { timeout: 10000 }, async ({ rawPrj: project, expect }) =
     ],
   });
 
-  await project.setBlockArgs(blockId, {
-    titleArg: "Custom title",
-    subtitleArg: "Custom subtitle",
-    badgeArg: "Custom badge",
-    tagToWorkflow: "workflow-tag",
-    tagArgs: ["tag-one", "tag-two"],
-  } satisfies BlockArgs);
+  await project.mutateBlockStorage(blockId, {
+    operation: "update-block-data",
+    value: {
+      titleArg: "Custom title",
+      subtitleArg: "Custom subtitle",
+      badgeArg: "Custom badge",
+      tagToWorkflow: "workflow-tag",
+      tagArgs: ["tag-one", "tag-two"],
+    } satisfies BlockData,
+  });
 
   const stableOverview2 = await project.overview.awaitStableValue();
 
   expect(stableOverview2.blocks[0]).toMatchObject({
     title: "Custom title <- the title",
     subtitle: "Custom subtitle <- the subtitle",
-    tags: ["test-tag", "tag-one", "tag-two"],
+    tags: ["test-tag", "plugin-test", "tag-one", "tag-two"],
     sections: [
       {
         type: "link",
@@ -49,6 +52,6 @@ blockTest("with args", { timeout: 10000 }, async ({ rawPrj: project, expect }) =
   const stableOverview3 = await project.overview.awaitStableValue();
 
   expect(stableOverview3.blocks[0]).toMatchObject({
-    tags: ["test-tag", "tag-one", "tag-two", "workflow-tag"],
+    tags: ["test-tag", "plugin-test", "tag-one", "tag-two", "workflow-tag"],
   });
 });

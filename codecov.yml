@@ -8,7 +8,7 @@ coverage:
     patch: # Changed lines coverage
       default:
         target: 50% # New code coverage
-        threshold: 5%  # Existing code coverage drop
+        threshold: 5% # Existing code coverage drop
         informational: true
 
 component_management:
@@ -26,8 +26,6 @@ component_management:
     - component_id: ui
       name: UI
       paths:
-        - etc/ui-vue-docs/**/*
-        - etc/uikit-playground/**/*
         - lib/ui/uikit/**/*
         - sdk/ui-vue/**/*
     - component_id: backend
@@ -57,6 +55,5 @@ component_management:
         - tests/drivers-ml-blocks-integration/**/*
 
 ignore:
-  - "etc/uikit-playground/**/*"
   - "sdk/ui-vue/**/*"
   - "lib/ui/uikit/**/*"

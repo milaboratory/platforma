@@ -1,5 +1,30 @@
 # @milaboratories/build-configs
 
+## 1.5.2
+
+### Patch Changes
+
+- 90ee879: Set build target to Chrome 140 (Electron 38) to prevent LightningCSS from polyfilling modern CSS features like `light-dark()`
+
+## 1.5.1
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- c4fb398: Correct export and share build configs
+
+## 1.5.0
+
+### Minor Changes
+
+- 0271e3f: Replace css-injected-by-js with lib-inject-css for per-component CSS imports
+
+## 1.4.4
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+
 ## 1.4.3
 
 ### Patch Changes

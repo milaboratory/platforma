@@ -51,14 +51,9 @@ export function computedCached<T>(
   if (setter) {
     return computed({
       get: () => cachedValue.value,
-      set: (newValue) => {
-        if (!isJsonEqual(newValue, cachedValue.value)) {
-          cachedValue.value = newValue;
-          setter(newValue);
-        }
-      },
+      set: setter,
     });
   } else {
-    return computed(() => cachedValue.value);
+    return cachedValue;
   }
 }

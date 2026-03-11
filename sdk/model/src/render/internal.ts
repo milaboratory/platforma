@@ -1,5 +1,5 @@
 import type { Optional } from "utility-types";
-import type { Branded } from "../branding";
+import type { Branded, StringifiedJson } from "@milaboratories/pl-model-common";
 import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
 import type {
   ArchiveFormat,
@@ -13,6 +13,7 @@ import type {
   PObjectSpec,
   PSpecPredicate,
   PTableDef,
+  PTableDefV2,
   PTableHandle,
   ResultCollection,
   ValueOrError,
@@ -153,7 +154,7 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   createPTable(def: PTableDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>): PTableHandle;
 
   createPTableV2(
-    def: PTableDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>,
+    def: PTableDefV2<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>,
   ): PTableHandle;
 
   //
@@ -196,6 +197,8 @@ export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
   readonly uiState?: string | (() => string);
   readonly data: string | (() => string);
   readonly activeArgs: undefined | string | (() => string | undefined);
+
+  readonly blockStorage: () => StringifiedJson;
 
   // Note: strings below are used because, anyway, using strings is the only way
   // to get data inside the QuickJS context, as it is implemented now. With this

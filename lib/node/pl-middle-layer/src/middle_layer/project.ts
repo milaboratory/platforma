@@ -15,7 +15,7 @@ import { projectOverview } from "./project_overview";
 import type { BlockPackSpecAny } from "../model";
 import { randomUUID } from "node:crypto";
 import { withProject, withProjectAuthored } from "../mutator/project";
-import type { ExtendedResourceData } from "@milaboratories/pl-tree";
+import type { ExtendedResourceData, PruningFunction } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState, treeDumpStats } from "@milaboratories/pl-tree";
 import { setTimeout } from "node:timers/promises";
 import { frontendData } from "./frontend_path";
@@ -24,7 +24,14 @@ import { getBlockParameters, blockOutputs } from "./block";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectStructure } from "../model/project_model";
 import { projectFieldName } from "../model/project_model";
-import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
+import {
+  cachedDeserialize,
+  notEmpty,
+  type MiLogger,
+  createInfiniteRetryState,
+  nextInfiniteRetryState,
+  type InfiniteRetryState,
+} from "@milaboratories/ts-helpers";
 import type { BlockPackInfo } from "../model/block_pack";
 import type {
   ProjectOverview,
@@ -34,7 +41,7 @@ import type {
 } from "@milaboratories/pl-model-middle-layer";
 import { activeConfigs } from "./active_cfg";
 import { NavigationStates } from "./navigation_states";
-import { extractConfig } from "@platforma-sdk/model";
+import { extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
 import fs from "node:fs/promises";
 import canonicalize from "canonicalize";
 import type { ProjectOverviewLight } from "./project_overview_light";
@@ -116,6 +123,7 @@ export class Project {
   }
 
   private async refreshLoop(): Promise<void> {
+    let retryState: InfiniteRetryState | undefined;
     while (!this.destroyed) {
       try {
         await withProject(
@@ -128,7 +136,9 @@ export class Project {
           { name: "doRefresh", lockId: this.projectLockId },
         );
         await this.activeConfigs.getValue();
-        await setTimeout(this.env.ops.projectRefreshInterval, this.abortController.signal);
+        await setTimeout(this.env.ops.projectRefreshInterval, undefined, {
+          signal: this.abortController.signal,
+        });
 
         // Block computables housekeeping
         const overviewLight = await this.overviewLight.getValue();
@@ -141,25 +151,41 @@ export class Project {
             this.blockComputables.set(blockId, null);
           }
         }
+        retryState = undefined;
       } catch (e: unknown) {
         // If we're destroyed, exit gracefully regardless of error type
-        if (this.destroyed) {
-          // Log just in case, to help with debugging if something unexpected happens during shutdown
-          this.env.logger.warn(new Error("Error during refresh loop shutdown", { cause: e }));
-          break;
-        }
+        if (this.destroyed) break;
 
         if (isNotFoundError(e)) {
-          console.warn(
+          this.env.logger.warn(
             "project refresh routine terminated, because project was externally deleted",
           );
           break;
         } else if (isTimeoutOrCancelError(e)) {
           // Timeout during normal operation, continue the loop
         } else {
-          // TODO: This stops the refresh loop permanently, leaving the project broken.
-          // Need to decide how to handle this case.
-          throw new Error("Unexpected exception", { cause: e });
+          retryState = retryState
+            ? nextInfiniteRetryState(retryState)
+            : createInfiniteRetryState({
+                type: "exponentialWithMaxDelayBackoff",
+                initialDelay: 1000,
+                maxDelay: 60_000,
+                backoffMultiplier: 2,
+                jitter: 0,
+              });
+          this.env.logger.error(
+            new Error(`[refreshLoop] unexpected exception, retrying in ${retryState.nextDelay}ms`, {
+              cause: e,
+            }),
+          );
+          try {
+            await setTimeout(retryState.nextDelay, undefined, {
+              signal: this.abortController.signal,
+            });
+          } catch {
+            // Aborted during retry delay, will exit via while condition or destroyed check
+            break;
+          }
         }
       }
     }
@@ -187,9 +213,11 @@ export class Project {
     const blockCfgContainer = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
     const blockCfg = extractConfig(blockCfgContainer); // full content of this var should never be persisted
 
+    this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
+
     // Build NewBlockSpec based on model API version
     const newBlockSpec =
-      blockCfg.modelAPIVersion === 2
+      blockCfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION
         ? { storageMode: "fromModel" as const, blockPack: preparedBp }
         : {
             storageMode: "legacy" as const,
@@ -276,15 +304,18 @@ export class Project {
     const blockCfg = extractConfig(
       await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec),
     );
+
+    this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
+
     // resetState signals to mutator to reset storage
     // For v2+ blocks: mutator gets initial storage directly via getInitialStorageInVM
     // For v1 blocks: we pass the legacy state format
     const resetState = resetArgs
       ? {
           state:
-            blockCfg.modelAPIVersion === 2
-              ? {}
-              : { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState },
+            blockCfg.modelAPIVersion === 1
+              ? { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState }
+              : {},
         }
       : undefined;
     await withProjectAuthored(
@@ -459,7 +490,7 @@ export class Project {
   /**
    * Sets navigation state.
    * */
-  // eslint-disable-next-line @typescript-eslint/require-await
+  //
   public async setNavigationState(blockId: string, state: NavigationState): Promise<void> {
     this.navigationStates.setState(blockId, state);
   }
@@ -545,7 +576,7 @@ export class Project {
         this.rid,
         author,
         (prj) => {
-          if (config.modelAPIVersion === 2) {
+          if (config.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION) {
             // V2+: Reset to initial storage via VM
             prj.resetToInitialStorage(blockId);
           } else {
@@ -686,7 +717,7 @@ export class Project {
       rid,
       {
         ...env.ops.defaultTreeOptions,
-        pruning: projectTreePruning,
+        pruning: projectTreePruning(env.logger),
       },
       env.logger,
     );
@@ -703,27 +734,28 @@ export class Project {
   }
 }
 
-function projectTreePruning(r: ExtendedResourceData): FieldData[] {
-  // console.log(
-  //   JSON.stringify(
-  //     { ...r, kv: [], data: undefined } satisfies ExtendedResourceData,
-  //     (_, v) => {
-  //       if (typeof v === 'bigint') return v.toString();
-  //       return v;
-  //     }
-  //   )
-  // );
-  if (r.type.name.startsWith("StreamWorkdir/")) return [];
-  switch (r.type.name) {
-    case "BlockPackCustom":
-      return r.fields.filter((f) => f.name !== "template");
-    case "UserProject":
-      return r.fields.filter((f) => !f.name.startsWith("__serviceTemplate"));
-    case "Blob":
-      return [];
-    default:
-      return r.fields;
-  }
+function projectTreePruning(logger: MiLogger): PruningFunction {
+  return (r: ExtendedResourceData): FieldData[] => {
+    if (r.fields.length > 1000)
+      logger.warn(
+        `resource with excessive field count: type=${r.type.name} id=${r.id} fields=${r.fields.length}` +
+          ` names=[${r.fields
+            .slice(0, 10)
+            .map((f) => f.name)
+            .join(", ")}, ...]`,
+      );
+    if (r.type.name.startsWith("StreamWorkdir/")) return [];
+    switch (r.type.name) {
+      case "BlockPackCustom":
+        return r.fields.filter((f) => f.name !== "template");
+      case "UserProject":
+        return r.fields.filter((f) => !f.name.startsWith("__serviceTemplate"));
+      case "Blob":
+        return [];
+      default:
+        return r.fields;
+    }
+  };
 }
 
 /** Returns true if sdk version of the block is old and we need to convert

@@ -1,5 +1,34 @@
 # @milaboratories/test-helpers
 
+## 1.1.10
+
+### Patch Changes
+
+- Updated dependencies [a93de45]
+  - @milaboratories/helpers@1.13.7
+
+## 1.1.9
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/helpers@1.13.6
+
+## 1.1.8
+
+### Patch Changes
+
+- Updated dependencies [cb28fde]
+  - @milaboratories/helpers@1.13.5
+
+## 1.1.7
+
+### Patch Changes
+
+- Updated dependencies [0ae1854]
+  - @milaboratories/helpers@1.13.4
+
 ## 1.1.6
 
 ### Patch Changes

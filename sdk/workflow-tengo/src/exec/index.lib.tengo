@@ -18,6 +18,7 @@ oop := import(":oop")
 constants := import(":constants")
 monetization := import(":exec.monetization_internal")
 execConstants := import(":exec.constants")
+units := import(":units")
 
 /**
  * Creates a new builder for constructing and executing commands.
@@ -144,8 +145,6 @@ builder := func() {
 		 * Expressions are evaluated using the expr-lang syntax (https://expr-lang.org/docs/language-definition).
 		 * Available variables in expressions:
 		 *
-		 * - `secrets.SECRET_NAME` - Access to secrets (e.g., `{secrets.API_KEY}`)
-		 * - `env.ENV_NAME` - Access to environment variables (automatically converted to appropriate types)
 		 * - `system.cpu` - Number of CPU cores allocated
 		 * - `system.ram.bytes`, `system.ram.b` - RAM in bytes
 		 * - `system.ram.kb`, `system.ram.mb`, `system.ram.gb` - RAM in metric units (base-10)
@@ -154,9 +153,7 @@ builder := func() {
 		 *
 		 * Expression examples:
 		 * - `--memory={system.ram.mb * 80 / 100}` - Calculate 80% of available RAM in MB
-		 * - `--java-home={env.JAVA_HOME}` - Use environment variable
 		 * - `--threads={system.cpu}` - Use number of CPU cores
-		 * - `--config={secrets.CONFIG_PATH}` - Access secret value
 		 *
 		 * @param arg: string - argument with expressions, e.g., "-Xms{system.ram.mb * 80 / 100}m"
 		 */
@@ -203,8 +200,6 @@ builder := func() {
 		 * Expressions are evaluated using the expr-lang syntax (https://expr-lang.org/docs/language-definition).
 		 * Available variables in expressions:
 		 *
-		 * - `secrets.SECRET_NAME` - Access to secrets (e.g., `{secrets.API_KEY}`)
-		 * - `env.ENV_NAME` - Access to environment variables (automatically converted to appropriate types)
 		 * - `system.cpu` - Number of CPU cores allocated
 		 * - `system.ram.bytes`, `system.ram.b` - RAM in bytes
 		 * - `system.ram.kb`, `system.ram.mb`, `system.ram.gb` - RAM in metric units (base-10)
@@ -212,9 +207,7 @@ builder := func() {
 		 * - Custom substitution variables defined by substitution rules
 		 *
 		 * Expression examples:
-		 * - `{env.JAVA_HOME}/bin/java` - Use environment variable
 		 * - `{system.ram.mb * 80 / 100}` - Calculate 80% of available RAM in MB
-		 * - `{secrets.DATABASE_URL}` - Access secret value
 		 * - `{system.cpu}` - Use number of CPU cores
 		 *
 		 * @param name: string - the name of the environment variable.
@@ -253,14 +246,61 @@ builder := func() {
 		},
 
 		/**
-		 * Set environment variable to value of given secret.
+		 * Provide secret to command runtime.
+		 *
+		 * Secrets contain sensitive information that should be available for software,
+		 * but should not be exposed to outer observers. License keys, passwords, API keys are examples
+		 * of such information.
+		 *
+		 * On Platforma Backend side, secrets feature uses native instruments of particular
+		 * infrastructure designed for that purpose (i.e. Kubertenes secrets). The secret is usually stored
+		 * somewhere _outside_ Platforma Backend, but Platforma Backend knows how to start the software
+		 * and provide access to this secret for one particular run.
+		 *
+		 * Value of a secret can be exposed to the process only via environment variable, because other
+		 * mechanisms easly 'leak' secret's value to logs, processes list or other places, that is easy
+		 * to access with little permissions.
+		 *
+		 * When you use .secret("SECRET_NAME"), Platforma Backend knows that this particular software
+		 * needs a value of secret with name "SECRET_NAME" to be available at runtime in environment variable
+		 * with the same name. You can customize env variable name by setting 2nd argument to the .secret() method.
+		 *
+		 * For example, MiXCR software expects license to be available in MI_LICENSE environment variable.
+		 * to run MiXCR in workflow, you can use .secret("mixcr-license", "MI_LICENSE").
+		 * to make Platforma Backend provide MiXCR with license code stored in secret 'mixcr-license'.
+		 * This will require infrastructure, that runs Platforma Backend, to have this 'mixcr-license' secret
+		 * on their side.
+		 * Usually, secrets are named after environment variables software expects.
+		 *
+		 * Here are few recommendations on how to work with secrets:
+		 *  - tend to use the environment variable name as a name of a secret for simplicity of understanding.
+		 *  - when declaring a secret in your block workflow, use the same secret name for the same software.
+		 *    Even in different blocks. I.e. use 'MI_LICENSE' in all MiXCR software runs in all blocks.
+		 *  - once secret is added and block is released, do not change name of a secret in a block from version to version.
+		 *    Changing the secret name requires all our clients creating a secret with new name to make new version of a block working.
+		 *  - never use the same secret name for different software unless you know for sure they accept/expect the same secret value.
+		 *
+		 * Examples of secret names:
+		 *  - BAD: "password", "api-key", "secret", "key" - too general. Will overlap in different blocks for different software,
+		 *    making it impossible to use these blocks simultaneously in the same Platforma Backend instance.
+		 *  - GOOD: "MI_LICENSE" - has 'MI_' prefix, stating this is for MiXCR software (or for MiLaboratories software in general)
 		 *
 		 * @param secretName: string - name of secret to pass as environment variable.
-		 * @param envName: string - name of environment variable to set with value of secret.
+		 * @param [envName]: string - name of environment variable to set with value of secret.
+		 *                            Defaults to name of a secret.
 		 */
-		secret: func(secretName, envName) {
-			validation.assertType([secretName, envName], ["string"])
-			secrets[envName] = "{secrets."+secretName+"}"
+		secret: func(secretName, ...opts) {
+			validation.assertType(secretName, "string")
+			validation.assert(secretName != "", "exec.secret(): secret name cannot be empty")
+
+			envName := secretName
+			if len(opts) > 0 {
+				envName = opts[0]
+				validation.assertType(envName, "string")
+				validation.assert(envName != "", "exec.secret(): environment name for secret cannot be empty")
+			}
+
+			secrets[envName] = secretName
 			return self
 		},
 
@@ -377,7 +417,7 @@ builder := func() {
 		 */
 		mem: func(amount) {
 			validation.assertType(amount, ["or", "number", "string"], "exec.builder.mem: RAM amount should be a number or string")
-			ll.assert(is_string(amount) || amount > 0, "exec.builder.mem: amount in bytes should be greater than 0")
+			ll.assert(is_string(amount) || amount >= 16 * units.MiB, "exec.builder.mem: amount in bytes should be at least 16MiB")
 			ramRequest = amount
 
 			return self

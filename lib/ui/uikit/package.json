@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/uikit",
-  "version": "2.10.19",
+  "version": "2.10.42",
   "type": "module",
   "main": "dist/index.js",
   "exports": {
@@ -9,7 +9,6 @@
       "sources": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./styles": "./dist/index.js",
     "./styles/variables": "./src/assets/variables.scss",
     "./assets/mixins.scss": "./src/assets/mixins.scss",
     "./svg/icons/*": "./src/assets/icons/icon-assets-min/*",

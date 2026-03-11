@@ -1,5 +1,11 @@
 # @platforma-sdk/r-builder
 
+## 1.1.10
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
 ## 1.1.9
 
 ### Patch Changes

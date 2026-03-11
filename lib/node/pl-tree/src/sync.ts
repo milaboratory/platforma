@@ -4,10 +4,10 @@ import type {
   PlTransaction,
   ResourceId,
 } from "@milaboratories/pl-client";
-import { isNullResourceId } from "@milaboratories/pl-client";
 import Denque from "denque";
+import { isNullResourceId } from "@milaboratories/pl-client";
 import type { ExtendedResourceData, PlTreeState } from "./state";
-import { msToHumanReadable } from "@milaboratories/ts-helpers";
+import { ConcurrencyLimitingExecutor, msToHumanReadable } from "@milaboratories/ts-helpers";
 
 /** Applied to list of fields in resource data. */
 export type PruningFunction = (resource: ExtendedResourceData) => FieldData[];
@@ -108,57 +108,54 @@ export async function loadTreeState(
 
   const { seedResources, finalResources, pruningFunction } = loadingRequest;
 
-  // Main idea of using a queue here is that responses will arrive in the same order as they were
-  // sent, so we can only wait for the earliest sent unprocessed response promise at any given moment.
-  // In such a way logic become linear without recursion, and at the same time deal with data
-  // as soon as it arrives.
+  // Limits the number of concurrent gRPC fetches to bound peak memory
+  // from in-flight request/response buffers.
+  const limiter = new ConcurrencyLimitingExecutor(100);
 
+  // Promises of resource states, in the order they were requested.
   const pending = new Denque<Promise<ExtendedResourceData | undefined>>();
 
   // vars to calculate number of roundtrips for stats
   let roundTripToggle: boolean = true;
   let numberOfRoundTrips = 0;
 
-  // tracking resources we already requested
+  // tracking resources we already requested or queued
   const requested = new Set<ResourceId>();
+
+  /** Mark a resource for fetching. Deduplicates and respects final-resource set. */
   const requestState = (rid: OptionalResourceId) => {
     if (isNullResourceId(rid) || requested.has(rid)) return;
 
-    // separate check to collect stats
     if (finalResources.has(rid)) {
       if (stats) stats.finalResourcesSkipped++;
       return;
     }
 
-    // adding the id, so we will not request it's state again if somebody else
-    // references the same resource
     requested.add(rid);
 
-    // requesting resource and all kv records
-    const resourceData = tx.getResourceDataIfExists(rid, true);
-    const kvData = tx.listKeyValuesIfResourceExists(rid);
-
-    // counting round-trip (begin)
-    const addRT = roundTripToggle;
-    if (roundTripToggle) roundTripToggle = false;
-
-    // pushing combined promise
     pending.push(
-      (async () => {
+      limiter.run(async () => {
+        const resourceData = tx.getResourceDataIfExists(rid, true);
+        const kvData = tx.listKeyValuesIfResourceExists(rid);
+
+        // counting round-trip (begin)
+        const addRT = roundTripToggle;
+        if (roundTripToggle) roundTripToggle = false;
+
         const [resource, kv] = await Promise.all([resourceData, kvData]);
 
-        // counting round-trip, actually incrementing counter and returning toggle back, so the next request can acquire it
+        // counting round-trip, actually incrementing counter and returning toggle back,
+        // so the next request can acquire it
         if (addRT) {
           numberOfRoundTrips++;
           roundTripToggle = true;
         }
 
         if (resource === undefined) return undefined;
-
         if (kv === undefined) throw new Error("Inconsistent replies");
 
         return { ...resource, kv };
-      })(),
+      }),
     );
   };
 
@@ -166,15 +163,10 @@ export async function loadTreeState(
   seedResources.forEach((rid) => requestState(rid));
 
   const result: ExtendedResourceData[] = [];
-  while (true) {
-    // taking next pending request
-    const nextResourcePromise = pending.shift();
-    if (nextResourcePromise === undefined)
-      // this means we have no pending requests and traversal is over
-      break;
-
-    // at this point we pause and wait for the nest requested resource state to arrive
-    let nextResource = await nextResourcePromise;
+  let nextPromise: Promise<ExtendedResourceData | undefined> | undefined;
+  while ((nextPromise = pending.shift()) !== undefined) {
+    // at this point we pause and wait for the next requested resource state to arrive
+    let nextResource = await nextPromise;
     if (nextResource === undefined)
       // ignoring resources that were not found (this may happen for seed resource ids)
       continue;
@@ -187,7 +179,7 @@ export async function loadTreeState(
       nextResource = { ...nextResource, fields: fieldsAfterPruning };
     }
 
-    // continue traversal over the referenced resource
+    // continue traversal over the referenced resources
     requestState(nextResource.error);
     for (const field of nextResource.fields) {
       requestState(field.value);

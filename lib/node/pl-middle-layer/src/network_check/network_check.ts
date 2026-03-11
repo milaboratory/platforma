@@ -68,6 +68,9 @@ interface NetworkReports {
 }
 
 export interface CheckNetworkOpts {
+  /** Signal to abort all network checks. */
+  signal?: AbortSignal;
+
   /** Platforma Backend pings options. */
   pingCheckDurationMs: number;
   pingTimeoutMs: number;

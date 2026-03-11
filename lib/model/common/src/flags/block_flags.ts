@@ -18,11 +18,16 @@ export type BlockCodeKnownFeatureFlags = {
   readonly supportsLazyState?: boolean;
   readonly requiresModelAPIVersion?: number;
   readonly requiresUIAPIVersion?: number;
+  readonly requiresCreatePTable?: number;
 };
 
 export const AllSupportsFeatureFlags = ["supportsLazyState"] as const;
 
-export const AllRequiresFeatureFlags = ["requiresUIAPIVersion", "requiresModelAPIVersion"] as const;
+export const AllRequiresFeatureFlags = [
+  "requiresUIAPIVersion",
+  "requiresCreatePTable",
+  "requiresModelAPIVersion",
+] as const;
 
 //
 // Assertions

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-deployments",
-  "version": "2.15.10",
+  "version": "2.15.21",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
   "keywords": [],
   "license": "UNLICENSED",
@@ -66,5 +66,5 @@
   "engines": {
     "node": ">=22.19.0"
   },
-  "pl-version": "1.44.1"
+  "pl-version": "1.46.0"
 }

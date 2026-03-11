@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.14.2
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
 ## 1.14.1
 
 ### Patch Changes

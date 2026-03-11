@@ -1,11 +1,11 @@
 import { platforma } from "@milaboratories/milaboratories.test-enter-numbers-v3.model";
 import MainPage from "./MainPage.vue";
-import { defineApp, ensureError } from "@platforma-sdk/ui-vue";
+import { defineAppV3, ensureError } from "@platforma-sdk/ui-vue";
 import type { Component } from "vue";
 import { computed, reactive, ref } from "vue";
 import type { Equal, Expect } from "@milaboratories/helpers";
 
-export const sdkPlugin = defineApp(
+export const sdkPlugin = defineAppV3(
   platforma,
   () => {
     // Additional data

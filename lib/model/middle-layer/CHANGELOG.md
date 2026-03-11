@@ -1,5 +1,140 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.12.11
+
+### Patch Changes
+
+- Updated dependencies [a93de45]
+  - @platforma-sdk/model@1.58.19
+
+## 1.12.10
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/pl-model-common@1.25.2
+  - @platforma-sdk/model@1.58.11
+
+## 1.12.9
+
+### Patch Changes
+
+- Updated dependencies [4d83b3c]
+  - @platforma-sdk/model@1.58.9
+
+## 1.12.8
+
+### Patch Changes
+
+- Updated dependencies [c2d9319]
+  - @platforma-sdk/model@1.58.5
+
+## 1.12.7
+
+### Patch Changes
+
+- Updated dependencies [327444c]
+  - @platforma-sdk/model@1.58.3
+
+## 1.12.6
+
+### Patch Changes
+
+- Updated dependencies [523a59f]
+  - @milaboratories/pl-model-common@1.25.1
+  - @platforma-sdk/model@1.58.2
+
+## 1.12.5
+
+### Patch Changes
+
+- Updated dependencies [d318a76]
+  - @platforma-sdk/model@1.58.1
+
+## 1.12.4
+
+### Patch Changes
+
+- Updated dependencies [b5d19c6]
+  - @platforma-sdk/model@1.58.0
+
+## 1.12.3
+
+### Patch Changes
+
+- Updated dependencies [6ba4c69]
+  - @platforma-sdk/model@1.57.2
+
+## 1.12.2
+
+### Patch Changes
+
+- Updated dependencies [8baa2b3]
+  - @platforma-sdk/model@1.57.0
+
+## 1.12.1
+
+### Patch Changes
+
+- Updated dependencies [f2daf69]
+  - @platforma-sdk/model@1.56.0
+
+## 1.12.0
+
+### Minor Changes
+
+- 2ad9783: Add `findTableColumn` method to `PFrameWasmAPI` interface
+
+## 1.11.14
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @milaboratories/pl-model-common@1.25.0
+  - @platforma-sdk/model@1.55.0
+
+## 1.11.13
+
+### Patch Changes
+
+- Updated dependencies [cb28fde]
+  - @milaboratories/pl-model-common@1.24.11
+  - @platforma-sdk/model@1.54.13
+
+## 1.11.12
+
+### Patch Changes
+
+- Updated dependencies [866a323]
+  - @milaboratories/pl-model-common@1.24.10
+  - @platforma-sdk/model@1.54.10
+
+## 1.11.11
+
+### Patch Changes
+
+- Updated dependencies [a3659cd]
+  - @milaboratories/pl-model-common@1.24.9
+  - @platforma-sdk/model@1.54.9
+
+## 1.11.10
+
+### Patch Changes
+
+- Updated dependencies [4f04561]
+  - @milaboratories/pl-model-common@1.24.8
+  - @platforma-sdk/model@1.54.8
+
+## 1.11.9
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-model-common@1.24.7
+  - @platforma-sdk/model@1.54.7
+
 ## 1.11.8
 
 ### Patch Changes

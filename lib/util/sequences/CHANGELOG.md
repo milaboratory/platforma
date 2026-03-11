@@ -1,5 +1,11 @@
 # @milaboratories/sequences
 
+## 1.1.9
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
 ## 1.1.8
 
 ### Patch Changes

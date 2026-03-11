@@ -1,5 +1,246 @@
 # @platforma-sdk/test
 
+## 1.58.21
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.21
+
+## 1.58.20
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.20
+
+## 1.58.19
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.19
+
+## 1.58.18
+
+### Patch Changes
+
+- Updated dependencies [502cbfa]
+  - @milaboratories/pl-middle-layer@1.48.18
+
+## 1.58.15
+
+### Patch Changes
+
+- Updated dependencies [c19a02b]
+  - @milaboratories/pl-middle-layer@1.48.17
+  - @milaboratories/pl-client@2.17.9
+  - @milaboratories/pl-tree@1.8.49
+
+## 1.58.14
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.16
+
+## 1.58.13
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.15
+
+## 1.58.12
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.14
+
+## 1.58.11
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+- Updated dependencies [c4fb398]
+  - @milaboratories/computable@2.8.6
+  - @milaboratories/pl-client@2.17.8
+  - @milaboratories/pl-middle-layer@1.48.13
+  - @milaboratories/pl-tree@1.8.48
+
+## 1.58.9
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.12
+
+## 1.58.7
+
+### Patch Changes
+
+- Updated dependencies [0da9f54]
+  - @milaboratories/pl-tree@1.8.47
+  - @milaboratories/pl-middle-layer@1.48.11
+
+## 1.58.6
+
+### Patch Changes
+
+- Updated dependencies [c498d1b]
+  - @milaboratories/pl-tree@1.8.46
+  - @milaboratories/pl-middle-layer@1.48.10
+
+## 1.58.5
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.9
+
+## 1.58.3
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.8
+
+## 1.58.2
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.7
+- @milaboratories/pl-middle-layer@1.48.7
+- @milaboratories/pl-tree@1.8.45
+
+## 1.58.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.6
+
+## 1.58.0
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.5
+
+## 1.57.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.4
+
+## 1.57.2
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.3
+
+## 1.57.1
+
+### Patch Changes
+
+- Updated dependencies [a95fc4e]
+  - @milaboratories/pl-middle-layer@1.48.2
+
+## 1.57.0
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.48.1
+
+## 1.56.0
+
+### Patch Changes
+
+- Updated dependencies [f2daf69]
+  - @milaboratories/pl-middle-layer@1.48.0
+
+## 1.55.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.47.2
+
+## 1.55.3
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.47.1
+
+## 1.55.0
+
+### Minor Changes
+
+- 01d0b52: BlockModelV3 update
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @milaboratories/pl-middle-layer@1.47.0
+  - @milaboratories/pl-client@2.17.6
+  - @milaboratories/pl-tree@1.8.44
+
+## 1.54.13
+
+### Patch Changes
+
+- Updated dependencies [cb28fde]
+  - @milaboratories/pl-middle-layer@1.46.34
+  - @milaboratories/pl-client@2.17.5
+  - @milaboratories/pl-tree@1.8.43
+
+## 1.54.10
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.46.33
+- @milaboratories/pl-client@2.17.4
+- @milaboratories/pl-tree@1.8.42
+
+## 1.54.9
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.3
+- @milaboratories/pl-middle-layer@1.46.32
+- @milaboratories/pl-tree@1.8.41
+
+## 1.54.8
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.46.31
+- @milaboratories/pl-client@2.17.2
+- @milaboratories/pl-tree@1.8.40
+
+## 1.54.7
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/pl-middle-layer@1.46.30
+  - @milaboratories/computable@2.8.5
+  - @milaboratories/pl-client@2.17.1
+  - @milaboratories/pl-tree@1.8.39
+
+## 1.54.6
+
+### Patch Changes
+
+- Updated dependencies [dff3672]
+  - @milaboratories/pl-middle-layer@1.46.29
+
+## 1.54.5
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.46.28
+
+## 1.54.4
+
+### Patch Changes
+
+- Updated dependencies [f37108b]
+  - @milaboratories/pl-client@2.17.0
+  - @milaboratories/pl-middle-layer@1.46.27
+  - @milaboratories/pl-tree@1.8.38
+
 ## 1.54.3
 
 ### Patch Changes

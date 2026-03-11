@@ -1,5 +1,11 @@
 # @milaboratories/pl-error-like
 
+## 1.12.9
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
 ## 1.12.8
 
 ### Patch Changes

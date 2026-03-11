@@ -1,5 +1,169 @@
 # @milaboratories/uikit
 
+## 2.10.42
+
+### Patch Changes
+
+- a93de45: Fix table filters bugs
+- Updated dependencies [a93de45]
+  - @milaboratories/helpers@1.13.7
+  - @platforma-sdk/model@1.58.19
+
+## 2.10.41
+
+### Patch Changes
+
+- f2b7989: Use shared PlCloseModalBtn in PlAlert and PlPureSlideModal instead of duplicated close button styles
+
+## 2.10.40
+
+### Patch Changes
+
+- 746838c: Remove `sideEffects` field that caused Rolldown to tree-shake CSS imports from barrel modules
+
+## 2.10.39
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+- Updated dependencies [79156bc]
+  - @milaboratories/helpers@1.13.6
+  - @platforma-sdk/model@1.58.11
+
+## 2.10.38
+
+### Patch Changes
+
+- Updated dependencies [4d83b3c]
+  - @platforma-sdk/model@1.58.9
+
+## 2.10.37
+
+### Patch Changes
+
+- Updated dependencies [c2d9319]
+  - @platforma-sdk/model@1.58.5
+
+## 2.10.36
+
+### Patch Changes
+
+- Updated dependencies [327444c]
+  - @platforma-sdk/model@1.58.3
+
+## 2.10.35
+
+### Patch Changes
+
+- @platforma-sdk/model@1.58.2
+
+## 2.10.34
+
+### Patch Changes
+
+- Updated dependencies [d318a76]
+  - @platforma-sdk/model@1.58.1
+
+## 2.10.33
+
+### Patch Changes
+
+- Updated dependencies [b5d19c6]
+  - @platforma-sdk/model@1.58.0
+
+## 2.10.32
+
+### Patch Changes
+
+- 0271e3f: Replace css-injected-by-js with lib-inject-css for per-component CSS imports
+  - @milaboratories/helpers@1.13.5
+  - @platforma-sdk/model@1.57.2
+
+## 2.10.31
+
+### Patch Changes
+
+- Updated dependencies [6ba4c69]
+  - @platforma-sdk/model@1.57.2
+
+## 2.10.30
+
+### Patch Changes
+
+- Updated dependencies [8baa2b3]
+  - @platforma-sdk/model@1.57.0
+
+## 2.10.29
+
+### Patch Changes
+
+- Updated dependencies [f2daf69]
+  - @platforma-sdk/model@1.56.0
+
+## 2.10.28
+
+### Patch Changes
+
+- bc16fab: add helper with tooltip for table fast search
+
+## 2.10.27
+
+### Patch Changes
+
+- 3e71add: update tooltips
+
+## 2.10.26
+
+### Patch Changes
+
+- Updated dependencies [01d0b52]
+  - @platforma-sdk/model@1.55.0
+
+## 2.10.25
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+- Updated dependencies [cb28fde]
+  - @milaboratories/helpers@1.13.5
+  - @platforma-sdk/model@1.54.13
+
+## 2.10.24
+
+### Patch Changes
+
+- d2e1b6b: fix overflow in PlElementList
+
+## 2.10.23
+
+### Patch Changes
+
+- Updated dependencies [866a323]
+  - @platforma-sdk/model@1.54.10
+
+## 2.10.22
+
+### Patch Changes
+
+- Updated dependencies [a3659cd]
+  - @platforma-sdk/model@1.54.9
+
+## 2.10.21
+
+### Patch Changes
+
+- Updated dependencies [4f04561]
+  - @platforma-sdk/model@1.54.8
+
+## 2.10.20
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+- Updated dependencies [0ae1854]
+  - @milaboratories/helpers@1.13.4
+  - @platforma-sdk/model@1.54.7
+
 ## 2.10.19
 
 ### Patch Changes
