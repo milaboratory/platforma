@@ -2,12 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseDocument, isScalar, isAlias } from "yaml";
-
-/** Pinned versions for packages */
-const PINNED_VERSIONS = {
-  "ag-grid-enterprise": "~34.1.2",
-  "ag-grid-vue3": "~34.1.2",
-} as const;
+import { PINNED_VERSIONS } from "./generated/pinned-versions";
 
 const RETRY_COUNT = 2;
 const RETRY_BASE_MS = 500;
@@ -139,7 +134,7 @@ export async function updatePackages(cwd?: string): Promise<void> {
     }
   }
 
-  // Enforce pinned versions for licensed packages
+  // Enforce pinned versions
   for (const [packageName, pinnedVersion] of Object.entries(PINNED_VERSIONS)) {
     if (!catalogKeys.includes(packageName)) continue;
 

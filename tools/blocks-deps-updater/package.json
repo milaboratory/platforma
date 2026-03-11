@@ -22,12 +22,13 @@
     }
   },
   "scripts": {
-    "build": "ts-builder build --target node",
+    "generate-pinned": "node scripts/generate-pinned.mjs",
+    "build": "pnpm generate-pinned && ts-builder build --target node",
     "test": "vitest run",
     "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
-    "types:check": "ts-builder type-check --target node",
+    "types:check": "pnpm generate-pinned && ts-builder type-check --target node",
     "fmt": "ts-builder format",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
