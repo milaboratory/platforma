@@ -8,7 +8,7 @@ import { parseDocument } from "yaml";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const workspacePath = path.resolve(__dirname, "../../../pnpm-workspace.yaml");
-const outPath = path.resolve(__dirname, "../src/pinned-versions.generated.ts");
+const outPath = path.resolve(__dirname, "../src/generated/pinned-versions.ts");
 
 const PINNED_PACKAGES = ["ag-grid-enterprise", "ag-grid-vue3"];
 
@@ -39,5 +39,6 @@ const generated =
   };
 ` + "\n";
 
+await fs.mkdir(path.dirname(outPath), { recursive: true });
 await fs.writeFile(outPath, generated, "utf8");
 console.log(`generated ${path.relative(process.cwd(), outPath)}`);

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseDocument, isScalar, isAlias } from "yaml";
-import { PINNED_VERSIONS } from "./pinned-versions.generated";
+import { PINNED_VERSIONS } from "./generated/pinned-versions";
 
 const RETRY_COUNT = 2;
 const RETRY_BASE_MS = 500;

@@ -1,3 +1,3 @@
 dist/
 package.tgz
-src/*.generated.ts
+src/generated/*
