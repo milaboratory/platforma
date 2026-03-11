@@ -20,7 +20,7 @@ export const plTest = test.extend<{
     await use(workFolder);
     onTestFinished(async (context) => {
       if (context.task.result?.state === "pass") {
-        await fsp.rm(workFolder, { recursive: true });
+        await fsp.rm(workFolder, { recursive: true, maxRetries: 3, retryDelay: 100 });
       } else {
         console.log(`TEST FAILED TMP FOLDER IS PRESERVED: ${workFolder}`);
       }
