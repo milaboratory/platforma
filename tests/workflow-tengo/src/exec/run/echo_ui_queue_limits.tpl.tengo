@@ -1,0 +1,20 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+self.defineOutputs(["limits"])
+
+sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+self.body(func(inputs) {
+	limitsRun := exec.builder().
+		setQueue(inputs.queue).
+		software(sw).
+		argWithVar("{system.cpu},{system.ram.bytes},"+inputs.id).
+		saveStdoutContent().
+		run()
+
+	return {
+		limits: limitsRun.getStdoutContent()
+	}
+})
