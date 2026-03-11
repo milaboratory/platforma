@@ -3,12 +3,6 @@ import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseDocument, isScalar, isAlias } from "yaml";
 
-/** Pinned versions for packages */
-const PINNED_VERSIONS = {
-  "ag-grid-enterprise": "~34.1.2",
-  "ag-grid-vue3": "~34.1.2",
-} as const;
-
 const RETRY_COUNT = 2;
 const RETRY_BASE_MS = 500;
 const TIMEOUT_MS = 30_000;
@@ -114,12 +108,11 @@ export async function updatePackages(cwd?: string): Promise<void> {
   }
 
   const catalogKeys = Object.keys(catalog);
-  const sdkPackages = catalogKeys
-    .filter((pkg) => pkg.startsWith("@platforma-sdk/") || pkg.startsWith("@milaboratories/"))
-    .filter((pkg) => !Object.hasOwn(PINNED_VERSIONS, pkg));
+  const sdkPackages = catalogKeys.filter(
+    (pkg) => pkg.startsWith("@platforma-sdk/") || pkg.startsWith("@milaboratories/"),
+  );
 
   const updated: Change[] = [];
-  const pinned: Change[] = [];
 
   // Fetch latest versions for all SDK packages in parallel
   const latestVersions = await Promise.all(sdkPackages.map((pkg) => getLatestVersion(pkg)));
@@ -139,19 +132,7 @@ export async function updatePackages(cwd?: string): Promise<void> {
     }
   }
 
-  // Enforce pinned versions for licensed packages
-  for (const [packageName, pinnedVersion] of Object.entries(PINNED_VERSIONS)) {
-    if (!catalogKeys.includes(packageName)) continue;
-
-    const currentVersion = catalog[packageName];
-    if (typeof currentVersion !== "string") continue;
-
-    if (setCatalogValue({ doc, packageName, version: pinnedVersion })) {
-      pinned.push({ packageName, from: currentVersion, to: pinnedVersion });
-    }
-  }
-
-  if (updated.length === 0 && pinned.length === 0) {
+  if (updated.length === 0) {
     console.log("up to date");
     return;
   }
@@ -164,8 +145,5 @@ export async function updatePackages(cwd?: string): Promise<void> {
 
   for (const c of updated) {
     console.log(`updated: ${c.packageName} ${c.from} -> ${c.to}`);
-  }
-  for (const c of pinned) {
-    console.log(` pinned: ${c.packageName} ${c.from} -> ${c.to}`);
   }
 }
