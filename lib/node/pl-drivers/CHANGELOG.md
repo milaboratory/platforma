@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.11.63
+
+### Patch Changes
+
+- ab3d352: fix: treat gRPC UNIMPLEMENTED as non-recoverable in blob-to-URL download
+
 ## 1.11.62
 
 ### Patch Changes
