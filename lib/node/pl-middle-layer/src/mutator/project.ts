@@ -62,11 +62,11 @@ import {
   cachedDeserialize,
   notEmpty,
   canonicalJsonBytes,
-  canonicalJsonGzBytes,
   cachedDecode,
   type MiLogger,
   ConsoleLoggerAdapter,
 } from "@milaboratories/ts-helpers";
+import { gzipSync } from "node:zlib";
 import type { ProjectHelper } from "../model/project_helper";
 import {
   extractConfig,
@@ -479,25 +479,40 @@ export class ProjectMutator {
     return info;
   }
 
-  private createJsonFieldValueByContent(content: string, gzip = false): BlockFieldStateValue {
-    if (content === undefined) throw new Error("content is undefined");
-    if (gzip) {
-      const { data, isGzipped } = canonicalJsonGzBytes(JSON.parse(content));
-      const ref = this.tx.createValue(isGzipped ? Pl.JsonGzObject : Pl.JsonObject, data);
-      return { ref, value: data, status: "Ready" };
-    }
-    const value = Buffer.from(content);
+  /** Create a plain JSON resource value from a JS object (no compression). */
+  private createJsonFieldValue(obj: unknown): BlockFieldStateValue {
+    const value = Buffer.from(JSON.stringify(obj));
     const ref = this.tx.createValue(Pl.JsonObject, value);
     return { ref, value, status: "Ready" };
   }
 
-  private createJsonFieldValue(obj: unknown, gzip = false): BlockFieldStateValue {
-    if (gzip) {
-      const { data, isGzipped } = canonicalJsonGzBytes(obj);
-      const ref = this.tx.createValue(isGzipped ? Pl.JsonGzObject : Pl.JsonObject, data);
+  /** Create a plain JSON resource value from a pre-serialized JSON string (no compression). */
+  private createJsonFieldValueFromContent(json: string): BlockFieldStateValue {
+    const value = Buffer.from(json);
+    const ref = this.tx.createValue(Pl.JsonObject, value);
+    return { ref, value, status: "Ready" };
+  }
+
+  /** Create a gzip-compressed JSON resource value from a JS object (compressed if >= 16KB). */
+  private createGzJsonFieldValue(obj: unknown): BlockFieldStateValue {
+    const jsonBytes = canonicalJsonBytes(obj);
+    return this.createGzJsonFieldValueFromBytes(jsonBytes);
+  }
+
+  /** Create a gzip-compressed JSON resource value from a pre-serialized JSON string (compressed if >= 16KB). */
+  private createGzJsonFieldValueFromContent(json: string): BlockFieldStateValue {
+    return this.createGzJsonFieldValueFromBytes(Buffer.from(json));
+  }
+
+  private createGzJsonFieldValueFromBytes(jsonBytes: Uint8Array): BlockFieldStateValue {
+    const gzipThreshold = 16_384;
+    if (jsonBytes.length >= gzipThreshold) {
+      const data = gzipSync(jsonBytes);
+      const ref = this.tx.createValue(Pl.JsonGzObject, data);
       return { ref, value: data, status: "Ready" };
     }
-    return this.createJsonFieldValueByContent(JSON.stringify(obj));
+    const ref = this.tx.createValue(Pl.JsonObject, jsonBytes);
+    return { ref, value: jsonBytes, status: "Ready" };
   }
 
   private getBlock(blockId: string): Block {
@@ -659,7 +674,7 @@ export class ProjectMutator {
     this.setBlockFieldObj(
       blockId,
       "blockStorage",
-      this.createJsonFieldValueByContent(rawStorageJson, true),
+      this.createGzJsonFieldValueFromContent(rawStorageJson),
     );
     this.blocksWithChangedInputs.add(blockId);
     this.updateLastModified();
@@ -754,7 +769,7 @@ export class ProjectMutator {
         this.setBlockFieldObj(
           req.blockId,
           "blockStorage",
-          this.createJsonFieldValueByContent(updatedStorageJson, true),
+          this.createGzJsonFieldValueFromContent(updatedStorageJson),
         );
 
         // Derive args directly from storage (VM extracts data internally)
@@ -774,7 +789,7 @@ export class ProjectMutator {
           );
         }
       } else {
-        this.setBlockFieldObj(req.blockId, "blockStorage", this.createJsonFieldValue(req.state, true));
+        this.setBlockFieldObj(req.blockId, "blockStorage", this.createGzJsonFieldValue(req.state));
         if (req.state !== null && typeof req.state === "object" && "args" in req.state) {
           args = (req.state as { args: unknown }).args;
         } else {
@@ -1032,7 +1047,7 @@ export class ProjectMutator {
     this.setBlockFieldObj(
       blockId,
       "blockStorage",
-      this.createJsonFieldValueByContent(storageToWrite, true),
+      this.createGzJsonFieldValueFromContent(storageToWrite),
     );
 
     // checking structure
