@@ -1,10 +1,6 @@
-name: CI (Pull Request)
+name: Merge Queue
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-    branches:
-      - main
   merge_group:
 
 permissions:
@@ -15,9 +11,6 @@ env:
   BODY_LIMIT: '1048576000'
 
 jobs:
-  # ──────────────────────────────────────────────
-  # 1. Init
-  # ──────────────────────────────────────────────
   init:
     runs-on: ubuntu-latest
     outputs:
@@ -30,12 +23,8 @@ jobs:
           version-canonize: false
           branch-versioning: main
 
-  # ──────────────────────────────────────────────
-  # 2. Check changesets (merge queue only)
-  # ──────────────────────────────────────────────
   check-changesets:
     runs-on: ubuntu-latest
-    if: github.event_name == 'merge_group'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,28 +46,19 @@ jobs:
       - name: Check changeset status
         run: pnpm changeset status --since=origin/main
 
-  # ──────────────────────────────────────────────
-  # 3. Build (reusable)
-  # ──────────────────────────────────────────────
   build:
     needs: [init]
     uses: ./.github/workflows/_build.yaml
     secrets: inherit
 
-  # ──────────────────────────────────────────────
-  # 4. Test (reusable)
-  # ──────────────────────────────────────────────
   test:
     needs: [build]
     uses: ./.github/workflows/_test.yaml
     secrets: inherit
 
-  # ──────────────────────────────────────────────
-  # 5. Monitor merge queue duration
-  # ──────────────────────────────────────────────
   monitor-merge-queue:
     runs-on: ubuntu-latest
-    if: always() && github.event_name == 'merge_group'
+    if: always()
     needs: [test]
     steps:
       - name: Check workflow duration
