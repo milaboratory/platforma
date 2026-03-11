@@ -6,6 +6,7 @@ import {
   type PObjectSpec,
 } from "@milaboratories/pl-model-common";
 import type { ColumnSnapshot } from "./column_snapshot";
+import { throwError } from "@milaboratories/helpers";
 
 const DISTANCE_PENALTY = 0.001;
 const LABEL_TYPE = "__LABEL__";

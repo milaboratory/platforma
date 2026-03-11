@@ -1,6 +1,6 @@
-import { Annotation, PColumnSpec } from "@milaboratories/pl-model-common";
+import { Annotation, type PColumnSpec } from "@milaboratories/pl-model-common";
 import { expect, test } from "vitest";
-import { deriveLabels, type Trace } from "./label";
+import { deriveLabels, type Entry, type Trace } from "./label";
 
 function tracesToSpecs(traces: Trace[]) {
   return traces.map(
@@ -16,6 +16,17 @@ function tracesToSpecs(traces: Trace[]) {
         axesSpec: [],
       }) satisfies PColumnSpec,
   );
+}
+
+function createSpec(overrides: Partial<PColumnSpec> = {}): PColumnSpec {
+  return {
+    kind: "PColumn",
+    name: "name",
+    valueType: "Int",
+    annotations: {},
+    axesSpec: [],
+    ...overrides,
+  } as PColumnSpec;
 }
 test.each<{ name: string; traces: Trace[]; labels: string[] }>([
   {
@@ -274,3 +285,173 @@ test.each<{ name: string; traces: Trace[]; labels: string[]; forceTraceElements:
     }
   },
 );
+
+// --- Entry with { spec, prefixTrace, suffixTrace } ---
+
+test("Entry with prefixTrace prepends to labels", () => {
+  const spec = createSpec({
+    annotations: {
+      [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Base" }]),
+    },
+  });
+  const entries: Entry[] = [
+    { spec, prefixTrace: [{ type: "prefix", label: "P1" }] },
+    { spec, prefixTrace: [{ type: "prefix", label: "P2" }] },
+  ];
+  const labels = deriveLabels(entries).map((r) => r.label);
+  expect(labels).toEqual(["P1", "P2"]);
+});
+
+test("Entry with suffixTrace appends to labels", () => {
+  const spec = createSpec({
+    annotations: {
+      [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Base" }]),
+    },
+  });
+  const entries: Entry[] = [
+    { spec, suffixTrace: [{ type: "suffix", label: "S1" }] },
+    { spec, suffixTrace: [{ type: "suffix", label: "S2" }] },
+  ];
+  const labels = deriveLabels(entries).map((r) => r.label);
+  expect(labels).toEqual(["S1", "S2"]);
+});
+
+test("Entry with both prefixTrace and suffixTrace", () => {
+  const spec1 = createSpec({
+    annotations: {
+      [Annotation.Trace]: JSON.stringify([{ type: "base", label: "Same" }]),
+    },
+  });
+  const entries: Entry[] = [
+    {
+      spec: spec1,
+      prefixTrace: [{ type: "pfx", label: "Pre1" }],
+      suffixTrace: [{ type: "sfx", label: "Suf1" }],
+    },
+    {
+      spec: spec1,
+      prefixTrace: [{ type: "pfx", label: "Pre2" }],
+      suffixTrace: [{ type: "sfx", label: "Suf2" }],
+    },
+  ];
+  const labels = deriveLabels(entries).map((r) => r.label);
+  // suffix is later in the trace (higher positional importance), so it wins over prefix
+  expect(labels).toEqual(["Suf1", "Suf2"]);
+});
+
+// --- addLabelAsSuffix ---
+
+test("addLabelAsSuffix places native label at the end", () => {
+  const specs = tracesToSpecs([[{ type: "t1", label: "L1" }], [{ type: "t1", label: "L2" }]]);
+  const labels = deriveLabels(specs, { includeNativeLabel: true, addLabelAsSuffix: true }).map(
+    (r) => r.label,
+  );
+  expect(labels).toEqual(["L1 / Label", "L2 / Label"]);
+});
+
+// --- separator ---
+
+test("custom separator is used between label parts", () => {
+  const specs = tracesToSpecs([
+    [
+      { type: "t1", label: "A" },
+      { type: "t2", label: "X" },
+    ],
+    [
+      { type: "t1", label: "A" },
+      { type: "t2", label: "Y" },
+    ],
+    [
+      { type: "t1", label: "B" },
+      { type: "t2", label: "Y" },
+    ],
+  ]);
+  const labels = deriveLabels(specs, { separator: " - " }).map((r) => r.label);
+  expect(labels).toEqual(["A - X", "A - Y", "B - Y"]);
+});
+
+// --- single value ---
+
+test("single value gets its trace label", () => {
+  const specs = tracesToSpecs([[{ type: "t1", label: "Only" }]]);
+  const labels = deriveLabels(specs).map((r) => r.label);
+  expect(labels).toEqual(["Only"]);
+});
+
+// --- Unlabeled fallback ---
+
+test("Unlabeled fallback when no trace entries match", () => {
+  // Two identical specs with identical traces — fallback path
+  const spec = createSpec({
+    annotations: {
+      [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Same" }]),
+    },
+  });
+  // Remove native label so LABEL_TYPE is not added
+  delete spec.annotations![Annotation.Label];
+
+  const result = deriveLabels([spec, spec]);
+  expect(result.every((r) => r.label === "Same")).toBe(true);
+});
+
+test("Unlabeled when no traces and no label", () => {
+  const spec = createSpec();
+  const result = deriveLabels([spec, spec]);
+  expect(result.every((r) => r.label === "Unlabeled")).toBe(true);
+});
+
+// --- repeated type occurrences (secondaryTypes path) ---
+
+test("repeated type occurrences are used as secondary types", () => {
+  // Two records where "t1" appears twice in each, with different labels on 2nd occurrence
+  const specs = tracesToSpecs([
+    [
+      { type: "t1", label: "First" },
+      { type: "t1", label: "A" },
+    ],
+    [
+      { type: "t1", label: "First" },
+      { type: "t1", label: "B" },
+    ],
+  ]);
+  const labels = deriveLabels(specs).map((r) => r.label);
+  // t1@1 has label "First" for both (same), t1@2 has "A" vs "B" (distinguishing)
+  // t1@2 is secondary since it only appears when there are 2 occurrences
+  expect(labels).toEqual(["A", "B"]);
+});
+
+// --- spec without Annotation.Label (only Trace) ---
+
+test("spec without native label uses only trace entries", () => {
+  const specs = [
+    createSpec({
+      annotations: {
+        [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "X" }]),
+      },
+    }),
+    createSpec({
+      annotations: {
+        [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Y" }]),
+      },
+    }),
+  ];
+  const labels = deriveLabels(specs).map((r) => r.label);
+  expect(labels).toEqual(["X", "Y"]);
+});
+
+test("includeNativeLabel with no native label does not break", () => {
+  const specs = [
+    createSpec({
+      annotations: {
+        [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "X" }]),
+      },
+    }),
+    createSpec({
+      annotations: {
+        [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Y" }]),
+      },
+    }),
+  ];
+  const labels = deriveLabels(specs, { includeNativeLabel: true }).map((r) => r.label);
+  expect(labels).toEqual(["X", "Y"]);
+});
