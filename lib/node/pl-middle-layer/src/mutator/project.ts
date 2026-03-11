@@ -62,6 +62,7 @@ import {
   cachedDeserialize,
   notEmpty,
   canonicalJsonBytes,
+  canonicalJsonGzBytes,
   cachedDecode,
   type MiLogger,
   ConsoleLoggerAdapter,
@@ -478,14 +479,24 @@ export class ProjectMutator {
     return info;
   }
 
-  private createJsonFieldValueByContent(content: string): BlockFieldStateValue {
+  private createJsonFieldValueByContent(content: string, gzip = false): BlockFieldStateValue {
     if (content === undefined) throw new Error("content is undefined");
+    if (gzip) {
+      const { data, isGzipped } = canonicalJsonGzBytes(JSON.parse(content));
+      const ref = this.tx.createValue(isGzipped ? Pl.JsonGzObject : Pl.JsonObject, data);
+      return { ref, value: data, status: "Ready" };
+    }
     const value = Buffer.from(content);
     const ref = this.tx.createValue(Pl.JsonObject, value);
     return { ref, value, status: "Ready" };
   }
 
-  private createJsonFieldValue(obj: unknown): BlockFieldStateValue {
+  private createJsonFieldValue(obj: unknown, gzip = false): BlockFieldStateValue {
+    if (gzip) {
+      const { data, isGzipped } = canonicalJsonGzBytes(obj);
+      const ref = this.tx.createValue(isGzipped ? Pl.JsonGzObject : Pl.JsonObject, data);
+      return { ref, value: data, status: "Ready" };
+    }
     return this.createJsonFieldValueByContent(JSON.stringify(obj));
   }
 
@@ -648,7 +659,7 @@ export class ProjectMutator {
     this.setBlockFieldObj(
       blockId,
       "blockStorage",
-      this.createJsonFieldValueByContent(rawStorageJson),
+      this.createJsonFieldValueByContent(rawStorageJson, true),
     );
     this.blocksWithChangedInputs.add(blockId);
     this.updateLastModified();
@@ -743,7 +754,7 @@ export class ProjectMutator {
         this.setBlockFieldObj(
           req.blockId,
           "blockStorage",
-          this.createJsonFieldValueByContent(updatedStorageJson),
+          this.createJsonFieldValueByContent(updatedStorageJson, true),
         );
 
         // Derive args directly from storage (VM extracts data internally)
@@ -763,7 +774,7 @@ export class ProjectMutator {
           );
         }
       } else {
-        this.setBlockFieldObj(req.blockId, "blockStorage", this.createJsonFieldValue(req.state));
+        this.setBlockFieldObj(req.blockId, "blockStorage", this.createJsonFieldValue(req.state, true));
         if (req.state !== null && typeof req.state === "object" && "args" in req.state) {
           args = (req.state as { args: unknown }).args;
         } else {
@@ -774,6 +785,7 @@ export class ProjectMutator {
       }
 
       // Set or clear currentArgs based on derivation result
+      // NB: currentArgs must NOT be gzipped — they are read by Tengo workflows which can't decompress
       if (args !== undefined) {
         const currentArgsData = canonicalJsonBytes(args);
         const argsPartRef = this.tx.createValue(Pl.JsonObject, currentArgsData);
@@ -783,6 +795,7 @@ export class ProjectMutator {
       }
 
       // Set currentPrerunArgs field and check if it actually changed
+      // NB: currentPrerunArgs must NOT be gzipped — they are read by Tengo workflows which can't decompress
       let prerunArgsChanged = false;
       if (prerunArgs !== undefined) {
         const prerunArgsData = canonicalJsonBytes(prerunArgs);
@@ -1019,7 +1032,7 @@ export class ProjectMutator {
     this.setBlockFieldObj(
       blockId,
       "blockStorage",
-      this.createJsonFieldValueByContent(storageToWrite),
+      this.createJsonFieldValueByContent(storageToWrite, true),
     );
 
     // checking structure
