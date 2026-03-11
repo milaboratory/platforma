@@ -89,6 +89,7 @@ const supportedFilters = [
   "notEqual",
 ] as (typeof PlAdvancedFilterSupportedFilters)[number][];
 
+// getSuggestOptions - provide discrete values from column annotations
 function handleSuggestOptions(params: {
   columnId: PlAdvancedFilterColumnId;
   axisIdx?: number;

@@ -1,3 +1,7 @@
+import { activateAgGrid } from "../../lib";
+
+activateAgGrid();
+
 export { default as PlDataTableV2 } from "./PlAgDataTableV2.vue";
 export { default as PlAgOverlayLoading } from "./PlAgOverlayLoading.vue";
 export { default as PlAgOverlayNoRows } from "./PlAgOverlayNoRows.vue";

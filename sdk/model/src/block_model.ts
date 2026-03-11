@@ -130,6 +130,7 @@ export class BlockModelV3<
 
   public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
     supportsLazyState: true,
+    supportsPframeQueryRanking: true,
     requiresUIAPIVersion: 3,
     requiresModelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
     requiresCreatePTable: 2,
@@ -558,41 +559,40 @@ export class BlockModelV3<
     }
     const allOutputs = { ...this.config.outputs, ...pluginOutputs };
 
-    const blockConfig: BlockConfigContainer = {
-      v4: {
-        configVersion: 4,
-        modelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
+    globalThis.platformaApiVersion = apiVersion;
+
+    if (!isInUI()) {
+      const blockConfig: BlockConfigContainer = {
+        v4: {
+          configVersion: 4,
+          modelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
+          sdkVersion: PlatformaSDKVersion,
+          renderingMode: this.config.renderingMode,
+          sections: this.config.sections,
+          title: this.config.title,
+          subtitle: this.config.subtitle,
+          tags: this.config.tags,
+          outputs: allOutputs,
+          enrichmentTargets: this.config.enrichmentTargets,
+          featureFlags: this.config.featureFlags,
+          blockLifecycleCallbacks: { ...BlockStorageFacadeHandles },
+        },
+
+        // fields below are added to allow previous desktop versions read generated configs
         sdkVersion: PlatformaSDKVersion,
         renderingMode: this.config.renderingMode,
         sections: this.config.sections,
-        title: this.config.title,
-        subtitle: this.config.subtitle,
-        tags: this.config.tags,
-        outputs: allOutputs,
-        enrichmentTargets: this.config.enrichmentTargets,
-        featureFlags: this.config.featureFlags,
-        blockLifecycleCallbacks: { ...BlockStorageFacadeHandles },
-      },
-
-      // fields below are added to allow previous desktop versions read generated configs
-      sdkVersion: PlatformaSDKVersion,
-      renderingMode: this.config.renderingMode,
-      sections: this.config.sections,
-      outputs: Object.fromEntries(
-        Object.entries(this.config.outputs).map(([key, value]) => [
-          key,
-          downgradeCfgOrLambda(value),
-        ]),
-      ),
-    };
-
-    globalThis.platformaApiVersion = apiVersion;
-
-    if (!isInUI())
+        outputs: Object.fromEntries(
+          Object.entries(this.config.outputs).map(([key, value]) => [
+            key,
+            downgradeCfgOrLambda(value),
+          ]),
+        ),
+      };
       // we are in the configuration rendering routine, not in actual UI
       return { config: blockConfig } as any;
-    // normal operation inside the UI
-    else
+      // normal operation inside the UI
+    } else {
       return {
         ...getPlatformaInstance({
           sdkVersion: PlatformaSDKVersion,
@@ -608,8 +608,10 @@ export class BlockModelV3<
             ]),
           ),
           pluginIds: pluginHandles,
+          featureFlags: this.config.featureFlags,
         },
       } as any;
+    }
   }
 }
 

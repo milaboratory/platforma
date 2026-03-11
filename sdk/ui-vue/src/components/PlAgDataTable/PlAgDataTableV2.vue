@@ -21,7 +21,6 @@ import {
 import type { CellRendererSelectorFunc, GridApi, GridState } from "ag-grid-enterprise";
 import { AgGridVue } from "ag-grid-vue3";
 import { computed, effectScope, nextTick, ref, toRefs, watch, watchEffect } from "vue";
-import { AgGridTheme } from "../../aggrid";
 import PlAgCsvExporter from "../PlAgCsvExporter/PlAgCsvExporter.vue";
 import { PlAgGridColumnManager } from "../PlAgGridColumnManager";
 import PlTableFiltersV2 from "../PlTableFilters/PlTableFiltersV2.vue";
@@ -44,6 +43,7 @@ import type {
 } from "./types";
 import { useFilterableColumns } from "./compositions/useFilterableColumns";
 import { useGrid } from "./compositions/useGrid";
+import { AgGridTheme } from "./compositions/useTheme";
 
 const tableState = defineModel<PlDataTableStateV2>({
   required: true,

@@ -4,6 +4,7 @@ import type {
   PlatformaV3,
   PlatformaV1,
   PlatformaV2,
+  BlockCodeKnownFeatureFlags,
 } from "@platforma-sdk/model";
 import {
   getPlatformaApiVersion,
@@ -17,13 +18,17 @@ import { createAppV1, type BaseAppV1 } from "./internal/createAppV1";
 import { createAppV2, type BaseAppV2 } from "./internal/createAppV2";
 import { createAppV3, type BaseAppV3 } from "./internal/createAppV3";
 import type { AppSettings, ExtendSettings, Routes } from "./types";
-import { activateAgGrid } from "./aggrid";
 
 const pluginKey = Symbol("sdk-vue");
 export const pluginDataKey = Symbol("plugin-data-access");
 
 export function useSdkPlugin(): SdkPlugin {
   return inject(pluginKey)!;
+}
+
+export function useFeatureFlags() {
+  const sdk = useSdkPlugin();
+  return sdk.featureFlags;
 }
 
 export function defineApp<
@@ -75,8 +80,6 @@ export function defineApp<
     | AppV1<Args, Outputs, UiState, Href, Extend>
     | AppV2<Args, Outputs, UiState, Href, Extend>
     | undefined = undefined;
-
-  activateAgGrid();
 
   const runtimeApiVersion = platforma.apiVersion ?? 1; // undefined means 1 (backward compatibility)
   const blockRequestedApiVersion = getPlatformaApiVersion();
@@ -135,6 +138,7 @@ export function defineApp<
 
   const plugin = reactive({
     apiVersion: platforma.apiVersion ?? 1,
+    featureFlags: platforma.blockModelInfo.featureFlags,
     loaded: false,
     error: undefined as unknown,
     useApp<PageHref extends Href = Href>() {
@@ -175,8 +179,6 @@ export function defineAppV3<
   // Captured during install() so V3 can provide plugin data access after async load
   let vueAppInstance: VueApp | undefined;
 
-  activateAgGrid();
-
   const runtimeApiVersion = 3;
   const blockRequestedApiVersion = getPlatformaApiVersion();
 
@@ -216,14 +218,15 @@ export function defineAppV3<
         getRoute(href: Href): Component | undefined {
           return routes[href];
         },
-      } as unknown as AppV3<Data, Args, Outputs, Href, Plugins, Extend>);
+      } as AppV3<Data, Args, Outputs, Href, Plugins, Extend>);
     });
   };
 
   const plugin = reactive({
     apiVersion: 3,
+    featureFlags: platforma.blockModelInfo.featureFlags,
     loaded: false,
-    error: undefined as unknown,
+    error: undefined,
     useApp<PageHref extends Href = Href>() {
       return notEmpty(app, "App is not loaded") as AppV3<
         Data,
@@ -287,6 +290,7 @@ export type SdkPluginV1<
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
 > = {
   apiVersion: 1;
+  featureFlags: BlockCodeKnownFeatureFlags;
   loaded: boolean;
   error: unknown;
   useApp<PageHref extends Href = Href>(): AppV1<Args, Outputs, UiState, PageHref, Local>;
@@ -301,6 +305,7 @@ export type SdkPluginV2<
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
 > = {
   apiVersion: 2;
+  featureFlags: BlockCodeKnownFeatureFlags;
   loaded: boolean;
   error: unknown;
   useApp<PageHref extends Href = Href>(): AppV2<Args, Outputs, UiState, PageHref, Local>;
@@ -316,6 +321,7 @@ export type SdkPluginV3<
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
 > = {
   apiVersion: 3;
+  featureFlags: BlockCodeKnownFeatureFlags;
   loaded: boolean;
   error: unknown;
   useApp<PageHref extends Href = Href>(): AppV3<Data, Args, Outputs, PageHref, Plugins, Local>;
