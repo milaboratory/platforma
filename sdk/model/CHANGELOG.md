@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.58.22
+
+### Patch Changes
+
+- 15959f8: Add support feature flags for UI
+- Updated dependencies [15959f8]
+  - @milaboratories/pl-model-common@1.25.3
+  - @milaboratories/ptabler-expression-js@1.1.25
+
 ## 1.58.19
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.58.22
+
+### Patch Changes
+
+- 15959f8: Add support feature flags for UI
+- Updated dependencies [15959f8]
+  - @platforma-sdk/model@1.58.22
+  - @milaboratories/uikit@2.10.43
+
 ## 1.58.19
 
 ### Patch Changes

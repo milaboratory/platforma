@@ -1,5 +1,12 @@
 # @milaboratories/pl-local
 
+## 2.15.22
+
+### Patch Changes
+
+- Updated dependencies [15959f8]
+  - @milaboratories/pl-model-common@1.25.3
+
 ## 2.15.21
 
 ### Patch Changes
