@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
+import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseDocument } from "yaml";
@@ -11,7 +11,7 @@ const outPath = path.resolve(__dirname, "../src/pinned-versions.generated.ts");
 
 const PINNED_PACKAGES = ["ag-grid-enterprise", "ag-grid-vue3"];
 
-const content = fs.readFileSync(workspacePath, "utf8");
+const content = await fs.readFile(workspacePath, "utf8");
 const doc = parseDocument(content);
 const catalog = doc.toJSON()?.catalog;
 
@@ -36,5 +36,5 @@ ${entries.join("\n")}
 };
 `;
 
-fs.writeFileSync(outPath, generated, "utf8");
+await fs.writeFile(outPath, generated, "utf8");
 console.log(`generated ${path.relative(process.cwd(), outPath)}`);
