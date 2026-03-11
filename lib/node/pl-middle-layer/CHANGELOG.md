@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.48.21
+
+### Patch Changes
+
+- Updated dependencies [ab3d352]
+  - @milaboratories/pl-drivers@1.11.63
+
 ## 1.48.20
 
 ### Patch Changes
