@@ -97,7 +97,7 @@ export function deriveLabels<T extends Entry>(
         options,
         separator,
       );
-      return build(minimized, false)!;
+      return build(minimized, false) ?? throwError("Failed to derive unique labels");
     }
 
     additionalType++;
