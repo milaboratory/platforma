@@ -16,16 +16,18 @@ export type Props = {
 };
 </script>
 <script setup lang="ts">
+import { computed } from "vue";
 import { randomInt } from "@milaboratories/helpers";
 import { PlBtnSecondary, PlEditableTitle, PlSidebarItem } from "@milaboratories/uikit";
 import type { ListOptionBase, PObjectId, SUniversalPColumnId } from "@platforma-sdk/model";
-import { computed } from "vue";
+
+import { PlAdvancedFilterComponent } from "../../PlAdvancedFilter";
 import type {
-  PlAdvancedFilterFilter,
+  PlAdvancedFilterItem,
+  PlAdvancedFilterColumnId,
   PlAdvancedFilterSupportedFilters,
+  PlAdvancedFilter,
 } from "../../PlAdvancedFilter";
-import { PlAdvancedFilter, type PlAdvancedFilterItem } from "../../PlAdvancedFilter";
-import type { PlAdvancedFilterColumnId } from "../../PlAdvancedFilter/types";
 import type { Filter } from "../types";
 
 import $commonStyle from "./style.module.css";
@@ -113,8 +115,8 @@ const supportedFilters = [
       />
     </template>
     <template #body-content>
-      <PlAdvancedFilter
-        v-model:filters="step.filter as PlAdvancedFilterFilter"
+      <PlAdvancedFilterComponent
+        v-model:filters="step.filter as PlAdvancedFilter"
         :class="[$style.root, { [$commonStyle.disabled]: step.label.length === 0 }]"
         :items="props.columns"
         :supported-filters="supportedFilters"
@@ -135,7 +137,7 @@ const supportedFilters = [
             </PlBtnSecondary>
           </div>
         </template>
-      </PlAdvancedFilter>
+      </PlAdvancedFilterComponent>
     </template>
   </PlSidebarItem>
 </template>

@@ -115,6 +115,12 @@ packages:
   - etc/blocks/model-test/block
   - etc/blocks/model-test/test
 
+  - etc/blocks/table-test/workflow
+  - etc/blocks/table-test/model
+  - etc/blocks/table-test/ui
+  - etc/blocks/table-test/block
+  - etc/blocks/table-test/test
+
   - etc/blocks/pool-explorer/workflow
   - etc/blocks/pool-explorer/model
   - etc/blocks/pool-explorer/ui
@@ -144,15 +150,13 @@ packages:
   - tests/tengo-builder/2-artifacts
   - tests/tengo-builder/3-software-dep
 
-  # Etc
-
-  - etc/uikit-playground
-  - etc/ui-vue-docs
-
 catalog:
   # Build
-  "typescript": ~5.6.3
-  "vite": ^6.4.1
+  "typescript": ~5.9.3
+  "tsconfig-paths": ^4.2.0
+  "tsup": ~8.3.5
+  "vite": 8.0.0-beta.15
+  "@vitejs/plugin-vue": ^6.0.4
   "rollup": ^4.45.1
   "@rollup/plugin-node-resolve": ^16.0.1
   "@rollup/plugin-typescript": ^12.1.4
@@ -162,7 +166,9 @@ catalog:
   "rollup-plugin-node-externals": ^8.0.0
   "rollup-plugin-sourcemaps2": ^0.5.2
   "vite-plugin-dts": ^4.5.3
-  "vite-plugin-css-injected-by-js": ^3.5.2
+  "vite-plugin-lib-inject-css": ^2.2.2
+  "vite-plugin-externalize-deps": ^0.9.0
+  "vite-plugin-commonjs": ^0.10.4
   "ts-node": ^10.9.2
   "@zed-industries/vscode-langservers-extracted": ^4.10.7
 
@@ -179,8 +185,6 @@ catalog:
   "turbo": 2.5.3
 
   "husky": ^9.1.7
-
-  "@vitejs/plugin-vue": ^5.2.3
 
   "svgo": ^3.3.2
 
@@ -209,6 +213,7 @@ catalog:
   "long": ^5.3.2
   "mime-types": ^2.1.35
   "semver": ^7.7.2
+  "jsonc-parser": 3.3.1
 
   "upath": ^2.0.1
   "tar": ^7.4.3
@@ -234,8 +239,8 @@ catalog:
   "winston": ^3.17.0
 
   "@milaboratories/tengo-tester": ^1.6.4
-  "@milaboratories/pframes-rs-node": 1.1.2
-  "@milaboratories/pframes-rs-wasm": 0.1.0
+  "@milaboratories/pframes-rs-node": &pframes-rs 1.1.11
+  "@milaboratories/pframes-rs-wasm": *pframes-rs
 
   "quickjs-emscripten": 0.31.0
 
@@ -263,7 +268,6 @@ catalog:
   "ag-grid-vue3": *ag-grid
 
   "monaco-editor": ^0.52.2
-
   "sortablejs": ^1.15.6
   "@types/sortablejs": ^1.15.6
 
@@ -279,10 +283,9 @@ catalog:
 
   # Test
 
-  "vitest": &vitest-version ^4.0.16
+  "vitest": &vitest-version ^4.0.18
   "@vitest/coverage-istanbul": *vitest-version
   "@faker-js/faker": ^9.2.0
-  "happy-dom": ^15.11.7
   "jsdom": ^25.0.1
   "@vue/test-utils": ^2.4.6
   "resize-observer-polyfill": ^1.5.1

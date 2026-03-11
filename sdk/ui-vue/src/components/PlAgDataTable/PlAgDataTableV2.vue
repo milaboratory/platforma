@@ -8,40 +8,28 @@ import type {
   PlTableColumnIdJson,
   PTableColumnSpec,
   PTableKey,
-  PTableValue,
 } from "@platforma-sdk/model";
 import {
   getRawPlatformaInstance,
-  parseJson,
   createPlSelectionModel,
   matchAxisId,
   getAxisId,
   canonicalizeJson,
   isAbortError,
+  isColumnOptional,
 } from "@platforma-sdk/model";
-import type {
-  CellRendererSelectorFunc,
-  ColDef,
-  ColGroupDef,
-  GridApi,
-  GridOptions,
-  GridState,
-  ManagedGridOptionKey,
-  ManagedGridOptions,
-} from "ag-grid-enterprise";
+import type { CellRendererSelectorFunc, GridApi, GridState } from "ag-grid-enterprise";
 import { AgGridVue } from "ag-grid-vue3";
-import { computed, effectScope, ref, shallowRef, toRefs, watch, watchEffect } from "vue";
+import { computed, effectScope, nextTick, ref, toRefs, watch, watchEffect } from "vue";
 import { AgGridTheme } from "../../aggrid";
 import PlAgCsvExporter from "../PlAgCsvExporter/PlAgCsvExporter.vue";
 import { PlAgGridColumnManager } from "../PlAgGridColumnManager";
-import type { PlDataTableFiltersSettings } from "../PlTableFilters";
 import PlTableFiltersV2 from "../PlTableFilters/PlTableFiltersV2.vue";
+import { PlTableFastSearch } from "../PlTableFastSearch";
 import PlAgDataTableSheets from "./PlAgDataTableSheets.vue";
-import PlOverlayLoading from "./PlAgOverlayLoading.vue";
-import PlOverlayNoRows from "./PlAgOverlayNoRows.vue";
 import PlAgRowCount from "./PlAgRowCount.vue";
 import { DeferredCircular, ensureNodeVisible } from "./sources/focus-row";
-import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from "./sources/row-number";
+import { PlAgDataTableRowNumberColId } from "./sources/row-number";
 import type { PlAgCellButtonAxisParams } from "./sources/table-source-v2";
 import { calculateGridOptions } from "./sources/table-source-v2";
 import { useTableState } from "./sources/table-state-v2";
@@ -53,10 +41,9 @@ import type {
   PlDataTableSettingsV2,
   PlDataTableSheetsSettings,
   PlTableRowId,
-  PlTableRowIdJson,
 } from "./types";
-import { watchCached } from "@milaboratories/uikit";
-import { type PTableHidden } from "./sources/common";
+import { useFilterableColumns } from "./compositions/useFilterableColumns";
+import { useGrid } from "./compositions/useGrid";
 
 const tableState = defineModel<PlDataTableStateV2>({
   required: true,
@@ -130,8 +117,56 @@ const emit = defineEmits<{
   newDataRendered: [];
 }>();
 
-const { gridState, sheetsState, filtersState } = useTableState(tableState, settings);
+const dataRenderedTracker = new DeferredCircular<GridApi<PlAgDataTableV2Row>>();
+const { gridApi, gridOptions } = useGrid({
+  selection: selection.value,
+  noRowsText: props.noRowsText,
+  runningText: props.runningText,
+  loadingText: props.loadingText,
+  notReadyText: props.notReadyText,
+  cellRendererSelector: props.cellRendererSelector,
+});
+let isReloading = false;
+gridOptions.value.onGridPreDestroyed = (event) => {
+  if (!isReloading) {
+    gridOptions.value.initialState = gridState.value = normalizeColumnVisibility(
+      makePartialState(event.api.getState()),
+      gridState.value,
+      event.api,
+    );
+  }
+  gridApi.value = null;
+};
+gridOptions.value.onRowDoubleClicked = (event) => {
+  if (event.data && event.data.axesKey) emit("rowDoubleClicked", event.data.axesKey);
+};
+gridOptions.value.onStateUpdated = (event) => {
+  const partialState = normalizeColumnVisibility(
+    makePartialState(event.state),
+    gridState.value,
+    event.api,
+  );
+  // We have to keep initialState synchronized with gridState for gridState recovery after key updating.
+  gridOptions.value.initialState = gridState.value = partialState;
 
+  if (!isJsonEqual(event.sources, ["columnSizing"])) {
+    event.api.autoSizeColumns(
+      event.api
+        .getAllDisplayedColumns()
+        .filter((column) => column.getColId() !== PlAgDataTableRowNumberColId),
+    );
+  }
+};
+
+const [filterableColumns, visibleFilterableColumns] = useFilterableColumns(
+  () => settings.value.sourceId,
+  () => gridOptions.value.columnDefs ?? null,
+);
+const { gridState, sheetsState, filtersState, searchString } = useTableState(
+  tableState,
+  settings,
+  visibleFilterableColumns,
+);
 const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
   const settingsCopy = { ...settings.value };
   return settingsCopy.sourceId !== null
@@ -144,138 +179,7 @@ const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
         cachedState: [],
       };
 });
-
-const filterableColumns = ref<PTableColumnSpec[]>([]);
-const filtersSettings = computed<PlDataTableFiltersSettings>(() => {
-  const settingsCopy = { ...settings.value };
-  const columns = filterableColumns.value;
-  const result =
-    settingsCopy.sourceId !== null && columns.length > 0
-      ? {
-          columns,
-          config: (column: PTableColumnSpec) =>
-            settingsCopy.filtersConfig({ sourceId: settingsCopy.sourceId, column }),
-          cachedState: [...filtersState.value],
-        }
-      : {
-          columns: [],
-          config: () => ({}),
-          cachedState: [],
-        };
-  return result;
-});
-
-const gridApi = shallowRef<GridApi<PlAgDataTableV2Row> | null>(null);
-const dataRenderedTracker = new DeferredCircular<GridApi<PlAgDataTableV2Row>>();
-const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
-  animateRows: false,
-  suppressColumnMoveAnimation: true,
-  cellSelection: !selection.value,
-  initialState: gridState.value,
-  autoSizeStrategy: { type: "fitCellContents" },
-  rowSelection: selection.value
-    ? {
-        mode: "multiRow",
-        selectAll: "all",
-        groupSelects: "self",
-        checkboxes: false,
-        headerCheckbox: false,
-        enableClickSelection: false,
-      }
-    : undefined,
-  onSelectionChanged: (event) => {
-    if (selection.value) {
-      const state = event.api.getServerSideSelectionState();
-      const selectedKeys =
-        state?.toggledNodes?.map((nodeId) => parseJson(nodeId as PlTableRowIdJson)) ?? [];
-      if (!isJsonEqual(selection.value.selectedKeys, selectedKeys)) {
-        selection.value = { ...selection.value, selectedKeys };
-      }
-    }
-  },
-  onRowDoubleClicked: (event) => {
-    if (event.data && event.data.axesKey) emit("rowDoubleClicked", event.data.axesKey);
-  },
-  defaultColDef: {
-    suppressHeaderMenuButton: true,
-    sortingOrder: ["desc", "asc", null],
-    cellRendererSelector: props.cellRendererSelector,
-  },
-  maintainColumnOrder: true,
-  localeText: {
-    loadingError: "...",
-  },
-  rowModelType: "serverSide",
-  // cacheBlockSize should be the same as PlMultiSequenceAlignment limit
-  // so that selectAll will add all rows to selection
-  cacheBlockSize: 1000,
-  maxBlocksInCache: 100,
-  blockLoadDebounceMillis: 500,
-  serverSideSortAllLevels: true,
-  suppressServerSideFullWidthLoadingRow: true,
-  getRowId: (params) => params.data.id,
-  loading: true,
-  loadingOverlayComponentParams: {
-    variant: "not-ready",
-    loadingText: props.loadingText,
-    runningText: props.runningText,
-    notReadyText: props.notReadyText,
-  } satisfies PlAgOverlayLoadingParams,
-  loadingOverlayComponent: PlOverlayLoading,
-  noRowsOverlayComponent: PlOverlayNoRows,
-  noRowsOverlayComponentParams: {
-    text: props.noRowsText,
-  } satisfies PlAgOverlayNoRowsParams,
-  defaultCsvExportParams: {
-    allColumns: true,
-    suppressQuotes: true,
-    columnSeparator: "\t",
-    fileName: "table.tsv",
-  },
-  onGridReady: (event) => {
-    const api = event.api;
-    autoSizeRowNumberColumn(api);
-    const setGridOption = (key: ManagedGridOptionKey, value: GridOptions[ManagedGridOptionKey]) => {
-      const options = { ...gridOptions.value };
-      options[key] = value;
-      gridOptions.value = options;
-      api.setGridOption(key, value);
-    };
-    const updateGridOptions = (options: ManagedGridOptions) => {
-      gridOptions.value = {
-        ...gridOptions.value,
-        ...options,
-      };
-      api.updateGridOptions(options);
-    };
-    gridApi.value = new Proxy(api, {
-      get(target, prop, receiver) {
-        switch (prop) {
-          case "setGridOption":
-            return setGridOption;
-          case "updateGridOptions":
-            return updateGridOptions;
-          default:
-            return Reflect.get(target, prop, receiver);
-        }
-      },
-    });
-  },
-  onStateUpdated: (event) => {
-    gridOptions.value.initialState = gridState.value = makePartialState(event.state);
-    if (!isJsonEqual(event.sources, ["columnSizing"])) {
-      event.api.autoSizeColumns(
-        event.api
-          .getAllDisplayedColumns()
-          .filter((column) => column.getColId() !== PlAgDataTableRowNumberColId),
-      );
-    }
-  },
-  onGridPreDestroyed: (event) => {
-    gridOptions.value.initialState = gridState.value = makePartialState(event.api.getState());
-    gridApi.value = null;
-  },
-});
+gridOptions.value.initialState = gridState.value;
 
 // Restore proper types erased by AgGrid
 function makePartialState(state: GridState): PlDataTableGridStateCore {
@@ -301,6 +205,50 @@ function makePartialState(state: GridState): PlDataTableGridStateCore {
   };
 }
 
+// AG Grid returns columnVisibility: undefined when all columns are visible.
+// We need to distinguish "no state yet" (use isColumnOptional defaults) from
+// "user explicitly showed all columns" (store []). This function normalizes
+// the undefined from AG Grid based on the previous state.
+function normalizeColumnVisibility(
+  partialState: PlDataTableGridStateCore,
+  prevState: PlDataTableGridStateCore,
+  api: GridApi<PlAgDataTableV2Row>,
+): PlDataTableGridStateCore {
+  if (partialState.columnVisibility !== undefined) return partialState;
+
+  if (prevState.columnVisibility !== undefined) {
+    // Had explicit visibility state before → user made all columns visible → store [].
+    return { ...partialState, columnVisibility: { hiddenColIds: [] } };
+  }
+
+  // No previous explicit state → compute defaults from current columns
+  // to replicate: hide: hiddenColIds?.includes(colId) ?? isColumnOptional(spec.spec)
+  const defaultHidden = getDefaultHiddenColIds(api);
+  if (defaultHidden.length > 0) {
+    return { ...partialState, columnVisibility: { hiddenColIds: defaultHidden } };
+  }
+
+  return partialState;
+}
+
+function getDefaultHiddenColIds(api: GridApi<PlAgDataTableV2Row>): PlTableColumnIdJson[] {
+  const cols = api.getAllGridColumns();
+  if (!cols) return [];
+  return cols
+    .filter((col) => {
+      const spec = col.getColDef().context as PTableColumnSpec | undefined;
+      return spec && isColumnOptional(spec.spec);
+    })
+    .map((col) => col.getColId() as PlTableColumnIdJson);
+}
+
+// Normalize columnVisibility for comparison: undefined and { hiddenColIds: [] } are equivalent.
+function stateForReloadCompare(state: PlDataTableGridStateCore): PlDataTableGridStateCore {
+  const cv = state.columnVisibility;
+  const normalizedCv = !cv || cv.hiddenColIds.length === 0 ? undefined : state.columnVisibility;
+  return { ...state, columnVisibility: normalizedCv };
+}
+
 // Reload AgGrid when new state arrives from server
 const reloadKey = ref(0);
 watch(
@@ -308,9 +256,16 @@ watch(
   ([gridApi, gridState]) => {
     if (!gridApi || gridApi.isDestroyed()) return;
     const selfState = makePartialState(gridApi.getState());
-    if (!isJsonEqual(gridState, {}) && !isJsonEqual(gridState, selfState)) {
+    if (
+      !isJsonEqual(gridState, {}) &&
+      !isJsonEqual(stateForReloadCompare(gridState), stateForReloadCompare(selfState))
+    ) {
+      isReloading = true;
       gridOptions.value.initialState = gridState;
       ++reloadKey.value;
+      nextTick(() => {
+        isReloading = false;
+      });
     }
   },
 );
@@ -374,35 +329,6 @@ defineExpose<PlAgDataTableV2Controller>({
     return true;
   },
 });
-
-function getDataColDefs(
-  columnDefs: ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] | null | undefined,
-): ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] {
-  const isColDef = <TData, TValue>(
-    def: ColDef<TData, TValue> | ColGroupDef<TData>,
-  ): def is ColDef<TData, TValue> => !("children" in def);
-  if (!columnDefs) return [];
-  return columnDefs
-    .filter(isColDef)
-    .filter((def) => def.colId && def.colId !== PlAgDataTableRowNumberColId);
-}
-
-// Propagate columns for filter component
-watchCached(
-  () => gridOptions.value.columnDefs,
-  (columnDefs) => {
-    const sourceId = settings.value.sourceId;
-    if (sourceId === null) {
-      filterableColumns.value = [];
-    } else {
-      const dataColumns = getDataColDefs(columnDefs);
-      filterableColumns.value = dataColumns.map(
-        (def) => parseJson(def.colId! satisfies string as PlTableColumnIdJson).labeled,
-      );
-    }
-  },
-  { immediate: true },
-);
 
 // Update AgGrid when settings change
 const defaultSelection = createPlSelectionModel();
@@ -607,7 +533,8 @@ watchEffect(() => {
     <PlTableFiltersV2
       v-if="!disableFiltersPanel"
       v-model="filtersState"
-      :settings="filtersSettings"
+      :pframe-handle="'model' in settings ? settings?.model?.fullPframeHandle : undefined"
+      :columns="filterableColumns"
     />
     <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />
     <PlAgDataTableSheets v-model="sheetsState" :settings="sheetsSettings">
@@ -618,6 +545,7 @@ watchEffect(() => {
         <slot name="after-sheets" />
       </template>
     </PlAgDataTableSheets>
+    <PlTableFastSearch v-model="searchString" />
     <AgGridVue
       :key="reloadKey"
       :theme="AgGridTheme"

@@ -16,6 +16,7 @@ import type {
   PObjectSpec,
   PSpecPredicate,
   PTableDef,
+  PTableDefV2,
   PTableHandle,
   ResourceType as ResourceTypeFromSDK,
   ResultCollection,
@@ -29,6 +30,7 @@ import {
   mapDataInfo,
   mapPObjectData,
   mapPTableDef,
+  mapPTableDefV2,
   mapValueInVOE,
 } from "@platforma-sdk/model";
 import { notEmpty } from "@milaboratories/ts-helpers";
@@ -411,14 +413,14 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return key;
   }
   public createPTableV2(
-    def: PTableDef<PColumn<string | PColumnValues | DataInfo<string>>>,
+    def: PTableDefV2<PColumn<string | PColumnValues | DataInfo<string>>>,
   ): PTableHandle {
     if (this.computableCtx === undefined)
       throw new Error(
         "can't instantiate PTable from this context (most porbably called from the future mapper)",
       );
     const { key, unref } = this.env.driverKit.pFrameDriver.createPTableV2(
-      mapPTableDef(def, (c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
+      mapPTableDefV2(def, (c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
     );
     this.computableCtx.addOnDestroy(unref);
     return key;
@@ -506,8 +508,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
             return (fn as any)(...args);
           } catch (e: unknown) {
             const newErr = parent.errorRepo.setAndRecreateForQuickJS(e);
-
-            // eslint-disable-next-line @typescript-eslint/only-throw-error
             throw vm.newError(newErr);
           }
         };
@@ -543,10 +543,17 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
           const args = this.blockCtx.args(this.computableCtx);
           return args === undefined ? vm.undefined : vm.newString(args);
         });
+        exportCtxFunction("blockStorage", () => {
+          if (this.computableCtx === undefined)
+            throw new Error(
+              `Add dummy call to ctx.blockStorage outside the future lambda. Can't be directly used in this context.`,
+            );
+          return vm.newString(this.blockCtx.blockStorage(this.computableCtx) ?? "{}");
+        });
         exportCtxFunction("data", () => {
           if (this.computableCtx === undefined)
             throw new Error(
-              `Add dummy call to ctx.state outside the future lambda. Can't be directly used in this context.`,
+              `Add dummy call to ctx.data outside the future lambda. Can't be directly used in this context.`,
             );
           return vm.newString(this.blockCtx.data(this.computableCtx) ?? "{}");
         });
@@ -845,7 +852,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       exportCtxFunction("createPTableV2", (def) => {
         return parent.exportSingleValue(
           this.createPTableV2(
-            parent.importObjectViaJson(def) as PTableDef<PColumn<string | PColumnValues>>,
+            parent.importObjectViaJson(def) as PTableDefV2<PColumn<string | PColumnValues>>,
           ),
           undefined,
         );

@@ -113,7 +113,7 @@ a.btn-link {
 }
 
 .info {
-  display: block;
+  display: inline-block;
   margin: 0 4px;
   @include icon(url("./images/16_info.svg"), 16px);
 

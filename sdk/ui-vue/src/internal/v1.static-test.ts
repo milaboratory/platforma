@@ -9,7 +9,7 @@ import type {
   Platforma,
 } from "@platforma-sdk/model";
 import type { BaseAppV1, createAppV1 } from "./createAppV1";
-import { type App } from "../defineApp";
+import { type AppV1 } from "../defineApp";
 import { computed, type Component } from "vue";
 
 declare function __createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<M>;
@@ -84,7 +84,7 @@ const _local = () => {
   };
 };
 
-type ExtApp = App<1, BlockOutputsBase, unknown, "/", ReturnType<typeof _local>>;
+type ExtApp = AppV1<1, BlockOutputsBase, unknown, "/", ReturnType<typeof _local>>;
 
 type _UpdateArgsParams = Parameters<Parameters<_App1["updateArgs"]>[0]>[0];
 

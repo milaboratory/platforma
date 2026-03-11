@@ -5,23 +5,42 @@ import type {
   FilterSpec,
   FilterSpecLeaf,
   PColumnSpec,
+  PTableColumnId,
   SUniversalPColumnId,
 } from "@platforma-sdk/model";
 import type { SUPPORTED_FILTER_TYPES } from "./constants";
 
 export type Operand = "or" | "and";
 
-export type PlAdvancedFilterColumnId = SUniversalPColumnId | CanonicalizedJson<AxisId>;
+// Can be any of string type, but for better type safety we use union of specific types
+export type PlAdvancedFilterColumnId =
+  | SUniversalPColumnId
+  | CanonicalizedJson<AxisId>
+  | CanonicalizedJson<PTableColumnId>;
+
+export type RequiredMeta = { id: number; isExpanded?: boolean };
 
 export type FilterLeafContent = Extract<
   FilterSpecLeaf<PlAdvancedFilterColumnId>,
   { type: SupportedFilterTypes }
 >;
-export type CommonFilter = FilterSpec<FilterLeafContent, { id: number; isExpanded?: boolean }>;
-export type FilterLeaf = Exclude<CommonFilter, { type: Operand | "not" }>;
-export type NodeFilter = Extract<CommonFilter, { type: Operand | "not" }>;
-export type RootFilter = Omit<Extract<NodeFilter, { type: Operand }>, "filters"> & {
-  filters: NodeFilter[];
+export type CommonFilter<Meta extends RequiredMeta = RequiredMeta> = FilterSpec<
+  FilterLeafContent,
+  Meta
+>;
+export type FilterLeaf<Meta extends RequiredMeta = RequiredMeta> = Exclude<
+  CommonFilter<Meta>,
+  { type: Operand | "not" }
+>;
+export type NodeFilter<Meta extends RequiredMeta = RequiredMeta> = Extract<
+  CommonFilter<Meta>,
+  { type: Operand | "not" }
+>;
+export type RootFilter<Meta extends RequiredMeta = RequiredMeta> = Omit<
+  Extract<NodeFilter<Meta>, { type: Operand }>,
+  "filters"
+> & {
+  filters: NodeFilter<Meta>[];
 };
 
 // Not supported: less(/greater)ThanColumn, less(/greater)ThanColumnOrEqual

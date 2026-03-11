@@ -1,5 +1,29 @@
 # @milaboratories/helpers
 
+## 1.13.7
+
+### Patch Changes
+
+- a93de45: Fix table filters bugs
+
+## 1.13.6
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
+## 1.13.5
+
+### Patch Changes
+
+- cb28fde: FilterSpec strict types, fast table search
+
+## 1.13.4
+
+### Patch Changes
+
+- 0ae1854: createPTableV2 + Advanced filter in AgTable
+
 ## 1.13.3
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/biowasm-tools
 
+## 2.0.3
+
+### Patch Changes
+
+- 79156bc: fix dense axis
+
 ## 2.0.2
 
 ### Patch Changes

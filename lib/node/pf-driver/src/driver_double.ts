@@ -128,7 +128,7 @@ export type InternalPFrameDriverDouble = AbstractInternalPFrameDriver<
 // It's mock for testing purposes, not a real test!
 export async function createPFrameDriverDouble({
   dataFolder = tmpdir() as FolderPath,
-  logger = () => {},
+  logger = console.log,
 }: {
   dataFolder?: FolderPath;
   logger?: PFrameInternal.Logger;

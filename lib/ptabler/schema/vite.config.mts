@@ -10,7 +10,7 @@ export default defineConfig({
       formats: ["es", "cjs"],
     },
     sourcemap: true,
-    rollupOptions: {},
+    rolldownOptions: {},
   },
   plugins: [
     dts({

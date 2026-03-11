@@ -110,3 +110,22 @@ export type SimpleErrorOrValue<S, F = Error> =
     };
 
 export type OmitOverUnion<T, K extends PropertyKey> = T extends T ? Omit<T, K> : never;
+
+export type DistributiveKeys<T> = T extends any ? keyof T : never;
+
+export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
+  ? I
+  : never;
+
+type LastOf<T> =
+  UnionToIntersection<T extends any ? () => T : never> extends () => infer R ? R : never;
+type Push<T extends any[], V> = [...T, V];
+export type UnionToTuple<T, L = LastOf<T>, N = [T] extends [never] ? true : false> = true extends N
+  ? []
+  : Push<UnionToTuple<Exclude<T, L>>, L>;
+
+export type UnionToTuples<T, A extends T[] = []> = UnionToTuple<T>["length"] extends A["length"]
+  ? [...A]
+  : UnionToTuples<T, [T, ...A]>;

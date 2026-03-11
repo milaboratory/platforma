@@ -26,7 +26,7 @@ _RTYPE_RUN_COMMAND_REFS := { Name: "RunCommandRefs", Version: "1" }
 
 ARG_SCHEMA := {
 	"__options__,closed": true,
-	"type": "string,regex=string|expressionRef|variableRef",
+	"type": "string,regex=string|expressionRef|variableRef|secret",
 	"value": "string"
 }
 
@@ -116,7 +116,6 @@ variableArg := func(argTpl) {
 /**
  * Creates 'expressionRef' arguments
  * @param argTpl: string - arguments value in any form with expressions inside, e.g.:
- *   - `–Xms{env.PL_EXEC_HARD_MEMORY_LIMIT_MB * 80 / 100}m`
  *   - `file://{pkg}/some-file`
  *   - `o-{java}-o`
  */
@@ -124,6 +123,17 @@ expressionArg := func(argTpl) {
 	return {
 		type: constants.ARG_TYPE_EXPRESSION,
 		value: argTpl
+	}
+}
+
+/**
+ * Creates 'secret' argument for environment variables.
+ * @param secretName: string - plain name of the secret
+ */
+secretArg := func(secretName) {
+	return {
+		type: constants.ARG_TYPE_SECRET,
+		value: secretName
 	}
 }
 
@@ -176,6 +186,8 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 		cmdTyped: func(type, value) {
 			ll.assert(slices.hasElement(constants.ARG_TYPES, type),
 				"runcmd.plan.cmdTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+			ll.assert(type != constants.ARG_TYPE_SECRET,
+				"runcmd.plan.cmdTyped: 'secret' type is only valid for environment variables")
 
 			if type == constants.ARG_TYPE_STRING {
 				return self.cmd(value)
@@ -231,6 +243,8 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 		argTyped: func(type, value) {
 			ll.assert(slices.hasElement(constants.ARG_TYPES, type),
 				"runcmd.plan.argTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+			ll.assert(type != constants.ARG_TYPE_SECRET,
+				"runcmd.plan.argTyped: 'secret' type is only valid for environment variables")
 
 			if type == constants.ARG_TYPE_STRING {
 				return self.arg(value)
@@ -327,6 +341,17 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 			return returnSelfFn()
 		},
 
+		/**
+		 * Sets environment variable to the value of a secret.
+		 *
+		 * @param name: string - the name of the environment variable.
+		 * @param secretName: string - the plain name of the secret.
+		 */
+		envSecret: func(name, secretName) {
+			state.options.envs[name] = secretArg(secretName)
+			return returnSelfFn()
+		},
+
 		envTyped: func(name, type, value) {
 			ll.assert(slices.hasElement(constants.ARG_TYPES, type),
 				"runcmd.plan.envTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
@@ -337,6 +362,8 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 				return self.envExpression(name, value)
 			} else if type == constants.ARG_TYPE_VAR {
 				return self.envVar(name, value)
+			} else if type == constants.ARG_TYPE_SECRET {
+				return self.envSecret(name, value)
 			}
 
 			ll.panic("runcmd.plan.envTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
@@ -381,6 +408,8 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 		addPathTyped: func(type, value) {
 			ll.assert(slices.hasElement(constants.ARG_TYPES, type),
 				"runcmd.plan.addPathTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+			ll.assert(type != constants.ARG_TYPE_SECRET,
+				"runcmd.plan.addPathTyped: 'secret' type is only valid for environment variables")
 
 			if type == constants.ARG_TYPE_STRING {
 				return self.addPath(value)
@@ -629,6 +658,7 @@ builder := func(workdir, ...initialState) {
 
 			hasPatternArgs := false
 			hasExpressionArgs := false
+			hasSecretArgs := false
 
 			check := func(arg) {
 				if !ll.isMap(arg) {
@@ -639,6 +669,9 @@ builder := func(workdir, ...initialState) {
 				}
 				if arg.type == constants.ARG_TYPE_EXPRESSION {
 					hasExpressionArgs = true
+				}
+				if arg.type == constants.ARG_TYPE_SECRET {
+					hasSecretArgs = true
 				}
 			}
 
@@ -680,6 +713,8 @@ builder := func(workdir, ...initialState) {
 			ll.assert(!hasExpressionArgs || feats.commandExpressions,
 				"runcmd.builder().build: expression arguments must be enabled only if platforma backend supports expressions, found: %v",
 				hasExpressionArgs)
+			ll.assert(!hasSecretArgs || feats.secretEnvSupport,
+				"runcmd.builder().build: secret arguments must be enabled only if platforma backend supports secret env type")
 
 			if !is_undefined(allocation) {
 				runRes.getField(_FIELD_ALLOCATION).set(allocation)
@@ -751,5 +786,6 @@ export ll.toStrict({
 	simpleArg: simpleArg,
 	variableArg: variableArg,
 	expressionArg: expressionArg,
+	secretArg: secretArg,
 	createRunCommandPlan: createRunCommandPlan
 })
