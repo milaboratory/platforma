@@ -1,5 +1,13 @@
 # @platforma-sdk/test
 
+## 1.58.23
+
+### Patch Changes
+
+- a018dc9: Fix driver kit dispose: actually invoke driver `[Symbol.asyncDispose]()` instead of collecting function references
+- Updated dependencies [a018dc9]
+  - @milaboratories/pl-middle-layer@1.48.23
+
 ## 1.58.22
 
 ### Patch Changes
