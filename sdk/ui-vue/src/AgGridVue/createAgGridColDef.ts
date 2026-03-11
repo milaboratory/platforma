@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ColDef, ICellRendererParams } from "ag-grid-enterprise";
 import { PlAgCellProgress } from "../components/PlAgCellProgress";
 import type { MaskIconName16, PlProgressCellProps } from "@milaboratories/uikit";

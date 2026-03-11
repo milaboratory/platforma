@@ -1,26 +1,5 @@
-import {
-  AllEnterpriseModule,
-  createPart,
-  LicenseManager,
-  ModuleRegistry,
-  type Theme,
-  themeQuartz,
-} from "ag-grid-enterprise";
-import { getEnvironmentValue } from "@platforma-sdk/model";
-import OverrideCss from "./components/PlAgDataTable/ag-override.css?raw";
-
-export function activateAgGrid() {
-  ModuleRegistry.registerModules([AllEnterpriseModule]);
-  const agGridLicense = getEnvironmentValue("AGGRID_LICENSE");
-  if (agGridLicense) {
-    LicenseManager.setLicenseKey(agGridLicense);
-    console.log("AG Grid Activated");
-  } else {
-    console.log("AG Grid License not found");
-  }
-}
-
-const agGridOverrideStyles = createPart({ feature: "headerBottomBorder", css: OverrideCss });
+import { type Theme, themeQuartz, createPart } from "ag-grid-enterprise";
+import OverrideCss from "../ag-override.css?raw";
 
 export const AgGridTheme: Theme = themeQuartz
   .withParams({
@@ -57,4 +36,4 @@ export const AgGridTheme: Theme = themeQuartz
     tooltipTextColor: "#FFFFFF",
     wrapperBorderRadius: "6px",
   })
-  .withPart(agGridOverrideStyles);
+  .withPart(createPart({ feature: "headerBottomBorder", css: OverrideCss }));
