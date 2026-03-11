@@ -239,7 +239,7 @@ catalog:
   "winston": ^3.17.0
 
   "@milaboratories/tengo-tester": ^1.6.4
-  "@milaboratories/pframes-rs-node": &pframes-rs 1.1.12
+  "@milaboratories/pframes-rs-node": &pframes-rs 1.1.13
   "@milaboratories/pframes-rs-wasm": *pframes-rs
 
   "quickjs-emscripten": 0.31.0

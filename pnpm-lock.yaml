@@ -22,11 +22,11 @@ catalogs:
       specifier: ~1.13.4
       version: 1.13.4
     '@milaboratories/pframes-rs-node':
-      specifier: 1.1.12
-      version: 1.1.12
+      specifier: 1.1.13
+      version: 1.1.13
     '@milaboratories/pframes-rs-wasm':
-      specifier: 1.1.12
-      version: 1.1.12
+      specifier: 1.1.13
+      version: 1.1.13
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.9
       version: 2.2.9
@@ -1817,14 +1817,10 @@ importers:
     dependencies:
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.1.12(encoding@0.1.13)
+        version: 1.1.13(encoding@0.1.13)
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
-<<<<<<< HEAD
-        version: 1.1.11(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.2)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
-=======
-        version: 1.1.12(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.2)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
->>>>>>> b95933b39 (bump pframes-rs-node version to 1.1.12)
+        version: 1.1.13(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.2)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
         version: link:../../model/middle-layer
@@ -2203,7 +2199,7 @@ importers:
         version: link:../pf-driver
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.1.12(encoding@0.1.13)
+        version: 1.1.13(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -4655,15 +4651,15 @@ packages:
     resolution: {integrity: sha512-BgwkcYrppMZzHyRpq6CgWZrns9zJr9ppSu+TIeJgozHQV+ufIujziyPttonWz2UmTVUEJh3/Q2TLp1bbbWKyNQ==}
     engines: {node: '>=22'}
 
-  '@milaboratories/pframes-rs-node@1.1.12':
-    resolution: {integrity: sha512-ZtBYGYgmAPpC+Tto6dWfqjl1zczbpHtK1bPGAdVWXOpACQ3IjajSqp/oZ9Wm1KK2G9XD+wTTJkYIG4S8euHbzg==}
+  '@milaboratories/pframes-rs-node@1.1.13':
+    resolution: {integrity: sha512-j3tpcVYgsakMB6751u/pDZIYfCf3Ip+JFYZSy37jj5EpH1ocX9QThnjwIubZUnWI04CbvbqTZVDcPKZGnRS2eg==}
 
-  '@milaboratories/pframes-rs-serv@1.1.12':
-    resolution: {integrity: sha512-Jd8XOhlWqGUsBPupR0evkZLdCA30zXrOek0ZU8exUDYPXpwuoI0a8ALryUtvKJGOgBB6JR5EcyMkeYmeoiu5Zw==}
+  '@milaboratories/pframes-rs-serv@1.1.13':
+    resolution: {integrity: sha512-or56onLuK+g0/Csek+hUCowPEEbl9vaI799A3esnzBxRF0IwYp6MVtAZ0hywxqw7+HkW8PAjiUFR5lLhff3r9Q==}
     hasBin: true
 
-  '@milaboratories/pframes-rs-wasm@1.1.12':
-    resolution: {integrity: sha512-dDqSuXzvsLhsfXAKgvDspeij+VlRlJwhjGAXV8HeB++0+PrGY523hOpNmYUtHIXjJ/koecV4NAKn4mZMXc14WQ==}
+  '@milaboratories/pframes-rs-wasm@1.1.13':
+    resolution: {integrity: sha512-JW3RZYN+0F0qTzoqD+EDQSaMGpSv1jj40c3B0coGNhvm2vQqXrjWhHBLBVdMmc67aZ+xBYiz7f9p4JsbPcEz2Q==}
     peerDependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
       '@milaboratories/pl-model-common': 1.25.1
@@ -8762,9 +8758,6 @@ packages:
   vscode-nls@5.2.0:
     resolution: {integrity: sha512-RAaHx7B14ZU04EU31pT+rKz2/zSl7xMsfIZuo8pd+KZO6PXtQmpevpq3vxvWNcrGbdmhM/rr5Uw5Mz+NBfhVng==}
 
-  vscode-uri@3.0.8:
-    resolution: {integrity: sha512-AyFQ0EVmsOZOlAnxoFOGOq1SQDWAB7C6aqMGS23svWAllfOaxbuFvcT8D1i8z3Gyn8fraVeZNNmN6e9bxxXkKw==}
-
   vscode-uri@3.1.0:
     resolution: {integrity: sha512-/BpdSx+yCQGnCvecbyXdxHDkuk55/G3xwnC0GqY4gmQ3j+A+g8kzzgB4Nk/SINjqn6+waqw3EgbVF2QKExkRxQ==}
 
@@ -10569,18 +10562,18 @@ snapshots:
 
   '@milaboratories/helpers@1.13.5': {}
 
-  '@milaboratories/pframes-rs-node@1.1.12(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.1.13(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.3(encoding@0.1.13)
       '@milaboratories/helpers': 1.13.5
-      '@milaboratories/pframes-rs-serv': 1.1.12
+      '@milaboratories/pframes-rs-serv': 1.1.13
       '@milaboratories/pl-model-common': 1.25.1
       ulid: 3.0.2
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-serv@1.1.12':
+  '@milaboratories/pframes-rs-serv@1.1.13':
     dependencies:
       '@milaboratories/helpers': 1.13.5
       '@milaboratories/pl-model-common': 1.25.1
@@ -10588,11 +10581,7 @@ snapshots:
       commander: 14.0.3
       selfsigned: 5.5.0
 
-<<<<<<< HEAD
-  '@milaboratories/pframes-rs-wasm@1.1.11(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.2)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
-=======
-  '@milaboratories/pframes-rs-wasm@1.1.12(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.2)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
->>>>>>> b95933b39 (bump pframes-rs-node version to 1.1.12)
+  '@milaboratories/pframes-rs-wasm@1.1.13(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.25.2)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
     dependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
       '@milaboratories/pl-model-common': 1.25.2
@@ -12127,7 +12116,7 @@ snapshots:
     dependencies:
       '@volar/language-core': 2.4.20
       path-browserify: 1.0.1
-      vscode-uri: 3.0.8
+      vscode-uri: 3.1.0
 
   '@vscode/l10n@0.0.10': {}
 
@@ -12265,7 +12254,7 @@ snapshots:
       vscode-languageserver-types: 3.17.5
       vscode-markdown-languageservice: 0.5.0-alpha.11
       vscode-nls: 5.2.0
-      vscode-uri: 3.0.8
+      vscode-uri: 3.1.0
 
   '@zed-industries/vscode-languageserver@10.0.0-next.3':
     dependencies:
@@ -15005,11 +14994,9 @@ snapshots:
       picomatch: 2.3.1
       vscode-languageserver-protocol: 3.17.5
       vscode-languageserver-textdocument: 1.0.12
-      vscode-uri: 3.0.8
+      vscode-uri: 3.1.0
 
   vscode-nls@5.2.0: {}
-
-  vscode-uri@3.0.8: {}
 
   vscode-uri@3.1.0: {}
 
