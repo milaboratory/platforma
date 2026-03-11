@@ -227,7 +227,7 @@ export class UploadDriver {
 }
 
 function isProgressDone(p: sdk.ImportProgress) {
-  return p.done && (p.status?.progress ?? 0.0) >= 1.0;
+  return p.done;
 }
 
 type ScheduledRefresh = {
