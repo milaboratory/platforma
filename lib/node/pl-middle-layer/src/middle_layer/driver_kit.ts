@@ -141,7 +141,7 @@ export async function initDriverKit(
 
   const dispose = async () => {
     const disposePromises = Object.values(driverKit).flatMap((driver) =>
-      isAsyncDisposable(driver) ? [driver[Symbol.asyncDispose]] : [],
+      isAsyncDisposable(driver) ? [driver[Symbol.asyncDispose]()] : [],
     );
     await Promise.all(disposePromises);
   };
