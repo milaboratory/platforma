@@ -29,11 +29,23 @@ import type { PColumnDataUniversal } from "../render";
 export type AxesVault = Map<CanonicalizedJson<AxisId>, AxisSpecNormalized>;
 
 /** Create id for column copy with added keys in axes domains */
-const colId = (id: PObjectId, domains: (Record<string, string> | undefined)[]) => {
+const colId = (
+  id: PObjectId,
+  domains: (Record<string, string> | undefined)[],
+  contextDomains: (Record<string, string> | undefined)[],
+) => {
   let wid = id.toString();
   domains?.forEach((domain) => {
     if (domain) {
       for (const [k, v] of Object.entries(domain)) {
+        wid += k;
+        wid += v;
+      }
+    }
+  });
+  contextDomains?.forEach((contextDomain) => {
+    if (contextDomain) {
+      for (const [k, v] of Object.entries(contextDomain)) {
         wid += k;
         wid += v;
       }
@@ -122,6 +134,15 @@ function getAdditionalColumnsForColumn<T extends Omit<PColumn<PColumnDataUnivers
           allAddedDomainValues.add(item);
         }
       });
+      const cd1 = column.spec.axesSpec[idx].contextDomain;
+      const cd2 = axisId.contextDomain;
+      Object.entries(cd2 ?? {}).forEach(([key, value]) => {
+        if (cd1?.[key] === undefined) {
+          const item = JSON.stringify(["ctx:" + key, value]);
+          addedSet.add(item);
+          allAddedDomainValues.add(item);
+        }
+      });
       return {
         ...axisId,
         annotations: column.spec.axesSpec[idx].annotations,
@@ -139,6 +160,7 @@ function getAdditionalColumnsForColumn<T extends Omit<PColumn<PColumnDataUnivers
     const id = colId(
       column.id,
       idsList.map((id) => id.domain),
+      idsList.map((id) => id.contextDomain),
     );
 
     const label = readAnnotation(column.spec, Annotation.Label) ?? "";

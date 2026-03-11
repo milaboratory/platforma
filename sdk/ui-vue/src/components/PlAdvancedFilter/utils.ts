@@ -49,12 +49,14 @@ export type NormalizedSpecData = {
   valueType: ValueType;
   annotations: PColumnSpec["annotations"];
   domain: PColumnSpec["domain"];
+  contextDomain: PColumnSpec["contextDomain"];
 };
 export function getNormalizedSpec(spec: PColumnSpec | AxisSpec): NormalizedSpecData {
   return {
     valueType: getTypeFromPColumnOrAxisSpec(spec),
     annotations: spec.annotations,
     domain: spec.domain,
+    contextDomain: spec.contextDomain,
   };
 }
 

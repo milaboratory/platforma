@@ -7,6 +7,7 @@ bquery := import(":workflow.bquery")
 model := import(":workflow.model")
 validation := import(":validation")
 smart := import(":smart")
+feats := import(":feats")
 
 self.awaitState("anchorSpecs", "ResourceReady")
 self.awaitState("request", "ResourceReady")
@@ -116,6 +117,60 @@ self.body(func(inputs) {
             queryPredicates += [ domainPredicate ]
         }
 
+        // contextDomain query predicate requires backend support (feature flag)
+        if feats.contextDomainQuery && (!is_undefined(query.contextDomain) || !is_undefined(query.contextDomainAnchor)) {
+            contextDomainPredicate := {
+                type: "ContextDomain",
+                domain: {}
+            }
+
+            // Process contextDomainAnchor if present
+            if !is_undefined(query.contextDomainAnchor) {
+                anchorId := query.contextDomainAnchor
+                if is_undefined(anchors[anchorId]) {
+                    ll.panic("Cannot resolve context domain anchor: anchor '%s' not found", anchorId)
+                }
+
+                // Copy all context domain values from the anchor
+                if !is_undefined(anchors[anchorId].contextDomain) {
+                    for domainKey, domainValue in anchors[anchorId].contextDomain {
+                        contextDomainPredicate.domain[domainKey] = domainValue
+                    }
+                }
+            }
+
+            // Process each contextDomain key-value pair
+            if !is_undefined(query.contextDomain) {
+                for domainKey, domainValue in query.contextDomain {
+                    // Check if this is an anchored context domain reference (has 'anchor' property)
+                    if is_map(domainValue) && !is_undefined(domainValue.anchor) {
+                        // This is an anchored context domain reference
+                        // Use the anchor ID to get the context domain value from the anchors
+                        anchorId := domainValue.anchor
+                        if is_undefined(anchors[anchorId]) {
+                            ll.panic("Cannot resolve anchored contextDomain: anchor '%s' not found", anchorId)
+                        }
+
+                        // Get context domain value from the anchor
+                        if is_undefined(anchors[anchorId].contextDomain) || is_undefined(anchors[anchorId].contextDomain[domainKey]) {
+                            if opts.ignoreMissingDomains {
+                                continue
+                            }
+                            ll.panic("Cannot resolve anchored contextDomain: key '%s' not found in anchor '%s'", domainKey, anchorId)
+                        }
+
+                        // Use the resolved value
+                        contextDomainPredicate.domain[domainKey] = anchors[anchorId].contextDomain[domainKey]
+                    } else {
+                        // This is a regular context domain value
+                        contextDomainPredicate.domain[domainKey] = domainValue
+                    }
+                }
+            }
+
+            queryPredicates += [ contextDomainPredicate ]
+        }
+
         // Add axes if present
         if !is_undefined(query.axes) {
             axesMatcher := {
@@ -127,7 +182,8 @@ self.body(func(inputs) {
                         return {
                             name: axis.name,
                             type: axis.type,
-                            domain: !is_undefined(axis.domain) ? axis.domain : {}
+                            domain: !is_undefined(axis.domain) ? axis.domain : {},
+                            contextDomain: !is_undefined(axis.contextDomain) ? axis.contextDomain : {}
                         }
                     }
 
@@ -183,7 +239,8 @@ self.body(func(inputs) {
 						return {
 							name: foundAxis.name,
 							type: foundAxis.type,
-							domain: !is_undefined(foundAxis.domain) ? foundAxis.domain : {}
+							domain: !is_undefined(foundAxis.domain) ? foundAxis.domain : {},
+							contextDomain: !is_undefined(foundAxis.contextDomain) ? foundAxis.contextDomain : {}
 						}
                     }
 

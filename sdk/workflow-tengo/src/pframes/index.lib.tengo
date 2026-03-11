@@ -24,6 +24,7 @@ BASIC_TSV_COLUMN_SPEC_SCHEMA := {
 	"valueType": "string,regex=Int|Long|Float|Double|String",
 	"name,?": "string",
 	"domain,?": { "any": "string" },
+	"contextDomain,?": { "any": "string" },
 	"annotations,?": { "any": "string" }
 }
 
@@ -32,6 +33,7 @@ BASIC_TSV_COLUMN_SPEC_SCHEMA_STRING := {
 	"valueType": "string,regex=String",
 	"name,?": "string",
 	"domain,?": { "any": "string" },
+	"contextDomain,?": { "any": "string" },
 	"annotations,?": { "any": "string" }
 }
 
@@ -54,6 +56,7 @@ TSV_CONTENT_SETTINGS_SCHEMA := {
 			"type": "string,regex=Int|Long|Float|Double|String",
 			"name,?": "string",
 			"domain,?": { "any": "string" },
+			"contextDomain,?": { "any": "string" },
 			"annotations,?": { "any": "string" }
 		}
 	}],

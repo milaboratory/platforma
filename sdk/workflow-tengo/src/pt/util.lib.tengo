@@ -103,6 +103,9 @@ makeFrameColumnInfo := func(params, translation) {
         if !is_undefined(entry.spec.domain) && len(entry.spec.domain) > 0 {
             spec.domain = entry.spec.domain
         }
+        if !is_undefined(entry.spec.contextDomain) && len(entry.spec.contextDomain) > 0 {
+            spec.contextDomain = entry.spec.contextDomain
+        }
         if !is_undefined(entry.spec.annotations) && len(entry.spec.annotations) > 0 {
             spec.annotations = entry.spec.annotations
         }
@@ -121,6 +124,9 @@ makeFrameColumnInfo := func(params, translation) {
         }
         if !is_undefined(entry.spec.domain) && len(entry.spec.domain) > 0 {
             spec.domain = entry.spec.domain
+        }
+        if !is_undefined(entry.spec.contextDomain) && len(entry.spec.contextDomain) > 0 {
+            spec.contextDomain = entry.spec.contextDomain
         }
         if !is_undefined(entry.spec.annotations) && len(entry.spec.annotations) > 0 {
             spec.annotations = entry.spec.annotations
@@ -344,7 +350,8 @@ _P_TABLE_COLUMN_ID_SCHEMA := [`or`,
         `axisId`: {
             `name`: `string`,
             `type`: `string,regex=Int|Long|String`,
-            `domain,?`: { any: `string` }
+            `domain,?`: { any: `string` },
+            `contextDomain,?`: { any: `string` }
         }
     }]
 

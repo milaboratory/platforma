@@ -242,8 +242,8 @@ describe("sortSpecQuery", () => {
         {
           entry: pcol("a"),
           qualifications: [
-            { axis: { name: "z" }, additionalDomains: {} },
-            { axis: { name: "a" }, additionalDomains: {} },
+            { axis: { name: "z" }, contextDomain: {} },
+            { axis: { name: "a" }, contextDomain: {} },
           ],
         },
       ],

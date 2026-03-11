@@ -14,6 +14,10 @@ export type PObjectSpec = {
   /** Domain is a set of key-value pairs that can be used to identify the object */
   readonly domain?: Record<string, string>;
 
+  /** Context domain provides additional axis/column identity that is matched
+   * by kinship rules (subset/superset/overlap) rather than exact equality */
+  readonly contextDomain?: Record<string, string>;
+
   /** Additional information attached to the object */
   readonly annotations?: Record<string, string>;
 };
