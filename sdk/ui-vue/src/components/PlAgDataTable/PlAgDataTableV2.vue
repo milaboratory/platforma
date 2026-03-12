@@ -43,7 +43,7 @@ import type {
 } from "./types";
 import { useFilterableColumns } from "./compositions/useFilterableColumns";
 import { useGrid } from "./compositions/useGrid";
-import { AgGridTheme } from "./compositions/useTheme";
+import { AgGridTheme } from "../../AgGridVue/AgGridTheme";
 
 const tableState = defineModel<PlDataTableStateV2>({
   required: true,
