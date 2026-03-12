@@ -52,7 +52,7 @@ const options = listToOptions([
         :compact="data.compactBtnGroup"
       />
       <PlCheckbox v-model="data.compactBtnGroup">Compact btn group component</PlCheckbox>
-      <PlTextField v-model="data.text" label="PlTextField" clearable />
+      <PlTextField v-model="data.text" label="PlTextField" :clearable="() => undefined" />
       <PlTextField v-model="data.text" label="PlTextField (password)" type="password" clearable />
       <PlSearchField v-model="data.text">
         <template #helper>
