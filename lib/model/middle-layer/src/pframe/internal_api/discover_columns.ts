@@ -2,7 +2,7 @@ import type { PColumnIdAndSpec } from "@milaboratories/pl-model-common";
 import type { AxisQualification, ColumnAxesWithQualifications } from "./common";
 
 /** Matches a string value either exactly or by regex pattern */
-export type StringMatcher = { exact: string } | { regex: string };
+export type StringMatcher = { type: "exact"; value: string } | { type: "regex"; value: string };
 
 /** Map of key to array of string matchers (OR-ed per key, AND-ed across keys) */
 export type MatcherMap = Record<string, StringMatcher[]>;
