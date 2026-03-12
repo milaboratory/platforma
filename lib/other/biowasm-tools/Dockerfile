@@ -40,7 +40,7 @@ RUN patch -p0 < rapidNJ.patch
 RUN source /build/emsdk/emsdk_env.sh && \
 emmake make -j
 
-FROM scratch
+FROM ubuntu:24.04
 COPY --from=build \
 /build/kalign/build/src/kalign.js \
 /build/rapidNJ/bin/rapidnj.js \
