@@ -1,12 +1,11 @@
 import { describe, it, expect } from "vitest";
 
-import { mount } from "@vue/test-utils";
-import PlDropdown from "../PlDropdownMulti.vue";
-import { delay } from "@milaboratories/helpers";
+import { mount, flushPromises } from "@vue/test-utils";
+import PlDropdownMulti from "../PlDropdownMulti.vue";
 
 describe("PlDropdownMulti", () => {
   it("modelValue", async () => {
-    const wrapper = mount(PlDropdown, {
+    const wrapper = mount(PlDropdownMulti, {
       props: {
         modelValue: [1],
         "onUpdate:modelValue": (e) => wrapper.setProps({ modelValue: e }),
@@ -27,8 +26,7 @@ describe("PlDropdownMulti", () => {
     expect(options.length).toBe(2);
 
     options[1].click();
-
-    await delay(20);
+    await flushPromises();
 
     expect(wrapper.props("modelValue")).toEqual([1, 2]);
 

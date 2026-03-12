@@ -1,8 +1,7 @@
 import { describe, it, expect } from "vitest";
 
-import { mount } from "@vue/test-utils";
+import { mount, flushPromises } from "@vue/test-utils";
 import PlDropdownRef from "../PlDropdownRef.vue";
-import { delay } from "@milaboratories/helpers";
 
 describe("PlDropdownRef", () => {
   it("modelValue", async () => {
@@ -41,11 +40,8 @@ describe("PlDropdownRef", () => {
 
     expect(options.length).toBe(2);
 
-    expect(options.length).toBe(2);
-
     options[1].click();
-
-    await delay(20);
+    await flushPromises();
 
     expect(wrapper.props("modelValue")).toStrictEqual({
       __isRef: true as const,

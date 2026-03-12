@@ -1,12 +1,11 @@
 import { describe, it, expect } from "vitest";
 
-import { mount } from "@vue/test-utils";
-import PlDropdown from "../PlDropdownMultiRef.vue";
-import { delay } from "@milaboratories/helpers";
+import { mount, flushPromises } from "@vue/test-utils";
+import PlDropdownMultiRef from "../PlDropdownMultiRef.vue";
 
 describe("PlDropdownMultiRef", () => {
   it("modelValue", async () => {
-    const wrapper = mount(PlDropdown, {
+    const wrapper = mount(PlDropdownMultiRef, {
       props: {
         modelValue: [
           {
@@ -46,10 +45,8 @@ describe("PlDropdownMultiRef", () => {
 
     expect(options.length).toBe(2);
 
-    // console.log(wrapper.props('modelValue'), 'mv');
     options[0].click();
-
-    await delay(20);
+    await flushPromises();
 
     expect(wrapper.props("modelValue")).toEqual([
       {
