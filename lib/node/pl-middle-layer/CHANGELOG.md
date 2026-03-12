@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.48.24
+
+### Patch Changes
+
+- 664e859: Gzip-compress blockStorage values to avoid 3MiB resource data limit
+
 ## 1.48.23
 
 ### Patch Changes
