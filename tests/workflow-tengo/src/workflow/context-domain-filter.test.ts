@@ -1,91 +1,135 @@
-import {
-  awaitStableState,
-  ML,
-  TestWorkflowResults,
-  TplTestHelpers,
-  tplTest,
-} from "@platforma-sdk/test";
+import { awaitStableState, ML, TestWorkflowResults, tplTest } from "@platforma-sdk/test";
 
 const SETUP_TEMPLATE = "workflow.context-domain-filter.setup";
 const QUERY_TEMPLATE = "workflow.context-domain-filter.query";
 
-/** Render setup workflow exporting 3 PColumns with distinct contextDomain values. */
-async function setupContext(helper: TplTestHelpers) {
-  const setup = await helper.renderWorkflow(SETUP_TEMPLATE, false, {}, { blockId: "b1" });
-  return await awaitStableState(setup.context());
+const DEFAULT_COLUMN_SPEC: ML.PColumnSpec = {
+  kind: "PColumn",
+  name: "pl7.app/cdtest",
+  valueType: "String",
+  domain: { "pl7.app/block": "b1" },
+  axesSpec: [
+    {
+      name: "pl7.app/sampleId",
+      type: "String",
+      domain: {},
+    },
+  ],
+};
+
+interface ColumnSpecOverride {
+  contextDomain: ML.Metadata;
+  axesSpec?: { contextDomain: ML.Metadata }[];
 }
 
-/** Run a contextDomain query against the setup context. */
-async function runQuery(
-  helper: TplTestHelpers,
-  ctx: ML.ResourceId,
-  query: Record<string, unknown>,
-  opts: { rawOnly?: boolean } = {},
-) {
-  return helper.renderWorkflow(
-    QUERY_TEMPLATE,
-    false,
-    { query, ...opts },
-    { parent: ctx, blockId: "b2" },
-  );
+function columnSpec(override: ColumnSpecOverride): ML.PColumnSpec {
+  return {
+    ...DEFAULT_COLUMN_SPEC,
+    contextDomain: override.contextDomain,
+    axesSpec: DEFAULT_COLUMN_SPEC.axesSpec.map((axis, i) => ({
+      ...axis,
+      contextDomain: override.axesSpec?.[i]?.contextDomain ?? override.contextDomain,
+    })),
+  };
 }
 
-/** Number of specs matched by a multi-result query. */
-async function awaitMatchCount(qWf: TestWorkflowResults): Promise<number> {
+const TEST_COLUMNS: Record<string, ML.PColumnSpec> = {
+  humanBlood: columnSpec({
+    contextDomain: { species: "human", tissue: "blood" },
+    axesSpec: [{ contextDomain: { species: "human" } }],
+  }),
+  humanLung: columnSpec({
+    contextDomain: { species: "human", tissue: "lung" },
+    axesSpec: [{ contextDomain: { species: "human" } }],
+  }),
+  mouse: columnSpec({
+    contextDomain: { species: "mouse" },
+  }),
+};
+
+const cdTest = tplTest.extend<{
+  parentContext: ML.ResourceId;
+  runQuery: (
+    query: Record<string, unknown>,
+    opts?: { rawOnly?: boolean },
+  ) => Promise<TestWorkflowResults>;
+}>({
+  parentContext: async ({ helper }, use) => {
+    const setup = await helper.renderWorkflow(
+      SETUP_TEMPLATE,
+      false,
+      { columns: TEST_COLUMNS },
+      { blockId: "b1" },
+    );
+    await use(await awaitStableState(setup.context()));
+  },
+  runQuery: async ({ helper, parentContext }, use) => {
+    await use((query, opts = {}) =>
+      helper.renderWorkflow(
+        QUERY_TEMPLATE,
+        false,
+        { query, ...opts },
+        { parent: parentContext, blockId: "b2" },
+      ),
+    );
+  },
+});
+
+async function awaitMatchedColumnCount(queryResult: TestWorkflowResults): Promise<number> {
   const fields = await awaitStableState(
-    qWf.output("r1Spec", (a) => {
-      if (!a?.getIsReadyOrError()) return undefined;
-      return a.listInputFields();
+    queryResult.output("resultSpec", (accessor) => {
+      if (!accessor?.getIsReadyOrError()) return undefined;
+      return accessor.listInputFields();
     }),
   );
   return fields?.length ?? 0;
 }
 
-/** Parsed spec from a single-result query (first/single mode). */
-async function awaitMatchedSpec(qWf: TestWorkflowResults) {
+async function awaitMatchedColumnSpec(
+  queryResult: TestWorkflowResults,
+): Promise<Pick<ML.PColumnSpec, "contextDomain"> | undefined> {
   return awaitStableState(
-    qWf.output("r1Spec", (a) => a?.getDataAsJson<{ contextDomain?: Record<string, string> }>()),
+    queryResult.output("resultSpec", (accessor) =>
+      accessor?.getDataAsJson<Pick<ML.PColumnSpec, "contextDomain">>(),
+    ),
   );
 }
 
-/** Whether the query result is NoResult (no match in single mode). */
-async function awaitIsNoResult(qWf: TestWorkflowResults): Promise<boolean> {
+async function awaitIsNoResult(queryResult: TestWorkflowResults): Promise<boolean> {
   const typeName = await awaitStableState(
-    qWf.output("r1", (a, c) => {
-      if (!a?.getIsReadyOrError()) {
-        c.markUnstable("not_ready");
+    queryResult.output("result", (accessor, computable) => {
+      if (!accessor?.getIsReadyOrError()) {
+        computable.markUnstable("not_ready");
         return undefined;
       }
-      return a.getField("ref")?.value?.resourceType?.name;
+      return accessor.getField("ref")?.value?.resourceType?.name;
     }),
   );
   return typeName?.includes("NoResult") ?? false;
 }
 
-tplTest.concurrent(
+cdTest.concurrent(
   "contextDomain filter: multi-result returns only matching columns",
-  async ({ helper, expect }) => {
-    const ctx = await setupContext(helper);
-    const qWf = await runQuery(helper, ctx, {
+  async ({ runQuery, expect }) => {
+    const queryResult = await runQuery({
       name: "pl7.app/cdtest",
       contextDomain: { species: "human" },
       matchStrategy: "expectMultiple",
     });
 
-    expect(await awaitMatchCount(qWf)).eq(2);
+    expect(await awaitMatchedColumnCount(queryResult)).eq(2);
   },
 );
 
-tplTest.concurrent(
+cdTest.concurrent(
   "contextDomain filter: single result with exact contextDomain match",
-  async ({ helper, expect }) => {
-    const ctx = await setupContext(helper);
-    const qWf = await runQuery(helper, ctx, {
+  async ({ runQuery, expect }) => {
+    const queryResult = await runQuery({
       name: "pl7.app/cdtest",
       contextDomain: { species: "human", tissue: "blood" },
     });
 
-    const spec = await awaitMatchedSpec(qWf);
+    const spec = await awaitMatchedColumnSpec(queryResult);
     expect(spec).toBeDefined();
     expect(spec!.contextDomain).toMatchObject({
       species: "human",
@@ -94,40 +138,35 @@ tplTest.concurrent(
   },
 );
 
-tplTest.concurrent(
+cdTest.concurrent(
   "contextDomain filter: no match returns empty result",
-  async ({ helper, expect }) => {
-    const ctx = await setupContext(helper);
-    const qWf = await runQuery(helper, ctx, {
+  async ({ runQuery, expect }) => {
+    const queryResult = await runQuery({
       name: "pl7.app/cdtest",
       contextDomain: { species: "rat" },
       matchStrategy: "expectMultiple",
     });
 
-    expect(await awaitMatchCount(qWf)).eq(0);
+    expect(await awaitMatchedColumnCount(queryResult)).eq(0);
   },
 );
 
-tplTest.concurrent(
+cdTest.concurrent(
   "contextDomain filter: no match in single mode returns NoResult",
-  async ({ helper, expect }) => {
-    const ctx = await setupContext(helper);
-    const qWf = await runQuery(
-      helper,
-      ctx,
+  async ({ runQuery, expect }) => {
+    const queryResult = await runQuery(
       { name: "pl7.app/cdtest", contextDomain: { species: "rat" } },
       { rawOnly: true },
     );
 
-    expect(await awaitIsNoResult(qWf)).toBe(true);
+    expect(await awaitIsNoResult(queryResult)).toBe(true);
   },
 );
 
-tplTest.concurrent(
+cdTest.concurrent(
   "contextDomain filter: axis-level contextDomain with partial match",
-  async ({ helper, expect }) => {
-    const ctx = await setupContext(helper);
-    const qWf = await runQuery(helper, ctx, {
+  async ({ runQuery, expect }) => {
+    const queryResult = await runQuery({
       name: "pl7.app/cdtest",
       contextDomain: { species: "mouse" },
       axes: [
@@ -141,15 +180,14 @@ tplTest.concurrent(
       matchStrategy: "expectMultiple",
     });
 
-    expect(await awaitMatchCount(qWf)).eq(1);
+    expect(await awaitMatchedColumnCount(queryResult)).eq(1);
   },
 );
 
-tplTest.concurrent(
+cdTest.concurrent(
   "contextDomain filter: axis-level contextDomain with positional match",
-  async ({ helper, expect }) => {
-    const ctx = await setupContext(helper);
-    const qWf = await runQuery(helper, ctx, {
+  async ({ runQuery, expect }) => {
+    const queryResult = await runQuery({
       name: "pl7.app/cdtest",
       contextDomain: { species: "mouse" },
       axes: [
@@ -162,6 +200,6 @@ tplTest.concurrent(
       matchStrategy: "expectMultiple",
     });
 
-    expect(await awaitMatchCount(qWf)).eq(1);
+    expect(await awaitMatchedColumnCount(queryResult)).eq(1);
   },
 );

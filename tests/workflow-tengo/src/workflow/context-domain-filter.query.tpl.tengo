@@ -4,12 +4,12 @@
 // Inputs:
 //   args.query    — column selector passed to anchoredQuery (name, contextDomain, axes, etc.)
 //   args.specOnly — (optional, default true) whether to fetch spec only
-//   args.rawOnly  — (optional, default false) output only r1 (raw result), skip r1Spec
+//   args.rawOnly  — (optional, default false) output only "resultSpec", skip spec extraction
 //                   Use for single-result no-match tests where spec field doesn't exist.
 //
 // Outputs:
-//   r1     — raw query result (RTYPE_QUERY_RESULT), always present
-//   r1Spec — spec field of the query result; omitted when rawOnly is true
+//   result     — raw query result (RTYPE_QUERY_RESULT), always present
+//   resultSpec — spec field of the query result; omitted when rawOnly is true
 
 wf := import("@platforma-sdk/workflow-tengo:workflow")
 
@@ -17,18 +17,18 @@ wf.body(func(args) {
 	specOnly := is_undefined(args.specOnly) ? true : args.specOnly
 	rawOnly := !is_undefined(args.rawOnly) && args.rawOnly
 
-	qResult := wf.anchoredQuery({}, {
-		r1: {
+	queryResult := wf.anchoredQuery({}, {
+		result: {
 			query: args.query,
 			specOnly: specOnly
 		}
 	})
 
 	outputs := {
-		r1: qResult.getResult("r1")
+		result: queryResult.getResult("result")
 	}
 	if !rawOnly {
-		outputs["r1Spec"] = qResult.getResultSpec("r1")
+		outputs["resultSpec"] = queryResult.getResultSpec("result")
 	}
 
 	return {
