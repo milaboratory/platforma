@@ -1,5 +1,25 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.13.0
+
+### Minor Changes
+
+- b4036fb: Add contextDomain support across the platform
+
+  - Add `contextDomain` field to AxisId, AxisSpec, PColumnSpec and related types
+  - Add `contextDomainAnchor` to AnchoredPColumnSelector with full pack-based optimization in AnchoredIdDeriver
+  - Extend spec distiller, matchers, xsv-builder, and query resolution to handle contextDomain
+  - Add contextDomain to discoverColumns API types (MultiColumnSelector, MultiAxisSelector)
+  - Add feature-flag-gated ContextDomain query predicate in query-anchored template
+  - Add client-side contextDomain post-filter template for old backends without ContextDomain query support
+  - Rename `additionalDomains` to `contextDomain` in SpecQueryJoinEntry and AxisQualification
+
+### Patch Changes
+
+- Updated dependencies [b4036fb]
+  - @milaboratories/pl-model-common@1.26.0
+  - @platforma-sdk/model@1.59.0
+
 ## 1.12.12
 
 ### Patch Changes
