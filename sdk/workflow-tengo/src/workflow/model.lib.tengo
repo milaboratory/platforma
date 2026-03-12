@@ -5,7 +5,8 @@ AXIS_SELECTOR_SCHEMA := {
     `__options__,closed`: true,
     `type,?`: ["or", "string", ["string"]],
     `name,?`: `string`,
-    `domain,?`: { any: `string` }
+    `domain,?`: { any: `string` },
+    `contextDomain,?`: { any: `string` }
 }
 
 // Anchor axis reference schemas for different reference types
@@ -52,6 +53,8 @@ ANCHORED_P_COLUMN_SELECTOR_SCHEMA := {
     `type,?`: ["or", "string", ["string"]],
     `domainAnchor,?`: `string`,
     `domain,?`: { any: A_DOMAIN_SCHEMA },
+    `contextDomainAnchor,?`: `string`,
+    `contextDomain,?`: { any: A_DOMAIN_SCHEMA },
     `axes,?`: [A_AXIS_SELECTOR_SCHEMA],
     `partialAxesMatch,?`: `boolean`,
     `annotations,?`: { any: `string` },

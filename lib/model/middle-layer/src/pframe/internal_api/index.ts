@@ -4,6 +4,7 @@ export * from "./api_wasm";
 export * from "./common";
 export * from "./create_table";
 export * from "./delete_column";
+export * from "./discover_columns";
 export * from "./find_columns";
 export * from "./table";
 

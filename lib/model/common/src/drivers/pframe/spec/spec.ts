@@ -312,6 +312,10 @@ export type AxisSpec = {
    * unique identifier */
   readonly domain?: Record<string, string>;
 
+  /** Context domain provides additional axis identity that is matched
+   * by kinship rules (subset/superset/overlap) rather than exact equality */
+  readonly contextDomain?: Record<string, string>;
+
   /** Any additional information attached to the axis that does not affect its
    * identifier */
   readonly annotations?: Record<string, string>;
@@ -419,6 +423,12 @@ function normalizingAxesComparator(
   const domain2 = canonicalizeJson(axis2.domain ?? {});
   if (domain1 !== domain2) {
     return domain1 < domain2 ? 1 : -1;
+  }
+
+  const contextDomain1 = canonicalizeJson(axis1.contextDomain ?? {});
+  const contextDomain2 = canonicalizeJson(axis2.contextDomain ?? {});
+  if (contextDomain1 !== contextDomain2) {
+    return contextDomain1 < contextDomain2 ? 1 : -1;
   }
 
   const parents1 = canonicalizeAxisWithParents(axis1);
@@ -592,6 +602,10 @@ export type PUniversalColumnSpec = PObjectSpec & {
    * unique identifier */
   readonly domain?: Record<string, string>;
 
+  /** Context domain provides additional column identity that is matched
+   * by kinship rules (subset/superset/overlap) rather than exact equality */
+  readonly contextDomain?: Record<string, string>;
+
   /** Any additional information attached to the column that does not affect its
    * identifier */
   readonly annotations?: Record<string, string>;
@@ -635,6 +649,10 @@ export type PColumnSpecId = {
    * unique identifier */
   readonly domain?: Record<string, string>;
 
+  /** Context domain provides additional column identity that is matched
+   * by kinship rules (subset/superset/overlap) rather than exact equality */
+  readonly contextDomain?: Record<string, string>;
+
   /** A list of zero-based indices of parent axes from the {@link axesSpec} array. */
   readonly parentAxes?: number[];
 
@@ -648,6 +666,7 @@ export function getPColumnSpecId(spec: PColumnSpec): PColumnSpecId {
     valueType: spec.valueType,
     name: spec.name,
     domain: spec.domain,
+    contextDomain: spec.contextDomain,
     parentAxes: spec.parentAxes,
     axesId: getAxesId(spec.axesSpec),
   };
@@ -695,6 +714,10 @@ export interface AxisId {
   /** Adds auxiliary information to the axis or column name and type to form a
    * unique identifier */
   readonly domain?: Record<string, string>;
+
+  /** Context domain provides additional axis identity that is matched
+   * by kinship rules (subset/superset/overlap) rather than exact equality */
+  readonly contextDomain?: Record<string, string>;
 }
 
 /** Array of axis ids */
@@ -702,10 +725,13 @@ export type AxesId = AxisId[];
 
 /** Extracts axis ids from axis spec */
 export function getAxisId(spec: AxisSpec): AxisId {
-  const { type, name, domain } = spec;
-  const result = { type, name };
+  const { type, name, domain, contextDomain } = spec;
+  const result: AxisId = { type, name };
   if (domain && Object.entries(domain).length > 0) {
     Object.assign(result, { domain });
+  }
+  if (contextDomain && Object.entries(contextDomain).length > 0) {
+    Object.assign(result, { contextDomain });
   }
   return result;
 }
@@ -732,7 +758,11 @@ function matchDomain(query?: Record<string, string>, target?: Record<string, str
 
 /** Returns whether "match" axis id is compatible with the "query" */
 export function matchAxisId(query: AxisId, target: AxisId): boolean {
-  return query.name === target.name && matchDomain(query.domain, target.domain);
+  return (
+    query.name === target.name &&
+    matchDomain(query.domain, target.domain) &&
+    matchDomain(query.contextDomain, target.contextDomain)
+  );
 }
 
 export function getTypeFromPColumnOrAxisSpec(spec: PColumnSpec | AxisSpec): ValueType {

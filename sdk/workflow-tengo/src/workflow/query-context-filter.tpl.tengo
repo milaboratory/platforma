@@ -1,0 +1,163 @@
+ll := import(":ll")
+smart := import(":smart")
+maps := import(":maps")
+constants := import(":constants")
+json := import("json")
+
+self := import(":tpl.light")
+
+self.awaitState("unfilteredResult", "ResourceReady")
+self.awaitState("request", "ResourceReady")
+
+// Subset match on a map field — mirrors Go backend's subset check:
+//   for k, v1 := range query { if v2, ok := target[k]; !ok || v1 != v2 { return false } }
+// Returns true if target contains all key-value pairs from query.
+// Returns true if query is empty (vacuous truth).
+_domainSubset := func(target, query) {
+    for key, value in query {
+        if is_undefined(target) || is_undefined(target[key]) || target[key] != value {
+            return false
+        }
+    }
+    return true
+}
+
+// Spec-level contextDomain check — mirrors BQueryContextDomain.Accept.
+// Spec with no contextDomain does NOT match a non-empty filter.
+_matchesSpecContextDomain := func(spec, filterDomain) {
+    if len(filterDomain) == 0 {
+        return true
+    }
+    return _domainSubset(spec.contextDomain, filterDomain)
+}
+
+// Axis-level contextDomain check — mirrors BQueryAxesKeys.Accept + BQueryAxisKeyMatcher.Accept.
+// Re-checks contextDomain only; name and domain are already matched by the old backend.
+//
+// axesFilter: [{ name: string, contextDomain: map }] from the original query
+// partialAxesMatch: bool — true: search by name across all spec axes;
+//                          false: match by position (index order)
+// DomainExactMatch is never set by Tengo SDK — only subset mode needed.
+_matchesAxesContextDomain := func(specAxes, axesFilter, partialAxesMatch) {
+    if len(axesFilter) == 0 {
+        return true
+    }
+    if is_undefined(specAxes) {
+        return false
+    }
+
+    if partialAxesMatch {
+        for f in axesFilter {
+            if len(f.contextDomain) == 0 {
+                continue
+            }
+            matched := false
+            for specAxis in specAxes {
+                if specAxis.name == f.name && _domainSubset(specAxis.contextDomain, f.contextDomain) {
+                    matched = true
+                    break
+                }
+            }
+            if !matched {
+                return false
+            }
+        }
+    } else {
+        for i, f in axesFilter {
+            if len(f.contextDomain) == 0 {
+                continue
+            }
+            if i >= len(specAxes) {
+                return false
+            }
+            if specAxes[i].name != f.name {
+                return false
+            }
+            if !_domainSubset(specAxes[i].contextDomain, f.contextDomain) {
+                return false
+            }
+        }
+    }
+    return true
+}
+
+self.body(func(inputs) {
+    src := inputs.unfilteredResult  // RTYPE_QUERY_RESULT, always multi-result (first: false)
+    req := inputs.request
+    // req fields:
+    //   contextDomain: map          — spec-level filter
+    //   axesFilter: array           — axis-level filter [{name, contextDomain}, ...]
+    //   partialAxesMatch: bool      — mirrors AxesKeys.partialMatch
+    //   wantFirst: bool             — original first intent
+    //   wantSingle: bool            — original single intent
+
+    ll.assert(src.hasInputField("spec"), "contextDomain filter requires spec: true")
+
+    specs := src.get("spec").inputs()         // map: ref_json_string -> spec_field
+    hasData := src.hasInputField("data")
+    datas := hasData ? src.get("data") : undefined
+
+    specFilter := req.contextDomain
+    axesFilter := req.axesFilter
+    partialAxesMatch := req.partialAxesMatch
+
+    matchingRefs := []
+    maps.forEach(specs, func(ref, s) {
+        spec := s.getValueAsJson()
+        if !_matchesSpecContextDomain(spec, specFilter) {
+            return
+        }
+        if !_matchesAxesContextDomain(spec.axesSpec, axesFilter, partialAxesMatch) {
+            return
+        }
+        matchingRefs = append(matchingRefs, ref)
+    })
+
+    // Build filtered RTYPE_QUERY_RESULT
+    rb := smart.structBuilder(constants.RTYPE_QUERY_RESULT)
+
+    if req.wantFirst || req.wantSingle {
+        // Single-result format (ops.first = true)
+        if req.wantSingle {
+            ll.assert(len(matchingRefs) <= 1,
+                "contextDomain filter: expected at most one match, got %d", len(matchingRefs))
+        }
+
+        rb.createInputField("ops").setJson({
+            spec: true, data: hasData, first: true, single: false
+        })
+
+        if len(matchingRefs) == 0 {
+            noResult := smart.structBuilder(constants.RTYPE_BRESOLVE_NO_RESULT)
+            rb.createInputField("ref").set(noResult.lockAndBuild())
+        } else {
+            ref := matchingRefs[0]
+            rb.createInputField("ref").setJson(json.decode(ref))
+            rb.createInputField("spec").set(specs[ref].getValue())
+            if hasData {
+                rb.createInputField("data").set(datas.getField(ref).getValue())
+            }
+        }
+    } else {
+        // Multi-result format
+        rb.createInputField("ops").setJson({
+            spec: true, data: hasData, first: false, single: false
+        })
+
+        specMap := smart.mapBuilder()
+        for ref in matchingRefs {
+            specMap.add(ref, specs[ref].getValue())
+        }
+        rb.createInputField("spec").set(specMap.build())
+
+        if hasData {
+            dataMap := smart.mapBuilder()
+            for ref in matchingRefs {
+                dataMap.add(ref, datas.getField(ref).getValue())
+            }
+            rb.createInputField("data").set(dataMap.build())
+        }
+    }
+
+    return { "result": rb.lockAndBuild() }
+})

@@ -19,6 +19,7 @@ canonical := import(":canonical")
 P_UNTYPED_SPEC_SCHEMA := {
 	`name`: `string`,
 	`domain,?`: { any: `string` },
+	`contextDomain,?`: { any: `string` },
 	`annotations,?`: { any: `string` },
 	`parentAxes,?`: [ `number` ]
 }
@@ -102,6 +103,7 @@ _P_MATCHER_SCHEMA := {
 	`type,?`: `string,regex=Int|Long|Float|Double|String`,
 	`name`: `string`,
 	`domain,?`: { any: `string` },
+	`contextDomain,?`: { any: `string` },
 	`optional,?`: `boolean`
 }
 
@@ -126,6 +128,13 @@ _checkAxisMatch := func(axisSpec, matcher) {
 	if !is_undefined(matcher.domain) {
 		for domain, domainValue in matcher.domain {
 			if is_undefined(axisSpec.domain) || axisSpec.domain[domain] != domainValue {
+				return false
+			}
+		}
+	}
+	if !is_undefined(matcher.contextDomain) {
+		for key, value in matcher.contextDomain {
+			if is_undefined(axisSpec.contextDomain) || axisSpec.contextDomain[key] != value {
 				return false
 			}
 		}
@@ -323,17 +332,18 @@ createSpecDistiller := func(specs) {
 	// Map to collect all domain values by name
 	// Structure: { name: { domainName: Set<values> } }
 	domainsValues := {}
+	contextDomainsValues := {}
 
-	addDomainValue := func(name, domainName, domainValue) {
-		if is_undefined(domainsValues[name]) {
-			domainsValues[name] = {}
+	addDomainValue := func(valuesMap, name, domainName, domainValue) {
+		if is_undefined(valuesMap[name]) {
+			valuesMap[name] = {}
 		}
 
-		if is_undefined(domainsValues[name][domainName]) {
-			domainsValues[name][domainName] = {}
+		if is_undefined(valuesMap[name][domainName]) {
+			valuesMap[name][domainName] = {}
 		}
 
-		domainsValues[name][domainName][domainValue] = true
+		valuesMap[name][domainName][domainValue] = true
 	}
 
 	// Collect all domain values for each spec and axis
@@ -342,7 +352,12 @@ createSpecDistiller := func(specs) {
 		columnName := spec.name
 		if !is_undefined(spec.domain) {
 			for domainName, domainValue in spec.domain {
-				addDomainValue(columnName, domainName, domainValue)
+				addDomainValue(domainsValues, columnName, domainName, domainValue)
+			}
+		}
+		if !is_undefined(spec.contextDomain) {
+			for domainName, domainValue in spec.contextDomain {
+				addDomainValue(contextDomainsValues, columnName, domainName, domainValue)
 			}
 		}
 
@@ -352,7 +367,12 @@ createSpecDistiller := func(specs) {
 				axisName := axis.name
 				if !is_undefined(axis.domain) {
 					for domainName, domainValue in axis.domain {
-						addDomainValue(axisName, domainName, domainValue)
+						addDomainValue(domainsValues, axisName, domainName, domainValue)
+					}
+				}
+				if !is_undefined(axis.contextDomain) {
+					for domainName, domainValue in axis.contextDomain {
+						addDomainValue(contextDomainsValues, axisName, domainName, domainValue)
 					}
 				}
 			}
@@ -360,29 +380,35 @@ createSpecDistiller := func(specs) {
 	}
 
 	// Filter domains that have more than one value - these are the ones that help discriminate pcolumns
-	discriminativeDomains := {}
-	for name, domains in domainsValues {
-		for domainName, valueSet in domains {
-			if len(valueSet) > 1 {
-				if is_undefined(discriminativeDomains[name]) {
-					discriminativeDomains[name] = {}
+	computeDiscriminative := func(valuesMap) {
+		result := {}
+		for name, domains in valuesMap {
+			for domainName, valueSet in domains {
+				if len(valueSet) > 1 {
+					if is_undefined(result[name]) {
+						result[name] = {}
+					}
+					result[name][domainName] = true
 				}
-				discriminativeDomains[name][domainName] = true
 			}
 		}
+		return result
 	}
 
+	discriminativeDomains := computeDiscriminative(domainsValues)
+	discriminativeContextDomains := computeDiscriminative(contextDomainsValues)
+
 	// Helper function to filter domains based on discriminative domains
-	filterDomain := func(domain, entityName) {
+	filterDomain := func(domain, entityName, discriminativeMap) {
 		if is_undefined(domain) {
 			return undefined
 		}
 
 		filteredDomain := undefined
 
-		if !is_undefined(discriminativeDomains[entityName]) {
+		if !is_undefined(discriminativeMap[entityName]) {
 			for domainName, domainValue in domain {
-				if sets.hasElement(discriminativeDomains[entityName], domainName) {
+				if sets.hasElement(discriminativeMap[entityName], domainName) {
 					if is_undefined(filteredDomain) {
 						filteredDomain = {}
 					}
@@ -403,11 +429,19 @@ createSpecDistiller := func(specs) {
 		}
 
 		// Filter domains
-		filteredDomain := filterDomain(result.domain, entityName)
+		filteredDomain := filterDomain(result.domain, entityName, discriminativeDomains)
 		if !is_undefined(filteredDomain) {
 			result.domain = filteredDomain
 		} else if !is_undefined(result.domain) {
 			delete(result, "domain")
+		}
+
+		// Filter context domains
+		filteredContextDomain := filterDomain(result.contextDomain, entityName, discriminativeContextDomains)
+		if !is_undefined(filteredContextDomain) {
+			result.contextDomain = filteredContextDomain
+		} else if !is_undefined(result.contextDomain) {
+			delete(result, "contextDomain")
 		}
 
 		return result
@@ -537,16 +571,21 @@ axisSpecToMatcher := func(axisSpec) {
 	if !is_undefined(axisSpec.domain) {
 		matcher.domain = maps.clone(axisSpec.domain) // Clone to avoid modifying original spec's domain
 	}
+	if !is_undefined(axisSpec.contextDomain) {
+		matcher.contextDomain = maps.clone(axisSpec.contextDomain) // Clone to avoid modifying original spec's contextDomain
+	}
 	return matcher
 }
 
 getAxisId := func(axisSpec) {
 	validation.assertType(axisSpec, P_AXIS_SPEC_SCHEMA)
-	return canonical.encode({
+	id := {
 		name: axisSpec.name,
 		type: axisSpec.type,
-		domain: axisSpec.domain
-	})
+		domain: axisSpec.domain,
+		contextDomain: axisSpec.contextDomain
+	}
+	return canonical.encode(id)
 }
 
 export ll.toStrict({

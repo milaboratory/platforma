@@ -84,6 +84,8 @@ _SPEC_AXES_SCHEMA := {
 		// Auxiliary information to the axis name, type and parents to form a unique identifier;
 		// default: empty
 		`domain,?`: { any: `string` },
+		// Context domain matched by kinship rules; default: empty
+		`contextDomain,?`: { any: `string` },
 		// Any additional information attached to the axis that does not affect its identifier;
 		// default: "pl7.app/label": Column label from XSV
 		`annotations,?`: { any: `string` },
@@ -124,6 +126,8 @@ _SPEC_COLUMN_SCHEMA := {
 		// Auxiliary information to the column name, type and parents to form a unique identifier;
 		// default: empty
 		`domain,?`: { any: `string` },
+		// Context domain matched by kinship rules; default: empty
+		`contextDomain,?`: { any: `string` },
 		// Any additional information attached to the axis that does not affect its identifier;
 		// default: "pl7.app/label": Column label from XSV
 		`annotations,?`: { any: `string` },
@@ -139,6 +143,8 @@ _SPEC_INDEX_SCHEMA := {
 	// Auxiliary information to the column name, type and parents to form a unique identifier;
 	// default: empty
 	`domain,?`: { any: `string` },
+	// Context domain matched by kinship rules; default: empty
+	`contextDomain,?`: { any: `string` },
 	// Any additional information attached to the axis that does not affect its identifier;
 	// default: "pl7.app/label": name
 	`annotations,?`: { any: `string` },

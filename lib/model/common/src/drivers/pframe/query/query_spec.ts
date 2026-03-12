@@ -54,7 +54,7 @@ type ColumnIdAndSpec = {
  * {
  *   entry: querySpec,
  *   qualifications: [
- *     { axis: { name: 'sample' }, additionalDomains: { ... } }
+ *     { axis: { name: 'sample' }, contextDomain: { ... } }
  *   ]
  * }
  */
@@ -64,7 +64,7 @@ export type SpecQueryJoinEntry<C = PObjectId> = QueryJoinEntry<SpecQuery<C>> & {
     /** Axis selector identifying which axis to qualify */
     axis: SingleAxisSelector;
     /** Additional domain constraints for this axis */
-    additionalDomains: Domain;
+    contextDomain: Domain;
   }[];
 };
 

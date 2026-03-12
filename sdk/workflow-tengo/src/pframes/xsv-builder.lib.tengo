@@ -98,7 +98,15 @@ xsvFileBuilder := func(xsvType) {
             // canonical.encode({}) usually produces "^{}" or similar
             domainCanonicalStr = canonical.encode({})
         }
-        return nameStr + "|" + typeStr + "|" + domainCanonicalStr
+
+        contextDomainCanonicalStr := ""
+        if is_map(axisSpec.contextDomain) {
+            contextDomainCanonicalStr = canonical.encode(axisSpec.contextDomain)
+        } else {
+            // If contextDomain is not a map (e.g., undefined or null), encode an empty map
+            contextDomainCanonicalStr = canonical.encode({})
+        }
+        return nameStr + "|" + typeStr + "|" + domainCanonicalStr + "|" + contextDomainCanonicalStr
     }
 
     findAxisHeaderOverride := func(axisSpec) {
@@ -177,6 +185,7 @@ xsvFileBuilder := func(xsvType) {
                             name: labelledAxis.name,
                             type: labelledAxis.type,
                             domain: labelledAxis.domain, // Store original domain from the labelled (effectively distilled) axis
+                            contextDomain: labelledAxis.contextDomain,
                             label: labelledAxis.annotations["pl7.app/label"]
                         }
                     }

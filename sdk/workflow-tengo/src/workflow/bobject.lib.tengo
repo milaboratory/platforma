@@ -21,10 +21,13 @@ _pObjectSpecSchema := {
 
 	"domain,?": {",any": "string"},
 
+	"contextDomain,?": {",any": "string"},
+
 	"axesSpec,?": [{
 		"type": "string,regex=String",
 		"name": "string",
 		"domain,?": {",any": "string"},
+		"contextDomain,?": {",any": "string"},
 		"annotations,?": {",any": "string"}
 	}],
 
