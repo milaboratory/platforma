@@ -1,5 +1,11 @@
 # @milaboratories/pf-driver
 
+## 1.0.67
+
+### Patch Changes
+
+- fc2de3a: Bump pframes-rs to 1.1.14
+
 ## 1.0.66
 
 ### Patch Changes

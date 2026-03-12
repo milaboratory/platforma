@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.48.26
+
+### Patch Changes
+
+- Updated dependencies [fc2de3a]
+  - @milaboratories/pf-driver@1.0.67
+
 ## 1.48.25
 
 ### Patch Changes
