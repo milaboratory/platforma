@@ -18,7 +18,7 @@ import {
 import { reactive } from "vue";
 
 const data = reactive({
-  text: "some text",
+  text: "some text" as string | undefined,
   single: "A",
   multiple: ["A", "B"],
   multiple2: ["B", "A", "D"],

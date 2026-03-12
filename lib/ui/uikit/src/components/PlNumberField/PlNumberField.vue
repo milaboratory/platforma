@@ -18,7 +18,7 @@ export default {
 };
 </script>
 
-<script setup lang="ts" generic="C extends undefined | number = undefined | number">
+<script setup lang="ts" generic="V extends undefined | number, C extends V">
 import "./pl-number-field.scss";
 import DoubleContour from "../../utils/DoubleContour.vue";
 import { useLabelNotch } from "../../utils/useLabelNotch";
@@ -27,7 +27,7 @@ import { PlTooltip } from "../PlTooltip";
 import { PlIcon16 } from "../PlIcon16";
 import { parseNumber, normalizeNumberString } from "./parseNumber";
 
-const modelValue = defineModel<undefined | number>({ required: true });
+const modelValue = defineModel<V>({ required: true });
 
 const props = withDefaults(
   defineProps<{
@@ -113,7 +113,7 @@ const inputValue = computed({
     if (r.error) {
       inputRef.value!.value = r.cleanInput;
     } else {
-      modelValue.value = r.value as C;
+      modelValue.value = r.value as V;
     }
   },
 });
@@ -124,9 +124,9 @@ const canShowClearable = computed(
 
 function clear() {
   if (typeof props.clearable === "function") {
-    modelValue.value = props.clearable();
+    modelValue.value = props.clearable() as V;
   } else {
-    modelValue.value = undefined as C;
+    modelValue.value = undefined as V;
   }
   resetCachedValue();
 }
@@ -195,7 +195,7 @@ function increment() {
       nV =
         ((parsedValue || 0) * multiplier.value + props.step * multiplier.value) / multiplier.value;
     }
-    modelValue.value = props.maxValue !== undefined ? Math.min(props.maxValue, nV) : nV;
+    modelValue.value = (props.maxValue !== undefined ? Math.min(props.maxValue, nV) : nV) as V;
   }
 }
 
@@ -212,7 +212,7 @@ function decrement() {
       nV =
         ((parsedValue || 0) * multiplier.value - props.step * multiplier.value) / multiplier.value;
     }
-    modelValue.value = props.minValue !== undefined ? Math.max(props.minValue, nV) : nV;
+    modelValue.value = (props.minValue !== undefined ? Math.max(props.minValue, nV) : nV) as V;
   }
 }
 

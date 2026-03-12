@@ -3,7 +3,7 @@ import { PlRow, PlContainer, PlCheckbox, PlNumberField, PlBlockPage } from "@pla
 import { reactive } from "vue";
 
 const data = reactive({
-  number: 100,
+  number: 100 as number | undefined,
   disableSteps: false,
 });
 

@@ -7,7 +7,7 @@ export default {
 };
 </script>
 
-<script lang="ts" setup generic="C extends undefined | string = string">
+<script lang="ts" setup generic="V extends undefined | string, C extends V">
 import { computed, ref, useSlots } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
 import { getErrorMessage } from "../../helpers/error.ts";
@@ -24,7 +24,7 @@ const slots = useSlots();
 /**
  * The current value of the input field.
  */
-const model = defineModel<string | C>({
+const model = defineModel<V>({
   required: true,
 });
 
@@ -67,7 +67,7 @@ const props = defineProps<{
    */
   prefix?: string;
   /** Additional validity check for input value that must return an error text if failed */
-  validate?: (v: string | C) => string | undefined;
+  validate?: (v: V) => string | undefined;
   /**
    * The string specifies whether the field should be a password or not, value could be "password" or undefined.
    */
@@ -105,7 +105,7 @@ const passwordIcon = computed(() => (showPassword.value ? "view-show" : "view-hi
 
 const clear = () => {
   if (props.clearable) {
-    model.value = typeof props.clearable === "function" ? props.clearable() : "";
+    model.value = (typeof props.clearable === "function" ? props.clearable() : "") as V;
   }
 };
 
@@ -120,7 +120,7 @@ const displayErrors = computed(() => {
     errors.push(propsError);
   }
   if (props.validate) {
-    const error = props.validate(model.value);
+    const error = props.validate(model.value as V);
     if (error) {
       errors.push(error);
     }
