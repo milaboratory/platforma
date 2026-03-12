@@ -31,7 +31,7 @@ getResourceTypes := func(queueName) {
 
 	// Fallback: existing logic for backward compatibility with older backends
 	runnerType := constants.RUNNER_EXECUTOR
-	if feats.hasBatch && queueName != constants.UI_TASKS_QUEUE {
+	if feats.hasBatch && (queueName != constants.UI_TASKS_QUEUE || !feats.uiQueueAllowedInExecutor) {
 		runnerType = constants.RUNNER_BATCH
 	}
 	return {
