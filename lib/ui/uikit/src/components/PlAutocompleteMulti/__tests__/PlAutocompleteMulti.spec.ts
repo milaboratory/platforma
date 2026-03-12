@@ -1,10 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-import { mount } from "@vue/test-utils";
+import { mount, flushPromises } from "@vue/test-utils";
 import PlAutocompleteMulti from "../PlAutocompleteMulti.vue";
-import { delay } from "@milaboratories/helpers";
 
 describe("PlAutocompleteMulti", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
   it("modelValue", async () => {
     const wrapper = mount(PlAutocompleteMulti, {
       props: {
@@ -20,22 +22,24 @@ describe("PlAutocompleteMulti", () => {
       },
     });
 
-    await delay(10);
+    // Flush initial watch (immediate: true) that fires on mount
+    await vi.advanceTimersByTimeAsync(0);
+    await flushPromises();
+
     await wrapper.find(".pl-autocomplete-multi__envelope").trigger("click");
     await wrapper.find("input").trigger("focus");
+    // Flush debounce (0ms) + optionsSearch promise
+    await vi.advanceTimersByTimeAsync(0);
+    await flushPromises();
 
     const getOptions = () =>
       [...document.body.querySelectorAll(".dropdown-list-item")] as HTMLElement[];
 
-    await delay(1);
+    expect(getOptions().length).toBe(2);
 
-    const options = getOptions();
-
-    expect(options.length).toBe(2);
-
-    options[1].click();
-
-    await delay(20);
+    getOptions()[1].click();
+    await vi.advanceTimersByTimeAsync(0);
+    await flushPromises();
 
     expect(wrapper.props("modelValue")).toEqual([1, 2]);
 
