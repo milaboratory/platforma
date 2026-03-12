@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.58.25
+
+### Patch Changes
+
+- 5e769e4: reexport aggridtheme
+
 ## 1.58.22
 
 ### Patch Changes
