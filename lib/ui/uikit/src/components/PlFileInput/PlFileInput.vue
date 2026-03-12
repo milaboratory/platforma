@@ -111,11 +111,16 @@ const fileName = computed(() => tryValue(props.modelValue, getFileNameFromHandle
 
 const filePath = computed(() => tryValue(props.modelValue, getFilePathFromHandle));
 
+const isAborted = computed(() => props.progress?.aborted);
+
 const isUploading = computed(() => props.progress && !props.progress.done);
 
-const isUploaded = computed(() => props.progress && props.progress.done);
+const isUploaded = computed(() => props.progress && props.progress.done && !props.progress.aborted);
 
-const computedErrorMessage = computed(() => getErrorMessage(data.error, props.error));
+const computedErrorMessage = computed(() => {
+  if (isAborted.value) return props.progress?.lastError ?? "Import cancelled";
+  return getErrorMessage(data.error, props.error);
+});
 
 const hasErrors = computed(() => typeof computedErrorMessage.value === "string");
 
@@ -136,13 +141,13 @@ const uploadStats = computed(() => {
 const progressStyle = computed(() => {
   const { progress } = props;
 
-  if (!progress) {
+  if (!progress || progress.aborted) {
     return {};
   }
 
-  return {
-    width: progress.done ? "100%" : Math.round((progress.status?.progress ?? 0) * 100) + "%",
-  };
+  const pct = progress.done ? 100 : Math.round((progress.status?.progress ?? 0) * 100);
+
+  return { width: pct + "%" };
 });
 
 const openFileDialog = () => {

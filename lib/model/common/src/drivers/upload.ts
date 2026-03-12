@@ -1,5 +1,8 @@
 export interface ImportProgress {
   done: boolean;
+  /** True if the import was terminated because the resource
+   * was deleted or aborted on the server (e.g. NOT_FOUND / ABORTED). */
+  aborted?: boolean;
   /** Status of indexing/uploading got from platforma gRPC. */
   status?: ImportStatus;
   /** True if BlobUpload, false if BlobIndex. */

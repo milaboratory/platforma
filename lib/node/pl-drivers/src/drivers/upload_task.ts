@@ -89,7 +89,7 @@ export class UploadTask {
         this.change.markChanged(
           `blob upload for ${resourceIdToString(this.res.id)} aborted: ${e.code}`,
         );
-        this.setDone(true);
+        this.setAborted();
 
         return;
       }
@@ -141,7 +141,7 @@ export class UploadTask {
         this.change.markChanged(
           `upload status for ${resourceIdToString(this.res.id)} aborted: ${e.code}`,
         );
-        this.setDone(true);
+        this.setAborted();
         return;
       }
 
@@ -176,6 +176,11 @@ export class UploadTask {
   private setDone(done: boolean) {
     this.progress.done = done;
     if (done) this.progress.lastError = undefined;
+  }
+
+  private setAborted() {
+    this.progress.done = true;
+    this.progress.aborted = true;
   }
 
   public incCounter(w: Watcher, callerId: string) {
@@ -259,6 +264,7 @@ function newProgress(res: ImportResourceSnapshot, signer: Signer) {
     uploadData: uploadData,
     progress: {
       done: false,
+      aborted: undefined,
       status: undefined,
       isUpload: isUpload(res),
       isUploadSignMatch: isUploadSignMatch,
@@ -280,6 +286,7 @@ export function isMyUpload(p: sdk.ImportProgress): boolean {
 function cloneProgress(progress: sdk.ImportProgress): sdk.ImportProgress {
   const cloned: sdk.ImportProgress = {
     done: progress.done,
+    aborted: progress.aborted,
     isUpload: progress.isUpload,
     isUploadSignMatch: progress.isUploadSignMatch,
     lastError: progress.lastError,
