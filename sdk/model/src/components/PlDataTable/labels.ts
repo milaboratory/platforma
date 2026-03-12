@@ -61,12 +61,22 @@ export function getMatchingLabelColumns(
   }
 
   // warning: changing this id will break backward compatibility
-  const colId = (id: PObjectId, domain?: Record<string, string>): PObjectId => {
+  const colId = (
+    id: PObjectId,
+    domain?: Record<string, string>,
+    contextDomain?: Record<string, string>,
+  ): PObjectId => {
     let wid = id.toString();
     if (domain) {
       for (const k in domain) {
         wid += k;
         wid += domain[k];
+      }
+    }
+    if (contextDomain) {
+      for (const k in contextDomain) {
+        wid += k;
+        wid += contextDomain[k];
       }
     }
     return wid as PObjectId;
@@ -80,11 +90,14 @@ export function getMatchingLabelColumns(
     const labelMatch = unlabeledAxes.findIndex((axisId) => matchAxisId(axisId, labelAxisId));
     if (labelMatch !== -1) {
       const axisId = unlabeledAxes[labelMatch];
-      const dataDomainLen = Object.keys(axisId.domain ?? {}).length;
-      const labelDomainLen = Object.keys(labelAxis.domain ?? {}).length;
+      const dataDomainLen =
+        Object.keys(axisId.domain ?? {}).length + Object.keys(axisId.contextDomain ?? {}).length;
+      const labelDomainLen =
+        Object.keys(labelAxis.domain ?? {}).length +
+        Object.keys(labelAxis.contextDomain ?? {}).length;
       if (dataDomainLen > labelDomainLen) {
         labelColumns.push({
-          id: colId(labelColumn.id, axisId.domain),
+          id: colId(labelColumn.id, axisId.domain, axisId.contextDomain),
           spec: {
             ...labelColumn.spec,
             axesSpec: [{ ...axisId, annotations: labelAxis.annotations }],

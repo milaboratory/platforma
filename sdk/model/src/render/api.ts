@@ -423,6 +423,10 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
         continue;
       }
 
+      if (!matchDomain(spec.contextDomain, oth.contextDomain)) {
+        continue;
+      }
+
       for (let i = 0; i < spec.axesSpec.length; ++i) {
         const qAx = spec.axesSpec[i];
         const tAx = oth.axesSpec[i];
@@ -433,6 +437,9 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
           continue out;
         }
         if (!matchDomain(qAx.domain, tAx.domain)) {
+          continue out;
+        }
+        if (!matchDomain(qAx.contextDomain, tAx.contextDomain)) {
           continue out;
         }
       }
@@ -457,7 +464,8 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
         spec.axesSpec.length === 1 &&
         spec.axesSpec[0].name === axis.name &&
         spec.axesSpec[0].type === axis.type &&
-        matchDomain(axis.domain, spec.axesSpec[0].domain)
+        matchDomain(axis.domain, spec.axesSpec[0].domain) &&
+        matchDomain(axis.contextDomain, spec.axesSpec[0].contextDomain)
       ) {
         if (column.obj.data.resourceType.name !== "PColumnData/Json") {
           throw Error(`Expected JSON column for labels, got: ${column.obj.data.resourceType.name}`);

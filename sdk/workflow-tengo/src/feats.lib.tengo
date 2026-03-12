@@ -68,5 +68,8 @@ export ll.toStrict({
 	isDockerAvailable:        _isEnabled("dockerSupport"),
 
 	// true when backend supports 'secret' argType for environment variables
-	secretEnvSupport:         _isEnabled("secretEnvSupport")
+	secretEnvSupport:         _isEnabled("secretEnvSupport"),
+
+	// true when backend supports "ContextDomain" query predicate in block resolver
+	contextDomainQuery:       _isEnabled("contextDomainQuery")
 })

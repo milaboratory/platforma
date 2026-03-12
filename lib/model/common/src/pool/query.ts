@@ -80,6 +80,12 @@ export function executePSpecPredicate(predicate: PSpecPredicate, spec: PObjectSp
                 (axisSpec.domain !== undefined &&
                   Object.entries(matcher.domain).every(
                     ([domain, domainValue]) => axisSpec.domain![domain] === domainValue,
+                  ))) &&
+              (matcher.contextDomain === undefined ||
+                Object.keys(matcher.contextDomain).length === 0 ||
+                (axisSpec.contextDomain !== undefined &&
+                  Object.entries(matcher.contextDomain).every(
+                    ([key, value]) => axisSpec.contextDomain![key] === value,
                   ))),
           ),
         )

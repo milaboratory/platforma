@@ -10,6 +10,7 @@ export function deriveNativeId(spec: PObjectSpec): NativePObjectId {
     name: spec.name,
   };
   if (spec.domain !== undefined) result.domain = spec.domain;
+  if (spec.contextDomain !== undefined) result.contextDomain = spec.contextDomain;
   if (isPColumnSpec(spec)) result.axesSpec = getAxesId(spec.axesSpec);
   return canonicalize(result) as NativePObjectId;
 }

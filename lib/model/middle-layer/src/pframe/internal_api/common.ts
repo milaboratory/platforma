@@ -13,7 +13,7 @@ export type PTableId = PTableHandle;
 
 export interface AxisQualification {
   axis: SingleAxisSelector;
-  additionalDomains: Record<string, string>;
+  contextDomain: Record<string, string>;
 }
 
 export interface ColumnAxesWithQualifications {

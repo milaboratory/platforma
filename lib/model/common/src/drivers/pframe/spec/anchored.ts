@@ -32,16 +32,19 @@ function domainKey(key: string, value: string): string {
  */
 export class AnchoredIdDeriver {
   private readonly domains = new Map<string, string>();
+  private readonly contextDomains = new Map<string, string>();
   private readonly axes = new Map<string, AnchorAxisRefByIdx>();
   /**
    * Domain packs are used to group domain keys that can be anchored to the same anchor
    * This is used to optimize the lookup of domain anchors
    */
   private readonly domainPacks: string[][] = [];
+  private readonly contextDomainPacks: string[][] = [];
   /**
    * Maps domain packs to anchors
    */
   private readonly domainPackToAnchor = new Map<string, string>();
+  private readonly contextDomainPackToAnchor = new Map<string, string>();
 
   /**
    * Creates a new anchor context from a set of anchor column specifications
@@ -66,6 +69,18 @@ export class AnchoredIdDeriver {
         for (const [dKey, dValue] of domainEntries) {
           const key = domainKey(dKey, dValue);
           this.domains.set(key, anchorId);
+        }
+      }
+      if (spec.contextDomain !== undefined) {
+        const contextDomainEntries = Object.entries(spec.contextDomain);
+        contextDomainEntries.sort((a, b) => a[0].localeCompare(b[0]));
+
+        this.contextDomainPackToAnchor.set(JSON.stringify(contextDomainEntries), anchorId);
+        this.contextDomainPacks.push(contextDomainEntries.map(([dKey]) => dKey));
+
+        for (const [dKey, dValue] of contextDomainEntries) {
+          const key = domainKey(dKey, dValue);
+          this.contextDomains.set(key, anchorId);
         }
       }
     }
@@ -119,6 +134,32 @@ export class AnchoredIdDeriver {
       const anchorId = this.domains.get(key);
       result.domain ??= {};
       result.domain[dKey] = anchorId ? { anchor: anchorId } : dValue;
+    }
+
+    let skipContextDomains: Set<string> | undefined = undefined;
+    if (spec.contextDomain !== undefined) {
+      outer: for (const contextDomainPack of this.contextDomainPacks) {
+        const dAnchor: string[][] = [];
+        for (const domainKey of contextDomainPack) {
+          const dValue = spec.contextDomain[domainKey];
+          if (dValue !== undefined) dAnchor.push([domainKey, dValue]);
+          else break outer;
+        }
+        const contextDomainAnchor = this.contextDomainPackToAnchor.get(JSON.stringify(dAnchor));
+        if (contextDomainAnchor !== undefined) {
+          result.contextDomainAnchor = contextDomainAnchor;
+          skipContextDomains = new Set(contextDomainPack);
+          break;
+        }
+      }
+    }
+
+    for (const [dKey, dValue] of Object.entries(spec.contextDomain ?? {})) {
+      if (skipContextDomains !== undefined && skipContextDomains.has(dKey)) continue;
+      const key = domainKey(dKey, dValue);
+      const anchorId = this.contextDomains.get(key);
+      result.contextDomain ??= {};
+      result.contextDomain[dKey] = anchorId ? { anchor: anchorId } : dValue;
     }
 
     result.axes = spec.axesSpec.map((axis) => {
@@ -237,6 +278,38 @@ export function resolveAnchors(
       }
     }
     result.domain = resolvedDomain;
+  }
+
+  if (result.contextDomainAnchor !== undefined) {
+    const anchorSpec = anchors[result.contextDomainAnchor];
+    if (!anchorSpec) throw new Error(`Anchor "${result.contextDomainAnchor}" not found`);
+
+    const anchorContextDomains = anchorSpec.contextDomain || {};
+    result.contextDomain = { ...anchorContextDomains, ...result.contextDomain };
+    delete result.contextDomainAnchor;
+  }
+
+  if (result.contextDomain) {
+    const resolvedContextDomain: Record<string, string> = {};
+    for (const [key, value] of Object.entries(result.contextDomain)) {
+      if (typeof value === "string") {
+        resolvedContextDomain[key] = value;
+      } else {
+        // It's an AnchorDomainRef
+        const anchorSpec = anchors[value.anchor];
+        if (!anchorSpec)
+          throw new Error(`Anchor "${value.anchor}" not found for contextDomain key "${key}"`);
+
+        if (!anchorSpec.contextDomain || anchorSpec.contextDomain[key] === undefined) {
+          if (!ignoreMissingDomains)
+            throw new Error(`Context domain key "${key}" not found in anchor "${value.anchor}"`);
+          continue;
+        }
+
+        resolvedContextDomain[key] = anchorSpec.contextDomain[key];
+      }
+    }
+    result.contextDomain = resolvedContextDomain;
   }
 
   if (result.axes) result.axes = result.axes.map((axis) => resolveAxisReference(anchors, axis));

@@ -35,6 +35,13 @@ export interface AxisSelector {
    * An axis with additional domain entries not present in this selector will still match.
    */
   domain?: Record<string, string>;
+
+  /**
+   * Optional context domain key-value pairs to match against.
+   * Context domains are matched by kinship rules (subset/superset/overlap) rather than exact equality.
+   * When specified, an axis will match only if it contains all the key-value pairs defined here.
+   */
+  contextDomain?: Record<string, string>;
 }
 
 /** Single axis selector */
@@ -112,6 +119,11 @@ export interface AnchoredPColumnSelector {
   /** Optional domain values to match, can include anchored references, if domainAnchor is specified,
    * interpreted as additional domains to domain from the anchor */
   domain?: Record<string, ADomain>;
+  /** If specified, the context domain values must be anchored to this anchor */
+  contextDomainAnchor?: string;
+  /** Optional context domain values to match, can include anchored references, if contextDomainAnchor is specified,
+   * interpreted as additional context domains to context domain from the anchor */
+  contextDomain?: Record<string, ADomain>;
   /** Optional axes to match, can include anchored references */
   axes?: AAxisSelector[];
   /** When true, allows matching if only a subset of axes match */
@@ -130,6 +142,8 @@ export interface AnchoredPColumnSelector {
 export interface PColumnSelector extends AnchoredPColumnSelector {
   domainAnchor?: never;
   domain?: Record<string, string>;
+  contextDomainAnchor?: never;
+  contextDomain?: Record<string, string>;
   axes?: AxisSelector[];
 }
 
@@ -193,6 +207,13 @@ export function matchAxis(selector: AxisSelector, axis: AxisId): boolean {
       if (axisDomain[key] !== value) return false;
   }
 
+  // Match contextDomain if specified
+  if (selector.contextDomain !== undefined) {
+    const axisContextDomain = axis.contextDomain || {};
+    for (const [key, value] of Object.entries(selector.contextDomain))
+      if (axisContextDomain[key] !== value) return false;
+  }
+
   return true;
 }
 
@@ -225,6 +246,13 @@ export function matchPColumn(pcolumn: PColumnSpec, selector: PColumnSelector): b
     const columnDomain = pcolumn.domain || {};
     for (const [key, value] of Object.entries(selector.domain))
       if (columnDomain[key] !== value) return false;
+  }
+
+  // Match contextDomain if specified
+  if (selector.contextDomain !== undefined) {
+    const columnContextDomain = pcolumn.contextDomain || {};
+    for (const [key, value] of Object.entries(selector.contextDomain))
+      if (columnContextDomain[key] !== value) return false;
   }
 
   // Match axes if specified

@@ -7,6 +7,11 @@ bquery := import(":workflow.bquery")
 model := import(":workflow.model")
 validation := import(":validation")
 smart := import(":smart")
+feats := import(":feats")
+assets := import(":assets")
+render := import(":render")
+
+contextFilterTpl := assets.importTemplate(":workflow.query-context-filter")
 
 self.awaitState("anchorSpecs", "ResourceReady")
 self.awaitState("request", "ResourceReady")
@@ -116,9 +121,55 @@ self.body(func(inputs) {
             queryPredicates += [ domainPredicate ]
         }
 
+        // Resolve contextDomain criteria — always, regardless of feature flag.
+        // Used either as a backend predicate or for client-side filtering.
+        resolvedContextDomain := {}
+        needsClientFilter := false
+
+        if !is_undefined(query.contextDomain) || !is_undefined(query.contextDomainAnchor) {
+            // contextDomainAnchor: copy all contextDomain values from the referenced anchor
+            if !is_undefined(query.contextDomainAnchor) {
+                anchorId := query.contextDomainAnchor
+                ll.assert(!is_undefined(anchors[anchorId]),
+                    "Cannot resolve context domain anchor: anchor '%s' not found", anchorId)
+                if !is_undefined(anchors[anchorId].contextDomain) {
+                    for domainKey, domainValue in anchors[anchorId].contextDomain {
+                        resolvedContextDomain[domainKey] = domainValue
+                    }
+                }
+            }
+
+            // contextDomain: direct values or anchored references per key
+            if !is_undefined(query.contextDomain) {
+                for domainKey, domainValue in query.contextDomain {
+                    if is_map(domainValue) && !is_undefined(domainValue.anchor) {
+                        anchorId := domainValue.anchor
+                        ll.assert(!is_undefined(anchors[anchorId]),
+                            "Cannot resolve anchored contextDomain: anchor '%s' not found", anchorId)
+                        if is_undefined(anchors[anchorId].contextDomain) || is_undefined(anchors[anchorId].contextDomain[domainKey]) {
+                            if opts.ignoreMissingDomains {
+                                continue
+                            }
+                            ll.panic("Cannot resolve anchored contextDomain: key '%s' not found in anchor '%s'", domainKey, anchorId)
+                        }
+                        resolvedContextDomain[domainKey] = anchors[anchorId].contextDomain[domainKey]
+                    } else {
+                        resolvedContextDomain[domainKey] = domainValue
+                    }
+                }
+            }
+
+            if feats.contextDomainQuery {
+                queryPredicates += [ { type: "ContextDomain", domain: resolvedContextDomain } ]
+            } else if len(resolvedContextDomain) > 0 {
+                needsClientFilter = true
+            }
+        }
+
         // Add axes if present
+        axesMatcher := undefined
         if !is_undefined(query.axes) {
-            axesMatcher := {
+            axesMatcher = {
                 type: "AxesKeys",
                 axesKeys: slices.map(query.axes, func(axis) {
                     // If axis is a direct AxisId (has name, type properties)
@@ -127,7 +178,8 @@ self.body(func(inputs) {
                         return {
                             name: axis.name,
                             type: axis.type,
-                            domain: !is_undefined(axis.domain) ? axis.domain : {}
+                            domain: !is_undefined(axis.domain) ? axis.domain : {},
+                            contextDomain: !is_undefined(axis.contextDomain) ? axis.contextDomain : {}
                         }
                     }
 
@@ -183,7 +235,8 @@ self.body(func(inputs) {
 						return {
 							name: foundAxis.name,
 							type: foundAxis.type,
-							domain: !is_undefined(foundAxis.domain) ? foundAxis.domain : {}
+							domain: !is_undefined(foundAxis.domain) ? foundAxis.domain : {},
+							contextDomain: !is_undefined(foundAxis.contextDomain) ? foundAxis.contextDomain : {}
 						}
                     }
 
@@ -230,14 +283,46 @@ self.body(func(inputs) {
         } : queryPredicates[0]
 
         expectMultiple := query.matchStrategy == "expectMultiple"
+
         queryOps := {
             spec: true,
-            data: fetchData,  // Use the fetchData flag to control whether to fetch data
+            data: fetchData,
             first: !expectMultiple,
             single: !expectMultiple
         }
 
+        if needsClientFilter {
+            // Force multi-result so filter template sees all candidates.
+            queryOps.first = false
+            queryOps.single = false
+        }
+
         queryResult := bquery.create(querySpec, ctx, queryOps)
+
+        if needsClientFilter {
+            // Extract axis-level contextDomain for filtering.
+            resolvedAxesFilter := []
+            if !is_undefined(query.axes) {
+                for axisObj in axesMatcher.axesKeys {
+                    resolvedAxesFilter = append(resolvedAxesFilter, {
+                        name: axisObj.name,
+                        contextDomain: axisObj.contextDomain
+                    })
+                }
+            }
+
+            filterResult := render.createEphemeral(contextFilterTpl, {
+                unfilteredResult: queryResult,
+                request: {
+                    contextDomain: resolvedContextDomain,
+                    axesFilter: resolvedAxesFilter,
+                    partialAxesMatch: !is_undefined(query.partialAxesMatch) ? query.partialAxesMatch : false,
+                    wantFirst: !expectMultiple,
+                    wantSingle: !expectMultiple
+                }
+            })
+            queryResult = filterResult.output("result")
+        }
 
         outputs["result/" + queryId] = queryResult
     }

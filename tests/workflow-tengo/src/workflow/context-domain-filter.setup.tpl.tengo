@@ -1,0 +1,21 @@
+// Setup workflow: exports PColumns from a map of specs.
+//
+// Inputs:
+//   args.columns — map of export key to PColumnSpec
+
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+wf.body(func(args) {
+	exports := {}
+	for key, spec in args.columns {
+		exports[key] = {
+			spec: spec,
+			data: smart.createNullResource()
+		}
+	}
+	return {
+		outputs: {},
+		exports: exports
+	}
+})

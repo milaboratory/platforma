@@ -16,6 +16,7 @@ import type {
   DeleteColumnFromColumnsRequest,
   DeleteColumnFromColumnsResponse,
 } from "./delete_column";
+import type { DiscoverColumnsRequest, DiscoverColumnsResponse } from "./discover_columns";
 import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
 
 export interface PFrameWasmAPI {
@@ -56,6 +57,13 @@ export interface PFrameWasm extends Disposable {
    * Deletes columns from a columns specification.
    */
   deleteColumns(request: DeleteColumnFromColumnsRequest): DeleteColumnFromColumnsResponse;
+
+  /**
+   * Discovers columns compatible with a given axes integration.
+   * Returns columns that could be integrated with the provided column set,
+   * along with possible mapping variants describing how to integrate them.
+   */
+  discoverColumns(request: DiscoverColumnsRequest): DiscoverColumnsResponse;
 
   /**
    * Finds columns in the PFrame matching the given filter criteria.

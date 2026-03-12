@@ -1156,6 +1156,21 @@ _matcherToAxisSpec := func(ctx, processedMatcher) {
 				continue
 			}
 		}
+		if !is_undefined(distilledMatcher.contextDomain) && len(distilledMatcher.contextDomain) > 0 {
+			if is_undefined(spec.contextDomain) || len(spec.contextDomain) < len(distilledMatcher.contextDomain) {
+				continue
+			}
+			contextDomainMatches := true
+			for domainKey, domainValue in distilledMatcher.contextDomain {
+				if spec.contextDomain[domainKey] != domainValue {
+					contextDomainMatches = false
+					break
+				}
+			}
+			if !contextDomainMatches {
+				continue
+			}
+		}
 		axisSpec = spec
 		break
 	}

@@ -62,4 +62,8 @@ def toPolarsType(pType: PType) -> pl.DataType:
         raise ValueError(f"Unknown Polars type string '{pType}'.")
 
 def axis_ref(spec: AxisSpec) -> str:
-    return canonicalize(AxisId(name=spec.name, type=spec.type, domain=spec.domain)).decode('utf-8')
+    kwargs: dict = dict(name=spec.name, type=spec.type, domain=spec.domain)
+    context_domain = getattr(spec, 'context_domain', None)
+    if context_domain is not None:
+        kwargs['context_domain'] = context_domain
+    return canonicalize(AxisId(**kwargs)).decode('utf-8')

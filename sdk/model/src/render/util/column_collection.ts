@@ -149,19 +149,25 @@ function fallbackIdDeriver(originalId: PObjectId, axisFilters?: AxisFilterByIdx[
 function hasAnchors(selector: unknown): selector is AnchoredPColumnSelector {
   if (!selector || typeof selector !== "object") return false;
   const potentialAnchored = selector as Record<string, any>;
-  const domainHasAnchors =
-    potentialAnchored["domain"] &&
-    typeof potentialAnchored["domain"] === "object" &&
-    Object.values(potentialAnchored["domain"]).some(
-      (v: unknown) => typeof v === "object" && v !== null && "anchor" in v,
-    );
+  const hasAnchorValues = (obj: unknown) =>
+    obj &&
+    typeof obj === "object" &&
+    Object.values(obj).some((v: unknown) => typeof v === "object" && v !== null && "anchor" in v);
+  const domainHasAnchors = hasAnchorValues(potentialAnchored["domain"]);
+  const contextDomainHasAnchors = hasAnchorValues(potentialAnchored["contextDomain"]);
   const axesHaveAnchors =
     potentialAnchored["axes"] &&
     Array.isArray(potentialAnchored["axes"]) &&
     potentialAnchored["axes"].some(
       (a: unknown) => typeof a === "object" && a !== null && "anchor" in a,
     );
-  return !!potentialAnchored["domainAnchor"] || domainHasAnchors || axesHaveAnchors;
+  return (
+    !!potentialAnchored["domainAnchor"] ||
+    !!potentialAnchored["contextDomainAnchor"] ||
+    domainHasAnchors ||
+    contextDomainHasAnchors ||
+    axesHaveAnchors
+  );
 }
 
 /**
