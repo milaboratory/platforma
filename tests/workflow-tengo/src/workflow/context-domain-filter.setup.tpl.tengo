@@ -1,0 +1,88 @@
+// Setup workflow: exports 3 PColumns with different contextDomain values.
+// All share the same name so they're distinguishable only by contextDomain.
+
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+wf.body(func(args) {
+	exports := {}
+
+	// e1: species=human, tissue=blood
+	exports["e1"] = {
+		spec: {
+			kind: "PColumn",
+			name: "pl7.app/cdtest",
+			valueType: "String",
+			domain: {
+				"pl7.app/block": "b1"
+			},
+			contextDomain: {
+				"species": "human",
+				"tissue": "blood"
+			},
+			axesSpec: [{
+				name: "pl7.app/sampleId",
+				type: "String",
+				domain: {},
+				contextDomain: {
+					"species": "human"
+				}
+			}]
+		},
+		data: smart.createNullResource()
+	}
+
+	// e2: species=human, tissue=lung
+	exports["e2"] = {
+		spec: {
+			kind: "PColumn",
+			name: "pl7.app/cdtest",
+			valueType: "String",
+			domain: {
+				"pl7.app/block": "b1"
+			},
+			contextDomain: {
+				"species": "human",
+				"tissue": "lung"
+			},
+			axesSpec: [{
+				name: "pl7.app/sampleId",
+				type: "String",
+				domain: {},
+				contextDomain: {
+					"species": "human"
+				}
+			}]
+		},
+		data: smart.createNullResource()
+	}
+
+	// e3: species=mouse
+	exports["e3"] = {
+		spec: {
+			kind: "PColumn",
+			name: "pl7.app/cdtest",
+			valueType: "String",
+			domain: {
+				"pl7.app/block": "b1"
+			},
+			contextDomain: {
+				"species": "mouse"
+			},
+			axesSpec: [{
+				name: "pl7.app/sampleId",
+				type: "String",
+				domain: {},
+				contextDomain: {
+					"species": "mouse"
+				}
+			}]
+		},
+		data: smart.createNullResource()
+	}
+
+	return {
+		outputs: {},
+		exports: exports
+	}
+})
