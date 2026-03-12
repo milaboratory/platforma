@@ -1,5 +1,5 @@
 import { type Theme, themeQuartz, createPart } from "ag-grid-enterprise";
-import OverrideCss from "../ag-override.css?raw";
+import OverrideCss from "./ag-override.css?raw";
 
 export const AgGridTheme: Theme = themeQuartz
   .withParams({

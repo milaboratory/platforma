@@ -25,7 +25,7 @@ import { PlAgChartHistogramCell } from "../components/PlAgChartHistogramCell";
 import type { ImportFileHandle } from "@platforma-sdk/model";
 import type { ImportProgress } from "@platforma-sdk/model";
 import { PlAgCellStatusTag } from "../components/PlAgCellStatusTag";
-import { AgGridTheme } from "../components/PlAgDataTable/compositions/useTheme";
+import { AgGridTheme } from "./AgGridTheme";
 interface GridOptionsExtended<TData = any> extends Omit<
   GridOptions<TData>,
   "columnDefs" | "loadingOverlayComponentParams"
