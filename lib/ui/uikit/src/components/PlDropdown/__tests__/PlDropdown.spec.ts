@@ -1,8 +1,7 @@
 import { describe, it, expect } from "vitest";
 
-import { mount } from "@vue/test-utils";
+import { mount, flushPromises } from "@vue/test-utils";
 import PlDropdown from "../PlDropdown.vue";
-import { delay } from "@milaboratories/helpers";
 
 describe("PlDropdown", () => {
   it("modelValue", async () => {
@@ -24,8 +23,7 @@ describe("PlDropdown", () => {
     expect(options.length).toBe(2);
 
     options[1].click();
-
-    await delay(20);
+    await flushPromises();
 
     expect(wrapper.props("modelValue")).toBe(2);
 
