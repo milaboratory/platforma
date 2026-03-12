@@ -7,13 +7,12 @@ export default {
 };
 </script>
 
-<script lang="ts" setup>
+<script lang="ts" setup generic="C extends undefined | string = string">
 import { computed, ref, useSlots } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
 import { getErrorMessage } from "../../helpers/error.ts";
 import DoubleContour from "../../utils/DoubleContour.vue";
 import { useLabelNotch } from "../../utils/useLabelNotch";
-import { useValidation } from "../../utils/useValidation";
 import { PlIcon16 } from "../PlIcon16";
 import { PlIcon24 } from "../PlIcon24";
 import { PlSvg } from "../PlSvg";
@@ -25,8 +24,8 @@ const slots = useSlots();
 /**
  * The current value of the input field.
  */
-const model = defineModel<string>({
-  default: "",
+const model = defineModel<string | C>({
+  required: true,
 });
 
 const props = defineProps<{
@@ -36,8 +35,9 @@ const props = defineProps<{
   label?: string;
   /**
    * If `true`, a clear icon will appear in the input field to clear the value (set it to empty string).
+   * If a function, calls it to get the reset value.
    */
-  clearable?: boolean;
+  clearable?: boolean | (() => C);
   /**
    * If `true`, the input field is marked as required.
    */
@@ -66,10 +66,8 @@ const props = defineProps<{
    * A prefix text to display inside the input field before the value.
    */
   prefix?: string;
-  /**
-   * An array of validation rules to apply to the input field. Each rule is a function that takes the current value and returns `true` if valid or an error message if invalid.
-   */
-  rules?: ((v: string) => boolean | string)[];
+  /** Additional validity check for input value that must return an error text if failed */
+  validate?: (v: string | C) => string | undefined;
   /**
    * The string specifies whether the field should be a password or not, value could be "password" or undefined.
    */
@@ -107,11 +105,9 @@ const passwordIcon = computed(() => (showPassword.value ? "view-show" : "view-hi
 
 const clear = () => {
   if (props.clearable) {
-    model.value = "";
+    model.value = typeof props.clearable === "function" ? props.clearable() : "";
   }
 };
-
-const validationData = useValidation(model, props.rules || []);
 
 const isEmpty = computed(() => model.value === "");
 
@@ -123,8 +119,11 @@ const displayErrors = computed(() => {
   if (propsError) {
     errors.push(propsError);
   }
-  if (!validationData.value.isValid) {
-    errors.push(...validationData.value.errors);
+  if (props.validate) {
+    const error = props.validate(model.value);
+    if (error) {
+      errors.push(error);
+    }
   }
   return errors;
 });

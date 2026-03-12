@@ -18,18 +18,19 @@ export default {
 };
 </script>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="C extends undefined | number = undefined | number">
 import "./pl-number-field.scss";
 import DoubleContour from "../../utils/DoubleContour.vue";
 import { useLabelNotch } from "../../utils/useLabelNotch";
 import { computed, ref, useSlots, watch } from "vue";
 import { PlTooltip } from "../PlTooltip";
-import { parseNumber } from "./parseNumber";
+import { PlIcon16 } from "../PlIcon16";
+import { parseNumber, normalizeNumberString } from "./parseNumber";
+
+const modelValue = defineModel<undefined | number>({ required: true });
 
 const props = withDefaults(
   defineProps<{
-    /** Input is disabled if true */
-    disabled?: boolean;
     /** Label on the top border of the field, empty by default */
     label?: string;
     /** Input placeholder, empty by default */
@@ -40,14 +41,16 @@ const props = withDefaults(
     minValue?: number;
     /** If defined - show an error if value is higher */
     maxValue?: number;
-    /** If false - remove buttons on the right */
-    useIncrementButtons?: boolean;
-    /** If true - changes do not apply immediately, they apply only by removing focus from the input (by click enter or by click outside)  */
-    updateOnEnterOrClickOutside?: boolean;
+    /** Input is disabled if true */
+    disabled?: boolean;
+    /** If true - remove buttons on the right */
+    disableSteps?: boolean;
     /** Error message that shows always when it's provided, without other checks */
     errorMessage?: string;
     /** Additional validity check for input value that must return an error text if failed */
     validate?: (v: number) => string | undefined;
+    /** If `true`, shows a clear button that resets value to `undefined`. If a function, calls it to get the reset value. */
+    clearable?: boolean | (() => C);
     /** Makes some of corners not rounded */
     groupPosition?:
       | "top"
@@ -66,15 +69,13 @@ const props = withDefaults(
     placeholder: undefined,
     minValue: undefined,
     maxValue: undefined,
-    useIncrementButtons: true,
-    updateOnEnter: false,
-    errorMessage: undefined,
-    validate: undefined,
+    clearable: false,
     groupPosition: undefined,
+    disableSteps: false,
+    validate: undefined,
+    errorMessage: undefined,
   },
 );
-
-const modelValue = defineModel<number | undefined>({ required: true });
 
 const slots = useSlots();
 
@@ -109,19 +110,30 @@ const inputValue = computed({
 
     cachedValue.value = r.cleanInput;
 
-    if (r.error || props.updateOnEnterOrClickOutside) {
+    if (r.error) {
       inputRef.value!.value = r.cleanInput;
     } else {
-      modelValue.value = r.value;
+      modelValue.value = r.value as C;
     }
   },
 });
 
-const focused = ref(false);
+const canShowClearable = computed(
+  () => props.clearable && modelValue.value !== undefined && !props.disabled,
+);
+
+function clear() {
+  if (typeof props.clearable === "function") {
+    modelValue.value = props.clearable();
+  } else {
+    modelValue.value = undefined as C;
+  }
+  resetCachedValue();
+}
 
 function applyChanges() {
   if (parsedResult.value.error === undefined) {
-    modelValue.value = parsedResult.value.value;
+    modelValue.value = parsedResult.value.value as C;
   }
 }
 
@@ -205,16 +217,6 @@ function decrement() {
 }
 
 function handleKeyPress(e: { code: string; preventDefault(): void }) {
-  if (props.updateOnEnterOrClickOutside) {
-    if (e.code === "Escape") {
-      inputValue.value = modelToString(modelValue.value);
-      inputRef.value?.blur();
-    }
-    if (e.code === "Enter") {
-      inputRef.value?.blur();
-    }
-  }
-
   if (e.code === "Enter") {
     inputValue.value = String(modelValue.value); // to make .1 => 0.1, 10.00 => 10, remove leading zeros etc
   }
@@ -223,12 +225,20 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
     e.preventDefault();
   }
 
-  if (props.useIncrementButtons && e.code === "ArrowUp") {
+  if (props.disableSteps !== true && e.code === "ArrowUp") {
     increment();
   }
 
-  if (props.useIncrementButtons && e.code === "ArrowDown") {
+  if (props.disableSteps !== true && e.code === "ArrowDown") {
     decrement();
+  }
+}
+
+function handlePaste(e: ClipboardEvent) {
+  const pasted = e.clipboardData?.getData("text");
+  if (pasted) {
+    e.preventDefault();
+    inputValue.value = normalizeNumberString(pasted);
   }
 }
 
@@ -251,10 +261,7 @@ const onMousedown = (ev: MouseEvent) => {
   >
     <div class="pl-number-field__main-wrapper d-flex">
       <DoubleContour class="pl-number-field__contour" :group-position="groupPosition" />
-      <div
-        class="pl-number-field__wrapper flex-grow d-flex flex-align-center"
-        :class="{ withoutArrows: !useIncrementButtons }"
-      >
+      <div class="pl-number-field__wrapper flex-grow d-flex flex-align-center">
         <label v-if="label" class="text-description">
           {{ label }}
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
@@ -269,15 +276,18 @@ const onMousedown = (ev: MouseEvent) => {
           :disabled="disabled"
           :placeholder="placeholder"
           class="text-s flex-grow"
-          @focusin="focused = true"
-          @focusout="
-            focused = false;
-            applyChanges();
-          "
+          @focusout="applyChanges"
+          @paste="handlePaste"
+        />
+        <PlIcon16
+          v-if="canShowClearable"
+          class="pl-number-field__clearable"
+          name="delete-clear"
+          @click.stop="clear"
         />
       </div>
       <div
-        v-if="useIncrementButtons"
+        v-if="!props.disableSteps"
         class="pl-number-field__icons d-flex-column"
         @mousedown="onMousedown"
       >

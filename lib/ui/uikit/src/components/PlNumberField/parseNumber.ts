@@ -10,6 +10,53 @@ function isPartial(v: string) {
   return v === "." || v === "," || v === "-";
 }
 
+/**
+ * Normalizes a pasted number string by detecting the format and removing thousand separators.
+ *
+ * Supported formats:
+ *   1.222.333,0053  (EU: dot = thousands, comma = decimal)
+ *   1,222,333.0053  (US: comma = thousands, dot = decimal)
+ *   1 222 333,0053  (space = thousands, comma = decimal)
+ *   1 222 333.0053  (space = thousands, dot = decimal)
+ */
+export function normalizeNumberString(v: string): string {
+  v = v.trim();
+  v = v.replace(/\s/g, ""); // remove spaces / nbsp (thousand separators)
+  v = v.replace("−", "-");
+  v = v.replace("–", "-");
+  v = v.replace("+", "");
+
+  const dots = (v.match(/\./g) || []).length;
+  const commas = (v.match(/,/g) || []).length;
+
+  if (dots > 1 && commas <= 1) {
+    // EU: 1.222.333,0053 — dots are thousand separators, comma is decimal
+    v = v.replace(/\./g, "");
+    v = v.replace(",", ".");
+  } else if (commas > 1 && dots <= 1) {
+    // US: 1,222,333.0053 — commas are thousand separators, dot is decimal
+    v = v.replace(/,/g, "");
+  } else if (dots === 1 && commas === 1) {
+    // Ambiguous with one of each — last one is the decimal separator
+    const lastDot = v.lastIndexOf(".");
+    const lastComma = v.lastIndexOf(",");
+    if (lastComma > lastDot) {
+      // EU: 1.222,05
+      v = v.replace(".", "");
+      v = v.replace(",", ".");
+    } else {
+      // US: 1,222.05
+      v = v.replace(",", "");
+    }
+  } else if (commas === 1 && dots === 0) {
+    // Single comma — treat as decimal separator
+    v = v.replace(",", ".");
+  }
+  // dots === 1 && commas === 0 — already fine
+
+  return v;
+}
+
 function clearNumericValue(v: string) {
   v = v.trim();
   v = v.replace(",", ".");

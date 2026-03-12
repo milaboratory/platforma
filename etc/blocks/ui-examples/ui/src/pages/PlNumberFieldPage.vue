@@ -3,10 +3,16 @@ import { PlRow, PlContainer, PlCheckbox, PlNumberField, PlBlockPage } from "@pla
 import { reactive } from "vue";
 
 const data = reactive({
-  useIncrementButtons: true,
-  updateOnEnterOrClickOutside: false,
   number: 100,
+  disableSteps: false,
 });
+
+function updateNumber(value: number) {
+  if (data.number == null || Number.isNaN(data.number)) {
+    data.number = 0;
+  }
+  data.number += value;
+}
 </script>
 
 <template>
@@ -14,12 +20,9 @@ const data = reactive({
     <template #title>PlNumberField</template>
     <pre>number: {{ data.number }} {{ typeof data.number }}</pre>
     <PlRow>
-      <PlCheckbox v-model="data.useIncrementButtons">Use increment buttons</PlCheckbox>
-      <PlCheckbox v-model="data.updateOnEnterOrClickOutside"
-        >Update on enter or click outside</PlCheckbox
-      >
-      <button @click="data.number += 1">Increment number</button>
-      <button @click="data.number -= 1">Decrement number</button>
+      <PlCheckbox v-model="data.disableSteps">Disable increment buttons</PlCheckbox>
+      <button @click="updateNumber(1)">Increment number</button>
+      <button @click="updateNumber(-1)">Decrement number</button>
       <button @click="data.number = NaN">Set NaN</button>
       <button @click="data.number = 102">Set 102</button>
       <button @click="data.number = '102.2aaaa' as unknown as number">Set '102.2aaaa'</button>
@@ -31,24 +34,24 @@ const data = reactive({
           :min-value="10"
           :max-value="100"
           label="PlNumberField (min: 10, max: 100)"
-          :update-on-enter-or-click-outside="data.updateOnEnterOrClickOutside"
-          :use-increment-buttons="data.useIncrementButtons"
+          clearable
+          :disable-steps="data.disableSteps"
         />
         <PlNumberField
           v-model="data.number"
           :min-value="-5"
           :max-value="200"
           label="PlNumberField (min: -5, max: 200)"
-          :update-on-enter-or-click-outside="data.updateOnEnterOrClickOutside"
-          :use-increment-buttons="data.useIncrementButtons"
+          :clearable="() => undefined"
+          :disable-steps="data.disableSteps"
         />
         <PlNumberField
           v-model="data.number"
           :max-value="100"
           label="PlNumberField (max: 100 and validate is even)"
           :validate="(v) => (v % 2 === 0 ? undefined : 'Value must be even')"
-          :update-on-enter-or-click-outside="data.updateOnEnterOrClickOutside"
-          :use-increment-buttons="data.useIncrementButtons"
+          :clearable="() => 33"
+          :disable-steps="data.disableSteps"
         />
       </PlContainer>
     </PlRow>
