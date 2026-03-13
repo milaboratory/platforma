@@ -1,5 +1,14 @@
 ## PlTextField
 
+### `parse` prop removed — use `PlNumberField` for numeric inputs
+
+The `:parse` prop has been removed from `PlTextField`. If you were using it to parse numbers, switch to `PlNumberField`:
+
+```diff
+- <PlTextField v-model="count" :parse="parseNumber" />
++ <PlNumberField v-model="count" />
+```
+
 ### `model-value` is now required and supports `undefined`
 
 Previously, `v-model` defaulted to `""`. Now it is required and accepts `string | undefined`.
