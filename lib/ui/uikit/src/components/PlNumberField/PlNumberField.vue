@@ -9,7 +9,6 @@
  * <PlNumberField
  *   v-model="evenNumber"
  *   :validate="(v) => v % 2 !== 0 ? 'Number must be even' : undefined"
- *   :update-on-enter-or-click-outside="true"
  *   label="Even Number"
  * />
  */
@@ -25,7 +24,7 @@ import { useLabelNotch } from "../../utils/useLabelNotch";
 import { computed, ref, useSlots, watch } from "vue";
 import { PlTooltip } from "../PlTooltip";
 import { PlIcon16 } from "../PlIcon16";
-import { parseNumber, normalizeNumberString } from "./parseNumber";
+import { tryParseNumber, normalizePastedNumber, validateNumber } from "./parseNumber";
 
 const modelValue = defineModel<V>({ required: true });
 
@@ -84,38 +83,80 @@ const inputRef = ref<HTMLInputElement>();
 
 useLabelNotch(rootRef);
 
-function modelToString(v: number | undefined) {
-  return v === undefined ? "" : String(+v); // (+v) to avoid staying in input non-number values if they are provided in model
+function numberToString(v: number | undefined): string {
+  return v === undefined ? "" : String(+v);
 }
 
-const parsedResult = computed(() => parseNumber(props, inputValue.value));
+// Display text — what the user sees in the input. Independent of modelValue during editing.
+const displayText = ref(numberToString(modelValue.value));
 
-const cachedValue = ref<string | undefined>(undefined);
-
-const resetCachedValue = () => (cachedValue.value = undefined);
-
-watch(modelValue, (n) => {
-  const r = parsedResult.value;
-  if (r.error || n !== r.value) {
-    resetCachedValue();
-  }
+// When model changes externally (parent, increment/decrement), sync display.
+// Skip if user's current input already represents the same value.
+watch(modelValue, (newVal) => {
+  const parsed = tryParseNumber(displayText.value);
+  if (parsed.value === newVal) return;
+  displayText.value = numberToString(newVal);
 });
 
-const inputValue = computed({
-  get() {
-    return cachedValue.value ?? modelToString(modelValue.value);
-  },
-  set(nextValue: string) {
-    const r = parseNumber(props, nextValue);
+function handleInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+  displayText.value = input.value;
 
-    cachedValue.value = r.cleanInput;
+  const result = tryParseNumber(input.value);
+  if (result.value !== undefined) {
+    modelValue.value = result.value as V;
+  } else if (input.value.trim() === "") {
+    modelValue.value = undefined as V;
+  }
+}
 
-    if (r.error) {
-      inputRef.value!.value = r.cleanInput;
-    } else {
-      modelValue.value = r.value as V;
-    }
-  },
+// On Enter or blur — replace display with canonical number string
+function commitValue() {
+  const text = displayText.value.trim();
+  if (text === "") {
+    modelValue.value = undefined as V;
+    displayText.value = "";
+    return;
+  }
+  const result = tryParseNumber(text);
+  if (result.value !== undefined) {
+    modelValue.value = result.value as V;
+    displayText.value = String(result.value);
+  }
+}
+
+function handlePaste(e: ClipboardEvent) {
+  const input = inputRef.value!;
+  const pasted = e.clipboardData?.getData("text");
+  if (!pasted) return;
+
+  e.preventDefault();
+
+  const selStart = input.selectionStart ?? 0;
+  const selEnd = input.selectionEnd ?? 0;
+  const current = displayText.value;
+
+  const normalized = normalizePastedNumber(pasted);
+  const newValue = current.slice(0, selStart) + normalized + current.slice(selEnd);
+
+  displayText.value = newValue;
+
+  const result = tryParseNumber(newValue);
+  if (result.value !== undefined) {
+    modelValue.value = result.value as V;
+  }
+}
+
+const error = computed(() => {
+  if (props.errorMessage) return props.errorMessage;
+
+  const result = tryParseNumber(displayText.value);
+  if (result.error) return result.error;
+  if (result.value !== undefined) {
+    return validateNumber(result.value, props);
+  }
+
+  return undefined;
 });
 
 const canShowClearable = computed(
@@ -128,136 +169,89 @@ function clear() {
   } else {
     modelValue.value = undefined as V;
   }
-  resetCachedValue();
+  displayText.value = numberToString(modelValue.value);
 }
-
-function applyChanges() {
-  if (parsedResult.value.error === undefined) {
-    modelValue.value = parsedResult.value.value as C;
-  }
-}
-
-const errors = computed(() => {
-  let ers: string[] = [];
-
-  if (props.errorMessage) {
-    ers.push(props.errorMessage);
-  }
-
-  const r = parsedResult.value;
-
-  if (r.error) {
-    ers.push(r.error.message);
-  } else if (props.validate && r.value !== undefined) {
-    const error = props.validate(r.value);
-    if (error) {
-      ers.push(error);
-    }
-  }
-
-  ers = [...ers];
-
-  return ers.join(" ");
-});
 
 const isIncrementDisabled = computed(() => {
-  const r = parsedResult.value;
-
-  if (props.maxValue !== undefined && r.value !== undefined) {
-    return r.value >= props.maxValue;
-  }
-
-  return false;
+  return (
+    props.maxValue !== undefined &&
+    modelValue.value !== undefined &&
+    modelValue.value >= props.maxValue
+  );
 });
 
 const isDecrementDisabled = computed(() => {
-  const r = parsedResult.value;
-
-  if (props.minValue !== undefined && r.value !== undefined) {
-    return r.value <= props.minValue;
-  }
-
-  return false;
+  return (
+    props.minValue !== undefined &&
+    modelValue.value !== undefined &&
+    modelValue.value <= props.minValue
+  );
 });
 
 const multiplier = computed(() => 10 ** (props.step.toString().split(".").at(1)?.length ?? 0));
 
 function increment() {
-  const r = parsedResult.value;
+  if (isIncrementDisabled.value) return;
 
-  const parsedValue = r.value;
-
-  if (!isIncrementDisabled.value) {
-    let nV;
-    if (parsedValue === undefined) {
-      nV = props.minValue ? props.minValue : 0;
-    } else {
-      nV =
-        ((parsedValue || 0) * multiplier.value + props.step * multiplier.value) / multiplier.value;
-    }
-    modelValue.value = (props.maxValue !== undefined ? Math.min(props.maxValue, nV) : nV) as V;
+  let nV: number;
+  if (modelValue.value === undefined) {
+    nV = props.minValue ?? 0;
+  } else {
+    nV =
+      ((modelValue.value || 0) * multiplier.value + props.step * multiplier.value) /
+      multiplier.value;
   }
+
+  modelValue.value = (props.maxValue !== undefined ? Math.min(props.maxValue, nV) : nV) as V;
 }
 
 function decrement() {
-  const r = parsedResult.value;
+  if (isDecrementDisabled.value) return;
 
-  const parsedValue = r.value;
-
-  if (!isDecrementDisabled.value) {
-    let nV;
-    if (parsedValue === undefined) {
-      nV = 0;
-    } else {
-      nV =
-        ((parsedValue || 0) * multiplier.value - props.step * multiplier.value) / multiplier.value;
-    }
-    modelValue.value = (props.minValue !== undefined ? Math.max(props.minValue, nV) : nV) as V;
+  let nV: number;
+  if (modelValue.value === undefined) {
+    nV = 0;
+  } else {
+    nV =
+      ((modelValue.value || 0) * multiplier.value - props.step * multiplier.value) /
+      multiplier.value;
   }
+
+  modelValue.value = (props.minValue !== undefined ? Math.max(props.minValue, nV) : nV) as V;
 }
 
-function handleKeyPress(e: { code: string; preventDefault(): void }) {
+function handleKeyDown(e: KeyboardEvent) {
   if (e.code === "Enter") {
-    inputValue.value = String(modelValue.value); // to make .1 => 0.1, 10.00 => 10, remove leading zeros etc
+    commitValue();
   }
 
   if (["ArrowDown", "ArrowUp"].includes(e.code)) {
     e.preventDefault();
   }
 
-  if (props.disableSteps !== true && e.code === "ArrowUp") {
+  if (!props.disableSteps && e.code === "ArrowUp") {
     increment();
   }
 
-  if (props.disableSteps !== true && e.code === "ArrowDown") {
+  if (!props.disableSteps && e.code === "ArrowDown") {
     decrement();
   }
 }
 
-function handlePaste(e: ClipboardEvent) {
-  const pasted = e.clipboardData?.getData("text");
-  if (pasted) {
-    e.preventDefault();
-    inputValue.value = normalizeNumberString(pasted);
-  }
-}
-
-// https://stackoverflow.com/questions/880512/prevent-text-selection-after-double-click#:~:text=If%20you%20encounter%20a%20situation,none%3B%20to%20the%20summary%20element.
-// this prevents selecting of more than input content in some cases,
-// but also disable selecting input content by double-click (useful feature)
-const onMousedown = (ev: MouseEvent) => {
+// Prevent selecting beyond input content on triple-click etc.
+function handleMousedown(ev: MouseEvent) {
   if (ev.detail > 1) {
     ev.preventDefault();
   }
-};
+}
 </script>
 
 <template>
   <div
     ref="rootRef"
-    :class="{ error: !!errors.trim(), disabled: disabled }"
+    :class="{ error: !!error, disabled: disabled }"
     class="pl-number-field d-flex-column"
-    @keydown="handleKeyPress($event)"
+    @keydown="handleKeyDown"
   >
     <div class="pl-number-field__main-wrapper d-flex">
       <DoubleContour class="pl-number-field__contour" :group-position="groupPosition" />
@@ -272,11 +266,14 @@ const onMousedown = (ev: MouseEvent) => {
         </label>
         <input
           ref="inputRef"
-          v-model="inputValue"
+          type="text"
+          inputmode="numeric"
+          :value="displayText"
           :disabled="disabled"
           :placeholder="placeholder"
           class="text-s flex-grow"
-          @focusout="applyChanges"
+          @input="handleInput"
+          @focusout="commitValue"
           @paste="handlePaste"
         />
         <PlIcon16
@@ -289,7 +286,7 @@ const onMousedown = (ev: MouseEvent) => {
       <div
         v-if="!props.disableSteps"
         class="pl-number-field__icons d-flex-column"
-        @mousedown="onMousedown"
+        @mousedown="handleMousedown"
       >
         <div
           :class="{ disabled: isIncrementDisabled }"
@@ -333,8 +330,8 @@ const onMousedown = (ev: MouseEvent) => {
         </div>
       </div>
     </div>
-    <div v-if="errors.trim()" class="pl-number-field__error">
-      {{ errors }}
+    <div v-if="error" class="pl-number-field__error">
+      {{ error }}
     </div>
   </div>
 </template>

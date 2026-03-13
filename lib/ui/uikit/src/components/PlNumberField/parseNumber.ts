@@ -1,55 +1,39 @@
-type ParseResult = {
-  error?: Error;
-  value?: number;
-  cleanInput: string;
-};
-
-const NUMBER_REGEX = /^[-−–+]?(\d+)?[.,]?(\d+)?$/; // parseFloat works without errors on strings with multiple dots, or letters in value
-
-function isPartial(v: string) {
-  return v === "." || v === "," || v === "-";
-}
+export type ParseResult =
+  | { value: number; error?: undefined }
+  | { value?: undefined; error: string }
+  | { value?: undefined; error?: undefined };
 
 /**
- * Normalizes a pasted number string by detecting the format and removing thousand separators.
- *
- * Supported formats:
- *   1.222.333,0053  (EU: dot = thousands, comma = decimal)
- *   1,222,333.0053  (US: comma = thousands, dot = decimal)
- *   1 222 333,0053  (space = thousands, comma = decimal)
- *   1 222 333.0053  (space = thousands, dot = decimal)
+ * Detect locale format and normalize to a plain number string.
+ * Handles:
+ *   555.555.555,100  (EU: dot = thousands, comma = decimal)
+ *   555,555,555.100  (US: comma = thousands, dot = decimal)
+ *   555 555 555,100  (space = thousands, comma = decimal)
+ *   555 555 555.100  (space = thousands, dot = decimal)
+ *   123,45 / 123.45  (single separator = decimal)
  */
-export function normalizeNumberString(v: string): string {
-  v = v.trim();
-  v = v.replace(/\s/g, ""); // remove spaces / nbsp (thousand separators)
-  v = v.replace("−", "-");
-  v = v.replace("–", "-");
-  v = v.replace("+", "");
+function normalizeNumberFormat(v: string): string {
+  v = v.replace(/\s/g, "");
+  v = v.replace("−", "-").replace("–", "-").replace("+", "");
 
   const dots = (v.match(/\./g) || []).length;
   const commas = (v.match(/,/g) || []).length;
 
   if (dots > 1 && commas <= 1) {
-    // EU: 1.222.333,0053 — dots are thousand separators, comma is decimal
-    v = v.replace(/\./g, "");
-    v = v.replace(",", ".");
+    // EU: 1.222.333,0053
+    v = v.replace(/\./g, "").replace(",", ".");
   } else if (commas > 1 && dots <= 1) {
-    // US: 1,222,333.0053 — commas are thousand separators, dot is decimal
+    // US: 1,222,333.0053
     v = v.replace(/,/g, "");
   } else if (dots === 1 && commas === 1) {
-    // Ambiguous with one of each — last one is the decimal separator
-    const lastDot = v.lastIndexOf(".");
-    const lastComma = v.lastIndexOf(",");
-    if (lastComma > lastDot) {
+    if (v.lastIndexOf(",") > v.lastIndexOf(".")) {
       // EU: 1.222,05
-      v = v.replace(".", "");
-      v = v.replace(",", ".");
+      v = v.replace(".", "").replace(",", ".");
     } else {
       // US: 1,222.05
       v = v.replace(",", "");
     }
   } else if (commas === 1 && dots === 0) {
-    // Single comma — treat as decimal separator
     v = v.replace(",", ".");
   }
   // dots === 1 && commas === 0 — already fine
@@ -57,115 +41,53 @@ export function normalizeNumberString(v: string): string {
   return v;
 }
 
-function clearNumericValue(v: string) {
-  v = v.trim();
-  v = v.replace(",", ".");
-  v = v.replace("−", "-"); // minus, replacing for the case of input the whole copied value
-  v = v.replace("–", "-"); // dash, replacing for the case of input the whole copied value
-  v = v.replace("+", "");
-  return v;
+/**
+ * Try to parse a string as a number using locale-aware rules.
+ *
+ * Returns:
+ *   { value } — successfully parsed
+ *   { error } — clearly invalid input
+ *   {}        — empty or partial input (no error, no value)
+ */
+export function tryParseNumber(str: string): ParseResult {
+  str = str.trim();
+  if (str === "") return {};
+
+  const v = normalizeNumberFormat(str);
+
+  // Partial input: just sign, just dot, sign+dot — not an error yet
+  if (/^-?\.*$/.test(v)) return {};
+
+  if (/^-?(\d+\.?\d*|\.\d+)$/.test(v)) {
+    const n = parseFloat(v);
+    return isNaN(n) ? { error: "Value is not a number" } : { value: n };
+  }
+
+  return { error: "Value is not a number" };
 }
 
-function stringToNumber(v: string) {
-  return parseFloat(clearNumericValue(v));
+/**
+ * Normalizes a pasted number string.
+ * Strips all non-numeric characters first, then resolves locale format.
+ */
+export function normalizePastedNumber(v: string): string {
+  v = v.trim().replace(/[^\d.,\-−–+\s]/g, "");
+  return normalizeNumberFormat(v);
 }
 
-function clearInput(v: string): string {
-  v = v.trim();
-
-  if (isPartial(v)) {
-    return v;
-  }
-
-  if (/^-[^0-9.]/.test(v)) {
-    return "-";
-  }
-
-  const match = v.match(/^(.*)[.,][^0-9].*$/);
-  if (match) {
-    return match[1] + ".";
-  }
-
-  if (v.match(NUMBER_REGEX)) {
-    return clearNumericValue(v);
-  }
-
-  const n = stringToNumber(v);
-
-  return isNaN(n) ? "" : String(+n);
-}
-
-export function parseNumber(
+export function validateNumber(
+  value: number,
   props: {
     minValue?: number;
     maxValue?: number;
     validate?: (v: number) => string | undefined;
   },
-  str: string,
-): ParseResult {
-  str = str.trim();
-
-  const cleanInput = clearInput(str);
-
-  if (str === "") {
-    return {
-      value: undefined,
-      cleanInput,
-    };
-  }
-
-  if (!str.match(NUMBER_REGEX)) {
-    return {
-      error: Error("Value is not a number"),
-      cleanInput,
-    };
-  }
-
-  if (isPartial(str)) {
-    return {
-      error: Error("Enter a number"),
-      cleanInput,
-    };
-  }
-
-  const value = stringToNumber(str);
-
-  if (isNaN(value)) {
-    return {
-      error: Error("Value is not a number"),
-      cleanInput,
-    };
-  }
-
+): string | undefined {
   if (props.minValue !== undefined && value < props.minValue) {
-    return {
-      error: Error(`Value must be higher than ${props.minValue}`),
-      value,
-      cleanInput,
-    };
+    return `Value must be higher than ${props.minValue}`;
   }
-
   if (props.maxValue !== undefined && value > props.maxValue) {
-    return {
-      error: Error(`Value must be less than ${props.maxValue}`),
-      value,
-      cleanInput,
-    };
+    return `Value must be less than ${props.maxValue}`;
   }
-
-  if (props.validate) {
-    const error = props.validate(value);
-    if (error) {
-      return {
-        error: Error(error),
-        value,
-        cleanInput,
-      };
-    }
-  }
-
-  return {
-    value,
-    cleanInput,
-  };
+  return props.validate?.(value);
 }
