@@ -24,7 +24,7 @@ import { useLabelNotch } from "../../utils/useLabelNotch";
 import { computed, ref, useSlots, watch } from "vue";
 import { PlTooltip } from "../PlTooltip";
 import { PlIcon16 } from "../PlIcon16";
-import { tryParseNumber, normalizePastedNumber, validateNumber } from "./parseNumber";
+import { tryParseNumber, numberToDecimalString, validateNumber } from "./parseNumber";
 
 const modelValue = defineModel<V>({ required: true });
 
@@ -79,23 +79,17 @@ const props = withDefaults(
 const slots = useSlots();
 
 const rootRef = ref<HTMLElement>();
-const inputRef = ref<HTMLInputElement>();
 
 useLabelNotch(rootRef);
 
-function numberToString(v: number | undefined): string {
-  return v === undefined ? "" : String(+v);
-}
+const displayText = ref(numberToDecimalString(modelValue.value));
 
-// Display text — what the user sees in the input. Independent of modelValue during editing.
-const displayText = ref(numberToString(modelValue.value));
-
-// When model changes externally (parent, increment/decrement), sync display.
-// Skip if user's current input already represents the same value.
+// Sync display when model changes externally (parent, increment/decrement).
+// Skip if the current input already represents the same value.
 watch(modelValue, (newVal) => {
   const parsed = tryParseNumber(displayText.value);
   if (parsed.value === newVal) return;
-  displayText.value = numberToString(newVal);
+  displayText.value = numberToDecimalString(newVal);
 });
 
 function handleInput(event: Event) {
@@ -110,40 +104,22 @@ function handleInput(event: Event) {
   }
 }
 
-// On Enter or blur — replace display with canonical number string
+// On Enter or blur: if parseable, replace display with canonical decimal string.
+// Converts exponential (1e-5) to plain form (0.00001).
 function commitValue() {
   const text = displayText.value.trim();
-  if (text === "") {
+  const result = tryParseNumber(text);
+
+  // Empty or partial (-, ., -.) → clear to undefined
+  if (text === "" || (result.value === undefined && result.error === undefined)) {
     modelValue.value = undefined as V;
     displayText.value = "";
     return;
   }
-  const result = tryParseNumber(text);
+
   if (result.value !== undefined) {
     modelValue.value = result.value as V;
-    displayText.value = String(result.value);
-  }
-}
-
-function handlePaste(e: ClipboardEvent) {
-  const input = inputRef.value!;
-  const pasted = e.clipboardData?.getData("text");
-  if (!pasted) return;
-
-  e.preventDefault();
-
-  const selStart = input.selectionStart ?? 0;
-  const selEnd = input.selectionEnd ?? 0;
-  const current = displayText.value;
-
-  const normalized = normalizePastedNumber(pasted);
-  const newValue = current.slice(0, selStart) + normalized + current.slice(selEnd);
-
-  displayText.value = newValue;
-
-  const result = tryParseNumber(newValue);
-  if (result.value !== undefined) {
-    modelValue.value = result.value as V;
+    displayText.value = numberToDecimalString(result.value);
   }
 }
 
@@ -160,19 +136,24 @@ const error = computed(() => {
 });
 
 const canShowClearable = computed(
-  () => props.clearable && modelValue.value !== undefined && !props.disabled,
+  () =>
+    props.clearable &&
+    (modelValue.value !== undefined || displayText.value.trim() !== "") &&
+    !props.disabled,
 );
 
 function clear() {
   if (typeof props.clearable === "function") {
     modelValue.value = props.clearable() as V;
+    displayText.value = numberToDecimalString(modelValue.value);
   } else {
     modelValue.value = undefined as V;
+    displayText.value = "";
   }
-  displayText.value = numberToString(modelValue.value);
 }
 
 const isIncrementDisabled = computed(() => {
+  if (error.value) return true;
   return (
     props.maxValue !== undefined &&
     modelValue.value !== undefined &&
@@ -181,6 +162,7 @@ const isIncrementDisabled = computed(() => {
 });
 
 const isDecrementDisabled = computed(() => {
+  if (error.value) return true;
   return (
     props.minValue !== undefined &&
     modelValue.value !== undefined &&
@@ -274,7 +256,6 @@ function handleMousedown(ev: MouseEvent) {
           class="text-s flex-grow"
           @input="handleInput"
           @focusout="commitValue"
-          @paste="handlePaste"
         />
         <PlIcon16
           v-if="canShowClearable"
