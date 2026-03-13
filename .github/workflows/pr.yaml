@@ -1,0 +1,37 @@
+name: Pull Request
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  BODY_LIMIT: '1048576000'
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      is-release: ${{ steps.context.outputs.is-release }}
+      current-version: ${{ steps.context.outputs.current-version }}
+    steps:
+      - id: context
+        uses: milaboratory/github-ci/actions/context/init@v4
+        with:
+          version-canonize: false
+          branch-versioning: main
+
+  build:
+    needs: [init]
+    uses: ./.github/workflows/_build.yaml
+    secrets: inherit
+
+  test:
+    needs: [build]
+    uses: ./.github/workflows/_test.yaml
+    secrets: inherit

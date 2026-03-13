@@ -1,0 +1,100 @@
+name: Merge Queue
+
+on:
+  merge_group:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  BODY_LIMIT: '1048576000'
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      is-release: ${{ steps.context.outputs.is-release }}
+      current-version: ${{ steps.context.outputs.current-version }}
+    steps:
+      - id: context
+        uses: milaboratory/github-ci/actions/context/init@v4
+        with:
+          version-canonize: false
+          branch-versioning: main
+
+  check-changesets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable pnpm
+        run: corepack enable pnpm
+
+      - name: Install dependencies
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Check changeset status
+        run: pnpm changeset status --since=origin/main
+
+  build:
+    needs: [init]
+    uses: ./.github/workflows/_build.yaml
+    secrets: inherit
+
+  test:
+    needs: [build]
+    uses: ./.github/workflows/_test.yaml
+    secrets: inherit
+
+  monitor-merge-queue:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [test]
+    steps:
+      - name: Check workflow duration
+        id: check-duration
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DURATION_THRESHOLD_MINUTES: '10'
+        run: |
+          RUN_STARTED_AT=$(gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" --jq '.run_started_at')
+          START_EPOCH=$(date -d "${RUN_STARTED_AT}" +%s)
+          CURRENT_EPOCH=$(date +%s)
+          DURATION_MINUTES=$(( (CURRENT_EPOCH - START_EPOCH) / 60 ))
+
+          echo "Duration: ${DURATION_MINUTES} minutes (threshold: ${DURATION_THRESHOLD_MINUTES})"
+
+          if [ "${DURATION_MINUTES}" -gt "${DURATION_THRESHOLD_MINUTES}" ]; then
+            echo "::warning::Merge queue run took ${DURATION_MINUTES} minutes, exceeding threshold"
+            echo "alert=true" >> "$GITHUB_OUTPUT"
+            echo "duration=${DURATION_MINUTES}" >> "$GITHUB_OUTPUT"
+          else
+            echo "alert=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send slow merge queue alert
+        if: steps.check-duration.outputs.alert == 'true'
+        uses: milaboratory/github-ci/actions/notify/slack/send@v4
+        with:
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          payload: |
+            {
+              "channel": "${{ secrets.SLACK_PL_SDK_CHANNEL }}",
+              "text": "Slow Merge Queue: ${{ github.repository }} took ${{ steps.check-duration.outputs.duration }} min (threshold: 10 min)",
+              "blocks": [
+                {"type": "header", "text": {"type": "plain_text", "text": "Slow Merge Queue Alert"}},
+                {"type": "section", "text": {"type": "mrkdwn", "text": "*${{ github.repository }}* merge queue took *${{ steps.check-duration.outputs.duration }} minutes*"}},
+                {"type": "section", "text": {"type": "mrkdwn", "text": "This may indicate Turbo cache issues or infrastructure problems."}}
+              ]
+            }
