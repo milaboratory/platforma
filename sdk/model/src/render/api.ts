@@ -263,7 +263,6 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     if (!columns || !opts?.filterToAnchorPartitions) return columns;
     const allowedKeys = this.deriveAnchorPartitionKeys(anchorsOrCtx);
     if (allowedKeys === undefined) return undefined;
-    if (allowedKeys.length === 0) return columns;
     const keysJson = JSON.stringify(allowedKeys);
     return columns.map((col) => ({
       ...col,
