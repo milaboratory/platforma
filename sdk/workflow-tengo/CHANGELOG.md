@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.10.1
+
+### Patch Changes
+
+- 598b009: fix: xsv converter can be launched in k8s installations.
+
 ## 5.10.0
 
 ### Minor Changes
