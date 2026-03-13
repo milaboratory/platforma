@@ -1031,7 +1031,7 @@ field = func(f) {
 		 * @param reference smart.resource or smart.field
 		 */
 		set: func(reference) {
-			ll.assert(!self.isSet(), "field ", self.name(), " is already set")
+			ll.assert(!self.isSet(), "field %q is already set", self.name())
 
 			if isResource(reference) {
 				tx.setFieldToResource(self.id, reference.id)
