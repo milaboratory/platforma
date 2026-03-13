@@ -55,7 +55,7 @@ const props = withDefaults(
     /** Additional validity check for input value that must return an error text if failed */
     validate?: (v: number) => string | undefined;
     /** If `true`, shows a clear button that resets value to `undefined`. If a function, calls it to get the reset value. */
-    clearable?: boolean | (() => C);
+    clearable?: V extends undefined ? boolean | (() => C) : false | (() => C);
     /** Makes some of corners not rounded */
     groupPosition?:
       | "top"
@@ -68,18 +68,7 @@ const props = withDefaults(
       | "bottom-right"
       | "middle";
   }>(),
-  {
-    step: 1,
-    label: undefined,
-    placeholder: undefined,
-    minValue: undefined,
-    maxValue: undefined,
-    clearable: false,
-    groupPosition: undefined,
-    disableSteps: false,
-    validate: undefined,
-    errorMessage: undefined,
-  },
+  { step: 1 },
 );
 
 const slots = useSlots();
