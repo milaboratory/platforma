@@ -50,4 +50,6 @@
     "platforma",
     "ptable"
   ],
+  "markdown.extension.completion.enabled": false,
+  "markdown.extension.tableFormatter.enabled": false,
 }
