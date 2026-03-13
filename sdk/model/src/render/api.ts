@@ -69,7 +69,7 @@ import type { LabelDerivationOps } from "./util/label";
 import { deriveLabels } from "./util/label";
 import type { APColumnSelectorWithSplit } from "./util/split_selectors";
 import { patchInSetFilters } from "./util/pframe_upgraders";
-import { allPColumnsReady } from "./util/pcolumn_data";
+import { allPColumnsReady, getUniquePartitionKeys } from "./util/pcolumn_data";
 import type { PColumnDataUniversal } from "./internal";
 
 /**
@@ -112,6 +112,15 @@ type UniversalPColumnOpts = {
   labelOps?: LabelDerivationOps;
   dontWaitAllData?: boolean;
   exclude?: AnchoredPColumnSelector | AnchoredPColumnSelector[];
+  /**
+   * When true, restricts each returned column's visible axis-0 key range to the
+   * partition keys present in the resolved anchor column(s), by injecting a
+   * `pl7.app/axisKeys/0` annotation onto each returned column spec.
+   * Graph-maker respects this annotation when building sample dropdowns via
+   * `findLabelsForColumnAxis`, so only dataset-scoped samples are shown.
+   * Returns undefined if any anchor column's data is not yet available.
+   */
+  filterToAnchorPartitions?: boolean;
 } & ResolveAnchorsOptions;
 
 type GetOptionsOpts = {
@@ -206,6 +215,27 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
   }
 
   /**
+   * Collects unique axis-0 partition key values from all PlRef anchors.
+   * Returns undefined if any anchor's data is not yet ready (caller should propagate undefined).
+   * Returns an empty array when anchorsOrCtx is an AnchoredIdDeriver (no refs to resolve).
+   */
+  private deriveAnchorPartitionKeys(
+    anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>,
+  ): (string | number)[] | undefined {
+    if (anchorsOrCtx instanceof AnchoredIdDeriver) return [];
+    const allKeys = new Set<string | number>();
+    for (const value of Object.values(anchorsOrCtx)) {
+      if (!isPlRef(value)) continue;
+      const col = this.getPColumnByRef(value);
+      if (!col?.data) return undefined;
+      const uniqueKeys = getUniquePartitionKeys(col.data);
+      if (uniqueKeys === undefined) return undefined;
+      for (const key of uniqueKeys[0] ?? []) allKeys.add(key);
+    }
+    return [...allKeys];
+  }
+
+  /**
    * Returns columns that match the provided anchors and selectors. It applies axis filters and label derivation.
    *
    * @param anchorsOrCtx - Anchor context for column selection (same as in getCanonicalOptions)
@@ -223,13 +253,27 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
   ): PColumn<PColumnDataUniversal>[] | undefined {
     const anchorCtx = this.resolveAnchorCtx(anchorsOrCtx);
     if (!anchorCtx) return undefined;
-    return new PColumnCollection()
+    const columns = new PColumnCollection()
       .addColumnProvider(this)
       .addAxisLabelProvider(this)
       .getColumns(predicateOrSelectors, {
         ...opts,
         anchorCtx,
       });
+    if (!columns || !opts?.filterToAnchorPartitions) return columns;
+    const allowedKeys = this.deriveAnchorPartitionKeys(anchorsOrCtx);
+    if (allowedKeys === undefined) return undefined;
+    const keysJson = JSON.stringify(allowedKeys);
+    return columns.map((col) => ({
+      ...col,
+      spec: {
+        ...col.spec,
+        annotations: {
+          ...col.spec.annotations,
+          "pl7.app/axisKeys/0": keysJson,
+        },
+      },
+    }));
   }
 
   /**
