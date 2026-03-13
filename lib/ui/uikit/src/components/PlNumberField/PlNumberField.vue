@@ -28,6 +28,12 @@ import { tryParseNumber, numberToDecimalString, validateNumber } from "./parseNu
 
 const modelValue = defineModel<V>({ required: true });
 
+const emit = defineEmits<{
+  blur: [value: V];
+  focus: [value: V];
+  enter: [value: V];
+}>();
+
 const props = withDefaults(
   defineProps<{
     /** Label on the top border of the field, empty by default */
@@ -202,9 +208,19 @@ function decrement() {
   modelValue.value = (props.minValue !== undefined ? Math.max(props.minValue, nV) : nV) as V;
 }
 
+function handleBlur() {
+  commitValue();
+  emit("blur", modelValue.value);
+}
+
+function handleFocus() {
+  emit("focus", modelValue.value);
+}
+
 function handleKeyDown(e: KeyboardEvent) {
   if (e.code === "Enter") {
     commitValue();
+    emit("enter", modelValue.value);
   }
 
   if (["ArrowDown", "ArrowUp"].includes(e.code)) {
@@ -255,7 +271,8 @@ function handleMousedown(ev: MouseEvent) {
           :placeholder="placeholder"
           class="text-s flex-grow"
           @input="handleInput"
-          @focusout="commitValue"
+          @focusout="handleBlur"
+          @focusin="handleFocus"
         />
         <PlIcon16
           v-if="canShowClearable"
