@@ -132,16 +132,12 @@ test("getAnchoredPColumns: injects pl7.app/axisKeys/0 annotation when filterToAn
   mockGetColumns.mockReturnValue([makeColumn(makePartitionedData([]))]);
   vi.spyOn(pool, "resolveAnchorCtx").mockReturnValue(new AnchoredIdDeriver({}) as any);
 
-  const result = pool.getAnchoredPColumns(
-    { main: ref },
-    [{ axes: [{ anchor: "main", idx: 0 }] }],
-    { filterToAnchorPartitions: true },
-  );
+  const result = pool.getAnchoredPColumns({ main: ref }, [{ axes: [{ anchor: "main", idx: 0 }] }], {
+    filterToAnchorPartitions: true,
+  });
 
   expect(result).toHaveLength(1);
-  expect(result![0].spec.annotations["pl7.app/axisKeys/0"]).toBe(
-    JSON.stringify(["s1", "s2"]),
-  );
+  expect(result![0].spec.annotations["pl7.app/axisKeys/0"]).toBe(JSON.stringify(["s1", "s2"]));
 });
 
 test("getAnchoredPColumns: returns undefined when anchor data is not ready", () => {
@@ -152,11 +148,9 @@ test("getAnchoredPColumns: returns undefined when anchor data is not ready", () 
   mockGetColumns.mockReturnValue([makeColumn(makePartitionedData([]))]);
   vi.spyOn(pool, "resolveAnchorCtx").mockReturnValue(new AnchoredIdDeriver({}) as any);
 
-  const result = pool.getAnchoredPColumns(
-    { main: ref },
-    [{ axes: [{ anchor: "main", idx: 0 }] }],
-    { filterToAnchorPartitions: true },
-  );
+  const result = pool.getAnchoredPColumns({ main: ref }, [{ axes: [{ anchor: "main", idx: 0 }] }], {
+    filterToAnchorPartitions: true,
+  });
 
   expect(result).toBeUndefined();
 });
@@ -169,10 +163,7 @@ test("getAnchoredPColumns: does not inject annotation when filterToAnchorPartiti
   mockGetColumns.mockReturnValue([makeColumn(makePartitionedData([]))]);
   vi.spyOn(pool, "resolveAnchorCtx").mockReturnValue(new AnchoredIdDeriver({}) as any);
 
-  const result = pool.getAnchoredPColumns(
-    { main: ref },
-    [{ axes: [{ anchor: "main", idx: 0 }] }],
-  );
+  const result = pool.getAnchoredPColumns({ main: ref }, [{ axes: [{ anchor: "main", idx: 0 }] }]);
 
   expect(result).toHaveLength(1);
   expect(result![0].spec.annotations?.["pl7.app/axisKeys/0"]).toBeUndefined();
