@@ -136,7 +136,7 @@ export class UploadTask {
 
       if (isTerminalUploadError(e)) {
         this.logger.info(
-          `BlobImport terminated (resource deleted or aborted): ${e}, ${stringifyWithResourceId(this.res)}`,
+          `terminal error while updating BlobImport status: ${e}, ${stringifyWithResourceId(this.res)}`,
         );
         this.change.markChanged(
           `upload status for ${resourceIdToString(this.res.id)} aborted: ${e.code}`,
