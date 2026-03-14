@@ -635,7 +635,8 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
     if (deleted) this.keyToOnDemand.delete(blobKey(blobId));
   }
 
-  /** Removes all files from a hard drive. */
+  /** Stops all active downloads, drops all pending (queued) downloads and removes
+   *  all partially downloaded files from storage. */
   async releaseAll() {
     this.downloadQueue.stop();
 
@@ -646,6 +647,7 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
   }
 
   async dispose(): Promise<void> {
+    await this.releaseAll();
     await this.rangesCache.dispose();
   }
 
