@@ -316,24 +316,33 @@ async function checkExpectedMTime(path: string, expectedMTimeUnix: bigint) {
   }
 }
 
+function isExpiredTokenError(body: string): boolean {
+  return body.includes("<Code>ExpiredToken</Code>");
+}
+
 function checkStatusCodeOk(
   statusCode: number,
   body: string,
   headers: IncomingHttpHeaders,
   info: UploadAPI_GetPartURL_Response,
 ) {
+  const message =
+    `response is not ok, status code: ${statusCode},` +
+    ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`;
+
   if (statusCode == 400) {
-    throw new BadRequestError(
-      `response is not ok, status code: ${statusCode},` +
-        ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`,
-    );
+    // S3 may return 400 with ExpiredToken when the STS session credentials
+    // used to sign the pre-signed URL have expired. This is recoverable:
+    // a retry will request a fresh pre-signed URL from the backend.
+    if (isExpiredTokenError(body)) {
+      throw new NetworkError(message);
+    }
+
+    throw new BadRequestError(message);
   }
 
   if (statusCode != 200) {
-    throw new NetworkError(
-      `response is not ok, status code: ${statusCode},` +
-        ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`,
-    );
+    throw new NetworkError(message);
   }
 }
 
