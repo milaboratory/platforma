@@ -2,7 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
-import type { MiddleLayer } from "@milaboratories/pl-middle-layer";
+import { type MiddleLayer, resourceIdToString } from "@milaboratories/pl-middle-layer";
+import { z } from "zod";
 
 export interface PlMcpServerOptions {
   /** MiddleLayer instance providing access to projects, blocks, etc. */
@@ -11,6 +12,12 @@ export interface PlMcpServerOptions {
   port: number;
   /** Secret path segment for URL security. */
   secret: string;
+}
+
+function textResult(data: unknown) {
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(data) }],
+  };
 }
 
 export class PlMcpServer {
@@ -38,7 +45,6 @@ export class PlMcpServer {
     const expectedPath = `/${this.secret}/mcp`;
 
     this.httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
-      // Validate Origin header per MCP spec
       if (req.headers.origin !== undefined) {
         try {
           const origin = new URL(req.headers.origin);
@@ -54,21 +60,18 @@ export class PlMcpServer {
         }
       }
 
-      // Validate path — must match /{secret}/mcp exactly
       if (req.url !== expectedPath) {
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Not Found" }));
         return;
       }
 
-      // Route to existing session or create new one for initialization
       const sessionId = req.headers["mcp-session-id"] as string | undefined;
       if (sessionId && this.transports.has(sessionId)) {
         await this.transports.get(sessionId)!.handleRequest(req, res);
         return;
       }
 
-      // New session — only allowed for POST (initialization)
       if (req.method === "POST") {
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
@@ -89,7 +92,6 @@ export class PlMcpServer {
         return;
       }
 
-      // Unknown session for non-POST
       res.writeHead(400, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Bad Request: no valid session" }));
     });
@@ -124,10 +126,95 @@ export class PlMcpServer {
   }
 
   private registerTools(server: McpServer): void {
+    this.registerPingTool(server);
+    this.registerProjectTools(server);
+  }
+
+  /** Resolves a project from the list by its internal id. */
+  private async resolveProject(projectId: string) {
+    await this.ml.projectList.refreshState();
+    const projects = await this.ml.projectList.awaitStableValue();
+    const entry = projects.find((p) => resourceIdToString(p.rid) === projectId);
+    if (!entry) throw new Error(`Project ${projectId} not found`);
+    return entry;
+  }
+
+  private registerPingTool(server: McpServer): void {
     server.registerTool("ping", { description: "Health check" }, async () => {
-      return {
-        content: [{ type: "text", text: JSON.stringify({ status: "ok" }) }],
-      };
+      return textResult({ status: "ok" });
     });
+  }
+
+  private registerProjectTools(server: McpServer): void {
+    const ml = this.ml;
+
+    server.registerTool(
+      "list_projects",
+      { description: "List all projects with their IDs, labels, and status" },
+      async () => {
+        await ml.projectList.refreshState();
+        const projects = await ml.projectList.awaitStableValue();
+        return textResult(
+          projects.map((p) => ({
+            projectId: resourceIdToString(p.rid),
+            label: p.meta.label,
+            opened: p.opened,
+            created: p.created.toISOString(),
+            lastModified: p.lastModified.toISOString(),
+          })),
+        );
+      },
+    );
+
+    server.registerTool(
+      "create_project",
+      {
+        description: "Create a new project",
+        inputSchema: { label: z.string().describe("Project name") },
+      },
+      async ({ label }) => {
+        const rid = await ml.createProject({ label });
+        return textResult({ projectId: resourceIdToString(rid) });
+      },
+    );
+
+    server.registerTool(
+      "open_project",
+      {
+        description: "Open a project for editing. Required before working with blocks.",
+        inputSchema: { projectId: z.string().describe("Project ID from list_projects or create_project") },
+      },
+      async ({ projectId }) => {
+        const entry = await this.resolveProject(projectId);
+        await ml.openProject(entry.rid);
+        return textResult({ ok: true });
+      },
+    );
+
+    server.registerTool(
+      "close_project",
+      {
+        description: "Close an opened project, releasing its resources",
+        inputSchema: { projectId: z.string().describe("Project ID") },
+      },
+      async ({ projectId }) => {
+        const entry = await this.resolveProject(projectId);
+        await ml.closeProject(entry.rid);
+        return textResult({ ok: true });
+      },
+    );
+
+    server.registerTool(
+      "delete_project",
+      {
+        description: "Delete a project permanently. The project must be closed first.",
+        inputSchema: { projectId: z.string().describe("Project ID") },
+      },
+      async ({ projectId }) => {
+        const entry = await this.resolveProject(projectId);
+        await ml.deleteProject(entry.id);
+        return textResult({ ok: true });
+      },
+    );
   }
 }
