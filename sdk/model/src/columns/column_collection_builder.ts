@@ -99,6 +99,7 @@ export interface AnchoredBuildOpts extends BuildOpts {
  */
 export class ColumnCollectionBuilder {
   private readonly providers: ColumnProvider[] = [];
+  private readonly markUnstable?: () => void;
 
   /**
    * @param markUnstable Callback to mark the render context unstable.
@@ -106,7 +107,9 @@ export class ColumnCollectionBuilder {
    *   If not provided, accessing data on computing columns will not mark unstable
    *   (suitable for spec-only use cases).
    */
-  constructor(private readonly markUnstable?: () => void) {}
+  constructor(options: { readonly markUnstable?: () => void } = {}) {
+    this.markUnstable = options.markUnstable;
+  }
 
   /**
    * Register a column source. Sources added first take precedence for dedup.

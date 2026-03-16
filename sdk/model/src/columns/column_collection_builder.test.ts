@@ -33,10 +33,7 @@ function createSnapshot(
   };
 }
 
-function createProvider(
-  snapshots: ColumnSnapshot<PObjectId>[],
-  complete = true,
-): ColumnProvider {
+function createProvider(snapshots: ColumnSnapshot<PObjectId>[], complete = true): ColumnProvider {
   return {
     selectColumns(selectors) {
       const pred = typeof selectors === "function" ? selectors : () => true;
@@ -301,8 +298,8 @@ describe("multiple providers", () => {
 describe("anchored build", () => {
   test("throws for anchored build (not yet implemented)", () => {
     const builder = new ColumnCollectionBuilder();
-    expect(() =>
-      builder.build({ anchors: { main: "id1" as PObjectId } }),
-    ).toThrow(/not yet implemented/i);
+    expect(() => builder.build({ anchors: { main: "id1" as PObjectId } })).toThrow(
+      /not yet implemented/i,
+    );
   });
 });
