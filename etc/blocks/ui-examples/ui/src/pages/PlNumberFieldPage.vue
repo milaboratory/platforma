@@ -25,17 +25,15 @@ function updateNumber(value: number) {
       <button @click="updateNumber(-1)">Decrement number</button>
       <button @click="data.number = NaN">Set NaN</button>
       <button @click="data.number = 102">Set 102</button>
-      <button @click="data.number = '102.2aaaa' as unknown as number">Set '102.2aaaa'</button>
     </PlRow>
     <PlRow no-gap>
       <PlContainer width="400px">
         <PlNumberField
-          required
           v-model="data.number"
           :min-value="10"
           :max-value="100"
           label="PlNumberField (min: 10, max: 100)"
-          :clearable="false"
+          clearable
           :disable-steps="data.disableSteps"
         />
         <PlNumberField

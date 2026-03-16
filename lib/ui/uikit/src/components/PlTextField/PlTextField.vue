@@ -7,7 +7,15 @@ export default {
 };
 </script>
 
-<script lang="ts" setup generic="V extends undefined | string, C extends V">
+<script
+  lang="ts"
+  setup
+  generic="
+    R extends true | false,
+    V extends undefined | string,
+    C extends Exclude<V, R extends true ? undefined : never>
+  "
+>
 import { computed, ref, useSlots } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
 import { getErrorMessage } from "../../helpers/error.ts";
@@ -35,9 +43,9 @@ const props = defineProps<{
    * If `true`, a clear icon will appear in the input field to clear the value (set it to empty string).
    * If a function, calls it to get the reset value.
    */
-  clearable?: boolean | (() => C);
-  /** If `true`, the input field is marked as required. */
-  required?: boolean;
+  clearable?: (R extends true ? never : boolean) | (() => C);
+  /** If `true`, the input field is marked as required and will show an error if left empty. */
+  required?: R;
   /** An error message to display below the input field. */
   error?: unknown;
   /** A helper text to display below the input field when there are no errors. */
@@ -91,8 +99,6 @@ const clear = () => {
 
 const isEmpty = computed(() => model.value === "");
 
-const nonEmpty = computed(() => !isEmpty.value);
-
 const displayErrors = computed(() => {
   const errors: string[] = [];
   const propsError = getErrorMessage(props.error);
@@ -105,13 +111,16 @@ const displayErrors = computed(() => {
       errors.push(error);
     }
   }
+  if (props.required && isEmpty.value) {
+    errors.push("Value is required");
+  }
   return errors;
 });
 
 const hasErrors = computed(() => displayErrors.value.length > 0);
 
 const canShowClearable = computed(
-  () => props.clearable && nonEmpty.value && props.type !== "password" && !props.disabled,
+  () => props.clearable && !isEmpty.value && props.type !== "password" && !props.disabled,
 );
 
 const togglePasswordVisibility = () => (showPassword.value = !showPassword.value);
@@ -130,7 +139,7 @@ useLabelNotch(rootRef);
         error: hasErrors,
         disabled,
         dashed,
-        nonEmpty,
+        nonEmpty: !isEmpty,
       }"
     >
       <label v-if="label" ref="label">

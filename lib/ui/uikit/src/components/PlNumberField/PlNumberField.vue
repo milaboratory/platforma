@@ -17,7 +17,15 @@ export default {
 };
 </script>
 
-<script setup lang="ts" generic="V extends undefined | number, C extends V">
+<script
+  setup
+  lang="ts"
+  generic="
+    R extends true | false,
+    V extends undefined | number,
+    C extends Exclude<V, R extends true ? undefined : never>
+  "
+>
 import "./pl-number-field.scss";
 import DoubleContour from "../../utils/DoubleContour.vue";
 import { useLabelNotch } from "../../utils/useLabelNotch";
@@ -37,7 +45,7 @@ const emit = defineEmits<{
 const props = withDefaults(
   defineProps<{
     /** If `true`, the field is required and will show an error if left empty. */
-    required?: undefined extends V ? undefined | boolean : true;
+    required?: R;
     /** Label on the top border of the field, empty by default */
     label?: string;
     /** Input placeholder, empty by default */
@@ -57,7 +65,7 @@ const props = withDefaults(
     /** Additional validity check for input value that must return an error text if failed */
     validate?: (v: number) => string | undefined;
     /** If `true`, shows a clear button that resets value to `undefined`. If a function, calls it to get the reset value. */
-    clearable?: V extends undefined ? boolean | (() => C) : false | (() => C);
+    clearable?: (R extends true ? never : boolean) | (() => C);
     /** Makes some of corners not rounded */
     groupPosition?:
       | "top"
@@ -105,9 +113,12 @@ function commitValue() {
   const text = displayText.value.trim();
   const result = tryParseNumber(text);
 
-  // Empty or partial (-, ., -.) → clear display
+  // Empty or partial (-, ., -.) → clear display and reset model for non-required fields
   if (text === "" || (result.value === undefined && result.error === undefined)) {
     displayText.value = "";
+    if (!props.required) {
+      modelValue.value = undefined as V;
+    }
     return;
   }
 
@@ -142,7 +153,7 @@ const canShowClearable = computed(
 
 function clear() {
   if (typeof props.clearable === "function") {
-    modelValue.value = props.clearable() as V;
+    modelValue.value = props.clearable();
     displayText.value = numberToDecimalString(modelValue.value);
   } else {
     modelValue.value = undefined as V;
