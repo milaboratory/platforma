@@ -18,7 +18,7 @@ describe("TextField", () => {
     const wrapper = mount(PlTextField, {
       props: {
         modelValue: "initialText",
-        "onUpdate:modelValue": (e: string) => wrapper.setProps({ modelValue: e }),
+        "onUpdate:modelValue": (e) => wrapper.setProps({ modelValue: e }),
       },
     });
 
@@ -31,7 +31,7 @@ describe("TextField", () => {
       props: {
         modelValue: "initialText" as string | undefined,
         clearable: true,
-        "onUpdate:modelValue": (e) => wrapper.setProps({ modelValue: e }),
+        "onUpdate:modelValue": (e: string | undefined) => wrapper.setProps({ modelValue: e }),
       },
     });
 

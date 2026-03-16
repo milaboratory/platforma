@@ -9,10 +9,10 @@ const data = reactive({
   progressDurationMs: "10000",
 });
 
-function positiveNumberRule(v: string): boolean | string {
+function positiveNumberRule(v: string): string | undefined {
   const n = Number(v);
   if (!Number.isFinite(n) || n <= 0) return "Must be a positive number";
-  return true;
+  return undefined;
 }
 
 const numbers = computed({
@@ -64,7 +64,7 @@ const numbers = computed({
       <PlTextField
         v-model="data.progressDurationMs"
         label="Progress duration (ms)"
-        :rules="[positiveNumberRule]"
+        :validate="positiveNumberRule"
       />
     </PlRow>
   </PlBlockPage>
