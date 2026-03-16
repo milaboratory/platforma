@@ -1,11 +1,13 @@
 import type {
   NativePObjectId,
-  PColumnSelector,
   PColumnSpec,
+  PlRef,
   PObjectId,
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
-import { deriveNativeId, selectorsToPredicate } from "@milaboratories/pl-model-common";
+import { deriveNativeId } from "@milaboratories/pl-model-common";
+import type { ColumnSelectorInput } from "./column_selector";
+import { selectorsToPredicate } from "./column_selector";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { ColumnSnapshot } from "./column_snapshot";
 import {
@@ -16,14 +18,14 @@ import {
 import type { ColumnProvider, ColumnSource } from "./column_provider";
 import { ArrayColumnProvider, toColumnProvider } from "./column_provider";
 
-// --- FindColumnsOpts ---
+// --- FindColumnsOptions ---
 
 /** Options for plain collection findColumns. */
-export interface FindColumnsOpts {
+export interface FindColumnsOptions {
   /** Include columns matching these selectors. If omitted, includes all columns. */
-  include?: PColumnSelector | PColumnSelector[];
+  include?: ColumnSelectorInput;
   /** Exclude columns matching these selectors. */
-  exclude?: PColumnSelector | PColumnSelector[];
+  exclude?: ColumnSelectorInput;
 }
 
 // --- ColumnCollection ---
@@ -36,7 +38,7 @@ export interface ColumnCollection {
   /** Find columns matching selectors. Returns flat list of snapshots.
    *  No axis compatibility matching, no linker traversal.
    *  Never returns undefined — the "not ready" state was absorbed by the builder. */
-  findColumns(opts?: FindColumnsOpts): ColumnSnapshot<PObjectId>[];
+  findColumns(options?: FindColumnsOptions): ColumnSnapshot<PObjectId>[];
 }
 
 // --- AnchoredColumnCollection (stub — full implementation in Step 7) ---
@@ -54,7 +56,7 @@ export interface AnchoredColumnCollection {
 export type MatchingMode = "enrichment" | "related" | "exact";
 
 /** Options for anchored collection findColumns. */
-export interface AnchoredFindColumnsOpts extends FindColumnsOpts {
+export interface AnchoredFindColumnsOpts extends FindColumnsOptions {
   /** Controls axis matching behavior. Default: 'enrichment'. */
   mode?: MatchingMode;
   /** Maximum linker hops for cross-domain discovery (0 = direct only, default: 4). */
@@ -83,7 +85,7 @@ export interface BuildOpts {
 }
 
 export interface AnchoredBuildOpts extends BuildOpts {
-  anchors: Record<string, PObjectId | PColumnSpec>;
+  anchors: Record<string, PlRef | PObjectId | PColumnSpec>;
 }
 
 // --- ColumnCollectionBuilder ---
@@ -114,13 +116,16 @@ export class ColumnCollectionBuilder {
   addSource(source: ColumnSource | TreeNodeAccessor): this {
     if (source instanceof TreeNodeAccessor) {
       const columns = source.getPColumns();
-      if (columns !== undefined) {
-        this.providers.push(new ArrayColumnProvider(columns));
-      }
-      // If getPColumns() returns undefined, source is not ready yet.
-      // The caller should check and return undefined from the output lambda.
+      if (columns) this.providers.push(new ArrayColumnProvider(columns));
     } else {
       this.providers.push(toColumnProvider(source));
+    }
+    return this;
+  }
+
+  addSources(sources: (ColumnSource | TreeNodeAccessor)[]): this {
+    for (const source of sources) {
+      this.addSource(source);
     }
     return this;
   }
@@ -158,13 +163,11 @@ export class ColumnCollectionBuilder {
       throw new Error("AnchoredColumnCollection not yet implemented (Step 7)");
     }
 
-    const collection = new ColumnCollectionImpl(columnMap, this.markUnstable);
-
-    if (allowPartial) {
-      return Object.assign(collection, { columnListComplete: allComplete } as const);
-    }
-
-    return collection;
+    return new ColumnCollectionImpl(
+      columnMap,
+      this.markUnstable,
+      allowPartial ? allComplete : false,
+    );
   }
 
   /**
@@ -195,7 +198,8 @@ export class ColumnCollectionBuilder {
 class ColumnCollectionImpl implements ColumnCollection {
   constructor(
     private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>,
-    private readonly markUnstable?: () => void,
+    private readonly markUnstable: () => void = () => {},
+    public readonly columnListComplete: boolean = false,
   ) {}
 
   getColumn(id: PObjectId): undefined | ColumnSnapshot<PObjectId> {
@@ -204,22 +208,18 @@ class ColumnCollectionImpl implements ColumnCollection {
     return this.toSnapshot(col);
   }
 
-  findColumns(opts?: FindColumnsOpts): ColumnSnapshot<PObjectId>[] {
+  findColumns(opts?: FindColumnsOptions): ColumnSnapshot<PObjectId>[] {
     const columns = [...this.columns.values()];
 
     let filtered = columns;
 
     if (opts?.include) {
-      const includePred = selectorsToPredicate(
-        Array.isArray(opts.include) ? opts.include : [opts.include],
-      );
+      const includePred = selectorsToPredicate(opts.include);
       filtered = filtered.filter((col) => includePred(col.spec));
     }
 
     if (opts?.exclude) {
-      const excludePred = selectorsToPredicate(
-        Array.isArray(opts.exclude) ? opts.exclude : [opts.exclude],
-      );
+      const excludePred = selectorsToPredicate(opts.exclude);
       filtered = filtered.filter((col) => !excludePred(col.spec));
     }
 

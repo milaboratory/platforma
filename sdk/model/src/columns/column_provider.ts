@@ -85,26 +85,17 @@ export class ArrayColumnProvider implements ColumnProvider {
  * Always complete. Data status taken from each snapshot.
  */
 export class SnapshotColumnProvider implements ColumnProvider {
-  private readonly columns: ColumnSnapshot[];
-
-  constructor(snapshots: ColumnSnapshot[]) {
-    this.columns = snapshots.map((snap) => ({
-      id: snap.id,
-      spec: snap.spec,
-      dataStatus: snap.dataStatus,
-      data: { get: () => snap.data?.get() },
-    }));
-  }
+  constructor(private readonly snapshots: ColumnSnapshot[]) {}
 
   selectColumns(
     selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
   ): ColumnSnapshot[] {
     const predicate = typeof selectors === "function" ? selectors : selectorsToPredicate(selectors);
-    return this.columns.filter((col) => predicate(col.spec));
+    return this.snapshots.filter((col) => predicate(col.spec));
   }
 
   getColumn(id: PObjectId): undefined | ColumnSnapshot {
-    return this.columns.find((col) => col.id === id);
+    return this.snapshots.find((col) => col.id === id);
   }
 
   isColumnListComplete(): boolean {
@@ -174,16 +165,6 @@ export class OutputColumnProvider implements ColumnProvider {
   }
 }
 
-/**
- * Create a ColumnProvider from a TreeNodeAccessor (output/prerun resolve result).
- */
-export function createOutputColumnProvider(
-  accessor: TreeNodeAccessor,
-  opts?: OutputColumnProviderOpts,
-): ColumnProvider {
-  return new OutputColumnProvider(accessor, opts);
-}
-
 // --- Source normalization ---
 
 /** Checks if a value is a ColumnProvider (duck-typing). */
@@ -201,9 +182,7 @@ export function isColumnProvider(source: unknown): source is ColumnProvider {
 }
 
 /** Checks if a value looks like a PColumn (has id, spec, data). */
-function isPColumnArray(
-  source: ColumnSource,
-): source is PColumn<PColumnDataUniversal | undefined>[] {
+function isPColumnArray(source: unknown): source is PColumn<PColumnDataUniversal | undefined>[] {
   if (!Array.isArray(source)) return false;
   if (source.length === 0) return true; // empty array — treat as PColumn[]
   const first = source[0];
@@ -211,7 +190,7 @@ function isPColumnArray(
 }
 
 /** Checks if a value looks like a ColumnSnapshot array. */
-function isSnapshotArray(source: ColumnSource): source is ColumnSnapshot[] {
+function isSnapshotArray(source: unknown): source is ColumnSnapshot[] {
   if (!Array.isArray(source)) return false;
   if (source.length === 0) return true; // empty array — treat as snapshots
   const first = source[0];

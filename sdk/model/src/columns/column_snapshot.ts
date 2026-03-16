@@ -38,13 +38,11 @@ export interface ColumnData {
 }
 
 /** Creates a ColumnData active object for a ready column. */
-// @TODO: rename to createColumnData
 export function createReadyColumnData(getData: () => PColumnDataUniversal | undefined): ColumnData {
   return { get: getData };
 }
 
 /** Creates a ColumnData active object for a computing column. */
-// @TODO: rename to createReactiveColumnData
 export function createComputingColumnData(markUnstable: () => void): ColumnData {
   return {
     get() {
