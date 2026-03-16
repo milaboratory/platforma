@@ -34,8 +34,8 @@ catalogs:
       specifier: ^1.6.4
       version: 1.6.4
     '@modelcontextprotocol/sdk':
-      specifier: ~1.22.0
-      version: 1.22.0
+      specifier: ^1.27.1
+      version: 1.27.1
     '@oclif/core':
       specifier: ^4.0.37
       version: 4.0.37
@@ -310,12 +310,11 @@ catalogs:
       specifier: ^2.8.0
       version: 2.8.0
     zod:
-      specifier: ~3.23.8
-      version: 3.23.8
+      specifier: ~3.25.76
+      version: 3.25.76
 
 overrides:
   '@microsoft/api-extractor>typescript': ~5.9.3
-  zod-to-json-schema: ~3.24.1
 
 importers:
 
@@ -385,7 +384,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -435,7 +434,7 @@ importers:
         version: 5.9.3
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
 
   etc/blocks/blob-url-custom-protocol/workflow:
     dependencies:
@@ -473,7 +472,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -526,7 +525,7 @@ importers:
         version: 5.9.3
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
 
   etc/blocks/download-file/workflow:
     dependencies:
@@ -564,7 +563,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -611,7 +610,7 @@ importers:
         version: 5.9.3
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
 
   etc/blocks/enter-numbers-v3/workflow:
     dependencies:
@@ -649,7 +648,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -696,7 +695,7 @@ importers:
         version: 5.9.3
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
 
   etc/blocks/enter-numbers/workflow:
     dependencies:
@@ -800,7 +799,7 @@ importers:
         version: 5.9.3
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
 
   etc/blocks/model-test/workflow:
     dependencies:
@@ -976,7 +975,7 @@ importers:
         version: 5.9.3
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
 
   etc/blocks/pool-explorer/workflow:
     dependencies:
@@ -1014,7 +1013,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -1061,7 +1060,7 @@ importers:
         version: 5.9.3
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
 
   etc/blocks/read-logs/workflow:
     dependencies:
@@ -1102,7 +1101,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -1152,7 +1151,7 @@ importers:
         version: 5.9.3
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
 
   etc/blocks/sum-numbers-v3/workflow:
     dependencies:
@@ -1190,7 +1189,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -1240,7 +1239,7 @@ importers:
         version: 5.9.3
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
 
   etc/blocks/sum-numbers/workflow:
     dependencies:
@@ -1385,7 +1384,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -1435,7 +1434,7 @@ importers:
         version: 5.9.3
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
 
   etc/blocks/transfer-files/workflow:
     dependencies:
@@ -1473,7 +1472,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -1535,7 +1534,7 @@ importers:
         version: 5.9.3
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
 
   etc/blocks/ui-examples/workflow:
     dependencies:
@@ -1582,7 +1581,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -1629,7 +1628,7 @@ importers:
         version: 5.9.3
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
 
   etc/blocks/upload-file/workflow:
     dependencies:
@@ -1651,7 +1650,7 @@ importers:
         version: 2.1.0
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -1682,7 +1681,7 @@ importers:
         version: 2.1.0
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -1719,7 +1718,7 @@ importers:
         version: 3.11.0
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -1744,7 +1743,7 @@ importers:
         version: 5.0.1
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -2010,7 +2009,7 @@ importers:
         version: 2.8.0
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -2098,7 +2097,7 @@ importers:
         version: 7.16.0
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -2144,7 +2143,7 @@ importers:
         version: link:../ts-helpers
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -2203,10 +2202,10 @@ importers:
         version: link:../pl-middle-layer
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.22.0
+        version: 1.27.1(zod@3.25.76)
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -2312,7 +2311,7 @@ importers:
         version: 2.8.0
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -2364,7 +2363,7 @@ importers:
         version: 3.11.0
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -2731,7 +2730,7 @@ importers:
         version: 3.11.0
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -2841,7 +2840,7 @@ importers:
         version: 3.5.24(typescript@5.9.3)
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@faker-js/faker':
         specifier: 'catalog:'
@@ -3085,7 +3084,7 @@ importers:
         version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
 
   tests/helper:
     dependencies:
@@ -3137,10 +3136,10 @@ importers:
         version: link:../../lib/node/pl-middle-layer
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
-        version: 1.22.0
+        version: 1.27.1(zod@3.25.76)
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -3349,7 +3348,7 @@ importers:
         version: 2.8.0
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -3590,7 +3589,7 @@ importers:
         version: 2.8.0
       zod:
         specifier: 'catalog:'
-        version: 3.23.8
+        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -4598,6 +4597,12 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
+  '@hono/node-server@1.19.11':
+    resolution: {integrity: sha512-dr8/3zEaB+p0D2n/IUrlPF1HZm586qgJNXK1a9fhg/PzdtkK7Ksd5l312tJX2yBuALqDYBlG20QEbayqPyxn+g==}
+    engines: {node: '>=18.14.1'}
+    peerDependencies:
+      hono: ^4
+
   '@inquirer/checkbox@4.0.1':
     resolution: {integrity: sha512-ehJjmNPdguajc1hStvjN7DJNVjwG5LC1mgGMGFjCmdkn2fxB2GtULftMnlaqNmvMdPpqdaSoOFpl86VkLtG4pQ==}
     engines: {node: '>=18'}
@@ -4825,11 +4830,12 @@ packages:
     os: [darwin, linux, win32]
     hasBin: true
 
-  '@modelcontextprotocol/sdk@1.22.0':
-    resolution: {integrity: sha512-VUpl106XVTCpDmTBil2ehgJZjhyLY2QZikzF8NvTXtLRF1CvO5iEE2UNZdVIUer35vFOwMKYeUGbjJtvPWan3g==}
+  '@modelcontextprotocol/sdk@1.27.1':
+    resolution: {integrity: sha512-sr6GbP+4edBwFndLbM60gf07z0FQ79gaExpnsjMGePXqFcSSb7t6iscpjk9DhFhwd+mTEQrzNafGP8/iGGFYaA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cfworker/json-schema': ^4.1.1
+      zod: ^3.25 || ^4.0
     peerDependenciesMeta:
       '@cfworker/json-schema':
         optional: true
@@ -7081,8 +7087,8 @@ packages:
     resolution: {integrity: sha512-JhFGDVJ7tmDJItKhYgJCGLOWjuK9vPxiXoUFLwLDc99NlmklilbiQJwoctZtt13+xMw91MCk/REan6MWHqDjyA==}
     engines: {node: '>=12.0.0'}
 
-  express-rate-limit@7.5.1:
-    resolution: {integrity: sha512-7iN8iPMDzOMHPUYllBEsQdWVB6fPDMPqwjBaFrgr4Jgr/+okjvzAy+UHlYYL/Vs0OsOrMkwS6PJDkFlJwoxUnw==}
+  express-rate-limit@8.3.1:
+    resolution: {integrity: sha512-D1dKN+cmyPWuvB+G2SREQDzPY1agpBIcTa9sJxOPMCNeH3gwzhqJRDWCXW3gg0y//+LQ/8j52JbMROWyrKdMdw==}
     engines: {node: '>= 16'}
     peerDependencies:
       express: '>= 4.11'
@@ -7358,6 +7364,10 @@ packages:
   header-case@2.0.4:
     resolution: {integrity: sha512-H/vuk5TEEVZwrR0lp2zed9OCo1uAILMlx0JEMgC26rzyJJ3N1v6XkwHHXJQdR2doSjcGPM6OKPYoJgf0plJ11Q==}
 
+  hono@4.12.8:
+    resolution: {integrity: sha512-VJCEvtrezO1IAR+kqEYnxUOoStaQPGrCmX3j4wDTNOcD1uRPFpGlwQUIW8niPuvHXaTUxeOUl5MMDGrl+tmO9A==}
+    engines: {node: '>=16.9.0'}
+
   hosted-git-info@7.0.2:
     resolution: {integrity: sha512-puUZAUKT5m8Zzvs72XWy3HtvVbTWljRE66cP60bxJzAqf2DgICo7lYTY2IHUmLnNpjYvw5bvmoHvPc0QO2a62w==}
     engines: {node: ^16.14.0 || >=18.0.0}
@@ -7448,6 +7458,10 @@ packages:
   internmap@2.0.3:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
     engines: {node: '>=12'}
+
+  ip-address@10.1.0:
+    resolution: {integrity: sha512-XXADHxXmvT9+CRxhXg56LJovE+bmWnEWB78LB83VZTprKTmaC5QfruXocxzTZ2Kl0DNwKuBdlIhjL8LeY8Sf8Q==}
+    engines: {node: '>= 12'}
 
   ipaddr.js@1.9.1:
     resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
@@ -7572,6 +7586,9 @@ packages:
   jju@1.4.0:
     resolution: {integrity: sha512-8wb9Yw966OSxApiCt0K3yNJL8pnNeIv+OEq2YMidz4FKP6nonSRoOXc80iXY4JaN2FC11B9qsNmDsm+ZOfMROA==}
 
+  jose@6.2.1:
+    resolution: {integrity: sha512-jUaKr1yrbfaImV7R2TN/b3IcZzsw38/chqMpo2XJ7i2F8AfM/lA4G1goC3JVEwg0H7UldTmSt3P68nt31W7/mw==}
+
   js-beautify@1.15.1:
     resolution: {integrity: sha512-ESjNzSlt/sWE8sciZH8kBF8BPlwXPwhR6pWKAw8bw4Bwj+iZcnKW6ONWUutJ7eObuBZQpiIb8S7OYspWrKt7rA==}
     engines: {node: '>=14'}
@@ -7618,6 +7635,9 @@ packages:
 
   json-schema-traverse@1.0.0:
     resolution: {integrity: sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==}
+
+  json-schema-typed@8.0.2:
+    resolution: {integrity: sha512-fQhoXdcvc3V28x7C7BMs4P5+kNlgUURe2jmUT1T//oBRMDrqy1QPelJimwZGo7Hg9VPV3EQV5Bnq4hbFy2vetA==}
 
   json-stringify-safe@5.0.1:
     resolution: {integrity: sha512-ZClg6AaYvamvYEE82d3Iyd3vSSIjQ+odgjaTzRuO3s7toCdFKczob2i0zCh7JE8kWn17yvAWhUVxvqGwUalsRA==}
@@ -9270,13 +9290,16 @@ packages:
     resolution: {integrity: sha512-zK7YHHz4ZXpW89AHXUPbQVGKI7uvkd3hzusTdotCg1UxyaVtg0zFJSTfW/Dq5f7OBBVnq6cZIaC8Ti4hb6dtCA==}
     engines: {node: '>= 14'}
 
-  zod-to-json-schema@3.24.6:
-    resolution: {integrity: sha512-h/z3PKvcTcTetyjl1fkj79MHNEjm+HpD6NXheWjzOekY7kV+lwDYnHw+ivHkijnCSMz1yJaWBD9vu/Fcmk+vEg==}
+  zod-to-json-schema@3.25.1:
+    resolution: {integrity: sha512-pM/SU9d3YAggzi6MtR4h7ruuQlqKtad8e9S0fmxcMi+ueAK5Korys/aWcV9LIIHTVbj01NdzxcnXSN+O74ZIVA==}
     peerDependencies:
-      zod: ^3.24.1
+      zod: ^3.25 || ^4
 
   zod@3.23.8:
     resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
+
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
   zod@4.1.12:
     resolution: {integrity: sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ==}
@@ -10642,6 +10665,10 @@ snapshots:
       protobufjs: 7.4.0
       yargs: 17.7.2
 
+  '@hono/node-server@1.19.11(hono@4.12.8)':
+    dependencies:
+      hono: 4.12.8
+
   '@inquirer/checkbox@4.0.1(@types/node@24.5.2)':
     dependencies:
       '@inquirer/core': 10.0.1(@types/node@24.5.2)
@@ -10974,8 +11001,9 @@ snapshots:
 
   '@milaboratories/tengo-tester@1.6.4': {}
 
-  '@modelcontextprotocol/sdk@1.22.0':
+  '@modelcontextprotocol/sdk@1.27.1(zod@3.25.76)':
     dependencies:
+      '@hono/node-server': 1.19.11(hono@4.12.8)
       ajv: 8.18.0
       ajv-formats: 3.0.1(ajv@8.18.0)
       content-type: 1.0.5
@@ -10984,11 +11012,14 @@ snapshots:
       eventsource: 3.0.7
       eventsource-parser: 3.0.6
       express: 5.2.1
-      express-rate-limit: 7.5.1(express@5.2.1)
+      express-rate-limit: 8.3.1(express@5.2.1)
+      hono: 4.12.8
+      jose: 6.2.1
+      json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 3.23.8
-      zod-to-json-schema: 3.24.6(zod@3.23.8)
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.1(zod@3.25.76)
     transitivePeerDependencies:
       - supports-color
 
@@ -13503,9 +13534,10 @@ snapshots:
 
   expect-type@1.2.2: {}
 
-  express-rate-limit@7.5.1(express@5.2.1):
+  express-rate-limit@8.3.1(express@5.2.1):
     dependencies:
       express: 5.2.1
+      ip-address: 10.1.0
 
   express@5.2.1:
     dependencies:
@@ -13832,6 +13864,8 @@ snapshots:
       capital-case: 1.0.4
       tslib: 2.8.1
 
+  hono@4.12.8: {}
+
   hosted-git-info@7.0.2:
     dependencies:
       lru-cache: 10.4.3
@@ -13927,6 +13961,8 @@ snapshots:
   ini@1.3.8: {}
 
   internmap@2.0.3: {}
+
+  ip-address@10.1.0: {}
 
   ipaddr.js@1.9.1: {}
 
@@ -14031,6 +14067,8 @@ snapshots:
 
   jju@1.4.0: {}
 
+  jose@6.2.1: {}
+
   js-beautify@1.15.1:
     dependencies:
       config-chain: 1.1.13
@@ -14089,6 +14127,8 @@ snapshots:
   json-parse-better-errors@1.0.2: {}
 
   json-schema-traverse@1.0.0: {}
+
+  json-schema-typed@8.0.2: {}
 
   json-stringify-safe@5.0.1: {}
 
@@ -15771,10 +15811,12 @@ snapshots:
       compress-commons: 6.0.2
       readable-stream: 4.5.2
 
-  zod-to-json-schema@3.24.6(zod@3.23.8):
+  zod-to-json-schema@3.25.1(zod@3.25.76):
     dependencies:
-      zod: 3.23.8
+      zod: 3.25.76
 
   zod@3.23.8: {}
+
+  zod@3.25.76: {}
 
   zod@4.1.12: {}

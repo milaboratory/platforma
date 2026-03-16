@@ -198,7 +198,7 @@ catalog:
 
   # Net / MCP
 
-  "@modelcontextprotocol/sdk": ~1.22.0
+  "@modelcontextprotocol/sdk": ^1.27.1
   "undici": ~7.16.0
   "@grpc/grpc-js": ~1.13.4
   "@protobuf-ts/grpc-transport": *protobuf-ts
@@ -233,8 +233,7 @@ catalog:
 
   "es-toolkit": ^1.39.10
 
-  # dont upgrade, ask @dbolotin first
-  "zod": ~3.23.8
+  "zod": ~3.25.76
 
   "yaml": ^2.8.0
 
