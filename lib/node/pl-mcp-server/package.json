@@ -37,6 +37,7 @@
     "@milaboratories/pl-middle-layer": ">=1.48.0"
   },
   "devDependencies": {
+    "@milaboratories/pl-middle-layer": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",

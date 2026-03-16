@@ -2197,9 +2197,6 @@ importers:
 
   lib/node/pl-mcp-server:
     dependencies:
-      '@milaboratories/pl-middle-layer':
-        specifier: workspace:*
-        version: link:../pl-middle-layer
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
         version: 1.27.1(zod@3.25.76)
@@ -2210,6 +2207,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/pl-middle-layer':
+        specifier: workspace:*
+        version: link:../pl-middle-layer
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../../../tools/ts-builder
