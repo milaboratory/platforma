@@ -18,8 +18,7 @@ export class PlMcpServer {
   private readonly port: number;
   private readonly secret: string;
   private httpServer: Server | undefined;
-  private mcpServer: McpServer | undefined;
-  private transport: StreamableHTTPServerTransport | undefined;
+  private readonly transports = new Map<string, StreamableHTTPServerTransport>();
 
   constructor(options: PlMcpServerOptions) {
     this.ml = options.middleLayer;
@@ -35,19 +34,6 @@ export class PlMcpServer {
     if (this.httpServer) {
       throw new Error("MCP server is already running");
     }
-
-    this.mcpServer = new McpServer(
-      { name: "platforma", version: "0.1.0" },
-      { capabilities: { tools: {} } },
-    );
-
-    this.registerTools(this.mcpServer);
-
-    this.transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-    });
-
-    await this.mcpServer.connect(this.transport);
 
     const expectedPath = `/${this.secret}/mcp`;
 
@@ -75,7 +61,37 @@ export class PlMcpServer {
         return;
       }
 
-      await this.transport!.handleRequest(req, res);
+      // Route to existing session or create new one for initialization
+      const sessionId = req.headers["mcp-session-id"] as string | undefined;
+      if (sessionId && this.transports.has(sessionId)) {
+        await this.transports.get(sessionId)!.handleRequest(req, res);
+        return;
+      }
+
+      // New session — only allowed for POST (initialization)
+      if (req.method === "POST") {
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+        });
+
+        transport.onclose = () => {
+          const sid = transport.sessionId;
+          if (sid) this.transports.delete(sid);
+        };
+
+        const server = this.createMcpServer();
+        await server.connect(transport);
+
+        await transport.handleRequest(req, res);
+
+        const sid = transport.sessionId;
+        if (sid) this.transports.set(sid, transport);
+        return;
+      }
+
+      // Unknown session for non-POST
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Bad Request: no valid session" }));
     });
 
     await new Promise<void>((resolve, reject) => {
@@ -85,20 +101,26 @@ export class PlMcpServer {
   }
 
   async stop(): Promise<void> {
-    if (this.transport) {
-      await this.transport.close();
-      this.transport = undefined;
+    for (const transport of this.transports.values()) {
+      await transport.close();
     }
-    if (this.mcpServer) {
-      await this.mcpServer.close();
-      this.mcpServer = undefined;
-    }
+    this.transports.clear();
+
     if (this.httpServer) {
       await new Promise<void>((resolve, reject) => {
         this.httpServer!.close((err) => (err ? reject(err) : resolve()));
       });
       this.httpServer = undefined;
     }
+  }
+
+  private createMcpServer(): McpServer {
+    const server = new McpServer(
+      { name: "platforma", version: "0.1.0" },
+      { capabilities: { tools: {} } },
+    );
+    this.registerTools(server);
+    return server;
   }
 
   private registerTools(server: McpServer): void {
