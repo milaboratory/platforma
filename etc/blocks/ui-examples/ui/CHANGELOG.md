@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.8.37
+
+### Patch Changes
+
+- 68bc3e4: update uikit file/number input
+
 ## 1.8.36
 
 ### Patch Changes

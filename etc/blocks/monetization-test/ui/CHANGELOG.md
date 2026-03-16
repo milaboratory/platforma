@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.205
+
+### Patch Changes
+
+- 68bc3e4: update uikit file/number input
+  - @platforma-sdk/ui-vue@1.59.4
+
 ## 1.1.204
 
 ### Patch Changes
