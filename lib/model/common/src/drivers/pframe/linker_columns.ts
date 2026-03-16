@@ -89,7 +89,6 @@ export class LinkerMap implements LinkersData {
       for (const [keyLeft] of leftKeyVariants) {
         for (const [keyRight] of rightKeyVariants) {
           result.get(keyLeft)?.linkWith.set(keyRight, linker);
-          result.get(keyRight)?.linkWith.set(keyLeft, linker);
         }
       }
     }
@@ -138,7 +137,8 @@ export class LinkerMap implements LinkersData {
               current = previous[current];
             }
             ids.push(current);
-            return ids.map((id: LinkerKey) => this.data.get(id)!.linkWith.get(previous[id])!);
+            // Edge (previous[id] -> id) is stored at the "from" node in one-directional map
+            return ids.map((id: LinkerKey) => this.data.get(previous[id])!.linkWith.get(id)!);
           } else if (!visited.has(availableId)) {
             next.add(availableId);
             visited.add(availableId);
