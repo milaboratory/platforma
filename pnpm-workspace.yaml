@@ -26,6 +26,7 @@ packages:
   - lib/node/pl-tree
   - lib/node/pl-drivers
   - lib/node/pl-middle-layer
+  - lib/node/pl-mcp-server
   - lib/node/pl-deployments
   - lib/node/pl-config
 
@@ -139,6 +140,7 @@ packages:
   - tests/block-repo
   - tests/config-local-ml-integration
   - tests/drivers-ml-blocks-integration
+  - tests/mcp-server
 
   - tests/package-builder
   - tests/package-builder/10.asset
@@ -194,8 +196,9 @@ catalog:
   "oxlint": 1.43.0
   "oxfmt": 0.28.0
 
-  # Net
+  # Net / MCP
 
+  "@modelcontextprotocol/sdk": ^1.27.1
   "undici": ~7.16.0
   "@grpc/grpc-js": ~1.13.4
   "@protobuf-ts/grpc-transport": *protobuf-ts

@@ -1,0 +1,30 @@
+{
+  "name": "@milaboratories/mcp-server-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Integration tests for Platforma MCP server",
+  "scripts": {
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "test": "vitest run --coverage --no-file-parallelism --sequence.concurrent=false",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/pl-middle-layer": "workspace:*",
+    "@milaboratories/pl-mcp-server": "workspace:*",
+    "@modelcontextprotocol/sdk": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

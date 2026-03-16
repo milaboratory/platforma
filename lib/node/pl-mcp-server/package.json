@@ -1,0 +1,49 @@
+{
+  "name": "@milaboratories/pl-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for Platforma Desktop",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "test": "vitest run --coverage",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@milaboratories/pl-middle-layer": "workspace:*",
+    "@modelcontextprotocol/sdk": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}
