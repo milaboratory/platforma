@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.59.3
+
+### Patch Changes
+
+- Updated dependencies [227002e]
+  - @milaboratories/pl-model-common@1.26.1
+  - @milaboratories/ptabler-expression-js@1.1.27
+
 ## 1.59.0
 
 ### Minor Changes
