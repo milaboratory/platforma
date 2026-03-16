@@ -30,9 +30,11 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@milaboratories/pl-middle-layer": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
     "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "@milaboratories/pl-middle-layer": ">=1.48.0"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
