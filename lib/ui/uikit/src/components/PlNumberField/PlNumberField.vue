@@ -9,7 +9,6 @@
  * <PlNumberField
  *   v-model="evenNumber"
  *   :validate="(v) => v % 2 !== 0 ? 'Number must be even' : undefined"
- *   :update-on-enter-or-click-outside="true"
  *   label="Even Number"
  * />
  */
@@ -18,18 +17,35 @@ export default {
 };
 </script>
 
-<script setup lang="ts">
+<script
+  setup
+  lang="ts"
+  generic="
+    R extends true | false,
+    V extends undefined | number,
+    C extends Exclude<V, R extends true ? undefined : never>
+  "
+>
 import "./pl-number-field.scss";
 import DoubleContour from "../../utils/DoubleContour.vue";
 import { useLabelNotch } from "../../utils/useLabelNotch";
 import { computed, ref, useSlots, watch } from "vue";
 import { PlTooltip } from "../PlTooltip";
-import { parseNumber } from "./parseNumber";
+import { PlIcon16 } from "../PlIcon16";
+import { tryParseNumber, numberToDecimalString, validateNumber } from "./parseNumber";
+
+const modelValue = defineModel<V>({ required: true });
+
+const emit = defineEmits<{
+  blur: [value: V];
+  focus: [value: V];
+  enter: [value: V];
+}>();
 
 const props = withDefaults(
   defineProps<{
-    /** Input is disabled if true */
-    disabled?: boolean;
+    /** If `true`, the field is required and will show an error if left empty. */
+    required?: R;
     /** Label on the top border of the field, empty by default */
     label?: string;
     /** Input placeholder, empty by default */
@@ -40,14 +56,16 @@ const props = withDefaults(
     minValue?: number;
     /** If defined - show an error if value is higher */
     maxValue?: number;
-    /** If false - remove buttons on the right */
-    useIncrementButtons?: boolean;
-    /** If true - changes do not apply immediately, they apply only by removing focus from the input (by click enter or by click outside)  */
-    updateOnEnterOrClickOutside?: boolean;
+    /** Input is disabled if true */
+    disabled?: boolean;
+    /** If true - remove buttons on the right */
+    disableSteps?: boolean;
     /** Error message that shows always when it's provided, without other checks */
     errorMessage?: string;
     /** Additional validity check for input value that must return an error text if failed */
     validate?: (v: number) => string | undefined;
+    /** If `true`, shows a clear button that resets value to `undefined`. If a function, calls it to get the reset value. */
+    clearable?: (R extends true ? never : boolean) | (() => C);
     /** Makes some of corners not rounded */
     groupPosition?:
       | "top"
@@ -60,201 +78,185 @@ const props = withDefaults(
       | "bottom-right"
       | "middle";
   }>(),
-  {
-    step: 1,
-    label: undefined,
-    placeholder: undefined,
-    minValue: undefined,
-    maxValue: undefined,
-    useIncrementButtons: true,
-    updateOnEnter: false,
-    errorMessage: undefined,
-    validate: undefined,
-    groupPosition: undefined,
-  },
+  { step: 1 },
 );
-
-const modelValue = defineModel<number | undefined>({ required: true });
 
 const slots = useSlots();
 
 const rootRef = ref<HTMLElement>();
-const inputRef = ref<HTMLInputElement>();
 
 useLabelNotch(rootRef);
 
-function modelToString(v: number | undefined) {
-  return v === undefined ? "" : String(+v); // (+v) to avoid staying in input non-number values if they are provided in model
-}
+const displayText = ref(numberToDecimalString(modelValue.value));
 
-const parsedResult = computed(() => parseNumber(props, inputValue.value));
-
-const cachedValue = ref<string | undefined>(undefined);
-
-const resetCachedValue = () => (cachedValue.value = undefined);
-
-watch(modelValue, (n) => {
-  const r = parsedResult.value;
-  if (r.error || n !== r.value) {
-    resetCachedValue();
-  }
+// Sync display when model changes externally (parent, increment/decrement).
+// Skip if the current input already represents the same value.
+watch(modelValue, (newVal) => {
+  const parsed = tryParseNumber(displayText.value);
+  if (parsed.value === newVal) return;
+  displayText.value = numberToDecimalString(newVal);
 });
 
-const inputValue = computed({
-  get() {
-    return cachedValue.value ?? modelToString(modelValue.value);
-  },
-  set(nextValue: string) {
-    const r = parseNumber(props, nextValue);
+function handleInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+  displayText.value = input.value;
 
-    cachedValue.value = r.cleanInput;
-
-    if (r.error || props.updateOnEnterOrClickOutside) {
-      inputRef.value!.value = r.cleanInput;
-    } else {
-      modelValue.value = r.value;
-    }
-  },
-});
-
-const focused = ref(false);
-
-function applyChanges() {
-  if (parsedResult.value.error === undefined) {
-    modelValue.value = parsedResult.value.value;
+  const result = tryParseNumber(input.value);
+  if (result.value !== undefined) {
+    modelValue.value = result.value as V;
   }
 }
 
-const errors = computed(() => {
-  let ers: string[] = [];
+// On Enter or blur: if parseable, replace display with canonical decimal string.
+// Converts exponential (1e-5) to plain form (0.00001).
+function commitValue() {
+  const text = displayText.value.trim();
+  const result = tryParseNumber(text);
 
-  if (props.errorMessage) {
-    ers.push(props.errorMessage);
-  }
-
-  const r = parsedResult.value;
-
-  if (r.error) {
-    ers.push(r.error.message);
-  } else if (props.validate && r.value !== undefined) {
-    const error = props.validate(r.value);
-    if (error) {
-      ers.push(error);
+  // Empty or partial (-, ., -.) → clear display and reset model for non-required fields
+  if (text === "" || (result.value === undefined && result.error === undefined)) {
+    displayText.value = "";
+    if (!props.required) {
+      modelValue.value = undefined as V;
     }
+    return;
   }
 
-  ers = [...ers];
+  if (result.value !== undefined) {
+    modelValue.value = result.value as V;
+    displayText.value = numberToDecimalString(result.value);
+  }
+}
 
-  return ers.join(" ");
+const error = computed(() => {
+  if (props.errorMessage) return props.errorMessage;
+
+  const result = tryParseNumber(displayText.value);
+  if (result.error) return result.error;
+  if (result.value !== undefined) {
+    return validateNumber(result.value, props);
+  }
+
+  if (props.required && displayText.value.trim() === "") {
+    return "Value is required";
+  }
+
+  return undefined;
 });
+
+const canShowClearable = computed(
+  () =>
+    props.clearable &&
+    (modelValue.value !== undefined || displayText.value.trim() !== "") &&
+    !props.disabled,
+);
+
+function clear() {
+  if (typeof props.clearable === "function") {
+    modelValue.value = props.clearable();
+    displayText.value = numberToDecimalString(modelValue.value);
+  } else {
+    modelValue.value = undefined as V;
+    displayText.value = "";
+  }
+}
 
 const isIncrementDisabled = computed(() => {
-  const r = parsedResult.value;
-
-  if (props.maxValue !== undefined && r.value !== undefined) {
-    return r.value >= props.maxValue;
-  }
-
-  return false;
+  if (error.value) return true;
+  return (
+    props.maxValue !== undefined &&
+    modelValue.value !== undefined &&
+    modelValue.value >= props.maxValue
+  );
 });
 
 const isDecrementDisabled = computed(() => {
-  const r = parsedResult.value;
-
-  if (props.minValue !== undefined && r.value !== undefined) {
-    return r.value <= props.minValue;
-  }
-
-  return false;
+  if (error.value) return true;
+  return (
+    props.minValue !== undefined &&
+    modelValue.value !== undefined &&
+    modelValue.value <= props.minValue
+  );
 });
 
 const multiplier = computed(() => 10 ** (props.step.toString().split(".").at(1)?.length ?? 0));
 
 function increment() {
-  const r = parsedResult.value;
+  if (isIncrementDisabled.value) return;
 
-  const parsedValue = r.value;
-
-  if (!isIncrementDisabled.value) {
-    let nV;
-    if (parsedValue === undefined) {
-      nV = props.minValue ? props.minValue : 0;
-    } else {
-      nV =
-        ((parsedValue || 0) * multiplier.value + props.step * multiplier.value) / multiplier.value;
-    }
-    modelValue.value = props.maxValue !== undefined ? Math.min(props.maxValue, nV) : nV;
+  let nV: number;
+  if (modelValue.value === undefined) {
+    nV = props.minValue ?? 0;
+  } else {
+    nV =
+      ((modelValue.value || 0) * multiplier.value + props.step * multiplier.value) /
+      multiplier.value;
   }
+
+  modelValue.value = (props.maxValue !== undefined ? Math.min(props.maxValue, nV) : nV) as V;
 }
 
 function decrement() {
-  const r = parsedResult.value;
+  if (isDecrementDisabled.value) return;
 
-  const parsedValue = r.value;
-
-  if (!isDecrementDisabled.value) {
-    let nV;
-    if (parsedValue === undefined) {
-      nV = 0;
-    } else {
-      nV =
-        ((parsedValue || 0) * multiplier.value - props.step * multiplier.value) / multiplier.value;
-    }
-    modelValue.value = props.minValue !== undefined ? Math.max(props.minValue, nV) : nV;
+  let nV: number;
+  if (modelValue.value === undefined) {
+    nV = 0;
+  } else {
+    nV =
+      ((modelValue.value || 0) * multiplier.value - props.step * multiplier.value) /
+      multiplier.value;
   }
+
+  modelValue.value = (props.minValue !== undefined ? Math.max(props.minValue, nV) : nV) as V;
 }
 
-function handleKeyPress(e: { code: string; preventDefault(): void }) {
-  if (props.updateOnEnterOrClickOutside) {
-    if (e.code === "Escape") {
-      inputValue.value = modelToString(modelValue.value);
-      inputRef.value?.blur();
-    }
-    if (e.code === "Enter") {
-      inputRef.value?.blur();
-    }
-  }
+function handleBlur() {
+  commitValue();
+  emit("blur", modelValue.value);
+}
 
+function handleFocus() {
+  emit("focus", modelValue.value);
+}
+
+function handleKeyDown(e: KeyboardEvent) {
   if (e.code === "Enter") {
-    inputValue.value = String(modelValue.value); // to make .1 => 0.1, 10.00 => 10, remove leading zeros etc
+    commitValue();
+    emit("enter", modelValue.value);
   }
 
   if (["ArrowDown", "ArrowUp"].includes(e.code)) {
     e.preventDefault();
   }
 
-  if (props.useIncrementButtons && e.code === "ArrowUp") {
+  if (!props.disableSteps && e.code === "ArrowUp") {
     increment();
   }
 
-  if (props.useIncrementButtons && e.code === "ArrowDown") {
+  if (!props.disableSteps && e.code === "ArrowDown") {
     decrement();
   }
 }
 
-// https://stackoverflow.com/questions/880512/prevent-text-selection-after-double-click#:~:text=If%20you%20encounter%20a%20situation,none%3B%20to%20the%20summary%20element.
-// this prevents selecting of more than input content in some cases,
-// but also disable selecting input content by double-click (useful feature)
-const onMousedown = (ev: MouseEvent) => {
+// Prevent selecting beyond input content on triple-click etc.
+function handleMousedown(ev: MouseEvent) {
   if (ev.detail > 1) {
     ev.preventDefault();
   }
-};
+}
 </script>
 
 <template>
   <div
     ref="rootRef"
-    :class="{ error: !!errors.trim(), disabled: disabled }"
+    :class="{ error: !!error, disabled: disabled }"
     class="pl-number-field d-flex-column"
-    @keydown="handleKeyPress($event)"
+    @keydown="handleKeyDown"
   >
     <div class="pl-number-field__main-wrapper d-flex">
       <DoubleContour class="pl-number-field__contour" :group-position="groupPosition" />
-      <div
-        class="pl-number-field__wrapper flex-grow d-flex flex-align-center"
-        :class="{ withoutArrows: !useIncrementButtons }"
-      >
+      <div class="pl-number-field__wrapper flex-grow d-flex flex-align-center">
         <label v-if="label" class="text-description">
           {{ label }}
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
@@ -265,21 +267,27 @@ const onMousedown = (ev: MouseEvent) => {
         </label>
         <input
           ref="inputRef"
-          v-model="inputValue"
+          type="text"
+          inputmode="numeric"
+          :value="displayText"
           :disabled="disabled"
           :placeholder="placeholder"
           class="text-s flex-grow"
-          @focusin="focused = true"
-          @focusout="
-            focused = false;
-            applyChanges();
-          "
+          @input="handleInput"
+          @focusout="handleBlur"
+          @focusin="handleFocus"
+        />
+        <PlIcon16
+          v-if="canShowClearable"
+          class="pl-number-field__clearable"
+          name="delete-clear"
+          @click.stop="clear"
         />
       </div>
       <div
-        v-if="useIncrementButtons"
+        v-if="!props.disableSteps"
         class="pl-number-field__icons d-flex-column"
-        @mousedown="onMousedown"
+        @mousedown="handleMousedown"
       >
         <div
           :class="{ disabled: isIncrementDisabled }"
@@ -323,8 +331,8 @@ const onMousedown = (ev: MouseEvent) => {
         </div>
       </div>
     </div>
-    <div v-if="errors.trim()" class="pl-number-field__error">
-      {{ errors }}
+    <div v-if="error" class="pl-number-field__error">
+      {{ error }}
     </div>
   </div>
 </template>

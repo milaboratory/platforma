@@ -7,13 +7,20 @@ export default {
 };
 </script>
 
-<script lang="ts" setup>
+<script
+  lang="ts"
+  setup
+  generic="
+    R extends true | false,
+    V extends undefined | string,
+    C extends Exclude<V, R extends true ? undefined : never>
+  "
+>
 import { computed, ref, useSlots } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
 import { getErrorMessage } from "../../helpers/error.ts";
 import DoubleContour from "../../utils/DoubleContour.vue";
 import { useLabelNotch } from "../../utils/useLabelNotch";
-import { useValidation } from "../../utils/useValidation";
 import { PlIcon16 } from "../PlIcon16";
 import { PlIcon24 } from "../PlIcon24";
 import { PlSvg } from "../PlSvg";
@@ -25,58 +32,37 @@ const slots = useSlots();
 /**
  * The current value of the input field.
  */
-const model = defineModel<string>({
-  default: "",
+const model = defineModel<V>({
+  required: true,
 });
 
 const props = defineProps<{
-  /**
-   * The label to display above the input field.
-   */
+  /** The label to display above the input field. */
   label?: string;
   /**
    * If `true`, a clear icon will appear in the input field to clear the value (set it to empty string).
+   * If a function, calls it to get the reset value.
    */
-  clearable?: boolean;
-  /**
-   * If `true`, the input field is marked as required.
-   */
-  required?: boolean;
-  /**
-   * An error message to display below the input field.
-   */
+  clearable?: (R extends true ? never : boolean) | (() => C);
+  /** If `true`, the input field is marked as required and will show an error if left empty. */
+  required?: R;
+  /** An error message to display below the input field. */
   error?: unknown;
-  /**
-   * A helper text to display below the input field when there are no errors.
-   */
+  /** A helper text to display below the input field when there are no errors. */
   helper?: string;
-  /**
-   * A placeholder text to display inside the input field when it is empty.
-   */
+  /** A placeholder text to display inside the input field when it is empty. */
   placeholder?: string;
-  /**
-   * If `true`, the input field is disabled and cannot be interacted with.
-   */
+  /** If `true`, the input field is disabled and cannot be interacted with. */
   disabled?: boolean;
-  /**
-   * If `true`, the input field has a dashed border.
-   */
+  /** If `true`, the input field has a dashed border. */
   dashed?: boolean;
-  /**
-   * A prefix text to display inside the input field before the value.
-   */
+  /** A prefix text to display inside the input field before the value. */
   prefix?: string;
-  /**
-   * An array of validation rules to apply to the input field. Each rule is a function that takes the current value and returns `true` if valid or an error message if invalid.
-   */
-  rules?: ((v: string) => boolean | string)[];
-  /**
-   * The string specifies whether the field should be a password or not, value could be "password" or undefined.
-   */
+  /** Additional validity check for input value that must return an error text if failed */
+  validate?: (v: V) => string | undefined;
+  /** The string specifies whether the field should be a password or not, value could be "password" or undefined. */
   type?: "password";
-  /**
-   * Makes some of corners not rounded
-   * */
+  /** Makes some of corners not rounded */
   groupPosition?:
     | "top"
     | "bottom"
@@ -107,15 +93,11 @@ const passwordIcon = computed(() => (showPassword.value ? "view-show" : "view-hi
 
 const clear = () => {
   if (props.clearable) {
-    model.value = "";
+    model.value = (typeof props.clearable === "function" ? props.clearable() : "") as V;
   }
 };
 
-const validationData = useValidation(model, props.rules || []);
-
 const isEmpty = computed(() => model.value === "");
-
-const nonEmpty = computed(() => !isEmpty.value);
 
 const displayErrors = computed(() => {
   const errors: string[] = [];
@@ -123,8 +105,14 @@ const displayErrors = computed(() => {
   if (propsError) {
     errors.push(propsError);
   }
-  if (!validationData.value.isValid) {
-    errors.push(...validationData.value.errors);
+  if (props.validate) {
+    const error = props.validate(model.value as V);
+    if (error) {
+      errors.push(error);
+    }
+  }
+  if (props.required && isEmpty.value) {
+    errors.push("Value is required");
   }
   return errors;
 });
@@ -132,7 +120,7 @@ const displayErrors = computed(() => {
 const hasErrors = computed(() => displayErrors.value.length > 0);
 
 const canShowClearable = computed(
-  () => props.clearable && nonEmpty.value && props.type !== "password" && !props.disabled,
+  () => props.clearable && !isEmpty.value && props.type !== "password" && !props.disabled,
 );
 
 const togglePasswordVisibility = () => (showPassword.value = !showPassword.value);
@@ -151,7 +139,7 @@ useLabelNotch(rootRef);
         error: hasErrors,
         disabled,
         dashed,
-        nonEmpty,
+        nonEmpty: !isEmpty,
       }"
     >
       <label v-if="label" ref="label">

@@ -7,6 +7,7 @@
   --label-offset-right-x: 8px;
   --label-color: var(--txt-01);
   --color-hint: #9d9eae;
+  --show-clearable: none;
 
   // overflow: hidden;
 
@@ -22,11 +23,9 @@
 
   &__wrapper {
     padding-left: 12px;
-    // background-color: rgb(111, 94, 94);
+    padding-right: 8px;
+    gap: 8px;
     border-radius: 6px;
-  }
-  &__wrapper.withoutArrows {
-    padding-right: 12px;
   }
 
   &__icons {
@@ -60,6 +59,12 @@
     border-bottom: 1px solid var(--contour-color);
   }
 
+  &__clearable {
+    display: var(--show-clearable) !important;
+    --icon-color: var(--ic-02) !important;
+    cursor: pointer;
+  }
+
   &__hint {
     margin-top: 3px;
     color: var(--color-hint);
@@ -88,6 +93,14 @@
     z-index: 0;
     pointer-events: none;
     transition: all 0.3s;
+  }
+
+  &:hover {
+    --show-clearable: inline-block;
+  }
+
+  &:focus-within {
+    --show-clearable: inline-block;
   }
 
   &:focus-within:not(.error) {

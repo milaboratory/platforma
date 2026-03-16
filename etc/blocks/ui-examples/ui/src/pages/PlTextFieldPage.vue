@@ -9,11 +9,11 @@ const data = reactive({
   optionalNum: "" as string,
 });
 
-function numberRule(v: string): boolean | string {
-  if (v === "") return true;
+function numberRule(v: string): string | undefined {
+  if (v === "") return undefined;
   const parsed = Number(v);
   if (!Number.isFinite(parsed)) return "Not a number";
-  return true;
+  return undefined;
 }
 </script>
 
@@ -42,13 +42,13 @@ function numberRule(v: string): boolean | string {
       />
 
       <div>Number (string) + clearable</div>
-      <PlTextField v-model="data.num" placeholder="Number" :rules="[numberRule]" clearable />
+      <PlTextField v-model="data.num" placeholder="Number" :validate="numberRule" clearable />
 
       <div>Optional number (string)</div>
       <PlTextField
         v-model="data.optionalNum"
         placeholder="Number"
-        :rules="[numberRule]"
+        :validate="numberRule"
         clearable
       />
 
