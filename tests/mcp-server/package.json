@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@milaboratories/pl-client": "workspace:*",
-    "@milaboratories/pl-middle-layer": "workspace:*",
     "@milaboratories/pl-mcp-server": "workspace:*",
+    "@milaboratories/pl-middle-layer": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
     "zod": "catalog:"
   },

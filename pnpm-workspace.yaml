@@ -198,7 +198,7 @@ catalog:
 
   # Net / MCP
 
-  "@modelcontextprotocol/sdk": ^1.27.1
+  "@modelcontextprotocol/sdk": ~1.22.0
   "undici": ~7.16.0
   "@grpc/grpc-js": ~1.13.4
   "@protobuf-ts/grpc-transport": *protobuf-ts
