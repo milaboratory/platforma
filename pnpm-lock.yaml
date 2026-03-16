@@ -2661,6 +2661,9 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:*
         version: link:../../lib/util/helpers
+      '@milaboratories/pl-client':
+        specifier: workspace:*
+        version: link:../../lib/node/pl-client
       '@milaboratories/pl-error-like':
         specifier: workspace:*
         version: link:../../lib/model/pl-error-like

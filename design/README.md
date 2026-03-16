@@ -2,7 +2,11 @@
 
 **One-liner:** Unified column discovery that separates spec lookup from data loading
 
-**Status:** Specification
+**Status:** Active
+
+**Start:** 2026-03-04
+
+**Target:** 2026-03-13
 
 **Urgency:** 7 — blocks label/dropdown code on Lead Selection, blocks V3 migration quality
 
