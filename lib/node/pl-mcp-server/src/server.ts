@@ -10,6 +10,8 @@ export interface PlMcpServerCallbacks {
   onProjectOpened?: (projectId: string) => void | Promise<void>;
   onProjectClosed?: (projectId: string) => void | Promise<void>;
   onProjectDeleted?: (projectId: string) => void | Promise<void>;
+  /** Capture the current application window as a PNG screenshot. Returns base64-encoded PNG. */
+  captureScreenshot?: () => Promise<string>;
 }
 
 export interface PlMcpServerOptions {
@@ -139,6 +141,7 @@ export class PlMcpServer {
   private registerTools(server: McpServer): void {
     this.registerPingTool(server);
     this.registerProjectTools(server);
+    this.registerScreenshotTool(server);
   }
 
   /** Resolves a project from the list by its internal id. */
@@ -230,6 +233,22 @@ export class PlMcpServer {
         await ml.deleteProject(entry.id);
         await this.callbacks.onProjectDeleted?.(projectId);
         return textResult({ ok: true });
+      },
+    );
+  }
+
+  private registerScreenshotTool(server: McpServer): void {
+    server.registerTool(
+      "capture_screenshot",
+      { description: "Capture a screenshot of the current application window" },
+      async () => {
+        if (!this.callbacks.captureScreenshot) {
+          return textResult({ error: "Screenshot not available (no desktop integration)" });
+        }
+        const base64Png = await this.callbacks.captureScreenshot();
+        return {
+          content: [{ type: "image" as const, data: base64Png, mimeType: "image/png" }],
+        };
       },
     );
   }
