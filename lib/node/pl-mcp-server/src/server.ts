@@ -5,6 +5,13 @@ import { randomUUID } from "node:crypto";
 import { type MiddleLayer, resourceIdToString } from "@milaboratories/pl-middle-layer";
 import { z } from "zod";
 
+export interface PlMcpServerCallbacks {
+  onProjectCreated?: (projectId: string) => void | Promise<void>;
+  onProjectOpened?: (projectId: string) => void | Promise<void>;
+  onProjectClosed?: (projectId: string) => void | Promise<void>;
+  onProjectDeleted?: (projectId: string) => void | Promise<void>;
+}
+
 export interface PlMcpServerOptions {
   /** MiddleLayer instance providing access to projects, blocks, etc. */
   middleLayer: MiddleLayer;
@@ -12,6 +19,8 @@ export interface PlMcpServerOptions {
   port: number;
   /** Secret path segment for URL security. */
   secret: string;
+  /** Optional callbacks for project lifecycle events (e.g. to sync UI state). */
+  callbacks?: PlMcpServerCallbacks;
 }
 
 function textResult(data: unknown) {
@@ -24,6 +33,7 @@ export class PlMcpServer {
   private readonly ml: MiddleLayer;
   private readonly port: number;
   private readonly secret: string;
+  private readonly callbacks: PlMcpServerCallbacks;
   private httpServer: Server | undefined;
   private readonly transports = new Map<string, StreamableHTTPServerTransport>();
 
@@ -31,6 +41,7 @@ export class PlMcpServer {
     this.ml = options.middleLayer;
     this.port = options.port;
     this.secret = options.secret;
+    this.callbacks = options.callbacks ?? {};
   }
 
   get url(): string {
@@ -174,7 +185,9 @@ export class PlMcpServer {
       },
       async ({ label }) => {
         const rid = await ml.createProject({ label });
-        return textResult({ projectId: resourceIdToString(rid) });
+        const projectId = resourceIdToString(rid);
+        await this.callbacks.onProjectCreated?.(projectId);
+        return textResult({ projectId });
       },
     );
 
@@ -187,6 +200,7 @@ export class PlMcpServer {
       async ({ projectId }) => {
         const entry = await this.resolveProject(projectId);
         await ml.openProject(entry.rid);
+        await this.callbacks.onProjectOpened?.(projectId);
         return textResult({ ok: true });
       },
     );
@@ -200,6 +214,7 @@ export class PlMcpServer {
       async ({ projectId }) => {
         const entry = await this.resolveProject(projectId);
         await ml.closeProject(entry.rid);
+        await this.callbacks.onProjectClosed?.(projectId);
         return textResult({ ok: true });
       },
     );
@@ -213,6 +228,7 @@ export class PlMcpServer {
       async ({ projectId }) => {
         const entry = await this.resolveProject(projectId);
         await ml.deleteProject(entry.id);
+        await this.callbacks.onProjectDeleted?.(projectId);
         return textResult({ ok: true });
       },
     );
