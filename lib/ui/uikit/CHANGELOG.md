@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.10.46
+
+### Patch Changes
+
+- 68bc3e4: update uikit file/number input
+
 ## 2.10.45
 
 ### Patch Changes
