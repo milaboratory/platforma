@@ -2,14 +2,14 @@ export {
   type Trace,
   type DeriveLabelsOptions as LabelDerivationOps,
   type Entry as SpecExtractorResult,
-} from "../../columns/label";
+} from "../../labels/derive_labels";
 
 // Backward-compatible wrapper: old API accepted a getSpec callback
 import {
   deriveLabels as deriveLabelsInternal,
   type DeriveLabelsOptions,
   type Entry,
-} from "../../columns/label";
+} from "../../labels/derive_labels";
 
 type WithLabel<T> = { value: T; label: string };
 

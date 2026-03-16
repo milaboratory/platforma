@@ -5,14 +5,13 @@ import {
   type CanonicalizedJson,
   type PObjectSpec,
 } from "@milaboratories/pl-model-common";
-import type { ColumnSnapshot } from "./column_snapshot";
 import { throwError } from "@milaboratories/helpers";
 
 const DISTANCE_PENALTY = 0.001;
 const LABEL_TYPE = "__LABEL__";
 const LABEL_TYPE_FULL = "__LABEL__@1";
 
-type WithLabel<T> = {
+export type WithLabel<T> = {
   value: T;
   label: string;
 };
@@ -24,7 +23,7 @@ type TraceEntry = {
   importance?: number;
 };
 
-type FullTraceEntry = TraceEntry & { fullType: string; occurrenceIndex: number };
+export type Trace = TraceEntry[];
 
 export type Entry =
   | PObjectSpec
@@ -120,16 +119,8 @@ export function deriveLabels<T extends Entry>(
   return build(minimized, true) ?? throwError("Failed to derive unique labels");
 }
 
-export function writeLabelsToSpecs(items: WithLabel<ColumnSnapshot>[]): void {
-  for (const { value, label } of items) {
-    // @ts-expect-error - annotations are mutable at runtime, even if not in the type
-    value.spec.annotations = value.spec.annotations ?? {};
-    value.spec.annotations[Annotation.Label] = label;
-    value.spec.annotations["pl7.app/label/isDerived"] = "true";
-  }
-}
-
 // --- Pure helpers ---
+type FullTraceEntry = TraceEntry & { fullType: string; occurrenceIndex: number };
 
 type EnrichedRecord<T> = {
   value: T;
@@ -165,8 +156,6 @@ function buildFullTrace(trace: TraceEntry[]): FullTraceEntry[] {
   result.reverse();
   return result;
 }
-
-export type Trace = TraceEntry[];
 
 function enrichRecord<T extends Entry>(value: T, options: DeriveLabelsOptions): EnrichedRecord<T> {
   const { spec, prefixTrace, suffixTrace } = extractSpecAndTrace(value);

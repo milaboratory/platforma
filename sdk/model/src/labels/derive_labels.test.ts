@@ -1,6 +1,6 @@
 import { Annotation, type PColumnSpec } from "@milaboratories/pl-model-common";
 import { expect, test } from "vitest";
-import { deriveLabels, type Entry, type Trace } from "./label";
+import { deriveLabels, type Entry, type Trace } from "./derive_labels";
 
 function tracesToSpecs(traces: Trace[]) {
   return traces.map(
