@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.26.1
+
+### Patch Changes
+
+- 227002e: remove back direction in linkers
+
 ## 1.26.0
 
 ### Minor Changes

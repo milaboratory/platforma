@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.software-ptabler.schema",
-  "version": "1.13.19",
+  "version": "1.13.20",
   "description": "Type definitions for PTabler",
   "files": [
     "./dist/**/*",
