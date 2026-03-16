@@ -129,6 +129,119 @@ test("project list manipulations test", async ({ expect }) => {
   });
 });
 
+test("duplicate project test", async ({ expect }) => {
+  await withMl(async (ml) => {
+    const projectList = ml.projectList;
+
+    // Create source project
+    const sourceRid = await ml.createProject({ label: "Source Project" }, "src1");
+    await ml.openProject(sourceRid);
+    const srcPrj = ml.getOpenedProject(sourceRid);
+
+    // Add blocks with args
+    const block1Id = await srcPrj.addBlock("Enter Numbers", enterNumberSpec);
+    const block2Id = await srcPrj.addBlock("Sum Numbers", sumNumbersSpec);
+
+    await srcPrj.setBlockArgs(block1Id, { numbers: [10, 20, 30] });
+    await srcPrj.setBlockArgs(block2Id, {
+      sources: [outputRef(block1Id, "numbers")],
+    });
+
+    await ml.closeProject(sourceRid);
+
+    // Duplicate with rename lambda
+    const dupRid = await ml.duplicateProject(
+      sourceRid,
+      (prevLabel, existingLabels) => {
+        expect(existingLabels).toContain("Source Project");
+        let candidate = `${prevLabel} (Copy)`;
+        let i = 2;
+        while (existingLabels.includes(candidate)) {
+          candidate = `${prevLabel} (Copy ${i})`;
+          i++;
+        }
+        return candidate;
+      },
+      "dup1",
+    );
+
+    // Verify project list has both projects
+    const list = await projectList.getValue();
+    expect(list).toHaveLength(2);
+
+    const srcEntry = list!.find((p) => p.rid === sourceRid);
+    const dupEntry = list!.find((p) => p.rid === dupRid);
+    expect(srcEntry).toBeDefined();
+    expect(dupEntry).toBeDefined();
+    expect(srcEntry!.meta.label).toBe("Source Project");
+    expect(dupEntry!.meta.label).toBe("Source Project (Copy)");
+
+    // Duplicate has different rid and fresh timestamps
+    expect(dupRid).not.toBe(sourceRid);
+    expect(dupEntry!.created.valueOf()).toBeGreaterThanOrEqual(srcEntry!.created.valueOf());
+
+    // Open duplicate and verify structure
+    await ml.openProject(dupRid);
+    const dupPrj = ml.getOpenedProject(dupRid);
+
+    const dupOverview = await dupPrj.overview.awaitStableValue();
+    expect(dupOverview.meta.label).toBe("Source Project (Copy)");
+    expect(dupOverview.blocks).toHaveLength(2);
+    expect(dupOverview.blocks[0].title).toBeDefined();
+    expect(dupOverview.blocks[1].title).toBeDefined();
+
+    // Verify source project is unchanged
+    await ml.openProject(sourceRid);
+    const srcPrj2 = ml.getOpenedProject(sourceRid);
+    const srcOverview = await srcPrj2.overview.awaitStableValue();
+    expect(srcOverview.meta.label).toBe("Source Project");
+    expect(srcOverview.blocks).toHaveLength(2);
+
+    // Cleanup
+    await ml.closeProject(dupRid);
+    await ml.closeProject(sourceRid);
+    await ml.deleteProject("dup1");
+    await ml.deleteProject("src1");
+
+    expect(await projectList.awaitStableValue()).toEqual([]);
+  });
+});
+
+test("duplicate project - name deduplication test", async ({ expect }) => {
+  await withMl(async (ml) => {
+    const projectList = ml.projectList;
+
+    // Create two projects with names that would conflict
+    const rid1 = await ml.createProject({ label: "My Analysis" }, "p1");
+    await ml.createProject({ label: "My Analysis (Copy)" }, "p2");
+
+    // Duplicate with dedup logic - should skip "My Analysis (Copy)" since it exists
+    const dupRid = await ml.duplicateProject(
+      rid1,
+      (prevLabel, existingLabels) => {
+        let candidate = `${prevLabel} (Copy)`;
+        let i = 2;
+        while (existingLabels.includes(candidate)) {
+          candidate = `${prevLabel} (Copy ${i})`;
+          i++;
+        }
+        return candidate;
+      },
+      "p3",
+    );
+
+    const list = await projectList.getValue();
+    expect(list).toHaveLength(3);
+    const dupEntry = list!.find((p) => p.rid === dupRid);
+    expect(dupEntry!.meta.label).toBe("My Analysis (Copy 2)");
+
+    // Cleanup
+    await ml.deleteProject("p3");
+    await ml.deleteProject("p2");
+    await ml.deleteProject("p1");
+  });
+});
+
 test("simple project manipulations test", { timeout: 30000, retry: 3 }, async ({ expect }) => {
   // Baseline stat:
   // (1a) {"committed":{"txCount":41,"rootsCreated":0,"structsCreated":18,"structsCreatedDataBytes":487161,"ephemeralsCreated":125,"ephemeralsCreatedDataBytes":3033,"valuesCreated":113,"valuesCreatedDataBytes":574938,"kvSetRequests":33,"kvSetBytes":33,"inputsLocked":79,"outputsLocked":59,"fieldsCreated":439,"fieldsSet":516,"fieldsGet":3,"rGetDataCacheHits":180,"rGetDataCacheFields":0,"rGetDataCacheBytes":160264,"rGetDataNetRequests":129,"rGetDataNetFields":578,"rGetDataNetBytes":478364,"kvListRequests":121,"kvListEntries":283,"kvListBytes":19773,"kvGetRequests":75,"kvGetBytes":5212},"conflict":{"txCount":1,"rootsCreated":0,"structsCreated":0,"structsCreatedDataBytes":0,"ephemeralsCreated":24,"ephemeralsCreatedDataBytes":630,"valuesCreated":4,"valuesCreatedDataBytes":86,"kvSetRequests":1,"kvSetBytes":1,"inputsLocked":10,"outputsLocked":6,"fieldsCreated":26,"fieldsSet":40,"fieldsGet":0,"rGetDataCacheHits":21,"rGetDataCacheFields":0,"rGetDataCacheBytes":434,"rGetDataNetRequests":4,"rGetDataNetFields":31,"rGetDataNetBytes":0,"kvListRequests":1,"kvListEntries":9,"kvListBytes":703,"kvGetRequests":5,"kvGetBytes":427},"error":{"txCount":0,"rootsCreated":0,"structsCreated":0,"structsCreatedDataBytes":0,"ephemeralsCreated":0,"ephemeralsCreatedDataBytes":0,"valuesCreated":0,"valuesCreatedDataBytes":0,"kvSetRequests":0,"kvSetBytes":0,"inputsLocked":0,"outputsLocked":0,"fieldsCreated":0,"fieldsSet":0,"fieldsGet":0,"rGetDataCacheHits":0,"rGetDataCacheFields":0,"rGetDataCacheBytes":0,"rGetDataNetRequests":0,"rGetDataNetFields":0,"rGetDataNetBytes":0,"kvListRequests":0,"kvListEntries":0,"kvListBytes":0,"kvGetRequests":0,"kvGetBytes":0}}
