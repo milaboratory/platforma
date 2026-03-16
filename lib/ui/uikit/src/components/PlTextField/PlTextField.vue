@@ -29,52 +29,32 @@ const model = defineModel<V>({
 });
 
 const props = defineProps<{
-  /**
-   * The label to display above the input field.
-   */
+  /** The label to display above the input field. */
   label?: string;
   /**
    * If `true`, a clear icon will appear in the input field to clear the value (set it to empty string).
    * If a function, calls it to get the reset value.
    */
   clearable?: boolean | (() => C);
-  /**
-   * If `true`, the input field is marked as required.
-   */
+  /** If `true`, the input field is marked as required. */
   required?: boolean;
-  /**
-   * An error message to display below the input field.
-   */
+  /** An error message to display below the input field. */
   error?: unknown;
-  /**
-   * A helper text to display below the input field when there are no errors.
-   */
+  /** A helper text to display below the input field when there are no errors. */
   helper?: string;
-  /**
-   * A placeholder text to display inside the input field when it is empty.
-   */
+  /** A placeholder text to display inside the input field when it is empty. */
   placeholder?: string;
-  /**
-   * If `true`, the input field is disabled and cannot be interacted with.
-   */
+  /** If `true`, the input field is disabled and cannot be interacted with. */
   disabled?: boolean;
-  /**
-   * If `true`, the input field has a dashed border.
-   */
+  /** If `true`, the input field has a dashed border. */
   dashed?: boolean;
-  /**
-   * A prefix text to display inside the input field before the value.
-   */
+  /** A prefix text to display inside the input field before the value. */
   prefix?: string;
   /** Additional validity check for input value that must return an error text if failed */
   validate?: (v: V) => string | undefined;
-  /**
-   * The string specifies whether the field should be a password or not, value could be "password" or undefined.
-   */
+  /** The string specifies whether the field should be a password or not, value could be "password" or undefined. */
   type?: "password";
-  /**
-   * Makes some of corners not rounded
-   * */
+  /** Makes some of corners not rounded */
   groupPosition?:
     | "top"
     | "bottom"

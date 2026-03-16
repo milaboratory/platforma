@@ -1,4 +1,4 @@
-import PlNumberField from "./PlNumberField.vue";
+import PlNumberField from "../PlNumberField.vue";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 

@@ -36,6 +36,8 @@ const emit = defineEmits<{
 
 const props = withDefaults(
   defineProps<{
+    /** If `true`, the field is required and will show an error if left empty. */
+    required?: undefined extends V ? undefined | boolean : true;
     /** Label on the top border of the field, empty by default */
     label?: string;
     /** Input placeholder, empty by default */
@@ -94,8 +96,6 @@ function handleInput(event: Event) {
   const result = tryParseNumber(input.value);
   if (result.value !== undefined) {
     modelValue.value = result.value as V;
-  } else if (input.value.trim() === "") {
-    modelValue.value = undefined as V;
   }
 }
 
@@ -105,9 +105,8 @@ function commitValue() {
   const text = displayText.value.trim();
   const result = tryParseNumber(text);
 
-  // Empty or partial (-, ., -.) → clear to undefined
+  // Empty or partial (-, ., -.) → clear display
   if (text === "" || (result.value === undefined && result.error === undefined)) {
-    modelValue.value = undefined as V;
     displayText.value = "";
     return;
   }
@@ -125,6 +124,10 @@ const error = computed(() => {
   if (result.error) return result.error;
   if (result.value !== undefined) {
     return validateNumber(result.value, props);
+  }
+
+  if (props.required && displayText.value.trim() === "") {
+    return "Value is required";
   }
 
   return undefined;

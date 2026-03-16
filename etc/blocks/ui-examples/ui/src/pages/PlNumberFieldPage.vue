@@ -3,7 +3,7 @@ import { PlRow, PlContainer, PlCheckbox, PlNumberField, PlBlockPage } from "@pla
 import { reactive } from "vue";
 
 const data = reactive({
-  number: 100 as number | undefined,
+  number: 100 as number,
   disableSteps: false,
 });
 
@@ -30,11 +30,12 @@ function updateNumber(value: number) {
     <PlRow no-gap>
       <PlContainer width="400px">
         <PlNumberField
+          required
           v-model="data.number"
           :min-value="10"
           :max-value="100"
           label="PlNumberField (min: 10, max: 100)"
-          clearable
+          :clearable="false"
           :disable-steps="data.disableSteps"
         />
         <PlNumberField
@@ -42,7 +43,7 @@ function updateNumber(value: number) {
           :min-value="-5"
           :max-value="200"
           label="PlNumberField (min: -5, max: 200)"
-          :clearable="() => undefined"
+          clearable
           :disable-steps="data.disableSteps"
         />
         <PlNumberField

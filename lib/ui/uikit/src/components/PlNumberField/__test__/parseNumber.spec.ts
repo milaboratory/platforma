@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tryParseNumber, numberToDecimalString, validateNumber } from "./parseNumber";
+import { tryParseNumber, numberToDecimalString, validateNumber } from "../parseNumber";
 
 describe("tryParseNumber", () => {
   describe("empty and partial inputs → {} (no value, no error)", () => {
