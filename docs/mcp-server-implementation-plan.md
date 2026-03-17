@@ -331,6 +331,8 @@ Approach: feature branch in each repo. PRs created after each meaningful milesto
 
 ## Test strategy
 
+### Automated integration tests
+
 All e2e tests in `tests/mcp-server/` use the same pattern:
 
 ```typescript
@@ -352,6 +354,72 @@ test("test name", async () => {
 5. Tears down: stop server, close MiddleLayer
 
 Tests run as part of `pnpm test` via Turbo. Require `PL_ADDRESS` env (same as existing integration tests — they need a running PL backend).
+
+### Desktop manual testing with UI interaction tools
+
+The MCP server exposes UI interaction tools (`click`, `type_text`, `press_key`, `scroll`, `execute_js`, `capture_screenshot`) that allow AI assistants to drive the desktop app UI directly. This is essential for testing real bioinformatics blocks whose data schemas are complex and not practical to set programmatically via `set_block_data`.
+
+#### Available tools
+
+| Tool | Description | Input |
+|------|-------------|-------|
+| `capture_screenshot` | Capture window as PNG image | — |
+| `click` | Click at CSS coordinates | `x`, `y`, optional `doubleClick` |
+| `type_text` | Type text into focused element | `text` |
+| `press_key` | Press a key with optional modifiers | `key`, optional `modifiers` |
+| `scroll` | Scroll at a position | `x`, `y`, `deltaY` |
+| `execute_js` | Run JS in renderer, return result | `code` |
+
+#### Coordinate system — critical for correct clicking
+
+**Problem:** `capture_screenshot` returns device-pixel images (e.g. 3840x2160 on a 2x DPI display), but `click`/`scroll` expect CSS-pixel coordinates (e.g. 1920x1080). The screenshot displayed in the AI's context is further scaled down, making visual coordinate estimation unreliable — clicks land on wrong elements.
+
+**Solution:** Always use `execute_js` with `getBoundingClientRect()` to get the exact CSS coordinates of the target element before clicking.
+
+**Pattern for interacting with UI elements:**
+
+```
+Step 1: Find element and get its position
+  execute_js: (() => {
+    const el = document.querySelector('input[placeholder*="Search"]');
+    if (!el) return 'Not found';
+    const rect = el.getBoundingClientRect();
+    return { x: rect.x + rect.width/2, y: rect.y + rect.height/2, width: rect.width, height: rect.height };
+  })()
+  → returns { x: 1622, y: 215, width: 275, height: 34 }
+
+Step 2: Click at the returned coordinates
+  click: { x: 1622, y: 215 }
+
+Step 3: Type if needed
+  type_text: { text: "Alpaca" }
+
+Step 4: Verify with screenshot
+  capture_screenshot
+```
+
+**Window info helper** (run once per session to understand the coordinate space):
+```
+execute_js: (() => ({
+  innerWidth: window.innerWidth,
+  innerHeight: window.innerHeight,
+  devicePixelRatio: window.devicePixelRatio
+}))()
+```
+
+#### Practical workflow for testing real blocks
+
+For blocks with complex UIs (e.g. MiXCR Clonotyping, Import Sequencing Data):
+
+1. Use `create_project` + `open_project` via MCP API to set up the project
+2. Use `add_block` via MCP API with `from-registry-v2` spec to add blocks
+3. Use `execute_js` to find UI elements (dropdowns, inputs, buttons)
+4. Use `click` + `type_text` + `press_key` to fill in block configuration
+5. Use `capture_screenshot` to verify the UI state after each step
+6. Use `run_block` via MCP API to start execution
+7. Use `get_project_overview` to check block status programmatically
+
+This hybrid approach (MCP API for project/block lifecycle, UI tools for block configuration) works well because block UIs have unique DOM structures that aren't practical to drive purely through `set_block_data`.
 
 ---
 
