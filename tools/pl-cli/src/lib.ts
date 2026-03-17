@@ -1,7 +1,20 @@
-export { createPlConnection, type PlConnectionOptions } from "./connection";
 export {
+  createPlConnection,
   createAdminPlConnection,
-  navigateToUserRoot,
+  type PlConnectionOptions,
   type AdminConnectionOptions,
-} from "./admin_connection";
-export { listProjects, getProjectInfo, type ProjectEntry, type ProjectInfo } from "./project_ops";
+} from "./connection";
+export {
+  listProjects,
+  getProjectInfo,
+  getProjectListRid,
+  resolveProject,
+  renameProject,
+  deleteProject,
+  deduplicateName,
+  navigateToUserRoot,
+  duplicateProject,
+  type ProjectEntry,
+  type ProjectInfo,
+} from "./project_ops";
+export { type OutputFormat, outputJson, formatTable, formatDate } from "./output";

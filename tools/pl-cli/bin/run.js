@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
-// eslint-disable-next-line unicorn/prefer-top-level-await
-(async () => {
-  const oclif = await import("@oclif/core");
-  await oclif.execute({ dir: __dirname });
-})();
+import { execute } from "@oclif/core";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+await execute({ dir: __dirname });

@@ -1,16 +1,8 @@
 export type OutputFormat = "text" | "json";
 
-/** Outputs data in the requested format. */
-export function output(data: unknown, format: OutputFormat): void {
-  if (format === "json") {
-    console.log(JSON.stringify(data, null, 2));
-  } else {
-    if (typeof data === "string") {
-      console.log(data);
-    } else {
-      console.log(data);
-    }
-  }
+/** Outputs data as formatted JSON to stdout. */
+export function outputJson(data: unknown): void {
+  console.log(JSON.stringify(data, null, 2));
 }
 
 /** Formats a table as aligned text columns. */

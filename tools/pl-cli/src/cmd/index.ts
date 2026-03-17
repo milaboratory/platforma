@@ -6,7 +6,6 @@ import ProjectDuplicate from "./project/duplicate";
 import ProjectRename from "./project/rename";
 import ProjectDelete from "./project/delete";
 import AdminCopyProject from "./admin/copy-project";
-import AdminUserList from "./admin/user-list";
 
 export const COMMANDS = {
   "project:list": ProjectList,
@@ -15,5 +14,4 @@ export const COMMANDS = {
   "project:rename": ProjectRename,
   "project:delete": ProjectDelete,
   "admin:copy-project": AdminCopyProject,
-  "admin:user-list": AdminUserList,
 };

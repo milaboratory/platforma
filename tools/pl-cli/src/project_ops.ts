@@ -1,17 +1,16 @@
-import type { PlClient, PlTransaction, ResourceId } from "@milaboratories/pl-client";
-import { field, isNullResourceId, isNotNullResourceId } from "@milaboratories/pl-client";
-import type { ProjectMeta } from "@milaboratories/pl-model-middle-layer";
-
-/** Mirrors the KV key names used in pl-middle-layer project_model.ts */
-const ProjectMetaKey = "ProjectMeta";
-const ProjectCreatedTimestamp = "ProjectCreated";
-const ProjectLastModifiedTimestamp = "ProjectLastModified";
-const SchemaVersionKey = "SchemaVersion";
-const ProjectStructureKey = "ProjectStructure";
-const BlockArgsAuthorKeyPrefix = "BlockArgsAuthor/";
-const ProjectStructureAuthorKey = "ProjectStructureAuthor";
-const SchemaVersionCurrent = "3";
-const ProjectResourceType = { name: "UserProject", version: "2" };
+import type { PlClient, ResourceId } from "@milaboratories/pl-client";
+import { field, isNullResourceId } from "@milaboratories/pl-client";
+import {
+  ProjectMetaKey,
+  ProjectCreatedTimestamp,
+  ProjectLastModifiedTimestamp,
+  SchemaVersionKey,
+  ProjectStructureKey,
+  ProjectsField,
+  duplicateProject,
+} from "@milaboratories/pl-middle-layer";
+import type { ProjectMeta } from "@milaboratories/pl-middle-layer";
+import { createHash } from "node:crypto";
 
 export interface ProjectEntry {
   id: string;
@@ -74,17 +73,16 @@ export async function getProjectInfo(
     const rid = fieldData.value;
     const kvs = await tx.listKeyValuesString(rid);
 
-    const metaKV = kvs.find((kv) => kv.key === ProjectMetaKey);
-    const createdKV = kvs.find((kv) => kv.key === ProjectCreatedTimestamp);
-    const modifiedKV = kvs.find((kv) => kv.key === ProjectLastModifiedTimestamp);
-    const schemaKV = kvs.find((kv) => kv.key === SchemaVersionKey);
-    const structureKV = kvs.find((kv) => kv.key === ProjectStructureKey);
+    const metaKV = kvs.find((kv: { key: string }) => kv.key === ProjectMetaKey);
+    const createdKV = kvs.find((kv: { key: string }) => kv.key === ProjectCreatedTimestamp);
+    const modifiedKV = kvs.find((kv: { key: string }) => kv.key === ProjectLastModifiedTimestamp);
+    const schemaKV = kvs.find((kv: { key: string }) => kv.key === SchemaVersionKey);
+    const structureKV = kvs.find((kv: { key: string }) => kv.key === ProjectStructureKey);
 
     const meta: ProjectMeta = metaKV ? JSON.parse(metaKV.value) : { label: "(unknown)" };
     const schemaVersion = schemaKV ? JSON.parse(schemaKV.value) : undefined;
 
-    // Extract block IDs from structure
-    let blockIds: string[] = [];
+    const blockIds: string[] = [];
     if (structureKV) {
       const structure = JSON.parse(structureKV.value);
       for (const group of structure.groups ?? []) {
@@ -114,15 +112,12 @@ export async function resolveProject(
   identifier: string,
 ): Promise<{ id: string; rid: ResourceId }> {
   return await pl.withReadTx("resolveProject", async (tx) => {
-    // Search all projects by field ID or label
     const data = await tx.getResourceData(projectListRid, true);
     for (const f of data.fields) {
       if (isNullResourceId(f.value)) continue;
-      // Match by field ID
       if (f.name === identifier) {
         return { id: f.name, rid: f.value };
       }
-      // Match by label
       const metaStr = await tx.getKValueStringIfExists(f.value, ProjectMetaKey);
       if (metaStr) {
         const meta: ProjectMeta = JSON.parse(metaStr);
@@ -170,68 +165,6 @@ export function deduplicateName(baseName: string, existingLabels: string[]): str
   return candidate;
 }
 
-/**
- * Duplicates a project within a transaction (low-level).
- * This mirrors the duplicateProject function from pl-middle-layer/mutator/project.ts
- * but avoids importing internal modules.
- */
-export async function duplicateProjectInTx(
-  tx: PlTransaction,
-  sourceRid: ResourceId,
-  options?: { label?: string },
-) {
-  const sourceDataP = tx.getResourceData(sourceRid, true);
-  const sourceKVsP = tx.listKeyValuesString(sourceRid);
-
-  const sourceData = await sourceDataP;
-  const sourceKVs = await sourceKVsP;
-
-  // Validate schema version
-  const schemaKV = sourceKVs.find((kv) => kv.key === SchemaVersionKey);
-  const schema = schemaKV ? JSON.parse(schemaKV.value) : undefined;
-  if (schema !== SchemaVersionCurrent) {
-    throw new Error(
-      `Cannot duplicate project with schema version ${schema ?? "unknown"}. ` +
-        `Only schema version ${SchemaVersionCurrent} is supported. ` +
-        `Try opening the project first to trigger migration.`,
-    );
-  }
-
-  const newPrj = tx.createEphemeral(ProjectResourceType);
-  tx.lock(newPrj);
-
-  const ts = String(Date.now());
-  const kvSkipPrefixes = [BlockArgsAuthorKeyPrefix];
-  const kvSkipKeys = new Set([
-    ProjectCreatedTimestamp,
-    ProjectLastModifiedTimestamp,
-    ProjectStructureAuthorKey,
-  ]);
-
-  for (const { key, value } of sourceKVs) {
-    if (kvSkipKeys.has(key)) continue;
-    if (kvSkipPrefixes.some((prefix) => key.startsWith(prefix))) continue;
-
-    if (key === ProjectMetaKey && options?.label !== undefined) {
-      const meta: ProjectMeta = JSON.parse(value);
-      tx.setKValue(newPrj, key, JSON.stringify({ ...meta, label: options.label }));
-    } else {
-      tx.setKValue(newPrj, key, value);
-    }
-  }
-
-  tx.setKValue(newPrj, ProjectCreatedTimestamp, ts);
-  tx.setKValue(newPrj, ProjectLastModifiedTimestamp, ts);
-
-  for (const f of sourceData.fields) {
-    if (isNotNullResourceId(f.value)) {
-      tx.createField(field(newPrj, f.name), "Dynamic", f.value);
-    }
-  }
-
-  return newPrj;
-}
-
 /** Rename a project (update its label). */
 export async function renameProject(
   pl: PlClient,
@@ -259,3 +192,50 @@ export async function deleteProject(
     await tx.commit();
   });
 }
+
+/** Get the project list ResourceId for the connected user. */
+export async function getProjectListRid(pl: PlClient): Promise<ResourceId> {
+  return await pl.withReadTx("getProjectList", async (tx) => {
+    const fieldData = await tx.getField({
+      resourceId: tx.clientRoot,
+      fieldName: ProjectsField,
+    });
+    if (isNullResourceId(fieldData.value)) {
+      throw new Error("No project list found for this user.");
+    }
+    return fieldData.value;
+  });
+}
+
+/**
+ * Navigates to a specific user's project list resource ID.
+ * Computes SHA256(username) to find the user's root, then reads the "projects" field.
+ */
+export async function navigateToUserRoot(
+  pl: PlClient,
+  username: string,
+): Promise<{ userRoot: ResourceId; projectListRid: ResourceId }> {
+  const rootName = createHash("sha256").update(username).digest("hex");
+
+  return await pl.withReadTx("navigateToUserRoot", async (tx) => {
+    if (!(await tx.checkResourceNameExists(rootName))) {
+      throw new Error(`User "${username}" not found on this server (no root resource).`);
+    }
+
+    const userRootRid = await tx.getResourceByName(rootName);
+
+    const projectsFieldData = await tx.getField({
+      resourceId: userRootRid,
+      fieldName: ProjectsField,
+    });
+
+    if (isNullResourceId(projectsFieldData.value)) {
+      throw new Error(`User "${username}" has no project list.`);
+    }
+
+    return { userRoot: userRootRid, projectListRid: projectsFieldData.value };
+  });
+}
+
+// Re-export duplicateProject from pl-middle-layer for use in commands
+export { duplicateProject };

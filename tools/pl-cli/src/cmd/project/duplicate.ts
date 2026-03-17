@@ -1,9 +1,15 @@
 import { Args, Flags } from "@oclif/core";
-import { field, toGlobalResourceId } from "@milaboratories/pl-client";
+import { field, isNullResourceId, toGlobalResourceId } from "@milaboratories/pl-client";
+import { ProjectMetaKey } from "@milaboratories/pl-middle-layer";
 import { randomUUID } from "node:crypto";
 import { PlCommand } from "../../base_command";
-import { resolveProject, deduplicateName, duplicateProjectInTx } from "../../project_ops";
-import { output } from "../../output";
+import {
+  resolveProject,
+  deduplicateName,
+  duplicateProject,
+  getProjectListRid,
+} from "../../project_ops";
+import { outputJson } from "../../output";
 
 export default class ProjectDuplicate extends PlCommand {
   static override description =
@@ -20,19 +26,20 @@ export default class ProjectDuplicate extends PlCommand {
     ...PlCommand.baseFlags,
     name: Flags.string({
       char: "n",
-      summary: "Name for the duplicate (auto-renames on collision unless --no-auto-rename)",
+      summary: "Name for the duplicate",
       helpValue: "<name>",
     }),
-    "no-auto-rename": Flags.boolean({
-      summary: "Fail if the name already exists instead of auto-renaming",
-      default: false,
+    "auto-rename": Flags.boolean({
+      summary: "Auto-rename on collision (default: true)",
+      default: true,
+      allowNo: true,
     }),
   };
 
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(ProjectDuplicate);
     const pl = await this.connect(flags);
-    const projectListRid = await this.getProjectListRid(pl);
+    const projectListRid = await getProjectListRid(pl);
 
     const { rid: sourceRid } = await resolveProject(pl, projectListRid, args.project);
 
@@ -40,7 +47,7 @@ export default class ProjectDuplicate extends PlCommand {
 
     const newRid = await pl.withWriteTx("duplicateProject", async (tx) => {
       // Read source label
-      const sourceMetaStr = await tx.getKValueString(sourceRid, "ProjectMeta");
+      const sourceMetaStr = await tx.getKValueString(sourceRid, ProjectMetaKey);
       const sourceMeta = JSON.parse(sourceMetaStr);
       const sourceLabel: string = sourceMeta.label;
 
@@ -48,9 +55,8 @@ export default class ProjectDuplicate extends PlCommand {
       const data = await tx.getResourceData(projectListRid, true);
       const existingLabels: string[] = [];
       for (const f of data.fields) {
-        const { isNullResourceId: isNull } = await import("@milaboratories/pl-client");
-        if (isNull(f.value)) continue;
-        const metaStr = await tx.getKValueStringIfExists(f.value, "ProjectMeta");
+        if (isNullResourceId(f.value)) continue;
+        const metaStr = await tx.getKValueStringIfExists(f.value, ProjectMetaKey);
         if (metaStr) {
           existingLabels.push(JSON.parse(metaStr).label);
         }
@@ -59,7 +65,7 @@ export default class ProjectDuplicate extends PlCommand {
       // Compute new label
       let newLabel: string;
       if (flags.name) {
-        if (flags["no-auto-rename"] && existingLabels.includes(flags.name)) {
+        if (!flags["auto-rename"] && existingLabels.includes(flags.name)) {
           throw new Error(`Project name "${flags.name}" already exists.`);
         }
         newLabel = existingLabels.includes(flags.name)
@@ -69,7 +75,7 @@ export default class ProjectDuplicate extends PlCommand {
         newLabel = deduplicateName(sourceLabel, existingLabels);
       }
 
-      const newPrj = await duplicateProjectInTx(tx, sourceRid, { label: newLabel });
+      const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
       tx.createField(field(projectListRid, newId), "Dynamic", newPrj);
       await tx.commit();
 
@@ -77,7 +83,7 @@ export default class ProjectDuplicate extends PlCommand {
     });
 
     if (flags.format === "json") {
-      output({ id: newId, rid: String(newRid.rid), label: newRid.label }, "json");
+      outputJson({ id: newId, rid: String(newRid.rid), label: newRid.label });
     } else {
       console.log(`Duplicated project as "${newRid.label}" (id: ${newId})`);
     }

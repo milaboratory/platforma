@@ -1,7 +1,12 @@
 import { Args, Flags } from "@oclif/core";
 import { PlCommand } from "../../base_command";
-import { resolveProject, deleteProject, getProjectInfo } from "../../project_ops";
-import { output } from "../../output";
+import {
+  resolveProject,
+  deleteProject,
+  getProjectInfo,
+  getProjectListRid,
+} from "../../project_ops";
+import { outputJson } from "../../output";
 
 export default class ProjectDelete extends PlCommand {
   static override description = "Delete a project. This permanently destroys all project data.";
@@ -24,10 +29,9 @@ export default class ProjectDelete extends PlCommand {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(ProjectDelete);
     const pl = await this.connect(flags);
-    const projectListRid = await this.getProjectListRid(pl);
+    const projectListRid = await getProjectListRid(pl);
     const { id } = await resolveProject(pl, projectListRid, args.project);
 
-    // Get project info for confirmation message
     const info = await getProjectInfo(pl, projectListRid, id);
 
     if (!flags.force) {
@@ -46,7 +50,7 @@ export default class ProjectDelete extends PlCommand {
     await deleteProject(pl, projectListRid, id);
 
     if (flags.format === "json") {
-      output({ deleted: true, id, label: info.label }, "json");
+      outputJson({ deleted: true, id, label: info.label });
     } else {
       console.log(`Deleted project "${info.label}"`);
     }

@@ -12,6 +12,12 @@ export interface PlConnectionOptions {
   password?: string;
 }
 
+export interface AdminConnectionOptions {
+  address: string;
+  adminUser: string;
+  adminPassword: string;
+}
+
 /** Creates an authenticated PlClient from address + credentials. */
 export async function createPlConnection(opts: PlConnectionOptions): Promise<PlClient> {
   const config: PlClientConfig = plAddressToConfig(opts.address);
@@ -33,6 +39,16 @@ export async function createPlConnection(opts: PlConnectionOptions): Promise<PlC
   } else {
     authInformation = {};
   }
+
+  return await PlClient.init(config, { authInformation });
+}
+
+/** Creates a PlClient with admin/controller credentials. */
+export async function createAdminPlConnection(opts: AdminConnectionOptions): Promise<PlClient> {
+  const config: PlClientConfig = plAddressToConfig(opts.address);
+
+  const unauth = await UnauthenticatedPlClient.build(config);
+  const authInformation: AuthInformation = await unauth.login(opts.adminUser, opts.adminPassword);
 
   return await PlClient.init(config, { authInformation });
 }

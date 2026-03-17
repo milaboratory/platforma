@@ -10,7 +10,7 @@ export default defineConfig({
         cli: resolve("src", "cmd", "index.ts"),
         index: resolve("src", "lib.ts"),
       },
-      formats: ["es", "cjs"],
+      formats: ["es"],
     },
     sourcemap: true,
     rolldownOptions: {},

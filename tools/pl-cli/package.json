@@ -12,14 +12,13 @@
     "./src/**/*",
     "./README.md"
   ],
+  "type": "module",
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
   "types": "./dist/lib.d.ts",
   "exports": {
     ".": {
       "types": "./dist/lib.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
@@ -35,7 +34,7 @@
   },
   "dependencies": {
     "@milaboratories/pl-client": "workspace:*",
-    "@milaboratories/pl-model-middle-layer": "workspace:*",
+    "@milaboratories/pl-middle-layer": "workspace:*",
     "@oclif/core": "catalog:"
   },
   "devDependencies": {
