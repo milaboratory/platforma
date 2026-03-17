@@ -5,10 +5,10 @@ import type {
   PObjectId,
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
-import { deriveNativeId } from "@milaboratories/pl-model-common";
+import { AnchoredIdDeriver, deriveNativeId, isPlRef } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import type { ColumnSelectorInput } from "./column_selector";
-import { normalizeSelectors, selectorsToPredicate } from "./column_selector";
+import { normalizeSelectors } from "./column_selector";
 import type { ColumnSelector, AxisSelector, StringMatcher } from "./column_selector";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { ColumnSnapshot } from "./column_snapshot";
@@ -51,15 +51,15 @@ export interface ColumnCollection {
   findColumns(options?: FindColumnsOptions): ColumnSnapshot<PObjectId>[];
 }
 
-// --- AnchoredColumnCollection (stub — full implementation in Step 7) ---
+// --- AnchoredColumnCollection ---
 
-/** @TODO Step 7: full axis-aware discovery via pSpecDriver.discoverColumns */
+/** Axis-aware column collection with anchored identity derivation. */
 export interface AnchoredColumnCollection {
   /** Point lookup by anchored ID. */
   getColumn(id: SUniversalPColumnId): undefined | ColumnSnapshot<SUniversalPColumnId>;
 
   /** Axis-aware column discovery. */
-  findColumns(opts?: AnchoredFindColumnsOptions): ColumnMatch[];
+  findColumns(options?: AnchoredFindColumnsOptions): ColumnMatch[];
 }
 
 /** Controls axis matching behavior for anchored discovery. */
@@ -175,15 +175,23 @@ export class ColumnCollectionBuilder {
     const columnMap = this.collectColumns();
 
     if (hasAnchors) {
-      // @TODO Step 7: anchored collection with axis-aware discovery
-      throw new Error("AnchoredColumnCollection not yet implemented (Step 7)");
-    }
+      const anchorSpecs = resolveAnchorSpecs(options.anchors, columnMap);
+      const idDeriver = new AnchoredIdDeriver(anchorSpecs);
 
-    return new ColumnCollectionImpl(this.specFrameCtx, {
-      columns: columnMap,
-      markUnstable: this.markUnstable,
-      columnListComplete: allowPartial ? allComplete : false,
-    });
+      return new AnchoredColumnCollectionImpl(this.specFrameCtx, {
+        columns: columnMap,
+        idDeriver,
+        anchorSpecs,
+        markUnstable: this.markUnstable,
+        columnListComplete: allowPartial ? allComplete : false,
+      });
+    } else {
+      return new ColumnCollectionImpl(this.specFrameCtx, {
+        columns: columnMap,
+        markUnstable: this.markUnstable,
+        columnListComplete: allowPartial ? allComplete : false,
+      });
+    }
   }
 
   /**
@@ -252,8 +260,8 @@ class ColumnCollectionImpl implements ColumnCollection {
     return this.toSnapshot(col);
   }
 
-  findColumns(opts?: FindColumnsOptions): ColumnSnapshot<PObjectId>[] {
-    const columnFilter = opts?.include ? toMultiColumnSelectors(opts.include) : [];
+  findColumns(options?: FindColumnsOptions): ColumnSnapshot<PObjectId>[] {
+    const columnFilter = options?.include ? toMultiColumnSelectors(options.include) : [];
 
     const response = this.ctx.specFrameDiscoverColumns(this.specFrameHandle, {
       columnFilter,
@@ -267,31 +275,139 @@ class ColumnCollectionImpl implements ColumnCollection {
       .filter((col): col is ColumnSnapshot<PObjectId> => col !== undefined)
       .map((col) => this.toSnapshot(col));
 
-    // Apply exclude (post-filter — WASM doesn't have native exclude)
-    if (opts?.exclude) {
-      const excludePred = selectorsToPredicate(opts.exclude);
-      results = results.filter((col) => !excludePred(col.spec));
+    if (options?.exclude) {
+      throw new Error("Exclude filter is not yet implemented for plain ColumnCollection");
     }
 
     return results;
   }
 
   private toSnapshot(col: ColumnSnapshot<PObjectId>): ColumnSnapshot<PObjectId> {
-    let data;
-    switch (col.dataStatus) {
-      case "ready":
-        data = createReadyColumnData(() => col.data?.get());
-        break;
-      case "computing":
-        data = createComputingColumnData(this.markUnstable ?? (() => {}));
-        break;
-      case "absent":
-        data = undefined;
-        break;
-    }
-    return createColumnSnapshot(col.id, col.spec, col.dataStatus, data);
+    return remapSnapshot(col.id, col, this.markUnstable);
   }
 }
+
+// --- AnchoredColumnCollectionImpl ---
+
+interface AnchoredColumnCollectionImplOptions {
+  readonly markUnstable?: () => void;
+  readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
+  readonly idDeriver: AnchoredIdDeriver;
+  readonly anchorSpecs: Record<string, PColumnSpec>;
+  readonly columnListComplete?: boolean;
+}
+
+class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
+  private readonly markUnstable: () => void;
+  private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
+  private readonly idDeriver: AnchoredIdDeriver;
+  private readonly specFrameHandle: string;
+  private readonly anchorAxes: PFrameInternal.ColumnAxesWithQualifications[];
+  /** Reverse lookup: SUniversalPColumnId → PObjectId */
+  private readonly idToOriginal: Map<SUniversalPColumnId, PObjectId>;
+  public readonly columnListComplete: boolean;
+
+  constructor(
+    private readonly ctx: SpecFrameCtx,
+    options: AnchoredColumnCollectionImplOptions,
+  ) {
+    this.markUnstable = options.markUnstable ?? (() => {});
+    this.columns = options.columns;
+    this.idDeriver = options.idDeriver;
+    this.columnListComplete = options.columnListComplete ?? false;
+
+    // Create spec frame from all collected columns
+    this.specFrameHandle = this.ctx.createSpecFrame(
+      this.columns
+        .entries()
+        .reduce((acc, [id, col]) => ((acc[id] = col.spec), acc), {} as Record<string, PColumnSpec>),
+    );
+
+    // Build anchor axes for discovery requests
+    this.anchorAxes = Object.values(options.anchorSpecs).map((spec) => ({
+      axesSpec: spec.axesSpec,
+      qualifications: [],
+    }));
+
+    // Build reverse lookup map
+    this.idToOriginal = new Map(
+      this.columns.entries().map(([id, col]) => [this.idDeriver.deriveS(col.spec), id] as const),
+    );
+  }
+
+  getColumn(id: SUniversalPColumnId): undefined | ColumnSnapshot<SUniversalPColumnId> {
+    const origId = this.idToOriginal.get(id);
+    if (origId === undefined) return undefined;
+    const col = this.columns.get(origId);
+    if (col === undefined) return undefined;
+    return this.toSnapshot(id, col);
+  }
+
+  findColumns(options?: AnchoredFindColumnsOptions): ColumnMatch[] {
+    const mode = options?.mode ?? "enrichment";
+    const constraints = matchingModeToConstraints(mode);
+    const columnFilter = options?.include ? toMultiColumnSelectors(options.include) : [];
+
+    const response = this.ctx.specFrameDiscoverColumns(this.specFrameHandle, {
+      columnFilter,
+      constraints,
+      axes: this.anchorAxes,
+    });
+
+    // Map hits back to ColumnMatch entries
+    let results = response.hits
+      .map((hit) => {
+        const origId = hit.hit.columnId as PObjectId;
+        const col = this.columns.get(origId);
+        if (!col) return undefined;
+        const universalId = this.idDeriver.deriveS(col.spec);
+        return {
+          column: this.toSnapshot(universalId, col),
+          originalId: origId,
+          variants: hit.mappingVariants.map((): MatchVariant => ({})),
+        } satisfies ColumnMatch;
+      })
+      .filter((m): m is ColumnMatch => m !== undefined);
+
+    if (options?.exclude) {
+      throw new Error("Exclude filter is not yet implemented for AnchoredColumnCollection");
+    }
+
+    return results;
+  }
+
+  private toSnapshot(
+    universalId: SUniversalPColumnId,
+    col: ColumnSnapshot<PObjectId>,
+  ): ColumnSnapshot<SUniversalPColumnId> {
+    return remapSnapshot(universalId, col, this.markUnstable);
+  }
+}
+
+// --- Shared snapshot helpers ---
+
+/** Create a new snapshot with a different ID, wiring up data accessors with instability tracking. */
+function remapSnapshot<Id extends PObjectId>(
+  id: Id,
+  col: ColumnSnapshot<PObjectId>,
+  markUnstable: () => void,
+): ColumnSnapshot<Id> {
+  let data;
+  switch (col.dataStatus) {
+    case "ready":
+      data = createReadyColumnData(() => col.data?.get());
+      break;
+    case "computing":
+      data = createComputingColumnData(markUnstable);
+      break;
+    case "absent":
+      data = undefined;
+      break;
+  }
+  return createColumnSnapshot(id, col.spec, col.dataStatus, data);
+}
+
+// --- Selector conversion helpers ---
 
 function convertStringMatcher(m: StringMatcher): PFrameInternal.StringMatcher {
   if ("exact" in m) return { type: "exact", value: m.exact };
@@ -335,4 +451,64 @@ function convertColumnSelector(sel: ColumnSelector): PFrameInternal.MultiColumnS
 /** Convert SDK ColumnSelectorInput to WASM MultiColumnSelector[]. */
 function toMultiColumnSelectors(input: ColumnSelectorInput): PFrameInternal.MultiColumnSelector[] {
   return normalizeSelectors(input).map(convertColumnSelector);
+}
+
+// --- Anchor resolution ---
+
+/**
+ * Resolve each anchor value to a PColumnSpec.
+ * - PColumnSpec: used directly
+ * - PObjectId (string): looked up in the collected column map
+ * - PlRef: not supported at this level — caller must resolve before building
+ */
+function resolveAnchorSpecs(
+  anchors: Record<string, PlRef | PObjectId | PColumnSpec>,
+  columnMap: Map<PObjectId, ColumnSnapshot<PObjectId>>,
+): Record<string, PColumnSpec> {
+  const result: Record<string, PColumnSpec> = {};
+  for (const [key, anchor] of Object.entries(anchors)) {
+    if (typeof anchor === "string") {
+      // PObjectId — look up in collected columns
+      const col = columnMap.get(anchor as PObjectId);
+      if (!col) throw new Error(`Anchor "${key}": column with id "${anchor}" not found in sources`);
+      result[key] = col.spec;
+    } else if (isPlRef(anchor)) {
+      throw new Error(
+        `Anchor "${key}": PlRef anchors must be resolved to PColumnSpec before building. ` +
+          `Use the column's spec directly or pass its PObjectId.`,
+      );
+    } else {
+      // PColumnSpec
+      result[key] = anchor;
+    }
+  }
+  return result;
+}
+
+// --- MatchingMode → DiscoverColumnsConstraints ---
+
+function matchingModeToConstraints(mode: MatchingMode): PFrameInternal.DiscoverColumnsConstraints {
+  switch (mode) {
+    case "enrichment":
+      return {
+        allowFloatingSourceAxes: false,
+        allowFloatingHitAxes: true,
+        allowSourceQualifications: false,
+        allowHitQualifications: true,
+      };
+    case "related":
+      return {
+        allowFloatingSourceAxes: true,
+        allowFloatingHitAxes: true,
+        allowSourceQualifications: false,
+        allowHitQualifications: true,
+      };
+    case "exact":
+      return {
+        allowFloatingSourceAxes: false,
+        allowFloatingHitAxes: false,
+        allowSourceQualifications: false,
+        allowHitQualifications: false,
+      };
+  }
 }

@@ -29,7 +29,6 @@
   "dependencies": {
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
-    "@platforma-sdk/model": "workspace:*",
     "es-toolkit": "catalog:",
     "utility-types": "catalog:",
     "zod": "catalog:"
