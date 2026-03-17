@@ -22,6 +22,8 @@ export interface PlMcpServerCallbacks {
   executeJavaScript?: (code: string) => Promise<unknown>;
   /** List available blocks from all configured registries. */
   listAvailableBlocks?: (query?: string) => Promise<unknown[]>;
+  /** Navigate the desktop UI to show a specific block. */
+  selectBlock?: (projectId: string, blockId: string) => Promise<void>;
 }
 
 export interface PlMcpServerOptions {
@@ -353,6 +355,24 @@ export class PlMcpServer {
         }
         const blocks = await this.callbacks.listAvailableBlocks(query);
         return textResult(blocks);
+      },
+    );
+
+    server.registerTool(
+      "select_block",
+      {
+        description: "Navigate the desktop UI to show a specific block's interface",
+        inputSchema: {
+          projectId: z.string().describe("Project ID"),
+          blockId: z.string().describe("Block ID to display"),
+        },
+      },
+      async ({ projectId, blockId }) => {
+        if (!this.callbacks.selectBlock) {
+          return textResult({ error: "UI navigation not available" });
+        }
+        await this.callbacks.selectBlock(projectId, blockId);
+        return textResult({ ok: true });
       },
     );
   }
