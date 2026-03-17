@@ -1833,12 +1833,12 @@ export async function createProject(
  *
  * @param tx - active write transaction
  * @param sourceRid - resource id of the project to duplicate
- * @param ops.label - optional label override for the new project; if omitted, copies the source label
+ * @param options.label - optional label override for the new project; if omitted, copies the source label
  */
 export async function duplicateProject(
   tx: PlTransaction,
   sourceRid: ResourceId,
-  ops?: { label?: string },
+  options?: { label?: string },
 ): Promise<AnyResourceRef> {
   // Read source resource data (with fields) and all KV pairs
   const sourceDataP = tx.getResourceData(sourceRid, true);
@@ -1876,10 +1876,10 @@ export async function duplicateProject(
     if (kvSkipKeys.has(key)) continue;
     if (kvSkipPrefixes.some((prefix) => key.startsWith(prefix))) continue;
 
-    if (key === ProjectMetaKey && ops?.label !== undefined) {
+    if (key === ProjectMetaKey && options?.label !== undefined) {
       // Override label
       const meta: ProjectMeta = JSON.parse(value);
-      tx.setKValue(newPrj, key, JSON.stringify({ ...meta, label: ops.label }));
+      tx.setKValue(newPrj, key, JSON.stringify({ ...meta, label: options.label }));
     } else {
       // Copy as-is
       tx.setKValue(newPrj, key, value);
