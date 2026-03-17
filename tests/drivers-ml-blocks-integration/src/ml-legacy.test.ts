@@ -28,7 +28,7 @@ import fs from "node:fs";
 import { createHash } from "node:crypto";
 import * as fsp from "node:fs/promises";
 import path from "node:path";
-import { test } from "vitest";
+import { assert, test } from "vitest";
 import { compareBuffersInChunks, computeHashIncremental, shuffleInPlace } from "./imports";
 import { isObject } from "@milaboratories/ts-helpers";
 import { withMl, withMlAndProxy } from "./with-ml";
@@ -167,18 +167,19 @@ test("duplicate project test", async ({ expect }) => {
 
     // Verify project list has both projects
     const list = await projectList.getValue();
+    assert(list);
     expect(list).toHaveLength(2);
 
-    const srcEntry = list!.find((p) => p.rid === sourceRid);
-    const dupEntry = list!.find((p) => p.rid === dupRid);
-    expect(srcEntry).toBeDefined();
-    expect(dupEntry).toBeDefined();
-    expect(srcEntry!.meta.label).toBe("Source Project");
-    expect(dupEntry!.meta.label).toBe("Source Project (Copy)");
+    const srcEntry = list.find((p) => p.rid === sourceRid);
+    const dupEntry = list.find((p) => p.rid === dupRid);
+    assert(srcEntry);
+    assert(dupEntry);
+    expect(srcEntry.meta.label).toBe("Source Project");
+    expect(dupEntry.meta.label).toBe("Source Project (Copy)");
 
     // Duplicate has different rid and fresh timestamps
     expect(dupRid).not.toBe(sourceRid);
-    expect(dupEntry!.created.valueOf()).toBeGreaterThanOrEqual(srcEntry!.created.valueOf());
+    expect(dupEntry.created.valueOf()).toBeGreaterThanOrEqual(srcEntry.created.valueOf());
 
     // Open duplicate and verify structure
     await ml.openProject(dupRid);
@@ -231,9 +232,11 @@ test("duplicate project - name deduplication test", async ({ expect }) => {
     );
 
     const list = await projectList.getValue();
+    assert(list);
     expect(list).toHaveLength(3);
-    const dupEntry = list!.find((p) => p.rid === dupRid);
-    expect(dupEntry!.meta.label).toBe("My Analysis (Copy 2)");
+    const dupEntry = list.find((p) => p.rid === dupRid);
+    assert(dupEntry);
+    expect(dupEntry.meta.label).toBe("My Analysis (Copy 2)");
 
     // Cleanup
     await ml.deleteProject("p3");
