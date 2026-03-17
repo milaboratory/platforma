@@ -10,5 +10,6 @@ export * from "./table";
 
 export * from "./pframe";
 export * from "./http_helpers";
+export * from "./spec_driver";
 
 export type { SingleAxisSelector } from "@milaboratories/pl-model-common";
