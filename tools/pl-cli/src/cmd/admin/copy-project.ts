@@ -1,5 +1,5 @@
 import { Flags } from "@oclif/core";
-import { field, toGlobalResourceId, isNullResourceId } from "@milaboratories/pl-client";
+import { field, toGlobalResourceId } from "@milaboratories/pl-client";
 import { ProjectMetaKey } from "@milaboratories/pl-middle-layer";
 import { randomUUID } from "node:crypto";
 import { PlCommand } from "../../base_command";
@@ -8,6 +8,7 @@ import {
   resolveProject,
   deduplicateName,
   duplicateProject,
+  getExistingLabelsInTx,
   navigateToUserRoot,
 } from "../../project_ops";
 import { outputJson } from "../../output";
@@ -65,15 +66,7 @@ export default class AdminCopyProject extends PlCommand {
       const sourceMeta = JSON.parse(sourceMetaStr);
       const sourceLabel: string = sourceMeta.label;
 
-      const targetData = await tx.getResourceData(target.projectListRid, true);
-      const existingLabels: string[] = [];
-      for (const f of targetData.fields) {
-        if (isNullResourceId(f.value)) continue;
-        const metaStr = await tx.getKValueStringIfExists(f.value, ProjectMetaKey);
-        if (metaStr) {
-          existingLabels.push(JSON.parse(metaStr).label);
-        }
-      }
+      const existingLabels = await getExistingLabelsInTx(tx, target.projectListRid);
 
       let newLabel: string = flags.name ?? sourceLabel;
 

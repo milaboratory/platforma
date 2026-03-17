@@ -1,4 +1,4 @@
-import type { PlClient, ResourceId } from "@milaboratories/pl-client";
+import type { PlClient, ResourceId, PlTransaction } from "@milaboratories/pl-client";
 import { field, isNullResourceId } from "@milaboratories/pl-client";
 import {
   ProjectMetaKey,
@@ -38,9 +38,11 @@ export async function listProjects(
     for (const f of data.fields) {
       if (isNullResourceId(f.value)) continue;
 
-      const metaStr = await tx.getKValueStringIfExists(f.value, ProjectMetaKey);
-      const createdStr = await tx.getKValueStringIfExists(f.value, ProjectCreatedTimestamp);
-      const modifiedStr = await tx.getKValueStringIfExists(f.value, ProjectLastModifiedTimestamp);
+      const [metaStr, createdStr, modifiedStr] = await Promise.all([
+        tx.getKValueStringIfExists(f.value, ProjectMetaKey),
+        tx.getKValueStringIfExists(f.value, ProjectCreatedTimestamp),
+        tx.getKValueStringIfExists(f.value, ProjectLastModifiedTimestamp),
+      ]);
 
       const meta: ProjectMeta = metaStr ? JSON.parse(metaStr) : { label: "(unknown)" };
 
@@ -131,23 +133,31 @@ export async function resolveProject(
   });
 }
 
+/** Read all project labels within an existing transaction. */
+export async function getExistingLabelsInTx(
+  tx: PlTransaction,
+  projectListRid: ResourceId,
+): Promise<string[]> {
+  const data = await tx.getResourceData(projectListRid, true);
+  const labels: string[] = [];
+  for (const f of data.fields) {
+    if (isNullResourceId(f.value)) continue;
+    const metaStr = await tx.getKValueStringIfExists(f.value, ProjectMetaKey);
+    if (metaStr) {
+      const meta: ProjectMeta = JSON.parse(metaStr);
+      labels.push(meta.label);
+    }
+  }
+  return labels;
+}
+
 /** Get all project labels from a project list. */
 export async function getProjectLabels(
   pl: PlClient,
   projectListRid: ResourceId,
 ): Promise<string[]> {
   return await pl.withReadTx("getProjectLabels", async (tx) => {
-    const data = await tx.getResourceData(projectListRid, true);
-    const labels: string[] = [];
-    for (const f of data.fields) {
-      if (isNullResourceId(f.value)) continue;
-      const metaStr = await tx.getKValueStringIfExists(f.value, ProjectMetaKey);
-      if (metaStr) {
-        const meta: ProjectMeta = JSON.parse(metaStr);
-        labels.push(meta.label);
-      }
-    }
-    return labels;
+    return getExistingLabelsInTx(tx, projectListRid);
   });
 }
 

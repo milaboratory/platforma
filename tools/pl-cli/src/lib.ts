@@ -8,6 +8,7 @@ export {
   listProjects,
   getProjectInfo,
   getProjectListRid,
+  getExistingLabelsInTx,
   resolveProject,
   renameProject,
   deleteProject,

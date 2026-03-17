@@ -1,9 +1,14 @@
 import { Args, Flags } from "@oclif/core";
-import { field, isNullResourceId, toGlobalResourceId } from "@milaboratories/pl-client";
+import { field, toGlobalResourceId } from "@milaboratories/pl-client";
 import { ProjectMetaKey } from "@milaboratories/pl-middle-layer";
 import { randomUUID } from "node:crypto";
 import { PlCommand } from "../../base_command";
-import { resolveProject, deduplicateName, duplicateProject } from "../../project_ops";
+import {
+  resolveProject,
+  deduplicateName,
+  duplicateProject,
+  getExistingLabelsInTx,
+} from "../../project_ops";
 import { outputJson } from "../../output";
 
 export default class ProjectDuplicate extends PlCommand {
@@ -40,21 +45,11 @@ export default class ProjectDuplicate extends PlCommand {
     const newId = randomUUID();
 
     const newRid = await pl.withWriteTx("duplicateProject", async (tx) => {
-      // Read source label
       const sourceMetaStr = await tx.getKValueString(sourceRid, ProjectMetaKey);
       const sourceMeta = JSON.parse(sourceMetaStr);
       const sourceLabel: string = sourceMeta.label;
 
-      // Read all existing labels
-      const data = await tx.getResourceData(projectListRid, true);
-      const existingLabels: string[] = [];
-      for (const f of data.fields) {
-        if (isNullResourceId(f.value)) continue;
-        const metaStr = await tx.getKValueStringIfExists(f.value, ProjectMetaKey);
-        if (metaStr) {
-          existingLabels.push(JSON.parse(metaStr).label);
-        }
-      }
+      const existingLabels = await getExistingLabelsInTx(tx, projectListRid);
 
       // Compute new label
       let newLabel: string;
