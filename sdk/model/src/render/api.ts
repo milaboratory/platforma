@@ -709,6 +709,26 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     return this.ctx.getBlockLabel(blockId);
   }
 
+  //
+  // Spec Frames
+  //
+
+  public createSpecFrame(specs: Record<string, PColumnSpec>): string {
+    return this.ctx.createSpecFrame(specs);
+  }
+
+  public specFrameDiscoverColumns(...args: Parameters<typeof this.ctx.specFrameDiscoverColumns>) {
+    return this.ctx.specFrameDiscoverColumns(...args);
+  }
+
+  public specFrameFindColumns(...args: Parameters<typeof this.ctx.specFrameFindColumns>) {
+    return this.ctx.specFrameFindColumns(...args);
+  }
+
+  public specFrameDispose(handle: string): void {
+    this.ctx.specFrameDispose(handle);
+  }
+
   public getCurrentUnstableMarker(): string | undefined {
     return this.ctx.getCurrentUnstableMarker();
   }

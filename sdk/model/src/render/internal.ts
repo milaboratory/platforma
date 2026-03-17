@@ -19,8 +19,10 @@ import type {
   ValueOrError,
   DataInfo,
   RangeBytes,
+  PColumnSpec,
 } from "@milaboratories/pl-model-common";
 import type { TreeNodeAccessor } from "./accessor";
+import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 
 export const StagingAccessorName = "staging";
 export const MainAccessorName = "main";
@@ -156,6 +158,24 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   createPTableV2(
     def: PTableDefV2<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>,
   ): PTableHandle;
+
+  //
+  // Spec Frames (synchronous WASM-based PFrame for spec-level operations)
+  //
+
+  createSpecFrame(specs: Record<string, PColumnSpec>): string;
+
+  specFrameDiscoverColumns(
+    handle: string,
+    request: PFrameInternal.DiscoverColumnsRequest,
+  ): PFrameInternal.DiscoverColumnsResponse;
+
+  specFrameFindColumns(
+    handle: string,
+    request: PFrameInternal.FindColumnsRequest,
+  ): PFrameInternal.FindColumnsResponse;
+
+  specFrameDispose(handle: string): void;
 
   //
   // Computable

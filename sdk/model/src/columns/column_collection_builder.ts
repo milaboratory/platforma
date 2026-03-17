@@ -6,8 +6,10 @@ import type {
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
 import { deriveNativeId } from "@milaboratories/pl-model-common";
+import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import type { ColumnSelectorInput } from "./column_selector";
-import { selectorsToPredicate } from "./column_selector";
+import { normalizeSelectors, selectorsToPredicate } from "./column_selector";
+import type { ColumnSelector, AxisSelector, StringMatcher } from "./column_selector";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { ColumnSnapshot } from "./column_snapshot";
 import {
@@ -17,6 +19,14 @@ import {
 } from "./column_snapshot";
 import type { ColumnProvider, ColumnSource } from "./column_provider";
 import { ArrayColumnProvider, toColumnProvider } from "./column_provider";
+
+import type { GlobalCfgRenderCtxMethods } from "../render/internal";
+
+/** Subset of render context methods needed for spec frame operations. */
+type SpecFrameCtx = Pick<
+  GlobalCfgRenderCtxMethods,
+  "createSpecFrame" | "specFrameDiscoverColumns" | "specFrameDispose"
+>;
 
 // --- FindColumnsOptions ---
 
@@ -49,14 +59,14 @@ export interface AnchoredColumnCollection {
   getColumn(id: SUniversalPColumnId): undefined | ColumnSnapshot<SUniversalPColumnId>;
 
   /** Axis-aware column discovery. */
-  findColumns(opts?: AnchoredFindColumnsOpts): ColumnMatch[];
+  findColumns(opts?: AnchoredFindColumnsOptions): ColumnMatch[];
 }
 
 /** Controls axis matching behavior for anchored discovery. */
 export type MatchingMode = "enrichment" | "related" | "exact";
 
 /** Options for anchored collection findColumns. */
-export interface AnchoredFindColumnsOpts extends FindColumnsOptions {
+export interface AnchoredFindColumnsOptions extends FindColumnsOptions {
   /** Controls axis matching behavior. Default: 'enrichment'. */
   mode?: MatchingMode;
   /** Maximum linker hops for cross-domain discovery (0 = direct only, default: 4). */
@@ -80,15 +90,21 @@ export interface MatchVariant {
 
 // --- Build options ---
 
-export interface BuildOpts {
+export interface BuildOptions {
   allowPartialColumnList?: true;
 }
 
-export interface AnchoredBuildOpts extends BuildOpts {
+export interface AnchoredBuildOptions extends BuildOptions {
   anchors: Record<string, PlRef | PObjectId | PColumnSpec>;
 }
 
 // --- ColumnCollectionBuilder ---
+
+export interface ColumnCollectionBuilderOptions {
+  /** Callback to mark the render context unstable.
+   *  Used when constructing ColumnData active objects for computing columns. */
+  readonly markUnstable?: () => void;
+}
 
 /**
  * Mutable builder that accumulates column sources, then produces
@@ -101,13 +117,10 @@ export class ColumnCollectionBuilder {
   private readonly providers: ColumnProvider[] = [];
   private readonly markUnstable?: () => void;
 
-  /**
-   * @param markUnstable Callback to mark the render context unstable.
-   *   Used when constructing ColumnData active objects for computing columns.
-   *   If not provided, accessing data on computing columns will not mark unstable
-   *   (suitable for spec-only use cases).
-   */
-  constructor(options: { readonly markUnstable?: () => void } = {}) {
+  constructor(
+    private readonly specFrameCtx: SpecFrameCtx,
+    options: ColumnCollectionBuilderOptions = {},
+  ) {
     this.markUnstable = options.markUnstable;
   }
 
@@ -135,24 +148,24 @@ export class ColumnCollectionBuilder {
 
   /** Plain collection — selector-based filtering, PObjectId namespace. */
   build(): undefined | ColumnCollection;
-  build(opts: {
+  build(options: {
     allowPartialColumnList: true;
   }): ColumnCollection & { readonly columnListComplete: boolean };
   /** Anchored collection — axis-aware discovery, SUniversalPColumnId namespace. */
   build(
-    opts: AnchoredBuildOpts & { allowPartialColumnList: true },
+    options: AnchoredBuildOptions & { allowPartialColumnList: true },
   ): AnchoredColumnCollection & { readonly columnListComplete: boolean };
-  build(opts: AnchoredBuildOpts): undefined | AnchoredColumnCollection;
+  build(options: AnchoredBuildOptions): undefined | AnchoredColumnCollection;
   build(
-    opts?: BuildOpts | AnchoredBuildOpts,
+    options?: BuildOptions | AnchoredBuildOptions,
   ):
     | undefined
     | ColumnCollection
     | AnchoredColumnCollection
     | (ColumnCollection & { readonly columnListComplete: boolean })
     | (AnchoredColumnCollection & { readonly columnListComplete: boolean }) {
-    const allowPartial = opts?.allowPartialColumnList === true;
-    const hasAnchors = opts !== undefined && "anchors" in opts;
+    const allowPartial = options?.allowPartialColumnList === true;
+    const hasAnchors = options !== undefined && "anchors" in options;
 
     // Check column list completeness
     const allComplete = this.providers.every((p) => p.isColumnListComplete());
@@ -166,11 +179,11 @@ export class ColumnCollectionBuilder {
       throw new Error("AnchoredColumnCollection not yet implemented (Step 7)");
     }
 
-    return new ColumnCollectionImpl(
-      columnMap,
-      this.markUnstable,
-      allowPartial ? allComplete : false,
-    );
+    return new ColumnCollectionImpl(this.specFrameCtx, {
+      columns: columnMap,
+      markUnstable: this.markUnstable,
+      columnListComplete: allowPartial ? allComplete : false,
+    });
   }
 
   /**
@@ -196,14 +209,42 @@ export class ColumnCollectionBuilder {
   }
 }
 
+// --- Permissive constraints for plain (non-anchored) filtering ---
+
+const PLAIN_CONSTRAINTS: PFrameInternal.DiscoverColumnsConstraints = {
+  allowFloatingSourceAxes: true,
+  allowFloatingHitAxes: true,
+  allowSourceQualifications: false,
+  allowHitQualifications: false,
+};
+
 // --- ColumnCollectionImpl ---
 
+interface ColumnCollectionImplOptions {
+  readonly markUnstable?: () => void;
+  readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
+  readonly columnListComplete?: boolean;
+}
+
 class ColumnCollectionImpl implements ColumnCollection {
+  private readonly markUnstable: () => void;
+  private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
+  private readonly specFrameHandle: string;
+  public readonly columnListComplete: boolean;
+
   constructor(
-    private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>,
-    private readonly markUnstable: () => void = () => {},
-    public readonly columnListComplete: boolean = false,
-  ) {}
+    private readonly ctx: SpecFrameCtx,
+    options: ColumnCollectionImplOptions,
+  ) {
+    this.markUnstable = options.markUnstable ?? (() => {});
+    this.columns = options.columns;
+    this.columnListComplete = options.columnListComplete ?? false;
+    this.specFrameHandle = this.ctx.createSpecFrame(
+      this.columns
+        .entries()
+        .reduce((acc, [id, col]) => ((acc[id] = col.spec), acc), {} as Record<string, PColumnSpec>),
+    );
+  }
 
   getColumn(id: PObjectId): undefined | ColumnSnapshot<PObjectId> {
     const col = this.columns.get(id);
@@ -212,21 +253,27 @@ class ColumnCollectionImpl implements ColumnCollection {
   }
 
   findColumns(opts?: FindColumnsOptions): ColumnSnapshot<PObjectId>[] {
-    const columns = [...this.columns.values()];
+    const columnFilter = opts?.include ? toMultiColumnSelectors(opts.include) : [];
 
-    let filtered = columns;
+    const response = this.ctx.specFrameDiscoverColumns(this.specFrameHandle, {
+      columnFilter,
+      axes: [],
+      constraints: PLAIN_CONSTRAINTS,
+    });
 
-    if (opts?.include) {
-      const includePred = selectorsToPredicate(opts.include);
-      filtered = filtered.filter((col) => includePred(col.spec));
-    }
+    // Map hits back to snapshots
+    let results = response.hits
+      .map((hit) => this.columns.get(hit.hit.columnId as PObjectId))
+      .filter((col): col is ColumnSnapshot<PObjectId> => col !== undefined)
+      .map((col) => this.toSnapshot(col));
 
+    // Apply exclude (post-filter — WASM doesn't have native exclude)
     if (opts?.exclude) {
       const excludePred = selectorsToPredicate(opts.exclude);
-      filtered = filtered.filter((col) => !excludePred(col.spec));
+      results = results.filter((col) => !excludePred(col.spec));
     }
 
-    return filtered.map((col) => this.toSnapshot(col));
+    return results;
   }
 
   private toSnapshot(col: ColumnSnapshot<PObjectId>): ColumnSnapshot<PObjectId> {
@@ -244,4 +291,48 @@ class ColumnCollectionImpl implements ColumnCollection {
     }
     return createColumnSnapshot(col.id, col.spec, col.dataStatus, data);
   }
+}
+
+function convertStringMatcher(m: StringMatcher): PFrameInternal.StringMatcher {
+  if ("exact" in m) return { type: "exact", value: m.exact };
+  return { type: "regex", value: m.regex };
+}
+
+function convertMatcherArray(arr: StringMatcher[]): PFrameInternal.StringMatcher[] {
+  return arr.map(convertStringMatcher);
+}
+
+function convertMatcherMap(record: Record<string, StringMatcher[]>): PFrameInternal.MatcherMap {
+  const result: PFrameInternal.MatcherMap = {};
+  for (const [key, matchers] of Object.entries(record)) {
+    result[key] = convertMatcherArray(matchers);
+  }
+  return result;
+}
+
+function convertAxisSelector(sel: AxisSelector): PFrameInternal.MultiAxisSelector {
+  const result: PFrameInternal.MultiAxisSelector = {};
+  if (sel.name) (result as any).name = convertMatcherArray(sel.name);
+  if (sel.type) (result as any).type = sel.type;
+  if (sel.domain) (result as any).domain = convertMatcherMap(sel.domain);
+  if (sel.contextDomain) (result as any).contextDomain = convertMatcherMap(sel.contextDomain);
+  if (sel.annotations) (result as any).annotations = convertMatcherMap(sel.annotations);
+  return result;
+}
+
+function convertColumnSelector(sel: ColumnSelector): PFrameInternal.MultiColumnSelector {
+  const result: PFrameInternal.MultiColumnSelector = {};
+  if (sel.name) (result as any).name = convertMatcherArray(sel.name);
+  if (sel.type) (result as any).type = sel.type;
+  if (sel.domain) (result as any).domain = convertMatcherMap(sel.domain);
+  if (sel.contextDomain) (result as any).contextDomain = convertMatcherMap(sel.contextDomain);
+  if (sel.annotations) (result as any).annotations = convertMatcherMap(sel.annotations);
+  if (sel.axes) (result as any).axes = sel.axes.map(convertAxisSelector);
+  if (sel.partialAxesMatch !== undefined) (result as any).partialAxesMatch = sel.partialAxesMatch;
+  return result;
+}
+
+/** Convert SDK ColumnSelectorInput to WASM MultiColumnSelector[]. */
+function toMultiColumnSelectors(input: ColumnSelectorInput): PFrameInternal.MultiColumnSelector[] {
+  return normalizeSelectors(input).map(convertColumnSelector);
 }

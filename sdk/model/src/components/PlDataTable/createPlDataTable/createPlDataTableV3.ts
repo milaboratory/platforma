@@ -195,7 +195,7 @@ export function createPlDataTableV3<A, U>(
   if (providers.length === 0) return undefined;
 
   // Step 1: Build collection from sources
-  const builder = new ColumnCollectionBuilder().addSources(providers);
+  const builder = new ColumnCollectionBuilder(ctx).addSources(providers);
   const anchors = options.columns.anchors;
   const collection = isNil(anchors) ? builder.build() : builder.build({ anchors });
 

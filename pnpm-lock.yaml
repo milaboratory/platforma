@@ -1698,6 +1698,9 @@ importers:
 
   lib/model/middle-layer:
     dependencies:
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../util/helpers
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../common
@@ -1821,10 +1824,17 @@ importers:
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
 <<<<<<< HEAD
+<<<<<<< HEAD
         version: 1.1.14(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.26.1)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
 =======
         version: 1.1.14(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.26.0)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
 >>>>>>> 8de7dc686 (chore: lock file)
+=======
+        version: 1.1.14(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../../model/common
+>>>>>>> 0a69ca558 (feat(model): integrate spec frame driver into ColumnCollectionBuilder)
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
         version: link:../../model/middle-layer
@@ -2674,6 +2684,9 @@ importers:
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../../lib/model/common
+      '@milaboratories/pl-model-middle-layer':
+        specifier: workspace:*
+        version: link:../../lib/model/middle-layer
       '@milaboratories/ptabler-expression-js':
         specifier: workspace:*
         version: link:../../lib/ptabler/js
@@ -10641,10 +10654,10 @@ snapshots:
       commander: 14.0.3
       selfsigned: 5.5.0
 
-  '@milaboratories/pframes-rs-wasm@1.1.14(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.26.0)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
+  '@milaboratories/pframes-rs-wasm@1.1.14(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
     dependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
-      '@milaboratories/pl-model-common': 1.26.0
+      '@milaboratories/pl-model-common': link:lib/model/common
       '@milaboratories/pl-model-middle-layer': link:lib/model/middle-layer
 
   '@milaboratories/pl-error-like@1.12.9':
