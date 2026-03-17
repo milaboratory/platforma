@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.49.0
+
+### Minor Changes
+
+- e2f2809: Add project duplication: `duplicateProject` function in mutator and `duplicateProject` method on MiddleLayer class
+
 ## 1.48.28
 
 ### Patch Changes
