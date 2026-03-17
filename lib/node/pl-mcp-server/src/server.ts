@@ -16,6 +16,10 @@ export interface PlMcpServerCallbacks {
   onProjectDeleted?: (projectId: string) => void | Promise<void>;
   /** Capture the current application window as a PNG screenshot. Returns base64-encoded PNG. */
   captureScreenshot?: () => Promise<string>;
+  /** Send an input event to the application window. */
+  sendInputEvent?: (event: unknown) => Promise<void>;
+  /** Execute JavaScript in the renderer and return the result. */
+  executeJavaScript?: (code: string) => Promise<unknown>;
 }
 
 export interface PlMcpServerOptions {
@@ -148,6 +152,7 @@ export class PlMcpServer {
     this.registerBlockTools(server);
     this.registerBlockStateTools(server);
     this.registerScreenshotTool(server);
+    this.registerUIInteractionTools(server);
   }
 
   /** Resolves a project from the list by its projectId (resourceIdToString format). */
@@ -427,6 +432,133 @@ export class PlMcpServer {
         return {
           content: [{ type: "image" as const, data: base64Png, mimeType: "image/png" }],
         };
+      },
+    );
+  }
+
+  private registerUIInteractionTools(server: McpServer): void {
+    server.registerTool(
+      "click",
+      {
+        description: "Click at coordinates (x, y) in the application window. Use capture_screenshot to find element positions.",
+        inputSchema: {
+          x: z.number().describe("X coordinate"),
+          y: z.number().describe("Y coordinate"),
+          doubleClick: z.boolean().optional().describe("Double click"),
+        },
+      },
+      async ({ x, y, doubleClick }) => {
+        if (!this.callbacks.sendInputEvent) {
+          return textResult({ error: "UI interaction not available" });
+        }
+        const clickCount = doubleClick ? 2 : 1;
+        await this.callbacks.sendInputEvent({ type: "mouseDown", x, y, button: "left", clickCount });
+        await this.callbacks.sendInputEvent({ type: "mouseUp", x, y, button: "left", clickCount });
+        return textResult({ ok: true });
+      },
+    );
+
+    server.registerTool(
+      "type_text",
+      {
+        description: "Type text into the currently focused element",
+        inputSchema: {
+          text: z.string().describe("Text to type"),
+        },
+      },
+      async ({ text }) => {
+        if (!this.callbacks.sendInputEvent) {
+          return textResult({ error: "UI interaction not available" });
+        }
+        for (const char of text) {
+          await this.callbacks.sendInputEvent({ type: "keyDown", keyCode: char });
+          await this.callbacks.sendInputEvent({ type: "char", keyCode: char });
+          await this.callbacks.sendInputEvent({ type: "keyUp", keyCode: char });
+        }
+        return textResult({ ok: true });
+      },
+    );
+
+    server.registerTool(
+      "press_key",
+      {
+        description: "Press a keyboard key (Enter, Tab, Escape, Backspace, ArrowDown, ArrowUp, etc.)",
+        inputSchema: {
+          key: z.string().describe("Key name (e.g. 'Enter', 'Tab', 'Escape', 'Backspace', 'ArrowDown')"),
+          modifiers: z
+            .array(z.enum(["shift", "control", "alt", "meta"]))
+            .optional()
+            .describe("Modifier keys to hold"),
+        },
+      },
+      async ({ key, modifiers }) => {
+        if (!this.callbacks.sendInputEvent) {
+          return textResult({ error: "UI interaction not available" });
+        }
+        await this.callbacks.sendInputEvent({
+          type: "keyDown",
+          keyCode: key,
+          ...(modifiers && {
+            shift: modifiers.includes("shift"),
+            control: modifiers.includes("control"),
+            alt: modifiers.includes("alt"),
+            meta: modifiers.includes("meta"),
+          }),
+        });
+        await this.callbacks.sendInputEvent({
+          type: "keyUp",
+          keyCode: key,
+          ...(modifiers && {
+            shift: modifiers.includes("shift"),
+            control: modifiers.includes("control"),
+            alt: modifiers.includes("alt"),
+            meta: modifiers.includes("meta"),
+          }),
+        });
+        return textResult({ ok: true });
+      },
+    );
+
+    server.registerTool(
+      "scroll",
+      {
+        description: "Scroll the page at a given position",
+        inputSchema: {
+          x: z.number().describe("X coordinate to scroll at"),
+          y: z.number().describe("Y coordinate to scroll at"),
+          deltaX: z.number().optional().default(0).describe("Horizontal scroll amount"),
+          deltaY: z.number().describe("Vertical scroll amount (negative = up, positive = down)"),
+        },
+      },
+      async ({ x, y, deltaX, deltaY }) => {
+        if (!this.callbacks.sendInputEvent) {
+          return textResult({ error: "UI interaction not available" });
+        }
+        await this.callbacks.sendInputEvent({
+          type: "mouseWheel",
+          x,
+          y,
+          deltaX: deltaX ?? 0,
+          deltaY,
+        });
+        return textResult({ ok: true });
+      },
+    );
+
+    server.registerTool(
+      "execute_js",
+      {
+        description: "Execute JavaScript in the renderer process and return the result. Useful for querying DOM, reading text, or complex interactions.",
+        inputSchema: {
+          code: z.string().describe("JavaScript code to execute"),
+        },
+      },
+      async ({ code }) => {
+        if (!this.callbacks.executeJavaScript) {
+          return textResult({ error: "JS execution not available" });
+        }
+        const result = await this.callbacks.executeJavaScript(code);
+        return textResult(result);
       },
     );
   }
