@@ -38,6 +38,7 @@ import {
   ProjectMetaKey,
   InitialBlockMeta,
   blockArgsAuthorKey,
+  BlockArgsAuthorKeyPrefix,
   ProjectLastModifiedTimestamp,
   ProjectCreatedTimestamp,
   ProjectStructureAuthorKey,
@@ -1820,6 +1821,83 @@ export async function createProject(
     Pl.wrapInHolder(tx, loadTemplate(tx, ctxExportTplEnvelope.spec)),
   );
   return prj;
+}
+
+/**
+ * Duplicates an existing project resource within a transaction.
+ * Creates a new project resource with all dynamic fields (block data) copied by reference
+ * and all KV metadata copied with appropriate adjustments.
+ *
+ * The returned resource is NOT attached to any project list — the caller is responsible
+ * for placing it where needed. This enables cross-user duplication.
+ *
+ * @param tx - active write transaction
+ * @param sourceRid - resource id of the project to duplicate
+ * @param options.label - optional label override for the new project; if omitted, copies the source label
+ */
+export async function duplicateProject(
+  tx: PlTransaction,
+  sourceRid: ResourceId,
+  options?: { label?: string },
+): Promise<AnyResourceRef> {
+  // Read source resource data (with fields) and all KV pairs
+  const sourceDataP = tx.getResourceData(sourceRid, true);
+  const sourceKVsP = tx.listKeyValuesString(sourceRid);
+
+  const sourceData = await sourceDataP;
+  const sourceKVs = await sourceKVsP;
+
+  // Validate schema version
+  const schemaKV = sourceKVs.find((kv) => kv.key === SchemaVersionKey);
+  const schema = schemaKV ? JSON.parse(schemaKV.value) : undefined;
+  if (schema !== SchemaVersionCurrent) {
+    throw new UiError(
+      `Cannot duplicate project with schema version ${schema ?? "unknown"}. ` +
+        `Only schema version ${SchemaVersionCurrent} is supported. ` +
+        `Try opening the project first to trigger migration.`,
+    );
+  }
+
+  // Create new project resource
+  const newPrj = tx.createEphemeral(ProjectResourceType);
+  tx.lock(newPrj);
+
+  // Copy KV pairs with adjustments
+  const ts = String(Date.now());
+  const kvSkipPrefixes = [BlockArgsAuthorKeyPrefix];
+  const kvSkipKeys = new Set([
+    ProjectCreatedTimestamp,
+    ProjectLastModifiedTimestamp,
+    ProjectStructureAuthorKey,
+  ]);
+
+  for (const { key, value } of sourceKVs) {
+    // Skip author markers
+    if (kvSkipKeys.has(key)) continue;
+    if (kvSkipPrefixes.some((prefix) => key.startsWith(prefix))) continue;
+
+    if (key === ProjectMetaKey && options?.label !== undefined) {
+      // Override label
+      const meta: ProjectMeta = JSON.parse(value);
+      tx.setKValue(newPrj, key, JSON.stringify({ ...meta, label: options.label }));
+    } else {
+      // Copy as-is
+      tx.setKValue(newPrj, key, value);
+    }
+  }
+
+  // Set fresh timestamps
+  tx.setKValue(newPrj, ProjectCreatedTimestamp, ts);
+  tx.setKValue(newPrj, ProjectLastModifiedTimestamp, ts);
+
+  // Copy all dynamic fields by sharing references
+  for (const f of sourceData.fields) {
+    if (isNotNullResourceId(f.value)) {
+      tx.createField(field(newPrj, f.name), "Dynamic", f.value);
+    }
+  }
+
+  return newPrj;
 }
 
 export async function withProject<T>(
