@@ -163,17 +163,16 @@ export class MiddleLayer {
   /**
    * Duplicates an existing project and adds the copy to this user's project list.
    *
-   * @param options.sourceRid - resource id of the project to duplicate
-   * @param options.rename - optional function that receives the source label and all existing
+   * @param sourceRid - resource id of the project to duplicate
+   * @param rename - optional function that receives the source label and all existing
    *   project labels (read within the same transaction), and returns the label for the copy
-   * @param options.id - optional id for the new project list entry (defaults to random UUID)
+   * @param id - optional id for the new project list entry (defaults to random UUID)
    */
-  public async duplicateProject(options: {
-    sourceRid: ResourceId;
-    rename?: (previousLabel: string, existingLabels: string[]) => string;
-    id?: string;
-  }): Promise<ResourceId> {
-    const { sourceRid, rename, id = randomUUID() } = options;
+  public async duplicateProject(
+    sourceRid: ResourceId,
+    rename?: (previousLabel: string, existingLabels: string[]) => string,
+    id: string = randomUUID(),
+  ): Promise<ResourceId> {
     const resource = await this.pl.withWriteTx("MLDuplicateProject", async (tx) => {
       // Read source project meta
       const sourceMeta = await tx.getKValueJson<ProjectMeta>(sourceRid, ProjectMetaKey);

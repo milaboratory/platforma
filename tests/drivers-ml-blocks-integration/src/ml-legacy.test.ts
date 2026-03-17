@@ -150,9 +150,9 @@ test("duplicate project test", async ({ expect }) => {
     await ml.closeProject(sourceRid);
 
     // Duplicate with rename lambda
-    const dupRid = await ml.duplicateProject({
+    const dupRid = await ml.duplicateProject(
       sourceRid,
-      rename: (prevLabel, existingLabels) => {
+      (prevLabel, existingLabels) => {
         expect(existingLabels).toContain("Source Project");
         let candidate = `${prevLabel} (Copy)`;
         let i = 2;
@@ -162,8 +162,8 @@ test("duplicate project test", async ({ expect }) => {
         }
         return candidate;
       },
-      id: "dup1",
-    });
+      "dup1",
+    );
 
     // Verify project list has both projects
     const list = await projectList.getValue();
@@ -217,9 +217,9 @@ test("duplicate project - name deduplication test", async ({ expect }) => {
     await ml.createProject({ label: "My Analysis (Copy)" }, "p2");
 
     // Duplicate with dedup logic - should skip "My Analysis (Copy)" since it exists
-    const dupRid = await ml.duplicateProject({
-      sourceRid: rid1,
-      rename: (prevLabel, existingLabels) => {
+    const dupRid = await ml.duplicateProject(
+      rid1,
+      (prevLabel, existingLabels) => {
         let candidate = `${prevLabel} (Copy)`;
         let i = 2;
         while (existingLabels.includes(candidate)) {
@@ -228,8 +228,8 @@ test("duplicate project - name deduplication test", async ({ expect }) => {
         }
         return candidate;
       },
-      id: "p3",
-    });
+      "p3",
+    );
 
     const list = await projectList.getValue();
     assert(list);
