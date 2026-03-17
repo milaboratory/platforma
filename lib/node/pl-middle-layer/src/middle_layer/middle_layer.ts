@@ -1,5 +1,10 @@
 import type { PlClient, ResourceId } from "@milaboratories/pl-client";
-import { field, isNullResourceId, toGlobalResourceId } from "@milaboratories/pl-client";
+import {
+  field,
+  isNotNullResourceId,
+  isNullResourceId,
+  toGlobalResourceId,
+} from "@milaboratories/pl-client";
 import { createProjectList, ProjectsField, ProjectsResourceType } from "./project_list";
 import { createProject, duplicateProject, withProjectAuthored } from "../mutator/project";
 import { ProjectMetaKey } from "../model/project_model";
@@ -173,14 +178,14 @@ export class MiddleLayer {
       // Read source project meta
       const sourceMeta = await tx.getKValueJson<ProjectMeta>(sourceRid, ProjectMetaKey);
 
-      // Read all existing project labels from the project list
+      // Read all existing project labels from the project list (parallel reads)
       const projectListData = await tx.getResourceData(this.projectListResourceId, true);
-      const existingLabels: string[] = [];
-      for (const f of projectListData.fields) {
-        if (isNullResourceId(f.value)) continue;
-        const meta = await tx.getKValueJson<ProjectMeta>(f.value, ProjectMetaKey);
-        existingLabels.push(meta.label);
-      }
+      const projectRids = projectListData.fields.map((f) => f.value).filter(isNotNullResourceId);
+      const existingLabels = (
+        await Promise.all(
+          projectRids.map((rid) => tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey)),
+        )
+      ).map((m) => m.label);
 
       // Compute new label
       const newLabel = rename ? rename(sourceMeta.label, existingLabels) : sourceMeta.label;
