@@ -1,5 +1,6 @@
 import { Annotation } from "@milaboratories/pl-model-common";
-import type { ColumnSnapshot, WithLabel } from "../columns";
+import type { ColumnSnapshot } from "../columns";
+import type { WithLabel } from "./derive_labels";
 
 export function writeLabelsToSpecs(items: WithLabel<ColumnSnapshot>[]): void {
   for (const { value, label } of items) {

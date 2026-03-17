@@ -289,12 +289,9 @@ class ColumnCollectionImpl implements ColumnCollection {
 
 // --- AnchoredColumnCollectionImpl ---
 
-interface AnchoredColumnCollectionImplOptions {
-  readonly markUnstable?: () => void;
-  readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
+interface AnchoredColumnCollectionImplOptions extends ColumnCollectionImplOptions {
   readonly idDeriver: AnchoredIdDeriver;
   readonly anchorSpecs: Record<string, PColumnSpec>;
-  readonly columnListComplete?: boolean;
 }
 
 class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
@@ -409,13 +406,8 @@ function remapSnapshot<Id extends PObjectId>(
 
 // --- Selector conversion helpers ---
 
-function convertStringMatcher(m: StringMatcher): PFrameInternal.StringMatcher {
-  if ("exact" in m) return { type: "exact", value: m.exact };
-  return { type: "regex", value: m.regex };
-}
-
 function convertMatcherArray(arr: StringMatcher[]): PFrameInternal.StringMatcher[] {
-  return arr.map(convertStringMatcher);
+  return arr;
 }
 
 function convertMatcherMap(record: Record<string, StringMatcher[]>): PFrameInternal.MatcherMap {
@@ -491,16 +483,16 @@ function matchingModeToConstraints(mode: MatchingMode): PFrameInternal.DiscoverC
   switch (mode) {
     case "enrichment":
       return {
-        allowFloatingSourceAxes: false,
+        allowFloatingSourceAxes: true,
         allowFloatingHitAxes: true,
         allowSourceQualifications: false,
-        allowHitQualifications: true,
+        allowHitQualifications: false,
       };
     case "related":
       return {
         allowFloatingSourceAxes: true,
         allowFloatingHitAxes: true,
-        allowSourceQualifications: false,
+        allowSourceQualifications: true,
         allowHitQualifications: true,
       };
     case "exact":

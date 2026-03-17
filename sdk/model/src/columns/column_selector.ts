@@ -5,12 +5,14 @@ import type { PColumnSpec, ValueType } from "@milaboratories/pl-model-common";
 
 /** Matches a string value exactly. */
 export interface ExactMatcher {
-  readonly exact: string;
+  readonly type: "exact";
+  readonly value: string;
 }
 
 /** Matches a string value against a regex pattern (full match). */
 export interface RegexMatcher {
-  readonly regex: RegExpString;
+  readonly type: "regex";
+  readonly value: RegExpString;
 }
 
 export type StringMatcher = ExactMatcher | RegexMatcher;
@@ -71,9 +73,9 @@ export type ColumnSelectorInput = RelaxedColumnSelector | RelaxedColumnSelector[
 // --- Normalization ---
 
 function normalizeStringMatchers(input: RelaxedStringMatchers): StringMatcher[] {
-  if (typeof input === "string") return [{ regex: input as RegExpString }];
+  if (typeof input === "string") return [{ type: "regex", value: input as RegExpString }];
   if (!Array.isArray(input)) return [input];
-  return input.map((v) => (typeof v === "string" ? { regex: v as RegExpString } : v));
+  return input.map((v) => (typeof v === "string" ? { type: "regex" as const, value: v as RegExpString } : v));
 }
 
 function normalizeRecord(input: RelaxedRecord): Record<string, StringMatcher[]> {
@@ -122,8 +124,8 @@ function normalizeSingleSelector(input: RelaxedColumnSelector): ColumnSelector {
 
 function matchStringValue(value: string, matchers: StringMatcher[]): boolean {
   return matchers.some((m) => {
-    if ("exact" in m) return value === m.exact;
-    return new RegExp(`^(?:${m.regex})$`).test(value);
+    if (m.type === "exact") return value === m.value;
+    return new RegExp(`^(?:${m.value})$`).test(value);
   });
 }
 

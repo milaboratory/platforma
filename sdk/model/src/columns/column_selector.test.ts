@@ -27,7 +27,7 @@ describe("normalizeSelectors", () => {
   test("wraps single selector in array", () => {
     const result = normalizeSelectors({ name: "foo" });
     expect(result).toHaveLength(1);
-    expect(result[0].name).toEqual([{ regex: "foo" }]);
+    expect(result[0].name).toEqual([{ type: "regex", value: "foo" }]);
   });
 
   test("passes through array of selectors", () => {
@@ -37,19 +37,19 @@ describe("normalizeSelectors", () => {
 
   test("normalizes plain string name to RegexMatcher[]", () => {
     const [sel] = normalizeSelectors({ name: "foo" });
-    expect(sel.name).toEqual([{ regex: "foo" }]);
+    expect(sel.name).toEqual([{ type: "regex", value: "foo" }]);
   });
 
   test("normalizes array of mixed strings and matchers", () => {
     const [sel] = normalizeSelectors({
-      name: ["foo", { regex: "bar.*" as RegExpString }],
+      name: ["foo", { type: "regex", value: "bar.*" as RegExpString }],
     });
-    expect(sel.name).toEqual([{ regex: "foo" }, { regex: "bar.*" }]);
+    expect(sel.name).toEqual([{ type: "regex", value: "foo" }, { type: "regex", value: "bar.*" }]);
   });
 
   test("normalizes single StringMatcher object", () => {
-    const [sel] = normalizeSelectors({ name: { exact: "foo" } });
-    expect(sel.name).toEqual([{ exact: "foo" }]);
+    const [sel] = normalizeSelectors({ name: { type: "exact", value: "foo" } });
+    expect(sel.name).toEqual([{ type: "exact", value: "foo" }]);
   });
 
   test("normalizes single ValueType to array", () => {
@@ -67,16 +67,16 @@ describe("normalizeSelectors", () => {
       domain: { "pl7.app/chain": "IGHeavy" },
     });
     expect(sel.domain).toEqual({
-      "pl7.app/chain": [{ regex: "IGHeavy" }],
+      "pl7.app/chain": [{ type: "regex", value: "IGHeavy" }],
     });
   });
 
   test("normalizes record with mixed array values", () => {
     const [sel] = normalizeSelectors({
-      annotations: { label: ["a", { regex: "b.*" as RegExpString }] },
+      annotations: { label: ["a", { type: "regex", value: "b.*" as RegExpString }] },
     });
     expect(sel.annotations).toEqual({
-      label: [{ regex: "a" }, { regex: "b.*" }],
+      label: [{ type: "regex", value: "a" }, { type: "regex", value: "b.*" }],
     });
   });
 
@@ -84,7 +84,7 @@ describe("normalizeSelectors", () => {
     const [sel] = normalizeSelectors({
       axes: [{ name: "axisName", type: "String" }],
     });
-    expect(sel.axes).toEqual([{ name: [{ regex: "axisName" }], type: ["String"] }]);
+    expect(sel.axes).toEqual([{ name: [{ type: "regex", value: "axisName" }], type: ["String"] }]);
   });
 
   test("preserves partialAxesMatch", () => {
@@ -106,32 +106,32 @@ describe("matchColumn", () => {
   describe("name matching", () => {
     test("exact name match", () => {
       const s = spec({ name: "pl7.app/vdj/sequence" });
-      const sel: ColumnSelector = { name: [{ exact: "pl7.app/vdj/sequence" }] };
+      const sel: ColumnSelector = { name: [{ type: "exact", value: "pl7.app/vdj/sequence" }] };
       expect(matchColumn(s, sel)).toBe(true);
     });
 
     test("exact name mismatch", () => {
       const s = spec({ name: "pl7.app/vdj/sequence" });
-      const sel: ColumnSelector = { name: [{ exact: "pl7.app/vdj/other" }] };
+      const sel: ColumnSelector = { name: [{ type: "exact", value: "pl7.app/vdj/other" }] };
       expect(matchColumn(s, sel)).toBe(false);
     });
 
     test("regex name match", () => {
       const s = spec({ name: "pl7.app/vdj/sequence" });
-      const sel: ColumnSelector = { name: [{ regex: "pl7\\.app/vdj/.*" as RegExpString }] };
+      const sel: ColumnSelector = { name: [{ type: "regex", value: "pl7\\.app/vdj/.*" as RegExpString }] };
       expect(matchColumn(s, sel)).toBe(true);
     });
 
     test("regex full match required", () => {
       const s = spec({ name: "pl7.app/vdj/sequence" });
-      const sel: ColumnSelector = { name: [{ regex: "vdj" as RegExpString }] };
+      const sel: ColumnSelector = { name: [{ type: "regex", value: "vdj" as RegExpString }] };
       expect(matchColumn(s, sel)).toBe(false);
     });
 
     test("OR across name matchers", () => {
       const s = spec({ name: "colB" });
       const sel: ColumnSelector = {
-        name: [{ exact: "colA" }, { exact: "colB" }],
+        name: [{ type: "exact", value: "colA" }, { type: "exact", value: "colB" }],
       };
       expect(matchColumn(s, sel)).toBe(true);
     });
@@ -161,7 +161,7 @@ describe("matchColumn", () => {
     test("matches column domain", () => {
       const s = spec({ name: "c", domain: { chain: "IGHeavy" } });
       const sel: ColumnSelector = {
-        domain: { chain: [{ exact: "IGHeavy" }] },
+        domain: { chain: [{ type: "exact", value: "IGHeavy" }] },
       };
       expect(matchColumn(s, sel)).toBe(true);
     });
@@ -174,7 +174,7 @@ describe("matchColumn", () => {
         ] as PColumnSpec["axesSpec"],
       });
       const sel: ColumnSelector = {
-        domain: { chain: [{ exact: "IGHeavy" }] },
+        domain: { chain: [{ type: "exact", value: "IGHeavy" }] },
       };
       expect(matchColumn(s, sel)).toBe(true);
     });
@@ -182,7 +182,7 @@ describe("matchColumn", () => {
     test("domain key missing fails", () => {
       const s = spec({ name: "c", domain: {} });
       const sel: ColumnSelector = {
-        domain: { chain: [{ exact: "IGHeavy" }] },
+        domain: { chain: [{ type: "exact", value: "IGHeavy" }] },
       };
       expect(matchColumn(s, sel)).toBe(false);
     });
@@ -191,8 +191,8 @@ describe("matchColumn", () => {
       const s = spec({ name: "c", domain: { chain: "IGHeavy", species: "human" } });
       const sel: ColumnSelector = {
         domain: {
-          chain: [{ exact: "IGHeavy" }],
-          species: [{ exact: "human" }],
+          chain: [{ type: "exact", value: "IGHeavy" }],
+          species: [{ type: "exact", value: "human" }],
         },
       };
       expect(matchColumn(s, sel)).toBe(true);
@@ -202,8 +202,8 @@ describe("matchColumn", () => {
       const s = spec({ name: "c", domain: { chain: "IGHeavy", species: "mouse" } });
       const sel: ColumnSelector = {
         domain: {
-          chain: [{ exact: "IGHeavy" }],
-          species: [{ exact: "human" }],
+          chain: [{ type: "exact", value: "IGHeavy" }],
+          species: [{ type: "exact", value: "human" }],
         },
       };
       expect(matchColumn(s, sel)).toBe(false);
@@ -214,7 +214,7 @@ describe("matchColumn", () => {
     test("exact annotation match", () => {
       const s = spec({ name: "c", annotations: { label: "CDR3" } });
       const sel: ColumnSelector = {
-        annotations: { label: [{ exact: "CDR3" }] },
+        annotations: { label: [{ type: "exact", value: "CDR3" }] },
       };
       expect(matchColumn(s, sel)).toBe(true);
     });
@@ -222,7 +222,7 @@ describe("matchColumn", () => {
     test("regex annotation match", () => {
       const s = spec({ name: "c", annotations: { label: "CDR3-length" } });
       const sel: ColumnSelector = {
-        annotations: { label: [{ regex: ".*CDR3.*" as RegExpString }] },
+        annotations: { label: [{ type: "regex", value: ".*CDR3.*" as RegExpString }] },
       };
       expect(matchColumn(s, sel)).toBe(true);
     });
@@ -230,7 +230,7 @@ describe("matchColumn", () => {
     test("missing annotation key fails", () => {
       const s = spec({ name: "c", annotations: {} });
       const sel: ColumnSelector = {
-        annotations: { label: [{ exact: "CDR3" }] },
+        annotations: { label: [{ type: "exact", value: "CDR3" }] },
       };
       expect(matchColumn(s, sel)).toBe(false);
     });
@@ -245,7 +245,7 @@ describe("matchColumn", () => {
     test("partial match (default) — selector axis found", () => {
       const s = withAxes([axis("a1"), axis("a2")]);
       const sel: ColumnSelector = {
-        axes: [{ name: [{ exact: "a1" }] }],
+        axes: [{ name: [{ type: "exact", value: "a1" }] }],
       };
       expect(matchColumn(s, sel)).toBe(true);
     });
@@ -253,7 +253,7 @@ describe("matchColumn", () => {
     test("partial match — selector axis not found", () => {
       const s = withAxes([axis("a1")]);
       const sel: ColumnSelector = {
-        axes: [{ name: [{ exact: "missing" }] }],
+        axes: [{ name: [{ type: "exact", value: "missing" }] }],
       };
       expect(matchColumn(s, sel)).toBe(false);
     });
@@ -261,7 +261,7 @@ describe("matchColumn", () => {
     test("exact match — same count and order", () => {
       const s = withAxes([axis("a1"), axis("a2")]);
       const sel: ColumnSelector = {
-        axes: [{ name: [{ exact: "a1" }] }, { name: [{ exact: "a2" }] }],
+        axes: [{ name: [{ type: "exact", value: "a1" }] }, { name: [{ type: "exact", value: "a2" }] }],
         partialAxesMatch: false,
       };
       expect(matchColumn(s, sel)).toBe(true);
@@ -270,7 +270,7 @@ describe("matchColumn", () => {
     test("exact match — wrong order fails", () => {
       const s = withAxes([axis("a1"), axis("a2")]);
       const sel: ColumnSelector = {
-        axes: [{ name: [{ exact: "a2" }] }, { name: [{ exact: "a1" }] }],
+        axes: [{ name: [{ type: "exact", value: "a2" }] }, { name: [{ type: "exact", value: "a1" }] }],
         partialAxesMatch: false,
       };
       expect(matchColumn(s, sel)).toBe(false);
@@ -279,7 +279,7 @@ describe("matchColumn", () => {
     test("exact match — count mismatch fails", () => {
       const s = withAxes([axis("a1"), axis("a2")]);
       const sel: ColumnSelector = {
-        axes: [{ name: [{ exact: "a1" }] }],
+        axes: [{ name: [{ type: "exact", value: "a1" }] }],
         partialAxesMatch: false,
       };
       expect(matchColumn(s, sel)).toBe(false);
@@ -302,7 +302,7 @@ describe("matchColumn", () => {
       } as PColumnSpec["axesSpec"][number];
       const s = withAxes([a]);
       const sel: ColumnSelector = {
-        axes: [{ domain: { k: [{ exact: "v" }] } }],
+        axes: [{ domain: { k: [{ type: "exact", value: "v" }] } }],
       };
       expect(matchColumn(s, sel)).toBe(true);
     });
@@ -316,9 +316,9 @@ describe("matchColumn", () => {
         annotations: { label: "x" },
       });
       const sel: ColumnSelector = {
-        name: [{ exact: "col1" }],
+        name: [{ type: "exact", value: "col1" }],
         type: ["Int"],
-        annotations: { label: [{ exact: "x" }] },
+        annotations: { label: [{ type: "exact", value: "x" }] },
       };
       expect(matchColumn(s, sel)).toBe(true);
     });
@@ -329,7 +329,7 @@ describe("matchColumn", () => {
         valueType: "String",
       });
       const sel: ColumnSelector = {
-        name: [{ exact: "col1" }],
+        name: [{ type: "exact", value: "col1" }],
         type: ["Int"],
       };
       expect(matchColumn(s, sel)).toBe(false);
@@ -348,24 +348,24 @@ describe("matchColumnSelectors", () => {
   test("matches if any selector matches", () => {
     const s = spec({ name: "col2" });
     const selectors: ColumnSelector[] = [
-      { name: [{ exact: "col1" }] },
-      { name: [{ exact: "col2" }] },
+      { name: [{ type: "exact", value: "col1" }] },
+      { name: [{ type: "exact", value: "col2" }] },
     ];
-    expect(matchColumnSelectors(s, selectors)).toBe(true);
+    expect(matchColumnSelectors(selectors, s)).toBe(true);
   });
 
   test("no match if none match", () => {
     const s = spec({ name: "col3" });
     const selectors: ColumnSelector[] = [
-      { name: [{ exact: "col1" }] },
-      { name: [{ exact: "col2" }] },
+      { name: [{ type: "exact", value: "col1" }] },
+      { name: [{ type: "exact", value: "col2" }] },
     ];
-    expect(matchColumnSelectors(s, selectors)).toBe(false);
+    expect(matchColumnSelectors(selectors, s)).toBe(false);
   });
 
   test("empty array matches nothing", () => {
     const s = spec({ name: "col1" });
-    expect(matchColumnSelectors(s, [])).toBe(false);
+    expect(matchColumnSelectors([], s)).toBe(false);
   });
 });
 
@@ -386,7 +386,7 @@ describe("selectorsToPredicate", () => {
   });
 
   test("works with regex in relaxed form", () => {
-    const pred = selectorsToPredicate({ name: { regex: "col[12]" as RegExpString } });
+    const pred = selectorsToPredicate({ name: { type: "regex", value: "col[12]" as RegExpString } });
     expect(pred(spec({ name: "col1" }))).toBe(true);
     expect(pred(spec({ name: "col2" }))).toBe(true);
     expect(pred(spec({ name: "col3" }))).toBe(false);
@@ -425,19 +425,19 @@ describe("relaxed selectors end-to-end", () => {
     ];
     const selectors = normalizeSelectors(input);
 
-    expect(matchColumnSelectors(spec({ name: "pl7.app/vdj/sequence" }), selectors)).toBe(true);
+    expect(matchColumnSelectors(selectors, spec({ name: "pl7.app/vdj/sequence" }))).toBe(true);
 
     expect(
       matchColumnSelectors(
-        spec({ name: "pl7.app/vdj/geneHit", domain: { "pl7.app/vdj/chain": "IGHeavy" } }),
         selectors,
+        spec({ name: "pl7.app/vdj/geneHit", domain: { "pl7.app/vdj/chain": "IGHeavy" } }),
       ),
     ).toBe(true);
 
     expect(
       matchColumnSelectors(
-        spec({ name: "pl7.app/vdj/geneHit", domain: { "pl7.app/vdj/chain": "IGLight" } }),
         selectors,
+        spec({ name: "pl7.app/vdj/geneHit", domain: { "pl7.app/vdj/chain": "IGLight" } }),
       ),
     ).toBe(false);
   });
