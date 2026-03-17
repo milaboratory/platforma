@@ -3,12 +3,7 @@ import { field, isNullResourceId, toGlobalResourceId } from "@milaboratories/pl-
 import { ProjectMetaKey } from "@milaboratories/pl-middle-layer";
 import { randomUUID } from "node:crypto";
 import { PlCommand } from "../../base_command";
-import {
-  resolveProject,
-  deduplicateName,
-  duplicateProject,
-  getProjectListRid,
-} from "../../project_ops";
+import { resolveProject, deduplicateName, duplicateProject } from "../../project_ops";
 import { outputJson } from "../../output";
 
 export default class ProjectDuplicate extends PlCommand {
@@ -38,8 +33,7 @@ export default class ProjectDuplicate extends PlCommand {
 
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(ProjectDuplicate);
-    const pl = await this.connect(flags);
-    const projectListRid = await getProjectListRid(pl);
+    const { pl, projectListRid } = await this.connect(flags);
 
     const { rid: sourceRid } = await resolveProject(pl, projectListRid, args.project);
 

@@ -29,6 +29,7 @@ export const UserAuthFlags = {
   }),
 };
 
+/** Admin credentials only (for purely admin commands like copy-project). */
 export const AdminAuthFlags = {
   "admin-user": Flags.string({
     summary: "Admin/controller username",
@@ -39,5 +40,21 @@ export const AdminAuthFlags = {
     summary: "Admin/controller password",
     env: "PL_ADMIN_PASSWORD",
     required: true,
+  }),
+};
+
+/** Admin credentials + target user (for regular commands that can optionally operate on another user). */
+export const AdminTargetFlags = {
+  "admin-user": Flags.string({
+    summary: "Admin/controller username (enables admin mode)",
+    env: "PL_ADMIN_USER",
+  }),
+  "admin-password": Flags.string({
+    summary: "Admin/controller password",
+    env: "PL_ADMIN_PASSWORD",
+  }),
+  "target-user": Flags.string({
+    summary: "Operate on this user's data (requires admin credentials)",
+    env: "PL_TARGET_USER",
   }),
 };

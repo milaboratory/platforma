@@ -1,6 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 import { PlCommand } from "../../base_command";
-import { resolveProject, renameProject, getProjectListRid } from "../../project_ops";
+import { resolveProject, renameProject } from "../../project_ops";
 import { outputJson } from "../../output";
 
 export default class ProjectRename extends PlCommand {
@@ -25,8 +25,7 @@ export default class ProjectRename extends PlCommand {
 
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(ProjectRename);
-    const pl = await this.connect(flags);
-    const projectListRid = await getProjectListRid(pl);
+    const { pl, projectListRid } = await this.connect(flags);
     const { id, rid } = await resolveProject(pl, projectListRid, args.project);
 
     await renameProject(pl, rid, flags.name);

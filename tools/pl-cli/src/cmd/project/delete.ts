@@ -1,11 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 import { PlCommand } from "../../base_command";
-import {
-  resolveProject,
-  deleteProject,
-  getProjectInfo,
-  getProjectListRid,
-} from "../../project_ops";
+import { resolveProject, deleteProject, getProjectInfo } from "../../project_ops";
 import { outputJson } from "../../output";
 
 export default class ProjectDelete extends PlCommand {
@@ -28,8 +23,7 @@ export default class ProjectDelete extends PlCommand {
 
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(ProjectDelete);
-    const pl = await this.connect(flags);
-    const projectListRid = await getProjectListRid(pl);
+    const { pl, projectListRid } = await this.connect(flags);
     const { id } = await resolveProject(pl, projectListRid, args.project);
 
     const info = await getProjectInfo(pl, projectListRid, id);

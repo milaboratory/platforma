@@ -1,5 +1,5 @@
 import { PlCommand } from "../../base_command";
-import { listProjects, getProjectListRid } from "../../project_ops";
+import { listProjects } from "../../project_ops";
 import { formatTable, formatDate, outputJson } from "../../output";
 
 export default class ProjectList extends PlCommand {
@@ -11,8 +11,7 @@ export default class ProjectList extends PlCommand {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(ProjectList);
-    const pl = await this.connect(flags);
-    const projectListRid = await getProjectListRid(pl);
+    const { pl, projectListRid } = await this.connect(flags);
     const projects = await listProjects(pl, projectListRid);
 
     if (flags.format === "json") {

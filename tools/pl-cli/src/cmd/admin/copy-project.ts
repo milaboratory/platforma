@@ -2,7 +2,8 @@ import { Flags } from "@oclif/core";
 import { field, toGlobalResourceId, isNullResourceId } from "@milaboratories/pl-client";
 import { ProjectMetaKey } from "@milaboratories/pl-middle-layer";
 import { randomUUID } from "node:crypto";
-import { AdminCommand } from "../../admin_base_command";
+import { PlCommand } from "../../base_command";
+import { GlobalFlags, AdminAuthFlags } from "../../cmd-opts";
 import {
   resolveProject,
   deduplicateName,
@@ -11,12 +12,13 @@ import {
 } from "../../project_ops";
 import { outputJson } from "../../output";
 
-export default class AdminCopyProject extends AdminCommand {
+export default class AdminCopyProject extends PlCommand {
   static override description =
     "Copy a project from one user to another. Requires admin/controller credentials.";
 
   static override flags = {
-    ...AdminCommand.baseFlags,
+    ...GlobalFlags,
+    ...AdminAuthFlags,
     "source-user": Flags.string({
       summary: "Username of the source project owner",
       required: true,
@@ -42,7 +44,7 @@ export default class AdminCopyProject extends AdminCommand {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(AdminCopyProject);
-    const pl = await this.connectAdmin(flags);
+    const pl = await this.connectClient(flags);
 
     const targetUser = flags["target-user"] ?? flags["source-user"];
 
