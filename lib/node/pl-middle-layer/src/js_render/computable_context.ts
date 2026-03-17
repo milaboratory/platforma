@@ -44,6 +44,9 @@ import type { ResultPool } from "../pool/result_pool";
 import type { JsExecutionContext } from "./context";
 import type { VmFunctionImplementation } from "quickjs-emscripten";
 import { Scope, type QuickJSHandle } from "quickjs-emscripten";
+import type { PColumnSpec } from "@milaboratories/pl-model-common";
+import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
+import { SpecFrameDriver } from "@milaboratories/pf-driver";
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {
   return data !== undefined ? Buffer.from(data).toString("base64") : undefined;
@@ -57,6 +60,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
   private computableCtx: ComputableCtx | undefined;
   private readonly accessors = new Map<string, PlTreeNodeAccessor | undefined>();
+  private readonly specFrameDriver = new SpecFrameDriver();
 
   private readonly meta: Map<string, Block>;
 
@@ -856,6 +860,42 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
           ),
           undefined,
         );
+      });
+
+      //
+      // Spec Frames
+      //
+
+      exportCtxFunction("createSpecFrame", (specs) => {
+        const handle = this.specFrameDriver.createSpecFrame(
+          parent.importObjectViaJson(specs) as Record<string, PColumnSpec>,
+        );
+        this.computableCtx?.addOnDestroy(() => this.specFrameDriver.disposeSpecFrame(handle));
+        return parent.exportSingleValue(handle, undefined);
+      });
+
+      exportCtxFunction("specFrameDiscoverColumns", (handle, request) => {
+        return parent.exportObjectViaJson(
+          this.specFrameDriver.specFrameDiscoverColumns(
+            vm.getString(handle),
+            parent.importObjectViaJson(request) as PFrameInternal.DiscoverColumnsRequest,
+          ),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("specFrameFindColumns", (handle, request) => {
+        return parent.exportObjectViaJson(
+          this.specFrameDriver.specFrameFindColumns(
+            vm.getString(handle),
+            parent.importObjectViaJson(request) as PFrameInternal.FindColumnsRequest,
+          ),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("specFrameDispose", (handle) => {
+        this.specFrameDriver.disposeSpecFrame(vm.getString(handle));
       });
 
       //
