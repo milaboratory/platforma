@@ -24,7 +24,7 @@
   "scripts": {
     "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts && node --run fmt",
     "build": "vite build",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",
