@@ -1838,9 +1838,6 @@ importers:
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../ts-helpers
-      '@platforma-sdk/model':
-        specifier: workspace:*
-        version: link:../../../sdk/model
       es-toolkit:
         specifier: 'catalog:'
         version: 1.39.10
@@ -1857,6 +1854,9 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../sdk/model
       '@types/node':
         specifier: 'catalog:'
         version: 24.5.2

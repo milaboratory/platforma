@@ -1,7 +1,6 @@
 import {
   pTableValue,
   canonicalizeJson,
-  filterSpecToSpecQueryExpr,
   type CalculateTableDataResponse,
   type PFrameDriver,
   type PObjectId,
@@ -9,7 +8,8 @@ import {
   type SpecQuery,
   type SpecQueryExpression,
   SpecQueryBooleanExpression,
-} from "@platforma-sdk/model";
+} from "@milaboratories/pl-model-common";
+import { filterSpecToSpecQueryExpr } from "@platforma-sdk/model";
 import { readJson, PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { test } from "vitest";
 import { join } from "node:path";
