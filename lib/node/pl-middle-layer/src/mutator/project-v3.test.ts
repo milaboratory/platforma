@@ -1,5 +1,4 @@
 import { field, poll, TestHelpers, toGlobalResourceId } from "@milaboratories/pl-client";
-import { getQuickJS } from "quickjs-emscripten";
 import { expect, test } from "vitest";
 import { outputRef } from "../model/args";
 import { ProjectHelper } from "../model/project_helper";
@@ -24,8 +23,6 @@ const BPSpecSumV3: BlockPackSpec = {
 };
 
 test("v3 blocks: basic test with unified state", async () => {
-  const quickJs = await getQuickJS();
-
   await TestHelpers.withTempRoot(async (pl) => {
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
@@ -37,7 +34,7 @@ test("v3 blocks: basic test with unified state", async () => {
     // Add enter-numbers-v3 block with storageMode: 'fromModel'
     // Initial storage comes from VM, then we set desired state via setStates
     await pl.withWriteTx("AddEnterNumbersV3Block", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.addBlock(
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
         {
@@ -70,7 +67,7 @@ test("v3 blocks: basic test with unified state", async () => {
 
     // Add second enter-numbers-v3 block
     await pl.withWriteTx("AddEnterNumbersV3Block2", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.addBlock(
         { id: "enter2", label: "Enter Numbers V3 #2", renderingMode: "Heavy" },
         {
@@ -95,7 +92,7 @@ test("v3 blocks: basic test with unified state", async () => {
 
     // Add sum-numbers-v3 block that references both enter blocks
     await pl.withWriteTx("AddSumNumbersV3Block", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.addBlock(
         { id: "sum1", label: "Sum Numbers V3", renderingMode: "Heavy" },
         {
@@ -132,7 +129,7 @@ test("v3 blocks: basic test with unified state", async () => {
 
     // Render production for all blocks
     await pl.withWriteTx("RenderProduction", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.renderProduction(["enter1", "enter2", "sum1"]);
       mut.doRefresh();
       mut.save();
@@ -157,8 +154,6 @@ test("v3 blocks: basic test with unified state", async () => {
 });
 
 test("v3 blocks: prerunArgs skip test", async () => {
-  const quickJs = await getQuickJS();
-
   await TestHelpers.withTempRoot(async (pl) => {
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
@@ -169,7 +164,7 @@ test("v3 blocks: prerunArgs skip test", async () => {
 
     // Add enter-numbers-v3 block
     await pl.withWriteTx("AddEnterNumbersV3Block", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.addBlock(
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
         {
@@ -210,7 +205,7 @@ test("v3 blocks: prerunArgs skip test", async () => {
     // Change state: [3, 1, 2] -> [5, 1, 2]
     // prerunArgs (evenNumbers) stays [2], so staging should be SKIPPED
     await pl.withWriteTx("ChangeState_SamePrerunArgs", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.setStates([
         {
           modelAPIVersion: 2,
@@ -240,7 +235,7 @@ test("v3 blocks: prerunArgs skip test", async () => {
     // Change state: [5, 1, 2] -> [5, 1, 4]
     // prerunArgs (evenNumbers) changes from [2] to [4], so staging should RUN
     await pl.withWriteTx("ChangeState_DifferentPrerunArgs", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.setStates([
         {
           modelAPIVersion: 2,
@@ -286,8 +281,6 @@ test("v3 blocks: prerunArgs skip test", async () => {
 });
 
 test("v3 blocks: migrateBlockPack preserves state and re-derives args and prerunArgs", async () => {
-  const quickJs = await getQuickJS();
-
   await TestHelpers.withTempRoot(async (pl) => {
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
@@ -298,7 +291,7 @@ test("v3 blocks: migrateBlockPack preserves state and re-derives args and prerun
 
     // Add enter-numbers-v3 block and set data with even numbers
     await pl.withWriteTx("AddBlock", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.addBlock(
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
         {
@@ -332,7 +325,7 @@ test("v3 blocks: migrateBlockPack preserves state and re-derives args and prerun
 
     // Call migrateBlockPack without newClearState (state-preserved path)
     await pl.withWriteTx("MigrateBlockPack", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.migrateBlockPack("enter1", await TestBPPreparer.prepare(BPSpecEnterV3));
       mut.save();
       await tx.commit();
@@ -358,8 +351,6 @@ test("v3 blocks: migrateBlockPack preserves state and re-derives args and prerun
 });
 
 test("v3 blocks: migrateBlockPack with storage migration re-derives args and prerunArgs", async () => {
-  const quickJs = await getQuickJS();
-
   await TestHelpers.withTempRoot(async (pl) => {
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
@@ -370,7 +361,7 @@ test("v3 blocks: migrateBlockPack with storage migration re-derives args and pre
 
     // Add enter-numbers-v3 block with initial data
     await pl.withWriteTx("AddBlock", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.addBlock(
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
         {
@@ -391,7 +382,7 @@ test("v3 blocks: migrateBlockPack with storage migration re-derives args and pre
 
     // Overwrite blockStorage with v1-format data (simulating old block version)
     await pl.withWriteTx("DowngradeStorage", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       const v1Storage = JSON.stringify(createBlockStorage({ numbers: [3, 1, 5] }, "v1"));
       mut.setBlockStorageRaw("enter1", v1Storage);
       mut.save();
@@ -400,7 +391,7 @@ test("v3 blocks: migrateBlockPack with storage migration re-derives args and pre
 
     // Call migrateBlockPack (state-preserved) — triggers v1→v2→v3 migration
     await pl.withWriteTx("MigrateBlockPack", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.migrateBlockPack("enter1", await TestBPPreparer.prepare(BPSpecEnterV3));
       mut.save();
       await tx.commit();
@@ -434,8 +425,6 @@ test("v3 blocks: migrateBlockPack with storage migration re-derives args and pre
 });
 
 test("v3 blocks: migrateBlockPack assigns author marker", async () => {
-  const quickJs = await getQuickJS();
-
   await TestHelpers.withTempRoot(async (pl) => {
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
@@ -446,7 +435,7 @@ test("v3 blocks: migrateBlockPack assigns author marker", async () => {
 
     // Add block with data
     await pl.withWriteTx("AddBlock", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.addBlock(
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
         {
@@ -468,7 +457,7 @@ test("v3 blocks: migrateBlockPack assigns author marker", async () => {
     // Call migrateBlockPack with an author marker
     const testAuthor: AuthorMarker = { authorId: "test-author-123", localVersion: 1 };
     await pl.withWriteTx("MigrateWithAuthor", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj, testAuthor);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj, testAuthor);
       mut.migrateBlockPack("enter1", await TestBPPreparer.prepare(BPSpecEnterV3));
       mut.save();
       await tx.commit();

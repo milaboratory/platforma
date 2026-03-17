@@ -1,5 +1,4 @@
 import { field, poll, TestHelpers, toGlobalResourceId } from "@milaboratories/pl-client";
-import { getQuickJS } from "quickjs-emscripten";
 import { expect, test } from "vitest";
 import { outputRef } from "../model/args";
 import { ProjectHelper } from "../model/project_helper";
@@ -16,8 +15,6 @@ import {
 import { createProject, ProjectMutator } from "./project";
 
 test("simple test #1", async () => {
-  const quickJs = await getQuickJS();
-
   await TestHelpers.withTempRoot(async (pl) => {
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
@@ -27,7 +24,7 @@ test("simple test #1", async () => {
     });
 
     await pl.withWriteTx("AddBlock1", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.addBlock(
         { id: "block1", label: "Block1", renderingMode: "Heavy" },
         {
@@ -41,7 +38,7 @@ test("simple test #1", async () => {
     });
 
     await pl.withWriteTx("AddBlock2", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.addBlock(
         { id: "block2", label: "Block2", renderingMode: "Heavy" },
         {
@@ -56,7 +53,7 @@ test("simple test #1", async () => {
     });
 
     await pl.withWriteTx("AddBlock3", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.addBlock(
         { id: "block3", label: "Block3", renderingMode: "Heavy" },
         {
@@ -123,7 +120,7 @@ test("simple test #1", async () => {
     });
 
     await pl.withWriteTx("DeleteBlock2", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.deleteBlock("block2");
       mut.save();
       await tx.commit();
@@ -147,7 +144,7 @@ test("simple test #1", async () => {
     });
 
     await pl.withWriteTx("Refresh", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.doRefresh();
       mut.save();
       await tx.commit();
@@ -165,7 +162,7 @@ test("simple test #1", async () => {
     });
 
     await pl.withWriteTx("RenderProduction", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.renderProduction(["block1", "block3"]);
       mut.doRefresh();
       mut.save();
@@ -182,8 +179,6 @@ test("simple test #1", async () => {
 });
 
 test("simple test #2 with bp migration", async () => {
-  const quickJs = await getQuickJS();
-
   await TestHelpers.withTempRoot(async (pl) => {
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
@@ -193,7 +188,7 @@ test("simple test #2 with bp migration", async () => {
     });
 
     await pl.withWriteTx("AddBlock1", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.addBlock(
         { id: "block1", label: "Block1", renderingMode: "Heavy" },
         {
@@ -248,7 +243,7 @@ test("simple test #2 with bp migration", async () => {
     });
 
     await pl.withWriteTx("MigrateBlock2", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       // TODO change to dev
       mut.migrateBlockPack("block2", await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared));
       mut.save();
@@ -265,7 +260,7 @@ test("simple test #2 with bp migration", async () => {
     });
 
     await pl.withWriteTx("Refresh", async (tx) => {
-      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      const mut = await ProjectMutator.load(new ProjectHelper(), tx, prj);
       mut.doRefresh();
       mut.save();
       await tx.commit();

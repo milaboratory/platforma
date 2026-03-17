@@ -3,22 +3,19 @@
 import { z } from "zod";
 import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
 import { resourceIdToString, resourceTypeToString } from "@milaboratories/pl-client";
-import { notEmpty } from "@milaboratories/ts-helpers";
 
-/** The error that comes from QuickJS. */
-export class PlQuickJSError extends Error {
+/** The error that comes from the JS sandbox (isolated-vm). */
+export class PlSandboxError extends Error {
   public stack: string;
   public fullMessage: string;
 
-  constructor(quickJSError: Error, cause: Error) {
-    super(`PlQuickJSError: ${cause.message}`, { cause });
-    this.name = "PlQuickJSError";
+  constructor(sandboxError: Error, cause: Error) {
+    super(`PlSandboxError: ${cause.message}`, { cause });
+    this.name = "PlSandboxError";
 
-    // QuickJS wraps the error with the name and the message,
-    // but we need another format.
-    let stack = notEmpty(quickJSError.stack);
-    stack = stack.replace(quickJSError.message, "");
-    stack = stack.replace(notEmpty(cause.message), "");
+    let stack = sandboxError.stack ?? "";
+    if (sandboxError.message) stack = stack.replace(sandboxError.message, "");
+    if (cause.message) stack = stack.replace(cause.message, "");
 
     this.stack = stack;
 
@@ -27,12 +24,15 @@ export class PlQuickJSError extends Error {
         ? cause.fullMessage
         : cause.message;
 
-    this.fullMessage = `PlQuickJSError: ${causeMsg}
-QuickJS stacktrace:
+    this.fullMessage = `PlSandboxError: ${causeMsg}
+Sandbox stacktrace:
 ${this.stack}
 `;
   }
 }
+
+/** @deprecated Use PlSandboxError instead */
+export const PlQuickJSError = PlSandboxError;
 
 /**
  * A parsed error from the Pl backend.

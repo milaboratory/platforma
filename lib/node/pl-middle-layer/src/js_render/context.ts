@@ -3,28 +3,11 @@ import type { BlockCodeKnownFeatureFlags } from "@platforma-sdk/model";
 import { JsRenderInternal } from "@platforma-sdk/model";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import { randomUUID } from "node:crypto";
-import type { QuickJSContext, QuickJSHandle } from "quickjs-emscripten";
-import { Scope, errors } from "quickjs-emscripten";
+import ivm from "isolated-vm";
 import type { BlockContextAny } from "../middle_layer/block_ctx";
 import type { MiddleLayerEnvironment } from "../middle_layer/middle_layer";
-import { stringifyWithResourceId } from "@milaboratories/pl-client";
-import { PlQuickJSError } from "@milaboratories/pl-errors";
+import { PlSandboxError } from "@milaboratories/pl-errors";
 import { ComputableContextHelper } from "./computable_context";
-
-export type DeadlineSettings = {
-  currentExecutionTarget: string;
-  deadline: number;
-};
-
-/**
- * Communicates a deadline to the quickjs runtime, that if passed, will interrupt the execution.
- * Undefined can be used to reset the deadline.
- * */
-export type DeadlineSetter = (settings: DeadlineSettings | undefined) => void;
-
-function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
-  return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);
-}
 
 /**
  * Contains references to objects needed to execute lambda within computable,
@@ -40,9 +23,8 @@ export type ComputableEnv = {
 };
 
 export class JsExecutionContext {
-  private readonly callbackRegistry: QuickJSHandle;
-  private readonly fnJSONStringify: QuickJSHandle;
-  private readonly fnJSONParse: QuickJSHandle;
+  private readonly context: ivm.Context;
+  private readonly cfgRenderCtxRef: ivm.Reference<Record<string, unknown>>;
 
   public readonly errorRepo = new ErrorRepository();
 
@@ -51,31 +33,29 @@ export class JsExecutionContext {
   /**
    * Creates a new JS execution context.
    *
-   * @param scope - QuickJS scope for memory management
-   * @param vm - QuickJS VM context
-   * @param deadlineSetter - Function to set execution deadline
+   * @param isolate - isolated-vm Isolate instance
+   * @param timeout - Execution timeout in milliseconds
    * @param featureFlags - Block feature flags
    * @param computableEnv - Optional reactive computable environment (for outputs, inputsValid, etc.)
    */
   constructor(
-    public readonly scope: Scope,
-    public readonly vm: QuickJSContext,
-    private readonly deadlineSetter: DeadlineSetter,
+    public readonly isolate: ivm.Isolate,
+    private readonly timeout: number,
     featureFlags: BlockCodeKnownFeatureFlags | undefined,
     computableEnv?: ComputableEnv,
   ) {
-    this.callbackRegistry = this.scope.manage(this.vm.newObject());
+    this.context = isolate.createContextSync();
 
-    this.fnJSONStringify = scope.manage(
-      vm.getProp(vm.global, "JSON").consume((json) => vm.getProp(json, "stringify")),
-    );
-    if (vm.typeof(this.fnJSONStringify) !== "function")
-      throw new Error(`JSON.stringify() not found.`);
+    // Create cfgRenderCtx object with callbackRegistry inside the isolate
+    this.context.evalSync(`globalThis.cfgRenderCtx = { callbackRegistry: {} };`, { timeout: 1000 });
 
-    this.fnJSONParse = scope.manage(
-      vm.getProp(vm.global, "JSON").consume((json) => vm.getProp(json, "parse")),
+    this.cfgRenderCtxRef = this.context.global.getSync("cfgRenderCtx", { reference: true });
+
+    // Inject feature flags
+    this.cfgRenderCtxRef.setSync(
+      "featureFlags",
+      new ivm.ExternalCopy(JsRenderInternal.GlobalCfgRenderCtxFeatureFlags).copyInto(),
     );
-    if (vm.typeof(this.fnJSONParse) !== "function") throw new Error(`JSON.parse() not found.`);
 
     if (computableEnv !== undefined)
       this.computableHelper = new ComputableContextHelper(
@@ -86,7 +66,10 @@ export class JsExecutionContext {
         computableEnv.computableCtx,
       );
 
-    this.injectCtx();
+    // Inject context values from computableHelper
+    if (this.computableHelper !== undefined) {
+      this.computableHelper.injectCtx(this.cfgRenderCtxRef);
+    }
   }
 
   public resetComputableCtx() {
@@ -96,249 +79,163 @@ export class JsExecutionContext {
     ).resetComputableCtx();
   }
 
-  private static cleanErrorContext(error: unknown): void {
-    if (typeof error === "object" && error !== null && "context" in error) delete error["context"];
-  }
-
-  // private static cleanError(error: unknown): unknown {
-  //   if (error instanceof errors.QuickJSUnwrapError) {
-  //     const { cause, context: _, name, message, stack, ...rest } = error;
-  //     const clean = new errors.QuickJSUnwrapError(cause);
-  //     Object.assign(clean, { ...rest, name, message, stack });
-  //     return clean;
-  //   }
-  //   return error;
-  // }
-
   public evaluateBundle(code: string) {
-    try {
-      this.deadlineSetter({
-        currentExecutionTarget: "evaluateBundle",
-        deadline: Date.now() + 10000,
-      });
-      this.vm.unwrapResult(this.vm.evalCode(code, "bundle.js", { type: "global" })).dispose();
-    } catch (err: unknown) {
-      JsExecutionContext.cleanErrorContext(err);
-      throw err;
-    } finally {
-      this.deadlineSetter(undefined);
-    }
+    this.context.evalSync(code, { filename: "bundle.js", timeout: this.timeout });
   }
 
-  public runCallback(cbName: string, ...args: unknown[]): QuickJSHandle {
+  public runCallback(cbName: string, ...args: unknown[]): unknown {
     try {
-      this.deadlineSetter({ currentExecutionTarget: cbName, deadline: Date.now() + 10000 });
-      return Scope.withScope((localScope) => {
-        const targetCallback = localScope.manage(this.vm.getProp(this.callbackRegistry, cbName));
+      const callbackRegistryRef = this.cfgRenderCtxRef.getSync("callbackRegistry", {
+        reference: true,
+      }) as ivm.Reference<Record<string, unknown>>;
+      const callbackRef = callbackRegistryRef.getSync(cbName, { reference: true });
 
-        if (this.vm.typeof(targetCallback) !== "function")
-          throw new Error(`No such callback: ${cbName}`);
+      if (callbackRef.typeof !== "function") throw new Error(`No such callback: ${cbName}`);
 
-        return this.scope.manage(
-          this.vm.unwrapResult(
-            this.vm.callFunction(
-              targetCallback,
-              this.vm.undefined,
-              ...args.map((arg) => this.exportObjectUniversal(arg, localScope)),
-            ),
-          ),
-        );
+      const transferredArgs = args.map((arg) =>
+        new ivm.ExternalCopy(arg === undefined ? null : arg).copyInto(),
+      );
+
+      return callbackRef.applySync(undefined, transferredArgs, {
+        timeout: this.timeout,
+        result: { copy: true },
       });
     } catch (err: unknown) {
-      JsExecutionContext.cleanErrorContext(err);
       const original = this.errorRepo.getOriginal(err);
       throw original;
-    } finally {
-      this.deadlineSetter(undefined);
     }
   }
 
-  //
-  // QuickJS Helpers
-  //
+  /**
+   * Runs a callback and returns a Reference to the result inside the isolate,
+   * allowing later reads after mutations (for async Computable pattern).
+   */
+  public runCallbackRef(cbName: string, ...args: unknown[]): ivm.Reference<unknown> {
+    try {
+      const callbackRegistryRef = this.cfgRenderCtxRef.getSync("callbackRegistry", {
+        reference: true,
+      }) as ivm.Reference<Record<string, unknown>>;
+      const callbackRef = callbackRegistryRef.getSync(cbName, { reference: true });
 
-  public exportSingleValue(
-    obj: boolean | number | string | null | ArrayBuffer | undefined,
-    scope: Scope | undefined,
-  ): QuickJSHandle {
-    const result = this.tryExportSingleValue(obj, scope);
-    if (result === undefined) {
-      throw new Error(
-        `Can't export value: ${obj === undefined ? "undefined" : JSON.stringify(obj)}`,
-      );
-    }
-    return result;
-  }
+      if (callbackRef.typeof !== "function") throw new Error(`No such callback: ${cbName}`);
 
-  public tryExportSingleValue(obj: unknown, scope: Scope | undefined): QuickJSHandle | undefined {
-    let handle: QuickJSHandle;
-    let manage = false;
-    switch (typeof obj) {
-      case "string":
-        handle = this.vm.newString(obj);
-        manage = true;
-        break;
-      case "number":
-        handle = this.vm.newNumber(obj);
-        manage = true;
-        break;
-      case "undefined":
-        handle = this.vm.undefined;
-        break;
-      case "boolean":
-        handle = obj ? this.vm.true : this.vm.false;
-        break;
-      default:
-        if (obj === null) {
-          handle = this.vm.null;
-          break;
-        }
-        if (isArrayBufferOrView(obj)) {
-          handle = this.vm.newArrayBuffer(obj);
-          manage = true;
-          break;
-        }
-        return undefined;
-    }
-    return manage && scope != undefined ? scope.manage(handle) : handle;
-  }
-
-  public exportObjectUniversal(obj: unknown, scope: Scope | undefined): QuickJSHandle {
-    const simpleHandle = this.tryExportSingleValue(obj, scope);
-    if (simpleHandle !== undefined) return simpleHandle;
-    return this.exportObjectViaJson(obj, scope);
-  }
-
-  public exportObjectViaJson(obj: unknown, scope: Scope | undefined): QuickJSHandle {
-    const result = this.vm
-      .newString(JSON.stringify(obj))
-      .consume((json) =>
-        this.vm.unwrapResult(this.vm.callFunction(this.fnJSONParse, this.vm.undefined, json)),
-      );
-    return scope !== undefined ? scope.manage(result) : result;
-  }
-
-  public importObjectUniversal(handle: QuickJSHandle | undefined): unknown {
-    if (handle === undefined) return undefined;
-    switch (this.vm.typeof(handle)) {
-      case "undefined":
-        return undefined;
-      case "boolean":
-      case "number":
-      case "string":
-        return this.vm.dump(handle);
-      default:
-        return this.importObjectViaJson(handle);
-    }
-  }
-
-  public importObjectViaJson(handle: QuickJSHandle): unknown {
-    const text = this.vm
-      .unwrapResult(this.vm.callFunction(this.fnJSONStringify, this.vm.undefined, handle))
-      .consume((strHandle) => this.vm.getString(strHandle));
-    if (text === "undefined")
-      // special case with futures
-      return undefined;
-    return JSON.parse(text);
-  }
-
-  private injectCtx() {
-    Scope.withScope((localScope) => {
-      const configCtx = localScope.manage(this.vm.newObject());
-
-      //
-      // Core props
-      //
-
-      this.vm.setProp(configCtx, "callbackRegistry", this.callbackRegistry);
-      this.vm.setProp(
-        configCtx,
-        "featureFlags",
-        this.exportObjectUniversal(JsRenderInternal.GlobalCfgRenderCtxFeatureFlags, localScope),
+      const transferredArgs = args.map((arg) =>
+        new ivm.ExternalCopy(arg === undefined ? null : arg).copyInto(),
       );
 
-      // Inject context values from computableHelper (reactive context for outputs, inputsValid, etc.)
-      if (this.computableHelper !== undefined) {
-        this.computableHelper.injectCtx(configCtx);
+      return callbackRef.applySync(undefined, transferredArgs, {
+        timeout: this.timeout,
+        result: { reference: true },
+      }) as ivm.Reference<unknown>;
+    } catch (err: unknown) {
+      const original = this.errorRepo.getOriginal(err);
+      throw original;
+    }
+  }
+
+  /**
+   * Reads a value from a Reference by JSON-serializing inside the isolate and parsing on host.
+   * This handles complex objects that may not be directly copyable.
+   */
+  public importFromRef(ref: ivm.Reference<unknown>): unknown {
+    // Use copySync() to deep-copy the value from the isolate to the host
+    try {
+      return ref.copySync();
+    } catch {
+      // If copySync fails (e.g. non-transferable value), fall back to JSON roundtrip
+      this.context.global.setSync("__importTemp", ref.derefInto());
+      try {
+        const json = this.context.evalSync(
+          `(() => { const v = __importTemp; return v === undefined ? '__undefined__' : JSON.stringify(v); })()`,
+          { timeout: this.timeout, copy: true },
+        ) as string;
+        if (json === "__undefined__") return undefined;
+        return JSON.parse(json);
+      } finally {
+        this.context.evalSync(`delete globalThis.__importTemp;`, { timeout: 1000 });
       }
+    }
+  }
 
-      //
-      // Creating global variable inside the vm
-      //
+  /** Getter for the cfgRenderCtx reference */
+  public get cfgRef(): ivm.Reference<Record<string, unknown>> {
+    return this.cfgRenderCtxRef;
+  }
 
-      this.vm.setProp(this.vm.global, "cfgRenderCtx", configCtx);
-    });
+  /** Getter for the context */
+  public get ctx(): ivm.Context {
+    return this.context;
+  }
+
+  public dispose() {
+    try {
+      this.context.release();
+    } catch {
+      // context may already be released
+    }
+    try {
+      if (!this.isolate.isDisposed) {
+        this.isolate.dispose();
+      }
+    } catch {
+      // isolate may already be disposed
+    }
   }
 }
 
 /** Holds errors that happened in the host code (like in middle-layer's drivers)
- * and then throws it where the error from quick JS is needed.
- * QuickJS couldn't throw custom errors, so we store them here, and rethrow them when we exit QuickJS side. */
+ * and then throws it where the error from the sandbox is needed.
+ * The sandbox couldn't throw custom errors, so we store them here, and rethrow them when we exit sandbox side. */
 export class ErrorRepository {
   private readonly errorIdToError = new Map<string, unknown>();
 
-  /** Sets the error to the repository and returns a mimicrated error that also has uuid key of the original error. */
-  public setAndRecreateForQuickJS(error: unknown): {
-    name: string;
-    message: string;
-  } {
+  /** Sets the error to the repository and returns a recreated error with uuid key of the original error. */
+  public setAndRecreateForSandbox(error: unknown): Error {
     const errorId = randomUUID();
     this.errorIdToError.set(errorId, error);
 
     if (error instanceof Error) {
-      return {
-        name: `${error.name}/uuid:${errorId}`,
-        message: error.message,
-      };
+      const err = new Error(error.message);
+      err.name = `${error.name}/uuid:${errorId}`;
+      return err;
     }
 
-    return {
-      name: `UnknownErrorQuickJS/uuid:${errorId}`,
-      message: `${error as any}`,
-    };
+    const err = new Error(`${error as any}`);
+    err.name = `UnknownErrorSandbox/uuid:${errorId}`;
+    return err;
   }
 
-  /** Returns the original error that was stored by parsing uuid of mimicrated error. */
-  public getOriginal(quickJSError: unknown): unknown {
-    if (!(quickJSError instanceof errors.QuickJSUnwrapError)) {
-      console.warn(
-        "ErrorRepo: quickJSError is not a QuickJSUnwrapError",
-        stringifyWithResourceId(quickJSError),
-      );
-      return quickJSError;
+  /** Returns the original error that was stored by parsing uuid of the sandbox error. */
+  public getOriginal(sandboxError: unknown): unknown {
+    if (!(sandboxError instanceof Error)) {
+      return sandboxError;
     }
 
-    const cause = quickJSError.cause;
-    if (
-      !(
-        typeof cause === "object" &&
-        cause !== null &&
-        "name" in cause &&
-        typeof cause.name === "string"
-      )
-    ) {
-      console.warn(
-        "ErrorRepo: quickJSError.cause is not an Error (can be stack limit exceeded)",
-        stringifyWithResourceId(quickJSError),
-      );
-      return quickJSError;
+    // Check if the error message or the error itself contains a /uuid: pattern
+    // isolated-vm wraps errors from callbacks into Error objects
+    const errorStr = sandboxError.message ?? "";
+    const uuidMatch = errorStr.match(/\/uuid:([0-9a-f-]+)/);
+    if (!uuidMatch) {
+      // Try the name field as well
+      const nameStr = sandboxError.name ?? "";
+      const nameMatch = nameStr.match(/\/uuid:([0-9a-f-]+)/);
+      if (!nameMatch) {
+        return sandboxError;
+      }
+      const errorId = nameMatch[1];
+      const error = this.errorIdToError.get(errorId);
+      if (error === undefined) {
+        return sandboxError;
+      }
+      return new PlSandboxError(sandboxError, error as Error);
     }
 
-    const causeName = cause.name;
-    const errorId = causeName.slice(causeName.indexOf("/uuid:") + "/uuid:".length);
-    if (!errorId) {
-      throw new Error(
-        `ErrorRepo: quickJSError.cause.name does not contain errorId: ${causeName}, ${stringifyWithResourceId(quickJSError)}`,
-      );
-    }
-
+    const errorId = uuidMatch[1];
     const error = this.errorIdToError.get(errorId);
     if (error === undefined) {
-      throw new Error(
-        `ErrorRepo: errorId not found: ${errorId}, ${stringifyWithResourceId(quickJSError)}`,
-      );
+      return sandboxError;
     }
 
-    return new PlQuickJSError(quickJSError, error as Error);
+    return new PlSandboxError(sandboxError, error as Error);
   }
 }

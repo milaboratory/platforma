@@ -42,8 +42,7 @@ import type { Block } from "../model/project_model";
 import { parseFinalPObjectCollection } from "../pool/p_object_collection";
 import type { ResultPool } from "../pool/result_pool";
 import type { JsExecutionContext } from "./context";
-import type { VmFunctionImplementation } from "quickjs-emscripten";
-import { Scope, type QuickJSHandle } from "quickjs-emscripten";
+import ivm from "isolated-vm";
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {
   return data !== undefined ? Buffer.from(data).toString("base64") : undefined;
@@ -489,398 +488,323 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     }
   }
 
-  public injectCtx(configCtx: QuickJSHandle): void {
+  public injectCtx(cfgRef: ivm.Reference<Record<string, unknown>>): void {
     const parent = this.parent;
-    const vm = parent.vm;
 
-    Scope.withScope((localScope) => {
-      // Exporting methods
-
-      const exportCtxFunction = (
-        name: string,
-        fn: VmFunctionImplementation<QuickJSHandle>,
-      ): void => {
-        const withCachedError: VmFunctionImplementation<QuickJSHandle> = (...args) => {
-          // QuickJS strips all fields from errors apart from 'name' and 'message'.
-          // That's why here we need to store them, and rethrow them when we exit
-          // from QuickJS code.
-          try {
-            return (fn as any)(...args);
-          } catch (e: unknown) {
-            const newErr = parent.errorRepo.setAndRecreateForQuickJS(e);
-            throw vm.newError(newErr);
-          }
-        };
-
-        vm.newFunction(name, withCachedError).consume((fnh) => vm.setProp(configCtx, name, fnh));
-        vm.newFunction(name, fn).consume((fnh) =>
-          vm.setProp(configCtx, name + "__internal__", fnh),
-        );
-      };
-
-      // Check if this is a v1/v2 block (requiresModelAPIVersion !== 2)
-      // For v1/v2 blocks, state is {args, uiState} and we need to inject uiState separately
-      const isLegacyBlock = !checkBlockFlag(this.featureFlags, "requiresModelAPIVersion", 2);
-
-      // Helper to extract uiState from legacy state format {args, uiState}
-      const extractUiState = (stateJson: string | undefined): string => {
-        if (!stateJson) return "{}";
+    /**
+     * Helper to export a host function into the isolate's cfgRenderCtx.
+     * Wraps with error caching (UUID-based ErrorRepository).
+     */
+    const exportCtxFunction = (name: string, fn: (...args: any[]) => unknown): void => {
+      const withCachedError = (...args: any[]) => {
         try {
-          const parsed = JSON.parse(stateJson);
-          return JSON.stringify(parsed?.uiState ?? {});
-        } catch {
-          return "{}";
+          return fn(...args);
+        } catch (e: unknown) {
+          throw parent.errorRepo.setAndRecreateForSandbox(e);
         }
       };
 
-      if (checkBlockFlag(this.featureFlags, "supportsLazyState")) {
-        // injecting lazy state functions
-        exportCtxFunction("args", () => {
-          if (this.computableCtx === undefined)
-            throw new Error(
-              `Add dummy call to ctx.args outside the future lambda. Can't be directly used in this context.`,
-            );
-          const args = this.blockCtx.args(this.computableCtx);
-          return args === undefined ? vm.undefined : vm.newString(args);
-        });
-        exportCtxFunction("blockStorage", () => {
-          if (this.computableCtx === undefined)
-            throw new Error(
-              `Add dummy call to ctx.blockStorage outside the future lambda. Can't be directly used in this context.`,
-            );
-          return vm.newString(this.blockCtx.blockStorage(this.computableCtx) ?? "{}");
-        });
-        exportCtxFunction("data", () => {
-          if (this.computableCtx === undefined)
-            throw new Error(
-              `Add dummy call to ctx.data outside the future lambda. Can't be directly used in this context.`,
-            );
-          return vm.newString(this.blockCtx.data(this.computableCtx) ?? "{}");
-        });
-        exportCtxFunction("activeArgs", () => {
-          if (this.computableCtx === undefined)
-            throw new Error(
-              `Add dummy call to ctx.activeArgs outside the future lambda. Can't be directly used in this context.`,
-            );
-          const res = this.blockCtx.activeArgs(this.computableCtx);
-          return res === undefined ? vm.undefined : vm.newString(res);
-        });
-        // For v1/v2 blocks, also inject uiState (extracted from state.uiState)
-        if (isLegacyBlock) {
-          exportCtxFunction("uiState", () => {
-            if (this.computableCtx === undefined)
-              throw new Error(
-                `Add dummy call to ctx.uiState outside the future lambda. Can't be directly used in this context.`,
-              );
-            return vm.newString(extractUiState(this.blockCtx.data(this.computableCtx)));
-          });
-        }
-      } else {
-        const args = this.blockCtx.args(this.computableCtx!);
-        const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
-        const data = this.blockCtx.data(this.computableCtx!);
-        if (args !== undefined) {
-          vm.setProp(configCtx, "args", localScope.manage(vm.newString(args)));
-        }
-        vm.setProp(configCtx, "data", localScope.manage(vm.newString(data ?? "{}")));
-        if (activeArgs !== undefined)
-          vm.setProp(configCtx, "activeArgs", localScope.manage(vm.newString(activeArgs)));
-        // For v1/v2 blocks, also inject uiState (extracted from state.uiState)
-        if (isLegacyBlock) {
-          vm.setProp(configCtx, "uiState", localScope.manage(vm.newString(extractUiState(data))));
-        }
+      cfgRef.setSync(name, new ivm.Callback(withCachedError));
+      cfgRef.setSync(name + "__internal__", new ivm.Callback(fn));
+    };
+
+    // Check if this is a v1/v2 block (requiresModelAPIVersion !== 2)
+    // For v1/v2 blocks, state is {args, uiState} and we need to inject uiState separately
+    const isLegacyBlock = !checkBlockFlag(this.featureFlags, "requiresModelAPIVersion", 2);
+
+    // Helper to extract uiState from legacy state format {args, uiState}
+    const extractUiState = (stateJson: string | undefined): string => {
+      if (!stateJson) return "{}";
+      try {
+        const parsed = JSON.parse(stateJson);
+        return JSON.stringify(parsed?.uiState ?? {});
+      } catch {
+        return "{}";
       }
+    };
 
-      //
-      // Methods for injected ctx object
-      //
-
-      exportCtxFunction("getAccessorHandleByName", (name) => {
-        return parent.exportSingleValue(
-          this.getAccessorHandleByName(vm.getString(name)),
-          undefined,
-        );
-      });
-
-      //
-      // Accessors
-      //
-
-      exportCtxFunction("resolveWithCommon", (handle, commonOptions, ...steps) => {
-        return parent.exportSingleValue(
-          this.resolveWithCommon(
-            vm.getString(handle),
-            parent.importObjectViaJson(commonOptions) as CommonFieldTraverseOpsFromSDK,
-            ...steps.map(
-              (step) => parent.importObjectViaJson(step) as FieldTraversalStepFromSDK | string,
-            ),
-          ),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("getResourceType", (handle) => {
-        return parent.exportObjectViaJson(this.getResourceType(vm.getString(handle)), undefined);
-      });
-
-      exportCtxFunction("getInputsLocked", (handle) => {
-        return parent.exportSingleValue(this.getInputsLocked(vm.getString(handle)), undefined);
-      });
-
-      exportCtxFunction("getOutputsLocked", (handle) => {
-        return parent.exportSingleValue(this.getOutputsLocked(vm.getString(handle)), undefined);
-      });
-
-      exportCtxFunction("getIsReadyOrError", (handle) => {
-        return parent.exportSingleValue(this.getIsReadyOrError(vm.getString(handle)), undefined);
-      });
-
-      exportCtxFunction("getIsFinal", (handle) => {
-        return parent.exportSingleValue(this.getIsFinal(vm.getString(handle)), undefined);
-      });
-
-      exportCtxFunction("getError", (handle) => {
-        return parent.exportSingleValue(this.getError(vm.getString(handle)), undefined);
-      });
-
-      exportCtxFunction("listInputFields", (handle) => {
-        return parent.exportObjectViaJson(this.listInputFields(vm.getString(handle)), undefined);
-      });
-
-      exportCtxFunction("listOutputFields", (handle) => {
-        return parent.exportObjectViaJson(this.listInputFields(vm.getString(handle)), undefined);
-      });
-
-      exportCtxFunction("listDynamicFields", (handle) => {
-        return parent.exportObjectViaJson(this.listInputFields(vm.getString(handle)), undefined);
-      });
-
-      exportCtxFunction("getKeyValueBase64", (handle, key) => {
-        return parent.exportSingleValue(
-          this.getKeyValueBase64(vm.getString(handle), vm.getString(key)),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("getKeyValueAsString", (handle, key) => {
-        return parent.exportSingleValue(
-          this.getKeyValueAsString(vm.getString(handle), vm.getString(key)),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("getDataBase64", (handle) => {
-        return parent.exportSingleValue(this.getDataBase64(vm.getString(handle)), undefined);
-      });
-
-      exportCtxFunction("getDataAsString", (handle) => {
-        return parent.exportSingleValue(this.getDataAsString(vm.getString(handle)), undefined);
-      });
-
-      //
-      // Accessor helpers
-      //
-
-      exportCtxFunction(
-        "parsePObjectCollection",
-        (handle, errorOnUnknownField, prefix, ...resolveSteps) => {
-          return parent.exportObjectUniversal(
-            this.parsePObjectCollection(
-              vm.getString(handle),
-              vm.dump(errorOnUnknownField) as boolean,
-              vm.getString(prefix),
-              ...resolveSteps.map((stepHandle) => vm.getString(stepHandle)),
-            ),
-            undefined,
+    if (checkBlockFlag(this.featureFlags, "supportsLazyState")) {
+      // injecting lazy state functions
+      exportCtxFunction("args", () => {
+        if (this.computableCtx === undefined)
+          throw new Error(
+            `Add dummy call to ctx.args outside the future lambda. Can't be directly used in this context.`,
           );
-        },
-      );
+        const args = this.blockCtx.args(this.computableCtx);
+        return args === undefined ? undefined : args;
+      });
+      exportCtxFunction("blockStorage", () => {
+        if (this.computableCtx === undefined)
+          throw new Error(
+            `Add dummy call to ctx.blockStorage outside the future lambda. Can't be directly used in this context.`,
+          );
+        return this.blockCtx.blockStorage(this.computableCtx) ?? "{}";
+      });
+      exportCtxFunction("data", () => {
+        if (this.computableCtx === undefined)
+          throw new Error(
+            `Add dummy call to ctx.data outside the future lambda. Can't be directly used in this context.`,
+          );
+        return this.blockCtx.data(this.computableCtx) ?? "{}";
+      });
+      exportCtxFunction("activeArgs", () => {
+        if (this.computableCtx === undefined)
+          throw new Error(
+            `Add dummy call to ctx.activeArgs outside the future lambda. Can't be directly used in this context.`,
+          );
+        const res = this.blockCtx.activeArgs(this.computableCtx);
+        return res === undefined ? undefined : res;
+      });
+      // For v1/v2 blocks, also inject uiState (extracted from state.uiState)
+      if (isLegacyBlock) {
+        exportCtxFunction("uiState", () => {
+          if (this.computableCtx === undefined)
+            throw new Error(
+              `Add dummy call to ctx.uiState outside the future lambda. Can't be directly used in this context.`,
+            );
+          return extractUiState(this.blockCtx.data(this.computableCtx));
+        });
+      }
+    } else {
+      const args = this.blockCtx.args(this.computableCtx!);
+      const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
+      const data = this.blockCtx.data(this.computableCtx!);
+      if (args !== undefined) {
+        cfgRef.setSync("args", new ivm.ExternalCopy(args).copyInto());
+      }
+      cfgRef.setSync("data", new ivm.ExternalCopy(data ?? "{}").copyInto());
+      if (activeArgs !== undefined)
+        cfgRef.setSync("activeArgs", new ivm.ExternalCopy(activeArgs).copyInto());
+      // For v1/v2 blocks, also inject uiState (extracted from state.uiState)
+      if (isLegacyBlock) {
+        cfgRef.setSync("uiState", new ivm.ExternalCopy(extractUiState(data)).copyInto());
+      }
+    }
 
-      //
-      // Blobs
-      //
+    //
+    // Methods for injected ctx object
+    //
 
-      exportCtxFunction("getBlobContentAsBase64", (handle, range) => {
-        return parent.exportSingleValue(
-          this.getBlobContentAsBase64(
-            vm.getString(handle),
-            parent.importObjectUniversal(range) as RangeBytes | undefined,
-          ),
-          undefined,
+    exportCtxFunction("getAccessorHandleByName", (name: string) => {
+      return this.getAccessorHandleByName(name);
+    });
+
+    //
+    // Accessors
+    //
+
+    exportCtxFunction(
+      "resolveWithCommon",
+      (handle: string, commonOptions: any, ...steps: any[]) => {
+        return this.resolveWithCommon(
+          handle,
+          commonOptions as CommonFieldTraverseOpsFromSDK,
+          ...steps.map((step: any) => step as FieldTraversalStepFromSDK | string),
         );
-      });
+      },
+    );
 
-      exportCtxFunction("getBlobContentAsString", (handle, range) => {
-        return parent.exportSingleValue(
-          this.getBlobContentAsString(
-            vm.getString(handle),
-            parent.importObjectUniversal(range) as RangeBytes | undefined,
-          ),
-          undefined,
+    exportCtxFunction("getResourceType", (handle: string) => {
+      return new ivm.ExternalCopy(this.getResourceType(handle)).copyInto();
+    });
+
+    exportCtxFunction("getInputsLocked", (handle: string) => {
+      return this.getInputsLocked(handle);
+    });
+
+    exportCtxFunction("getOutputsLocked", (handle: string) => {
+      return this.getOutputsLocked(handle);
+    });
+
+    exportCtxFunction("getIsReadyOrError", (handle: string) => {
+      return this.getIsReadyOrError(handle);
+    });
+
+    exportCtxFunction("getIsFinal", (handle: string) => {
+      return this.getIsFinal(handle);
+    });
+
+    exportCtxFunction("getError", (handle: string) => {
+      return this.getError(handle);
+    });
+
+    exportCtxFunction("listInputFields", (handle: string) => {
+      return new ivm.ExternalCopy(this.listInputFields(handle)).copyInto();
+    });
+
+    exportCtxFunction("listOutputFields", (handle: string) => {
+      return new ivm.ExternalCopy(this.listInputFields(handle)).copyInto();
+    });
+
+    exportCtxFunction("listDynamicFields", (handle: string) => {
+      return new ivm.ExternalCopy(this.listInputFields(handle)).copyInto();
+    });
+
+    exportCtxFunction("getKeyValueBase64", (handle: string, key: string) => {
+      return this.getKeyValueBase64(handle, key);
+    });
+
+    exportCtxFunction("getKeyValueAsString", (handle: string, key: string) => {
+      return this.getKeyValueAsString(handle, key);
+    });
+
+    exportCtxFunction("getDataBase64", (handle: string) => {
+      return this.getDataBase64(handle);
+    });
+
+    exportCtxFunction("getDataAsString", (handle: string) => {
+      return this.getDataAsString(handle);
+    });
+
+    //
+    // Accessor helpers
+    //
+
+    exportCtxFunction(
+      "parsePObjectCollection",
+      (handle: string, errorOnUnknownField: boolean, prefix: string, ...resolveSteps: string[]) => {
+        const result = this.parsePObjectCollection(
+          handle,
+          errorOnUnknownField,
+          prefix,
+          ...resolveSteps,
         );
-      });
+        return result === undefined ? undefined : new ivm.ExternalCopy(result).copyInto();
+      },
+    );
 
-      exportCtxFunction("getDownloadedBlobContentHandle", (handle) => {
-        return parent.exportSingleValue(
-          this.getDownloadedBlobContentHandle(vm.getString(handle)),
-          undefined,
-        );
-      });
+    //
+    // Blobs
+    //
 
-      exportCtxFunction("getOnDemandBlobContentHandle", (handle) => {
-        return parent.exportSingleValue(
-          this.getOnDemandBlobContentHandle(vm.getString(handle)),
-          undefined,
-        );
-      });
+    exportCtxFunction("getBlobContentAsBase64", (handle: string, range?: RangeBytes) => {
+      return this.getBlobContentAsBase64(handle, range);
+    });
 
-      //
-      // Blobs to URLs
-      //
+    exportCtxFunction("getBlobContentAsString", (handle: string, range?: RangeBytes) => {
+      return this.getBlobContentAsString(handle, range);
+    });
 
-      exportCtxFunction("extractArchiveAndGetURL", (handle, format) => {
-        return parent.exportSingleValue(
-          this.extractArchiveAndGetURL(vm.getString(handle), vm.getString(format) as ArchiveFormat),
-          undefined,
-        );
-      });
+    exportCtxFunction("getDownloadedBlobContentHandle", (handle: string) => {
+      return this.getDownloadedBlobContentHandle(handle);
+    });
 
-      //
-      // ImportProgress
-      //
+    exportCtxFunction("getOnDemandBlobContentHandle", (handle: string) => {
+      return this.getOnDemandBlobContentHandle(handle);
+    });
 
-      exportCtxFunction("getImportProgress", (handle) => {
-        return parent.exportSingleValue(this.getImportProgress(vm.getString(handle)), undefined);
-      });
+    //
+    // Blobs to URLs
+    //
 
-      //
-      // Logs
-      //
+    exportCtxFunction("extractArchiveAndGetURL", (handle: string, format: string) => {
+      return this.extractArchiveAndGetURL(handle, format as ArchiveFormat);
+    });
 
-      exportCtxFunction("getLastLogs", (handle, nLines) => {
-        return parent.exportSingleValue(
-          this.getLastLogs(vm.getString(handle), vm.getNumber(nLines)),
-          undefined,
-        );
-      });
+    //
+    // ImportProgress
+    //
 
-      exportCtxFunction("getProgressLog", (handle, patternToSearch) => {
-        return parent.exportSingleValue(
-          this.getProgressLog(vm.getString(handle), vm.getString(patternToSearch)),
-          undefined,
-        );
-      });
+    exportCtxFunction("getImportProgress", (handle: string) => {
+      return this.getImportProgress(handle);
+    });
 
-      exportCtxFunction("getProgressLogWithInfo", (handle, patternToSearch) => {
-        return parent.exportSingleValue(
-          this.getProgressLogWithInfo(vm.getString(handle), vm.getString(patternToSearch)),
-          undefined,
-        );
-      });
+    //
+    // Logs
+    //
 
-      exportCtxFunction("getLogHandle", (handle) => {
-        return parent.exportSingleValue(this.getLogHandle(vm.getString(handle)), undefined);
-      });
+    exportCtxFunction("getLastLogs", (handle: string, nLines: number) => {
+      return this.getLastLogs(handle, nLines);
+    });
 
-      //
-      // Blocks
-      //
+    exportCtxFunction("getProgressLog", (handle: string, patternToSearch: string) => {
+      return this.getProgressLog(handle, patternToSearch);
+    });
 
-      exportCtxFunction("getBlockLabel", (blockId) => {
-        return parent.exportSingleValue(this.getBlockLabel(vm.getString(blockId)), undefined);
-      });
+    exportCtxFunction("getProgressLogWithInfo", (handle: string, patternToSearch: string) => {
+      return this.getProgressLogWithInfo(handle, patternToSearch);
+    });
 
-      //
-      // Result pool
-      //
+    exportCtxFunction("getLogHandle", (handle: string) => {
+      return this.getLogHandle(handle);
+    });
 
-      exportCtxFunction("getDataFromResultPool", () => {
-        return parent.exportObjectUniversal(this.getDataFromResultPool(), undefined);
-      });
+    //
+    // Blocks
+    //
 
-      exportCtxFunction("getDataWithErrorsFromResultPool", () => {
-        return parent.exportObjectUniversal(this.getDataWithErrorsFromResultPool(), undefined);
-      });
+    exportCtxFunction("getBlockLabel", (blockId: string) => {
+      return this.getBlockLabel(blockId);
+    });
 
-      exportCtxFunction("getSpecsFromResultPool", () => {
-        return parent.exportObjectUniversal(this.getSpecsFromResultPool(), undefined);
-      });
+    //
+    // Result pool
+    //
 
-      exportCtxFunction("calculateOptions", (predicate) => {
-        return parent.exportObjectUniversal(
-          this.calculateOptions(parent.importObjectViaJson(predicate) as PSpecPredicate),
-          undefined,
-        );
-      });
+    exportCtxFunction("getDataFromResultPool", () => {
+      return new ivm.ExternalCopy(this.getDataFromResultPool()).copyInto();
+    });
 
-      exportCtxFunction("getSpecFromResultPoolByRef", (blockId, exportName) => {
-        return parent.exportObjectUniversal(
-          this.getSpecFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
-          undefined,
-        );
-      });
+    exportCtxFunction("getDataWithErrorsFromResultPool", () => {
+      return new ivm.ExternalCopy(this.getDataWithErrorsFromResultPool()).copyInto();
+    });
 
-      exportCtxFunction("getDataFromResultPoolByRef", (blockId, exportName) => {
-        return parent.exportObjectUniversal(
-          this.getDataFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
-          undefined,
-        );
-      });
+    exportCtxFunction("getSpecsFromResultPool", () => {
+      return new ivm.ExternalCopy(this.getSpecsFromResultPool()).copyInto();
+    });
 
-      //
-      // PFrames / PTables
-      //
+    exportCtxFunction("calculateOptions", (predicate: PSpecPredicate) => {
+      return new ivm.ExternalCopy(this.calculateOptions(predicate)).copyInto();
+    });
 
-      exportCtxFunction("createPFrame", (def) => {
-        return parent.exportSingleValue(
-          this.createPFrame(
-            parent.importObjectViaJson(def) as PFrameDef<PColumn<string | PColumnValues>>,
-          ),
-          undefined,
-        );
-      });
+    exportCtxFunction("getSpecFromResultPoolByRef", (blockId: string, exportName: string) => {
+      const result = this.getSpecFromResultPoolByRef(blockId, exportName);
+      return result === undefined ? undefined : new ivm.ExternalCopy(result).copyInto();
+    });
 
-      exportCtxFunction("createPTable", (def) => {
-        return parent.exportSingleValue(
-          this.createPTable(
-            parent.importObjectViaJson(def) as PTableDef<PColumn<string | PColumnValues>>,
-          ),
-          undefined,
-        );
-      });
+    exportCtxFunction("getDataFromResultPoolByRef", (blockId: string, exportName: string) => {
+      const result = this.getDataFromResultPoolByRef(blockId, exportName);
+      return result === undefined ? undefined : new ivm.ExternalCopy(result).copyInto();
+    });
 
-      exportCtxFunction("createPTableV2", (def) => {
-        return parent.exportSingleValue(
-          this.createPTableV2(
-            parent.importObjectViaJson(def) as PTableDefV2<PColumn<string | PColumnValues>>,
-          ),
-          undefined,
-        );
-      });
+    //
+    // PFrames / PTables
+    //
 
-      //
-      // Computable
-      //
+    exportCtxFunction("createPFrame", (def: any) => {
+      return this.createPFrame(def as PFrameDef<PColumn<string | PColumnValues>>);
+    });
 
-      exportCtxFunction("getCurrentUnstableMarker", () => {
-        return parent.exportSingleValue(this.getCurrentUnstableMarker(), undefined);
-      });
+    exportCtxFunction("createPTable", (def: any) => {
+      return this.createPTable(def as PTableDef<PColumn<string | PColumnValues>>);
+    });
 
-      //
-      // Logging
-      //
+    exportCtxFunction("createPTableV2", (def: any) => {
+      return this.createPTableV2(def as PTableDefV2<PColumn<string | PColumnValues>>);
+    });
 
-      exportCtxFunction("logInfo", (message) => {
-        this.logInfo(vm.getString(message));
-      });
+    //
+    // Computable
+    //
 
-      exportCtxFunction("logWarn", (message) => {
-        this.logWarn(vm.getString(message));
-      });
+    exportCtxFunction("getCurrentUnstableMarker", () => {
+      return this.getCurrentUnstableMarker();
+    });
 
-      exportCtxFunction("logError", (message) => {
-        this.logError(vm.getString(message));
-      });
+    //
+    // Logging
+    //
+
+    exportCtxFunction("logInfo", (message: string) => {
+      this.logInfo(message);
+    });
+
+    exportCtxFunction("logWarn", (message: string) => {
+      this.logWarn(message);
+    });
+
+    exportCtxFunction("logError", (message: string) => {
+      this.logError(message);
     });
   }
 }

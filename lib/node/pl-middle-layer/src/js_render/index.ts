@@ -2,9 +2,8 @@ import type { MiddleLayerEnvironment } from "../middle_layer/middle_layer";
 import type { BlockCodeWithInfo, ConfigRenderLambda } from "@platforma-sdk/model";
 import type { ComputableRenderingOps } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
-import type { QuickJSWASMModule } from "quickjs-emscripten";
-import { Scope } from "quickjs-emscripten";
-import type { DeadlineSettings } from "./context";
+import ivm from "isolated-vm";
+import { notEmpty } from "@milaboratories/ts-helpers";
 import { JsExecutionContext } from "./context";
 import type { BlockContextAny } from "../middle_layer/block_ctx";
 import { getDebugFlags } from "../debug";
@@ -29,12 +28,12 @@ function logOutputStatus(
 }
 
 /**
- * Creates a Computable that executes a render function (`fh`) from a block's code in a QuickJS virtual machine.
+ * Creates a Computable that executes a render function (`fh`) from a block's code in an isolated-vm sandbox.
  * This function handles both synchronous and asynchronous execution patterns of the sandboxed JS code.
  *
  * The overall data flow is as follows:
- * 1. A QuickJS VM is initialized.
- * 2. A `JsExecutionContext` is created to bridge the host (TypeScript) and guest (QuickJS) environments. It injects a
+ * 1. An isolated-vm Isolate is initialized with memory limits.
+ * 2. A `JsExecutionContext` is created to bridge the host (TypeScript) and guest (isolated-vm) environments. It injects a
  *    context object (`cfgRenderCtx`) into the VM, providing helper methods for the sandboxed code to interact with the
  *    platform (e.g., to request data).
  * 3. The block's Javascript bundle is evaluated in the VM.
@@ -48,7 +47,7 @@ function logOutputStatus(
  * - The `computablesToResolve` map in `JsExecutionContext` remains empty.
  * - The function returns an object with an `ir` field holding the result (`{ ir: importedResult }`).
  *   Since `postprocessValue` is not specified, `ir` is treated as the final resolved value of the Computable.
- * - The QuickJS VM is disposed of immediately as it's no longer needed.
+ * - The isolated-vm Isolate is disposed of immediately as it's no longer needed.
  *
  * ### Asynchronous Path (with `postprocessValue`)
  * If the render function needs external data requiring asynchronous calculations (e.g., fetching a file), it calls
@@ -62,7 +61,7 @@ function logOutputStatus(
  *   computables.
  * - The `computablesToResolve` map is passed as the `ir` (initial result) to `Computable.makeRaw`.
  * - The `postprocessValue` function is provided to handle the results once the computables are resolved.
- * - The QuickJS VM is kept alive (`keepVmAlive = true`) because its state is needed in `postprocessValue`.
+ * - The isolate is kept alive (`keepVmAlive = true`) because its state is needed in `postprocessValue`.
  * - Once the `computable` framework resolves all dependencies, it calls `postprocessValue` with the resolved data.
  * - `postprocessValue` feeds the resolved data back into the VM, allowing the sandboxed code to compute the final
  *   result.
@@ -96,45 +95,33 @@ export function computableFromRF(
         `Block lambda recalculation : ${key} (${cCtx.changeSourceMarker}; ${cCtx.bodyInvocations} invocations)`,
       );
 
-    const scope = new Scope();
+    const isolate = new ivm.Isolate({ memoryLimit: 8 });
     let keepVmAlive = false;
+    let rCtx: JsExecutionContext | undefined;
+
     cCtx.addOnDestroy(() => {
-      // If keepVmAlive is false, the scope will be disposed by the finally block,
+      // If keepVmAlive is false, the isolate will be disposed by the finally block,
       // no need to dispose it here.
-      if (keepVmAlive) scope.dispose();
+      if (keepVmAlive && rCtx) rCtx.dispose();
     });
 
     try {
-      const runtime = scope.manage(env.quickJs.newRuntime());
-      runtime.setMemoryLimit(1024 * 1024 * 8);
-      runtime.setMaxStackSize(1024 * 320);
-
-      let deadlineSettings: DeadlineSettings | undefined;
-      runtime.setInterruptHandler(() => {
-        if (deadlineSettings === undefined) return false;
-        if (Date.now() > deadlineSettings.deadline) return true;
-        return false;
+      rCtx = new JsExecutionContext(isolate, 10000, featureFlags, {
+        computableCtx: cCtx,
+        blockCtx: ctx,
+        mlEnv: env,
       });
-      const vm = scope.manage(runtime.newContext());
-      const rCtx = new JsExecutionContext(
-        scope,
-        vm,
-        (s) => {
-          deadlineSettings = s;
-        },
-        featureFlags,
-        { computableCtx: cCtx, blockCtx: ctx, mlEnv: env },
-      );
 
       rCtx.evaluateBundle(code.content);
-      const result = rCtx.runCallback(fh.handle);
+      const resultRef = rCtx.runCallbackRef(fh.handle);
 
       rCtx.resetComputableCtx();
 
-      const toBeResolved = rCtx.computableHelper!.computablesToResolve;
+      const computableHelper = notEmpty(rCtx.computableHelper, "computableHelper");
+      const toBeResolved = computableHelper.computablesToResolve;
 
       if (Object.keys(toBeResolved).length === 0) {
-        const importedResult = rCtx.importObjectUniversal(result);
+        const importedResult = rCtx.importFromRef(resultRef);
         logOutputStatus(
           fh.handle,
           importedResult,
@@ -145,19 +132,24 @@ export function computableFromRF(
         return { ir: importedResult };
       }
 
-      let recalculationCounter = 0;
-      if (getDebugFlags().logOutputStatus)
+      if (getDebugFlags().logOutputStatus) {
         console.log(`Output ${fh.handle} scaffold calculated (not all computables resolved yet).`);
+      }
       keepVmAlive = true;
+
+      let recalculationCounter = 0;
+      // Capture rCtx in a const to avoid non-null assertions in the closure
+      const capturedCtx = rCtx;
 
       return {
         ir: toBeResolved,
         postprocessValue: (resolved: Record<string, unknown>, { unstableMarker, stable }) => {
           // resolving futures
-          for (const [handle, value] of Object.entries(resolved)) rCtx.runCallback(handle, value);
+          for (const [handle, value] of Object.entries(resolved))
+            capturedCtx.runCallback(handle, value);
 
           // rendering result
-          const renderedResult = rCtx.importObjectUniversal(result);
+          const renderedResult = capturedCtx.importFromRef(resultRef);
 
           // logging
           recalculationCounter++;
@@ -170,46 +162,32 @@ export function computableFromRF(
       keepVmAlive = false;
       throw e;
     } finally {
-      if (!keepVmAlive) scope.dispose();
+      if (!keepVmAlive) {
+        if (rCtx) rCtx.dispose();
+        else if (!isolate.isDisposed) isolate.dispose();
+      }
     }
   }, ops);
 }
 
 export function executeSingleLambda(
-  quickJs: QuickJSWASMModule,
   fh: ConfigRenderLambda,
   codeWithInfo: BlockCodeWithInfo,
   ...args: unknown[]
 ): unknown {
   const { code, featureFlags } = codeWithInfo;
-  const scope = new Scope();
+  const isolate = new ivm.Isolate({ memoryLimit: 8 });
+  let rCtx: JsExecutionContext | undefined;
   try {
-    const runtime = scope.manage(quickJs.newRuntime());
-    runtime.setMemoryLimit(1024 * 1024 * 8);
-    runtime.setMaxStackSize(1024 * 320);
-
-    let deadlineSettings: DeadlineSettings | undefined;
-    runtime.setInterruptHandler(() => {
-      if (deadlineSettings === undefined) return false;
-      if (Date.now() > deadlineSettings.deadline) return true;
-      return false;
-    });
-    const vm = scope.manage(runtime.newContext());
-    const rCtx = new JsExecutionContext(
-      scope,
-      vm,
-      (s) => {
-        deadlineSettings = s;
-      },
-      featureFlags,
-    );
+    rCtx = new JsExecutionContext(isolate, 10000, featureFlags);
 
     // Initializing the model
     rCtx.evaluateBundle(code.content);
 
     // Running the lambda with arguments (e.g., state for args(), args for enrichmentTargets())
-    return rCtx.importObjectUniversal(rCtx.runCallback(fh.handle, ...args));
+    return rCtx.runCallback(fh.handle, ...args);
   } finally {
-    scope.dispose();
+    if (rCtx) rCtx.dispose();
+    else if (!isolate.isDisposed) isolate.dispose();
   }
 }

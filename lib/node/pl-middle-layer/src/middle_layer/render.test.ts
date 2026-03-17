@@ -1,7 +1,6 @@
 import { expect, test } from "vitest";
 import * as tp from "node:timers/promises";
 import path from "path";
-import { getQuickJS, Scope, shouldInterruptAfterDeadline } from "quickjs-emscripten";
 import { randomUUID } from "node:crypto";
 import { MiddleLayer } from "./middle_layer";
 import { PlClient, TestHelpers } from "@milaboratories/pl-client";
@@ -143,37 +142,20 @@ test.skip("test JS render download", async () => {
   });
 });
 
-test.skip("basic quickjs code", async () => {
-  const qJs = await getQuickJS();
-
+test.skip("basic isolated-vm code", async () => {
+  const ivm = await import("isolated-vm");
   const start = Date.now();
-  // const n = 1000;
-  // for (let i = 0; i < n; ++i) {
+  const isolate = new ivm.default.Isolate({ memoryLimit: 8 });
   try {
-    Scope.withScope((scope) => {
-      const rt = scope.manage(qJs.newRuntime());
-      rt.setInterruptHandler(shouldInterruptAfterDeadline(Date.now() + 100));
-      rt.setMemoryLimit(1024 * 640);
-      rt.setMaxStackSize(1024 * 320);
-      const vm = scope.manage(rt.newContext({ intrinsics: { TypedArrays: false } }));
-      vm.newFunction("nextId", () => {
-        return vm.newNumber(12); // vm.newArrayBuffer(new Uint8Array([1, 2]));
-      }).consume((fn) => vm.setProp(vm.global, "nextId", fn));
-
-      const nextId = vm.getString(
-        scope.manage(
-          vm.unwrapResult(
-            vm.evalCode(
-              `nextId(); nextId(); i = 0; while (1) { i++ } /* Buffer.from(nextId()); */`,
-            ),
-          ),
-        ),
-      );
-      console.log(`${nextId}us per iteration`);
-    });
-  } catch (e: any) {
-    console.log(e);
+    const context = isolate.createContextSync();
+    context.global.setSync("nextId", new ivm.default.Callback(() => 12));
+    try {
+      context.evalSync(`nextId(); nextId(); var i = 0; while (1) { i++ }`, { timeout: 100 });
+    } catch (e: any) {
+      console.log(e);
+    }
+  } finally {
+    isolate.dispose();
   }
-  // }
-  console.log(`${Date.now() - start}us per iteration`);
+  console.log(`${Date.now() - start}ms elapsed`);
 });

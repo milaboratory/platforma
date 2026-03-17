@@ -13,7 +13,6 @@ import {
   BLOCK_STORAGE_FACADE_VERSION,
 } from "@platforma-sdk/model";
 import { LRUCache } from "lru-cache";
-import type { QuickJSWASMModule } from "quickjs-emscripten";
 import { executeSingleLambda } from "../js_render";
 import type { ResourceId } from "@milaboratories/pl-client";
 import { ConsoleLoggerAdapter, type MiLogger } from "@milaboratories/ts-helpers";
@@ -56,10 +55,7 @@ export class ProjectHelper {
     },
   });
 
-  constructor(
-    private readonly quickJs: QuickJSWASMModule,
-    public readonly logger: MiLogger = new ConsoleLoggerAdapter(),
-  ) {}
+  constructor(public readonly logger: MiLogger = new ConsoleLoggerAdapter()) {}
 
   // =============================================================================
   // Args Derivation from Storage (V3+)
@@ -88,7 +84,6 @@ export class ProjectHelper {
 
     try {
       const result = executeSingleLambda(
-        this.quickJs,
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.ArgsDerive],
         extractCodeWithInfo(blockConfig),
         storageJson,
@@ -118,7 +113,6 @@ export class ProjectHelper {
 
     try {
       const result = executeSingleLambda(
-        this.quickJs,
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.PrerunArgsDerive],
         extractCodeWithInfo(blockConfig),
         storageJson,
@@ -140,7 +134,6 @@ export class ProjectHelper {
     if (blockConfig.enrichmentTargets === undefined) return undefined;
     const args = req.args();
     const result = executeSingleLambda(
-      this.quickJs,
       blockConfig.enrichmentTargets,
       extractCodeWithInfo(blockConfig),
       args,
@@ -180,7 +173,6 @@ export class ProjectHelper {
 
     try {
       const result = executeSingleLambda(
-        this.quickJs,
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageInitial],
         extractCodeWithInfo(blockConfig),
       ) as string;
@@ -219,7 +211,6 @@ export class ProjectHelper {
 
     try {
       const result = executeSingleLambda(
-        this.quickJs,
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageApplyUpdate],
         extractCodeWithInfo(blockConfig),
         currentStorageJson,
@@ -252,7 +243,6 @@ export class ProjectHelper {
 
     try {
       const result = executeSingleLambda(
-        this.quickJs,
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageDebugView],
         extractCodeWithInfo(blockConfig),
         rawStorageJson,
@@ -297,7 +287,6 @@ export class ProjectHelper {
 
     try {
       const result = executeSingleLambda(
-        this.quickJs,
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageMigrate],
         extractCodeWithInfo(blockConfig),
         currentStorageJson,

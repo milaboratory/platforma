@@ -37,7 +37,6 @@
     "@milaboratories/ts-helpers": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
     "@platforma-sdk/test": "workspace:*",
-    "quickjs-emscripten": "catalog:",
     "undici": "catalog:"
   },
   "devDependencies": {

@@ -568,8 +568,8 @@ test("v3: test error propagation", async ({ expect }) => {
     }
 
     expect(result.errors).toHaveLength(1);
-    // V3 blocks produce PlQuickJSError when trying to access non-existent prerun output
-    expect(result.errors[0].name).toBe("PlQuickJSError");
+    // V3 blocks produce PlSandboxError when trying to access non-existent prerun output
+    expect(result.errors[0].name).toBe("PlSandboxError");
   });
 });
 

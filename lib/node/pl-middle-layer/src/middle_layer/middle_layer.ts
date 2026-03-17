@@ -20,8 +20,6 @@ import type {
   BlockPlatform,
 } from "@milaboratories/pl-model-middle-layer";
 import { BlockUpdateWatcher } from "../block_registry/watcher";
-import type { QuickJSWASMModule } from "quickjs-emscripten";
-import { getQuickJS } from "quickjs-emscripten";
 import type { MiddleLayerDriverKit } from "./driver_kit";
 import { initDriverKit } from "./driver_kit";
 import type { BlockCodeFeatureFlags, DriverKit, SupportedRequirement } from "@platforma-sdk/model";
@@ -46,7 +44,6 @@ export interface MiddleLayerEnvironment {
   readonly bpPreparer: BlockPackPreparer;
   readonly frontendDownloadDriver: DownloadUrlDriver;
   readonly blockUpdateWatcher: BlockUpdateWatcher;
-  readonly quickJs: QuickJSWASMModule;
   readonly driverKit: MiddleLayerDriverKit;
   readonly projectHelper: ProjectHelper;
 }
@@ -210,7 +207,6 @@ export class MiddleLayer {
    */
   public async close() {
     await Promise.all([...this.openedProjectsByRid.values()].map((prj) => prj.destroy()));
-    // this.env.quickJs;
     await this.projectListTree.terminate();
     await this.env.dispose();
     await this.pl.close();
@@ -281,8 +277,6 @@ export class MiddleLayer {
       retryHttpDispatcher,
     );
 
-    const quickJs = await getQuickJS();
-
     const runtimeCapabilities = new RuntimeCapabilities();
     // add runtime capabilities of model here
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 1);
@@ -307,8 +301,7 @@ export class MiddleLayer {
         preferredUpdateChannel: ops.preferredUpdateChannel,
       }),
       runtimeCapabilities,
-      quickJs,
-      projectHelper: new ProjectHelper(quickJs, logger),
+      projectHelper: new ProjectHelper(logger),
       dispose: async () => {
         await retryHttpDispatcher.destroy();
         await driverKit.dispose();

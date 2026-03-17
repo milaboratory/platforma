@@ -54,6 +54,7 @@ export function ensureErrorLike(error: unknown): ErrorLike {
     const err = result.data;
 
     if (
+      err.name === "PlSandboxError" ||
       err.name === "PlQuickJSError" ||
       err.name === "PlErrorReport" ||
       err.name === "PlInternalError" ||
