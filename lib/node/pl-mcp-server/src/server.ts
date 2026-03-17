@@ -20,6 +20,8 @@ export interface PlMcpServerCallbacks {
   sendInputEvent?: (event: unknown) => Promise<void>;
   /** Execute JavaScript in the renderer and return the result. */
   executeJavaScript?: (code: string) => Promise<unknown>;
+  /** List available blocks from all configured registries. */
+  listAvailableBlocks?: (query?: string) => Promise<unknown[]>;
 }
 
 export interface PlMcpServerOptions {
@@ -334,6 +336,23 @@ export class PlMcpServer {
         const project = await this.getOpenedProject(projectId);
         await project.stopBlock(blockId);
         return textResult({ ok: true });
+      },
+    );
+
+    server.registerTool(
+      "list_available_blocks",
+      {
+        description: "List available blocks from configured registries. Optional query to filter by name.",
+        inputSchema: {
+          query: z.string().optional().describe("Filter blocks by name (case-insensitive substring match)"),
+        },
+      },
+      async ({ query }) => {
+        if (!this.callbacks.listAvailableBlocks) {
+          return textResult({ error: "Block registry not available" });
+        }
+        const blocks = await this.callbacks.listAvailableBlocks(query);
+        return textResult(blocks);
       },
     );
   }
