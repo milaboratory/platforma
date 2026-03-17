@@ -1,0 +1,16 @@
+---
+"@platforma-sdk/pl-cli": minor
+---
+
+Add pl-cli: CLI tool for Platforma server state manipulation
+
+New CLI tool with the following commands:
+- `pl-cli project list` — list all projects
+- `pl-cli project info` — show project details
+- `pl-cli project duplicate` — duplicate a project with auto-rename
+- `pl-cli project rename` — rename a project
+- `pl-cli project delete` — delete a project
+- `pl-cli admin copy-project` — copy project between users (controller auth)
+- `pl-cli admin user-list` — list user roots on server
+
+All commands support `--format text` (default) and `--format json` output.

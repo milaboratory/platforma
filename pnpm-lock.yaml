@@ -3527,6 +3527,49 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
+  tools/pl-cli:
+    dependencies:
+      '@milaboratories/pl-client':
+        specifier: workspace:*
+        version: link:../../lib/node/pl-client
+      '@milaboratories/pl-model-middle-layer':
+        specifier: workspace:*
+        version: link:../../lib/model/middle-layer
+      '@oclif/core':
+        specifier: 'catalog:'
+        version: 4.0.37
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../build-configs
+      '@milaboratories/oclif-index':
+        specifier: workspace:*
+        version: link:../oclif-index
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../ts-configs
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.5.2
+      rollup-plugin-node-externals:
+        specifier: 'catalog:'
+        version: 8.0.0(rollup@4.52.4)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.0.0-beta.15(@types/node@24.5.2)(esbuild@0.27.3)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+      vite-plugin-dts:
+        specifier: 'catalog:'
+        version: 4.5.3(@types/node@24.5.2)(rollup@4.52.4)(typescript@5.9.3)(vite@8.0.0-beta.15(@types/node@24.5.2)(esbuild@0.27.3)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+
   tools/r-builder:
     dependencies:
       fs-extra:
