@@ -2,7 +2,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
-import { type MiddleLayer, resourceIdToString } from "@milaboratories/pl-middle-layer";
+import {
+  type MiddleLayer,
+  type BlockPackSpecAny,
+  resourceIdToString,
+} from "@milaboratories/pl-middle-layer";
 import { z } from "zod";
 
 export interface PlMcpServerCallbacks {
@@ -141,16 +145,23 @@ export class PlMcpServer {
   private registerTools(server: McpServer): void {
     this.registerPingTool(server);
     this.registerProjectTools(server);
+    this.registerBlockTools(server);
     this.registerScreenshotTool(server);
   }
 
-  /** Resolves a project from the list by its internal id. */
+  /** Resolves a project from the list by its projectId (resourceIdToString format). */
   private async resolveProject(projectId: string) {
     await this.ml.projectList.refreshState();
     const projects = await this.ml.projectList.awaitStableValue();
     const entry = projects.find((p) => resourceIdToString(p.rid) === projectId);
     if (!entry) throw new Error(`Project ${projectId} not found`);
     return entry;
+  }
+
+  /** Gets an opened project by projectId. Resolves via project list → rid → getOpenedProject. */
+  private async getOpenedProject(projectId: string) {
+    const entry = await this.resolveProject(projectId);
+    return this.ml.getOpenedProject(entry.rid);
   }
 
   private registerPingTool(server: McpServer): void {
@@ -232,6 +243,90 @@ export class PlMcpServer {
         const entry = await this.resolveProject(projectId);
         await ml.deleteProject(entry.id);
         await this.callbacks.onProjectDeleted?.(projectId);
+        return textResult({ ok: true });
+      },
+    );
+  }
+
+  private registerBlockTools(server: McpServer): void {
+    server.registerTool(
+      "add_block",
+      {
+        description:
+          "Add a block to an opened project. Spec can be from-registry-v2 (for published blocks) or dev-v2 (for local dev blocks).",
+        inputSchema: {
+          projectId: z.string().describe("Project ID (must be opened)"),
+          label: z.string().describe("Block label"),
+          spec: z
+            .union([
+              z.object({
+                type: z.literal("from-registry-v2"),
+                registryUrl: z.string().describe("Registry URL"),
+                id: z.object({
+                  organization: z.string(),
+                  name: z.string(),
+                  version: z.string(),
+                }),
+              }),
+              z.object({
+                type: z.literal("dev-v2"),
+                folder: z.string().describe("Path to block folder"),
+              }),
+            ])
+            .describe("Block pack specification"),
+        },
+      },
+      async ({ projectId, label, spec }) => {
+        const project = await this.getOpenedProject(projectId);
+        const blockId = await project.addBlock(label, spec as BlockPackSpecAny);
+        return textResult({ blockId });
+      },
+    );
+
+    server.registerTool(
+      "remove_block",
+      {
+        description: "Remove a block from an opened project",
+        inputSchema: {
+          projectId: z.string().describe("Project ID"),
+          blockId: z.string().describe("Block ID to remove"),
+        },
+      },
+      async ({ projectId, blockId }) => {
+        const project = await this.getOpenedProject(projectId);
+        await project.deleteBlock(blockId);
+        return textResult({ ok: true });
+      },
+    );
+
+    server.registerTool(
+      "run_block",
+      {
+        description: "Run a block. Stale upstream blocks are started automatically.",
+        inputSchema: {
+          projectId: z.string().describe("Project ID"),
+          blockId: z.string().describe("Block ID to run"),
+        },
+      },
+      async ({ projectId, blockId }) => {
+        const project = await this.getOpenedProject(projectId);
+        await project.runBlock(blockId);
+        return textResult({ ok: true });
+      },
+    );
+
+    server.registerTool(
+      "stop_block",
+      {
+        description: "Stop a running block",
+        inputSchema: {
+          projectId: z.string().describe("Project ID"),
+          blockId: z.string().describe("Block ID to stop"),
+        },
+      },
+      async ({ projectId, blockId }) => {
+        const project = await this.getOpenedProject(projectId);
+        await project.stopBlock(blockId);
         return textResult({ ok: true });
       },
     );
