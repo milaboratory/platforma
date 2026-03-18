@@ -217,7 +217,7 @@ This requires access to PFrame infrastructure. The `MiddleLayer` provides `drive
 
 ---
 
-### Step 8: Logs tool — DONE (get_app_log only, get_block_logs deferred)
+### Step 8: Logs tool — DONE
 
 Tools:
 - `get_block_logs` → reads execution logs for a block
