@@ -25,10 +25,10 @@ import {
   isLinkerColumn,
   isPartitionedDataInfoEntries,
   isPColumnSpec,
+  legacyColumnSelectorsToPredicate,
   LinkerMap,
   matchAxisId,
   resolveAnchors,
-  selectorsToPredicate,
 } from "@milaboratories/pl-model-common";
 import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
@@ -66,7 +66,8 @@ class ArrayColumnProvider implements ColumnProvider {
   selectColumns(
     selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
   ): PColumn<PColumnDataUniversal | undefined>[] {
-    const predicate = typeof selectors === "function" ? selectors : selectorsToPredicate(selectors);
+    const predicate =
+      typeof selectors === "function" ? selectors : legacyColumnSelectorsToPredicate(selectors);
     // Filter based on spec, ignoring data type for now
     return this.columns.filter((column): column is PColumn<PColumnDataUniversal | undefined> =>
       predicate(column.spec),
@@ -300,8 +301,10 @@ export class PColumnCollection {
             throw new Error(
               "Anchored selectors in exclude require an AnchoredIdDeriver to be provided in options.",
             );
-          return selectorsToPredicate(resolveAnchors(anchorCtx.anchors, selector, opts));
-        } else return selectorsToPredicate(selector);
+          return legacyColumnSelectorsToPredicate(
+            resolveAnchors(anchorCtx.anchors, selector, opts),
+          );
+        } else return legacyColumnSelectorsToPredicate(selector);
       });
       excludePredicate = (spec) => excludePredicartes.some((predicate) => predicate(spec));
     }

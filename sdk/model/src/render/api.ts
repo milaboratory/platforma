@@ -26,6 +26,7 @@ import type {
   SUniversalPColumnId,
   ValueOrError,
 } from "@milaboratories/pl-model-common";
+import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import {
   AnchoredIdDeriver,
   collectSpecQueryColumns,
@@ -43,8 +44,8 @@ import {
   mapValueInVOE,
   PColumnName,
   readAnnotation,
-  selectorsToPredicate,
   withEnrichments,
+  legacyColumnSelectorsToPredicate,
 } from "@milaboratories/pl-model-common";
 import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
@@ -155,7 +156,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     const predicate =
       typeof predicateOrSelector === "function"
         ? predicateOrSelector
-        : selectorsToPredicate(predicateOrSelector);
+        : legacyColumnSelectorsToPredicate(predicateOrSelector);
     const filtered = this.getSpecs().entries.filter((s) => predicate(s.obj));
 
     let labelOps: LabelDerivationOps | ((spec: PObjectSpec, ref: PlRef) => string) = {};
@@ -494,7 +495,8 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
   public selectColumns(
     selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
   ): PColumn<TreeNodeAccessor | undefined>[] {
-    const predicate = typeof selectors === "function" ? selectors : selectorsToPredicate(selectors);
+    const predicate =
+      typeof selectors === "function" ? selectors : legacyColumnSelectorsToPredicate(selectors);
 
     const matchedSpecs = this.getSpecs().entries.filter(({ obj: spec }) => {
       if (!isPColumnSpec(spec)) return false;
@@ -717,12 +719,18 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     return this.ctx.createSpecFrame(specs);
   }
 
-  public specFrameDiscoverColumns(...args: Parameters<typeof this.ctx.specFrameDiscoverColumns>) {
-    return this.ctx.specFrameDiscoverColumns(...args);
+  public specFrameDiscoverColumns(
+    handle: string,
+    request: PFrameInternal.DiscoverColumnsRequest,
+  ): PFrameInternal.DiscoverColumnsResponse {
+    return this.ctx.specFrameDiscoverColumns(handle, request);
   }
 
-  public specFrameFindColumns(...args: Parameters<typeof this.ctx.specFrameFindColumns>) {
-    return this.ctx.specFrameFindColumns(...args);
+  public specFrameFindColumns(
+    handle: string,
+    request: PFrameInternal.FindColumnsRequest,
+  ): PFrameInternal.FindColumnsResponse {
+    return this.ctx.specFrameFindColumns(handle, request);
   }
 
   public specFrameDispose(handle: string): void {
