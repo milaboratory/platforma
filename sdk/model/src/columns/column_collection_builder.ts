@@ -447,25 +447,25 @@ function convertMatcherMap(record: Record<string, StringMatcher[]>): PFrameInter
 }
 
 function convertAxisSelector(sel: AxisSelector): PFrameInternal.MultiAxisSelector {
-  const result: PFrameInternal.MultiAxisSelector = {};
-  if (sel.name) (result as any).name = convertMatcherArray(sel.name);
-  if (sel.type) (result as any).type = sel.type;
-  if (sel.domain) (result as any).domain = convertMatcherMap(sel.domain);
-  if (sel.contextDomain) (result as any).contextDomain = convertMatcherMap(sel.contextDomain);
-  if (sel.annotations) (result as any).annotations = convertMatcherMap(sel.annotations);
-  return result;
+  return {
+    ...(sel.name && { name: convertMatcherArray(sel.name) }),
+    ...(sel.type && { type: sel.type as string[] }),
+    ...(sel.domain && { domain: convertMatcherMap(sel.domain) }),
+    ...(sel.contextDomain && { contextDomain: convertMatcherMap(sel.contextDomain) }),
+    ...(sel.annotations && { annotations: convertMatcherMap(sel.annotations) }),
+  };
 }
 
 function convertColumnSelector(sel: ColumnSelector): PFrameInternal.MultiColumnSelector {
-  const result: PFrameInternal.MultiColumnSelector = {};
-  if (sel.name) (result as any).name = convertMatcherArray(sel.name);
-  if (sel.type) (result as any).type = sel.type;
-  if (sel.domain) (result as any).domain = convertMatcherMap(sel.domain);
-  if (sel.contextDomain) (result as any).contextDomain = convertMatcherMap(sel.contextDomain);
-  if (sel.annotations) (result as any).annotations = convertMatcherMap(sel.annotations);
-  if (sel.axes) (result as any).axes = sel.axes.map(convertAxisSelector);
-  if (sel.partialAxesMatch !== undefined) (result as any).partialAxesMatch = sel.partialAxesMatch;
-  return result;
+  return {
+    ...(sel.name && { name: convertMatcherArray(sel.name) }),
+    ...(sel.type && { type: sel.type as string[] }),
+    ...(sel.domain && { domain: convertMatcherMap(sel.domain) }),
+    ...(sel.contextDomain && { contextDomain: convertMatcherMap(sel.contextDomain) }),
+    ...(sel.annotations && { annotations: convertMatcherMap(sel.annotations) }),
+    ...(sel.axes && { axes: sel.axes.map(convertAxisSelector) }),
+    ...(sel.partialAxesMatch !== undefined && { partialAxesMatch: sel.partialAxesMatch }),
+  };
 }
 
 /** Convert SDK ColumnSelectorInput to WASM MultiColumnSelector[]. */
