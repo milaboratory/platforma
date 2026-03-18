@@ -19,17 +19,6 @@ const enterNumbersBlockFolder = path.resolve(
   "block",
 );
 
-const sumNumbersBlockFolder = path.resolve(
-  import.meta.dirname,
-  "..",
-  "..",
-  "..",
-  "etc",
-  "blocks",
-  "sum-numbers-v3",
-  "block",
-);
-
 test("await_block_done waits for completion", { timeout: 60_000 }, async () => {
   await withMcpServer(async ({ client }) => {
     const { projectId } = parseResult(
