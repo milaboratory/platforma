@@ -35,6 +35,7 @@ export async function prepareTemplateSpec(tpl: TemplateSpecAny): Promise<Templat
       };
     case "from-registry":
     case "explicit":
+    case "cached":
       return tpl;
     case "prepared":
       return tpl;
@@ -65,6 +66,8 @@ export function loadTemplate(tx: PlTransaction, spec: TemplateSpecPrepared): Any
       return loadTemplateFromExplicitDirect(tx, spec);
     case "prepared":
       return loadTemplateFromPrepared(tx, spec);
+    case "cached":
+      return spec.resourceId;
     default:
       return assertNever(spec);
   }

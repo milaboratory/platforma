@@ -1,3 +1,4 @@
+import type { ResourceId } from "@milaboratories/pl-client";
 import type { CompiledTemplateV3, TemplateData } from "@milaboratories/pl-model-backend";
 
 export interface TemplateFromRegistry {
@@ -16,10 +17,19 @@ export interface PreparedTemplate {
   data: TemplateData | CompiledTemplateV3;
 }
 
+export interface CachedTemplate {
+  readonly type: "cached";
+  resourceId: ResourceId;
+}
+
 export interface TemplateFromFile {
   readonly type: "from-file";
   path: string;
 }
 
-export type TemplateSpecPrepared = TemplateFromRegistry | ExplicitTemplate | PreparedTemplate;
+export type TemplateSpecPrepared =
+  | TemplateFromRegistry
+  | ExplicitTemplate
+  | PreparedTemplate
+  | CachedTemplate;
 export type TemplateSpecAny = TemplateSpecPrepared | TemplateFromFile;
