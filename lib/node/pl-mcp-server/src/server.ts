@@ -438,7 +438,7 @@ export class PlMcpServer {
                 : state.blockStorage;
             data = parsed?.__data;
           } catch {
-            data = state.blockStorage;
+            data = undefined;
           }
         }
         return textResult({
