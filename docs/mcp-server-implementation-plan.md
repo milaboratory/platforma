@@ -425,7 +425,16 @@ This hybrid approach (MCP API for project/block lifecycle, UI tools for block co
 ## Open questions for review
 
 1. **Package location:** `lib/node/pl-mcp-server/` — is this the right place? Alternative: `sdk/mcp-server/`.
+   - **Answer:** Yes, `lib/node/pl-mcp-server/` is the right place.
+
 2. **Test block choice:** Plan uses `enter-numbers-v3` + `sum-numbers-v3` from `etc/blocks/`. These are simple and well-tested. Any preference for other blocks?
+   - **Answer:** Use the [VDJ 003 Tiny Trees](https://www.notion.so/mixcr/VDJ-003-Tiny-10x-and-Bulk-SHM-Trees-1513a83ff4af800bbe89df08f08e0501) project for real-world testing. It covers Import Sequencing Data, MiXCR Clonotyping (bulk + single cell), Clonotype Browser, and MiXCR SHM Trees. Keep `enter-numbers-v3` + `sum-numbers-v3` for fast automated integration tests that don't need a full backend.
+
 3. **PFrame access in Step 7:** The worker thread creates PFrame instances via `pFrameApi`. The MCP server needs similar access. Should it go through MiddleLayer's `driverKit`, or do we need a dedicated PFrame interface?
+   - **Answer:** Use MiddleLayer's API.
+
 4. **Port selection:** Spec says 4200. Any conflict with existing dev tools on your setup?
+   - **Answer:** 4200 is fine.
+
 5. **`run_block` implementation:** The spec mentions `addUpstreams` flag. Need to verify the exact API in the mutator for starting block execution with upstream dependencies.
+   - **Answer (resolved during implementation):** `project.runBlock(blockId)` auto-starts stale upstream blocks. No explicit flag needed at the MCP API level.
